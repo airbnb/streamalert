@@ -24,13 +24,13 @@ Overview
 All rules take this form::
 
     @rule('example', logs=[...], matchers=[...], outputs=[...])
-    def example(rec):
+    def example(record):
         # analyze the incoming record w/your logic
         return (
             # return true if an alert should be sent
         )
 
-``rec`` is an incoming record from any one of the configured datasources. You define ``logs`` and ``matchers`` to ensure the logic within the ``def`` function block only runs against logs that it should.
+``record`` is an incoming record from any one of the configured datasources. You define ``logs`` and ``matchers`` to ensure the logic within the ``def`` function block only runs against logs that it should.
 
 
 Example
@@ -42,9 +42,9 @@ Here’s an example that alerts on the use of sudo in a PCI environment::
           logs=['osquery'],                           # applicable datasource(s)
           matchers=['pci'],                           # matcher(s) to evaluate
           outputs=['s3', 'pagerduty', 'slack'])       # where to send alerts
-    def production_sudo(rec):                         # rec = incoming record/log
-        table_name = rec['name']
-        tag = rec['columns']['tag']
+    def production_sudo(record):                      # incoming record/log
+        table_name = record['name']
+        tag = record['columns']['tag']
         return (
           table_name == 'linux_syslog_auth' and
           fnmatch(tag, 'sudo*')
@@ -79,8 +79,8 @@ Matchers can serve 2 purposes:
 In the above example, we are evaluating the ``pci`` matcher. As you can likely deduce, this ensures rule logic is only run if the incoming record is coming from the pci environment. This is achieved by looking for a particular field in the log. The code::
 
     @matcher('pci')
-    def is_prod_env(rec):
-        return rec['decorations']['envIdentifier'] == 'pci'
+    def is_prod_env(record):
+        return record['decorations']['envIdentifier'] == 'pci'
 
 
 outputs
@@ -112,7 +112,7 @@ Example function::
 Example use of that function within a rule::
 
     @rule('foobar', ...)
-    def foobar(rec):
+    def foobar(record):
         ...
         user = ...
         user_whitelist = ...
