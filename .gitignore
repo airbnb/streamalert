@@ -1,4 +1,12 @@
+# PYC files
 *.pyc
+
+# Terraform files
 *.terraform/
 terraform.tfvars
 terraform/terraform.tfstate*
+
+# MacOS artifacts
+Thumbs.db
+.DS_Store
+*.swp
