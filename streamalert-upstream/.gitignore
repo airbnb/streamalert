@@ -1,0 +1,4 @@
+*.pyc
+*.terraform/
+terraform.tfvars
+terraform/terraform.tfstate*

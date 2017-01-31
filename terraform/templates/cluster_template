@@ -1,0 +1,73 @@
+// StreamAlert Lambda Function
+module "stream_alert_{{ cluster_name }}" {
+  source                       = "modules/tf_stream_alert"
+  account_id                   = "${var.account_id}"
+  region                       = "${lookup(var.clusters, "{{ cluster_name }}")}"
+  lambda_function_name         = "${var.prefix}_{{ cluster_name }}_stream_alert_processor"
+  lambda_source_bucket_name    = "${var.lambda_source_bucket_name}"
+  lambda_source_key            = "${var.lambda_source_key}"
+  lambda_function_prod_version = "${var.lambda_function_prod_versions["{{ cluster_name }}"]}"
+  lambda_handler               = "${var.lambda_handler}"
+  lambda_timeout               = "${element(var.lambda_settings["{{ cluster_name }}"], 0)}"
+  lambda_memory                = "${element(var.lambda_settings["{{ cluster_name }}"], 1)}"
+  output_lambda_function_name  = "${var.prefix}_{{ cluster_name }}_stream_alert_output_processor"
+  output_lambda_source_key     = "${var.output_lambda_source_key}"
+  kms_key_arn                  = "${aws_kms_key.stream_alert_secrets.arn}"
+}
+
+// Cloudwatch alerts for production and staging Lambda functions
+module "cloudwatch_monitoring_{{ cluster_name }}" {
+  source               = "modules/tf_stream_alert_monitoring"
+  sns_topic_arns       = ["${module.stream_alert_{{ cluster_name }}.sns_topic_arn}"]
+  lambda_function_name = "${var.prefix}_{{ cluster_name }}_stream_alert_processor"
+}
+
+// Kinesis Stream and Firehose to send data to the Lambda function
+module "kinesis_{{ cluster_name }}" {
+  source                  = "modules/tf_stream_alert_kinesis"
+  account_id              = "${var.account_id}"
+  region                  = "${lookup(var.clusters, "{{ cluster_name }}")}"
+  cluster_name            = "{{ cluster_name }}"
+  firehose_s3_bucket_name = "${var.prefix}.{{ cluster_name }}.${var.firehose_s3_bucket_suffix}"
+  stream_name             = "${var.prefix}_{{ cluster_name }}_stream_alert_kinesis"
+  firehose_name           = "${var.prefix}_{{ cluster_name }}_stream_alert_firehose"
+  username                = "${var.prefix}_{{ cluster_name }}_stream_alert_user"
+  stream_shards           = "${element(var.kinesis_settings["{{ cluster_name }}"], 0)}"
+  stream_retention        = "${element(var.kinesis_settings["{{ cluster_name }}"], 1)}"
+}
+
+// Enable a Kinesis Stream to send events to Lambda
+module "kinesis_events_{{ cluster_name }}" {
+  source                    = "modules/tf_stream_alert_kinesis_events"
+  lambda_staging_enabled    = true
+  lambda_production_enabled = true
+  lambda_role_id            = "${module.stream_alert_{{ cluster_name }}.lambda_role_id}"
+  lambda_function_arn       = "${module.stream_alert_{{ cluster_name }}.lambda_arn}"
+  kinesis_stream_arn        = "${module.kinesis_{{ cluster_name }}.arn}"
+  role_policy_prefix        = "{{ cluster_name }}"
+}
+{% if s3_buckets %}
+{% for s3_bucket_id in s3_buckets %}
+module "s3_events_{{ cluster_name }}" {
+  source               = "modules/tf_stream_alert_s3_events"
+  lambda_function_arn  = "${module.stream_alert_{{ cluster_name }}.lambda_arn}"
+  lambda_function_name = "${var.prefix}_{{ cluster_name }}_stream_alert_processor"
+  s3_bucket_id         = "{{ s3_bucket_id}}"
+  s3_bucket_arn        = "arn:aws:s3:::{{ s3_bucket_id }}"
+  lambda_role_id       = "${module.stream_alert_{{ cluster_name }}.lambda_role_id}"
+  lambda_role_arn      = "${module.stream_alert_{{ cluster_name }}.lambda_role_arn}"
+}
+{% endfor %}
+{% endif %}
+
+output "kinesis_{{ cluster_name }}_username" {
+  value = "${module.kinesis_{{ cluster_name }}.username}"
+}
+
+output "kinesis_{{ cluster_name }}_access_key_id" {
+  value = "${module.kinesis_{{ cluster_name }}.access_key_id}"
+}
+
+output "kinesis_{{ cluster_name }}_secret_key" {
+  value = "${module.kinesis_{{ cluster_name }}.secret_key}"
+}

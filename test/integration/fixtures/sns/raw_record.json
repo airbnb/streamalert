@@ -1,0 +1,45 @@
+{
+  "default": "default",
+  "alerts": [
+    {
+      "rule_name": "demo_invalid_login",
+      "payload": {
+        "service": "kinesis",
+        "log_source": "demo",
+        "entity": "demo_kinsis_stream",
+        "record": {
+          "name": "last",
+          "calendarTime": "Jan 10 2017",
+          "decorations": {
+            "envIdentifier": "demo",
+            "roleIdentifier": "demo"
+          },
+          "unixTime": "1470824034",
+          "action": "added",
+          "columns": {
+            "username": "joebob",
+            "tty": "pts/0",
+            "pid": "139",
+            "host": "10.0.0.2",
+            "time": "12345678",
+            "type": "7"
+          },
+          "hostIdentifier": "demo.host.net"
+        },
+        "valid": true,
+        "raw_record": {
+          "eventSourceARN": "arn:aws:kinesis:region:account-id:stream/demo_kinsis_stream",
+          "eventSource": "aws:kinesis",
+          "kinesis": {
+            "data": "dGhpcyxpcyxkZW1vLGRhdGEK"
+          }
+        },
+        "type": "json"
+      },
+      "outputs": [
+        "pagerduty",
+        "s3"
+      ]
+    }
+  ]
+}
