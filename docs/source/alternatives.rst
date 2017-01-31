@@ -24,7 +24,7 @@ StreamAlert uses JSON files and queries are written in Python; they can utilize 
 Security
 ~~~~~~~~
 
-In ElastAlert, TLS is optional and authentication is optional (basic-auth). Elasticsearch does not perform authentication or authorization, leaving it as an exercise for the developer. You can purchase Elastic Shield, a product which provides encrypted communications and role-based access control.
+In ElastAlert, TLS and authentication is optional (Elasticsearch). This can be enabled via Elastic Shield/X-Pack.
 
 StreamAlert requires TLS for data transport (Kinesis requirement) and authentication is required (AWS Identity and Access Management (IAM))
 
@@ -52,7 +52,7 @@ Security
 
 * Infrastructure: Apache (w/mod_rewrite, mod_headers), PHP, SQLite, & MySQL. You are responsible for hardening and vulnerability management of these applications and the underlying host / operating system.
 
-* AuthN/AuthZ: The UI is accessed via username/password over TLS. Elasticsearch does not perform authentication or authorization, leaving it as an exercise for the developer. You can purchase Elastic Shield, a product which provides encrypted communications and role-based access control.
+* AuthN/AuthZ: The UI is accessed via username/password over TLS. TLS and authentication is optional for Elasticsearch; it can be enabled via Elastic Shield/X-Pack
 
 StreamAlert:
 

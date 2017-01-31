@@ -50,5 +50,7 @@ Example::
 
     "lambda_source_bucket_name": "companyx.streamalert.source",
 
-This defines the S3 bucket to create/use for uploading and storing the StreamAlert application code
+This defines the S3 bucket to create/use for uploading and storing the StreamAlert application code.
+
+Open ``variables.json`` and replace the prefix with your company name.
 
