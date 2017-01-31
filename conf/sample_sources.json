@@ -1,0 +1,29 @@
+/*
+This is a sample! Copy and rename this file to `sources.json` in the same folder.
+Below you will find a sample sources mapping for each log.
+
+To get the name of the kinesis stream, type:
+$ ./stream_alert_cli.py terraform status
+*/
+{
+  "kinesis": {
+    "cluster-1--kinesis-stream": {
+      "logs": [
+        "json_log_name",
+        "csv_log_name"
+      ]
+    },
+    "cluster-2-kinesis-stream": {
+      "logs": [
+        "json_log_name"
+      ]
+    },
+  },
+  "s3": {
+    "my-s3-bucket-id": {
+      "logs": [
+        "syslog_log_name"
+      ]
+    }
+  }
+}
