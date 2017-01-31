@@ -1,0 +1,159 @@
+{
+  "test_log_type_json": {
+    "parser": "json",
+    "schema": {
+      "key1": "string",
+      "key2": "string",
+      "key3": "integer"
+    }
+  },
+  "test_log_type_json_2": {
+    "parser": "json",
+    "schema": {
+      "key4": "string",
+      "key5": "string",
+      "key6": "string",
+      "key7": "string"
+    }
+  },
+  "test_log_type_json_nested": {
+    "parser": "json",
+    "schema": {
+      "date": "string",
+      "unixtime": "integer",
+      "host": "string",
+      "data": {}
+    }
+  },
+  "test_log_type_json_nested_osquery": {
+    "parser": "json",
+    "schema": {
+      "name": "string",
+      "hostIdentifier": "string",
+      "calendarTime": "string",
+      "unixTime": "integer",
+      "columns": {},
+      "action": "string",
+      "decorations": {
+        "role": "string",
+        "env": "string",
+        "cluster": "string",
+        "number": "integer"
+      }
+    }
+  },
+  "test_log_type_json_nested_with_data": {
+    "parser": "json",
+    "schema": {
+      "date": "string",
+      "unixtime": "integer",
+      "host": "string",
+      "application": "string",
+      "environment": "string",
+      "data": {
+        "category": "string",
+        "type": "integer",
+        "source": "string"
+      }
+    }
+  },
+  "test_log_type_kv_auditd": {
+    "parser": "kv",
+    "delimiter": " ",
+    "separator": "=",
+    "schema": {
+      "type": "string",
+      "msg": "string",
+      "arch": "string",
+      "syscall": "string",
+      "success": "string",
+      "exit": "string",
+      "a0": "string",
+      "a1": "string",
+      "a2": "string",
+      "a3": "string",
+      "items": "string",
+      "ppid": "integer",
+      "pid": "integer",
+      "auid": "integer",
+      "uid": "integer",
+      "gid": "integer",
+      "euid": "integer",
+      "suid": "integer",
+      "fsuid": "integer",
+      "egid": "integer",
+      "sgid": "integer",
+      "fsgid": "integer",
+      "tty": "string",
+      "ses": "string",
+      "comm": "string",
+      "exe": "string",
+      "subj": "string",
+      "key": "string",
+      "type_2": "string",
+      "msg_2": "string",
+      "cwd": "string",
+      "type_3": "string",
+      "msg_3": "string",
+      "item": "string",
+      "name": "string",
+      "inode": "string",
+      "dev": "string",
+      "mode": "integer",
+      "ouid": "integer",
+      "ogid": "integer",
+      "rdev": "string",
+      "obj": "string"
+    }
+  },
+  "test_log_type_csv": {
+    "parser": "csv",
+    "schema": {
+      "date": "string",
+      "time": "integer",
+      "host": "string",
+      "message": "string"
+    },
+    "hints": {
+      "message": [
+        "*keyword1*"
+      ]
+    }
+  },
+  "test_log_type_csv_nested": {
+    "parser": "csv",
+    "schema": {
+      "date": "string",
+      "time": "integer",
+      "host": "string",
+      "env": "string",
+      "message": {
+        "application": "string",
+        "role": "string",
+        "cluster_host": "integer",
+        "cluster_size": "integer",
+        "result": "string"
+      }
+    },
+    "hints": {
+      "env": [
+        "Corp"
+      ],
+      "host": [
+        "host*.prod.test"
+      ],
+      "message": {
+        "role": "*-server*"
+      }
+    }
+  },
+  "test_log_type_syslog": {
+    "parser": "syslog",
+    "schema": {
+      "timestamp": "string",
+      "host": "string",
+      "application": "string",
+      "message": "string"
+    }
+  }
+}
