@@ -62,6 +62,7 @@ Table of Contents
    kinesis-streams
    kinesis-firehose
    lambda
+   secrets
 
 .. _deployment:
 
@@ -72,7 +73,6 @@ Table of Contents
    installation
    deploying
    deploy-rollback
-   secrets
 
 .. _user_guide:
 

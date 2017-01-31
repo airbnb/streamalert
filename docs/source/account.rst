@@ -26,7 +26,25 @@ prefix
 
 Open ``variables.json`` and set ``prefix`` to your company name.
 
-lambda_source_bucket_name
-~~~~~~~~~~~~~~~~~~~~~~~~~
+Administrator
+~~~~~~~~~~~~~
 
-Open ``variables.json`` and prefix your organization name in ``lambda_source_bucket_name``, e.g. 'company_name.streamalert.source'
+To successfully deploy StreamAlert, you need to create an administrative user in the AWS account.
+
+Steps:
+
+* Go to: Services => IAM => Users
+* Click: Add user
+* Username: streamalert
+* Access type: Programmatic access
+* Click: Next
+* Select: Attach existing policies directly
+* Type: AdministratorAccess
+* Click: The checkbox next to AdministratorAccess
+* Click:  Next (Review), and then Create User
+
+Take the Access Key and Secret Key and add them to your environment variables::
+
+  $ export AWS_ACCESS_KEY_ID="REPLACE_ME"
+  $ export AWS_SECRET_ACCESS_KEY="REPLACE_ME"
+  $ export AWS_DEFAULT_REGION="us-east-1"
