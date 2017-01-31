@@ -21,6 +21,8 @@ At a high-level:
 * Supports different types of data (Ex: JSON, CSV, Key-Value, and Syslog)
 * Supports different use-cases like security, infrastructure, compliance and more
 
+.. note:: Note: Docs are under construction, don't mind the dust!
+
 
 Table of Contents
 =======================================

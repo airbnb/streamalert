@@ -13,3 +13,5 @@ At a high-level:
 * Supports data from different environment types (ex: Cloud, Datacenter, Office)
 * Supports different types of data (ex: JSON, CSV, Key-Value, Syslog)
 * Supports different use-cases like security, infrastructure, compliance and more
+
+.. note:: Note: Docs are under construction, don't mind the dust!
