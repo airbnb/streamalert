@@ -14,4 +14,9 @@ At a high-level:
 * Supports different types of data (ex: JSON, CSV, Key-Value, Syslog)
 * Supports different use-cases like security, infrastructure, compliance and more
 
-.. note:: Note: Docs are under construction, don't mind the dust!
+Other Links:
+
+* Twitter (unofficial): https://twitter.com/streamalert_io
+* Slack (unofficial): https://streamalert.herokuapp.com
+
+.. note:: Docs are under construction, don't mind the dust!
