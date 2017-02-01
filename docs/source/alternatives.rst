@@ -17,7 +17,7 @@ StreamAlert directly ingests data from S3 buckets or other sources like fluentd,
 Rules/Queries
 ~~~~~~~~~~~~~
 
-ElastAlert uses YAML files and Elasticsearch's Query DSL
+ElastAlert uses YAML files and Elasticsearch's Query DSL. It supports query types that StreamAlert currently does not, ex: Change, Frequency, Spike, Flatline, New Term, Cardinality
 
 StreamAlert uses JSON files and queries are written in Python; they can utilize any Python libraries or functions
 
