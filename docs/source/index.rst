@@ -6,6 +6,8 @@
 StreamAlert
 =======================================
 
+.. image:: ../images/high-level-overview.png
+
 StreamAlert is a serverless, realtime data analysis framework which empowers you to ingest, analyze, and alert on data from any environment, using datasources and alerting logic you define.
 
 For more details, see our announcement post: https://medium.com/@airbnbeng/e8619e3e5043
