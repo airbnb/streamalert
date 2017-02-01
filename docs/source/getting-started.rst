@@ -1,10 +1,10 @@
-Installation
-============
+Getting Started
+===============
 
-Do the following on your laptop or development machine
+Perform the following on your laptop or development machine
 
-Preparation
------------
+Dependencies
+------------
 
 1. Install Python2.7
 2. Install `pip <https://pip.pypa.io/en/stable/installing/>`_

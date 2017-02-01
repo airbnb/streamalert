@@ -10,6 +10,7 @@ Frequently Asked Questions
 **What language is StreamAlert written in?**
 
 * The application and rules are written in Python, the infrastructure is written with Terraform
+* Code can be found here: https://github.com/airbnb/streamalert
 
 **What license is StreamAlert released under?**
 
@@ -37,10 +38,6 @@ Frequently Asked Questions
 * Some SaaS products provide you access/audit logs in an S3 bucket
 * Many companies send logs to S3 or Glacier for long-term retention
 
-**Does StreamAlert support analytics, metrics or time series use-cases?**
-
-* No, there are many great opensource and commercial offerings in this space, including but not limited to Prometheus, DataDog and NewRelic.
-
 **What scale does StreamAlert operate at?**
 
 * StreamAlert utilizes Kinesis Streams, which can "continuously capture and store terabytes of data per hour from hundreds of thousands of sources" [1]
@@ -49,6 +46,16 @@ Frequently Asked Questions
 
 * Limited; StreamAlert utilizes Terraform, Kinesis Streams and AWS Lambda, which means you don't have to manually provision, manage, patch or harden any servers
 
+**Does StreamAlert support analytics, metrics or time series use-cases?**
 
+* StreamAlert itself does not support analytics, metrics or time series use-cases. StreamAlert can send data to such tools or you can use one of many great open source and commercial offerings in this space, including but not limited to Prometheus, DataDog and NewRelic.
+
+**Is StreamAlert intended for synchronous (blocking) or asynchronous decision making?**
+
+* StreamAlert is intended for asynchronous decision making.
+
+**What about historical searching and alerting?**
+
+* This is on our `Roadmap <roadmap.html#historical-search>`_ . StreamAlert will utilize AWS Athena, a serverless, interactive query service that uses Presto. This will allow you to analyze your data using SQL for both ad-hoc and scheduled queries.
 
 
