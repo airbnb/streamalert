@@ -1,4 +1,4 @@
 Rollback
 ========
 
-.. note:: TODO
+.. note:: TODO: Documentation coming soon!

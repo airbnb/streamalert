@@ -49,11 +49,21 @@ Table of Contents
    roadmap
    faq
 
+.. _getting-started:
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Getting Started
+
+   getting-started
+   deployment
+   deploy-rollback
+
 .. _data_configuration:
 
 .. toctree::
    :maxdepth: 2
-   :caption: Data Configuration
+   :caption: Data Config Details
 
    conf-datasources
    conf-schemas
@@ -62,7 +72,7 @@ Table of Contents
 
 .. toctree::
    :maxdepth: 2
-   :caption: Infrastructure Configuration
+   :caption: Infra Config Details
 
    account
    clusters
@@ -71,21 +81,11 @@ Table of Contents
    lambda
    secrets
 
-.. _deployment:
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Deployment
-
-   installation
-   deploying
-   deploy-rollback
-
 .. _user_guide:
 
 .. toctree::
    :maxdepth: 2
-   :caption: User Guide
+   :caption: Other
 
    metrics
    troubleshooting

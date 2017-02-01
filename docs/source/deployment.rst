@@ -1,7 +1,7 @@
-Deploying StreamAlert Infrastructure
-====================================
+Deployment
+==========
 
-Make sure you've completed the `installation <installation.html>`_ instructions prior to continuing.
+Make sure you've completed the `Getting Started <getting-started.html>`_ instructions prior to continuing.
 
 Initial Build
 -------------
