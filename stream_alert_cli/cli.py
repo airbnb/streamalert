@@ -17,7 +17,6 @@ limitations under the License.
 import json
 import logging
 import os
-import subprocess
 
 from collections import namedtuple
 from jinja2 import Environment, PackageLoader
@@ -25,19 +24,20 @@ from jinja2 import Environment, PackageLoader
 from stream_alert_cli.package import AlertPackage, OutputPackage
 from stream_alert_cli.version import LambdaVersion
 from stream_alert_cli.test import stream_alert_test
+from stream_alert_cli.helpers import CLIHelpers
+
 from stream_alert import __version__ as stream_alert_version
 from stream_alert_output import __version__ as stream_alert_output_version
 
 class InvalidClusterName(Exception):
+    """Exception for invalid cluster names"""
     pass
 
 class StreamAlertCLI(object):
+    """Runner class for StreamAlert CLI"""
     CONFIG_FILE = 'variables.json'
 
     def __init__(self):
-        self.config = self._load_config()
-
-    def refresh_config(self):
         self.config = self._load_config()
 
     def run(self, options):
@@ -50,12 +50,18 @@ class StreamAlertCLI(object):
                 Contains the following keys for lambda commands:
                     (command, subcommand, env, func, source)
         """
-        logging.info("Stream Alert CLI\nIssues? Report here: https://github.com/airbnb/streamalert/issues")
-        prereqs_message = 'Terraform not found! Please install and add to' \
-                          ' your $PATH:\n' \
-                          '$ export PATH=$PATH:/usr/local/terraform/bin'
-        terraform_check = self._cmd(['terraform', 'version'], prereqs_message, quiet=True)
-        # There is no `else` since it's handled in the self._cmd call
+        cli_load_message = ('Stream Alert CLI'
+                            '\nIssues? Report here: '
+                            'https://github.com/airbnb/streamalert/issues')
+        logging.info(cli_load_message)
+
+        prereqs_message = ('Terraform not found! Please install and add to'
+                           'your $PATH:\n'
+                           '$ export PATH=$PATH:/usr/local/terraform/bin')
+        terraform_check = self.run_command(['terraform', 'version'],
+                                           error_message=prereqs_message,
+                                           quiet=True)
+        # There is no `else` since it's handled in the self.run_command call
         if terraform_check:
             if options.command == 'lambda':
                 self._lambda_runner(options)
@@ -67,21 +73,32 @@ class StreamAlertCLI(object):
         if options.subcommand == 'deploy':
             self.deploy(options)
         elif options.subcommand == 'rollback':
-            raise NotImplementedError
+            self.rollback()
+            targets = ['module.stream_alert_{}'.format(x)
+                       for x in self.config['clusters'].keys()]
+            self._tf_runner(targets=targets)
         elif options.subcommand == 'test':
             stream_alert_test(options)
 
     def _terraform_runner(self, options):
-        """Handle all Lambda CLI operations."""
+        """Handle all Terraform CLI operations."""
+        deploy_opts = namedtuple('deploy_opts', 'func, env')
 
+        # plan and apply our terraform infrastructure
         if options.subcommand == 'build':
             if options.target:
                 target = options.target
-                targets = ['module.{}_{}'.format(target, cluster) for cluster in self.config['clusters'].keys()]
+                targets = ['module.{}_{}'.format(target, cluster)
+                           for cluster in self.config['clusters'].keys()]
                 self._tf_runner(targets=targets)
             else:
                 self._tf_runner()
 
+        # generate terraform files
+        elif options.subcommand == 'generate':
+            self.generate_tf_files()
+
+        # initialize streamalert infrastructure from a blank state
         elif options.subcommand == 'init':
             logging.info('Initializing StreamAlert')
             self.generate_tf_files()
@@ -95,37 +112,31 @@ class StreamAlertCLI(object):
             self._tf_runner(targets=init_targets, refresh_state=False)
 
             logging.info('Building infrastructure')
-            DeployOptions = namedtuple('DeployOptions', 'func, env')
             # deploy both lambda functions to staging
-            self.deploy(DeployOptions('*', 'staging'))
+            self.deploy(deploy_opts('*', 'staging'))
             # create all remainder infrastructure
             self._tf_runner()
             # refresh config to get modified variables
             self.refresh_config()
             # deploy to production
-            self.deploy(DeployOptions('alert', 'production'))
+            self.deploy(deploy_opts('alert', 'production'))
 
+        # destroy all infrastructure
         elif options.subcommand == 'destroy':
             self._tf_runner(action='destroy')
 
+        # get a quick status on our declare infrastructure
         elif options.subcommand == 'status':
             self.status()
 
     @staticmethod
-    def _cmd(args=None, error_message="An error occured while running: {args}", **kwargs):
-        """Helper function to run commands with error handling"""
-        if kwargs.get('quiet', None):
-            stdout_option = open(os.devnull, 'w')
-        else:
-            stdout_option = None
-        if not args:
-            raise Exception('No command arguments given')
-        try:
-            subprocess.check_call(args, stdout=stdout_option, cwd='terraform')
-        except (OSError, subprocess.CalledProcessError) as e:
-            logging.warn(error_message.format(args=' '.join(args)))
-            return False
-        return True
+    def run_command(args=None, **kwargs):
+        """Alias to CLI Helpers.run_command"""
+        return CLIHelpers.run_command(args, **kwargs)
+
+    def refresh_config(self):
+        """Reload the configuration after updating"""
+        self.config = self._load_config()
 
     def _load_config(self):
         """Load the `variables.json` configuration file.
@@ -142,7 +153,7 @@ class StreamAlertCLI(object):
     @staticmethod
     def _continue_prompt():
         """Continue prompt used before applying Terraform plans."""
-        required_responses = ['yes', 'no']
+        required_responses = {'yes', 'no'}
         response = ''
         while response not in required_responses:
             response = raw_input('\nWould you like to continue? (yes or no): ')
@@ -151,7 +162,7 @@ class StreamAlertCLI(object):
         return False
 
     def _tf_runner(self, **kwargs):
-        """Initalizer for StreamAlert infrastructure.
+        """Terraform wrapper to build StreamAlert infrastructure.
 
         Steps:
             - resolve modules with `terraform get`
@@ -170,7 +181,7 @@ class StreamAlertCLI(object):
         targets = kwargs.get('targets', [])
         action = kwargs.get('action', None)
         refresh_state = kwargs.get('refresh_state', False)
-        ACTION = 1 # The index to the terraform 'action'
+        tf_action_index = 1 # The index to the terraform 'action'
 
         tf_opts = ['-var-file=../{}'.format(self.CONFIG_FILE)]
         tf_targets = ['-target={}'.format(x) for x in targets]
@@ -193,25 +204,25 @@ class StreamAlertCLI(object):
                      self.config['region'],
                      self.config['kms_key_alias'],
                      ' '.join(tf_opts))
-            self._cmd([remote_state_cmd], quiet=True)
+            self.run_command([remote_state_cmd], quiet=True)
 
         logging.info('Resolving Terraform modules')
-        self._cmd(['terraform', 'get'], quiet=True)
+        self.run_command(['terraform', 'get'], quiet=True)
 
         logging.info('Planning infrastructure')
-        tf_plan = self._cmd(tf_command) and self._continue_prompt()
+        tf_plan = self.run_command(tf_command) and self._continue_prompt()
         if not tf_plan:
             return False
         if action == 'destroy':
             logging.info('Destroying infrastructure')
-            tf_command[ACTION] = action
+            tf_command[tf_action_index] = action
             tf_command.remove('-destroy')
         elif action:
-            tf_command[ACTION] = action
+            tf_command[tf_action_index] = action
         else:
             logging.info('Creating infrastructure')
-            tf_command[ACTION] = 'apply'
-        self._cmd(tf_command)
+            tf_command[tf_action_index] = 'apply'
+        self.run_command(tf_command)
         return True
 
     def status(self):
@@ -232,7 +243,24 @@ class StreamAlertCLI(object):
             print '\n'
 
         print 'User access keys'
-        self._cmd(['terraform', 'output'])
+        self.run_command(['terraform', 'output'])
+
+    def rollback(self):
+        """Rollback the current production AWS Lambda version by 1
+
+        Notes:
+            Ignores if the production version is $LATEST
+            Only rollsback if published version is greater than 1
+        """
+        clusters = self.config['clusters'].keys()
+        for cluster in clusters:
+            current_vers = self.config['lambda_function_prod_versions'][cluster]
+            if current_vers != '$LATEST':
+                current_vers = int(current_vers)
+                if current_vers > 1:
+                    new_vers = current_vers - 1
+                    self.config['lambda_function_prod_versions'][cluster] = new_vers
+        CLIHelpers.update_config(self.config)
 
     def generate_tf_files(self):
         """Generate all Terraform plans for declared clusters in variables.json"""
@@ -269,7 +297,8 @@ class StreamAlertCLI(object):
         """
         env = options.env
         func = options.func
-        targets = ['module.stream_alert_{}'.format(x) for x in self.config['clusters'].keys()]
+        targets = ['module.stream_alert_{}'.format(x)
+                   for x in self.config['clusters'].keys()]
 
         if env == 'staging':
             if func == 'alert':

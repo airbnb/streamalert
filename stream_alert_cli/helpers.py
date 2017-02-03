@@ -1,11 +1,22 @@
 import logging
+import json
 import os
 import subprocess
 
 class CLIHelpers(object):
+    """Common helpers between StreamAlert CLI classes"""
     @classmethod
     def run_command(cls, runner_args, **kwargs):
-        """Helper function to run commands with error handling"""
+        """Helper function to run commands with error handling.
+
+        Args:
+            runner_args (list): Commands to run via subprocess
+            kwargs:
+                cwd (string): A path to execute commands from
+                error_message (string): Message to show if command fails
+                quiet (boolean): Whether to show command output or hide it
+
+        """
         default_error_message = "An error occured while running: {}".format(
             ' '.join(runner_args)
         )
@@ -25,3 +36,19 @@ class CLIHelpers(object):
             return False
 
         return True
+
+    @classmethod
+    def update_config(cls, new_config):
+        """Update variables.json with updated values.
+
+        Args:
+            new_config (dict): Loaded and updated variables.json dict
+
+        """
+        logging.info('Updating variables.json')
+        with open('variables.json', 'w') as var_file:
+            config_out = json.dumps(new_config,
+                                    indent=4,
+                                    separators=(',', ': '),
+                                    sort_keys=True)
+            var_file.write(config_out)

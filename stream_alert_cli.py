@@ -95,7 +95,7 @@ Examples:
     )
     tf_parser.add_argument(
         'subcommand',
-        choices=['build','init','destroy','status']
+        choices=['build', 'init', 'destroy', 'status', 'generate']
     )
     tf_parser.add_argument(
         '--target',
