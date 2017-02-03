@@ -14,182 +14,224 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 
+from datetime import datetime
+
 import base64
 import hashlib
-import zipfile
 import json
 import logging
 import os
+import shutil
 import tempfile
+import pip
 
-from datetime import datetime
+from stream_alert_cli.helpers import CLIHelpers
 
 import boto3
 
 class LambdaPackage(object):
-    """
-    Build and upload the StreamAlert deployment package to S3.
-    """
-    packageFolders = ()
-    packageFiles = ()
-    packageName = None
-    packageDir = None
-    sourceKey = None
-    sourceHashKey = None
-    sourcePrefix = None
+    """Build and upload a StreamAlert deployment package to S3."""
+    package_folders = ()
+    package_files = ()
+    package_name = None
+    package_root_dir = None
+    source_key = None
+    source_hash_key = None
+    source_prefix = None
 
     def __init__(self, **kwargs):
-        self.version = kwargs.get('version')
-        self.config = kwargs.get('config')
+        self.version = kwargs['version']
+        self.config = kwargs['config']
 
     def create_and_upload(self):
+        """Create a Lambda deployment package, checksum it, and upload it to S3.
+
+        Reference:
+            package_name: Generated name based on date/time/version/name
+            temp_package_path: Temp package to store deployment package files
+            package_path: Full path to zipped deployment package
+            package_sha256: Checksum of package_path
+            package_sha256_path: Full path to package_path checksum file
         """
-        Create a zip of the StreamAlert Lambda function,
-        and then take its SHA256 hash.
+        # get tmp dir and copy files
+        temp_package_path = self._get_tmpdir()
+        self._copy_files(temp_package_path)
+        # download third-party libs
+        self._resolve_third_party(temp_package_path)
+        # zip up files
+        package_path = self.zip(temp_package_path)
+        package_name = package_path.split('/')[-1]
+        # checksum files
+        package_sha256, package_sha256_path = self._sha256sum(package_path)
+        # upload to s3
+        if self._upload(package_path):
+            # remove generated deployment files
+            self._cleanup(package_path, package_sha256_path)
+            # set new config values and update
+            self.config[self.source_key] = os.path.join(self.source_prefix,
+                                                        package_name)
+            self.config[self.source_hash_key] = package_sha256
+            self._update_config(self.config)
+
+    def _get_tmpdir(self):
+        """Return a temporary directory to write files to.
+
+        Example: tmpfolder/stream_alert_1.0.0_date_time/
         """
-        temp_dir = self._get_tmpdir()
-        pkg, pkg_path = self.zip(temp_dir)
-        pkg_sha256, pkg_sha256_path = self._sha256sum(pkg_path)
-        self._upload(temp_dir, pkg)
-        self._cleanup([pkg_path, pkg_sha256_path])
-        self._update_config(pkg, pkg_sha256)
+        date = datetime.utcnow().strftime("%Y%m%d_T%H%M%S")
+        package_name = '_'.join([self.package_name, self.version, date])
+        temp_package_path = os.path.join(tempfile.gettempdir(), package_name)
+        return temp_package_path
 
     @staticmethod
-    def _get_tmpdir():
-        """
-        Get a temporary directory to write files to.
-        """
-        return tempfile.gettempdir()
+    def _cleanup(*files):
+        """Removes the temporary StreamAlert package and checksum.
 
-    @staticmethod
-    def _cleanup(files):
-        """
-        Removes the temporary StreamAlert package and checksum.
+        Args:
+            files (tuple): full filepaths to cleanup after uploading to S3.
         """
         logging.info('Removing local files')
         for obj in files:
             os.remove(obj)
 
-    def _update_config(self, pkg, pkg_sha256):
-        """
-        Write generated deployment package filename and sha256 hash
-        to `variables.json`.  We will need these values to deploy to production.
-        """
+    # TODO(jacknagz) move this to helpers for the rollback functionality
+    def _update_config(self, new_config):
+        """Update `variables.json` with new deployment package filename and sha256."""
         logging.info('Updating variables.json')
-        with open('variables.json', 'r+') as varFile:
-            config = json.load(varFile)
-            config[self.sourceHashKey] = pkg_sha256
-            config[self.sourceKey] = os.path.join(self.sourcePrefix, pkg)
-            config_out = json.dumps(config, indent=4, separators=(',', ': '),
+        with open('variables.json', 'w') as var_file:
+            config_out = json.dumps(new_config,
+                                    indent=4,
+                                    separators=(',', ': '),
                                     sort_keys=True)
-            varFile.seek(0)
-            varFile.write(config_out)
-            varFile.truncate()
+            var_file.write(config_out)
 
-    def zip(self, temp_dir):
-        """
-        Create the StreamAlert Lambda deployment package.
+    def _copy_files(self, temp_package_path):
+        """Copy all files and folders into temporary package path"""
+        for package_folder in self.package_folders:
+            shutil.copytree(os.path.join(self.package_root_dir, package_folder),
+                            os.path.join(temp_package_path, package_folder))
+
+        for package_file in self.package_files:
+            shutil.copy(os.path.join(self.package_root_dir, package_file),
+                        os.path.join(temp_package_path, package_file))
+
+    @staticmethod
+    def zip(temp_package_path):
+        """Create the StreamAlert Lambda deployment package archive.
+
         Zips up all dependency files to run the function,
         and names the zip based on the current date/time,
         along with the declared version in __init__.py.
 
-        example filename: stream_alert_1.0.0_20161010_00:11:22.zip
+            example filename: stream_alert_1.0.0_20161010_00:11:22.zip
 
-        Only package in the `.py` files per AWS's instructions
-        for creation of lambda functions.
+            Only package in the `.py` files per AWS's instructions
+            for creation of lambda functions.
 
-        Returns: Deployment package filename, and the
-                 deployment package full path.
+        Args:
+            temp_package_path (string): the temporary file path to store the zip.
+
+        Returns:
+            Deployment package filename
+            Deployment package full path
         """
-        # Change dir into the folder with the lambda code
-        startDir = os.getcwd()
-        os.chdir(self.packageDir)
-
-        # Set the date for the package name
-        date = datetime.utcnow().strftime("%Y%m%d_T%H:%M:%S")
-        basename = '_'.join([self.packageName, self.version, date])
-        pkg = ''.join([basename, '.zip'])
-        pkg_path = os.path.join(temp_dir, pkg)
-
-        # Walk the package files/folders and add to archive
-        logging.info('Creating Lambda package: %s', pkg)
-        zf = zipfile.ZipFile(pkg_path, mode='w')
-        for path in self.packageFolders:
-            for root, _, files in os.walk(path):
-                for packagefile in files:
-                    if packagefile.endswith('.pyc'):
-                        continue
-                    arcname = os.path.join(root, packagefile)
-                    zf.write(arcname)
-
-        for packagefile in self.packageFiles:
-            zf.write(packagefile)
-
-        zf.close()
+        logging.info('Creating Lambda package: %s', ''.join([temp_package_path, '.zip']))
+        package_path = shutil.make_archive(temp_package_path, 'zip', temp_package_path)
         logging.info('Package Successfully Created!')
-        logging.debug('Wrote the following files to the deployment package: %s',
-                      json.dumps(zf.namelist()))
-        os.chdir(startDir)
-        return pkg, pkg_path
+
+        return package_path
 
     @staticmethod
-    def _sha256sum(pkg_path):
-        """
-        After creating the deployment package, compute its SHA256
-        hash.  This value is necessary to publish the staging
-        lambda function to production.
+    def _sha256sum(package_path):
+        """Take a SHA256 checksum of a deployment package
 
-        Returns: The checksum of the package passed and a path
-                 to the file containing the checksum.
+        After creating the deployment package, compute its SHA256
+        hash.  This value is necessary to publish the `staging`
+        AWS Lambda function to `production`.
+
+        Args:
+            package_path (string): Full path to our zipped deployment package
+
+        Returns:
+            The generated SHA256 checksum of the package
+            A path to the checksum file
         """
         hasher = hashlib.sha256()
-        with open(pkg_path, 'rb') as pkg_path_fh:
-            hasher.update(pkg_path_fh.read())
+        with open(package_path, 'rb') as package_fh:
+            hasher.update(package_fh.read())
             code_hash = hasher.digest()
             code_b64 = base64.b64encode(code_hash)
-            pkg_sha256 = code_b64.decode('utf-8')
+            package_sha256 = code_b64.decode('utf-8')
 
-        pkg_sha256_path = pkg_path + '.sha256'
-        with open(pkg_sha256_path, 'w') as pkg_sha256_path_fh:
-            pkg_sha256_path_fh.write(pkg_sha256)
+        package_sha256_path = package_path + '.sha256'
+        with open(package_sha256_path, 'w') as package_sha256_fh:
+            package_sha256_fh.write(package_sha256)
 
-        return pkg_sha256, pkg_sha256_path
+        return package_sha256, package_sha256_path
 
-    def _upload(self, tempDir, package):
+    def _resolve_third_party(self, temp_package_path):
+        """Install all third-party packages into the deployment package folder
+
+        Note: For Mac OSX/Homebrew users, add the following to ~/.pydistutils.cfg:
+              [install]
+              prefix=
+
+        Args:
+            temp_package_path (string): Full path to temp package path
+
         """
-        Upload the StreamAlert package and sha256 to S3.
-        """
+        third_party_libs = self.config.get('third_party_libs')
+        if third_party_libs:
+            if len(third_party_libs) > 0:
+                logging.info('Installing third-party libraries')
+                pip_command = ['install']
+                pip_command.extend(third_party_libs)
+                pip_command.extend(['--upgrade', '--target', temp_package_path])
+                pip.main(pip_command)
+            else:
+                logging.info('No third-party libraries to install.')
+
+    def _upload(self, package_path):
+        """Upload the StreamAlert package and sha256 to S3."""
         logging.info('Uploading StreamAlert package to S3')
         client = boto3.client('s3', region_name=self.config['region'])
-        for packageFile in (package, '{}.sha256'.format(package)):
-            fh = open(os.path.join(tempDir, packageFile), 'r')
+        # the zip and the checksum file
+        for package_file in (package_path, '{}.sha256'.format(package_path)):
+            package_name = package_file.split('/')[-1]
+            package_fh = open(package_file, 'r')
             try:
                 client.put_object(
                     Bucket=self.config['lambda_source_bucket_name'],
-                    Key=os.path.join(self.sourcePrefix, packageFile),
-                    Body=fh,
+                    Key=os.path.join(self.source_prefix, package_name),
+                    Body=package_fh,
                     ServerSideEncryption='AES256'
                 )
             except:
-                logging.info('An error occured while uploding %s', packageFile)
+                logging.info('An error occured while uploding %s', package_name)
                 raise
-            fh.close()
-            logging.info('Uploaded %s to S3', packageFile)
+            package_fh.close()
+            logging.info('Uploaded %s to S3', package_name)
+
+        return True
 
 class AlertPackage(LambdaPackage):
-    packageFolders = {'stream_alert', 'rules', 'conf'}
-    packageFiles = {'main.py', 'variables.json'}
-    packageDir = '.'
-    packageName = 'stream_alert'
-    sourceKey = 'lambda_source_key'
-    sourceHashKey = 'lambda_source_current_hash'
-    sourcePrefix = 'alert'
+    """Deployment package class for the AWS Lambda `Alert` function"""
+    package_folders = {'stream_alert', 'rules', 'conf'}
+    package_files = {'main.py', 'variables.json'}
+    package_root_dir = '.'
+    package_name = 'stream_alert'
+
+    source_key = 'lambda_source_key'
+    source_hash_key = 'lambda_source_current_hash'
+    source_prefix = 'alert'
 
 class OutputPackage(LambdaPackage):
-    packageFolders = {'encrypted_credentials'}
-    packageFiles = {'main.py'}
-    packageDir = 'stream_alert_output'
-    sourceKey = 'output_lambda_source_key'
-    sourceHashKey = 'output_lambda_current_hash'
-    packageName = 'stream_alert_output'
-    sourcePrefix = 'output'
+    """Deployment package class for the AWS Lambda `Output` function"""
+    package_folders = {'encrypted_credentials'}
+    package_files = {'main.py'}
+    package_root_dir = 'stream_alert_output'
+    package_name = 'stream_alert_output'
+
+    source_key = 'output_lambda_source_key'
+    source_hash_key = 'output_lambda_current_hash'
+    source_prefix = 'output'
