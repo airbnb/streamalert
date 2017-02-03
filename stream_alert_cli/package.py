@@ -18,7 +18,6 @@ from datetime import datetime
 
 import base64
 import hashlib
-import json
 import logging
 import os
 import shutil
@@ -71,7 +70,7 @@ class LambdaPackage(object):
             self.config[self.source_key] = os.path.join(self.source_prefix,
                                                         package_name)
             self.config[self.source_hash_key] = package_sha256
-            self._update_config(self.config)
+            CLIHelpers.update_config(self.config)
 
     def _get_tmpdir(self):
         """Return a temporary directory to write files to.
@@ -93,17 +92,6 @@ class LambdaPackage(object):
         logging.info('Removing local files')
         for obj in files:
             os.remove(obj)
-
-    # TODO(jacknagz) move this to helpers for the rollback functionality
-    def _update_config(self, new_config):
-        """Update `variables.json` with new deployment package filename and sha256."""
-        logging.info('Updating variables.json')
-        with open('variables.json', 'w') as var_file:
-            config_out = json.dumps(new_config,
-                                    indent=4,
-                                    separators=(',', ': '),
-                                    sort_keys=True)
-            var_file.write(config_out)
 
     def _copy_files(self, temp_package_path):
         """Copy all files and folders into temporary package path"""

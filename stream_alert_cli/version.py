@@ -51,7 +51,7 @@ class LambdaVersion(object):
                 Description='publish new version of lambda function'
             )
             version = response['Version']
-            new_versions[cluster] = version
+            new_versions[cluster] = int(version)
             logging.info('Published version %s for %s cluster', version, cluster)
         self._update_config(new_versions)
 
