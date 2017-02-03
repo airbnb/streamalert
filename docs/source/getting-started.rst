@@ -12,6 +12,13 @@ Dependencies
 4. Download StreamAlert: ``git clone https://github.com/airbnb/streamalert.git``
 5. Install dependencies: ``pip install -r requirements.txt``
 
+.. note:: For Mac OSX/Homebrew users, add the following to ~/.pydistutils.cfg:
+
+.. code-block:: python
+
+   [install]
+   prefix=
+
 Configuration
 -------------
 
@@ -21,7 +28,7 @@ Configuration
 4. Define your `schemas <conf-schemas.html>`_
 5. Define your `kinesis streams <kinesis-streams.html>`_
 6. Define your `kinesis firehose <kinesis-firehose.html>`_
-7. Define your `lambda <lambda.html>`_
+7. Define your `lambda settings <lambda.html>`_
 8. Define/deploy your `secrets <secrets.html>`_
 
-Now it's time to deploy!
+Now it's time to `deploy <deployment.html>`_!
