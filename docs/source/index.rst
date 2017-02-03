@@ -25,6 +25,7 @@ At a high-level:
 
 Other Links:
 
+* Github: https://github.com/airbnb/streamalert
 * Twitter (unofficial): https://twitter.com/streamalert_io
 * Slack (unofficial): https://streamalert.herokuapp.com
 
