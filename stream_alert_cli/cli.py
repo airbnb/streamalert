@@ -102,16 +102,20 @@ class StreamAlertCLI(object):
         elif options.subcommand == 'init':
             logging.info('Initializing StreamAlert')
             self.generate_tf_files()
+
+            # build init infrastructure
             init_targets = [
                 'aws_s3_bucket.lambda_source',
                 'aws_s3_bucket.integration_testing',
+                'aws_s3_bucket.terraform_remote_state',
                 'aws_kms_key.stream_alert_secrets',
                 'aws_kms_alias.stream_alert_secrets'
             ]
-            # build init infrastructure
             self._tf_runner(targets=init_targets, refresh_state=False)
 
             logging.info('Building infrastructure')
+            # setup remote state
+            self._refresh_tf_state()
             # deploy both lambda functions to staging
             self.deploy(deploy_opts('*', 'staging'))
             # create all remainder infrastructure
@@ -123,7 +127,8 @@ class StreamAlertCLI(object):
 
         # destroy all infrastructure
         elif options.subcommand == 'destroy':
-            self._tf_runner(action='destroy')
+            self.run_command(['terraform', 'remote', 'config', '-disable'])
+            self._tf_runner(action='destroy', refresh_state=False)
 
         # get a quick status on our declare infrastructure
         elif options.subcommand == 'status':
@@ -161,6 +166,27 @@ class StreamAlertCLI(object):
             return True
         return False
 
+    def _refresh_tf_state(self):
+        logging.info('Refreshing Remote State config')
+        region = self.config['region']
+        bucket = '{}.streamalert.terraform.state'.format(self.config['prefix'])
+        s3_key = self.config['tfstate_s3_key']
+        kms_key_id = 'alias/{}'.format(self.config['kms_key_alias'])
+
+        remote_state_opts = [
+            'terraform',
+            'remote',
+            'config',
+            '-backend=s3',
+            '-backend-config="bucket={}"'.format(bucket),
+            '-backend-config="key={}"'.format(s3_key),
+            '-backend-config="region={}"'.format(region),
+            '-backend-config="kms_key_id={}"'.format(kms_key_id),
+            '-backend-config="encrypt=true"'
+        ]
+
+        self.run_command([' '.join(remote_state_opts)], quiet=True, shell=True)
+
     def _tf_runner(self, **kwargs):
         """Terraform wrapper to build StreamAlert infrastructure.
 
@@ -180,7 +206,7 @@ class StreamAlertCLI(object):
         """
         targets = kwargs.get('targets', [])
         action = kwargs.get('action', None)
-        refresh_state = kwargs.get('refresh_state', False)
+        refresh_state = kwargs.get('refresh_state', True)
         tf_action_index = 1 # The index to the terraform 'action'
 
         tf_opts = ['-var-file=../{}'.format(self.CONFIG_FILE)]
@@ -190,21 +216,7 @@ class StreamAlertCLI(object):
             tf_command.append('-destroy')
 
         if refresh_state:
-            logging.info('Refreshing Remote State config')
-            remote_state_cmd = (
-                'terraform remote config '
-                '-backend=s3 '
-                '-backend-config="bucket={}" '
-                '-backend-config="key={}" '
-                '-backend-config="region={}" '
-                '-backend-config="kms_key_id={}" '
-                '{}'
-            ).format(self.config['lambda_source_bucket_name'],
-                     self.config['tfstate_s3_key'],
-                     self.config['region'],
-                     self.config['kms_key_alias'],
-                     ' '.join(tf_opts))
-            self.run_command([remote_state_cmd], quiet=True)
+            self._refresh_tf_state()
 
         logging.info('Resolving Terraform modules')
         self.run_command(['terraform', 'get'], quiet=True)
