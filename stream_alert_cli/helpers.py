@@ -31,8 +31,8 @@ class CLIHelpers(object):
 
         try:
             subprocess.check_call(runner_args, stdout=stdout_option, cwd=cwd)
-        except (OSError, subprocess.CalledProcessError):
-            logging.error('%s', error_message)
+        except subprocess.CalledProcessError as e:
+            logging.error('Return Code %s - %s', e.returncode, e.cmd)
             return False
 
         return True

@@ -5,18 +5,17 @@
 provider "aws" {}
 
 // store tfstate file in s3 using the terraform_tfstate_key
-// data "terraform_remote_state" "tfstate_stream_alert" {
-//   backend = "s3"
-// 
-//   config {
-//     bucket     = "${var.lambda_source_bucket_name}"
-//     key        = "${var.tfstate_s3_key}"
-//     region     = "${var.region}"
-//     // encrypt    = true
-//     acl        = "private"
-//     // kms_key_id = "alias/${var.kms_key_alias}"
-//   }
-// }
+data "terraform_remote_state" "tfstate_stream_alert" {
+  backend = "s3"
+  config {
+    bucket     = "${var.lambda_source_bucket_name}"
+    key        = "${var.tfstate_s3_key}"
+    region     = "${var.region}"
+    encrypt    = true
+    acl        = "private"
+    kms_key_id = "alias/${var.kms_key_alias}"
+  }
+}
 
 // Setup StreamAlert source code S3 bucket
 // This bucket must be created first
@@ -31,6 +30,16 @@ resource "aws_s3_bucket" "integration_testing" {
   bucket        = "${var.prefix}.streamalert.testing.results"
   acl           = "private"
   force_destroy = true
+}
+
+// Setup Terraform tfstate bucket
+resource "aws_s3_bucket" "terraform_remote_state" {
+  bucket        = "${var.prefix}.streamalert.terraform.state"
+  acl           = "private"
+  force_destroy = true
+  versioning {
+    enabled = true
+  }
 }
 
 resource "aws_kms_key" "stream_alert_secrets" {
