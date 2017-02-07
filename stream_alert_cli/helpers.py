@@ -25,15 +25,12 @@ class CLIHelpers(object):
         default_cwd = 'terraform'
         cwd = kwargs.get('cwd', default_cwd)
 
-        shell = kwargs.get('shell', False)
-
         stdout_option = None
         if kwargs.get('quiet'):
             stdout_option = open(os.devnull, 'w')
 
         try:
-            subprocess.check_call(runner_args, stdout=stdout_option,
-                                  cwd=cwd, shell=shell)
+            subprocess.check_call(runner_args, stdout=stdout_option, cwd=cwd)
         except subprocess.CalledProcessError as e:
             logging.error('Return Code %s - %s', e.returncode, e.cmd)
             return False

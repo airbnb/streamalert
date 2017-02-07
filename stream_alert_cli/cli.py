@@ -178,14 +178,14 @@ class StreamAlertCLI(object):
             'remote',
             'config',
             '-backend=s3',
-            '-backend-config="bucket={}"'.format(bucket),
-            '-backend-config="key={}"'.format(s3_key),
-            '-backend-config="region={}"'.format(region),
-            '-backend-config="kms_key_id={}"'.format(kms_key_id),
-            '-backend-config="encrypt=true"'
+            '-backend-config=bucket={}'.format(bucket),
+            '-backend-config=key={}'.format(s3_key),
+            '-backend-config=region={}'.format(region),
+            '-backend-config=kms_key_id={}'.format(kms_key_id),
+            '-backend-config=encrypt=true'
         ]
 
-        self.run_command([' '.join(remote_state_opts)], quiet=True, shell=True)
+        self.run_command(remote_state_opts, quiet=True)
 
     def _tf_runner(self, **kwargs):
         """Terraform wrapper to build StreamAlert infrastructure.
