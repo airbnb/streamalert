@@ -24,7 +24,7 @@ Open ``variables.json`` and set ``account_id`` to this value.
 prefix
 ~~~~~~
 
-Open ``variables.json`` and set ``prefix`` to your company name.
+Open ``variables.json`` and set ``prefix`` to your company or organization name.
 
 Administrator
 ~~~~~~~~~~~~~

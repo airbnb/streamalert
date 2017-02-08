@@ -7,7 +7,7 @@ StreamAlert will deploy separate infrastructure for each ``cluster`` (environmen
 
 What constitutes a ``cluster`` is up to you.
 
-Example: You could define ``IT``, ``PCI`` and ``Production`` clusters
+Example: You could define ``IT``, ``PCI`` and ``Production`` clusters.
 
 **Strategy**
 

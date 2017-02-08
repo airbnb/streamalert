@@ -7,13 +7,13 @@ $ ./stream_alert_cli.py terraform status
 */
 {
   "kinesis": {
-    "cluster-1--kinesis-stream": {
+    "prefix_cluster1_stream_alert_kinesis": {
       "logs": [
         "json_log_name",
         "csv_log_name"
       ]
     },
-    "cluster-2-kinesis-stream": {
+    "prefix_cluster2_stream_alert_kinesis": {
       "logs": [
         "json_log_name"
       ]

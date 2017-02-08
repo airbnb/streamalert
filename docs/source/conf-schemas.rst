@@ -43,7 +43,7 @@ Here are the basics:
 * An empty hash ({}) implies zero or more elements
 * Schemas can be as tight or as loose as you want (see Example: osquery)
 
-JSON Example: inspec
+JSON Example: Inspec
 --------------------
 Schema::
 
