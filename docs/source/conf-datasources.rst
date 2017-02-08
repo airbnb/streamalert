@@ -1,22 +1,27 @@
-Datasources
-===========
+Datasource Configuration
+========================
+
+For background on supported datasource types, read `datasources <datasources.html>`_.
 
 Overview
 --------
 
-Datasources are defined in ``conf/sources.json``
+* Datasources defined in ``conf/sources.json`` control which datasources can send to and be analyzed by StreamAlert.
+* Each datasource (``kinesis``, ``s3``) contains a mapping of specific datasource names (kinesis stream names, s3 bucket IDs) along with a list of logs coming from that source.
+* Logs are defined in ``conf/logs.json``
+* Each log in the list of ``logs`` dictates to StreamAlert how to parse incoming data from that entity.  Data will only be analyzed if their type is defined here.
 
 Example::
 
     {
-      "kinesis": {                 # define each kinesis stream w/respective logs
-        "abc_corporate_stream": {  # kinesis stream name
-          "logs": [                # expected log types
+      "kinesis": {                               # define each kinesis stream w/respective logs
+        "abc_corporate_stream_alert_kinesis": {  # kinesis stream name
+          "logs": [                              #  expected log types
             "box",
             "pan"
           ]
         },
-        "abc_production_stream": {
+        "abc_production_stream_stream_alert_kinesis": {
           "logs": [
             "inspec",
             "osquery"
