@@ -163,17 +163,17 @@ class StreamRules(object):
     def process(cls, input_payload):
         """Process rules on a record.
 
-        Get the list of rules based on the record's data source name.
+        Gather a list of rules based on the record's datasource type.
         For each rule, evaluate the record through all listed matchers
-        and the rule itself to determine if a match occurs.  If so,
-        send the record to its listed `sink`.
+        and the rule itself to determine if a match occurs.
 
         Returns:
-            An array of triggered alerts. An alert is represented as
-            a dictionary with the following keys:
-                rule_name - the name of the triggered rule
-                payload - the StreamPayload object
-                outputs - list of outputs to send to
+            List of alerts. 
+
+            An alert is represented as a dictionary with the following keys:
+                rule_name: the name of the triggered rule
+                payload: the StreamPayload object
+                outputs: list of outputs to send to
         """
         rules = []
         alerts = []
@@ -185,16 +185,24 @@ class StreamRules(object):
 
         if len(rules) > 0:
             for rule in rules:
+                # subkey check
                 has_sub_keys = cls.process_subkeys(payload, rule)
-                if has_sub_keys:
-                    matcher_result = cls.match_event(payload, rule)
-                    rule_result = cls.process_rule(payload, rule)
-                    if matcher_result and rule_result:
-                        alert = {
-                            'rule_name': rule.rule_name,
-                            'payload': payload,
-                            'outputs': rule.outputs
-                        }
-                        alerts.append(alert)
+                if not has_sub_keys:
+                    continue
+
+                # matcher check
+                matcher_result = cls.match_event(payload, rule)
+                if not matcher_result:
+                    continue
+
+                # rule analysis
+                rule_result = cls.process_rule(payload, rule)
+                if rule_result:
+                    alert = {
+                        'rule_name': rule.rule_name,
+                        'payload': payload,
+                        'outputs': rule.outputs
+                    }
+                    alerts.append(alert)
 
         return alerts
