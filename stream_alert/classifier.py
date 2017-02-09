@@ -31,11 +31,16 @@ from fnmatch import fnmatch
 
 import boto3
 
+from stream_alert.parsers import get_parser
+
 logging.basicConfig()
 logger = logging.getLogger('StreamAlert')
 
 class InvalidSchemaError(Exception):
     pass
+
+# class StreamClassifier(object):
+#
 
 class StreamPayload(object):
     """Classify and parse a raw record into its declared type.
@@ -81,9 +86,9 @@ class StreamPayload(object):
         self.type = None
         self.log_source = None
         self.record = None
+        self.raw_record = kwargs.get('raw_record')
 
         self.log_metadata = kwargs.get('log_metadata', None)
-        self.raw_record = kwargs.get('raw_record')
         self.env = kwargs.get('env')
         self.config = kwargs.get('config')
 
@@ -210,32 +215,35 @@ class StreamPayload(object):
         """
         for log_name, attributes in self.log_metadata.iteritems():
             if not self.type:
-                parser = attributes.get('parser')
+                parser_name = attributes['parser']
             else:
-                parser = self.type
-            parser_method = getattr(self, 'parse_{}'.format(parser))
+                parser_name = self.type
 
-            args = {}
-            args['schema'] = attributes.get('schema')
-            args['hints'] = attributes.get('hints')
-            args['parser'] = parser
-            args['delimiter'] = attributes.get('delimiter')
-            args['separator'] = attributes.get('separator')
+            options = {}
+            options['hints'] = attributes.get('hints')
+            options['delimiter'] = attributes.get('delimiter')
+            options['separator'] = attributes.get('separator')
+            options['parser'] = parser_name
+            options['service'] = self.service
+            schema = attributes['schema']
 
-            parsed_data = parser_method(data, args)
+            parser_class = get_parser(parser_name)
+            parser = parser_class(data, schema, options)
+            parsed_data = parser.parse()
+
             logger.debug('log_name: %s', log_name)
             logger.debug('parsed_data: %s', parsed_data)
 
             if parsed_data:
-                parsed_and_typed_data = self._convert_type(parsed_data, args)
+                parsed_and_typed_data = self._convert_type(parsed_data, schema, options)
                 if parsed_and_typed_data:
                     self.log_source = log_name
-                    self.type = parser
-                    self.record = parsed_data
+                    self.type = parser_name
+                    self.record = parsed_and_typed_data
                     return True
         return False
 
-    def _convert_type(self, payload, args):
+    def _convert_type(self, parsed_data, schema, options):
         """Convert a parsed payload's values into their declared types.
 
         If the schema is incorrectly defined for a particular field,
@@ -244,12 +252,12 @@ class StreamPayload(object):
 
         Args:
             payload (dict): parsed payload object
-            args (dict): log type schema denoting keys with their value types
+            options (dict): log type schema denoting keys with their value types
 
         Returns:
             (dict) parsed payload with typed values
         """
-        schema = args['schema']
+        payload = parsed_data
         for key, value in schema.iteritems():
             key = str(key)
             # if the schema value is declared as string
@@ -268,179 +276,14 @@ class StreamPayload(object):
                 if len(value) == 0:
                     pass
                 else:
-                    args['schema'] = schema[key]
+                    schema = schema[key]
                     # handle nested csv
                     if isinstance(payload[key], str):
-                        args['hints'] = args['hints'][key]
-                        payload[key] = self.parse_csv(payload[key], args)
-                    self._convert_type(payload[key], args)
+                        options['hints'] = options['hints'][key]
+                        parse_csv = get_parser('csv')
+                        payload[key] = parse_csv(payload[key], schema, options).parse()
+                    self._convert_type(payload[key], schema, options)
             else:
                 logger.error('Invalid declared type - %s', value)
 
         return payload
-
-    def parse_json(self, data, args):
-        """Parse a string into JSON.
-
-        Args:
-            data (str): A decoded data string from a Lambda event.
-            args (dict): All parser arguments, JSON uses:
-                schema: Log type structure, including keys and their type.
-
-        Returns:
-            A dictionary representing the data passed in.
-            False if the data is not JSON or the keys do not match.
-        """
-        schema = args['schema']
-        try:
-            json_payload = json.loads(data)
-            self.type = 'json'
-        except ValueError:
-            return False
-
-        # top level key check
-        if set(json_payload.keys()) == set(schema.keys()):
-            # subkey check
-            for key, key_type in schema.iteritems():
-                # if the key is a map of key/value pairs
-                if isinstance(key_type, dict) and key_type != {}:
-                    if set(json_payload[key].keys()) != set(schema[key].keys()):
-                        return False
-            return json_payload
-        else:
-            # logger.debug('JSON Key mismatch: %s vs. %s', json_payload.keys(), args['keys'])
-            return False
-
-    def parse_csv(self, data, args):
-        """Parse a string into a comma separated value reader object.
-
-        Args:
-            data (str): A decoded data string from a Lambda event.
-            args (dict): All parser arguments, CSV uses:
-                schema: Log type structure, including keys and their type.
-                hints: A list of string wildcards to find in data.
-
-        Returns:
-            A dict of the parsed CSV record
-        """
-        schema = args['schema']
-        hints = args['hints']
-        hint_result = []
-        csv_payload = {}
-
-        if self.service == 's3':
-            try:
-                csv_data = StringIO.StringIO(data)
-                reader = csv.DictReader(csv_data, delimiter=',')
-            except ValueError:
-                return False
-
-        elif self.service == 'kinesis':
-            try:
-                csv_data = StringIO.StringIO(data)
-                reader = csv.reader(csv_data, delimiter=',')
-            except ValueError:
-                return False
-
-        if reader and hints:
-            for row in reader:
-                # check number of columns match and any hints match
-                logger.debug('hint result: %s', hint_result)
-                if len(row) == len(schema):
-                    for field, hint_list in hints.iteritems():
-                        # handle nested hints
-                        if not isinstance(hint_list, list):
-                            continue
-                        # the hint field index in the row
-                        field_index = schema.keys().index(field)
-                        # store results per hint
-                        hint_group_result = []
-                        for hint in hint_list:
-                            hint_group_result.append(fnmatch(row[field_index], hint))
-                        # append the result of any of the hints being True
-                        hint_result.append(any(hint_group_result))
-                    # if all hint group results are True
-                    if all(hint_result):
-                        self.type = 'csv'
-                        for index, key in enumerate(schema):
-                            csv_payload[key] = row[index]
-                        return csv_payload
-                else:
-                    # logger.debug('CSV Key mismatch: %s vs. %s', len(row), len(schema))
-                    return False
-        else:
-            return False
-
-    def parse_kv(self, data, args):
-        """Parse a key value string into a dictionary.
-
-        Args:
-            data (str): A decoded data string from a Lambda event.
-            args (dict): All parser arguments, KV uses:
-                schema: Log type structure, including keys and their type.
-                delimiter: The character between key/value pairs.
-                separator: The character between keys and values.
-
-        Returns:
-            (dict) of the loaded key value pairs
-        """
-        delimiter = args['delimiter']
-        separator = args['separator']
-        schema = args['schema']
-        kv_payload = {}
-
-        # remove any blank strings that may exist in our list
-        fields = filter(None, data.split(delimiter))
-        # first check the field length matches our # of keys
-        if len(fields) == len(schema):
-            regex = re.compile('.+{}.+'.format(separator))
-            for index, field in enumerate(fields):
-                # verify our fields match the kv regex
-                if regex.match(field):
-                    key, value = field.split(separator)
-                    # handle duplicate keys
-                    if key in kv_payload:
-                        # load key from our configuration
-                        kv_payload[schema.keys()[index]] = value
-                    else:
-                        # load key from data
-                        kv_payload[key] = value
-                else:
-                    logger.error('key/value regex failure for %s', field)
-            self.type = 'kv'
-            return kv_payload
-        else:
-            return False
-
-    def parse_syslog(self, data, args):
-        """Parse a syslog string into a dictionary
-
-        Matches syslog events with the following format:
-            timestamp(Month DD HH:MM:SS) host application: message
-        Example(s):
-            Jan 10 19:35:33 vagrant-ubuntu-trusty-64 sudo: session opened for root
-            Jan 10 19:35:13 vagrant-ubuntu-precise-32 ssh[13941]: login for mike
-
-        Args:
-            data (str): A decoded data string from a Lambda event.
-            args (dict): All parser arguments, Syslog uses:
-                schema: Log type structure, including keys and their type.
-
-        Returns:
-            (dict) syslog key-value pairs
-        """
-        schema = args['schema']
-        syslog_payload = {}
-        syslog_regex = re.compile(r"(?P<timestamp>^\w{3}\s\d{2}\s(\d{2}:?)+)\s"
-                                  r"(?P<host>(\w[-]*)+)\s"
-                                  r"(?P<application>\w+)(\[\w+\])*:\s"
-                                  r"(?P<message>.*$)")
-
-        match = syslog_regex.search(data)
-        if match:
-            for key in schema.keys():
-                syslog_payload[key] = match.group(key)
-            self.type = 'syslog'
-            return syslog_payload
-        else:
-            return False
