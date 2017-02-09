@@ -18,7 +18,8 @@ import logging
 import os
 
 from stream_alert.config import load_config, load_env
-from stream_alert.classifier import StreamPayload, StreamPayloadHelpers
+from stream_alert.classifier import StreamPayload
+from stream_alert.pre_parsers import StreamPreParsers
 from stream_alert.rules_engine import StreamRules
 from stream_alert.sink import StreamSink
 
@@ -58,7 +59,7 @@ def handler(event, context):
         payload.map_source()
 
         if payload.service == 's3':
-            s3_file_lines = StreamPayloadHelpers.parse_s3_object(payload.raw_record)
+            s3_file_lines = StreamPreParsers.pre_parse_s3(payload.raw_record)
             for line in s3_file_lines:
                 data = line.rstrip()
                 payload.refresh_record(data)
@@ -66,7 +67,7 @@ def handler(event, context):
                 process_alerts(payload, alerts_to_send)
 
         elif payload.service == 'kinesis':
-            data = StreamPayloadHelpers.pre_parse_kinesis(payload.raw_record)
+            data = StreamPreParsers.pre_parse_kinesis(payload.raw_record)
             payload.classify_record(data)
             process_alerts(payload, alerts_to_send)
 

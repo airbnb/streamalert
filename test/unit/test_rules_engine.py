@@ -19,7 +19,8 @@ import json
 
 from nose.tools import assert_equal, assert_not_equal, nottest
 
-from stream_alert.classifier import StreamPayload, StreamPayloadHelpers
+from stream_alert.classifier import StreamPayload
+from stream_alert.pre_parsers import StreamPreParsers
 from stream_alert.config import load_config
 from stream_alert.rules_engine import StreamRules
 
@@ -53,7 +54,7 @@ class TestStreamRules(object):
 
     @staticmethod
     def pre_parse_kinesis(payload):
-        return StreamPayloadHelpers.pre_parse_kinesis(payload.raw_record)
+        return StreamPreParsers.pre_parse_kinesis(payload.raw_record)
 
     def make_kinesis_payload(self, **kwargs):
         kinesis_stream = kwargs.get('kinesis_stream')

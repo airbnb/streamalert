@@ -24,7 +24,8 @@ from collections import OrderedDict
 
 from nose.tools import assert_equal, assert_not_equal, nottest
 
-from stream_alert.classifier import StreamPayload, StreamPayloadHelpers
+from stream_alert.classifier import StreamPayload
+from stream_alert.pre_parsers import StreamPreParsers
 from stream_alert.config import load_config
 
 class TestStreamPayload(object):
@@ -40,7 +41,7 @@ class TestStreamPayload(object):
 
     @staticmethod
     def pre_parse_kinesis(payload):
-        return StreamPayloadHelpers.pre_parse_kinesis(payload.raw_record)
+        return StreamPreParsers.pre_parse_kinesis(payload.raw_record)
 
     @staticmethod
     def make_kinesis_record(**kwargs):
