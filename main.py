@@ -18,7 +18,7 @@ import logging
 import os
 
 from stream_alert.config import load_config, load_env
-from stream_alert.classifier import StreamPayload
+from stream_alert.classifier import StreamPayload, StreamClassifier
 from stream_alert.pre_parsers import StreamPreParsers
 from stream_alert.rules_engine import StreamRules
 from stream_alert.sink import StreamSink
@@ -52,23 +52,30 @@ def handler(event, context):
 
     config = load_config()
     env = load_env(context)
+    # process_alerts(event['Records'])
     alerts_to_send = []
 
+    # TODO(jack): Move this into classification
     for record in event.get('Records'):
-        payload = StreamPayload(raw_record=record, config=config, env=env)
-        payload.map_source()
+        payload = StreamPayload(raw_record=record)
+        classifier = StreamClassifier(config=config)
+        classifier.map_source(payload)
+        # If the kinesis stream or s3 bucket is not in our config,
+        # go onto the next record.
+        if not payload.valid_source:
+            continue
 
         if payload.service == 's3':
             s3_file_lines = StreamPreParsers.pre_parse_s3(payload.raw_record)
             for line in s3_file_lines:
                 data = line.rstrip()
                 payload.refresh_record(data)
-                payload.classify_record(data)
+                classifier.classify_record(payload, data)
                 process_alerts(payload, alerts_to_send)
 
         elif payload.service == 'kinesis':
             data = StreamPreParsers.pre_parse_kinesis(payload.raw_record)
-            payload.classify_record(data)
+            classifier.classify_record(payload, data)
             process_alerts(payload, alerts_to_send)
 
     if alerts_to_send:
