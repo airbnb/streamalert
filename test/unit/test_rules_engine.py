@@ -19,7 +19,7 @@ import json
 
 from nose.tools import assert_equal, assert_not_equal, nottest
 
-from stream_alert.classifier import StreamPayload
+from stream_alert.classifier import StreamPayload, StreamClassifier
 from stream_alert.pre_parsers import StreamPreParsers
 from stream_alert.config import load_config
 from stream_alert.rules_engine import StreamRules
@@ -67,12 +67,13 @@ class TestStreamRules(object):
                 'data': base64.b64encode(kinesis_data)
             }
         }
-        payload = StreamPayload(raw_record=raw_record,
-                                env=self.env,
-                                config=self.config)
-        payload.map_source()
+        payload = StreamPayload(raw_record=raw_record)
+        classifier = StreamClassifier(config=self.config)
+
+        classifier.map_source(payload)
         data = self.pre_parse_kinesis(payload)
-        payload.classify_record(data)
+        classifier.classify_record(payload, data)
+
         if payload.valid:
             return payload
 
@@ -200,7 +201,7 @@ class TestStreamRules(object):
             'session opened for user root by (uid=0)'
         )
         # prepare the payloads
-        payload = self.make_kinesis_payload(kinesis_stream='test_kinesis_stream',
+        payload = self.make_kinesis_payload(kinesis_stream='test_stream_2',
                                             kinesis_data=kinesis_data)
 
         # process payloads

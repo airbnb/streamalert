@@ -24,7 +24,7 @@ from collections import OrderedDict
 
 from nose.tools import assert_equal, assert_not_equal, nottest
 
-from stream_alert.classifier import StreamPayload
+from stream_alert.classifier import StreamPayload, StreamClassifier
 from stream_alert.pre_parsers import StreamPreParsers
 from stream_alert.config import load_config
 
@@ -57,6 +57,16 @@ class TestStreamPayload(object):
         }
         return raw_record
 
+    def payload_generator(self, **kwargs):
+        """Given raw data, return a payload object"""
+        kinesis_stream = kwargs['kinesis_stream']
+        kinesis_data = kwargs['kinesis_data']
+        kinesis_record = self.make_kinesis_record(kinesis_stream=kinesis_stream,
+                                                  kinesis_data=kinesis_data)
+        
+        payload = StreamPayload(raw_record=kinesis_record)
+        return payload
+
     def setup(self):
         """Setup before each method"""
         self.env = {
@@ -72,44 +82,37 @@ class TestStreamPayload(object):
         """Teardown after each method"""
         pass
 
+
     def test_refresh_record(self):
-        kinesis_data = {
+        kinesis_data = json.dumps({
             'key3': 'key3data',
             'key2': 'key2data',
             'key1': 'key1data'
-        }
-        kinesis_data_json = json.dumps(kinesis_data)
-        first_raw_record = self.make_kinesis_record(kinesis_stream='test_kinesis_stream',
-                                               kinesis_data=kinesis_data_json)
-        payload = StreamPayload(raw_record=first_raw_record,
-                                env=self.env,
-                                config=self.config)
+        })
+        payload = self.payload_generator(kinesis_stream='test_kinesis_stream',
+                                         kinesis_data=kinesis_data)
 
         # generate a second record
-        new_kinesis_data = {
+        new_kinesis_data = json.dumps({
             'key4': 'key4data',
             'key5': 'key5data',
             'key6': 'key6data'
-        }
-        new_kinesis_data_json = json.dumps(new_kinesis_data)
+        })
         second_record = self.make_kinesis_record(kinesis_stream='test_kinesis_stream',
-                                               kinesis_data=new_kinesis_data_json)
+                                 kinesis_data=new_kinesis_data)
         payload.refresh_record(second_record)
 
-        # check loaded record
+        # check newly loaded record
         assert_equal(payload.raw_record, second_record)
-        assert_not_equal(payload.raw_record, first_raw_record)
 
-    def test_map_source(self):
-        data = 'test_map_source data'
-        data_encoded = base64.b64encode(data)
-        raw_record = self.make_kinesis_record(kinesis_stream='test_kinesis_stream',
-                                               kinesis_data=data_encoded)
 
-        payload = StreamPayload(raw_record=raw_record,
-                                env=self.env,
-                                config=self.config)
-        payload.map_source()
+    def test_map_source_1(self):
+        data_encoded = base64.b64encode('test_map_source data')
+        payload = self.payload_generator(kinesis_stream='test_kinesis_stream',
+                                         kinesis_data=data_encoded)
+
+        classifier = StreamClassifier(config=self.config)
+        classifier.map_source(payload)
 
         test_kinesis_stream_logs = {
             'test_log_type_json',
@@ -118,51 +121,51 @@ class TestStreamPayload(object):
             'test_log_type_json_nested_with_data',
             'test_log_type_csv',
             'test_log_type_csv_nested',
-            'test_log_type_kv_auditd',
-            'test_log_type_syslog'
+            'test_log_type_kv_auditd'
         }
-        
+        metadata = classifier.log_metadata(payload)
+
         # service, entity, metadata test
         assert_equal(payload.service, 'kinesis')
         assert_equal(payload.entity, 'test_kinesis_stream')
-        assert_equal(set(payload.log_metadata.keys()), test_kinesis_stream_logs)
+        assert_equal(set(metadata.keys()), test_kinesis_stream_logs)
 
-        # second stream test
-        raw_record_2 = self.make_kinesis_record(kinesis_stream='test_stream_2',
-                                               kinesis_data=data_encoded)
 
-        payload_2 = StreamPayload(raw_record=raw_record_2,
-                                env=self.env,
-                                config=self.config)
-        payload_2.map_source()
+    def test_map_source_2(self):
+        data_encoded = base64.b64encode('test_map_source_data_2')
+        payload = self.payload_generator(kinesis_stream='test_stream_2',
+                                         kinesis_data=data_encoded)
+
+        classifier = StreamClassifier(config=self.config)
+        classifier.map_source(payload)
 
         test_stream_2_logs = {
             'test_log_type_json_2',
-            'test_log_type_json_nested_osquery'
+            'test_log_type_json_nested_osquery',
+            'test_log_type_syslog'
         }
+        metadata = classifier.log_metadata(payload)
 
         # service, entity, metadata test
-        assert_equal(payload_2.service, 'kinesis')
-        assert_equal(payload_2.entity, 'test_stream_2')
-        assert_equal(set(payload_2.log_metadata.keys()), test_stream_2_logs)
+        assert_equal(payload.service, 'kinesis')
+        assert_equal(payload.entity, 'test_stream_2')
+        assert_equal(set(metadata.keys()), test_stream_2_logs)
+
 
     def test_classify_record_kinesis_json(self):
-        kinesis_data = {
+        kinesis_data = json.dumps({
             'key1': 'sample data!!!!',
             'key2': 'more sample data',
             'key3': '1'
-        }
-        kinesis_data_json = json.dumps(kinesis_data)
-        raw_record = self.make_kinesis_record(kinesis_stream='test_kinesis_stream',
-                                               kinesis_data=kinesis_data_json)
+        })
+        payload = self.payload_generator(kinesis_stream='test_kinesis_stream',
+                                         kinesis_data=kinesis_data)
+        classifier = StreamClassifier(config=self.config)
+        classifier.map_source(payload)
 
-        payload = StreamPayload(raw_record=raw_record,
-                                env=self.env,
-                                config=self.config)
-        payload.map_source()
-
+        # pre parse and classify
         data = self.pre_parse_kinesis(payload)
-        payload.classify_record(data)
+        classifier.classify_record(payload, data)
 
         # valid record test
         assert_equal(payload.valid, True)
@@ -180,8 +183,9 @@ class TestStreamPayload(object):
         assert_equal(type(payload.record['key2']), str)
         assert_equal(type(payload.record['key3']), int)
 
+
     def test_classify_record_kinesis_nested_json(self):
-        kinesis_data = {
+        kinesis_data = json.dumps({
             'date': 'Jan 01 2017',
             'unixtime': '1485556524',
             'host': 'my-host-name',
@@ -189,18 +193,14 @@ class TestStreamPayload(object):
                 'key1': 'test',
                 'key2': 'one'
             }
-        }
-        kinesis_data_json = json.dumps(kinesis_data)
-        raw_record = self.make_kinesis_record(kinesis_stream='test_kinesis_stream',
-                                               kinesis_data=kinesis_data_json)
-
-        payload = StreamPayload(raw_record=raw_record,
-                                env=self.env,
-                                config=self.config)
-        payload.map_source()
+        })
+        payload = self.payload_generator(kinesis_stream='test_kinesis_stream',
+                                         kinesis_data=kinesis_data)
+        classifier = StreamClassifier(config=self.config)
+        classifier.map_source(payload)
 
         data = self.pre_parse_kinesis(payload)
-        payload.classify_record(data)
+        classifier.classify_record(payload, data)
 
         # valid record test
         assert_equal(payload.valid, True)
@@ -222,8 +222,9 @@ class TestStreamPayload(object):
         assert_equal(payload.record['date'], 'Jan 01 2017')
         assert_equal(payload.record['data']['key1'], 'test')
 
+
     def test_classify_record_kinesis_nested_json_osquery(self):
-        kinesis_data = {
+        kinesis_data = json.dumps({
             'name': 'testquery',
             'hostIdentifier': 'host1.test.prod',
             'calendarTime': 'Jan 01 2017',
@@ -239,18 +240,15 @@ class TestStreamPayload(object):
                 'cluster': 'eu-east',
                 'number': '100'
             }
-        }
-        kinesis_data_json = json.dumps(kinesis_data)
-        raw_record = self.make_kinesis_record(kinesis_stream='test_stream_2',
-                                               kinesis_data=kinesis_data_json)
+        })
+        payload = self.payload_generator(kinesis_stream='test_stream_2',
+                                         kinesis_data=kinesis_data)
 
-        payload = StreamPayload(raw_record=raw_record,
-                                env=self.env,
-                                config=self.config)
-        payload.map_source()
+        classifier = StreamClassifier(config=self.config)
+        classifier.map_source(payload)
 
         data = self.pre_parse_kinesis(payload)
-        payload.classify_record(data)
+        classifier.classify_record(payload, data)
 
         # valid record test
         assert_equal(payload.valid, True)
@@ -275,8 +273,9 @@ class TestStreamPayload(object):
         assert_equal(payload.record['decorations']['cluster'], 'eu-east')
         assert_equal(payload.record['decorations']['number'], 100)
 
+
     def test_classify_record_kinesis_nested_json_missing_subkey_fields(self):
-        kinesis_data = {
+        kinesis_data = json.dumps({
             'name': 'testquery',
             'hostIdentifier': 'host1.test.prod',
             'calendarTime': 'Jan 01 2017',
@@ -292,25 +291,23 @@ class TestStreamPayload(object):
                 # 'cluster': 'eu-east',
                 'number': '100'
             }
-        }
-        kinesis_data_json = json.dumps(kinesis_data)
-        raw_record = self.make_kinesis_record(kinesis_stream='test_stream_2',
-                                               kinesis_data=kinesis_data_json)
+        })
+        payload = self.payload_generator(kinesis_stream='test_stream_2',
+                                               kinesis_data=kinesis_data)
 
-        payload = StreamPayload(raw_record=raw_record,
-                                env=self.env,
-                                config=self.config)
-        payload.map_source()
+        classifier = StreamClassifier(config=self.config)
+        classifier.map_source(payload)
 
         data = self.pre_parse_kinesis(payload)
-        payload.classify_record(data)
+        classifier.classify_record(payload, data)
 
         # invalid record test
         assert_equal(payload.valid, False)
         assert_equal(payload.record, None)
 
+
     def test_classify_record_kinesis_nested_json_with_data(self):
-        kinesis_data = {
+        kinesis_data = json.dumps({
             'date': 'Jan 01 2017',
             'unixtime': '1485556524',
             'host': 'host1',
@@ -321,18 +318,15 @@ class TestStreamPayload(object):
                 'type': '1',
                 'source': 'dev-app-1'
             }
-        }
-        kinesis_data_json = json.dumps(kinesis_data)
-        raw_record = self.make_kinesis_record(kinesis_stream='test_kinesis_stream',
-                                               kinesis_data=kinesis_data_json)
+        })
+        payload = self.payload_generator(kinesis_stream='test_kinesis_stream',
+                                               kinesis_data=kinesis_data)
 
-        payload = StreamPayload(raw_record=raw_record,
-                                env=self.env,
-                                config=self.config)
-        payload.map_source()
+        classifier = StreamClassifier(config=self.config)
+        classifier.map_source(payload)
 
         data = self.pre_parse_kinesis(payload)
-        payload.classify_record(data)
+        classifier.classify_record(payload, data)
 
         # valid record test
         assert_equal(payload.valid, True)
@@ -356,16 +350,17 @@ class TestStreamPayload(object):
         assert_equal(payload.record['date'], 'Jan 01 2017')
         assert_equal(payload.record['data']['source'], 'dev-app-1')
 
+
     def test_classify_record_kinesis_csv(self):
         csv_data = 'jan102017,0100,host1,thisis some data with keyword1 in it'
-        raw_record = self.make_kinesis_record(kinesis_stream='test_kinesis_stream',
+        payload = self.payload_generator(kinesis_stream='test_kinesis_stream',
                                                kinesis_data=csv_data)
-        payload = StreamPayload(raw_record=raw_record,
-                                env=self.env,
-                                config=self.config)
-        payload.map_source()
+
+        classifier = StreamClassifier(config=self.config)
+        classifier.map_source(payload)
+
         data = self.pre_parse_kinesis(payload)
-        payload.classify_record(data)
+        classifier.classify_record(payload, data)
 
         # valid record test
         assert_equal(payload.valid, True)
@@ -382,19 +377,20 @@ class TestStreamPayload(object):
         # log source test
         assert_equal(payload.log_source, 'test_log_type_csv')
 
+
     def test_classify_record_kinesis_csv_nested(self):
         csv_nested_data = (
             '"Jan 10 2017","1485635414","host1.prod.test","Corp",'
             '"chef,web-server,1,10,success"'
         )
-        raw_record = self.make_kinesis_record(kinesis_stream='test_kinesis_stream',
-                                               kinesis_data=csv_nested_data)
-        payload = StreamPayload(raw_record=raw_record,
-                                env=self.env,
-                                config=self.config)
-        payload.map_source()
+        payload = self.payload_generator(kinesis_stream='test_kinesis_stream',
+                                         kinesis_data=csv_nested_data)
+
+        classifier = StreamClassifier(config=self.config)
+        classifier.map_source(payload)
+
         data = self.pre_parse_kinesis(payload)
-        payload.classify_record(data)
+        classifier.classify_record(payload, data)
 
         # valid record test
         assert_equal(payload.valid, True)
@@ -414,6 +410,7 @@ class TestStreamPayload(object):
         # log source test
         assert_equal(payload.log_source, 'test_log_type_csv_nested')
 
+
     def test_classify_record_kinesis_kv(self):
         auditd_test_data = (
             'type=SYSCALL msg=audit(1364481363.243:24287): '
@@ -429,14 +426,14 @@ class TestStreamPayload(object):
             'rdev=00:00 obj=system_u:object_r:etc_t:s0'
         )
 
-        raw_record = self.make_kinesis_record(kinesis_stream='test_kinesis_stream',
-                                               kinesis_data=auditd_test_data)
-        payload = StreamPayload(raw_record=raw_record,
-                                env=self.env,
-                                config=self.config)
-        payload.map_source()
+        payload = self.payload_generator(kinesis_stream='test_kinesis_stream',
+                                         kinesis_data=auditd_test_data)
+
+        classifier = StreamClassifier(config=self.config)
+        classifier.map_source(payload)
+
         data = self.pre_parse_kinesis(payload)
-        payload.classify_record(data)
+        classifier.classify_record(payload, data)
 
         # valid record test
         assert_equal(payload.valid, True)
@@ -453,6 +450,7 @@ class TestStreamPayload(object):
         assert_not_equal(payload.type, 'csv')
         assert_not_equal(payload.type, 'json')
 
+
     def test_classify_record_syslog(self):
         test_data_1 = (
             'Jan 26 19:35:33 vagrant-ubuntu-trusty-64 '
@@ -468,14 +466,14 @@ class TestStreamPayload(object):
 
         fixtures = {'test_1': test_data_1, 'test_2': test_data_2}
         for name, syslog_message in fixtures.iteritems():
-            raw_record = self.make_kinesis_record(kinesis_stream='test_kinesis_stream',
-                                                   kinesis_data=syslog_message)
-            payload = StreamPayload(raw_record=raw_record,
-                                    env=self.env,
-                                    config=self.config)
-            payload.map_source()
+            payload = self.payload_generator(kinesis_stream='test_stream_2',
+                                             kinesis_data=syslog_message)
+
+            classifier = StreamClassifier(config=self.config)
+            classifier.map_source(payload)
+
             data = self.pre_parse_kinesis(payload)
-            payload.classify_record(data)
+            classifier.classify_record(payload, data)
 
             # valid record test
             assert_equal(payload.valid, True)

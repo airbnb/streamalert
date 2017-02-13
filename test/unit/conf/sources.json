@@ -8,14 +8,14 @@
         "test_log_type_json_nested_with_data",
         "test_log_type_csv",
         "test_log_type_csv_nested",
-        "test_log_type_kv_auditd",
-        "test_log_type_syslog"
+        "test_log_type_kv_auditd"
       ]
     },
     "test_stream_2": {
       "logs": [
         "test_log_type_json_2",
-        "test_log_type_json_nested_osquery"
+        "test_log_type_json_nested_osquery",
+        "test_log_type_syslog"
       ]
     }
   }
