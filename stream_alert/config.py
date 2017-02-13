@@ -41,7 +41,10 @@ def load_config(conf_dir='conf/'):
     config = {}
     for desc, filename in conf_files.iteritems():
         with open(os.path.join(conf_dir, filename)) as data:
-            config[desc] = json.load(data, object_pairs_hook=OrderedDict)
+            try:
+                config[desc] = json.load(data, object_pairs_hook=OrderedDict)
+            except ValueError:
+                raise ConfigError('Invalid JSON format for {}.json'.format(desc))
 
     if validate_config(config):
         return config
@@ -56,12 +59,12 @@ def validate_config(config):
         - each sources has a list of logs declared
     """
     for config_key, settings in config.iteritems():
-        # TODO(jacknagz): add specific unit test cases for this method
         # check log declarations
         if config_key == 'logs':
             for log, attrs in settings.iteritems():
                 if not {'schema', 'parser'}.issubset(set(attrs.keys())):
                     raise ConfigError('Schema or parser missing for {}'.format(log))
+
         # check sources attributes
         elif config_key == 'sources':
             if not set(settings.keys()).issubset(set(['kinesis', 's3'])):
@@ -73,7 +76,7 @@ def validate_config(config):
                     if len(entity_attrs['logs']) == 0:
                         raise ConfigError('Log list is empty for {}'.format(entity))
 
-        return True
+    return True
 
 def load_env(context):
     """Get the current environment for the running Lambda function.
