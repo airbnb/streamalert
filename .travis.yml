@@ -6,4 +6,5 @@ before_install:
 install:
   - pip install -r requirements.txt
 script: 
-  - nosetests -v -s test/unit/
+  - ./test/scripts/unit_tests.sh
+  - ./test/scripts/integration_test_kinesis.sh

@@ -1,0 +1,39 @@
+{
+  "Records": [
+    {
+      "eventSource": "aws:kinesis", 
+      "eventSourceARN": "arn:aws:kinesis:region:account-id:stream/prefix_cluster1_stream_alert_kinesis", 
+      "kinesis": {
+        "data": "eyJuYW1lIjogIm5hbWUtMSIsICJob3N0IjogInRlc3QtaG9zdC0yIiwgImRhdGEiOiB7InRpbWUiOiAiSmFuIDAxLCAyMDE3In19"
+      }
+    }, 
+    {
+      "eventSource": "aws:kinesis", 
+      "eventSourceARN": "arn:aws:kinesis:region:account-id:stream/prefix_cluster1_stream_alert_kinesis", 
+      "kinesis": {
+        "data": "eyJuYW1lIjogIm5hbWUtMSIsICJob3N0IjogInRlc3QtaG9zdC0xIiwgImRhdGEiOiB7InRpbWUiOiAiSmFuIDAxLCAyMDE3In19"
+      }
+    }, 
+    {
+      "eventSource": "aws:kinesis", 
+      "eventSourceARN": "arn:aws:kinesis:region:account-id:stream/prefix_cluster1_stream_alert_kinesis", 
+      "kinesis": {
+        "data": "SmFuIDAxIDEyOjAwOjEyIHRlc3QtaG9zdC0xIHN1ZG9bMTUxXTogQ09NTUFORCBzdWRvIHJtIC90bXAvdGVzdA=="
+      }
+    }, 
+    {
+      "eventSource": "aws:kinesis", 
+      "eventSourceARN": "arn:aws:kinesis:region:account-id:stream/prefix_cluster1_stream_alert_kinesis", 
+      "kinesis": {
+        "data": "SmFuIDAxIDIwMTcsMTQ4NzA5NTUyOSx0ZXN0LWhvc3QtMix0aGlzIGlzIHRlc3QgZGF0YSBmb3IgcnVsZXMsY2x1c3RlciA1"
+      }
+    }, 
+    {
+      "eventSource": "aws:kinesis", 
+      "eventSourceARN": "arn:aws:kinesis:region:account-id:stream/prefix_cluster1_stream_alert_kinesis", 
+      "kinesis": {
+        "data": "dHlwZT1jb21tIG1zZz1mYXRhbCB1aWQ9MTAw"
+      }
+    }
+  ]
+}

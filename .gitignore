@@ -1,7 +1,7 @@
 # Sphinx build directory
-build
+docs/build
 
-# PYC files
+# Compiled Python files
 *.pyc
 
 # Terraform files
@@ -14,3 +14,6 @@ Thumbs.db
 .DS_Store
 *.swp
 terminal.glue
+
+# nose coverage file
+.coverage

@@ -1,0 +1,24 @@
+{
+	"kinesis": {
+		"prefix_cluster1_stream_alert_kinesis": {
+			"logs": [
+				"json_log",
+				"syslog_log",
+				"kv_log",
+				"csv_log"
+			]
+		},
+		"prefix_cluster2_stream_alert_kinesis": {
+			"logs": [
+				"json_log"
+			]
+		}
+	},
+	"s3": {
+		"my-s3-bucket-id": {
+			"logs": [
+				"syslog_log"
+			]
+		}
+	}
+}

@@ -1,19 +1,15 @@
-/*
-This is a sample! Copy and rename this file to `logs.json` in the same folder.
-Below you will find a sample log for each parser type.
-*/
 {
-  "json_log_name": {
+  "json_log": {
     "schema": {
       "name": "string",
-      "host": "integer",
+      "host": "string",
       "data": {
         "time": "string"
       }
     },
     "parser": "json"
   },
-  "syslog_log_name": {
+  "syslog_log": {
     "schema": {
       "timestamp": "string",
       "host": "string",
@@ -22,18 +18,22 @@ Below you will find a sample log for each parser type.
     },
     "parser": "syslog"
   },
-  "csv_log_name": {
+  "csv_log": {
     "schema": {
       "date": "string",
       "time": "integer",
       "host": "string",
-      "message": "string"
+      "message": "string",
+      "source": "string"
     },
+    "parser": "csv",
     "hints": {
-      "message": ["*keyword*"]
+      "source": [
+        "cluster *"
+      ]
     }
   },
-  "kv_log_name": {
+  "kv_log": {
     "schema": {
       "type": "string",
       "msg": "string",
