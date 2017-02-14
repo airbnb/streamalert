@@ -55,18 +55,10 @@ class StreamAlertCLI(object):
                             'https://github.com/airbnb/streamalert/issues')
         logging.info(cli_load_message)
 
-        prereqs_message = ('Terraform not found! Please install and add to'
-                           'your $PATH:\n'
-                           '$ export PATH=$PATH:/usr/local/terraform/bin')
-        terraform_check = self.run_command(['terraform', 'version'],
-                                           error_message=prereqs_message,
-                                           quiet=True)
-        # There is no `else` since it's handled in the self.run_command call
-        if terraform_check:
-            if options.command == 'lambda':
-                self._lambda_runner(options)
-            elif options.command == 'terraform':
-                self._terraform_runner(options)
+        if options.command == 'lambda':
+            self._lambda_runner(options)
+        elif options.command == 'terraform':
+            self._terraform_runner(options)
 
     def _lambda_runner(self, options):
         """Handle all Lambda CLI operations."""
@@ -80,8 +72,17 @@ class StreamAlertCLI(object):
         elif options.subcommand == 'test':
             stream_alert_test(options)
 
+    def _terraform_check(self):
+        prereqs_message = ('Terraform not found! Please install and add to'
+                           'your $PATH:\n'
+                           '$ export PATH=$PATH:/usr/local/terraform/bin')
+        self.run_command(['terraform', 'version'],
+                         error_message=prereqs_message,
+                         quiet=True)
+
     def _terraform_runner(self, options):
         """Handle all Terraform CLI operations."""
+        self._terraform_check()
         deploy_opts = namedtuple('deploy_opts', 'func, env')
 
         # plan and apply our terraform infrastructure
