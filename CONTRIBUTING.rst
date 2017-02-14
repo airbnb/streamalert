@@ -42,6 +42,7 @@ When writing commit messages, make sure to prefix with one of the following tags
   [core]              # changes with core stream_alert classes used across both functions
   [testing]           # changes with testing infrastructure or processes
   [setup]             # StreamAlert development setup changes
+  [config]            # stream_alert config changes
 
 The first line of your commit message should be short.  Use newlines to explain further::
 

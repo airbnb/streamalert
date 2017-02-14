@@ -1,0 +1,4 @@
+{"name": "name-1", "host": "test-host-1", "data": {"time": "Jan 01, 2017"}}
+Jan 01 12:00:12 test-host-1 sudo[151]: COMMAND sudo rm /tmp/test
+Jan 01 2017,1487095529,test-host-2,this is test data for rules,cluster 5
+type=comm msg=fatal uid=100

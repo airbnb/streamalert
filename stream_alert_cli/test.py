@@ -64,6 +64,7 @@ def read_kinesis_records(local_directories):
                 with open(os.path.join(root, json_file), 'r') as json_fh:
                     lines = json_fh.readlines()
                 for line in lines:
+                    line = line.strip()
                     record = {
                         'kinesis': {'data': base64.b64encode(line)},
                         'eventSource': 'aws:{}'.format(folder),
@@ -71,6 +72,7 @@ def read_kinesis_records(local_directories):
                             .format(folder, root.split('/')[-1])
                     }
                     records['Records'].append(record)
+
     return records
 
 def read_s3_records(local_directories):
@@ -121,10 +123,11 @@ def read_s3_records(local_directories):
     records = {'Records': []}
     for folder in local_directories:
         for root, _, files in os.walk(os.path.join(BASEFOLDER, folder)):
-            for json_file in files:
-                with open(os.path.join(root, json_file), 'r') as json_fh:
-                    lines = json_fh.readlines()
+            for test_file in files:
+                with open(os.path.join(root, test_file), 'r') as test_file_fh:
+                    lines = test_file_fh.readlines()
                 for line in lines:
+                    line = line.strip()
                     # provide a way to skip records
                     if line[0] == '#':
                         continue
@@ -135,6 +138,7 @@ def read_s3_records(local_directories):
                     record['awsRegion'] = 'us-east-1'
                     record['eventName'] = 'ObjectCreated:Put'
                     records['Records'].append(record)
+
     return records
 
 def format_sns(in_file):
@@ -144,37 +148,38 @@ def format_sns(in_file):
     message = base64.b64encode(json.dumps(in_file_contents))
     out_records = {
       "Records": [
-        {
-          "EventVersion": "1.0",
-          "EventSubscriptionArn": "arn:aws:sns:EXAMPLE",
-          "EventSource": "aws:sns",
-          "Sns": {
-            "SignatureVersion": "1",
-            "Timestamp": "1970-01-01T00:00:00.000Z",
-            "Signature": "EXAMPLE",
-            "SigningCertUrl": "EXAMPLE",
-            "MessageId": "95df01b4-ee98-5cb9-9903-4c221d41eb5e",
-            "Message": message,
-            "MessageAttributes": {
-              "Test": {
-                "Type": "String",
-                "Value": "TestString"
-              },
-              "TestBinary": {
-                "Type": "Binary",
-                "Value": "TestBinary"
+          {
+              "EventVersion": "1.0",
+              "EventSubscriptionArn": "arn:aws:sns:EXAMPLE",
+              "EventSource": "aws:sns",
+              "Sns": {
+                "SignatureVersion": "1",
+                "Timestamp": "1970-01-01T00:00:00.000Z",
+                "Signature": "EXAMPLE",
+                "SigningCertUrl": "EXAMPLE",
+                "MessageId": "95df01b4-ee98-5cb9-9903-4c221d41eb5e",
+                "Message": message,
+                "MessageAttributes": {
+                  "Test": {
+                    "Type": "String",
+                    "Value": "TestString"
+                  },
+                  "TestBinary": {
+                    "Type": "Binary",
+                    "Value": "TestBinary"
+                  }
+                },
+                "Type": "Notification",
+                "UnsubscribeUrl": "EXAMPLE",
+                "TopicArn": "arn:aws:sns:EXAMPLE",
+                "Subject": "TestInvoke"
               }
-            },
-            "Type": "Notification",
-            "UnsubscribeUrl": "EXAMPLE",
-            "TopicArn": "arn:aws:sns:EXAMPLE",
-            "Subject": "TestInvoke"
-          }
+            }
+          ]
         }
-      ]
-    }
     out_file = '{}.out'.format(in_file)
     write_records(out_records, out_file)
+
     return out_file
 
 def write_records(records, out_file):
@@ -190,7 +195,7 @@ def write_records(records, out_file):
 
 def stream_alert_test(options):
     def alert_emulambda(out_file):
-        context_file = os.path.join(BASEFOLDER, 'context')
+        # context_file = os.path.join(BASEFOLDER, 'context')
         sys.argv = ['emulambda', 'main.handler', out_file, '-v']
         import emulambda
         emulambda.main()

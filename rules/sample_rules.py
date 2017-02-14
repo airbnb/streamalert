@@ -43,3 +43,38 @@ def invalid_subnet_rule(rec):
 def rule_func(rec):
     """Description"""
     return True
+
+
+@rule('sample_json_rule',
+      logs=['json_log'],
+      matchers=[],
+      outputs=['s3'])
+def sample_json_rule(rec):
+    return rec['host'] == 'test-host-1'
+
+
+@rule('sample_syslog_rule',
+      logs=['syslog_log'],
+      matchers=[],
+      outputs=['pagerduty'])
+def sample_syslog_rule(rec):
+    return rec['application'] == 'sudo'
+
+
+@rule('sample_csv_rule',
+      logs=['csv_log'],
+      matchers=[],
+      outputs=['s3'])
+def sample_csv_rule(rec):
+    return rec['host'] == 'test-host-2'
+
+
+@rule('sample_kv_rule',
+      logs=['kv_log'],
+      matchers=[],
+      outputs=['s3'])
+def sample_kv_rule(rec):
+    return (
+        rec['msg'] == 'fatal' and
+        rec['uid'] == 100
+    )

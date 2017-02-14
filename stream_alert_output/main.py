@@ -114,6 +114,8 @@ class StreamOutput(object):
                 else:
                     logger.error('Declared output [%s] does not exist', output)
 
+    # TODO(jacknagz) remove this - we don't need whitelist keys anymore now
+    # that the payload attributes are fixed
     def _format_alert(self, alert):
         """Alert formatter and shortener
 
