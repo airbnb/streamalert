@@ -38,7 +38,7 @@ Each new rule file must contain the following at the top::
 
 All rules take this structure::
 
-    @rule('example', 
+    @rule('example',
           logs=[...],
           matchers=[...],
           outputs=[...])
@@ -83,7 +83,7 @@ logs
 matchers
 ~~~~~~~~
 
-``matchers`` define the conditions that must be satisfied before rule is evaluated.  This serves two purposes:
+``matchers`` is optional; it defines conditions that must be satisfied in order for the rule to be evaluated.  This serves two purposes:
 
 * To extract common logic from rules, which improves readability and writability
 * To ensure necessary conditions are met before full analysis of an incoming record
@@ -102,9 +102,30 @@ In the above example, we are evaluating the ``pci`` matcher.  As you can likely 
 outputs
 ~~~~~~~
 
-``outputs`` define where the alert should be sent to, if the return value of the function is ``True``.
+``outputs`` define where the alert should be sent to, if the return value of the rule is ``True``.
 
 StreamAlert supports sending alerts to PagerDuty, Slack and Amazon S3. As demonstrated in the example, an alert can be sent to multiple destinations.
+
+req_subkeys
+~~~~~~~~~~~
+
+``req_subkeys`` is optional; it defines the required sub-keys that must exist in the incoming record in order for the rule to be evaluated.
+
+This feature should be avoided, but is useful if you defined a loose schema to trade flexibility for safety; see `Schemas <conf-schemas.html#json-example-osquery>`_.
+
+Examples::
+
+  @rule('osquery_etc_hosts',
+        logs=['osquery'],
+        outputs=['pagerduty', 's3'],
+        req_subkeys={'columns':['address', 'hostnames']})
+        ...
+
+  @rule('osquery_listening_ports',
+        logs=['osquery'],
+        outputs=['pagerduty', 's3'],
+        req_subkeys={'columns':['port', 'protocol']})
+        ...
 
 
 Helpers
@@ -145,7 +166,7 @@ Configuration
 
 To get started, create (or find) an example log for your given rule.  If the rule you added expects incoming records to be JSON, add a raw JSON record into the ``trigger_events.json `` file for the related stream.
 
-Example logs will be stored in the ``test/integration/fixtures/kinesis`` subdirectory.  A new folder should be created for each Kinesis stream as declared in your `sources.json <conf-datasources.html>`_.  
+Example logs will be stored in the ``test/integration/fixtures/kinesis`` subdirectory.  A new folder should be created for each Kinesis stream as declared in your `sources.json <conf-datasources.html>`_.
 
 Within each of these folders, add the following two files:
 
@@ -180,11 +201,11 @@ Running Tests
 ~~~~~~~~~~~~~
 
 To test an example record coming from Kinesis::
-  
+
   ./stream_alert_cli.py lambda test --func alert --source kinesis
 
 To test example records from S3::
-  
+
   ./stream_alert_cli.py lambda test --func alert --source s3
 
 .. note:: coming soon - Amazon S3 testing instructions
