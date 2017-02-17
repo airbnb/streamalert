@@ -13,11 +13,13 @@ Getting Started
 ---------------
 
 * Rules are located in the ``rules/`` sub-directory.
-* Generally, a separate rule file should be created for each cluster defined in the ``variables.json`` file.
-  * examples: ``corp.py``, ``pci.py``, or ``production.py``
-  * This structure is optional, you can organize rules however you would like.
+* We suggest a separate rule file is created for each cluster defined in the ``variables.json`` file.
+* Examples: ``corp.py``, ``pci.py``, or ``production.py``
+* This structure is optional, you can organize rules however you like.
 
-After defining a new rule file, you must import them in the ``main.py`` file (found in the repo root).  For the given examples above, this would be::
+All rule files must be explicitly imported in ``main.py``.
+
+Example::
 
   from rules import (
       corp,
@@ -25,12 +27,12 @@ After defining a new rule file, you must import them in the ``main.py`` file (fo
       production
   )
 
-.. note:: If you skip the above step, your rules will not load when AWS Lambda runs.
+.. note:: If you skip the step above, your rules will not be used by StreamAlert.
 
 Overview
 --------
 
-Each new rule file must contain the following at the top::
+Each Rule file must contain the following at the top::
 
   from stream_alert import rule_helpers
   from stream_alert.rules_engine import StreamRules
@@ -38,13 +40,13 @@ Each new rule file must contain the following at the top::
 
 All rules take this structure::
 
-    @rule('example', 
+    @rule('example',
           logs=[...],
           matchers=[...],
           outputs=[...])
     def example(record):
-        # record analysis             # analyze the incoming record w/ your logic
-        return True                   # return True if an alert should be sent
+        # code                    # analyze the incoming record w/ your logic
+        return True               # return True if an alert should be sent
 
 You define a list of ``logs`` that the rule is applicable to.  Rules will only be evaluated against incoming records that match the declared log types.
 
@@ -83,12 +85,12 @@ logs
 matchers
 ~~~~~~~~
 
-``matchers`` define the conditions that must be satisfied before rule is evaluated.  This serves two purposes:
+``matchers`` is optional; it defines conditions that must be satisfied in order for the rule to be evaluated.  This serves two purposes:
 
 * To extract common logic from rules, which improves readability and writability
 * To ensure necessary conditions are met before full analysis of an incoming record
 
-Matchers are defined in ``rules/matchers.py`. If desired, matchers can also be defined in rule files if the following line is added to the top::
+Matchers are defined in ``rules/matchers.py``. If desired, matchers can also be defined in rule files if the following line is added to the top::
 
   matcher = StreamRules.matcher
 
@@ -102,9 +104,30 @@ In the above example, we are evaluating the ``pci`` matcher.  As you can likely 
 outputs
 ~~~~~~~
 
-``outputs`` define where the alert should be sent to, if the return value of the function is ``True``.
+``outputs`` define where the alert should be sent to, if the return value of the rule is ``True``.
 
 StreamAlert supports sending alerts to PagerDuty, Slack and Amazon S3. As demonstrated in the example, an alert can be sent to multiple destinations.
+
+req_subkeys
+~~~~~~~~~~~
+
+``req_subkeys`` is optional; it defines the required sub-keys that must exist in the incoming record in order for the rule to be evaluated.
+
+This feature should be avoided, but it is useful if you defined a loose schema to trade flexibility for safety; see `Schemas <conf-schemas.html#json-example-osquery>`_.
+
+Examples::
+
+  @rule('osquery_etc_hosts',
+        logs=['osquery'],
+        outputs=['pagerduty', 's3'],
+        req_subkeys={'columns':['address', 'hostnames']})
+        ...
+
+  @rule('osquery_listening_ports',
+        logs=['osquery'],
+        outputs=['pagerduty', 's3'],
+        req_subkeys={'columns':['port', 'protocol']})
+        ...
 
 
 Helpers
@@ -143,9 +166,9 @@ In order to test the effectiveness of our new rules, you can run a set of local 
 Configuration
 ~~~~~~~~~~~~~
 
-To get started, create (or find) an example log for your given rule.  If the rule you added expects incoming records to be JSON, add a raw JSON record into the ``trigger_events.json `` file for the related stream.
+To get started, create (or find) an example log for your given rule.  If the rule you added expects incoming records to be JSON, add a raw JSON record into the ``trigger_events.json`` file for the related stream.
 
-Example logs will be stored in the ``test/integration/fixtures/kinesis`` subdirectory.  A new folder should be created for each Kinesis stream as declared in your `sources.json <conf-datasources.html>`_.  
+Example logs will be stored in the ``test/integration/fixtures/kinesis`` subdirectory.  A new folder should be created for each Kinesis stream as declared in your `sources.json <conf-datasources.html>`_.
 
 Within each of these folders, add the following two files:
 
@@ -180,11 +203,11 @@ Running Tests
 ~~~~~~~~~~~~~
 
 To test an example record coming from Kinesis::
-  
+
   ./stream_alert_cli.py lambda test --func alert --source kinesis
 
 To test example records from S3::
-  
+
   ./stream_alert_cli.py lambda test --func alert --source s3
 
 .. note:: coming soon - Amazon S3 testing instructions

@@ -144,7 +144,7 @@ This promotes Rule safety, but requires additional time to define the schemas
     }
   },
 
-.. warning:: In Option 2, the schema definition is flexible, but Rule safety is lost because you'll need to use defensive programming when accessing and analyzing fields in `columns`. The use of `req_subkeys` will be advised.
+.. warning:: In Option 2, the schema definition is flexible, but Rule safety is lost because you'll need to use defensive programming when accessing and analyzing fields in `columns`. The use of `req_subkeys` will be advised, see Rules for more details
 
 CSV Example
 -----------
