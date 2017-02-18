@@ -65,24 +65,90 @@ class ParserBase:
 
     @abstractmethod
     def parse(self):
-        """Main parser method to be overridden by all Parser classes"""
+        """Main parser method to be overridden by all Parser classes
+
+        Returns:
+            A list of parsed records
+        """
         pass
 
 @parser
 class JSONParser(ParserBase):
     __parserid__ = 'json'
 
+    def __init__(self, *args):
+        super(JSONParser, self).__init__(*args)
+        self.nested = False
+        self.nested_keys = []
+
+    def _get_schema(self):
+        """Return the schema, handle nested json types"""
+        schema = self.schema
+        if self.nested:
+            for key in self.nested_keys:
+                schema = schema.get(key)
+            return schema[0]
+
+        return schema
+
+    def _key_check(self, json_records):
+        """Verify the declared schema matches the json payload
+
+        If keys do not match per the schema, records are removed from the
+        passed in json_records list
+        """
+        schema = self._get_schema()
+        schema_keys = set(schema.keys())
+
+        for json_record in json_records:
+            json_keys = set(json_record.keys())
+            if json_keys == schema_keys:
+                for key, key_type in schema.iteritems():
+                    # If the value is a map of defined key/value pairs
+                    if isinstance(key_type, dict) and key_type != {}:
+                        # subkey check
+                        if set(json_record[key].keys()) != set(schema[key].keys()):
+                            json_records.remove(json_record)
+            else:
+                logger.debug('JSON Key mismatch: %s vs. %s', json_keys, schema_keys)
+                json_records.remove(json_record)
+
+    def _parse_records(self, json_payload):
+        """Iterate over a json_payload to determine if nested records exist
+
+        Args:
+            json_payload: A dict of the parsed json data
+            schema: A dict of a log type's schema
+
+        Returns:
+            A list of dict JSON payloads
+        """
+        json_records = []
+
+        if len(json_payload) == 1:
+            for key, val in json_payload.iteritems():
+                self.nested = True
+                self.nested_keys.append(key)
+                if isinstance(val, list):
+                    for record in val:
+                        json_records.append(record)
+                elif isinstance(val, dict):
+                    return self._parse_records(json_payload[key])
+        else:
+            json_records.append(json_payload)
+
+        return json_records
+
     def parse(self):
-        """Parse a string into JSON.
+        """Parse a string into a list of JSON payloads.
 
         Options:
             - None
 
         Returns:
-            - A dict of the parsed JSON record.
-            - False if the data is not JSON or the columns do not match.
+            - A list of parsed JSON record(s).
+            - False if the data is not JSON or the data does not follow the schema.
         """
-        schema = self.schema
         data = self.data
 
         try:
@@ -91,19 +157,12 @@ class JSONParser(ParserBase):
         except ValueError:
             return False
 
-        # top level key check
-        json_keys = set(json_payload.keys())
-        schema_keys = set(schema.keys())
-        if json_keys == schema_keys:
-            # subkey check
-            for key, key_type in schema.iteritems():
-                # if the key is a map of key/value pairs
-                if isinstance(key_type, dict) and key_type != {}:
-                    if set(json_payload[key].keys()) != set(schema[key].keys()):
-                        return False
-            return json_payload
+        json_records = self._parse_records(json_payload)
+        self._key_check(json_records)
+
+        if len(json_records) > 0:
+            return json_records
         else:
-            logger.debug('JSON Key mismatch: %s vs. %s', json_keys, schema_keys)
             return False
 
 @parser
@@ -145,20 +204,21 @@ class CSVParser(ParserBase):
             - hints: A dict of string wildcards to find in payload fields.
 
         Returns:
-            - A dict of the parsed CSV record.
+            - A list of parsed CSV records.
             - False if the data is not CSV or the columns do not match.
         """
         schema = self.schema
         hints = self.options['hints']
 
         hint_result = []
-        csv_payload = {}
+        csv_payloads = []
 
         reader = self._get_reader()
         if not reader:
             return False
 
         for row in reader:
+            csv_payload = {}
             # check number of columns match and any hints match
             if len(row) != len(schema):
                 logger.debug('CSV Key mismatch: %s vs. %s', len(row), len(schema))
@@ -184,7 +244,9 @@ class CSVParser(ParserBase):
                 for index, key in enumerate(schema):
                     csv_payload[key] = row[index]
 
-                return csv_payload
+                csv_payloads.append(csv_payload)
+
+        return csv_payloads
 
 @parser
 class KVParser(ParserBase):
@@ -200,7 +262,7 @@ class KVParser(ParserBase):
             - separator: The character between keys and values.
 
         Returns:
-            - A dict of the loaded key value pairs.
+            - A list of the key value pair records.
             - False if the columns do not match.
         """
         data = self.data
@@ -236,7 +298,7 @@ class KVParser(ParserBase):
 
         self.payload_type = 'kv'
 
-        return kv_payload
+        return [kv_payload]
 
 @parser
 class SyslogParser(ParserBase):
@@ -255,7 +317,7 @@ class SyslogParser(ParserBase):
             - None
 
         Returns:
-            - A dict of syslog key-value pairs.
+            - A list of syslog records.
             - False if the data does not match the syslog regex.
         """
         schema = self.schema
@@ -275,4 +337,4 @@ class SyslogParser(ParserBase):
         for key in schema.keys():
             syslog_payload[key] = match.group(key)
 
-        return syslog_payload
+        return [syslog_payload]

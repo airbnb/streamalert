@@ -50,8 +50,12 @@ class StreamSink(object):
                 'payload': 'message_payload'
             ]
         """
+        def jdefault(obj):
+            """Helper method for marshalling custom objects to JSON"""
+            return obj.__dict__
+
         snsDict = {'default': 'default', 'alerts': self.alerts}
-        snsJsonMessage = json.dumps(snsDict, default=self.jdefault)
+        snsJsonMessage = json.dumps(snsDict, default=jdefault)
         encodedSnsMessage = base64.b64encode(snsJsonMessage)
 
         if self.env.get('lambda_alias') == 'production':
@@ -59,7 +63,7 @@ class StreamSink(object):
             client = boto3.client('sns', region_name=self.env.get('lambda_region'))
             self.publish_message(client, encodedSnsMessage, topic_arn)
         elif self.env.get('lambda_alias') == 'staging':
-            logger.info(json.dumps(snsDict, indent=2, default=self.jdefault))
+            logger.info(json.dumps(snsDict, indent=2, default=jdefault))
 
     def _get_sns_topic_arn(self):
         """Return a properly formatted SNS ARN.
@@ -74,11 +78,6 @@ class StreamSink(object):
             account_id=self.env.get('account_id'),
             topic=topic
         )
-
-    @staticmethod
-    def jdefault(obj):
-        """Helper method for marshalling custom objects to JSON"""
-        return obj.__dict__
 
     @staticmethod
     def _sns_message_size_check(message):

@@ -12,7 +12,7 @@ logging.basicConfig()
 logger = logging.getLogger('StreamAlert')
 logger.setLevel(logging.INFO)
 
-__version__ = '1.1.1'
+__version__ = '1.2.0'
 
 class StreamAlert(object):
     """Wrapper class for handling all StreamAlert classificaiton and processing"""

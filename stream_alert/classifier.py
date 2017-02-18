@@ -52,7 +52,7 @@ class StreamPayload(object):
 
         type: The data type of the record - json, csv, syslog, etc.
 
-        record: A parsed and typed record.
+        record: A list of parsed and typed record(s).
 
     Public Methods:
         refresh_record
@@ -222,7 +222,13 @@ class StreamClassifier(object):
         """
         logger.debug(data)
 
-        for log_name, attributes in self.log_metadata(payload).iteritems():
+        log_metadata = self.log_metadata(payload)
+        # TODO(jack) make this process more efficient.
+        # Separate out parsing with key matching.
+        # Right now, if keys match but the type/parser is correct,
+        # it has to start over
+        for log_name, attributes in log_metadata.iteritems():
+            # short circuit parser determination
             if not payload.type:
                 parser_name = attributes['parser']
             else:
@@ -236,8 +242,11 @@ class StreamClassifier(object):
             options['service'] = payload.service
             schema = attributes['schema']
 
+            # Setup the parser
             parser_class = get_parser(parser_name)
             parser = parser_class(data, schema, options)
+            options['nested_keys'] = parser.__dict__.get('nested_keys')
+            # A list of parsed records
             parsed_data = parser.parse()
 
             # Used for short circuiting parser determination
@@ -248,11 +257,15 @@ class StreamClassifier(object):
             logger.debug('parsed_data: %s', parsed_data)
 
             if parsed_data:
-                parsed_and_typed_data = self._convert_type(parsed_data, schema, options)
-                if parsed_and_typed_data:
+                typed_data = []
+                for data in parsed_data:
+                    # convert data types per the schema
+                    typed_data.append(self._convert_type(data, schema, options))
+
+                if typed_data:
                     payload.log_source = log_name
                     payload.type = parser_name
-                    payload.record = parsed_and_typed_data
+                    payload.record = typed_data
                     return True
         return False
 
@@ -264,13 +277,14 @@ class StreamClassifier(object):
         invalid.
 
         Args:
-            parsed_data: parsed dict payload
+            parsed_data: Parsed payload dict
             schema: data schema for a specific log source
             options: parser options dict
 
         Returns:
             parsed dict payload with typed values
         """
+        # check for list types here
         payload = parsed_data
         for key, value in schema.iteritems():
             key = str(key)
@@ -295,7 +309,11 @@ class StreamClassifier(object):
                     if isinstance(payload[key], str):
                         options['hints'] = options['hints'][key]
                         parse_csv = get_parser('csv')
-                        payload[key] = parse_csv(payload[key], schema, options).parse()
+                        parsed_nested_key = parse_csv(payload[key],
+                                                      schema,
+                                                      options).parse()
+                        # Call the first element since a list is returned
+                        payload[key] = parsed_nested_key[0]
                     self._convert_type(payload[key], schema, options)
             else:
                 logger.error('Invalid declared type - %s', value)
