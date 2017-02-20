@@ -44,7 +44,7 @@ module "flow_logs_prod" {
   <tr>
     <td>targets</td>
     <td>Map of "enis", "vpcs", and "subnets", each an array containing IDs of resources to enable flow logs for</td>
-    <td>`{"vpcs":[], "subnets":[], "enis":[]}`</td>
+    <td>{"vpcs":[], "subnets":[], "enis":[]}</td>
     <td>False</td>
   </tr>
   <tr>
@@ -56,7 +56,7 @@ module "flow_logs_prod" {
   <tr>
     <td>flow_log_filter</td>
     <td>CloudWatch subscription filter to match flow logs</td>
-    <td>`[version, account, eni, source, destination, srcport, destport, protocol, packets, bytes, windowstart, windowend, action, flowlogstatus]`</td>
+    <td>"[version, account, eni, source, destination, srcport, destport, protocol, packets, bytes, windowstart, windowend, action, flowlogstatus]"</td>
     <td>False</td>
   </tr>
 </table>
