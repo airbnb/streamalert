@@ -88,7 +88,7 @@ class StreamPreParsers(object):
         size_kb = size / 1024
         size_mb = size_kb / 1024
         if size_mb > 128:
-            raise S3ObjectSizeError('S3 object to download is above 500MB')
+            raise S3ObjectSizeError('S3 object to download is above 128MB')
 
         logger.debug('/tmp directory contents:%s ', os.listdir('/tmp'))
         logger.debug(os.system('df -h /tmp | tail -1'))
