@@ -1,5 +1,4 @@
-# Stream Alert Flow Log Terraform Module
-* StreamAlert: a serverless, real-time intrusion detection engine.
+# Stream Alert VPC Flow Log Terraform Module
 * This Terraform module enables flow logs for specified VPCs, subnets, and ENIs
 the specified kinesis stream, and the necessary IAM roles for everything to work
 

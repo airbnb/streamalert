@@ -2,8 +2,9 @@
 // http://docs.aws.amazon.com/AmazonVPC/latest/UserGuide/flow-logs.html#flow-logs-iam
 
 resource "aws_iam_role" "flow_log_role" {
-    name = "flow_log_role"
-    assume_role_policy = <<EOF
+  name = "flow_log_role"
+
+  assume_role_policy = <<EOF
 {
   "Version": "2012-10-17",
   "Statement": [
@@ -21,9 +22,10 @@ EOF
 }
 
 resource "aws_iam_role_policy" "flow_log_write" {
-    name = "write_to_cloudwatch"
-    role = "${aws_iam_role.flow_log_role.id}"
-    policy = <<EOF
+  name = "write_to_cloudwatch"
+  role = "${aws_iam_role.flow_log_role.id}"
+
+  policy = <<EOF
 {
   "Version": "2012-10-17",
   "Statement": [
@@ -47,8 +49,9 @@ EOF
 // http://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/SubscriptionFilters.html
 
 resource "aws_iam_role" "flow_log_subscription_role" {
-    name = "flow_log_subscription_role"
-    assume_role_policy = <<EOF
+  name = "flow_log_subscription_role"
+
+  assume_role_policy = <<EOF
 {
   "Version": "2012-10-17",
   "Statement": [
