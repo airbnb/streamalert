@@ -69,7 +69,7 @@ class StreamPayload(object):
         self.entity = None
         self.type = None
         self.log_source = None
-        self.record = None
+        self.records = None
 
         self.valid = False
         self.valid_source = None
@@ -84,7 +84,7 @@ class StreamPayload(object):
                             self.log_source,
                             self.entity,
                             self.type,
-                            self.record)
+                            self.records)
 
         return repr_str
 
@@ -99,7 +99,7 @@ class StreamPayload(object):
             new_record (str): A new raw record to be parsed
         """
         self.raw_record = None
-        self.record = None
+        self.records = None
         self.valid = None
         self.type = None
         self.raw_record = new_record
@@ -202,7 +202,7 @@ class StreamClassifier(object):
                 payload.entity,
                 payload.type,
                 payload.log_source,
-                payload.record]):
+                payload.records]):
             payload.valid = True
 
     def _parse(self, payload, data):
@@ -215,7 +215,7 @@ class StreamClassifier(object):
         Sets:
             payload.log_source: The detected log name from the data_sources config.
             payload.type: The record's type.
-            payload.record: The parsed record.
+            payload.records: The parsed record.
 
         Returns:
             A boolean representing the success of the parse.
@@ -265,7 +265,7 @@ class StreamClassifier(object):
                 if typed_data:
                     payload.log_source = log_name
                     payload.type = parser_name
-                    payload.record = typed_data
+                    payload.records = typed_data
                     return True
         return False
 

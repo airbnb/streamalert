@@ -184,7 +184,7 @@ class StreamRules(object):
                 rules.append(rule_attrs)
 
         if len(rules) > 0:
-            for record in payload.record:
+            for record in payload.records:
                 for rule in rules:
                     # subkey check
                     has_sub_keys = cls.process_subkeys(record,
