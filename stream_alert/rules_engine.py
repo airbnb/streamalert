@@ -92,7 +92,7 @@ class StreamRules(object):
         return decorator
 
     @classmethod
-    def match_event(cls, payload, rule):
+    def match_event(cls, record, rule):
         """Evaluate matchers on a record.
 
         Given a list of matchers, evaluate a record through each
@@ -115,7 +115,7 @@ class StreamRules(object):
             matcher_function = cls.__matchers.get(matcher)
             if matcher_function:
                 try:
-                    matcher_result = matcher_function(payload.record)
+                    matcher_result = matcher_function(record)
                 except Exception as e:
                     matcher_result = False
                     logger.error('%s: %s', matcher_function.__name__, e.message)
@@ -127,16 +127,16 @@ class StreamRules(object):
         return True
 
     @classmethod
-    def process_rule(cls, payload, rule):
+    def process_rule(cls, record, rule):
         try:
-            rule_result = rule.rule_function(payload.record)
+            rule_result = rule.rule_function(record)
         except Exception as e:
             rule_result = False
             logger.error('%s: %s', rule.rule_function.__name__, e.message)
         return rule_result
 
     @classmethod
-    def process_subkeys(cls, payload, rule):
+    def process_subkeys(cls, record, payload_type, rule):
         """Check payload record contains all subkeys needed for rules
 
         Because each log is processed by every rule for a given log type,
@@ -151,11 +151,11 @@ class StreamRules(object):
         Returns:
             Boolean result of subkey check.
         """
-        if not rule.req_subkeys or payload.type != 'json':
+        if not rule.req_subkeys or payload_type != 'json':
             return True
         else:
             for key, nested_keys in rule.req_subkeys.iteritems():
-                if not all(x in payload.record[key] for x in nested_keys):
+                if not all(x in record[key] for x in nested_keys):
                     return False
             return True
 
@@ -184,25 +184,36 @@ class StreamRules(object):
                 rules.append(rule_attrs)
 
         if len(rules) > 0:
-            for rule in rules:
-                # subkey check
-                has_sub_keys = cls.process_subkeys(payload, rule)
-                if not has_sub_keys:
-                    continue
+            for record in payload.records:
+                for rule in rules:
+                    # subkey check
+                    has_sub_keys = cls.process_subkeys(record,
+                                                       payload.type,
+                                                       rule)
+                    if not has_sub_keys:
+                        continue
 
-                # matcher check
-                matcher_result = cls.match_event(payload, rule)
-                if not matcher_result:
-                    continue
+                    # matcher check
+                    matcher_result = cls.match_event(record, rule)
+                    if not matcher_result:
+                        continue
 
-                # rule analysis
-                rule_result = cls.process_rule(payload, rule)
-                if rule_result:
-                    alert = {
-                        'rule_name': rule.rule_name,
-                        'payload': payload,
-                        'outputs': rule.outputs
-                    }
-                    alerts.append(alert)
+                    # rule analysis
+                    rule_result = cls.process_rule(record, rule)
+                    if rule_result:
+                        alert = {
+                            'rule_name': rule.rule_name,
+                            'record': record,
+                            'metadata': {
+                                'log': str(payload.log_source),
+                                'outputs': rule.outputs,
+                                'type': payload.type,
+                                'source': {
+                                    'service': payload.service,
+                                    'entity': payload.entity
+                                }
+                            }
+                        }
+                        alerts.append(alert)
 
         return alerts

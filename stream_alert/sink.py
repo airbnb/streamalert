@@ -33,7 +33,7 @@ class StreamSink(object):
     def __init__(self, alerts, config, env):
         self.alerts = alerts
         self.env = env
-        self.variables = config.get('variables')
+        self.variables = config['variables']
 
     def sink(self):
         """Sink triggered alerts from the StreamRules engine.
@@ -50,16 +50,22 @@ class StreamSink(object):
                 'payload': 'message_payload'
             ]
         """
+        def jdefault(obj):
+            """Helper method for marshalling custom objects to JSON"""
+            return obj.__dict__
+
         snsDict = {'default': 'default', 'alerts': self.alerts}
-        snsJsonMessage = json.dumps(snsDict, default=self.jdefault)
+        snsJsonMessage = json.dumps(snsDict, default=jdefault)
         encodedSnsMessage = base64.b64encode(snsJsonMessage)
 
-        if self.env.get('lambda_alias') == 'production':
+        lambda_alias = self.env['lambda_alias']
+
+        if lambda_alias == 'production':
             topic_arn = self._get_sns_topic_arn()
-            client = boto3.client('sns', region_name=self.env.get('lambda_region'))
+            client = boto3.client('sns', region_name=self.env['lambda_region'])
             self.publish_message(client, encodedSnsMessage, topic_arn)
-        elif self.env.get('lambda_alias') == 'staging':
-            logger.info(json.dumps(snsDict, indent=2, default=self.jdefault))
+        elif lambda_alias == 'staging':
+            logger.info(json.dumps(snsDict, indent=2, default=jdefault))
 
     def _get_sns_topic_arn(self):
         """Return a properly formatted SNS ARN.
@@ -68,17 +74,12 @@ class StreamSink(object):
             region: Which AWS region the SNS topic exists in.
             topic: The name of the SNS topic.
         """
-        topic = '{}_monitoring'.format(self.env.get('lambda_function_name'))
+        topic = '{}_monitoring'.format(self.env['lambda_function_name'])
         return 'arn:aws:sns:{region}:{account_id}:{topic}'.format(
-            region=self.env.get('lambda_region'),
-            account_id=self.env.get('account_id'),
+            region=self.env['lambda_region'],
+            account_id=self.env['account_id'],
             topic=topic
         )
-
-    @staticmethod
-    def jdefault(obj):
-        """Helper method for marshalling custom objects to JSON"""
-        return obj.__dict__
 
     @staticmethod
     def _sns_message_size_check(message):

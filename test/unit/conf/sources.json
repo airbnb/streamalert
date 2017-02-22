@@ -17,6 +17,11 @@
         "test_log_type_json_nested_osquery",
         "test_log_type_syslog"
       ]
+    },
+    "test_cloudtrail_bucket": {
+      "logs": [
+        "test_cloudtrail"
+      ]
     }
   }
 }
