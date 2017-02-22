@@ -104,16 +104,18 @@ class TestStreamRules(object):
         # process payloads
         alerts = StreamRules.process(payload)
 
-        alert_keys = {'rule_name', 'outputs', 'record', 'type', 'source', 'log'}
+        alert_keys = {'rule_name', 'metadata', 'record'}
+        metadata_keys = {'log', 'outputs', 'type', 'source'}
         assert_equal(set(alerts[0].keys()), alert_keys)
+        assert_equal(set(alerts[0]['metadata'].keys()), metadata_keys)
 
         # test alert fields
         assert_equal(type(alerts[0]['rule_name']), str)
-        assert_equal(type(alerts[0]['outputs']), list)
         assert_equal(type(alerts[0]['record']), dict)
-        assert_equal(type(alerts[0]['type']), str)
-        assert_equal(type(alerts[0]['source']), str)
-        assert_equal(type(alerts[0]['log']), str)
+        assert_equal(type(alerts[0]['metadata']['outputs']), list)
+        assert_equal(type(alerts[0]['metadata']['type']), str)
+        assert_equal(type(alerts[0]['metadata']['source']), dict)
+        assert_equal(type(alerts[0]['metadata']['log']), str)
 
 
     def test_basic_rule_matcher_process(self):
@@ -163,11 +165,11 @@ class TestStreamRules(object):
 
         # alert 1 tests
         assert_equal(alerts[1]['rule_name'], 'chef_logs')
-        assert_equal(alerts[1]['outputs'], ['pagerduty'])
+        assert_equal(alerts[1]['metadata']['outputs'], ['pagerduty'])
 
         # alert 0 tests
         assert_equal(alerts[0]['rule_name'], 'minimal_rule')
-        assert_equal(alerts[0]['outputs'], ['s3'])
+        assert_equal(alerts[0]['metadata']['outputs'], ['s3'])
 
     def test_process_req_subkeys(self):
         @rule('data_location',
@@ -250,7 +252,7 @@ class TestStreamRules(object):
         assert_equal(len(alerts), 1)
         assert_equal(alerts[0]['rule_name'], 'syslog_sudo')
         assert_equal(alerts[0]['record']['host'], 'vagrant-ubuntu-trusty-64')
-        assert_equal(alerts[0]['type'], 'syslog')
+        assert_equal(alerts[0]['metadata']['type'], 'syslog')
 
     def test_csv_rule(self):
         @rule('nested_csv',

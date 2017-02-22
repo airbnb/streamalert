@@ -203,14 +203,16 @@ class StreamRules(object):
                     if rule_result:
                         alert = {
                             'rule_name': rule.rule_name,
-                            'outputs': rule.outputs,
                             'record': record,
-                            'type': payload.type,
-                            'source': '{}:{}'.format(payload.service,
-                                                     payload.entity),
-                            # cast log_source as a string, otherwise
-                            # it is the only unicode field in the alert
-                            'log': str(payload.log_source)
+                            'metadata': {
+                                'log': str(payload.log_source),
+                                'outputs': rule.outputs,
+                                'type': payload.type,
+                                'source': {
+                                    'service': payload.service,
+                                    'entity': payload.entity
+                                }
+                            }
                         }
                         alerts.append(alert)
 

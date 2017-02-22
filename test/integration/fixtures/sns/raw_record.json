@@ -2,44 +2,85 @@
   "default": "default",
   "alerts": [
     {
-      "rule_name": "demo_invalid_login",
-      "payload": {
-        "service": "kinesis",
-        "log_source": "demo",
-        "entity": "demo_kinsis_stream",
-        "record": {
-          "name": "last",
-          "calendarTime": "Jan 10 2017",
-          "decorations": {
-            "envIdentifier": "demo",
-            "roleIdentifier": "demo"
-          },
-          "unixTime": "1470824034",
-          "action": "added",
-          "columns": {
-            "username": "joebob",
-            "tty": "pts/0",
-            "pid": "139",
-            "host": "10.0.0.2",
-            "time": "12345678",
-            "type": "7"
-          },
-          "hostIdentifier": "demo.host.net"
-        },
-        "valid": true,
-        "raw_record": {
-          "eventSourceARN": "arn:aws:kinesis:region:account-id:stream/demo_kinsis_stream",
-          "eventSource": "aws:kinesis",
-          "kinesis": {
-            "data": "dGhpcyxpcyxkZW1vLGRhdGEK"
-          }
-        },
-        "type": "json"
+      "rule_name": "sample_json_rule",
+      "metadata": {
+        "outputs": [
+          "slack"
+        ],
+        "type": "json",
+        "log": "json_log",
+        "source": {
+          "service": "kinesis",
+          "entity": "prefix_cluster1_stream_alert_kinesis"
+        }
       },
-      "outputs": [
-        "pagerduty",
-        "s3"
-      ]
+      "record": {
+        "host": "test-host-1",
+        "data": {
+          "time": "Jan 01, 2017"
+        },
+        "name": "name-1"
+      }
+    },
+    {
+      "rule_name": "sample_syslog_rule",
+      "metadata": {
+        "outputs": [
+          "pagerduty"
+        ],
+        "type": "syslog",
+        "log": "syslog_log",
+        "source": {
+          "service": "kinesis",
+          "entity": "prefix_cluster1_stream_alert_kinesis"
+        }
+      },
+      "record": {
+        "timestamp": "Jan 01 12:00:12",
+        "host": "test-host-1",
+        "message": "COMMAND sudo rm /tmp/test",
+        "application": "sudo"
+      }
+    },
+    {
+      "rule_name": "sample_csv_rule",
+      "metadata": {
+        "outputs": [
+          "s3"
+        ],
+        "type": "csv",
+        "log": "csv_log",
+        "source": {
+          "service": "kinesis",
+          "entity": "prefix_cluster1_stream_alert_kinesis"
+        }
+      },
+      "record": {
+        "date": "Jan 01 2017",
+        "source": "cluster 5",
+        "host": "test-host-2",
+        "message": "this is test data for rules",
+        "time": 1487095529
+      }
+    },
+    {
+      "rule_name": "sample_kv_rule",
+      "metadata": {
+        "outputs": [
+          "s3"
+        ],
+        "type": "kv",
+        "log": "kv_log",
+        "source": {
+          "service": "kinesis",
+          "entity": "prefix_cluster1_stream_alert_kinesis"
+        }
+      },
+      "record": {
+        "msg": "fatal",
+        "type": "comm",
+        "uid": 100
+      }
     }
   ]
 }

@@ -1,0 +1,31 @@
+{
+  "Records": [
+    {
+      "EventSource": "aws:sns", 
+      "EventSubscriptionArn": "arn:aws:sns:EXAMPLE", 
+      "EventVersion": "1.0", 
+      "Sns": {
+        "Message": "eyJkZWZhdWx0IjogImRlZmF1bHQiLCAiYWxlcnRzIjogW3sicnVsZV9uYW1lIjogInNhbXBsZV9qc29uX3J1bGUiLCAicmVjb3JkIjogeyJob3N0IjogInRlc3QtaG9zdC0xIiwgImRhdGEiOiB7InRpbWUiOiAiSmFuIDAxLCAyMDE3In0sICJuYW1lIjogIm5hbWUtMSJ9LCAibWV0YWRhdGEiOiB7Im91dHB1dHMiOiBbInNsYWNrIl0sICJ0eXBlIjogImpzb24iLCAibG9nIjogImpzb25fbG9nIiwgInNvdXJjZSI6IHsic2VydmljZSI6ICJraW5lc2lzIiwgImVudGl0eSI6ICJwcmVmaXhfY2x1c3RlcjFfc3RyZWFtX2FsZXJ0X2tpbmVzaXMifX19LCB7InJ1bGVfbmFtZSI6ICJzYW1wbGVfc3lzbG9nX3J1bGUiLCAicmVjb3JkIjogeyJ0aW1lc3RhbXAiOiAiSmFuIDAxIDEyOjAwOjEyIiwgImhvc3QiOiAidGVzdC1ob3N0LTEiLCAibWVzc2FnZSI6ICJDT01NQU5EIHN1ZG8gcm0gL3RtcC90ZXN0IiwgImFwcGxpY2F0aW9uIjogInN1ZG8ifSwgIm1ldGFkYXRhIjogeyJvdXRwdXRzIjogWyJwYWdlcmR1dHkiXSwgInR5cGUiOiAic3lzbG9nIiwgImxvZyI6ICJzeXNsb2dfbG9nIiwgInNvdXJjZSI6IHsic2VydmljZSI6ICJraW5lc2lzIiwgImVudGl0eSI6ICJwcmVmaXhfY2x1c3RlcjFfc3RyZWFtX2FsZXJ0X2tpbmVzaXMifX19LCB7InJ1bGVfbmFtZSI6ICJzYW1wbGVfY3N2X3J1bGUiLCAicmVjb3JkIjogeyJkYXRlIjogIkphbiAwMSAyMDE3IiwgInNvdXJjZSI6ICJjbHVzdGVyIDUiLCAiaG9zdCI6ICJ0ZXN0LWhvc3QtMiIsICJtZXNzYWdlIjogInRoaXMgaXMgdGVzdCBkYXRhIGZvciBydWxlcyIsICJ0aW1lIjogMTQ4NzA5NTUyOX0sICJtZXRhZGF0YSI6IHsib3V0cHV0cyI6IFsiczMiXSwgInR5cGUiOiAiY3N2IiwgImxvZyI6ICJjc3ZfbG9nIiwgInNvdXJjZSI6IHsic2VydmljZSI6ICJraW5lc2lzIiwgImVudGl0eSI6ICJwcmVmaXhfY2x1c3RlcjFfc3RyZWFtX2FsZXJ0X2tpbmVzaXMifX19LCB7InJ1bGVfbmFtZSI6ICJzYW1wbGVfa3ZfcnVsZSIsICJyZWNvcmQiOiB7Im1zZyI6ICJmYXRhbCIsICJ0eXBlIjogImNvbW0iLCAidWlkIjogMTAwfSwgIm1ldGFkYXRhIjogeyJvdXRwdXRzIjogWyJzMyJdLCAidHlwZSI6ICJrdiIsICJsb2ciOiAia3ZfbG9nIiwgInNvdXJjZSI6IHsic2VydmljZSI6ICJraW5lc2lzIiwgImVudGl0eSI6ICJwcmVmaXhfY2x1c3RlcjFfc3RyZWFtX2FsZXJ0X2tpbmVzaXMifX19XX0=", 
+        "MessageAttributes": {
+          "Test": {
+            "Type": "String", 
+            "Value": "TestString"
+          }, 
+          "TestBinary": {
+            "Type": "Binary", 
+            "Value": "TestBinary"
+          }
+        }, 
+        "MessageId": "95df01b4-ee98-5cb9-9903-4c221d41eb5e", 
+        "Signature": "EXAMPLE", 
+        "SignatureVersion": "1", 
+        "SigningCertUrl": "EXAMPLE", 
+        "Subject": "TestInvoke", 
+        "Timestamp": "1970-01-01T00:00:00.000Z", 
+        "TopicArn": "arn:aws:sns:EXAMPLE", 
+        "Type": "Notification", 
+        "UnsubscribeUrl": "EXAMPLE"
+      }
+    }
+  ]
+}
