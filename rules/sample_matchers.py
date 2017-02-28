@@ -18,14 +18,14 @@ from stream_alert.rules_engine import StreamRules
 matcher = StreamRules.matcher
 
 # basic matcher for checking environments
-@matcher('production_env')
+@matcher()
 def production_env(rec):
     env = rec['env']
     return env == 'production'
 
 
 # matcher rlayout
-@matcher('matcher_name')
+@matcher()
 def matcher_name(rec):
     """Description"""
     return True

@@ -79,13 +79,14 @@ class StreamRules(object):
         return decorator
 
     @classmethod
-    def matcher(cls, name):
+    def matcher(cls):
         """Registers a matcher rule.
 
         Matchers are rules which allow you to extract common logic
         into helper functions. Each rule can contain multiple matchers.
         """
         def decorator(matcher):
+            name = matcher.__name__
             if name in cls.__matchers:
                 raise ValueError('matcher already defined: {}'.format(name))
             cls.__matchers[name] = matcher

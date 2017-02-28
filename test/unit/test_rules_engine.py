@@ -118,7 +118,7 @@ class TestStreamRules(object):
 
 
     def test_basic_rule_matcher_process(self):
-        @matcher('prod')
+        @matcher()
         def prod(rec):
             return rec['environment'] == 'prod'
 
