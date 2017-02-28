@@ -146,6 +146,41 @@ This promotes Rule safety, but requires additional time to define the schemas
 
 .. warning:: In Option 2, the schema definition is flexible, but Rule safety is lost because you'll need to use defensive programming when accessing and analyzing fields in `columns`. The use of `req_subkeys` will be advised, see Rules for more details
 
+
+JSON Example: VPC Flow Logs
+---------------------------
+
+VPC flow logs can be delivered via CloudWatch to a kinesis stream. Though they are compressed with deflate, we can use the special ``gzip-json`` parser to decompress them before parsing.CloudWatch logs are delivered as a nested record, so we will need to pass ``hints`` to JSON parser to properly find the nested records::
+
+  "cloudwatch_flow_logs": {
+    "schema": {
+      "protocol": "integer",
+      "source": "string",
+      "destination": "string",
+      "srcport": "integer",
+      "destport": "integer",
+      "action": "string",
+      "packets": "integer",
+      "bytes": "integer",
+      "windowstart": "integer",
+      "windowend": "integer",
+      "version": "integer",
+      "eni": "string",
+      "account": "integer",
+      "flowlogstatus": "string"
+    },
+    "parser": "gzip-json",
+    "hints": {
+      "records": "logEvents[*].extractedFields",
+      "envelope": {
+        "logGroup": "string",
+        "logStream": "string",
+        "owner": "integer"
+      }
+    }
+  }
+
+
 CSV Example
 -----------
 
