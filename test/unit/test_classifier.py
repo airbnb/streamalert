@@ -169,7 +169,7 @@ class TestStreamPayload(object):
 
         # valid record test
         assert_equal(payload.valid, True)
-        assert_equal(type(payload.record), dict)
+        assert_equal(type(payload.records[0]), dict)
 
         # log type test
         assert_equal(payload.log_source, 'test_log_type_json')
@@ -179,9 +179,9 @@ class TestStreamPayload(object):
         assert_not_equal(payload.type, 'csv')
 
         # record type test
-        assert_equal(type(payload.record['key1']), str)
-        assert_equal(type(payload.record['key2']), str)
-        assert_equal(type(payload.record['key3']), int)
+        assert_equal(type(payload.records[0]['key1']), str)
+        assert_equal(type(payload.records[0]['key2']), str)
+        assert_equal(type(payload.records[0]['key3']), int)
 
 
     def test_classify_record_kinesis_nested_json(self):
@@ -204,7 +204,7 @@ class TestStreamPayload(object):
 
         # valid record test
         assert_equal(payload.valid, True)
-        assert_equal(type(payload.record), dict)
+        assert_equal(type(payload.records[0]), dict)
 
         # log type test
         assert_equal(payload.log_source, 'test_log_type_json_nested')
@@ -214,13 +214,13 @@ class TestStreamPayload(object):
         assert_not_equal(payload.type, 'csv')
 
         # record type test
-        assert_equal(type(payload.record['date']), str)
-        assert_equal(type(payload.record['unixtime']), int)
-        assert_equal(type(payload.record['data']), dict)
+        assert_equal(type(payload.records[0]['date']), str)
+        assert_equal(type(payload.records[0]['unixtime']), int)
+        assert_equal(type(payload.records[0]['data']), dict)
 
         # record value test
-        assert_equal(payload.record['date'], 'Jan 01 2017')
-        assert_equal(payload.record['data']['key1'], 'test')
+        assert_equal(payload.records[0]['date'], 'Jan 01 2017')
+        assert_equal(payload.records[0]['data']['key1'], 'test')
 
 
     def test_classify_record_kinesis_nested_json_osquery(self):
@@ -252,7 +252,7 @@ class TestStreamPayload(object):
 
         # valid record test
         assert_equal(payload.valid, True)
-        assert_equal(type(payload.record), dict)
+        assert_equal(type(payload.records[0]), dict)
 
         # log type test
         assert_equal(payload.log_source, 'test_log_type_json_nested_osquery')
@@ -262,16 +262,16 @@ class TestStreamPayload(object):
         assert_not_equal(payload.type, 'csv')
 
         # record type test
-        assert_equal(type(payload.record['hostIdentifier']), str)
-        assert_equal(type(payload.record['unixTime']), int)
-        assert_equal(type(payload.record['columns']), dict)
-        assert_equal(type(payload.record['decorations']), dict)
+        assert_equal(type(payload.records[0]['hostIdentifier']), str)
+        assert_equal(type(payload.records[0]['unixTime']), int)
+        assert_equal(type(payload.records[0]['columns']), dict)
+        assert_equal(type(payload.records[0]['decorations']), dict)
 
         # record value test
-        assert_equal(payload.record['unixTime'], 1485556524)
-        assert_equal(payload.record['columns']['key1'], 'test')
-        assert_equal(payload.record['decorations']['cluster'], 'eu-east')
-        assert_equal(payload.record['decorations']['number'], 100)
+        assert_equal(payload.records[0]['unixTime'], 1485556524)
+        assert_equal(payload.records[0]['columns']['key1'], 'test')
+        assert_equal(payload.records[0]['decorations']['cluster'], 'eu-east')
+        assert_equal(payload.records[0]['decorations']['number'], 100)
 
 
     def test_classify_record_kinesis_nested_json_missing_subkey_fields(self):
@@ -303,7 +303,7 @@ class TestStreamPayload(object):
 
         # invalid record test
         assert_equal(payload.valid, False)
-        assert_equal(payload.record, None)
+        assert_equal(payload.records, None)
 
 
     def test_classify_record_kinesis_nested_json_with_data(self):
@@ -330,7 +330,7 @@ class TestStreamPayload(object):
 
         # valid record test
         assert_equal(payload.valid, True)
-        assert_equal(type(payload.record), dict)
+        assert_equal(type(payload.records[0]), dict)
         
         # log type test
         assert_equal(payload.log_source, 'test_log_type_json_nested_with_data')
@@ -340,15 +340,15 @@ class TestStreamPayload(object):
         assert_not_equal(payload.type, 'csv')
 
         # record type test
-        assert_equal(type(payload.record['date']), str)
-        assert_equal(type(payload.record['unixtime']), int)
-        assert_equal(type(payload.record['data']), dict)
-        assert_equal(type(payload.record['data']['type']), int)
-        assert_equal(type(payload.record['data']['category']), str)
+        assert_equal(type(payload.records[0]['date']), str)
+        assert_equal(type(payload.records[0]['unixtime']), int)
+        assert_equal(type(payload.records[0]['data']), dict)
+        assert_equal(type(payload.records[0]['data']['type']), int)
+        assert_equal(type(payload.records[0]['data']['category']), str)
 
         # record value test
-        assert_equal(payload.record['date'], 'Jan 01 2017')
-        assert_equal(payload.record['data']['source'], 'dev-app-1')
+        assert_equal(payload.records[0]['date'], 'Jan 01 2017')
+        assert_equal(payload.records[0]['data']['source'], 'dev-app-1')
 
 
     def test_classify_record_kinesis_csv(self):
@@ -364,11 +364,12 @@ class TestStreamPayload(object):
 
         # valid record test
         assert_equal(payload.valid, True)
-        assert_equal(type(payload.record), dict)
+        assert_equal(type(payload.records[0]), dict)
 
         # record value tests
-        assert_equal(payload.record.get('message'), 'thisis some data with keyword1 in it')
-        assert_equal(payload.record.get('host'), 'host1')
+        assert_equal(payload.records[0]['message'],
+                     'thisis some data with keyword1 in it')
+        assert_equal(payload.records[0]['host'], 'host1')
 
         # type test
         assert_equal(payload.type, 'csv')
@@ -394,14 +395,14 @@ class TestStreamPayload(object):
 
         # valid record test
         assert_equal(payload.valid, True)
-        assert_equal(type(payload.record), dict)
+        assert_equal(type(payload.records[0]), dict)
 
         # record value tests
-        assert_equal(payload.record['date'], 'Jan 10 2017')
-        assert_equal(payload.record['host'], 'host1.prod.test')
-        assert_equal(payload.record['time'], 1485635414)
-        assert_equal(payload.record['message']['role'], 'web-server')
-        assert_equal(payload.record['message']['cluster_size'], 10)
+        assert_equal(payload.records[0]['date'], 'Jan 10 2017')
+        assert_equal(payload.records[0]['host'], 'host1.prod.test')
+        assert_equal(payload.records[0]['time'], 1485635414)
+        assert_equal(payload.records[0]['message']['role'], 'web-server')
+        assert_equal(payload.records[0]['message']['cluster_size'], 10)
 
         # type test
         assert_equal(payload.type, 'csv')
@@ -437,13 +438,13 @@ class TestStreamPayload(object):
 
         # valid record test
         assert_equal(payload.valid, True)
-        assert_equal(type(payload.record), dict)
+        assert_equal(type(payload.records[0]), dict)
 
         # record value tests
-        assert_equal(payload.record.get('type'), 'SYSCALL')
-        assert_equal(payload.record.get('suid'), 500)
-        assert_equal(payload.record.get('pid'), 3538)
-        assert_equal(payload.record.get('type_3'), 'PATH')
+        assert_equal(payload.records[0]['type'], 'SYSCALL')
+        assert_equal(payload.records[0]['suid'], 500)
+        assert_equal(payload.records[0]['pid'], 3538)
+        assert_equal(payload.records[0]['type_3'], 'PATH')
 
         # type test
         assert_equal(payload.type, 'kv')
@@ -477,7 +478,7 @@ class TestStreamPayload(object):
 
             # valid record test
             assert_equal(payload.valid, True)
-            assert_equal(type(payload.record), dict)
+            assert_equal(type(payload.records[0]), dict)
 
             # type test
             assert_equal(payload.type, 'syslog')
@@ -487,9 +488,9 @@ class TestStreamPayload(object):
 
             # record value tests
             if name == 'test_1':
-                assert_equal(payload.record.get('host'), 'vagrant-ubuntu-trusty-64')
-                assert_equal(payload.record.get('application'), 'sudo')
-                assert_equal(payload.record.get('message'), 'pam_unix(sudo:session): session opened for user root by (uid=0)')
+                assert_equal(payload.records[0]['host'], 'vagrant-ubuntu-trusty-64')
+                assert_equal(payload.records[0]['application'], 'sudo')
+                assert_equal(payload.records[0]['message'], 'pam_unix(sudo:session): session opened for user root by (uid=0)')
             elif name == 'test_2':
-                assert_equal(payload.record.get('host'), 'macbook004154test')
-                assert_equal(payload.record.get('application'), 'authd')
+                assert_equal(payload.records[0]['host'], 'macbook004154test')
+                assert_equal(payload.records[0]['application'], 'authd')

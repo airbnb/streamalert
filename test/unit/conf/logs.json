@@ -155,5 +155,28 @@
       "application": "string",
       "message": "string"
     }
+  },
+  "test_cloudtrail": {
+    "parser": "json",
+    "schema": {
+      "Records": [
+        {
+          "eventVersion": "string",
+          "eventID": "string",
+          "eventTime": "string",
+          "requestParameters": {},
+          "eventType": "string",
+          "responseElements": "string",
+          "awsRegion": "string",
+          "eventName": "string",
+          "userIdentity": {},
+          "eventSource": "string",
+          "requestID": "string",
+          "userAgent": "string",
+          "sourceIPAddress": "string",
+          "recipientAccountId": "string"
+        }
+      ]
+    }
   }
 }

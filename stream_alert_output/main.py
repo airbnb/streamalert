@@ -42,9 +42,12 @@ def handler(event, context):
     an array of alerts sent from the main StreamAlert
     lambda function.
     """
-    for record in event.get('Records'):
+    for record in event['Records']:
         sns_payload = record.get('Sns')
-        message = sns_payload.get('Message')
+        # If for some reason SNS did not invoke this function
+        if not sns_payload:
+            continue
+        message = sns_payload['Message']
         alerts = json.loads(base64.b64decode(message))
         StreamOutput(context).run(alerts)
 
@@ -92,54 +95,35 @@ class StreamOutput(object):
             The alerts list include elements with the following structure:
 
             {
-                'rule_name': 'rule',
-                'payload': <StreamPayload>,
-                'outputs': [output1, output2, outputN]
+                'rule_name': rule.rule_name,
+                'record': record,
+                'metadata': {
+                    'log': str(payload.log_source),
+                    'outputs': rule.outputs,
+                    'type': payload.type,
+                    'source': {
+                        'service': payload.service,
+                        'entity': payload.entity
+                    }
+                }
             }
         """
         grouped_alerts = collections.defaultdict(list)
-        for alert in alerts.get('alerts'):
+        for alert in alerts['alerts']:
             grouped_alerts[alert.get('rule_name')].append(alert)
 
         for rule_name, alerts in grouped_alerts.iteritems():
             # first strip out unnecessary keys and sort
-            formatted_alerts = [self._format_alert(alert) for alert in alerts]
+            formatted_alerts = [self._sort_dict(alert) for alert in alerts]
             # get the output configuration for this rule.  all alerts
             # for this rule will have the same outputs.
-            for output in set(formatted_alerts[0].get('outputs')):
+            for output in set(formatted_alerts[0]['metadata']['outputs']):
                 output_func = getattr(self, '_{}'.format(output), None)
                 if output_func:
                     self._setup_output_creds(output)
                     output_func(rule_name, formatted_alerts)
                 else:
                     logger.error('Declared output [%s] does not exist', output)
-
-    # TODO(jacknagz) remove this - we don't need whitelist keys anymore now
-    # that the payload attributes are fixed
-    def _format_alert(self, alert):
-        """Alert formatter and shortener
-
-        Removes keys from an alert that do not provide value to an
-        analyst and then sorts the results for beter readability.
-
-        Args:
-            alert: An Alert dictionary.
-
-        Returns:
-            An ordered dictionary with sorted keys.
-        """
-        valid_keys = {
-            'service',
-            'entity',
-            'type',
-            'log_source',
-            'record'
-        }
-        for key in alert['payload'].keys():
-            if key not in valid_keys:
-                alert['payload'].pop(key, None)
-
-        return self._sort_dict(alert)
 
     def _sort_dict(self, unordered_dict):
         """Recursively sort a dictionary
@@ -272,8 +256,8 @@ class StreamOutput(object):
                 # pull service/entity from the first alert.
                 # because logs are sent in groups, it's unlikely
                 # these values will be different across a group of alerts.
-                alerts[0]['payload']['service'],
-                alerts[0]['payload']['entity'],
+                alerts[0]['metadata']['source']['service'],
+                alerts[0]['metadata']['source']['entity'],
                 rule_name,
                 datetime.now().strftime('%Y-%m-%d-%H-%M'),
                 datetime.now().isoformat('-')
@@ -312,12 +296,12 @@ class StreamOutput(object):
             },
             {
                 'title': 'Service',
-                'value': alerts[0]['payload']['service'],
+                'value': alerts[0]['metadata']['source']['service'],
                 'short': True
             },
             {
                 'title': 'Entity',
-                'value': alerts[0]['payload']['entity'],
+                'value': alerts[0]['metadata']['source']['entity'],
                 'short': True
             },
         ]
@@ -328,7 +312,7 @@ class StreamOutput(object):
 
         for alert in alerts:
             text_data = json.dumps({'text': '```{}```'.format(
-                json.dumps(alert['payload']['record'], indent=4)
+                json.dumps(alert['record'], indent=4)
             )})
             self.request_helper(url, text_data, 'Slack')
 

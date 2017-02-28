@@ -77,6 +77,47 @@ class TestStreamRules(object):
         if payload.valid:
             return payload
 
+    def test_alert_format(self):
+        @rule('alert_format_test',
+              logs=['test_log_type_json_nested_with_data'],
+              outputs=['s3'])
+        def alert_format_test(rec):
+            return rec['application'] == 'web-app'
+
+        kinesis_data = {
+            'date': 'Dec 01 2016',
+            'unixtime': '1483139547',
+            'host': 'host1.web.prod.net',
+            'application': 'web-app',
+            'environment': 'prod',
+            'data': {
+                'category': 'web-server',
+                'type': '1',
+                'source': 'eu'
+            }
+        }
+        # prepare the payloads
+        kinesis_data_json = json.dumps(kinesis_data)
+        payload = self.make_kinesis_payload(kinesis_stream='test_kinesis_stream',
+                                            kinesis_data=kinesis_data_json)
+
+        # process payloads
+        alerts = StreamRules.process(payload)
+
+        alert_keys = {'rule_name', 'metadata', 'record'}
+        metadata_keys = {'log', 'outputs', 'type', 'source'}
+        assert_equal(set(alerts[0].keys()), alert_keys)
+        assert_equal(set(alerts[0]['metadata'].keys()), metadata_keys)
+
+        # test alert fields
+        assert_equal(type(alerts[0]['rule_name']), str)
+        assert_equal(type(alerts[0]['record']), dict)
+        assert_equal(type(alerts[0]['metadata']['outputs']), list)
+        assert_equal(type(alerts[0]['metadata']['type']), str)
+        assert_equal(type(alerts[0]['metadata']['source']), dict)
+        assert_equal(type(alerts[0]['metadata']['log']), str)
+
+
     def test_basic_rule_matcher_process(self):
         @matcher('prod')
         def prod(rec):
@@ -124,11 +165,11 @@ class TestStreamRules(object):
 
         # alert 1 tests
         assert_equal(alerts[1]['rule_name'], 'chef_logs')
-        assert_equal(alerts[1]['outputs'], ['pagerduty'])
+        assert_equal(alerts[1]['metadata']['outputs'], ['pagerduty'])
 
         # alert 0 tests
         assert_equal(alerts[0]['rule_name'], 'minimal_rule')
-        assert_equal(alerts[0]['outputs'], ['s3'])
+        assert_equal(alerts[0]['metadata']['outputs'], ['s3'])
 
     def test_process_req_subkeys(self):
         @rule('data_location',
@@ -210,8 +251,8 @@ class TestStreamRules(object):
         # alert tests
         assert_equal(len(alerts), 1)
         assert_equal(alerts[0]['rule_name'], 'syslog_sudo')
-        assert_equal(alerts[0]['payload'].record['host'], 'vagrant-ubuntu-trusty-64')
-        assert_equal(alerts[0]['payload'].type, 'syslog')
+        assert_equal(alerts[0]['record']['host'], 'vagrant-ubuntu-trusty-64')
+        assert_equal(alerts[0]['metadata']['type'], 'syslog')
 
     def test_csv_rule(self):
         @rule('nested_csv',
@@ -277,5 +318,6 @@ class TestStreamRules(object):
 
         # alert tests
         assert_equal(len(alerts), 2)
-        assert_equal(alerts[0]['rule_name'], 'gid_500')
-        assert_equal(alerts[1]['rule_name'], 'auditd_bin_cat')
+
+        rule_name_alerts = set([x['rule_name'] for x in alerts])
+        assert_equal(rule_name_alerts, set(['gid_500', 'auditd_bin_cat']))
