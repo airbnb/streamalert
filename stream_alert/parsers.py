@@ -120,8 +120,7 @@ class JSONParser(ParserBase):
 
     def _parse_records(self, json_payload):
         """Iterate over a json_payload. Identify and extract nested payloads.
-        Nested payloads can automatically detected (only one key in the dict)
-        Nested payloads can also be detected with hints (`records` should be a
+        Nested payloads can be detected with hints (`records` should be a
         JSONpath selector that yields the desired nested records).
 
         If desired, fields present on the root record can be merged into child
@@ -138,18 +137,7 @@ class JSONParser(ParserBase):
         json_records = []
         hints = self.options.get('hints', {})
         envelope = {}
-        # autodetect nested payloads with only one field
-        if len(json_payload) == 1:
-            for key, val in json_payload.iteritems():
-                self.nested = True
-                self.nested_keys.append(key)
-                if isinstance(val, list):
-                    for record in val:
-                        json_records.append(record)
-                elif isinstance(val, dict):
-                    return self._parse_records(json_payload[key])
-        # if hints are present, use them to find the nested records
-        elif (hints and len(hints)):
+        if (hints and len(hints)):
             records_jsonpath = jsonpath_rw.parse(hints['records'])
             envelope_schema = hints.get('envelope', {})
             if len(envelope_schema):
@@ -192,6 +180,7 @@ class JSONParser(ParserBase):
         self._key_check(json_records)
 
         if len(json_records) > 0:
+            print("%d records" % len(json_records))
             return json_records
         else:
             return False

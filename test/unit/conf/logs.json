@@ -159,8 +159,6 @@
   "test_cloudtrail": {
     "parser": "json",
     "schema": {
-      "Records": [
-        {
           "eventVersion": "string",
           "eventID": "string",
           "eventTime": "string",
@@ -175,8 +173,9 @@
           "userAgent": "string",
           "sourceIPAddress": "string",
           "recipientAccountId": "string"
-        }
-      ]
+    },
+    "hints" : {
+      "records": "Records[*]"
     }
   },
   "test_cloudwatch": {

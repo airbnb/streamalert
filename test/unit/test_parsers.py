@@ -45,14 +45,14 @@ class TestJSONParser(object):
         """Multi-layered JSON"""
         # setup
         schema = {
-            'profiles': {
-                'controls': [{
-                    'name': 'string',
-                    'result': 'string'
-                }]
+            'name': 'string',
+            'result': 'string'
+        }
+        options = {
+            "hints": {
+                "records": "$.profiles.controls[*]"
             }
         }
-        options = None
         data = '{"profiles": {"controls": [{"name": "infra-test-1", "result": "fail"}]}}'
 
         # get parsed data
@@ -64,7 +64,7 @@ class TestJSONParser(object):
     def test_cloudtrail(self):
         """Cloudtrail JSON"""
         schema = self.config['logs']['test_cloudtrail']['schema']
-        options = None
+        options = { "hints" : self.config['logs']['test_cloudtrail']['hints'] }
         # load fixture file
         with open('test/unit/fixtures/cloudtrail.json', 'r') as fixture_file:
             data = fixture_file.readlines()
@@ -72,7 +72,6 @@ class TestJSONParser(object):
         data_record = data[0].strip()
         # setup json parser
         parsed_result = self.parser_helper(data=data_record, schema=schema, options=options)
-
         assert_equal(len(parsed_result), 2)
         assert_equal(len(parsed_result[0].keys()), 14)
         assert_equal(len(parsed_result[1].keys()), 14)
@@ -143,16 +142,7 @@ class TestCloudWatchParser(object):
     def test_cloudwatch(self):
         """CloudWatch JSON"""
         schema = self.config['logs']['test_cloudwatch']['schema']
-        options = {
-            "hints" : {
-                "records": "logEvents[*].extractedFields",
-                "envelope": {
-                    u"logGroup": "string",
-                    u"logStream": "string",
-                    u"owner": "integer"
-                }
-            }
-        }
+        options = { "hints": self.config['logs']['test_cloudwatch']['hints']}
         with open('test/unit/fixtures/cloudwatch.json','r') as fixture_file:
             data = fixture_file.readlines()
         data_record = zlib.compress(data[0].strip())
