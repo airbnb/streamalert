@@ -150,7 +150,7 @@ class JSONParser(ParserBase):
             for match in records_jsonpath.find(json_payload):
                 record = match.value
                 if len(envelope):
-                    record.update({"envelope":envelope})
+                    record.update({"envelope": envelope})
                 json_records.append(record)
         else:
             json_records.append(json_payload)

@@ -50,7 +50,7 @@ class TestJSONParser(object):
         }
         options = {
             "hints": {
-                "records": "$.profiles.controls[*]"
+                "records": "profiles.controls[*]"
             }
         }
         data = '{"profiles": {"controls": [{"name": "infra-test-1", "result": "fail"}]}}'

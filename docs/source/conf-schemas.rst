@@ -11,7 +11,7 @@ Schemas are defined in ``conf/logs.json``
   "cloudtrail": {                           # log-type
     "parser": "json",                       # data-type
     "schema": {
-      "eventVersion": "string",         # type checking
+      "eventVersion": "string",             # type checking
       "eventID": "string",
       "eventTime": "string",
       "requestParameters": "string",
@@ -61,7 +61,7 @@ Schema::
     },
     "parser": "json",
     "hints": {
-      "records": "$.profiles[*].controls[*]"
+      "records": "profiles[*].controls[*]"
     }
   },
 
