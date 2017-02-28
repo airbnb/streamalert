@@ -119,9 +119,14 @@ class JSONParser(ParserBase):
                 json_records.remove(json_record)
 
     def _parse_records(self, json_payload):
-        """Iterate over a json_payload. 
-        Determine if nested records exist.
-        If nested records exist, extract and return the nested records
+        """Iterate over a json_payload. Identify and extract nested payloads.
+        Nested payloads can automatically detected (only one key in the dict)
+        Nested payloads can also be detected with hints (`records` should be a
+        JSONpath selector that yields the desired nested records).
+
+        If desired, fields present on the root record can be merged into child
+        events using the `envelope` option.
+
 
         Args:
             json_payload: A dict of the parsed json data
@@ -131,7 +136,7 @@ class JSONParser(ParserBase):
             A list of dict JSON payloads
         """
         json_records = []
-        hints = self.options.get('hints',{})
+        hints = self.options.get('hints', {})
         envelope = {}
         # autodetect nested payloads with only one field
         if len(json_payload) == 1:
@@ -148,7 +153,7 @@ class JSONParser(ParserBase):
             records_jsonpath = jsonpath_rw.parse(hints['records'])
             envelope_schema = hints.get('envelope', {})
             if len(envelope_schema):
-                self.schema.update({u"envelope": envelope_schema})
+                self.schema.update({"envelope": envelope_schema})
                 envelope_keys = envelope_schema.keys()
                 envelope_jsonpath = jsonpath_rw.parse("$." + ",".join(envelope_keys))
                 envelope_matches = [match.value for match in envelope_jsonpath.find(json_payload)]
@@ -157,7 +162,7 @@ class JSONParser(ParserBase):
             for match in records_jsonpath.find(json_payload):
                 record = match.value
                 if len(envelope):
-                    record.update({u"envelope":envelope})
+                    record.update({"envelope":envelope})
                 json_records.append(record)
         else:
             json_records.append(json_payload)
