@@ -41,7 +41,7 @@ class StreamRules(object):
     __matchers = {}
 
     @classmethod
-    def rule(cls, rule_name, **opts):
+    def rule(cls, **opts):
         """Register a rule that evaluates records against rules.
 
         A rule maps events (by `logs`) to a function that accepts an event
@@ -50,13 +50,14 @@ class StreamRules(object):
         dropped.
         """
         rule_attrs = namedtuple('Rule', ['rule_name',
-                                        'rule_function',
-                                        'matchers',
-                                        'logs',
-                                        'outputs',
-                                        'req_subkeys'])
+                                         'rule_function',
+                                         'matchers',
+                                         'logs',
+                                         'outputs',
+                                         'req_subkeys'])
 
         def decorator(rule):
+            rule_name = rule.__name__
             logs = opts.get('logs')
             outputs = opts.get('outputs')
             matchers = opts.get('matchers')
@@ -69,11 +70,11 @@ class StreamRules(object):
             if rule_name in cls.__rules:
                 raise ValueError('rule [{}] already defined'.format(rule_name))
             cls.__rules[rule_name] = rule_attrs(rule_name,
-                                               rule,
-                                               matchers,
-                                               logs,
-                                               outputs,
-                                               req_subkeys)
+                                                rule,
+                                                matchers,
+                                                logs,
+                                                outputs,
+                                                req_subkeys)
             return rule
         return decorator
 
@@ -179,7 +180,7 @@ class StreamRules(object):
         alerts = []
         payload = copy.copy(input_payload)
 
-        for rule_name, rule_attrs in cls.__rules.iteritems():
+        for _, rule_attrs in cls.__rules.iteritems():
             if payload.log_source in rule_attrs.logs:
                 rules.append(rule_attrs)
 
