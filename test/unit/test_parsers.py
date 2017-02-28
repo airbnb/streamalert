@@ -61,6 +61,22 @@ class TestJSONParser(object):
         assert_equal(len(parsed_data), 1)
         assert_equal(parsed_data[0]['result'], 'fail')
 
+    def test_inspec(self):
+        """Inspec JSON"""
+        schema = self.config['logs']['test_inspec']['schema']
+        options = { "hints" : self.config['logs']['test_inspec']['hints'] }
+        # load fixture file
+        with open('test/unit/fixtures/inspec.json', 'r') as fixture_file:
+            data = fixture_file.readlines()
+
+        data_record = data[0].strip()
+        # setup json parser
+        parsed_result = self.parser_helper(data=data_record, schema=schema, options=options)
+        print parsed_result
+        assert_equal(len(parsed_result), 2)
+        assert_equal(sorted((u'impact', u'code', u'tags', u'source_location', u'refs', u'title',
+            u'results', u'id', u'desc')),sorted(parsed_result[0].keys()))
+
     def test_cloudtrail(self):
         """Cloudtrail JSON"""
         schema = self.config['logs']['test_cloudtrail']['schema']

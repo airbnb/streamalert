@@ -61,7 +61,7 @@ Schema::
     },
     "parser": "json",
     "hints": {
-      "records": "$.profiles.controls[*]"
+      "records": "$.profiles[*].controls[*]"
     }
   },
 

@@ -156,6 +156,23 @@
       "message": "string"
     }
   },
+  "test_inspec": {
+    "schema": {
+      "title": "string",
+      "desc": "string",
+      "impact": "string",
+      "refs": "string",
+      "tags": "string",
+      "code": "string",
+      "id": "string",
+      "source_location": "string",
+      "results": "string"
+    },
+    "parser": "json",
+    "hints": {
+      "records": "$.profiles[*].controls[*]"
+    }
+  },
   "test_cloudtrail": {
     "parser": "json",
     "schema": {
