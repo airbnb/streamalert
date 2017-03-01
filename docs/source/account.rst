@@ -39,11 +39,18 @@ Steps:
 * Access type: Programmatic access
 * Click: Next
 * Select: Attach existing policies directly
-* Type: AdministratorAccess
-* Click: The checkbox next to AdministratorAccess
+* Attach the following policies:
+  * AmazonKinesisFirehoseFullAccess
+  * AmazonKinesisFullAccess
+  * AmazonS3FullAccess
+  * AmazonSNSFullAccess
+  * AWSLambdaFullAccess
+  * CloudWatchFullAccess
+  * CloudWatchLogsFullAccess
+  * IAMFullAccess
 * Click:  Next (Review), and then Create User
 
-Take the Access Key and Secret Key and add them to your environment variables::
+Take the Access Key and Secret Key and export them to your environment variables::
 
   $ export AWS_ACCESS_KEY_ID="REPLACE_ME"
   $ export AWS_SECRET_ACCESS_KEY="REPLACE_ME"
