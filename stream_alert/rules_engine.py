@@ -185,37 +185,40 @@ class StreamRules(object):
             if payload.log_source in rule_attrs.logs:
                 rules.append(rule_attrs)
 
-        if len(rules) > 0:
-            for record in payload.records:
-                for rule in rules:
-                    # subkey check
-                    has_sub_keys = cls.process_subkeys(record,
-                                                       payload.type,
-                                                       rule)
-                    if not has_sub_keys:
-                        continue
+        if len(rules) == 0:
+            logger.debug('No rules to process for %s', payload)
+            return alerts
 
-                    # matcher check
-                    matcher_result = cls.match_event(record, rule)
-                    if not matcher_result:
-                        continue
+        for record in payload.records:
+            for rule in rules:
+                # subkey check
+                has_sub_keys = cls.process_subkeys(record,
+                                                   payload.type,
+                                                   rule)
+                if not has_sub_keys:
+                    continue
 
-                    # rule analysis
-                    rule_result = cls.process_rule(record, rule)
-                    if rule_result:
-                        alert = {
-                            'rule_name': rule.rule_name,
-                            'record': record,
-                            'metadata': {
-                                'log': str(payload.log_source),
-                                'outputs': rule.outputs,
-                                'type': payload.type,
-                                'source': {
-                                    'service': payload.service,
-                                    'entity': payload.entity
-                                }
+                # matcher check
+                matcher_result = cls.match_event(record, rule)
+                if not matcher_result:
+                    continue
+
+                # rule analysis
+                rule_result = cls.process_rule(record, rule)
+                if rule_result:
+                    alert = {
+                        'rule_name': rule.rule_name,
+                        'record': record,
+                        'metadata': {
+                            'log': str(payload.log_source),
+                            'outputs': rule.outputs,
+                            'type': payload.type,
+                            'source': {
+                                'service': payload.service,
+                                'entity': payload.entity
                             }
                         }
-                        alerts.append(alert)
+                    }
+                    alerts.append(alert)
 
         return alerts

@@ -42,5 +42,17 @@
     "parser": "kv",
     "delimiter": " ",
     "separator": "="
+  },
+  "osquery": {
+    "schema": {
+      "name": "string",
+      "hostIdentifier": "string",
+      "calendarTime": "string",
+      "unixTime": "string",
+      "columns": {},
+      "action": "string",
+      "decorations": {}
+    },
+    "parser": "json"
   }
 }

@@ -1,0 +1,44 @@
+{
+  "records": [
+    {
+      "data": {
+        "name": "logged_in_users",
+        "hostIdentifier": "host2",
+        "calendarTime": "Tue Feb 28 19:19:07 UTC 2017",
+        "unixTime": "1488309540",
+        "columns": {
+          "host": "10.2.0.16",
+          "user": "john"
+        },
+        "action": "added",
+        "decorations": {
+          "environment": "qa"
+        }
+      },
+      "description": "user not in the whitelist",
+      "trigger": true,
+      "source": "prefix_cluster1_stream_alert_kinesis",
+      "service": "kinesis"
+    },
+    {
+      "data": {
+        "name": "logged_in_users",
+        "hostIdentifier": "host2",
+        "calendarTime": "Tue Feb 28 19:19:07 UTC 2017",
+        "unixTime": "1488309540",
+        "columns": {
+          "host": "10.2.0.16",
+          "user": "alice"
+        },
+        "action": "added",
+        "decorations": {
+          "environment": "qa"
+        }
+      },
+      "description": "user in the whitelist",
+      "trigger": false,
+      "source": "prefix_cluster1_stream_alert_kinesis",
+      "service": "kinesis"
+    }
+  ]
+}

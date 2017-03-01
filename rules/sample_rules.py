@@ -31,14 +31,18 @@ def invalid_user(rec):
 from netaddr import IPAddress, IPNetwork
 
 @rule(logs=['osquery'],
-      matchers=['logged_in_users'],
-      outputs=['pagerduty'])
+      matchers=[],
+      outputs=['pagerduty'],
+      req_subkeys={'columns': ['host']})
 def invalid_subnet(rec):
     """Catch logins from unauthorized subnets"""
     valid_cidr = IPNetwork('10.2.0.0/24')
     ip = IPAddress(rec['columns']['host'])
 
-    return ip not in valid_cidr
+    return (
+        rec['name'] == 'logged_in_users' and
+        ip not in valid_cidr
+    )
 
 
 @rule(logs=['json_log'],

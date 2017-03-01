@@ -252,10 +252,9 @@ class StreamClassifier(object):
             if parser.payload_type:
                 payload.type = parser.payload_type
 
-            logger.debug('log name: %s', log_name)
-            logger.debug('parsed_data: %s', parsed_data)
-
             if parsed_data:
+                logger.debug('log name: %s', log_name)
+                logger.debug('parsed_data: %s', parsed_data)
                 typed_data = []
                 for data in parsed_data:
                     # convert data types per the schema
@@ -265,6 +264,7 @@ class StreamClassifier(object):
                     payload.log_source = log_name
                     payload.type = parser_name
                     payload.records = typed_data
+                    logger.debug('valid data detected')
                     return True
         return False
 

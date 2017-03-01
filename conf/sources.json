@@ -5,7 +5,8 @@
 				"json_log",
 				"syslog_log",
 				"kv_log",
-				"csv_log"
+				"csv_log",
+				"osquery"
 			]
 		},
 		"prefix_cluster2_stream_alert_kinesis": {

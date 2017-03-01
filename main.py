@@ -16,7 +16,8 @@ limitations under the License.
 
 from stream_alert.handler import StreamAlert
 from rules import (
-    sample_rules
+    sample_rules,
+    sample_matchers
 )
 
 def handler(event, context):
