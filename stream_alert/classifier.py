@@ -220,7 +220,6 @@ class StreamClassifier(object):
         Returns:
             A boolean representing the success of the parse.
         """
-        logger.debug(data)
 
         log_metadata = self.log_metadata(payload)
         # TODO(jack) make this process more efficient.

@@ -10,26 +10,25 @@ Schemas are defined in ``conf/logs.json``
 
   "cloudtrail": {                           # log-type
     "parser": "json",                       # data-type
-    "schema": {                             # begin schema definition
-      "Records": [
-        {
-          "eventVersion": "string",         # type checking
-          "eventID": "string",
-          "eventTime": "string",
-          "requestParameters": "string",
-          "eventType": "string",
-          "responseElements": "string",
-          "awsRegion": "string",
-          "eventName": "string",
-          "userIdentity": "string",
-          "eventSource": "string",
-          "requestID": "string",
-          "apiVersion": "string",
-          "userAgent": "string",
-          "sourceIPAddress": "string",
-          "recipientAccountId": "string"
-        }
-      ]
+    "schema": {
+      "eventVersion": "string",             # type checking
+      "eventID": "string",
+      "eventTime": "string",
+      "requestParameters": "string",
+      "eventType": "string",
+      "responseElements": "string",
+      "awsRegion": "string",
+      "eventName": "string",
+      "userIdentity": "string",
+      "eventSource": "string",
+      "requestID": "string",
+      "apiVersion": "string",
+      "userAgent": "string",
+      "sourceIPAddress": "string",
+      "recipientAccountId": "string"
+    },
+    "hints" : {
+      "records": "Records[*]"
     }
   },
   ....
@@ -42,6 +41,7 @@ Here are the basics:
 * Arrays imply zero or more elements
 * An empty hash ({}) implies zero or more elements
 * Schemas can be as tight or as loose as you want (see Example: osquery)
+* If you have nested records, you can specify a JSONPath to your ``records`` with ``hints``
 
 JSON Example: Inspec
 --------------------
@@ -49,25 +49,20 @@ Schema::
 
   "inspec": {
     "schema": {
-      "profiles": [
-        {
-          "controls": [
-            {
-              "title": "string",
-              "desc": "string",
-              "impact": "string",
-              "refs": "string",
-              "tags": "string",
-              "code": "string",
-              "id": "string",
-              "source_location": "string",
-              "results": "string"
-            }
-          ]
-        }
-      ]
+      "title": "string",
+      "desc": "string",
+      "impact": "string",
+      "refs": "string",
+      "tags": "string",
+      "code": "string",
+      "id": "string",
+      "source_location": "string",
+      "results": "string"
     },
-    "parser": "json"
+    "parser": "json",
+    "hints": {
+      "records": "profiles[*].controls[*]"
+    }
   },
 
 JSON Example: box.com
@@ -145,6 +140,41 @@ This promotes Rule safety, but requires additional time to define the schemas
   },
 
 .. warning:: In Option 2, the schema definition is flexible, but Rule safety is lost because you'll need to use defensive programming when accessing and analyzing fields in `columns`. The use of `req_subkeys` will be advised, see Rules for more details
+
+
+JSON Example: VPC Flow Logs
+---------------------------
+
+VPC flow logs can be delivered via CloudWatch to a kinesis stream. Though they are compressed with deflate, we can use the special ``gzip-json`` parser to decompress them before parsing. CloudWatch logs are delivered as a nested record, so we will need to pass ``hints`` to JSON parser to properly find the nested records::
+
+  "cloudwatch_flow_logs": {
+    "schema": {
+      "protocol": "integer",
+      "source": "string",
+      "destination": "string",
+      "srcport": "integer",
+      "destport": "integer",
+      "action": "string",
+      "packets": "integer",
+      "bytes": "integer",
+      "windowstart": "integer",
+      "windowend": "integer",
+      "version": "integer",
+      "eni": "string",
+      "account": "integer",
+      "flowlogstatus": "string"
+    },
+    "parser": "gzip-json",
+    "hints": {
+      "records": "logEvents[*].extractedFields",
+      "envelope": {
+        "logGroup": "string",
+        "logStream": "string",
+        "owner": "integer"
+      }
+    }
+  }
+
 
 CSV Example
 -----------

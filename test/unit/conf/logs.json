@@ -156,11 +156,26 @@
       "message": "string"
     }
   },
+  "test_inspec": {
+    "schema": {
+      "title": "string",
+      "desc": "string",
+      "impact": "string",
+      "refs": "string",
+      "tags": "string",
+      "code": "string",
+      "id": "string",
+      "source_location": "string",
+      "results": "string"
+    },
+    "parser": "json",
+    "hints": {
+      "records": "$.profiles[*].controls[*]"
+    }
+  },
   "test_cloudtrail": {
     "parser": "json",
     "schema": {
-      "Records": [
-        {
           "eventVersion": "string",
           "eventID": "string",
           "eventTime": "string",
@@ -175,8 +190,36 @@
           "userAgent": "string",
           "sourceIPAddress": "string",
           "recipientAccountId": "string"
-        }
-      ]
+    },
+    "hints" : {
+      "records": "Records[*]"
+    }
+  },
+  "test_cloudwatch": {
+    "schema": {
+      "protocol": "integer",
+      "source": "ipaddress",
+      "destination": "ipaddress",
+      "srcport": "integer",
+      "destport": "integer",
+      "action": "string",
+      "packets": "integer",
+      "bytes": "integer",
+      "windowstart": "integer",
+      "windowend": "integer",
+      "version": "integer",
+      "eni": "string",
+      "account": "integer",
+      "flowlogstatus": "string"
+    },
+    "parser": "gzip-json",
+    "hints": {
+      "records": "logEvents[*].extractedFields",
+      "envelope": {
+        "logGroup": "string",
+        "logStream": "string",
+        "owner": "integer"
+      }
     }
   }
 }
