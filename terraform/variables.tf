@@ -37,3 +37,8 @@ variable "lambda_settings" {
   type    = "map"
   default = {}
 }
+
+variable "flow_log_settings" {
+  type    = "map"
+  default = {}
+}

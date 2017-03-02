@@ -24,6 +24,7 @@
     "lambda_source_bucket_name": "ADD-ORG-NAME-HERE.streamalert.source",
     "lambda_source_current_hash": "auto",
     "lambda_source_key": "auto",
+    "flow_log_settings": {},
     "output_lambda_current_hash": "auto",
     "output_lambda_source_key": "auto",
     "prefix": "ADD-ORG-NAME-HERE",
