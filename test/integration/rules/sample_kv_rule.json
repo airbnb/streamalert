@@ -1,0 +1,11 @@
+{
+  "records": [
+    {
+      "data": "type=comm msg=fatal uid=100",
+      "description": "fatal message from uid 100",
+      "trigger": true,
+      "source": "prefix_cluster1_stream_alert_kinesis",
+      "service": "kinesis"
+    }
+  ]
+}

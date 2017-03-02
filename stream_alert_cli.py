@@ -88,6 +88,10 @@ Examples:
         help='the name of the lambda function to deploy.',
         required=True
     )
+    lambda_parser.add_argument(
+        '--debug',
+        action='store_true'
+    )
 
     tf_parser = subparsers.add_parser(
         'terraform',

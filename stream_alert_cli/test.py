@@ -16,219 +16,174 @@ limitations under the License.
 
 import base64
 import json
+import logging
 import os
-import sys
 
-BASEFOLDER = 'test/integration/fixtures'
+from main import StreamAlert
+from rules import (
+    sample_rules,
+    sample_matchers
+)
 
-def read_kinesis_records(local_directories):
-    """Read raw kinesis records and format for Lambda test event.
+LOGGER_SA = logging.getLogger('StreamAlert')
+LOGGER_CLI = logging.getLogger('StreamAlertCLI')
+LOGGER_CLI.setLevel(logging.INFO)
+
+DIR_RULES = 'test/integration/rules'
+DIR_TEMPLATES = 'test/integration/templates'
+COLOR_RED = '\033[0;31;1m'
+COLOR_GREEN = '\033[0;32;1m'
+COLOR_RESET = '\033[0m'
+
+def report_output(cols):
+    """Helper function to pretty print columns
 
     Args:
-        local_directories (list): local_directories to read raw records from.
+        cols: A list of columns to print (test description, pass|fail)
+    """
+    print '\ttest: {: <40} {: >25}'.format(*cols)
+
+def test_rule(rule_name, test_file_contents):
+    """Feed formatted records into StreamAlert and check for alerts
+
+    Args:
+        rule_name:
+        trigger_records:
+        non_trigger_records:
+    """
+    # rule name header
+    print '\n{}'.format(rule_name)
+
+    for record in test_file_contents['records']:
+        context = None
+        event = {'Records': []}
+        event['Records'].append(record['kinesis_data'])
+        if record['trigger']:
+            expected_alerts = 1
+        else:
+            expected_alerts = 0
+
+        alerts = StreamAlert(return_alerts=True).run(event, context)
+        # we only want alerts for the specific rule passed in
+        matched_alerts = [x for x in alerts if x['rule_name'] == rule_name]
+
+        if len(matched_alerts) == expected_alerts:
+            result = '{}[Pass]{}'.format(COLOR_GREEN, COLOR_RESET)
+        else:
+            result = '{}[Fail]{}'.format(COLOR_RED, COLOR_RESET)
+
+        report_output([record['description'], result])
+
+def format_record(test_record):
+    """Create a properly formatted Kinesis, S3, or SNS record.
+
+    Supports a dictionary or string based data record.  Reads in
+    event templates from the test/integration/templates folder.
+
+    Args:
+        test_record: Test record metadata dict with the following structure:
+            data - string or dict of the raw data
+            trigger - bool of if the record should produce an alert
+            source - which stream/s3 bucket originated the data
+            service - which aws service originated the data
 
     Returns:
-        (dict): formatted Kinesis records to be output as JSON.
-
-    The lambda input format is line delimited JSON.
-    Example Kinesis record:
-
-    {
-      "Records": [
-        {
-          "eventID": "shardId-000000000000:1111",
-          "eventVersion": "1.0",
-          "kinesis": {
-            "approximateArrivalTimestamp": 1428537600,
-            "partitionKey": "partitionKey-3",
-            "data": "SGVsbG8sIHRoaXMgaXMgYSB0ZXN0IDEyMy4=",
-            "kinesisSchemaVersion": "1.0",
-            "sequenceNumber": "1111"
-          },
-          "invokeIdentityArn": "arn:aws:iam::EXAMPLE",
-          "eventName": "aws:kinesis:record",
-          "eventSourceARN": "arn:aws:kinesis:EXAMPLE",
-          "eventSource": "aws:kinesis",
-          "awsRegion": "us-east-1"
-        }
-      ]
-    }
-
-    StreamAlert only needs the kinesis['data'], eventSource, and
-    eventSourceARN keys, so we only add those to the mock record.
+        populated dict in the format of the specific service.
     """
-    records = {'Records': []}
-    for folder in local_directories:
-        for root, _, files in os.walk(os.path.join(BASEFOLDER, folder)):
-            for json_file in files:
-                with open(os.path.join(root, json_file), 'r') as json_fh:
-                    lines = json_fh.readlines()
-                for line in lines:
-                    line = line.strip()
-                    record = {
-                        'kinesis': {'data': base64.b64encode(line)},
-                        'eventSource': 'aws:{}'.format(folder),
-                        'eventSourceARN': 'arn:aws:{}:region:account-id:stream/{}' \
-                            .format(folder, root.split('/')[-1])
-                    }
-                    records['Records'].append(record)
+    service = test_record['service']
+    source = test_record['source']
 
-    return records
+    data_type = type(test_record['data'])
+    if data_type == dict:
+        data = json.dumps(test_record['data'])
+    elif data_type in (unicode, str):
+        data = test_record['data']
+    else:
+        LOGGER_CLI.info('Invalid data type: %s', type(test_record['data']))
+        return
 
-def read_s3_records(local_directories):
-    """Read S3 event notifications and format Lambda test event.
+    if service == 's3':
+        pass
+
+    elif service == 'kinesis':
+        kinesis_path = os.path.join(DIR_TEMPLATES, 'kinesis.json')
+        with open(kinesis_path, 'r') as kinesis_template:
+            template = json.load(kinesis_template)
+        template['kinesis']['data'] = base64.b64encode(data)
+        template['eventSourceARN'] = 'arn:aws:kinesis:us-east-1:111222333:stream/{}'.format(source)
+        return template
+
+    elif service == 'sns':
+        pass
+
+    else:
+        LOGGER_CLI.info('Invalid service %s', service)
+
+def check_keys(test_record):
+    """Check the test_record contains the required keys
 
     Args:
-        local_directories (list): local_directories to read raw records from.
+        test_record: Test record metadata dict
 
     Returns:
-        (dict): formatted Kinesis records to be output as JSON.
-
-    Example S3 Event Notification Record:
-    {
-      "eventVersion": "2.0",
-      "eventTime": "1970-01-01T00:00:00.000Z",
-      "requestParameters": {
-        "sourceIPAddress": "127.0.0.1"
-      },
-      "s3": {
-        "configurationId": "testConfigRule",
-        "object": {
-          "eTag": "0123456789abcdef0123456789abcdef",
-          "sequencer": "0A1B2C3D4E5F678901",
-          "key": "HappyFace.jpg",
-          "size": 1024
-        },
-        "bucket": {
-          "arn": "arn:aws:s3:::mybucket",
-          "name": "sourcebucket",
-          "ownerIdentity": {
-            "principalId": "EXAMPLE"
-          }
-        },
-        "s3SchemaVersion": "1.0"
-      },
-      "responseElements": {
-        "x-amz-id-2": "EXAMPLE123/5678abcdefghijklambdaisawesome/mnopqrstuvwxyzABCDEFGH",
-        "x-amz-request-id": "EXAMPLE123456789"
-      },
-      "awsRegion": "us-east-1",
-      "eventName": "ObjectCreated:Put",
-      "userIdentity": {
-        "principalId": "EXAMPLE"
-      },
-      "eventSource": "aws:s3"
+        Boolean result of key set comparison
+    """
+    req_keys = {
+        'data',
+        'description',
+        'service',
+        'source',
+        'trigger'
     }
-    """
-    records = {'Records': []}
-    for folder in local_directories:
-        for root, _, files in os.walk(os.path.join(BASEFOLDER, folder)):
-            for test_file in files:
-                with open(os.path.join(root, test_file), 'r') as test_file_fh:
-                    lines = test_file_fh.readlines()
-                for line in lines:
-                    line = line.strip()
-                    # provide a way to skip records
-                    if line[0] == '#':
-                        continue
-                    record = json.loads(line)
-                    # TODO(jacknagz) load this bucket from variables.json
-                    record['s3']['bucket']['arn'] = 'arn:aws:s3:::my-org-name-here.streamalert.testing.results'
-                    record['s3']['bucket']['name'] = 'my-org-name-here.streamalert.testing.results'
-                    record['awsRegion'] = 'us-east-1'
-                    record['eventName'] = 'ObjectCreated:Put'
-                    records['Records'].append(record)
+    record_keys = set(test_record.keys())
+    return req_keys == record_keys
 
-    return records
+def test_kinesis_alert_rules():
+    """Integration test the 'Alert' Lambda function with Kinesis records"""
+    for root, _, rule_files in os.walk(DIR_RULES):
+        for rule_file in rule_files:
+            rule_name = rule_file.split('.')[0]
+            rule_file_path = os.path.join(root, rule_file)
 
-def format_sns(in_file):
-    with open(in_file, 'r') as f:
-        in_file_contents = json.load(f)
+            with open(rule_file_path, 'r') as rule_file_handle:
+                try:
+                    contents = json.load(rule_file_handle)
+                except ValueError:
+                    LOGGER_CLI.info('Error loading %s, bad JSON', rule_file)
 
-    message = base64.b64encode(json.dumps(in_file_contents))
-    out_records = {
-      "Records": [
-          {
-              "EventVersion": "1.0",
-              "EventSubscriptionArn": "arn:aws:sns:EXAMPLE",
-              "EventSource": "aws:sns",
-              "Sns": {
-                "SignatureVersion": "1",
-                "Timestamp": "1970-01-01T00:00:00.000Z",
-                "Signature": "EXAMPLE",
-                "SigningCertUrl": "EXAMPLE",
-                "MessageId": "95df01b4-ee98-5cb9-9903-4c221d41eb5e",
-                "Message": message,
-                "MessageAttributes": {
-                  "Test": {
-                    "Type": "String",
-                    "Value": "TestString"
-                  },
-                  "TestBinary": {
-                    "Type": "Binary",
-                    "Value": "TestBinary"
-                  }
-                },
-                "Type": "Notification",
-                "UnsubscribeUrl": "EXAMPLE",
-                "TopicArn": "arn:aws:sns:EXAMPLE",
-                "Subject": "TestInvoke"
-              }
-            }
-          ]
-        }
-    out_file = '{}.out'.format(in_file)
-    write_records(out_records, out_file)
+            test_records = contents['records']
+            if len(test_records) == 0:
+                LOGGER_CLI.info('No records to test for %s', rule_name)
 
-    return out_file
+            for test_record in test_records:
+                if not check_keys(test_record):
+                    LOGGER_CLI.info('Improperly formatted test_record: %s',
+                                    test_record)
+                    continue
+                test_record['kinesis_data'] = format_record(test_record)
 
-def write_records(records, out_file):
-    """Write all formatted records to the out_file specified as JSON.
-
-    Args:
-        records (dict): A formatted Lambda test event to be JSON dumped.
-        out_file (string): A filename to write to.
-    """
-    json_events = json.dumps(records, ensure_ascii=False, sort_keys=True, indent=2)
-    with open(out_file, 'w') as outfile:
-        outfile.write(json_events)
+            test_rule(rule_name, contents)
 
 def stream_alert_test(options):
-    def alert_emulambda(out_file):
-        # context_file = os.path.join(BASEFOLDER, 'context')
-        sys.argv = ['emulambda', 'main.handler', out_file, '-v']
-        import emulambda
-        emulambda.main()
+    """Integration testing handler
 
-    def output_emulambda(out_file):
-        context_file = os.path.join('..', 'test', 'integration', 'context')
-        sys.argv = [
-            'emulambda',
-            'stream_alert_output.main.handler',
-            out_file,
-            context_file,
-            '-v'
-        ]
-        import emulambda
-        emulambda.main()
+    Args:
+        options: dict of CLI options: (func, env, source)
+    """
+    if options.debug:
+        LOGGER_SA.setLevel(logging.DEBUG)
+    else:
+        LOGGER_SA.setLevel(logging.INFO)
 
     if options.source == 'kinesis':
         if options.func == 'alert':
-            out_file = os.path.join(BASEFOLDER, 'out/kinesis_record_events.json')
-            kinesis_records = read_kinesis_records(['kinesis'])
-            write_records(kinesis_records, out_file)
-            alert_emulambda(out_file)
+            test_kinesis_alert_rules()
 
         elif options.func == 'output':
-            os.chdir('stream_alert_output')
-            sns_record_path = os.path.join('..', BASEFOLDER, 'sns/raw_record.json')
-            out_file = format_sns(sns_record_path)
-            output_emulambda(out_file)
-            os.chdir('..')
+            # TODO(jack) handle s3 event formatting
+            pass
 
     elif options.source == 's3':
         if options.func == 'alert':
-            out_file = os.path.join(BASEFOLDER, 'out/s3_record_events.json')
-            s3_records = read_s3_records(['s3'])
-            write_records(s3_records, out_file)
-            alert_emulambda(out_file)
+            # TODO(jack) handle s3 event formatting
+            pass

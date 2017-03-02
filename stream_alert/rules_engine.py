@@ -41,7 +41,7 @@ class StreamRules(object):
     __matchers = {}
 
     @classmethod
-    def rule(cls, rule_name, **opts):
+    def rule(cls, **opts):
         """Register a rule that evaluates records against rules.
 
         A rule maps events (by `logs`) to a function that accepts an event
@@ -50,13 +50,14 @@ class StreamRules(object):
         dropped.
         """
         rule_attrs = namedtuple('Rule', ['rule_name',
-                                        'rule_function',
-                                        'matchers',
-                                        'logs',
-                                        'outputs',
-                                        'req_subkeys'])
+                                         'rule_function',
+                                         'matchers',
+                                         'logs',
+                                         'outputs',
+                                         'req_subkeys'])
 
         def decorator(rule):
+            rule_name = rule.__name__
             logs = opts.get('logs')
             outputs = opts.get('outputs')
             matchers = opts.get('matchers')
@@ -69,22 +70,23 @@ class StreamRules(object):
             if rule_name in cls.__rules:
                 raise ValueError('rule [{}] already defined'.format(rule_name))
             cls.__rules[rule_name] = rule_attrs(rule_name,
-                                               rule,
-                                               matchers,
-                                               logs,
-                                               outputs,
-                                               req_subkeys)
+                                                rule,
+                                                matchers,
+                                                logs,
+                                                outputs,
+                                                req_subkeys)
             return rule
         return decorator
 
     @classmethod
-    def matcher(cls, name):
+    def matcher(cls):
         """Registers a matcher rule.
 
         Matchers are rules which allow you to extract common logic
         into helper functions. Each rule can contain multiple matchers.
         """
         def decorator(matcher):
+            name = matcher.__name__
             if name in cls.__matchers:
                 raise ValueError('matcher already defined: {}'.format(name))
             cls.__matchers[name] = matcher
@@ -179,41 +181,44 @@ class StreamRules(object):
         alerts = []
         payload = copy.copy(input_payload)
 
-        for rule_name, rule_attrs in cls.__rules.iteritems():
+        for _, rule_attrs in cls.__rules.iteritems():
             if payload.log_source in rule_attrs.logs:
                 rules.append(rule_attrs)
 
-        if len(rules) > 0:
-            for record in payload.records:
-                for rule in rules:
-                    # subkey check
-                    has_sub_keys = cls.process_subkeys(record,
-                                                       payload.type,
-                                                       rule)
-                    if not has_sub_keys:
-                        continue
+        if len(rules) == 0:
+            logger.debug('No rules to process for %s', payload)
+            return alerts
 
-                    # matcher check
-                    matcher_result = cls.match_event(record, rule)
-                    if not matcher_result:
-                        continue
+        for record in payload.records:
+            for rule in rules:
+                # subkey check
+                has_sub_keys = cls.process_subkeys(record,
+                                                   payload.type,
+                                                   rule)
+                if not has_sub_keys:
+                    continue
 
-                    # rule analysis
-                    rule_result = cls.process_rule(record, rule)
-                    if rule_result:
-                        alert = {
-                            'rule_name': rule.rule_name,
-                            'record': record,
-                            'metadata': {
-                                'log': str(payload.log_source),
-                                'outputs': rule.outputs,
-                                'type': payload.type,
-                                'source': {
-                                    'service': payload.service,
-                                    'entity': payload.entity
-                                }
+                # matcher check
+                matcher_result = cls.match_event(record, rule)
+                if not matcher_result:
+                    continue
+
+                # rule analysis
+                rule_result = cls.process_rule(record, rule)
+                if rule_result:
+                    alert = {
+                        'rule_name': rule.rule_name,
+                        'record': record,
+                        'metadata': {
+                            'log': str(payload.log_source),
+                            'outputs': rule.outputs,
+                            'type': payload.type,
+                            'source': {
+                                'service': payload.service,
+                                'entity': payload.entity
                             }
                         }
-                        alerts.append(alert)
+                    }
+                    alerts.append(alert)
 
         return alerts

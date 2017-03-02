@@ -1,0 +1,17 @@
+{
+  "records": [
+    {
+      "data": {
+        "name": "name-1",
+        "host": "test-host-1",
+        "data": {
+          "time": "Jan 01, 2017"
+        }
+      },
+      "description": "host is test-host-1",
+      "trigger": true,
+      "source": "prefix_cluster1_stream_alert_kinesis",
+      "service": "kinesis"
+    }
+  ]
+}

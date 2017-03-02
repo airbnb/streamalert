@@ -18,7 +18,7 @@ import time
 
 from nose.tools import assert_equal
 
-from stream_alert.rule_helpers import in_set, last_hour
+from rules.helpers.base import in_set, last_hour
 
 def test_in_set():
     # basic example

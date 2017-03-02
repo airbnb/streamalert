@@ -12,20 +12,20 @@ You can also supply multiple matchers for many common scenarios:
     @rule('root_logins', data_source=['osquery'],
           matchers=['prod', 'itx_corp'], sink=['csirt-pagerduty'])
 """
-from stream_alert.rule_helpers import in_set, last_hour
+from helpers.base import in_set, last_hour
 from stream_alert.rules_engine import StreamRules
 
 matcher = StreamRules.matcher
 
 # basic matcher for checking environments
-@matcher('production_env')
+@matcher()
 def production_env(rec):
     env = rec['env']
     return env == 'production'
 
 
 # matcher rlayout
-@matcher('matcher_name')
+@matcher()
 def matcher_name(rec):
     """Description"""
     return True
