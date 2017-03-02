@@ -19,11 +19,9 @@ import json
 import logging
 import os
 
-from main import StreamAlert
-from rules import (
-    sample_rules,
-    sample_matchers
-)
+from stream_alert.handler import StreamAlert
+# import all rules loaded from the main handler
+import main
 
 LOGGER_SA = logging.getLogger('StreamAlert')
 LOGGER_CLI = logging.getLogger('StreamAlertCLI')
