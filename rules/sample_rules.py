@@ -3,7 +3,7 @@ from stream_alert.rules_engine import StreamRules
 
 rule = StreamRules.rule
 
-# # rule layout
+# # Note: This is the rule layout
 # @rule(logs=['foo'],
 #       matchers=['foo'],
 #       outputs=['foo'])

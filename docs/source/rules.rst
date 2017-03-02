@@ -164,7 +164,7 @@ In order to test the effectiveness of new rules, local integration tests can be 
 Configuration
 ~~~~~~~~~~~~~
 
-To test a new rule, first create a new file under `test/integration/rules` named `rule_name.json`.  This file should contain this exact structure::
+To test a new rule, first create a new file under `test/integration/rules` named `rule_name_goes_here.json`.  This file should contain this exact structure::
   
   {
     "records": [
@@ -182,18 +182,18 @@ The `data` key can either be a Map or a String.  Normally all json types should 
 
 The `description` key should be a short sentence describing the intent of the test.
 
-The `trigger` key indicates whether or not this record should produce an alert or not.  This is used to determine the overall coverage of this rule.  Coverage indicates that all of our test records produce the correct amount of alerts.
+The `trigger` key indicates whether or not this record should produce an alert or not.  This is used to determine that all of our test records produce the correct amount of alerts.
 
-The `source` key is used to tell StreamAlert where the log came from, which is necessary for classification of the record.
+The `source` key is the name of the kinesis stream or s3 bucket.
 
-The `service` key is used to format the message into the proper template.
+The `service` key is the name of the AWS service which sent the alert (kinesis or s3).
 
 For more examples, see the default rule tests in `test/integration/rules`.
 
 Running Tests - Kinesis
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-To run our integration tests as configured above::
+To run integration tests::
 
   ./stream_alert_cli.py lambda test --func alert --source kinesis
 

@@ -25,15 +25,15 @@ from rules import (
     sample_matchers
 )
 
-SA_LOGGER = logging.getLogger('StreamAlert')
-CLI_LOGGER = logging.getLogger('StreamAlertCLI')
-CLI_LOGGER.setLevel(logging.INFO)
+LOGGER_SA = logging.getLogger('StreamAlert')
+LOGGER_CLI = logging.getLogger('StreamAlertCLI')
+LOGGER_CLI.setLevel(logging.INFO)
 
-RULES_DIR = 'test/integration/rules'
-TEMPLATES_DIR = 'test/integration/templates'
-RED_COLOR = '\033[0;31;1m'
-GREEN_COLOR = '\033[0;32;1m'
-RESET_COLOR = '\033[0m'
+DIR_RULES = 'test/integration/rules'
+DIR_TEMPLATES = 'test/integration/templates'
+COLOR_RED = '\033[0;31;1m'
+COLOR_GREEN = '\033[0;32;1m'
+COLOR_RESET = '\033[0m'
 
 def report_output(cols):
     """Helper function to pretty print columns
@@ -68,9 +68,9 @@ def test_rule(rule_name, test_file_contents):
         matched_alerts = [x for x in alerts if x['rule_name'] == rule_name]
 
         if len(matched_alerts) == expected_alerts:
-            result = '{}[Pass]{}'.format(GREEN_COLOR, RESET_COLOR)
+            result = '{}[Pass]{}'.format(COLOR_GREEN, COLOR_RESET)
         else:
-            result = '{}[Fail]{}'.format(RED_COLOR, RESET_COLOR)
+            result = '{}[Fail]{}'.format(COLOR_RED, COLOR_RESET)
 
         report_output([record['description'], result])
 
@@ -99,14 +99,14 @@ def format_record(test_record):
     elif data_type in (unicode, str):
         data = test_record['data']
     else:
-        CLI_LOGGER.info('Invalid data type: %s', type(test_record['data']))
+        LOGGER_CLI.info('Invalid data type: %s', type(test_record['data']))
         return
 
     if service == 's3':
         pass
 
     elif service == 'kinesis':
-        kinesis_path = os.path.join(TEMPLATES_DIR, 'kinesis.json')
+        kinesis_path = os.path.join(DIR_TEMPLATES, 'kinesis.json')
         with open(kinesis_path, 'r') as kinesis_template:
             template = json.load(kinesis_template)
         template['kinesis']['data'] = base64.b64encode(data)
@@ -117,7 +117,7 @@ def format_record(test_record):
         pass
 
     else:
-        CLI_LOGGER.info('Invalid service %s', service)
+        LOGGER_CLI.info('Invalid service %s', service)
 
 def check_keys(test_record):
     """Check the test_record contains the required keys
@@ -140,7 +140,7 @@ def check_keys(test_record):
 
 def test_kinesis_alert_rules():
     """Integration test the 'Alert' Lambda function with Kinesis records"""
-    for root, _, rule_files in os.walk(RULES_DIR):
+    for root, _, rule_files in os.walk(DIR_RULES):
         for rule_file in rule_files:
             rule_name = rule_file.split('.')[0]
             rule_file_path = os.path.join(root, rule_file)
@@ -149,15 +149,15 @@ def test_kinesis_alert_rules():
                 try:
                     contents = json.load(rule_file_handle)
                 except ValueError:
-                    CLI_LOGGER.info('Error loading %s, bad JSON', rule_file)
+                    LOGGER_CLI.info('Error loading %s, bad JSON', rule_file)
 
             test_records = contents['records']
             if len(test_records) == 0:
-                CLI_LOGGER.info('No records to test for %s', rule_name)
+                LOGGER_CLI.info('No records to test for %s', rule_name)
 
             for test_record in test_records:
                 if not check_keys(test_record):
-                    CLI_LOGGER.info('Improperly formatted test_record: %s',
+                    LOGGER_CLI.info('Improperly formatted test_record: %s',
                                     test_record)
                     continue
                 test_record['kinesis_data'] = format_record(test_record)
@@ -171,9 +171,9 @@ def stream_alert_test(options):
         options: dict of CLI options: (func, env, source)
     """
     if options.debug:
-        SA_LOGGER.setLevel(logging.DEBUG)
+        LOGGER_SA.setLevel(logging.DEBUG)
     else:
-        SA_LOGGER.setLevel(logging.INFO)
+        LOGGER_SA.setLevel(logging.INFO)
 
     if options.source == 'kinesis':
         if options.func == 'alert':
