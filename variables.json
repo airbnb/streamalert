@@ -30,5 +30,7 @@
     "region": "us-east-1",
     "tfstate_s3_key": "stream_alert_state/terraform.tfstate",
     "tfvars": "terraform.tfvars",
-    "third_party_libs": []
+    "third_party_libs": [
+        "jsonpath_rw"
+    ]
 }
