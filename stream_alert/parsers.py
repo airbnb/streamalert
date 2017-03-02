@@ -180,7 +180,6 @@ class JSONParser(ParserBase):
         self._key_check(json_records)
 
         if len(json_records) > 0:
-            print("%d records" % len(json_records))
             return json_records
         else:
             return False

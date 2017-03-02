@@ -6,17 +6,29 @@ Perform the following steps on your laptop or development machine
 Dependencies
 ------------
 
-1. Install Python 2.7 and  `pip <https://pip.pypa.io/en/stable/installing/>`_
+1. Install Python 2.7 and `pip <https://pip.pypa.io/en/stable/installing/>`_
 2. Install `Terraform <https://www.terraform.io/intro/getting-started/install.html>`_
-3. Download StreamAlert: ``git clone https://github.com/airbnb/streamalert.git``
-4. Install dependencies: ``pip install -r requirements.txt``
+3. Download StreamAlert:
 
-.. note:: For Mac OSX/Homebrew users, add the following to ~/.pydistutils.cfg:
+.. code-block:: bash
 
-.. code-block:: python
+  $ git clone https://github.com/airbnb/streamalert.git
+  $ cd streamalert
 
-   [install]
-   prefix=
+4. Install and activate Virtualenv:
+
+.. code-block:: bash
+
+  $ pip install virtualenv
+  $ virtualenv venv
+  $ source venv/bin/activate
+
+5. Install dependencies:
+
+.. code-block:: bash
+
+  $ pip install -r requirements.txt
+
 
 Quick Start
 -----------

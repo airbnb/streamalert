@@ -72,7 +72,6 @@ class TestJSONParser(object):
         data_record = data[0].strip()
         # setup json parser
         parsed_result = self.parser_helper(data=data_record, schema=schema, options=options)
-        print parsed_result
         assert_equal(len(parsed_result), 2)
         assert_equal(sorted((u'impact', u'code', u'tags', u'source_location', u'refs', u'title',
             u'results', u'id', u'desc')),sorted(parsed_result[0].keys()))
