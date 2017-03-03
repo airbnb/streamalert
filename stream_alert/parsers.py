@@ -248,7 +248,7 @@ class CSVParser(ParserBase):
             - False if the data is not CSV or the columns do not match.
         """
         schema = self.schema
-        hints = self.options['hints']
+        hints = self.options.get('hints')
 
         hint_result = []
         csv_payloads = []
