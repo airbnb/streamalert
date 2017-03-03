@@ -42,7 +42,7 @@ class TestJSONParser(object):
         return parsed_result
 
     def test_multi_nested_json(self):
-        """Multi-layered JSON"""
+        """Parse Multi-layered JSON"""
         # setup
         schema = {
             'name': 'string',
@@ -62,7 +62,7 @@ class TestJSONParser(object):
         assert_equal(parsed_data[0]['result'], 'fail')
 
     def test_inspec(self):
-        """Inspec JSON"""
+        """Parse Inspec JSON"""
         schema = self.config['logs']['test_inspec']['schema']
         options = { "hints" : self.config['logs']['test_inspec']['hints'] }
         # load fixture file
@@ -77,7 +77,7 @@ class TestJSONParser(object):
             u'results', u'id', u'desc')),sorted(parsed_result[0].keys()))
 
     def test_cloudtrail(self):
-        """Cloudtrail JSON"""
+        """Parse Cloudtrail JSON"""
         schema = self.config['logs']['test_cloudtrail']['schema']
         options = { "hints" : self.config['logs']['test_cloudtrail']['hints'] }
         # load fixture file
@@ -104,7 +104,7 @@ class TestJSONParser(object):
                      'stream_alert_prod_user')
 
     def test_basic_json(self):
-        """Non-nested JSON objects"""
+        """Parse Non-nested JSON objects"""
         # setup
         schema = {
             'name': 'string',
@@ -155,7 +155,7 @@ class TestCloudWatchParser(object):
         return parsed_result
 
     def test_cloudwatch(self):
-        """CloudWatch JSON"""
+        """Parse CloudWatch JSON"""
         schema = self.config['logs']['test_cloudwatch']['schema']
         options = { "hints": self.config['logs']['test_cloudwatch']['hints']}
         with open('test/unit/fixtures/cloudwatch.json','r') as fixture_file:
@@ -167,3 +167,44 @@ class TestCloudWatchParser(object):
         for result in parsed_result:
             assert_equal(sorted((u'protocol', u'source', u'destination', u'srcport', u'destport', u'eni', u'action', u'packets', u'bytes', u'windowstart', u'windowend', u'version', u'account', u'flowlogstatus',u'envelope')), sorted(result.keys()))
             assert_equal(sorted((u"logGroup",u"logStream",u"owner")),sorted(result['envelope'].keys()))
+
+class TestKVParser(object):
+    def setup(self):
+        """Setup before each method"""
+        # load config
+        self.config = load_config('test/unit/conf')
+        # load JSON parser class
+        self.parser_class = get_parser('kv')
+
+    def teardown(self):
+        """Teardown after each method"""
+        pass
+
+    def parser_helper(self, **kwargs):
+        data = kwargs['data']
+        schema = kwargs['schema']
+        options = kwargs['options']
+
+        kv_parser = self.parser_class(data, schema, options)
+        parsed_result = kv_parser.parse()
+        return parsed_result
+
+    def test_kv_parsing(self):
+        """Parse KV - 'key:value,key:value'"""
+        # setup
+        schema = {
+            'name': 'string',
+            'result': 'string'
+        }
+        options = {
+            'separator': ':',
+            'delimiter': ',',
+            'service': 'kinesis'
+        }
+        data = 'name:joe bob,result:success'
+
+        # get parsed data
+        parsed_data = self.parser_helper(data=data, schema=schema, options=options)
+
+        assert_equal(len(parsed_data), 1)
+        assert_equal(parsed_data[0]['name'], 'joe bob')

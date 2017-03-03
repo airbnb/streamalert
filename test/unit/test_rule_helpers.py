@@ -21,6 +21,7 @@ from nose.tools import assert_equal
 from rules.helpers.base import in_set, last_hour
 
 def test_in_set():
+    """Helpers - In Set"""
     # basic example
     test_list = ['this', 'is', 'a9', 'test']
     data = 'test'
@@ -37,6 +38,7 @@ def test_in_set():
     assert_equal(result, True)
 
 def test_last_hour():
+    """Helpers - Last Hour"""
     time_now = int(time.time())
 
     thirty_minutes_ago = time_now - 1800
