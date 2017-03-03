@@ -78,6 +78,7 @@ class TestStreamRules(object):
             return payload
 
     def test_alert_format(self):
+        """Rule Engine - Alert Format"""
         @rule(logs=['test_log_type_json_nested_with_data'],
               outputs=['s3'])
         def alert_format_test(rec):
@@ -118,6 +119,7 @@ class TestStreamRules(object):
 
 
     def test_basic_rule_matcher_process(self):
+        """Rule Engine - Basic Rule/Matcher"""
         @matcher()
         def prod(rec):
             return rec['environment'] == 'prod'
@@ -169,6 +171,7 @@ class TestStreamRules(object):
         assert_equal(alerts[0]['metadata']['outputs'], ['s3'])
 
     def test_process_req_subkeys(self):
+        """Rule Engine - Req Subkeys"""
         @rule(logs=['test_log_type_json_nested'],
               outputs=['s3'],
               req_subkeys={'data': ['location']})
@@ -222,6 +225,7 @@ class TestStreamRules(object):
         assert_equal(alerts[1]['rule_name'], 'data_location')
 
     def test_syslog_rule(self):
+        """Rule Engine - Syslog Rule"""
         @rule(logs=['test_log_type_syslog'],
               outputs=['s3'])
         def syslog_sudo(rec):
@@ -249,6 +253,7 @@ class TestStreamRules(object):
         assert_equal(alerts[0]['metadata']['type'], 'syslog')
 
     def test_csv_rule(self):
+        """Rule Engine - CSV Rule"""
         @rule(logs=['test_log_type_csv_nested'],
               outputs=['pagerduty'])
         def nested_csv(rec):
@@ -272,6 +277,7 @@ class TestStreamRules(object):
         assert_equal(alerts[0]['rule_name'], 'nested_csv')
 
     def test_kv_rule(self):
+        """Rule Engine - KV Rule"""
         @rule(logs=['test_log_type_kv_auditd'],
               outputs=['pagerduty'])
         def auditd_bin_cat(rec):

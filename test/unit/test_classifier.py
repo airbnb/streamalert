@@ -84,6 +84,7 @@ class TestStreamPayload(object):
 
 
     def test_refresh_record(self):
+        """Payload Record Refresh"""
         kinesis_data = json.dumps({
             'key3': 'key3data',
             'key2': 'key2data',
@@ -107,6 +108,7 @@ class TestStreamPayload(object):
 
 
     def test_map_source_1(self):
+        """Payload Source Mapping 1"""
         data_encoded = base64.b64encode('test_map_source data')
         payload = self.payload_generator(kinesis_stream='test_kinesis_stream',
                                          kinesis_data=data_encoded)
@@ -132,6 +134,7 @@ class TestStreamPayload(object):
 
 
     def test_map_source_2(self):
+        """Payload Source Mapping 2"""
         data_encoded = base64.b64encode('test_map_source_data_2')
         payload = self.payload_generator(kinesis_stream='test_stream_2',
                                          kinesis_data=data_encoded)
@@ -153,6 +156,7 @@ class TestStreamPayload(object):
 
 
     def test_classify_record_kinesis_json(self):
+        """Payload Classify JSON"""
         kinesis_data = json.dumps({
             'key1': 'sample data!!!!',
             'key2': 'more sample data',
@@ -185,6 +189,7 @@ class TestStreamPayload(object):
 
 
     def test_classify_record_kinesis_nested_json(self):
+        """Payload Classify Nested JSON"""
         kinesis_data = json.dumps({
             'date': 'Jan 01 2017',
             'unixtime': '1485556524',
@@ -224,6 +229,7 @@ class TestStreamPayload(object):
 
 
     def test_classify_record_kinesis_nested_json_osquery(self):
+        """Payload Classify JSON osquery"""
         kinesis_data = json.dumps({
             'name': 'testquery',
             'hostIdentifier': 'host1.test.prod',
@@ -275,6 +281,7 @@ class TestStreamPayload(object):
 
 
     def test_classify_record_kinesis_nested_json_missing_subkey_fields(self):
+        """Payload Classify Nested JSON Missing Subkeys"""
         kinesis_data = json.dumps({
             'name': 'testquery',
             'hostIdentifier': 'host1.test.prod',
@@ -307,6 +314,7 @@ class TestStreamPayload(object):
 
 
     def test_classify_record_kinesis_nested_json_with_data(self):
+        """Payload Classify Nested JSON Generic"""
         kinesis_data = json.dumps({
             'date': 'Jan 01 2017',
             'unixtime': '1485556524',
@@ -352,6 +360,7 @@ class TestStreamPayload(object):
 
 
     def test_classify_record_kinesis_csv(self):
+        """Payload Classify CSV"""
         csv_data = 'jan102017,0100,host1,thisis some data with keyword1 in it'
         payload = self.payload_generator(kinesis_stream='test_kinesis_stream',
                                                kinesis_data=csv_data)
@@ -380,6 +389,7 @@ class TestStreamPayload(object):
 
 
     def test_classify_record_kinesis_csv_nested(self):
+        """Payload Classify Nested CSV"""
         csv_nested_data = (
             '"Jan 10 2017","1485635414","host1.prod.test","Corp",'
             '"chef,web-server,1,10,success"'
@@ -413,6 +423,7 @@ class TestStreamPayload(object):
 
 
     def test_classify_record_kinesis_kv(self):
+        """Payload Classify KV"""
         auditd_test_data = (
             'type=SYSCALL msg=audit(1364481363.243:24287): '
             'arch=c000003e syscall=2 success=no exit=-13 a0=7fffd19c5592 a1=0 '
@@ -453,6 +464,7 @@ class TestStreamPayload(object):
 
 
     def test_classify_record_syslog(self):
+        """Payload Classify Syslog"""
         test_data_1 = (
             'Jan 26 19:35:33 vagrant-ubuntu-trusty-64 '
             'sudo: pam_unix(sudo:session): '

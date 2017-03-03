@@ -37,6 +37,7 @@ from stream_alert.config import (
 )
 
 def test_validate_config_valid():
+    """Config Validator - Valid Config"""
     config = {
         'logs': {
             'json_log': {
@@ -70,6 +71,7 @@ def test_validate_config_valid():
 
 @raises(ConfigError)
 def test_validate_config_no_parsers():
+    """Config Validator - No Parsers"""
     config = {
         'logs': {
             'json_log': {
@@ -100,6 +102,7 @@ def test_validate_config_no_parsers():
 
 @raises(ConfigError)
 def test_validate_config_no_logs():
+    """Config Validator - No Logs"""
     config = {
         'logs': {
             'json_log': {
