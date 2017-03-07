@@ -14,7 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 
-import base64
 import calendar
 import collections
 import json
@@ -27,7 +26,6 @@ from datetime import datetime
 
 import boto3
 
-
 logging.basicConfig()
 logger = logging.getLogger('StreamOutput')
 logger.setLevel(logging.INFO)
@@ -38,9 +36,8 @@ def handler(event, context):
 
     The event accepted in this Lambda function is
     an SNS event with a `message` key containing a
-    base64 encoded JSON string.  The JSON contains
-    an array of alerts sent from the main StreamAlert
-    lambda function.
+    JSON string.  The JSON contains an array of alerts
+    sent from the main StreamAlert lambda function.
     """
     for record in event['Records']:
         sns_payload = record.get('Sns')
@@ -48,8 +45,11 @@ def handler(event, context):
         if not sns_payload:
             continue
         message = sns_payload['Message']
-        alerts = json.loads(base64.b64decode(message))
-        StreamOutput(context).run(alerts)
+        try:
+            alerts = json.loads(message)
+            StreamOutput(context).run(alerts)
+        except ValueError as err:
+            logging.error('An error occured while decoding message to JSON: %s', err)
 
 class OutputRequestFailure(Exception):
     pass
@@ -88,8 +88,7 @@ class StreamOutput(object):
             structure:
 
             {
-                'default': 'default',
-                'alerts': [alert1, alert2, alertN]
+                'default': [alert]
             }
 
             The alerts list include elements with the following structure:
@@ -109,7 +108,7 @@ class StreamOutput(object):
             }
         """
         grouped_alerts = collections.defaultdict(list)
-        for alert in alerts['alerts']:
+        for alert in alerts['default']:
             grouped_alerts[alert.get('rule_name')].append(alert)
 
         for rule_name, alerts in grouped_alerts.iteritems():
