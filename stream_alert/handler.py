@@ -93,7 +93,7 @@ class StreamAlert(object):
             else:
                 StreamSink(self.alerts, env).sink()
         else:
-            logger.debug('Valid data, no alerts: %s', payload)
+            logger.debug('Valid data, no alerts')
 
     def process_alerts(self, payload):
         """Process records for alerts"""
