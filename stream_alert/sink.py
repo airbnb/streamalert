@@ -14,8 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 
-import base64
-import collections
 import json
 import logging
 import sys
@@ -23,17 +21,29 @@ import sys
 import boto3
 import botocore
 
+_SNS_MAX_SIZE = (256*1024)
+
 logging.basicConfig()
 logger = logging.getLogger('StreamAlert')
+
+def json_dump(sns_dict, indent_value=None):
+    def json_dict_serializer(obj):
+        """Helper method for marshalling dictionary objects to JSON"""
+        return obj.__dict__
+
+    try:
+        return json.dumps(sns_dict, indent=indent_value, default=json_dict_serializer)
+    except AttributeError as err:
+        logging.error('An error occured while dumping object to JSON: %s', err)
+        return ""
 
 class SNSMessageSizeError(Exception):
     pass
 
 class StreamSink(object):
-    def __init__(self, alerts, config, env):
+    def __init__(self, alerts, env):
         self.alerts = alerts
         self.env = env
-        self.variables = config['variables']
 
     def sink(self):
         """Sink triggered alerts from the StreamRules engine.
@@ -43,29 +53,32 @@ class StreamSink(object):
         group of alerts to the given SNS topic.
 
         Sends a message to SNS with the following JSON format:
-            default: 'default',
-            alerts: [
-                'rule_name': 'name',
-                'outputs': ['output1', 'output2'],
-                'payload': 'message_payload'
-            ]
+            {default: [
+                {
+                    'rule_name': rule.rule_name,
+                    'record': record,
+                    'metadata': {
+                        'log': str(payload.log_source),
+                        'outputs': rule.outputs,
+                        'type': payload.type,
+                        'source': {
+                            'service': payload.service,
+                            'entity': payload.entity
+                        }
+                    }
+                }
+            ]}
         """
-        def jdefault(obj):
-            """Helper method for marshalling custom objects to JSON"""
-            return obj.__dict__
-
-        snsDict = {'default': 'default', 'alerts': self.alerts}
-        snsJsonMessage = json.dumps(snsDict, default=jdefault)
-        encodedSnsMessage = base64.b64encode(snsJsonMessage)
-
         lambda_alias = self.env['lambda_alias']
 
-        if lambda_alias == 'production':
-            topic_arn = self._get_sns_topic_arn()
-            client = boto3.client('sns', region_name=self.env['lambda_region'])
-            self.publish_message(client, encodedSnsMessage, topic_arn)
-        elif lambda_alias == 'staging':
-            logger.info(json.dumps(snsDict, indent=2, default=jdefault))
+        for alert in self.alerts:
+            sns_dict = {'default': [alert]}
+            if lambda_alias == 'production':
+                topic_arn = self._get_sns_topic_arn()
+                client = boto3.client('sns', region_name=self.env['lambda_region'])
+                self.publish_message(client, json_dump(sns_dict), topic_arn)
+            elif lambda_alias == 'staging':
+                logger.info(json_dump(sns_dict, 2))
 
     def _get_sns_topic_arn(self):
         """Return a properly formatted SNS ARN.
@@ -85,20 +98,20 @@ class StreamSink(object):
     def _sns_message_size_check(message):
         """Verify the SNS message is less than or equal to 256KB (SNS Limit)
         Args:
-            message: A base64 encoded string of alerts to send to SNS.
+            message: A JSON string containing an alert to send to SNS.
 
         Returns:
             Boolean result of if the message is within the size constraint
         """
-        messageSize = float(sys.getsizeof(message)) / 1024
-        return 0 < messageSize <= 256.0
+        message_size = sys.getsizeof(message)
+        return 0 < message_size <= _SNS_MAX_SIZE
 
     def publish_message(self, client, message, topic):
         """Emit a message to SNS.
 
         Args:
             client: The boto3 client object.
-            message: A JSON string containing all serialized alerts.
+            message: A JSON string containing a serialized alert.
             topic: The SNS topic ARN to send to.
         """
         if self._sns_message_size_check(message):
@@ -108,9 +121,9 @@ class StreamSink(object):
                     Message=message,
                     Subject='StreamAlert Rules Triggered'
                 )
-            except botocore.exceptions.ClientError as e:
-                logging.error('An error occured while publishing Alert: %s', e.response)
-                raise e
+            except botocore.exceptions.ClientError as err:
+                logging.error('An error occured while publishing Alert: %s', err.response)
+                raise err
             logger.info('Published %i alert(s) to %s', len(self.alerts), topic)
             logger.info('SNS MessageID: %s', response['MessageId'])
         else:
