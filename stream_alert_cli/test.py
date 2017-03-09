@@ -106,7 +106,12 @@ def format_record(test_record):
     elif service == 'kinesis':
         kinesis_path = os.path.join(DIR_TEMPLATES, 'kinesis.json')
         with open(kinesis_path, 'r') as kinesis_template:
-            template = json.load(kinesis_template)
+            try:
+                template = json.load(kinesis_template)
+            except ValueError as err:
+                LOGGER_CLI.error('Error loading kinesis.json: %s', err)
+                return
+
         template['kinesis']['data'] = base64.b64encode(data)
         template['eventSourceARN'] = 'arn:aws:kinesis:us-east-1:111222333:stream/{}'.format(source)
         return template
@@ -146,8 +151,9 @@ def test_kinesis_alert_rules():
             with open(rule_file_path, 'r') as rule_file_handle:
                 try:
                     contents = json.load(rule_file_handle)
-                except ValueError:
-                    LOGGER_CLI.info('Error loading %s, bad JSON', rule_file)
+                except ValueError as err:
+                    LOGGER_CLI.error('Error loading %s: %s', rule_file, err)
+                    continue
 
             test_records = contents['records']
             if len(test_records) == 0:
