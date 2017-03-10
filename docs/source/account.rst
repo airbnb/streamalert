@@ -40,6 +40,7 @@ Steps:
 * Click: Next
 * Select: Attach existing policies directly
 * Attach the following policies:
+
   * AmazonKinesisFirehoseFullAccess
   * AmazonKinesisFullAccess
   * AmazonS3FullAccess
