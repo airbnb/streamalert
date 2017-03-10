@@ -18,6 +18,8 @@ import base64
 import json
 import logging
 import os
+import re
+import time
 
 from stream_alert.handler import StreamAlert
 # import all rules loaded from the main handler
@@ -33,21 +35,21 @@ COLOR_RED = '\033[0;31;1m'
 COLOR_GREEN = '\033[0;32;1m'
 COLOR_RESET = '\033[0m'
 
-def report_output(cols):
+def report_output(cols, force_exit):
     """Helper function to pretty print columns
-
     Args:
         cols: A list of columns to print (test description, pass|fail)
+        force_exit: Boolean to break exectuion of integration testing
     """
     print '\ttest: {: <40} {: >25}'.format(*cols)
+    if force_exit:
+        os._exit(1)
 
 def test_rule(rule_name, test_file_contents):
     """Feed formatted records into StreamAlert and check for alerts
-
     Args:
-        rule_name:
-        trigger_records:
-        non_trigger_records:
+        rule_name: The rule name being tested
+        test_file_contents: The dictionary of the loaded test fixture file
     """
     # rule name header
     print '\n{}'.format(rule_name)
@@ -67,10 +69,12 @@ def test_rule(rule_name, test_file_contents):
 
         if len(matched_alerts) == expected_alerts:
             result = '{}[Pass]{}'.format(COLOR_GREEN, COLOR_RESET)
+            force_exit = False
         else:
             result = '{}[Fail]{}'.format(COLOR_RED, COLOR_RESET)
+            force_exit = True
 
-        report_output([record['description'], result])
+        report_output([record['description'], result], force_exit)
 
 def format_record(test_record):
     """Create a properly formatted Kinesis, S3, or SNS record.
@@ -141,6 +145,36 @@ def check_keys(test_record):
     record_keys = set(test_record.keys())
     return req_keys == record_keys
 
+def apply_helpers(test_record):
+    """Detect and apply helper functions to test fixtures
+    Helpers are declared in test fixtures via the following keyword:
+    "<helpers:helper_name>"
+
+    Supported helper functions:
+        last_hour: return the current epoch time minus 60 seconds to pass the
+                   last_hour rule helper.
+    Args:
+        test_record: loaded fixture file JSON as a dict.
+    """
+    # declare all helper functions here, they should always return a string
+    helpers = {
+        'last_hour': lambda: str(int(time.time()) - 60)
+    }
+    helper_regex = re.compile(r'\<helper:(?P<helper>\w+)\>')
+
+    def find_and_apply_helpers(test_record):
+        for key, value in test_record.iteritems():
+            if isinstance(value, str) or isinstance(value, unicode):
+                test_record[key] = re.sub(
+                    helper_regex,
+                    lambda match: helpers[match.group('helper')](),
+                    test_record[key]
+                )
+            elif isinstance(value, dict):
+                find_and_apply_helpers(test_record[key])
+
+    find_and_apply_helpers(test_record)
+
 def test_kinesis_alert_rules():
     """Integration test the 'Alert' Lambda function with Kinesis records"""
     for root, _, rule_files in os.walk(DIR_RULES):
@@ -155,15 +189,21 @@ def test_kinesis_alert_rules():
                     LOGGER_CLI.error('Error loading %s: %s', rule_file, err)
                     continue
 
-            test_records = contents['records']
+            test_records = contents.get('records')
+            if not test_records:
+                LOGGER_CLI.error('Improperly formatted test file: %s', rule_file_path)
+                continue
+
             if len(test_records) == 0:
-                LOGGER_CLI.info('No records to test for %s', rule_name)
+                LOGGER_CLI.error('No records to test for %s', rule_name)
+                continue
 
             for test_record in test_records:
                 if not check_keys(test_record):
-                    LOGGER_CLI.info('Improperly formatted test_record: %s',
+                    LOGGER_CLI.error('Improperly formatted test_record: %s',
                                     test_record)
                     continue
+                apply_helpers(test_record)
                 test_record['kinesis_data'] = format_record(test_record)
 
             test_rule(rule_name, contents)

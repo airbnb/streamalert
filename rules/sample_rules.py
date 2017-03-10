@@ -74,3 +74,14 @@ def sample_kv_rule(rec):
         rec['msg'] == 'fatal' and
         rec['uid'] == 100
     )
+
+
+@rule(logs=['kv_log'],
+      matchers=[],
+      outputs=['s3'])
+def sample_kv_rule_last_hour(rec):
+    return (
+        rec['type'] == 'start' and
+        rec['uid'] == 0 and
+        last_hour(rec['time'])
+    )

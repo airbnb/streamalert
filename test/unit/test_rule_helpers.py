@@ -18,14 +18,14 @@ import time
 
 from nose.tools import assert_equal
 
-from rules.helpers.base import in_set, last_hour
+from rules.helpers import base
 
 def test_in_set():
     """Helpers - In Set"""
     # basic example
     test_list = ['this', 'is', 'a9', 'test']
     data = 'test'
-    result = in_set(data, test_list)
+    result = base.in_set(data, test_list)
     assert_equal(result, True)
 
     # with globbing
@@ -34,7 +34,7 @@ def test_in_set():
     yourhost = 'yourhost134931'
     ahost = 'ahost12321-test'
 
-    result = all(in_set(x, host_patterns) for x in (myhost, yourhost, ahost))
+    result = all(base.in_set(x, host_patterns) for x in (myhost, yourhost, ahost))
     assert_equal(result, True)
 
 def test_last_hour():
@@ -42,10 +42,31 @@ def test_last_hour():
     time_now = int(time.time())
 
     thirty_minutes_ago = time_now - 1800
-    assert_equal(last_hour(thirty_minutes_ago), True)
+    assert_equal(base.last_hour(thirty_minutes_ago), True)
 
     one_hour_ago = time_now - 3600
-    assert_equal(last_hour(one_hour_ago), True)
+    assert_equal(base.last_hour(one_hour_ago), True)
 
     two_hours_ago = time_now - 7200
-    assert_equal(last_hour(two_hours_ago), False)
+    assert_equal(base.last_hour(two_hours_ago), False)
+
+def test_valid_ip():
+    """Helpers - Valid IP"""
+    test_ip_valid = '127.0.0.1'
+    assert_equal(base.valid_ip(test_ip_valid), True)
+
+    test_ip_invalid = 'test [1234]'
+    assert_equal(base.valid_ip(test_ip_invalid), False)
+
+def test_in_network():
+    """Helpers - In Network"""
+    cidrs = {
+        '10.0.16.0/24',
+        '10.0.17.0/24'
+    }
+
+    ip_in_cidr = '10.0.16.24'
+    assert_equal(base.in_network(ip_in_cidr, cidrs), True)
+
+    ip_not_in_cidr = '10.0.15.24'
+    assert_equal(base.in_network(ip_not_in_cidr, cidrs), False)

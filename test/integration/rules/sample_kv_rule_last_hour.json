@@ -1,8 +1,8 @@
 {
   "records": [
     {
-      "data": "type=comm msg=fatal uid=100 time=1489013975",
-      "description": "fatal message from uid 100",
+      "data": "type=start msg=info uid=0 time=<helper:last_hour>",
+      "description": "info message from uid 0 in the last hour",
       "trigger": true,
       "source": "prefix_cluster1_stream_alert_kinesis",
       "service": "kinesis"

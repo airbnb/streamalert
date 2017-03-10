@@ -37,7 +37,8 @@
     "schema": {
       "type": "string",
       "msg": "string",
-      "uid": "integer"
+      "uid": "integer",
+      "time": "integer"
     },
     "parser": "kv",
     "delimiter": " ",

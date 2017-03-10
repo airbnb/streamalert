@@ -32,6 +32,7 @@
     "tfstate_s3_key": "stream_alert_state/terraform.tfstate",
     "tfvars": "terraform.tfvars",
     "third_party_libs": [
-        "jsonpath_rw"
+        "jsonpath_rw",
+        "netaddr"
     ]
 }
