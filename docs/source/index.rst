@@ -47,6 +47,7 @@ Table of Contents
    datasources
    datatypes
    rules
+   rule-testing
    outputs
    alternatives
    roadmap

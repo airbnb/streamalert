@@ -11,12 +11,12 @@ At a high-level:
 * Infrastructure security is a default, no security expertise required
 * Supports data from different environments (ex: IT, PCI, Engineering)
 * Supports data from different environment types (ex: Cloud, Datacenter, Office)
-* Supports different types of data (ex: JSON, CSV, Key-Value, Syslog)
+* Supports different types of data (ex: ``JSON``, ``CSV``, ``Key-Value``, ``Syslog``)
 * Supports different use-cases like security, infrastructure, compliance and more
 
 Other Links:
 
-* Twitter (unofficial): https://twitter.com/streamalert_io
-* Slack (unofficial): https://streamalert.herokuapp.com
+* `Twitter <https://twitter.com/streamalert_io>`_ (unofficial)
+* `Slack <https://streamalert.herokuapp.com>`_ (unofficial)
 
 .. note:: Docs are under construction, don't mind the dust!

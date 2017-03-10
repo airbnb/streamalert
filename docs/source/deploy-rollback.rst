@@ -7,4 +7,4 @@ When production AWS Lambda functions are published, they become immutable.  If f
 
 To initiate a rollback:
 
-``./stream_alert_cli.py lambda rollback --func alert``
+``$ ./stream_alert_cli.py lambda rollback --func alert``
