@@ -15,7 +15,7 @@ module "stream_alert_{{ cluster_name }}" {
   kms_key_arn                  = "${aws_kms_key.stream_alert_secrets.arn}"
 }
 
-// Cloudwatch alerts for production and staging Lambda functions
+// Cloudwatch alerts for production Lambda functions
 module "cloudwatch_monitoring_{{ cluster_name }}" {
   source               = "modules/tf_stream_alert_monitoring"
   sns_topic_arns       = ["${module.stream_alert_{{ cluster_name }}.sns_topic_arn}"]
@@ -39,7 +39,6 @@ module "kinesis_{{ cluster_name }}" {
 // Enable a Kinesis Stream to send events to Lambda
 module "kinesis_events_{{ cluster_name }}" {
   source                    = "modules/tf_stream_alert_kinesis_events"
-  lambda_staging_enabled    = true
   lambda_production_enabled = true
   lambda_role_id            = "${module.stream_alert_{{ cluster_name }}.lambda_role_id}"
   lambda_function_arn       = "${module.stream_alert_{{ cluster_name }}.lambda_arn}"

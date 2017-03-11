@@ -12,8 +12,8 @@ resource "aws_kinesis_firehose_delivery_stream" "stream_alert_firehose" {
 // AWS Kinesis Stream
 resource "aws_kinesis_stream" "stream_alert_stream" {
   name             = "${var.stream_name}"
-  shard_count      = "${var.stream_shards}"
-  retention_period = "${var.stream_retention}"
+  shard_count      = "${element(var.stream_config, 0)}"
+  retention_period = "${element(var.stream_config, 1)}"
 
   shard_level_metrics = [
     "IncomingBytes",

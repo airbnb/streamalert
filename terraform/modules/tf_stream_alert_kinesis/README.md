@@ -1,13 +1,13 @@
 # Stream Alert Kinesis Terraform Module
-* StreamAlert: a serverless, real-time intrusion detection engine.
 * This Terraform module creates the following:
   * A Kinesis Stream to send logs to for rule matching against the StreamAlert lambda function.
   * A Kinesis Firehose for long term log storage in S3.
 
 ## Components
-* Create a Kinesis Stream and Kinesis Firehose
-* Create a user account to send to the stream
-* Create roles for the user account
+* Create a Kinesis Stream
+* Create a Kinesis Firehose
+* Create a user to send to the stream
+* Create roles/policies for the user account
 * Create a role to allow the Firehose to send to the provided S3 bucket
 
 ## Example

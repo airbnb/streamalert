@@ -1,13 +1,17 @@
 # Stream Alert Terraform Module
-* StreamAlert: a serverless, real-time intrusion detection engine.
-* This Terraform module creates the lambda function to match rules against logs.
+* This Terraform module creates the main AWS Lambda functions to match rules and send alerts.
 
 ## Components
-Creates the following:
-* A S3 bucket for stream_alert lambda source code.
-* The Lambda function with the execution role.
-* A staging and production alias.
-* An SNS topic to send alerts to.
+* A S3 buckets
+  * StreamAlert Lambda source code.
+  * Bucket to store alerts from the Output processor.
+
+* AWS Lambda Functions
+  * StreamAlert processor
+  * StreamAlert output processor
+  * Each with a ``production`` Lambda alias
+
+* IAM roles/policies
 
 ## Example
 ```

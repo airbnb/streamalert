@@ -1,6 +1,6 @@
-// Lambda Function Role
-resource "aws_iam_role" "stream_alert_lambda_role" {
-  name = "${var.lambda_function_name}_role"
+// Rule Processor Execution Role
+resource "aws_iam_role" "streamalert_rule_processor_role" {
+  name = "${var.prefix}_${var.cluster}_streamalert_rule_processor_role"
 
   assume_role_policy = <<EOF
 {
@@ -19,9 +19,10 @@ resource "aws_iam_role" "stream_alert_lambda_role" {
 EOF
 }
 
-resource "aws_iam_role_policy" "stream_alert_lambda_sns" {
-  name = "${var.lambda_function_name}_send_to_sns"
-  role = "${aws_iam_role.stream_alert_lambda_role.id}"
+// Allow the Rule Processor to send alerts to SNS
+resource "aws_iam_role_policy" "streamalert_rule_processor_sns" {
+  name = "${var.prefix}_${var.cluster}_streamalert_rule_processor_send_to_sns"
+  role = "${aws_iam_role.streamalert_rule_processor_role.id}"
 
   policy = <<EOF
 {
@@ -40,8 +41,10 @@ resource "aws_iam_role_policy" "stream_alert_lambda_sns" {
 EOF
 }
 
-resource "aws_iam_role" "stream_alert_output_lambda_role" {
-  name = "${var.output_lambda_function_name}_role"
+
+// Alert Processor Execution Role
+resource "aws_iam_role" "streamalert_alert_processor_role" {
+  name = "${var.prefix}_${var.cluster}_streamalert_alert_processor_role"
 
   assume_role_policy = <<EOF
 {
@@ -60,9 +63,10 @@ resource "aws_iam_role" "stream_alert_output_lambda_role" {
 EOF
 }
 
-resource "aws_iam_role_policy" "stream_alert_output_lambda_kms" {
-  name = "${var.output_lambda_function_name}_kms"
-  role = "${aws_iam_role.stream_alert_output_lambda_role.id}"
+// Allow the Alert Processor to decrypt secrets
+resource "aws_iam_role_policy" "streamalert_alert_processor_kms" {
+  name = "${var.prefix}_${var.cluster}_streamalert_alert_processor_kms"
+  role = "${aws_iam_role.streamalert_alert_processor_role.id}"
 
   policy = <<EOF
 {
@@ -81,9 +85,12 @@ resource "aws_iam_role_policy" "stream_alert_output_lambda_kms" {
 EOF
 }
 
-resource "aws_iam_role_policy" "stream_alert_output_lambda_s3" {
-  name = "${var.output_lambda_function_name}_s3_output"
-  role = "${aws_iam_role.stream_alert_output_lambda_role.id}"
+// Allow the Alert Processor to write objects to S3
+//   S3 bucket list configured in alert_processor
+resource "aws_iam_role_policy" "streamalert_alert_processor_s3" {
+  name = "${var.prefix}_${var.cluster}_streamalert_alert_processor_s3_${count.index}"
+  role = "${aws_iam_role.streamalert_alert_processor_role.id}"
+  count = "${length(var.alert_processor_config["alerts_s3_bucket_arns"])}"
 
   policy = <<EOF
 {
@@ -97,7 +104,31 @@ resource "aws_iam_role_policy" "stream_alert_output_lambda_s3" {
       ],
       "Effect": "Allow",
       "Resource": [
-        "${aws_s3_bucket.stream_alert_output.arn}",
+        "${element(var.alert_processor_config["output_s3_bucket_arns"], count.index)}/*"
+      ]
+    }
+  ]
+}
+EOF
+}
+
+// Default s3 bucket created by this module.
+resource "aws_iam_role_policy" "streamalert_alert_processor_s3" {
+  name = "${var.prefix}_${var.cluster}_streamalert_alert_processor_s3_default"
+  role = "${aws_iam_role.streamalert_alert_processor_role.id}"
+
+  policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Action": [
+        "s3:PutObject",
+        "s3:PutObjectAcl",
+        "s3:ListBucket"
+      ],
+      "Effect": "Allow",
+      "Resource": [
         "${aws_s3_bucket.stream_alert_output.arn}/*"
       ]
     }
@@ -106,9 +137,11 @@ resource "aws_iam_role_policy" "stream_alert_output_lambda_s3" {
 EOF
 }
 
-resource "aws_iam_role_policy" "stream_alert_output_lambda_cloudwatch" {
-  name = "${var.output_lambda_function_name}_cloudwatch"
-  role = "${aws_iam_role.stream_alert_output_lambda_role.id}"
+// Allow the Alert Processor to write cloudwatch logs
+resource "aws_iam_role_policy" "streamalert_alert_processor_cloudwatch" {
+  name = "${var.prefix}_${var.cluster}_streamalert_alert_processor_cloudwatch"
+  role = "${aws_iam_role.streamalert_alert_processor_role.id}"
+
   policy = <<EOF
 {
   "Version": "2012-10-17",

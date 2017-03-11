@@ -20,10 +20,10 @@ variable "stream_name" {
   default = "stream_alert_stream"
 }
 
-variable "stream_shards" {
-  default = 2
-}
-
-variable "stream_retention" {
-  default = 24
+variable "stream_config" {
+  type = "list"
+  default = [
+    1, // number of shards
+    24 // retention period
+  ]
 }

@@ -2,8 +2,7 @@ variable "environments" {
   type = "list"
 
   default = [
-    "staging",
-    "production",
+    "production"
   ]
 }
 

@@ -1,29 +1,59 @@
-// Lambda function: Stream Alert Processor
+// AWS Lambda Function: StreamAlert Processor
 //    Matches rules against logs from Kinesis Streams or S3
-resource "aws_lambda_function" "stream_alert_processor" {
-  function_name = "${var.lambda_function_name}"
-  runtime       = "python2.7"
+resource "aws_lambda_function" "streamalert_rule_processor" {
+  function_name = "${var.prefix}_${var.cluster}_streamalert_rule_processor"
   description   = "StreamAlert Rule Processor"
-  memory_size   = "${var.lambda_memory}"
-  timeout       = "${var.lambda_timeout}"
-  role          = "${aws_iam_role.stream_alert_lambda_role.arn}"
-  handler       = "${var.lambda_handler}"
-  s3_bucket     = "${var.lambda_source_bucket_name}"
-  s3_key        = "${var.lambda_source_key}"
+  runtime       = "python2.7"
+  role          = "${aws_iam_role.streamalert_rule_processor_role.arn}"
+  handler       = "${lookup(var.rule_processor_config, "handler")}"
+  memory_size   = "${element(var.rule_processor_lambda_config, 1)}"
+  timeout       = "${element(var.rule_processor_lambda_config, 0)}"
+  s3_bucket     = "${lookup(var.rule_processor_config, "source_bucket")}"
+  s3_key        = "${lookup(var.rule_processor_config, "source_object_key")}"
 }
 
-// Lambda Staging Alias: Processes alerts and logs to Cloudwatch
-resource "aws_lambda_alias" "staging" {
-  name             = "staging"
-  description      = "staging stream_alert processor function"
-  function_name    = "${aws_lambda_function.stream_alert_processor.arn}"
-  function_version = "$LATEST"
-}
-
-// Lambda Production Alias: Processes alerts and sends to rule outputs
-resource "aws_lambda_alias" "production" {
+// StreamAlert Processor Production Alias
+resource "aws_lambda_alias" "rule_processor_production" {
   name             = "production"
-  description      = "production stream_alert processor function"
-  function_name    = "${aws_lambda_function.stream_alert_processor.arn}"
-  function_version = "${var.lambda_function_prod_version}"
+  description      = "Production StreamAlert Rule Processor Alias"
+  function_name    = "${aws_lambda_function.streamalert_rule_processor.arn}"
+  function_version = "${var.rule_processor_prod_version}"
+}
+
+// AWS Lambda Function: StreamAlert Output Processor
+//    Send alerts to declared outputs
+resource "aws_lambda_function" "streamalert_alert_processor" {
+  function_name = "${var.prefix}_${var.cluster}_streamalert_alert_processor"
+  description   = "StreamAlert Output Processor"
+  runtime       = "python2.7"
+  role          = "${aws_iam_role.streamalert_alert_processor_role.arn}"
+  handler       = "${lookup(var.alert_processor_config, "handler")}"
+  memory_size   = "${element(var.alert_processor_lambda_config, 1)}"
+  timeout       = "${element(var.alert_processor_lambda_config, 0)}"
+  s3_bucket     = "${lookup(var.alert_processor_config, "source_bucket")}"
+  s3_key        = "${lookup(var.alert_processor_config, "source_object_key")}"
+}
+
+// StreamAlert Output Processor Production Alias
+resource "aws_lambda_alias" "alert_processor_production" {
+  name             = "production"
+  description      = "Production StreamAlert Alert Processor Alias"
+  function_name    = "${aws_lambda_function.streamalert_alert_processor.arn}"
+  function_version = "${var.alert_processor_prod_version}"
+}
+
+// Allow SNS to invoke the StreamAlert Output Processor
+resource "aws_lambda_permission" "with_sns" {
+  statement_id  = "AllowExecutionFromSNS"
+  action        = "lambda:InvokeFunction"
+  function_name = "${aws_lambda_function.streamalert_alert_processor.arn}"
+  principal     = "sns.amazonaws.com"
+  source_arn    = "${aws_sns_topic.streamalert.arn}"
+}
+
+// S3 bucket for S3 outputs
+resource "aws_s3_bucket" "stream_alert_output" {
+  bucket        = "${var.prefix}_${var.cluster}_streamalerts"
+  acl           = "private"
+  force_destroy = false
 }
