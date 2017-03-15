@@ -21,6 +21,7 @@ import logging
 import os
 import time
 import urllib2
+import ssl
 
 from datetime import datetime
 
@@ -236,7 +237,9 @@ class StreamOutput(object):
             "details": output_alerts,
             "client": "StreamAlert"
         })
-        self.request_helper(url, values_json, 'Pagerduty')
+        resp = self.request_helper(url, values_json)
+        if resp and resp.getcode() in range(200, 299):
+            logger.info('Successfully sent alert to Pagerduty.')
 
     def _s3(self, rule_name, alerts):
         """Send alerts to an S3 bucket.
@@ -307,23 +310,38 @@ class StreamOutput(object):
 
         attachment['fields'] = fields
         json_data = json.dumps({'attachments': [attachment]})
-        self.request_helper(url, json_data, 'Slack')
+        resp = self.request_helper(url, json_data)
 
-        for alert in alerts:
-            text_data = json.dumps({'text': '```{}```'.format(
-                json.dumps(alert['record'], indent=4)
-            )})
-            self.request_helper(url, text_data, 'Slack')
+        if resp and resp.read() == 'ok':
+            logger.info('Successfully sent attachment to Slack.')
+            success_cnt = 0
+            for alert in alerts:
+                text_data = json.dumps({'text': '```{}```'.format(
+                    json.dumps(alert['record'], indent=4)
+                )})
+                resp = self.request_helper(url, text_data)
+                if resp and resp.read() == 'ok':
+                    success_cnt += 1
+            logger.info('Successfully sent %s alerts to Slack.', success_cnt)
 
     @staticmethod
-    def request_helper(url, data, endpoint):
+    def request_helper(url, data, headers=None, verify=True):
         """url request helper with error handling"""
         try:
-            req = urllib2.Request(url, data=data)
-            resp = urllib2.urlopen(req)
-            logger.info('Successfully sent to %s', endpoint)
+            if not headers:
+                headers = {}
+            context = None
+            if not verify:
+                context = ssl.create_default_context()
+                context.check_hostname = False
+                context.verify_mode = ssl.CERT_NONE
+            req = urllib2.Request(url, data=data, headers=headers)
+            resp = urllib2.urlopen(req, context=context)
+            return resp
         except urllib2.HTTPError as e:
-            raise OutputRequestFailure('Failed to send to {} - [{}] {}'.format(e.code, e.read()))
+            raise OutputRequestFailure('Failed to send to {} - [{}] {}'.format(e.url,
+                                                                               e.code,
+                                                                               e.read()))
 
     @staticmethod
     def emit_cloudwatch_metrics():
