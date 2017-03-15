@@ -1,14 +1,6 @@
-variable "environments" {
-  type = "list"
+variable "sns_topic_arn" {}
 
-  default = [
-    "production"
-  ]
-}
-
-variable "sns_topic_arns" {
+variable "lambda_functions" {
   type    = "list"
   default = []
 }
-
-variable "lambda_function_name" {}
