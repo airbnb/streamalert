@@ -48,7 +48,7 @@ variable "rule_processor_versions" {
   default = {}
 }
 
-variable "alert_processor_lambda_config" {
+variable "rule_processor_lambda_config" {
   type = "map"
   default = {}
 }
