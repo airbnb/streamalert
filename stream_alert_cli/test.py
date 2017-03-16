@@ -129,7 +129,7 @@ def format_record(test_record):
         template['eventSourceARN'] = 'arn:aws:kinesis:us-east-1:111222333:stream/{}'.format(source)
     elif service == 'sns':
         # TODO implement sns testing
-        pass
+        raise NotImplementedError
     else:
         LOGGER_CLI.info('Invalid service %s', service)
 
