@@ -14,10 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 
-import json
+from datetime import datetime
+
 import logging
 
 import boto3
+
 
 class LambdaVersion(object):
     """
@@ -33,41 +35,34 @@ class LambdaVersion(object):
 
     The goal of this class is to publish production Lambda versions.
     """
-    def __init__(self, config):
-        self.config = config
+
+    def __init__(self, **kwargs):
+        self.config = kwargs['config']
+        self.package = kwargs['package']
 
     def publish_function(self):
         logging.info('Publishing New Function Version')
+        date = datetime.utcnow().strftime("%Y%m%d_T%H%M%S")
         new_versions = {}
 
         for cluster, region in self.config['clusters'].iteritems():
-            client = boto3.client('lambda',region_name=region)
-            functionName = '{}_{}_stream_alert_processor'.format(
-                            self.config['prefix'], cluster)
-            logging.info('Publishing %s', functionName)
+            client = boto3.client('lambda', region_name=region)
+            function_name = '{}_{}_streamalert_processor_{}'.format(
+                self.config['prefix'],
+                cluster,
+                self.package.package_name
+            )
+            logging.info('Publishing %s', function_name)
             response = client.publish_version(
-                FunctionName=functionName,
-                CodeSha256=self.config['lambda_source_current_hash'],
-                Description='publish new version of lambda function'
+                FunctionName=function_name,
+                CodeSha256=self.config[self.package.config_key]['source_current_hash'],
+                Description='Publish Lambda {} on {}'.format(function_name, date)
             )
             version = response['Version']
             new_versions[cluster] = int(version)
-            logging.info('Published version %s for %s cluster', version, cluster)
-        self._update_config(new_versions)
+            logging.info('Published version %s for %s:%s',
+                         version, cluster, function_name)
 
-    @staticmethod
-    def _update_config(new_versions):
-        vers_key = 'lambda_function_prod_versions'
-        with open('variables.json', 'r+') as varfile:
-            config = json.load(varfile)
-            for cluster, new_version in new_versions.iteritems():
-                config[vers_key][cluster] = new_version
-            config_out = json.dumps(
-                config,
-                indent=4,
-                separators=(',', ': '),
-                sort_keys=True
-            )
-            varfile.seek(0)
-            varfile.write(config_out)
-            varfile.truncate()
+        lambda_config_key = '{}_versions'.format(self.package.package_name)
+        for cluster, new_version in new_versions.iteritems():
+            self.config[lambda_config_key][cluster] = new_version

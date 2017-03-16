@@ -27,7 +27,7 @@ from moto import mock_s3
 from stream_alert.handler import StreamAlert
 # import all rules so they are loaded
 # pylint: disable=unused-import
-import main
+import stream_alert.rule_processor.main
 # pylint: enable=unused-import
 
 LOGGER_SA = logging.getLogger('StreamAlert')
