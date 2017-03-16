@@ -39,6 +39,46 @@
       "trigger": false,
       "source": "prefix_cluster1_stream_alert_kinesis",
       "service": "kinesis"
+    },
+    {
+      "data": {
+        "name": "logged_in_users",
+        "hostIdentifier": "host3",
+        "calendarTime": "Tue Feb 29 20:20:09 UTC 2017",
+        "unixTime": "1488309540",
+        "columns": {
+          "host": "10.54.0.21",
+          "user": "sam"
+        },
+        "action": "added",
+        "decorations": {
+          "environment": "qa"
+        }
+      },
+      "description": "user logging in from an untrusted subnet",
+      "trigger": true,
+      "source": "example_s3_bucket",
+      "service": "s3"
+    },
+    {
+      "data": {
+        "name": "logged_in_users",
+        "hostIdentifier": "host4",
+        "calendarTime": "Tue Feb 27 18:18:08 UTC 2017",
+        "unixTime": "1488309540",
+        "columns": {
+          "host": "10.2.0.99",
+          "user": "mike"
+        },
+        "action": "added",
+        "decorations": {
+          "environment": "qa"
+        }
+      },
+      "description": "user logging in from the trusted subnet",
+      "trigger": false,
+      "source": "example_s3_bucket",
+      "service": "s3"
     }
   ]
 }

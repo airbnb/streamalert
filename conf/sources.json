@@ -16,9 +16,13 @@
 		}
 	},
 	"s3": {
-		"my-s3-bucket-id": {
+		"example_s3_bucket": {
 			"logs": [
-				"syslog_log"
+				"json_log",
+				"syslog_log",
+				"kv_log",
+				"csv_log",
+				"osquery"
 			]
 		}
 	}
