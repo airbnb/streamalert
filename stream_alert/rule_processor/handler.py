@@ -2,11 +2,11 @@ import json
 import logging
 import os
 
-from stream_alert.config import load_config, load_env
-from stream_alert.classifier import StreamPayload, StreamClassifier
-from stream_alert.pre_parsers import StreamPreParsers
-from stream_alert.rules_engine import StreamRules
-from stream_alert.sink import StreamSink
+from stream_alert.rule_processor.config import load_config, load_env
+from stream_alert.rule_processor.classifier import StreamPayload, StreamClassifier
+from stream_alert.rule_processor.pre_parsers import StreamPreParsers
+from stream_alert.rule_processor.rules_engine import StreamRules
+from stream_alert.rule_processor.sink import StreamSink
 
 logging.basicConfig()
 logger = logging.getLogger('StreamAlert')

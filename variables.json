@@ -6,7 +6,7 @@
     "region": "us-east-1"
   },
   "alert_processor_config": {
-    "handler": "alert_processor.handler",
+    "handler": "stream_alert.alert_processor.main.handler",
     "third_party_libraries": [],
     "source_bucket": "ADD-ORG-NAME-HERE.streamalert.source",
     "source_current_hash": "auto",
@@ -40,7 +40,7 @@
     ]
   },
   "rule_processor_config": {
-    "handler": "rule_processor.handler",
+    "handler": "stream_alert.rule_processor.main.handler",
     "third_party_libraries": [
       "jsonpath_rw",
       "netaddr"

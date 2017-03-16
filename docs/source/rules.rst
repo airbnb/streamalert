@@ -35,7 +35,7 @@ Overview
 Each Rule file must contain the following at the top::
 
   from stream_alert import rule_helpers
-  from stream_alert.rules_engine import StreamRules
+  from stream_alert.rule_processor.rules_engine import StreamRules
 
   rule = StreamRules.rule
 

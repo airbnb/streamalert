@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 
-from stream_alert.handler import StreamAlert
+from stream_alert.rule_processor.handler import StreamAlert
 from rules import (
     sample_rules,
     sample_matchers

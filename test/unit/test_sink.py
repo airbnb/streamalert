@@ -19,7 +19,7 @@ import base64
 
 from nose.tools import assert_equal
 
-import stream_alert.sink as sink
+import stream_alert.rule_processor.sink as sink
 
 class TestStreamSink(object):
     @classmethod
