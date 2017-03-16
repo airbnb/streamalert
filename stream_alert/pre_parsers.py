@@ -91,13 +91,13 @@ class StreamPreParsers(object):
             raise S3ObjectSizeError('S3 object to download is above 128MB')
 
         logger.debug('/tmp directory contents:%s ', os.listdir('/tmp'))
-        logger.debug(os.system('df -h /tmp | tail -1'))
+        logger.debug(os.popen('df -h /tmp | tail -1').read().strip())
 
         if size_mb:
             display_size = '{}MB'.format(size_mb)
         else:
             display_size = '{}KB'.format(size_kb)
-        logger.info('Starting download from S3 - %s/%s [%s]',
+        logger.debug('Starting download from S3 - %s/%s [%s]',
                     bucket, key, display_size)
 
         suffix = key.replace('/', '-')
@@ -107,7 +107,7 @@ class StreamPreParsers(object):
             client.download_fileobj(bucket, key, data)
 
         end_time = time.time() - start_time
-        logger.info('Completed download in %s seconds', round(end_time, 2))
+        logger.debug('Completed download in %s seconds', round(end_time, 2))
 
         return downloaded_s3_object
 
@@ -144,6 +144,6 @@ class StreamPreParsers(object):
         # remove file path
         os.remove(downloaded_s3_object)
         if not os.path.exists(downloaded_s3_object):
-            logger.info('Removed temp file - %s', downloaded_s3_object)
+            logger.debug('Removed temp file - %s', downloaded_s3_object)
 
         return lines

@@ -12,6 +12,7 @@ Jinja2==2.9.5
 jmespath==0.9.1
 jsonpath-rw==1.4.0
 MarkupSafe==0.23
+moto==0.4.31
 netaddr==0.7.18
 nose==1.3.7
 numpy==1.12.0

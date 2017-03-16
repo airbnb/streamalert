@@ -221,19 +221,13 @@ class CSVParser(ParserBase):
         service = self.options['service']
         delimiter = self.options['delimiter'] or self.__default_delimiter
 
-        if service == 's3':
-            try:
-                csv_data = StringIO.StringIO(data)
-                reader = csv.DictReader(csv_data, delimiter=delimiter)
-            except ValueError, csv.Error:
-                return False
-
-        elif service == 'kinesis':
-            try:
-                csv_data = StringIO.StringIO(data)
-                reader = csv.reader(csv_data, delimiter=delimiter)
-            except ValueError, csv.Error:
-                return False
+        # TODO(ryandeivert): either subclass a current parser or add a new
+        # parser to support parsing CSV data that contains a header line
+        try:
+            csv_data = StringIO.StringIO(data)
+            reader = csv.reader(csv_data, delimiter=delimiter)
+        except ValueError, csv.Error:
+            return False
 
         return reader
 

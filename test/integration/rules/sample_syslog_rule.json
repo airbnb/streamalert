@@ -6,6 +6,13 @@
       "trigger": true,
       "source": "prefix_cluster1_stream_alert_kinesis",
       "service": "kinesis"
+    },
+    {
+      "data": "Jan 01 12:00:12 test-host-2 sudo[159]: COMMAND sudo rm /tmp/badstuff",
+      "description": "sudo command ran",
+      "trigger": true,
+      "source": "example_s3_bucket",
+      "service": "s3"
     }
   ]
 }

@@ -14,7 +14,7 @@
     },
     "bucket": {
       "arn": "arn:aws:s3:::mybucket",
-      "name": "sourcebucket",
+      "name": "mybucket",
       "ownerIdentity": {
         "principalId": "EXAMPLE"
       }

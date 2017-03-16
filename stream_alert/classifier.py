@@ -205,6 +205,8 @@ class StreamClassifier(object):
                 payload.records]):
             payload.valid = True
 
+        logger.debug('payload: %s', payload)
+
     def _parse(self, payload, data):
         """Parse a record into a declared type.
 
@@ -264,7 +266,6 @@ class StreamClassifier(object):
                     payload.log_source = log_name
                     payload.type = parser_name
                     payload.records = typed_data
-                    logger.debug('valid data detected')
                     return True
         return False
 
