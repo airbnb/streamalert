@@ -17,3 +17,6 @@ terminal.glue
 
 # nose coverage file
 .coverage
+
+# virtualenv files
+venv/
