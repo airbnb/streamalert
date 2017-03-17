@@ -232,6 +232,7 @@ class StreamOutput(object):
         values_json = json.dumps({
             "service_key": service_key,
             "event_type": "trigger",
+            "incident_key": rule_name,
             "description": message,
             "details": output_alerts,
             "client": "StreamAlert"
