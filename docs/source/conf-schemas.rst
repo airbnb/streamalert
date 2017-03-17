@@ -39,7 +39,7 @@ Here are the basics:
 * Keys defined in the ``schema`` must exist
 * Values are weakly/loosely typed and enforced
 * Arrays imply zero or more elements
-* An empty hash ({}) implies zero or more elements
+* An empty map ({}) implies zero or more elements
 * Schemas can be as tight or as loose as you want (see Example: osquery)
 * If you have nested records, you can specify a JSONPath to your ``records`` with ``hints``
 
