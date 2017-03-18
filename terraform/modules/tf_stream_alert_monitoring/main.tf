@@ -10,7 +10,7 @@ resource "aws_cloudwatch_metric_alarm" "stream_alert_invocation_errors" {
   threshold           = "0"
   evaluation_periods  = "1"
   period              = "300"
-  alarm_description   = "StreamAlert Lambda Invocation Errors: ${var.environments["${count.index}"]}"
+  alarm_description   = "StreamAlert Lambda Invocation Errors: ${element(var.lambda_functions, count.index)}"
   alarm_actions       = ["${var.sns_topic_arn}"]
 
   dimensions {

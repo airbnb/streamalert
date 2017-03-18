@@ -26,6 +26,10 @@ import pip
 
 import boto3
 
+# from stream_alert_cli.logger import LOGGER_CLI
+logging.basicConfig(format='%(name)s [%(levelname)s]: %(message)s')
+LOGGER_CLI = logging.getLogger('StreamAlertCLI')
+LOGGER_CLI.setLevel(logging.INFO)
 
 class LambdaPackage(object):
     """Build and upload a StreamAlert deployment package to S3."""
@@ -66,8 +70,10 @@ class LambdaPackage(object):
             # set new config values and update
             full_package_name = os.path.join(self.package_name, generated_package_name)
             # make all config changes here
+            print self.config[self.config_key]
             self.config[self.config_key]['source_object_key'] = full_package_name
             self.config[self.config_key]['source_current_hash'] = package_sha256
+            self.config.write()
 
     def _get_tmpdir(self):
         """Generate a temporary directory and package name
@@ -88,7 +94,7 @@ class LambdaPackage(object):
         Args:
             files [tuple]: File paths to remove after uploading to S3.
         """
-        logging.info('Removing local files')
+        LOGGER_CLI.info('Removing local files')
         for obj in files:
             os.remove(obj)
 
@@ -121,9 +127,9 @@ class LambdaPackage(object):
         Returns:
             [string] Deployment package full path
         """
-        logging.info('Creating Lambda package: %s', ''.join([temp_package_path, '.zip']))
+        LOGGER_CLI.info('Creating Lambda package: %s', ''.join([temp_package_path, '.zip']))
         package_path = shutil.make_archive(temp_package_path, 'zip', temp_package_path)
-        logging.info('Package Successfully Created!')
+        LOGGER_CLI.info('Package Successfully Created!')
 
         return package_path
 
@@ -164,13 +170,13 @@ class LambdaPackage(object):
         third_party_libs = self.config[self.config_key]['third_party_libraries']
         if third_party_libs:
             if len(third_party_libs) > 0:
-                logging.info('Installing third-party libraries')
+                LOGGER_CLI.info('Installing third-party libraries')
                 pip_command = ['install']
                 pip_command.extend(third_party_libs)
                 pip_command.extend(['--upgrade', '--target', temp_package_path])
                 pip.main(pip_command)
             else:
-                logging.info('No third-party libraries to install.')
+                LOGGER_CLI.info('No third-party libraries to install.')
 
     def _upload(self, package_path):
         """Upload the StreamAlert package and sha256 to S3.
@@ -184,7 +190,7 @@ class LambdaPackage(object):
         Raises:
             Exception if client put_object fails
         """
-        logging.info('Uploading StreamAlert package to S3')
+        LOGGER_CLI.info('Uploading StreamAlert package to S3')
         client = boto3.client('s3', region_name=self.config['account']['region'])
         # the zip and the checksum file
         for package_file in (package_path, '{}.sha256'.format(package_path)):
@@ -192,16 +198,16 @@ class LambdaPackage(object):
             package_fh = open(package_file, 'r')
             try:
                 client.put_object(
-                    Bucket=self.config['lambda_source_bucket_name'],
+                    Bucket=self.config[self.config_key]['source_bucket'],
                     Key=os.path.join(self.package_name, package_name),
                     Body=package_fh,
                     ServerSideEncryption='AES256'
                 )
             except BaseException:
-                logging.info('An error occured while uploding %s', package_name)
+                LOGGER_CLI.info('An error occured while uploding %s', package_name)
                 raise
             package_fh.close()
-            logging.info('Uploaded %s to S3', package_name)
+            LOGGER_CLI.info('Uploaded %s to S3', package_name)
 
         return True
 
@@ -209,7 +215,7 @@ class LambdaPackage(object):
 class RuleProcessorPackage(LambdaPackage):
     """Deployment package class for the StreamAlert Rule Processor function"""
     package_folders = {'stream_alert/rule_processor', 'rules', 'conf'}
-    package_files = {'variables.json'}
+    package_files = {'stream_alert/__init__.py', 'variables.json'}
     package_root_dir = '.'
     package_name = 'rule_processor'
     config_key = 'rule_processor_config'
@@ -218,7 +224,7 @@ class RuleProcessorPackage(LambdaPackage):
 class AlertProcessorPackage(LambdaPackage):
     """Deployment package class for the StreamAlert Alert Processor function"""
     package_folders = {'stream_alert/alert_processor'}
-    package_files = {}
+    package_files = {'stream_alert/__init__.py'}
     package_root_dir = '.'
     package_name = 'alert_processor'
     config_key = 'alert_processor_config'

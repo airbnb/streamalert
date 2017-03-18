@@ -86,32 +86,6 @@ EOF
 }
 
 // Allow the Alert Processor to write objects to S3
-//   S3 bucket list configured in alert_processor
-resource "aws_iam_role_policy" "streamalert_alert_processor_s3" {
-  name = "${var.prefix}_${var.cluster}_streamalert_alert_processor_s3_${count.index}"
-  role = "${aws_iam_role.streamalert_alert_processor_role.id}"
-  count = "${length(var.alert_processor_config["alerts_s3_bucket_arns"])}"
-
-  policy = <<EOF
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Action": [
-        "s3:PutObject",
-        "s3:PutObjectAcl",
-        "s3:ListBucket"
-      ],
-      "Effect": "Allow",
-      "Resource": [
-        "${element(var.alert_processor_config["output_s3_bucket_arns"], count.index)}/*"
-      ]
-    }
-  ]
-}
-EOF
-}
-
 // Default s3 bucket created by this module.
 resource "aws_iam_role_policy" "streamalert_alert_processor_s3" {
   name = "${var.prefix}_${var.cluster}_streamalert_alert_processor_s3_default"

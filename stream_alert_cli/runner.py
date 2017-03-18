@@ -14,17 +14,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 
-import logging
-import os
-
 from collections import namedtuple
 from jinja2 import Environment, PackageLoader
 
 from stream_alert_cli.package import RuleProcessorPackage, AlertProcessorPackage
-from stream_alert_cli.version import LambdaVersion
 from stream_alert_cli.test import stream_alert_test
 from stream_alert_cli.helpers import CLIHelpers
 from stream_alert_cli.config import CLIConfig
+from stream_alert_cli.logger import LOGGER_CLI
+from stream_alert_cli.version import LambdaVersion
 
 from stream_alert.alert_processor import __version__ as alert_processor_version
 from stream_alert.rule_processor import __version__ as rule_processor_version
@@ -48,10 +46,9 @@ def cli_runner(options):
             Contains the following keys for lambda commands:
                 (command, subcommand, env, func, source)
     """
-    cli_load_message = ('Stream Alert CLI'
-                        '\nIssues? Report here: '
+    cli_load_message = ('Issues? Report here: '
                         'https://github.com/airbnb/streamalert/issues')
-    logging.info(cli_load_message)
+    LOGGER_CLI.info(cli_load_message)
 
     if options.command == 'lambda':
         lambda_runner(options)
@@ -66,10 +63,7 @@ def lambda_runner(options):
         deploy(options)
 
     elif options.subcommand == 'rollback':
-        rollback()
-        targets = ['module.stream_alert_{}'.format(x)
-                   for x in CONFIG['clusters'].keys()]
-        tf_runner(targets=targets)
+        rollback(options)
 
     elif options.subcommand == 'test':
         stream_alert_test(options)
@@ -109,12 +103,12 @@ def terraform_runner(options):
 
     # initialize streamalert infrastructure from a blank state
     elif options.subcommand == 'init':
-        logging.info('Initializing StreamAlert')
-        logging.info('Generating Cluster Files')
+        LOGGER_CLI.info('Initializing StreamAlert')
+        LOGGER_CLI.info('Generating Cluster Files')
         generate_tf_files()
 
         # build init infrastructure
-        logging.info('Building Initial Infrastructure')
+        LOGGER_CLI.info('Building Initial Infrastructure')
         init_targets = [
             'aws_s3_bucket.lambda_source',
             'aws_s3_bucket.integration_testing',
@@ -124,15 +118,13 @@ def terraform_runner(options):
         ]
         tf_runner(targets=init_targets, refresh_state=False)
 
-        os._exit(0)
-
-        logging.info('Deploying Lambda Functions')
+        LOGGER_CLI.info('Deploying Lambda Functions')
         # setup remote state
         refresh_tf_state()
         # deploy both lambda functions
         deploy(deploy_opts('all'))
         # create all remainder infrastructure
-        logging.info('Building Remainder Infrastructure')
+        LOGGER_CLI.info('Building Remainder Infrastructure')
         tf_runner()
         # refresh config to get modified variables
         # refresh_config()
@@ -165,7 +157,7 @@ def continue_prompt():
 
 def refresh_tf_state():
     """Refresh the Terraform remote state"""
-    logging.info('Refreshing Remote State config')
+    LOGGER_CLI.info('Refreshing Remote State config')
     region = CONFIG['account']['region']
     bucket = '{}.streamalert.terraform.state'.format(CONFIG['account']['prefix'])
     s3_key = CONFIG['terraform']['tfstate_s3_key']
@@ -217,16 +209,16 @@ def tf_runner(**kwargs):
     if refresh_state:
         refresh_tf_state()
 
-    logging.info('Resolving Terraform modules')
+    LOGGER_CLI.info('Resolving Terraform modules')
     run_command(['terraform', 'get'], quiet=True)
 
-    logging.info('Planning infrastructure')
+    LOGGER_CLI.info('Planning infrastructure')
     tf_plan = run_command(tf_command) and continue_prompt()
     if not tf_plan:
         return False
 
     if action == 'destroy':
-        logging.info('Destroying infrastructure')
+        LOGGER_CLI.info('Destroying infrastructure')
         tf_command[tf_action_index] = action
         tf_command.remove('-destroy')
 
@@ -234,7 +226,7 @@ def tf_runner(**kwargs):
         tf_command[tf_action_index] = action
 
     else:
-        logging.info('Creating infrastructure')
+        LOGGER_CLI.info('Creating infrastructure')
         tf_command[tf_action_index] = 'apply'
 
     run_command(tf_command)
@@ -262,7 +254,7 @@ def status():
     run_command(['terraform', 'output'])
 
 
-def rollback():
+def rollback(options):
     """Rollback the current production AWS Lambda version by 1
 
     Notes:
@@ -270,18 +262,31 @@ def rollback():
         Only rollsback if published version is greater than 1
     """
     clusters = CONFIG['clusters'].keys()
+    if options.processor == 'all':
+        lambda_functions = {'rule_processor', 'alert_processor'}
+    else:
+        lambda_functions = {'{}_processor'.format(options.processor)}
+
     for cluster in clusters:
-        for lambda_function in ('rule_processor', 'alert_processor'):
-            current_vers = CONFIG['{}_versions'][cluster]
+        for lambda_function in lambda_functions:
+            version_key = '{}_versions'.format(lambda_function)
+            print version_key, cluster
+            current_vers = CONFIG[version_key][cluster]
             if current_vers != '$LATEST':
                 current_vers = int(current_vers)
                 if current_vers > 1:
                     new_vers = current_vers - 1
-                    CONFIG['{}_versions'][cluster] = new_vers
+                    CONFIG[version_key][cluster] = new_vers
+                    CONFIG.write()
+
+    targets = ['module.stream_alert_{}'.format(x)
+               for x in CONFIG['clusters'].keys()]
+    tf_runner(targets=targets)
 
 
 def generate_tf_files():
     """Generate all Terraform plans for the clusters in variables.json"""
+    LOGGER_CLI.info('Generating Terraform files')
     env = Environment(loader=PackageLoader('terraform', 'templates'))
     template = env.get_template('cluster_template')
 
@@ -316,39 +321,50 @@ def deploy(options):
     # terraform apply only to the module which contains our lambda functions
     targets = ['module.stream_alert_{}'.format(x)
                for x in CONFIG['clusters'].keys()]
+    packages = []
+
+    def publish_version(packages):
+        """Publish Lambda versions"""
+        for package in packages:
+            LambdaVersion(
+                config=CONFIG,
+                package=package
+            ).publish_function()
 
     def deploy_rule_processor():
         """Create Rule Processor package and publish versions"""
-        package = RuleProcessorPackage(
+        rule_package = RuleProcessorPackage(
             config=CONFIG,
             version=rule_processor_version
-        ).create_and_upload()
-
-        LambdaVersion(
-            config=CONFIG,
-            package=package
-        ).publish_function()
+        )
+        rule_package.create_and_upload()
+        return rule_package
 
     def deploy_alert_processor():
         """Create Alert Processor package and publish versions"""
-        package = AlertProcessorPackage(
+        alert_package = AlertProcessorPackage(
             config=CONFIG,
             version=alert_processor_version
-        ).create_and_upload()
-
-        LambdaVersion(
-            config=CONFIG,
-            package=package
-        ).publish_function()
+        )
+        alert_package.create_and_upload()
+        return alert_package
 
     if processor == 'rule':
-        deploy_rule_processor()
+        packages.append(deploy_rule_processor())
 
     elif processor == 'alert':
-        deploy_alert_processor()
+        packages.append(deploy_alert_processor())
 
     elif processor == 'all':
-        deploy_rule_processor()
-        deploy_alert_processor()
+        packages.append(deploy_rule_processor())
+        packages.append(deploy_alert_processor())
 
+    # update the source code in $LATEST
+    tf_runner(targets=targets)
+
+    # TODO(jack) write integration test to verify newly updated function
+
+    # create production version by running a second time
+    print packages
+    publish_version(packages)
     tf_runner(targets=targets)

@@ -73,14 +73,18 @@ class CLIConfig(object):
             self.config = self._convert_schema()
             self.version = self.detect_version()
 
+    def __repr__(self):
+        return json.dumps(self.config)
+
     def __getitem__(self, key):
         return self.config[key]
 
     def __setitem__(self, key, new_value):
-        try:
-            self.config[key] = new_value
-        finally:
+        if key in self.v2_schema:
+            self.config.__setitem__(key, new_value)
             self.write()
+        else:
+            raise ConfigError('Invalid key to set: {}'.format(key))
 
     def get(self, key):
         return self.config.get(key)
@@ -127,7 +131,9 @@ class CLIConfig(object):
         elif config_keys == self.v2_schema:
             return 2
         else:
-            raise ConfigError('StreamAlert variables.json is missing keys!')
+            raise ConfigError('StreamAlert variables.json does not match schema!\n{}'.format(
+                config_keys
+            ))
 
     def _convert_schema(self):
         """Upgrade the config from v1 to v2
@@ -148,15 +154,14 @@ class CLIConfig(object):
             'third_party_libraries': [],
             'source_bucket': self.config['lambda_source_bucket_name'],
             'source_current_hash': self.config['output_lambda_current_hash'],
-            'source_object_key': self.config['output_lambda_source_key'],
-            'output_s3_bucket_arns': []
+            'source_object_key': self.config['output_lambda_source_key']
         }
         for cluster, _ in self.config['clusters'].iteritems():
-            new_config['alert_processor_versions'][cluster] = '$LATEST'
             new_config['alert_processor_lambda_config'][cluster] = [10, 128]
+            new_config['alert_processor_versions'][cluster] = '$LATEST'
 
         new_config['rule_processor_config'] = {
-            'handler': self.config['lambda_handler'],
+            'handler': 'stream_alert.rule_processor.main.handler',
             'third_party_libraries': self.config['third_party_libs'],
             'source_bucket': self.config['lambda_source_bucket_name'],
             'source_current_hash': self.config['lambda_source_current_hash'],

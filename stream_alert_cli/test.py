@@ -24,15 +24,13 @@ import time
 
 import boto3
 from moto import mock_s3
-from stream_alert.handler import StreamAlert
-# import all rules so they are loaded
+
+from stream_alert.rule_processor.handler import StreamAlert
+from stream_alert_cli.logger import LOGGER_CLI, LOGGER_SA
+# import all rules loaded from the main handler
 # pylint: disable=unused-import
 import stream_alert.rule_processor.main
 # pylint: enable=unused-import
-
-LOGGER_SA = logging.getLogger('StreamAlert')
-LOGGER_CLI = logging.getLogger('StreamAlertCLI')
-LOGGER_CLI.setLevel(logging.INFO)
 
 BOTO_MOCKER = mock_s3()
 

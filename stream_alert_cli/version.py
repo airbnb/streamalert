@@ -1,12 +1,9 @@
 '''
 Copyright 2017-present, Airbnb Inc.
-
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
-
    http://www.apache.org/licenses/LICENSE-2.0
-
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,15 +21,12 @@ import boto3
 class LambdaVersion(object):
     """
     Publish versions of the StreamAlert Lambda function.
-
     There are two environments, staging and production.  They are configured
     as Lambda alises, which are pointers to certain published versions
     of code.  Versions can be either: the most recently uploaded code,
     which is represented as $LATEST, or a published version (0, 1, 2, etc).
-
     Staging always points to $LATEST, and production always points to a
     published version.  These are both defined in `variables.json`.
-
     The goal of this class is to publish production Lambda versions.
     """
 
@@ -47,8 +41,8 @@ class LambdaVersion(object):
 
         for cluster, region in self.config['clusters'].iteritems():
             client = boto3.client('lambda', region_name=region)
-            function_name = '{}_{}_streamalert_processor_{}'.format(
-                self.config['prefix'],
+            function_name = '{}_{}_streamalert_{}'.format(
+                self.config['account']['prefix'],
                 cluster,
                 self.package.package_name
             )
@@ -66,3 +60,4 @@ class LambdaVersion(object):
         lambda_config_key = '{}_versions'.format(self.package.package_name)
         for cluster, new_version in new_versions.iteritems():
             self.config[lambda_config_key][cluster] = new_version
+        self.config.write()

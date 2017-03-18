@@ -20,14 +20,7 @@ data "terraform_remote_state" "tfstate_stream_alert" {
 // Setup StreamAlert source code S3 bucket
 // This bucket must be created first
 resource "aws_s3_bucket" "lambda_source" {
-  bucket        = "${lookup(var.rule_processor_config, "source_bucket_name")}"
-  acl           = "private"
-  force_destroy = true
-}
-
-// Setup integration testing bucket
-resource "aws_s3_bucket" "integration_testing" {
-  bucket        = "${lookup(var.account, "prefix")}.streamalert.testing.results"
+  bucket        = "${lookup(var.rule_processor_config, "source_bucket")}"
   acl           = "private"
   force_destroy = true
 }

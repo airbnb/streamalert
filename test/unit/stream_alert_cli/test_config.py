@@ -40,7 +40,7 @@ class TestCLIConfig(object):
 
     def test_v1_config(self):
         v1_config = {
-            "account_id": "ADD-AWS-ACCOUNT-ID-HERE",
+            "account_id": "12345678911",
             "clusters": {
                 "prod": "us-east-1"
             },
@@ -77,6 +77,7 @@ class TestCLIConfig(object):
                 "netaddr"
             ]
         }
+
         v1_config_pretty = json.dumps(
             v1_config,
             indent=4,
@@ -88,9 +89,16 @@ class TestCLIConfig(object):
             if path == 'variables.json':
                 return io.BytesIO(v1_config_pretty)
 
+        # mock the opening of `variables.json`
         with patch('__builtin__.open') as mocked_open:
             mocked_open.side_effect = load_config
-
             cli_config = CLIConfig()
+
             assert_equal(cli_config.version, 2)
-        
+            assert_equal(cli_config['account']['aws_account_id'], '12345678911')
+            assert_equal(cli_config['alert_processor_config']['source_bucket'], 
+                                    'unit-testing.streamalert.source')
+            assert_equal(cli_config['rule_processor_config']['third_party_libraries'],
+                                    ['jsonpath_rw', 'netaddr'])
+            assert_equal(cli_config['terraform']['tfstate_s3_key'],
+                                    'stream_alert_state/terraform.tfstate')

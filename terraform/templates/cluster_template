@@ -8,18 +8,18 @@ module "stream_alert_{{ cluster_name }}" {
   kms_key_arn                   = "${aws_kms_key.stream_alert_secrets.arn}"
 
   rule_processor_config         = "${var.rule_processor_config}"
-  rule_processor_lambda_config  = "${lookup(var.rule_processor_lambda_config, "{{ cluster_name }}")}"
-  rule_processor_prod_version   = "${lookup(var.rule_processor_versions, "{{ cluster_name }}")}"
+  rule_processor_lambda_config  = "${var.rule_processor_lambda_config}"
+  rule_processor_versions       = "${var.rule_processor_versions}"
 
   alert_processor_config        = "${var.alert_processor_config}"
-  alert_processor_lambda_config = "${lookup(var.alert_processor_lambda_config, "{{ cluster_name }}")}"
-  alert_processor_prod_version  = "${lookup(var.alert_processor_versions, "{{ cluster_name }}")}"
+  alert_processor_lambda_config = "${var.alert_processor_lambda_config}"
+  alert_processor_versions      = "${var.alert_processor_versions}"
 }
 
 // Cloudwatch alerts for production Lambda functions
 module "cloudwatch_monitoring_{{ cluster_name }}" {
   source           = "modules/tf_stream_alert_monitoring"
-  sns_topic_arns   = ["${module.stream_alert_{{ cluster_name }}.sns_topic_arn}"]
+  sns_topic_arn   = "${module.stream_alert_{{ cluster_name }}.sns_topic_arn}"
   lambda_functions = [
     "${lookup(var.account, "prefix")}_{{ cluster_name }}_streamalert_rule_processor",
     "${lookup(var.account, "prefix")}_{{ cluster_name }}_streamalert_alert_processor"
@@ -36,7 +36,7 @@ module "kinesis_{{ cluster_name }}" {
   stream_name             = "${lookup(var.account, "prefix")}_{{ cluster_name }}_stream_alert_kinesis"
   firehose_name           = "${lookup(var.account, "prefix")}_{{ cluster_name }}_stream_alert_firehose"
   username                = "${lookup(var.account, "prefix")}_{{ cluster_name }}_stream_alert_user"
-  stream_config           = "${lookup(var.kinesis_streams_config, "{{ cluster_name }}")}"
+  stream_config           = "${var.kinesis_streams_config["{{ cluster_name }}"]}"
 }
 
 // Enable a Kinesis Stream to send events to Lambda
