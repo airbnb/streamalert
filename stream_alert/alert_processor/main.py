@@ -39,7 +39,7 @@ def handler(event, context):
     JSON string.  The JSON contains an array of alerts
     sent from the main StreamAlert lambda function.
     """
-    for record in event['Records']:
+    for record in event.get('Records', []):
         sns_payload = record.get('Sns')
         # If for some reason SNS did not invoke this function
         if not sns_payload:

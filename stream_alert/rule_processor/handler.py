@@ -41,12 +41,12 @@ class StreamAlert(object):
         Returns:
             None
         """
-        logger.debug('Number of Records: %d', len(event.get('Records')))
+        logger.debug('Number of Records: %d', len(event.get('Records', [])))
 
         config = load_config()
         env = load_env(context)
 
-        for record in event.get('Records'):
+        for record in event.get('Records', []):
             payload = StreamPayload(raw_record=record)
             classifier = StreamClassifier(config=config)
             classifier.map_source(payload)
