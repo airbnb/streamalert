@@ -262,10 +262,10 @@ def stream_alert_test(options):
     else:
         LOGGER_SA.setLevel(logging.INFO)
 
-    if options.func == 'alert':
-        passed = test_alert_rules()
+    if options.processor == 'rule':
+        test_rule_processor()
 
-    elif options.func == 'output':
+    elif options.processor == 'alert':
         # TODO(jack) test output
         raise NotImplementedError
 
