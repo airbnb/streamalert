@@ -18,7 +18,6 @@ from datetime import datetime
 
 import base64
 import hashlib
-import logging
 import os
 import shutil
 import tempfile
@@ -26,15 +25,12 @@ import pip
 
 import boto3
 
-# from stream_alert_cli.logger import LOGGER_CLI
-logging.basicConfig(format='%(name)s [%(levelname)s]: %(message)s')
-LOGGER_CLI = logging.getLogger('StreamAlertCLI')
-LOGGER_CLI.setLevel(logging.INFO)
+from stream_alert_cli.logger import LOGGER_CLI
 
 class LambdaPackage(object):
     """Build and upload a StreamAlert deployment package to S3."""
-    package_folders = {}
-    package_files = {}
+    package_folders = set()
+    package_files = set()
     package_name = None
     package_root_dir = None
     config_key = None
@@ -70,7 +66,6 @@ class LambdaPackage(object):
             # set new config values and update
             full_package_name = os.path.join(self.package_name, generated_package_name)
             # make all config changes here
-            print self.config[self.config_key]
             self.config[self.config_key]['source_object_key'] = full_package_name
             self.config[self.config_key]['source_current_hash'] = package_sha256
             self.config.write()
@@ -145,8 +140,7 @@ class LambdaPackage(object):
             package_path [string]: Full path to our zipped deployment package
 
         Returns:
-            [string] The generated SHA256 checksum of the package
-            [string] A path to the checksum file
+            [string tuple](SHA256 checksum of the package, checksum file path)
         """
         hasher = hashlib.sha256()
         with open(package_path, 'rb') as package_fh:

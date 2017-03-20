@@ -25,10 +25,10 @@ To run terraform by hand, change to the terraform directory and run:
 terraform <cmd> -var-file=../terraform.tfvars -var-file=../variables.json
 '''
 
-import logging
 from argparse import ArgumentParser, RawTextHelpFormatter
 
 from stream_alert_cli.runner import cli_runner
+from stream_alert_cli.logger import LOGGER_CLI
 
 def build_parser():
     description = (
@@ -73,18 +73,14 @@ def build_parser():
     # lambda parser arguments
     lambda_parser.add_argument(
         'subcommand',
-        choices=['deploy',
-                 'rollback',
-                 'test'],
+        choices=['deploy', 'rollback', 'test'],
         help=('Deploy: Build Lambda package, upload to S3, and deploy with Terraform\n'
               'Rollback: Roll a Lambda function back by one production vpersion\n'
               'Test: Run integration tests on a Lambda function')
     )
     lambda_parser.add_argument(
         '--processor',
-        choices=['rule',
-                 'alert',
-                 'all'],
+        choices=['alert', 'all', 'rule'],
         help='The name of the AWS Lambda function to deploy',
         required=True
     )
@@ -101,18 +97,11 @@ def build_parser():
     )
     tf_parser.add_argument(
         'subcommand',
-        choices=['build',
-                 'init',
-                 'destroy',
-                 'status',
-                 'generate']
+        choices=['build', 'destroy', 'init', 'generate', 'status']
     )
     tf_parser.add_argument(
         '--target',
-        choices=['stream_alert',
-                 'kinesis',
-                 'kinesis_events',
-                 's3_events',
+        choices=['stream_alert', 'kinesis', 'kinesis_events', 's3_events',
                  'cloudwatch_monitoring'],
         help='A specific Terraform module to build',
         nargs='?'
@@ -122,12 +111,9 @@ def build_parser():
     return parser
 
 def main():
-    # logging.basicConfig(level=logging.INFO,
-    #                     format='%(asctime)s [%(levelname)s] %(message)s',
-    #                     datefmt='%m/%d/%Y %I:%M:%S%p')
     parser = build_parser()
     options = parser.parse_args()
     cli_runner(options)
-    logging.info('Completed')
+    LOGGER_CLI.info('Completed')
 
 if __name__ == "__main__": main()

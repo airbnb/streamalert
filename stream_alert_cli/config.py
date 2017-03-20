@@ -68,10 +68,10 @@ class CLIConfig(object):
 
     def __init__(self):
         self.config = self.load()
-        self.version = self.detect_version()
+        self.version = self._detect_version()
         if self.version == 1:
             self.config = self._convert_schema()
-            self.version = self.detect_version()
+            self.version = self._detect_version()
 
     def __repr__(self):
         return json.dumps(self.config)
@@ -108,17 +108,15 @@ class CLIConfig(object):
     def write(self):
         """Write the current config in memory to disk"""
         with open(self.filename, 'r+') as varfile:
-            config_out = json.dumps(
+            varfile.write(json.dumps(
                 self.config,
                 indent=4,
                 separators=(',', ': '),
                 sort_keys=True
-            )
-            varfile.seek(0)
-            varfile.write(config_out)
+            ))
             varfile.truncate()
 
-    def detect_version(self):
+    def _detect_version(self):
         """Detect the config version
 
         Returns:

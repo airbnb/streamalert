@@ -2,11 +2,11 @@
 * This Terraform module creates the main AWS Lambda functions to match rules and send alerts.
 
 ## Components
-* A S3 buckets
+* S3 buckets:
   * StreamAlert Lambda source code.
   * Bucket to store alerts from the Output processor.
 
-* AWS Lambda Functions
+* AWS Lambda Functions:
   * StreamAlert processor
   * StreamAlert output processor
   * Each with a ``production`` Lambda alias

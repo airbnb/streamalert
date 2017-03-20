@@ -18,11 +18,9 @@ limitations under the License.
 # specific test: nosetests -v -s test/unit/file.py:TestStreamPayload.test_name
 
 import json
-
 import io
 
 from nose.tools import assert_equal, assert_not_equal, nottest
-from pyfakefs import fake_filesystem_unittest
 from mock import patch
 
 from stream_alert_cli.config import CLIConfig
