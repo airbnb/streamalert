@@ -25,8 +25,10 @@ import time
 import boto3
 from moto import mock_s3
 from stream_alert.handler import StreamAlert
-# import all rules loaded from the main handler
+# import all rules so they are loaded
+# pylint: disable=unused-import
 import main
+# pylint: enable=unused-import
 
 LOGGER_SA = logging.getLogger('StreamAlert')
 LOGGER_CLI = logging.getLogger('StreamAlertCLI')
@@ -40,44 +42,40 @@ COLOR_RED = '\033[0;31;1m'
 COLOR_GREEN = '\033[0;32;1m'
 COLOR_RESET = '\033[0m'
 
-def report_output(cols, force_exit):
+def report_output(cols, failed):
     """Helper function to pretty print columns
     Args:
-        cols: A list of columns to print (test description, pass|fail)
-        force_exit: Boolean to break exectuion of integration testing
+        cols: A list of columns to print (service, test description)
+        failed: Boolean indicating if this rule failed
     """
-    print '\t{}\ttest ({}): {}'.format(*cols)
-    if force_exit:
-        os._exit(1)
 
-def test_rule(rule_name, test_file_contents):
+    status = ('{}[Pass]{}'.format(COLOR_GREEN, COLOR_RESET),
+              '{}[Fail]{}'.format(COLOR_RED, COLOR_RESET))[failed]
+
+    print '\t{}\ttest ({}): {}'.format(status, *cols)
+
+def test_rule(rule_name, test_record, formatted_record):
     """Feed formatted records into StreamAlert and check for alerts
     Args:
         rule_name: The rule name being tested
-        test_file_contents: The dictionary of the loaded test fixture file
+        test_record: A single record to test
+        formatted_record: A properly formatted version of record for the service to be tested
+
+    Returns:
+        boolean indicating if this rule passed
     """
-    # rule name header
-    print '\n{}'.format(rule_name)
+    event = {'Records': [formatted_record]}
 
-    for record in test_file_contents['records']:
-        service = record['service']
-        service_record_key = '{}_record'.format(service)
-        event = {'Records': [record[service_record_key]]}
+    expected_alert_count = (0, 1)[test_record['trigger']]
 
-        expected_alert_count = (0, 1)[record['trigger']]
+    alerts = StreamAlert(return_alerts=True).run(event, None)
+    # we only want alerts for the specific rule passed in
+    matched_alert_count = len([x for x in alerts if x['rule_name'] == rule_name])
 
-        alerts = StreamAlert(return_alerts=True).run(event, None)
-        # we only want alerts for the specific rule passed in
-        matched_alert_count = len([x for x in alerts if x['rule_name'] == rule_name])
+    report_output([test_record['service'], test_record['description']],
+                  matched_alert_count != expected_alert_count)
 
-        if matched_alert_count == expected_alert_count:
-            result = '{}[Pass]{}'.format(COLOR_GREEN, COLOR_RESET)
-            force_exit = False
-        else:
-            result = '{}[Fail]{}'.format(COLOR_RED, COLOR_RESET)
-            force_exit = True
-
-        report_output([result, service, record['description']], force_exit)
+    return matched_alert_count == expected_alert_count
 
 def format_record(test_record):
     """Create a properly formatted Kinesis, S3, or SNS record.
@@ -88,6 +86,7 @@ def format_record(test_record):
     Args:
         test_record: Test record metadata dict with the following structure:
             data - string or dict of the raw data
+            description - a string describing the test that is being performed
             trigger - bool of if the record should produce an alert
             source - which stream/s3 bucket originated the data
             service - which aws service originated the data
@@ -185,49 +184,55 @@ def apply_helpers(test_record):
     find_and_apply_helpers(test_record)
 
 def test_alert_rules():
-    """Integration test the 'Alert' Lambda function with various record types"""
+    """Integration test the 'Alert' Lambda function with various record types
+
+    Returns:
+        boolean indicating if all tests passed
+    """
     # Start the mock_s3 instance here so we can test with mocked objects project-wide
     BOTO_MOCKER.start()
+    tests_passed = True
 
     for root, _, rule_files in os.walk(DIR_RULES):
         for rule_file in rule_files:
             rule_name = rule_file.split('.')[0]
             rule_file_path = os.path.join(root, rule_file)
 
+            # Print rule name for section header
+            print '\n{}'.format(rule_name)
+
             with open(rule_file_path, 'r') as rule_file_handle:
                 try:
                     contents = json.load(rule_file_handle)
-                except ValueError as err:
-                    LOGGER_CLI.error('Error loading %s: %s', rule_file, err)
+                    test_records = contents['records']
+                except (ValueError, KeyError) as err:
+                    tests_passed = False
+                    LOGGER_CLI.error('Improperly formatted file (%s) %s: %s',
+                                     rule_file_path, type(err).__name__, err)
                     continue
 
-            test_records = contents.get('records')
-            if not test_records:
-                LOGGER_CLI.error('Improperly formatted test file: %s', rule_file_path)
-                continue
-            elif len(test_records) == 0:
+            if len(test_records) == 0:
+                tests_passed = False
                 LOGGER_CLI.error('No records to test for %s', rule_name)
                 continue
 
-            # Go backwards over the records so we can remove improper ones
-            # safely without unnecessary copying/modifying of the list
-            for test_record in reversed(test_records):
+            # Go over the records and test the applicable rule
+            for test_record in test_records:
                 if not check_keys(test_record):
-                    LOGGER_CLI.error('Discarding improperly formatted record for service %s: %s',
-                                     test_record['service'],
-                                     test_record)
-                    # Removing an improperly formatted record here allows us to
-                    # continue with current tests, while still logging it above
-                    test_records.pop(test_records.index(test_record))
+                    report_output([test_record['service'],
+                                   'Improperly formatted record: {}'.format(test_record)],
+                                  True
+                                 )
+                    tests_passed = False
                     continue
 
                 apply_helpers(test_record)
-                service_record_key = '{}_record'.format(test_record['service'])
-                test_record[service_record_key] = format_record(test_record)
-
-            test_rule(rule_name, contents)
+                formatted_record = format_record(test_record)
+                tests_passed = test_rule(rule_name, test_record, formatted_record) and tests_passed
 
     BOTO_MOCKER.stop()
+
+    return tests_passed
 
 def put_mocked_s3_object(bucket_name, key_name, body_value):
     """Create a mock AWS S3 object for testing
@@ -260,8 +265,11 @@ def stream_alert_test(options):
         LOGGER_SA.setLevel(logging.INFO)
 
     if options.func == 'alert':
-        test_alert_rules()
+        passed = test_alert_rules()
 
     elif options.func == 'output':
         # TODO(jack) test output
         raise NotImplementedError
+
+    if not passed:
+        os._exit(1)
