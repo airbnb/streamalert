@@ -27,7 +27,7 @@ resource "aws_kinesis_stream" "stream_alert_stream" {
 
   tags {
     Application = "StreamAlert"
-    Cluster = "${var.cluster_name}"
+    Cluster     = "${var.cluster_name}"
   }
 }
 
@@ -35,9 +35,9 @@ resource "aws_s3_bucket" "firehose_store" {
   bucket        = "${var.firehose_s3_bucket_name}"
   acl           = "private"
   force_destroy = false
-  
+
   tags {
     Application = "StreamAlert"
-    Cluster = "${var.cluster_name}"
+    Cluster     = "${var.cluster_name}"
   }
 }

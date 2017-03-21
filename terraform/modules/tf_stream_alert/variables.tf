@@ -19,31 +19,31 @@ variable "kms_key_arn" {
 }
 
 variable "rule_processor_config" {
-  type = "map"
+  type    = "map"
   default = {}
 }
 
 variable "rule_processor_lambda_config" {
-  type = "map"
+  type    = "map"
   default = {}
 }
 
 variable "rule_processor_versions" {
-  type = "map"
+  type    = "map"
   default = {}
 }
 
 variable "alert_processor_config" {
-  type = "map"
+  type    = "map"
   default = {}
 }
 
 variable "alert_processor_lambda_config" {
-  type = "map"
+  type    = "map"
   default = {}
 }
 
 variable "alert_processor_versions" {
-  type = "map"
+  type    = "map"
   default = {}
 }

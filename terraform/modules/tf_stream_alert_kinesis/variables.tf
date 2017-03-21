@@ -22,8 +22,9 @@ variable "stream_name" {
 
 variable "stream_config" {
   type = "list"
+
   default = [
-    1, // number of shards
-    24 // retention period
-  ]
+    1,  // number of shards
+    24,
+  ] // retention period
 }

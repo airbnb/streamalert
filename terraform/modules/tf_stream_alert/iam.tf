@@ -41,7 +41,6 @@ resource "aws_iam_role_policy" "streamalert_rule_processor_sns" {
 EOF
 }
 
-
 // Alert Processor Execution Role
 resource "aws_iam_role" "streamalert_alert_processor_role" {
   name = "${var.prefix}_${var.cluster}_streamalert_alert_processor_role"

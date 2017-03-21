@@ -52,8 +52,15 @@ resource "aws_lambda_permission" "with_sns" {
 }
 
 // S3 bucket for S3 outputs
-resource "aws_s3_bucket" "stream_alert_output" {
+resource "aws_s3_bucket" "streamalerts" {
   bucket        = "${var.prefix}_${var.cluster}_streamalerts"
+  acl           = "private"
+  force_destroy = false
+}
+
+// Legacy S3 bucket name - All alerts should be copied to the bucket created above.
+resource "aws_s3_bucket" "stream_alert_output" {
+  bucket        = "${var.prefix}.${var.cluster}._stream_alert_output_processor.results"
   acl           = "private"
   force_destroy = false
 }
