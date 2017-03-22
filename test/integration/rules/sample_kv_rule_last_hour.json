@@ -13,6 +13,13 @@
       "trigger": true,
       "source": "example_s3_bucket",
       "service": "s3"
+    },
+    {
+      "data": "type=start msg=info uid=0 time=<helper:last_hour>",
+      "description": "info message from uid 0 in the last hour",
+      "trigger": true,
+      "source": "example_sns_topic",
+      "service": "sns"
     }
   ]
 }

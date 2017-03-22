@@ -67,8 +67,8 @@ def validate_config(config):
 
         # check sources attributes
         elif config_key == 'sources':
-            if not set(settings.keys()).issubset(set(['kinesis', 's3'])):
-                raise ConfigError('Sources missing kinesis or s3 keys')
+            if not set(settings.keys()).issubset(set(['kinesis', 's3', 'sns'])):
+                raise ConfigError('Sources missing kinesis, s3 or sns keys')
             for log, attrs in settings.iteritems():
                 for entity, entity_attrs in attrs.iteritems():
                     if 'logs' not in set(entity_attrs.keys()):

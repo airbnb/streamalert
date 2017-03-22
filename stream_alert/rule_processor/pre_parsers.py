@@ -68,6 +68,17 @@ class StreamPreParsers(object):
         return cls._read_s3_file(downloaded_s3_object)
 
     @classmethod
+    def pre_parse_sns(cls, raw_record):
+        """Decode an SNS record.
+
+        Args:
+            raw_record (dict): An SNS message.
+
+        Returns: (string) Base64 decoded data.
+        """
+        return base64.b64decode(raw_record['Sns']['Message'])
+
+    @classmethod
     def _download_s3_object(cls, client, bucket, key, size):
         """Download an object from S3.
 

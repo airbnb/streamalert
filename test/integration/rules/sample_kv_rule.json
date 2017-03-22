@@ -13,6 +13,13 @@
       "trigger": true,
       "source": "example_s3_bucket",
       "service": "s3"
+    },
+    {
+      "data": "type=test msg=fatal uid=100 time=1488013995",
+      "description": "fatal message from uid 100",
+      "trigger": true,
+      "source": "example_sns_topic",
+      "service": "sns"
     }
   ]
 }

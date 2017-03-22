@@ -130,11 +130,14 @@ class StreamClassifier(object):
             payload.service = 'kinesis'
         elif 's3' in payload.raw_record:
             payload.service = 's3'
+        elif 'Sns' in payload.raw_record:
+            payload.service = 'sns'
 
         # map the entity name from a record
         entity_mapper = {
             'kinesis': lambda r: r['eventSourceARN'].split('/')[1],
-            's3': lambda r: r['s3']['bucket']['name']
+            's3': lambda r: r['s3']['bucket']['name'],
+            'sns': lambda r: r['EventSubscriptionArn'].split(':')[5]
         }
         # get the entity name
         payload.entity = entity_mapper[payload.service](payload.raw_record)

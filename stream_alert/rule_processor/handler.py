@@ -62,6 +62,8 @@ class StreamAlert(object):
                 self.s3_process(payload, classifier)
             elif payload.service == 'kinesis':
                 self.kinesis_process(payload, classifier)
+            elif payload.service == 'sns':
+                self.sns_process(payload, classifier)
             else:
                 logger.info('Unsupported service: %s', payload.service)
 
@@ -85,6 +87,12 @@ class StreamAlert(object):
             payload.refresh_record(data)
             classifier.classify_record(payload, data)
             self.process_alerts(payload)
+
+    def sns_process(self, payload, classifier):
+        """Process SNS data for alerts"""
+        data = StreamPreParsers.pre_parse_sns(payload.raw_record)
+        classifier.classify_record(payload, data)
+        self.process_alerts(payload)
 
     def send_alerts(self, env, payload):
         """Send generated alerts to correct places"""

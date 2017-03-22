@@ -2,17 +2,24 @@
   "records": [
     {
       "data": "Jan 01 12:00:12 test-host-1 sudo[151]: COMMAND sudo rm /tmp/test",
-      "description": "sudo command ran",
+      "description": "sudo command ran (`sudo rm /tmp/test`)",
       "trigger": false,
       "source": "prefix_cluster1_stream_alert_kinesis",
       "service": "kinesis"
     },
     {
       "data": "Jan 01 12:00:12 test-host-2 sudo[159]: COMMAND sudo rm /tmp/badstuff",
-      "description": "sudo command ran",
+      "description": "sudo command ran (`sudo rm /tmp/badstuff`)",
       "trigger": false,
       "source": "example_s3_bucket",
       "service": "s3"
+    },
+    {
+      "data": "Jan 01 12:00:12 test-host-2 sudo[159]: COMMAND sudo rm -rf /",
+      "description": "sudo command ran (`sudo rm -rf /`)",
+      "trigger": false,
+      "source": "example_sns_topic",
+      "service": "sns"
     }
   ]
 }

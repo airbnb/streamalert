@@ -22,5 +22,16 @@
 				"cloudtrail"
 			]
 		}
+	},
+	"sns": {
+		"example_sns_topic": {
+			"logs": [
+				"json_log",
+				"syslog_log",
+				"kv_log",
+				"csv_log",
+				"osquery"
+			]
+		}
 	}
 }

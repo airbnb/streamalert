@@ -140,9 +140,8 @@ def format_record(test_record):
         template['eventSourceARN'] = 'arn:aws:kinesis:us-east-1:111222333:stream/{}'.format(source)
 
     elif service == 'sns':
-        # TODO implement sns testing
-        raise NotImplementedError
-
+        template['Sns']['Message'] = base64.b64encode(data)
+        template['EventSubscriptionArn'] = 'arn:aws:sns:us-east-1:111222333:{}'.format(source)
     else:
         LOGGER_CLI.info('Invalid service %s', service)
 
@@ -244,8 +243,7 @@ def test_alert_rules():
                 if not check_keys(test_record):
                     report_output([test_record['service'],
                                    'Improperly formatted record: {}'.format(test_record)],
-                                  True
-                                 )
+                                  True)
                     tests_passed = False
                     continue
 
