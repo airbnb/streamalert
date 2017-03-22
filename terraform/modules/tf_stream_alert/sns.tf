@@ -7,6 +7,6 @@ resource "aws_sns_topic" "streamalert" {
 // Subscribe the Alert Processor Lambda function to the SNS topic
 resource "aws_sns_topic_subscription" "alert_processor" {
   topic_arn = "${aws_sns_topic.streamalert.arn}"
-  endpoint  = "${aws_lambda_function.streamalert_alert_processor.arn}"
+  endpoint  = "${aws_lambda_function.streamalert_alert_processor.arn}:production"
   protocol  = "lambda"
 }

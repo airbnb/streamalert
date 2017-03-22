@@ -49,6 +49,7 @@ resource "aws_lambda_permission" "with_sns" {
   function_name = "${aws_lambda_function.streamalert_alert_processor.arn}"
   principal     = "sns.amazonaws.com"
   source_arn    = "${aws_sns_topic.streamalert.arn}"
+  qualifier     = "production"
 }
 
 // S3 bucket for S3 outputs
