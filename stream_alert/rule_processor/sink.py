@@ -87,7 +87,10 @@ class StreamSink(object):
             region: Which AWS region the SNS topic exists in.
             topic: The name of the SNS topic.
         """
-        topic = '{}_monitoring'.format(self.env['lambda_function_name'])
+        prefix, cluster = self.env['lambda_function_name'].split('_')[0:2]
+        # dynamically generate the SNS topic name: prefix_cluster_streamalerts
+        topic = '_'.join([prefix, cluster, 'streamalerts'])
+
         return 'arn:aws:sns:{region}:{account_id}:{topic}'.format(
             region=self.env['lambda_region'],
             account_id=self.env['account_id'],

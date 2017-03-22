@@ -36,7 +36,7 @@ class TestStreamSink(object):
         self.env = {
             'lambda_region': 'us-east-1',
             'account_id': '123456789012',
-            'lambda_function_name': 'stream_alert_test',
+            'lambda_function_name': 'unittest_prod_stream_alert_test',
             'lambda_alias': 'production'
         }
 
@@ -44,7 +44,7 @@ class TestStreamSink(object):
         """Sink SNS Messaging - Topic ARN"""
         sinker = sink.StreamSink([], self.env)
         arn = sinker._get_sns_topic_arn()
-        assert_equal(arn, 'arn:aws:sns:us-east-1:123456789012:stream_alert_test_monitoring')
+        assert_equal(arn, 'arn:aws:sns:us-east-1:123456789012:unittest_prod_streamalerts')
 
     def test_message_size_check(self):
         """Sink SNS Messaging - Message Blob Size Check"""
