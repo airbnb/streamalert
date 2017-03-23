@@ -304,17 +304,17 @@ class StreamClassifier(object):
                 if len(value) == 0:
                     pass
                 else:
-                    schema = schema[key]
                     # handle nested csv
                     if isinstance(payload[key], str):
                         options['hints'] = options['hints'][key]
                         parse_csv = get_parser('csv')
                         parsed_nested_key = parse_csv(payload[key],
-                                                      schema,
+                                                      schema[key],
                                                       options).parse()
                         # Call the first element since a list is returned
                         payload[key] = parsed_nested_key[0]
-                    self._convert_type(payload[key], schema, options)
+
+                    self._convert_type(payload[key], schema[key], options)
             else:
                 logger.error('Invalid declared type - %s', value)
 

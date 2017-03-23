@@ -104,19 +104,26 @@ class JSONParser(ParserBase):
         """
         schema = self._get_schema()
         schema_keys = set(schema.keys())
+        valid_records = []
+        schema_match = False
 
         for json_record in json_records:
             json_keys = set(json_record.keys())
             if json_keys == schema_keys:
+                schema_match = True
                 for key, key_type in schema.iteritems():
                     # If the value is a map of defined key/value pairs
                     if isinstance(key_type, dict) and key_type != {}:
                         # subkey check
                         if set(json_record[key].keys()) != set(schema[key].keys()):
-                            json_records.remove(json_record)
+                            schema_match = False
             else:
                 logger.debug('JSON Key mismatch: %s vs. %s', json_keys, schema_keys)
-                json_records.remove(json_record)
+
+            if schema_match:
+                valid_records.append(json_record)
+
+        return valid_records
 
     def _parse_records(self, json_payload):
         """Iterate over a json_payload. Identify and extract nested payloads.
@@ -135,11 +142,15 @@ class JSONParser(ParserBase):
             A list of dict JSON payloads
         """
         json_records = []
-        hints = self.options.get('hints', {})
         envelope = {}
-        if (hints and len(hints)):
-            records_jsonpath = jsonpath_rw.parse(hints['records'])
+
+        hints = self.options.get('hints', {})
+        if hints:
+            records_schema = hints.get('records')
             envelope_schema = hints.get('envelope', {})
+
+        if (hints and len(hints) and records_schema):
+            records_jsonpath = jsonpath_rw.parse(records_schema)
             if len(envelope_schema):
                 self.schema.update({"envelope": envelope_schema})
                 envelope_keys = envelope_schema.keys()
@@ -177,10 +188,10 @@ class JSONParser(ParserBase):
             return False
 
         json_records = self._parse_records(json_payload)
-        self._key_check(json_records)
+        valid_records = self._key_check(json_records)
 
-        if len(json_records) > 0:
-            return json_records
+        if len(valid_records):
+            return valid_records
         else:
             return False
 
