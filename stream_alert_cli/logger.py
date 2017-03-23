@@ -14,12 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 
-from stream_alert.handler import StreamAlert
-from rules import (
-    sample_rules,
-    sample_matchers
-)
+import logging
 
-def handler(event, context):
-    """Main Lambda handler function"""
-    StreamAlert().run(event, context)
+LOGGER_SA = logging.getLogger('StreamAlert')
+LOGGER_SA.setLevel(logging.INFO)
+
+logging.basicConfig(format='%(name)s [%(levelname)s]: %(message)s')
+LOGGER_CLI = logging.getLogger('StreamAlertCLI')
+LOGGER_CLI.setLevel(logging.INFO)

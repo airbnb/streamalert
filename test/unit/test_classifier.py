@@ -24,9 +24,9 @@ from collections import OrderedDict
 
 from nose.tools import assert_equal, assert_not_equal, nottest
 
-from stream_alert.classifier import StreamPayload, StreamClassifier
-from stream_alert.pre_parsers import StreamPreParsers
-from stream_alert.config import load_config
+from stream_alert.rule_processor.classifier import StreamPayload, StreamClassifier
+from stream_alert.rule_processor.pre_parsers import StreamPreParsers
+from stream_alert.rule_processor.config import load_config
 
 class TestStreamPayload(object):
     @classmethod

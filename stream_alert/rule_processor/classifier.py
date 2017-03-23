@@ -18,7 +18,7 @@ import logging
 
 from collections import OrderedDict
 
-from stream_alert.parsers import get_parser
+from stream_alert.rule_processor.parsers import get_parser
 
 logging.basicConfig()
 logger = logging.getLogger('StreamAlert')

@@ -1,37 +1,49 @@
-variable "account_id" {}
-
-variable "region" {}
-
-variable "lambda_source_bucket_name" {}
-
-variable "lambda_source_key" {}
-
-variable "lambda_handler" {}
-
-variable "lambda_function_prod_version" {}
-
-variable "output_lambda_function_name" {}
-
-variable "kms_key_arn" {}
-
-variable "output_lambda_source_key" {}
-
-variable "lambda_function_name" {
-  default = "stream_alert_processor"
+variable "account_id" {
+  default = ""
 }
 
-variable "lambda_timeout" {
-  default = "10"
+variable "region" {
+  default = ""
 }
 
-variable "lambda_memory" {
-  default = "128"
+variable "prefix" {
+  default = ""
 }
 
-variable "output_lambda_timeout" {
-  default = "10"
+variable "cluster" {
+  type = "string"
 }
 
-variable "output_lambda_memory" {
-  default = "128"
+variable "kms_key_arn" {
+  type = "string"
+}
+
+variable "rule_processor_config" {
+  type    = "map"
+  default = {}
+}
+
+variable "rule_processor_lambda_config" {
+  type    = "map"
+  default = {}
+}
+
+variable "rule_processor_versions" {
+  type    = "map"
+  default = {}
+}
+
+variable "alert_processor_config" {
+  type    = "map"
+  default = {}
+}
+
+variable "alert_processor_lambda_config" {
+  type    = "map"
+  default = {}
+}
+
+variable "alert_processor_versions" {
+  type    = "map"
+  default = {}
 }

@@ -1,5 +1,5 @@
 from helpers.base import in_set, last_hour
-from stream_alert.rules_engine import StreamRules
+from stream_alert.rule_processor.rules_engine import StreamRules
 
 rule = StreamRules.rule
 
@@ -14,7 +14,8 @@ rule = StreamRules.rule
 # osquery invalid user
 @rule(logs=['osquery'],
       matchers=[],
-      outputs=['pagerduty'])
+      outputs=['s3'],
+      req_subkeys={'columns': ['user']})
 def invalid_user(rec):
     """Catch unauthorized user logins"""
     auth_users = {'alice', 'bob'}
@@ -32,7 +33,7 @@ from netaddr import IPAddress, IPNetwork
 
 @rule(logs=['osquery'],
       matchers=[],
-      outputs=['pagerduty'],
+      outputs=['slack'],
       req_subkeys={'columns': ['host']})
 def invalid_subnet(rec):
     """Catch logins from unauthorized subnets"""

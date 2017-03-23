@@ -24,15 +24,13 @@ import time
 
 import boto3
 from moto import mock_s3
-from stream_alert.handler import StreamAlert
-# import all rules so they are loaded
-# pylint: disable=unused-import
-import main
-# pylint: enable=unused-import
 
-LOGGER_SA = logging.getLogger('StreamAlert')
-LOGGER_CLI = logging.getLogger('StreamAlertCLI')
-LOGGER_CLI.setLevel(logging.INFO)
+from stream_alert.rule_processor.handler import StreamAlert
+from stream_alert_cli.logger import LOGGER_CLI, LOGGER_SA
+# import all rules loaded from the main handler
+# pylint: disable=unused-import
+import stream_alert.rule_processor.main
+# pylint: enable=unused-import
 
 BOTO_MOCKER = mock_s3()
 
@@ -264,10 +262,10 @@ def stream_alert_test(options):
     else:
         LOGGER_SA.setLevel(logging.INFO)
 
-    if options.func == 'alert':
+    if options.processor == 'rule':
         passed = test_alert_rules()
 
-    elif options.func == 'output':
+    elif options.processor == 'alert':
         # TODO(jack) test output
         raise NotImplementedError
 

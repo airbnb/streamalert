@@ -18,34 +18,39 @@ limitations under the License.
 ---------------------------------------------------------------------------
 
 This script builds StreamAlert AWS infrastructure, is responsible for
-deploying to AWS Lambda, and publishing versions from staging to production.
+deploying to AWS Lambda, and publishing production versions.
 
-To run terraform by hand, cd to the terraform/ directory and run:
-    terraform <cmd> -var-file=../terraform.tfvars -var-file=../variables.json
+To run terraform by hand, change to the terraform directory and run:
+
+terraform <cmd> -var-file=../terraform.tfvars -var-file=../variables.json
 '''
 
-import logging
 from argparse import ArgumentParser, RawTextHelpFormatter
-from stream_alert_cli.cli import StreamAlertCLI
+
+from stream_alert_cli.runner import cli_runner
+from stream_alert_cli.logger import LOGGER_CLI
 
 def build_parser():
     description = (
-    """
-CLI tool to build and deploy StreamAlert infrastructure and lambda code.
+    """Build, Deploy, and Test StreamAlert Infrastructure
 
-Examples:
-    stream_alert_cli.py lambda deploy --env 'staging' --func 'alert'
-    stream_alert_cli.py lambda deploy --env 'production' --func 'alert'
-    stream_alert_cli.py lambda deploy --env 'staging' --func '*'
+    Deploying Lambda Functions:
+    stream_alert_cli.py lambda deploy --processor 'rule'
+    stream_alert_cli.py lambda deploy --processor 'alert'
+    stream_alert_cli.py lambda deploy --processor 'all'
     
-    stream_alert_cli.py lambda rollback --env 'production' --func 'alert'
+    Rolling Back:
+    stream_alert_cli.py lambda rollback --func 'rule'
     
+    Running Integration Tests:
+    stream_alert_cli.py lambda test --processor 'rule'
+    stream_alert_cli.py lambda test --processor 'alert'
+
+    Building Infrastructure:
     stream_alert_cli.py terraform init
     stream_alert_cli.py terraform build
     stream_alert_cli.py terraform build --target kinesis
-    
-    stream_alert_cli.py lambda test --func 'alert' --source s3
-    stream_alert_cli.py lambda test --func 'output' --source kinesis
+    stream_alert_cli.py terraform build --target stream_alert
     """
     )
 
@@ -54,61 +59,51 @@ Examples:
         prog='stream_alert_cli.py',
         formatter_class=RawTextHelpFormatter
     )
-    subparsers = parser.add_subparsers(help='All commands')
+    subparsers = parser.add_subparsers()
 
+    # lambda parser and defaults
     lambda_parser = subparsers.add_parser(
         'lambda',
-        help='Manage the stream alert lambda function'
+        help='Deploy, Rollback, and Test StreamAlert Lambda functions'
     )
     lambda_parser.set_defaults(
-        command='lambda',
-        env='staging',
-        source='kinesis'
+        command='lambda'
     )
 
+    # lambda parser arguments
     lambda_parser.add_argument(
         'subcommand',
-        choices=['deploy','rollback', 'test'],
-        help='''deploy -- Upload to S3 and update Terraform config
-                rollback -- Roll the production lambda back one version.'''
+        choices=['deploy', 'rollback', 'test'],
+        help=('Deploy: Build Lambda package, upload to S3, and deploy with Terraform\n'
+              'Rollback: Roll a Lambda function back by one production vpersion\n'
+              'Test: Run integration tests on a Lambda function')
     )
     lambda_parser.add_argument(
-        '--source',
-        choices=['s3', 'kinesis'],
-        help='the test fixture source.'
-    )
-    lambda_parser.add_argument(
-        '--env',
-        choices=['staging', 'production'],
-        help='the environment to deploy the lambda function to.'
-    )
-    lambda_parser.add_argument(
-        '--func',
-        choices=['alert', 'output', '*'],
-        help='the name of the lambda function to deploy.',
+        '--processor',
+        choices=['alert', 'all', 'rule'],
+        help='The name of the AWS Lambda function to deploy',
         required=True
     )
     lambda_parser.add_argument(
         '--debug',
-        action='store_true'
+        action='store_true',
+        help='Enable DEBUG logger output'
     )
 
+    # terraform parser and defaults
     tf_parser = subparsers.add_parser(
         'terraform',
         help='Build the stream alert infrastructure'
     )
     tf_parser.add_argument(
         'subcommand',
-        choices=['build', 'init', 'destroy', 'status', 'generate']
+        choices=['build', 'destroy', 'init', 'generate', 'status']
     )
     tf_parser.add_argument(
         '--target',
-        choices=['stream_alert',
-                 'kinesis',
-                 'kinesis_events',
-                 's3_events',
+        choices=['stream_alert', 'kinesis', 'kinesis_events', 's3_events',
                  'cloudwatch_monitoring'],
-        help='the target to apply the Terraform command to.',
+        help='A specific Terraform module to build',
         nargs='?'
     )
     tf_parser.set_defaults(command='terraform')
@@ -116,13 +111,9 @@ Examples:
     return parser
 
 def main():
-    logging.basicConfig(level=logging.INFO,
-                        format='%(asctime)s [%(levelname)s] %(message)s',
-                        datefmt='%m/%d/%Y %I:%M:%S%p')
     parser = build_parser()
     options = parser.parse_args()
-    cli = StreamAlertCLI()
-    cli.run(options)
-    logging.info('Completed')
+    cli_runner(options)
+    LOGGER_CLI.info('Completed')
 
 if __name__ == "__main__": main()

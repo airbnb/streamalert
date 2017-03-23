@@ -13,7 +13,7 @@ You can also supply multiple matchers for many common scenarios:
           matchers=['prod', 'itx_corp'], sink=['csirt-pagerduty'])
 """
 from helpers.base import in_set, last_hour
-from stream_alert.rules_engine import StreamRules
+from stream_alert.rule_processor.rules_engine import StreamRules
 
 matcher = StreamRules.matcher
 
@@ -24,7 +24,7 @@ def production_env(rec):
     return env == 'production'
 
 
-# matcher rlayout
+# matcher layout
 @matcher()
 def matcher_name(rec):
     """Description"""

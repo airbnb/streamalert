@@ -31,23 +31,25 @@ logger = logging.getLogger('StreamOutput')
 logger.setLevel(logging.INFO)
 
 def handler(event, context):
-    """
-    StreamAlert Output Lambda Handler
+    """StreamAlert Alert Processor
 
-    The event accepted in this Lambda function is
-    an SNS event with a `message` key containing a
-    JSON string.  The JSON contains an array of alerts
-    sent from the main StreamAlert lambda function.
+    The handler accepts an SNS event with a `message` key 
+    containing a JSON string.
+    The JSON contains an array of alerts
+    sent from the main StreamAlert Rule processor function.
     """
-    for record in event['Records']:
+    for record in event.get('Records', []):
         sns_payload = record.get('Sns')
-        # If for some reason SNS did not invoke this function
         if not sns_payload:
             continue
+
         message = sns_payload['Message']
         try:
             alerts = json.loads(message)
-            StreamOutput(context).run(alerts)
+            if 'default' in alerts:
+                StreamOutput(context).run(alerts)
+            else:
+                logging.info('Unexpected message: %s', alerts)
         except ValueError as err:
             logging.error('An error occured while decoding message to JSON: %s', err)
 
@@ -55,17 +57,17 @@ class OutputRequestFailure(Exception):
     pass
 
 class StreamOutput(object):
-    """Route StreamAlert alerts to their declared outputs.
+    """Route StreamAlerts to their declared outputs.
 
     Attributes:
-        creds: a dictionary containing decrypted credentials
-            for StreamAlert outputs.  The keys are the name
-            of the output, and the value is a named tuple
+        creds [dict]: Store decrypted credentials
+            for StreamAlert outputs.  Dict keys are the name
+            of the output, and their value is a named tuple
             containing the (url, secret) to send the message.
 
-        bucket: the S3 bucket to store alerts.
+        bucket [string]: the S3 bucket to store alerts.
 
-        lambda_region: the region of the currently executing
+        lambda_region [string]: the region of the currently executing
             lambda function.
 
     Public Methods:
@@ -150,8 +152,8 @@ class StreamOutput(object):
     def _get_bucket_name(context):
         """Return the lambda function name for the currently executing Lambda function."""
         lambda_func_name = context.invoked_function_arn.split(':')[6]
-        lambda_func_name = '{}.results'.format(lambda_func_name.replace('_', '.'))
-        return lambda_func_name
+        prefix, cluster = lambda_func_name.split('_')[0:2]
+        return '.'.join([prefix, cluster, 'streamalerts'])
 
     def _setup_output_creds(self, output):
         """Decrypt credentials and store them in the `creds` attribute.
