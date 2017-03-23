@@ -64,7 +64,11 @@ def test_rule(rule_name, test_record, formatted_record):
     """
     event = {'Records': [formatted_record]}
 
-    expected_alert_count = (0, 1)[test_record['trigger']]
+    trigger_count = test_record.get('trigger_count')
+    if trigger_count:
+        expected_alert_count = trigger_count
+    else:
+        expected_alert_count = (0, 1)[test_record['trigger']]
 
     alerts = StreamAlert(return_alerts=True).run(event, None)
     # we only want alerts for the specific rule passed in
@@ -148,8 +152,16 @@ def check_keys(test_record):
         'source',
         'trigger'
     }
+
+    optional_keys = {
+        'trigger_count'
+    }
+
     record_keys = set(test_record.keys())
-    return req_keys == record_keys
+    return (
+        req_keys == record_keys or
+        optional_keys.issubset(record_keys)
+    )
 
 def apply_helpers(test_record):
     """Detect and apply helper functions to test fixtures
