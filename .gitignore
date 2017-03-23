@@ -20,3 +20,5 @@ terminal.glue
 
 # virtualenv files
 venv/
+
+.vagrant/
