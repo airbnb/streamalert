@@ -1,0 +1,87 @@
+{
+  "records": [
+    {
+      "data": {
+        "Records": [
+          {
+            "eventVersion": "1.05",
+            "userIdentity": {
+              "type": "AWSService",
+              "invokedBy": "lambda.amazonaws.com"
+            },
+            "eventTime": "2017-01-01T23:00:00Z",
+            "eventSource": "sts.amazonaws.com",
+            "eventName": "AssumeRole",
+            "awsRegion": "us-east-1",
+            "sourceIPAddress": "lambda.amazonaws.com",
+            "userAgent": "lambda.amazonaws.com",
+            "requestParameters": {
+              "roleSessionName": "lambda_name",
+              "roleArn": "arn:aws:iam::account:role/lambda"
+            },
+            "responseElements": {
+              "credentials": {
+                "sessionToken": "cccccccccccccccccccccccccccccccccccccccc",
+                "accessKeyId": "AAAAAAAAAAAAAAAA",
+                "expiration": "Jan 01, 2017 11:00:00 AM"
+              }
+            },
+            "requestID": "666666-666666-6666666-6666",
+            "eventID": "6666666-666666-66666-666666",
+            "resources": [
+              {
+                "ARN": "arn:aws:iam::account:role/lambda",
+                "accountId": "11111111111",
+                "type": "AWS::IAM::Role"
+              }
+            ],
+            "eventType": "AwsApiCall",
+            "recipientAccountId": "11111111111",
+            "sharedEventID": "66666-6666-66666-66666666"
+          },
+          {
+            "eventVersion": "1.05",
+            "userIdentity": {
+              "type": "AWSService",
+              "invokedBy": "kinesis.amazonaws.com"
+            },
+            "eventTime": "2017-01-01T23:00:00Z",
+            "eventSource": "sts.amazonaws.com",
+            "eventName": "AssumeRole",
+            "awsRegion": "us-east-1",
+            "sourceIPAddress": "servivce.amazonaws.com",
+            "userAgent": "kinesis.amazonaws.com",
+            "requestParameters": {
+              "roleSessionName": "kinesis_name",
+              "roleArn": "arn:aws:iam::account:role/kinesis"
+            },
+            "responseElements": {
+              "credentials": {
+                "sessionToken": "dddddddddddddddddddddddddddddddddddddddd",
+                "accessKeyId": "AAAAAAAAAAAAAAAA",
+                "expiration": "Jan 01, 2017 11:00:00 AM"
+              }
+            },
+            "requestID": "777777-77777-7777777-7777",
+            "eventID": "777777-777777-777777-777777",
+            "resources": [
+              {
+                "ARN": "arn:aws:iam::account:role/kinesis",
+                "accountId": "11111111111",
+                "type": "AWS::IAM::Role"
+              }
+            ],
+            "eventType": "AwsApiCall",
+            "recipientAccountId": "11111111111",
+            "sharedEventID": "777777-7777-77777-7777777777"
+          }
+        ]
+      },
+      "description": "cloudtrail test",
+      "trigger": true,
+      "trigger_count": 2,
+      "source": "example_s3_bucket",
+      "service": "s3"
+    }
+  ]
+}
