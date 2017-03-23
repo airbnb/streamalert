@@ -24,7 +24,7 @@ def production_env(rec):
     return env == 'production'
 
 
-# matcher rlayout
+# matcher layout
 @matcher()
 def matcher_name(rec):
     """Description"""

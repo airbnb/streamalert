@@ -263,7 +263,7 @@ def stream_alert_test(options):
         LOGGER_SA.setLevel(logging.INFO)
 
     if options.processor == 'rule':
-        test_rule_processor()
+        passed = test_alert_rules()
 
     elif options.processor == 'alert':
         # TODO(jack) test output
