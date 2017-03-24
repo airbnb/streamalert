@@ -86,3 +86,19 @@ def sample_kv_rule_last_hour(rec):
         rec['uid'] == 0 and
         last_hour(rec['time'])
     )
+
+
+@rule(logs=['cloudtrail:v1.05'],
+      matchers=[],
+      outputs=['slack'])
+def sample_cloudtrail_rule(rec):
+    whitelist_services = {
+        'lambda.amazonaws.com',
+        'kinesis.amazonaws.com'
+    }
+
+    return (
+        rec['eventName'] == 'AssumeRole' and
+        rec['awsRegion'] == 'us-east-1' and
+        in_set(rec['userIdentity']['invokedBy'], whitelist_services)
+    )
