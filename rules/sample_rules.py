@@ -102,3 +102,18 @@ def sample_cloudtrail_rule(rec):
         rec['awsRegion'] == 'us-east-1' and
         in_set(rec['userIdentity']['invokedBy'], whitelist_services)
     )
+
+
+@rule(logs=['cloudwatch:ec2_event'],
+      matchers=[],
+      outputs=['s3'])
+def sample_cloudwatch_events_rule(rec):
+    return rec['source'] == 'aws.ec2'
+
+
+@rule(logs=['cloudwatch:cloudtrail'],
+      matchers=[],
+      outputs=['s3'])
+def sample_cloudwatch_cloudtrail_rule(rec):
+    return rec['detail']['eventName'] == 'Decrypt'
+
