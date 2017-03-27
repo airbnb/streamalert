@@ -1,28 +1,31 @@
 Datasources
 ===========
 
-StreamAlert supports:
+StreamAlert supports the following services as primary datasources:
 
 * Amazon S3
 * AWS Kinesis Streams
-* Log Forwarding Agents\*
-* Code/Applications\*
 
-.. note:: \* *Must send to a Kinesis Stream*
+The services above can accept data from:
+
+* Log Forwarding Agents
+* Custom Applications
+* AWS CloudTrail
+* AWS CloudWatch Events
+* And more
 
 To configure datasources, read `datasource configuration <conf-datasources.html>`_
 
 Amazon S3
 ---------
 
-StreamAlert supports data analysis and alerting for logs written to configured Amazon S3 buckets.
-This is achieved via Amazon S3 Event Notifications looking for an event type of ``s3:ObjectCreated:*``
+StreamAlert supports data analysis and alerting for logs written to Amazon S3 buckets.
+This is achieved via Amazon S3 Event Notifications from an event type of ``s3:ObjectCreated:*``.
 
 Example AWS use-cases:
 
-* **CloudTrail** logs
-* **AWS Config** logs
-* **S3 Server Access logs**
+* AWS Config logs
+* S3 Server Access logs
 
 Example non-AWS use-cases:
 
@@ -34,43 +37,38 @@ Example non-AWS use-cases:
 AWS Kinesis Streams
 -------------------
 
-StreamAlert also supports data analysis and alerting for logs written to AWS Kinesis Streams.
-By default, StreamAlert configures an AWS Kinesis stream per `cluster <clusters.html>`_.
+StreamAlert also utilizes AWS Kinesis Streams for real-time data ingestion and analysis.
+By default, StreamAlert creates an AWS Kinesis stream per `cluster <clusters.html>`_.
 
-Optionally, StreamAlert can also utilize existing streams as an additional source
-by adding the following into your generated Terraform cluster file (found in ``terraform/cluster-name.tf``)::
+Optionally, StreamAlert can also utilize existing Kinesis streams as a source
+by adding the following into a Terraform cluster file (found in ``terraform/cluster-name.tf``)::
 
   // Enable a Kinesis Stream to send events to Lambda
   module "kinesis_events_<cluster-name>" {
     source                    = "modules/tf_stream_alert_kinesis_events"
-    lambda_staging_enabled    = true
     lambda_production_enabled = true
     lambda_role_id            = "${module.stream_alert_<cluster-name>.lambda_role_id}"
     lambda_function_arn       = "${module.stream_alert_<cluster-name>.lambda_arn}"
-    kinesis_stream_arn        = "<add-kinesis-stream-ARN-here>"
+    kinesis_stream_arn        = "arn:aws:kinesis:region:account-id:stream/stream-name"
     role_policy_prefix        = "<cluster-name>"
   }
-  
-There are several ways to send data into AWS Kinesis, as listed below.
+
+Sending to AWS Kinesis Streams 
+------------------------------
 
 Log Forwarding Agents
 ~~~~~~~~~~~~~~~~~~~~~
 
-StreamAlert utilizes AWS Kinesis Streams for real-time data ingestion.
-
 Log forwarding agents that support AWS Kinesis Streams:
 
-* **logstash**
-* **fluentd**
-* **aws-kinesis-agent**
-* **osquery**
+* `aws-kinesis-agent <http://docs.aws.amazon.com/streams/latest/dev/writing-with-agents.html>`_ 
+* `fluentd <http://docs.fluentd.org/v0.12/articles/kinesis-stream>`_
+* `logstash <https://github.com/samcday/logstash-output-kinesis>`_
+* `osquery <https://osquery.readthedocs.io/en/stable/deployment/aws-logging/>`_ 
 
 Code/Applications
 ~~~~~~~~~~~~~~~~~
 
-StreamAlert utilizes AWS Kinesis Streams for real-time data ingestion.
+Code can send data to an AWS Kinesis Stream via:
 
-Your code can send data to an AWS Kinesis Stream via:
-
-* AWS SDK (Streams API)
-* KPL (Amazon Kinesis Producer Library)
+* `AWS KPL (Amazon Kinesis Producer Library) <http://docs.aws.amazon.com/streams/latest/dev/developing-producers-with-kpl.html>`_
