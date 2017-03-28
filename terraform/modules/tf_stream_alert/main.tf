@@ -61,7 +61,7 @@ resource "aws_s3_bucket" "streamalerts" {
 
 // Legacy S3 bucket name - All alerts should be copied to the bucket created above.
 resource "aws_s3_bucket" "stream_alert_output" {
-  bucket        = "${var.prefix}.${var.cluster}.stream.alert.output.processor.results"
+  bucket        = "${replace("${var.prefix}.${var.cluster}.stream.alert.output.processor.results", "_", ".")}"
   acl           = "private"
   force_destroy = false
 }
