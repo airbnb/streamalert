@@ -21,7 +21,7 @@ import json
 import io
 
 from nose.tools import assert_equal, assert_not_equal, nottest
-from mock import patch
+from mock import patch, mock_open
 
 from stream_alert_cli.config import CLIConfig
 
@@ -83,13 +83,8 @@ class TestCLIConfig(object):
             sort_keys=True
         )
 
-        def load_config(path):
-            if path == 'variables.json':
-                return io.BytesIO(v1_config_pretty)
-
         # mock the opening of `variables.json`
-        with patch('__builtin__.open') as mocked_open:
-            mocked_open.side_effect = load_config
+        with patch('__builtin__.open', mock_open(read_data=v1_config_pretty), create=True) as m:            
             cli_config = CLIConfig()
 
             assert_equal(cli_config.version, 2)
