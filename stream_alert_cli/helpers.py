@@ -1,7 +1,24 @@
-import logging
+'''
+Copyright 2017-present, Airbnb Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+'''
+
 import json
 import os
 import subprocess
+
+from stream_alert_cli.logger import LOGGER_CLI
 
 class CLIHelpers(object):
     """Common helpers between StreamAlert CLI classes"""
@@ -32,23 +49,7 @@ class CLIHelpers(object):
         try:
             subprocess.check_call(runner_args, stdout=stdout_option, cwd=cwd)
         except subprocess.CalledProcessError as e:
-            logging.error('Return Code %s - %s', e.returncode, e.cmd)
+            LOGGER_CLI.error('Return Code %s - %s', e.returncode, e.cmd)
             return False
 
         return True
-
-    @classmethod
-    def update_config(cls, new_config):
-        """Update variables.json with updated values.
-
-        Args:
-            new_config (dict): Loaded and updated variables.json dict
-
-        """
-        logging.info('Updating variables.json')
-        with open('variables.json', 'w') as var_file:
-            config_out = json.dumps(new_config,
-                                    indent=4,
-                                    separators=(',', ': '),
-                                    sort_keys=True)
-            var_file.write(config_out)

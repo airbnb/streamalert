@@ -30,7 +30,7 @@ from nose.tools import (
     raises
 )
 
-from stream_alert.config import (
+from stream_alert.rule_processor.config import (
     ConfigError,
     load_config,
     validate_config

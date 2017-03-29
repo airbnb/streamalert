@@ -1,7 +1,5 @@
 variable "lambda_role_id" {}
 
-variable "lambda_staging_enabled" {}
-
 variable "lambda_production_enabled" {}
 
 variable "lambda_function_arn" {}

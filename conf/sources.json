@@ -6,12 +6,8 @@
 				"syslog_log",
 				"kv_log",
 				"csv_log",
-				"osquery"
-			]
-		},
-		"prefix_cluster2_stream_alert_kinesis": {
-			"logs": [
-				"json_log"
+				"osquery",
+				"cloudwatch"
 			]
 		}
 	},
@@ -22,7 +18,8 @@
 				"syslog_log",
 				"kv_log",
 				"csv_log",
-				"osquery"
+				"osquery",
+				"cloudtrail"
 			]
 		}
 	}

@@ -2,15 +2,17 @@ import json
 import logging
 import os
 
-from stream_alert.config import load_config, load_env
-from stream_alert.classifier import StreamPayload, StreamClassifier
-from stream_alert.pre_parsers import StreamPreParsers
-from stream_alert.rules_engine import StreamRules
-from stream_alert.sink import StreamSink
+from stream_alert.rule_processor.config import load_config, load_env
+from stream_alert.rule_processor.classifier import StreamPayload, StreamClassifier
+from stream_alert.rule_processor.pre_parsers import StreamPreParsers
+from stream_alert.rule_processor.rules_engine import StreamRules
+from stream_alert.rule_processor.sink import StreamSink
 
 logging.basicConfig()
 logger = logging.getLogger('StreamAlert')
-logger.setLevel(logging.INFO)
+level = os.environ.get('LOGGER_LEVEL', 'INFO')
+logger.setLevel(level.upper())
+
 
 class StreamAlert(object):
     """Wrapper class for handling all StreamAlert classificaiton and processing"""
@@ -41,12 +43,12 @@ class StreamAlert(object):
         Returns:
             None
         """
-        logger.debug('Number of Records: %d', len(event.get('Records')))
+        logger.debug('Number of Records: %d', len(event.get('Records', [])))
 
         config = load_config()
         env = load_env(context)
 
-        for record in event.get('Records'):
+        for record in event.get('Records', []):
             payload = StreamPayload(raw_record=record)
             classifier = StreamClassifier(config=config)
             classifier.map_source(payload)
@@ -63,11 +65,11 @@ class StreamAlert(object):
             else:
                 logger.info('Unsupported service: %s', payload.service)
 
-        # Give the user control over handling generated alerts
+        # returns the list of generated alerts
         if self.return_alerts:
             return self.alerts
-        else:
-            self.send_alerts(env)
+        # send alerts to SNS
+        self.send_alerts(env, payload)
 
     def kinesis_process(self, payload, classifier):
         """Process Kinesis data for alerts"""
@@ -84,7 +86,7 @@ class StreamAlert(object):
             classifier.classify_record(payload, data)
             self.process_alerts(payload)
 
-    def send_alerts(self, env):
+    def send_alerts(self, env, payload):
         """Send generated alerts to correct places"""
         if self.alerts:
             if env['lambda_alias'] == 'development':
@@ -92,7 +94,7 @@ class StreamAlert(object):
                 logger.info('\n%s\n', json.dumps(self.alerts, indent=4))
             else:
                 StreamSink(self.alerts, env).sink()
-        else:
+        elif payload.valid:
             logger.debug('Valid data, no alerts')
 
     def process_alerts(self, payload):
@@ -102,4 +104,6 @@ class StreamAlert(object):
             if alerts:
                 self.alerts.extend(alerts)
         else:
-            logger.debug('Invalid data: %s', payload)
+            logger.error('Invalid data: %s\n%s',
+                         payload,
+                         json.dumps(payload.raw_record, indent=4))

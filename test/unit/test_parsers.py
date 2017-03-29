@@ -1,5 +1,5 @@
-from stream_alert.config import load_config
-from stream_alert.parsers import get_parser
+from stream_alert.rule_processor.config import load_config
+from stream_alert.rule_processor.parsers import get_parser
 import zlib
 
 from nose.tools import (

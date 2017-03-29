@@ -1,25 +1,20 @@
-variable "lambda_source_bucket_name" {}
+variable "account" {
+  type = "map"
+  default = {}
+}
 
-variable "lambda_source_key" {}
+variable "alert_processor_config" {
+  type = "map"
+  default = {}
+}
 
-variable "lambda_handler" {}
+variable "alert_processor_lambda_config" {
+  type = "map"
+  default = {}
+}
 
-variable "region" {}
-
-variable "account_id" {}
-
-variable "tfstate_s3_key" {}
-
-variable "kms_key_alias" {}
-
-variable "firehose_s3_bucket_suffix" {}
-
-variable "prefix" {}
-
-variable "output_lambda_source_key" {}
-
-variable "lambda_function_prod_versions" {
-  type    = "map"
+variable "alert_processor_versions" {
+  type = "map"
   default = {}
 }
 
@@ -28,17 +23,37 @@ variable "clusters" {
   default = {}
 }
 
-variable "kinesis_settings" {
+variable "firehose" {
   type    = "map"
   default = {}
 }
 
-variable "lambda_settings" {
+variable "flow_log_config" {
   type    = "map"
   default = {}
 }
 
-variable "flow_log_settings" {
+variable "kinesis_streams_config" {
   type    = "map"
+  default = {}
+}
+
+variable "rule_processor_config" {
+  type = "map"
+  default = {}
+}
+
+variable "rule_processor_lambda_config" {
+  type = "map"
+  default = {}
+}
+
+variable "rule_processor_versions" {
+  type = "map"
+  default = {}
+}
+
+variable "terraform" {
+  type = "map"
   default = {}
 }

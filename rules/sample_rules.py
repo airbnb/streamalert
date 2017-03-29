@@ -1,5 +1,5 @@
 from helpers.base import in_set, last_hour
-from stream_alert.rules_engine import StreamRules
+from stream_alert.rule_processor.rules_engine import StreamRules
 
 rule = StreamRules.rule
 
@@ -14,7 +14,8 @@ rule = StreamRules.rule
 # osquery invalid user
 @rule(logs=['osquery'],
       matchers=[],
-      outputs=['pagerduty'])
+      outputs=['s3'],
+      req_subkeys={'columns': ['user']})
 def invalid_user(rec):
     """Catch unauthorized user logins"""
     auth_users = {'alice', 'bob'}
@@ -32,7 +33,7 @@ from netaddr import IPAddress, IPNetwork
 
 @rule(logs=['osquery'],
       matchers=[],
-      outputs=['pagerduty'],
+      outputs=['slack'],
       req_subkeys={'columns': ['host']})
 def invalid_subnet(rec):
     """Catch logins from unauthorized subnets"""
@@ -85,3 +86,34 @@ def sample_kv_rule_last_hour(rec):
         rec['uid'] == 0 and
         last_hour(rec['time'])
     )
+
+
+@rule(logs=['cloudtrail:v1.05'],
+      matchers=[],
+      outputs=['slack'])
+def sample_cloudtrail_rule(rec):
+    whitelist_services = {
+        'lambda.amazonaws.com',
+        'kinesis.amazonaws.com'
+    }
+
+    return (
+        rec['eventName'] == 'AssumeRole' and
+        rec['awsRegion'] == 'us-east-1' and
+        in_set(rec['userIdentity']['invokedBy'], whitelist_services)
+    )
+
+
+@rule(logs=['cloudwatch:ec2_event'],
+      matchers=[],
+      outputs=['s3'])
+def sample_cloudwatch_events_rule(rec):
+    return rec['source'] == 'aws.ec2'
+
+
+@rule(logs=['cloudwatch:cloudtrail'],
+      matchers=[],
+      outputs=['s3'])
+def sample_cloudwatch_cloudtrail_rule(rec):
+    return rec['detail']['eventName'] == 'Decrypt'
+

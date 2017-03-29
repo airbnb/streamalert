@@ -7,4 +7,4 @@ install:
   - pip install -r requirements.txt
 script: 
   - ./test/scripts/unit_tests.sh
-  - ./test/scripts/integration_test_kinesis.sh
+  - ./test/scripts/rule_test.sh

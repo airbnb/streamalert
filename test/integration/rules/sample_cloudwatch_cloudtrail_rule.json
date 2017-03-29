@@ -1,0 +1,63 @@
+{
+  "records": [
+    {
+      "data": {
+        "account": "0123456789012",
+        "region": "us-east-1",
+        "detail": {
+            "eventVersion": "1.05",
+            "eventID": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+            "eventTime": "2017-03-20T20:32:31Z",
+            "requestParameters": {
+                "encryptionContext": {
+                    "aws:s3:arn": "arn:aws:s3:::dummy.streamalert.terraform.state/stream_alert_state/terraform.tfstate"
+                }
+            },
+            "eventType": "AwsApiCall",
+            "responseElements": null,
+            "awsRegion": "us-east-1",
+            "eventName": "Decrypt",
+            "readOnly": true,
+            "userIdentity": {
+                "userName": "testuser",
+                "principalId": "ADFJIBU4IGBH76Q27GJWO",
+                "accessKeyId": "AAISIYBWMMHF6I7N01FQ",
+                "invokedBy": "internal.amazonaws.com",
+                "sessionContext": {
+                    "attributes": {
+                        "creationDate": "2017-03-20T20:32:31Z",
+                        "mfaAuthenticated": "false"
+                    }
+                },
+                "type": "IAMUser",
+                "arn": "arn:aws:iam::0123456789012:user/testuser",
+                "accountId": "0123456789012"
+            },
+            "eventSource": "kms.amazonaws.com",
+            "requestID": "bbbbbbbb-cccc-dddd-eeee-ffffffffffff",
+            "userAgent": "internal.amazonaws.com",
+            "sourceIPAddress": "internal.amazonaws.com",
+            "resources": [
+                {
+                    "type": "AWS::KMS::Key",
+                    "ARN": "arn:aws:kms:us-east-1:0123456789012:key/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+                    "accountId": "0123456789012"
+                }
+            ]
+        },
+        "detail-type": "AWS API Call via CloudTrail",
+        "source": "aws.kms",
+        "version": "0",
+        "time": "2017-03-20T20:32:31Z",
+        "id": "eeeeeeee-dddd-cccc-bbbb-aaaaaaaaaaaa",
+        "resources": []
+      },
+      "description": "cloudwatch cloudtrail 'Decrypt' event log",
+      "trigger": true,
+      "source": "prefix_cluster1_stream_alert_kinesis",
+      "service": "kinesis"
+    }
+  ]
+}
+
+
