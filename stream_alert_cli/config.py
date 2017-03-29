@@ -72,6 +72,7 @@ class CLIConfig(object):
         if self.version == 1:
             self.config = self._convert_schema()
             self.version = self._detect_version()
+            self.write()
 
     def __repr__(self):
         return json.dumps(self.config)

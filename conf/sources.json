@@ -6,7 +6,8 @@
 				"syslog_log",
 				"kv_log",
 				"csv_log",
-				"osquery"
+				"osquery",
+				"cloudwatch"
 			]
 		}
 	},

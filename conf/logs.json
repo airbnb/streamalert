@@ -85,7 +85,7 @@
       "userAgent": "string",
       "sourceIPAddress": "string",
       "resources": {},
-      "recipientAccountId": "string"
+      "recipientAccountId": "integer"
     },
     "parser": "json",
     "hints": {
@@ -113,7 +113,7 @@
                   "type": "string",
                   "arn": "string",
                   "principalId": "string",
-                  "accountId": "string"
+                  "accountId": "integer"
               },
               "attributes": {
                   "creationDate": "string",
@@ -136,5 +136,52 @@
     "hints": {
       "records": "Records[*]"
     }
+  },
+  "cloudwatch:cloudtrail": {
+    "schema": {
+      "account": "integer",
+      "region": "string",
+      "detail": {
+        "eventVersion": "string",
+        "eventID": "string",
+        "eventTime": "string",
+        "readOnly": "string",
+        "requestParameters": {},
+        "eventType": "string",
+        "responseElements": {},
+        "awsRegion": "string",
+        "eventName": "string",
+        "userIdentity": {},
+        "eventSource": "string",
+        "requestID": "string",
+        "userAgent": "string",
+        "sourceIPAddress": "string",
+        "resources": {}
+      },
+      "detail-type": "string",
+      "source": "string",
+      "version": "string",
+      "time": "string",
+      "id": "string",
+      "resources": {}
+    },
+    "parser": "json"
+  },
+  "cloudwatch:ec2_event": {
+    "schema": {
+      "version": "string",
+      "id": "string",
+      "detail-type": "string",
+      "source": "string",
+      "account": "integer",
+      "time": "string",
+      "region": "string",
+      "resources": {},
+      "detail": {
+        "instance-id": "string",
+        "state": "string"
+      }
+    },
+    "parser": "json"
   }
 }
