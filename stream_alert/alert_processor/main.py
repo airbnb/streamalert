@@ -21,6 +21,7 @@ import logging
 import os
 import time
 import urllib2
+import ssl
 
 from datetime import datetime
 
@@ -238,7 +239,51 @@ class StreamOutput(object):
             "details": output_alerts,
             "client": "StreamAlert"
         })
-        self.request_helper(url, values_json, 'Pagerduty')
+        resp = self.request_helper(url, values_json)
+
+        if resp and resp.getcode() in range(200, 299):
+            logger.info('Successfully sent alert to Pagerduty.')
+
+    def _phantom(self, rule_name, alerts):
+        """Send alerts to Phantom
+
+        Args:
+            rule_name: The name of the triggered rule.
+            alerts: The array of alerts relevant to the triggered rule.
+        """
+        baseurl = self.creds.get('phantom').url
+        container_url = os.path.join(baseurl, 'rest/container/')
+        artifact_url = os.path.join(baseurl, 'rest/artifact/')
+
+        headers = {"ph-auth-token": self.creds.get('phantom').secret}
+
+        message = "StreamAlert Rule Triggered - {}".format(rule_name)
+        ph_container = {'name' : message,
+                        'description' : message,
+                        'data' : alerts}
+        resp = self.request_helper(container_url, json.dumps(ph_container), headers, verify=False)
+        if resp and resp.getcode() == 200:
+            resp_dict = {}
+            try:
+                resp_dict = json.loads(resp.read())
+            except ValueError as err:
+                logging.info('An error occured while decoding message to JSON: %s', err)
+            if resp_dict.get('id', None):
+                logger.info('Successfully created Phantom container %s', resp_dict['id'])
+                success_cnt = 0
+                for alert in alerts:
+                    artifact = {"cef" : alert['record'],
+                                "container_id" : resp_dict['id'],
+                                "data" : alert,
+                                "name" : "Phantom Artifact",
+                                "label" : "Alert"}
+                    resp = self.request_helper(artifact_url,
+                                               json.dumps(artifact),
+                                               headers,
+                                               False)
+                    if resp and resp.getcode() == 200:
+                        success_cnt += 1
+                logger.info('Successfully sent %s alerts to Phantom.', success_cnt)
 
     def _s3(self, rule_name, alerts):
         """Send alerts to an S3 bucket.
@@ -309,23 +354,38 @@ class StreamOutput(object):
 
         attachment['fields'] = fields
         json_data = json.dumps({'attachments': [attachment]})
-        self.request_helper(url, json_data, 'Slack')
+        resp = self.request_helper(url, json_data)
 
-        for alert in alerts:
-            text_data = json.dumps({'text': '```{}```'.format(
-                json.dumps(alert['record'], indent=4)
-            )})
-            self.request_helper(url, text_data, 'Slack')
+        if resp and resp.read() == 'ok':
+            logger.info('Successfully sent attachment to Slack.')
+            success_cnt = 0
+            for alert in alerts:
+                text_data = json.dumps({'text': '```{}```'.format(
+                    json.dumps(alert['record'], indent=4)
+                )})
+                resp = self.request_helper(url, text_data)
+                if resp and resp.read() == 'ok':
+                    success_cnt += 1
+            logger.info('Successfully sent %s alerts to Slack.', success_cnt)
 
     @staticmethod
-    def request_helper(url, data, endpoint):
+    def request_helper(url, data, headers=None, verify=True):
         """url request helper with error handling"""
         try:
-            req = urllib2.Request(url, data=data)
-            resp = urllib2.urlopen(req)
-            logger.info('Successfully sent to %s', endpoint)
+            if not headers:
+                headers = {}
+            context = None
+            if not verify:
+                context = ssl.create_default_context()
+                context.check_hostname = False
+                context.verify_mode = ssl.CERT_NONE
+            req = urllib2.Request(url, data=data, headers=headers)
+            resp = urllib2.urlopen(req, context=context)
+            return resp
         except urllib2.HTTPError as e:
-            raise OutputRequestFailure('Failed to send to {} - [{}] {}'.format(e.code, e.read()))
+            raise OutputRequestFailure('Failed to send to {} - [{}] {}'.format(e.url,
+                                                                               e.code,
+                                                                               e.read()))
 
     @staticmethod
     def emit_cloudwatch_metrics():
