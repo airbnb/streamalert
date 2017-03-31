@@ -1,3 +1,7 @@
+provider "aws" {
+  region = "${var.region}"
+}
+
 resource "aws_flow_log" "vpc_flow_log" {
   count          = "${length(var.targets["vpcs"])}"
   vpc_id         = "${element(var.targets["vpcs"],count.index)}"
