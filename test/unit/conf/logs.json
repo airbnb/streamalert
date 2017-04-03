@@ -2,7 +2,7 @@
   "test_log_type_json": {
     "parser": "json",
     "schema": {
-      "key1": "string",
+      "key1": [],
       "key2": "string",
       "key3": "integer"
     }
@@ -10,10 +10,10 @@
   "test_log_type_json_2": {
     "parser": "json",
     "schema": {
-      "key4": "string",
-      "key5": "string",
-      "key6": "string",
-      "key7": "string"
+      "key4": "boolean",
+      "key5": "float",
+      "key6": "integer",
+      "key7": "boolean"
     }
   },
   "test_log_type_json_nested": {

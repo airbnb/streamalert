@@ -158,7 +158,16 @@ class TestStreamPayload(object):
     def test_classify_record_kinesis_json(self):
         """Payload Classify JSON"""
         kinesis_data = json.dumps({
-            'key1': 'sample data!!!!',
+            'key1': [
+                {
+                    'test': 1,
+                    'test2': 2
+                },
+                {
+                    'test3': 3,
+                    'test4': 4
+                }
+            ],
             'key2': 'more sample data',
             'key3': '1'
         })
@@ -183,9 +192,46 @@ class TestStreamPayload(object):
         assert_not_equal(payload.type, 'csv')
 
         # record type test
-        assert_equal(type(payload.records[0]['key1']), str)
+        assert_equal(type(payload.records[0]['key1']), list)
+        assert_equal(len(payload.records[0]['key1']), 2)
+        assert_equal(payload.records[0]['key1'][1]['test4'], 4)
+
         assert_equal(type(payload.records[0]['key2']), str)
         assert_equal(type(payload.records[0]['key3']), int)
+
+    def test_classify_record_kinesis_json(self):
+        """Payload Classify JSON - boolean, float, integer types"""
+        kinesis_data = json.dumps({
+            'key4': 'true',
+            'key5': '10.001',
+            'key6': '10',
+            'key7': 'false'
+        })
+        payload = self.payload_generator(kinesis_stream='test_kinesis_stream',
+                                         kinesis_data=kinesis_data)
+        classifier = StreamClassifier(config=self.config)
+        classifier.map_source(payload)
+
+        # pre parse and classify
+        data = self.pre_parse_kinesis(payload)
+        classifier.classify_record(payload, data)
+
+        # valid record test
+        assert_equal(payload.valid, True)
+        assert_equal(type(payload.records[0]), dict)
+
+        # log type test
+        assert_equal(payload.log_source, 'test_log_type_json_2')
+
+        # payload type test
+        assert_equal(payload.type, 'json')
+        assert_not_equal(payload.type, 'csv')
+
+        # record type test
+        assert_equal(payload.records[0]['key4'], True)
+        assert_equal(payload.records[0]['key5'], 10.001)
+        assert_equal(payload.records[0]['key6'], 10)
+        assert_equal(payload.records[0]['key7'], False)
 
 
     def test_classify_record_kinesis_nested_json(self):
