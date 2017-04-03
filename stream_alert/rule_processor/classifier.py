@@ -300,7 +300,21 @@ class StreamClassifier(object):
                     logger.error('Invalid schema - %s is not an int', key)
                     return False
 
+            elif value == 'float':
+                try:
+                    payload[key] = float(payload[key])
+                except ValueError as e:
+                    logger.error('Invalid schema - %s is not a float', key)
+                    return False
+
+            elif value == 'boolean':
+                payload[key] = payload[key].lower() == 'true'
+
+            elif isinstance(value, list):
+                pass
+
             elif isinstance(value, (OrderedDict)):
+                # allow for any value to exist in the map
                 if len(value) == 0:
                     pass
                 else:

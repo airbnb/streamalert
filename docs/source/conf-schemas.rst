@@ -28,7 +28,7 @@ Schemas are defined in ``conf/logs.json``
       "recipientAccountId": "string"
     },
     "hints" : {
-      "records": "Records[*]"
+      "records": "Records[*]"               # JSONPath to records
     }
   },
   ....
@@ -38,8 +38,9 @@ Here are the basics:
 
 * Keys defined in the ``schema`` must exist
 * Values are weakly/loosely typed and enforced
-* Arrays imply zero or more elements
-* An empty map ({}) implies zero or more elements
+* Supported types: ``string``, ``integer``, ``boolean``, ``float``, ``{}``, and ``[]``
+* An empty array (``[]``) imply zero or more elements of any type
+* An empty map (``{}``) implies zero or more key/value pairs
 * Schemas can be as tight or as loose as you want (see Example: osquery)
 * If you have nested records, you can specify a JSONPath to your ``records`` with ``hints``
 
