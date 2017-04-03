@@ -1,6 +1,8 @@
 variable "destination_stream_arn" {}
 
-variable "region" {}
+variable "region" {
+  default = "us-east-1"
+}
 
 variable "flow_log_group_name" {}
 
