@@ -92,6 +92,7 @@ def sample_kv_rule_last_hour(rec):
       matchers=[],
       outputs=['slack'])
 def sample_cloudtrail_rule(rec):
+    """Non Lambda/Kinesis service AssumedRole"""
     whitelist_services = {
         'lambda.amazonaws.com',
         'kinesis.amazonaws.com'
@@ -100,7 +101,7 @@ def sample_cloudtrail_rule(rec):
     return (
         rec['eventName'] == 'AssumeRole' and
         rec['awsRegion'] == 'us-east-1' and
-        in_set(rec['userIdentity']['invokedBy'], whitelist_services)
+        not in_set(rec['userIdentity']['invokedBy'], whitelist_services)
     )
 
 
@@ -108,6 +109,7 @@ def sample_cloudtrail_rule(rec):
       matchers=[],
       outputs=['s3'])
 def sample_cloudwatch_events_rule(rec):
+    """Any activity on EC2"""
     return rec['source'] == 'aws.ec2'
 
 
@@ -115,5 +117,16 @@ def sample_cloudwatch_events_rule(rec):
       matchers=[],
       outputs=['s3'])
 def sample_cloudwatch_cloudtrail_rule(rec):
+    """IAM Key Decrypt operation"""
     return rec['detail']['eventName'] == 'Decrypt'
 
+
+@rule(logs=['cloudwatch:flow_logs'],
+      matchers=[],
+      outputs=['slack'])
+def sample_cloudwatch_flog_log_rule(rec):
+    """Successful SSH connection"""
+    return (
+        rec['destport'] == 22 and
+        rec['action'] == 'ACCEPT'
+    )
