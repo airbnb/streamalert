@@ -36,7 +36,7 @@ class TestStreamSink(object):
         self.env = {
             'lambda_region': 'us-east-1',
             'account_id': '123456789012',
-            'lambda_function_name': 'unittest_prod_stream_alert_test',
+            'lambda_function_name': 'unittest_prod_streamalert_rule_processor',
             'lambda_alias': 'production'
         }
 
