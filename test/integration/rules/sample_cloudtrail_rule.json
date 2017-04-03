@@ -7,17 +7,17 @@
             "eventVersion": "1.05",
             "userIdentity": {
               "type": "AWSService",
-              "invokedBy": "lambda.amazonaws.com"
+              "invokedBy": "sns.amazonaws.com"
             },
             "eventTime": "2017-01-01T23:00:00Z",
             "eventSource": "sts.amazonaws.com",
             "eventName": "AssumeRole",
             "awsRegion": "us-east-1",
-            "sourceIPAddress": "lambda.amazonaws.com",
-            "userAgent": "lambda.amazonaws.com",
+            "sourceIPAddress": "sns.amazonaws.com",
+            "userAgent": "sns.amazonaws.com",
             "requestParameters": {
-              "roleSessionName": "lambda_name",
-              "roleArn": "arn:aws:iam::account:role/lambda"
+              "roleSessionName": "sns_name",
+              "roleArn": "arn:aws:iam::account:role/sns"
             },
             "responseElements": {
               "credentials": {
@@ -30,7 +30,7 @@
             "eventID": "6666666-666666-66666-666666",
             "resources": [
               {
-                "ARN": "arn:aws:iam::account:role/lambda",
+                "ARN": "arn:aws:iam::account:role/sns",
                 "accountId": "11111111111",
                 "type": "AWS::IAM::Role"
               }
@@ -43,17 +43,17 @@
             "eventVersion": "1.05",
             "userIdentity": {
               "type": "AWSService",
-              "invokedBy": "kinesis.amazonaws.com"
+              "invokedBy": "elasticbeanstalk.amazonaws.com"
             },
             "eventTime": "2017-01-01T23:00:00Z",
             "eventSource": "sts.amazonaws.com",
             "eventName": "AssumeRole",
             "awsRegion": "us-east-1",
             "sourceIPAddress": "servivce.amazonaws.com",
-            "userAgent": "kinesis.amazonaws.com",
+            "userAgent": "elasticbeanstalk.amazonaws.com",
             "requestParameters": {
-              "roleSessionName": "kinesis_name",
-              "roleArn": "arn:aws:iam::account:role/kinesis"
+              "roleSessionName": "elasticbeanstalk_name",
+              "roleArn": "arn:aws:iam::account:role/elasticbeanstalk"
             },
             "responseElements": {
               "credentials": {
@@ -66,7 +66,7 @@
             "eventID": "777777-777777-777777-777777",
             "resources": [
               {
-                "ARN": "arn:aws:iam::account:role/kinesis",
+                "ARN": "arn:aws:iam::account:role/elasticbeanstalk",
                 "accountId": "11111111111",
                 "type": "AWS::IAM::Role"
               }

@@ -21,6 +21,7 @@ import os
 import random
 import re
 import time
+import zlib
 
 import boto3
 from moto import mock_s3
@@ -92,12 +93,14 @@ def format_record(test_record):
             trigger - bool of if the record should produce an alert
             source - which stream/s3 bucket originated the data
             service - which aws service originated the data
+            compress (optional) - if the payload needs to be gzip compressed or not
 
     Returns:
         dict in the format of the specific service
     """
     service = test_record['service']
     source = test_record['source']
+    compress = test_record.get('compress')
 
     data_type = type(test_record['data'])
     if data_type == dict:
@@ -116,6 +119,7 @@ def format_record(test_record):
         except ValueError as err:
             LOGGER_CLI.error('Error loading %s.json: %s', service, err)
             return
+
     if service == 's3':
         # Set the S3 object key to a random value for testing
         test_record['key'] = ('{:032X}'.format(random.randrange(16**32)))
@@ -125,12 +129,20 @@ def format_record(test_record):
 
         # Create the mocked s3 object in the designated bucket with the random key
         put_mocked_s3_object(source, test_record['key'], data)
+
     elif service == 'kinesis':
-        template['kinesis']['data'] = base64.b64encode(data)
+        if compress:
+            kinesis_data = base64.b64encode(zlib.compress(data))
+        else:
+            kinesis_data = base64.b64encode(data)
+
+        template['kinesis']['data'] = kinesis_data
         template['eventSourceARN'] = 'arn:aws:kinesis:us-east-1:111222333:stream/{}'.format(source)
+
     elif service == 'sns':
         # TODO implement sns testing
         raise NotImplementedError
+
     else:
         LOGGER_CLI.info('Invalid service %s', service)
 
@@ -154,13 +166,14 @@ def check_keys(test_record):
     }
 
     optional_keys = {
-        'trigger_count'
+        'trigger_count',
+        'compress'
     }
 
     record_keys = set(test_record.keys())
     return (
         req_keys == record_keys or
-        optional_keys.issubset(record_keys)
+        any(x in test_record for x in optional_keys)
     )
 
 def apply_helpers(test_record):

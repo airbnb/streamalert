@@ -183,5 +183,32 @@
       }
     },
     "parser": "json"
+  },
+  "cloudwatch:flow_logs": {
+    "schema": {
+      "protocol": "integer",
+      "source": "string",
+      "destination": "string",
+      "srcport": "integer",
+      "destport": "integer",
+      "action": "string",
+      "packets": "integer",
+      "bytes": "integer",
+      "windowstart": "integer",
+      "windowend": "integer",
+      "version": "integer",
+      "eni": "string",
+      "account": "integer",
+      "flowlogstatus": "string"
+    },
+    "parser": "gzip-json",
+    "hints": {
+      "records": "logEvents[*].extractedFields",
+      "envelope": {
+        "logGroup": "string",
+        "logStream": "string",
+        "owner": "integer"
+      }
+    }
   }
 }
