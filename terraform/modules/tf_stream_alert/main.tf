@@ -54,7 +54,7 @@ resource "aws_lambda_permission" "with_sns" {
 
 // S3 bucket for S3 outputs
 resource "aws_s3_bucket" "streamalerts" {
-  bucket        = "${var.prefix}.${var.cluster}.streamalerts"
+  bucket        = "${replace("${var.prefix}.${var.cluster}.streamalerts", "_", ".")}"
   acl           = "private"
   force_destroy = false
 }
