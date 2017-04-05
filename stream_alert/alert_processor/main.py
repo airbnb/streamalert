@@ -153,8 +153,9 @@ class StreamOutput(object):
     def _get_bucket_name(context):
         """Return the lambda function name for the currently executing Lambda function."""
         lambda_func_name = context.invoked_function_arn.split(':')[6]
-        prefix, cluster = lambda_func_name.split('_')[0:2]
-        return '.'.join([prefix, cluster, 'streamalerts'])
+        bucket = lambda_func_name.replace('_streamalert_alert_processor',
+                                                         '_streamalerts')
+        return bucket.replace('_', '.')
 
     def _setup_output_creds(self, output):
         """Decrypt credentials and store them in the `creds` attribute.
