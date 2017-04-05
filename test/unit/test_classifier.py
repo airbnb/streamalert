@@ -205,7 +205,7 @@ class TestStreamPayload(object):
             'key4': 'true',
             'key5': '10.001',
             'key6': '10',
-            'key7': 'false'
+            'key7': False
         })
         payload = self.payload_generator(kinesis_stream='test_kinesis_stream',
                                          kinesis_data=kinesis_data)
