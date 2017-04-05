@@ -144,15 +144,15 @@ class JSONParser(ParserBase):
         json_records = []
         envelope = {}
 
-        hints = self.options.get('hints', {})
-        if hints:
-            records_schema = hints.get('records')
-            envelope_schema = hints.get('envelope', {})
+        config_options = self.options.get('configuration')
+        if config_options:
+            records_schema = config_options.get('json_path')
+            envelope_schema = config_options.get('envelope_keys', {})
 
-        if (hints and len(hints) and records_schema):
+        if (config_options and len(config_options) and records_schema):
             records_jsonpath = jsonpath_rw.parse(records_schema)
             if len(envelope_schema):
-                self.schema.update({"envelope": envelope_schema})
+                self.schema.update({'envelope': envelope_schema})
                 envelope_keys = envelope_schema.keys()
                 envelope_jsonpath = jsonpath_rw.parse("$." + ",".join(envelope_keys))
                 envelope_matches = [match.value for match in envelope_jsonpath.find(json_payload)]
@@ -161,7 +161,7 @@ class JSONParser(ParserBase):
             for match in records_jsonpath.find(json_payload):
                 record = match.value
                 if len(envelope):
-                    record.update({"envelope": envelope})
+                    record.update({'envelope': envelope})
                 json_records.append(record)
         else:
             json_records.append(json_payload)
@@ -202,8 +202,6 @@ class GzipJSONParser(JSONParser):
     def parse(self):
         """Parse a gzipped string into JSON.
 
-        Options:
-            - hints
         Returns:
             - An array of parsed JSON records.
             - False if the data is not Gzipped JSON or the columns do not match.
@@ -221,16 +219,18 @@ class CSVParser(ParserBase):
     __parserid__ = 'csv'
     __default_delimiter = ','
 
-    def _get_reader(self):
+    def _get_reader(self, config_options):
         """Return the CSV reader for the given payload source
+
+        Args:
+            config_options [map]: Map containing parser options such as delimiter
 
         Returns:
             - CSV reader object if the parse was successful
             - False if parse was unsuccessful
         """
         data = self.data
-        service = self.options['service']
-        delimiter = self.options['delimiter'] or self.__default_delimiter
+        delimiter = config_options.get('delimiter') or self.__default_delimiter
 
         # TODO(ryandeivert): either subclass a current parser or add a new
         # parser to support parsing CSV data that contains a header line
@@ -254,11 +254,12 @@ class CSVParser(ParserBase):
         """
         schema = self.schema
         hints = self.options.get('hints')
+        config_options = self.options.get('configuration')
 
         hint_result = []
         csv_payloads = []
 
-        reader = self._get_reader()
+        reader = self._get_reader(config_options)
         if not reader:
             return False
         try:
@@ -315,9 +316,10 @@ class KVParser(ParserBase):
         data = self.data
         schema = self.schema
         options = self.options
+        config_options = options.get('configuration', {})
 
-        delimiter = options['delimiter'] or self.__default_delimiter
-        separator = options['separator'] or self.__default_separator
+        delimiter = config_options.get('delimiter') or self.__default_delimiter
+        separator = config_options.get('separator') or self.__default_separator
 
         kv_payload = {}
         try:

@@ -59,8 +59,6 @@
   },
   "test_log_type_kv_auditd": {
     "parser": "kv",
-    "delimiter": " ",
-    "separator": "=",
     "schema": {
       "type": "string",
       "msg": "string",
@@ -104,6 +102,10 @@
       "ogid": "integer",
       "rdev": "string",
       "obj": "string"
+    },
+    "configuration": {
+      "delimiter": " ",
+      "separator": "="
     }
   },
   "test_log_type_csv": {
@@ -169,30 +171,30 @@
       "results": "string"
     },
     "parser": "json",
-    "hints": {
-      "records": "$.profiles[*].controls[*]"
+    "configuration": {
+      "json_path": "$.profiles[*].controls[*]"
     }
   },
   "test_cloudtrail": {
     "parser": "json",
     "schema": {
-          "eventVersion": "string",
-          "eventID": "string",
-          "eventTime": "string",
-          "requestParameters": {},
-          "eventType": "string",
-          "responseElements": "string",
-          "awsRegion": "string",
-          "eventName": "string",
-          "userIdentity": {},
-          "eventSource": "string",
-          "requestID": "string",
-          "userAgent": "string",
-          "sourceIPAddress": "string",
-          "recipientAccountId": "string"
+      "eventVersion": "string",
+      "eventID": "string",
+      "eventTime": "string",
+      "requestParameters": {},
+      "eventType": "string",
+      "responseElements": "string",
+      "awsRegion": "string",
+      "eventName": "string",
+      "userIdentity": {},
+      "eventSource": "string",
+      "requestID": "string",
+      "userAgent": "string",
+      "sourceIPAddress": "string",
+      "recipientAccountId": "string"
     },
-    "hints" : {
-      "records": "Records[*]"
+    "configuration": {
+      "json_path": "Records[*]"
     }
   },
   "test_cloudwatch": {
@@ -213,9 +215,9 @@
       "flowlogstatus": "string"
     },
     "parser": "gzip-json",
-    "hints": {
-      "records": "logEvents[*].extractedFields",
-      "envelope": {
+    "configuration": {
+      "json_path": "logEvents[*].extractedFields",
+      "envelope_keys": {
         "logGroup": "string",
         "logStream": "string",
         "owner": "integer"

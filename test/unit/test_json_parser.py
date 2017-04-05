@@ -1,5 +1,7 @@
 from stream_alert.rule_processor.config import load_config
 from stream_alert.rule_processor.parsers import get_parser
+
+import json
 import zlib
 
 from nose.tools import (
@@ -49,11 +51,18 @@ class TestJSONParser(object):
             'result': 'string'
         }
         options = {
-            "hints": {
-                "records": "profiles.controls[*]"
+            'configuration': {
+                'json_path': 'profiles.controls[*]'
             }
         }
-        data = '{"profiles": {"controls": [{"name": "infra-test-1", "result": "fail"}]}}'
+        data = json.dumps({
+            'profiles': {
+                'controls': [{
+                    'name': 'test-infra-1',
+                    'result': 'fail'
+                }]
+            }
+        })
 
         # get parsed data
         parsed_data = self.parser_helper(data=data, schema=schema, options=options)
@@ -64,29 +73,40 @@ class TestJSONParser(object):
     def test_inspec(self):
         """Parse Inspec JSON"""
         schema = self.config['logs']['test_inspec']['schema']
-        options = { "hints" : self.config['logs']['test_inspec']['hints'] }
+        options = {
+            'configuration': self.config['logs']['test_inspec']['configuration']
+        }
         # load fixture file
         with open('test/unit/fixtures/inspec.json', 'r') as fixture_file:
             data = fixture_file.readlines()
 
         data_record = data[0].strip()
         # setup json parser
-        parsed_result = self.parser_helper(data=data_record, schema=schema, options=options)
+        parsed_result = self.parser_helper(data=data_record,
+                                           schema=schema,
+                                           options=options)
+
         assert_equal(len(parsed_result), 2)
-        assert_equal(sorted((u'impact', u'code', u'tags', u'source_location', u'refs', u'title',
-            u'results', u'id', u'desc')),sorted(parsed_result[0].keys()))
+        inspec_keys = (u'impact', u'code', u'tags', u'source_location', u'refs', 
+                       u'title', u'results', u'id', u'desc')
+        assert_equal(sorted((inspec_keys)),sorted(parsed_result[0].keys()))
 
     def test_cloudtrail(self):
         """Parse Cloudtrail JSON"""
         schema = self.config['logs']['test_cloudtrail']['schema']
-        options = { "hints" : self.config['logs']['test_cloudtrail']['hints'] }
+        options = {
+            'configuration' : self.config['logs']['test_cloudtrail']['configuration']
+        }
         # load fixture file
         with open('test/unit/fixtures/cloudtrail.json', 'r') as fixture_file:
             data = fixture_file.readlines()
 
         data_record = data[0].strip()
         # setup json parser
-        parsed_result = self.parser_helper(data=data_record, schema=schema, options=options)
+        parsed_result = self.parser_helper(data=data_record,
+                                           schema=schema, 
+                                           options=options)
+
         assert_equal(len(parsed_result), 2)
         assert_equal(len(parsed_result[0].keys()), 14)
         assert_equal(len(parsed_result[1].keys()), 14)

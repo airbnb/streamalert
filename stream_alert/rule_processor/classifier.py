@@ -222,35 +222,33 @@ class StreamClassifier(object):
         Returns:
             A boolean representing the success of the parse.
         """
-
         log_metadata = self.log_metadata(payload)
         # TODO(jack) make this process more efficient.
         # Separate out parsing with key matching.
         # Right now, if keys match but the type/parser is correct,
         # it has to start over
         for log_name, attributes in log_metadata.iteritems():
-            # short circuit parser determination
+            # Short circuit parser determination
             if not payload.type:
                 parser_name = attributes['parser']
             else:
                 parser_name = payload.type
 
             options = {}
-            options['hints'] = attributes.get('hints')
-            options['delimiter'] = attributes.get('delimiter')
-            options['separator'] = attributes.get('separator')
+            options['hints'] = attributes.get('hints', {})
+            options['configuration'] = attributes.get('configuration', {})
             options['parser'] = parser_name
-            options['service'] = payload.service
+
             schema = attributes['schema']
 
-            # Setup the parser
+            # Setup the parser class
             parser_class = get_parser(parser_name)
             parser = parser_class(data, schema, options)
             options['nested_keys'] = parser.__dict__.get('nested_keys')
             # A list of parsed records
             parsed_data = parser.parse()
 
-            # Used for short circuiting parser determination
+            # Set the payload type to short circuit parser determination
             if parser.payload_type:
                 payload.type = parser.payload_type
 
