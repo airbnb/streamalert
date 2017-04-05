@@ -308,7 +308,7 @@ class StreamClassifier(object):
                     return False
 
             elif value == 'boolean':
-                payload[key] = str(payload[key].lower()) == 'true'
+                payload[key] = str(payload[key]).lower() == 'true'
 
             elif isinstance(value, list):
                 pass
