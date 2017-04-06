@@ -19,9 +19,9 @@ from datetime import datetime
 import base64
 import hashlib
 import os
+import pip
 import shutil
 import tempfile
-import pip
 
 import boto3
 
@@ -198,7 +198,7 @@ class LambdaPackage(object):
                     ServerSideEncryption='AES256'
                 )
             except BaseException:
-                LOGGER_CLI.info('An error occured while uploding %s', package_name)
+                LOGGER_CLI.info('An error occurred while uploading %s', package_name)
                 raise
             package_fh.close()
             LOGGER_CLI.info('Uploaded %s to S3', package_name)
