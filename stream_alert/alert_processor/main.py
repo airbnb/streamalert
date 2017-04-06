@@ -51,88 +51,73 @@ def handler(event, context):
             logging.info('malformed alert: %s', alert)
             return
 
-        StreamOutput().run(alert, context)
+def run(message, context):
+    """Send an Alert to its described outputs.
 
+    Args:
+        alerts [dict]: SNS message dictionary with the following structure:
 
-class StreamOutput(object):
-    """Route StreamAlert alerts to their declared outputs.
+        {
+            'default': alert
+        }
 
-    Public Methods:
-        run
-        emit_cloudwatch_metrics
-    """
-    def run(self, message, context):
-        """Send an Alert to its described outputs.
+        The alert is another dict with the following structure:
 
-        Args:
-            alerts [dict]: SNS message dictionary with the following structure:
-
-            {
-                'default': alert
-            }
-
-            The alert is another dict with the following structure:
-
-            {
-                'rule_name': rule.rule_name,
-                'record': record,
-                'metadata': {
-                    'log': str(payload.log_source),
-                    'outputs': rule.outputs,
-                    'type': payload.type,
-                    'source': {
-                        'service': payload.service,
-                        'entity': payload.entity
-                    }
+        {
+            'rule_name': rule.rule_name,
+            'record': record,
+            'metadata': {
+                'log': str(payload.log_source),
+                'outputs': rule.outputs,
+                'type': payload.type,
+                'source': {
+                    'service': payload.service,
+                    'entity': payload.entity
                 }
             }
-        """
-        alert = message['default']
-        rule_name = alert['rule_name']
+        }
+    """
+    alert = message['default']
+    rule_name = alert['rule_name']
 
-        # strip out unnecessary keys and sort
-        alert = self._sort_dict(alert)
+    # strip out unnecessary keys and sort
+    alert = sort_dict(alert)
 
-        outputs = alert['metadata']['outputs']
-        # Get the output configuration for this rule and send the alert to each
-        for output in set(outputs):
-            output_info = output.split(':')
-            service, descriptor = output_info[0], output_info[1] if len(output_info) > 1 else ""
-            region = context.invoked_function_arn.split(':')[3]
-            function = context.invoked_function_arn.split(':')[-1]
+    outputs = alert['metadata']['outputs']
+    # Get the output configuration for this rule and send the alert to each
+    for output in set(outputs):
+        output_info = output.split(':')
+        service, descriptor = output_info[0], output_info[1] if len(output_info) > 1 else ""
+        region = context.invoked_function_arn.split(':')[3]
+        function = context.invoked_function_arn.split(':')[-1]
 
-            # Retrieve the proper class to handle dispatching the alerts of this services
-            output_dispatcher = get_output_dispatcher(service, region, function)
+        # Retrieve the proper class to handle dispatching the alerts of this services
+        output_dispatcher = get_output_dispatcher(service, region, function)
 
-            if not output_dispatcher:
-                continue
+        if not output_dispatcher:
+            continue
 
-            try:
-                output_dispatcher.dispatch(descriptor, rule_name, alert)
-            except BaseException as err:
-                LOGGER.error('an error occurred while sending alert to %s: %s',
-                             service, err)
+        try:
+            output_dispatcher.dispatch(descriptor, rule_name, alert)
+        except BaseException as err:
+            LOGGER.error('an error occurred while sending alert to %s: %s',
+                         service, err)
 
-    @staticmethod
-    def emit_cloudwatch_metrics():
-        """Send Number of Alerts metric as a CloudWatch metric."""
-        raise NotImplementedError
+def sort_dict(unordered_dict):
+    """Recursively sort a dictionary
 
-    def _sort_dict(self, unordered_dict):
-        """Recursively sort a dictionary
+    Args:
+        unordered_dict [dict]: an alert dictionary
 
-        Args:
-            unordered_dict [dict]: an alert dictionary
+    Returns:
+        [OrderedDict] a sorted version of the dictionary
+    """
+    result = OrderedDict()
+    for key, value in sorted(unordered_dict.items(), key=lambda t: t[0]):
+        if isinstance(value, dict):
+            result[key] = sort_dict(value)
+            continue
 
-        Returns:
-            [OrderedDict] a sorted version of the dictionary
-        """
-        result = OrderedDict()
-        for key, value in sorted(unordered_dict.items(), key=lambda t: t[0]):
-            if isinstance(value, dict):
-                result[key] = self._sort_dict(value)
-                continue
+        result[key] = value
 
-            result[key] = value
-
-        return result
+    return result
