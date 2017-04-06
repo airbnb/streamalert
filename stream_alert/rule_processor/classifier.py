@@ -257,8 +257,10 @@ class StreamClassifier(object):
                 logger.debug('parsed_data: %s', parsed_data)
                 typed_data = []
                 for data in parsed_data:
-                    # convert data types per the schema
-                    typed_data.append(self._convert_type(data, schema, options))
+                    # Convert data types per the schema
+                    # Use the parser.schema due to updates caused by
+                    #   configuration settings such as envelope and optional_keys
+                    typed_data.append(self._convert_type(data, parser.schema, options))
 
                 if typed_data:
                     payload.log_source = log_name
@@ -294,14 +296,14 @@ class StreamClassifier(object):
             elif value == 'integer':
                 try:
                     payload[key] = int(payload[key])
-                except ValueError as e:
+                except ValueError:
                     logger.error('Invalid schema - %s is not an int', key)
                     return False
 
             elif value == 'float':
                 try:
                     payload[key] = float(payload[key])
-                except ValueError as e:
+                except ValueError:
                     logger.error('Invalid schema - %s is not a float', key)
                     return False
 

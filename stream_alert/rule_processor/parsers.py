@@ -16,14 +16,16 @@ limitations under the License.
 
 import csv
 import json
-import jsonpath_rw
-import zlib
 import logging
 import re
 import StringIO
+import zlib
 
 from abc import ABCMeta, abstractmethod
+from collections import OrderedDict
 from fnmatch import fnmatch
+
+import jsonpath_rw
 
 logging.basicConfig()
 logger = logging.getLogger('StreamAlert')
@@ -133,23 +135,52 @@ class JSONParser(ParserBase):
         If desired, fields present on the root record can be merged into child
         events using the `envelope` option.
 
-
         Args:
-            json_payload: A dict of the parsed json data
-            schema: A dict of a log type's schema
+            json_payload [dict]: The parsed json data
+            schema [dict]: A log type's schema
 
         Returns:
-            A list of dict JSON payloads
+            [list] of dictionaries representing JSON payloads
         """
         json_records = []
         envelope = {}
 
+        # Check configuration options
         config_options = self.options.get('configuration')
         if config_options:
             records_schema = config_options.get('json_path')
             envelope_schema = config_options.get('envelope_keys', {})
+            optional_keys = config_options.get('optional_top_level_keys')
 
-        if (config_options and len(config_options) and records_schema):
+        # Handle optional keys
+        if config_options and optional_keys:
+            # Note: This function exists because dict/OrderedDict cannot
+            #       be keys in a dictionary.
+            def default_optional_values(key):
+                """Return a default value for a given schema type"""
+                if key == 'string':
+                    return str()
+                elif key == 'integer':
+                    return int()
+                elif key == 'float':
+                    return float()
+                elif key == 'boolean':
+                    return bool()
+                elif key == []:
+                    return list()
+                elif key == OrderedDict():
+                    return dict()
+
+            for key_name, value_type in optional_keys.iteritems():
+                # Update the schema to ensure the record is valid
+                self.schema.update({key_name: value_type})
+                # If the optional key isn't in our parsed json payload
+                if key_name not in json_payload:
+                    # Set default value
+                    json_payload[key_name] = default_optional_values(value_type)
+
+        # Handle jsonpath extraction of records
+        if config_options and len(config_options) and records_schema:
             records_jsonpath = jsonpath_rw.parse(records_schema)
             if len(envelope_schema):
                 self.schema.update({'envelope': envelope_schema})
@@ -183,8 +214,8 @@ class JSONParser(ParserBase):
         try:
             json_payload = json.loads(data)
             self.payload_type = 'json'
-        except ValueError as e:
-            logger.debug('JSON parse failed: %s', str(e))
+        except ValueError as err:
+            logger.debug('JSON parse failed: %s', str(err))
             return False
 
         json_records = self._parse_records(json_payload)
@@ -207,9 +238,9 @@ class GzipJSONParser(JSONParser):
             - False if the data is not Gzipped JSON or the columns do not match.
         """
         try:
-            json_payload = zlib.decompress(self.data,47)
+            json_payload = zlib.decompress(self.data, 47)
             self.data = json_payload
-            return super(GzipJSONParser,self).parse()
+            return super(GzipJSONParser, self).parse()
 
         except zlib.error:
             return False
@@ -237,7 +268,7 @@ class CSVParser(ParserBase):
         try:
             csv_data = StringIO.StringIO(data)
             reader = csv.reader(csv_data, delimiter=delimiter)
-        except ValueError, csv.Error:
+        except (ValueError, csv.Error):
             return False
 
         return reader
@@ -292,7 +323,7 @@ class CSVParser(ParserBase):
 
                     csv_payloads.append(csv_payload)
 
-            return csv_payloads     
+            return csv_payloads
         except csv.Error:
             return False
 
