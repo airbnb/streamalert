@@ -369,23 +369,31 @@ def deploy(options):
     publish_version(packages)
     tf_runner(targets=targets)
 
-def user_input(requested_info, err=''):
-    """Prompt user for requested information"""
+def user_input(requested_info, is_secret):
+    """Prompt user for requested information
+
+    Args:
+        requested_info [string]: description of the information needed
+        is_secret [boolean]: decides whether to mask input or not
+
+    Returns:
+        [string] response provided by the user
+    """
     response = ''
-    while not response:
-        response = raw_input('\n%sPlease supply %s: ' %(err, requested_info))
+    prompt = '\nPlease supply {}: '.format(requested_info)
 
-    if ' ' in response:
-        err = 'Error: the supplied input should not contain any spaces'
-        return user_input(requested_info, '{}\n'.format(err))
+    if not is_secret:
+        while not response:
+            response = raw_input(prompt)
 
-    return response
+        # Restrict having spaces in items (applies to things like descriptors, etc)
+        if ' ' in response:
+            LOGGER_CLI.error('the supplied input should not contain any spaces')
+            return user_input(requested_info, is_secret)
+    else:
+        while not response:
+            response = getpass(prompt=prompt)
 
-def user_input_secret(requested_info):
-    """Get the secret from stdin"""
-    response = ''
-    while not response:
-        response = getpass(prompt='\nPlease supply %s: ' % requested_info)
     return response
 
 def configure_output(options):
@@ -404,10 +412,7 @@ def configure_output(options):
     props = output.get_user_defined_properties()
 
     for name, prop in props.iteritems():
-        if prop.is_secret:
-            props[name] = prop._replace(value=user_input_secret(prop.description))
-        else:
-            props[name] = prop._replace(value=user_input(prop.description))
+        props[name] = prop._replace(value=user_input(prop.description, prop.is_secret))
 
     config = output.load_config(props)
     # An empty config here means this configuration already exists,
