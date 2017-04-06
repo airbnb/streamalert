@@ -15,6 +15,7 @@ limitations under the License.
 '''
 
 from collections import namedtuple
+from getpass import getpass
 from jinja2 import Environment, PackageLoader
 
 from stream_alert_cli.package import RuleProcessorPackage, AlertProcessorPackage
@@ -25,15 +26,16 @@ from stream_alert_cli.logger import LOGGER_CLI
 from stream_alert_cli.version import LambdaVersion
 
 from stream_alert.alert_processor import __version__ as alert_processor_version
+from stream_alert.alert_processor.outputs import get_output_dispatcher
 from stream_alert.rule_processor import __version__ as rule_processor_version
+
+
+CONFIG = CLIConfig()
 
 
 class InvalidClusterName(Exception):
     """Exception for invalid cluster names"""
     pass
-
-
-CONFIG = CLIConfig()
 
 
 def cli_runner(options):
@@ -50,7 +52,10 @@ def cli_runner(options):
                         'https://github.com/airbnb/streamalert/issues')
     LOGGER_CLI.info(cli_load_message)
 
-    if options.command == 'lambda':
+    if options.command == 'output':
+        configure_output(options)
+
+    elif options.command == 'lambda':
         lambda_runner(options)
 
     elif options.command == 'terraform':
@@ -280,7 +285,6 @@ def rollback(options):
                for x in CONFIG['clusters'].keys()]
     tf_runner(targets=targets)
 
-
 def generate_tf_files():
     """Generate all Terraform plans for the clusters in variables.json"""
     LOGGER_CLI.info('Generating Terraform files')
@@ -364,3 +368,54 @@ def deploy(options):
     # create production version by running a second time
     publish_version(packages)
     tf_runner(targets=targets)
+
+def user_input(requested_info, err=''):
+    """Prompt user for requested information"""
+    response = ''
+    while not response:
+        response = raw_input('\n%sPlease supply %s: ' %(err, requested_info))
+
+    if ' ' in response:
+        err = 'Error: the supplied input should not contain any spaces'
+        return user_input(requested_info, '{}\n'.format(err))
+
+    return response
+
+def user_input_secret(requested_info):
+    """Get the secret from stdin"""
+    response = ''
+    while not response:
+        response = getpass(prompt='\nPlease supply %s: ' % requested_info)
+    return response
+
+def configure_output(options):
+    """Configure a new output for this service
+
+    Args:
+        options [argparse]
+    """
+    region = CONFIG['account']['region']
+    prefix = CONFIG['account']['prefix']
+
+    # Retrieve the proper class to handle dispatching the alerts of this services
+    output = get_output_dispatcher(options.service, region, prefix)
+
+    # get dictionary of OutputProperty items to be used for user prompting
+    props = output.get_user_defined_properties()
+
+    for name, prop in props.iteritems():
+        if prop.is_secret:
+            props[name] = prop._replace(value=user_input_secret(prop.description))
+        else:
+            props[name] = prop._replace(value=user_input(prop.description))
+
+    config = output.load_config(props)
+    # An empty config here means this configuration already exists,
+    # so we can ask for user input again for a unique configuration
+    if config is False:
+        return configure_output(options)
+
+    # Encrypt the creds and push them to S3
+    # then update the local output configuration with properties
+    output.push_creds_to_s3(props)
+    output.update_outputs_config(config, props)
