@@ -180,7 +180,7 @@ class JSONParser(ParserBase):
                     json_payload[key_name] = default_optional_values(value_type)
 
         # Handle jsonpath extraction of records
-        if config_options and len(config_options) and records_schema:
+        if config_options and records_schema:
             records_jsonpath = jsonpath_rw.parse(records_schema)
             if len(envelope_schema):
                 self.schema.update({'envelope': envelope_schema})

@@ -52,7 +52,7 @@ class TestStreamPayload(object):
                               .format(kinesis_stream),
             'kinesis': {
                 'data': base64.b64encode(kinesis_data)
-                              }
+            }
         }
         return raw_record
 
