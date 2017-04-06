@@ -40,8 +40,8 @@ class OutputRequestFailure(Exception):
     """OutputRequestFailure handles any HTTP failures"""
 
 
-class OutputBase(object):
-    """StreamOutputBase is the base class to handle routing alters to outputs
+class StreamOutputBase(object):
+    """StreamOutputBase is the base class to handle routing alerts to outputs
 
     """
     __service__ = NotImplemented
@@ -141,6 +141,9 @@ class OutputBase(object):
         Args:
             cred_location [string]: tmp path on disk to to store the encrypted blob
             descriptor [string]: service destination (ie: slack channel, pd integration)
+
+        Returns:
+            [boolean] true if download of creds from s3 was a success
         """
         try:
             client = boto3.client('s3', region_name=self.region)

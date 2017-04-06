@@ -23,14 +23,14 @@ from datetime import datetime
 
 import boto3
 
-from stream_alert.alert_processor.output_base import OutputBase, OutputProperty
+from stream_alert.alert_processor.output_base import StreamOutputBase, OutputProperty
 
 logging.basicConfig()
 LOGGER = logging.getLogger('StreamOutput')
 
 STREAM_OUTPUTS = {}
 
-def streamoutput(cls):
+def output(cls):
     """Class decorator to register all stream outputs"""
     STREAM_OUTPUTS[cls.__service__] = cls
 
@@ -44,8 +44,8 @@ def get_output_dispatcher(service, region, s3_prefix):
         LOGGER.error('designated output service [%s] does not exist', service)
 
 
-@streamoutput
-class PagerDutyOutput(OutputBase):
+@output
+class PagerDutyOutput(StreamOutputBase):
     """PagerDutyOutput handles all alert dispatching for PagerDuty"""
     __service__ = 'pagerduty'
 
@@ -101,8 +101,8 @@ class PagerDutyOutput(OutputBase):
         self._log_status(success)
 
 
-@streamoutput
-class PhantomOutput(OutputBase):
+@output
+class PhantomOutput(StreamOutputBase):
     """PhantomOutput handles all alert dispatching for Phantom"""
     __service__ = 'phantom'
 
@@ -138,7 +138,7 @@ class PhantomOutput(OutputBase):
         Returns:
             [integer] ID of the Phantom container where the alerts will be sent
         """
-        message = "StreamAlert Rule Triggered - {}".format(rule_name)
+        message = 'StreamAlert Rule Triggered - {}'.format(rule_name)
         ph_container = {'name' : message,
                         'description' : message}
         container_string = json.dumps(ph_container)
@@ -176,11 +176,11 @@ class PhantomOutput(OutputBase):
 
         success = False
         if container_id:
-            artifact = {"cef" : alert['record'],
-                        "container_id" : container_id,
-                        "data" : alert,
-                        "name" : "Phantom Artifact",
-                        "label" : "Alert"}
+            artifact = {'cef' : alert['record'],
+                        'container_id' : container_id,
+                        'data' : alert,
+                        'name' : 'Phantom Artifact',
+                        'label' : 'Alert'}
             artifact_string = json.dumps(artifact)
             artifact_url = os.path.join(creds['url'], 'rest/artifact/')
             resp = self._request_helper(artifact_url, artifact_string, headers, False)
@@ -190,8 +190,8 @@ class PhantomOutput(OutputBase):
         self._log_status(success)
 
 
-@streamoutput
-class SlackOutput(OutputBase):
+@output
+class SlackOutput(StreamOutputBase):
     """SlackOutput handles all alert dispatching for Slack"""
     __service__ = 'slack'
 
@@ -230,7 +230,7 @@ class SlackOutput(OutputBase):
 
         self._log_status(success)
 
-class AWSOutput(OutputBase):
+class AWSOutput(StreamOutputBase):
     """Subclass to be inherited from for all AWS service outputs"""
     def format_output_config(self, service_config, values):
         """Format the output configuration for this AWS service to be written to disk
@@ -245,7 +245,7 @@ class AWSOutput(OutputBase):
                     **{values['descriptor'].value: values['arn'].value})
 
 
-@streamoutput
+@output
 class S3Output(AWSOutput):
     """S3Output handles all alert dispatching for AWS S3"""
     __service__ = 's3'
