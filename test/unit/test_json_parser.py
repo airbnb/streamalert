@@ -2,15 +2,11 @@ from stream_alert.rule_processor.config import load_config
 from stream_alert.rule_processor.parsers import get_parser
 
 import json
-import zlib
 
 from nose.tools import (
-    assert_equal,
-    assert_not_equal,
-    nottest,
-    assert_raises,
-    raises
+    assert_equal,    
 )
+
 
 class TestJSONParser(object):
     @classmethod
@@ -87,15 +83,15 @@ class TestJSONParser(object):
                                            options=options)
 
         assert_equal(len(parsed_result), 2)
-        inspec_keys = (u'impact', u'code', u'tags', u'source_location', u'refs', 
+        inspec_keys = (u'impact', u'code', u'tags', u'source_location', u'refs',
                        u'title', u'results', u'id', u'desc')
-        assert_equal(sorted((inspec_keys)),sorted(parsed_result[0].keys()))
+        assert_equal(sorted((inspec_keys)), sorted(parsed_result[0].keys()))
 
     def test_cloudtrail(self):
         """Parse Cloudtrail JSON"""
         schema = self.config['logs']['test_cloudtrail']['schema']
         options = {
-            'configuration' : self.config['logs']['test_cloudtrail']['configuration']
+            'configuration': self.config['logs']['test_cloudtrail']['configuration']
         }
         # load fixture file
         with open('test/unit/fixtures/cloudtrail.json', 'r') as fixture_file:
@@ -104,7 +100,7 @@ class TestJSONParser(object):
         data_record = data[0].strip()
         # setup json parser
         parsed_result = self.parser_helper(data=data_record,
-                                           schema=schema, 
+                                           schema=schema,
                                            options=options)
 
         assert_equal(len(parsed_result), 2)
@@ -142,3 +138,41 @@ class TestJSONParser(object):
         assert_equal(set(parsed_data[0].keys()), {'name', 'age', 'city', 'state'})
         assert_equal(parsed_data[0]['name'], 'john')
         assert_equal(type(parsed_data[0]['age']), int)
+
+    def test_optional_keys_json(self):
+        """Parse JSON with optional top level keys"""
+        schema = {
+            'name': 'string',
+            'host': 'string',
+            'columns': {}
+        }
+        options = {
+            'configuration': {
+                'optional_top_level_keys': {
+                    'ids': [],
+                    'results': {},
+                    'host-id': 'integer',
+                    'valid': 'boolean'
+                }
+            }
+        }
+        data = json.dumps({
+            'name': 'unit-test',
+            'host': 'unit-test-host-1',
+            'columns': {
+                'test-column': 1
+            },
+            'valid': 'true'
+        })
+        parsed_result = self.parser_helper(data=data,
+                                           schema=schema,
+                                           options=options)
+
+        # tests
+        assert_equal(parsed_result[0]['host'], 'unit-test-host-1')
+        assert_equal(parsed_result[0]['valid'], 'true')
+
+        # test optional fields
+        assert_equal(parsed_result[0]['host-id'], 0)
+        assert_equal(parsed_result[0]['ids'], [])
+        assert_equal(parsed_result[0]['results'], {})

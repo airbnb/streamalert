@@ -5,6 +5,13 @@
       "key1": [],
       "key2": "string",
       "key3": "integer"
+    },
+    "configuration": {
+      "optional_top_level_keys": {
+        "key9": "boolean",
+        "key10": {},
+        "key11": "float"
+      }
     }
   },
   "test_log_type_json_2": {
@@ -39,6 +46,11 @@
         "env": "string",
         "cluster": "string",
         "number": "integer"
+      }
+    },
+    "configuration": {
+      "optional_top_level_keys": {
+        "log_type": "string"
       }
     }
   },
