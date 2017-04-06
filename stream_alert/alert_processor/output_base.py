@@ -26,8 +26,6 @@ from collections import namedtuple
 import boto3
 from botocore.exceptions import ClientError
 
-from stream_alert.alert_processor.config import load_outputs_config, write_outputs_config
-
 logging.basicConfig()
 LOGGER = logging.getLogger('StreamOutput')
 
@@ -81,7 +79,7 @@ class StreamOutputBase(object):
             [dict] the loaded credential info needed for sending alerts to this service
         """
         local_cred_location = os.path.join(self._local_temp_dir(),
-                                           self._output_cred_name(descriptor))
+                                           self.output_cred_name(descriptor))
 
         # Creds are not cached locally, so get the encrypted blob from s3
         if not os.path.exists(local_cred_location):
@@ -106,26 +104,29 @@ class StreamOutputBase(object):
 
         return creds_dict
 
+    def get_secrets_bucket_name(self):
+        return self._format_s3_bucket('streamalert.secrets')
+
     def _format_s3_bucket(self, suffix):
         """Format the s3 bucket by combining the stored qualifier with a suffix
 
         Args:
-            suffix [string]: suffix for an s3 bucket
+            suffix [string]: Suffix for an s3 bucket
 
         Returns:
-            [string] the combined prefix and suffix
+            [string] The combined prefix and suffix
         """
         return '.'.join([self.s3_prefix, suffix])
 
-    def _output_cred_name(self, descriptor):
+    def output_cred_name(self, descriptor):
         """Formats the output name for this credential by combining the service
         and the descriptor.
 
         Args:
-            descriptor [string]: service destination (ie: slack channel, pd integration)
+            descriptor [string]: Service destination (ie: slack channel, pd integration)
 
         Return:
-            [string] the formatted credential name (ie: slack_ryandchannel)
+            [string] Formatted credential name (ie: slack_ryandchannel)
         """
         cred_name = str(self.__service__)
 
@@ -139,71 +140,33 @@ class StreamOutputBase(object):
         """Pull the encrypted credential blob for this service and destination from s3
 
         Args:
-            cred_location [string]: tmp path on disk to to store the encrypted blob
-            descriptor [string]: service destination (ie: slack channel, pd integration)
+            cred_location [string]: The tmp path on disk to to store the encrypted blob
+            descriptor [string]: Service destination (ie: slack channel, pd integration)
 
         Returns:
-            [boolean] true if download of creds from s3 was a success
+            [boolean] True if download of creds from s3 was a success
         """
         try:
             client = boto3.client('s3', region_name=self.region)
             with open(cred_location, 'wb') as cred_output:
-                client.download_fileobj(self._format_s3_bucket('streamalert.secrets'),
-                                        self._output_cred_name(descriptor),
+                client.download_fileobj(self.get_secrets_bucket_name(),
+                                        self.output_cred_name(descriptor),
                                         cred_output)
 
             return True
         except ClientError as err:
             LOGGER.error('credentials for %s could not be downloaded from S3: %s',
-                         self._output_cred_name(descriptor),
+                         self.output_cred_name(descriptor),
                          err.response)
-
-    def _send_creds_to_s3(self, descriptor, blob_data):
-        """Put the encrypted credential blob for this service and destination in s3
-
-        Args:
-            descriptor [string]: service destination (ie: slack channel, pd integration)
-            blob_data [bytes]: cipher text blob from the kms encryption
-        """
-        try:
-            client = boto3.client('s3', region_name=self.region)
-            client.put_object(
-                Body=blob_data,
-                Bucket=self._format_s3_bucket('streamalert.secrets'),
-                Key=self._output_cred_name(descriptor)
-            )
-        except ClientError as err:
-            LOGGER.error('an error occurred while sending credentials for %s to S3: %s',
-                         self._output_cred_name(descriptor),
-                         err.response)
-            raise err
-
-    def _kms_encrypt(self, data):
-        """Encrypt data with AWS KMS.
-
-        Args:
-            data [string]: json string to be encrypted
-
-        Returns:
-            [string] encrypted ciphertext data blob
-        """
-        try:
-            client = boto3.client('kms', region_name=self.region)
-            response = client.encrypt(KeyId='alias/stream_alert_secrets',
-                                      Plaintext=data)
-            return response['CiphertextBlob']
-        except ClientError as err:
-            LOGGER.error('an error occurred during credential encryption: %s', err.response)
-            raise err
 
     def _kms_decrypt(self, data):
         """Decrypt data with AWS KMS.
 
         Args:
-            data [string]: an encrypted ciphertext data blob
+            data [string]: An encrypted ciphertext data blob
 
         Returns:
-            [string] decrypted json string
+            [string] Decrypted json string
         """
         try:
             client = boto3.client('kms', region_name=self.region)
@@ -216,7 +179,7 @@ class StreamOutputBase(object):
         """Log the status of sending the alerts
 
         Args:
-            success [boolean]: indicates if the dispatching of alerts was successful
+            success [boolean]: Indicates if the dispatching of alerts was successful
         """
         if success:
             LOGGER.info('successfully sent alert to %s', self.__service__)
@@ -228,10 +191,10 @@ class StreamOutputBase(object):
         """Return a bucket prefix that has been properly formatted
 
         Args:
-            s3_prefix [string]: qualifier value to format
+            s3_prefix [string]: Qualifier value to format
 
         Returns:
-            [string] representing the formatted value
+            [string] The formatted value
         """
         s3_prefix = s3_prefix.replace('_streamalert_alert_processor', '')
         return s3_prefix.replace('_', '.')
@@ -241,12 +204,12 @@ class StreamOutputBase(object):
         """URL request helper to send a payload to an endpoint
 
         Args:
-            url [string]: endpoint for this request
-            data [string]: payload to send with this request
-            headers [dict=None]: dictionary containing request-specific header parameters
-            verify [boolean=True]: whether or not SSL should be used for this request
+            url [string]: Endpoint for this request
+            data [string]: Payload to send with this request
+            headers [dict=None]: Dictionary containing request-specific header parameters
+            verify [boolean=True]: Whether or not SSL should be used for this request
         Returns:
-            [file handle] contains the http response to be read
+            [file handle] Contains the http response to be read
         """
         try:
             context = None
@@ -285,32 +248,13 @@ class StreamOutputBase(object):
         """
         pass
 
-    @classmethod
-    def _check_output_exists(cls, service, config, props):
-        """Determine if this service and destination combo has already been created
-
-        Args:
-            service [string]: the service for which the user is adding a configuration
-            config [dict]: the outputs config that has been read from disk
-            props [OrderedDict]: Contains various OutputProperty items
-
-        Returns:
-            [boolean] true if the service/destination exists already
-        """
-        if service in config and props['descriptor'].value in config[service]:
-            LOGGER.error('this descriptor is already configured for %s. '
-                         'please select a new and unique descriptor', service)
-            return
-
-        return True
-
-    def _get_config_service(self):
+    def get_config_service(self):
         """Get the string used for saving this service to the config. AWS services
         are not named the same in the config as they are in the rules processor, so
         having the ability to return a string like 'aws-s3' instead of 's3' is required
 
         Returns:
-            [string] service string used for looking up info in output configuration
+            [string] Service string used for looking up info in output configuration
         """
         return (self.__config_service__,
                 self.__service__)[self.__config_service__ == NotImplemented]
@@ -320,42 +264,12 @@ class StreamOutputBase(object):
            If the service doesn't exist, a new entry is added to an empty list
 
         Args:
-            config [dict]: the loaded configuration as a dictionary
+            config [dict]: Loaded configuration as a dictionary
             props [OrderedDict]: Contains various OutputProperty items
         Returns:
-            [string] list of descriptors for this service
+            [list<string>] List of descriptors for this service
         """
-        return config.get(self._get_config_service(), []) + [props['descriptor'].value]
-
-    def load_config(self, props):
-        """Gets the outputs config from disk and checks if the output already exists
-
-        Args:
-            props [OrderedDict]: Contains various OutputProperty items
-
-        Returns:
-            [dict] if the output doesn't exist, return the configuration, otherwise return false
-        """
-        config = load_outputs_config()
-        service = self._get_config_service()
-        if not self._check_output_exists(service, config, props):
-            return False
-
-        return config
-
-    def update_outputs_config(self, config, props):
-        """Updates and writes the outputs config back to disk
-
-        Args:
-            config [dict]: the loaded configuration as a dictionary
-            props [OrderedDict]: Contains various OutputProperty items
-
-        Returns:
-            [dict] if the output doesn't exist, return the configuration, otherwise return false
-        """
-        service = self._get_config_service()
-        config[service] = self.format_output_config(config, props)
-        write_outputs_config(config)
+        return config.get(self.get_config_service(), []) + [props['descriptor'].value]
 
     def dispatch(self, descriptor, rule_name, alert):
         """Send alerts to the given service. This base class just
@@ -363,23 +277,7 @@ class StreamOutputBase(object):
 
         Args:
             descriptor [string]: Service descriptor (ie: slack channel, pd integration)
-            rule_name [string]: The name of the triggered rule
-            alert [dict]: The alert relevant to the triggered rule
+            rule_name [string]: Name of the triggered rule
+            alert [dict]: Alert relevant to the triggered rule
         """
         LOGGER.error('unable to send alert for service %s', self.__service__)
-
-    def push_creds_to_s3(self, user_input):
-        """Construct a dictionary of the credentials we want to encrypt and send to s3
-
-        """
-        creds = {name: prop.value
-                 for (name, prop) in user_input.iteritems() if prop.cred_requirement}
-
-        # Check if we have any creds to send to s3
-        # Some services (ie: AWS) do not require this, so it's not an error
-        if not creds:
-            return
-
-        creds_json = json.dumps(creds)
-        enc_creds = self._kms_encrypt(creds_json)
-        self._send_creds_to_s3(user_input['descriptor'], enc_creds)

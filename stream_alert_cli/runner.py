@@ -14,9 +14,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 
+import json
+
 from collections import namedtuple
 from getpass import getpass
 from jinja2 import Environment, PackageLoader
+
+import boto3
+
+from botocore.exceptions import ClientError
 
 from stream_alert_cli.package import RuleProcessorPackage, AlertProcessorPackage
 from stream_alert_cli.test import stream_alert_test
@@ -24,6 +30,7 @@ from stream_alert_cli.helpers import CLIHelpers
 from stream_alert_cli.config import CLIConfig
 from stream_alert_cli.logger import LOGGER_CLI
 from stream_alert_cli.version import LambdaVersion
+import stream_alert_cli.outputs as config_outputs
 
 from stream_alert.alert_processor import __version__ as alert_processor_version
 from stream_alert.alert_processor.outputs import get_output_dispatcher
@@ -373,8 +380,8 @@ def user_input(requested_info, is_secret):
     """Prompt user for requested information
 
     Args:
-        requested_info [string]: description of the information needed
-        is_secret [boolean]: decides whether to mask input or not
+        requested_info [string]: Description of the information needed
+        is_secret [boolean]: Decides whether to mask input or not
 
     Returns:
         [string] response provided by the user
@@ -400,7 +407,7 @@ def configure_output(options):
     """Configure a new output for this service
 
     Args:
-        options [argparse]
+        options [argparse]: Basically a namedtuple with the service setting
     """
     region = CONFIG['account']['region']
     prefix = CONFIG['account']['prefix']
@@ -414,13 +421,80 @@ def configure_output(options):
     for name, prop in props.iteritems():
         props[name] = prop._replace(value=user_input(prop.description, prop.is_secret))
 
-    config = output.load_config(props)
+    service = output.get_config_service()
+    config = config_outputs.load_config(props, service)
     # An empty config here means this configuration already exists,
     # so we can ask for user input again for a unique configuration
     if config is False:
         return configure_output(options)
 
+    secrets_bucket = output.get_secrets_bucket_name()
+    secrets_key = output.output_cred_name(props['descriptor'].value)
+
     # Encrypt the creds and push them to S3
     # then update the local output configuration with properties
-    output.push_creds_to_s3(props)
-    output.update_outputs_config(config, props)
+    encrypt_and_push_creds_to_s3(region, secrets_bucket, secrets_key, props)
+    updated_config = output.format_output_config(config, props)
+    config_outputs.update_outputs_config(config, updated_config, service)
+
+def encrypt_and_push_creds_to_s3(region, bucket, key, props):
+    """Construct a dictionary of the credentials we want to encrypt and send to s3
+
+    Args:
+        region [string]: The aws region to use for boto3 client
+        bucket [string]: The name of the s3 bucket to write the encrypted credentials to
+        key [string]: ID for the s3 object to write the encrypted credentials to
+        props [OrderedDict]: Contains various OutputProperty items
+    """
+    creds = {name: prop.value
+             for (name, prop) in props.iteritems() if prop.cred_requirement}
+
+    # Check if we have any creds to send to s3
+    # Some services (ie: AWS) do not require this, so it's not an error
+    if not creds:
+        return
+
+    creds_json = json.dumps(creds)
+    enc_creds = kms_encrypt(region, creds_json)
+    send_creds_to_s3(region, bucket, key, enc_creds)
+
+def kms_encrypt(region, data):
+    """Encrypt data with AWS KMS.
+
+    Args:
+        region [string]: AWS region to use for boto3 client
+        data [string]: json string to be encrypted
+
+    Returns:
+        [string] Encrypted ciphertext data blob
+    """
+    try:
+        client = boto3.client('kms', region_name=region)
+        response = client.encrypt(KeyId='alias/stream_alert_secrets',
+                                  Plaintext=data)
+        return response['CiphertextBlob']
+    except ClientError as err:
+        LOGGER_CLI.error('an error occurred during credential encryption: %s', err.response)
+        raise err
+
+def send_creds_to_s3(region, bucket, key, blob_data):
+    """Put the encrypted credential blob for this service and destination in s3
+
+    Args:
+        region [string]: AWS region to use for boto3 client
+        bucket [string]: The name of the s3 bucket to write the encrypted credentials to
+        key [string]: ID for the s3 object to write the encrypted credentials to
+        blob_data [bytes]: Cipher text blob from the kms encryption
+    """
+    try:
+        client = boto3.client('s3', region_name=region)
+        client.put_object(
+            Body=blob_data,
+            Bucket=bucket,
+            Key=key
+        )
+    except ClientError as err:
+        LOGGER_CLI.error('an error occurred while sending credentials for key []%s] to S3: %s',
+                         key,
+                         err.response)
+        raise err
