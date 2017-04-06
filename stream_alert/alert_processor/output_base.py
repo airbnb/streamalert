@@ -21,7 +21,8 @@ import ssl
 import tempfile
 import urllib2
 
-from collections import namedtuple
+from abc import ABCMeta, abstractmethod
+from collections import namedtuple, Container
 
 import boto3
 from botocore.exceptions import ClientError
@@ -30,7 +31,7 @@ logging.basicConfig()
 LOGGER = logging.getLogger('StreamOutput')
 
 OutputProperty = namedtuple('OutputProperty',
-                            'description, value, is_secret, cred_requirement')
+                            'description, value, mask_input, cred_requirement')
 OutputProperty.__new__.__defaults__ = ('', '', False, False)
 
 
@@ -39,9 +40,8 @@ class OutputRequestFailure(Exception):
 
 
 class StreamOutputBase(object):
-    """StreamOutputBase is the base class to handle routing alerts to outputs
-
-    """
+    """StreamOutputBase is the base class to handle routing alerts to outputs"""
+    __metaclass__ = ABCMeta
     __service__ = NotImplemented
     __config_service__ = __service__
 
@@ -105,6 +105,7 @@ class StreamOutputBase(object):
         return creds_dict
 
     def get_secrets_bucket_name(self):
+        """Returns the streamalerts secrets s3 bucket name"""
         return self._format_s3_bucket('streamalert.secrets')
 
     def _format_s3_bucket(self, suffix):
@@ -228,10 +229,18 @@ class StreamOutputBase(object):
     def _check_http_response(resp):
         return resp and (200 <= resp.getcode() <= 299)
 
-    @classmethod
-    def get_user_defined_properties(cls):
-        """Base method for retrieving properties that must be asssigned by the user
-        for a this output service integration. Overridden in output subclasses
+    @abstractmethod
+    def get_user_defined_properties(self):
+        """Base method for retrieving properties that must be asssigned by the user when
+        configuring a new output for this service. This should include any information that
+        is sensitive or use-case specific. For intance, if the url needed for this integration
+        is unique to your situation, it should be supplied here.
+
+        If information of this sort is needed, it should be added to the method that
+        overrides this one in the subclass.
+
+        At the very minimum, subclass functions should return an OrderedDict that contains
+        the key 'descriptor' with a description of the integration being configured
 
         Returns:
             [OrderedDict] Contains various OutputProperty items
@@ -240,8 +249,17 @@ class StreamOutputBase(object):
 
     @classmethod
     def get_default_properties(cls):
-        """Base method for retrieving properties that are hard coded for this
-        output service integration. Overridden in output subclasses
+        """Base method for retrieving properties that should be hard-coded for this
+        output service integration. This could include information such as a static
+        url used for sending the alerts to this service, a static port, or other
+        non-sensitive information.
+
+        If information of this sort is needed, this should be overridden in output subclasses.
+
+        NOTE: This should not contain any sensitive or use-case specific data. Information
+        such as this should be retrieved from the user using `get_user_defined_properties()`
+        so the user is prompted for the sensitive information at configuration time and said
+        information is then sent to kms for encryption and s3 for storage.
 
         Returns:
             [OrderedDict] Contains various OutputProperty items
@@ -271,13 +289,15 @@ class StreamOutputBase(object):
         """
         return config.get(self.get_config_service(), []) + [props['descriptor'].value]
 
-    def dispatch(self, descriptor, rule_name, alert):
+    @abstractmethod
+    def dispatch(self, **kwargs):
         """Send alerts to the given service. This base class just
             logs an error if not implemented on the inheriting class
 
         Args:
-            descriptor [string]: Service descriptor (ie: slack channel, pd integration)
-            rule_name [string]: Name of the triggered rule
-            alert [dict]: Alert relevant to the triggered rule
+            **kwargs: consists of any combination of the following items:
+                descriptor [string]: Service descriptor (ie: slack channel, pd integration)
+                rule_name [string]: Name of the triggered rule
+                alert [dict]: Alert relevant to the triggered rule
         """
-        LOGGER.error('unable to send alert for service %s', self.__service__)
+        pass

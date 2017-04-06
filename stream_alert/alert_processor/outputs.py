@@ -18,6 +18,7 @@ import json
 import logging
 import os
 
+from abc import abstractmethod
 from collections import OrderedDict
 from datetime import datetime
 
@@ -51,7 +52,8 @@ class PagerDutyOutput(StreamOutputBase):
 
     @classmethod
     def get_default_properties(cls):
-        """Get properties that are hard coded for this output service integration
+        """Get the standard url used for PagerDuty. This is the same for everyone, so
+        is hard-coded here and does not need to be configured by the user
 
         Returns:
             [OrderedDict] Contains various OutputProperty items
@@ -60,9 +62,16 @@ class PagerDutyOutput(StreamOutputBase):
             ('url', 'https://events.pagerduty.com/generic/2010-04-15/create_event.json')
         ])
 
-    @classmethod
-    def get_user_defined_properties(cls):
-        """Get properties that must be asssigned by the user for a PagerDuty integration
+    def get_user_defined_properties(self):
+        """Get properties that must be asssigned by the user when configuring a new PagerDuty
+        output.  This should be sensitive or unique information for this use-case that needs
+        to come from the user.
+
+        Every output should return a dict that contains a 'descriptor' with a description of the
+        integration being configured.
+
+        PagerDuty also requires a service_key that represnts this integration. This
+        value should be masked during input and is a credential requirement.
 
         Returns:
             [OrderedDict] Contains various OutputProperty items
@@ -73,26 +82,28 @@ class PagerDutyOutput(StreamOutputBase):
                                         'PagerDuty integration')),
             ('service_key',
              OutputProperty(description='the service key for this PagerDuty integration',
-                            is_secret=True))
+                            mask_input=True,
+                            cred_requirement=True))
         ])
 
-    def dispatch(self, descriptor, rule_name, alert):
+    def dispatch(self, **kwargs):
         """Send alert to Pagerduty
 
         Args:
-            descriptor [string]: Service descriptor (ie: slack channel, pd integration)
-            rule_name [string]: The name of the triggered rule
-            alert [dict]: The alert relevant to the triggered rule
+            **kwargs: consists of any combination of the following items:
+                descriptor [string]: Service descriptor (ie: slack channel, pd integration)
+                rule_name [string]: Name of the triggered rule
+                alert [dict]: Alert relevant to the triggered rule
         """
-        creds = self._load_creds(descriptor)
-        message = "StreamAlert Rule Triggered - {}".format(rule_name)
+        creds = self._load_creds(kwargs['descriptor'])
+        message = 'StreamAlert Rule Triggered - {}'.format(kwargs['rule_name'])
         values_json = json.dumps({
-            "service_key": creds['service_key'],
-            "event_type": "trigger",
-            "incident_key": rule_name,
-            "description": message,
-            "details": alert,
-            "client": "StreamAlert"
+            'service_key': creds['service_key'],
+            'event_type': 'trigger',
+            'incident_key': kwargs['rule_name'],
+            'description': message,
+            'details': kwargs['alert'],
+            'client': 'StreamAlert'
         })
 
         resp = self._request_helper(creds['url'], values_json)
@@ -106,9 +117,17 @@ class PhantomOutput(StreamOutputBase):
     """PhantomOutput handles all alert dispatching for Phantom"""
     __service__ = 'phantom'
 
-    @classmethod
-    def get_user_defined_properties(cls):
-        """Get properties that must be asssigned by the user for a Phantom integration
+    def get_user_defined_properties(self):
+        """Get properties that must be asssigned by the user when configuring a new Phantom
+        output.  This should be sensitive or unique information for this use-case that needs
+        to come from the user.
+
+        Every output should return a dict that contains a 'descriptor' with a description of the
+        integration being configured.
+
+        Phantom also requires a ph_auth_token that represnts an authorization token for this
+        integration and a user provided url to use for alert dispatching. These values should be
+        masked during input and are credential requirements.
 
         Returns:
             [OrderedDict] Contains various OutputProperty items
@@ -119,11 +138,11 @@ class PhantomOutput(StreamOutputBase):
                                         'Phantom integration')),
             ('ph_auth_token',
              OutputProperty(description='the auth token for this Phantom integration',
-                            is_secret=True,
+                            mask_input=True,
                             cred_requirement=True)),
             ('url',
              OutputProperty(description='the endpoint url for this Phantom integration',
-                            is_secret=True,
+                            mask_input=True,
                             cred_requirement=True))
         ])
 
@@ -156,29 +175,29 @@ class PhantomOutput(StreamOutputBase):
 
         return resp_dict and resp_dict['id']
 
-    def dispatch(self, descriptor, rule_name, alert):
+    def dispatch(self, **kwargs):
         """Send alert to Phantom
 
         Args:
-            descriptor [string]: Service descriptor (ie: slack channel, pd integration)
-            rule_name [string]: The name of the triggered rule
-            alert [dict]: The alert relevant to the triggered rule
+            **kwargs: consists of any combination of the following items:
+                descriptor [string]: Service descriptor (ie: slack channel, pd integration)
+                rule_name [string]: Name of the triggered rule
+                alert [dict]: Alert relevant to the triggered rule
         """
-
-        creds = self._load_creds(descriptor)
+        creds = self._load_creds(kwargs['descriptor'])
         if not creds:
             self._log_status(False)
             return
 
         headers = {"ph-auth-token": creds['ph_auth_token']}
         container_url = os.path.join(creds['url'], 'rest/container/')
-        container_id = self._setup_container(rule_name, container_url, headers)
+        container_id = self._setup_container(kwargs['rule_name'], container_url, headers)
 
         success = False
         if container_id:
-            artifact = {'cef' : alert['record'],
+            artifact = {'cef' : kwargs['alert']['record'],
                         'container_id' : container_id,
-                        'data' : alert,
+                        'data' : kwargs['alert'],
                         'name' : 'Phantom Artifact',
                         'label' : 'Alert'}
             artifact_string = json.dumps(artifact)
@@ -195,9 +214,17 @@ class SlackOutput(StreamOutputBase):
     """SlackOutput handles all alert dispatching for Slack"""
     __service__ = 'slack'
 
-    @classmethod
-    def get_user_defined_properties(cls):
-        """Get properties that must be asssigned by the user for a Slack integration
+    def get_user_defined_properties(self):
+        """Get properties that must be asssigned by the user when configuring a new Slack
+        output.  This should be sensitive or unique information for this use-case that needs
+        to come from the user.
+
+        Every output should return a dict that contains a 'descriptor' with a description of the
+        integration being configured.
+
+        Slack also requires a user provided 'webhook' url that is comprised of the slack api url
+        and the unique integration key for this output. This value should be should be masked
+        during input and is a credential requirement.
 
         Returns:
             [OrderedDict] Contains various OutputProperty items
@@ -211,18 +238,20 @@ class SlackOutput(StreamOutputBase):
                             cred_requirement=True))
         ])
 
-    def dispatch(self, descriptor, _, alert):
+    def dispatch(self, **kwargs):
         """Send alert text to Slack
 
         Args:
-            descriptor [string]: Service descriptor (ie: slack channel, pd integration)
-            alert [dict]: The alert relevant to the triggered rule
+            **kwargs: consists of any combination of the following items:
+                descriptor [string]: Service descriptor (ie: slack channel, pd integration)
+                rule_name [string]: Name of the triggered rule
+                alert [dict]: Alert relevant to the triggered rule
         """
-        creds = self._load_creds(descriptor)
+        creds = self._load_creds(kwargs['descriptor'])
         url = os.path.join(creds['url'])
 
         slack_message = json.dumps({'text': '```{}```'.format(
-            json.dumps(alert, indent=4)
+            json.dumps(kwargs['alert'], indent=4)
         )})
 
         resp = self._request_helper(url, slack_message)
@@ -244,6 +273,11 @@ class AWSOutput(StreamOutputBase):
         return dict(service_config.get(self.__config_service__, {}),
                     **{values['descriptor'].value: values['arn'].value})
 
+    @abstractmethod
+    def dispatch(self, **kwargs):
+        """Placeholder for implementation in the subclasses"""
+        pass
+
 
 @output
 class S3Output(AWSOutput):
@@ -251,9 +285,17 @@ class S3Output(AWSOutput):
     __service__ = 's3'
     __config_service__ = 'aws-s3'
 
-    @classmethod
-    def get_user_defined_properties(cls):
-        """Get properties that must be asssigned by the user for an AWS S3 bucket integration
+    def get_user_defined_properties(self):
+        """Get properties that must be asssigned by the user when configuring a new S3
+        output.  This should be sensitive or unique information for this use-case that needs
+        to come from the user.
+
+        Every output should return a dict that contains a 'descriptor' with a description of the
+        integration being configured.
+
+        S3 also requires a user provided AWS arn to be used for this service output. This
+        value should not be masked during input and is not a credential requirement
+        that needs encrypted.
 
         Returns:
             [OrderedDict] Contains various OutputProperty items
@@ -266,7 +308,7 @@ class S3Output(AWSOutput):
              OutputProperty(description='the AWS arn to use for this S3 bucket'))
         ])
 
-    def dispatch(self, _, rule_name, alert):
+    def dispatch(self, **kwargs):
         """Send alert to an S3 bucket
 
         Organizes alert into the following folder structure:
@@ -274,9 +316,12 @@ class S3Output(AWSOutput):
         The alert gets dumped to a JSON string
 
         Args:
-            rule_name [string]: The name of the triggered rule
-            alert [dict]: The alert relevant to the triggered rule
+            **kwargs: consists of any combination of the following items:
+                descriptor [string]: Service descriptor (ie: slack channel, pd integration)
+                rule_name [string]: Name of the triggered rule
+                alert [dict]: Alert relevant to the triggered rule
         """
+        alert = kwargs['alert']
         service = alert['metadata']['source']['service']
         entity = alert['metadata']['source']['entity']
         current_date = datetime.now()
@@ -289,7 +334,7 @@ class S3Output(AWSOutput):
             Key='{}/{}/{}/dt={}/streamalerts_{}.json'.format(
                 service,
                 entity,
-                rule_name,
+                kwargs['rule_name'],
                 current_date.strftime('%Y-%m-%d-%H-%M'),
                 current_date.isoformat('-')
             )

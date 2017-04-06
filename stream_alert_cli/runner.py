@@ -376,12 +376,12 @@ def deploy(options):
     publish_version(packages)
     tf_runner(targets=targets)
 
-def user_input(requested_info, is_secret):
+def user_input(requested_info, mask):
     """Prompt user for requested information
 
     Args:
         requested_info [string]: Description of the information needed
-        is_secret [boolean]: Decides whether to mask input or not
+        mask [boolean]: Decides whether to mask input or not
 
     Returns:
         [string] response provided by the user
@@ -389,14 +389,14 @@ def user_input(requested_info, is_secret):
     response = ''
     prompt = '\nPlease supply {}: '.format(requested_info)
 
-    if not is_secret:
+    if not mask:
         while not response:
             response = raw_input(prompt)
 
         # Restrict having spaces in items (applies to things like descriptors, etc)
         if ' ' in response:
             LOGGER_CLI.error('the supplied input should not contain any spaces')
-            return user_input(requested_info, is_secret)
+            return user_input(requested_info, mask)
     else:
         while not response:
             response = getpass(prompt=prompt)
@@ -412,14 +412,18 @@ def configure_output(options):
     region = CONFIG['account']['region']
     prefix = CONFIG['account']['prefix']
 
-    # Retrieve the proper class to handle dispatching the alerts of this services
+    # Retrieve the proper service class to handle dispatching the alerts of this services
     output = get_output_dispatcher(options.service, region, prefix)
+
+    # If an output for this service has not been defined, the error is logged prior to this
+    if not output:
+        return
 
     # get dictionary of OutputProperty items to be used for user prompting
     props = output.get_user_defined_properties()
 
     for name, prop in props.iteritems():
-        props[name] = prop._replace(value=user_input(prop.description, prop.is_secret))
+        props[name] = prop._replace(value=user_input(prop.description, prop.mask_input))
 
     service = output.get_config_service()
     config = config_outputs.load_config(props, service)
