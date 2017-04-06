@@ -41,8 +41,10 @@
       "time": "integer"
     },
     "parser": "kv",
-    "delimiter": " ",
-    "separator": "="
+    "configuration": {
+      "delimiter": " ",
+      "separator": "="  
+    }
   },
   "osquery": {
     "schema": {
@@ -88,8 +90,8 @@
       "recipientAccountId": "integer"
     },
     "parser": "json",
-    "hints": {
-      "records": "Records[*]"
+    "configuration": {
+      "json_path": "Records[*]"
     }
   },
   "cloudtrail:v1.04": {
@@ -133,8 +135,8 @@
       "recipientAccountId": "integer"
     },
     "parser": "json",
-    "hints": {
-      "records": "Records[*]"
+    "configuration": {
+      "json_path": "Records[*]"
     }
   },
   "cloudwatch:cloudtrail": {
@@ -202,9 +204,9 @@
       "flowlogstatus": "string"
     },
     "parser": "gzip-json",
-    "hints": {
-      "records": "logEvents[*].extractedFields",
-      "envelope": {
+    "configuration": {
+      "json_path": "logEvents[*].extractedFields",
+      "envelope_keys": {
         "logGroup": "string",
         "logStream": "string",
         "owner": "integer"

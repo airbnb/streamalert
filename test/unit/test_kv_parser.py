@@ -39,9 +39,10 @@ class TestKVParser(object):
             'result': 'string'
         }
         options = {
-            'separator': ':',
-            'delimiter': ',',
-            'service': 'kinesis'
+            'configuration': {
+                'separator': ':',
+                'delimiter': ',',
+            }
         }
         data = 'name:joe bob,result:success'
 

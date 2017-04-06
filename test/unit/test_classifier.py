@@ -20,13 +20,12 @@ limitations under the License.
 import base64
 import json
 
-from collections import OrderedDict
-
-from nose.tools import assert_equal, assert_not_equal, nottest
+from nose.tools import assert_equal, assert_not_equal
 
 from stream_alert.rule_processor.classifier import StreamPayload, StreamClassifier
 from stream_alert.rule_processor.pre_parsers import StreamPreParsers
 from stream_alert.rule_processor.config import load_config
+
 
 class TestStreamPayload(object):
     @classmethod
@@ -50,7 +49,7 @@ class TestStreamPayload(object):
         raw_record = {
             'eventSource': 'aws:kinesis',
             'eventSourceARN': 'arn:aws:kinesis:us-east-1:123456789012:stream/{}'
-                .format(kinesis_stream),
+                              .format(kinesis_stream),
             'kinesis': {
                 'data': base64.b64encode(kinesis_data)
             }
@@ -63,7 +62,7 @@ class TestStreamPayload(object):
         kinesis_data = kwargs['kinesis_data']
         kinesis_record = self.make_kinesis_record(kinesis_stream=kinesis_stream,
                                                   kinesis_data=kinesis_data)
-        
+
         payload = StreamPayload(raw_record=kinesis_record)
         return payload
 
@@ -82,7 +81,6 @@ class TestStreamPayload(object):
         """Teardown after each method"""
         pass
 
-
     def test_refresh_record(self):
         """Payload Record Refresh"""
         kinesis_data = json.dumps({
@@ -100,12 +98,11 @@ class TestStreamPayload(object):
             'key6': 'key6data'
         })
         second_record = self.make_kinesis_record(kinesis_stream='test_kinesis_stream',
-                                 kinesis_data=new_kinesis_data)
+                                                 kinesis_data=new_kinesis_data)
         payload.refresh_record(second_record)
 
         # check newly loaded record
         assert_equal(payload.raw_record, second_record)
-
 
     def test_map_source_1(self):
         """Payload Source Mapping 1"""
@@ -132,7 +129,6 @@ class TestStreamPayload(object):
         assert_equal(payload.entity, 'test_kinesis_stream')
         assert_equal(set(metadata.keys()), test_kinesis_stream_logs)
 
-
     def test_map_source_2(self):
         """Payload Source Mapping 2"""
         data_encoded = base64.b64encode('test_map_source_data_2')
@@ -154,9 +150,8 @@ class TestStreamPayload(object):
         assert_equal(payload.entity, 'test_stream_2')
         assert_equal(set(metadata.keys()), test_stream_2_logs)
 
-
-    def test_classify_record_kinesis_json(self):
-        """Payload Classify JSON"""
+    def test_classify_record_kinesis_json_optional(self):
+        """Payload Classify JSON - optional fields"""
         kinesis_data = json.dumps({
             'key1': [
                 {
@@ -169,7 +164,11 @@ class TestStreamPayload(object):
                 }
             ],
             'key2': 'more sample data',
-            'key3': '1'
+            'key3': '1',
+            'key10': {
+                'test-field': 1,
+                'test-field2': 2
+            }
         })
         payload = self.payload_generator(kinesis_stream='test_kinesis_stream',
                                          kinesis_data=kinesis_data)
@@ -191,11 +190,18 @@ class TestStreamPayload(object):
         assert_equal(payload.type, 'json')
         assert_not_equal(payload.type, 'csv')
 
-        # record type test
-        assert_equal(type(payload.records[0]['key1']), list)
+        # record value tests
         assert_equal(len(payload.records[0]['key1']), 2)
+        assert_equal(payload.records[0]['key3'], 1)
         assert_equal(payload.records[0]['key1'][1]['test4'], 4)
 
+        # optional field tests
+        assert_equal(payload.records[0]['key11'], 0.0)
+        assert_equal(payload.records[0]['key9'], False)
+        assert_equal(len(payload.records[0]['key10']), 2)
+
+        # record type tests
+        assert_equal(type(payload.records[0]['key1']), list)
         assert_equal(type(payload.records[0]['key2']), str)
         assert_equal(type(payload.records[0]['key3']), int)
 
@@ -232,7 +238,6 @@ class TestStreamPayload(object):
         assert_equal(payload.records[0]['key5'], 10.001)
         assert_equal(payload.records[0]['key6'], 10)
         assert_equal(payload.records[0]['key7'], False)
-
 
     def test_classify_record_kinesis_nested_json(self):
         """Payload Classify Nested JSON"""
@@ -272,7 +277,6 @@ class TestStreamPayload(object):
         # record value test
         assert_equal(payload.records[0]['date'], 'Jan 01 2017')
         assert_equal(payload.records[0]['data']['key1'], 'test')
-
 
     def test_classify_record_kinesis_nested_json_osquery(self):
         """Payload Classify JSON osquery"""
@@ -324,7 +328,7 @@ class TestStreamPayload(object):
         assert_equal(payload.records[0]['columns']['key1'], 'test')
         assert_equal(payload.records[0]['decorations']['cluster'], 'eu-east')
         assert_equal(payload.records[0]['decorations']['number'], 100)
-
+        assert_equal(payload.records[0]['log_type'], '')
 
     def test_classify_record_kinesis_nested_json_missing_subkey_fields(self):
         """Payload Classify Nested JSON Missing Subkeys"""
@@ -346,7 +350,7 @@ class TestStreamPayload(object):
             }
         })
         payload = self.payload_generator(kinesis_stream='test_stream_2',
-                                               kinesis_data=kinesis_data)
+                                         kinesis_data=kinesis_data)
 
         classifier = StreamClassifier(config=self.config)
         classifier.map_source(payload)
@@ -357,7 +361,6 @@ class TestStreamPayload(object):
         # invalid record test
         assert_equal(payload.valid, False)
         assert_equal(payload.records, None)
-
 
     def test_classify_record_kinesis_nested_json_with_data(self):
         """Payload Classify Nested JSON Generic"""
@@ -374,7 +377,7 @@ class TestStreamPayload(object):
             }
         })
         payload = self.payload_generator(kinesis_stream='test_kinesis_stream',
-                                               kinesis_data=kinesis_data)
+                                         kinesis_data=kinesis_data)
 
         classifier = StreamClassifier(config=self.config)
         classifier.map_source(payload)
@@ -385,7 +388,7 @@ class TestStreamPayload(object):
         # valid record test
         assert_equal(payload.valid, True)
         assert_equal(type(payload.records[0]), dict)
-        
+
         # log type test
         assert_equal(payload.log_source, 'test_log_type_json_nested_with_data')
 
@@ -404,12 +407,11 @@ class TestStreamPayload(object):
         assert_equal(payload.records[0]['date'], 'Jan 01 2017')
         assert_equal(payload.records[0]['data']['source'], 'dev-app-1')
 
-
     def test_classify_record_kinesis_csv(self):
         """Payload Classify CSV"""
         csv_data = 'jan102017,0100,host1,thisis some data with keyword1 in it'
         payload = self.payload_generator(kinesis_stream='test_kinesis_stream',
-                                               kinesis_data=csv_data)
+                                         kinesis_data=csv_data)
 
         classifier = StreamClassifier(config=self.config)
         classifier.map_source(payload)
@@ -432,7 +434,6 @@ class TestStreamPayload(object):
 
         # log source test
         assert_equal(payload.log_source, 'test_log_type_csv')
-
 
     def test_classify_record_kinesis_csv_nested(self):
         """Payload Classify Nested CSV"""
@@ -466,7 +467,6 @@ class TestStreamPayload(object):
 
         # log source test
         assert_equal(payload.log_source, 'test_log_type_csv_nested')
-
 
     def test_classify_record_kinesis_kv(self):
         """Payload Classify KV"""
@@ -508,7 +508,6 @@ class TestStreamPayload(object):
         assert_not_equal(payload.type, 'csv')
         assert_not_equal(payload.type, 'json')
 
-
     def test_classify_record_syslog(self):
         """Payload Classify Syslog"""
         test_data_1 = (
@@ -548,7 +547,9 @@ class TestStreamPayload(object):
             if name == 'test_1':
                 assert_equal(payload.records[0]['host'], 'vagrant-ubuntu-trusty-64')
                 assert_equal(payload.records[0]['application'], 'sudo')
-                assert_equal(payload.records[0]['message'], 'pam_unix(sudo:session): session opened for user root by (uid=0)')
+                assert_equal(payload.records[0]['message'], 'pam_unix(sudo:session):'
+                                                            ' session opened for user'
+                                                            ' root by (uid=0)')
             elif name == 'test_2':
                 assert_equal(payload.records[0]['host'], 'macbook004154test')
                 assert_equal(payload.records[0]['application'], 'authd')

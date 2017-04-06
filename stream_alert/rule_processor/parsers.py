@@ -16,14 +16,16 @@ limitations under the License.
 
 import csv
 import json
-import jsonpath_rw
-import zlib
 import logging
 import re
 import StringIO
+import zlib
 
 from abc import ABCMeta, abstractmethod
+from collections import OrderedDict
 from fnmatch import fnmatch
+
+import jsonpath_rw
 
 logging.basicConfig()
 logger = logging.getLogger('StreamAlert')
@@ -133,26 +135,55 @@ class JSONParser(ParserBase):
         If desired, fields present on the root record can be merged into child
         events using the `envelope` option.
 
-
         Args:
-            json_payload: A dict of the parsed json data
-            schema: A dict of a log type's schema
+            json_payload [dict]: The parsed json data
+            schema [dict]: A log type's schema
 
         Returns:
-            A list of dict JSON payloads
+            [list] of dictionaries representing JSON payloads
         """
         json_records = []
         envelope = {}
 
-        hints = self.options.get('hints', {})
-        if hints:
-            records_schema = hints.get('records')
-            envelope_schema = hints.get('envelope', {})
+        # Check configuration options
+        config_options = self.options.get('configuration')
+        if config_options:
+            records_schema = config_options.get('json_path')
+            envelope_schema = config_options.get('envelope_keys', {})
+            optional_keys = config_options.get('optional_top_level_keys')
 
-        if (hints and len(hints) and records_schema):
+        # Handle optional keys
+        if config_options and optional_keys:
+            # Note: This function exists because dict/OrderedDict cannot
+            #       be keys in a dictionary.
+            def default_optional_values(key):
+                """Return a default value for a given schema type"""
+                if key == 'string':
+                    return str()
+                elif key == 'integer':
+                    return int()
+                elif key == 'float':
+                    return float()
+                elif key == 'boolean':
+                    return bool()
+                elif key == []:
+                    return list()
+                elif key == OrderedDict():
+                    return dict()
+
+            for key_name, value_type in optional_keys.iteritems():
+                # Update the schema to ensure the record is valid
+                self.schema.update({key_name: value_type})
+                # If the optional key isn't in our parsed json payload
+                if key_name not in json_payload:
+                    # Set default value
+                    json_payload[key_name] = default_optional_values(value_type)
+
+        # Handle jsonpath extraction of records
+        if config_options and records_schema:
             records_jsonpath = jsonpath_rw.parse(records_schema)
             if len(envelope_schema):
-                self.schema.update({"envelope": envelope_schema})
+                self.schema.update({'envelope': envelope_schema})
                 envelope_keys = envelope_schema.keys()
                 envelope_jsonpath = jsonpath_rw.parse("$." + ",".join(envelope_keys))
                 envelope_matches = [match.value for match in envelope_jsonpath.find(json_payload)]
@@ -161,7 +192,7 @@ class JSONParser(ParserBase):
             for match in records_jsonpath.find(json_payload):
                 record = match.value
                 if len(envelope):
-                    record.update({"envelope": envelope})
+                    record.update({'envelope': envelope})
                 json_records.append(record)
         else:
             json_records.append(json_payload)
@@ -183,8 +214,8 @@ class JSONParser(ParserBase):
         try:
             json_payload = json.loads(data)
             self.payload_type = 'json'
-        except ValueError as e:
-            logger.debug('JSON parse failed: %s', str(e))
+        except ValueError as err:
+            logger.debug('JSON parse failed: %s', str(err))
             return False
 
         json_records = self._parse_records(json_payload)
@@ -202,16 +233,14 @@ class GzipJSONParser(JSONParser):
     def parse(self):
         """Parse a gzipped string into JSON.
 
-        Options:
-            - hints
         Returns:
             - An array of parsed JSON records.
             - False if the data is not Gzipped JSON or the columns do not match.
         """
         try:
-            json_payload = zlib.decompress(self.data,47)
+            json_payload = zlib.decompress(self.data, 47)
             self.data = json_payload
-            return super(GzipJSONParser,self).parse()
+            return super(GzipJSONParser, self).parse()
 
         except zlib.error:
             return False
@@ -221,23 +250,25 @@ class CSVParser(ParserBase):
     __parserid__ = 'csv'
     __default_delimiter = ','
 
-    def _get_reader(self):
+    def _get_reader(self, config_options):
         """Return the CSV reader for the given payload source
+
+        Args:
+            config_options [map]: Map containing parser options such as delimiter
 
         Returns:
             - CSV reader object if the parse was successful
             - False if parse was unsuccessful
         """
         data = self.data
-        service = self.options['service']
-        delimiter = self.options['delimiter'] or self.__default_delimiter
+        delimiter = config_options.get('delimiter') or self.__default_delimiter
 
         # TODO(ryandeivert): either subclass a current parser or add a new
         # parser to support parsing CSV data that contains a header line
         try:
             csv_data = StringIO.StringIO(data)
             reader = csv.reader(csv_data, delimiter=delimiter)
-        except ValueError, csv.Error:
+        except (ValueError, csv.Error):
             return False
 
         return reader
@@ -254,11 +285,12 @@ class CSVParser(ParserBase):
         """
         schema = self.schema
         hints = self.options.get('hints')
+        config_options = self.options.get('configuration')
 
         hint_result = []
         csv_payloads = []
 
-        reader = self._get_reader()
+        reader = self._get_reader(config_options)
         if not reader:
             return False
         try:
@@ -291,7 +323,7 @@ class CSVParser(ParserBase):
 
                     csv_payloads.append(csv_payload)
 
-            return csv_payloads     
+            return csv_payloads
         except csv.Error:
             return False
 
@@ -315,9 +347,10 @@ class KVParser(ParserBase):
         data = self.data
         schema = self.schema
         options = self.options
+        config_options = options.get('configuration', {})
 
-        delimiter = options['delimiter'] or self.__default_delimiter
-        separator = options['separator'] or self.__default_separator
+        delimiter = config_options.get('delimiter') or self.__default_delimiter
+        separator = config_options.get('separator') or self.__default_separator
 
         kv_payload = {}
         try:

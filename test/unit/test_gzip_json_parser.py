@@ -44,13 +44,27 @@ class TestGzipJsonParser(object):
     def test_cloudwatch(self):
         """Parse CloudWatch JSON"""
         schema = self.config['logs']['test_cloudwatch']['schema']
-        options = { "hints": self.config['logs']['test_cloudwatch']['hints']}
+        options = {
+            'configuration': self.config['logs']['test_cloudwatch']['configuration']
+        }
+
         with open('test/unit/fixtures/cloudwatch.json','r') as fixture_file:
             data = fixture_file.readlines()
         data_record = zlib.compress(data[0].strip())
-        parsed_result = self.parser_helper(data=data_record, schema=schema, options=options)
+
+        parsed_result = self.parser_helper(data=data_record,
+                                           schema=schema,
+                                           options=options)
+
         assert_not_equal(parsed_result, False)
         assert_equal(80,len(parsed_result))
+
+        expected_keys = (u'protocol', u'source', u'destination', u'srcport',
+                         u'destport', u'eni', u'action', u'packets', u'bytes',
+                         u'windowstart', u'windowend', u'version', u'account',
+                         u'flowlogstatus',u'envelope')
+        expected_envelope_keys = (u'logGroup', u'logStream', u'owner')
+
         for result in parsed_result:
-            assert_equal(sorted((u'protocol', u'source', u'destination', u'srcport', u'destport', u'eni', u'action', u'packets', u'bytes', u'windowstart', u'windowend', u'version', u'account', u'flowlogstatus',u'envelope')), sorted(result.keys()))
-            assert_equal(sorted((u"logGroup",u"logStream",u"owner")),sorted(result['envelope'].keys()))
+            assert_equal(sorted(expected_keys), sorted(result.keys()))
+            assert_equal(sorted(expected_envelope_keys),sorted(result['envelope'].keys()))
