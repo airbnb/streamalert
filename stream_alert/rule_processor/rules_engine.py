@@ -94,6 +94,16 @@ class StreamRules(object):
         return decorator
 
     @classmethod
+    def disable(cls):
+        """Disables a rule from being run by removing it from the internal rules dict"""
+        def decorator(rule):
+            rule_name = rule.__name__
+            if rule_name in cls.__rules:
+                del cls.__rules[rule_name]
+            return rule
+        return decorator
+
+    @classmethod
     def match_event(cls, record, rule):
         """Evaluate matchers on a record.
 

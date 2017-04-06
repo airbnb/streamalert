@@ -15,17 +15,21 @@ You can also supply multiple matchers for many common scenarios:
 from helpers.base import in_set, last_hour
 from stream_alert.rule_processor.rules_engine import StreamRules
 
-matcher = StreamRules.matcher
+matcher = StreamRules.matcher()
 
 # basic matcher for checking environments
-@matcher()
+@matcher
 def production_env(rec):
     env = rec['env']
     return env == 'production'
 
 
 # matcher layout
-@matcher()
+@matcher
 def matcher_name(rec):
     """Description"""
     return True
+
+@matcher
+def json_test_matcher(rec):
+    return rec['name'] == 'name-1'

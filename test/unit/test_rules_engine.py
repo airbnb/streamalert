@@ -25,7 +25,8 @@ from stream_alert.rule_processor.config import load_config
 from stream_alert.rule_processor.rules_engine import StreamRules
 
 rule = StreamRules.rule
-matcher = StreamRules.matcher
+matcher = StreamRules.matcher()
+disable = StreamRules.disable()
 
 class TestStreamRules(object):
     @classmethod
@@ -120,7 +121,7 @@ class TestStreamRules(object):
 
     def test_basic_rule_matcher_process(self):
         """Rule Engine - Basic Rule/Matcher"""
-        @matcher()
+        @matcher
         def prod(rec):
             return rec['environment'] == 'prod'
 
@@ -275,6 +276,29 @@ class TestStreamRules(object):
         # alert tests
         assert_equal(len(alerts), 1)
         assert_equal(alerts[0]['rule_name'], 'nested_csv')
+
+    def test_rule_disable(self):
+        """Rule Engine - Disable Rule"""
+        @disable
+        @rule(logs=['test_log_type_json_2'],
+              outputs=['pagerduty'])
+        def nested_csv_disable_test(rec):
+            return rec['host'] == 'unit-test-host.prod.test'
+
+        kinesis_data = json.dumps({
+            'key4': True,
+            'key5': 0.0,
+            'key6': 1,
+            'key7': False
+        })
+        # prepare the payloads
+        payload = self.make_kinesis_payload(kinesis_stream='test_kinesis_stream',
+                                            kinesis_data=kinesis_data)
+        # process payloads
+        alerts = StreamRules.process(payload)
+
+        # alert tests
+        assert_equal(len(alerts), 0)
 
     def test_kv_rule(self):
         """Rule Engine - KV Rule"""

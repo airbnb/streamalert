@@ -2,6 +2,7 @@ from helpers.base import in_set, last_hour
 from stream_alert.rule_processor.rules_engine import StreamRules
 
 rule = StreamRules.rule
+disable = StreamRules.disable()
 
 # # Note: This is the rule layout
 # @rule(logs=['foo'],
@@ -47,12 +48,12 @@ def invalid_subnet(rec):
 
 
 @rule(logs=['json_log'],
-      matchers=[],
+      matchers=['json_test_matcher'],
       outputs=['s3'])
 def sample_json_rule(rec):
     return rec['host'] == 'test-host-1'
 
-
+@disable
 @rule(logs=['syslog_log'],
       matchers=[],
       outputs=['pagerduty'])
