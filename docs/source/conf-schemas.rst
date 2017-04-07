@@ -148,7 +148,7 @@ Example Log After Parsing::
     }
   }
 
-Note the values of ``field_3`` are strings, since no type can be defined with ``{}``.
+Note the values of ``field_3`` are strings, since no type(s) can be defined with ``{}``.
 
 Example Rule with a Loose Schema::
   
@@ -164,6 +164,55 @@ Example Rule with a Loose Schema::
 Also note the usage of ``req_subkeys``.
 
 This keyword argument ensures that the parsed log contains the required subkeys of `rec['field_3']['time']`.
+
+Optional Top Level Keys
+~~~~~~~~~~~~~~~~~~~~~~
+
+If incoming logs occasionally include/exclude certain fields, this can be expressed in the ``configuration`` settings as ``optional_top_level_keys``.
+
+If any of the ``optional_top_level_keys`` do not exist in the log, defaults are appended to the parsed log depending on the declared value.
+
+Example Schema::
+
+  "test_log_type_json": {
+    "parser": "json",
+    "schema": {
+      "key1": [],
+      "key2": "string",
+      "key3": "integer"
+    },
+    "configuration": {
+      "optional_top_level_keys": {
+        "key4": "boolean",
+        "key5": "string"
+      }
+    }
+  }
+
+Example logs before parsing::
+  
+  '{"key1": [1, 2, 3], "key2": "test", "key3": 100}'
+  '{"key1": [3, 4, 5], "key2": "test", "key3": 200, "key4": true}'
+
+Parsed logs::
+  
+  [
+    {
+      'key1': [1, 2, 3],
+      'key2': 'test',
+      'key3': 100,
+      'key4': False,          # default value for boolean
+      'key5': ''              # default value for string
+    },
+    {
+      'key1': [3, 4, 5],
+      'key2': 'test',
+      'key3': 200,
+      'key4': True,           # default is overridden by parsed log
+      'key5': ''              # default value for string
+    }
+  ]
+
 
 JSON Parsing
 ------------
