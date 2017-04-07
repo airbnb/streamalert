@@ -1,2 +1,14 @@
 {
+    "aws-s3": {
+        "sample.bucket": "sample_bucket_arn"
+    },
+    "pagerduty": [
+        "sample_integration"
+    ],
+    "phantom": [
+        "sample_integration"
+    ],
+    "slack": [
+        "sample_channel"
+    ]
 }

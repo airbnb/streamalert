@@ -19,11 +19,11 @@ from datetime import datetime
 import base64
 import hashlib
 import os
-import pip
 import shutil
 import tempfile
 
 import boto3
+import pip
 
 from stream_alert_cli.logger import LOGGER_CLI
 
@@ -217,8 +217,8 @@ class RuleProcessorPackage(LambdaPackage):
 
 class AlertProcessorPackage(LambdaPackage):
     """Deployment package class for the StreamAlert Alert Processor function"""
-    package_folders = {'encrypted_credentials'}
-    package_files = {'__init__.py', 'main.py'}
-    package_root_dir = 'stream_alert/alert_processor'
+    package_folders = {'stream_alert/alert_processor', 'conf'}
+    package_files = {'stream_alert/__init__.py'}
+    package_root_dir = '.'
     package_name = 'alert_processor'
     config_key = 'alert_processor_config'

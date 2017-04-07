@@ -13,7 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-
 import json
 import logging
 
@@ -23,7 +22,7 @@ from stream_alert.alert_processor.outputs import get_output_dispatcher
 
 logging.basicConfig()
 LOGGER = logging.getLogger('StreamOutput')
-LOGGER.setLevel(logging.INFO)
+LOGGER.setLevel(logging.DEBUG)
 
 def handler(event, context):
     """StreamAlert Alert Processor
@@ -40,18 +39,20 @@ def handler(event, context):
         if not sns_payload:
             continue
 
-        message = sns_payload['Message']
+        sns_message = sns_payload['Message']
         try:
-            alert = json.loads(message)
+            loaded_sns_message = json.loads(sns_message)
         except ValueError as err:
-            logging.error('an error occurred while decoding message to JSON: %s', err)
+            LOGGER.error('an error occurred while decoding message to JSON: %s', err)
             return
 
-        if not 'default' in alert:
-            logging.info('malformed alert: %s', alert)
+        if not 'default' in loaded_sns_message:
+            LOGGER.error('Malformed SNS: %s', loaded_sns_message)
             return
 
-def run(message, context):
+        run(loaded_sns_message, context)
+
+def run(loaded_sns_message, context):
     """Send an Alert to its described outputs.
 
     Args:
@@ -77,31 +78,47 @@ def run(message, context):
             }
         }
     """
-    alert = message['default']
+    LOGGER.debug(loaded_sns_message)
+    alert = loaded_sns_message['default']
     rule_name = alert['rule_name']
 
     # strip out unnecessary keys and sort
     alert = sort_dict(alert)
 
+    config = load_output_config()
+
     outputs = alert['metadata']['outputs']
     # Get the output configuration for this rule and send the alert to each
     for output in set(outputs):
-        output_info = output.split(':')
-        service, descriptor = output_info[0], output_info[1] if len(output_info) > 1 else ""
+        try:
+            service, descriptor = output.split(':')
+        except ValueError:
+            LOGGER.error('outputs for rules must be declared with both a service and a '
+                         'descriptor for the integration (ie: \'slack:my_channel\')')
+
+        if not service in config or not descriptor in config[service]:
+            LOGGER.error('The output %s does not exist!', output)
+            continue
+
         region = context.invoked_function_arn.split(':')[3]
-        function = context.invoked_function_arn.split(':')[-1]
+        function_name = context.function_name
 
         # Retrieve the proper class to handle dispatching the alerts of this services
-        output_dispatcher = get_output_dispatcher(service, region, function)
+        output_dispatcher = get_output_dispatcher(service, region, function_name, config)
 
         if not output_dispatcher:
             continue
 
-        try:
-            output_dispatcher.dispatch(descriptor, rule_name, alert)
-        except BaseException as err:
-            LOGGER.error('an error occurred while sending alert to %s: %s',
-                         service, err)
+        # try:
+        LOGGER.debug('Sending alert to %s', output_dispatcher.__service__)
+        output_dispatcher.dispatch(
+            descriptor=descriptor,
+            rule_name=rule_name,
+            alert=alert
+            )
+        # except BaseException as err:
+        #     LOGGER.error('an error occurred while sending alert to %s: %s',
+        #                  service, err)
 
 def sort_dict(unordered_dict):
     """Recursively sort a dictionary
@@ -121,3 +138,17 @@ def sort_dict(unordered_dict):
         result[key] = value
 
     return result
+
+def load_output_config():
+    """Load the outputs configuration file from disk
+
+    Returns:
+        [dict] The output configuration settings
+    """
+    with open('conf/outputs.json') as outputs:
+        try:
+            config = json.load(outputs)
+        except ValueError:
+            LOGGER.exception('the outputs.json file could not be loaded into json')
+
+    return config

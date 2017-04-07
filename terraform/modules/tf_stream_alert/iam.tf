@@ -107,12 +107,11 @@ resource "aws_iam_role_policy" "streamalert_alert_processor_s3" {
     },
     {
       "Action": [
-        "s3:GetObject",
-        "s3:ListBucket"
+        "s3:GetObject"
       ],
       "Effect": "Allow",
       "Resource": [
-        "${aws_s3_bucket.stream_alerts_secrets.arn}/*"
+        "arn:aws:s3:::${var.prefix}.streamalert.secrets/*"
       ]
     }
   ]

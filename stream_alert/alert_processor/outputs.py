@@ -13,7 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-
 import json
 import logging
 import os
@@ -24,23 +23,27 @@ from datetime import datetime
 
 import boto3
 
+from botocore.exceptions import ClientError
+
 from stream_alert.alert_processor.output_base import StreamOutputBase, OutputProperty
 
 logging.basicConfig()
 LOGGER = logging.getLogger('StreamOutput')
 
+# STREAM_OUTPUTS will contain each subclass of the StreamOutputBase
+# All included subclasses are designated using the '@output' class decorator
+# The keys are the name of the service and the value is the class itself
+# {cls.__service__: <cls>}
 STREAM_OUTPUTS = {}
 
 def output(cls):
     """Class decorator to register all stream outputs"""
     STREAM_OUTPUTS[cls.__service__] = cls
 
-def get_output_dispatcher(service, region, s3_prefix):
+def get_output_dispatcher(service, region, function_name, config):
     """Returns the subclass that should handle this particular service"""
     try:
-        if service[:3] == 'aws':
-            service = service.split('-')[-1]
-        return STREAM_OUTPUTS[service](region, s3_prefix)
+        return STREAM_OUTPUTS[service](region, function_name, config)
     except KeyError:
         LOGGER.error('designated output service [%s] does not exist', service)
 
@@ -56,11 +59,11 @@ class PagerDutyOutput(StreamOutputBase):
         is hard-coded here and does not need to be configured by the user
 
         Returns:
-            [OrderedDict] Contains various OutputProperty items
+            [dict] Contains various default items for this output (ie: url)
         """
-        return OrderedDict([
-            ('url', 'https://events.pagerduty.com/generic/2010-04-15/create_event.json')
-        ])
+        return {
+            'url': 'https://events.pagerduty.com/generic/2010-04-15/create_event.json'
+        }
 
     def get_user_defined_properties(self):
         """Get properties that must be asssigned by the user when configuring a new PagerDuty
@@ -156,6 +159,7 @@ class PhantomOutput(StreamOutputBase):
 
         Returns:
             [integer] ID of the Phantom container where the alerts will be sent
+                or False if there is an issue getting the container id
         """
         message = 'StreamAlert Rule Triggered - {}'.format(rule_name)
         ph_container = {'name' : message,
@@ -231,10 +235,11 @@ class SlackOutput(StreamOutputBase):
         """
         return OrderedDict([
             ('descriptor',
-             OutputProperty(description='a short and unique descriptor for this Slack integration'
+             OutputProperty(description='a short and unique descriptor for this Slack integration '
                                         '(ie: channel, group, etc)')),
             ('url',
              OutputProperty(description='the full Slack webhook url, including the secret',
+                            mask_input=True,
                             cred_requirement=True))
         ])
 
@@ -264,14 +269,22 @@ class AWSOutput(StreamOutputBase):
     def format_output_config(self, service_config, values):
         """Format the output configuration for this AWS service to be written to disk
         AWS services are stored as a dictionary within the config instead of a list so
-        we have access to the AWS arn for Terraform
+        we have access to the AWS value (arn/bucket name/etc) for Terraform
 
         Args:
             service_config [dict]: The actual outputs config that has been read in
             values [OrderedDict]: Contains all the OutputProperty items for this service
+
+        Returns:
+            [dict{<string>: <string>}] Updated dictionary of descriptors and
+                values for this AWS service needed for the output configuration
+            NOTE: S3 requires the bucket name, not an arn, for this value.
+                Instead of implementing this differently in subclasses, all AWSOutput
+                subclasses should use a generic 'aws_value' to store the value for the
+                descriptor used in configuration
         """
-        return dict(service_config.get(self.__config_service__, {}),
-                    **{values['descriptor'].value: values['arn'].value})
+        return dict(service_config.get(self.__service__, {}),
+                    **{values['descriptor'].value: values['aws_value'].value})
 
     @abstractmethod
     def dispatch(self, **kwargs):
@@ -282,8 +295,7 @@ class AWSOutput(StreamOutputBase):
 @output
 class S3Output(AWSOutput):
     """S3Output handles all alert dispatching for AWS S3"""
-    __service__ = 's3'
-    __config_service__ = 'aws-s3'
+    __service__ = 'aws-s3'
 
     def get_user_defined_properties(self):
         """Get properties that must be asssigned by the user when configuring a new S3
@@ -293,7 +305,7 @@ class S3Output(AWSOutput):
         Every output should return a dict that contains a 'descriptor' with a description of the
         integration being configured.
 
-        S3 also requires a user provided AWS arn to be used for this service output. This
+        S3 also requires a user provided bucket name to be used for this service output. This
         value should not be masked during input and is not a credential requirement
         that needs encrypted.
 
@@ -304,8 +316,8 @@ class S3Output(AWSOutput):
             ('descriptor',
              OutputProperty(description=
                             'a short and unique descriptor for this S3 bucket (ie: bucket name)')),
-            ('arn',
-             OutputProperty(description='the AWS arn to use for this S3 bucket'))
+            ('aws_value',
+             OutputProperty(description='the AWS S3 bucket name to use for this S3 configuration'))
         ])
 
     def dispatch(self, **kwargs):
@@ -327,10 +339,10 @@ class S3Output(AWSOutput):
         current_date = datetime.now()
         alert_string = json.dumps(alert)
 
-        client = boto3.client(self.__service__, region_name=self.region)
+        client = boto3.client('s3', region_name=self.region)
         resp = client.put_object(
             Body=alert_string,
-            Bucket=self._format_s3_bucket('streamalerts'),
+            Bucket=self.config[self.__service__][kwargs['descriptor']],
             Key='{}/{}/{}/dt={}/streamalerts_{}.json'.format(
                 service,
                 entity,

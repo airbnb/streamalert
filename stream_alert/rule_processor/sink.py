@@ -72,7 +72,7 @@ class StreamSink(object):
         lambda_alias = self.env['lambda_alias']
 
         for alert in self.alerts:
-            sns_dict = {'default': [alert]}
+            sns_dict = {'default': alert}
             if lambda_alias == 'production':
                 topic_arn = self._get_sns_topic_arn()
                 client = boto3.client('sns', region_name=self.env['lambda_region'])

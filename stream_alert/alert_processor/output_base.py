@@ -13,7 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-
 import json
 import logging
 import os
@@ -25,6 +24,7 @@ from abc import ABCMeta, abstractmethod
 from collections import namedtuple
 
 import boto3
+
 from botocore.exceptions import ClientError
 
 logging.basicConfig()
@@ -59,11 +59,11 @@ class StreamOutputBase(object):
     """
     __metaclass__ = ABCMeta
     __service__ = NotImplemented
-    __config_service__ = __service__
 
-    def __init__(self, region, s3_prefix):
+    def __init__(self, region, function_name, config):
         self.region = region
-        self.s3_prefix = self._format_prefix(s3_prefix)
+        self.secrets_bucket = self._get_secrets_bucket_name(function_name)
+        self.config = config
 
     @staticmethod
     def _local_temp_dir():
@@ -75,7 +75,7 @@ class StreamOutputBase(object):
         temp_dir = os.path.join(tempfile.gettempdir(), "stream_alert_secrets")
 
         # Check if this item exists as a file, and remove it if it does
-        if os.path.exists(temp_dir) and not os.path.isdir(temp_dir):
+        if os.path.isfile(temp_dir):
             os.remove(temp_dir)
 
         # Create the folder on disk to store the credentials temporarily
@@ -93,6 +93,7 @@ class StreamOutputBase(object):
 
         Returns:
             [dict] the loaded credential info needed for sending alerts to this service
+                or None if nothing gets loaded
         """
         local_cred_location = os.path.join(self._local_temp_dir(),
                                            self.output_cred_name(descriptor))
@@ -102,7 +103,8 @@ class StreamOutputBase(object):
             if not self._get_creds_from_s3(local_cred_location, descriptor):
                 return
 
-        with open(local_cred_location, 'wb') as cred_file:
+        # Open encrypted credential file
+        with open(local_cred_location, 'rb') as cred_file:
             enc_creds = cred_file.read()
 
         # Get the decrypted credential json from kms and load into dict
@@ -120,16 +122,11 @@ class StreamOutputBase(object):
 
         return creds_dict
 
-    def _format_s3_bucket(self, suffix):
-        """Format the s3 bucket by combining the stored qualifier with a suffix
-
-        Args:
-            suffix [string]: Suffix for an s3 bucket
-
-        Returns:
-            [string] The combined prefix and suffix
-        """
-        return '.'.join([self.s3_prefix, suffix])
+    @classmethod
+    def _get_secrets_bucket_name(cls, function_name):
+        """Returns the streamalerts secrets s3 bucket name"""
+        prefix = function_name.split('_')[0]
+        return '.'.join([prefix, 'streamalert', 'secrets'])
 
     def _get_creds_from_s3(self, cred_location, descriptor):
         """Pull the encrypted credential blob for this service and destination from s3
@@ -144,7 +141,7 @@ class StreamOutputBase(object):
         try:
             client = boto3.client('s3', region_name=self.region)
             with open(cred_location, 'wb') as cred_output:
-                client.download_fileobj(self.get_secrets_bucket_name(),
+                client.download_fileobj(self.secrets_bucket,
                                         self.output_cred_name(descriptor),
                                         cred_output)
 
@@ -212,7 +209,7 @@ class StreamOutputBase(object):
                 context = ssl.create_default_context()
                 context.check_hostname = False
                 context.verify_mode = ssl.CERT_NONE
-            request = urllib2.Request(url, data=data, headers=headers)
+            request = urllib2.Request(url, data=data, headers=headers or {})
             resp = urllib2.urlopen(request, context=context)
             return resp
         except urllib2.HTTPError as err:
@@ -238,13 +235,9 @@ class StreamOutputBase(object):
         information is then sent to kms for encryption and s3 for storage.
 
         Returns:
-            [OrderedDict] Contains various OutputProperty items
+            [dict] Contains various default items for this output (ie: url)
         """
         pass
-
-    def get_secrets_bucket_name(self):
-        """Returns the streamalerts secrets s3 bucket name"""
-        return self._format_s3_bucket('streamalert.secrets')
 
     def output_cred_name(self, descriptor):
         """Formats the output name for this credential by combining the service
@@ -264,17 +257,6 @@ class StreamOutputBase(object):
 
         return cred_name
 
-    def get_config_service(self):
-        """Get the string used for saving this service to the config. AWS services
-        are not named the same in the config as they are in the rules processor, so
-        having the ability to return a string like 'aws-s3' instead of 's3' is required
-
-        Returns:
-            [string] Service string used for looking up info in output configuration
-        """
-        return (self.__config_service__,
-                self.__service__)[self.__config_service__ == NotImplemented]
-
     def format_output_config(self, config, props):
         """Add this descriptor to the list of descriptor this service
            If the service doesn't exist, a new entry is added to an empty list
@@ -285,7 +267,7 @@ class StreamOutputBase(object):
         Returns:
             [list<string>] List of descriptors for this service
         """
-        return config.get(self.get_config_service(), []) + [props['descriptor'].value]
+        return config.get(self.__service__, []) + [props['descriptor'].value]
 
     @abstractmethod
     def get_user_defined_properties(self):

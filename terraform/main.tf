@@ -1,5 +1,5 @@
 // Make sure you export the following environment variables!
-//    export AWS_ACCESS_KEY_ID="access-key"
+//   export AWS_ACCESS_KEY_ID="access-key"
 //   export AWS_SECRET_ACCESS_KEY="secret-key"
 //   export AWS_DEFAULT_REGION="region"
 provider "aws" {}
