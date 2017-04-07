@@ -25,7 +25,9 @@ firehose_s3_bucket_suffix
 
 Example::
 
-    "firehose_s3_bucket_suffix": "streamalert.results",
+  "firehose": {
+      "s3_bucket_suffix": "streamalert.results"
+  }
 
 This is the suffix used when naming/creating S3 buckets for each cluster.
 
