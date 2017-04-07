@@ -22,7 +22,7 @@ import tempfile
 import urllib2
 
 from abc import ABCMeta, abstractmethod
-from collections import namedtuple, Container
+from collections import namedtuple
 
 import boto3
 from botocore.exceptions import ClientError
@@ -40,7 +40,23 @@ class OutputRequestFailure(Exception):
 
 
 class StreamOutputBase(object):
-    """StreamOutputBase is the base class to handle routing alerts to outputs"""
+    """StreamOutputBase is the base class to handle routing alerts to outputs
+
+    Public methods:
+        get_secrets_bucket_name: returns the name of the s3 bucket for secrets that
+            includes a unique prefix
+        output_cred_name: the name that is used to store the credentials both on s3
+            and locally on disk in tmp
+        get_config_service: the name of the service used by the config to store any
+            configured outputs for this service. implemented by some subclasses, but
+            subclass is not required to implement
+        format_output_config: returns a formatted version of the outputs configuration
+            that is to be written to disk
+        get_user_defined_properties: returns any properties for this output that must be
+            provided by the user. must be implemented by subclasses
+        dispatch: handles the actual sending of alerts to the configured service. must
+            be implemented by subclass
+    """
     __metaclass__ = ABCMeta
     __service__ = NotImplemented
     __config_service__ = __service__
@@ -98,15 +114,11 @@ class StreamOutputBase(object):
         creds_dict = json.loads(decrypted_creds)
 
         # Add any of the hard-coded default output props to this dict (ie: url)
-        defaults = self.get_default_properties()
+        defaults = self._get_default_properties()
         if defaults:
             creds_dict.update(defaults)
 
         return creds_dict
-
-    def get_secrets_bucket_name(self):
-        """Returns the streamalerts secrets s3 bucket name"""
-        return self._format_s3_bucket('streamalert.secrets')
 
     def _format_s3_bucket(self, suffix):
         """Format the s3 bucket by combining the stored qualifier with a suffix
@@ -118,24 +130,6 @@ class StreamOutputBase(object):
             [string] The combined prefix and suffix
         """
         return '.'.join([self.s3_prefix, suffix])
-
-    def output_cred_name(self, descriptor):
-        """Formats the output name for this credential by combining the service
-        and the descriptor.
-
-        Args:
-            descriptor [string]: Service destination (ie: slack channel, pd integration)
-
-        Return:
-            [string] Formatted credential name (ie: slack_ryandchannel)
-        """
-        cred_name = str(self.__service__)
-
-        # should descriptor be enforced in all rules?
-        if descriptor:
-            cred_name = '{}_{}'.format(cred_name, descriptor)
-
-        return cred_name
 
     def _get_creds_from_s3(self, cred_location, descriptor):
         """Pull the encrypted credential blob for this service and destination from s3
@@ -229,26 +223,8 @@ class StreamOutputBase(object):
     def _check_http_response(resp):
         return resp and (200 <= resp.getcode() <= 299)
 
-    @abstractmethod
-    def get_user_defined_properties(self):
-        """Base method for retrieving properties that must be asssigned by the user when
-        configuring a new output for this service. This should include any information that
-        is sensitive or use-case specific. For intance, if the url needed for this integration
-        is unique to your situation, it should be supplied here.
-
-        If information of this sort is needed, it should be added to the method that
-        overrides this one in the subclass.
-
-        At the very minimum, subclass functions should return an OrderedDict that contains
-        the key 'descriptor' with a description of the integration being configured
-
-        Returns:
-            [OrderedDict] Contains various OutputProperty items
-        """
-        pass
-
     @classmethod
-    def get_default_properties(cls):
+    def _get_default_properties(cls):
         """Base method for retrieving properties that should be hard-coded for this
         output service integration. This could include information such as a static
         url used for sending the alerts to this service, a static port, or other
@@ -265,6 +241,28 @@ class StreamOutputBase(object):
             [OrderedDict] Contains various OutputProperty items
         """
         pass
+
+    def get_secrets_bucket_name(self):
+        """Returns the streamalerts secrets s3 bucket name"""
+        return self._format_s3_bucket('streamalert.secrets')
+
+    def output_cred_name(self, descriptor):
+        """Formats the output name for this credential by combining the service
+        and the descriptor.
+
+        Args:
+            descriptor [string]: Service destination (ie: slack channel, pd integration)
+
+        Return:
+            [string] Formatted credential name (ie: slack_ryandchannel)
+        """
+        cred_name = str(self.__service__)
+
+        # should descriptor be enforced in all rules?
+        if descriptor:
+            cred_name = '{}_{}'.format(cred_name, descriptor)
+
+        return cred_name
 
     def get_config_service(self):
         """Get the string used for saving this service to the config. AWS services
@@ -288,6 +286,24 @@ class StreamOutputBase(object):
             [list<string>] List of descriptors for this service
         """
         return config.get(self.get_config_service(), []) + [props['descriptor'].value]
+
+    @abstractmethod
+    def get_user_defined_properties(self):
+        """Base method for retrieving properties that must be asssigned by the user when
+        configuring a new output for this service. This should include any information that
+        is sensitive or use-case specific. For intance, if the url needed for this integration
+        is unique to your situation, it should be supplied here.
+
+        If information of this sort is needed, it should be added to the method that
+        overrides this one in the subclass.
+
+        At the very minimum, subclass functions should return an OrderedDict that contains
+        the key 'descriptor' with a description of the integration being configured
+
+        Returns:
+            [OrderedDict] Contains various OutputProperty items
+        """
+        pass
 
     @abstractmethod
     def dispatch(self, **kwargs):

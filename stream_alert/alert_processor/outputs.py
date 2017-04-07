@@ -51,8 +51,8 @@ class PagerDutyOutput(StreamOutputBase):
     __service__ = 'pagerduty'
 
     @classmethod
-    def get_default_properties(cls):
-        """Get the standard url used for PagerDuty. This is the same for everyone, so
+    def _get_default_properties(cls):
+        """Get the standard url used for PagerDuty. This value the same for everyone, so
         is hard-coded here and does not need to be configured by the user
 
         Returns:
