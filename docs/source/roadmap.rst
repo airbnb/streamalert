@@ -1,7 +1,7 @@
 Roadmap
 =======
 
-Large deliverables are outlined below. Progress, and smaller features, can be tracked on Github: https://github.com/airbnb/streamalert/issues
+Large deliverables are outlined below. Progress, and smaller features, can be tracked on `Github <https://github.com/airbnb/streamalert/issues>`_ 
 
 Crowdsource Plugin
 ~~~~~~~~~~~~~~~~~~
