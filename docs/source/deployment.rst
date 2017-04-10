@@ -6,9 +6,9 @@ Make sure you've completed the `Getting Started <getting-started.html>`_ instruc
 Initial Build
 -------------
 
-To initialize StreamAlert:
+To initialize StreamAlert::
 
-``$ ./stream_alert_cli.py terraform init``
+  $ ./stream_alert_cli.py terraform init
 
 This will perform the following:
 
@@ -22,16 +22,31 @@ Type ``yes`` at each prompt.
 Continuous Deployment
 ---------------------
 
-As new rules, sources, or outputs are added to StreamAlert, new versions of the AWS Lambda functions must be deployed for changes to become effective.  To accomplish this, StreamAlertCLI contains a ``lambda deploy`` command.
+As new rules, sources, or outputs are added to StreamAlert, new versions of the AWS Lambda functions must be deployed for changes to become effective.
 
-To publish new changes for all AWS Lambda functions:
-``$ ./stream_alert_cli.py lambda deploy --processor all``
+To accomplish this, ``stream_alert_cli.py`` contains a ``lambda deploy`` command.
 
-Optionally, to publish changes for only a specific AWS Lambda function:
-``$ ./stream_alert_cli.py lambda deploy --processor rule``
-``$ ./stream_alert_cli.py lambda deploy --processor alert``
+To publish new changes for all AWS Lambda functions::
+
+  $ ./stream_alert_cli.py lambda deploy --processor all
+
+Optionally, to publish changes for only a specific AWS Lambda function::
+
+  $ ./stream_alert_cli.py lambda deploy --processor rule
+  $ ./stream_alert_cli.py lambda deploy --processor alert
+
+To apply infrastructure level changes (additional Kinesis shards, Lambda memory, etc), run::
+
+  $ ./stream_alert_cli.py terraform build
+
+To speed up the Terraform run, the module name may be specified with the ``target`` parameter::
+
+  $ ./stream_alert_cli.py terraform build --target kinesis            # corresponds to the tf_stream_alert_kinesis module
+  $ ./stream_alert_cli.py terraform build --target stream_alert       # corresponds to the tf_stream_alert module
 
 Monitoring Functions
 --------------------
 
-StreamAlert clusters contain a module which configures CloudWatch Alarms to monitor AWS Lambda invocation errors.  No errors ensures that the running code is running reliably.  To access these monitors, login to AWS Console and go to CloudWatch, and then click Alarms. 
+StreamAlert clusters contain a module to create CloudWatch Alarms for monitoring AWS Lambda invocation errors.
+
+These ensure that the currently running code is reliable.  To access these monitors, login to AWS Console and go to CloudWatch, and then click Alarms. 

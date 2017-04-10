@@ -1,13 +1,13 @@
 Rule Testing
 ============
 
-In order to test the effectiveness of new rules, local integration tests can be used to verify that alerts would be triggered given a certain input.  The ``stream_alert_cli.py`` command line tool comes built-in with a ``lambda test`` command which does exactly this.
+To test the accuracy of new rules, local tests can be written to verify that alerts trigger against valid input.  The ``stream_alert_cli.py`` CLI tool comes built-in with a ``lambda test`` command which does exactly this.
 
 Configuration
 ~~~~~~~~~~~~~
 
 To test a new rule, first create a new file under ``test/integration/rules`` named ``rule_name_goes_here.json``.  This file should contain this exact structure::
-  
+
   {
     "records": [
       {
@@ -22,22 +22,27 @@ To test a new rule, first create a new file under ``test/integration/rules`` nam
 
 .. note:: Multiple tests can be included in one file simply by adding them to the "records" array within the `rule_name_goes_here.json` file.
 
-The ``data`` key can either be a Map or a String.  Normally all json types should be in Map format while others should be String (``csv, kv, syslog``).
+Rule Test Reference
+-------------------
 
-The ``description`` key should be a short sentence describing the intent of the test.
+=============      ================================= ========  ===========
+Key                Type                              Required  Description
+-------------      --------------------------------- --------- ----------
+``data``           ``{}`` or ``string``              Yes       All ``json`` log types should be in Map format while others (``csv, kv, syslog``) should be ``string``
+``description``    ``string``                        Yes       A short sentence describing the intent of the test
+``trigger``        ``boolean``                       Yes       Whether or not a record should produce an alert
+``trigger_count``  ``integer``                       No        The amount of alerts that should be generated.  Used for nested data
+``source``         ``string``                        Yes       The name of the Kinesis Stream or S3 bucket where the data originated from.  This value should match a source provided in ``conf/sources.json``
+``service``        ``string``                        Yes       The name of the AWS service which sent the log (Kinesis or S3)
+``compress``       ``boolean``                       No        Whether or not to compress records with ``gzip`` prior to testing (used for ``gzip-json`` logs)
+=============      ================================= ========  ===========
 
-The ``trigger`` key indicates whether or not this record should produce an alert or not.  This is used to determine that all of our test records produce the correct amount of alerts.
-
-The ``source`` key is the name of the kinesis stream or s3 bucket.  The source value should match a source provided for this service in ``conf/sources.json``.
-
-The ``service`` key is the name of the AWS service which sent the alert (kinesis or s3).
-
-For more examples, see the default rule tests in ``test/integration/rules``.
+For more examples, see the provided default rule tests in ``test/integration/rules``
 
 Helpers
 ~~~~~~~
 
-It is often necessary to stub out (dynamically fill in) certain values in our test data.  This could be due to time-based rules which utilize the ``last_hour`` `rule helper <rules.html#helpers>`_.  In order to test in these scenarios, a testing helper can be used.
+It's often necessary to stub (dynamically fill in) values in our test data.  This could be due to time-based rules which utilize the ``last_hour`` `rule helper <rules.html#helpers>`_.  In order to test in these scenarios, a testing helper can be used.
 
 All Helpers
 -----------
@@ -47,7 +52,7 @@ All Helpers
 Usage
 -----
 
-To use these helpers in integration test data, replace a specific field with the following syntax::
+To use these helpers in rule testing, replace a specific log field value with the following::
 
   "<helper:helper_name_goes_here>"
 
@@ -73,7 +78,7 @@ Running Tests
 
 To run integration tests::
 
-  $ ./stream_alert_cli.py lambda test --func alert
+  $ ./test/scripts/rule_test.sh
 
 This will produce output similar to the following::
 
