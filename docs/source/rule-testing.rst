@@ -28,14 +28,14 @@ Rule Test Reference
 =============      ================================= ========  ===========
 Key                Type                              Required  Description
 -------------      --------------------------------- --------- ----------
-``data``           ``{}`` or ``string``              ``true``  All ``json`` log types should be in Map format while others (``csv, kv, syslog``) should be ``string``
-``description``    ``string``                        ``true``  A short sentence describing the intent of the test
-``trigger``        ``boolean``                       ``true``  Whether or not a record should produce an alert
-``trigger_count``  ``integer``                       ``false`` The amount of alerts that should be generated.  Used for nested data
-``source``         ``string``                        ``true``  The name of the Kinesis Stream or S3 bucket.  This value should match a source provided in ``conf/sources.json``
-``service``        ``string``                        ``true``  The name of the AWS service which sent the log (Kinesis or S3)
-``compress``       ``boolean``                       ``false`` Whether or not to compress records with ``gzip`` prior to testing (used for ``gzip-json`` logs)
-=====  =====  ======
+``data``           ``{}`` or ``string``              Yes       All ``json`` log types should be in Map format while others (``csv, kv, syslog``) should be ``string``
+``description``    ``string``                        Yes       A short sentence describing the intent of the test
+``trigger``        ``boolean``                       Yes       Whether or not a record should produce an alert
+``trigger_count``  ``integer``                       No        The amount of alerts that should be generated.  Used for nested data
+``source``         ``string``                        Yes       The name of the Kinesis Stream or S3 bucket where the data originated from.  This value should match a source provided in ``conf/sources.json``
+``service``        ``string``                        Yes       The name of the AWS service which sent the log (Kinesis or S3)
+``compress``       ``boolean``                       No        Whether or not to compress records with ``gzip`` prior to testing (used for ``gzip-json`` logs)
+=============      ================================= ========  ===========
 
 For more examples, see the provided default rule tests in ``test/integration/rules``
 
@@ -52,7 +52,7 @@ All Helpers
 Usage
 -----
 
-To use these helpers in integration test data, replace a specific log field value with the following::
+To use these helpers in rule testing, replace a specific log field value with the following::
 
   "<helper:helper_name_goes_here>"
 

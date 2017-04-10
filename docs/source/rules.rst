@@ -19,7 +19,9 @@ Getting Started
 
 All rule files must be explicitly imported in ``stream_alert/rule_processor/main.py``.
 
-Example::
+Example:
+
+.. code-block:: python
 
   from rules import (
       corp,
@@ -33,14 +35,18 @@ Example::
 Overview
 --------
 
-Each Rule file must contain the following at the top::
+Each Rule file must contain the following at the top:
+
+.. code-block:: python
 
   from stream_alert import rule_helpers
   from stream_alert.rule_processor.rules_engine import StreamRules
 
   rule = StreamRules.rule
 
-All rules take this structure::
+All rules take this structure:
+
+.. code-block:: python
 
     @rule(logs=[...],
           matchers=[...],
@@ -57,7 +63,9 @@ Rules will only be evaluated against incoming records that match the declared lo
 Example
 -------
 
-Here’s an example that alerts on the use of sudo in a PCI environment::
+Here’s an example that alerts on the use of sudo in a PCI environment:
+
+.. code-block:: python
 
     from fnmatch import fnmatch
 
@@ -84,7 +92,7 @@ logs
 
 ``logs`` define the log sources the rule supports; The ``def`` function block is not run unless this condition is satisfied.
 
-A rule can be run against multiple log sources if desired
+A rule can be run against multiple log sources if desired.
 
 Log sources are defined in ``conf/sources.json`` and subsequent schemas are defined in ``conf/logs.json``
 
@@ -104,7 +112,9 @@ Matchers are normally defined in ``rules/matchers.py``. If desired, matchers can
 
 In the above example, we are evaluating the ``pci`` matcher.  As you can likely deduce, this ensures alerts are only triggered if the incoming record is from the ``pci`` environment.
 
-This is achieved by looking for a particular field in the log. The code::
+This is achieved by looking for a particular field in the log. The code:
+
+.. code-block:: python
 
     @matcher
     def pci(record):
@@ -123,16 +133,24 @@ An alert can be sent to multiple destinations.
 req_subkeys
 ~~~~~~~~~~~
 
-``req_subkeys`` is optional; It defines the required sub-keys that must exist in the incoming record in order for it to be evaluated.
+``req_subkeys`` is an optional argument which defines required sub-keys that must exist in the incoming record in order for it to be evaluated.
 
 This feature should be avoided, but it is useful if you defined a loose schema to trade flexibility for safety; see `Schemas <conf-schemas.html#json-example-osquery>`_.
 
-Examples::
+Examples:
+
+.. code-block:: python
+
+  # The 'columns' key must contain
+  # sub-keys of 'address' and 'hostnames'
 
   @rule(logs=['osquery'],
         outputs=['pagerduty', 's3'],
         req_subkeys={'columns':['address', 'hostnames']})
         ...
+
+  # The 'columns' key must contain
+  # sub-keys of 'port' and 'protocol'
 
   @rule(logs=['osquery'],
         outputs=['pagerduty', 's3'],
@@ -142,11 +160,13 @@ Examples::
 
 Helpers
 -------
-To improve readability and writability of rules, you can extract commonly used ``Python`` processing logic into custom helper methods.
+To improve readability and writability of rules, you can extract commonly used ``Python`` logic into custom helper methods.
 
 These helpers are defined in ``rules/helpers/base.py`` and can be called from within a matcher or rule.
 
-Example function::
+Example function:
+
+.. code-block:: python
 
     # rules/helpers/base.py
 
@@ -162,7 +182,9 @@ Example function::
         """
         return any(fnmatch(data, x) for x in whitelist)
 
-Example usage of the function above in a rule::
+Example usage of the function above in a rule:
+
+.. code-block:: python
 
     # rules/prod.py
     
@@ -185,9 +207,13 @@ Example usage of the function above in a rule::
 Disabling Rules
 ---------------
 
-If a rule needs to be excluded from a rule file without deleting it, a special decorator ``@disable`` can be used.
+In the event that a rule must be temporarily disabled, due to either poor fidelity or any other reason, the ``@disable`` decorator can be used.
 
-In the following example, ``@disable`` prevents the first rule from analyzing incoming records::
+This allows you to keep the rule definition and tests in place, instead of having to remove them entirely.
+
+In the following example, ``@disable`` prevents the first rule from analyzing incoming records:
+
+.. code-block:: python
 
   # the decorator must be imported, similar to @rule and @matcher
   disable = StreamRules.disable()

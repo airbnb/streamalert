@@ -251,7 +251,7 @@ CloudWatch logs are delivered as a nested record, so we will need to pass ``conf
 osquery
 ~~~~~~~
 
-osquery's schema depends on the table being queried and there are 50+ tables
+Osquery's schema changes depending on the ``SELECT`` statement used and the table queried.  There are several options when writing schemas for these logs.
 
 **Option 1**: Define a schema for each table used::
 
@@ -285,10 +285,10 @@ osquery's schema depends on the table being queried and there are 50+ tables
   },
   ...
 
-This promotes Rule safety, but requires additional time to define the schemas
+This approach promotes Rule safety, but requires additional time to define the schemas.
 
 
-**Option 2**: Define a "loose" schema that captures all tables::
+**Option 2**: Define a "loose" schema which captures arbitrary values for a given field::
 
   "osquery": {
     "parser": "json",
@@ -302,7 +302,7 @@ This promotes Rule safety, but requires additional time to define the schemas
     }
   },
 
-.. warning:: In Option 2, the schema definition is flexible, but Rule safety is lost because you'll need to use defensive programming when accessing and analyzing fields in `columns`. The use of `req_subkeys` will be advised, see Rules for more details
+.. warning:: In Option 2, the schema definition is flexible, but Rule safety is lost because you will need to use defensive programming when accessing and analyzing fields in `columns`. The use of `req_subkeys` will be advised in this case, see `Rules <rules.html>`_ for additional details.
 
 
 CSV Examples
@@ -317,7 +317,7 @@ Key-Value (KV) Example
 Example schema::
 
   "example_auditd": {
-    "parser": "kv",          # define the parser as kv
+    "parser": "kv",          # define the parser as kv (key-value)
     "delimiter": " ",        # define the delimiter
     "separator": "=",        # define the separator
     "schema": {

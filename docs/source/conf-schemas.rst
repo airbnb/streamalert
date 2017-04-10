@@ -10,7 +10,7 @@ Schemas are defined in ``conf/logs.json`` and used by rules to determine which r
 
 They represent the structure of a given log in the form of key/value pairs.
 
-Each key in a schema corresponds to the name of a field referenced by rules.  Its value is data type the field is cast to.
+Each key in a schema corresponds to the name of a field referenced by rules.  Its value is the data type the field is cast to.
 
 Ordering is strict.
 
@@ -103,8 +103,10 @@ Example Log After Parsing::
     'field_3': True
   }
 
-Example Rule with Casted Types::
-  
+Example Rule with Casted Types:
+
+.. code-block:: python
+
   @rule(logs=['example_log_name'],
         outputs=['example_output'])
   def example_rule(rec):
@@ -116,7 +118,7 @@ Example Rule with Casted Types::
 Casting Special Types
 ~~~~~~~~~~~~~~~~~~~~~
 
-Schemas can be as tight or as loose as you want (see Example: osquery).
+Schemas can be as rigid or permissive as you want (see Example: osquery).
 
 Usage of the special types normally indicates a loose schema, in that not every part of the incoming data is described.
 
@@ -150,8 +152,10 @@ Example Log After Parsing::
 
 Note the values of ``field_3`` are strings, since no type(s) can be defined with ``{}``.
 
-Example Rule with a Loose Schema::
-  
+Example Rule with a loose Schema:
+
+.. code-block:: python
+
   @rule(logs=['example_log_name'],
         outputs=['example_output'],
         req_subkeys={'field_3': ['time']})
@@ -163,10 +167,10 @@ Example Rule with a Loose Schema::
 
 Also note the usage of ``req_subkeys``.
 
-This keyword argument ensures that the parsed log contains the required subkeys of `rec['field_3']['time']`.
+This keyword argument ensures that the parsed log contains the required subkeys of ``rec['field_3']['time']``.
 
 Optional Top Level Keys
-~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
 
 If incoming logs occasionally include/exclude certain fields, this can be expressed in the ``configuration`` settings as ``optional_top_level_keys``.
 
@@ -373,7 +377,7 @@ Hints
 
 Because CSV data does non contain explicit keys (unlike JSON or KV), it is often necessary to search for an expression in the incoming record to determine its log type.
 
-To accomplish this, the ``csv`` parser use ``hints``.
+To accomplish this, the ``csv`` parser uses ``hints``.
 
 Hints are a collection of key/value pairs where the key is the name of the field, and the value is a list of expressions to search for in data.
 
@@ -500,7 +504,7 @@ The schema is also static for this parser because of the regex used to parse rec
 Log Format
 ~~~~~~~~~~
 
-The ``syslog`` parser is matches events with the following format::
+The ``syslog`` parser matches events with the following format::
 
   timestamp(Month DD HH:MM:SS) host application: message
 
