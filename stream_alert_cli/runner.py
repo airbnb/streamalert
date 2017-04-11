@@ -15,6 +15,7 @@ limitations under the License.
 '''
 
 from collections import namedtuple
+from getpass import getpass
 from jinja2 import Environment, PackageLoader
 
 from stream_alert_cli.package import RuleProcessorPackage, AlertProcessorPackage
@@ -23,17 +24,19 @@ from stream_alert_cli.helpers import CLIHelpers
 from stream_alert_cli.config import CLIConfig
 from stream_alert_cli.logger import LOGGER_CLI
 from stream_alert_cli.version import LambdaVersion
+import stream_alert_cli.outputs as config_outputs
 
 from stream_alert.alert_processor import __version__ as alert_processor_version
+from stream_alert.alert_processor.outputs import get_output_dispatcher
 from stream_alert.rule_processor import __version__ as rule_processor_version
+
+
+CONFIG = CLIConfig()
 
 
 class InvalidClusterName(Exception):
     """Exception for invalid cluster names"""
     pass
-
-
-CONFIG = CLIConfig()
 
 
 def cli_runner(options):
@@ -50,7 +53,10 @@ def cli_runner(options):
                         'https://github.com/airbnb/streamalert/issues')
     LOGGER_CLI.info(cli_load_message)
 
-    if options.command == 'lambda':
+    if options.command == 'output':
+        configure_output(options)
+
+    elif options.command == 'lambda':
         lambda_runner(options)
 
     elif options.command == 'terraform':
@@ -280,7 +286,6 @@ def rollback(options):
                for x in CONFIG['clusters'].keys()]
     tf_runner(targets=targets)
 
-
 def generate_tf_files():
     """Generate all Terraform plans for the clusters in variables.json"""
     LOGGER_CLI.info('Generating Terraform files')
@@ -364,3 +369,68 @@ def deploy(options):
     # create production version by running a second time
     publish_version(packages)
     tf_runner(targets=targets)
+
+def user_input(requested_info, mask):
+    """Prompt user for requested information
+
+    Args:
+        requested_info [string]: Description of the information needed
+        mask [boolean]: Decides whether to mask input or not
+
+    Returns:
+        [string] response provided by the user
+    """
+    response = ''
+    prompt = '\nPlease supply {}: '.format(requested_info)
+
+    if not mask:
+        while not response:
+            response = raw_input(prompt)
+
+        # Restrict having spaces or colons in items (applies to things like descriptors, etc)
+        if any(x in [' ', ':'] for x in response):
+            LOGGER_CLI.error('the supplied input should not contain any space or colon characters')
+            return user_input(requested_info, mask)
+    else:
+        while not response:
+            response = getpass(prompt=prompt)
+
+    return response
+
+def configure_output(options):
+    """Configure a new output for this service
+
+    Args:
+        options [argparse]: Basically a namedtuple with the service setting
+    """
+    region = CONFIG['account']['region']
+    prefix = CONFIG['account']['prefix']
+
+    # Retrieve the proper service class to handle dispatching the alerts of this services
+    output = get_output_dispatcher(options.service, region, prefix, config_outputs.load_outputs_config())
+
+    # If an output for this service has not been defined, the error is logged prior to this
+    if not output:
+        return
+
+    # get dictionary of OutputProperty items to be used for user prompting
+    props = output.get_user_defined_properties()
+
+    for name, prop in props.iteritems():
+        props[name] = prop._replace(value=user_input(prop.description, prop.mask_input))
+
+    service = output.__service__
+    config = config_outputs.load_config(props, service)
+    # An empty config here means this configuration already exists,
+    # so we can ask for user input again for a unique configuration
+    if config is False:
+        return configure_output(options)
+
+    secrets_bucket = '{}.streamalert.secrets'.format(prefix)
+    secrets_key = output.output_cred_name(props['descriptor'].value)
+
+    # Encrypt the creds and push them to S3
+    # then update the local output configuration with properties
+    config_outputs.encrypt_and_push_creds_to_s3(region, secrets_bucket, secrets_key, props)
+    updated_config = output.format_output_config(config, props)
+    config_outputs.update_outputs_config(config, updated_config, service)

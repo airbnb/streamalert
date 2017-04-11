@@ -34,7 +34,7 @@ def json_dump(sns_dict, indent_value=None):
     try:
         return json.dumps(sns_dict, indent=indent_value, default=json_dict_serializer)
     except AttributeError as err:
-        logging.error('An error occured while dumping object to JSON: %s', err)
+        logging.error('An error occurred while dumping object to JSON: %s', err)
         return ""
 
 class SNSMessageSizeError(Exception):
@@ -72,7 +72,7 @@ class StreamSink(object):
         lambda_alias = self.env['lambda_alias']
 
         for alert in self.alerts:
-            sns_dict = {'default': [alert]}
+            sns_dict = {'default': alert}
             if lambda_alias == 'production':
                 topic_arn = self._get_sns_topic_arn()
                 client = boto3.client('sns', region_name=self.env['lambda_region'])
@@ -124,7 +124,7 @@ class StreamSink(object):
                     Subject='StreamAlert Rules Triggered'
                 )
             except botocore.exceptions.ClientError as err:
-                logging.error('An error occured while publishing Alert: %s', err.response)
+                logging.error('An error occurred while publishing alert: %s', err.response)
                 raise err
             logger.info('Published %i alert(s) to %s', len(self.alerts), topic)
             logger.info('SNS MessageID: %s', response['MessageId'])

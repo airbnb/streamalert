@@ -34,14 +34,17 @@ def build_parser():
     description = (
     """Build, Deploy, and Test StreamAlert Infrastructure
 
+    Define New Outputs:
+    stream_alert_cli.py output new --service 'service_name'
+
     Deploying Lambda Functions:
     stream_alert_cli.py lambda deploy --processor 'rule'
     stream_alert_cli.py lambda deploy --processor 'alert'
     stream_alert_cli.py lambda deploy --processor 'all'
-    
+
     Rolling Back:
     stream_alert_cli.py lambda rollback --func 'rule'
-    
+
     Running Integration Tests:
     stream_alert_cli.py lambda test --processor 'rule'
     stream_alert_cli.py lambda test --processor 'alert'
@@ -60,6 +63,29 @@ def build_parser():
         formatter_class=RawTextHelpFormatter
     )
     subparsers = parser.add_subparsers()
+
+    # defining new outputs
+    output_parser = subparsers.add_parser(
+        'output',
+        help='Define a new output to send alerts to'
+    )
+    output_parser.set_defaults(
+        command='output'
+    )
+
+    # output parser arguments. the cli will handle the logic to set these up
+    output_parser.add_argument(
+        'subcommand',
+        choices=['new'],
+        help=('new: create a new output to send alerts to\n')
+    )
+    #
+    output_parser.add_argument(
+        '--service',
+        choices=['aws-s3', 'pagerduty', 'phantom', 'slack'],
+        help='The name of the service to send alerts to',
+        required=True
+    )
 
     # lambda parser and defaults
     lambda_parser = subparsers.add_parser(

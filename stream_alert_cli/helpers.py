@@ -34,7 +34,7 @@ class CLIHelpers(object):
                 quiet (boolean): Whether to show command output or hide it
 
         """
-        default_error_message = "An error occured while running: {}".format(
+        default_error_message = "An error occurred while running: {}".format(
             ' '.join(runner_args)
         )
         error_message = kwargs.get('error_message', default_error_message)

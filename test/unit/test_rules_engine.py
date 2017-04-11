@@ -81,7 +81,7 @@ class TestStreamRules(object):
     def test_alert_format(self):
         """Rule Engine - Alert Format"""
         @rule(logs=['test_log_type_json_nested_with_data'],
-              outputs=['s3'])
+              outputs=['s3:sample.bucket'])
         def alert_format_test(rec):
             return rec['application'] == 'web-app'
 
@@ -130,13 +130,13 @@ class TestStreamRules(object):
             return True
 
         @rule(logs=['test_log_type_json_nested_with_data'],
-              outputs=['s3'])
+              outputs=['s3:sample.bucket'])
         def minimal_rule(rec):
             return rec['unixtime'] == 1483139547
 
         @rule(matchers=['foobar', 'prod'],
               logs=['test_log_type_json_nested_with_data'],
-              outputs=['pagerduty'])
+              outputs=['pagerduty:sample_integration'])
         def chef_logs(rec):
             return rec['application'] == 'chef'
 
@@ -165,22 +165,22 @@ class TestStreamRules(object):
 
         # alert 1 tests
         assert_equal(alerts[1]['rule_name'], 'chef_logs')
-        assert_equal(alerts[1]['metadata']['outputs'], ['pagerduty'])
+        assert_equal(alerts[1]['metadata']['outputs'], ['pagerduty:sample_integration'])
 
         # alert 0 tests
         assert_equal(alerts[0]['rule_name'], 'minimal_rule')
-        assert_equal(alerts[0]['metadata']['outputs'], ['s3'])
+        assert_equal(alerts[0]['metadata']['outputs'], ['s3:sample.bucket'])
 
     def test_process_req_subkeys(self):
         """Rule Engine - Req Subkeys"""
         @rule(logs=['test_log_type_json_nested'],
-              outputs=['s3'],
+              outputs=['s3:sample.bucket'],
               req_subkeys={'data': ['location']})
         def data_location(rec):
             return rec['data']['location'].startswith('us')
 
         @rule(logs=['test_log_type_json_nested'],
-              outputs=['s3'],
+              outputs=['s3:sample.bucket'],
               req_subkeys={'data': ['category']})
         def web_server(rec):
             return rec['data']['category'] == 'web-server'
@@ -228,7 +228,7 @@ class TestStreamRules(object):
     def test_syslog_rule(self):
         """Rule Engine - Syslog Rule"""
         @rule(logs=['test_log_type_syslog'],
-              outputs=['s3'])
+              outputs=['s3:sample.bucket'])
         def syslog_sudo(rec):
             return (
                 rec['application'] == 'sudo' and
@@ -256,7 +256,7 @@ class TestStreamRules(object):
     def test_csv_rule(self):
         """Rule Engine - CSV Rule"""
         @rule(logs=['test_log_type_csv_nested'],
-              outputs=['pagerduty'])
+              outputs=['pagerduty:sample_integration'])
         def nested_csv(rec):
             return (
                 rec['message']['application'] == 'chef' and
@@ -303,7 +303,7 @@ class TestStreamRules(object):
     def test_kv_rule(self):
         """Rule Engine - KV Rule"""
         @rule(logs=['test_log_type_kv_auditd'],
-              outputs=['pagerduty'])
+              outputs=['pagerduty:sample_integration'])
         def auditd_bin_cat(rec):
             return (
                 rec['type'] == 'SYSCALL' and
@@ -311,7 +311,7 @@ class TestStreamRules(object):
             )
 
         @rule(logs=['test_log_type_kv_auditd'],
-              outputs=['pagerduty'])
+              outputs=['pagerduty:sample_integration'])
         def gid_500(rec):
             return (
                 rec['gid'] == 500 and
