@@ -139,6 +139,9 @@ class StreamOutputBase(object):
             [boolean] True if download of creds from s3 was a success
         """
         try:
+            if not os.path.exists(os.path.dirname(cred_location)):
+                os.makedirs(os.path.dirname(cred_location))
+
             client = boto3.client('s3', region_name=self.region)
             with open(cred_location, 'wb') as cred_output:
                 client.download_fileobj(self.secrets_bucket,
@@ -253,7 +256,7 @@ class StreamOutputBase(object):
 
         # should descriptor be enforced in all rules?
         if descriptor:
-            cred_name = '{}_{}'.format(cred_name, descriptor)
+            cred_name = '{}/{}'.format(cred_name, descriptor)
 
         return cred_name
 

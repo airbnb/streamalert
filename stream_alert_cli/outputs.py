@@ -125,7 +125,8 @@ def send_creds_to_s3(region, bucket, key, blob_data):
         client.put_object(
             Body=blob_data,
             Bucket=bucket,
-            Key=key
+            Key=key,
+            ServerSideEncryption='AES256'
         )
     except ClientError as err:
         LOGGER_CLI.exception('an error occurred while sending credentials for key [%s] to S3: %s',
