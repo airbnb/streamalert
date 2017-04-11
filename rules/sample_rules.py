@@ -15,7 +15,7 @@ disable = StreamRules.disable()
 # osquery invalid user
 @rule(logs=['osquery'],
       matchers=[],
-      outputs=['s3:sample.bucket'],
+      outputs=['aws-s3:sample.bucket'],
       req_subkeys={'columns': ['user']})
 def invalid_user(rec):
     """Catch unauthorized user logins"""
@@ -49,7 +49,7 @@ def invalid_subnet(rec):
 
 @rule(logs=['json_log'],
       matchers=['json_test_matcher'],
-      outputs=['s3'])
+      outputs=['aws-s3'])
 def sample_json_rule(rec):
     return rec['host'] == 'test-host-1'
 
@@ -63,14 +63,14 @@ def sample_syslog_rule(rec):
 
 @rule(logs=['csv_log'],
       matchers=[],
-      outputs=['s3:sample.bucket'])
+      outputs=['aws-s3:sample.bucket'])
 def sample_csv_rule(rec):
     return rec['host'] == 'test-host-2'
 
 
 @rule(logs=['kv_log'],
       matchers=[],
-      outputs=['s3:sample.bucket'])
+      outputs=['aws-s3:sample.bucket'])
 def sample_kv_rule(rec):
     return (
         rec['msg'] == 'fatal' and
@@ -80,7 +80,7 @@ def sample_kv_rule(rec):
 
 @rule(logs=['kv_log'],
       matchers=[],
-      outputs=['s3:sample.bucket'])
+      outputs=['aws-s3:sample.bucket'])
 def sample_kv_rule_last_hour(rec):
     return (
         rec['type'] == 'start' and
@@ -108,7 +108,7 @@ def sample_cloudtrail_rule(rec):
 
 @rule(logs=['cloudwatch:ec2_event'],
       matchers=[],
-      outputs=['s3:sample.bucket'])
+      outputs=['aws-s3:sample.bucket'])
 def sample_cloudwatch_events_rule(rec):
     """Any activity on EC2"""
     return rec['source'] == 'aws.ec2'
@@ -116,7 +116,7 @@ def sample_cloudwatch_events_rule(rec):
 
 @rule(logs=['cloudwatch:cloudtrail'],
       matchers=[],
-      outputs=['s3:sample.bucket'])
+      outputs=['aws-s3:sample.bucket'])
 def sample_cloudwatch_cloudtrail_rule(rec):
     """IAM Key Decrypt operation"""
     return rec['detail']['eventName'] == 'Decrypt'
