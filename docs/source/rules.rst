@@ -71,7 +71,7 @@ Here’s an example that alerts on the use of sudo in a PCI environment:
 
     @rule(logs=['osquery'],                           # applicable datasource(s)
           matchers=['pci'],                           # matcher(s) to evaluate
-          outputs=['s3', 'pagerduty', 'slack'])       # where to send alerts
+          outputs=['aws-s3', 'pagerduty', 'slack'])   # where to send alerts
     def production_sudo(record):                      # incoming record/log
         table_name = record['name']
         tag = record['columns']['tag']
@@ -145,7 +145,7 @@ Examples:
   # sub-keys of 'address' and 'hostnames'
 
   @rule(logs=['osquery'],
-        outputs=['pagerduty', 's3'],
+        outputs=['pagerduty', 'aws-s3'],
         req_subkeys={'columns':['address', 'hostnames']})
         ...
 
@@ -153,7 +153,7 @@ Examples:
   # sub-keys of 'port' and 'protocol'
 
   @rule(logs=['osquery'],
-        outputs=['pagerduty', 's3'],
+        outputs=['pagerduty', 'aws-s3'],
         req_subkeys={'columns':['port', 'protocol']})
         ...
 
