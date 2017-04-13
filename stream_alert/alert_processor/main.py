@@ -95,6 +95,7 @@ def run(loaded_sns_message, context):
         except ValueError:
             LOGGER.error('outputs for rules must be declared with both a service and a '
                          'descriptor for the integration (ie: \'slack:my_channel\')')
+            continue
 
         if not service in config or not descriptor in config[service]:
             LOGGER.error('The output %s does not exist!', output)
@@ -114,7 +115,7 @@ def run(loaded_sns_message, context):
         output_dispatcher.dispatch(
             descriptor=descriptor,
             rule_name=rule_name,
-            alert=alert
+            alert=alert['record']
             )
         # except BaseException as err:
         #     LOGGER.error('an error occurred while sending alert to %s: %s',

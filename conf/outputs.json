@@ -1,6 +1,6 @@
 {
     "aws-s3": {
-        "sample.bucket": "sample_bucket_arn"
+        "sample.bucket": "sample_bucket_name"
     },
     "pagerduty": [
         "sample_integration"
