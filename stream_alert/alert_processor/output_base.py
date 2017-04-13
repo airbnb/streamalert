@@ -31,8 +31,8 @@ logging.basicConfig()
 LOGGER = logging.getLogger('StreamOutput')
 
 OutputProperty = namedtuple('OutputProperty',
-                            'description, value, mask_input, cred_requirement')
-OutputProperty.__new__.__defaults__ = ('', '', False, False)
+                            'description, value, input_restrictions, mask_input, cred_requirement')
+OutputProperty.__new__.__defaults__ = ('', '', {' ', ':'}, False, False)
 
 
 class OutputRequestFailure(Exception):

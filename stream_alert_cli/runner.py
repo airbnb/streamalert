@@ -370,7 +370,7 @@ def deploy(options):
     publish_version(packages)
     tf_runner(targets=targets)
 
-def user_input(requested_info, mask):
+def user_input(requested_info, mask, input_restrictions):
     """Prompt user for requested information
 
     Args:
@@ -388,9 +388,10 @@ def user_input(requested_info, mask):
             response = raw_input(prompt)
 
         # Restrict having spaces or colons in items (applies to things like descriptors, etc)
-        if any(x in [' ', ':'] for x in response):
-            LOGGER_CLI.error('the supplied input should not contain any space or colon characters')
-            return user_input(requested_info, mask)
+        if any(x in input_restrictions for x in response):
+            LOGGER_CLI.error('the supplied input should not contain any of the following: %s',
+                             '"{}"'.format('", "'.join(input_restrictions)))
+            return user_input(requested_info, mask, input_restrictions)
     else:
         while not response:
             response = getpass(prompt=prompt)
@@ -407,7 +408,10 @@ def configure_output(options):
     prefix = CONFIG['account']['prefix']
 
     # Retrieve the proper service class to handle dispatching the alerts of this services
-    output = get_output_dispatcher(options.service, region, prefix, config_outputs.load_outputs_config())
+    output = get_output_dispatcher(options.service,
+                                   region,
+                                   prefix,
+                                   config_outputs.load_outputs_config())
 
     # If an output for this service has not been defined, the error is logged prior to this
     if not output:
@@ -417,7 +421,9 @@ def configure_output(options):
     props = output.get_user_defined_properties()
 
     for name, prop in props.iteritems():
-        props[name] = prop._replace(value=user_input(prop.description, prop.mask_input))
+        props[name] = prop._replace(value=user_input(prop.description,
+                                                     prop.mask_input,
+                                                     prop.input_restrictions))
 
     service = output.__service__
     config = config_outputs.load_config(props, service)
