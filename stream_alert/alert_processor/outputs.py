@@ -353,3 +353,60 @@ class S3Output(AWSOutput):
         )
 
         self._log_status(resp)
+
+@output
+class LambdaOutput(AWSOutput):
+    """LambdaOutput handles all alert dispatching to AWS Lambda"""
+    __service__ = 'aws-lambda'
+
+    def get_user_defined_properties(self):
+        """Get properties that must be asssigned by the user when configuring a new Lambda
+        output.  This should be sensitive or unique information for this use-case that needs
+        to come from the user.
+
+        Every output should return a dict that contains a 'descriptor' with a description of the
+        integration being configured.
+
+        Sending to Lambda also requires a user provided Lambda function name and optional qualifier
+        (if applicabale for the user's use case). A fully-qualified AWS ARN is also acceptable for
+        this value. This value should not be masked during input and is not a credential requirement
+        that needs encrypted.
+
+        Returns:
+            [OrderedDict] Contains various OutputProperty items
+        """
+        return OrderedDict([
+            ('descriptor',
+             OutputProperty(description='a short and unique descriptor for this Lambda function '
+                                        'configuration (ie: abbreviated name)')),
+            ('aws_value',
+             OutputProperty(description='the AWS Lambda function name with the optional qualifier '
+                                        'to use for this Lambda configuration '
+                                        '(ie: function_name:qualifier)',
+                            input_restrictions={' '})),
+        ])
+
+    def dispatch(self, **kwargs):
+        """Send alert to a Lambda function
+
+        The alert gets dumped to a JSON string to be sent to the Lambda function
+
+        Args:
+            **kwargs: consists of any combination of the following items:
+                descriptor [string]: Service descriptor (ie: slack channel, pd integration)
+                rule_name [string]: Name of the triggered rule
+                alert [dict]: Alert relevant to the triggered rule
+        """
+        alert = kwargs['alert']
+        alert_string = json.dumps(alert)
+
+        function_name = self.config[self.__service__][kwargs['descriptor']]
+
+        client = boto3.client('lambda', region_name=self.region)
+        resp = client.invoke(
+            FunctionName=function_name,
+            InvocationType='Event',
+            Payload=alert_string
+        )
+
+        self._log_status(resp)
