@@ -255,9 +255,9 @@ class SlackOutput(StreamOutputBase):
         creds = self._load_creds(kwargs['descriptor'])
         url = os.path.join(creds['url'])
 
-        slack_message = json.dumps({'text': '```{}```'.format(
-            json.dumps(kwargs['alert'], indent=4)
-        )})
+        slack_message = json.dumps({'text': '```StreamAlert Rule Triggered - {}\n{}```'
+                                            .format(kwargs['rule_name'],
+                                                    json.dumps(kwargs['alert'], indent=4))})
 
         resp = self._request_helper(url, slack_message)
         success = self._check_http_response(resp)
