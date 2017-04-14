@@ -143,3 +143,24 @@ resource "aws_iam_role_policy" "streamalert_alert_processor_cloudwatch" {
 }
 EOF
 }
+
+// Allow the Alert Processor to invoke Lambda
+resource "aws_iam_role_policy" "streamalert_alert_processor_lambda" {
+  name = "${var.prefix}_${var.cluster}_streamalert_alert_processor_lambda"
+  role = "${aws_iam_role.streamalert_alert_processor_role.id}"
+
+  policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Action": [
+        "lambda:InvokeFunction"
+      ],
+      "Effect": "Allow",
+      "Resource": "*"
+    }
+  ]
+}
+EOF
+}

@@ -82,7 +82,7 @@ def build_parser():
     #
     output_parser.add_argument(
         '--service',
-        choices=['aws-s3', 'pagerduty', 'phantom', 'slack'],
+        choices=['aws-lambda', 'aws-s3', 'pagerduty', 'phantom', 'slack'],
         help='The name of the service to send alerts to',
         required=True
     )
