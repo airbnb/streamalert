@@ -103,7 +103,6 @@ class PagerDutyOutput(StreamOutputBase):
         values_json = json.dumps({
             'service_key': creds['service_key'],
             'event_type': 'trigger',
-            'incident_key': kwargs['rule_name'],
             'description': message,
             'details': kwargs['alert'],
             'client': 'StreamAlert'
