@@ -20,10 +20,13 @@ module "stream_alert_{{ cluster_name }}" {
 module "cloudwatch_monitoring_{{ cluster_name }}" {
   source           = "modules/tf_stream_alert_monitoring"
   sns_topic_arn   = "${module.stream_alert_{{ cluster_name }}.sns_topic_arn}"
+
   lambda_functions = [
     "${lookup(var.account, "prefix")}_{{ cluster_name }}_streamalert_rule_processor",
     "${lookup(var.account, "prefix")}_{{ cluster_name }}_streamalert_alert_processor"
   ]
+
+  kinesis_stream = "${lookup(var.account, "prefix")}_{{ cluster_name }}_stream_alert_kinesis"
 }
 
 // Kinesis Stream and Firehose to send data to the Lambda function
