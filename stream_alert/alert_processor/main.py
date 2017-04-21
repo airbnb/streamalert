@@ -34,7 +34,10 @@ def handler(event, context):
             has been sent from the main StreamAlert Rule processor function
         context [AWSLambdaContext]: basically a namedtuple of properties from AWS
     """
-    for record in event.get('Records', []):
+    records = event.get('Records', [])
+    LOGGER.info('running alert processor for %d records', len(records))
+
+    for record in records:
         sns_payload = record.get('Sns')
         if not sns_payload:
             continue
@@ -44,11 +47,12 @@ def handler(event, context):
             loaded_sns_message = json.loads(sns_message)
         except ValueError as err:
             LOGGER.error('an error occurred while decoding message to JSON: %s', err)
-            return
+            continue
 
         if not 'default' in loaded_sns_message:
-            LOGGER.error('Malformed SNS: %s', loaded_sns_message)
-            return
+            if not 'AlarmName' in loaded_sns_message:  # do not log for messages related to alarms
+                LOGGER.error('Malformed SNS: %s', loaded_sns_message)
+            continue
 
         run(loaded_sns_message, context)
 
