@@ -125,19 +125,21 @@ class StreamClassifier(object):
             payload.entity: The specific instance of a service which sent the record
             payload.valid_source: Validates the record source
         """
-        # check raw record for either kinesis or s3 keys
-        if 'kinesis' in payload.raw_record:
-            payload.service = 'kinesis'
-        elif 's3' in payload.raw_record:
-            payload.service = 's3'
-
-        # map the entity name from a record
+        # Sns is capitalized below because this is how AWS stores it within the Record
+        # Other services, like s3, are not stored like this. Do not alter it!
         entity_mapper = {
             'kinesis': lambda r: r['eventSourceARN'].split('/')[1],
-            's3': lambda r: r['s3']['bucket']['name']
+            's3': lambda r: r['s3']['bucket']['name'],
+            'Sns': lambda r: r['EventSubscriptionArn'].split(':')[5]
         }
-        # get the entity name
-        payload.entity = entity_mapper[payload.service](payload.raw_record)
+
+        # check raw record for either kinesis, s3, or sns keys
+        for key, map_function in entity_mapper.iteritems():
+            if key in payload.raw_record:
+                payload.service = key.lower()
+                # map the entity name from a record
+                payload.entity = map_function(payload.raw_record)
+                break
 
         # if the payload's entity is found in the config and contains logs
         if self._payload_logs(payload):

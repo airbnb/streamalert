@@ -15,7 +15,7 @@
           "environment": "qa"
         }
       },
-      "description": "user logging in from an untrusted subnet",
+      "description": "user logging in from an untrusted subnet (10.4.0.16)",
       "trigger": true,
       "source": "prefix_cluster1_stream_alert_kinesis",
       "service": "kinesis"
@@ -35,7 +35,7 @@
           "environment": "qa"
         }
       },
-      "description": "user logging in from the trusted subnet",
+      "description": "user logging in from the trusted subnet (10.2.0.16)",
       "trigger": false,
       "source": "prefix_cluster1_stream_alert_kinesis",
       "service": "kinesis"
@@ -55,7 +55,7 @@
           "environment": "qa"
         }
       },
-      "description": "user logging in from an untrusted subnet",
+      "description": "user logging in from an untrusted subnet (10.54.0.21)",
       "trigger": true,
       "source": "example_s3_bucket",
       "service": "s3"
@@ -75,10 +75,50 @@
           "environment": "qa"
         }
       },
-      "description": "user logging in from the trusted subnet",
+      "description": "user logging in from the trusted subnet (10.2.0.99)",
       "trigger": false,
       "source": "example_s3_bucket",
       "service": "s3"
+    },
+    {
+      "data": {
+        "name": "logged_in_users",
+        "hostIdentifier": "host3",
+        "calendarTime": "Tue Feb 24 12:20:48 UTC 2017",
+        "unixTime": "1488309540",
+        "columns": {
+          "host": "10.99.0.210",
+          "user": "tom"
+        },
+        "action": "added",
+        "decorations": {
+          "environment": "qa"
+        }
+      },
+      "description": "user logging in from an untrusted subnet (10.99.0.210)",
+      "trigger": true,
+      "source": "example_sns_topic",
+      "service": "sns"
+    },
+    {
+      "data": {
+        "name": "logged_in_users",
+        "hostIdentifier": "host4",
+        "calendarTime": "Tue Feb 21 20:16:55 UTC 2017",
+        "unixTime": "1488309540",
+        "columns": {
+          "host": "10.2.0.244",
+          "user": "charlie"
+        },
+        "action": "added",
+        "decorations": {
+          "environment": "qa"
+        }
+      },
+      "description": "user logging in from the trusted subnet (10.2.0.244)",
+      "trigger": false,
+      "source": "example_sns_topic",
+      "service": "sns"
     }
   ]
 }

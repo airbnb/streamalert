@@ -15,7 +15,7 @@
           "environment": "qa"
         }
       },
-      "description": "user not in the whitelist",
+      "description": "user not in the whitelist (john)",
       "trigger": true,
       "source": "prefix_cluster1_stream_alert_kinesis",
       "service": "kinesis"
@@ -35,7 +35,7 @@
           "environment": "qa"
         }
       },
-      "description": "user in the whitelist",
+      "description": "user in the whitelist (alice)",
       "trigger": false,
       "source": "prefix_cluster1_stream_alert_kinesis",
       "service": "kinesis"
@@ -55,7 +55,7 @@
           "environment": "qa"
         }
       },
-      "description": "user not in the whitelist",
+      "description": "user not in the whitelist (sam)",
       "trigger": true,
       "source": "example_s3_bucket",
       "service": "s3"
@@ -75,10 +75,50 @@
           "environment": "qa"
         }
       },
-      "description": "user in the whitelist",
+      "description": "user in the whitelist (bob)",
       "trigger": false,
       "source": "example_s3_bucket",
       "service": "s3"
+    },
+    {
+      "data": {
+        "name": "logged_in_users",
+        "hostIdentifier": "host5",
+        "calendarTime": "Tue Feb 12 10:12:55 UTC 2017",
+        "unixTime": "1488309540",
+        "columns": {
+          "host": "10.2.0.16",
+          "user": "alice"
+        },
+        "action": "added",
+        "decorations": {
+          "environment": "qa"
+        }
+      },
+      "description": "user not in the whitelist (alice)",
+      "trigger": false,
+      "source": "example_sns_topic",
+      "service": "sns"
+    },
+    {
+      "data": {
+        "name": "logged_in_users",
+        "hostIdentifier": "host6",
+        "calendarTime": "Tue Feb 11 11:11:11 UTC 2017",
+        "unixTime": "1488309540",
+        "columns": {
+          "host": "10.2.0.16",
+          "user": "tom"
+        },
+        "action": "added",
+        "decorations": {
+          "environment": "qa"
+        }
+      },
+      "description": "user in the whitelist (tom)",
+      "trigger": true,
+      "source": "example_sns_topic",
+      "service": "sns"
     }
   ]
 }

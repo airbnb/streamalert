@@ -13,6 +13,13 @@
       "trigger": true,
       "source": "example_s3_bucket",
       "service": "s3"
+    },
+    {
+      "data": "Jan 01 2017,1487095529,test-host-2,this is test data for rules,cluster 6",
+      "description": "host is test-host-2",
+      "trigger": true,
+      "source": "example_sns_topic",
+      "service": "sns"
     }
   ]
 }
