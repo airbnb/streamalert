@@ -1,0 +1,5 @@
+{
+  "aws-sns": {
+    "sample_sns": "arn:aws:sns:us-region-1:111111111111:topicname"
+  }
+}

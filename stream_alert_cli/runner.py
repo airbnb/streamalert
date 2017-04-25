@@ -204,7 +204,8 @@ def tf_runner(**kwargs):
     refresh_state = kwargs.get('refresh_state', True)
     tf_action_index = 1  # The index to the terraform 'action'
 
-    tf_opts = ['-var-file=../{}'.format(CONFIG.filename)]
+    var_files = {CONFIG.filename, 'conf/outputs.json', 'conf/inputs.json'}
+    tf_opts = ['-var-file=../{}'.format(x) for x in var_files]
     tf_targets = ['-target={}'.format(x) for x in targets]
     tf_command = ['terraform', 'plan'] + tf_opts + tf_targets
     if action == 'destroy':
