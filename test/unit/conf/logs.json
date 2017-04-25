@@ -128,10 +128,12 @@
       "host": "string",
       "message": "string"
     },
-    "hints": {
-      "message": [
-        "*keyword1*"
-      ]
+    "configuration": {
+      "log_patterns": {
+        "message": [
+          "*keyword1*"
+        ]
+      }
     }
   },
   "test_log_type_csv_nested": {
@@ -149,15 +151,19 @@
         "result": "string"
       }
     },
-    "hints": {
-      "env": [
-        "Corp"
-      ],
-      "host": [
-        "host*.prod.test"
-      ],
-      "message": {
-        "role": "*-server*"
+    "configuration": {
+      "log_patterns": {
+        "env": [
+          "Corp"
+        ],
+        "host": [
+          "host*.prod.test"
+        ],
+        "message": {
+          "role": [
+            "*-server*"
+          ]
+        }
       }
     }
   },

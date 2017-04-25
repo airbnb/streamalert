@@ -4,7 +4,7 @@ from stream_alert.rule_processor.parsers import get_parser
 import json
 
 from nose.tools import (
-    assert_equal,    
+    assert_equal,
 )
 
 
@@ -35,8 +35,8 @@ class TestJSONParser(object):
         schema = kwargs['schema']
         options = kwargs['options']
 
-        json_parser = self.parser_class(data, schema, options)
-        parsed_result = json_parser.parse()
+        json_parser = self.parser_class(schema, options)
+        parsed_result = json_parser.parse(data)
         return parsed_result
 
     def test_multi_nested_json(self):
@@ -46,11 +46,8 @@ class TestJSONParser(object):
             'name': 'string',
             'result': 'string'
         }
-        options = {
-            'configuration': {
-                'json_path': 'profiles.controls[*]'
-            }
-        }
+        options = {'json_path': 'profiles.controls[*]'}
+
         data = json.dumps({
             'profiles': {
                 'controls': [{
@@ -69,9 +66,8 @@ class TestJSONParser(object):
     def test_inspec(self):
         """Parse Inspec JSON"""
         schema = self.config['logs']['test_inspec']['schema']
-        options = {
-            'configuration': self.config['logs']['test_inspec']['configuration']
-        }
+        options = self.config['logs']['test_inspec']['configuration']
+
         # load fixture file
         with open('test/unit/fixtures/inspec.json', 'r') as fixture_file:
             data = fixture_file.readlines()
@@ -90,9 +86,8 @@ class TestJSONParser(object):
     def test_cloudtrail(self):
         """Parse Cloudtrail JSON"""
         schema = self.config['logs']['test_cloudtrail']['schema']
-        options = {
-            'configuration': self.config['logs']['test_cloudtrail']['configuration']
-        }
+        options = self.config['logs']['test_cloudtrail']['configuration']
+
         # load fixture file
         with open('test/unit/fixtures/cloudtrail.json', 'r') as fixture_file:
             data = fixture_file.readlines()
@@ -147,13 +142,11 @@ class TestJSONParser(object):
             'columns': {}
         }
         options = {
-            'configuration': {
-                'optional_top_level_keys': {
-                    'ids': [],
-                    'results': {},
-                    'host-id': 'integer',
-                    'valid': 'boolean'
-                }
+            'optional_top_level_keys': {
+                'ids': [],
+                'results': {},
+                'host-id': 'integer',
+                'valid': 'boolean'
             }
         }
         data = json.dumps({

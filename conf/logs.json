@@ -27,10 +27,12 @@
       "source": "string"
     },
     "parser": "csv",
-    "hints": {
-      "source": [
-        "cluster *"
-      ]
+    "configuration": {
+      "log_patterns": {
+        "source": [
+          "cluster *"
+        ]
+      } 
     }
   },
   "kv_log": {
@@ -210,6 +212,90 @@
         "logGroup": "string",
         "logStream": "string",
         "owner": "integer"
+      }
+    }
+  },
+  "carbonblack:event01": {
+    "schema": {
+      "cb_server": "string",
+      "computer_name": "string",
+      "event_type": "string",
+      "md5": "string",
+      "pid": "integer",
+      "process_guid": "string",
+      "sensor_id": "integer",
+      "timestamp": "integer",
+      "type": "string",
+      "test": {
+        "key01": "string",
+        "key02": "string"
+      }
+    },
+    "parser": "json",
+    "configuration": {
+      "log_patterns": {
+        "type": [
+          "event01"
+        ],
+        "test": {
+          "key01": [
+            "value11"
+          ]
+        }
+      }
+    }
+  },
+  "carbonblack:event02": {
+    "schema": {
+      "cb_server": "string",
+      "computer_name": "string",
+      "event_type": "string",
+      "md5": "string",
+      "pid": "integer",
+      "process_guid": "string",
+      "sensor_id": "integer",
+      "timestamp": "integer",
+      "type": "string",
+      "test": {
+        "key01": "string",
+        "key02": "string"
+      }
+    },
+    "parser": "json",
+    "configuration": {
+      "log_patterns": {
+        "type": [
+          "event02"
+        ],
+        "test": {
+          "key01": [
+            "value01"
+          ]
+        }
+      }
+    }
+  },
+  "carbonblack:nested_matching": {
+    "schema": {
+      "computer_name": "string",
+      "event_type": "string",
+      "md5": "string",
+      "pid": "integer",
+      "timestamp": "integer",
+      "type": "string",
+      "nest_test": {
+        "key01": "string",
+        "key02": "string"
+      }
+    },
+    "parser": "json",
+    "configuration": {
+      "log_patterns": {
+        "nest_test": {
+          "key01": [
+            "value01"
+          ]
+        }
       }
     }
   }

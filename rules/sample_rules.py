@@ -131,3 +131,28 @@ def sample_cloudwatch_flog_log_rule(rec):
         rec['destport'] == 22 and
         rec['action'] == 'ACCEPT'
     )
+
+@rule(logs=['carbonblack:event01'],
+      matchers=[],
+      outputs=['aws-s3:sample.bucket'])
+def carbonblack_event_01(rec):
+    """CarbonBlack event01 Matched MD5"""
+    return rec['md5'] == '0BF4D085933DCF869D7FFFFFFFFF1111'
+
+
+@rule(logs=['carbonblack:event02'],
+      matchers=[],
+      outputs=['aws-s3:sample.bucket'])
+def carbonblack_event_02(rec):
+    """CarbonBlack event02 Matched MD5"""
+    return rec['md5'] == '0BF4D085933DCF869D7FFFFFFFFF4444'
+
+
+@rule(logs=['carbonblack:nested_matching'],
+      matchers=[],
+      outputs=['aws-s3:sample.bucket'])
+def sample_json_nested_matching(rec):
+    """Nested JSON Matched Computer Name"""
+    return (rec['computer_name'] == 'ml134134134foobar' and
+            rec['nest_test']['key01'] == 'value01'
+    )

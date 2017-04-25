@@ -140,6 +140,12 @@ class TestStreamRules(object):
         def chef_logs(rec):
             return rec['application'] == 'chef'
 
+        @rule(matchers=['foobar', 'prod'],
+              logs=['test_log_type_json_nested_with_data'],
+              outputs=['pagerduty:sample_integration'])
+        def test_nest(rec):
+            return rec['data']['source'] == 'eu'
+
         kinesis_data = {
             'date': 'Dec 01 2016',
             'unixtime': '1483139547',
@@ -161,15 +167,19 @@ class TestStreamRules(object):
         alerts = StreamRules.process(payload)
 
         # check alert output
-        assert_equal(len(alerts), 2)
+        assert_equal(len(alerts), 3)
+
+        # alert 2 tests
+        assert_equal(alerts[2]['rule_name'], 'chef_logs')
+        assert_equal(alerts[2]['metadata']['outputs'], ['pagerduty:sample_integration'])
 
         # alert 1 tests
-        assert_equal(alerts[1]['rule_name'], 'chef_logs')
-        assert_equal(alerts[1]['metadata']['outputs'], ['pagerduty:sample_integration'])
+        assert_equal(alerts[1]['rule_name'], 'minimal_rule')
+        assert_equal(alerts[1]['metadata']['outputs'], ['s3:sample.bucket'])
 
         # alert 0 tests
-        assert_equal(alerts[0]['rule_name'], 'minimal_rule')
-        assert_equal(alerts[0]['metadata']['outputs'], ['s3:sample.bucket'])
+        assert_equal(alerts[0]['rule_name'], 'test_nest')
+        assert_equal(alerts[0]['metadata']['outputs'], ['pagerduty:sample_integration'])
 
     def test_process_req_subkeys(self):
         """Rule Engine - Req Subkeys"""

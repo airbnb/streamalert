@@ -122,7 +122,7 @@ class TestStreamPayload(object):
             'test_log_type_csv_nested',
             'test_log_type_kv_auditd'
         }
-        metadata = classifier.log_metadata(payload)
+        metadata = classifier._log_metadata()
 
         # service, entity, metadata test
         assert_equal(payload.service, 'kinesis')
@@ -143,7 +143,7 @@ class TestStreamPayload(object):
             'test_log_type_json_nested_osquery',
             'test_log_type_syslog'
         }
-        metadata = classifier.log_metadata(payload)
+        metadata = classifier._log_metadata()
 
         # service, entity, metadata test
         assert_equal(payload.service, 'kinesis')
