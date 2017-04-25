@@ -20,7 +20,7 @@ limitations under the License.
 import base64
 import json
 
-from collections import OrderedDict
+from collections import OrderedDict, namedtuple
 
 from nose.tools import (
     assert_equal,
@@ -33,7 +33,8 @@ from nose.tools import (
 from stream_alert.rule_processor.config import (
     ConfigError,
     load_config,
-    validate_config
+    validate_config,
+    load_env
 )
 
 def test_validate_config_valid():
@@ -125,4 +126,12 @@ def test_validate_config_no_logs():
     }
 
     validate_result = validate_config(config)
-    
+
+def test_load_env():
+    """Config Environment Validator"""
+    context = namedtuple('Context', ['invoked_function_arn'])
+    context.invoked_function_arn = 'arn:aws:lambda:us-east-1:555555555555:function:streamalert_testing:production'
+
+    env = load_env(context)
+    assert_equal(env['lambda_function_name'], 'streamalert_testing')
+    assert_equal(env['lambda_alias'], 'production')
