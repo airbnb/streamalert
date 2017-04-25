@@ -76,8 +76,7 @@ class StreamAlert(object):
     def kinesis_process(self, payload, classifier):
         """Process Kinesis data for alerts"""
         data = StreamPreParsers.pre_parse_kinesis(payload.raw_record)
-        classifier.classify_record(payload, data)
-        self.process_alerts(payload)
+        self.process_alerts(classifier, payload, data)
 
     def s3_process(self, payload, classifier):
         """Process S3 data for alerts"""
@@ -85,14 +84,12 @@ class StreamAlert(object):
         for line in s3_file_lines:
             data = line.rstrip()
             payload.refresh_record(data)
-            classifier.classify_record(payload, data)
-            self.process_alerts(payload)
+            self.process_alerts(classifier, payload, data)
 
     def sns_process(self, payload, classifier):
         """Process SNS data for alerts"""
         data = StreamPreParsers.pre_parse_sns(payload.raw_record)
-        classifier.classify_record(payload, data)
-        self.process_alerts(payload)
+        self.process_alerts(classifier, payload, data)
 
     def send_alerts(self, env, payload):
         """Send generated alerts to correct places"""
@@ -105,8 +102,9 @@ class StreamAlert(object):
         elif payload.valid:
             logger.debug('Valid data, no alerts')
 
-    def process_alerts(self, payload):
+    def process_alerts(self, classifier, payload, data):
         """Process records for alerts"""
+        classifier.classify_record(payload, data)
         if payload.valid:
             alerts = StreamRules.process(payload)
             if alerts:
