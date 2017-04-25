@@ -9,9 +9,9 @@ from stream_alert.rule_processor.rules_engine import StreamRules
 from stream_alert.rule_processor.sink import StreamSink
 
 logging.basicConfig()
-logger = logging.getLogger('StreamAlert')
 level = os.environ.get('LOGGER_LEVEL', 'INFO')
-logger.setLevel(level.upper())
+LOGGER = logging.getLogger('StreamAlert')
+LOGGER.setLevel(level.upper())
 
 
 class StreamAlert(object):
@@ -43,7 +43,7 @@ class StreamAlert(object):
         Returns:
             None
         """
-        logger.debug('Number of Records: %d', len(event.get('Records', [])))
+        LOGGER.debug('Number of Records: %d', len(event.get('Records', [])))
 
         config = load_config()
         env = load_env(context)
@@ -51,34 +51,32 @@ class StreamAlert(object):
         for record in event.get('Records', []):
             payload = StreamPayload(raw_record=record)
             classifier = StreamClassifier(config=config)
-            classifier.map_source(payload)
 
-            # If the kinesis stream or s3 bucket is not in our config,
-            # go onto the next record
-            if not payload.valid_source:
+            # If the kinesis stream or s3 bucket is not in our config, go onto the next record
+            if not classifier.map_source(payload):
                 continue
 
             if payload.service == 's3':
-                self.s3_process(payload, classifier)
+                self._s3_process(payload, classifier)
             elif payload.service == 'kinesis':
-                self.kinesis_process(payload, classifier)
+                self._kinesis_process(payload, classifier)
             elif payload.service == 'sns':
-                self.sns_process(payload, classifier)
+                self._sns_process(payload, classifier)
             else:
-                logger.info('Unsupported service: %s', payload.service)
+                LOGGER.info('Unsupported service: %s', payload.service)
 
         # returns the list of generated alerts
         if self.return_alerts:
             return self.alerts
         # send alerts to SNS
-        self.send_alerts(env, payload)
+        self._send_alerts(env, payload)
 
-    def kinesis_process(self, payload, classifier):
+    def _kinesis_process(self, payload, classifier):
         """Process Kinesis data for alerts"""
         data = StreamPreParsers.pre_parse_kinesis(payload.raw_record)
         self.process_alerts(classifier, payload, data)
 
-    def s3_process(self, payload, classifier):
+    def _s3_process(self, payload, classifier):
         """Process S3 data for alerts"""
         s3_file_lines = StreamPreParsers.pre_parse_s3(payload.raw_record)
         for line in s3_file_lines:
@@ -86,21 +84,21 @@ class StreamAlert(object):
             payload.refresh_record(data)
             self.process_alerts(classifier, payload, data)
 
-    def sns_process(self, payload, classifier):
+    def _sns_process(self, payload, classifier):
         """Process SNS data for alerts"""
         data = StreamPreParsers.pre_parse_sns(payload.raw_record)
         self.process_alerts(classifier, payload, data)
 
-    def send_alerts(self, env, payload):
+    def _send_alerts(self, env, payload):
         """Send generated alerts to correct places"""
         if self.alerts:
             if env['lambda_alias'] == 'development':
-                logger.info('%s alerts triggered', len(self.alerts))
-                logger.info('\n%s\n', json.dumps(self.alerts, indent=4))
+                LOGGER.info('%s alerts triggered', len(self.alerts))
+                LOGGER.info('\n%s\n', json.dumps(self.alerts, indent=4))
             else:
                 StreamSink(self.alerts, env).sink()
         elif payload.valid:
-            logger.debug('Valid data, no alerts')
+            LOGGER.debug('Valid data, no alerts')
 
     def process_alerts(self, classifier, payload, data):
         """Process records for alerts"""
@@ -110,6 +108,6 @@ class StreamAlert(object):
             if alerts:
                 self.alerts.extend(alerts)
         else:
-            logger.error('Invalid data: %s\n%s',
+            LOGGER.error('Invalid data: %s\n%s',
                          payload,
                          json.dumps(payload.raw_record, indent=4))

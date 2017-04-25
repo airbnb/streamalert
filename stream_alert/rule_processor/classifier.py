@@ -21,7 +21,7 @@ from collections import OrderedDict
 from stream_alert.rule_processor.parsers import get_parser
 
 logging.basicConfig()
-logger = logging.getLogger('StreamAlert')
+LOGGER = logging.getLogger('StreamAlert')
 
 class InvalidSchemaError(Exception):
     """Raise this exception if a declared schema field type does not match
@@ -37,9 +37,6 @@ class StreamPayload(object):
 
         valid: A boolean representing if the record is deemed valid by
             parsing and classification.
-
-        valid_source: A boolean of if the record source is declared in
-            the sources.json configuration file.
 
         service: The aws service where the record originated from. Can be
             either S3 or kinesis.
@@ -70,21 +67,12 @@ class StreamPayload(object):
         self.type = None
         self.log_source = None
         self.records = None
-
         self.valid = False
-        self.valid_source = None
 
     def __repr__(self):
-        repr_str = ('<StreamPayload valid:{} '
-                    'log_source:{} '
-                    'entity:{} '
-                    'type:{} '
-                    'record:{} >'
-                   ).format(self.valid,
-                            self.log_source,
-                            self.entity,
-                            self.type,
-                            self.records)
+        repr_str = ('<StreamPayload valid:{} log_source:{} entity:{} '
+                    'type:{} record:{}>').format(self.valid, self.log_source,
+                                                 self.entity, self.type, self.records)
 
         return repr_str
 
@@ -98,17 +86,18 @@ class StreamPayload(object):
         Args:
             new_record (str): A new raw record to be parsed
         """
-        self.raw_record = None
-        self.records = None
-        self.valid = None
-        self.type = None
         self.raw_record = new_record
+        self.type = None
+        self.log_source = None
+        self.records = None
+        self.valid = False
 
 
 class StreamClassifier(object):
     """Classify, map source, and parse a raw record into its declared type."""
     def __init__(self, **kwargs):
         self.config = kwargs['config']
+        self._entity_log_sources = []
 
     def map_source(self, payload):
         """Map a record to its originating AWS service and entity.
@@ -123,7 +112,6 @@ class StreamClassifier(object):
         Sets:
             payload.service: The AWS service which sent the record
             payload.entity: The specific instance of a service which sent the record
-            payload.valid_source: Validates the record source
         """
         # Sns is capitalized below because this is how AWS stores it within the Record
         # Other services, like s3, are not stored like this. Do not alter it!
@@ -142,19 +130,20 @@ class StreamClassifier(object):
                 break
 
         # if the payload's entity is found in the config and contains logs
-        if self._payload_logs(payload):
-            payload.valid_source = True
+        self._entity_log_sources = self._payload_logs(payload)
+
+        return self._entity_log_sources and len(self._entity_log_sources) > 0
 
     def _payload_logs(self, payload):
-        # get all logs for the configured service/enetity (s3 or kinesis)
+        # get all logs for the configured service/entity (s3 or kinesis)
         all_service_entities = self.config['sources'][payload.service]
         config_entity = all_service_entities.get(payload.entity)
         if config_entity:
             return config_entity['logs']
-        else:
-            return False
 
-    def log_metadata(self, payload):
+        return False
+
+    def _log_metadata(self):
         """Return a mapping of all log sources to a given entity with attributes.
 
         Args:
@@ -170,21 +159,19 @@ class StreamClassifier(object):
                 'log_source_n': {
                     'parser': 'csv',
                     'keys': ['field1', 'field2', ..., 'fieldn'],
-                    'hints': ['*hint1*']
+                    'log_patterns': ['*pattern1*']
                 }
             }
         """
-        metadata = {}
+        config_logs = self.config['logs']
 
-        all_config_logs = self.config['logs']
-        entity_log_sources = self._payload_logs(payload)
-        for log_source, log_source_attributes in all_config_logs.iteritems():
-            source_pieces = log_source.split(':')
-            category = source_pieces[0]
-            if category in entity_log_sources:
-                metadata[log_source] = log_source_attributes
+        for log_source in config_logs.keys():
+            category = log_source.split(':')[0]
+            # Remove this log type if it's not one of the sources for this entity
+            if not category in self._entity_log_sources:
+                config_logs.pop(log_source)
 
-        return metadata
+        return config_logs
 
     def classify_record(self, payload, data):
         """Classify and type raw record passed into StreamAlert.
@@ -207,7 +194,7 @@ class StreamClassifier(object):
                 payload.records]):
             payload.valid = True
 
-        logger.debug('payload: %s', payload)
+        LOGGER.debug('payload: %s', payload)
 
     def _parse(self, payload, data):
         """Parse a record into a declared type.
@@ -224,54 +211,82 @@ class StreamClassifier(object):
         Returns:
             A boolean representing the success of the parse.
         """
-        log_metadata = self.log_metadata(payload)
+        log_metadata = self._log_metadata()
         # TODO(jack) make this process more efficient.
         # Separate out parsing with key matching.
         # Right now, if keys match but the type/parser is correct,
         # it has to start over
+        passes = []
         for log_name, attributes in log_metadata.iteritems():
             # Short circuit parser determination
-            if not payload.type:
-                parser_name = attributes['parser']
-            else:
-                parser_name = payload.type
-
-            options = {}
-            options['hints'] = attributes.get('hints', {})
-            options['configuration'] = attributes.get('configuration', {})
-            options['parser'] = parser_name
+            parser_name = payload.type or attributes['parser']
 
             schema = attributes['schema']
+            options = attributes.get('configuration', {})
 
             # Setup the parser class
             parser_class = get_parser(parser_name)
-            parser = parser_class(data, schema, options)
-            options['nested_keys'] = parser.__dict__.get('nested_keys')
-            # A list of parsed records
-            parsed_data = parser.parse()
+            parser = parser_class(schema, options)
 
-            # Set the payload type to short circuit parser determination
-            if parser.payload_type:
-                payload.type = parser.payload_type
+            # Get a list of parsed records
+            parsed_data = parser.parse(data)
 
+            LOGGER.debug('schema: %s', schema)
             if parsed_data:
-                logger.debug('log name: %s', log_name)
-                logger.debug('parsed_data: %s', parsed_data)
-                typed_data = []
-                for data in parsed_data:
-                    # Convert data types per the schema
-                    # Use the parser.schema due to updates caused by
-                    #   configuration settings such as envelope and optional_keys
-                    typed_data.append(self._convert_type(data, parser.schema, options))
+                passes.append((log_name, parser, parsed_data))
 
-                if typed_data:
-                    payload.log_source = log_name
-                    payload.type = parser_name
-                    payload.records = typed_data
-                    return True
-        return False
+        if not passes:
+            return False
 
-    def _convert_type(self, parsed_data, schema, options):
+        valid_parse = passes[0]
+        if len(passes) > 1:
+            matched_parses = []
+            for i, valid_parses in enumerate(passes):
+                parser = valid_parses[1]
+                for data in valid_parses[2]:
+                    if parser.matched_log_pattern(data, parser.options.get('log_patterns', {})):
+                        matched_parses.append(passes[i])
+                        break
+                    else:
+                        LOGGER.debug('log pattern matching failed for schema: %s', parser.schema)
+
+            if len(matched_parses) != 0:
+                valid_parse = matched_parses[0]
+                if len(matched_parses) > 1:
+                    LOGGER.error('log patterns matched for multiple schemas: %s',
+                                 ', '.join(name for name, _, _ in matched_parses))
+                    LOGGER.error('proceeding with schema for: %s', valid_parse[0])
+            else:
+                LOGGER.error('log classification matched for multiple schemas: %s',
+                             ', '.join(name for name, _, _ in passes))
+                LOGGER.error('proceeding with schema for: %s', passes[0][0])
+
+        log_name, parser, parsed_data = valid_parse[0], valid_parse[1], valid_parse[2]
+        LOGGER.debug('log_name: %s', log_name)
+        LOGGER.debug('parsed_data: %s', parsed_data)
+
+        typed_data = []
+        for data in parsed_data:
+            # Convert data types per the schema
+            # Use the parser.schema due to updates caused by
+            #   configuration settings such as envelope and optional_keys
+            converted_data = self._convert_type(data, parser.type(), parser.schema, parser.options)
+            if not converted_data:
+                payload.valid = False
+                break
+
+            typed_data.append(converted_data)
+
+        if not typed_data:
+            return False
+
+        payload.log_source = log_name
+        payload.type = parser.type()
+        payload.records = parsed_data
+
+        return True
+
+    def _convert_type(self, payload, parser_type, schema, options):
         """Convert a parsed payload's values into their declared types.
 
         If the schema is incorrectly defined for a particular field,
@@ -287,7 +302,6 @@ class StreamClassifier(object):
             parsed dict payload with typed values
         """
         # check for list types here
-        payload = parsed_data
         for key, value in schema.iteritems():
             key = str(key)
             # if the schema value is declared as string
@@ -299,39 +313,44 @@ class StreamClassifier(object):
                 try:
                     payload[key] = int(payload[key])
                 except ValueError:
-                    logger.error('Invalid schema - %s is not an int', key)
+                    LOGGER.error('Invalid schema - %s is not an int', key)
                     return False
 
             elif value == 'float':
                 try:
                     payload[key] = float(payload[key])
                 except ValueError:
-                    logger.error('Invalid schema - %s is not a float', key)
+                    LOGGER.error('Invalid schema - %s is not a float', key)
                     return False
 
             elif value == 'boolean':
                 payload[key] = str(payload[key]).lower() == 'true'
 
+            elif isinstance(value, OrderedDict):
+                # allow for any value to exist in the map
+                if len(value) != 0:
+                    # handle nested csv
+                    # skip the 'stream_log_envelope' key that we've added during parsing
+                    if all((key == 'stream_log_envelope', isinstance(payload[key], dict))):
+                        continue
+
+                    if 'log_patterns' in options.keys():
+                        options['log_patterns'] = options['log_patterns'][key]
+
+                    sub_schema = schema[key]
+                    parser = get_parser(parser_type)(sub_schema, options)
+                    parsed_nested_key = parser.parse(payload[key])
+
+                    # Call the first element since a list is returned
+                    if parsed_nested_key:
+                        payload[key] = parsed_nested_key[0]
+
+                    self._convert_type(payload[key], parser_type, sub_schema, options)
+
             elif isinstance(value, list):
                 pass
 
-            elif isinstance(value, (OrderedDict)):
-                # allow for any value to exist in the map
-                if len(value) == 0:
-                    pass
-                else:
-                    # handle nested csv
-                    if isinstance(payload[key], str):
-                        options['hints'] = options['hints'][key]
-                        parse_csv = get_parser('csv')
-                        parsed_nested_key = parse_csv(payload[key],
-                                                      schema[key],
-                                                      options).parse()
-                        # Call the first element since a list is returned
-                        payload[key] = parsed_nested_key[0]
-
-                    self._convert_type(payload[key], schema[key], options)
             else:
-                logger.error('Invalid declared type - %s', value)
+                LOGGER.error('Unsupported schema type: %s', value)
 
         return payload
