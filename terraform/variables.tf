@@ -1,20 +1,35 @@
 variable "account" {
-  type = "map"
+  type    = "map"
   default = {}
 }
 
 variable "alert_processor_config" {
-  type = "map"
+  type    = "map"
   default = {}
 }
 
 variable "alert_processor_lambda_config" {
-  type = "map"
+  type    = "map"
   default = {}
 }
 
 variable "alert_processor_versions" {
-  type = "map"
+  type    = "map"
+  default = {}
+}
+
+variable "aws-lambda" {
+  type    = "map"
+  default = {}
+}
+
+variable "aws-s3" {
+  type    = "map"
+  default = {}
+}
+
+variable "aws-sns" {
+  type    = "map"
   default = {}
 }
 
@@ -39,21 +54,21 @@ variable "kinesis_streams_config" {
 }
 
 variable "rule_processor_config" {
-  type = "map"
+  type    = "map"
   default = {}
 }
 
 variable "rule_processor_lambda_config" {
-  type = "map"
+  type    = "map"
   default = {}
 }
 
 variable "rule_processor_versions" {
-  type = "map"
+  type    = "map"
   default = {}
 }
 
 variable "terraform" {
-  type = "map"
+  type    = "map"
   default = {}
 }

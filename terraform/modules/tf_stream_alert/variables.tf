@@ -47,3 +47,18 @@ variable "alert_processor_versions" {
   type    = "map"
   default = {}
 }
+
+variable "output_lambda_functions" {
+  type    = "map"
+  default = {}
+}
+
+variable "output_s3_buckets" {
+  type    = "map"
+  default = {}
+}
+
+variable "input_sns_topics" {
+  type    = "map"
+  default = {}
+}

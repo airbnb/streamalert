@@ -20,6 +20,17 @@ resource "aws_lambda_alias" "rule_processor_production" {
   function_version = "${var.rule_processor_versions["${var.cluster}"]}"
 }
 
+// Allow SNS to invoke the StreamAlert Output Processor
+resource "aws_lambda_permission" "sns_inputs" {
+  count         = "${length(keys(var.input_sns_topics))}"
+  statement_id  = "AllowExecutionFromSNS_${element(keys(var.input_sns_topics), count.index)}"
+  action        = "lambda:InvokeFunction"
+  function_name = "${aws_lambda_function.streamalert_rule_processor.arn}"
+  principal     = "sns.amazonaws.com"
+  source_arn    = "${lookup(var.input_sns_topics, element(keys(var.input_sns_topics), count.index))}"
+  qualifier     = "production"
+}
+
 // AWS Lambda Function: StreamAlert Alert Processor
 //    Send alerts to declared outputs
 resource "aws_lambda_function" "streamalert_alert_processor" {

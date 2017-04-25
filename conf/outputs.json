@@ -1,14 +1,17 @@
 {
-    "aws-s3": {
-        "sample.bucket": "sample_bucket_name"
-    },
-    "pagerduty": [
-        "sample_integration"
-    ],
-    "phantom": [
-        "sample_integration"
-    ],
-    "slack": [
-        "sample_channel"
-    ]
+  "aws-s3": {
+    "sample.bucket": "sample_bucket_name"
+  },
+  "aws-lambda": {
+    "sample_lambda": "arn:aws:lambda:region:account-id:function:function-name"
+  },
+  "pagerduty": [
+    "sample_integration"
+  ],
+  "phantom": [
+    "sample_integration"
+  ],
+  "slack": [
+    "sample_channel"
+  ]
 }

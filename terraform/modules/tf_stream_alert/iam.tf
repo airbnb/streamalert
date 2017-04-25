@@ -146,8 +146,9 @@ EOF
 
 // Allow the Alert Processor to invoke Lambda
 resource "aws_iam_role_policy" "streamalert_alert_processor_lambda" {
-  name = "${var.prefix}_${var.cluster}_streamalert_alert_processor_lambda"
-  role = "${aws_iam_role.streamalert_alert_processor_role.id}"
+  count = "${length(keys(var.output_lambda_functions))}"
+  name  = "${var.prefix}_${var.cluster}_streamalert_alert_processor_lambda_${element(keys(var.output_lambda_functions), count.index)}"
+  role  = "${aws_iam_role.streamalert_alert_processor_role.id}"
 
   policy = <<EOF
 {
@@ -158,7 +159,31 @@ resource "aws_iam_role_policy" "streamalert_alert_processor_lambda" {
         "lambda:InvokeFunction"
       ],
       "Effect": "Allow",
-      "Resource": "*"
+      "Resource": "${lookup(var.output_lambda_functions, element(keys(var.output_lambda_functions), count.index))}"
+    }
+  ]
+}
+EOF
+}
+
+// Allow the Alert Processor to send to arbitrary S3 buckets as outputs
+resource "aws_iam_role_policy" "streamalert_alert_processor_s3_outputs" {
+  count = "${length(keys(var.output_s3_buckets))}"
+  name  = "${var.prefix}_${var.cluster}_streamalert_alert_processor_s3_output_${element(keys(var.output_s3_buckets), count.index)}"
+  role  = "${aws_iam_role.streamalert_alert_processor_role.id}"
+
+  policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Action": [
+        "s3:PutObject",
+        "s3:PutObjectAcl",
+        "s3:ListBucket"
+      ],
+      "Effect": "Allow",
+      "Resource": "arn:aws:s3:::${lookup(var.output_s3_buckets, element(keys(var.output_s3_buckets), count.index))}"
     }
   ]
 }
