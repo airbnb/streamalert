@@ -104,7 +104,7 @@ class PagerDutyOutput(StreamOutputBase):
             'service_key': creds['service_key'],
             'event_type': 'trigger',
             'description': message,
-            'details': kwargs['alert'],
+            'details': kwargs['alert']['record'],
             'client': 'StreamAlert'
         })
 
@@ -196,13 +196,15 @@ class PhantomOutput(StreamOutputBase):
         container_url = os.path.join(creds['url'], 'rest/container/')
         container_id = self._setup_container(kwargs['rule_name'], container_url, headers)
 
+        LOGGER.debug('sending alert to Phantom container with id %s ', container_id)
+
         success = False
         if container_id:
-            artifact = {'cef' : kwargs['alert']['record'],
-                        'container_id' : container_id,
-                        'data' : kwargs['alert'],
-                        'name' : 'Phantom Artifact',
-                        'label' : 'Alert'}
+            artifact = {'cef': kwargs['alert']['record'],
+                        'container_id': container_id,
+                        'data': kwargs['alert'],
+                        'name': 'Phantom Artifact',
+                        'label': 'Alert'}
             artifact_string = json.dumps(artifact)
             artifact_url = os.path.join(creds['url'], 'rest/artifact/')
             resp = self._request_helper(artifact_url, artifact_string, headers, False)
@@ -256,7 +258,8 @@ class SlackOutput(StreamOutputBase):
 
         slack_message = json.dumps({'text': '```StreamAlert Rule Triggered - {}\n{}```'
                                             .format(kwargs['rule_name'],
-                                                    json.dumps(kwargs['alert'], indent=4))})
+                                                    json.dumps(kwargs['alert']['record'],
+                                                               indent=4))})
 
         resp = self._request_helper(url, slack_message)
         success = self._check_http_response(resp)
@@ -336,20 +339,22 @@ class S3Output(AWSOutput):
         service = alert['metadata']['source']['service']
         entity = alert['metadata']['source']['entity']
         current_date = datetime.now()
-        alert_string = json.dumps(alert)
+        alert_string = json.dumps(alert['record'])
+        bucket = self.config[self.__service__][kwargs['descriptor']]
+        key = '{}/{}/{}/dt={}/streamalerts_{}.json'.format(
+            service,
+            entity,
+            kwargs['rule_name'],
+            current_date.strftime('%Y-%m-%d-%H-%M'),
+            current_date.isoformat('-')
+        )
+
+        LOGGER.debug('sending alert to S3 bucket %s with key %s', bucket, key)
 
         client = boto3.client('s3', region_name=self.region)
-        resp = client.put_object(
-            Body=alert_string,
-            Bucket=self.config[self.__service__][kwargs['descriptor']],
-            Key='{}/{}/{}/dt={}/streamalerts_{}.json'.format(
-                service,
-                entity,
-                kwargs['rule_name'],
-                current_date.strftime('%Y-%m-%d-%H-%M'),
-                current_date.isoformat('-')
-            )
-        )
+        resp = client.put_object(Body=alert_string,
+                                 Bucket=bucket,
+                                 Key=key)
 
         self._log_status(resp)
 
@@ -379,9 +384,10 @@ class LambdaOutput(AWSOutput):
              OutputProperty(description='a short and unique descriptor for this Lambda function '
                                         'configuration (ie: abbreviated name)')),
             ('aws_value',
-             OutputProperty(description='the AWS Lambda function name with the optional qualifier '
-                                        'to use for this Lambda configuration '
-                                        '(ie: function_name:qualifier)',
+             OutputProperty(description='the AWS arn, with the optional qualifier, that '
+                                        'represents the Lambda function to use for this '
+                                        'configuration (ie: arn:aws:lambda:aws-region:acct-id:'
+                                        'function:output_function:qualifier)',
                             input_restrictions={' '})),
         ])
 
@@ -397,15 +403,14 @@ class LambdaOutput(AWSOutput):
                 alert [dict]: Alert relevant to the triggered rule
         """
         alert = kwargs['alert']
-        alert_string = json.dumps(alert)
-
+        alert_string = json.dumps(alert['record'])
         function_name = self.config[self.__service__][kwargs['descriptor']]
 
+        LOGGER.debug('Sending alert to Lambda function %s', function_name)
+
         client = boto3.client('lambda', region_name=self.region)
-        resp = client.invoke(
-            FunctionName=function_name,
-            InvocationType='Event',
-            Payload=alert_string
-        )
+        resp = client.invoke(FunctionName=function_name,
+                             InvocationType='Event',
+                             Payload=alert_string)
 
         self._log_status(resp)

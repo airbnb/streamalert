@@ -35,7 +35,7 @@ def handler(event, context):
         context [AWSLambdaContext]: basically a namedtuple of properties from AWS
     """
     records = event.get('Records', [])
-    LOGGER.info('running alert processor for %d records', len(records))
+    LOGGER.info('Running alert processor for %d records', len(records))
 
     for record in records:
         sns_payload = record.get('Sns')
@@ -46,7 +46,7 @@ def handler(event, context):
         try:
             loaded_sns_message = json.loads(sns_message)
         except ValueError as err:
-            LOGGER.error('an error occurred while decoding message to JSON: %s', err)
+            LOGGER.error('An error occurred while decoding message to JSON: %s', err)
             continue
 
         if not 'default' in loaded_sns_message:
@@ -97,7 +97,7 @@ def run(loaded_sns_message, context):
         try:
             service, descriptor = output.split(':')
         except ValueError:
-            LOGGER.error('outputs for rules must be declared with both a service and a '
+            LOGGER.error('Outputs for rules must be declared with both a service and a '
                          'descriptor for the integration (ie: \'slack:my_channel\')')
             continue
 
@@ -114,16 +114,14 @@ def run(loaded_sns_message, context):
         if not output_dispatcher:
             continue
 
-        # try:
-        LOGGER.debug('Sending alert to %s', output_dispatcher.__service__)
-        output_dispatcher.dispatch(
-            descriptor=descriptor,
-            rule_name=rule_name,
-            alert=alert['record']
-            )
-        # except BaseException as err:
-        #     LOGGER.error('an error occurred while sending alert to %s: %s',
-        #                  service, err)
+        try:
+            LOGGER.debug('Sending alert to %s:%s', service, descriptor)
+            output_dispatcher.dispatch(descriptor=descriptor,
+                                       rule_name=rule_name,
+                                       alert=alert)
+        except Exception as err:
+            LOGGER.error('An error occurred while sending alert to %s:%s: %s. alert:\n%s',
+                         service, descriptor, err, json.dumps(alert, indent=4))
 
 def sort_dict(unordered_dict):
     """Recursively sort a dictionary
