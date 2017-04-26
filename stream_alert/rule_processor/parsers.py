@@ -28,7 +28,7 @@ from fnmatch import fnmatch
 import jsonpath_rw
 
 logging.basicConfig()
-logger = logging.getLogger('StreamAlert')
+LOGGER = logging.getLogger('StreamAlert')
 
 def get_parser(parserid):
     """Helper method to fetch parser classes
@@ -50,62 +50,82 @@ def parser(cls):
 class ParserBase:
     """Abstract Parser class to be inherited by all StreamAlert Parsers"""
     __metaclass__ = ABCMeta
+    __parserid__ = ''
 
-    def __init__(self, data, schema, options):
+    def __init__(self, schema, options):
         """Setup required parser properties
 
         Args:
-            data: Data string to be parsed.
             schema: Dict of log data schema.
-            options: Parser options dict - delimiter, separator, or hints
+            options: Parser options dict - delimiter, separator, or log_patterns
         """
-        self.data = data
         self.schema = schema
-        if options != None:
-            self.options = options
-        else:
-            self.options = {}
-        # If we can parse into a correct type, but keys or other config
-        # options do not match up, we can set a type in the payload object
-        # to short circuit type determination.
-        self.payload_type = None
+        self.options = options or {}
 
     @abstractmethod
-    def parse(self):
+    def parse(self, data):
         """Main parser method to be overridden by all Parser classes
 
+        Args:
+            data [str or dict]: Data to be parsed.
+
         Returns:
-            A list of parsed records
+            [list] A list of dictionaries representing parsed records.
         """
         pass
+
+    def type(self):
+        """Returns the type of parser. Overriden in GzipJSONParser to just return json"""
+        return self.__parserid__
+
+    def matched_log_pattern(self, record, log_patterns):
+        """Return True if all log patterns of this record match"""
+        # Return False immediately if there are no log patterns
+        # or if the data being tested is not a dict
+        if not (log_patterns and isinstance(record, dict)):
+            return False
+
+        pattern_result = []
+        for field, pattern_list in log_patterns.iteritems():
+            # handle nested log_patterns
+            if isinstance(pattern_list, dict):
+                return self.matched_log_pattern(record[field], pattern_list)
+
+            if not isinstance(pattern_list, list):
+                LOGGER.debug('designated log_patterns should be a \'list\'')
+                continue
+
+            # the pattern field value in the record
+            try:
+                value = record[field]
+            except (KeyError, TypeError):
+                LOGGER.debug('declared log pattern field [%s] is not a valid field '
+                             'for this record: %s', field, record)
+                continue
+            # append the result of any of the log_patterns being True
+            pattern_result.append(any(fnmatch(value, pattern)
+                                      for pattern in pattern_list))
+
+        LOGGER.debug('%s pattern result: %s', self.type(), pattern_result)
+
+        # if all pattern group results are True
+        return all(pattern_result)
+
 
 @parser
 class JSONParser(ParserBase):
     __parserid__ = 'json'
 
-    def __init__(self, *args):
-        super(JSONParser, self).__init__(*args)
-        self.nested = False
-        self.nested_keys = []
-
-    def _get_schema(self):
-        """Return the schema, handle nested json types"""
-        schema = self.schema
-        if self.nested:
-            for key in self.nested_keys:
-                schema = schema.get(key)
-            return schema[0]
-
-        return schema
-
     def _key_check(self, json_records):
         """Verify the declared schema matches the json payload
+
+        Args:
+            json_records [list]: List of dictionaries representing JSON payloads
 
         If keys do not match per the schema, records are removed from the
         passed in json_records list
         """
-        schema = self._get_schema()
-        schema_keys = set(schema.keys())
+        schema_keys = set(self.schema.keys())
         valid_records = []
         schema_match = False
 
@@ -113,14 +133,14 @@ class JSONParser(ParserBase):
             json_keys = set(json_record.keys())
             if json_keys == schema_keys:
                 schema_match = True
-                for key, key_type in schema.iteritems():
+                for key, key_type in self.schema.iteritems():
                     # If the value is a map of defined key/value pairs
-                    if isinstance(key_type, dict) and key_type != {}:
+                    if key_type and isinstance(key_type, dict):
                         # subkey check
-                        if set(json_record[key].keys()) != set(schema[key].keys()):
-                            schema_match = False
+                        schema_match = (set(json_record[key].keys()) == set(self.schema[key].keys()))
+
             else:
-                logger.debug('JSON Key mismatch: %s vs. %s', json_keys, schema_keys)
+                LOGGER.debug('JSON Key mismatch: %s vs. %s', json_keys, schema_keys)
 
             if schema_match:
                 valid_records.append(json_record)
@@ -129,7 +149,7 @@ class JSONParser(ParserBase):
 
     def _parse_records(self, json_payload):
         """Iterate over a json_payload. Identify and extract nested payloads.
-        Nested payloads can be detected with hints (`records` should be a
+        Nested payloads can be detected with log_patterns (`records` should be a
         JSONpath selector that yields the desired nested records).
 
         If desired, fields present on the root record can be merged into child
@@ -137,23 +157,17 @@ class JSONParser(ParserBase):
 
         Args:
             json_payload [dict]: The parsed json data
-            schema [dict]: A log type's schema
 
         Returns:
-            [list] of dictionaries representing JSON payloads
+            [list] A list of dictionaries representing parsed records.
         """
-        json_records = []
-        envelope = {}
+        # Check options and return the payload if there is nothing special to do
+        if not self.options:
+            return [json_payload]
 
-        # Check configuration options
-        config_options = self.options.get('configuration')
-        if config_options:
-            records_schema = config_options.get('json_path')
-            envelope_schema = config_options.get('envelope_keys', {})
-            optional_keys = config_options.get('optional_top_level_keys')
-
+        optional_keys = self.options.get('optional_top_level_keys')
         # Handle optional keys
-        if config_options and optional_keys:
+        if self.options and optional_keys:
             # Note: This function exists because dict/OrderedDict cannot
             #       be keys in a dictionary.
             def default_optional_values(key):
@@ -179,89 +193,94 @@ class JSONParser(ParserBase):
                     # Set default value
                     json_payload[key_name] = default_optional_values(value_type)
 
+        json_records = []
+        records_schema = self.options.get('json_path')
         # Handle jsonpath extraction of records
-        if config_options and records_schema:
-            records_jsonpath = jsonpath_rw.parse(records_schema)
+        if self.options and records_schema:
+            envelope = {}
+            envelope_schema = self.options.get('envelope_keys', {})
             if len(envelope_schema):
-                self.schema.update({'envelope': envelope_schema})
+                self.schema.update({'stream_log_envelope': envelope_schema})
                 envelope_keys = envelope_schema.keys()
                 envelope_jsonpath = jsonpath_rw.parse("$." + ",".join(envelope_keys))
                 envelope_matches = [match.value for match in envelope_jsonpath.find(json_payload)]
                 envelope = dict(zip(envelope_keys, envelope_matches))
 
+            records_jsonpath = jsonpath_rw.parse(records_schema)
             for match in records_jsonpath.find(json_payload):
                 record = match.value
                 if len(envelope):
-                    record.update({'envelope': envelope})
+                    record.update({'stream_log_envelope': envelope})
+
                 json_records.append(record)
-        else:
+
+        if not json_records:
             json_records.append(json_payload)
 
         return json_records
 
-    def parse(self):
+    def parse(self, data):
         """Parse a string into a list of JSON payloads.
 
-        Options:
-            - None
+        Args:
+            data [str or dict]: Data to be parsed.
 
         Returns:
-            - A list of parsed JSON record(s).
-            - False if the data is not JSON or the data does not follow the schema.
+            [list] A list of dictionaries representing parsed records.
+            [boolean] False if the data is not JSON or the data does not follow the schema.
         """
-        data = self.data
+        if isinstance(data, str):
+            try:
+                data = json.loads(data)
+            except ValueError as err:
+                LOGGER.debug('JSON parse failed: %s', str(err))
+                return False
 
-        try:
-            json_payload = json.loads(data)
-            self.payload_type = 'json'
-        except ValueError as err:
-            logger.debug('JSON parse failed: %s', str(err))
-            return False
-
-        json_records = self._parse_records(json_payload)
+        json_records = self._parse_records(data)
         valid_records = self._key_check(json_records)
 
         if len(valid_records):
             return valid_records
-        else:
-            return False
+
+        return False
 
 @parser
 class GzipJSONParser(JSONParser):
     __parserid__ = 'gzip-json'
 
-    def parse(self):
+    def parse(self, data):
         """Parse a gzipped string into JSON.
 
+        Args:
+            data [str]: Data to be parsed.
+
         Returns:
-            - An array of parsed JSON records.
-            - False if the data is not Gzipped JSON or the columns do not match.
+            [list] A list of dictionaries representing parsed records.
+            [boolean] False if the data is not Gzipped JSON or the columns do not match.
         """
         try:
-            json_payload = zlib.decompress(self.data, 47)
-            self.data = json_payload
-            return super(GzipJSONParser, self).parse()
-
+            data = zlib.decompress(data, 47)
+            return super(GzipJSONParser, self).parse(data)
         except zlib.error:
             return False
+
+    def type(self):
+        """Return the parserid for the super of this (json, not gzip-json)"""
+        return super(GzipJSONParser, self).__parserid__
 
 @parser
 class CSVParser(ParserBase):
     __parserid__ = 'csv'
     __default_delimiter = ','
 
-    def _get_reader(self, config_options):
+    def _get_reader(self, data):
         """Return the CSV reader for the given payload source
 
-        Args:
-            config_options [map]: Map containing parser options such as delimiter
-
         Returns:
-            - CSV reader object if the parse was successful
-            - False if parse was unsuccessful
+            [StringIO] CSV reader object if the parse was successful
+            [boolean] False if parse was unsuccessful
         """
-        data = self.data
-        delimiter = config_options.get('delimiter') or self.__default_delimiter
+        delimiter = self.options.get('delimiter', self.__default_delimiter)
 
         # TODO(ryandeivert): either subclass a current parser or add a new
         # parser to support parsing CSV data that contains a header line
@@ -273,59 +292,35 @@ class CSVParser(ParserBase):
 
         return reader
 
-    def parse(self):
+    def parse(self, data):
         """Parse a string into a comma separated value reader object.
 
-        Options:
-            - hints: A dict of string wildcards to find in payload fields.
+        Args:
+            data [str]: Data to be parsed.
 
         Returns:
-            - A list of parsed CSV records.
-            - False if the data is not CSV or the columns do not match.
+            [list] A list of dictionaries representing parsed records.
+            [boolean] False if the data is not CSV or the columns do not match.
         """
-        schema = self.schema
-        hints = self.options.get('hints')
-        config_options = self.options.get('configuration')
-
-        hint_result = []
-        csv_payloads = []
-
-        reader = self._get_reader(config_options)
+        reader = self._get_reader(data)
         if not reader:
             return False
+
+        csv_payloads = []
         try:
             for row in reader:
-                csv_payload = {}
-                # check number of columns match and any hints match
-                if len(row) != len(schema):
-                    logger.debug('CSV Key mismatch: %s vs. %s', len(row), len(schema))
+                # check number of columns match
+                if len(row) != len(self.schema):
+                    LOGGER.debug('csv key mismatch: %s vs. %s', len(row), len(self.schema))
                     return False
 
-                for field, hint_list in hints.iteritems():
-                    # handle nested hints
-                    if not isinstance(hint_list, list):
-                        continue
-                    # the hint field index in the row
-                    field_index = schema.keys().index(field)
-                    # store results per hint
-                    hint_group_result = []
-                    for hint in hint_list:
-                        hint_group_result.append(fnmatch(row[field_index], hint))
-                    # append the result of any of the hints being True
-                    hint_result.append(any(hint_group_result))
-
-                # if all hint group results are True
-                logger.debug('hint result: %s', hint_result)
-                if all(hint_result):
-                    self.payload_type = 'csv'
-                    for index, key in enumerate(schema):
-                        csv_payload[key] = row[index]
-
-                    csv_payloads.append(csv_payload)
+                # extract the keys from the row via the index
+                csv_payloads.append({key: row[index] for index, key in enumerate(self.schema)})
 
             return csv_payloads
         except csv.Error:
             return False
+
 
 @parser
 class KVParser(ParserBase):
@@ -333,32 +328,28 @@ class KVParser(ParserBase):
     __default_separator = '='
     __default_delimiter = ' '
 
-    def parse(self):
+    def parse(self, data):
         """Parse a key value string into a dictionary.
 
-        Options:
-            - delimiter: The character between key/value pairs.
-            - separator: The character between keys and values.
+        Args:
+            data [str]: Data to be parsed.
 
         Returns:
-            - A list of the key value pair records.
-            - False if the columns do not match.
+            [list] A list of dictionaries representing parsed records.
+            [boolean] False if the columns do not match.
         """
-        data = self.data
-        schema = self.schema
-        options = self.options
-        config_options = options.get('configuration', {})
-
-        delimiter = config_options.get('delimiter') or self.__default_delimiter
-        separator = config_options.get('separator') or self.__default_separator
+        # get the delimiter (character between key/value pairs) and the
+        # separator (the character between keys and values)
+        delimiter = self.options.get('delimiter', self.__default_delimiter)
+        separator = self.options.get('separator', self.__default_separator)
 
         kv_payload = {}
         try:
             # remove any blank strings that may exist in our list
             fields = filter(None, data.split(delimiter))
             # first check the field length matches our # of keys
-            if len(fields) != len(schema):
-                logger.debug('Parsed KV fields: %s', fields)
+            if len(fields) != len(self.schema):
+                LOGGER.debug('KV field length mismatch: %s vs %s', fields, self.schema)
                 return False
 
             regex = re.compile('.+{}.+'.format(separator))
@@ -369,24 +360,23 @@ class KVParser(ParserBase):
                     # handle duplicate keys
                     if key in kv_payload:
                         # load key from our configuration
-                        kv_payload[schema.keys()[index]] = value
+                        kv_payload[self.schema.keys()[index]] = value
                     else:
                         # load key from data
                         kv_payload[key] = value
                 else:
-                    logger.error('key/value regex failure for %s', field)
+                    LOGGER.error('key/value regex failure for %s', field)
 
-            self.payload_type = 'kv'
+            return [kv_payload]
         except UnicodeDecodeError:
             return False
 
-        return [kv_payload]
 
 @parser
 class SyslogParser(ParserBase):
     __parserid__ = 'syslog'
 
-    def parse(self):
+    def parse(self, data):
         """Parse a syslog string into a dictionary
 
         Matches syslog events with the following format:
@@ -395,17 +385,13 @@ class SyslogParser(ParserBase):
             Jan 10 19:35:33 vagrant-ubuntu-trusty-64 sudo: session opened for root
             Jan 10 19:35:13 vagrant-ubuntu-precise-32 ssh[13941]: login for mike
 
-        Options:
-            - None
+        Args:
+            data: Data to be parsed
 
         Returns:
             - A list of syslog records.
             - False if the data does not match the syslog regex.
         """
-        schema = self.schema
-        data = self.data
-
-        syslog_payload = {}
         syslog_regex = re.compile(r"(?P<timestamp>^\w{3}\s\d{2}\s(\d{2}:?)+)\s"
                                   r"(?P<host>(\w[-]*)+)\s"
                                   r"(?P<application>\w+)(\[\w+\])*:\s"
@@ -415,8 +401,4 @@ class SyslogParser(ParserBase):
         if not match:
             return False
 
-        self.payload_type = 'syslog'
-        for key in schema.keys():
-            syslog_payload[key] = match.group(key)
-
-        return [syslog_payload]
+        return [{key: match.group(key) for key in self.schema.keys()}]

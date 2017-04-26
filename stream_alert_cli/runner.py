@@ -249,11 +249,10 @@ def status():
                    CONFIG['lambda_settings'][cluster][0],
                    CONFIG['lambda_settings'][cluster][1],
                    CONFIG['lambda_function_prod_versions'][cluster])
-        print 'Kinesis settings: \n\tShards: {}\n\tRetention: {}'.format(
+        print 'Kinesis settings: \n\tShards: {}\n\tRetention: {}\n'.format(
             CONFIG['kinesis_settings'][cluster][0],
             CONFIG['kinesis_settings'][cluster][1]
         )
-        print '\n'
 
     print 'User access keys'
     run_command(['terraform', 'output'])

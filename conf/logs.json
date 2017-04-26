@@ -27,10 +27,12 @@
       "source": "string"
     },
     "parser": "csv",
-    "hints": {
-      "source": [
-        "cluster *"
-      ]
+    "configuration": {
+      "log_patterns": {
+        "source": [
+          "cluster *"
+        ]
+      }
     }
   },
   "kv_log": {
@@ -43,7 +45,7 @@
     "parser": "kv",
     "configuration": {
       "delimiter": " ",
-      "separator": "="  
+      "separator": "="
     }
   },
   "osquery": {
@@ -100,8 +102,8 @@
       "errorCode": "string",
       "eventTime": "string",
       "requestParameters": {
-          "policy": {},
-          "bucketName": "string"
+        "policy": {},
+        "bucketName": "string"
       },
       "eventType": "string",
       "errorMessage": "string",
@@ -109,23 +111,23 @@
       "awsRegion": "string",
       "eventName": "string",
       "userIdentity": {
-          "sessionContext": {
-              "sessionIssuer": {
-                  "userName": "string",
-                  "type": "string",
-                  "arn": "string",
-                  "principalId": "string",
-                  "accountId": "integer"
-              },
-              "attributes": {
-                  "creationDate": "string",
-                  "mfaAuthenticated": "string"
-              }
+        "sessionContext": {
+          "sessionIssuer": {
+            "userName": "string",
+            "type": "string",
+            "arn": "string",
+            "principalId": "string",
+            "accountId": "integer"
           },
-          "type": "string",
-          "arn": "string",
-          "principalId": "string",
-          "accountId": "integer"
+          "attributes": {
+            "creationDate": "string",
+            "mfaAuthenticated": "string"
+          }
+        },
+        "type": "string",
+        "arn": "string",
+        "principalId": "string",
+        "accountId": "integer"
       },
       "eventSource": "string",
       "requestID": "string",
@@ -210,6 +212,100 @@
         "logGroup": "string",
         "logStream": "string",
         "owner": "integer"
+      }
+    }
+  },
+  "carbonblack:ingress.event.regmod": {
+    "schema": {
+      "action": "string",
+      "actiontype": "integer",
+      "cb_server": "string",
+      "computer_name": "string",
+      "event_type": "string",
+      "link_process": "string",
+      "link_sensor": "string",
+      "md5": "string",
+      "path": "string",
+      "pid": "integer",
+      "process_guid": "string",
+      "sensor_id": "integer",
+      "timestamp": "integer",
+      "type": "string"
+    },
+    "parser": "json",
+    "configuration": {
+      "log_patterns": {
+        "type": "ingress.event.regmod"
+      }
+    }
+  },
+  "carbonblack:ingress.event.filemod": {
+    "schema": {
+      "action": "string",
+      "actiontype": "integer",
+      "cb_server": "string",
+      "computer_name": "string",
+      "event_type": "string",
+      "link_process": "string",
+      "link_sensor": "string",
+      "md5": "string",
+      "path": "string",
+      "pid": "integer",
+      "process_guid": "string",
+      "sensor_id": "integer",
+      "timestamp": "integer",
+      "type": "string"
+    },
+    "parser": "json",
+    "configuration": {
+      "log_patterns": {
+        "type": [
+          "ingress.event.filemod"
+        ]
+      },
+      "optional_top_level_keys": {
+        "filetype": "integer",
+        "filetype_name": "string"
+      }
+    }
+  },
+  "carbonblack:binaryinfo.host.observed": {
+    "schema": {
+      "md5": "string",
+      "hostname": "string",
+      "sensor_id": "integer",
+      "event_timestamp": "float",
+      "scores": {},
+      "watchlists": {}
+    },
+    "parser": "json",
+    "configuration": {
+      "log_patterns": {
+        "watchlists": {
+          "watchlist_9": [
+            "2014-02-13*"
+          ]
+        }
+      }
+    }
+  },
+  "carbonblack:binaryinfo.host.observed_alternate": {
+    "schema": {
+      "md5": "string",
+      "hostname": "string",
+      "sensor_id": "integer",
+      "event_timestamp": "float",
+      "scores": {},
+      "watchlists": {}
+    },
+    "parser": "json",
+    "configuration": {
+      "log_patterns": {
+        "watchlists": {
+          "watchlist_9": [
+            "2016-02-13*"
+          ]
+        }
       }
     }
   }

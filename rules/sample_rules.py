@@ -131,3 +131,38 @@ def sample_cloudwatch_flog_log_rule(rec):
         rec['destport'] == 22 and
         rec['action'] == 'ACCEPT'
     )
+
+@rule(logs=['carbonblack:ingress.event.filemod'],
+      matchers=[],
+      outputs=['aws-s3:sample.bucket'])
+def carbonblack_ingress_event_filemod(rec):
+    """CarbonBlack Ingress Event Filemod Matched MD5"""
+    return rec['md5'] == '7A2870C2A8283B3630BF7670D0362B94'
+
+
+@rule(logs=['carbonblack:ingress.event.regmod'],
+      matchers=[],
+      outputs=['aws-s3:sample.bucket'])
+def carbonblack_ingress_event_regmod(rec):
+    """CarbonBlack Ingress Event Regmod Matched MD5"""
+    return rec['md5'] == '0E7196981EDE614F1F54FFF2C3843ADF'
+
+
+@rule(logs=['carbonblack:binaryinfo.host.observed'],
+      matchers=[],
+      outputs=['aws-s3:sample.bucket'])
+def carbonblack_binaryinfo_host_observed(rec):
+    """CarbonBlack BinaryInfo Host Observed Watchlist Match"""
+    return (rec['hostname'] == 'FS-HQ' and
+            rec['md5'] == '9E4B0E7472B4CEBA9E17F440B8CB0AB8'
+    )
+
+
+@rule(logs=['carbonblack:binaryinfo.host.observed_alternate'],
+      matchers=[],
+      outputs=['aws-s3:sample.bucket'])
+def carbonblack_binaryinfo_host_observed_alternate(rec):
+    """CarbonBlack BinaryInfo Host Observed Watchlist Match"""
+    return (rec['hostname'] == 'FS-HQ' and
+            rec['md5'] == '9E4B0E7472B4CEBA9E17F440B8CB0CCC'
+    )

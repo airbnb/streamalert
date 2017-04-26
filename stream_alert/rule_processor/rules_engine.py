@@ -13,15 +13,14 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-
-import copy
 import logging
 
 from collections import namedtuple
+from copy import copy
 
 logging.basicConfig()
-logger = logging.getLogger('StreamAlert')
-logger.setLevel(logging.INFO)
+LOGGER = logging.getLogger('StreamAlert')
+LOGGER.setLevel(logging.INFO)
 
 class StreamRules(object):
     """Container class for StreamAlert Rules
@@ -64,7 +63,7 @@ class StreamRules(object):
             req_subkeys = opts.get('req_subkeys')
 
             if not all([logs, outputs]):
-                logger.error('Invalid rule [%s]', rule_name)
+                LOGGER.error('Invalid rule [%s]', rule_name)
                 return
 
             if rule_name in cls.__rules:
@@ -130,11 +129,11 @@ class StreamRules(object):
                     matcher_result = matcher_function(record)
                 except Exception as e:
                     matcher_result = False
-                    logger.error('%s: %s', matcher_function.__name__, e.message)
+                    LOGGER.error('%s: %s', matcher_function.__name__, e.message)
                 if not matcher_result:
                     return False
             else:
-                logger.error('The matcher [%s] does not exist!', matcher)
+                LOGGER.error('The matcher [%s] does not exist!', matcher)
 
         return True
 
@@ -144,7 +143,7 @@ class StreamRules(object):
             rule_result = rule.rule_function(record)
         except Exception as e:
             rule_result = False
-            logger.error('%s: %s', rule.rule_function.__name__, e.message)
+            LOGGER.error('%s: %s', rule.rule_function.__name__, e.message)
         return rule_result
 
     @classmethod
@@ -165,11 +164,12 @@ class StreamRules(object):
         """
         if not rule.req_subkeys or payload_type != 'json':
             return True
-        else:
-            for key, nested_keys in rule.req_subkeys.iteritems():
-                if not all(x in record[key] for x in nested_keys):
-                    return False
-            return True
+
+        for key, nested_keys in rule.req_subkeys.iteritems():
+            if not all(x in record[key] for x in nested_keys):
+                return False
+
+        return True
 
     @classmethod
     def process(cls, input_payload):
@@ -180,7 +180,7 @@ class StreamRules(object):
         and the rule itself to determine if a match occurs.
 
         Returns:
-            List of alerts. 
+            List of alerts.
 
             An alert is represented as a dictionary with the following keys:
                 rule_name: the name of the triggered rule
@@ -189,22 +189,20 @@ class StreamRules(object):
         """
         rules = []
         alerts = []
-        payload = copy.copy(input_payload)
+        payload = copy(input_payload)
 
         for _, rule_attrs in cls.__rules.iteritems():
             if payload.log_source in rule_attrs.logs:
                 rules.append(rule_attrs)
 
         if len(rules) == 0:
-            logger.debug('No rules to process for %s', payload)
+            LOGGER.debug('No rules to process for %s', payload)
             return alerts
 
         for record in payload.records:
             for rule in rules:
                 # subkey check
-                has_sub_keys = cls.process_subkeys(record,
-                                                   payload.type,
-                                                   rule)
+                has_sub_keys = cls.process_subkeys(record, payload.type, rule)
                 if not has_sub_keys:
                     continue
 
