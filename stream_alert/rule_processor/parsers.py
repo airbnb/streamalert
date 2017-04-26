@@ -67,10 +67,10 @@ class ParserBase:
         """Main parser method to be overridden by all Parser classes
 
         Args:
-            data: Data to be parsed.
+            data [str or dict]: Data to be parsed.
 
         Returns:
-            A list of parsed records
+            [list] A list of dictionaries representing parsed records.
         """
         pass
 
@@ -82,7 +82,7 @@ class ParserBase:
         """Return True if all log patterns of this record match"""
         # Return False immediately if there are no log patterns
         # or if the data being tested is not a dict
-        if not all((log_patterns, isinstance(record, dict))):
+        if not (log_patterns and isinstance(record, dict)):
             return False
 
         pattern_result = []
@@ -102,8 +102,8 @@ class ParserBase:
                              'for this record: %s', field, record)
                 continue
             # append the result of any of the log_patterns being True
-            pattern_result.append(any([fnmatch(value, pattern)
-                                       for pattern in pattern_list]))
+            pattern_result.append(any(fnmatch(value, pattern)
+                                      for pattern in pattern_list))
 
         LOGGER.debug('%s pattern result: %s', self.type(), pattern_result)
 
@@ -158,7 +158,7 @@ class JSONParser(ParserBase):
             json_payload [dict]: The parsed json data
 
         Returns:
-            [list] of dictionaries representing JSON payloads
+            [list] A list of dictionaries representing parsed records.
         """
         # Check options and return the payload if there is nothing special to do
         if not self.options:
@@ -213,7 +213,7 @@ class JSONParser(ParserBase):
 
                 json_records.append(record)
 
-        if len(json_records) == 0:
+        if not json_records:
             json_records.append(json_payload)
 
         return json_records
@@ -222,11 +222,11 @@ class JSONParser(ParserBase):
         """Parse a string into a list of JSON payloads.
 
         Args:
-            data: Data to be parsed (could be string or dict)
+            data [str or dict]: Data to be parsed.
 
         Returns:
-            - A list of parsed JSON record(s).
-            - False if the data is not JSON or the data does not follow the schema.
+            [list] A list of dictionaries representing parsed records.
+            [boolean] False if the data is not JSON or the data does not follow the schema.
         """
         if isinstance(data, str):
             try:
@@ -251,11 +251,11 @@ class GzipJSONParser(JSONParser):
         """Parse a gzipped string into JSON.
 
         Args:
-            data: Data to be parsed
+            data [str]: Data to be parsed.
 
         Returns:
-            - An array of parsed JSON records.
-            - False if the data is not Gzipped JSON or the columns do not match.
+            [list] A list of dictionaries representing parsed records.
+            [boolean] False if the data is not Gzipped JSON or the columns do not match.
         """
         try:
             data = zlib.decompress(data, 47)
@@ -276,8 +276,8 @@ class CSVParser(ParserBase):
         """Return the CSV reader for the given payload source
 
         Returns:
-            - CSV reader object if the parse was successful
-            - False if parse was unsuccessful
+            [StringIO] CSV reader object if the parse was successful
+            [boolean] False if parse was unsuccessful
         """
         delimiter = self.options.get('delimiter', self.__default_delimiter)
 
@@ -295,11 +295,11 @@ class CSVParser(ParserBase):
         """Parse a string into a comma separated value reader object.
 
         Args:
-            data: Data to be parsed
+            data [str]: Data to be parsed.
 
         Returns:
-            - A list of parsed CSV records.
-            - False if the data is not CSV or the columns do not match.
+            [list] A list of dictionaries representing parsed records.
+            [boolean] False if the data is not CSV or the columns do not match.
         """
         reader = self._get_reader(data)
         if not reader:
@@ -331,11 +331,11 @@ class KVParser(ParserBase):
         """Parse a key value string into a dictionary.
 
         Args:
-            data: Data to be parsed
+            data [str]: Data to be parsed.
 
         Returns:
-            - A list of the key value pair records.
-            - False if the columns do not match.
+            [list] A list of dictionaries representing parsed records.
+            [boolean] False if the columns do not match.
         """
         # get the delimiter (character between key/value pairs) and the
         # separator (the character between keys and values)

@@ -196,6 +196,35 @@ class StreamClassifier(object):
 
         LOGGER.debug('payload: %s', payload)
 
+    def _check_valid_parse(self, valid_parses):
+
+        if len(valid_parses) == 1:
+            return valid_parses[0]
+
+        matched_parses = []
+        for i, valid_parse in enumerate(valid_parses):
+            parser = valid_parse[1]
+            for data in valid_parse[2]:
+                if parser.matched_log_pattern(data, parser.options.get('log_patterns', {})):
+                    matched_parses.append(valid_parses[i])
+                    break
+                else:
+                    LOGGER.debug('log pattern matching failed for schema: %s', parser.schema)
+
+        if matched_parses:
+            if len(matched_parses) > 1:
+                LOGGER.error('log patterns matched for multiple schemas: %s',
+                             ', '.join(name for name, _, _ in matched_parses))
+                LOGGER.error('proceeding with schema for: %s', valid_parse[0])
+
+            return matched_parses[0]
+
+        LOGGER.error('log classification matched for multiple schemas: %s',
+                     ', '.join(name for name, _, _ in valid_parses))
+        LOGGER.error('proceeding with schema for: %s', valid_parses[0][0])
+
+        return valid_parses[0]
+
     def _parse(self, payload, data):
         """Parse a record into a declared type.
 
@@ -212,13 +241,11 @@ class StreamClassifier(object):
             A boolean representing the success of the parse.
         """
         log_metadata = self._log_metadata()
-        # TODO(jack) make this process more efficient.
-        # Separate out parsing with key matching.
-        # Right now, if keys match but the type/parser is correct,
-        # it has to start over
-        passes = []
+        valid_parses = []
+
+        # Loop over all logs declared in logs.json
         for log_name, attributes in log_metadata.iteritems():
-            # Short circuit parser determination
+            # get the parser type to use for this log
             parser_name = payload.type or attributes['parser']
 
             schema = attributes['schema']
@@ -233,33 +260,12 @@ class StreamClassifier(object):
 
             LOGGER.debug('schema: %s', schema)
             if parsed_data:
-                passes.append((log_name, parser, parsed_data))
+                valid_parses.append((log_name, parser, parsed_data))
 
-        if not passes:
+        if not valid_parses:
             return False
 
-        valid_parse = passes[0]
-        if len(passes) > 1:
-            matched_parses = []
-            for i, valid_parses in enumerate(passes):
-                parser = valid_parses[1]
-                for data in valid_parses[2]:
-                    if parser.matched_log_pattern(data, parser.options.get('log_patterns', {})):
-                        matched_parses.append(passes[i])
-                        break
-                    else:
-                        LOGGER.debug('log pattern matching failed for schema: %s', parser.schema)
-
-            if len(matched_parses) != 0:
-                valid_parse = matched_parses[0]
-                if len(matched_parses) > 1:
-                    LOGGER.error('log patterns matched for multiple schemas: %s',
-                                 ', '.join(name for name, _, _ in matched_parses))
-                    LOGGER.error('proceeding with schema for: %s', valid_parse[0])
-            else:
-                LOGGER.error('log classification matched for multiple schemas: %s',
-                             ', '.join(name for name, _, _ in passes))
-                LOGGER.error('proceeding with schema for: %s', passes[0][0])
+        valid_parse = self._check_valid_parse(valid_parses)
 
         log_name, parser, parsed_data = valid_parse[0], valid_parse[1], valid_parse[2]
         LOGGER.debug('log_name: %s', log_name)
