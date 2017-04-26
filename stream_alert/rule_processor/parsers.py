@@ -92,6 +92,7 @@ class ParserBase:
                 return self.matched_log_pattern(record[field], pattern_list)
 
             if not isinstance(pattern_list, list):
+                LOGGER.debug('designated log_patterns should be a \'list\'')
                 continue
 
             # the pattern field value in the record

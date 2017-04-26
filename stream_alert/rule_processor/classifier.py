@@ -106,12 +106,15 @@ class StreamClassifier(object):
         A Kinesis record will contain a `kinesis` key while a
         S3 record contains `s3`.
 
-        Args:
-            payload: A StreamAlert payload object
-
         Sets:
             payload.service: The AWS service which sent the record
             payload.entity: The specific instance of a service which sent the record
+
+        Args:
+            payload: A StreamAlert payload object
+
+        Returns:
+            [boolean] True if the entity's log sources loaded properly
         """
         # Sns is capitalized below because this is how AWS stores it within the Record
         # Other services, like s3, are not stored like this. Do not alter it!
@@ -132,7 +135,7 @@ class StreamClassifier(object):
         # if the payload's entity is found in the config and contains logs
         self._entity_log_sources = self._payload_logs(payload)
 
-        return self._entity_log_sources and len(self._entity_log_sources) > 0
+        return bool(self._entity_log_sources)
 
     def _payload_logs(self, payload):
         # get all logs for the configured service/entity (s3 or kinesis)
@@ -165,7 +168,7 @@ class StreamClassifier(object):
         """
         config_logs = self.config['logs']
 
-        for log_source in config_logs.keys():
+        for log_source in config_logs:
             category = log_source.split(':')[0]
             # Remove this log type if it's not one of the sources for this entity
             if not category in self._entity_log_sources:
@@ -197,7 +200,18 @@ class StreamClassifier(object):
         LOGGER.debug('payload: %s', payload)
 
     def _check_valid_parse(self, valid_parses):
+        """Check to see if there are multiple schemas that have validly parsed this
+        log. If so, fall back on using log_patterns to look for the proper log. If no
+        log_patterns exist, or they do not resolve the problem, fall back on using the
+        first matched schema.
 
+        Args:
+            [valid_parses] A list of tuples containing the info for schemas that have
+                validly parsed this record. Each tuple is: (log_name, parser, parsed_data)
+
+        Returns:
+            [tuple] The proper tuple to use for parsing from the list of tuples
+        """
         if len(valid_parses) == 1:
             return valid_parses[0]
 
@@ -215,9 +229,11 @@ class StreamClassifier(object):
             if len(matched_parses) > 1:
                 LOGGER.error('log patterns matched for multiple schemas: %s',
                              ', '.join(name for name, _, _ in matched_parses))
-                LOGGER.error('proceeding with schema for: %s', valid_parse[0])
+                LOGGER.error('proceeding with schema for: %s', matched_parses[0][0])
 
             return matched_parses[0]
+
+
 
         LOGGER.error('log classification matched for multiple schemas: %s',
                      ', '.join(name for name, _, _ in valid_parses))
@@ -334,13 +350,13 @@ class StreamClassifier(object):
 
             elif isinstance(value, OrderedDict):
                 # allow for any value to exist in the map
-                if len(value) != 0:
+                if value:
                     # handle nested csv
                     # skip the 'stream_log_envelope' key that we've added during parsing
-                    if all((key == 'stream_log_envelope', isinstance(payload[key], dict))):
+                    if key == 'stream_log_envelope' and isinstance(payload[key], dict):
                         continue
 
-                    if 'log_patterns' in options.keys():
+                    if 'log_patterns' in options:
                         options['log_patterns'] = options['log_patterns'][key]
 
                     sub_schema = schema[key]
