@@ -69,9 +69,10 @@ def run(loaded_sns_message, context):
         The alert is another dict with the following structure:
 
         {
-            'rule_name': rule.rule_name,
             'record': record,
             'metadata': {
+                'rule_name': rule.rule_name,
+                'rule_description': rule.rule_function.__doc__,
                 'log': str(payload.log_source),
                 'outputs': rule.outputs,
                 'type': payload.type,
@@ -84,7 +85,7 @@ def run(loaded_sns_message, context):
     """
     LOGGER.debug(loaded_sns_message)
     alert = loaded_sns_message['default']
-    rule_name = alert['rule_name']
+    rule_name = alert['metadata']['rule_name']
 
     # strip out unnecessary keys and sort
     alert = sort_dict(alert)

@@ -73,7 +73,7 @@ def test_rule(rule_name, test_record, formatted_record):
 
     alerts = StreamAlert(return_alerts=True).run(event, None)
     # we only want alerts for the specific rule passed in
-    matched_alert_count = len([x for x in alerts if x['rule_name'] == rule_name])
+    matched_alert_count = len([x for x in alerts if x['metadata']['rule_name'] == rule_name])
 
     report_output([test_record['service'], test_record['description']],
                   matched_alert_count != expected_alert_count)

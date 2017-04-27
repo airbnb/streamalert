@@ -215,9 +215,10 @@ class StreamRules(object):
                 rule_result = cls.process_rule(record, rule)
                 if rule_result:
                     alert = {
-                        'rule_name': rule.rule_name,
                         'record': record,
                         'metadata': {
+                            'rule_name': rule.rule_name,
+                            'rule_description': rule.rule_function.__doc__,
                             'log': str(payload.log_source),
                             'outputs': rule.outputs,
                             'type': payload.type,
