@@ -14,6 +14,10 @@ module "stream_alert_{{ cluster_name }}" {
   alert_processor_config        = "${var.alert_processor_config}"
   alert_processor_lambda_config = "${var.alert_processor_lambda_config}"
   alert_processor_versions      = "${var.alert_processor_versions}"
+
+  output_lambda_functions = "${var.aws-lambda}"
+  output_s3_buckets       = "${var.aws-s3}"
+  input_sns_topics        = "${var.aws-sns}"
 }
 
 // Cloudwatch alerts for production Lambda functions
