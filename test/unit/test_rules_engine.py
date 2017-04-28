@@ -83,7 +83,7 @@ class TestStreamRules(object):
         @rule(logs=['test_log_type_json_nested_with_data'],
               outputs=['s3:sample.bucket'])
         def alert_format_test(rec):
-            """Format test docstring"""
+            """'alert_format_test' docstring for testing rule_description"""
             return rec['application'] == 'web-app'
 
         kinesis_data = {

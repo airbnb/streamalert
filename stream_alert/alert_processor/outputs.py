@@ -36,6 +36,8 @@ LOGGER = logging.getLogger('StreamOutput')
 # {cls.__service__: <cls>}
 STREAM_OUTPUTS = {}
 
+DEFAULT_RULE_DESCRIPTION = 'No rule description provided'
+
 def output(cls):
     """Class decorator to register all stream outputs"""
     STREAM_OUTPUTS[cls.__service__] = cls
@@ -100,11 +102,14 @@ class PagerDutyOutput(StreamOutputBase):
         """
         creds = self._load_creds(kwargs['descriptor'])
         message = 'StreamAlert Rule Triggered - {}'.format(kwargs['rule_name'])
+        rule_desc = kwargs['alert']['metadata']['rule_description'] or DEFAULT_RULE_DESCRIPTION
+        details = {'rule_description': rule_desc,
+                   'alert': kwargs['alert']['record']}
         values_json = json.dumps({
             'service_key': creds['service_key'],
             'event_type': 'trigger',
             'description': message,
-            'details': kwargs['alert']['record'],
+            'details': details,
             'client': 'StreamAlert'
         })
 
@@ -148,7 +153,7 @@ class PhantomOutput(StreamOutputBase):
                             cred_requirement=True))
         ])
 
-    def _setup_container(self, rule_name, container_url, headers):
+    def _setup_container(self, rule_name, rule_description, container_url, headers):
         """Establish a Phantom container to write the alerts to
 
         Args:
@@ -160,9 +165,10 @@ class PhantomOutput(StreamOutputBase):
             [integer] ID of the Phantom container where the alerts will be sent
                 or False if there is an issue getting the container id
         """
+        # Try to use the rule_description from the rule as the container description
         message = 'StreamAlert Rule Triggered - {}'.format(rule_name)
         ph_container = {'name' : message,
-                        'description' : message}
+                        'description' : rule_description}
         container_string = json.dumps(ph_container)
         resp = self._request_helper(container_url, container_string, headers, False)
 
@@ -194,7 +200,9 @@ class PhantomOutput(StreamOutputBase):
 
         headers = {"ph-auth-token": creds['ph_auth_token']}
         container_url = os.path.join(creds['url'], 'rest/container/')
-        container_id = self._setup_container(kwargs['rule_name'], container_url, headers)
+        rule_desc = kwargs['alert']['metadata']['rule_description'] or DEFAULT_RULE_DESCRIPTION
+        container_id = self._setup_container(kwargs['rule_name'], rule_desc,
+                                             container_url, headers)
 
         LOGGER.debug('sending alert to Phantom container with id %s ', container_id)
 
@@ -244,6 +252,25 @@ class SlackOutput(StreamOutputBase):
                             cred_requirement=True))
         ])
 
+    @staticmethod
+    def _format_message(rule_name, alert):
+        """Format the message to be sent to slack.
+
+        Args:
+            rule_name [string]: The name of the rule that triggered the alert
+            alert: Alert relevant to the triggered rule
+
+        Returns:
+            [string] formatted message string to send to Slack. The message will look like:
+                ```StreamAlert Rule Triggered
+                Rule Name: rule_name
+                Rule Description: rule_description
+                {JSON DUMP OF ALERT}```
+        """
+        rule_desc = alert['metadata']['rule_description'] or DEFAULT_RULE_DESCRIPTION
+        message = '```StreamAlert Rule Triggered\nRule Name: {}\nRule Description: {}\n{}```'
+        return message.format(rule_name, rule_desc, json.dumps(alert['record'], indent=4))
+
     def dispatch(self, **kwargs):
         """Send alert text to Slack
 
@@ -256,10 +283,8 @@ class SlackOutput(StreamOutputBase):
         creds = self._load_creds(kwargs['descriptor'])
         url = os.path.join(creds['url'])
 
-        slack_message = json.dumps({'text': '```StreamAlert Rule Triggered - {}\n{}```'
-                                            .format(kwargs['rule_name'],
-                                                    json.dumps(kwargs['alert']['record'],
-                                                               indent=4))})
+        slack_message = json.dumps({'text': self._format_message(kwargs['rule_name'],
+                                                                 kwargs['alert'])})
 
         resp = self._request_helper(url, slack_message)
         success = self._check_http_response(resp)

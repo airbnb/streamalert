@@ -219,6 +219,7 @@ class StreamOutputBase(object):
             raise OutputRequestFailure('Failed to send to {} - [{}] {}'.format(err.url,
                                                                                err.code,
                                                                                err.read()))
+
     @staticmethod
     def _check_http_response(resp):
         return resp and (200 <= resp.getcode() <= 299)
