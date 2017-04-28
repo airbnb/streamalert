@@ -55,9 +55,10 @@ class StreamSink(object):
         Sends a message to SNS with the following JSON format:
             {default: [
                 {
-                    'rule_name': rule.rule_name,
                     'record': record,
                     'metadata': {
+                        'rule_name': rule.rule_name,
+                        'rule_description': rule.rule_function.__doc__,
                         'log': str(payload.log_source),
                         'outputs': rule.outputs,
                         'type': payload.type,
