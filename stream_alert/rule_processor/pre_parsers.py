@@ -86,8 +86,8 @@ class StreamPreParsers(object):
         Args:
             downloaded_s3_object (string): A full path to the downloaded file.
 
-        Returns:
-            (list) Lines from the downloaded s3 object
+        Yields:
+            [generator] A generator that yields lines from the downloaded s3 object
         """
         _, extension = os.path.splitext(downloaded_s3_object)
 
@@ -97,6 +97,11 @@ class StreamPreParsers(object):
         else:
             for line in open(downloaded_s3_object, 'r'):
                 yield line.rstrip()
+
+        # aws lambda apparently does not reallocate disk space when files are
+        # removed using os.remove(), so we must truncate them before removal
+        with open(downloaded_s3_object, 'w'):
+            pass
 
         # remove the file
         os.remove(downloaded_s3_object)
