@@ -277,6 +277,7 @@ class StreamClassifier(object):
             LOGGER.debug('schema: %s', schema)
             if parsed_data:
                 valid_parses.append((log_name, parser, parsed_data))
+                break
 
         if not valid_parses:
             return False
