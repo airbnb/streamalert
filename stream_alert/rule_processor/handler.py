@@ -78,9 +78,8 @@ class StreamAlert(object):
 
     def _s3_process(self, payload, classifier):
         """Process S3 data for alerts"""
-        s3_file_lines = StreamPreParsers.pre_parse_s3(payload.raw_record)
-        for line in s3_file_lines:
-            data = line.rstrip()
+        s3_file = StreamPreParsers.pre_parse_s3(payload.raw_record)
+        for data in StreamPreParsers.read_s3_file(s3_file):
             payload.refresh_record(data)
             self.process_alerts(classifier, payload, data)
 

@@ -13,7 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-
 import base64
 import gzip
 import logging
@@ -65,7 +64,7 @@ class StreamPreParsers(object):
         size = int(raw_record['s3']['object']['size'])
         downloaded_s3_object = cls._download_s3_object(client, bucket, key, size)
 
-        return cls._read_s3_file(downloaded_s3_object)
+        return downloaded_s3_object
 
     @classmethod
     def pre_parse_sns(cls, raw_record):
@@ -77,6 +76,32 @@ class StreamPreParsers(object):
         Returns: (string) Base64 decoded data.
         """
         return base64.b64decode(raw_record['Sns']['Message'])
+
+    @classmethod
+    def read_s3_file(cls, downloaded_s3_object):
+        """Parse a downloaded file from S3
+
+        Supports reading both gzipped files and plaintext files.
+
+        Args:
+            downloaded_s3_object (string): A full path to the downloaded file.
+
+        Returns:
+            (list) Lines from the downloaded s3 object
+        """
+        _, extension = os.path.splitext(downloaded_s3_object)
+
+        if extension == '.gz':
+            for line in gzip.open(downloaded_s3_object, 'r'):
+                yield line.rstrip()
+        else:
+            for line in open(downloaded_s3_object, 'r'):
+                yield line.rstrip()
+
+        # remove the file
+        os.remove(downloaded_s3_object)
+        if not os.path.exists(downloaded_s3_object):
+            logger.debug('Removed temp file - %s', downloaded_s3_object)
 
     @classmethod
     def _download_s3_object(cls, client, bucket, key, size):
@@ -121,40 +146,3 @@ class StreamPreParsers(object):
         logger.debug('Completed download in %s seconds', round(end_time, 2))
 
         return downloaded_s3_object
-
-    @classmethod
-    def _read_s3_file(cls, downloaded_s3_object):
-        """Parse a downloaded file from S3
-
-        Supports reading both gzipped files and plaintext files. Truncates
-        files after reading to save space on /tmp mount.
-
-        Args:
-            downloaded_s3_object (string): A full path to the downloaded file.
-
-        Returns:
-            (list) Lines from the downloaded s3 object
-        """
-        lines = []
-        filename, extension = os.path.splitext(downloaded_s3_object)
-
-        if extension == '.gz':
-            with gzip.open(downloaded_s3_object, 'r') as f:
-                lines = f.readlines()
-            # truncate file
-            clear_file = gzip.open(downloaded_s3_object, 'w')
-            clear_file.close()
-
-        else:
-            with open(downloaded_s3_object, 'r') as f:
-                lines = f.readlines()
-            # truncate file
-            clear_file = open(downloaded_s3_object, 'w')
-            clear_file.close()
-
-        # remove file path
-        os.remove(downloaded_s3_object)
-        if not os.path.exists(downloaded_s3_object):
-            logger.debug('Removed temp file - %s', downloaded_s3_object)
-
-        return lines
