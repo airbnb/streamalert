@@ -53,6 +53,33 @@ def report_output(cols, failed):
 
     print '\t{}\ttest ({}): {}'.format(status, *cols)
 
+def report_output_summary(rules_fail_pass):
+    """Helper function to print the summary results of all tests
+    Args:
+        rules_fail_pass [list]: A list containing two lists for failed and passed
+            rule tests. The sublists contain tuples made up of: (rule_name, rule_description)
+    """
+    failed_tests = len(rules_fail_pass[0])
+    passed_tests = len(rules_fail_pass[1])
+    total_tests = failed_tests + passed_tests
+
+    # Print a message indicating how many of the total tests passed
+    print '{}({}/{})\tTests Passed{}'.format(COLOR_GREEN, passed_tests, total_tests, COLOR_RESET)
+
+    # Check if there were failed tests and report on them appropriately
+    if rules_fail_pass[0]:
+        # Print a message indicating how many of the total tests failed
+        print '{}({}/{})\tTests Failed'.format(COLOR_RED, failed_tests, total_tests)
+
+        color = COLOR_RED
+        # Iterate over the rule_name values in the failed list and report on them
+        for i, failure in enumerate(rules_fail_pass[0]):
+            if i == failed_tests-1:
+                # Change the color back so std out is not red
+                color = COLOR_RESET
+            print '\t({}/{}) test failed for rule: {} [{}]{}'.format(i+1, failed_tests, failure[0],
+                                                                     failure[1], color)
+
 def test_rule(rule_name, test_record, formatted_record):
     """Feed formatted records into StreamAlert and check for alerts
     Args:
@@ -215,6 +242,10 @@ def test_alert_rules():
     BOTO_MOCKER.start()
     tests_passed = True
 
+    # Create a list for pass/fails. The first value in the list is a list of tuples for failures,
+    # and the second is list of tuples for passes. Tuple is (rule_name, rule_description)
+    rules_fail_pass = [[], []]
+
     for root, _, rule_files in os.walk(DIR_RULES):
         for rule_file in rule_files:
             rule_name = rule_file.split('.')[0]
@@ -249,7 +280,14 @@ def test_alert_rules():
 
                 apply_helpers(test_record)
                 formatted_record = format_record(test_record)
-                tests_passed = test_rule(rule_name, test_record, formatted_record) and tests_passed
+                passed = test_rule(rule_name, test_record, formatted_record)
+                tests_passed = passed and tests_passed
+
+                # Add the name of the rule to the applicable pass or fail list
+                rules_fail_pass[passed].append((rule_name, test_record['description']))
+
+    # Report on the final test results
+    report_output_summary(rules_fail_pass)
 
     BOTO_MOCKER.stop()
 
