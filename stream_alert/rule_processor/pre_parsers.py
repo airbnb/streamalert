@@ -73,9 +73,9 @@ class StreamPreParsers(object):
         Args:
             raw_record (dict): An SNS message.
 
-        Returns: (string) Base64 decoded data.
+        Returns: (string) SNS message data.
         """
-        return base64.b64decode(raw_record['Sns']['Message'])
+        return raw_record['Sns']['Message']
 
     @classmethod
     def read_s3_file(cls, downloaded_s3_object):
