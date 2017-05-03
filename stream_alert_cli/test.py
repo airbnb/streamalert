@@ -140,7 +140,7 @@ def format_record(test_record):
         template['eventSourceARN'] = 'arn:aws:kinesis:us-east-1:111222333:stream/{}'.format(source)
 
     elif service == 'sns':
-        template['Sns']['Message'] = base64.b64encode(data)
+        template['Sns']['Message'] = data
         template['EventSubscriptionArn'] = 'arn:aws:sns:us-east-1:111222333:{}'.format(source)
     else:
         LOGGER_CLI.info('Invalid service %s', service)

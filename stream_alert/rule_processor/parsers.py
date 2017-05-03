@@ -229,7 +229,7 @@ class JSONParser(ParserBase):
             [list] A list of dictionaries representing parsed records.
             [boolean] False if the data is not JSON or the data does not follow the schema.
         """
-        if isinstance(data, str):
+        if type(data) in {unicode, str}:
             try:
                 data = json.loads(data)
             except ValueError as err:

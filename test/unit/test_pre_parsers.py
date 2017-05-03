@@ -34,7 +34,7 @@ def test_pre_parse_kinesis():
 def test_pre_parse_sns():
     """Pre-Parse SNS Test"""
     test_data = 'Hello world'
-    raw_record = {'Sns': {'Message': base64.b64encode(test_data)}}
+    raw_record = {'Sns': {'Message': test_data}}
     data = StreamPreParsers.pre_parse_sns(raw_record)
     assert_equal(data, test_data)
 
