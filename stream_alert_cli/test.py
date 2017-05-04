@@ -65,7 +65,7 @@ def report_output_summary(rules_fail_pass):
     total_tests = failed_tests + passed_tests
 
     # Print a message indicating how many of the total tests passed
-    print '{}({}/{})\tTests Passed{}'.format(COLOR_GREEN, passed_tests, total_tests, COLOR_RESET)
+    print '\n\n{}({}/{})\tTests Passed{}'.format(COLOR_GREEN, passed_tests, total_tests, COLOR_RESET)
 
     # Check if there were failed tests and report on them appropriately
     if rules_fail_pass[0]:
@@ -74,24 +74,26 @@ def report_output_summary(rules_fail_pass):
         print '{}({}/{})\tTests Failed'.format(color, failed_tests, total_tests)
 
         # Iterate over the rule_name values in the failed list and report on them
-        for i, failure in enumerate(rules_fail_pass[0]):
-            if i == failed_tests-1:
+        for index, failure in enumerate(rules_fail_pass[0]):
+            if index == failed_tests-1:
                 # Change the color back so std out is not red
                 color = COLOR_RESET
-            print '\t({}/{}) test failed for rule: {} [{}]{}'.format(i+1, failed_tests, failure[0],
-                                                                     failure[1], color)
+            print '\t({}/{}) test failed for rule: {} [{}]{}'.format(index+1, failed_tests,
+                                                                     failure[0], failure[1],
+                                                                     color)
 
     # Check if there were any warnings and report on them
     if rules_fail_pass[2]:
         color = COLOR_YELLOW
         warning_count = len(rules_fail_pass[2])
-        print '{}{} \tWarning{}'.format(color, warning_count, ('','s')[warning_count>1])
+        print '{}{} \tWarning{}'.format(color, warning_count, ('', 's')[warning_count > 1])
 
-        for i, failure in enumerate(rules_fail_pass[2]):
-            if i == warning_count-1:
+        for index, failure in enumerate(rules_fail_pass[2]):
+            if index == warning_count-1:
                 # Change the color back so std out is not yellow
                 color = COLOR_RESET
-            print '\t({}/{}) {} [{}]{}'.format(i+1, warning_count, failure[1], failure[0], color)
+            print '\t({}/{}) {} [{}]{}'.format(index+1, warning_count, failure[1],
+                                               failure[0], color)
 
 def test_rule(rule_name, test_record, formatted_record):
     """Feed formatted records into StreamAlert and check for alerts
@@ -268,7 +270,7 @@ def test_alert_rules():
                 try:
                     contents = json.load(rule_file_handle)
                     test_records = contents['records']
-                except (ValueError, KeyError) as err:
+                except Exception as err:
                     all_tests_passed = False
                     message = 'improperly formatted file - {}: {}'.format(type(err).__name__, err)
                     rules_fail_pass[2].append((rule_file, message))
