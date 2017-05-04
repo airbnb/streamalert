@@ -314,24 +314,16 @@ class StreamClassifier(object):
         LOGGER.debug('log_name: %s', valid_parse.log_name)
         LOGGER.debug('parsed_data: %s', valid_parse.parsed_data)
 
-        typed_data = []
         for data in valid_parse.parsed_data:
             # Convert data types per the schema
             # Use the root schema for the parser due to updates caused by
-            #   configuration settings such as envelope and optional_keys
-            converted_data = self._convert_type(data, valid_parse.parser.type(), valid_parse.root_schema, valid_parse.parser.options)
-            if not converted_data:
-                payload.valid = False
-                break
-
-            typed_data.append(converted_data)
-
-        if not typed_data:
-            return False
+            # configuration settings such as envelope and optional_keys
+            if not self._convert_type(data, valid_parse.parser.type(), valid_parse.root_schema, valid_parse.parser.options):
+                return False
 
         payload.log_source = valid_parse.log_name
         payload.type = valid_parse.parser.type()
-        payload.records = typed_data
+        payload.records = valid_parse.parsed_data
 
         return True
 
@@ -395,4 +387,4 @@ class StreamClassifier(object):
             else:
                 LOGGER.error('Unsupported schema type: %s', value)
 
-        return payload
+        return True
