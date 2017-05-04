@@ -37,8 +37,8 @@ class TestGzipJsonParser(object):
         schema = kwargs['schema']
         options = kwargs['options']
 
-        json_parser = self.parser_class(schema, options)
-        parsed_result = json_parser.parse(data)
+        json_parser = self.parser_class(options)
+        parsed_result = json_parser.parse(schema, data)
         return parsed_result
 
     def test_cloudwatch(self):

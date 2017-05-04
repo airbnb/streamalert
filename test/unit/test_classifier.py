@@ -22,6 +22,8 @@ import json
 
 from nose.tools import assert_equal, assert_not_equal
 
+import stream_alert.rule_processor.classifier as sa_classifier
+
 from stream_alert.rule_processor.classifier import StreamPayload, StreamClassifier
 from stream_alert.rule_processor.pre_parsers import StreamPreParsers
 from stream_alert.rule_processor.config import load_config
@@ -139,6 +141,8 @@ class TestStreamPayload(object):
         classifier.map_source(payload)
 
         test_stream_2_logs = {
+            'test_multiple_schemas:01',
+            'test_multiple_schemas:02',
             'test_log_type_json_2',
             'test_log_type_json_nested_osquery',
             'test_log_type_syslog'
@@ -149,6 +153,57 @@ class TestStreamPayload(object):
         assert_equal(payload.service, 'kinesis')
         assert_equal(payload.entity, 'test_stream_2')
         assert_equal(set(metadata.keys()), test_stream_2_logs)
+
+    def test_multiple_schema_matching(self):
+        """Test Matching Multiple Schemas with Log Patterns"""
+        kinesis_data = json.dumps({
+            'name': 'file added test',
+            'identifier': 'host4.this.test',
+            'time': 'Jan 01 2017',
+            'type': 'lol_file_added_event_test',
+            'message': 'bad_001.txt was added'
+        })
+        # Make sure support for multiple schema matching is ON
+        sa_classifier.SUPPORT_MULTIPLE_SCHEMA_MATCHING = True
+
+        payload = self.payload_generator(kinesis_stream='test_stream_2',
+                                         kinesis_data=kinesis_data)
+        classifier = StreamClassifier(config=self.config)
+        classifier.map_source(payload)
+
+        data = self.pre_parse_kinesis(payload)
+        valid_parses = classifier._process_log_schemas(payload, data)
+
+        assert_equal(len(valid_parses), 2)
+        assert_equal(valid_parses[0].log_name, 'test_multiple_schemas:01')
+        assert_equal(valid_parses[1].log_name, 'test_multiple_schemas:02')
+        valid_parse = classifier._check_valid_parse(valid_parses)
+
+        assert_equal(valid_parse.log_name, 'test_multiple_schemas:01')
+
+    def test_single_schema_matching(self):
+        """Test Matching One Schema with Log Patterns"""
+        kinesis_data = json.dumps({
+            'name': 'file removal test',
+            'identifier': 'host4.this.test.also',
+            'time': 'Jan 01 2017',
+            'type': 'file_removed_event_test',
+            'message': 'bad_001.txt was removed'
+        })
+        # Make sure support for multiple schema matching is OFF
+        sa_classifier.SUPPORT_MULTIPLE_SCHEMA_MATCHING = False
+
+        payload = self.payload_generator(kinesis_stream='test_stream_2',
+                                         kinesis_data=kinesis_data)
+        classifier = StreamClassifier(config=self.config)
+        classifier.map_source(payload)
+
+        data = self.pre_parse_kinesis(payload)
+        valid_parses = classifier._process_log_schemas(payload, data)
+
+        assert_equal(len(valid_parses), 1)
+        valid_parse = classifier._check_valid_parse(valid_parses)
+        assert_equal(valid_parse.log_name, 'test_multiple_schemas:02')
 
     def test_classify_record_kinesis_json_optional(self):
         """Payload Classify JSON - optional fields"""

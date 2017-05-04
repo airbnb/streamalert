@@ -52,18 +52,17 @@ class ParserBase:
     __metaclass__ = ABCMeta
     __parserid__ = ''
 
-    def __init__(self, schema, options):
+    def __init__(self, options):
         """Setup required parser properties
 
         Args:
             schema: Dict of log data schema.
             options: Parser options dict - delimiter, separator, or log_patterns
         """
-        self.schema = schema
         self.options = options or {}
 
     @abstractmethod
-    def parse(self, data):
+    def parse(self, schema, data):
         """Main parser method to be overridden by all Parser classes
 
         Args:
@@ -80,10 +79,10 @@ class ParserBase:
 
     def matched_log_pattern(self, record, log_patterns):
         """Return True if all log patterns of this record match"""
-        # Return False immediately if there are no log patterns
+        # Return True immediately if there are no log patterns
         # or if the data being tested is not a dict
-        if not (log_patterns and isinstance(record, dict)):
-            return False
+        if not log_patterns:
+            return True
 
         pattern_result = []
         for field, pattern_list in log_patterns.iteritems():
@@ -116,7 +115,7 @@ class ParserBase:
 class JSONParser(ParserBase):
     __parserid__ = 'json'
 
-    def _key_check(self, json_records):
+    def _key_check(self, schema, json_records):
         """Verify the declared schema matches the json payload
 
         Args:
@@ -125,29 +124,28 @@ class JSONParser(ParserBase):
         If keys do not match per the schema, records are removed from the
         passed in json_records list
         """
-        schema_keys = set(self.schema.keys())
-        valid_records = []
+        schema_keys = set(schema.keys())
         schema_match = False
 
-        for json_record in json_records:
-            json_keys = set(json_record.keys())
+        for i in reversed(range(len(json_records))):
+            json_keys = set(json_records[i].keys())
             if json_keys == schema_keys:
                 schema_match = True
-                for key, key_type in self.schema.iteritems():
-                    # If the value is a map of defined key/value pairs
+                for key, key_type in schema.iteritems():
+                    if key == 'stream_log_envelope' and isinstance(json_records[i][key], dict):
+                        continue
+                    # Nested key check
                     if key_type and isinstance(key_type, dict):
-                        # subkey check
-                        schema_match = (set(json_record[key].keys()) == set(self.schema[key].keys()))
-
+                        schema_match = bool(self._key_check(schema[key], [json_records[i][key]]))
             else:
                 LOGGER.debug('JSON Key mismatch: %s vs. %s', json_keys, schema_keys)
 
-            if schema_match:
-                valid_records.append(json_record)
+            if not schema_match:
+                del json_records[i]
 
-        return valid_records
+        return json_records
 
-    def _parse_records(self, json_payload):
+    def _parse_records(self, schema, json_payload):
         """Iterate over a json_payload. Identify and extract nested payloads.
         Nested payloads can be detected with log_patterns (`records` should be a
         JSONpath selector that yields the desired nested records).
@@ -187,7 +185,7 @@ class JSONParser(ParserBase):
 
             for key_name, value_type in optional_keys.iteritems():
                 # Update the schema to ensure the record is valid
-                self.schema.update({key_name: value_type})
+                schema.update({key_name: value_type})
                 # If the optional key isn't in our parsed json payload
                 if key_name not in json_payload:
                     # Set default value
@@ -200,7 +198,7 @@ class JSONParser(ParserBase):
             envelope = {}
             envelope_schema = self.options.get('envelope_keys', {})
             if len(envelope_schema):
-                self.schema.update({'stream_log_envelope': envelope_schema})
+                schema.update({'stream_log_envelope': envelope_schema})
                 envelope_keys = envelope_schema.keys()
                 envelope_jsonpath = jsonpath_rw.parse("$." + ",".join(envelope_keys))
                 envelope_matches = [match.value for match in envelope_jsonpath.find(json_payload)]
@@ -219,7 +217,7 @@ class JSONParser(ParserBase):
 
         return json_records
 
-    def parse(self, data):
+    def parse(self, schema, data):
         """Parse a string into a list of JSON payloads.
 
         Args:
@@ -236,10 +234,10 @@ class JSONParser(ParserBase):
                 LOGGER.debug('JSON parse failed: %s', str(err))
                 return False
 
-        json_records = self._parse_records(data)
-        valid_records = self._key_check(json_records)
+        json_records = self._parse_records(schema, data)
+        valid_records = self._key_check(schema, json_records)
 
-        if len(valid_records):
+        if valid_records:
             return valid_records
 
         return False
@@ -248,7 +246,7 @@ class JSONParser(ParserBase):
 class GzipJSONParser(JSONParser):
     __parserid__ = 'gzip-json'
 
-    def parse(self, data):
+    def parse(self, schema, data):
         """Parse a gzipped string into JSON.
 
         Args:
@@ -260,7 +258,7 @@ class GzipJSONParser(JSONParser):
         """
         try:
             data = zlib.decompress(data, 47)
-            return super(GzipJSONParser, self).parse(data)
+            return super(GzipJSONParser, self).parse(schema, data)
         except zlib.error:
             return False
 
@@ -292,7 +290,7 @@ class CSVParser(ParserBase):
 
         return reader
 
-    def parse(self, data):
+    def parse(self, schema, data):
         """Parse a string into a comma separated value reader object.
 
         Args:
@@ -310,12 +308,23 @@ class CSVParser(ParserBase):
         try:
             for row in reader:
                 # check number of columns match
-                if len(row) != len(self.schema):
-                    LOGGER.debug('csv key mismatch: %s vs. %s', len(row), len(self.schema))
+                if len(row) != len(schema):
+                    LOGGER.debug('csv key mismatch: %s vs. %s', len(row), len(schema))
                     return False
 
-                # extract the keys from the row via the index
-                csv_payloads.append({key: row[index] for index, key in enumerate(self.schema)})
+                parsed_payload = {}
+                for index, key in enumerate(schema):
+                    # extract the keys from the row via the index
+                    parsed_payload[key] = row[index]
+
+                    # if the value for this key in the schema is a dict, this must be a nested
+                    # value, so we should try to parse it as one and replace the value
+                    if isinstance(schema[key], dict):
+                        parsed_data = self.parse(schema[key], row[index])
+                        if parsed_data:
+                            parsed_payload[key] = parsed_data[0]
+
+                csv_payloads.append(parsed_payload)
 
             return csv_payloads
         except csv.Error:
@@ -328,7 +337,7 @@ class KVParser(ParserBase):
     __default_separator = '='
     __default_delimiter = ' '
 
-    def parse(self, data):
+    def parse(self, schema, data):
         """Parse a key value string into a dictionary.
 
         Args:
@@ -348,8 +357,8 @@ class KVParser(ParserBase):
             # remove any blank strings that may exist in our list
             fields = filter(None, data.split(delimiter))
             # first check the field length matches our # of keys
-            if len(fields) != len(self.schema):
-                LOGGER.debug('KV field length mismatch: %s vs %s', fields, self.schema)
+            if len(fields) != len(schema):
+                LOGGER.debug('KV field length mismatch: %s vs %s', fields, schema)
                 return False
 
             regex = re.compile('.+{}.+'.format(separator))
@@ -360,7 +369,7 @@ class KVParser(ParserBase):
                     # handle duplicate keys
                     if key in kv_payload:
                         # load key from our configuration
-                        kv_payload[self.schema.keys()[index]] = value
+                        kv_payload[schema.keys()[index]] = value
                     else:
                         # load key from data
                         kv_payload[key] = value
@@ -376,7 +385,7 @@ class KVParser(ParserBase):
 class SyslogParser(ParserBase):
     __parserid__ = 'syslog'
 
-    def parse(self, data):
+    def parse(self, schema, data):
         """Parse a syslog string into a dictionary
 
         Matches syslog events with the following format:
@@ -401,4 +410,4 @@ class SyslogParser(ParserBase):
         if not match:
             return False
 
-        return [{key: match.group(key) for key in self.schema.keys()}]
+        return [{key: match.group(key) for key in schema.keys()}]

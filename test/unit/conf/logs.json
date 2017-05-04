@@ -241,5 +241,39 @@
         "owner": "integer"
       }
     }
+  },
+  "test_multiple_schemas:01": {
+    "schema": {
+      "name": "string",
+      "identifier": "string",
+      "time": "string",
+      "type": "string",
+      "message": "string"
+    },
+    "parser": "json",
+    "configuration": {
+      "log_patterns": {
+        "type": [
+          "*file_added_event*"
+        ]
+      }
+    }
+  },
+  "test_multiple_schemas:02": {
+    "schema": {
+      "name": "string",
+      "identifier": "string",
+      "time": "string",
+      "type": "string",
+      "message": "string"
+    },
+    "parser": "json",
+    "configuration": {
+      "log_patterns": {
+        "type": [
+          "*file_removed_event*"
+        ]
+      }
+    }
   }
 }
