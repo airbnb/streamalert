@@ -38,6 +38,7 @@ BOTO_MOCKER = mock_s3()
 DIR_RULES = 'test/integration/rules'
 DIR_TEMPLATES = 'test/integration/templates'
 COLOR_RED = '\033[0;31;1m'
+COLOR_YELLOW = '\033[0;33;1m'
 COLOR_GREEN = '\033[0;32;1m'
 COLOR_RESET = '\033[0m'
 
@@ -52,6 +53,47 @@ def report_output(cols, failed):
               '{}[Fail]{}'.format(COLOR_RED, COLOR_RESET))[failed]
 
     print '\t{}\ttest ({}): {}'.format(status, *cols)
+
+def report_output_summary(rules_fail_pass):
+    """Helper function to print the summary results of all tests
+    Args:
+        rules_fail_pass [list]: A list containing two lists for failed and passed
+            rule tests. The sublists contain tuples made up of: (rule_name, rule_description)
+    """
+    failed_tests = len(rules_fail_pass[0])
+    passed_tests = len(rules_fail_pass[1])
+    total_tests = failed_tests + passed_tests
+
+    # Print a message indicating how many of the total tests passed
+    print '\n\n{}({}/{})\tTests Passed{}'.format(COLOR_GREEN, passed_tests, total_tests, COLOR_RESET)
+
+    # Check if there were failed tests and report on them appropriately
+    if rules_fail_pass[0]:
+        color = COLOR_RED
+        # Print a message indicating how many of the total tests failed
+        print '{}({}/{})\tTests Failed'.format(color, failed_tests, total_tests)
+
+        # Iterate over the rule_name values in the failed list and report on them
+        for index, failure in enumerate(rules_fail_pass[0]):
+            if index == failed_tests-1:
+                # Change the color back so std out is not red
+                color = COLOR_RESET
+            print '\t({}/{}) test failed for rule: {} [{}]{}'.format(index+1, failed_tests,
+                                                                     failure[0], failure[1],
+                                                                     color)
+
+    # Check if there were any warnings and report on them
+    if rules_fail_pass[2]:
+        color = COLOR_YELLOW
+        warning_count = len(rules_fail_pass[2])
+        print '{}{} \tWarning{}'.format(color, warning_count, ('', 's')[warning_count > 1])
+
+        for index, failure in enumerate(rules_fail_pass[2]):
+            if index == warning_count-1:
+                # Change the color back so std out is not yellow
+                color = COLOR_RESET
+            print '\t({}/{}) {} [{}]{}'.format(index+1, warning_count, failure[1],
+                                               failure[0], color)
 
 def test_rule(rule_name, test_record, formatted_record):
     """Feed formatted records into StreamAlert and check for alerts
@@ -213,47 +255,61 @@ def test_alert_rules():
     """
     # Start the mock_s3 instance here so we can test with mocked objects project-wide
     BOTO_MOCKER.start()
-    tests_passed = True
+    all_tests_passed = True
+
+    # Create a list for pass/fails. The first value in the list is a list of tuples for failures,
+    # and the second is list of tuples for passes. Tuple is (rule_name, rule_description)
+    rules_fail_pass = [[], [], []]
 
     for root, _, rule_files in os.walk(DIR_RULES):
         for rule_file in rule_files:
             rule_name = rule_file.split('.')[0]
             rule_file_path = os.path.join(root, rule_file)
 
-            # Print rule name for section header
-            print '\n{}'.format(rule_name)
-
             with open(rule_file_path, 'r') as rule_file_handle:
                 try:
                     contents = json.load(rule_file_handle)
                     test_records = contents['records']
-                except (ValueError, KeyError) as err:
-                    tests_passed = False
-                    LOGGER_CLI.error('Improperly formatted file (%s) %s: %s',
-                                     rule_file_path, type(err).__name__, err)
+                except Exception as err:
+                    all_tests_passed = False
+                    message = 'improperly formatted file - {}: {}'.format(type(err).__name__, err)
+                    rules_fail_pass[2].append((rule_file, message))
                     continue
 
             if len(test_records) == 0:
-                tests_passed = False
-                LOGGER_CLI.error('No records to test for %s', rule_name)
+                all_tests_passed = False
+                rules_fail_pass[2].append((rule_file, 'no records to test in file'))
                 continue
 
+            print_header = True
             # Go over the records and test the applicable rule
             for test_record in test_records:
                 if not check_keys(test_record):
-                    report_output([test_record['service'],
-                                   'Improperly formatted record: {}'.format(test_record)],
-                                  True)
-                    tests_passed = False
+                    all_tests_passed = False
+                    message = 'improperly formatted record: {}'.format(test_record)
+                    rules_fail_pass[2].append((rule_file, message))
                     continue
+
+                if print_header:
+                    # Print rule name for section header, but only if we get to a point
+                    # where there is a record to actually be tested. this avoid blank sections
+                    print '\n{}'.format(rule_name)
+                    print_header = not print_header
 
                 apply_helpers(test_record)
                 formatted_record = format_record(test_record)
-                tests_passed = test_rule(rule_name, test_record, formatted_record) and tests_passed
+                current_test_passed = test_rule(rule_name, test_record, formatted_record)
+                all_tests_passed = current_test_passed and all_tests_passed
+
+                # Add the name of the rule to the applicable pass or fail list
+                rules_fail_pass[current_test_passed].append((rule_name, test_record['description']))
+
+    # Report on the final test results
+    report_output_summary(rules_fail_pass)
 
     BOTO_MOCKER.stop()
 
-    return tests_passed
+    return all_tests_passed
 
 def put_mocked_s3_object(bucket_name, key_name, body_value):
     """Create a mock AWS S3 object for testing
