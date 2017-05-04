@@ -90,7 +90,7 @@ Parameter Details
 logs
 ~~~~~~~~~~~
 
-``logs`` define the log sources the rule supports; The ``def`` function block is not run unless this condition is satisfied.
+``logs`` define the log sources the rule supports; The ``def`` function block is not run unless this condition is satisfied. Your rule(s) must define at least one log source.
 
 A rule can be run against multiple log sources if desired.
 
