@@ -25,7 +25,7 @@ LOGGER = logging.getLogger('StreamAlert')
 
 # Set the below to True when we want to support multiple matching on multiple schema
 # matching and then use log_patterns as a fall back for key/value schema matching
-SUPPORT_MULTIPLE_SCHEMA_MATCHING = True
+SUPPORT_MULTIPLE_SCHEMA_MATCHING = False
 
 class InvalidSchemaError(Exception):
     """Raise this exception if a declared schema field type does not match

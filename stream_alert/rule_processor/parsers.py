@@ -118,32 +118,35 @@ class JSONParser(ParserBase):
     def _key_check(self, schema, json_records):
         """Verify the declared schema matches the json payload
 
+        If keys do not match per the schema, records are removed from the
+        passed in json_records list
+
         Args:
             json_records [list]: List of dictionaries representing JSON payloads
 
-        If keys do not match per the schema, records are removed from the
-        passed in json_records list
+        Returns:
+            [bool] True if any log in the list matches the schema, False if not
         """
         schema_keys = set(schema.keys())
         schema_match = False
 
-        for i in reversed(range(len(json_records))):
-            json_keys = set(json_records[i].keys())
+        for index in reversed(range(len(json_records))):
+            json_keys = set(json_records[index].keys())
             if json_keys == schema_keys:
                 schema_match = True
                 for key, key_type in schema.iteritems():
-                    if key == 'stream_log_envelope' and isinstance(json_records[i][key], dict):
+                    if key == 'stream_log_envelope' and isinstance(json_records[index][key], dict):
                         continue
                     # Nested key check
                     if key_type and isinstance(key_type, dict):
-                        schema_match = bool(self._key_check(schema[key], [json_records[i][key]]))
+                        schema_match = self._key_check(schema[key], [json_records[index][key]])
             else:
                 LOGGER.debug('JSON Key mismatch: %s vs. %s', json_keys, schema_keys)
 
             if not schema_match:
-                del json_records[i]
+                del json_records[index]
 
-        return json_records
+        return bool(json_records)
 
     def _parse_records(self, schema, json_payload):
         """Iterate over a json_payload. Identify and extract nested payloads.
@@ -227,7 +230,7 @@ class JSONParser(ParserBase):
             [list] A list of dictionaries representing parsed records.
             [boolean] False if the data is not JSON or the data does not follow the schema.
         """
-        if type(data) in {unicode, str}:
+        if isinstance(data, (unicode, str)):
             try:
                 data = json.loads(data)
             except ValueError as err:
@@ -235,12 +238,11 @@ class JSONParser(ParserBase):
                 return False
 
         json_records = self._parse_records(schema, data)
-        valid_records = self._key_check(schema, json_records)
+        # Make sure all keys match the schema, including nests maps
+        if not self._key_check(schema, json_records):
+            return False
 
-        if valid_records:
-            return valid_records
-
-        return False
+        return json_records
 
 @parser
 class GzipJSONParser(JSONParser):
