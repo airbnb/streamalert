@@ -124,7 +124,7 @@ This is achieved by looking for a particular field in the log. The code:
 outputs
 ~~~~~~~
 
-``outputs`` define where the alert should be sent to if the return value of a rule is ``True``.
+``outputs`` define where the alert should be sent to if the return value of a rule is ``True``. Your rule(s) must define at least one output.
 
 StreamAlert supports sending alerts to PagerDuty, Slack, Amazon S3 and Phantom.
 
