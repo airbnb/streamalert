@@ -23,8 +23,8 @@ from stream_alert.rule_processor.parsers import get_parser
 logging.basicConfig()
 LOGGER = logging.getLogger('StreamAlert')
 
-# Set the below to True when we want to support multiple matching on multiple schema
-# matching and then use log_patterns as a fall back for key/value schema matching
+# Set the below to True when we want to support matching on multiple schemas
+# and then log_patterns will be used as a fall back for key/value matching
 SUPPORT_MULTIPLE_SCHEMA_MATCHING = False
 
 class InvalidSchemaError(Exception):
@@ -245,14 +245,14 @@ class StreamClassifier(object):
         return valid_parses[0]
 
     def _process_log_schemas(self, payload, data):
-        """Get any log schemas that properly classified this log
+        """Get any log schemas that matched this log format
 
         Args:
             payload: A StreamAlert payload object
             data: Pre parsed data string from a raw_event to be parsed
 
         Returns:
-            [list] A list containing any schemas that properly parsed this log
+            [list] A list containing any schemas that matched this log format
                 Each list entry contains the namedtuple of 'ClassifiedLog' with
                 values of log_name, root_schema, parser, and parsed_data
         """
