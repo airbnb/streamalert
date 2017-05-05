@@ -272,7 +272,7 @@ class SlackOutput(StreamOutputBase):
                     ...
         """
         # Convert the alert we have to a nicely formatted string for slack
-        alert_text = '\n'.join(cls._json_to_slack_mrkdwn(alert, 0))
+        alert_text = '\n'.join(cls._json_to_slack_mrkdwn(alert['record'], 0))
         # Slack requires escaping the characters: '&', '>' and '<' and cgi does just that
         alert_text = cgi.escape(alert_text)
         messages = []
