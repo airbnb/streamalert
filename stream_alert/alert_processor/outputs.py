@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+import cgi
 import json
 import logging
 import os
@@ -22,8 +23,6 @@ from collections import OrderedDict
 from datetime import datetime
 
 import boto3
-
-from botocore.exceptions import ClientError
 
 from stream_alert.alert_processor.output_base import StreamOutputBase, OutputProperty
 
@@ -226,6 +225,8 @@ class PhantomOutput(StreamOutputBase):
 class SlackOutput(StreamOutputBase):
     """SlackOutput handles all alert dispatching for Slack"""
     __service__ = 'slack'
+    # Slack recommends no messages larger than 4000 bytes. This does not account for unicode
+    MAX_MESSAGE_SIZE = 4000
 
     def get_user_defined_properties(self):
         """Get properties that must be asssigned by the user when configuring a new Slack
@@ -252,8 +253,8 @@ class SlackOutput(StreamOutputBase):
                             cred_requirement=True))
         ])
 
-    @staticmethod
-    def _format_message(rule_name, alert):
+    @classmethod
+    def _format_message(cls, rule_name, alert):
         """Format the message to be sent to slack.
 
         Args:
@@ -261,15 +262,148 @@ class SlackOutput(StreamOutputBase):
             alert: Alert relevant to the triggered rule
 
         Returns:
-            [string] formatted message string to send to Slack. The message will look like:
-                ```StreamAlert Rule Triggered
-                Rule Name: rule_name
-                Rule Description: rule_description
-                {JSON DUMP OF ALERT}```
+            [string] formatted message with attachments to send to Slack.
+                The message will look like:
+                    StreamAlert Rule Triggered: rule_name
+                    Rule Description:
+                    This will be the docstring from the rule, sent as the rule_description
+
+                    Record (Part 1 of 2):
+                    ...
         """
-        rule_desc = alert['metadata']['rule_description'] or DEFAULT_RULE_DESCRIPTION
-        message = '```StreamAlert Rule Triggered\nRule Name: {}\nRule Description: {}\n{}```'
-        return message.format(rule_name, rule_desc, json.dumps(alert['record'], indent=4))
+        # Convert the alert we have to a nicely formatted string for slack
+        alert_text = '\n'.join(cls._json_to_slack_mrkdwn(alert, 0))
+        # Slack requires escaping the characters: '&', '>' and '<' and cgi does just that
+        alert_text = cgi.escape(alert_text)
+        messages = []
+        index = cls.MAX_MESSAGE_SIZE
+        while alert_text != '':
+            if len(alert_text) <= index:
+                messages.append(alert_text)
+                break
+
+            # Find the closest line break prior to this index
+            while index > 1 and alert_text[index] != '\n':
+                index -= 1
+
+            # Append the message part up until this index, and move to the next chunk
+            messages.append(alert_text[:index])
+            alert_text = alert_text[index+1:]
+
+            index = cls.MAX_MESSAGE_SIZE
+
+        header_text = '*StreamAlert Rule Triggered: {}*'.format(rule_name)
+        full_message = {
+            'text': header_text,
+            'mrkdwn': True,
+            'attachments': []
+        }
+
+        for index, message in enumerate(messages):
+            title = 'Record:'
+            if len(messages) > 1:
+                title = 'Record (Part {} of {}):'.format(index+1, len(messages))
+            rule_desc = ''
+            # Only print the rule description on the first attachment
+            if index == 0:
+                rule_desc = alert['metadata']['rule_description'] or DEFAULT_RULE_DESCRIPTION
+                rule_desc = '*Rule Description:*\n{}\n'.format(rule_desc)
+
+            # Add this attachemnt to the full message array of attachments
+            full_message['attachments'].append({
+                'fallback': header_text,
+                'color': '#b22222',
+                'pretext': rule_desc,
+                'title': title,
+                'text': message,
+                'mrkdwn_in': ['text', 'pretext']
+            })
+
+        # Return the dumped json payload to be sent to slack
+        return json.dumps(full_message)
+
+    @classmethod
+    def _json_to_slack_mrkdwn(cls, json_values, indent_count):
+        """Translate a json object into a more human-readable list of lines
+        This will handle recursion of all nested maps and lists within the object
+
+        Args:
+            json_values [object]: variant to be translated (could be json map, list, etc)
+            tab_indent_count [integer]: Number of tabs to prefix each line with
+
+        Returns:
+            [list] list of strings that have been properly tabbed and formatted for printing
+        """
+        tab = '\t'
+        all_lines = []
+        if isinstance(json_values, dict):
+            all_lines = cls._json_map_to_text(json_values, tab, indent_count)
+        elif isinstance(json_values, list):
+            all_lines = cls._json_list_to_text(json_values, tab, indent_count)
+        else:
+            all_lines.append('{}'.format(json_values))
+
+        return all_lines
+
+    @classmethod
+    def _json_map_to_text(cls, json_values, tab, indent_count):
+        """Translate a map from json (dict) into a more human-readable list of lines
+        This will handle recursion of all nested maps and lists within the map
+
+        Args:
+            json_values [dict]: dictionary to be iterated over and formatted
+            tab [string]: string value to use for indentation
+            tab_indent_count [integer]: Number of tabs to prefix each line with
+
+        Returns:
+            [list] list of strings that have been properly tabbed and formatted for printing
+        """
+        all_lines = []
+        for key, value in json_values.iteritems():
+            if isinstance(value, (dict, list)) and value:
+                all_lines.append('{}*{}:*'.format(tab*indent_count, key))
+                all_lines.extend(cls._json_to_slack_mrkdwn(value, indent_count+1))
+            else:
+                new_lines = cls._json_to_slack_mrkdwn(value, indent_count+1)
+                if len(new_lines) == 1:
+                    all_lines.append('{}*{}:* {}'.format(tab*indent_count, key, new_lines[0]))
+                elif new_lines:
+                    all_lines.append('{}*{}:*'.format(tab*indent_count, key))
+                    all_lines.extend(new_lines)
+                else:
+                    all_lines.append('{}*{}:* {}'.format(tab*indent_count, key, value))
+
+        return all_lines
+
+    @classmethod
+    def _json_list_to_text(cls, json_values, tab, indent_count):
+        """Translate a list from json into a more human-readable list of lines
+        This will handle recursion of all nested maps and lists within the list
+
+        Args:
+            json_values [list]: list to be iterated over and formatted
+            tab [string]: string value to use for indentation
+            tab_indent_count [integer]: Number of tabs to prefix each line with
+
+        Returns:
+            [list] list of strings that have been properly tabbed and formatted for printing
+        """
+        all_lines = []
+        for index, value in enumerate(json_values):
+            if isinstance(value, (dict, list)) and value:
+                all_lines.append('{}*[{}]*'.format(tab*indent_count, index+1))
+                all_lines.extend(cls._json_to_slack_mrkdwn(value, indent_count+1))
+            else:
+                new_lines = cls._json_to_slack_mrkdwn(value, indent_count+1)
+                if len(new_lines) == 1:
+                    all_lines.append('{}*[{}]* {}'.format(tab*indent_count, index+1, new_lines[0]))
+                elif new_lines:
+                    all_lines.append('{}*[{}]*'.format(tab*indent_count, index+1))
+                    all_lines.extend(new_lines)
+                else:
+                    all_lines.append('{}*[{}]* {}'.format(tab*indent_count, index+1, value))
+
+        return all_lines
 
     def dispatch(self, **kwargs):
         """Send alert text to Slack
@@ -283,8 +417,7 @@ class SlackOutput(StreamOutputBase):
         creds = self._load_creds(kwargs['descriptor'])
         url = os.path.join(creds['url'])
 
-        slack_message = json.dumps({'text': self._format_message(kwargs['rule_name'],
-                                                                 kwargs['alert'])})
+        slack_message = self._format_message(kwargs['rule_name'], kwargs['alert'])
 
         resp = self._request_helper(url, slack_message)
         success = self._check_http_response(resp)
