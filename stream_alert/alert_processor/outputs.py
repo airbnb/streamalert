@@ -324,11 +324,11 @@ class SlackOutput(StreamOutputBase):
 
     @classmethod
     def _json_to_slack_mrkdwn(cls, json_values, indent_count):
-        """Translate a json object into a more human-readable blob of text
+        """Translate a json object into a more human-readable list of lines
         This will handle recursion of all nested maps and lists within the object
 
         Args:
-            values [object]: variant to be translated (could be json map, list, etc)
+            json_values [object]: variant to be translated (could be json map, list, etc)
             tab_indent_count [integer]: Number of tabs to prefix each line with
 
         Returns:
@@ -347,6 +347,17 @@ class SlackOutput(StreamOutputBase):
 
     @classmethod
     def _json_map_to_text(cls, json_values, tab, indent_count):
+        """Translate a map from json (dict) into a more human-readable list of lines
+        This will handle recursion of all nested maps and lists within the map
+
+        Args:
+            json_values [dict]: dictionary to be iterated over and formatted
+            tab [string]: string value to use for indentation
+            tab_indent_count [integer]: Number of tabs to prefix each line with
+
+        Returns:
+            [list] list of strings that have been properly tabbed and formatted for printing
+        """
         all_lines = []
         for key, value in json_values.iteritems():
             if isinstance(value, (dict, list)) and value:
@@ -366,6 +377,17 @@ class SlackOutput(StreamOutputBase):
 
     @classmethod
     def _json_list_to_text(cls, json_values, tab, indent_count):
+        """Translate a list from json into a more human-readable list of lines
+        This will handle recursion of all nested maps and lists within the list
+
+        Args:
+            json_values [list]: list to be iterated over and formatted
+            tab [string]: string value to use for indentation
+            tab_indent_count [integer]: Number of tabs to prefix each line with
+
+        Returns:
+            [list] list of strings that have been properly tabbed and formatted for printing
+        """
         all_lines = []
         for index, value in enumerate(json_values):
             if isinstance(value, (dict, list)) and value:
