@@ -27,8 +27,8 @@ class TestKVParser(object):
         schema = kwargs['schema']
         options = kwargs['options']
 
-        kv_parser = self.parser_class(schema, options)
-        parsed_result = kv_parser.parse(data)
+        kv_parser = self.parser_class(options)
+        parsed_result = kv_parser.parse(schema, data)
         return parsed_result
 
     def test_kv_parsing(self):

@@ -13,6 +13,7 @@
     },
     "test_stream_2": {
       "logs": [
+        "test_multiple_schemas",
         "test_log_type_json_2",
         "test_log_type_json_nested_osquery",
         "test_log_type_syslog"
