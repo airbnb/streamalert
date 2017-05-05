@@ -317,7 +317,7 @@ class StreamClassifier(object):
         for data in valid_parse.parsed_data:
             # Convert data types per the schema
             # Use the root schema for the parser due to updates caused by
-            # configuration settings such as envelope and optional_keys
+            # configuration settings such as envelope_keys and optional_keys
             if not self._convert_type(data, valid_parse.parser.type(), valid_parse.root_schema, valid_parse.parser.options):
                 return False
 
@@ -372,8 +372,8 @@ class StreamClassifier(object):
                     continue # allow empty maps (dict)
 
                 # handle nested values
-                # skip the 'stream_log_envelope' key that we've added during parsing
-                if key == 'stream_log_envelope' and isinstance(payload[key], dict):
+                # skip the 'streamalert:envelope_keys' key that we've added during parsing
+                if key == 'streamalert:envelope_keys' and isinstance(payload[key], dict):
                     continue
 
                 if 'log_patterns' in options:

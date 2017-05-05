@@ -135,7 +135,7 @@ class JSONParser(ParserBase):
             if json_keys == schema_keys:
                 schema_match = True
                 for key, key_type in schema.iteritems():
-                    if key == 'stream_log_envelope' and isinstance(json_records[index][key], dict):
+                    if key == 'streamalert:envelope_keys' and isinstance(json_records[index][key], dict):
                         continue
                     # Nested key check
                     if key_type and isinstance(key_type, dict):
@@ -154,7 +154,7 @@ class JSONParser(ParserBase):
         JSONpath selector that yields the desired nested records).
 
         If desired, fields present on the root record can be merged into child
-        events using the `envelope` option.
+        events using the `envelope_keys` option.
 
         Args:
             json_payload [dict]: The parsed json data
@@ -201,7 +201,7 @@ class JSONParser(ParserBase):
             envelope = {}
             envelope_schema = self.options.get('envelope_keys', {})
             if len(envelope_schema):
-                schema.update({'stream_log_envelope': envelope_schema})
+                schema.update({'streamalert:envelope_keys': envelope_schema})
                 envelope_keys = envelope_schema.keys()
                 envelope_jsonpath = jsonpath_rw.parse("$." + ",".join(envelope_keys))
                 envelope_matches = [match.value for match in envelope_jsonpath.find(json_payload)]
@@ -211,7 +211,7 @@ class JSONParser(ParserBase):
             for match in records_jsonpath.find(json_payload):
                 record = match.value
                 if len(envelope):
-                    record.update({'stream_log_envelope': envelope})
+                    record.update({'streamalert:envelope_keys': envelope})
 
                 json_records.append(record)
 

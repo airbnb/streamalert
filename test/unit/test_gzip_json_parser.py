@@ -60,9 +60,9 @@ class TestGzipJsonParser(object):
         expected_keys = (u'protocol', u'source', u'destination', u'srcport',
                          u'destport', u'eni', u'action', u'packets', u'bytes',
                          u'windowstart', u'windowend', u'version', u'account',
-                         u'flowlogstatus',u'stream_log_envelope')
+                         u'flowlogstatus',u'streamalert:envelope_keys')
         expected_envelope_keys = (u'logGroup', u'logStream', u'owner')
 
         for result in parsed_result:
             assert_equal(sorted(expected_keys), sorted(result.keys()))
-            assert_equal(sorted(expected_envelope_keys),sorted(result['stream_log_envelope'].keys()))
+            assert_equal(sorted(expected_envelope_keys),sorted(result['streamalert:envelope_keys'].keys()))
