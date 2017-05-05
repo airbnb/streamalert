@@ -93,7 +93,7 @@ def load_env(context):
 
     Returns:
         {'lambda_function_name': 'function_name',
-         'lambda_alias': 'staging|development|production'}
+         'lambda_alias': 'development|production'}
     """
     env = {}
     if context:
@@ -104,4 +104,5 @@ def load_env(context):
         env['lambda_alias'] = arn[7]
     else:
         env['lambda_alias'] = 'development'
+        env['lambda_region'] = 'us-east-1'
     return env

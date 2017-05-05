@@ -42,13 +42,13 @@ class TestStreamSink(object):
 
     def test_sns_topic_arn(self):
         """Sink SNS Messaging - Topic ARN"""
-        sinker = sink.StreamSink([], self.env)
+        sinker = sink.StreamSink(self.env)
         arn = sinker._get_sns_topic_arn()
         assert_equal(arn, 'arn:aws:sns:us-east-1:123456789012:unittest_prod_streamalerts')
 
     def test_message_size_check(self):
         """Sink SNS Messaging - Message Blob Size Check"""
-        sinker = sink.StreamSink([], self.env)
+        sinker = sink.StreamSink(self.env)
         passed = sinker._sns_message_size_check(get_payload(1000))
         assert_equal(passed, True)
         passed = sinker._sns_message_size_check(get_payload((256*1024)+1))

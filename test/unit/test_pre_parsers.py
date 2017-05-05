@@ -53,7 +53,7 @@ def test_pre_parse_s3():
             },
             'object': {
                 'key': key_name,
-                'size': 1000
+                'size': 30
             }
         }
     }
@@ -63,8 +63,9 @@ def test_pre_parse_s3():
     obj = s3_resource.Object(bucket_name, key_name)
     obj.put(Body=body_value)
 
-    s3_file = StreamPreParsers.pre_parse_s3(raw_record)
+    s3_file, size = StreamPreParsers.pre_parse_s3(raw_record)
     data = StreamPreParsers.read_s3_file(s3_file).next()
     assert_equal(body_value, data)
+    assert_equal(size, 30)
 
     BOTO_MOCKER.stop()

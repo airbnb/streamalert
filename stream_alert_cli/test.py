@@ -113,7 +113,7 @@ def test_rule(rule_name, test_record, formatted_record):
     else:
         expected_alert_count = (0, 1)[test_record['trigger']]
 
-    alerts = StreamAlert(return_alerts=True).run(event, None)
+    alerts = StreamAlert(None, True).run(event)
     # we only want alerts for the specific rule passed in
     matched_alert_count = len([x for x in alerts if x['metadata']['rule_name'] == rule_name])
 
@@ -166,6 +166,7 @@ def format_record(test_record):
         # Set the S3 object key to a random value for testing
         test_record['key'] = ('{:032X}'.format(random.randrange(16**32)))
         template['s3']['object']['key'] = test_record['key']
+        template['s3']['object']['size'] = len(data)
         template['s3']['bucket']['arn'] = 'arn:aws:s3:::{}'.format(source)
         template['s3']['bucket']['name'] = source
 
