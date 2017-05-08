@@ -91,7 +91,7 @@ class StreamAlert(object):
             count += 1
             # Log an info message on every 100 lines processed
             if count % 100 == 0:
-                avg_record_size = (processed_size - 1 / count)
+                avg_record_size = ((processed_size - 1) / count)
                 approx_record_count = s3_object_size / avg_record_size
                 LOGGER.info('Processed %s records out of an approximate total of %s '
                             '(average record size: %s bytes, total size: %s bytes)',
