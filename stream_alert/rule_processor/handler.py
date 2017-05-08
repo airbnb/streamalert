@@ -9,24 +9,29 @@ from stream_alert.rule_processor.rules_engine import StreamRules
 from stream_alert.rule_processor.sink import StreamSink
 
 logging.basicConfig()
-level = os.environ.get('LOGGER_LEVEL', 'INFO')
+LEVEL = os.environ.get('LOGGER_LEVEL', 'INFO')
 LOGGER = logging.getLogger('StreamAlert')
-LOGGER.setLevel(level.upper())
+LOGGER.setLevel(LEVEL.upper())
 
 
 class StreamAlert(object):
     """Wrapper class for handling all StreamAlert classificaiton and processing"""
-    def __init__(self, **kwargs):
+    def __init__(self, context, return_alerts=False):
         """
         Args:
+            context: An AWS context object which provides metadata on the currently
+                executing lambda function.
             return_alerts: If the user wants to handle the sinking
                 of alerts to external endpoints, return a list of
                 generated alerts.
         """
-        self.return_alerts = kwargs.get('return_alerts')
+        self.return_alerts = return_alerts
+        self.env = load_env(context)
+        # Instantiate the sink here to handle sending the triggered alerts to the alert processor
+        self.sinker = StreamSink(self.env)
         self.alerts = []
 
-    def run(self, event, context):
+    def run(self, event):
         """StreamAlert Lambda function handler.
 
         Loads the configuration for the StreamAlert function which contains:
@@ -37,8 +42,6 @@ class StreamAlert(object):
         Args:
             event: An AWS event mapped to a specific source/entity (kinesis stream or
                 an s3 bucket event) containing data emitted to the stream.
-            context: An AWS context object which provides metadata on the currently
-                executing lambda function.
 
         Returns:
             None
@@ -46,13 +49,13 @@ class StreamAlert(object):
         LOGGER.debug('Number of Records: %d', len(event.get('Records', [])))
 
         config = load_config()
-        env = load_env(context)
 
         for record in event.get('Records', []):
             payload = StreamPayload(raw_record=record)
             classifier = StreamClassifier(config=config)
 
-            # If the kinesis stream or s3 bucket is not in our config, go onto the next record
+            # If the kinesis stream, s3 bucket, or sns topic is not in our config,
+            # go onto the next record
             if not classifier.map_source(payload):
                 continue
 
@@ -65,48 +68,59 @@ class StreamAlert(object):
             else:
                 LOGGER.info('Unsupported service: %s', payload.service)
 
-        # returns the list of generated alerts
+        LOGGER.debug('%s alerts triggered', len(self.alerts))
+        LOGGER.debug('\n%s\n', json.dumps(self.alerts, indent=4))
+
         if self.return_alerts:
             return self.alerts
-        # send alerts to SNS
-        self._send_alerts(env, payload)
 
     def _kinesis_process(self, payload, classifier):
         """Process Kinesis data for alerts"""
         data = StreamPreParsers.pre_parse_kinesis(payload.raw_record)
-        self.process_alerts(classifier, payload, data)
+        self._process_alerts(classifier, payload, data)
 
     def _s3_process(self, payload, classifier):
         """Process S3 data for alerts"""
-        s3_file = StreamPreParsers.pre_parse_s3(payload.raw_record)
+        s3_file, s3_object_size = StreamPreParsers.pre_parse_s3(payload.raw_record)
+        count, processed_size = 0, 0
         for data in StreamPreParsers.read_s3_file(s3_file):
             payload.refresh_record(data)
-            self.process_alerts(classifier, payload, data)
+            self._process_alerts(classifier, payload, data)
+            # Add the current data to the total processed size, +1 to account for line feed
+            processed_size += (len(data) + 1)
+            count += 1
+            # Log an info message on every 100 lines processed
+            if count % 100 == 0:
+                avg_record_size = (processed_size - 1 / count)
+                approx_record_count = s3_object_size / avg_record_size
+                LOGGER.info('Processed %s records out of an approximate total of %s '
+                            '(average record size: %s bytes, total size: %s bytes)',
+                            count, approx_record_count, avg_record_size, s3_object_size)
 
     def _sns_process(self, payload, classifier):
         """Process SNS data for alerts"""
         data = StreamPreParsers.pre_parse_sns(payload.raw_record)
-        self.process_alerts(classifier, payload, data)
+        self._process_alerts(classifier, payload, data)
 
-    def _send_alerts(self, env, payload):
-        """Send generated alerts to correct places"""
-        if self.alerts:
-            if env['lambda_alias'] == 'development':
-                LOGGER.info('%s alerts triggered', len(self.alerts))
-                LOGGER.info('\n%s\n', json.dumps(self.alerts, indent=4))
-            else:
-                StreamSink(self.alerts, env).sink()
-        elif payload.valid:
-            LOGGER.debug('Valid data, no alerts')
+    def _process_alerts(self, classifier, payload, data):
+        """Process records for alerts and send them to the correct places
 
-    def process_alerts(self, classifier, payload, data):
-        """Process records for alerts"""
+        Args:
+            classifier [StreamClassifier]: Handler for classifying a record's data
+            payload [StreamPayload]: StreamAlert payload object being processed
+            data [string]: Pre parsed data string from a raw_event to be parsed
+        """
         classifier.classify_record(payload, data)
-        if payload.valid:
-            alerts = StreamRules.process(payload)
-            if alerts:
-                self.alerts.extend(alerts)
-        else:
-            LOGGER.error('Invalid data: %s\n%s',
-                         payload,
-                         json.dumps(payload.raw_record, indent=4))
+        if not payload.valid:
+            LOGGER.error('Invalid data: %s\n%s', payload, json.dumps(payload.raw_record, indent=4))
+            return
+
+        alerts = StreamRules.process(payload)
+        if not alerts:
+            LOGGER.debug('Valid data, no alerts')
+            return
+
+        if self.return_alerts:
+            self.alerts.extend(alerts)
+
+        self.sinker.sink(alerts)

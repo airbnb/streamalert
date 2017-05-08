@@ -133,5 +133,7 @@ def test_load_env():
     context.invoked_function_arn = 'arn:aws:lambda:us-east-1:555555555555:function:streamalert_testing:production'
 
     env = load_env(context)
+    assert_equal(env['lambda_region'], 'us-east-1')
+    assert_equal(env['account_id'], '555555555555')
     assert_equal(env['lambda_function_name'], 'streamalert_testing')
     assert_equal(env['lambda_alias'], 'production')

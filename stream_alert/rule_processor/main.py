@@ -22,4 +22,4 @@ from rules import (
 
 def handler(event, context):
     """Main Lambda handler function"""
-    StreamAlert().run(event, context)
+    StreamAlert(context).run(event)
