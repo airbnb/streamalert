@@ -34,7 +34,7 @@ def json_dump(sns_dict, indent_value=None):
     try:
         return json.dumps(sns_dict, indent=indent_value, default=json_dict_serializer)
     except AttributeError as err:
-        logging.error('An error occurred while dumping object to JSON: %s', err)
+        LOGGER.error('An error occurred while dumping object to JSON: %s', err)
         return ""
 
 class SNSMessageSizeError(Exception):
@@ -69,14 +69,11 @@ class StreamSink(object):
                 }
             ]}
         """
-        lambda_alias = self.env['lambda_alias']
         for alert in alerts:
             sns_dict = {'default': alert}
-            if lambda_alias == 'production':
-                topic_arn = self._get_sns_topic_arn()
-                self.publish_message(self.BOTO_CLIENT_SNS, json_dump(sns_dict), topic_arn)
-            else:
-                LOGGER.error('Unsupported lambda alias: %s', lambda_alias)
+            topic_arn = self._get_sns_topic_arn()
+            client = boto3.client('sns', region_name=self.env['lambda_region'])
+            self.publish_message(client, json_dump(sns_dict), topic_arn)
 
     def _get_sns_topic_arn(self):
         """Return a properly formatted SNS ARN.
@@ -115,7 +112,7 @@ class StreamSink(object):
             topic: The SNS topic ARN to send to.
         """
         if not self._sns_message_size_check(message):
-            logging.error('Cannot publish Alerts, message size is too big!')
+            LOGGER.error('Cannot publish Alerts, message size is too big!')
             raise SNSMessageSizeError('SNS message size is too big! (Max: 256KB)')
 
         try:
@@ -125,9 +122,14 @@ class StreamSink(object):
                 Subject='StreamAlert Rules Triggered'
             )
         except botocore.exceptions.ClientError as err:
-            logging.error('An error occurred while publishing alert: %s', err.response)
+            LOGGER.error('An error occurred while publishing alert: %s', err.response)
             raise err
 
-        LOGGER.info('Published alert to %s', topic)
-        LOGGER.info('SNS MessageID: %s', response['MessageId'])
+        if response['ResponseMetadata']['HTTPStatusCode'] != 200:
+            LOGGER.error('Failed to publish message to sns topic: %s', topic)
+            return
+
+        if self.env['lambda_alias'] != 'development':
+            LOGGER.info('Published alert to %s', topic)
+            LOGGER.info('SNS MessageID: %s', response['MessageId'])
 

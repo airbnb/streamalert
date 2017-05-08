@@ -24,7 +24,7 @@ import time
 import zlib
 
 import boto3
-from moto import mock_s3
+from moto import mock_s3, mock_sns
 
 from stream_alert.rule_processor.handler import StreamAlert
 from stream_alert_cli.logger import LOGGER_CLI, LOGGER_SA
@@ -33,7 +33,8 @@ from stream_alert_cli.logger import LOGGER_CLI, LOGGER_SA
 import stream_alert.rule_processor.main
 # pylint: enable=unused-import
 
-BOTO_MOCKER = mock_s3()
+BOTO_MOCKER_S3 = mock_s3()
+BOTO_MOCKER_SNS = mock_sns()
 
 DIR_RULES = 'test/integration/rules'
 DIR_TEMPLATES = 'test/integration/templates'
@@ -113,7 +114,18 @@ def test_rule(rule_name, test_record, formatted_record):
     else:
         expected_alert_count = (0, 1)[test_record['trigger']]
 
+    # Start mocked sns
+    BOTO_MOCKER_SNS.start()
+
+    # Create the topic used for the mocking of alert sending
+    boto3.client('sns', region_name='us-east-1').create_topic(Name='test_streamalerts')
+
+    # Run the rule processor. Passing 'None' for context will load a mocked object later
     alerts = StreamAlert(None, True).run(event)
+
+    # Stop mocked sns
+    BOTO_MOCKER_SNS.stop()
+
     # we only want alerts for the specific rule passed in
     matched_alert_count = len([x for x in alerts if x['metadata']['rule_name'] == rule_name])
 
@@ -255,7 +267,7 @@ def test_alert_rules():
         boolean indicating if all tests passed
     """
     # Start the mock_s3 instance here so we can test with mocked objects project-wide
-    BOTO_MOCKER.start()
+    BOTO_MOCKER_S3.start()
     all_tests_passed = True
 
     # Create a list for pass/fails. The first value in the list is a list of tuples for failures,
@@ -308,7 +320,7 @@ def test_alert_rules():
     # Report on the final test results
     report_output_summary(rules_fail_pass)
 
-    BOTO_MOCKER.stop()
+    BOTO_MOCKER_S3.stop()
 
     return all_tests_passed
 

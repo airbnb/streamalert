@@ -68,12 +68,11 @@ class StreamAlert(object):
             else:
                 LOGGER.info('Unsupported service: %s', payload.service)
 
+        LOGGER.debug('%s alerts triggered', len(self.alerts))
+        LOGGER.debug('\n%s\n', json.dumps(self.alerts, indent=4))
+
         if self.return_alerts:
             return self.alerts
-
-        if self.env['lambda_alias'] == 'development':
-            LOGGER.info('%s alerts triggered', len(self.alerts))
-            LOGGER.info('\n%s\n', json.dumps(self.alerts, indent=4))
 
     def _kinesis_process(self, payload, classifier):
         """Process Kinesis data for alerts"""
@@ -123,6 +122,5 @@ class StreamAlert(object):
 
         if self.return_alerts:
             self.alerts.extend(alerts)
-            return
 
         self.sinker.sink(alerts)

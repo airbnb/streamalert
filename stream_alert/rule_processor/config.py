@@ -92,8 +92,10 @@ def load_env(context):
         context: The AWS Lambda context object.
 
     Returns:
-        {'lambda_function_name': 'function_name',
-         'lambda_alias': 'development|production'}
+        {'lambda_region': 'region_name',
+         'account_id': <ACCOUNT_ID>,
+         'lambda_function_name': 'function_name',
+         'lambda_alias': 'qualifier'}
     """
     env = {}
     if context:
@@ -103,6 +105,8 @@ def load_env(context):
         env['lambda_function_name'] = arn[6]
         env['lambda_alias'] = arn[7]
     else:
-        env['lambda_alias'] = 'development'
         env['lambda_region'] = 'us-east-1'
+        env['account_id'] = '123456789012'
+        env['lambda_function_name'] = 'test_streamalert_rule_processor'
+        env['lambda_alias'] = 'development'
     return env
