@@ -1,4 +1,4 @@
-from helpers.base import in_set, last_hour
+from rules.helpers.base import in_set, last_hour
 from stream_alert.rule_processor.rules_engine import StreamRules
 
 rule = StreamRules.rule
