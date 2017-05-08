@@ -53,7 +53,10 @@ class LambdaPackage(object):
         temp_package_path = self._get_tmpdir()
         self._copy_files(temp_package_path)
         # download third-party libs
-        self._resolve_third_party(temp_package_path)
+        if self._resolve_third_party(temp_package_path):
+            LOGGER_CLI.exception('Failed to install necessary third-party libraries')
+            exit(1)
+
         # zip up files
         package_path = self.zip(temp_package_path)
         generated_package_name = package_path.split('/')[-1]
@@ -168,9 +171,13 @@ class LambdaPackage(object):
                 pip_command = ['install']
                 pip_command.extend(third_party_libs)
                 pip_command.extend(['--upgrade', '--target', temp_package_path])
-                pip.main(pip_command)
+                # Return the pip result code
+                return pip.main(pip_command)
             else:
                 LOGGER_CLI.info('No third-party libraries to install.')
+
+        # Return a default of 0 here if pip is not called
+        return 0
 
     def _upload(self, package_path):
         """Upload the StreamAlert package and sha256 to S3.
