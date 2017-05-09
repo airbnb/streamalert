@@ -308,5 +308,524 @@
         }
       }
     }
-  }
+  },
+  "bro:conn.log": {
+    "parser": "json",
+    "schema": {
+      "ts": "string",
+      "uid": "string",
+      "id": "string",
+      "proto": "string",
+      "service": "string",
+      "duration": "string",
+      "orig_bytes": "integer",
+      "resp_bytes": "integer",
+      "conn_state": "string",
+      "local_orig": "boolean",
+      "local_resp": "boolean",
+      "missed_bytes": "integer",
+      "history": "string",
+      "orig_pkts": "integer",
+      "resp_ip_bytes": "integer",
+      "tunnel_parents": "string",
+      "orig_l2_addr": "string",
+      "resp_l2_addr": "string",
+      "vlan": "integer",
+      "inner_vlan": "integer"
+    }
+  },
+  "bro:dce_rpc.log": {
+    "parser": "json",
+    "schema": {
+      "ts": "string",
+      "uid": "string",
+      "id": "string",
+      "rtt": "string",
+      "named_pipe": "string",
+      "endpoint": "string",
+      "operation": "string"
+    }
+  },
+  "bro:dhcp.log": {
+    "parser": "json",
+    "schema": {
+      "ts": "string",
+      "uid": "string",
+      "id": "string",
+      "mac": "string",
+      "assigned_ip": "string",
+      "lease_time": "integer",
+      "trans_id": "integer"
+    }
+  },
+  "bro:dnp3.log": {
+    "parser": "json",
+    "schema": {
+      "ts": "string",
+      "uid": "string",
+      "id": "string",
+      "fc_request": "string",
+      "fc_reply": "string",
+      "iin": "integer"
+    }
+  },
+    "bro:dns.log": {
+    "parser": "json",
+    "schema": {
+      "ts": "string",
+      "uid": "string",
+      "id": "string",
+      "proto": "string",
+      "trans_id": "string",
+      "rtt": "string",
+      "query", "string",
+      "qclass": "integer",
+      "qclass_name": "string",
+      "qtype": "integer",
+      "qtype_name": "string",
+      "rcode": "integer",
+      "rcode_name": "string",
+      "AA": "boolean",
+      "TC": "boolean",
+      "RD": "boolean",
+      "RA": "boolean",
+      "Z": "boolean",
+      "answers": "string",
+      "TTLs": "string",
+      "rejected": "boolean",
+      "total_answers": "integer",
+      "total_replies": "integer",
+      "saw_query": "boolean",
+      "saw_reply": "boolean",
+      "auth": "string",
+      "addl": "string"
+    }
+  },
+    "bro:ftp.log": {
+    "parser": "json",
+    "schema": {
+      "ts": "string",
+      "uid": "string",
+      "id": "string",
+      "user": "string",
+      "password": "string",
+      "command": "string",
+      "arg": "string",
+      "mime_type": "string",
+      "file_size": "integer",
+      "reply_code": "integer",
+      "reply_msg": "string",
+      "data_channel": "string",
+      "cwd": "string",
+      "cmdarg": "string",
+      "pending_commands", "string",
+      "passive": "boolean",
+      "capture_password": "boolean",
+      "fuid": "string",
+      "last_auth_requested": "string"
+    }
+  },
+    "bro:http.log": {
+    "parser": "json",
+    "schema": {
+      "ts": "string",
+      "uid": "string",
+      "id": "string",
+      "trans_depth": "integer",
+      "method": "string",
+      "host": "string",
+      "uri": "string",
+      "referrer": "string",
+      "version": "string",
+      "user_agent": "string",
+      "request_body_len": "integer",
+      "response_body_len": "integer",
+      "status_code": "integer",
+      "status_msg": "string",
+      "info_code": "integer",
+      "info_msg": "string",
+      "tags": "string",
+      "username": "string",
+      "password": "string",
+      "capture_password": "string",
+      "proxied": "string",
+      "range_request": "string",
+      "orig_fuids": "string",
+      "orig_filenames": "string",
+      "orig_mime_types": "string",
+      "resp_fuids": "string",
+      "resp_filenames": "string",
+      "resp_mime_types": "string",
+      "current_entity": "string",
+      "orig_mime_depth": "integer",
+      "resp_mime_depth": "integer",
+      "client_header_names": "string",
+      "server_header_names": "string",
+      "omniture": "boolean",
+      "flash_version": "string",
+      "cookie_vars": "string",
+      "uri_vars": "string"
+    }
+  },
+    "bro:irc.log": {
+    "parser": "json",
+    "schema": {
+      "ts": "string",
+      "uid": "string",
+      "id": "string",
+      "nick": "string",
+      "user": "string",
+      "command": "string",
+      "value": "string",
+      "addl": "string",
+      "dcc_file_name": "string",
+      "dcc_file_size": "string",
+      "dcc_mime_type": "string",
+      "fuid": "string"
+    }
+  },
+    "bro:kerberos.log": {
+    "parser": "json",
+    "schema": {
+      "ts": "string",
+      "uid": "string",
+      "id": "string",
+      "request_type": "string",
+      "client": "string",
+      "service": "string",
+      "success": "string",
+      "error_code": "string",
+      "error_msg": "string",
+      "from": "string",
+      "till": "string",
+      "cipher": "string",
+      "forwardable": "string",
+      "renewable": "string",
+      "logged": "boolean",
+      "client_cert": "string",
+      "client_cert_subject": "string",
+      "client_cert_fuid": "string",
+      "server_cert": "string",
+      "server_cert_subject": "string",
+      "server_cert_fuid": "string"
+    }
+  },
+    "bro:modbus.log": {
+    "parser": "json",
+    "schema": {
+      "ts": "string",
+      "uid": "string",
+      "id": "string",
+      "func": "string",
+      "exception": "string",
+      "track_address": "integer"
+    }
+  },
+    "bro:modbus_register_change.log": {
+    "parser": "json",
+    "schema": {
+      "ts": "string",
+      "uid": "string",
+      "id": "string",
+      "register": "integer",
+      "old_val": "integer",
+      "new_val": "integer",
+      "delta": "string"
+    }
+  },
+    "bro:mysql.log": {
+    "parser": "json",
+    "schema": {
+      "ts": "string",
+      "uid": "string",
+      "id": "string",
+      "cmd": "string",
+      "arg": "string",
+      "success": "boolean",
+      "rows": "integer",
+      "response": "string"
+    }
+  },
+    "bro:ntlm.log": {
+    "parser": "json",
+    "schema": {
+      "ts": "string",
+      "uid": "string",
+      "id": "string",
+      "username": "string",
+      "hostname": "string",
+      "domainname": "string",
+      "success": "boolean",
+      "status": "string",
+      "done": "boolean"
+    }
+  },
+    "bro:radius.log": {
+    "parser": "json",
+    "schema": {
+      "ts": "string",
+      "uid": "string",
+      "id": "string",
+      "username": "string",
+      "mac": "string",
+      "remote_ip": "string",
+      "connect_info": "string",
+      "result": "string",
+      "logged": "string"
+    }
+  },
+    "bro:rdp.log": {
+    "parser": "json",
+    "schema": {
+      "ts": "string",
+      "uid": "string",
+      "id": "string",
+      "cookie": "string",
+      "result": "string",
+      "security_protocol": "string",
+      "keyboard_layout": "string",
+      "client_build": "string",
+      "client_name": "string",
+      "client_dig_product_id": "string",
+      "desktop_width": "integer",
+      "desktop_height": "integer",
+      "requested_color_depth": "string",
+      "cert_type": "string",
+      "cert_count": "string",
+      "cert_permanent": "boolean",
+      "encryption_level": "string",
+      "analyzer_id": "integer",
+      "done": "boolean",
+      "ssl": "boolean"
+    }
+  },
+    "bro:rfb.log": {
+    "parser": "json",
+    "schema": {
+      "ts": "string",
+      "uid": "string",
+      "id": "string",
+      "client_major_version": "string",
+      "client_minor_version": "string",
+      "server_major_version": "string",
+      "server_minor_version": "string",
+      "authentication_method": "string",
+      "auth": "boolean",
+      "share_flag": "boolean",
+      "desktop_name": "string",
+      "width": "integer",
+      "height": "integer",
+      "done": "boolean"
+    }
+  },
+    "bro:sip.log": {
+    "parser": "json",
+    "schema": {
+      "ts": "string",
+      "uid": "string",
+      "id": "string",
+      "trans_depth": "integer",
+      "method": "string",
+      "uri": "string",
+      "date": "string",
+      "request_from": "string",
+      "request_to": "string",
+      "response_from": "string",
+      "response_to": "string",
+      "reply_to": "string",
+      "call_id": "string",
+      "seq": "string",
+      "subject": "string",
+      "request_path": "string",
+      "response_path": "string",
+      "user_agent": "string",
+      "status_code": "string",
+      "status_msg": "string",
+      "warning": "string",
+      "request_body_len": "string",
+      "response_body_len": "string",
+      "content_type": "string"
+    }
+  },
+    "bro:smb_cmd.log": {
+    "parser": "json",
+    "schema": {
+      "ts": "string",
+      "uid": "string",
+      "id": "string",
+      "command": "string",
+      "sub_command": "string",
+      "argument": "string",
+      "status": "string",
+      "rtt": "integer",
+      "version": "string",
+      "username": "string",
+      "tree": "string",
+      "tree_service": "string",
+      "referenced_file": "string",
+      "referenced_tree": "string",
+      "smb1_offered_dialects": "string",
+      "smb2_offered_dialects": "string"
+    }
+  },
+    "bro:smb_files.log": {
+    "parser": "json",
+    "schema": {
+      "ts": "string",
+      "uid": "string",
+      "id": "string",
+      "fuid": "string",
+      "action": "string",
+      "path": "string",
+      "name": "string",
+      "size": "integer",
+      "prev_name": "string",
+      "times": "string",
+      "fid": "integer",
+      "uuid": "string"
+    }
+  },
+    "bro:smb_mapping.log": {
+    "parser": "json",
+    "schema": {
+      "ts": "string",
+      "uid": "string",
+      "id": "string",
+      "path": "string",
+      "service": "string",
+      "native_file_system": "string",
+      "share_type": "string"
+    }
+  },
+    "bro:smtp.log": {
+    "parser": "json",
+    "schema": {
+      "ts": "string",
+      "uid": "string",
+      "id": "string",
+      "trans_depth": "integer",
+      "helo": "string",
+      "mailfrom": "string",
+      "rcptto": "string",
+      "date": "string",
+      "from": "string",
+      "to": "string",
+      "cc": "string",
+      "reply_to": "string",
+      "msg_id": "string",
+      "in_reply_to": "string",
+      "subject": "string",
+      "x_originating_ip": "string",
+      "first_received": "string",
+      "second_received": "string",
+      "last_reply": "string",
+      "path": "string",
+      "user_agent": "string",
+      "tls": "boolean",
+      "process_received_from": "boolean",
+      "has_client_activity": "boolean",
+      "entity": "string",
+      "fuids": "string",
+      "is_webmail": "boolean"
+    }
+  },
+    "bro:snmp.log": {
+    "parser": "json",
+    "schema": {
+      "ts": "string",
+      "uid": "string",
+      "id": "string",
+      "duration": "integer",
+      "version": "string",
+      "community": "string",
+      "get_requests": "integer",
+      "get_bulk_requests": "integer",
+      "get_responses": "integer",
+      "set_requests": "integer",
+      "display_string": "string",
+      "up_since": "string"
+    }
+  },
+    "bro:socks.log": {
+    "parser": "json",
+    "schema": {
+      "ts": "string",
+      "uid": "string",
+      "id": "string",
+      "version": "integer",
+      "user": "string",
+      "password": "string",
+      "status": "string",
+      "request": "string",
+      "request_p": "string",
+      "bound": "string",
+      "bound_p": "string"
+    }
+  },
+    "bro:ssh.log": {
+    "parser": "json",
+    "schema": {
+      "ts": "string",
+      "uid": "string",
+      "id": "string",
+      "version": "string",
+      "auth_success": "boolean",
+      "auth_attempts": "integer",
+      "direction": "string",
+      "client": "string",
+      "server": "string",
+      "cipher_alg": "string",
+      "mac_alg": "string",
+      "compression_alg": "string",
+      "kex_alg": "string",
+      "host_key_alg": "string",
+      "host_key": "string"
+    }
+  },
+    "bro:ssl.log": {
+    "parser": "json",
+    "schema": {
+      "ts": "string",
+      "uid": "string",
+      "id": "string",
+      "version_num": "integer",
+      "version": "string",
+      "cipher": "string",
+      "curve": "string",
+      "server_name": "string",
+      "session_id": "string",
+      "resumed": "boolean",
+      "client_ticket_empty_sessions_seen": "boolean",
+      "client_key_exchange_seen": "boolean",
+      "server_appdata": "integer",
+      "client_appdata": "boolean",
+      "last_alert": "string",
+      "next_protocol", "string",
+      "analyzer_id": "integer",
+      "established": "boolean",
+      "logged": "boolean"
+    }
+  },
+    "bro:syslog.log": {
+    "parser": "json",
+    "schema": {
+      "ts": "string",
+      "uid": "string",
+      "id": "string",
+      "proto": "string",
+      "facility": "string",
+      "severity": "string",
+      "message": "string"
+    }
+  },
+    "bro:tunnel.log": {
+    "parser": "json",
+    "schema": {
+      "ts": "string",
+      "uid": "string",
+      "id": "string",
+      "tunnel_type": "string",
+      "action": "string"
+    }
+  },     
 }
