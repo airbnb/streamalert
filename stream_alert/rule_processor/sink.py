@@ -24,7 +24,7 @@ import botocore
 _SNS_MAX_SIZE = (256*1024)
 
 logging.basicConfig()
-logger = logging.getLogger('StreamAlert')
+LOGGER = logging.getLogger('StreamAlert')
 
 def json_dump(sns_dict, indent_value=None):
     def json_dict_serializer(obj):
@@ -34,23 +34,22 @@ def json_dump(sns_dict, indent_value=None):
     try:
         return json.dumps(sns_dict, indent=indent_value, default=json_dict_serializer)
     except AttributeError as err:
-        logging.error('An error occurred while dumping object to JSON: %s', err)
+        LOGGER.error('An error occurred while dumping object to JSON: %s', err)
         return ""
 
 class SNSMessageSizeError(Exception):
     pass
 
 class StreamSink(object):
-    def __init__(self, alerts, env):
-        self.alerts = alerts
+    def __init__(self, env):
         self.env = env
+        self.BOTO_CLIENT_SNS = boto3.client('sns', region_name=self.env['lambda_region'])
 
-    def sink(self):
+    def sink(self, alerts):
         """Sink triggered alerts from the StreamRules engine.
 
-        Group alerts to be sent to each sink, verifies that the
-        sink exists in our configuration, and then sinks each
-        group of alerts to the given SNS topic.
+        Args:
+            alerts [list]: a list of dictionaries representating json alerts
 
         Sends a message to SNS with the following JSON format:
             {default: [
@@ -70,16 +69,11 @@ class StreamSink(object):
                 }
             ]}
         """
-        lambda_alias = self.env['lambda_alias']
-
-        for alert in self.alerts:
+        for alert in alerts:
             sns_dict = {'default': alert}
-            if lambda_alias == 'production':
-                topic_arn = self._get_sns_topic_arn()
-                client = boto3.client('sns', region_name=self.env['lambda_region'])
-                self.publish_message(client, json_dump(sns_dict), topic_arn)
-            elif lambda_alias == 'staging':
-                logger.info(json_dump(sns_dict, 2))
+            topic_arn = self._get_sns_topic_arn()
+            client = boto3.client('sns', region_name=self.env['lambda_region'])
+            self.publish_message(client, json_dump(sns_dict), topic_arn)
 
     def _get_sns_topic_arn(self):
         """Return a properly formatted SNS ARN.
@@ -117,18 +111,25 @@ class StreamSink(object):
             message: A JSON string containing a serialized alert.
             topic: The SNS topic ARN to send to.
         """
-        if self._sns_message_size_check(message):
-            try:
-                response = client.publish(
-                    TopicArn=topic,
-                    Message=message,
-                    Subject='StreamAlert Rules Triggered'
-                )
-            except botocore.exceptions.ClientError as err:
-                logging.error('An error occurred while publishing alert: %s', err.response)
-                raise err
-            logger.info('Published %i alert(s) to %s', len(self.alerts), topic)
-            logger.info('SNS MessageID: %s', response['MessageId'])
-        else:
-            logging.error('Cannot publish Alerts, message size is too big!')
+        if not self._sns_message_size_check(message):
+            LOGGER.error('Cannot publish Alerts, message size is too big!')
             raise SNSMessageSizeError('SNS message size is too big! (Max: 256KB)')
+
+        try:
+            response = client.publish(
+                TopicArn=topic,
+                Message=message,
+                Subject='StreamAlert Rules Triggered'
+            )
+        except botocore.exceptions.ClientError as err:
+            LOGGER.error('An error occurred while publishing alert: %s', err.response)
+            raise err
+
+        if response['ResponseMetadata']['HTTPStatusCode'] != 200:
+            LOGGER.error('Failed to publish message to sns topic: %s', topic)
+            return
+
+        if self.env['lambda_alias'] != 'development':
+            LOGGER.info('Published alert to %s', topic)
+            LOGGER.info('SNS MessageID: %s', response['MessageId'])
+

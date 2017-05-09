@@ -1,4 +1,6 @@
 language: python
+dist: trusty
+cache: pip
 python:
   - 2.7
 before_install:

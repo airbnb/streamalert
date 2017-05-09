@@ -24,7 +24,7 @@ import urllib
 import boto3
 
 logging.basicConfig()
-logger = logging.getLogger('StreamAlert')
+LOGGER = logging.getLogger('StreamAlert')
 
 class S3ObjectSizeError(Exception):
     pass
@@ -64,7 +64,7 @@ class StreamPreParsers(object):
         size = int(raw_record['s3']['object']['size'])
         downloaded_s3_object = cls._download_s3_object(client, bucket, key, size)
 
-        return downloaded_s3_object
+        return downloaded_s3_object, size
 
     @classmethod
     def pre_parse_sns(cls, raw_record):
@@ -73,9 +73,9 @@ class StreamPreParsers(object):
         Args:
             raw_record (dict): An SNS message.
 
-        Returns: (string) Base64 decoded data.
+        Returns: (string) SNS message data.
         """
-        return base64.b64decode(raw_record['Sns']['Message'])
+        return raw_record['Sns']['Message']
 
     @classmethod
     def read_s3_file(cls, downloaded_s3_object):
@@ -106,7 +106,7 @@ class StreamPreParsers(object):
         # remove the file
         os.remove(downloaded_s3_object)
         if not os.path.exists(downloaded_s3_object):
-            logger.debug('Removed temp file - %s', downloaded_s3_object)
+            LOGGER.debug('Removed temp file - %s', downloaded_s3_object)
 
     @classmethod
     def _download_s3_object(cls, client, bucket, key, size):
@@ -131,15 +131,15 @@ class StreamPreParsers(object):
         if size_mb > 128:
             raise S3ObjectSizeError('S3 object to download is above 128MB')
 
-        logger.debug('/tmp directory contents:%s ', os.listdir('/tmp'))
-        logger.debug(os.popen('df -h /tmp | tail -1').read().strip())
+        LOGGER.debug('/tmp directory contents:%s ', os.listdir('/tmp'))
+        LOGGER.debug(os.popen('df -h /tmp | tail -1').read().strip())
 
         if size_mb:
             display_size = '{}MB'.format(size_mb)
         else:
             display_size = '{}KB'.format(size_kb)
-        logger.debug('Starting download from S3 - %s/%s [%s]',
-                    bucket, key, display_size)
+
+        LOGGER.debug('Starting download from S3 - %s/%s [%s]', bucket, key, display_size)
 
         suffix = key.replace('/', '-')
         _, downloaded_s3_object = tempfile.mkstemp(suffix=suffix)
@@ -148,6 +148,6 @@ class StreamPreParsers(object):
             client.download_fileobj(bucket, key, data)
 
         end_time = time.time() - start_time
-        logger.debug('Completed download in %s seconds', round(end_time, 2))
+        LOGGER.debug('Completed download in %s seconds', round(end_time, 2))
 
         return downloaded_s3_object

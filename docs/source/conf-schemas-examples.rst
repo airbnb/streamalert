@@ -240,7 +240,7 @@ CloudWatch logs are delivered as a nested record, so we will need to pass ``conf
     "parser": "gzip-json",
     "configuration": {
       "json_path": "logEvents[*].extractedFields",
-      "envelope_key": {
+      "envelope_keys": {
         "logGroup": "string",
         "logStream": "string",
         "owner": "integer"

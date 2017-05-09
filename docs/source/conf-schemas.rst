@@ -320,7 +320,7 @@ The resultant parsed records::
       "example": 1,
       "host": "jumphost-1.domain.com",
       "time": "11:00 PM",
-      "envelope": {
+      "streamalert:envelope_keys": {
         "id": 1431948983198,
         "application": "my-app"
       }
@@ -329,7 +329,7 @@ The resultant parsed records::
       "example": 2,
       "host": "jumphost-2.domain.com",
       "time": "12:00 AM",
-      "envelope": {
+      "streamalert:envelope_keys": {
         "id": 1431948983198,
         "application": "my-app"
       }
