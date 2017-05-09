@@ -4,11 +4,12 @@
 //   export AWS_DEFAULT_REGION="region"
 provider "aws" {}
 
-// store tfstate file in s3 using the terraform_tfstate_key
-data "terraform_remote_state" "tfstate_stream_alert" {
-  backend = "s3"
+// Store the Terraform Statefile in S3
+// Upgrade instructions: https://www.terraform.io/upgrade-guides/0-9.html
+terraform {
+  required_version = "> 0.9.0"
 
-  config {
+  backend "s3" {
     bucket     = "${aws_s3_bucket.terraform_remote_state.id}"
     key        = "${lookup(var.terraform, "tfstate_s3_key")}"
     region     = "${lookup(var.account, "region")}"

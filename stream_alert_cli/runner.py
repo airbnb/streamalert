@@ -122,11 +122,9 @@ def terraform_runner(options):
             'aws_kms_key.stream_alert_secrets',
             'aws_kms_alias.stream_alert_secrets'
         ]
-        tf_runner(targets=init_targets, refresh_state=False)
+        tf_runner(targets=init_targets)
 
         LOGGER_CLI.info('Deploying Lambda Functions')
-        # setup remote state
-        refresh_tf_state()
         # deploy both lambda functions
         deploy(deploy_opts('all'))
         # create all remainder infrastructure
@@ -136,7 +134,7 @@ def terraform_runner(options):
     # destroy all infrastructure
     elif options.subcommand == 'destroy':
         run_command(['terraform', 'remote', 'config', '-disable'])
-        tf_runner(action='destroy', refresh_state=False)
+        tf_runner(action='destroy')
 
     # get a quick status on our declared infrastructure
     elif options.subcommand == 'status':
@@ -159,29 +157,6 @@ def continue_prompt():
     return False
 
 
-def refresh_tf_state():
-    """Refresh the Terraform remote state"""
-    LOGGER_CLI.info('Refreshing Remote State config')
-    region = CONFIG['account']['region']
-    bucket = '{}.streamalert.terraform.state'.format(CONFIG['account']['prefix'])
-    s3_key = CONFIG['terraform']['tfstate_s3_key']
-    kms_key_id = 'alias/{}'.format(CONFIG['account']['kms_key_alias'])
-
-    remote_state_opts = [
-        'terraform',
-        'remote',
-        'config',
-        '-backend=s3',
-        '-backend-config=bucket={}'.format(bucket),
-        '-backend-config=key={}'.format(s3_key),
-        '-backend-config=region={}'.format(region),
-        '-backend-config=kms_key_id={}'.format(kms_key_id),
-        '-backend-config=encrypt=true'
-    ]
-
-    run_command(remote_state_opts, quiet=True)
-
-
 def tf_runner(**kwargs):
     """Terraform wrapper to build StreamAlert infrastructure.
 
@@ -194,14 +169,12 @@ def tf_runner(**kwargs):
     kwargs:
         targets: a list of Terraform targets
         action: 'apply' or 'destroy'
-        refresh_state: boolean to refresh remote state or not
 
     Returns: Boolean result of if the terraform command
              was successful or not
     """
     targets = kwargs.get('targets', [])
     action = kwargs.get('action', None)
-    refresh_state = kwargs.get('refresh_state', True)
     tf_action_index = 1  # The index to the terraform 'action'
 
     var_files = {CONFIG.filename, 'conf/outputs.json', 'conf/inputs.json'}
@@ -211,8 +184,6 @@ def tf_runner(**kwargs):
     if action == 'destroy':
         tf_command.append('-destroy')
 
-    if refresh_state:
-        refresh_tf_state()
 
     LOGGER_CLI.info('Resolving Terraform modules')
     run_command(['terraform', 'get'], quiet=True)
