@@ -14,9 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 
+import sys
+
 from collections import namedtuple
 from getpass import getpass
-from jinja2 import Environment, PackageLoader
 
 from stream_alert_cli.package import RuleProcessorPackage, AlertProcessorPackage
 from stream_alert_cli.test import stream_alert_test
@@ -24,6 +25,7 @@ from stream_alert_cli.helpers import CLIHelpers
 from stream_alert_cli.config import CLIConfig
 from stream_alert_cli.logger import LOGGER_CLI
 from stream_alert_cli.version import LambdaVersion
+from stream_alert_cli.terraform_generate import terraform_generate
 import stream_alert_cli.outputs as config_outputs
 
 from stream_alert.alert_processor import __version__ as alert_processor_version
@@ -105,38 +107,51 @@ def terraform_runner(options):
 
     # generate terraform files
     elif options.subcommand == 'generate':
-        generate_tf_files()
+        terraform_generate(config=CONFIG)
 
     # initialize streamalert infrastructure from a blank state
     elif options.subcommand == 'init':
         LOGGER_CLI.info('Initializing StreamAlert')
         LOGGER_CLI.info('Generating Cluster Files')
-        generate_tf_files()
+
+        # generate init Terraform files
+        if not terraform_generate(config=CONFIG, init=True):
+            LOGGER_CLI.error('An error occured while generating Terraform files')
+            sys.exit(1)
+
+        LOGGER_CLI.info('Initializing Terraform')
+        run_command(['terraform', 'init'])
 
         # build init infrastructure
         LOGGER_CLI.info('Building Initial Infrastructure')
         init_targets = [
             'aws_s3_bucket.lambda_source',
             'aws_s3_bucket.integration_testing',
-            'aws_s3_bucket.terraform_remote_state',
+            'aws_s3_bucket.terraform_state',
+            'aws_s3_bucket.stream_alert_secrets',
             'aws_kms_key.stream_alert_secrets',
             'aws_kms_alias.stream_alert_secrets'
         ]
-        tf_runner(targets=init_targets, refresh_state=False)
+        if not tf_runner(targets=init_targets):
+            LOGGER_CLI.error('An error occured while running StreamAlert init')
+            sys.exit(1)
+
+        # generate the main.tf with remote state enabled
+        LOGGER_CLI.info('Configuring Terraform Remote State')
+        terraform_generate(config=CONFIG)
+        run_command(['terraform', 'init'])
 
         LOGGER_CLI.info('Deploying Lambda Functions')
-        # setup remote state
-        refresh_tf_state()
         # deploy both lambda functions
         deploy(deploy_opts('all'))
         # create all remainder infrastructure
+
         LOGGER_CLI.info('Building Remainder Infrastructure')
         tf_runner()
 
     # destroy all infrastructure
     elif options.subcommand == 'destroy':
-        run_command(['terraform', 'remote', 'config', '-disable'])
-        tf_runner(action='destroy', refresh_state=False)
+        tf_runner(action='destroy')
 
     # get a quick status on our declared infrastructure
     elif options.subcommand == 'status':
@@ -154,32 +169,8 @@ def continue_prompt():
     response = ''
     while response not in required_responses:
         response = raw_input('\nWould you like to continue? (yes or no): ')
-    if response == 'yes':
-        return True
-    return False
-
-
-def refresh_tf_state():
-    """Refresh the Terraform remote state"""
-    LOGGER_CLI.info('Refreshing Remote State config')
-    region = CONFIG['account']['region']
-    bucket = '{}.streamalert.terraform.state'.format(CONFIG['account']['prefix'])
-    s3_key = CONFIG['terraform']['tfstate_s3_key']
-    kms_key_id = 'alias/{}'.format(CONFIG['account']['kms_key_alias'])
-
-    remote_state_opts = [
-        'terraform',
-        'remote',
-        'config',
-        '-backend=s3',
-        '-backend-config=bucket={}'.format(bucket),
-        '-backend-config=key={}'.format(s3_key),
-        '-backend-config=region={}'.format(region),
-        '-backend-config=kms_key_id={}'.format(kms_key_id),
-        '-backend-config=encrypt=true'
-    ]
-
-    run_command(remote_state_opts, quiet=True)
+    if response == 'no':
+        sys.exit(0)
 
 
 def tf_runner(**kwargs):
@@ -194,14 +185,12 @@ def tf_runner(**kwargs):
     kwargs:
         targets: a list of Terraform targets
         action: 'apply' or 'destroy'
-        refresh_state: boolean to refresh remote state or not
 
     Returns: Boolean result of if the terraform command
              was successful or not
     """
     targets = kwargs.get('targets', [])
     action = kwargs.get('action', None)
-    refresh_state = kwargs.get('refresh_state', True)
     tf_action_index = 1  # The index to the terraform 'action'
 
     var_files = {CONFIG.filename, 'conf/outputs.json', 'conf/inputs.json'}
@@ -211,16 +200,15 @@ def tf_runner(**kwargs):
     if action == 'destroy':
         tf_command.append('-destroy')
 
-    if refresh_state:
-        refresh_tf_state()
-
     LOGGER_CLI.info('Resolving Terraform modules')
-    run_command(['terraform', 'get'], quiet=True)
+    if not run_command(['terraform', 'get'], quiet=True):
+        return False
 
     LOGGER_CLI.info('Planning infrastructure')
-    tf_plan = run_command(tf_command) and continue_prompt()
-    if not tf_plan:
+    if not run_command(tf_command):
         return False
+
+    continue_prompt()
 
     if action == 'destroy':
         LOGGER_CLI.info('Destroying infrastructure')
@@ -234,7 +222,9 @@ def tf_runner(**kwargs):
         LOGGER_CLI.info('Creating infrastructure')
         tf_command[tf_action_index] = 'apply'
 
-    run_command(tf_command)
+    if not run_command(tf_command):
+        return False
+
     return True
 
 
@@ -285,28 +275,6 @@ def rollback(options):
     targets = ['module.stream_alert_{}'.format(x)
                for x in CONFIG['clusters'].keys()]
     tf_runner(targets=targets)
-
-def generate_tf_files():
-    """Generate all Terraform plans for the clusters in variables.json"""
-    LOGGER_CLI.info('Generating Terraform files')
-    env = Environment(loader=PackageLoader('terraform', 'templates'))
-    template = env.get_template('cluster_template')
-
-    all_buckets = CONFIG.get('s3_event_buckets')
-
-    for cluster in CONFIG['clusters'].keys():
-        if cluster == 'main':
-            raise InvalidClusterName('Rename cluster main to something else!')
-
-        if all_buckets:
-            buckets = all_buckets.get(cluster)
-        else:
-            buckets = None
-
-        contents = template.render(cluster_name=cluster, s3_buckets=buckets)
-        with open('terraform/{}.tf'.format(cluster), 'w') as tf_file:
-            tf_file.write(contents)
-
 
 def deploy(options):
     """Deploy new versions of both Lambda functions
@@ -362,7 +330,8 @@ def deploy(options):
         packages.append(deploy_alert_processor())
 
     # update the source code in $LATEST
-    tf_runner(targets=targets)
+    if not tf_runner(targets=targets):
+        sys.exit(1)
 
     # TODO(jack) write integration test to verify newly updated function
 
