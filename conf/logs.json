@@ -387,18 +387,18 @@
       "qtype_name": "string",
       "rcode": "string",
       "rcode_name": "string",
-      "AA": "boolean",
-      "TC": "boolean",
-      "RD": "boolean",
-      "RA": "boolean",
+      "AA": "string",
+      "TC": "string",
+      "RD": "string",
+      "RA": "string",
       "Z": "string",
       "answers": "string",
       "TTLs": "string",
-      "rejected": "boolean",
+      "rejected": "string",
       "total_answers": "string",
       "total_replies": "string",
-      "saw_query": "boolean",
-      "saw_reply": "boolean",
+      "saw_query": "string",
+      "saw_reply": "string",
       "auth": "string",
       "addl": "string"
     }
@@ -421,8 +421,8 @@
       "cwd": "string",
       "cmdarg": "string",
       "pending_commands": "string",
-      "passive": "boolean",
-      "capture_password": "boolean",
+      "passive": "string",
+      "capture_password": "string",
       "fuid": "string",
       "last_auth_requested": "string"
     }
@@ -463,7 +463,7 @@
       "resp_mime_depth": "integer",
       "client_header_names": "string",
       "server_header_names": "string",
-      "omniture": "boolean",
+      "omniture": "string",
       "flash_version": "string",
       "cookie_vars": "string",
       "uri_vars": "string"
@@ -503,7 +503,7 @@
       "cipher": "string",
       "forwardable": "string",
       "renewable": "string",
-      "logged": "boolean",
+      "logged": "string",
       "client_cert": "string",
       "client_cert_subject": "string",
       "client_cert_fuid": "string",
@@ -543,7 +543,7 @@
       "id": "string",
       "cmd": "string",
       "arg": "string",
-      "success": "boolean",
+      "success": "string",
       "rows": "string",
       "response": "string"
     }
@@ -557,9 +557,9 @@
       "username": "string",
       "hostname": "string",
       "domainname": "string",
-      "success": "boolean",
+      "success": "string",
       "status": "string",
-      "done": "boolean"
+      "done": "string"
     }
   },
     "bro:radius.log": {
@@ -594,11 +594,11 @@
       "requested_color_depth": "string",
       "cert_type": "string",
       "cert_count": "string",
-      "cert_permanent": "boolean",
+      "cert_permanent": "string",
       "encryption_level": "string",
       "analyzer_id": "string",
-      "done": "boolean",
-      "ssl": "boolean"
+      "done": "string",
+      "ssl": "string"
     }
   },
     "bro:rfb.log": {
@@ -612,12 +612,12 @@
       "server_major_version": "string",
       "server_minor_version": "string",
       "authentication_method": "string",
-      "auth": "boolean",
-      "share_flag": "boolean",
+      "auth": "string",
+      "share_flag": "string",
       "desktop_name": "string",
       "width": "string",
       "height": "string",
-      "done": "boolean"
+      "done": "string"
     }
   },
     "bro:sip.log": {
@@ -723,12 +723,12 @@
       "last_reply": "string",
       "path": "string",
       "user_agent": "string",
-      "tls": "boolean",
-      "process_received_from": "boolean",
-      "has_client_activity": "boolean",
+      "tls": "string",
+      "process_received_from": "string",
+      "has_client_activity": "string",
       "entity": "string",
       "fuids": "string",
-      "is_webmail": "boolean"
+      "is_webmail": "string"
     }
   },
     "bro:snmp.log": {
@@ -771,7 +771,7 @@
       "uid": "string",
       "id": "string",
       "version": "string",
-      "auth_success": "boolean",
+      "auth_success": "string",
       "auth_attempts": "string",
       "direction": "string",
       "client": "string",
@@ -796,16 +796,16 @@
       "curve": "string",
       "server_name": "string",
       "session_id": "string",
-      "resumed": "boolean",
-      "client_ticket_empty_sessions_seen": "boolean",
-      "client_key_exchange_seen": "boolean",
+      "resumed": "string",
+      "client_ticket_empty_sessions_seen": "string",
+      "client_key_exchange_seen": "string",
       "server_appdata": "string",
-      "client_appdata": "boolean",
+      "client_appdata": "string",
       "last_alert": "string",
       "next_protocol": "string",
       "analyzer_id": "string",
-      "established": "boolean",
-      "logged": "boolean"
+      "established": "string",
+      "logged": "string"
     }
   },
     "bro:syslog.log": {
@@ -829,5 +829,5 @@
       "tunnel_type": "string",
       "action": "string"
     }
-  }     
+  }
 }
