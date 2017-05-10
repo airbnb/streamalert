@@ -100,10 +100,13 @@ class PagerDutyOutput(StreamOutputBase):
                 alert [dict]: Alert relevant to the triggered rule
         """
         creds = self._load_creds(kwargs['descriptor'])
+
         message = 'StreamAlert Rule Triggered - {}'.format(kwargs['rule_name'])
         rule_desc = kwargs['alert']['metadata']['rule_description'] or DEFAULT_RULE_DESCRIPTION
-        details = {'rule_description': rule_desc,
-                   'alert': kwargs['alert']['record']}
+        details = {
+            'rule_description': rule_desc,
+            'record': kwargs['alert']['record']
+        }
         values_json = json.dumps({
             'service_key': creds['service_key'],
             'event_type': 'trigger',
