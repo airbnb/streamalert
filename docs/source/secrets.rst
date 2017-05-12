@@ -1,6 +1,13 @@
 Secrets
 =======
 
+Create a new CMK
+----------------
+
+You will need to create a customer master key(CMK) so you can use the IAM section of the AWS Management Console.
+
+``http://docs.aws.amazon.com/kms/latest/developerguide/create-keys.html``
+
 Pagerduty
 ---------
 
