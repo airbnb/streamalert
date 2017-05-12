@@ -168,7 +168,7 @@ class JSONParser(ParserBase):
 
         optional_keys = self.options.get('optional_top_level_keys')
         # Handle optional keys
-        if self.options and optional_keys:
+        if optional_keys:
             # Note: This function exists because dict/OrderedDict cannot
             #       be keys in a dictionary.
             def default_optional_values(key):
@@ -194,13 +194,18 @@ class JSONParser(ParserBase):
                     # Set default value
                     json_payload[key_name] = default_optional_values(value_type)
 
+        envelope_schema = self.options.get('envelope_keys')
+        # If envelope_keys are declared, and this payload does not have every key specified
+        # in these envelope_keys, then it's safe to skip trying to extract records using json_path
+        if envelope_schema and not all(json_payload.get(x) for x in envelope_schema.keys()):
+            return [json_payload]
+
         json_records = []
         records_schema = self.options.get('json_path')
         # Handle jsonpath extraction of records
-        if self.options and records_schema:
+        if records_schema:
             envelope = {}
-            envelope_schema = self.options.get('envelope_keys', {})
-            if len(envelope_schema):
+            if envelope_schema:
                 schema.update({'streamalert:envelope_keys': envelope_schema})
                 envelope_keys = envelope_schema.keys()
                 envelope_jsonpath = jsonpath_rw.parse("$." + ",".join(envelope_keys))
@@ -210,7 +215,7 @@ class JSONParser(ParserBase):
             records_jsonpath = jsonpath_rw.parse(records_schema)
             for match in records_jsonpath.find(json_payload):
                 record = match.value
-                if len(envelope):
+                if envelope:
                     record.update({'streamalert:envelope_keys': envelope})
 
                 json_records.append(record)
