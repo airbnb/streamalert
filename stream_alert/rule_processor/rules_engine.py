@@ -143,7 +143,7 @@ class StreamRules(object):
             rule_result = rule.rule_function(record)
         except Exception as e:
             rule_result = False
-            LOGGER.error('%s: %s', rule.rule_function.__name__, e.message)
+            LOGGER.exception('%s: %s', rule.rule_function.__name__, e.message)
         return rule_result
 
     @classmethod
