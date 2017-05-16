@@ -197,7 +197,7 @@ class JSONParser(ParserBase):
         envelope_schema = self.options.get('envelope_keys')
         # If envelope_keys are declared, and this payload does not have every key specified
         # in these envelope_keys, then it's safe to skip trying to extract records using json_path
-        if envelope_schema and not all(json_payload.get(x) for x in envelope_schema.keys()):
+        if envelope_schema and not all(x in json_payload for x in envelope_schema):
             return [json_payload]
 
         json_records = []
