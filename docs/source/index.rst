@@ -10,7 +10,7 @@ StreamAlert
 
 StreamAlert is a serverless, realtime data analysis framework which empowers you to ingest, analyze, and alert on data from any environment, using datasources and alerting logic you define.
 
-For more details, see our `announcement post <https://medium.com/@airbnbeng/e8619e3e5043>`_. 
+For more details, see our `announcement post <https://medium.com/@airbnbeng/e8619e3e5043>`_.
 
 At a high-level:
 
@@ -27,7 +27,7 @@ Other Links:
 
 * `Github <https://github.com/airbnb/streamalert>`_
 * `Twitter (unofficial) <https://twitter.com/streamalert_io>`_
-* `Slack (unofficial) <https://streamalert.herokuapp.com>`_ 
+* `Slack (unofficial) <https://streamalert.herokuapp.com>`_
 
 .. note:: Docs are under construction, don't mind the dust!
 
@@ -83,7 +83,6 @@ Table of Contents
    kinesis-streams
    kinesis-firehose
    lambda
-   secrets
 
 .. _user_guide:
 
