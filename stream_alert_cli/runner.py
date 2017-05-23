@@ -432,15 +432,20 @@ def configure_output(options):
     if config is False:
         return configure_output(options)
 
-    secrets_bucket = '{}.streamalert.secrets'.format(prefix)
+    secrets_bucket = '{}.streamalert.secrets.test'.format(prefix)
     secrets_key = output.output_cred_name(props['descriptor'].value)
 
     # Encrypt the creds and push them to S3
     # then update the local output configuration with properties
-    config_outputs.encrypt_and_push_creds_to_s3(region, secrets_bucket, secrets_key, props)
-    updated_config = output.format_output_config(config, props)
-    config_outputs.update_outputs_config(config, updated_config, service)
+    if config_outputs.encrypt_and_push_creds_to_s3(region, secrets_bucket, secrets_key, props):
+        updated_config = output.format_output_config(config, props)
+        config_outputs.update_outputs_config(config, updated_config, service)
 
-    LOGGER_CLI.info('Successfully saved \'%s\' output configuration for service \'%s\'',
-                    props['descriptor'].value,
-                    options.service)
+        LOGGER_CLI.info('Successfully saved \'%s\' output configuration for service \'%s\'',
+                        props['descriptor'].value,
+                        options.service)
+    else:
+        LOGGER_CLI.error('An error occurred while saving \'%s\' '
+                         'output configuration for service \'%s\'',
+                         props['descriptor'].value,
+                         options.service)
