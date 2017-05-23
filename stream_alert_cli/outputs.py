@@ -91,7 +91,7 @@ def encrypt_and_push_creds_to_s3(region, bucket, key, props):
 
     creds_json = json.dumps(creds)
     enc_creds = kms_encrypt(region, creds_json)
-    send_creds_to_s3(region, bucket, key, enc_creds)
+    return send_creds_to_s3(region, bucket, key, enc_creds)
 
 def kms_encrypt(region, data):
     """Encrypt data with AWS KMS.
@@ -128,11 +128,15 @@ def send_creds_to_s3(region, bucket, key, blob_data):
             Key=key,
             ServerSideEncryption='AES256'
         )
+
+        return True
     except ClientError as err:
-        LOGGER_CLI.exception('an error occurred while sending credentials for key [%s] to S3: %s',
-                             key,
-                             err.response)
-        raise err
+        LOGGER_CLI.error('An error occurred while sending credentials to S3 for key [%s]: '
+                         '%s [%s]',
+                         key,
+                         err.response['Error']['Message'],
+                         err.response['Error']['BucketName'])
+        return False
 
 def check_output_exists(config, props, service):
     """Determine if this service and destination combo has already been created

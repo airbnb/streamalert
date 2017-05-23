@@ -34,6 +34,10 @@ Adding a new configuration for a currently supported service is handled using ``
 For example:
  - ``python stream_alert_cli.py output new --service slack``
 
+.. Note:: If this is the first time you have configured new outputs via the cli, you may see this error for certain services:
+ `An error occurred while sending credentials to S3 for key [<SERVICE>/<KEY>]: The specified bucket does not exist [<PREFIX>.streamalert.secrets]`
+ If you encounter this error, you must first run `python stream_alert_cli.py terraform build`. This ensures the S3 bucket used for storing encrypted secrets is created and only needs to occur once.
+
 The above command will then prompt the user for a ``descriptor`` to use for this configuration::
 
  Please supply a short and unique descriptor for this Slack integration (ie: channel, group, etc):
