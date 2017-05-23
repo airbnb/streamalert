@@ -35,8 +35,10 @@ For example:
  - ``python stream_alert_cli.py output new --service slack``
 
 .. Note:: If this is the first time you have configured new outputs via the cli, you may see this error for certain services:
- `An error occurred while sending credentials to S3 for key [<SERVICE>/<KEY>]: The specified bucket does not exist [<PREFIX>.streamalert.secrets]`
- If you encounter this error, you must first run `python stream_alert_cli.py terraform build`. This ensures the S3 bucket used for storing encrypted secrets is created and only needs to occur once.
+ `An error occurred while sending credentials to S3 for key [<SERVICE>/<KEY>]: The specified bucket does not exist [<PREFIX>.streamalert.secrets]`.
+ If you encounter this error, first make sure you've followed the `Quick Start <getting-started.html#quick-start>`_ steps.
+ If you've already configured StreamAlert in the past, you may just have to run `python stream_alert_cli.py terraform build`.
+ This ensures the S3 bucket used for storing encrypted secrets is created and only needs to be run once.
 
 The above command will then prompt the user for a ``descriptor`` to use for this configuration::
 
