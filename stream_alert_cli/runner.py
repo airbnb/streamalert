@@ -14,6 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 
+import sys
+
 from collections import namedtuple
 from getpass import getpass
 from jinja2 import Environment, PackageLoader
@@ -111,7 +113,9 @@ def terraform_runner(options):
     elif options.subcommand == 'init':
         LOGGER_CLI.info('Initializing StreamAlert')
         LOGGER_CLI.info('Generating Cluster Files')
-        generate_tf_files()
+        if not generate_tf_files():
+            LOGGER_CLI.error('An error occured while generating Terraform files')
+            sys.exit(1)
 
         # build init infrastructure
         LOGGER_CLI.info('Building Initial Infrastructure')
@@ -122,7 +126,9 @@ def terraform_runner(options):
             'aws_kms_key.stream_alert_secrets',
             'aws_kms_alias.stream_alert_secrets'
         ]
-        tf_runner(targets=init_targets)
+        if not tf_runner(targets=init_targets):
+            LOGGER_CLI.error('An error occured while running StreamAlert init')
+            sys.exit(1)
 
         LOGGER_CLI.info('Deploying Lambda Functions')
         # deploy both lambda functions
@@ -133,7 +139,6 @@ def terraform_runner(options):
 
     # destroy all infrastructure
     elif options.subcommand == 'destroy':
-        run_command(['terraform', 'remote', 'config', '-disable'])
         tf_runner(action='destroy')
 
     # get a quick status on our declared infrastructure
@@ -184,14 +189,15 @@ def tf_runner(**kwargs):
     if action == 'destroy':
         tf_command.append('-destroy')
 
-
     LOGGER_CLI.info('Resolving Terraform modules')
-    run_command(['terraform', 'get'], quiet=True)
+    if not run_command(['terraform', 'get'], quiet=True):
+        return False
 
     LOGGER_CLI.info('Planning infrastructure')
-    tf_plan = run_command(tf_command) and continue_prompt()
-    if not tf_plan:
+    if not run_command(tf_command):
         return False
+
+    continue_prompt()
 
     if action == 'destroy':
         LOGGER_CLI.info('Destroying infrastructure')
@@ -205,7 +211,9 @@ def tf_runner(**kwargs):
         LOGGER_CLI.info('Creating infrastructure')
         tf_command[tf_action_index] = 'apply'
 
-    run_command(tf_command)
+    if not run_command(tf_command):
+        return False
+
     return True
 
 
@@ -261,10 +269,19 @@ def generate_tf_files():
     """Generate all Terraform plans for the clusters in variables.json"""
     LOGGER_CLI.info('Generating Terraform files')
     env = Environment(loader=PackageLoader('terraform', 'templates'))
-    template = env.get_template('cluster_template')
+    cluster_template = env.get_template('cluster_template')
+    main_template = env.get_template('main_template')
+
+    # Setup main.tf
+    account_settings = CONFIG['account']
+    rendered_main_template = main_template.render(prefix=account_settings.get('prefix'),
+                                                  region=account_settings.get('region'))
+    with open('terraform/main.tf', 'w') as tf_file:
+        tf_file.write(rendered_main_template)
 
     all_buckets = CONFIG.get('s3_event_buckets')
 
+    # Setup cluster Terraform files
     for cluster in CONFIG['clusters'].keys():
         if cluster == 'main':
             raise InvalidClusterName('Rename cluster main to something else!')
@@ -274,9 +291,11 @@ def generate_tf_files():
         else:
             buckets = None
 
-        contents = template.render(cluster_name=cluster, s3_buckets=buckets)
+        contents = cluster_template.render(cluster_name=cluster, s3_buckets=buckets)
         with open('terraform/{}.tf'.format(cluster), 'w') as tf_file:
             tf_file.write(contents)
+
+    return True
 
 
 def deploy(options):
