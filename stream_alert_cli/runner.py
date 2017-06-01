@@ -432,7 +432,7 @@ def configure_output(options):
     if config is False:
         return configure_output(options)
 
-    secrets_bucket = '{}.streamalert.secrets.test'.format(prefix)
+    secrets_bucket = '{}.streamalert.secrets'.format(prefix)
     secrets_key = output.output_cred_name(props['descriptor'].value)
 
     # Encrypt the creds and push them to S3
