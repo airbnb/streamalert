@@ -121,6 +121,14 @@ class PagerDutyOutput(StreamOutputBase):
         resp = self._request_helper(creds['url'], values_json)
         success = self._check_http_response(resp)
 
+        if not success:
+            response_value = json.load(resp)
+            error_message = response_value['error']['message']
+            detailed_errors = response_value['error']['errors']
+            LOGGER.error('Encountered an error while sending to PagerDuty: %s\n%s',
+                         error_message,
+                         '\n'.join(detailed_errors))
+
         self._log_status(success)
 
 
@@ -433,6 +441,10 @@ class SlackOutput(StreamOutputBase):
 
         resp = self._request_helper(url, slack_message)
         success = self._check_http_response(resp)
+
+        if not success:
+            LOGGER.error('Encountered an error while sending to Slack: %s',
+                         resp.read())
 
         self._log_status(success)
 
