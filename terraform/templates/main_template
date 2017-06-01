@@ -10,7 +10,7 @@ terraform {
   required_version = "> 0.9.0"
 
   backend "s3" {
-    bucket     = "{{ prefix }}.streamalert.terraform.state"
+    bucket     = "{{ tfstate_bucket }}"
     key        = "stream_alert_state/terraform.tfstate"
     region     = "{{ region }}"
     encrypt    = true
@@ -27,18 +27,7 @@ resource "aws_s3_bucket" "lambda_source" {
   force_destroy = true
 }
 
-// Setup Terraform tfstate bucket
-resource "aws_s3_bucket" "terraform_remote_state" {
-  bucket        = "${lookup(var.account, "prefix")}.streamalert.terraform.state"
-  acl           = "private"
-  force_destroy = true
-
-  versioning {
-    enabled = true
-  }
-}
-
-// Setup StreamAlert S3 bucket for creds
+// Setup StreamAlert S3 bucket for secrets
 resource "aws_s3_bucket" "stream_alert_secrets" {
   bucket        = "${lookup(var.account, "prefix")}.streamalert.secrets"
   acl           = "private"

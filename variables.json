@@ -58,6 +58,7 @@
         "prod": "$LATEST"
     },
     "terraform": {
+        "tfstate_bucket": "PREFIX_GOES_HERE.streamalert.terraform.state",
         "tfstate_s3_key": "stream_alert_state/terraform.tfstate",
         "tfvars": "terraform.tfvars"
     }

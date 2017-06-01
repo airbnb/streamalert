@@ -122,7 +122,6 @@ def terraform_runner(options):
         init_targets = [
             'aws_s3_bucket.lambda_source',
             'aws_s3_bucket.integration_testing',
-            'aws_s3_bucket.terraform_remote_state',
             'aws_kms_key.stream_alert_secrets',
             'aws_kms_alias.stream_alert_secrets'
         ]
@@ -274,8 +273,10 @@ def generate_tf_files():
 
     # Setup main.tf
     account_settings = CONFIG['account']
+    terraform_settings = CONFIG['terraform']
     rendered_main_template = main_template.render(prefix=account_settings.get('prefix'),
-                                                  region=account_settings.get('region'))
+                                                  region=account_settings.get('region'),
+                                                  tfstate_bucket=terraform_settings.get('tfstate_bucket'))
     with open('terraform/main.tf', 'w') as tf_file:
         tf_file.write(rendered_main_template)
 
