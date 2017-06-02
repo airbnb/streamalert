@@ -6,15 +6,6 @@ Make sure you've completed the `Getting Started <getting-started.html>`_ instruc
 Initial Build
 -------------
 
-First, create a S3 bucket in the `AWS console <https://console.aws.amazon.com>`_ for Terraform:
-
-* Click ``S3``
-* Click ``Create Bucket``
-* Name the bucket the value of ``terraform['tfstate_bucket']`` in ``variables.json``
-* Ensure the ``region`` matches the value of ``account['region']`` in ``variables.json``
-* Enable versioning
-* Click ``Create Bucket``
-
 To initialize StreamAlert::
 
   $ ./stream_alert_cli.py terraform init

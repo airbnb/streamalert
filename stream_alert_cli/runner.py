@@ -18,7 +18,6 @@ import sys
 
 from collections import namedtuple
 from getpass import getpass
-from jinja2 import Environment, PackageLoader
 
 from stream_alert_cli.package import RuleProcessorPackage, AlertProcessorPackage
 from stream_alert_cli.test import stream_alert_test
@@ -26,6 +25,7 @@ from stream_alert_cli.helpers import CLIHelpers
 from stream_alert_cli.config import CLIConfig
 from stream_alert_cli.logger import LOGGER_CLI
 from stream_alert_cli.version import LambdaVersion
+from stream_alert_cli.terraform_generate import terraform_generate
 import stream_alert_cli.outputs as config_outputs
 
 from stream_alert.alert_processor import __version__ as alert_processor_version
@@ -107,13 +107,13 @@ def terraform_runner(options):
 
     # generate terraform files
     elif options.subcommand == 'generate':
-        generate_tf_files()
+        terraform_generate(config=CONFIG)
 
     # initialize streamalert infrastructure from a blank state
     elif options.subcommand == 'init':
         LOGGER_CLI.info('Initializing StreamAlert')
         LOGGER_CLI.info('Generating Cluster Files')
-        if not generate_tf_files():
+        if not terraform_generate(config=CONFIG, init=True):
             LOGGER_CLI.error('An error occured while generating Terraform files')
             sys.exit(1)
 
@@ -122,6 +122,7 @@ def terraform_runner(options):
         init_targets = [
             'aws_s3_bucket.lambda_source',
             'aws_s3_bucket.integration_testing',
+            'aws_s3_bucket.terraform_state',
             'aws_kms_key.stream_alert_secrets',
             'aws_kms_alias.stream_alert_secrets'
         ]
@@ -129,10 +130,15 @@ def terraform_runner(options):
             LOGGER_CLI.error('An error occured while running StreamAlert init')
             sys.exit(1)
 
+        # generate the main.tf with remote state enabled
+        terraform_generate(config=CONFIG)
+        run_command(['terraform', 'init'])
+
         LOGGER_CLI.info('Deploying Lambda Functions')
         # deploy both lambda functions
         deploy(deploy_opts('all'))
         # create all remainder infrastructure
+
         LOGGER_CLI.info('Building Remainder Infrastructure')
         tf_runner()
 
@@ -263,41 +269,6 @@ def rollback(options):
     targets = ['module.stream_alert_{}'.format(x)
                for x in CONFIG['clusters'].keys()]
     tf_runner(targets=targets)
-
-def generate_tf_files():
-    """Generate all Terraform plans for the clusters in variables.json"""
-    LOGGER_CLI.info('Generating Terraform files')
-    env = Environment(loader=PackageLoader('terraform', 'templates'))
-    cluster_template = env.get_template('cluster_template')
-    main_template = env.get_template('main_template')
-
-    # Setup main.tf
-    account_settings = CONFIG['account']
-    terraform_settings = CONFIG['terraform']
-    rendered_main_template = main_template.render(prefix=account_settings.get('prefix'),
-                                                  region=account_settings.get('region'),
-                                                  tfstate_bucket=terraform_settings.get('tfstate_bucket'))
-    with open('terraform/main.tf', 'w') as tf_file:
-        tf_file.write(rendered_main_template)
-
-    all_buckets = CONFIG.get('s3_event_buckets')
-
-    # Setup cluster Terraform files
-    for cluster in CONFIG['clusters'].keys():
-        if cluster == 'main':
-            raise InvalidClusterName('Rename cluster main to something else!')
-
-        if all_buckets:
-            buckets = all_buckets.get(cluster)
-        else:
-            buckets = None
-
-        contents = cluster_template.render(cluster_name=cluster, s3_buckets=buckets)
-        with open('terraform/{}.tf'.format(cluster), 'w') as tf_file:
-            tf_file.write(contents)
-
-    return True
-
 
 def deploy(options):
     """Deploy new versions of both Lambda functions
