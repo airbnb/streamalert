@@ -41,6 +41,6 @@ Quick Start
 6. Configure your `kinesis firehose <kinesis-firehose.html>`_
 7. Configure your `lambda settings <lambda.html>`_
 8. Write your `rules <rules.html>`_
-9. Define/deploy your `secrets <secrets.html>`_
+9. Configure your `outputs <outputs.html#configuration>`_
 
 Now it's time to `deploy <deployment.html>`_!

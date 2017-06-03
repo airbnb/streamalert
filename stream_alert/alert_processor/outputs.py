@@ -100,6 +100,9 @@ class PagerDutyOutput(StreamOutputBase):
                 alert [dict]: Alert relevant to the triggered rule
         """
         creds = self._load_creds(kwargs['descriptor'])
+        if not creds:
+            self._log_status(False)
+            return
 
         message = 'StreamAlert Rule Triggered - {}'.format(kwargs['rule_name'])
         rule_desc = kwargs['alert']['metadata']['rule_description'] or DEFAULT_RULE_DESCRIPTION
@@ -118,6 +121,14 @@ class PagerDutyOutput(StreamOutputBase):
         resp = self._request_helper(creds['url'], values_json)
         success = self._check_http_response(resp)
 
+        if not success:
+            response_value = json.load(resp)
+            error_message = response_value['error']['message']
+            detailed_errors = response_value['error']['errors']
+            LOGGER.error('Encountered an error while sending to PagerDuty: %s\n%s',
+                         error_message,
+                         '\n'.join(detailed_errors))
+
         self._log_status(success)
 
 
@@ -125,6 +136,8 @@ class PagerDutyOutput(StreamOutputBase):
 class PhantomOutput(StreamOutputBase):
     """PhantomOutput handles all alert dispatching for Phantom"""
     __service__ = 'phantom'
+    CONTAINER_ENDPOINT = 'rest/container/'
+    ARTIFACT_ENDPOINT = 'rest/artifact/'
 
     def get_user_defined_properties(self):
         """Get properties that must be asssigned by the user when configuring a new Phantom
@@ -155,12 +168,12 @@ class PhantomOutput(StreamOutputBase):
                             cred_requirement=True))
         ])
 
-    def _setup_container(self, rule_name, rule_description, container_url, headers):
+    def _setup_container(self, rule_name, rule_description, base_url, headers):
         """Establish a Phantom container to write the alerts to
 
         Args:
             rule_name [string]: The name of the rule that triggered the alert
-            container_url [string]: The contructed endpoint url for Phantom containers
+            base_url [string]: The base url for this Phantom instance
             headers [dict]: A dictionary containing header parameters
 
         Returns:
@@ -171,6 +184,7 @@ class PhantomOutput(StreamOutputBase):
         message = 'StreamAlert Rule Triggered - {}'.format(rule_name)
         ph_container = {'name' : message,
                         'description' : rule_description}
+        container_url = os.path.join(base_url, self.CONTAINER_ENDPOINT)
         container_string = json.dumps(ph_container)
         resp = self._request_helper(container_url, container_string, headers, False)
 
@@ -181,7 +195,7 @@ class PhantomOutput(StreamOutputBase):
         try:
             resp_dict = json.loads(resp.read())
         except ValueError as err:
-            logging.error('An error occurred while decoding message to JSON: %s', err)
+            LOGGER.error('An error occurred while decoding phantom response to JSON: %s', err)
             return False
 
         return resp_dict and resp_dict['id']
@@ -201,12 +215,11 @@ class PhantomOutput(StreamOutputBase):
             return
 
         headers = {"ph-auth-token": creds['ph_auth_token']}
-        container_url = os.path.join(creds['url'], 'rest/container/')
         rule_desc = kwargs['alert']['metadata']['rule_description'] or DEFAULT_RULE_DESCRIPTION
         container_id = self._setup_container(kwargs['rule_name'], rule_desc,
-                                             container_url, headers)
+                                             creds['url'], headers)
 
-        LOGGER.debug('sending alert to Phantom container with id %s ', container_id)
+        LOGGER.debug('sending alert to Phantom container with id %s', container_id)
 
         success = False
         if container_id:
@@ -216,7 +229,7 @@ class PhantomOutput(StreamOutputBase):
                         'name': 'Phantom Artifact',
                         'label': 'Alert'}
             artifact_string = json.dumps(artifact)
-            artifact_url = os.path.join(creds['url'], 'rest/artifact/')
+            artifact_url = os.path.join(creds['url'], self.ARTIFACT_ENDPOINT)
             resp = self._request_helper(artifact_url, artifact_string, headers, False)
 
             success = self._check_http_response(resp)
@@ -418,12 +431,20 @@ class SlackOutput(StreamOutputBase):
                 alert [dict]: Alert relevant to the triggered rule
         """
         creds = self._load_creds(kwargs['descriptor'])
+        if not creds:
+            self._log_status(False)
+            return
+
         url = os.path.join(creds['url'])
 
         slack_message = self._format_message(kwargs['rule_name'], kwargs['alert'])
 
         resp = self._request_helper(url, slack_message)
         success = self._check_http_response(resp)
+
+        if not success:
+            LOGGER.error('Encountered an error while sending to Slack: %s',
+                         resp.read())
 
         self._log_status(success)
 
