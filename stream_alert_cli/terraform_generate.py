@@ -89,8 +89,69 @@ def generate_main(**kwargs):
 
     return main_dict
 
-def generate_cluster():
-    pass
+def generate_cluster(**kwargs):
+    config = kwargs.get('config')
+    cluster_name = kwargs.get('cluster_name')
+
+    prefix = config['account']['prefix']
+    firehose_suffix = config['firehose']['s3_bucket_suffix']
+    cluster_dict = infinitedict()
+
+    cluster_dict['module']['stream_alert_{}'.format(cluster_name)] = {
+      'source': 'modules/tf_stream_alert',
+      'account_id': '${lookup(var.account, "aws_account_id")}',
+      'region': '${lookup(var.clusters, "{}")}'.format(cluster_name),
+      'prefix': '${lookup(var.account, "prefix")}',
+      'cluster': cluster_name,
+      'kms_key_arn': '${aws_kms_key.stream_alert_secrets.arn}',
+      'rule_processor_config': '${var.rule_processor_config}',
+      'rule_processor_lambda_config': '${var.rule_processor_lambda_config}',
+      'rule_processor_versions': '${var.rule_processor_versions}',
+      'alert_processor_config': '${var.alert_processor_config}',
+      'alert_processor_lambda_config': '${var.alert_processor_lambda_config}',
+      'alert_processor_versions': '${var.alert_processor_versions}',
+      'output_lambda_functions': '${var.aws-lambda}',
+      'output_s3_buckets': '${var.aws-s3}',
+      'input_sns_topics': '${var.aws-sns}'
+    }
+
+    cluster_dict['module']['cloudwatch_monitoring_{}'.format(cluster_name)] = {
+      'source': 'modules/tf_stream_alert_monitoring',
+      'sns_topic_arn': '${module.stream_alert_{}.sns_topic_arn}'.format(cluster_name),
+      'lambda_functions': [
+        '{}_{}_streamalert_rule_processor'.format(prefix, cluster_name),
+        '{}_{}_streamalert_alert_processor'.format(prefix, cluster_name)
+      ],
+      'kinesis_stream': '{}_{}_stream_alert_kinesis'.format(prefix, cluster_name)
+    }
+
+    for output in ('username', 'access_key_id', 'secret_key'):        
+        cluster_dict['output']['kinesis_{}_{}'.format(cluster_name, output)] = {
+            'value': '${module.kinesis_{}.{}}'.format(cluster_name, output)
+        }
+
+    cluster_dict['module']['kinesis_{}'.format(cluster_name)] = {
+        'source': 'modules/tf_stream_alert',
+        'account_id': '${lookup(var.account, "aws_account_id")}',
+        'region': '${lookup(var.clusters, "{}")}'.format(cluster_name),
+        'cluster_name': cluster_name,
+        'firehose_s3_bucket_name': '{}.{}.{}'.format(prefix, cluster_name, firehose_suffix),
+        'stream_name': '{}_{}_stream_alert_kinesis'.format(prefix, cluster_name),
+        'firehose_name': '{}_{}_stream_alert_firehose'.format(prefix, cluster_name),
+        'username': '{}_{}_stream_alert_user'.format(prefix, cluster_name),
+        'stream_config': '${var.kinesis_streams_config["{}"]}'.format(cluster_name)
+    }
+
+    cluster_dict['module']['kinesis_events_{}'.format(cluster_name)] = {
+        'source': 'modules/tf_stream_alert_kinesis_events',
+        'lambda_production_enabled': True,
+        'lambda_role_id': '${module.stream_alert_{}.lambda_role_id}'.format(cluster_name),
+        'lambda_function_arn': '${module.stream_alert_{}.lambda_arn}'.format(cluster_name),
+        'kinesis_stream_arn': '${module.kinesis_{}.arn}'.format(cluster_name),
+        'role_policy_prefix': cluster_name
+    }
+
+    return cluster_dict
 
 def terraform_generate(**kwargs):
     """Generate all Terraform plans for the clusters in variables.json"""
@@ -101,16 +162,21 @@ def terraform_generate(**kwargs):
     # Setup main.tf
     main_json = json.dumps(
         generate_main(init=init, config=config),
-        indent=4)
+        indent=4
+    )
     with open('terraform/main.tf', 'w') as tf_file:
         tf_file.write(main_json)
 
-    # # Setup cluster Terraform files
-    # for cluster in CONFIG['clusters'].keys():
-    #     if cluster == 'main':
-    #         raise InvalidClusterName('Rename cluster "main" to something else!')
-    # 
-    #     with open('terraform/{}.tf'.format(cluster), 'w') as tf_file:
-    #         tf_file.write(contents)
+    # Setup cluster Terraform files
+    for cluster in config['clusters'].keys():
+        if cluster == 'main':
+            raise InvalidClusterName('Rename cluster "main" to something else!')
+    
+        cluster_json = json.dumps(
+            generate_cluster(cluster_name=cluster, config=config),
+            indent=4
+        )
+        with open('terraform/{}.tf'.format(cluster), 'w') as tf_file:
+            tf_file.write(cluster_json)
 
     return True
