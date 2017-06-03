@@ -1,0 +1,33 @@
+{
+  "records": [
+    {
+      "data": {
+        "ts": 1494446388.623374,
+        "uid": "CMWGOC2ZO2W2rRHpEf",
+        "id_orig_h": "1.1.1.1",
+        "id_orig_p": 55514,
+        "id_resp_h": "2.2.2.2",
+        "id_resp_p": 80,
+        "proto": "tcp",
+        "service": "http",
+        "duration": 1.713744,
+        "orig_bytes": 12012,
+        "resp_bytes": 84408,
+        "conn_state": "SF",
+        "local_orig": true,
+        "local_resp": false,
+        "missed_bytes": 0,
+        "history": "SADadtTfF",
+        "orig_pkts": 71,
+        "orig_ip_bytes": 11570,
+        "resp_pkts": 88,
+        "resp_ip_bytes": 112636,
+        "tunnel_parents": []
+      },
+      "description": "bro:conn",
+      "trigger": false,
+      "source": "prefix_cluster1_stream_alert_kinesis",
+      "service": "kinesis"
+    }
+  ]
+}
