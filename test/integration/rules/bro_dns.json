@@ -1,0 +1,37 @@
+{
+  "records": [
+    {
+      "data": {
+        "ts": 1494446380.187831,
+        "uid": "Cd5VWV2SzJP90yfVMi",
+        "id_orig_h": "1.1.1.1",
+        "id_orig_p": 16939,
+        "id_resp_h": "2.2.2.2",
+        "id_resp_p": 53,
+        "proto": "udp",
+        "trans_id": 27047,
+        "query": "static.xx.fbcdn.net",
+        "rcode": 0,
+        "rcode_name": "NOERROR",
+        "AA": false,
+        "TC": false,
+        "RD": false,
+        "RA": true,
+        "Z": 0,
+        "answers": [
+            "scontent.xx.fbcdn.net",
+            "157.240.2.25"
+        ],
+        "TTLs": [
+              2753.0,
+              59.0
+        ],
+        "rejected": false
+        },
+        "description": "bro:dns",
+        "trigger": false,
+        "source": "prefix_cluster1_stream_alert_kinesis",
+        "service": "kinesis"
+      }
+    ]
+  }
