@@ -22,3 +22,9 @@ LOGGER_SA.setLevel(logging.INFO)
 logging.basicConfig(format='%(name)s [%(levelname)s]: %(message)s')
 LOGGER_CLI = logging.getLogger('StreamAlertCLI')
 LOGGER_CLI.setLevel(logging.INFO)
+
+# silence imported loggers
+for logger in logging.Logger.manager.loggerDict:
+    if logger.startswith('StreamAlert'):
+        continue
+    logging.getLogger(logger).setLevel(logging.CRITICAL)
