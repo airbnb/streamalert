@@ -14,7 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 
+import os
 import sys
+import shutil
 
 from collections import namedtuple
 from getpass import getpass
@@ -109,6 +111,9 @@ def terraform_runner(options):
     elif options.subcommand == 'generate':
         terraform_generate(config=CONFIG)
 
+    elif options.subcommand == 'init-backend':
+        run_command(['terraform', 'init'])
+
     # initialize streamalert infrastructure from a blank state
     elif options.subcommand == 'init':
         LOGGER_CLI.info('Initializing StreamAlert')
@@ -149,9 +154,31 @@ def terraform_runner(options):
         LOGGER_CLI.info('Building Remainder Infrastructure')
         tf_runner()
 
-    # destroy all infrastructure
     elif options.subcommand == 'destroy':
-        tf_runner(action='destroy')
+        # Migrate back to local state so Terraform can successfully
+        # destroy the S3 bucket used by the backend.
+        terraform_generate(config=CONFIG, init=True)
+        run_command(['terraform', 'init'])
+
+        # Destroy all of the infrastructure
+        if not tf_runner(action='destroy'):
+            sys.exit(1)
+
+        # Remove old Terraform files
+        LOGGER_CLI.info('Removing old Terraform files')
+        cleanup_files = ['{}.tf'.format(cluster) for cluster in CONFIG['clusters'].keys()]
+        cleanup_files.extend([
+            'main.tf',
+            'terraform.tfstate',
+            'terraform.tfstate.backup'
+        ])
+        for tf_file in cleanup_files:
+            file_to_remove = 'terraform/{}'.format(tf_file)
+            if not os.path.isfile(file_to_remove):
+                continue
+            os.remove(file_to_remove)
+        # Finally, delete the Terraform directory
+        shutil.rmtree('terraform/.terraform/')
 
     # get a quick status on our declared infrastructure
     elif options.subcommand == 'status':
@@ -214,6 +241,7 @@ def tf_runner(**kwargs):
         LOGGER_CLI.info('Destroying infrastructure')
         tf_command[tf_action_index] = action
         tf_command.remove('-destroy')
+        tf_command.append('-force')
 
     elif action:
         tf_command[tf_action_index] = action
@@ -275,6 +303,7 @@ def rollback(options):
     targets = ['module.stream_alert_{}'.format(x)
                for x in CONFIG['clusters'].keys()]
     tf_runner(targets=targets)
+
 
 def deploy(options):
     """Deploy new versions of both Lambda functions
@@ -339,6 +368,7 @@ def deploy(options):
     publish_version(packages)
     tf_runner(targets=targets)
 
+
 def user_input(requested_info, mask, input_restrictions):
     """Prompt user for requested information
 
@@ -356,16 +386,20 @@ def user_input(requested_info, mask, input_restrictions):
         while not response:
             response = raw_input(prompt)
 
-        # Restrict having spaces or colons in items (applies to things like descriptors, etc)
+        # Restrict having spaces or colons in items (applies to things like
+        # descriptors, etc)
         if any(x in input_restrictions for x in response):
-            LOGGER_CLI.error('the supplied input should not contain any of the following: %s',
-                             '"{}"'.format('", "'.join(input_restrictions)))
+            LOGGER_CLI.error(
+                'the supplied input should not contain any of the following: %s',
+                '"{}"'.format(
+                    '", "'.join(input_restrictions)))
             return user_input(requested_info, mask, input_restrictions)
     else:
         while not response:
             response = getpass(prompt=prompt)
 
     return response
+
 
 def configure_output(options):
     """Configure a new output for this service
@@ -382,7 +416,8 @@ def configure_output(options):
                                    prefix,
                                    config_outputs.load_outputs_config())
 
-    # If an output for this service has not been defined, the error is logged prior to this
+    # If an output for this service has not been defined, the error is logged
+    # prior to this
     if not output:
         return
 
