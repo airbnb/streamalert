@@ -30,24 +30,41 @@ from stream_alert.rule_processor.config import load_config
 
 
 class TestStreamPayload(object):
+    """Test class for StreamPayload"""
+    def __init__(self):
+        self.config = {}
+
     @classmethod
     def setup_class(cls):
-        """setup_class() before any methods in this class"""
-        pass
+        """Setup the class before any methods"""
+        cls.env = {
+            'lambda_region': 'us-east-1',
+            'account_id': '123456789012',
+            'lambda_function_name': 'test_kinesis_stream',
+            'lambda_alias': 'production'
+        }
 
     @classmethod
     def teardown_class(cls):
-        """teardown_class() after any methods in this class"""
-        pass
+        """Teardown the class after all methods"""
+        cls.env = None
+
+    def setup(self):
+        """Setup before each method"""
+        self.config = load_config('test/unit/conf')
+
+    def teardown(self):
+        """Teardown after each method"""
+        self.config = None
 
     @staticmethod
     def pre_parse_kinesis(payload):
+        """Call through to the pre_parse_kinesis on StreamPreParsers"""
         return StreamPreParsers.pre_parse_kinesis(payload.raw_record)
 
     @staticmethod
-    def make_kinesis_record(**kwargs):
-        kinesis_stream = kwargs.get('kinesis_stream')
-        kinesis_data = kwargs.get('kinesis_data')
+    def make_kinesis_record(kinesis_stream, kinesis_data):
+        """Helper for creating the kinesis payload"""
         raw_record = {
             'eventSource': 'aws:kinesis',
             'eventSourceARN': 'arn:aws:kinesis:us-east-1:123456789012:stream/{}'
@@ -58,30 +75,12 @@ class TestStreamPayload(object):
         }
         return raw_record
 
-    def payload_generator(self, **kwargs):
+    def payload_generator(self, kinesis_stream, kinesis_data):
         """Given raw data, return a payload object"""
-        kinesis_stream = kwargs['kinesis_stream']
-        kinesis_data = kwargs['kinesis_data']
         kinesis_record = self.make_kinesis_record(kinesis_stream=kinesis_stream,
                                                   kinesis_data=kinesis_data)
 
-        payload = StreamPayload(raw_record=kinesis_record)
-        return payload
-
-    def setup(self):
-        """Setup before each method"""
-        self.env = {
-            'lambda_region': 'us-east-1',
-            'account_id': '123456789012',
-            'lambda_function_name': 'test_kinesis_stream',
-            'lambda_alias': 'production'
-        }
-        self.config = load_config('test/unit/conf')
-        self.log_metadata = self.config['logs']
-
-    def teardown(self):
-        """Teardown after each method"""
-        pass
+        return StreamPayload(raw_record=kinesis_record)
 
     def test_refresh_record(self):
         """Payload Record Refresh"""

@@ -13,11 +13,10 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-
 import base64
 import json
 
-from nose.tools import assert_equal, assert_not_equal, nottest
+from nose.tools import assert_equal
 
 from stream_alert.rule_processor.classifier import StreamPayload, StreamClassifier
 from stream_alert.rule_processor.pre_parsers import StreamPreParsers
@@ -28,42 +27,46 @@ rule = StreamRules.rule
 matcher = StreamRules.matcher()
 disable = StreamRules.disable()
 
+
 class TestStreamRules(object):
+    """Test class for StreamRules"""
+    def __init__(self):
+        self.config = {}
+
     @classmethod
     def setup_class(cls):
-        """setup_class() before any methods in this class"""
-        pass
-
-    @classmethod
-    def teardown_class(cls):
-        """teardown_class() after any methods in this class"""
-        pass
-
-    def setup(self):
-        self.env = {
+        """Setup the class before any methods"""
+        cls.env = {
             'lambda_region': 'us-east-1',
             'account_id': '123456789012',
             'lambda_function_name': 'stream_alert_test',
             'lambda_alias': 'production'
         }
+
+    @classmethod
+    def teardown_class(cls):
+        """Teardown the class after all methods"""
+        cls.env = None
+
+    def setup(self):
+        """Setup before each method"""
         self.config = load_config('test/unit/conf')
-        self.log_metadata = self.config['logs']
-        pass
 
     def teardown(self):
-        pass
+        """Teardown after each method"""
+        self.config = None
 
     @staticmethod
     def pre_parse_kinesis(payload):
+        """Call through to the pre_parse_kinesis on StreamPreParsers"""
         return StreamPreParsers.pre_parse_kinesis(payload.raw_record)
 
-    def make_kinesis_payload(self, **kwargs):
-        kinesis_stream = kwargs.get('kinesis_stream')
-        kinesis_data = kwargs.get('kinesis_data')
+    def make_kinesis_payload(self, kinesis_stream, kinesis_data):
+        """Helper for creating the kinesis payload"""
         raw_record = {
             'eventSource': 'aws:kinesis',
             'eventSourceARN': 'arn:aws:kinesis:us-east-1:123456789012:stream/{}'
-                .format(kinesis_stream),
+                              .format(kinesis_stream),
             'kinesis': {
                 'data': base64.b64encode(kinesis_data)
             }
@@ -294,7 +297,7 @@ class TestStreamRules(object):
         """Rule Engine - Disable Rule"""
         @disable
         @rule(logs=['test_log_type_json_2'],
-              outputs=['pagerduty'])
+              outputs=['pagerduty:sample_integration'])
         def nested_csv_disable_test(rec):
             return rec['host'] == 'unit-test-host.prod.test'
 
