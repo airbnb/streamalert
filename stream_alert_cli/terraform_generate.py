@@ -21,6 +21,10 @@ from collections import defaultdict
 from stream_alert_cli.logger import LOGGER_CLI
 
 
+class InvalidClusterName(Exception):
+    """Exception for invalid cluster names"""
+    pass
+
 def infinitedict():
     """Create arbitrary levels of dictionary key/values"""
     return defaultdict(infinitedict)

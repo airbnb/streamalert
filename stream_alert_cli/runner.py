@@ -15,8 +15,8 @@ limitations under the License.
 '''
 
 import os
-import sys
 import shutil
+import sys
 
 from collections import namedtuple
 from getpass import getpass
@@ -36,11 +36,6 @@ from stream_alert.rule_processor import __version__ as rule_processor_version
 
 
 CONFIG = CLIConfig()
-
-
-class InvalidClusterName(Exception):
-    """Exception for invalid cluster names"""
-    pass
 
 
 def cli_runner(options):
@@ -125,7 +120,8 @@ def terraform_runner(options):
             sys.exit(1)
 
         LOGGER_CLI.info('Initializing Terraform')
-        run_command(['terraform', 'init'])
+        if not run_command(['terraform', 'init']):
+            sys.exit(1)
 
         # build init infrastructure
         LOGGER_CLI.info('Building Initial Infrastructure')
@@ -144,7 +140,8 @@ def terraform_runner(options):
         # generate the main.tf with remote state enabled
         LOGGER_CLI.info('Configuring Terraform Remote State')
         terraform_generate(config=CONFIG)
-        run_command(['terraform', 'init'])
+        if not run_command(['terraform', 'init']):
+            sys.exit(1)
 
         LOGGER_CLI.info('Deploying Lambda Functions')
         # deploy both lambda functions
@@ -158,7 +155,8 @@ def terraform_runner(options):
         # Migrate back to local state so Terraform can successfully
         # destroy the S3 bucket used by the backend.
         terraform_generate(config=CONFIG, init=True)
-        run_command(['terraform', 'init'])
+        if not run_command(['terraform', 'init']):
+            sys.exit(1)
 
         # Destroy all of the infrastructure
         if not tf_runner(action='destroy'):
