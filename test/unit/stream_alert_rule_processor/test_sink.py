@@ -22,23 +22,21 @@ from nose.tools import assert_equal
 import stream_alert.rule_processor.sink as sink
 
 class TestStreamSink(object):
+    """Test class for StreamSink"""
     @classmethod
     def setup_class(cls):
-        """setup_class() before any methods in this class"""
-        pass
-
-    @classmethod
-    def teardown_class(cls):
-        """teardown_class() after any methods in this class"""
-        pass
-
-    def setup(self):
-        self.env = {
+        """Setup the class before any methods"""
+        cls.env = {
             'lambda_region': 'us-east-1',
             'account_id': '123456789012',
             'lambda_function_name': 'unittest_prod_streamalert_rule_processor',
             'lambda_alias': 'production'
         }
+
+    @classmethod
+    def teardown_class(cls):
+        """Teardown the class after any methods"""
+        cls.env = None
 
     def test_sns_topic_arn(self):
         """Sink SNS Messaging - Topic ARN"""
@@ -54,7 +52,8 @@ class TestStreamSink(object):
         passed = sinker._sns_message_size_check(get_payload((256*1024)+1))
         assert_equal(passed, False)
 
-    def test_json_from_dict(self):
+    @staticmethod
+    def test_json_from_dict():
         """Sink SNS Messaging - Dictionary to JSON Marshalling"""
         # Create a dictionary with an empty alert list
         sns_dict = {"default": []}

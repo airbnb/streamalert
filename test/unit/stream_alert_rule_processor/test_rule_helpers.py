@@ -13,7 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-
 import time
 
 from nose.tools import assert_equal
@@ -34,7 +33,7 @@ def test_in_set():
     yourhost = 'yourhost134931'
     ahost = 'ahost12321-test'
 
-    result = all(base.in_set(x, host_patterns) for x in (myhost, yourhost, ahost))
+    result = all(base.in_set(host, host_patterns) for host in (myhost, yourhost, ahost))
     assert_equal(result, True)
 
 def test_last_hour():

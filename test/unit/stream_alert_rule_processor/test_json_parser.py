@@ -1,36 +1,43 @@
-from stream_alert.rule_processor.config import load_config
-from stream_alert.rule_processor.parsers import get_parser
+'''
+Copyright 2017-present, Airbnb Inc.
 
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+'''
 import json
 
-from nose.tools import (
-    assert_equal,
-)
+from nose.tools import assert_equal
+
+from stream_alert.rule_processor.config import load_config
+from stream_alert.rule_processor.parsers import get_parser
 
 
 class TestJSONParser(object):
     @classmethod
     def setup_class(cls):
-        """setup_class() before any methods in this class"""
-        pass
+        """Setup the class before any methods"""
+        # load config
+        cls.config = load_config('test/unit/conf')
+        # load JSON parser class
+        cls.parser_class = get_parser('json')
 
     @classmethod
     def teardown_class(cls):
-        """teardown_class() after any methods in this class"""
-        pass
-
-    def setup(self):
-        """Setup before each method"""
-        # load config
-        self.config = load_config('test/unit/conf')
-        # load JSON parser class
-        self.parser_class = get_parser('json')
-
-    def teardown(self):
-        """Teardown after each method"""
-        pass
+        """Teardown the class after all methods"""
+        cls.config = None
+        cls.parser_class = None
 
     def parser_helper(self, **kwargs):
+        """Helper to return the parser result"""
         data = kwargs['data']
         schema = kwargs['schema']
         options = kwargs['options']

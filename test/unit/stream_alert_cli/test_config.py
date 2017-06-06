@@ -18,9 +18,8 @@ limitations under the License.
 # specific test: nosetests -v -s test/unit/file.py:TestStreamPayload.test_name
 
 import json
-import io
 
-from nose.tools import assert_equal, assert_not_equal, nottest
+from nose.tools import assert_equal
 from mock import patch, mock_open
 
 from stream_alert_cli.config import CLIConfig
@@ -28,6 +27,7 @@ from stream_alert_cli.config import CLIConfig
 CONFIG_FILE = 'variables.json'
 
 class TestCLIConfig(object):
+    """Test class for CLIConfig"""
     def setup(self):
         """Setup before each method"""
         pass
@@ -36,7 +36,9 @@ class TestCLIConfig(object):
         """Teardown after each method"""
         pass
 
-    def test_v1_config(self):
+    @staticmethod
+    def test_v1_config():
+        """Test for the v1 config"""
         v1_config = {
             "account_id": "12345678911",
             "clusters": {
@@ -84,14 +86,14 @@ class TestCLIConfig(object):
         )
 
         # mock the opening of `variables.json`
-        with patch('__builtin__.open', mock_open(read_data=v1_config_pretty), create=True) as m:            
+        with patch('__builtin__.open', mock_open(read_data=v1_config_pretty), create=True):
             cli_config = CLIConfig()
 
             assert_equal(cli_config.version, 2)
             assert_equal(cli_config['account']['aws_account_id'], '12345678911')
-            assert_equal(cli_config['alert_processor_config']['source_bucket'], 
-                                    'unit-testing.streamalert.source')
+            assert_equal(cli_config['alert_processor_config']['source_bucket'],
+                         'unit-testing.streamalert.source')
             assert_equal(cli_config['rule_processor_config']['third_party_libraries'],
-                                    ['jsonpath_rw', 'netaddr'])
+                         ['jsonpath_rw', 'netaddr'])
             assert_equal(cli_config['terraform']['tfstate_s3_key'],
-                                    'stream_alert_state/terraform.tfstate')
+                         'stream_alert_state/terraform.tfstate')

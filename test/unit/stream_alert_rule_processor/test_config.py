@@ -17,22 +17,12 @@ limitations under the License.
 # command: nosetests -v -s test/unit/
 # specific test: nosetests -v -s test/unit/file.py:TestStreamPayload.test_name
 
-import base64
-import json
+from collections import namedtuple
 
-from collections import OrderedDict, namedtuple
-
-from nose.tools import (
-    assert_equal,
-    assert_not_equal,
-    nottest,
-    assert_raises,
-    raises
-)
+from nose.tools import assert_equal, raises
 
 from stream_alert.rule_processor.config import (
     ConfigError,
-    load_config,
     validate_config,
     load_env
 )
@@ -99,7 +89,7 @@ def test_validate_config_no_parsers():
         }
     }
 
-    validate_result = validate_config(config)
+    validate_config(config)
 
 @raises(ConfigError)
 def test_validate_config_no_logs():
@@ -125,12 +115,13 @@ def test_validate_config_no_logs():
         }
     }
 
-    validate_result = validate_config(config)
+    validate_config(config)
 
 def test_load_env():
     """Config Environment Validator"""
     context = namedtuple('Context', ['invoked_function_arn'])
-    context.invoked_function_arn = 'arn:aws:lambda:us-east-1:555555555555:function:streamalert_testing:production'
+    context.invoked_function_arn = ('arn:aws:lambda:us-east-1:555555555555:'
+                                    'function:streamalert_testing:production')
 
     env = load_env(context)
     assert_equal(env['lambda_region'], 'us-east-1')
