@@ -69,6 +69,10 @@ resource "aws_s3_bucket" "streamalerts" {
   bucket        = "${replace("${var.prefix}.${var.cluster}.streamalerts", "_", ".")}"
   acl           = "private"
   force_destroy = false
+
+  versioning {
+    enabled = true
+  }
 }
 
 // Legacy S3 bucket name - All alerts should be copied to the bucket created above.
