@@ -1,10 +1,4 @@
 {
-  "aws-s3": {
-    "sample_bucket": "sample.bucket.name"
-  },
-  "aws-lambda": {
-    "sample_lambda": "function-name"
-  },
   "pagerduty": [
     "sample_integration"
   ],
