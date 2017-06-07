@@ -169,15 +169,14 @@ class LambdaPackage(object):
         """
         third_party_libs = self.config[self.config_key]['third_party_libraries']
         if third_party_libs:
-            if len(third_party_libs) > 0:
-                LOGGER_CLI.info('Installing third-party libraries')
-                pip_command = ['install']
-                pip_command.extend(third_party_libs)
-                pip_command.extend(['--upgrade', '--target', temp_package_path])
-                # Return True if the pip result code is 0
-                return pip.main(pip_command) == 0
-            else:
-                LOGGER_CLI.info('No third-party libraries to install.')
+            LOGGER_CLI.info('Installing third-party libraries: {}'.format(', '.join(third_party_libs)))
+            pip_command = ['install']
+            pip_command.extend(third_party_libs)
+            pip_command.extend(['--upgrade', '--target', temp_package_path])
+            # Return True if the pip result code is 0
+            return pip.main(pip_command) == 0
+        else:
+            LOGGER_CLI.info('No third-party libraries to install.')
 
         # Return a default of True here if pip is not called
         return True

@@ -30,9 +30,10 @@ from argparse import ArgumentParser, RawTextHelpFormatter
 from stream_alert_cli.runner import cli_runner
 from stream_alert_cli.logger import LOGGER_CLI
 
+
 def build_parser():
     description = (
-    """Build, Deploy, and Test StreamAlert Infrastructure
+        """Build, Deploy, and Test StreamAlert Infrastructure
 
     Define New Outputs:
     stream_alert_cli.py output new --service 'service_name'
@@ -123,7 +124,7 @@ def build_parser():
     )
     tf_parser.add_argument(
         'subcommand',
-        choices=['build', 'destroy', 'init', 'generate', 'status']
+        choices=['build', 'destroy', 'init', 'init-backend', 'generate', 'status']
     )
     tf_parser.add_argument(
         '--target',
@@ -136,10 +137,13 @@ def build_parser():
 
     return parser
 
+
 def main():
     parser = build_parser()
     options = parser.parse_args()
     cli_runner(options)
     LOGGER_CLI.info('Completed')
 
-if __name__ == "__main__": main()
+
+if __name__ == "__main__":
+    main()
