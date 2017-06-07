@@ -10,6 +10,10 @@ resource "aws_lambda_function" "streamalert_rule_processor" {
   timeout       = "${element(var.rule_processor_lambda_config["${var.cluster}"], 0)}"
   s3_bucket     = "${lookup(var.rule_processor_config, "source_bucket")}"
   s3_key        = "${lookup(var.rule_processor_config, "source_object_key")}"
+
+  tags {
+    Name = "StreamAlert"
+  }
 }
 
 // StreamAlert Processor Production Alias
@@ -43,6 +47,10 @@ resource "aws_lambda_function" "streamalert_alert_processor" {
   timeout       = "${element(var.alert_processor_lambda_config["${var.cluster}"], 0)}"
   s3_bucket     = "${lookup(var.alert_processor_config, "source_bucket")}"
   s3_key        = "${lookup(var.alert_processor_config, "source_object_key")}"
+
+  tags {
+    Name = "StreamAlert"
+  }
 }
 
 // StreamAlert Output Processor Production Alias
