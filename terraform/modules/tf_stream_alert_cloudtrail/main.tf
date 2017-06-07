@@ -15,40 +15,60 @@ resource "aws_s3_bucket" "cloudtrail_bucket" {
   force_destroy = false
   count         = "${var.existing_trail ? 0 : 1}"
 
-  policy = <<POLICY
-{
-  "Version": "2012-10-17",
-  "Statement": [
-      {
-          "Sid": "AWSCloudTrailAclCheck",
-          "Effect": "Allow",
-          "Principal": {
-            "Service": "cloudtrail.amazonaws.com"
-          },
-          "Action": "s3:GetBucketAcl",
-          "Resource": "arn:aws:s3:::${var.prefix}.${var.cluster}.streamalert.cloudtrail"
-      },
-      {
-          "Sid": "AWSCloudTrailWrite",
-          "Effect": "Allow",
-          "Principal": {
-            "Service": "cloudtrail.amazonaws.com"
-          },
-          "Action": "s3:PutObject",
-          "Resource": "arn:aws:s3:::${var.prefix}.${var.cluster}.streamalert.cloudtrail/*",
-          "Condition": {
-              "StringEquals": {
-                  "s3:x-amz-acl": "bucket-owner-full-control"
-              }
-          }
-      }
-  ]
-}
-POLICY
+  versioning {
+    enabled = true
+  }
+
+  policy = "${data.aws_iam_policy_document.cloudtrail_bucket.json}"
 
   tags {
     Name    = "${var.prefix}.${var.cluster}.streamalert.cloudtrail"
     Cluster = "${var.cluster}"
+  }
+}
+
+data "aws_iam_policy_document" "cloudtrail_bucket" {
+  statement {
+    sid = "AWSCloudTrailAclCheck"
+
+    actions = [
+      "s3:GetBucketAcl",
+    ]
+
+    resources = [
+      "arn:aws:s3:::${var.prefix}.${var.cluster}.streamalert.cloudtrail",
+    ]
+
+    principals {
+      type        = "Service"
+      identifiers = ["cloudtrail.amazonaws.com"]
+    }
+  }
+
+  statement {
+    sid = "AWSCloudTrailWrite"
+
+    actions = [
+      "s3:PutObject",
+    ]
+
+    resources = [
+      "arn:aws:s3:::${var.prefix}.${var.cluster}.streamalert.cloudtrail/*",
+    ]
+
+    principals {
+      type        = "Service"
+      identifiers = ["cloudtrail.amazonaws.com"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "s3:x-amz-acl"
+
+      values = [
+        "bucket-owner-full-control",
+      ]
+    }
   }
 }
 

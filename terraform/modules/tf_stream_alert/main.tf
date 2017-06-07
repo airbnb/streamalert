@@ -10,6 +10,10 @@ resource "aws_lambda_function" "streamalert_rule_processor" {
   timeout       = "${element(var.rule_processor_lambda_config["${var.cluster}"], 0)}"
   s3_bucket     = "${lookup(var.rule_processor_config, "source_bucket")}"
   s3_key        = "${lookup(var.rule_processor_config, "source_object_key")}"
+
+  tags {
+    Name = "StreamAlert"
+  }
 }
 
 // StreamAlert Processor Production Alias
@@ -43,6 +47,10 @@ resource "aws_lambda_function" "streamalert_alert_processor" {
   timeout       = "${element(var.alert_processor_lambda_config["${var.cluster}"], 0)}"
   s3_bucket     = "${lookup(var.alert_processor_config, "source_bucket")}"
   s3_key        = "${lookup(var.alert_processor_config, "source_object_key")}"
+
+  tags {
+    Name = "StreamAlert"
+  }
 }
 
 // StreamAlert Output Processor Production Alias
@@ -69,11 +77,8 @@ resource "aws_s3_bucket" "streamalerts" {
   bucket        = "${replace("${var.prefix}.${var.cluster}.streamalerts", "_", ".")}"
   acl           = "private"
   force_destroy = false
-}
 
-// Legacy S3 bucket name - All alerts should be copied to the bucket created above.
-resource "aws_s3_bucket" "stream_alert_output" {
-  bucket        = "${replace("${var.prefix}.${var.cluster}.stream.alert.output.processor.results", "_", ".")}"
-  acl           = "private"
-  force_destroy = false
+  versioning {
+    enabled = true
+  }
 }
