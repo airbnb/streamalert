@@ -166,34 +166,6 @@ class JSONParser(ParserBase):
         if not self.options:
             return [json_payload]
 
-        optional_keys = self.options.get('optional_top_level_keys')
-        # Handle optional keys
-        if optional_keys:
-            # Note: This function exists because dict/OrderedDict cannot
-            #       be keys in a dictionary.
-            def default_optional_values(key):
-                """Return a default value for a given schema type"""
-                if key == 'string':
-                    return str()
-                elif key == 'integer':
-                    return int()
-                elif key == 'float':
-                    return float()
-                elif key == 'boolean':
-                    return bool()
-                elif key == []:
-                    return list()
-                elif key == OrderedDict():
-                    return dict()
-
-            for key_name, value_type in optional_keys.iteritems():
-                # Update the schema to ensure the record is valid
-                schema.update({key_name: value_type})
-                # If the optional key isn't in our parsed json payload
-                if key_name not in json_payload:
-                    # Set default value
-                    json_payload[key_name] = default_optional_values(value_type)
-
         envelope_schema = self.options.get('envelope_keys')
         # If envelope_keys are declared, and this payload does not have every key specified
         # in these envelope_keys, then it's safe to skip trying to extract records using json_path
@@ -222,6 +194,37 @@ class JSONParser(ParserBase):
 
         if not json_records:
             json_records.append(json_payload)
+
+        optional_keys = self.options.get('optional_top_level_keys')
+        # Handle optional keys
+        if optional_keys:
+
+            def default_optional_values(key):
+                """Return a default value for a given schema type"""
+                if key == 'string':
+                    return str()
+                elif key == 'integer':
+                    return int()
+                elif key == 'float':
+                    return float()
+                elif key == 'boolean':
+                    return bool()
+                elif key == []:
+                    return list()
+                elif key == OrderedDict():
+                    return dict()
+
+            for key_name, value_type in optional_keys.iteritems():
+                # Instead of doing a schema.update() here with a default value type,
+                # we should enforce having any optional keys declared within the schema
+                # and log an error if that is not the case
+                if key_name not in schema:
+                    LOGGER.error('Optional key \'%s\' not found in schema', key_name)
+                # If the optional key isn't in our parsed json payload
+                for record in json_records:
+                    if key_name not in record:
+                        # Set default value
+                        record[key_name] = default_optional_values(value_type)
 
         return json_records
 
