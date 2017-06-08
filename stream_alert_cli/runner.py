@@ -152,6 +152,13 @@ def terraform_runner(options):
         tf_runner()
 
     elif options.subcommand == 'destroy':
+        if options.target:
+            target = options.target
+            targets = ['module.{}_{}'.format(target, cluster)
+                       for cluster in CONFIG['clusters'].keys()]
+            tf_runner(targets=targets, action='destroy')
+            return
+
         # Migrate back to local state so Terraform can successfully
         # destroy the S3 bucket used by the backend.
         terraform_generate(config=CONFIG, init=True)
