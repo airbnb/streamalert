@@ -144,17 +144,21 @@ class TestJSONParser(object):
     def test_optional_keys_json(self):
         """Parse JSON with optional top level keys"""
         schema = {
-            'name': 'string',
+            'columns': {},
             'host': 'string',
-            'columns': {}
+            'host-id': 'integer',
+            'ids': [],
+            'name': 'string',
+            'results': {},
+            'valid': 'boolean'
         }
         options = {
-            'optional_top_level_keys': {
-                'ids': [],
-                'results': {},
-                'host-id': 'integer',
-                'valid': 'boolean'
-            }
+            'optional_top_level_keys': [
+                'host-id',
+                'ids',
+                'results',
+                'valid'
+            ]
         }
         data = json.dumps({
             'name': 'unit-test',
@@ -176,3 +180,66 @@ class TestJSONParser(object):
         assert_equal(parsed_result[0]['host-id'], 0)
         assert_equal(parsed_result[0]['ids'], [])
         assert_equal(parsed_result[0]['results'], {})
+
+    def test_optional_keys_with_json_path(self):
+        """Parse JSON with optional top level keys and json path to records"""
+        schema = {
+            'internal_name': 'string',
+            'is_64bit': 'boolean',
+            'is_executable': 'boolean',
+            'last_seen': 'string',
+            'md5': 'string',
+            'opt_key': 'string',
+            'another_opt_key': 'string'
+        }
+        options = {
+            'json_path': 'docs[*]',
+            'optional_top_level_keys': [
+                'opt_key',
+                'another_opt_key'
+            ]
+        }
+        data = json.dumps({
+            'server': 'test_server',
+            'username': 'test_user',
+            'docs': [
+                {
+                    'internal_name': 'testname01',
+                    'is_64bit': False,
+                    'is_executable': True,
+                    'last_seen': '20170707',
+                    'md5': '58B8702C20DE211D1FCB248D2FDD71D1',
+                    'opt_key': 'exists'
+                },
+                {
+                    'internal_name': 'testname02',
+                    'is_64bit': True,
+                    'is_executable': True,
+                    'last_seen': '20170706',
+                    'md5': '1D1FCB248D2FDD71D158B8702C20DE21',
+                    'opt_key': 'this_value_is_optional',
+                    'another_opt_key': 'this_value_is_also_optional'
+                },
+                {
+                    'internal_name': 'testname02',
+                    'is_64bit': True,
+                    'is_executable': True,
+                    'last_seen': '20170701',
+                    'md5': '1D1FCB248D2FDD71D158B8702C20DE21'
+                }
+            ]
+        })
+
+        parsed_result = self.parser_helper(data=data,
+                                           schema=schema,
+                                           options=options)
+
+        # tests
+        assert_equal(len(parsed_result), 3)
+        assert_equal(parsed_result[0]['internal_name'], 'testname01')
+        assert_equal(parsed_result[0]['md5'], '58B8702C20DE211D1FCB248D2FDD71D1')
+
+        # test optional fields
+        assert_equal(parsed_result[0]['opt_key'], 'exists')
+        assert_equal(parsed_result[1]['another_opt_key'], 'this_value_is_also_optional')
+        assert_equal(parsed_result[2]['opt_key'], '')

@@ -246,6 +246,8 @@
       "cb_server": "string",
       "computer_name": "string",
       "event_type": "string",
+      "filetype": "integer",
+      "filetype_name": "string",
       "link_process": "string",
       "link_sensor": "string",
       "md5": "string",
@@ -263,10 +265,10 @@
           "ingress.event.filemod"
         ]
       },
-      "optional_top_level_keys": {
-        "filetype": "integer",
-        "filetype_name": "string"
-      }
+      "optional_top_level_keys": [
+        "filetype",
+        "filetype_name"
+      ]
     }
   },
   "carbonblack:binaryinfo.host.observed": {
