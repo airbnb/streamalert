@@ -214,17 +214,19 @@ class JSONParser(ParserBase):
                 elif key == OrderedDict():
                     return dict()
 
-            for key_name, value_type in optional_keys.iteritems():
+            for key_name in optional_keys:
                 # Instead of doing a schema.update() here with a default value type,
                 # we should enforce having any optional keys declared within the schema
                 # and log an error if that is not the case
                 if key_name not in schema:
-                    LOGGER.error('Optional key \'%s\' not found in schema', key_name)
+                    LOGGER.error('Optional top level key \'%s\' '
+                                 'not found in declared log schema', key_name)
+                    continue
                 # If the optional key isn't in our parsed json payload
                 for record in json_records:
                     if key_name not in record:
                         # Set default value
-                        record[key_name] = default_optional_values(value_type)
+                        record[key_name] = default_optional_values(schema[key_name])
 
         return json_records
 

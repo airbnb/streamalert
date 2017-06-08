@@ -265,10 +265,10 @@
           "ingress.event.filemod"
         ]
       },
-      "optional_top_level_keys": {
-        "filetype": "integer",
-        "filetype_name": "string"
-      }
+      "optional_top_level_keys": [
+        "filetype",
+        "filetype_name"
+      ]
     }
   },
   "carbonblack:binaryinfo.host.observed": {
