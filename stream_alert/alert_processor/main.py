@@ -38,7 +38,7 @@ def handler(event, context):
     LOGGER.info('Running alert processor for %d records', len(records))
 
     # A failure to load the config will log the error in load_output_config and return here
-    config = load_output_config()
+    config = _load_output_config()
     if not config:
         return
 
@@ -100,7 +100,7 @@ def run(loaded_sns_message, region, function_name, config):
     rule_name = alert['metadata']['rule_name']
 
     # strip out unnecessary keys and sort
-    alert = sort_dict(alert)
+    alert = _sort_dict(alert)
 
     outputs = alert['metadata']['outputs']
     # Get the output configuration for this rule and send the alert to each
@@ -132,7 +132,7 @@ def run(loaded_sns_message, region, function_name, config):
             LOGGER.error('An error occurred while sending alert to %s:%s: %s. alert:\n%s',
                          service, descriptor, err, json.dumps(alert, indent=4))
 
-def sort_dict(unordered_dict):
+def _sort_dict(unordered_dict):
     """Recursively sort a dictionary
 
     Args:
@@ -144,20 +144,20 @@ def sort_dict(unordered_dict):
     result = OrderedDict()
     for key, value in sorted(unordered_dict.items(), key=lambda t: t[0]):
         if isinstance(value, dict):
-            result[key] = sort_dict(value)
+            result[key] = _sort_dict(value)
             continue
 
         result[key] = value
 
     return result
 
-def load_output_config():
+def _load_output_config(config_path='conf/outputs.json'):
     """Load the outputs configuration file from disk
 
     Returns:
         [dict] The output configuration settings
     """
-    with open('conf/outputs.json') as outputs:
+    with open(config_path) as outputs:
         try:
             config = json.load(outputs)
         except ValueError:
