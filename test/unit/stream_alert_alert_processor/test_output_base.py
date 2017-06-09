@@ -22,7 +22,7 @@ import boto3
 from mock import patch, Mock
 
 from moto import mock_s3, mock_kms
-from nose.tools import assert_equal
+from nose.tools import assert_equal, assert_is_not_none
 
 from stream_alert.alert_processor.main import (
     _load_output_config as load_config,
@@ -60,88 +60,124 @@ def test_output_property_default():
     assert_equal(prop.mask_input, False)
     assert_equal(prop.cred_requirement, False)
 
-def test_local_temp_dir():
-    """Local Temp Dir"""
-    temp_dir = StreamOutputBase(REGION, FUNCTION_NAME, CONFIG)._local_temp_dir()
-    assert_equal(temp_dir.split('/')[-1], 'stream_alert_secrets')
 
-def test_get_secrets_bucket_name():
-    """Get Secrets Bucket Name"""
-    bucket_name = StreamOutputBase(REGION, FUNCTION_NAME,
-                                   CONFIG)._get_secrets_bucket_name(FUNCTION_NAME)
-    assert_equal(bucket_name, 'corp-prefix.streamalert.secrets')
+class TestSteamOutputBase(object):
+    """Test class for StreamOutputBase"""
+    __dispatcher = None
+    __descriptor = 'desc_test'
+    @classmethod
+    def setup_class(cls):
+        """Setup the class before any methods"""
+        cls.__dispatcher = StreamOutputBase(REGION, FUNCTION_NAME, CONFIG)
 
-def test_output_cred_name():
-    """Output Cred Name"""
-    output_name = StreamOutputBase(REGION, FUNCTION_NAME,
-                                   CONFIG).output_cred_name('creds')
+    @classmethod
+    def teardown_class(cls):
+        """Teardown the class after all methods"""
+        cls.__dispatcher = None
 
-    assert_equal(output_name, 'test_service/creds')
+    def test_local_temp_dir(self):
+        """StreamOutputBase Local Temp Dir"""
+        temp_dir = self.__dispatcher._local_temp_dir()
+        assert_equal(temp_dir.split('/')[-1], 'stream_alert_secrets')
 
-@mock_s3
-def test_get_creds_from_s3():
-    """Get Creds From S3"""
-    descriptor = 'test_descriptor'
-    test_data = 'credential test string'
+    def test_get_secrets_bucket_name(self):
+        """StreamOutputBase Get Secrets Bucket Name"""
+        bucket_name = self.__dispatcher._get_secrets_bucket_name(FUNCTION_NAME)
+        assert_equal(bucket_name, 'corp-prefix.streamalert.secrets')
 
-    dispatcher = StreamOutputBase(REGION, FUNCTION_NAME, CONFIG)
-    bucket_name = dispatcher.secrets_bucket
-    key = dispatcher.output_cred_name(descriptor)
+    def test_output_cred_name(self):
+        """StreamOutputBase Output Cred Name"""
+        output_name = self.__dispatcher.output_cred_name('creds')
+        assert_equal(output_name, 'test_service/creds')
 
-    local_cred_location = os.path.join(dispatcher._local_temp_dir(), key)
+    @mock_s3
+    def test_get_creds_from_s3(self):
+        """StreamOutputBase Get Creds From S3"""
+        descriptor = 'test_descriptor'
+        test_data = 'credential test string'
 
-    client = boto3.client('s3', region_name=REGION)
-    _put_s3_test_object(client, bucket_name, key, test_data)
+        bucket_name = self.__dispatcher.secrets_bucket
+        key = self.__dispatcher.output_cred_name(descriptor)
 
-    dispatcher._get_creds_from_s3(local_cred_location, descriptor)
+        local_cred_location = os.path.join(self.__dispatcher._local_temp_dir(), key)
 
-    with open(local_cred_location) as creds:
-        line = creds.readline()
+        client = boto3.client('s3', region_name=REGION)
+        _put_s3_test_object(client, bucket_name, key, test_data)
 
-    assert_equal(line, test_data)
+        self.__dispatcher._get_creds_from_s3(local_cred_location, descriptor)
 
-@mock_kms
-def test_kms_decrypt():
-    """Credential KMS Decrypt"""
-    test_data = 'data to encrypt'
-    client = boto3.client('kms', region_name=REGION)
+        with open(local_cred_location) as creds:
+            line = creds.readline()
 
-    encrypted = _encrypt_with_kms(client, test_data)
-    decrypted = StreamOutputBase(REGION, FUNCTION_NAME, CONFIG)._kms_decrypt(encrypted)
+        assert_equal(line, test_data)
 
-    assert_equal(decrypted, test_data)
+    @mock_kms
+    def test_kms_decrypt(self):
+        """StreamOutputBase KMS Decrypt"""
+        test_data = 'data to encrypt'
+        client = boto3.client('kms', region_name=REGION)
 
+        encrypted = _encrypt_with_kms(client, test_data)
+        decrypted = self.__dispatcher._kms_decrypt(encrypted)
 
-@patch('logging.Logger.info')
-def test_log_status_failed(log_mock):
-    """Log status success"""
-    dispatcher = StreamOutputBase(REGION, FUNCTION_NAME, CONFIG)._log_status(True)
-    log_mock.assert_called_with('successfully sent alert to %s', 'test_service')
+        assert_equal(decrypted, test_data)
 
-
-@patch('logging.Logger.error')
-def test_log_status_failed(log_mock):
-    """Log status failed"""
-    dispatcher = StreamOutputBase(REGION, FUNCTION_NAME, CONFIG)._log_status(False)
-    log_mock.assert_called_with('failed to send alert to %s', 'test_service')
+    @patch('logging.Logger.info')
+    def test_log_status_success(self, log_mock):
+        """StreamOutputBase Log status success"""
+        self.__dispatcher._log_status(True)
+        log_mock.assert_called_with('successfully sent alert to %s', 'test_service')
 
 
-@patch('urllib2.urlopen')
-def test_check_http_response(mock_getcode):
-    """Check HTTP Response"""
-    # Test with a good code
-    mock_getcode.getcode.return_value = 200
+    @patch('logging.Logger.error')
+    def test_log_status_failed(self, log_mock):
+        """StreamOutputBase Log status failed"""
+        self.__dispatcher._log_status(False)
+        log_mock.assert_called_with('failed to send alert to %s', 'test_service')
 
-    dispatcher = StreamOutputBase(REGION, FUNCTION_NAME, CONFIG)
-    result = dispatcher._check_http_response(mock_getcode)
 
-    assert_equal(result, True)
+    @patch('urllib2.urlopen')
+    def test_check_http_response(self, mock_getcode):
+        """StreamOutputBase Check HTTP Response"""
+        # Test with a good response code
+        mock_getcode.getcode.return_value = 200
+        result = self.__dispatcher._check_http_response(mock_getcode)
+        assert_equal(result, True)
 
-    # Test with a bad code
-    mock_getcode.getcode.return_value = 440
-    result = dispatcher._check_http_response(mock_getcode)
+        # Test with a bad response code
+        mock_getcode.getcode.return_value = 440
+        result = self.__dispatcher._check_http_response(mock_getcode)
+        assert_equal(result, False)
 
-    assert_equal(result, False)
+    def _put_mock_creds(self):
+        """Helper function to mock encrypt creds and put on s3"""
+        output_name = self.__dispatcher.output_cred_name(self.__descriptor)
+
+        creds = {'url': 'http://www.foo.bar/test',
+                 'token': 'token_to_encrypt'}
+
+        creds_string = json.dumps(creds)
+
+        kms_client = boto3.client('kms', region_name=REGION)
+        enc_creds = _encrypt_with_kms(kms_client, creds_string)
+
+        s3_client = boto3.client('s3', region_name=REGION)
+        _put_s3_test_object(s3_client, self.__dispatcher.secrets_bucket,
+                            output_name, enc_creds)
+
+    @mock_s3
+    @mock_kms
+    def test_load_creds(self):
+        """Load Credentials"""
+        self._put_mock_creds()
+
+        loaded_creds = self.__dispatcher._load_creds(self.__descriptor)
+
+        assert_is_not_none(loaded_creds)
+        assert_equal(len(loaded_creds), 2)
+        assert_equal(loaded_creds['url'], u'http://www.foo.bar/test')
+        assert_equal(loaded_creds['token'], u'token_to_encrypt')
+
 
 class TestFormatOutputConfig(object):
     """Test class for Output Config formatting"""
