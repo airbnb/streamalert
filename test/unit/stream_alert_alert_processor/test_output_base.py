@@ -42,6 +42,7 @@ from unit.stream_alert_alert_processor import (
 
 from unit.stream_alert_alert_processor.helpers import (
     _encrypt_with_kms,
+    _put_mock_creds,
     _put_s3_test_object
 )
 
@@ -149,27 +150,16 @@ class TestSteamOutputBase(object):
         result = self.__dispatcher._check_http_response(mock_getcode)
         assert_equal(result, False)
 
-    def _put_mock_creds(self):
-        """Helper function to mock encrypt creds and put on s3"""
+    @mock_s3
+    @mock_kms
+    def test_load_creds(self):
+        """Load Credentials"""
         output_name = self.__dispatcher.output_cred_name(self.__descriptor)
 
         creds = {'url': 'http://www.foo.bar/test',
                  'token': 'token_to_encrypt'}
 
-        creds_string = json.dumps(creds)
-
-        kms_client = boto3.client('kms', region_name=REGION)
-        enc_creds = _encrypt_with_kms(kms_client, creds_string)
-
-        s3_client = boto3.client('s3', region_name=REGION)
-        _put_s3_test_object(s3_client, self.__dispatcher.secrets_bucket,
-                            output_name, enc_creds)
-
-    @mock_s3
-    @mock_kms
-    def test_load_creds(self):
-        """Load Credentials"""
-        self._put_mock_creds()
+        _put_mock_creds(output_name, creds, self.__dispatcher.secrets_bucket)
 
         loaded_creds = self.__dispatcher._load_creds(self.__descriptor)
 

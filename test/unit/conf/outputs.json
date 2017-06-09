@@ -5,6 +5,9 @@
   "aws-lambda": {
     "unit_test_lambda": "unit_test_function"
   },
+  "pagerduty": [
+    "unit_test_integration"
+  ],
   "slack": [
     "unit_test_channel"
   ]

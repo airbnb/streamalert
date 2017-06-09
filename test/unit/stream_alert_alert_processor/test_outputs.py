@@ -21,13 +21,14 @@ from collections import OrderedDict, Counter
 from StringIO import StringIO
 
 from mock import patch
-from moto import mock_s3, mock_lambda
+from moto import mock_s3, mock_kms, mock_lambda
 from nose.tools import (
     assert_equal,
     assert_is_none,
     assert_is_not_none,
     assert_not_equal,
-    assert_set_equal
+    assert_set_equal,
+    with_setup
 )
 
 from stream_alert.alert_processor import outputs as outputs
@@ -43,7 +44,10 @@ from unit.stream_alert_alert_processor import (
 )
 
 from unit.stream_alert_alert_processor.helpers import (
-    _get_alert
+    _get_alert,
+    _encrypt_with_kms,
+    _put_mock_creds,
+    _put_s3_test_object
 )
 
 UNIT_CONFIG = load_config('test/unit/conf/outputs.json')
@@ -83,7 +87,10 @@ def test_user_defined_properties():
 class TestPagerDutyOutput(object):
     """Test class for PagerDutyOutput"""
     __service = 'pagerduty'
+    __descriptor = 'unit_test_integration'
     __dispatcher = None
+    __backup_method = None
+
     @classmethod
     def setup_class(cls):
         """Setup the class before any methods"""
@@ -102,6 +109,75 @@ class TestPagerDutyOutput(object):
         assert_equal(len(props), 1)
         assert_equal(props['url'],
                      'https://events.pagerduty.com/generic/2010-04-15/create_event.json')
+
+    def _setup_dispatch(self):
+        """Helper for setting up PagerDutyOutput dispatch"""
+        # Cache the _get_default_properties and set it to return None
+        self.__backup_method = self.__dispatcher._get_default_properties
+        self.__dispatcher._get_default_properties = lambda: None
+
+        output_name = self.__dispatcher.output_cred_name(self.__descriptor)
+
+        creds = {'url': 'http://pagerduty.foo.bar/create_event.json',
+                 'service_key': 'mocked_service_key'}
+
+        _put_mock_creds(output_name, creds, self.__dispatcher.secrets_bucket)
+
+        return _get_alert(0)['default']
+
+    def _teardown_dispatch(self):
+        """Replace method with cached method"""
+        self.__dispatcher._get_default_properties = self.__backup_method
+
+    @patch('logging.Logger.info')
+    @patch('urllib2.urlopen')
+    @mock_s3
+    @mock_kms
+    def test_dispatch_success(self, url_mock, log_info_mock):
+        """PagerDutyOutput dispatch success"""
+        alert = self._setup_dispatch()
+        url_mock.return_value.getcode.return_value = 200
+
+        self.__dispatcher.dispatch(descriptor=self.__descriptor,
+                                   rule_name='rule_name',
+                                   alert=alert)
+
+        self._teardown_dispatch()
+
+        log_info_mock.assert_called_with('successfully sent alert to %s', self.__service)
+
+    @patch('logging.Logger.error')
+    @patch('urllib2.urlopen')
+    @mock_s3
+    @mock_kms
+    def test_dispatch_failure(self, url_mock, log_error_mock):
+        """PagerDutyOutput dispatch failure"""
+        alert = self._setup_dispatch()
+        bad_message = '{"error": {"message": "failed", "errors": ["err1", "err2"]}}'
+        url_mock.return_value.read.return_value = bad_message
+        url_mock.return_value.getcode.return_value = 400
+
+        self.__dispatcher.dispatch(descriptor=self.__descriptor,
+                                   rule_name='rule_name',
+                                   alert=alert)
+
+        self._teardown_dispatch()
+
+        log_error_mock.assert_called_with('failed to send alert to %s', self.__service)
+
+    @patch('logging.Logger.error')
+    @mock_s3
+    @mock_kms
+    def test_dispatch_bad_descriptor(self, log_error_mock):
+        """PagerDutyOutput dispatch bad descriptor"""
+        alert = self._setup_dispatch()
+        self.__dispatcher.dispatch(descriptor='bad_descriptor',
+                                   rule_name='rule_name',
+                                   alert=alert)
+
+        self._teardown_dispatch()
+
+        log_error_mock.assert_called_with('failed to send alert to %s', self.__service)
 
 
 class TestSlackOutput(object):

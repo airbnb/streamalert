@@ -15,6 +15,8 @@ limitations under the License.
 '''
 import json
 
+import boto3
+
 from mock import Mock
 
 from unit.stream_alert_alert_processor import (
@@ -76,6 +78,16 @@ def _get_mock_context():
                    function_name='corp-prefix_prod_streamalert_alert_processor')
 
     return context
+
+def _put_mock_creds(output_name, creds, bucket):
+    """Helper function to mock encrypt creds and put on s3"""
+    creds_string = json.dumps(creds)
+
+    kms_client = boto3.client('kms', region_name=REGION)
+    enc_creds = _encrypt_with_kms(kms_client, creds_string)
+
+    s3_client = boto3.client('s3', region_name=REGION)
+    _put_s3_test_object(s3_client, bucket, output_name, enc_creds)
 
 def _put_s3_test_object(client, bucket, key, data):
     client.create_bucket(Bucket=bucket)

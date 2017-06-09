@@ -84,7 +84,7 @@ def test_load_output_config():
     """Load outputs configuration file"""
     config = _load_output_config('test/unit/conf/outputs.json')
 
-    assert_equal(set(config.keys()), {'aws-s3', 'aws-lambda', 'slack'})
+    assert_equal(set(config.keys()), {'aws-s3', 'aws-lambda', 'pagerduty', 'slack'})
 
 def test_sort_dict():
     """Sorted Dict"""
