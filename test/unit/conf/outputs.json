@@ -1,0 +1,11 @@
+{
+  "aws-s3": {
+    "unit_test_bucket": "unit.test.bucket.name"
+  },
+  "aws-lambda": {
+    "unit_test_lambda": "unit_test_function"
+  },
+  "slack": [
+    "unit_test_channel"
+  ]
+}
