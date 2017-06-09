@@ -50,42 +50,6 @@ from unit.stream_alert_alert_processor.helpers import (
 StreamOutputBase.__abstractmethods__ = frozenset()
 StreamOutputBase.__service__ = 'test_service'
 
-
-class TestLoadCreds(object):
-    """Test class for Loading Credentials"""
-    __dispatcher = None
-    __descriptor = 'channel_desc_test'
-    @classmethod
-    @mock_s3
-    @mock_kms
-    def setup_class(cls):
-        """Setup the class before any methods"""
-        s3_client = boto3.client('s3', region_name=REGION)
-        kms_client = boto3.client('kms', region_name=REGION)
-        creds = {'url': 'http://www.foo.bar/test',
-                 'token': 'token_to_encrypt'}
-
-        cls.__dispatcher = StreamOutputBase(REGION, FUNCTION_NAME, CONFIG)
-
-        output_name = cls.__dispatcher.output_cred_name(cls.__descriptor)
-
-        creds_string = json.dumps(creds)
-
-        enc_creds = _encrypt_with_kms(kms_client, creds_string)
-
-        _put_s3_test_object(s3_client, cls.__dispatcher.secrets_bucket,
-                            output_name, enc_creds)
-
-    @mock_kms
-    @mock_s3
-    def test_load_creds(self):
-        """Load Credentials"""
-        loaded_creds = self.__dispatcher._load_creds(self.__descriptor)
-
-        assert_equal(len(loaded_creds), 2)
-        assert_equal(loaded_creds['url'], u'http://www.foo.bar/test')
-        assert_equal(loaded_creds['token'], u'token_to_encrypt')
-
 def test_output_property_default():
     """OutputProperty defaults"""
     prop = OutputProperty()
