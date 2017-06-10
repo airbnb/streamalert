@@ -6,7 +6,10 @@
     "unit_test_lambda": "unit_test_function"
   },
   "pagerduty": [
-    "unit_test_integration"
+    "unit_test_pagerduty"
+  ],
+  "phantom": [
+    "unit_test_phantom"
   ],
   "slack": [
     "unit_test_channel"

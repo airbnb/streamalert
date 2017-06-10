@@ -20,7 +20,7 @@ import zipfile
 from collections import OrderedDict, Counter
 from StringIO import StringIO
 
-from mock import patch
+from mock import call, patch
 from moto import mock_s3, mock_kms, mock_lambda
 from nose.tools import (
     assert_equal,
@@ -89,7 +89,7 @@ class TestPagerDutyOutput(object):
     @classmethod
     def setup_class(cls):
         cls.__service = 'pagerduty'
-        cls.__descriptor = 'unit_test_integration'
+        cls.__descriptor = 'unit_test_pagerduty'
         cls.__backup_method = None
         """Setup the class before any methods"""
         cls.__dispatcher = outputs.get_output_dispatcher(cls.__service,
@@ -174,6 +174,111 @@ class TestPagerDutyOutput(object):
                                    alert=alert)
 
         self._teardown_dispatch()
+
+        log_error_mock.assert_called_with('failed to send alert to %s', self.__service)
+
+
+class TestPhantomOutput(object):
+    """Test class for PhantomOutput"""
+    @classmethod
+    def setup_class(cls):
+        """Setup the class before any methods"""
+        cls.__service = 'phantom'
+        cls.__descriptor = 'unit_test_phantom'
+        cls.__dispatcher = outputs.get_output_dispatcher(cls.__service,
+                                                         REGION,
+                                                         FUNCTION_NAME,
+                                                         UNIT_CONFIG)
+    @classmethod
+    def teardown_class(cls):
+        """Teardown the class after all methods"""
+        cls.__dispatcher = None
+
+    def _setup_dispatch(self, url):
+        """Helper for setting up PhantomOutput dispatch"""
+        output_name = self.__dispatcher.output_cred_name(self.__descriptor)
+
+        creds = {'url': url,
+                 'ph_auth_token': 'mocked_auth_token'}
+
+        _put_mock_creds(output_name, creds, self.__dispatcher.secrets_bucket)
+
+        return _get_alert(0)['default']
+
+    @patch('logging.Logger.info')
+    @patch('urllib2.urlopen')
+    @mock_s3
+    @mock_kms
+    def test_dispatch(self, url_mock, log_mock):
+        """PhantomOutput dispatch success"""
+        alert = self._setup_dispatch('phantom.foo.bar')
+        url_mock.return_value.getcode.return_value = 200
+        url_mock.return_value.read.return_value = '{"id": 1948}'
+
+        self.__dispatcher.dispatch(descriptor=self.__descriptor,
+                                   rule_name='rule_name',
+                                   alert=alert)
+
+        log_mock.assert_called_with('successfully sent alert to %s', self.__service)
+
+    @patch('logging.Logger.error')
+    @patch('urllib2.urlopen')
+    @mock_s3
+    @mock_kms
+    def test_dispatch_container_failure(self, url_mock, log_mock):
+        """PhantomOutput dispatch failure (setup container)"""
+        alert = self._setup_dispatch('phantom.foo.bar')
+        url_mock.return_value.getcode.return_value = 400
+        self.__dispatcher.dispatch(descriptor=self.__descriptor,
+                                   rule_name='rule_name',
+                                   alert=alert)
+
+        log_mock.assert_called_with('failed to send alert to %s', self.__service)
+
+    @patch('logging.Logger.error')
+    @patch('urllib2.urlopen')
+    @mock_s3
+    @mock_kms
+    def test_dispatch_container_error(self, url_mock, log_mock):
+        """PhantomOutput dispatch decode error (setup container)"""
+        alert = self._setup_dispatch('phantom.foo.bar')
+        url_mock.return_value.getcode.return_value = 200
+        url_mock.return_value.read.return_value = 'this\nis\nnot\njson'
+
+        self.__dispatcher.dispatch(descriptor=self.__descriptor,
+                                   rule_name='rule_name',
+                                   alert=alert)
+
+        assert_equal(str(log_mock.call_args_list[0]),
+                     str(call('An error occurred while decoding phantom response to JSON: %s',
+                              ValueError('No JSON object could be decoded',))))
+
+    @patch('logging.Logger.error')
+    @patch('urllib2.urlopen')
+    @mock_s3
+    @mock_kms
+    def test_dispatch_failure(self, url_mock, log_mock):
+        """PhantomOutput dispatch failure (artifact)"""
+        alert = self._setup_dispatch('phantom.foo.bar')
+        url_mock.return_value.read.return_value = '{"id": 1902}'
+        # Use side_effect to change the getcode return value the second time
+        # it is called. This allows testing issues down the chain somewhere
+        url_mock.return_value.getcode.side_effect = [200, 400]
+        self.__dispatcher.dispatch(descriptor=self.__descriptor,
+                                   rule_name='rule_name',
+                                   alert=alert)
+
+        log_mock.assert_called_with('failed to send alert to %s', self.__service)
+
+    @patch('logging.Logger.error')
+    @mock_s3
+    @mock_kms
+    def test_dispatch_bad_descriptor(self, log_error_mock):
+        """PhantomOutput dispatch bad descriptor"""
+        alert = self._setup_dispatch('phantom.foo.bar')
+        self.__dispatcher.dispatch(descriptor='bad_descriptor',
+                                   rule_name='rule_name',
+                                   alert=alert)
 
         log_error_mock.assert_called_with('failed to send alert to %s', self.__service)
 
