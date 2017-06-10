@@ -444,6 +444,62 @@ class TestSlackOutput(object):
         assert_equal(len(result), 2)
         assert_equal(result[1], '*test_key_02:* test_value_02')
 
+    def _setup_dispatch(self):
+        """Helper for setting up SlackOutput dispatch"""
+        output_name = self.__dispatcher.output_cred_name(self.__descriptor)
+
+        creds = {'url': 'https://api.slack.com/web-hook-key'}
+
+        _put_mock_creds(output_name, creds, self.__dispatcher.secrets_bucket)
+
+        return _get_alert(0)['default']
+
+    @patch('logging.Logger.info')
+    @patch('urllib2.urlopen')
+    @mock_s3
+    @mock_kms
+    def test_dispatch_success(self, url_mock, log_info_mock):
+        """SlackOutput dispatch success"""
+        alert = self._setup_dispatch()
+        url_mock.return_value.getcode.return_value = 200
+
+        self.__dispatcher.dispatch(descriptor=self.__descriptor,
+                                   rule_name='rule_name',
+                                   alert=alert)
+
+        log_info_mock.assert_called_with('successfully sent alert to %s', self.__service)
+
+    @patch('logging.Logger.error')
+    @patch('urllib2.urlopen')
+    @mock_s3
+    @mock_kms
+    def test_dispatch_failure(self, url_mock, log_error_mock):
+        """SlackOutput dispatch failure"""
+        alert = self._setup_dispatch()
+        error_message = 'a helpful error message'
+        url_mock.return_value.read.return_value = error_message
+        url_mock.return_value.getcode.return_value = 400
+
+        self.__dispatcher.dispatch(descriptor=self.__descriptor,
+                                   rule_name='rule_name',
+                                   alert=alert)
+
+        log_error_mock.assert_any_call('Encountered an error while sending to Slack: %s',
+                                       error_message)
+        log_error_mock.assert_any_call('failed to send alert to %s', self.__service)
+
+    @patch('logging.Logger.error')
+    @mock_s3
+    @mock_kms
+    def test_dispatch_bad_descriptor(self, log_error_mock):
+        """SlackOutput dispatch bad descriptor"""
+        alert = self._setup_dispatch()
+        self.__dispatcher.dispatch(descriptor='bad_descriptor',
+                                   rule_name='rule_name',
+                                   alert=alert)
+
+        log_error_mock.assert_called_with('failed to send alert to %s', self.__service)
+
 
 class TestAWSOutput(object):
     """Test class for AWSOutput Base"""
