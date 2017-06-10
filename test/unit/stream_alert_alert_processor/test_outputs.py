@@ -86,13 +86,11 @@ def test_user_defined_properties():
 
 class TestPagerDutyOutput(object):
     """Test class for PagerDutyOutput"""
-    __service = 'pagerduty'
-    __descriptor = 'unit_test_integration'
-    __dispatcher = None
-    __backup_method = None
-
     @classmethod
     def setup_class(cls):
+        cls.__service = 'pagerduty'
+        cls.__descriptor = 'unit_test_integration'
+        cls.__backup_method = None
         """Setup the class before any methods"""
         cls.__dispatcher = outputs.get_output_dispatcher(cls.__service,
                                                          REGION,
@@ -182,13 +180,11 @@ class TestPagerDutyOutput(object):
 
 class TestSlackOutput(object):
     """Test class for PagerDutyOutput"""
-    __service = 'slack'
-    __descriptor = 'unit_test_channel'
-    __dispatcher = None
-
     @classmethod
     def setup_class(cls):
         """Setup the class before any methods"""
+        cls.__service = 'slack'
+        cls.__descriptor = 'unit_test_channel'
         cls.__dispatcher = outputs.get_output_dispatcher(cls.__service,
                                                          REGION,
                                                          FUNCTION_NAME,
@@ -346,9 +342,6 @@ class TestSlackOutput(object):
 
 class TestAWSOutput(object):
     """Test class for AWSOutput Base"""
-    __abstractmethods_cache = None
-    __dispatcher = None
-
     @classmethod
     def setup_class(cls):
         """Setup the class before any methods"""
@@ -383,41 +376,38 @@ class TestAWSOutput(object):
 
 class TestS3Ouput(object):
     """Test class for S3Output"""
-    __service = 'aws-s3'
-    __dispatcher = None
-    __descriptor = 'unit_test_bucket'
-    __mocker_s3 = mock_s3()
-    __s3_client = None
-
     @classmethod
     def setup_class(cls):
         """Setup the class before any methods"""
+        cls.__service = 'aws-s3'
+        cls.__descriptor = 'unit_test_bucket'
         cls.__dispatcher = outputs.get_output_dispatcher(cls.__service,
                                                          REGION,
                                                          FUNCTION_NAME,
                                                          UNIT_CONFIG)
 
-
-
-        cls.__mocker_s3.start()
-        cls.__s3_client = boto3.client('s3', region_name=REGION)
-        cls.__s3_client.create_bucket(Bucket=UNIT_CONFIG[cls.__service][cls.__descriptor])
-
     @classmethod
     def teardown_class(cls):
         """Teardown the class after all methods"""
         cls.dispatcher = None
-        cls.__mocker_s3.stop()
 
     def test_locals(self):
         """S3Output local variables"""
         assert_equal(self.__dispatcher.__class__.__name__, 'S3Output')
         assert_equal(self.__dispatcher.__service__, self.__service)
 
+    def _setup_dispatch(self):
+        """Helper for setting up S3Output dispatch"""
+        bucket = UNIT_CONFIG[self.__service][self.__descriptor]
+        boto3.client('s3', region_name=REGION).create_bucket(Bucket=bucket)
+
+        return _get_alert(0)['default']
+
     @patch('logging.Logger.info')
+    @mock_s3
     def test_dispatch(self, log_mock):
         """S3Output dispatch"""
-        alert = _get_alert(0)['default']
+        alert = self._setup_dispatch()
         self.__dispatcher.dispatch(descriptor=self.__descriptor,
                                    rule_name='rule_name',
                                    alert=alert)
@@ -427,20 +417,15 @@ class TestS3Ouput(object):
 
 class TestLambdaOuput(object):
     """Test class for LambdaOutput"""
-    __service = 'aws-lambda'
-    __descriptor = 'unit_test_lambda'
-    __dispatcher = None
-    __lambda_client = None
-
     @classmethod
     def setup_class(cls):
         """Setup the class before any methods"""
+        cls.__service = 'aws-lambda'
+        cls.__descriptor = 'unit_test_lambda'
         cls.__dispatcher = outputs.get_output_dispatcher(cls.__service,
                                                          REGION,
                                                          FUNCTION_NAME,
                                                          UNIT_CONFIG)
-
-        cls.__s3_client = boto3.client('lambda', region_name=REGION)
 
     @classmethod
     def _make_lambda_package(cls):
@@ -461,7 +446,6 @@ def handler(event, context):
     def teardown_class(cls):
         """Teardown the class after all methods"""
         cls.dispatcher = None
-        # cls.__mocker_lambda.stop()
 
     def test_locals(self):
         """LambdaOutput local variables"""
@@ -469,10 +453,10 @@ def handler(event, context):
         assert_equal(self.__dispatcher.__service__, self.__service)
 
     def _create_lambda_function(self):
-        """Helper function to create lambda function"""
+        """Helper function to create mock lambda function"""
         function_name = UNIT_CONFIG[self.__service][self.__descriptor]
 
-        self.__s3_client.create_function(
+        boto3.client('lambda', region_name=REGION).create_function(
             FunctionName=function_name,
             Runtime='python2.7',
             Role='test-iam-role',
@@ -486,12 +470,16 @@ def handler(event, context):
             }
         )
 
+    def _setup_dispatch(self):
+        """Helper for setting up LambdaOutput dispatch"""
+        self._create_lambda_function()
+        return _get_alert(0)['default']
+
     @mock_lambda
     @patch('logging.Logger.info')
     def test_dispatch(self, log_mock):
         """LambdaOutput dispatch"""
-        self._create_lambda_function()
-        alert = _get_alert(0)['default']
+        alert = self._setup_dispatch()
         self.__dispatcher.dispatch(descriptor=self.__descriptor,
                                    rule_name='rule_name',
                                    alert=alert)
