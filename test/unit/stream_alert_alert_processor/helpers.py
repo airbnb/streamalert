@@ -15,8 +15,11 @@ limitations under the License.
 '''
 import json
 import os
+import random
 import shutil
 import tempfile
+
+from collections import OrderedDict
 
 import boto3
 
@@ -27,24 +30,65 @@ from unit.stream_alert_alert_processor import (
     FUNCTION_NAME
 )
 
+
 def _construct_event(count):
     """Helper to construct a valid test 'event' with an arbitrary number of records"""
     event = {'Records': []}
     for index in range(count):
-        event['Records'] = event['Records'] + [{'Sns': {'Message': json.dumps(_get_alert(index))}}]
+        event['Records'] = event['Records'] + \
+            [{'Sns': {'Message': json.dumps(_get_sns_message(index))}}]
 
     return event
 
+
 def _encrypt_with_kms(client, data):
     alias = 'alias/stream_alert_secrets_test'
-    client.create_alias(AliasName=alias, TargetKeyId='1234abcd-12ab-34cd-56ef-1234567890ab')
+    client.create_alias(
+        AliasName=alias,
+        TargetKeyId='1234abcd-12ab-34cd-56ef-1234567890ab')
 
     response = client.encrypt(KeyId=alias,
                               Plaintext=data)
 
     return response['CiphertextBlob']
 
-def _get_alert(index):
+
+def _get_mock_context():
+    """Create a fake context object using Mock"""
+    arn = 'arn:aws:lambda:{}:555555555555:function:{}:production'
+    context = Mock(invoked_function_arn=(arn.format(REGION, FUNCTION_NAME)),
+                   function_name='corp-prefix_prod_streamalert_alert_processor')
+
+    return context
+
+
+def _get_random_alert(key_count, rule_name, omit_rule_desc=False):
+    """This loop generates key/value pairs with a key of length 6 and
+        value of length 148. when formatted, each line should consume
+        160 characters, account for newline and asterisk for bold. For example:
+        '*000001:* 6D829150B0154BF9BAC733FD25C61FA3D8CD3868AC2A92F19EEE119B
+        9CE8D6094966AA7592CE371002F1F7D82617673FCC9A9DB2A8F432AA791D74AB80BBCAD9\n'
+        Therefore, 25*160 = 4000 character message size (exactly the 4000 limit)
+        Anything over 4000 characters will result in multi-part slack messages:
+        55*160 = 8800 & 8800/4000 = ceil(2.2) = 3 messages needed
+    """
+    values = OrderedDict([('{:06}'.format(key),
+                           '{:0148X}'.format(random.randrange(16**128)))
+                          for key in range(key_count)])
+
+    rule_description = ('rule test description', '')[omit_rule_desc]
+    alert = {
+        'record': values,
+        'metadata': {
+            'rule_name': rule_name,
+            'rule_description': rule_description
+        }
+    }
+
+    return alert
+
+
+def _get_sns_message(index):
     return {
         'default': {
             'record': {
@@ -74,18 +118,12 @@ def _get_alert(index):
         }
     }
 
-def _get_mock_context():
-    """Create a fake context object using Mock"""
-    arn = 'arn:aws:lambda:{}:555555555555:function:{}:production'
-    context = Mock(invoked_function_arn=(arn.format(REGION, FUNCTION_NAME)),
-                   function_name='corp-prefix_prod_streamalert_alert_processor')
-
-    return context
 
 def _remove_temp_secrets():
     """"Blow away the stream_alert_secrets directory in temp"""
     secrets_dir = os.path.join(tempfile.gettempdir(), "stream_alert_secrets")
     shutil.rmtree(secrets_dir)
+
 
 def _put_mock_creds(output_name, creds, bucket):
     """Helper function to mock encrypt creds and put on s3"""
@@ -96,6 +134,7 @@ def _put_mock_creds(output_name, creds, bucket):
 
     s3_client = boto3.client('s3', region_name=REGION)
     _put_s3_test_object(s3_client, bucket, output_name, enc_creds)
+
 
 def _put_s3_test_object(client, bucket, key, data):
     client.create_bucket(Bucket=bucket)

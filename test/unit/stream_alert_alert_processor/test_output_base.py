@@ -13,21 +13,14 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-import json
 import os
-import urllib2
 
 import boto3
 
-from mock import patch, Mock
+from mock import patch
 
 from moto import mock_s3, mock_kms
 from nose.tools import assert_equal, assert_is_not_none
-
-from stream_alert.alert_processor.main import (
-    _load_output_config as load_config,
-    _sort_dict
-)
 
 from stream_alert.alert_processor.output_base import (
     OutputProperty,
@@ -52,6 +45,7 @@ from unit.stream_alert_alert_processor.helpers import (
 StreamOutputBase.__abstractmethods__ = frozenset()
 StreamOutputBase.__service__ = 'test_service'
 
+
 def test_output_property_default():
     """OutputProperty defaults"""
     prop = OutputProperty()
@@ -63,15 +57,18 @@ def test_output_property_default():
     assert_equal(prop.cred_requirement, False)
 
 
-class TestSteamOutputBase(object):
-    """Test class for StreamOutputBase"""
+class TestStreamOutputBase(object):
+    """Test class for StreamOutputBase
+
+    Perform various tests for methods inherited by all output classes
+    """
     __dispatcher = None
     __descriptor = 'desc_test'
+
     @classmethod
     def setup_class(cls):
         """Setup the class before any methods"""
         cls.__dispatcher = StreamOutputBase(REGION, FUNCTION_NAME, CONFIG)
-        _remove_temp_secrets()
 
     @classmethod
     def teardown_class(cls):
@@ -131,13 +128,11 @@ class TestSteamOutputBase(object):
         self.__dispatcher._log_status(True)
         log_mock.assert_called_with('successfully sent alert to %s', 'test_service')
 
-
     @patch('logging.Logger.error')
     def test_log_status_failed(self, log_mock):
         """StreamOutputBase Log status failed"""
         self.__dispatcher._log_status(False)
         log_mock.assert_called_with('failed to send alert to %s', 'test_service')
-
 
     @patch('urllib2.urlopen')
     def test_check_http_response(self, mock_getcode):
@@ -175,6 +170,7 @@ class TestSteamOutputBase(object):
 class TestFormatOutputConfig(object):
     """Test class for Output Config formatting"""
     __cached_name = StreamOutputBase.__service__
+
     @classmethod
     def setup_class(cls):
         """Setup the class before any methods"""

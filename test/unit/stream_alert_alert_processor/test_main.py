@@ -35,17 +35,21 @@ from unit.stream_alert_alert_processor import (
 from unit.stream_alert_alert_processor.helpers import _get_mock_context
 
 
-class TestAlertProcessor(object):
-    """Test base class for Alert Processor"""
-    @classmethod
-    def setup_class(cls):
-        """Setup the class before any methods"""
-        pass
+@patch('logging.Logger.error')
+def test_handler_malformed_message(log_mock):
+    """Main handler decode failure logging"""
+    # The @patch() decorator allows us to 'introspect' what occurs down the chain
+    # and verify the params a function was LAST called with. For instance, here
+    # we are checking the last call to `logging.Logger.error` and verifying that the
+    # function was called with two params, the first being 'Malformed SNS: %s' and
+    # the second being the dictionary contained within `message`
+    # This call should happen at stream_alert/alert_processor/main.py:62
+    context = _get_mock_context()
+    message = {'not_default': {'record': {'size': '9982'}}}
+    event = {'Records': [{'Sns': {'Message': json.dumps(message)}}]}
+    handler(event, context)
+    log_mock.assert_called_with('Malformed SNS: %s', message)
 
-    @classmethod
-    def teardown_class(cls):
-        """Teardown the class after all methods"""
-        pass
 
 @patch('logging.Logger.error')
 def test_handler_bad_message(log_mock):
@@ -57,14 +61,6 @@ def test_handler_bad_message(log_mock):
                  str(call('An error occurred while decoding message to JSON: %s',
                           ValueError('No JSON object could be decoded',))))
 
-@patch('logging.Logger.error')
-def test_handler_malformed_message(log_mock):
-    """Main handler decode failure logging"""
-    context = _get_mock_context()
-    message = {'not_default': {'record': {'size': '9982'}}}
-    event = {'Records': [{'Sns': {'Message': json.dumps(message)}}]}
-    handler(event, context)
-    log_mock.assert_called_with('Malformed SNS: %s', message)
 
 @patch('stream_alert.alert_processor.main.run')
 def test_handler_run(run_mock):
@@ -75,16 +71,14 @@ def test_handler_run(run_mock):
     handler(event, context)
     run_mock.assert_called_with(message, REGION, FUNCTION_NAME, CONFIG)
 
-def test_run():
-    """Main run test"""
-    # TODO(ryandeivert): add test for statements in the `run` method
-    pass
 
 def test_load_output_config():
     """Load outputs configuration file"""
     config = _load_output_config('test/unit/conf/outputs.json')
 
-    assert_equal(set(config.keys()), {'aws-s3', 'aws-lambda', 'pagerduty', 'phantom', 'slack'})
+    assert_equal(set(config.keys()), {
+        'aws-s3', 'aws-lambda', 'pagerduty', 'phantom', 'slack'})
+
 
 def test_sort_dict():
     """Sorted Dict"""

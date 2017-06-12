@@ -13,14 +13,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-import boto3
 import json
-import random
-import urllib2
 import zipfile
 
 from collections import OrderedDict, Counter
 from StringIO import StringIO
+
+import boto3
 
 from mock import call, patch
 from moto import mock_s3, mock_kms, mock_lambda
@@ -28,12 +27,10 @@ from nose.tools import (
     assert_equal,
     assert_is_none,
     assert_is_not_none,
-    assert_set_equal,
-    with_setup
+    assert_set_equal
 )
 
-from stream_alert.alert_processor import outputs as outputs
-
+from stream_alert.alert_processor import outputs
 from stream_alert.alert_processor.main import _load_output_config as load_config
 from stream_alert.alert_processor.output_base import OutputProperty
 
@@ -44,9 +41,10 @@ from unit.stream_alert_alert_processor import (
 )
 
 from unit.stream_alert_alert_processor.helpers import (
-    _get_alert,
+    _get_random_alert,
+    _get_sns_message,
     _remove_temp_secrets,
-    _put_mock_creds
+    _put_mock_creds,
 )
 
 UNIT_CONFIG = load_config('test/unit/conf/outputs.json')
@@ -55,8 +53,10 @@ UNIT_CONFIG = load_config('test/unit/conf/outputs.json')
 def test_existing_get_output_dispatcher():
     """Get output dispatcher - existing"""
     service = 'aws-s3'
-    dispatcher = outputs.get_output_dispatcher(service, REGION, FUNCTION_NAME, UNIT_CONFIG)
+    dispatcher = outputs.get_output_dispatcher(
+        service, REGION, FUNCTION_NAME, UNIT_CONFIG)
     assert_is_not_none(dispatcher)
+
 
 def test_nonexistent_get_output_dispatcher():
     """Get output dispatcher - nonexistent"""
@@ -67,12 +67,15 @@ def test_nonexistent_get_output_dispatcher():
                                                UNIT_CONFIG)
     assert_is_none(dispatcher)
 
+
 @patch('logging.Logger.error')
 def test_get_output_dispatcher_logging(log_mock):
     """Get output dispatcher - log error"""
     bad_service = 'bad-output'
     outputs.get_output_dispatcher(bad_service, REGION, FUNCTION_NAME, UNIT_CONFIG)
-    log_mock.assert_called_with('designated output service [%s] does not exist', bad_service)
+    log_mock.assert_called_with(
+        'designated output service [%s] does not exist',
+        bad_service)
 
 
 def test_user_defined_properties():
@@ -95,6 +98,7 @@ class TestPagerDutyOutput(object):
                                                          REGION,
                                                          FUNCTION_NAME,
                                                          UNIT_CONFIG)
+
     @classmethod
     def teardown_class(cls):
         """Teardown the class after all methods"""
@@ -122,7 +126,7 @@ class TestPagerDutyOutput(object):
 
         _put_mock_creds(output_name, creds, self.__dispatcher.secrets_bucket)
 
-        return _get_alert(0)['default']
+        return _get_sns_message(0)['default']
 
     def _teardown_dispatch(self):
         """Replace method with cached method"""
@@ -190,6 +194,7 @@ class TestPhantomOutput(object):
                                                          REGION,
                                                          FUNCTION_NAME,
                                                          UNIT_CONFIG)
+
     @classmethod
     def teardown_class(cls):
         """Teardown the class after all methods"""
@@ -206,7 +211,7 @@ class TestPhantomOutput(object):
 
         _put_mock_creds(output_name, creds, self.__dispatcher.secrets_bucket)
 
-        return _get_alert(0)['default']
+        return _get_sns_message(0)['default']
 
     @patch('logging.Logger.info')
     @patch('urllib2.urlopen')
@@ -252,9 +257,12 @@ class TestPhantomOutput(object):
                                    rule_name='rule_name',
                                    alert=alert)
 
-        assert_equal(str(log_mock.call_args_list[0]),
-                     str(call('An error occurred while decoding phantom response to JSON: %s',
-                              ValueError('No JSON object could be decoded',))))
+        response = str(
+            call('An error occurred while decoding '
+                 'phantom response to JSON: %s', ValueError(
+                     'No JSON object could be decoded',)))
+
+        assert_equal(str(log_mock.call_args_list[0]), response)
 
     @patch('logging.Logger.error')
     @patch('urllib2.urlopen')
@@ -297,69 +305,51 @@ class TestSlackOutput(object):
                                                          REGION,
                                                          FUNCTION_NAME,
                                                          UNIT_CONFIG)
+
     @classmethod
     def teardown_class(cls):
         """Teardown the class after all methods"""
         cls.__dispatcher = None
 
-    @staticmethod
-    def _get_random_alert(key_count, rule_name, omit_rule_desc=False):
-        """This loop generates key/value pairs with a key of length 6 and
-            value of length 148. when formatted, each line should consume
-            160 characters, account for newline and asterisk for bold. For example:
-            '*000001:* 6D829150B0154BF9BAC733FD25C61FA3D8CD3868AC2A92F19EEE119B
-            9CE8D6094966AA7592CE371002F1F7D82617673FCC9A9DB2A8F432AA791D74AB80BBCAD9\n'
-            Therefore, 25*160 = 4000 character message size (exactly the 4000 limit)
-            Anything over 4000 characters will result in multi-part slack messages:
-            55*160 = 8800 & 8800/4000 = ceil(2.2) = 3 messages needed
-        """
-        values = OrderedDict([('{:06}'.format(key),
-                               '{:0148X}'.format(random.randrange(16**128)))
-                              for key in range(key_count)])
-
-        rule_description = ('rule test description', '')[omit_rule_desc]
-        alert = {
-            'record': values,
-            'metadata': {
-                'rule_name': rule_name,
-                'rule_description': rule_description
-            }
-        }
-
-        return alert
-
     def test_format_message_single(self):
         """Format Single Message - Slack"""
         rule_name = 'test_rule_single'
-        alert = self._get_random_alert(25, rule_name)
+        alert = _get_random_alert(25, rule_name)
         loaded_message = json.loads(self.__dispatcher._format_message(rule_name, alert))
 
         # tests
         assert_set_equal(set(loaded_message.keys()), {'text', 'mrkdwn', 'attachments'})
-        assert_equal(loaded_message['text'], '*StreamAlert Rule Triggered: test_rule_single*')
+        assert_equal(
+            loaded_message['text'],
+            '*StreamAlert Rule Triggered: test_rule_single*')
         assert_equal(len(loaded_message['attachments']), 1)
 
     def test_format_message_mutliple(self):
         """Format Multi-Message - Slack"""
         rule_name = 'test_rule_multi-part'
-        alert = self._get_random_alert(30, rule_name)
+        alert = _get_random_alert(30, rule_name)
         loaded_message = json.loads(self.__dispatcher._format_message(rule_name, alert))
 
         # tests
         assert_set_equal(set(loaded_message.keys()), {'text', 'mrkdwn', 'attachments'})
-        assert_equal(loaded_message['text'], '*StreamAlert Rule Triggered: test_rule_multi-part*')
+        assert_equal(
+            loaded_message['text'],
+            '*StreamAlert Rule Triggered: test_rule_multi-part*')
         assert_equal(len(loaded_message['attachments']), 2)
-        assert_equal(loaded_message['attachments'][1]['text'].split('\n')[3][1:7], '000028')
+        assert_equal(loaded_message['attachments'][1]
+                     ['text'].split('\n')[3][1:7], '000028')
 
     def test_format_message_default_rule_description(self):
         """Format Message Default Rule Description - Slack"""
         rule_name = 'test_empty_rule_description'
-        alert = self._get_random_alert(10, rule_name, True)
+        alert = _get_random_alert(10, rule_name, True)
         loaded_message = json.loads(self.__dispatcher._format_message(rule_name, alert))
 
         # tests
         default_rule_description = '*Rule Description:*\nNo rule description provided\n'
-        assert_equal(loaded_message['attachments'][0]['pretext'], default_rule_description)
+        assert_equal(
+            loaded_message['attachments'][0]['pretext'],
+            default_rule_description)
 
     def test_json_to_slack_mrkdwn_str(self):
         """JSON to Slack mrkdwn - simple str"""
@@ -457,7 +447,7 @@ class TestSlackOutput(object):
 
         _put_mock_creds(output_name, creds, self.__dispatcher.secrets_bucket)
 
-        return _get_alert(0)['default']
+        return _get_sns_message(0)['default']
 
     @patch('logging.Logger.info')
     @patch('urllib2.urlopen')
@@ -525,8 +515,13 @@ class TestAWSOutput(object):
     def test_aws_format_output_config(self):
         """AWSOutput format output config"""
 
-        props = {'descriptor': OutputProperty('short_descriptor', 'descriptor_value'),
-                 'aws_value': OutputProperty('unique arn value, bucket, etc', 'bucket.value')}
+        props = {
+            'descriptor': OutputProperty(
+                'short_descriptor',
+                'descriptor_value'),
+            'aws_value': OutputProperty(
+                'unique arn value, bucket, etc',
+                'bucket.value')}
 
         formatted_config = self.__dispatcher.format_output_config(UNIT_CONFIG, props)
 
@@ -567,7 +562,7 @@ class TestS3Ouput(object):
         bucket = UNIT_CONFIG[self.__service][self.__descriptor]
         boto3.client('s3', region_name=REGION).create_bucket(Bucket=bucket)
 
-        return _get_alert(0)['default']
+        return _get_sns_message(0)['default']
 
     @patch('logging.Logger.info')
     @mock_s3
@@ -639,7 +634,7 @@ def handler(event, context):
     def _setup_dispatch(self):
         """Helper for setting up LambdaOutput dispatch"""
         self._create_lambda_function()
-        return _get_alert(0)['default']
+        return _get_sns_message(0)['default']
 
     @mock_lambda
     @patch('logging.Logger.info')
