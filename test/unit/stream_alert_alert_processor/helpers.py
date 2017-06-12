@@ -14,6 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 import json
+import os
+import shutil
+import tempfile
 
 import boto3
 
@@ -78,6 +81,11 @@ def _get_mock_context():
                    function_name='corp-prefix_prod_streamalert_alert_processor')
 
     return context
+
+def _remove_temp_secrets():
+    """"Blow away the stream_alert_secrets directory in temp"""
+    secrets_dir = os.path.join(tempfile.gettempdir(), "stream_alert_secrets")
+    shutil.rmtree(secrets_dir)
 
 def _put_mock_creds(output_name, creds, bucket):
     """Helper function to mock encrypt creds and put on s3"""

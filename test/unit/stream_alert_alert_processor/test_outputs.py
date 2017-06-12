@@ -13,6 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+import boto3
+import json
 import random
 import urllib2
 import zipfile
@@ -26,13 +28,11 @@ from nose.tools import (
     assert_equal,
     assert_is_none,
     assert_is_not_none,
-    assert_not_equal,
     assert_set_equal,
     with_setup
 )
 
 from stream_alert.alert_processor import outputs as outputs
-from stream_alert.alert_processor.outputs import *
 
 from stream_alert.alert_processor.main import _load_output_config as load_config
 from stream_alert.alert_processor.output_base import OutputProperty
@@ -45,9 +45,8 @@ from unit.stream_alert_alert_processor import (
 
 from unit.stream_alert_alert_processor.helpers import (
     _get_alert,
-    _encrypt_with_kms,
-    _put_mock_creds,
-    _put_s3_test_object
+    _remove_temp_secrets,
+    _put_mock_creds
 )
 
 UNIT_CONFIG = load_config('test/unit/conf/outputs.json')
@@ -88,10 +87,10 @@ class TestPagerDutyOutput(object):
     """Test class for PagerDutyOutput"""
     @classmethod
     def setup_class(cls):
+        """Setup the class before any methods"""
         cls.__service = 'pagerduty'
         cls.__descriptor = 'unit_test_pagerduty'
         cls.__backup_method = None
-        """Setup the class before any methods"""
         cls.__dispatcher = outputs.get_output_dispatcher(cls.__service,
                                                          REGION,
                                                          FUNCTION_NAME,
@@ -110,6 +109,8 @@ class TestPagerDutyOutput(object):
 
     def _setup_dispatch(self):
         """Helper for setting up PagerDutyOutput dispatch"""
+        _remove_temp_secrets()
+
         # Cache the _get_default_properties and set it to return None
         self.__backup_method = self.__dispatcher._get_default_properties
         self.__dispatcher._get_default_properties = lambda: None
@@ -196,6 +197,8 @@ class TestPhantomOutput(object):
 
     def _setup_dispatch(self, url):
         """Helper for setting up PhantomOutput dispatch"""
+        _remove_temp_secrets()
+
         output_name = self.__dispatcher.output_cred_name(self.__descriptor)
 
         creds = {'url': url,
@@ -446,6 +449,8 @@ class TestSlackOutput(object):
 
     def _setup_dispatch(self):
         """Helper for setting up SlackOutput dispatch"""
+        _remove_temp_secrets()
+
         output_name = self.__dispatcher.output_cred_name(self.__descriptor)
 
         creds = {'url': 'https://api.slack.com/web-hook-key'}

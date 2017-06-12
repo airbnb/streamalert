@@ -42,6 +42,7 @@ from unit.stream_alert_alert_processor import (
 
 from unit.stream_alert_alert_processor.helpers import (
     _encrypt_with_kms,
+    _remove_temp_secrets,
     _put_mock_creds,
     _put_s3_test_object
 )
@@ -70,6 +71,7 @@ class TestSteamOutputBase(object):
     def setup_class(cls):
         """Setup the class before any methods"""
         cls.__dispatcher = StreamOutputBase(REGION, FUNCTION_NAME, CONFIG)
+        _remove_temp_secrets()
 
     @classmethod
     def teardown_class(cls):
@@ -154,6 +156,7 @@ class TestSteamOutputBase(object):
     @mock_kms
     def test_load_creds(self):
         """Load Credentials"""
+        _remove_temp_secrets()
         output_name = self.__dispatcher.output_cred_name(self.__descriptor)
 
         creds = {'url': 'http://www.foo.bar/test',
