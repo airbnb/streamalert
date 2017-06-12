@@ -182,19 +182,6 @@ class StreamOutputBase(object):
             LOGGER.error('failed to send alert to %s', self.__service__)
 
     @staticmethod
-    def _format_prefix(s3_prefix):
-        """Return a bucket prefix that has been properly formatted
-
-        Args:
-            s3_prefix [string]: Qualifier value to format
-
-        Returns:
-            [string] The formatted value
-        """
-        s3_prefix = s3_prefix.replace('_streamalert_alert_processor', '')
-        return s3_prefix.replace('_', '.')
-
-    @staticmethod
     def _request_helper(url, data, headers=None, verify=True):
         """URL request helper to send a payload to an endpoint
 

@@ -1,9 +1,9 @@
 {
   "aws-s3": {
-    "sample.bucket": "sample_bucket_name"
+    "sample_bucket": "sample.bucket.name"
   },
   "aws-lambda": {
-    "sample_lambda": "arn:aws:lambda:region:account-id:function:function-name"
+    "sample_lambda": "function-name"
   },
   "pagerduty": [
     "sample_integration"
