@@ -191,5 +191,5 @@ class TestFormatOutputConfig(object):
                                      CONFIG).format_output_config(CONFIG, props)
 
         assert_equal(len(formatted), 2)
-        assert_equal(formatted[0], 'sample_channel')
+        assert_equal(formatted[0], 'unit_test_channel')
         assert_equal(formatted[1], 'test_channel')

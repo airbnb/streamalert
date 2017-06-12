@@ -28,8 +28,7 @@ from stream_alert.alert_processor.main import (
 
 from unit.stream_alert_alert_processor import (
     REGION,
-    FUNCTION_NAME,
-    CONFIG
+    FUNCTION_NAME
 )
 
 from unit.stream_alert_alert_processor.helpers import _get_mock_context
@@ -69,7 +68,10 @@ def test_handler_run(run_mock):
     message = {'default': {'record': {'size': '9982'}}}
     event = {'Records': [{'Sns': {'Message': json.dumps(message)}}]}
     handler(event, context)
-    run_mock.assert_called_with(message, REGION, FUNCTION_NAME, CONFIG)
+
+    # This test will load the actual config, so we should compare the
+    # function call against the same config here.
+    run_mock.assert_called_with(message, REGION, FUNCTION_NAME, _load_output_config())
 
 
 def test_load_output_config():
