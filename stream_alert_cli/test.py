@@ -43,6 +43,18 @@ COLOR_YELLOW = '\033[0;33;1m'
 COLOR_GREEN = '\033[0;32;1m'
 COLOR_RESET = '\033[0m'
 
+
+class TestingSuppressFilter(logging.Filter):
+    """Simple logging filter for suppressing specific log messagses that we
+    do not want to print during testing. Add any suppressions to the tuple.
+    """
+    def filter(self, record):
+        suppress_starts_with = (
+            'Starting download from S3',
+            'Completed download in'
+        )
+        return not record.getMessage().startswith(suppress_starts_with)
+
 def report_output(cols, failed):
     """Helper function to pretty print columns
     Args:
@@ -66,7 +78,12 @@ def report_output_summary(rules_fail_pass):
     total_tests = failed_tests + passed_tests
 
     # Print a message indicating how many of the total tests passed
-    print '\n\n{}({}/{})\tTests Passed{}'.format(COLOR_GREEN, passed_tests, total_tests, COLOR_RESET)
+    print '\n\n{}({}/{})\tTests Passed{}'.format(
+        COLOR_GREEN,
+        passed_tests,
+        total_tests,
+        COLOR_RESET
+    )
 
     # Check if there were failed tests and report on them appropriately
     if rules_fail_pass[0]:
@@ -349,6 +366,9 @@ def stream_alert_test(options):
     Args:
         options: dict of CLI options: (func, env, source)
     """
+    # Add the filter to suppress specific messages from testing output
+    LOGGER_SA.addFilter(TestingSuppressFilter())
+
     if options.debug:
         LOGGER_SA.setLevel(logging.DEBUG)
     else:

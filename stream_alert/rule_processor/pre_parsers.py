@@ -139,7 +139,7 @@ class StreamPreParsers(object):
         else:
             display_size = '{}KB'.format(size_kb)
 
-        LOGGER.debug('Starting download from S3 - %s/%s [%s]', bucket, key, display_size)
+        LOGGER.info('Starting download from S3: %s/%s [%s]', bucket, key, display_size)
 
         suffix = key.replace('/', '-')
         _, downloaded_s3_object = tempfile.mkstemp(suffix=suffix)
@@ -148,6 +148,6 @@ class StreamPreParsers(object):
             client.download_fileobj(bucket, key, data)
 
         end_time = time.time() - start_time
-        LOGGER.debug('Completed download in %s seconds', round(end_time, 2))
+        LOGGER.info('Completed download in %s seconds', round(end_time, 2))
 
         return downloaded_s3_object
