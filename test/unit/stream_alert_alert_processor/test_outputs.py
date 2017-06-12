@@ -31,7 +31,6 @@ from nose.tools import (
 )
 
 from stream_alert.alert_processor import outputs
-from stream_alert.alert_processor.main import _load_output_config as load_config
 from stream_alert.alert_processor.output_base import OutputProperty
 
 from unit.stream_alert_alert_processor import (
@@ -47,14 +46,12 @@ from unit.stream_alert_alert_processor.helpers import (
     _put_mock_creds,
 )
 
-UNIT_CONFIG = load_config('test/unit/conf/outputs.json')
-
 
 def test_existing_get_output_dispatcher():
     """Get output dispatcher - existing"""
     service = 'aws-s3'
     dispatcher = outputs.get_output_dispatcher(
-        service, REGION, FUNCTION_NAME, UNIT_CONFIG)
+        service, REGION, FUNCTION_NAME, CONFIG)
     assert_is_not_none(dispatcher)
 
 
@@ -64,7 +61,7 @@ def test_nonexistent_get_output_dispatcher():
     dispatcher = outputs.get_output_dispatcher(nonexistent_service,
                                                REGION,
                                                FUNCTION_NAME,
-                                               UNIT_CONFIG)
+                                               CONFIG)
     assert_is_none(dispatcher)
 
 
@@ -72,7 +69,7 @@ def test_nonexistent_get_output_dispatcher():
 def test_get_output_dispatcher_logging(log_mock):
     """Get output dispatcher - log error"""
     bad_service = 'bad-output'
-    outputs.get_output_dispatcher(bad_service, REGION, FUNCTION_NAME, UNIT_CONFIG)
+    outputs.get_output_dispatcher(bad_service, REGION, FUNCTION_NAME, CONFIG)
     log_mock.assert_called_with(
         'designated output service [%s] does not exist',
         bad_service)
@@ -97,7 +94,7 @@ class TestPagerDutyOutput(object):
         cls.__dispatcher = outputs.get_output_dispatcher(cls.__service,
                                                          REGION,
                                                          FUNCTION_NAME,
-                                                         UNIT_CONFIG)
+                                                         CONFIG)
 
     @classmethod
     def teardown_class(cls):
@@ -193,7 +190,7 @@ class TestPhantomOutput(object):
         cls.__dispatcher = outputs.get_output_dispatcher(cls.__service,
                                                          REGION,
                                                          FUNCTION_NAME,
-                                                         UNIT_CONFIG)
+                                                         CONFIG)
 
     @classmethod
     def teardown_class(cls):
@@ -304,7 +301,7 @@ class TestSlackOutput(object):
         cls.__dispatcher = outputs.get_output_dispatcher(cls.__service,
                                                          REGION,
                                                          FUNCTION_NAME,
-                                                         UNIT_CONFIG)
+                                                         CONFIG)
 
     @classmethod
     def teardown_class(cls):
@@ -503,7 +500,7 @@ class TestAWSOutput(object):
         """Setup the class before any methods"""
         cls.__abstractmethods_cache = outputs.AWSOutput.__abstractmethods__
         outputs.AWSOutput.__abstractmethods__ = frozenset()
-        cls.__dispatcher = outputs.AWSOutput(REGION, FUNCTION_NAME, UNIT_CONFIG)
+        cls.__dispatcher = outputs.AWSOutput(REGION, FUNCTION_NAME, CONFIG)
         cls.__dispatcher.__service__ = 'aws-s3'
 
     @classmethod
@@ -523,7 +520,7 @@ class TestAWSOutput(object):
                 'unique arn value, bucket, etc',
                 'bucket.value')}
 
-        formatted_config = self.__dispatcher.format_output_config(UNIT_CONFIG, props)
+        formatted_config = self.__dispatcher.format_output_config(CONFIG, props)
 
         assert_equal(len(formatted_config), 2)
         assert_is_not_none(formatted_config.get('descriptor_value'))
@@ -545,7 +542,7 @@ class TestS3Ouput(object):
         cls.__dispatcher = outputs.get_output_dispatcher(cls.__service,
                                                          REGION,
                                                          FUNCTION_NAME,
-                                                         UNIT_CONFIG)
+                                                         CONFIG)
 
     @classmethod
     def teardown_class(cls):
@@ -559,7 +556,7 @@ class TestS3Ouput(object):
 
     def _setup_dispatch(self):
         """Helper for setting up S3Output dispatch"""
-        bucket = UNIT_CONFIG[self.__service][self.__descriptor]
+        bucket = CONFIG[self.__service][self.__descriptor]
         boto3.client('s3', region_name=REGION).create_bucket(Bucket=bucket)
 
         return _get_sns_message(0)['default']
@@ -586,7 +583,7 @@ class TestLambdaOuput(object):
         cls.__dispatcher = outputs.get_output_dispatcher(cls.__service,
                                                          REGION,
                                                          FUNCTION_NAME,
-                                                         UNIT_CONFIG)
+                                                         CONFIG)
 
     @classmethod
     def _make_lambda_package(cls):
@@ -615,7 +612,7 @@ def handler(event, context):
 
     def _create_lambda_function(self):
         """Helper function to create mock lambda function"""
-        function_name = UNIT_CONFIG[self.__service][self.__descriptor]
+        function_name = CONFIG[self.__service][self.__descriptor]
 
         boto3.client('lambda', region_name=REGION).create_function(
             FunctionName=function_name,
