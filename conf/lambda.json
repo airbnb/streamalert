@@ -1,0 +1,19 @@
+{
+  "alert_processor_config": {
+    "handler": "stream_alert.alert_processor.main.handler",
+    "source_bucket": "PREFIX_GOES_HERE.streamalert.source",
+    "source_current_hash": "auto_generated",
+    "source_object_key": "auto_generated",
+    "third_party_libraries": []
+  },
+  "rule_processor_config": {
+    "handler": "stream_alert.rule_processor.main.handler",
+    "source_bucket": "PREFIX_GOES_HERE.streamalert.source",
+    "source_current_hash": "auto_generated",
+    "source_object_key": "auto_generated",
+    "third_party_libraries": [
+      "jsonpath_rw",
+      "netaddr"
+    ]
+  }
+}
