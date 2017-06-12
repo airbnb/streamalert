@@ -62,3 +62,17 @@ variable "input_sns_topics" {
   type    = "map"
   default = {}
 }
+
+variable "alert_processor_vpc_enabled" {
+  default = false
+}
+
+variable "alert_processor_vpc_subnet_ids" {
+  type    = "list"
+  default = []
+}
+
+variable "alert_processor_vpc_security_group_ids" {
+  type    = "list"
+  default = []
+}

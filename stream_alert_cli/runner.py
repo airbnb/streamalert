@@ -152,6 +152,13 @@ def terraform_runner(options):
         tf_runner()
 
     elif options.subcommand == 'destroy':
+        if options.target:
+            target = options.target
+            targets = ['module.{}_{}'.format(target, cluster)
+                       for cluster in CONFIG['clusters'].keys()]
+            tf_runner(targets=targets, action='destroy')
+            return
+
         # Migrate back to local state so Terraform can successfully
         # destroy the S3 bucket used by the backend.
         terraform_generate(config=CONFIG, init=True)
@@ -256,21 +263,25 @@ def tf_runner(**kwargs):
 
 def status():
     """Display current AWS infrastructure built by Terraform"""
-    print 'Cluster Info\n'
     for cluster, region in CONFIG['clusters'].iteritems():
-        print '==== {} ==='.format(cluster)
+        print '\n======== {} ========'.format(cluster)
         print 'Region: {}'.format(region)
-        print ('Lambda settings: \n\tTimeout: {}\n\tMemory: {}'
+        print ('Alert Processor Lambda Settings: \n\tTimeout: {}\n\tMemory: {}'
                '\n\tProd Version: {}').format(
-                   CONFIG['lambda_settings'][cluster][0],
-                   CONFIG['lambda_settings'][cluster][1],
-                   CONFIG['lambda_function_prod_versions'][cluster])
-        print 'Kinesis settings: \n\tShards: {}\n\tRetention: {}\n'.format(
-            CONFIG['kinesis_settings'][cluster][0],
-            CONFIG['kinesis_settings'][cluster][1]
+                   CONFIG['alert_processor_lambda_config'][cluster][0],
+                   CONFIG['alert_processor_lambda_config'][cluster][1],
+                   CONFIG['alert_processor_versions'][cluster])
+        print ('Rule Processor Lambda Settings: \n\tTimeout: {}\n\tMemory: {}'
+               '\n\tProd Version: {}').format(
+                   CONFIG['rule_processor_lambda_config'][cluster][0],
+                   CONFIG['rule_processor_lambda_config'][cluster][1],
+                   CONFIG['rule_processor_versions'][cluster])
+        print 'Kinesis settings: \n\tShards: {}\n\tRetention: {}'.format(
+            CONFIG['kinesis_streams_config'][cluster][0],
+            CONFIG['kinesis_streams_config'][cluster][1]
         )
 
-    print 'User access keys'
+    print '\nUser Access Keys:'
     run_command(['terraform', 'output'])
 
 

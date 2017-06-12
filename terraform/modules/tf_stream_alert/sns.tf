@@ -5,7 +5,17 @@ resource "aws_sns_topic" "streamalert" {
 }
 
 // Subscribe the Alert Processor Lambda function to the SNS topic
+// VPC
+resource "aws_sns_topic_subscription" "alert_processor_vpc" {
+  count     = "${var.alert_processor_vpc_enabled ? 1 : 0}"
+  topic_arn = "${aws_sns_topic.streamalert.arn}"
+  endpoint  = "${aws_lambda_function.streamalert_alert_processor_vpc.arn}:production"
+  protocol  = "lambda"
+}
+
+// Non VPC
 resource "aws_sns_topic_subscription" "alert_processor" {
+  count     = "${var.alert_processor_vpc_enabled ? 0 : 1}"
   topic_arn = "${aws_sns_topic.streamalert.arn}"
   endpoint  = "${aws_lambda_function.streamalert_alert_processor.arn}:production"
   protocol  = "lambda"
