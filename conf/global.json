@@ -5,9 +5,6 @@
     "prefix": "PREFIX_GOES_HERE",
     "region": "us-east-1"
   },
-  "clusters": {
-    "prod": "us-east-1"
-  },
   "terraform": {
     "tfstate_bucket": "PREFIX_GOES_HERE.streamalert.terraform.state",
     "tfstate_s3_key": "stream_alert_state/terraform.tfstate",
