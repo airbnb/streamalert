@@ -49,18 +49,18 @@ variable "alert_processor_versions" {
 }
 
 variable "output_lambda_functions" {
-  type    = "map"
-  default = {}
+  type    = "list"
+  default = []
 }
 
 variable "output_s3_buckets" {
-  type    = "map"
-  default = {}
+  type    = "list"
+  default = []
 }
 
 variable "input_sns_topics" {
-  type    = "map"
-  default = {}
+  type    = "list"
+  default = []
 }
 
 variable "alert_processor_vpc_enabled" {

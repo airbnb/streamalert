@@ -133,10 +133,19 @@ def generate_cluster(**kwargs):
       'alert_processor_memory': cluster_info['stream_alert']['alert_processor']['memory'],
       'alert_processor_timeout': cluster_info['stream_alert']['alert_processor']['timeout'],
       'alert_processor_version': cluster_info['stream_alert']['alert_processor']['current_version'],
-      'output_lambda_functions': '${var.aws-lambda}',
-      'output_s3_buckets': '${var.aws-s3}',
-      'input_sns_topics': '${var.aws-sns}'
+      'output_lambda_functions': cluster_info['stream_alert']['alert_processor']['outputs']['aws-lambda'],
+      'output_s3_buckets':  cluster_info['stream_alert']['alert_processor']['outputs']['aws-s3'],
+      'input_sns_topics': cluster_info['stream_alert']['rule_processor']['inputs']['aws-s3']
     }
+
+    # Add the VPC config conditionally to the StreamAlert module
+    vpc_config = cluster_info['stream_alert']['alert_processor'].get('vpc_config')
+    if vpc_config:
+        cluster_dict['module']['stream_alert_{}'.format(cluster_name)].update({
+            'alert_processor_vpc_enabled': True,
+            'alert_processor_vpc_subnet_ids': vpc_config['subnet_ids'],
+            'alert_processor_vpc_security_group_ids': vpc_config['security_group_ids']
+        })
 
     if cluster_info['cloudwatch_monitoring']['enabled']:
         # CloudWatch monitoring module
