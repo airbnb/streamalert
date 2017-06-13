@@ -300,13 +300,13 @@ def rollback(options):
 
     for cluster in clusters:
         for lambda_function in lambda_functions:
-            version_key = '{}_versions'.format(lambda_function)
-            current_vers = CONFIG[version_key][cluster]
+            stream_alert_key = CONFIG['clusters'][cluster]['modules']['stream_alert']
+            current_vers = stream_alert_key[lambda_function]['current_version']
             if current_vers != '$LATEST':
                 current_vers = int(current_vers)
                 if current_vers > 1:
                     new_vers = current_vers - 1
-                    CONFIG[version_key][cluster] = new_vers
+                    CONFIG['clusters'][cluster]['modules']['stream_alert'][lambda_function]['current_version'] = new_vers
                     CONFIG.write()
 
     targets = ['module.stream_alert_{}'.format(x)
@@ -416,8 +416,8 @@ def configure_output(options):
     Args:
         options [argparse]: Basically a namedtuple with the service setting
     """
-    region = CONFIG['account']['region']
-    prefix = CONFIG['account']['prefix']
+    region = CONFIG['global']['account']['region']
+    prefix = CONFIG['global']['account']['prefix']
 
     # Retrieve the proper service class to handle dispatching the alerts of this services
     output = get_output_dispatcher(options.service,
