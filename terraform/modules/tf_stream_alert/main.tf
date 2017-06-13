@@ -21,7 +21,7 @@ resource "aws_lambda_alias" "rule_processor_production" {
   name             = "production"
   description      = "Production StreamAlert Rule Processor Alias"
   function_name    = "${aws_lambda_function.streamalert_rule_processor.arn}"
-  function_version = "${var.rule_processor_versions["${var.cluster}"]}"
+  function_version = "${var.rule_processor_version}"
 }
 
 // Allow SNS to invoke the StreamAlert Output Processor
@@ -95,7 +95,7 @@ resource "aws_lambda_alias" "alert_processor_production" {
   name             = "production"
   description      = "Production StreamAlert Alert Processor Alias"
   function_name    = "${aws_lambda_function.streamalert_alert_processor.arn}"
-  function_version = "${var.alert_processor_versions["${var.cluster}"]}"
+  function_version = "${var.alert_processor_version}"
 }
 
 // Allow SNS to invoke the Alert Processor
