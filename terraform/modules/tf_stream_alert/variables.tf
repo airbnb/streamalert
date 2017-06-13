@@ -23,30 +23,22 @@ variable "rule_processor_config" {
   default = {}
 }
 
-variable "rule_processor_lambda_config" {
-  type    = "map"
-  default = {}
-}
+variable "rule_processor_version" {}
 
-variable "rule_processor_versions" {
-  type    = "map"
-  default = {}
-}
+variable "rule_processor_memory" {}
+
+variable "rule_processor_timeout" {}
 
 variable "alert_processor_config" {
   type    = "map"
   default = {}
 }
 
-variable "alert_processor_lambda_config" {
-  type    = "map"
-  default = {}
-}
+variable "alert_processor_version" {}
 
-variable "alert_processor_versions" {
-  type    = "map"
-  default = {}
-}
+variable "alert_processor_memory" {}
+
+variable "alert_processor_timeout" {}
 
 variable "output_lambda_functions" {
   type    = "list"
