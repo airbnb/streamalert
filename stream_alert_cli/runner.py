@@ -380,6 +380,10 @@ def deploy(options):
 
     # create production version by running a second time
     publish_version(packages)
+    # after the version is published and the config is written, generate the files
+    # to ensure the alias is properly updated
+    terraform_generate(config=CONFIG)
+    # apply the changes from publishing
     tf_runner(targets=targets)
 
 
