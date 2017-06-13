@@ -16,17 +16,20 @@ limitations under the License.
 
 import json
 import os
+import sys
 
 from collections import defaultdict
 
-class ConfigError(Exception):
-    """Generic config exception for a non existent/invalid config files"""
-    pass
+from stream_alert_cli.logger import LOGGER_CLI
 
 
 class CLIConfig(object):
     '''Provide an object to load, modify, and display the StreamAlertCLI Config'''
     def __init__(self):
+        self.config_files = {
+            'global': 'conf/global.json',
+            'lambda': 'conf/lambda.json'
+        }
         self.config = self.load()
 
     def __repr__(self):
@@ -52,16 +55,14 @@ class CLIConfig(object):
             [dict] loaded config from all config files with the following keys:
                 'clusters', 'global', and 'lambda'
         """
-        config_files = {
-            'global': 'conf/global.json',
-            'lambda': 'conf/lambda.json'
-        }
+
         config = {}
         config['clusters'] = {}
 
         def _config_loader(key, filepath, cluster_file):
             if not os.path.isfile(filepath):
-                raise ConfigError('StreamAlert {} file not found!'.format(filepath))
+                LOGGER_CLI.error('%s not found!', filepath)
+                sys.exit(1)
 
             with open(filepath) as data:
                 try:
@@ -70,11 +71,12 @@ class CLIConfig(object):
                     else:
                         config[key] = json.load(data)
                 except ValueError:
-                    raise ConfigError('StreamAlert {} file is not valid JSON!'.format(filepath))
+                    LOGGER_CLI.error('%s is not valid JSON!', filepath)
+                    sys.exit(1)
 
         # Load individual files
-        for key, filepath in config_files.iteritems():
-            _config_loader(key, filepath, False)
+        for key, path in self.config_files.iteritems():
+            _config_loader(key, path, False)
 
         # Load cluster files
         for cluster_file in os.listdir('conf/clusters'):
@@ -85,11 +87,19 @@ class CLIConfig(object):
 
     def write(self):
         """Write the current config in memory to disk"""
-        with open(self.filename, 'r+') as varfile:
-            varfile.write(json.dumps(
-                self.config,
-                indent=4,
-                separators=(',', ': '),
-                sort_keys=True
-            ))
-            varfile.truncate()
+        def _config_writer(config, path):
+            with open(path, 'r+') as varfile:
+                varfile.write(json.dumps(
+                    config,
+                    indent=4,
+                    separators=(',', ': '),
+                    sort_keys=True
+                ))
+                varfile.truncate()
+
+        for key, path in self.config_files.iteritems():
+            _config_writer(self.config[key], path)
+
+        for cluster_file in os.listdir('conf/clusters'):
+            key = os.path.splitext(cluster_file)[0]
+            _config_writer(self.config['clusters'][key], 'conf/clusters/{}'.format(cluster_file))

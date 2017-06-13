@@ -56,14 +56,17 @@ def cli_runner(options):
         configure_output(options)
 
     elif options.command == 'lambda':
-        lambda_runner(options)
+        lambda_handler(options)
 
     elif options.command == 'terraform':
-        terraform_runner(options)
+        terraform_handler(options)
 
 
-def lambda_runner(options):
+def lambda_handler(options):
     """Handle all Lambda CLI operations"""
+    # Make sure the Terraform code is up to date
+    terraform_generate(config=CONFIG)
+
     if options.subcommand == 'deploy':
         deploy(options)
 
@@ -84,7 +87,7 @@ def terraform_check():
                 quiet=True)
 
 
-def terraform_runner(options):
+def terraform_handler(options):
     """Handle all Terraform CLI operations"""
     # verify terraform is installed
     terraform_check()
@@ -93,11 +96,13 @@ def terraform_runner(options):
 
     # plan/apply our streamalert infrastructure
     if options.subcommand == 'build':
+        # Make sure the Terraform is completely up to date
+        terraform_generate(config=CONFIG)
         # --target is for terraforming a specific streamalert module
         if options.target:
             target = options.target
             targets = ['module.{}_{}'.format(target, cluster)
-                       for cluster in CONFIG['clusters'].keys()]
+                       for cluster in CONFIG.clusters()]
             tf_runner(targets=targets)
         else:
             tf_runner()
@@ -112,7 +117,6 @@ def terraform_runner(options):
     # initialize streamalert infrastructure from a blank state
     elif options.subcommand == 'init':
         LOGGER_CLI.info('Initializing StreamAlert')
-        LOGGER_CLI.info('Generating Cluster Files')
 
         # generate init Terraform files
         if not terraform_generate(config=CONFIG, init=True):
@@ -130,6 +134,7 @@ def terraform_runner(options):
             'aws_s3_bucket.integration_testing',
             'aws_s3_bucket.terraform_state',
             'aws_s3_bucket.stream_alert_secrets',
+            'aws_s3_bucket.logging_bucket',
             'aws_kms_key.stream_alert_secrets',
             'aws_kms_alias.stream_alert_secrets'
         ]
@@ -155,7 +160,7 @@ def terraform_runner(options):
         if options.target:
             target = options.target
             targets = ['module.{}_{}'.format(target, cluster)
-                       for cluster in CONFIG['clusters'].keys()]
+                       for cluster in CONFIG.clusters()]
             tf_runner(targets=targets, action='destroy')
             return
 
@@ -171,7 +176,7 @@ def terraform_runner(options):
 
         # Remove old Terraform files
         LOGGER_CLI.info('Removing old Terraform files')
-        cleanup_files = ['{}.tf'.format(cluster) for cluster in CONFIG['clusters'].keys()]
+        cleanup_files = ['{}.tf'.format(cluster) for cluster in CONFIG.clusters()]
         cleanup_files.extend([
             'main.tf',
             'terraform.tfstate',
@@ -225,7 +230,7 @@ def tf_runner(**kwargs):
     action = kwargs.get('action', None)
     tf_action_index = 1  # The index to the terraform 'action'
 
-    var_files = {CONFIG.filename, 'conf/outputs.json', 'conf/inputs.json'}
+    var_files = {'conf/lambda.json', 'conf/global.json'}
     tf_opts = ['-var-file=../{}'.format(x) for x in var_files]
     tf_targets = ['-target={}'.format(x) for x in targets]
     tf_command = ['terraform', 'plan'] + tf_opts + tf_targets
@@ -292,7 +297,7 @@ def rollback(options):
         Ignores if the production version is $LATEST
         Only rollsback if published version is greater than 1
     """
-    clusters = CONFIG['clusters'].keys()
+    clusters = CONFIG.clusters()
     if options.processor == 'all':
         lambda_functions = {'rule_processor', 'alert_processor'}
     else:
@@ -310,7 +315,7 @@ def rollback(options):
                     CONFIG.write()
 
     targets = ['module.stream_alert_{}'.format(x)
-               for x in CONFIG['clusters'].keys()]
+               for x in CONFIG.clusters()]
     tf_runner(targets=targets)
 
 
@@ -328,7 +333,7 @@ def deploy(options):
     processor = options.processor
     # terraform apply only to the module which contains our lambda functions
     targets = ['module.stream_alert_{}'.format(x)
-               for x in CONFIG['clusters'].keys()]
+               for x in CONFIG.clusters()]
     packages = []
 
     def publish_version(packages):
