@@ -30,23 +30,29 @@ def infinitedict():
     return defaultdict(infinitedict)
 
 def generate_s3_bucket(**kwargs):
-    bucket = kwargs.get('bucket')
+    bucket_name = kwargs.get('bucket')
     acl = kwargs.get('acl', 'private')
     logging_bucket = kwargs.get('logging')
     logging = {
         'target_bucket': logging_bucket,
-        'target_prefix': '{}/'.format(bucket)
+        'target_prefix': '{}/'.format(bucket_name)
     }
     force_destroy = kwargs.get('force_destroy', True)
     versioning = kwargs.get('versioning', {'enabled': True})
+    lifecycle_rule = kwargs.get('lifecycle_rule')
 
-    return {
-        'bucket': bucket,
+    bucket = {
+        'bucket': bucket_name,
         'acl': acl,
         'force_destroy': force_destroy,
         'versioning': versioning,
         'logging': logging
     }
+    
+    if lifecycle_rule:
+        bucket['lifecycle_rule'] = lifecycle_rule
+
+    return bucket
 
 def generate_main(**kwargs):
     init = kwargs.get('init')
@@ -76,6 +82,14 @@ def generate_main(**kwargs):
         }
 
     logging_bucket = '{}.streamalert.s3-logging'.format(config['global']['account']['prefix'])
+    logging_bucket_lifecycle = {
+        'prefix': '/',
+        'enabled': True,
+        'transition': {
+            'days': 30,
+            'storage_class': 'GLACIER'
+        }
+    }
     # Configure init S3 buckets
     main_dict['resource']['aws_s3_bucket'] = {
         'lambda_source': generate_s3_bucket(
@@ -93,7 +107,8 @@ def generate_main(**kwargs):
         'logging_bucket': generate_s3_bucket(
             bucket=logging_bucket,
             acl='log-delivery-write',
-            logging=logging_bucket
+            logging=logging_bucket,
+            lifecycle_rule=logging_bucket_lifecycle
         )
     }
 
