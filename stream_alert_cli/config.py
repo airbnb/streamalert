@@ -57,12 +57,11 @@ class CLIConfig(object):
                 'clusters', 'global', and 'lambda'
         """
 
-        config = {}
-        config['clusters'] = {}
+        config = {'clusters': {}}
 
         def _config_loader(key, filepath, cluster_file):
             if not os.path.isfile(filepath):
-                LOGGER_CLI.error('%s not found!', filepath)
+                LOGGER_CLI.error('[Config Error]: %s not found', filepath)
                 sys.exit(1)
 
             with open(filepath) as data:
@@ -72,7 +71,7 @@ class CLIConfig(object):
                     else:
                         config[key] = json.load(data)
                 except ValueError:
-                    LOGGER_CLI.error('%s is not valid JSON!', filepath)
+                    LOGGER_CLI.error('[Config Error]: %s is not valid JSON', filepath)
                     sys.exit(1)
 
         # Load individual files
