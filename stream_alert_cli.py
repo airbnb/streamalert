@@ -80,7 +80,7 @@ def build_parser():
         choices=['new'],
         help=('new: create a new output to send alerts to\n')
     )
-    #
+    # output service options
     output_parser.add_argument(
         '--service',
         choices=['aws-lambda', 'aws-s3', 'pagerduty', 'phantom', 'slack'],
@@ -115,6 +115,13 @@ def build_parser():
         '--debug',
         action='store_true',
         help='Enable DEBUG logger output'
+    )
+
+    lambda_parser.add_argument(
+        '-r', '--rules',
+        type=str,
+        default='',
+        help='Comma separated names of rules to test'
     )
 
     # terraform parser and defaults
