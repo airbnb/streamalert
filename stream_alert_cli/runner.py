@@ -64,13 +64,15 @@ def cli_runner(options):
 
 def lambda_handler(options):
     """Handle all Lambda CLI operations"""
-    # Make sure the Terraform code is up to date
-    terraform_generate(config=CONFIG)
 
     if options.subcommand == 'deploy':
+        # Make sure the Terraform code is up to date
+        terraform_generate(config=CONFIG)
         deploy(options)
 
     elif options.subcommand == 'rollback':
+        # Make sure the Terraform code is up to date
+        terraform_generate(config=CONFIG)
         rollback(options)
 
     elif options.subcommand == 'test':
