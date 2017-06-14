@@ -18,6 +18,9 @@ import importlib
 import os
 
 from stream_alert.rule_processor.handler import StreamAlert
+from rules import (
+    sample_matchers
+)
 
 modules_to_import = set()
 # walk the rules directory to dymanically import

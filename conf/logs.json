@@ -650,13 +650,11 @@
         "pkts_received": "string"
       }
     },
-    "hints": {
-      "message": {
-        "type": [
-          "TRAFFIC"
-        ]
-      }
-    },
-    "parser": "csv"
+    "parser": "csv",
+    "configuration": {
+      "log_patterns": {
+        "type": ["TRAFFIC"]
+        }
+    }
   }
 }

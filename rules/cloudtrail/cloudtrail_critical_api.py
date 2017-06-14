@@ -7,7 +7,7 @@ disable = StreamRules.disable()
 
 @rule(logs=['cloudtrail:api_events'],
       matchers=[],
-      outputs=['aws-s3:sample.bucket'])
+      outputs=['aws-s3:sample_bucket'])
 def cloudtrail_critical_api(rec):
     """
     author:           airbnb_csirt
