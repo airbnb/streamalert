@@ -25,9 +25,11 @@ class InvalidClusterName(Exception):
     """Exception for invalid cluster names"""
     pass
 
+
 def infinitedict():
     """Create arbitrary levels of dictionary key/values"""
     return defaultdict(infinitedict)
+
 
 def generate_s3_bucket(**kwargs):
     bucket_name = kwargs.get('bucket')
@@ -48,11 +50,12 @@ def generate_s3_bucket(**kwargs):
         'versioning': versioning,
         'logging': logging
     }
-    
+
     if lifecycle_rule:
         bucket['lifecycle_rule'] = lifecycle_rule
 
     return bucket
+
 
 def generate_main(**kwargs):
     init = kwargs.get('init')
@@ -81,7 +84,8 @@ def generate_main(**kwargs):
             'kms_key_id': 'alias/{}'.format(config['global']['account']['kms_key_alias'])
         }
 
-    logging_bucket = '{}.streamalert.s3-logging'.format(config['global']['account']['prefix'])
+    logging_bucket = '{}.streamalert.s3-logging'.format(
+        config['global']['account']['prefix'])
     logging_bucket_lifecycle = {
         'prefix': '/',
         'enabled': True,
@@ -124,12 +128,14 @@ def generate_main(**kwargs):
 
     return main_dict
 
+
 def generate_cluster(**kwargs):
     config = kwargs.get('config')
     cluster_name = kwargs.get('cluster_name')
     account = config['global']['account']
     prefix = account['prefix']
-    logging_bucket = '{}.streamalert.s3-logging'.format(config['global']['account']['prefix'])
+    logging_bucket = '{}.streamalert.s3-logging'.format(
+        config['global']['account']['prefix'])
     account_id = account['aws_account_id']
     firehose_suffix = config['clusters'][cluster_name]['modules']['kinesis']['firehose']['s3_bucket_suffix']
     modules = config['clusters'][cluster_name]['modules']
@@ -137,33 +143,33 @@ def generate_cluster(**kwargs):
 
     # Main StreamAlert module
     cluster_dict['module']['stream_alert_{}'.format(cluster_name)] = {
-      'source': 'modules/tf_stream_alert',
-      'account_id': account_id,
-      'region': config['clusters'][cluster_name]['region'],
-      'prefix': prefix,
-      'cluster': cluster_name,
-      'kms_key_arn': '${aws_kms_key.stream_alert_secrets.arn}',
-      'rule_processor_memory': modules['stream_alert']['rule_processor']['memory'],
-      'rule_processor_timeout': modules['stream_alert']['rule_processor']['timeout'],
-      'rule_processor_version': modules['stream_alert']['rule_processor']['current_version'],
-      'rule_processor_config': '${var.rule_processor_config}',
-      'alert_processor_config': '${var.alert_processor_config}',
-      'alert_processor_memory': modules['stream_alert']['alert_processor']['memory'],
-      'alert_processor_timeout': modules['stream_alert']['alert_processor']['timeout'],
-      'alert_processor_version': modules['stream_alert']['alert_processor']['current_version'],
-      's3_logging_bucket': logging_bucket
+        'source': 'modules/tf_stream_alert',
+        'account_id': account_id,
+        'region': config['clusters'][cluster_name]['region'],
+        'prefix': prefix,
+        'cluster': cluster_name,
+        'kms_key_arn': '${aws_kms_key.stream_alert_secrets.arn}',
+        'rule_processor_memory': modules['stream_alert']['rule_processor']['memory'],
+        'rule_processor_timeout': modules['stream_alert']['rule_processor']['timeout'],
+        'rule_processor_version': modules['stream_alert']['rule_processor']['current_version'],
+        'rule_processor_config': '${var.rule_processor_config}',
+        'alert_processor_config': '${var.alert_processor_config}',
+        'alert_processor_memory': modules['stream_alert']['alert_processor']['memory'],
+        'alert_processor_timeout': modules['stream_alert']['alert_processor']['timeout'],
+        'alert_processor_version': modules['stream_alert']['alert_processor']['current_version'],
+        's3_logging_bucket': logging_bucket
     }
 
     # Add Alert Processor output config conditionally to the StreamAlert module
-    output_config =  modules['stream_alert']['alert_processor'].get('outputs')
+    output_config = modules['stream_alert']['alert_processor'].get('outputs')
     if output_config:
         cluster_dict['module']['stream_alert_{}'.format(cluster_name)].update({
             'output_lambda_functions': modules['stream_alert']['alert_processor']['outputs']['aws-lambda'],
-            'output_s3_buckets':  modules['stream_alert']['alert_processor']['outputs']['aws-s3']
+            'output_s3_buckets': modules['stream_alert']['alert_processor']['outputs']['aws-s3']
         })
 
     # Add Alert Processor input config conditionally to the StreamAlert module
-    input_config =  modules['stream_alert']['rule_processor'].get('inputs')
+    input_config = modules['stream_alert']['rule_processor'].get('inputs')
     if input_config:
         cluster_dict['module']['stream_alert_{}'.format(cluster_name)].update({
             'input_sns_topics': input_config['aws-sns']
@@ -181,13 +187,13 @@ def generate_cluster(**kwargs):
     if modules['cloudwatch_monitoring']['enabled']:
         # CloudWatch monitoring module
         cluster_dict['module']['cloudwatch_monitoring_{}'.format(cluster_name)] = {
-          'source': 'modules/tf_stream_alert_monitoring',
-          'sns_topic_arn': '${{module.stream_alert_{}.sns_topic_arn}}'.format(cluster_name),
-          'lambda_functions': [
-            '{}_{}_streamalert_rule_processor'.format(prefix, cluster_name),
-            '{}_{}_streamalert_alert_processor'.format(prefix, cluster_name)
-          ],
-          'kinesis_stream': '{}_{}_stream_alert_kinesis'.format(prefix, cluster_name)
+            'source': 'modules/tf_stream_alert_monitoring',
+            'sns_topic_arn': '${{module.stream_alert_{}.sns_topic_arn}}'.format(cluster_name),
+            'lambda_functions': [
+                '{}_{}_streamalert_rule_processor'.format(prefix, cluster_name),
+                '{}_{}_streamalert_alert_processor'.format(prefix, cluster_name)
+            ],
+            'kinesis_stream': '{}_{}_stream_alert_kinesis'.format(prefix, cluster_name)
         }
 
     # Kinesis module
@@ -249,9 +255,11 @@ def generate_cluster(**kwargs):
             for input in ('vpcs', 'subnets', 'enis'):
                 input_data = flow_log_info.get(input)
                 if input_data:
-                    cluster_dict['module']['flow_logs_{}'.format(cluster_name)][input] = input_data
+                    cluster_dict['module']['flow_logs_{}'.format(
+                        cluster_name)][input] = input_data
 
     return cluster_dict
+
 
 def terraform_generate(**kwargs):
     """Generate all Terraform plans for the clusters in variables.json"""
@@ -267,7 +275,7 @@ def terraform_generate(**kwargs):
     )
     with open('terraform/main.tf', 'w') as tf_file:
         tf_file.write(main_json)
-    
+
     # Break out early during the init process, clusters aren't needed yet
     if init:
         return True
@@ -276,7 +284,7 @@ def terraform_generate(**kwargs):
     for cluster in config.clusters():
         if cluster == 'main':
             raise InvalidClusterName('Rename cluster "main" to something else!')
-    
+
         LOGGER_CLI.info('Generating cluster file: %s.tf', cluster)
         cluster_json = json.dumps(
             generate_cluster(cluster_name=cluster, config=config),

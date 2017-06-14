@@ -25,6 +25,7 @@ from stream_alert_cli.logger import LOGGER_CLI
 
 class CLIConfig(object):
     '''Provide an object to load, modify, and display the StreamAlertCLI Config'''
+
     def __init__(self):
         self.config_files = {
             'global': 'conf/global.json',
@@ -102,4 +103,6 @@ class CLIConfig(object):
 
         for cluster_file in os.listdir('conf/clusters'):
             key = os.path.splitext(cluster_file)[0]
-            _config_writer(self.config['clusters'][key], 'conf/clusters/{}'.format(cluster_file))
+            _config_writer(
+                self.config['clusters'][key],
+                'conf/clusters/{}'.format(cluster_file))

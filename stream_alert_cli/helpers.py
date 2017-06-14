@@ -20,6 +20,7 @@ import subprocess
 
 from stream_alert_cli.logger import LOGGER_CLI
 
+
 class CLIHelpers(object):
     """Common helpers between StreamAlert CLI classes"""
     @classmethod

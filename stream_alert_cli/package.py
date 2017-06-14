@@ -27,6 +27,7 @@ import pip
 
 from stream_alert_cli.logger import LOGGER_CLI
 
+
 class LambdaPackage(object):
     """Build and upload a StreamAlert deployment package to S3."""
     package_folders = set()
@@ -125,7 +126,8 @@ class LambdaPackage(object):
         Returns:
             [string] Deployment package full path
         """
-        LOGGER_CLI.info('Creating Lambda package: %s', ''.join([temp_package_path, '.zip']))
+        LOGGER_CLI.info('Creating Lambda package: %s',
+                        ''.join([temp_package_path, '.zip']))
         package_path = shutil.make_archive(temp_package_path, 'zip', temp_package_path)
         LOGGER_CLI.info('Package Successfully Created!')
 
@@ -169,7 +171,8 @@ class LambdaPackage(object):
         """
         third_party_libs = self.config['lambda'][self.config_key]['third_party_libraries']
         if third_party_libs:
-            LOGGER_CLI.info('Installing third-party libraries: {}'.format(', '.join(third_party_libs)))
+            LOGGER_CLI.info(
+                'Installing third-party libraries: {}'.format(', '.join(third_party_libs)))
             pip_command = ['install']
             pip_command.extend(third_party_libs)
             pip_command.extend(['--upgrade', '--target', temp_package_path])
@@ -194,7 +197,8 @@ class LambdaPackage(object):
             Exception if client put_object fails
         """
         LOGGER_CLI.info('Uploading StreamAlert package to S3')
-        client = boto3.client('s3', region_name=self.config['global']['account']['region'])
+        client = boto3.client(
+            's3', region_name=self.config['global']['account']['region'])
         # the zip and the checksum file
         for package_file in (package_path, '{}.sha256'.format(package_path)):
             package_name = package_file.split('/')[-1]
