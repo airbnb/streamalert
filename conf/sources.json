@@ -1,20 +1,20 @@
 {
-	"kinesis": {
-		"prefix_cluster1_stream_alert_kinesis": {
-			"logs": [
-				"osquery",
-				"cloudwatch",
+  "kinesis": {
+    "prefix_cluster1_stream_alert_kinesis": {
+      "logs": [
+        "osquery",
+        "cloudwatch",
         "cloudtrail"
-			]
-		}
-	},
-	"s3": {
-		"example_s3_bucket": {
-			"logs": [
-				"carbonblack",
-				"osquery",
-				"cloudtrail"
-			]
-		}
-	}
+      ]
+    }
+  },
+  "s3": {
+    "example_s3_bucket": {
+      "logs": [
+        "carbonblack",
+        "osquery",
+        "cloudtrail"
+      ]
+    }
+  }
 }
