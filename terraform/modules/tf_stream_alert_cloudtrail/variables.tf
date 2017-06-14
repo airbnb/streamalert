@@ -25,3 +25,7 @@ variable "existing_trail" {
 variable "is_global_trail" {
   default = true
 }
+
+variable "s3_logging_bucket" {
+  type = "string"
+}

@@ -11,21 +11,12 @@ Creates the following:
 
 ## Example
 ```
-variable "flow_log_targets" {
-  type = "map"
-
-  default = {
-    "vpcs"    = ["vpc-id-1", "vpc-id-2"]
-    "subnets" = ["subnet-id-1"]
-    "enis"    = ["eni-id-1"]
-  }
-}
 
 module "flow_logs_prod" {
   source                 = "modules/tf_stream_alert_flow_logs"
   flow_log_group_name    = "prefix_cluster_streamalert_flow_logs"
   destination_stream_arn = "arn:aws:kinesis:region:account-id:stream/stream-name"
-  targets                = "${var.flow_log_targets}"
+  vpcs                   = ["vpc"]
   region                 = "us-east-1"
 }
 ```
@@ -51,9 +42,21 @@ module "flow_logs_prod" {
     <td>True</td>
   </tr>
   <tr>
-    <td>targets</td>
-    <td>Map of "enis", "vpcs", and "subnets", each an array containing IDs of resources to enable flow logs for</td>
-    <td>{"vpcs":[], "subnets":[], "enis":[]}</td>
+    <td>vpcs</td>
+    <td>List of AWS VPC IDs to enable flow logs for</td>
+    <td>[]</td>
+    <td>False</td>
+  </tr>
+  <tr>
+    <td>subnets</td>
+    <td>List of AWS VPC Subnet IDs to enable flow logs for</td>
+    <td>[]</td>
+    <td>False</td>
+  </tr>
+  <tr>
+    <td>enis</td>
+    <td>List of AWS VPC ENI IDs to enable flow logs for</td>
+    <td>[]</td>
     <td>False</td>
   </tr>
   <tr>

@@ -35,3 +35,78 @@ Example::
         "pci": "us-east-1",
         "production": "us-west-2"
     },
+
+Template::
+
+    {
+      "id": "cluster-name",
+      "region": "region-name",
+      "modules": {
+        "stream_alert": {
+          "alert_processor": {
+            "timeout": 25,
+            "memory": 128,
+            "current_version": "$LATEST",
+            # Optional VPC configuration
+            "vpc_config": {
+              "subnet_ids": [],
+              "security_group_ids": []
+            },
+            # Required for custom S3 buckets and Lambda functions as outputs
+            "outputs": {
+              "aws-s3": [],
+              "aws-lambda": []
+            }
+          },
+          "rule_processor": {
+            "timeout": 10,
+            "memory": 256,
+            "current_version": "$LATEST",
+            # Required if custom SNS inputs as configured
+            "inputs": {
+              "aws-sns:": []
+            }
+          }
+        },
+        "cloudwatch_monitoring": {
+          "enabled": true
+        },
+        "kinesis": {
+          "streams": {
+            "shards": 1,
+            "retention": 24
+          },
+          "firehose": {
+            "enabled": true,
+            "s3_bucket_suffix": "streamalert.results"
+          }
+        },
+        "kinesis_events": {
+          "enabled": true
+        },
+        # Optional - Configure CloudTrail into Kinesis
+        "cloudtrail": {
+          "enabled": true,
+          "event_pattern": {
+            "source": [],
+            "detail-type": [],
+            "detail": {}
+          }
+        },
+        # Optional - Configure VPC Flow Logs into Kinesis
+        "flow_logs": {
+          "enabled": true,
+          "vpcs": [],
+          "subnets": [],
+          "enis": []
+        }
+      },
+      # Optional Terraform Outputs
+      "outputs": {
+        "kinesis": [
+          "username",
+          "access_key_id",
+          "secret_key"
+        ]
+      }
+    }

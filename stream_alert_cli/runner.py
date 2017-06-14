@@ -56,18 +56,23 @@ def cli_runner(options):
         configure_output(options)
 
     elif options.command == 'lambda':
-        lambda_runner(options)
+        lambda_handler(options)
 
     elif options.command == 'terraform':
-        terraform_runner(options)
+        terraform_handler(options)
 
 
-def lambda_runner(options):
+def lambda_handler(options):
     """Handle all Lambda CLI operations"""
+
     if options.subcommand == 'deploy':
+        # Make sure the Terraform code is up to date
+        terraform_generate(config=CONFIG)
         deploy(options)
 
     elif options.subcommand == 'rollback':
+        # Make sure the Terraform code is up to date
+        terraform_generate(config=CONFIG)
         rollback(options)
 
     elif options.subcommand == 'test':
@@ -84,7 +89,7 @@ def terraform_check():
                 quiet=True)
 
 
-def terraform_runner(options):
+def terraform_handler(options):
     """Handle all Terraform CLI operations"""
     # verify terraform is installed
     terraform_check()
@@ -93,11 +98,13 @@ def terraform_runner(options):
 
     # plan/apply our streamalert infrastructure
     if options.subcommand == 'build':
+        # Make sure the Terraform is completely up to date
+        terraform_generate(config=CONFIG)
         # --target is for terraforming a specific streamalert module
         if options.target:
             target = options.target
             targets = ['module.{}_{}'.format(target, cluster)
-                       for cluster in CONFIG['clusters'].keys()]
+                       for cluster in CONFIG.clusters()]
             tf_runner(targets=targets)
         else:
             tf_runner()
@@ -112,7 +119,6 @@ def terraform_runner(options):
     # initialize streamalert infrastructure from a blank state
     elif options.subcommand == 'init':
         LOGGER_CLI.info('Initializing StreamAlert')
-        LOGGER_CLI.info('Generating Cluster Files')
 
         # generate init Terraform files
         if not terraform_generate(config=CONFIG, init=True):
@@ -130,6 +136,7 @@ def terraform_runner(options):
             'aws_s3_bucket.integration_testing',
             'aws_s3_bucket.terraform_state',
             'aws_s3_bucket.stream_alert_secrets',
+            'aws_s3_bucket.logging_bucket',
             'aws_kms_key.stream_alert_secrets',
             'aws_kms_alias.stream_alert_secrets'
         ]
@@ -155,7 +162,7 @@ def terraform_runner(options):
         if options.target:
             target = options.target
             targets = ['module.{}_{}'.format(target, cluster)
-                       for cluster in CONFIG['clusters'].keys()]
+                       for cluster in CONFIG.clusters()]
             tf_runner(targets=targets, action='destroy')
             return
 
@@ -171,7 +178,7 @@ def terraform_runner(options):
 
         # Remove old Terraform files
         LOGGER_CLI.info('Removing old Terraform files')
-        cleanup_files = ['{}.tf'.format(cluster) for cluster in CONFIG['clusters'].keys()]
+        cleanup_files = ['{}.tf'.format(cluster) for cluster in CONFIG.clusters()]
         cleanup_files.extend([
             'main.tf',
             'terraform.tfstate',
@@ -225,7 +232,7 @@ def tf_runner(**kwargs):
     action = kwargs.get('action', None)
     tf_action_index = 1  # The index to the terraform 'action'
 
-    var_files = {CONFIG.filename, 'conf/outputs.json', 'conf/inputs.json'}
+    var_files = {'conf/lambda.json', 'conf/global.json'}
     tf_opts = ['-var-file=../{}'.format(x) for x in var_files]
     tf_targets = ['-target={}'.format(x) for x in targets]
     tf_command = ['terraform', 'plan'] + tf_opts + tf_targets
@@ -292,7 +299,7 @@ def rollback(options):
         Ignores if the production version is $LATEST
         Only rollsback if published version is greater than 1
     """
-    clusters = CONFIG['clusters'].keys()
+    clusters = CONFIG.clusters()
     if options.processor == 'all':
         lambda_functions = {'rule_processor', 'alert_processor'}
     else:
@@ -300,17 +307,19 @@ def rollback(options):
 
     for cluster in clusters:
         for lambda_function in lambda_functions:
-            version_key = '{}_versions'.format(lambda_function)
-            current_vers = CONFIG[version_key][cluster]
+            stream_alert_key = CONFIG['clusters'][cluster]['modules']['stream_alert']
+            current_vers = stream_alert_key[lambda_function]['current_version']
             if current_vers != '$LATEST':
                 current_vers = int(current_vers)
                 if current_vers > 1:
                     new_vers = current_vers - 1
-                    CONFIG[version_key][cluster] = new_vers
+                    CONFIG['clusters'][cluster]['modules']['stream_alert'][lambda_function]['current_version'] = new_vers
                     CONFIG.write()
 
     targets = ['module.stream_alert_{}'.format(x)
-               for x in CONFIG['clusters'].keys()]
+               for x in CONFIG.clusters()]
+
+    terraform_generate(config=CONFIG)
     tf_runner(targets=targets)
 
 
@@ -328,7 +337,7 @@ def deploy(options):
     processor = options.processor
     # terraform apply only to the module which contains our lambda functions
     targets = ['module.stream_alert_{}'.format(x)
-               for x in CONFIG['clusters'].keys()]
+               for x in CONFIG.clusters()]
     packages = []
 
     def publish_version(packages):
@@ -375,6 +384,10 @@ def deploy(options):
 
     # create production version by running a second time
     publish_version(packages)
+    # after the version is published and the config is written, generate the files
+    # to ensure the alias is properly updated
+    terraform_generate(config=CONFIG)
+    # apply the changes from publishing
     tf_runner(targets=targets)
 
 
@@ -416,8 +429,8 @@ def configure_output(options):
     Args:
         options [argparse]: Basically a namedtuple with the service setting
     """
-    region = CONFIG['account']['region']
-    prefix = CONFIG['account']['prefix']
+    region = CONFIG['global']['account']['region']
+    prefix = CONFIG['global']['account']['prefix']
 
     # Retrieve the proper service class to handle dispatching the alerts of this services
     output = get_output_dispatcher(options.service,

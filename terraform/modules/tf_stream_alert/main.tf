@@ -6,8 +6,8 @@ resource "aws_lambda_function" "streamalert_rule_processor" {
   runtime       = "python2.7"
   role          = "${aws_iam_role.streamalert_rule_processor_role.arn}"
   handler       = "${lookup(var.rule_processor_config, "handler")}"
-  memory_size   = "${element(var.rule_processor_lambda_config["${var.cluster}"], 1)}"
-  timeout       = "${element(var.rule_processor_lambda_config["${var.cluster}"], 0)}"
+  memory_size   = "${var.rule_processor_memory}"
+  timeout       = "${var.rule_processor_timeout}"
   s3_bucket     = "${lookup(var.rule_processor_config, "source_bucket")}"
   s3_key        = "${lookup(var.rule_processor_config, "source_object_key")}"
 
@@ -21,17 +21,17 @@ resource "aws_lambda_alias" "rule_processor_production" {
   name             = "production"
   description      = "Production StreamAlert Rule Processor Alias"
   function_name    = "${aws_lambda_function.streamalert_rule_processor.arn}"
-  function_version = "${var.rule_processor_versions["${var.cluster}"]}"
+  function_version = "${var.rule_processor_version}"
 }
 
 // Allow SNS to invoke the StreamAlert Output Processor
 resource "aws_lambda_permission" "sns_inputs" {
-  count         = "${length(keys(var.input_sns_topics))}"
-  statement_id  = "AllowExecutionFromSNS_${element(keys(var.input_sns_topics), count.index)}"
+  count         = "${length(var.input_sns_topics)}"
+  statement_id  = "AllowExecutionFromSNS${count.index}"
   action        = "lambda:InvokeFunction"
   function_name = "${aws_lambda_function.streamalert_rule_processor.arn}"
   principal     = "sns.amazonaws.com"
-  source_arn    = "${lookup(var.input_sns_topics, element(keys(var.input_sns_topics), count.index))}"
+  source_arn    = "${element(var.input_sns_topics, count.index)}"
   qualifier     = "production"
 }
 
@@ -46,8 +46,8 @@ resource "aws_lambda_function" "streamalert_alert_processor_vpc" {
   runtime       = "python2.7"
   role          = "${aws_iam_role.streamalert_alert_processor_role.arn}"
   handler       = "${lookup(var.alert_processor_config, "handler")}"
-  memory_size   = "${element(var.alert_processor_lambda_config["${var.cluster}"], 1)}"
-  timeout       = "${element(var.alert_processor_lambda_config["${var.cluster}"], 0)}"
+  memory_size   = "${var.alert_processor_memory}"
+  timeout       = "${var.alert_processor_timeout}"
   s3_bucket     = "${lookup(var.alert_processor_config, "source_bucket")}"
   s3_key        = "${lookup(var.alert_processor_config, "source_object_key")}"
 
@@ -69,8 +69,8 @@ resource "aws_lambda_function" "streamalert_alert_processor" {
   runtime       = "python2.7"
   role          = "${aws_iam_role.streamalert_alert_processor_role.arn}"
   handler       = "${lookup(var.alert_processor_config, "handler")}"
-  memory_size   = "${element(var.alert_processor_lambda_config["${var.cluster}"], 1)}"
-  timeout       = "${element(var.alert_processor_lambda_config["${var.cluster}"], 0)}"
+  memory_size   = "${var.alert_processor_memory}"
+  timeout       = "${var.alert_processor_timeout}"
   s3_bucket     = "${lookup(var.alert_processor_config, "source_bucket")}"
   s3_key        = "${lookup(var.alert_processor_config, "source_object_key")}"
 
@@ -86,7 +86,7 @@ resource "aws_lambda_alias" "alert_processor_production_vpc" {
   name             = "production"
   description      = "Production StreamAlert Alert Processor Alias"
   function_name    = "${aws_lambda_function.streamalert_alert_processor_vpc.arn}"
-  function_version = "${var.alert_processor_versions["${var.cluster}"]}"
+  function_version = "${var.alert_processor_version}"
 }
 
 // Non VPC
@@ -95,7 +95,7 @@ resource "aws_lambda_alias" "alert_processor_production" {
   name             = "production"
   description      = "Production StreamAlert Alert Processor Alias"
   function_name    = "${aws_lambda_function.streamalert_alert_processor.arn}"
-  function_version = "${var.alert_processor_versions["${var.cluster}"]}"
+  function_version = "${var.alert_processor_version}"
 }
 
 // Allow SNS to invoke the Alert Processor
@@ -131,5 +131,10 @@ resource "aws_s3_bucket" "streamalerts" {
 
   versioning {
     enabled = true
+  }
+
+  logging {
+    target_bucket = "${var.s3_logging_bucket}"
+    target_prefix = "${replace("${var.prefix}.${var.cluster}.streamalerts", "_", ".")}/"
   }
 }
