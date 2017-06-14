@@ -27,18 +27,20 @@ from stream_alert.alert_processor.output_base import (
     StreamOutputBase
 )
 
-from unit.stream_alert_alert_processor import (
-    REGION,
-    FUNCTION_NAME,
-    CONFIG
-)
-
-from unit.stream_alert_alert_processor.helpers import (
+from stream_alert_cli.helpers import (
     _encrypt_with_kms,
-    _remove_temp_secrets,
     _put_mock_creds,
     _put_s3_test_object
 )
+
+from unit.stream_alert_alert_processor import (
+    CONFIG,
+    FUNCTION_NAME,
+    KMS_ALIAS,
+    REGION
+)
+
+from unit.stream_alert_alert_processor.helpers import _remove_temp_secrets
 
 # Remove all abstractmethods from __abstractmethods__ so we can
 # instantiate StreamOutputBase for testing
@@ -101,8 +103,7 @@ class TestStreamOutputBase(object):
 
         local_cred_location = os.path.join(self.__dispatcher._local_temp_dir(), key)
 
-        client = boto3.client('s3', region_name=REGION)
-        _put_s3_test_object(client, bucket_name, key, test_data)
+        _put_s3_test_object(bucket_name, key, test_data, REGION)
 
         self.__dispatcher._get_creds_from_s3(local_cred_location, descriptor)
 
@@ -115,9 +116,7 @@ class TestStreamOutputBase(object):
     def test_kms_decrypt(self):
         """StreamOutputBase KMS Decrypt"""
         test_data = 'data to encrypt'
-        client = boto3.client('kms', region_name=REGION)
-
-        encrypted = _encrypt_with_kms(client, test_data)
+        encrypted = _encrypt_with_kms(test_data, REGION, KMS_ALIAS)
         decrypted = self.__dispatcher._kms_decrypt(encrypted)
 
         assert_equal(decrypted, test_data)
@@ -157,7 +156,8 @@ class TestStreamOutputBase(object):
         creds = {'url': 'http://www.foo.bar/test',
                  'token': 'token_to_encrypt'}
 
-        _put_mock_creds(output_name, creds, self.__dispatcher.secrets_bucket)
+        _put_mock_creds(output_name, creds, self.__dispatcher.secrets_bucket,
+                        REGION, KMS_ALIAS)
 
         loaded_creds = self.__dispatcher._load_creds(self.__descriptor)
 
