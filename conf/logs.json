@@ -141,7 +141,7 @@
       "json_path": "Records[*]"
     }
   },
-  "cloudwatch:cloudtrail": {
+  "cloudwatch:event": {
     "schema": {
       "account": "string",
       "detail": {},
@@ -152,23 +152,6 @@
       "source": "string",
       "time": "string",
       "version": "string"
-    },
-    "parser": "json"
-  },
-  "cloudwatch:ec2_event": {
-    "schema": {
-      "version": "string",
-      "id": "string",
-      "detail-type": "string",
-      "source": "string",
-      "account": "integer",
-      "time": "string",
-      "region": "string",
-      "resources": {},
-      "detail": {
-        "instance-id": "string",
-        "state": "string"
-      }
     },
     "parser": "json"
   },

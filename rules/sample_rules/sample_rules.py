@@ -106,7 +106,7 @@ def sample_cloudtrail_rule(rec):
     )
 
 
-@rule(logs=['cloudwatch:ec2_event'],
+@rule(logs=['cloudwatch:event'],
       matchers=[],
       outputs=['aws-s3:sample.bucket'])
 def sample_cloudwatch_events_rule(rec):
@@ -114,9 +114,10 @@ def sample_cloudwatch_events_rule(rec):
     return rec['source'] == 'aws.ec2'
 
 
-@rule(logs=['cloudwatch:cloudtrail'],
+@rule(logs=['cloudwatch:event'],
       matchers=[],
-      outputs=['aws-s3:sample.bucket'])
+      outputs=['aws-s3:sample.bucket'],
+      req_subkeys={'detail': ['eventName']})
 def sample_cloudwatch_cloudtrail_rule(rec):
     """IAM Key Decrypt operation"""
     return rec['detail']['eventName'] == 'Decrypt'
@@ -125,7 +126,7 @@ def sample_cloudwatch_cloudtrail_rule(rec):
 @rule(logs=['cloudwatch:flow_logs'],
       matchers=[],
       outputs=['slack:sample_channel'])
-def sample_cloudwatch_flog_log_rule(rec):
+def sample_cloudwatch_flow_log_rule(rec):
     """Successful SSH connection"""
     return (
         rec['destport'] == 22 and
