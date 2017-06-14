@@ -435,11 +435,9 @@ class SlackOutput(StreamOutputBase):
             self._log_status(False)
             return
 
-        url = os.path.join(creds['url'])
-
         slack_message = self._format_message(kwargs['rule_name'], kwargs['alert'])
 
-        resp = self._request_helper(url, slack_message)
+        resp = self._request_helper(creds['url'], slack_message)
         success = self._check_http_response(resp)
 
         if not success:
