@@ -51,7 +51,7 @@ def write_outputs_config(data, conf_dir='conf'):
     with open(os.path.join(conf_dir, OUTPUTS_CONFIG), 'w') as outputs:
         outputs.write(json.dumps(
             data,
-            indent=4,
+            indent=2,
             separators=(',', ': '),
             sort_keys=True
         ))

@@ -68,3 +68,7 @@ variable "alert_processor_vpc_security_group_ids" {
   type    = "list"
   default = []
 }
+
+variable "s3_logging_bucket" {
+  type = "string"
+}

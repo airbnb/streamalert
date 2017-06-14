@@ -19,6 +19,11 @@ resource "aws_s3_bucket" "cloudtrail_bucket" {
     enabled = true
   }
 
+  logging {
+    target_bucket = "${var.s3_logging_bucket}"
+    target_prefix = "${var.prefix}.${var.cluster}.streamalert.cloudtrail/"
+  }
+
   policy = "${data.aws_iam_policy_document.cloudtrail_bucket.json}"
 
   tags {

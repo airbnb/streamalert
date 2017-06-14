@@ -27,3 +27,7 @@ variable "shards" {
 variable "retention" {
   default = 24
 }
+
+variable "s3_logging_bucket" {
+  type = "string"
+}

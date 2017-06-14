@@ -91,7 +91,7 @@ class CLIConfig(object):
             with open(path, 'r+') as varfile:
                 varfile.write(json.dumps(
                     config,
-                    indent=4,
+                    indent=2,
                     separators=(',', ': '),
                     sort_keys=True
                 ))

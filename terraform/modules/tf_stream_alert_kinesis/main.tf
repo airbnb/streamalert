@@ -40,6 +40,11 @@ resource "aws_s3_bucket" "firehose_store" {
     enabled = true
   }
 
+  logging {
+    target_bucket = "${var.s3_logging_bucket}"
+    target_prefix = "${var.firehose_s3_bucket_name}/"
+  }
+
   tags {
     Name    = "StreamAlert"
     Cluster = "${var.cluster_name}"

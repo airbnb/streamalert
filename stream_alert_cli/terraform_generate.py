@@ -114,6 +114,7 @@ def generate_cluster(**kwargs):
     cluster_name = kwargs.get('cluster_name')
     account = config['global']['account']
     prefix = account['prefix']
+    logging_bucket = '{}.streamalert.s3-logging'.format(config['global']['account']['prefix'])
     account_id = account['aws_account_id']
     firehose_suffix = config['clusters'][cluster_name]['modules']['kinesis']['firehose']['s3_bucket_suffix']
     modules = config['clusters'][cluster_name]['modules']
@@ -134,7 +135,8 @@ def generate_cluster(**kwargs):
       'alert_processor_config': '${var.alert_processor_config}',
       'alert_processor_memory': modules['stream_alert']['alert_processor']['memory'],
       'alert_processor_timeout': modules['stream_alert']['alert_processor']['timeout'],
-      'alert_processor_version': modules['stream_alert']['alert_processor']['current_version']
+      'alert_processor_version': modules['stream_alert']['alert_processor']['current_version'],
+      's3_logging_bucket': logging_bucket
     }
 
     # Add Alert Processor output config conditionally to the StreamAlert module
@@ -184,7 +186,8 @@ def generate_cluster(**kwargs):
         'firehose_name': '{}_{}_stream_alert_firehose'.format(prefix, cluster_name),
         'username': '{}_{}_stream_alert_user'.format(prefix, cluster_name),
         'shards': modules['kinesis']['streams']['shards'],
-        'retention': modules['kinesis']['streams']['retention']
+        'retention': modules['kinesis']['streams']['retention'],
+        's3_logging_bucket': logging_bucket
     }
 
     outputs = config['clusters'][cluster_name].get('outputs')
@@ -216,7 +219,8 @@ def generate_cluster(**kwargs):
             'kinesis_arn': '${{module.kinesis_{}.arn}}'.format(cluster_name),
             'prefix': prefix,
             'enable_logging': cloudtrail_enabled,
-            'source': 'modules/tf_stream_alert_cloudtrail'
+            'source': 'modules/tf_stream_alert_cloudtrail',
+            's3_logging_bucket': logging_bucket
         }
 
     flow_log_info = modules.get('flow_logs')
@@ -243,7 +247,7 @@ def terraform_generate(**kwargs):
     LOGGER_CLI.info('Generating cluster file: main.tf')
     main_json = json.dumps(
         generate_main(init=init, config=config),
-        indent=4,
+        indent=2,
         sort_keys=True
     )
     with open('terraform/main.tf', 'w') as tf_file:
@@ -261,7 +265,7 @@ def terraform_generate(**kwargs):
         LOGGER_CLI.info('Generating cluster file: %s.tf', cluster)
         cluster_json = json.dumps(
             generate_cluster(cluster_name=cluster, config=config),
-            indent=4,
+            indent=2,
             sort_keys=True
         )
         with open('terraform/{}.tf'.format(cluster), 'w') as tf_file:

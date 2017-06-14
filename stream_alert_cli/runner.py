@@ -316,6 +316,8 @@ def rollback(options):
 
     targets = ['module.stream_alert_{}'.format(x)
                for x in CONFIG.clusters()]
+
+    terraform_generate(config=CONFIG)
     tf_runner(targets=targets)
 
 

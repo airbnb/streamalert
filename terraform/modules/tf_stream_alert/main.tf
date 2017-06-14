@@ -132,4 +132,9 @@ resource "aws_s3_bucket" "streamalerts" {
   versioning {
     enabled = true
   }
+
+  logging {
+    target_bucket = "${var.s3_logging_bucket}"
+    target_prefix = "${replace("${var.prefix}.${var.cluster}.streamalerts", "_", ".")}/"
+  }
 }
