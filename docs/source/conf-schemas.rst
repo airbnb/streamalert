@@ -174,7 +174,9 @@ Optional Top Level Keys
 
 If incoming logs occasionally include/exclude certain fields, this can be expressed in the ``configuration`` settings as ``optional_top_level_keys``.
 
-If any of the ``optional_top_level_keys`` do not exist in the log, defaults are appended to the parsed log depending on the declared value.
+The value of ``optional_top_level_keys`` should be an array, with entries corresponding to the actual key in the schema that is optional. Any keys specified in this array should also be included in the defined schema.
+
+If any of the ``optional_top_level_keys`` do not exist in the log being parsed, defaults are appended to the parsed log depending on the declared value.
 
 Example Schema::
 
@@ -184,12 +186,14 @@ Example Schema::
       "key1": [],
       "key2": "string",
       "key3": "integer"
+      "key4": "boolean",
+      "key5": "string"
     },
     "configuration": {
-      "optional_top_level_keys": {
-        "key4": "boolean",
-        "key5": "string"
-      }
+      "optional_top_level_keys": [
+        "key4",
+        "key5"
+      ]
     }
   }
 
