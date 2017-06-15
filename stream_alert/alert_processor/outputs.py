@@ -27,7 +27,7 @@ import boto3
 from stream_alert.alert_processor.output_base import StreamOutputBase, OutputProperty
 
 logging.basicConfig()
-LOGGER = logging.getLogger('StreamOutput')
+LOGGER = logging.getLogger('StreamAlertOutput')
 
 # STREAM_OUTPUTS will contain each subclass of the StreamOutputBase
 # All included subclasses are designated using the '@output' class decorator

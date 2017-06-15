@@ -21,7 +21,7 @@ from collections import OrderedDict
 from stream_alert.alert_processor.outputs import get_output_dispatcher
 
 logging.basicConfig()
-LOGGER = logging.getLogger('StreamOutput')
+LOGGER = logging.getLogger('StreamAlertOutput')
 LOGGER.setLevel(logging.DEBUG)
 
 def handler(event, context):
@@ -129,8 +129,9 @@ def run(loaded_sns_message, region, function_name, config):
                                        rule_name=rule_name,
                                        alert=alert)
         except Exception as err:
-            LOGGER.error('An error occurred while sending alert to %s:%s: %s. alert:\n%s',
-                         service, descriptor, err, json.dumps(alert, indent=4))
+            LOGGER.exception('An error occurred while sending alert '
+                             'to %s:%s: %s. alert:\n%s', service, descriptor,
+                             err, json.dumps(alert, indent=2))
 
 def _sort_dict(unordered_dict):
     """Recursively sort a dictionary

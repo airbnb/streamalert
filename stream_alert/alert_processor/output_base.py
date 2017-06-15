@@ -28,7 +28,7 @@ import boto3
 from botocore.exceptions import ClientError
 
 logging.basicConfig()
-LOGGER = logging.getLogger('StreamOutput')
+LOGGER = logging.getLogger('StreamAlertOutput')
 
 OutputProperty = namedtuple('OutputProperty',
                             'description, value, input_restrictions, mask_input, cred_requirement')
