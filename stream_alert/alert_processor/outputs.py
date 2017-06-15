@@ -101,8 +101,7 @@ class PagerDutyOutput(StreamOutputBase):
         """
         creds = self._load_creds(kwargs['descriptor'])
         if not creds:
-            self._log_status(False)
-            return
+            return self._log_status(False)
 
         message = 'StreamAlert Rule Triggered - {}'.format(kwargs['rule_name'])
         rule_desc = kwargs['alert']['metadata']['rule_description'] or DEFAULT_RULE_DESCRIPTION
@@ -129,7 +128,7 @@ class PagerDutyOutput(StreamOutputBase):
                          error_message,
                          '\n'.join(detailed_errors))
 
-        self._log_status(success)
+        return self._log_status(success)
 
 
 @output
@@ -189,7 +188,6 @@ class PhantomOutput(StreamOutputBase):
         resp = self._request_helper(container_url, container_string, headers, False)
 
         if not self._check_http_response(resp):
-            self._log_status(False)
             return False
 
         try:
@@ -211,8 +209,7 @@ class PhantomOutput(StreamOutputBase):
         """
         creds = self._load_creds(kwargs['descriptor'])
         if not creds:
-            self._log_status(False)
-            return
+            return self._log_status(False)
 
         headers = {"ph-auth-token": creds['ph_auth_token']}
         rule_desc = kwargs['alert']['metadata']['rule_description'] or DEFAULT_RULE_DESCRIPTION
@@ -234,7 +231,7 @@ class PhantomOutput(StreamOutputBase):
 
             success = self._check_http_response(resp)
 
-        self._log_status(success)
+        return self._log_status(success)
 
 
 @output
@@ -432,8 +429,7 @@ class SlackOutput(StreamOutputBase):
         """
         creds = self._load_creds(kwargs['descriptor'])
         if not creds:
-            self._log_status(False)
-            return
+            return self._log_status(False)
 
         slack_message = self._format_message(kwargs['rule_name'], kwargs['alert'])
 
@@ -444,7 +440,7 @@ class SlackOutput(StreamOutputBase):
             LOGGER.error('Encountered an error while sending to Slack: %s',
                          resp.read())
 
-        self._log_status(success)
+        return self._log_status(success)
 
 class AWSOutput(StreamOutputBase):
     """Subclass to be inherited from for all AWS service outputs"""
@@ -536,7 +532,7 @@ class S3Output(AWSOutput):
                                  Bucket=bucket,
                                  Key=key)
 
-        self._log_status(resp)
+        return self._log_status(resp)
 
 @output
 class LambdaOutput(AWSOutput):
@@ -593,4 +589,4 @@ class LambdaOutput(AWSOutput):
                              InvocationType='Event',
                              Payload=alert_string)
 
-        self._log_status(resp)
+        return self._log_status(resp)
