@@ -105,10 +105,18 @@ def _put_mock_creds(output_name, creds, bucket, region, alias):
 
     enc_creds = _encrypt_with_kms(creds_string, region, alias)
 
-    _put_s3_test_object(bucket, output_name, enc_creds, region)
+    _put_mock_s3_object(bucket, output_name, enc_creds, region)
 
 
-def _put_s3_test_object(bucket, key, data, region):
+def _put_mock_s3_object(bucket, key, data, region):
+    """Create a mock AWS S3 object for testing
+
+    Args:
+        bucket: the bucket in which to place the object (string)
+        key: the key to use for the S3 object (string)
+        data: the actual value to use for the object (string)
+        region: the aws region to use for this boto3 client
+    """
     s3_client = boto3.client('s3', region_name=region)
     s3_client.create_bucket(Bucket=bucket)
     s3_client.put_object(

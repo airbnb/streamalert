@@ -30,7 +30,7 @@ from stream_alert.alert_processor.output_base import (
 from stream_alert_cli.helpers import (
     _encrypt_with_kms,
     _put_mock_creds,
-    _put_s3_test_object
+    _put_mock_s3_object
 )
 
 from unit.stream_alert_alert_processor import (
@@ -103,7 +103,7 @@ class TestStreamOutputBase(object):
 
         local_cred_location = os.path.join(self.__dispatcher._local_temp_dir(), key)
 
-        _put_s3_test_object(bucket_name, key, test_data, REGION)
+        _put_mock_s3_object(bucket_name, key, test_data, REGION)
 
         self.__dispatcher._get_creds_from_s3(local_cred_location, descriptor)
 
