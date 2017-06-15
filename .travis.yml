@@ -7,6 +7,8 @@ before_install:
  - sudo apt-get install -qq python-numpy python-scipy
 install:
   - pip install -r requirements.txt
-script: 
+script:
   - ./test/scripts/unit_tests.sh
-  - ./test/scripts/rule_test.sh
+  - ./stream_alert_cli.py lambda test --processor rule
+  - ./stream_alert_cli.py lambda test --processor alert
+  - ./stream_alert_cli.py lambda test --processor all
