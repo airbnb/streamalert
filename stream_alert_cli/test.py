@@ -150,8 +150,7 @@ class RuleProcessorTester(object):
                     (rule_name, 'Rule failure: {}'.format(test_record['description'])))
 
         # Report on the final test results
-        if self.print_output:
-            self.report_output_summary()
+        self.report_output_summary()
 
     def check_keys(self, rule_name, test_record):
         """Check the test_record contains the required keys
@@ -225,9 +224,17 @@ class RuleProcessorTester(object):
         passed_tests = len(self.rules_fail_pass_warn[1])
         total_tests = failed_tests + passed_tests
 
-        # Print a message indicating how many of the total tests passed
-        print '\n\n{}({}/{})\tRule Tests Passed{}'.format(
-            COLOR_GREEN, passed_tests, total_tests, COLOR_RESET)
+        # Print some lines at the bottom of output to make it more readable
+        # This occurs here so there is always space and not only when the
+        # successful test info prints
+        print '\n\n'
+
+        # Only print success info if we explicitly want to print output
+        # but always print any errors or warnings below
+        if self.print_output:
+            # Print a message indicating how many of the total tests passed
+            print '{}({}/{})\tRule Tests Passed{}'.format(
+                COLOR_GREEN, passed_tests, total_tests, COLOR_RESET)
 
         # Check if there were failed tests and report on them appropriately
         if self.rules_fail_pass_warn[0]:
@@ -410,7 +417,7 @@ class AlertProcessorTester(object):
         total_tests = failed_tests + passed_tests
 
         # Print a message indicating how many of the total tests passed
-        print '\n{}({}/{})\tAlert Tests Passed{}'.format(
+        print '{}({}/{})\tAlert Tests Passed{}'.format(
             COLOR_GREEN, passed_tests, total_tests, COLOR_RESET)
 
         # Check if there were failed tests and report on them appropriately
