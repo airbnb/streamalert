@@ -427,6 +427,39 @@
       }
     }
   },
+    "bro:files": {
+    "schema": {
+      "ts": "float",
+      "fuid": "string"
+    },
+    "parser": "json",
+    "configuration": {
+      "optional_top_level_keys": {
+      "tx_hosts": "string",
+      "rx_hosts": "string",
+      "conn_uids": "string",
+      "source": "string",
+      "depth": "integer",
+      "analyzers": "string",
+      "mime_type": "string",
+      "filename": "string",
+      "duration": "float",
+      "local_orig": "boolean",
+      "is_orig": "boolean",
+      "seen_bytes": "integer",
+      "total_bytes": "integer",
+      "missing_bytes": "integer",
+      "overflow_bytes": "integer",
+      "timedout": "boolean",
+      "parent_fuid": "string",
+      "md5": "string",
+      "sha1": "string",
+      "sha256": "string",
+      "extracted": "string",
+      "entropy": "float"
+    }
+  }
+},
   "bro:ftp": {
     "schema": {
       "ts": "float",
