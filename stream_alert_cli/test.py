@@ -69,7 +69,16 @@ class RuleProcessorTester(object):
     """Class to encapsulate testing the rule processor"""
 
     def __init__(self, print_output):
-        super(self.__class__, self).__init__()
+        """RuleProcessorTester initializer
+
+        Args:
+            print_output [bool]: Boolean indicating whether this processor test
+                should print results to stdout. This is set to false when the
+                alert processor is explicitly being testing alone, and set to
+                true for rule processor tests and end-to-end tests.
+                Warnings and errors captrued during rule processor testing
+                will still be written to stdout regardless of this setting.
+        """
         # Create the topic used for the mocking of alert sending
         # This is used in stream_alert/rule_processor/sink.py to 'send' alerts
         sns_client = boto3.client('sns', region_name='us-east-1')
@@ -83,6 +92,10 @@ class RuleProcessorTester(object):
     def test_processor(self, rules):
         """Perform integration tests for the 'rule' Lambda function
 
+        Args:
+            rules [list or None]: Specific rule names (or None) to restrict
+                testing to. This is passed in from the CLI using the --rules option.
+
         Returns:
             [generator] yields a tuple containig a boolean of test status and
                 a list of alerts to run through the alert processor
@@ -93,7 +106,7 @@ class RuleProcessorTester(object):
             with open(os.path.join(DIR_RULES, rule_file), 'r') as rule_file_handle:
                 try:
                     contents = json.load(rule_file_handle)
-                except Exception as err:
+                except (ValueError, TypeError) as err:
                     all_tests_passed = False
                     message = 'Improperly formatted file - {}: {}'.format(
                         type(err).__name__, err)
@@ -135,10 +148,10 @@ class RuleProcessorTester(object):
                 if self.print_output:
                     report_output([
                         current_test_passed,
+                        '[trigger={}]'.format(expected_alerts),
                         'rule',
                         test_record['service'],
-                        '{} [trigger={}]'.format(test_record['description'],
-                                                 expected_alerts)])
+                        test_record['description']])
 
                 all_tests_passed = current_test_passed and all_tests_passed
 
@@ -156,6 +169,8 @@ class RuleProcessorTester(object):
         """Check the test_record contains the required keys
 
         Args:
+            rule_name: The name of the rule being tested. This is passed in
+                here strictly for reporting any errors with key checks.
             test_record [dict]: Test record metadata dict
 
         Returns:
@@ -263,7 +278,8 @@ class RuleProcessorTester(object):
                 print '\t({}/{}) [{}] {}{}'.format(index + 1, warning_count, failure[0],
                                                    failure[1], color)
 
-    def test_rule(self, rule_name, test_record, formatted_record):
+    @staticmethod
+    def test_rule(rule_name, test_record, formatted_record):
         """Feed formatted records into StreamAlert and check for alerts
         Args:
             rule_name [str]: The rule name being tested
@@ -290,7 +306,8 @@ class RuleProcessorTester(object):
 
         return alerts, expected_alert_count
 
-    def format_record(self, test_record):
+    @staticmethod
+    def format_record(test_record):
         """Create a properly formatted Kinesis, S3, or SNS record.
 
         Supports a dictionary or string based data record.  Reads in
@@ -366,17 +383,20 @@ class AlertProcessorTester(object):
     _alert_fail_pass = [0, 0]
 
     def __init__(self):
-        super(self.__class__, self).__init__()
         self.kms_alias = 'alias/stream_alert_secrets_test'
         self.secrets_bucket = 'test.streamalert.secrets'
         self.outputs_config = load_outputs_config()
 
     @patch('urllib2.urlopen')
     def test_processor(self, alerts, url_mock):
-        """Perform integration tests for the 'alert' Lambda function
+        """Perform integration tests for the 'alert' Lambda function. Alerts
+        that are fed through this are resultant from the rule processor tests.
+        In order to end up here, the log must be configured to trigger a rule
+        that would result in an alert being sent.
 
         Args:
-            alerts [list]: list of alerts to be processed
+            alerts [list]: list of alerts to be processed that have been fed in
+                from the rule processor.
             url_mock [mock.patch]: patch to mock out urlopen calls
 
         Return:
@@ -400,6 +420,7 @@ class AlertProcessorTester(object):
                 message = 'sending alert to \'{}\''.format(descriptor)
                 report_output([
                     passed,
+                    '',
                     'alert',
                     service,
                     message
@@ -478,7 +499,7 @@ def report_output(cols):
     status = ('{}[Fail]{}'.format(COLOR_RED, COLOR_RESET),
               '{}[Pass]{}'.format(COLOR_GREEN, COLOR_RESET))[cols[0]]
 
-    print '\t{}\t{}\t({}): {}'.format(status, *cols[1:])
+    print '\t{}{:>14}\t{}\t({}): {}'.format(status, *cols[1:])
 
 
 def get_rule_test_files(filter_rules):
@@ -490,15 +511,13 @@ def get_rule_test_files(filter_rules):
     Returns:
         [generator] Yields back the rule file path and rule name
     """
-    rules_to_test = ([], filter_rules.split(','))[bool(filter_rules)]
-
     for _, _, test_rule_files in os.walk(DIR_RULES):
         for rule_file in test_rule_files:
             rule_name = rule_file.split('.')[0]
 
             # If specific rules are being tested, skip files
             # that do not match those rules
-            if rules_to_test and rule_name not in rules_to_test:
+            if filter_rules and rule_name not in filter_rules:
                 continue
 
             yield rule_file, rule_name
@@ -509,10 +528,12 @@ def get_rule_test_files(filter_rules):
 @mock_s3
 @mock_kms
 def stream_alert_test(options):
-    """Integration testing handler
+    """Integration testing entry point. This function is wrapped with multiple
+    moto mock decorators to override any boto3 calls. Wrapping this function
+    here allows us to mock out all calls that happen below this scope.
 
     Args:
-        options: dict of CLI options: (func, env, source)
+        options: namedtuple of CLI options (debug, processor, etc)
     """
     # Instantiate two status items - one for the rule processor
     # and one for the alert processor

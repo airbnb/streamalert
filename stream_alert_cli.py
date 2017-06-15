@@ -119,9 +119,8 @@ def build_parser():
 
     lambda_parser.add_argument(
         '-r', '--rules',
-        type=str,
-        default='',
-        help='Comma separated names of rules to test'
+        nargs='+',
+        help='Names of rules to test, separated by spaces'
     )
 
     # terraform parser and defaults
