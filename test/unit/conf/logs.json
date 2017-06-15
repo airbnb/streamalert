@@ -4,14 +4,17 @@
     "schema": {
       "key1": [],
       "key2": "string",
-      "key3": "integer"
+      "key3": "integer",
+      "key9": "boolean",
+      "key10": {},
+      "key11": "float"
     },
     "configuration": {
-      "optional_top_level_keys": {
-        "key9": "boolean",
-        "key10": {},
-        "key11": "float"
-      }
+      "optional_top_level_keys": [
+        "key9",
+        "key10",
+        "key11"
+      ]
     }
   },
   "test_log_type_json_2": {
@@ -35,23 +38,24 @@
   "test_log_type_json_nested_osquery": {
     "parser": "json",
     "schema": {
-      "name": "string",
-      "hostIdentifier": "string",
-      "calendarTime": "string",
-      "unixTime": "integer",
-      "columns": {},
       "action": "string",
+      "calendarTime": "string",
+      "columns": {},
       "decorations": {
         "role": "string",
         "env": "string",
         "cluster": "string",
         "number": "integer"
-      }
+      },
+      "hostIdentifier": "string",
+      "log_type": "string",
+      "name": "string",
+      "unixTime": "integer"
     },
     "configuration": {
-      "optional_top_level_keys": {
-        "log_type": "string"
-      }
+      "optional_top_level_keys": [
+        "log_type"
+      ]
     }
   },
   "test_log_type_json_nested_with_data": {

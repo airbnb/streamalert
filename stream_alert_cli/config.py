@@ -16,63 +16,22 @@ limitations under the License.
 
 import json
 import os
+import sys
 
 from collections import defaultdict
 
-
-class ConfigError(Exception):
-    """Exception for a non existent config file"""
-    pass
+from stream_alert_cli.logger import LOGGER_CLI
 
 
 class CLIConfig(object):
     '''Provide an object to load, modify, and display the StreamAlertCLI Config'''
-    filename = 'variables.json'
-
-    v1_schema = {
-        'account_id',
-        'clusters',
-        'firehose_s3_bucket_suffix',
-        'flow_log_settings',
-        'kinesis_settings',
-        'kms_key_alias',
-        'lambda_function_prod_versions',
-        'lambda_handler',
-        'lambda_settings',
-        'lambda_source_bucket_name',
-        'lambda_source_current_hash',
-        'lambda_source_key',
-        'output_lambda_current_hash',
-        'output_lambda_source_key',
-        'prefix',
-        'region',
-        'tfstate_s3_key',
-        'tfvars',
-        'third_party_libs'
-    }
-
-    v2_schema = {
-        'account',
-        'alert_processor_config',
-        'alert_processor_lambda_config',
-        'alert_processor_versions',
-        'clusters',
-        'firehose',
-        'flow_log_config',
-        'kinesis_streams_config',
-        'rule_processor_config',
-        'rule_processor_lambda_config',
-        'rule_processor_versions',
-        'terraform'
-    }
 
     def __init__(self):
+        self.config_files = {
+            'global': 'conf/global.json',
+            'lambda': 'conf/lambda.json'
+        }
         self.config = self.load()
-        self.version = self._detect_version()
-        if self.version == 1:
-            self.config = self._convert_schema()
-            self.version = self._detect_version()
-            self.write()
 
     def __repr__(self):
         return json.dumps(self.config)
@@ -81,105 +40,68 @@ class CLIConfig(object):
         return self.config[key]
 
     def __setitem__(self, key, new_value):
-        if key in self.v2_schema:
-            self.config.__setitem__(key, new_value)
-            self.write()
-        else:
-            raise ConfigError('Invalid key to set: {}'.format(key))
+        self.config.__setitem__(key, new_value)
+        self.write()
 
     def get(self, key):
         return self.config.get(key)
 
+    def clusters(self):
+        return self.config['clusters'].keys()
+
     def load(self):
-        """Load the variables.json configuration file
+        """Load the cluster, global, and lambda configuration files
 
         Returns:
-            [dict] loaded config from variables.json
+            [dict] loaded config from all config files with the following keys:
+                'clusters', 'global', and 'lambda'
         """
-        if not os.path.isfile(self.filename):
-            raise ConfigError('StreamAlert variables.json file not found!')
 
-        with open(self.filename) as data:
-            try:
-                config = json.load(data)
-            except ValueError:
-                raise ConfigError('StreamAlert variables.json file is not valid JSON!')
-            return config
+        config = {'clusters': {}}
+
+        def _config_loader(key, filepath, cluster_file):
+            if not os.path.isfile(filepath):
+                LOGGER_CLI.error('[Config Error]: %s not found', filepath)
+                sys.exit(1)
+
+            with open(filepath) as data:
+                try:
+                    if cluster_file:
+                        config['clusters'][key] = json.load(data)
+                    else:
+                        config[key] = json.load(data)
+                except ValueError:
+                    LOGGER_CLI.error('[Config Error]: %s is not valid JSON', filepath)
+                    sys.exit(1)
+
+        # Load individual files
+        for key, path in self.config_files.iteritems():
+            _config_loader(key, path, False)
+
+        # Load cluster files
+        for cluster_file in os.listdir('conf/clusters'):
+            key = os.path.splitext(cluster_file)[0]
+            _config_loader(key, 'conf/clusters/{}'.format(cluster_file), True)
+
+        return config
 
     def write(self):
         """Write the current config in memory to disk"""
-        with open(self.filename, 'r+') as varfile:
-            varfile.write(json.dumps(
-                self.config,
-                indent=4,
-                separators=(',', ': '),
-                sort_keys=True
-            ))
-            varfile.truncate()
+        def _config_writer(config, path):
+            with open(path, 'r+') as varfile:
+                varfile.write(json.dumps(
+                    config,
+                    indent=2,
+                    separators=(',', ': '),
+                    sort_keys=True
+                ))
+                varfile.truncate()
 
-    def _detect_version(self):
-        """Detect the config version
+        for key, path in self.config_files.iteritems():
+            _config_writer(self.config[key], path)
 
-        Returns:
-            [int] detected config version
-        """
-        config_keys = set(self.config.keys())
-
-        if config_keys == self.v1_schema:
-            return 1
-        elif config_keys == self.v2_schema:
-            return 2
-        else:
-            raise ConfigError('StreamAlert variables.json does not match schema!\n{}'.format(
-                config_keys
-            ))
-
-    def _convert_schema(self):
-        """Upgrade the config from v1 to v2
-
-        Returns:
-            [dict] converted v2 config
-        """
-        new_config = defaultdict(dict)
-        new_config['account'] = {
-            'aws_account_id': self.config['account_id'],
-            'prefix': self.config['prefix'],
-            'kms_key_alias': self.config['kms_key_alias'],
-            'region': self.config['region']
-        }
-
-        new_config['alert_processor_config'] = {
-            'handler': 'stream_alert.alert_processor.main.handler',
-            'third_party_libraries': [],
-            'source_bucket': self.config['lambda_source_bucket_name'],
-            'source_current_hash': self.config['output_lambda_current_hash'],
-            'source_object_key': self.config['output_lambda_source_key']
-        }
-        for cluster, _ in self.config['clusters'].iteritems():
-            new_config['alert_processor_lambda_config'][cluster] = [10, 128]
-            new_config['alert_processor_versions'][cluster] = '$LATEST'
-
-        new_config['rule_processor_config'] = {
-            'handler': 'stream_alert.rule_processor.main.handler',
-            'third_party_libraries': self.config['third_party_libs'],
-            'source_bucket': self.config['lambda_source_bucket_name'],
-            'source_current_hash': self.config['lambda_source_current_hash'],
-            'source_object_key': self.config['lambda_source_key'],
-        }
-        new_config['rule_processor_versions'] = self.config['lambda_function_prod_versions']
-        new_config['rule_processor_lambda_config'] = self.config['lambda_settings']
-
-        new_config['clusters'] = self.config['clusters']
-        new_config['firehose']['s3_bucket_suffix'] = self.config['firehose_s3_bucket_suffix']
-        new_config['flow_log_config'] = {
-            'vpcs': [],
-            'subnets': [],
-            'emis': []
-        }
-        new_config['kinesis_streams_config'] = self.config['kinesis_settings']
-        new_config['terraform'] = {
-            'tfstate_s3_key': self.config['tfstate_s3_key'],
-            'tfvars': self.config['tfvars']
-        }
-
-        return new_config
+        for cluster_file in os.listdir('conf/clusters'):
+            key = os.path.splitext(cluster_file)[0]
+            _config_writer(
+                self.config['clusters'][key],
+                'conf/clusters/{}'.format(cluster_file))

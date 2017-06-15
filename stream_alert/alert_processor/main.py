@@ -37,6 +37,14 @@ def handler(event, context):
     records = event.get('Records', [])
     LOGGER.info('Running alert processor for %d records', len(records))
 
+    # A failure to load the config will log the error in load_output_config and return here
+    config = _load_output_config()
+    if not config:
+        return
+
+    region = context.invoked_function_arn.split(':')[3]
+    function_name = context.function_name
+
     for record in records:
         sns_payload = record.get('Sns')
         if not sns_payload:
@@ -54,13 +62,13 @@ def handler(event, context):
                 LOGGER.error('Malformed SNS: %s', loaded_sns_message)
             continue
 
-        run(loaded_sns_message, context)
+        run(loaded_sns_message, region, function_name, config)
 
-def run(loaded_sns_message, context):
+def run(loaded_sns_message, region, function_name, config):
     """Send an Alert to its described outputs.
 
     Args:
-        alerts [dict]: SNS message dictionary with the following structure:
+        loaded_sns_message [dict]: SNS message dictionary with the following structure:
 
         {
             'default': alert
@@ -82,15 +90,17 @@ def run(loaded_sns_message, context):
                 }
             }
         }
+
+        region [string]: the AWS region being used
+        function_name [string]: the name of the lambda function
+        config [dict]: the loaded configuration for outputs from conf/outputs.json
     """
     LOGGER.debug(loaded_sns_message)
     alert = loaded_sns_message['default']
     rule_name = alert['metadata']['rule_name']
 
     # strip out unnecessary keys and sort
-    alert = sort_dict(alert)
-
-    config = load_output_config()
+    alert = _sort_dict(alert)
 
     outputs = alert['metadata']['outputs']
     # Get the output configuration for this rule and send the alert to each
@@ -103,11 +113,8 @@ def run(loaded_sns_message, context):
             continue
 
         if not service in config or not descriptor in config[service]:
-            LOGGER.error('The output %s does not exist!', output)
+            LOGGER.error('The output \'%s\' does not exist!', output)
             continue
-
-        region = context.invoked_function_arn.split(':')[3]
-        function_name = context.function_name
 
         # Retrieve the proper class to handle dispatching the alerts of this services
         output_dispatcher = get_output_dispatcher(service, region, function_name, config)
@@ -115,8 +122,9 @@ def run(loaded_sns_message, context):
         if not output_dispatcher:
             continue
 
+        LOGGER.debug('Sending alert to %s:%s', service, descriptor)
+
         try:
-            LOGGER.debug('Sending alert to %s:%s', service, descriptor)
             output_dispatcher.dispatch(descriptor=descriptor,
                                        rule_name=rule_name,
                                        alert=alert)
@@ -124,7 +132,7 @@ def run(loaded_sns_message, context):
             LOGGER.error('An error occurred while sending alert to %s:%s: %s. alert:\n%s',
                          service, descriptor, err, json.dumps(alert, indent=4))
 
-def sort_dict(unordered_dict):
+def _sort_dict(unordered_dict):
     """Recursively sort a dictionary
 
     Args:
@@ -136,23 +144,24 @@ def sort_dict(unordered_dict):
     result = OrderedDict()
     for key, value in sorted(unordered_dict.items(), key=lambda t: t[0]):
         if isinstance(value, dict):
-            result[key] = sort_dict(value)
+            result[key] = _sort_dict(value)
             continue
 
         result[key] = value
 
     return result
 
-def load_output_config():
+def _load_output_config(config_path='conf/outputs.json'):
     """Load the outputs configuration file from disk
 
     Returns:
         [dict] The output configuration settings
     """
-    with open('conf/outputs.json') as outputs:
+    with open(config_path) as outputs:
         try:
             config = json.load(outputs)
         except ValueError:
-            LOGGER.exception('the outputs.json file could not be loaded into json')
+            LOGGER.error('The conf/outputs.json file could not be loaded into json')
+            return
 
     return config

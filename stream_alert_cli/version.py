@@ -39,17 +39,18 @@ class LambdaVersion(object):
         date = datetime.utcnow().strftime("%Y%m%d_T%H%M%S")
         new_versions = {}
 
-        for cluster, region in self.config['clusters'].iteritems():
+        for cluster in self.config.clusters():
+            region = self.config['clusters'][cluster]['region']
             client = boto3.client('lambda', region_name=region)
             function_name = '{}_{}_streamalert_{}'.format(
-                self.config['account']['prefix'],
+                self.config['global']['account']['prefix'],
                 cluster,
                 self.package.package_name
             )
             logging.info('Publishing %s', function_name)
             response = client.publish_version(
                 FunctionName=function_name,
-                CodeSha256=self.config[self.package.config_key]['source_current_hash'],
+                CodeSha256=self.config['lambda'][self.package.config_key]['source_current_hash'],
                 Description='Publish Lambda {} on {}'.format(function_name, date)
             )
             version = response['Version']
@@ -57,7 +58,6 @@ class LambdaVersion(object):
             logging.info('Published version %s for %s:%s',
                          version, cluster, function_name)
 
-        lambda_config_key = '{}_versions'.format(self.package.package_name)
         for cluster, new_version in new_versions.iteritems():
-            self.config[lambda_config_key][cluster] = new_version
+            self.config['clusters'][cluster]['modules']['stream_alert'][self.package.package_name]['current_version'] = new_version
         self.config.write()

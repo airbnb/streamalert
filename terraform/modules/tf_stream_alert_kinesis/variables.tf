@@ -20,11 +20,14 @@ variable "stream_name" {
   default = "stream_alert_stream"
 }
 
-variable "stream_config" {
-  type = "list"
+variable "shards" {
+  default = 1
+}
 
-  default = [
-    1,  // number of shards
-    24,
-  ] // retention period
+variable "retention" {
+  default = 24
+}
+
+variable "s3_logging_bucket" {
+  type = "string"
 }

@@ -1,19 +1,29 @@
-variable "destination_stream_arn" {}
+variable "destination_stream_arn" {
+  type = "string"
+}
 
 variable "region" {
+  type    = "string"
   default = "us-east-1"
 }
 
-variable "flow_log_group_name" {}
+variable "flow_log_group_name" {
+  type = "string"
+}
 
-variable "targets" {
-  type = "map"
+variable "vpcs" {
+  type    = "list"
+  default = []
+}
 
-  default = {
-    "vpcs"    = []
-    "subnets" = []
-    "enis"    = []
-  }
+variable "subnets" {
+  type    = "list"
+  default = []
+}
+
+variable "enis" {
+  type    = "list"
+  default = []
 }
 
 variable "flow_log_filter" {

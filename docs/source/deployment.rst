@@ -13,8 +13,8 @@ To initialize StreamAlert::
 This will perform the following:
 
 * Create S3 buckets and encryption keys.
-* Create all AWS Lambda functions.
-* Build all declared infrastructure in the Terraform files.
+* Create AWS Lambda functions.
+* Build declared infrastructure in the Terraform files.
 * Deploy initial production AWS Lambda versions.
 
 Type ``yes`` at each prompt.

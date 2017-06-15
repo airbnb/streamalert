@@ -27,6 +27,7 @@ import pip
 
 from stream_alert_cli.logger import LOGGER_CLI
 
+
 class LambdaPackage(object):
     """Build and upload a StreamAlert deployment package to S3."""
     package_folders = set()
@@ -69,8 +70,8 @@ class LambdaPackage(object):
             # set new config values and update
             full_package_name = os.path.join(self.package_name, generated_package_name)
             # make all config changes here
-            self.config[self.config_key]['source_object_key'] = full_package_name
-            self.config[self.config_key]['source_current_hash'] = package_sha256
+            self.config['lambda'][self.config_key]['source_object_key'] = full_package_name
+            self.config['lambda'][self.config_key]['source_current_hash'] = package_sha256
             self.config.write()
 
     def _get_tmpdir(self):
@@ -125,7 +126,8 @@ class LambdaPackage(object):
         Returns:
             [string] Deployment package full path
         """
-        LOGGER_CLI.info('Creating Lambda package: %s', ''.join([temp_package_path, '.zip']))
+        LOGGER_CLI.info('Creating Lambda package: %s',
+                        ''.join([temp_package_path, '.zip']))
         package_path = shutil.make_archive(temp_package_path, 'zip', temp_package_path)
         LOGGER_CLI.info('Package Successfully Created!')
 
@@ -167,17 +169,17 @@ class LambdaPackage(object):
         Returns:
             [boolean] False if the pip command failed to install requirements, True otherwise
         """
-        third_party_libs = self.config[self.config_key]['third_party_libraries']
+        third_party_libs = self.config['lambda'][self.config_key]['third_party_libraries']
         if third_party_libs:
-            if len(third_party_libs) > 0:
-                LOGGER_CLI.info('Installing third-party libraries')
-                pip_command = ['install']
-                pip_command.extend(third_party_libs)
-                pip_command.extend(['--upgrade', '--target', temp_package_path])
-                # Return True if the pip result code is 0
-                return pip.main(pip_command) == 0
-            else:
-                LOGGER_CLI.info('No third-party libraries to install.')
+            LOGGER_CLI.info(
+                'Installing third-party libraries: {}'.format(', '.join(third_party_libs)))
+            pip_command = ['install']
+            pip_command.extend(third_party_libs)
+            pip_command.extend(['--upgrade', '--target', temp_package_path])
+            # Return True if the pip result code is 0
+            return pip.main(pip_command) == 0
+        else:
+            LOGGER_CLI.info('No third-party libraries to install.')
 
         # Return a default of True here if pip is not called
         return True
@@ -195,14 +197,15 @@ class LambdaPackage(object):
             Exception if client put_object fails
         """
         LOGGER_CLI.info('Uploading StreamAlert package to S3')
-        client = boto3.client('s3', region_name=self.config['account']['region'])
+        client = boto3.client(
+            's3', region_name=self.config['global']['account']['region'])
         # the zip and the checksum file
         for package_file in (package_path, '{}.sha256'.format(package_path)):
             package_name = package_file.split('/')[-1]
             package_fh = open(package_file, 'r')
             try:
                 client.put_object(
-                    Bucket=self.config[self.config_key]['source_bucket'],
+                    Bucket=self.config['lambda'][self.config_key]['source_bucket'],
                     Key=os.path.join(self.package_name, package_name),
                     Body=package_fh,
                     ServerSideEncryption='AES256'
@@ -219,7 +222,7 @@ class LambdaPackage(object):
 class RuleProcessorPackage(LambdaPackage):
     """Deployment package class for the StreamAlert Rule Processor function"""
     package_folders = {'stream_alert/rule_processor', 'rules', 'conf'}
-    package_files = {'stream_alert/__init__.py', 'variables.json'}
+    package_files = {'stream_alert/__init__.py'}
     package_root_dir = '.'
     package_name = 'rule_processor'
     config_key = 'rule_processor_config'

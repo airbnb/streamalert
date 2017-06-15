@@ -5,7 +5,17 @@ resource "aws_sns_topic" "streamalert" {
 }
 
 // Subscribe the Alert Processor Lambda function to the SNS topic
+// VPC
+resource "aws_sns_topic_subscription" "alert_processor_vpc" {
+  count     = "${var.alert_processor_vpc_enabled ? 1 : 0}"
+  topic_arn = "${aws_sns_topic.streamalert.arn}"
+  endpoint  = "${aws_lambda_function.streamalert_alert_processor_vpc.arn}:production"
+  protocol  = "lambda"
+}
+
+// Non VPC
 resource "aws_sns_topic_subscription" "alert_processor" {
+  count     = "${var.alert_processor_vpc_enabled ? 0 : 1}"
   topic_arn = "${aws_sns_topic.streamalert.arn}"
   endpoint  = "${aws_lambda_function.streamalert_alert_processor.arn}:production"
   protocol  = "lambda"
@@ -13,8 +23,8 @@ resource "aws_sns_topic_subscription" "alert_processor" {
 
 // Subscribe the Rule Processor Lambda function to arbitrary SNS topics
 resource "aws_sns_topic_subscription" "input_topic_subscriptions" {
-  count     = "${length(keys(var.input_sns_topics))}"
-  topic_arn = "${lookup(var.input_sns_topics, element(keys(var.input_sns_topics), count.index))}"
+  count     = "${length(var.input_sns_topics)}"
+  topic_arn = "${element(var.input_sns_topics, count.index)}"
   endpoint  = "${aws_lambda_function.streamalert_rule_processor.arn}:production"
   protocol  = "lambda"
 }

@@ -1,38 +1,20 @@
 {
-	"kinesis": {
-		"prefix_cluster1_stream_alert_kinesis": {
-			"logs": [
-				"json_log",
-				"syslog_log",
-				"kv_log",
-				"csv_log",
-				"osquery",
-				"cloudwatch"
-			]
-		}
-	},
-	"s3": {
-		"example_s3_bucket": {
-			"logs": [
-				"carbonblack",
-				"json_log",
-				"syslog_log",
-				"kv_log",
-				"csv_log",
-				"osquery",
-				"cloudtrail"
-			]
-		}
-	},
-	"sns": {
-		"example_sns_topic": {
-			"logs": [
-				"json_log",
-				"syslog_log",
-				"kv_log",
-				"csv_log",
-				"osquery"
-			]
-		}
-	}
+  "kinesis": {
+    "prefix_cluster1_stream_alert_kinesis": {
+      "logs": [
+        "osquery",
+        "cloudwatch",
+        "cloudtrail"
+      ]
+    }
+  },
+  "s3": {
+    "example_s3_bucket": {
+      "logs": [
+        "carbonblack",
+        "osquery",
+        "cloudtrail"
+      ]
+    }
+  }
 }

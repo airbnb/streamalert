@@ -12,8 +12,8 @@ resource "aws_kinesis_firehose_delivery_stream" "stream_alert_firehose" {
 // AWS Kinesis Stream
 resource "aws_kinesis_stream" "stream_alert_stream" {
   name             = "${var.stream_name}"
-  shard_count      = "${element(var.stream_config, 0)}"
-  retention_period = "${element(var.stream_config, 1)}"
+  shard_count      = "${var.shards}"
+  retention_period = "${var.retention}"
 
   shard_level_metrics = [
     "IncomingBytes",
@@ -26,8 +26,8 @@ resource "aws_kinesis_stream" "stream_alert_stream" {
   ]
 
   tags {
-    Application = "StreamAlert"
-    Cluster     = "${var.cluster_name}"
+    Name    = "StreamAlert"
+    Cluster = "${var.cluster_name}"
   }
 }
 
@@ -36,8 +36,17 @@ resource "aws_s3_bucket" "firehose_store" {
   acl           = "private"
   force_destroy = false
 
+  versioning {
+    enabled = true
+  }
+
+  logging {
+    target_bucket = "${var.s3_logging_bucket}"
+    target_prefix = "${var.firehose_s3_bucket_name}/"
+  }
+
   tags {
-    Application = "StreamAlert"
-    Cluster     = "${var.cluster_name}"
+    Name    = "StreamAlert"
+    Cluster = "${var.cluster_name}"
   }
 }

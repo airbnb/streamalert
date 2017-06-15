@@ -41,6 +41,24 @@ module "stream_alert" {
     <td>True</td>
   </tr>
   <tr>
+    <td>alert_processor_vpc_enabled</td>
+    <td>To enable/disable placing the Alert Processor inside a VPC</td>
+    <td>False</td>
+    <td>False/td>
+  </tr>
+  <tr>
+    <td>alert_processor_vpc_subnet_ids</td>
+    <td>The subnet IDs to place the Alert Processor</td>
+    <td>[]</td>
+    <td>False</td>
+  </tr>
+  <tr>
+    <td>alert_processor_vpc_security_group_ids</td>
+    <td>The security group IDs to assign to the Alert Processor</td>
+    <td>[]</td>
+    <td>False</td>
+  </tr>
+  <tr>
     <td>region</td>
     <td>The AWS region for your stream</td>
     <td>None</td>
