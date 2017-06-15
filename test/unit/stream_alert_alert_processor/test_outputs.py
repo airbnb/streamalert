@@ -149,7 +149,7 @@ class TestPagerDutyOutput(object):
 
         self._teardown_dispatch()
 
-        log_info_mock.assert_called_with('successfully sent alert to %s', self.__service)
+        log_info_mock.assert_called_with('Successfully sent alert to %s', self.__service)
 
     @patch('logging.Logger.error')
     @patch('urllib2.urlopen')
@@ -168,7 +168,7 @@ class TestPagerDutyOutput(object):
 
         self._teardown_dispatch()
 
-        log_error_mock.assert_called_with('failed to send alert to %s', self.__service)
+        log_error_mock.assert_called_with('Failed to send alert to %s', self.__service)
 
     @patch('logging.Logger.error')
     @mock_s3
@@ -182,7 +182,7 @@ class TestPagerDutyOutput(object):
 
         self._teardown_dispatch()
 
-        log_error_mock.assert_called_with('failed to send alert to %s', self.__service)
+        log_error_mock.assert_called_with('Failed to send alert to %s', self.__service)
 
 
 class TestPhantomOutput(object):
@@ -230,7 +230,7 @@ class TestPhantomOutput(object):
                                    rule_name='rule_name',
                                    alert=alert)
 
-        log_mock.assert_called_with('successfully sent alert to %s', self.__service)
+        log_mock.assert_called_with('Successfully sent alert to %s', self.__service)
 
     @patch('logging.Logger.error')
     @patch('urllib2.urlopen')
@@ -244,7 +244,7 @@ class TestPhantomOutput(object):
                                    rule_name='rule_name',
                                    alert=alert)
 
-        log_mock.assert_called_with('failed to send alert to %s', self.__service)
+        log_mock.assert_called_with('Failed to send alert to %s', self.__service)
 
     @patch('logging.Logger.error')
     @patch('urllib2.urlopen')
@@ -282,7 +282,7 @@ class TestPhantomOutput(object):
                                    rule_name='rule_name',
                                    alert=alert)
 
-        log_mock.assert_called_with('failed to send alert to %s', self.__service)
+        log_mock.assert_called_with('Failed to send alert to %s', self.__service)
 
     @patch('logging.Logger.error')
     @mock_s3
@@ -294,7 +294,7 @@ class TestPhantomOutput(object):
                                    rule_name='rule_name',
                                    alert=alert)
 
-        log_error_mock.assert_called_with('failed to send alert to %s', self.__service)
+        log_error_mock.assert_called_with('Failed to send alert to %s', self.__service)
 
 
 class TestSlackOutput(object):
@@ -466,7 +466,7 @@ class TestSlackOutput(object):
                                    rule_name='rule_name',
                                    alert=alert)
 
-        log_info_mock.assert_called_with('successfully sent alert to %s', self.__service)
+        log_info_mock.assert_called_with('Successfully sent alert to %s', self.__service)
 
     @patch('logging.Logger.error')
     @patch('urllib2.urlopen')
@@ -485,7 +485,7 @@ class TestSlackOutput(object):
 
         log_error_mock.assert_any_call('Encountered an error while sending to Slack: %s',
                                        error_message)
-        log_error_mock.assert_any_call('failed to send alert to %s', self.__service)
+        log_error_mock.assert_any_call('Failed to send alert to %s', self.__service)
 
     @patch('logging.Logger.error')
     @mock_s3
@@ -497,7 +497,7 @@ class TestSlackOutput(object):
                                    rule_name='rule_name',
                                    alert=alert)
 
-        log_error_mock.assert_called_with('failed to send alert to %s', self.__service)
+        log_error_mock.assert_called_with('Failed to send alert to %s', self.__service)
 
 
 class TestAWSOutput(object):
@@ -577,7 +577,7 @@ class TestS3Ouput(object):
                                    rule_name='rule_name',
                                    alert=alert)
 
-        log_mock.assert_called_with('successfully sent alert to %s', self.__service)
+        log_mock.assert_called_with('Successfully sent alert to %s', self.__service)
 
 
 class TestLambdaOuput(object):
@@ -617,4 +617,4 @@ class TestLambdaOuput(object):
                                    rule_name='rule_name',
                                    alert=alert)
 
-        log_mock.assert_called_with('successfully sent alert to %s', self.__service)
+        log_mock.assert_called_with('Successfully sent alert to %s', self.__service)

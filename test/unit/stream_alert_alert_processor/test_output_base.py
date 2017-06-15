@@ -125,13 +125,13 @@ class TestStreamOutputBase(object):
     def test_log_status_success(self, log_mock):
         """StreamOutputBase Log status success"""
         self.__dispatcher._log_status(True)
-        log_mock.assert_called_with('successfully sent alert to %s', 'test_service')
+        log_mock.assert_called_with('Successfully sent alert to %s', 'test_service')
 
     @patch('logging.Logger.error')
     def test_log_status_failed(self, log_mock):
         """StreamOutputBase Log status failed"""
         self.__dispatcher._log_status(False)
-        log_mock.assert_called_with('failed to send alert to %s', 'test_service')
+        log_mock.assert_called_with('Failed to send alert to %s', 'test_service')
 
     @patch('urllib2.urlopen')
     def test_check_http_response(self, mock_getcode):
