@@ -44,11 +44,7 @@ Table of Contents
    overview
    benefits
    requirements
-   datasources
    datatypes
-   rules
-   rule-testing
-   outputs
    alternatives
    roadmap
    faq
@@ -69,6 +65,7 @@ Table of Contents
    :maxdepth: 2
    :caption: Data Config Details
 
+   datasources
    conf-datasources
    conf-schemas
 
@@ -88,8 +85,11 @@ Table of Contents
 
 .. toctree::
    :maxdepth: 2
-   :caption: Other
+   :caption: User Guide
 
+   rules
+   rule-testing
+   outputs
    metrics
    troubleshooting
    report-bugs-features
