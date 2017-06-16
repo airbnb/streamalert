@@ -21,6 +21,7 @@ import re
 import sys
 import time
 
+from collections import namedtuple
 from mock import Mock, patch
 
 import boto3
@@ -302,13 +303,22 @@ class AlertProcessorTester(object):
     """Class to encapsulate testing the alert processor"""
     _alert_fail_pass = [0, 0]
 
-    def __init__(self):
+    def __init__(self, context):
+        """AlertProcessorTester initializer
+
+        Args:
+            context [namedtuple]: Constructed aws context object. The
+                namedtuple contains an attribute of `mocked` that indicates
+                if all dispatch calls should be mocked out instead of actually
+                performed. If not mocked, the tests will attempt to actually
+                send alerts to outputs.
+        """
+        self.context = context
         self.kms_alias = 'alias/stream_alert_secrets_test'
         self.secrets_bucket = 'test.streamalert.secrets'
         self.outputs_config = load_outputs_config()
 
-    @patch('urllib2.urlopen')
-    def test_processor(self, alerts, url_mock):
+    def test_processor(self, alerts):
         """Perform integration tests for the 'alert' Lambda function. Alerts
         that are fed through this are resultant from the rule processor tests.
         In order to end up here, the log must be configured to trigger a rule
@@ -326,15 +336,11 @@ class AlertProcessorTester(object):
         # Set the logger level to info so its not too noisy
         StreamOutput.LOGGER.setLevel(logging.ERROR)
         for alert in alerts:
-            outputs = alert['metadata'].get('outputs', [])
-            self.setup_outputs(outputs, url_mock)
+            # Establish the mocked outputs if the context is being mocked
+            if self.context.mocked:
+                self.setup_outputs(alert)
             event = {'Records': [{'Sns': {'Message': json.dumps({'default': alert})}}]}
-            context = Mock()
-            context.invoked_function_arn = (
-                'arn:aws:lambda:us-east-1:0123456789012:'
-                'function:streamalert_alert_processor:production')
-            context.function_name = 'test_streamalert_alert_processor'
-            for passed, output in StreamOutput.handler(event, context):
+            for passed, output in StreamOutput.handler(event, self.context):
                 status = status and passed
                 service, descriptor = output.split(':')
                 message = 'sending alert to \'{}\''.format(descriptor)
@@ -367,8 +373,12 @@ class AlertProcessorTester(object):
             print '{}({}/{})\tAlert Tests Failed{}'.format(
                 COLOR_RED, failed_tests, total_tests, COLOR_RESET)
 
-    def setup_outputs(self, outputs, url_mock):
+    def setup_outputs(self, alert):
         """Helper function to handler any output setup"""
+        outputs = alert['metadata'].get('outputs', [])
+        # Patch the urllib2.urlopen event to override HTTPStatusCode, etc
+        url_mock = Mock()
+        patch('urllib2.urlopen', url_mock).start()
         for output in outputs:
             try:
                 service, descriptor = output.split(':')
@@ -443,47 +453,127 @@ def get_rule_test_files(filter_rules):
             yield rule_file, rule_name
 
 
-@mock_lambda
-@mock_sns
-@mock_s3
-@mock_kms
-def stream_alert_test(options):
-    """Integration testing entry point. This function is wrapped with multiple
-    moto mock decorators to override any boto3 calls. Wrapping this function
-    here allows us to mock out all calls that happen below this scope.
+def mock_me(context):
+    """Decorator function for wrapping framework in mock calls
+    for running local tests, and omitting mocks if testing live
 
     Args:
-        options: namedtuple of CLI options (debug, processor, etc)
+        context [namedtuple]: A constructed aws context object
     """
-    # Instantiate two status items - one for the rule processor
-    # and one for the alert processor
-    rp_status, ap_status = True, True
+    def wrap(func):
+        """Wrap the returned function with or without mocks"""
+        if context.mocked:
+            @mock_lambda
+            @mock_sns
+            @mock_s3
+            @mock_kms
+            def mocked(options, context):
+                """This function is now mocked using moto mock decorators to
+                override any boto3 calls. Wrapping this function here allows
+                us to mock out all calls that happen below this scope."""
+                return func(options, context)
+            return mocked
+        else:
+            def unmocked(options, context):
+                """This function will remain unmocked and operate normally"""
+                return func(options, context)
+            return unmocked
 
-    if options.debug:
-        LOGGER_SA.setLevel(logging.DEBUG)
-        LOGGER_CLI.setLevel(logging.DEBUG)
+    return wrap
+
+def get_context_from_config(config, cluster):
+    """Return a constructed context to be used for testing
+
+    Args:
+        config [CLIConfig]: Configuration for this StreamAlert setup that
+            includes cluster info, etc that can be used for constructing
+            an aws context object
+        cluster [str]: Name of the cluster to be used for live testing
+    """
+    context = namedtuple('aws_context', ['invoked_function_arn',
+                                         'function_name'
+                                         'mocked'])
+
+    # Return a mocked context if the cluster is not provided
+    # Otherwise construct the context from the config using the cluster
+    if not cluster:
+        context.invoked_function_arn = (
+            'arn:aws:lambda:us-east-1:0123456789012:'
+            'function:streamalert_alert_processor:production')
+        context.function_name = 'test_streamalert_alert_processor'
+        context.mocked = True
     else:
-        # Add a filter to suppress a few noisy log messages
-        LOGGER_SA.addFilter(TestingSuppressFilter())
+        prefix = config['global']['account']['prefix']
+        account = config['global']['account']['aws_account_id']
+        region = config['global']['account']['region']
+        function_name = '{}_{}_streamalert_alert_processor'.format(prefix, cluster)
+        arn = 'arn:aws:lambda:{}:{}:function:{}:testing'.format(
+            region, account, function_name)
 
-    test_alerts = options.processor == 'alert'
-    # See if the alert processor should be run for these tests
-    run_ap = test_alerts or options.processor == 'all'
-    rule_proc_tester = RuleProcessorTester(not test_alerts)
-    # Run the rule processor for all rules or designated rule set
-    for status, alerts in rule_proc_tester.test_processor(options.rules):
-        # If the alert processor should be tested, pass any alerts to it
-        # and store the status over time
+        context.invoked_function_arn = arn
+        context.function_name = function_name
+        context.mocked = False
+
+    return context
+
+def stream_alert_test(options, config):
+    """High level function to wrap the integration testing entry point.
+    This encapsulates the testing function and is used to specify if calls
+    should be mocked.
+
+    Args:
+        options [namedtuple]: CLI options (debug, processor, etc)
+        config [CLIConfig]: Configuration for this StreamAlert setup that
+            includes cluster info, etc that can be used for constructing
+            an aws context object
+    """
+    if options.live and options.live not in config.clusters():
+        LOGGER_CLI.error('Specified cluster \'%s\' does not exist '
+                         'in config', options.live)
+        return
+
+    context = get_context_from_config(config, options.live)
+
+    @mock_me(context)
+    def run_tests(options, context):
+        """Actual protected function for running tests
+
+        Args:
+            options [namedtuple]: CLI options (debug, processor, etc)
+            context [namedtuple]: A constructed aws context object
+        """
+        # Instantiate two status items - one for the rule processor
+        # and one for the alert processor
+        rp_status, ap_status = True, True
+
+        if options.debug:
+            LOGGER_SA.setLevel(logging.DEBUG)
+            LOGGER_CLI.setLevel(logging.DEBUG)
+        else:
+            # Add a filter to suppress a few noisy log messages
+            LOGGER_SA.addFilter(TestingSuppressFilter())
+
+        test_alerts = options.processor == 'alert'
+        # See if the alert processor should be run for these tests
+        run_ap = test_alerts or options.processor == 'all'
+        rule_proc_tester = RuleProcessorTester(not test_alerts)
+        # Run the rule processor for all rules or designated rule set
+        for status, alerts in rule_proc_tester.test_processor(options.rules):
+            # If the alert processor should be tested, pass any alerts to it
+            # and store the status over time
+            if run_ap:
+                # Update the overall alert processor status with the ongoing status
+                ap_status = AlertProcessorTester(
+                    context).test_processor(alerts) and ap_status
+
+            # Update the overall rule processor status with the ongoing status
+            rp_status = status and rp_status
+
+        # Report summary information for the alert processor if it was ran
         if run_ap:
-            # Update the overall alert processor status with the ongoing status
-            ap_status = AlertProcessorTester().test_processor(alerts) and ap_status
+            AlertProcessorTester.report_output_summary()
 
-        # Update the overall rule processor status with the ongoing status
-        rp_status = status and rp_status
+        if not (rp_status and ap_status):
+            sys.exit(1)
 
-    # Report summary information for the alert processor if it was ran
-    if run_ap:
-        AlertProcessorTester.report_output_summary()
-
-    if not (rp_status and ap_status):
-        sys.exit(1)
+    run_tests(options, context)
