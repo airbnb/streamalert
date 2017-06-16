@@ -38,8 +38,8 @@ Quick Start
 3. Define your `datasources <conf-datasources.html>`_
 4. Define your `schemas <conf-schemas.html>`_
 5. Configure your `kinesis stream/firehose <kinesis.html>`_
-7. Configure your `lambda settings <lambda.html>`_
-8. Write your `rules <rules.html>`_
-9. Configure your `outputs <outputs.html#configuration>`_
+6. Configure your `lambda settings <lambda.html>`_
+7. Write your `rules <rules.html>`_
+8. Configure your `outputs <outputs.html#configuration>`_
 
 Now it's time to `deploy <deployment.html>`_!
