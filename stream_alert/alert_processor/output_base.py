@@ -150,9 +150,9 @@ class StreamOutputBase(object):
 
             return True
         except ClientError as err:
-            LOGGER.error('credentials for %s could not be downloaded from S3: %s',
-                         self.output_cred_name(descriptor),
-                         err.response)
+            LOGGER.exception('credentials for \'%s\' could not be downloaded '
+                             'from S3: %s', self.output_cred_name(descriptor),
+                             err.response)
 
     def _kms_decrypt(self, data):
         """Decrypt data with AWS KMS.
@@ -205,9 +205,8 @@ class StreamOutputBase(object):
             resp = urllib2.urlopen(request, context=context)
             return resp
         except urllib2.HTTPError as err:
-            raise OutputRequestFailure('Failed to send to {} - [{}] {}'.format(err.url,
-                                                                               err.code,
-                                                                               err.read()))
+            raise OutputRequestFailure('Failed to send to {} - [{}]'.format(err.url,
+                                                                            err.code))
 
     @staticmethod
     def _check_http_response(resp):

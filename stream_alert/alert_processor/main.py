@@ -117,8 +117,9 @@ def run(loaded_sns_message, region, function_name, config):
         try:
             service, descriptor = output.split(':')
         except ValueError:
-            LOGGER.error('Outputs for rules must be declared with both a service and a '
-                         'descriptor for the integration (ie: \'slack:my_channel\')')
+            LOGGER.error('Improperly formatted output [%s]. Outputs for rules must '
+                         'be declared with both a service and a descriptor for the '
+                         'integration (ie: \'slack:my_channel\')', output)
             continue
 
         if not service in config or not descriptor in config[service]:
