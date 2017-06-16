@@ -84,7 +84,7 @@ class TestStreamRules(object):
     def test_alert_format(self):
         """Rule Engine - Alert Format"""
         @rule(logs=['test_log_type_json_nested_with_data'],
-              outputs=['s3:sample.bucket'])
+              outputs=['s3:sample_bucket'])
         def alert_format_test(rec):
             """'alert_format_test' docstring for testing rule_description"""
             return rec['application'] == 'web-app'
@@ -136,7 +136,7 @@ class TestStreamRules(object):
             return True
 
         @rule(logs=['test_log_type_json_nested_with_data'],
-              outputs=['s3:sample.bucket'])
+              outputs=['s3:sample_bucket'])
         def minimal_rule(rec):
             return rec['unixtime'] == 1483139547
 
@@ -181,7 +181,7 @@ class TestStreamRules(object):
 
         # alert 1 tests
         assert_equal(alerts[1]['metadata']['rule_name'], 'minimal_rule')
-        assert_equal(alerts[1]['metadata']['outputs'], ['s3:sample.bucket'])
+        assert_equal(alerts[1]['metadata']['outputs'], ['s3:sample_bucket'])
 
         # alert 0 tests
         assert_equal(alerts[0]['metadata']['rule_name'], 'test_nest')
@@ -190,13 +190,13 @@ class TestStreamRules(object):
     def test_process_req_subkeys(self):
         """Rule Engine - Req Subkeys"""
         @rule(logs=['test_log_type_json_nested'],
-              outputs=['s3:sample.bucket'],
+              outputs=['s3:sample_bucket'],
               req_subkeys={'data': ['location']})
         def data_location(rec):
             return rec['data']['location'].startswith('us')
 
         @rule(logs=['test_log_type_json_nested'],
-              outputs=['s3:sample.bucket'],
+              outputs=['s3:sample_bucket'],
               req_subkeys={'data': ['category']})
         def web_server(rec):
             return rec['data']['category'] == 'web-server'
@@ -244,7 +244,7 @@ class TestStreamRules(object):
     def test_syslog_rule(self):
         """Rule Engine - Syslog Rule"""
         @rule(logs=['test_log_type_syslog'],
-              outputs=['s3:sample.bucket'])
+              outputs=['s3:sample_bucket'])
         def syslog_sudo(rec):
             return (
                 rec['application'] == 'sudo' and

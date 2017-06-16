@@ -28,7 +28,7 @@ import boto3
 from botocore.exceptions import ClientError
 
 logging.basicConfig()
-LOGGER = logging.getLogger('StreamOutput')
+LOGGER = logging.getLogger('StreamAlertOutput')
 
 OutputProperty = namedtuple('OutputProperty',
                             'description, value, input_restrictions, mask_input, cred_requirement')
@@ -177,9 +177,11 @@ class StreamOutputBase(object):
             success [boolean]: Indicates if the dispatching of alerts was successful
         """
         if success:
-            LOGGER.info('successfully sent alert to %s', self.__service__)
+            LOGGER.info('Successfully sent alert to %s', self.__service__)
         else:
-            LOGGER.error('failed to send alert to %s', self.__service__)
+            LOGGER.error('Failed to send alert to %s', self.__service__)
+
+        return bool(success)
 
     @staticmethod
     def _request_helper(url, data, headers=None, verify=True):

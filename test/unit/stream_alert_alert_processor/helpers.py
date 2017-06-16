@@ -41,18 +41,6 @@ def _construct_event(count):
     return event
 
 
-def _encrypt_with_kms(client, data):
-    alias = 'alias/stream_alert_secrets_test'
-    client.create_alias(
-        AliasName=alias,
-        TargetKeyId='1234abcd-12ab-34cd-56ef-1234567890ab')
-
-    response = client.encrypt(KeyId=alias,
-                              Plaintext=data)
-
-    return response['CiphertextBlob']
-
-
 def _get_mock_context():
     """Create a fake context object using Mock"""
     arn = 'arn:aws:lambda:{}:555555555555:function:{}:production'
@@ -123,24 +111,3 @@ def _remove_temp_secrets():
     """"Blow away the stream_alert_secrets directory in temp"""
     secrets_dir = os.path.join(tempfile.gettempdir(), "stream_alert_secrets")
     shutil.rmtree(secrets_dir)
-
-
-def _put_mock_creds(output_name, creds, bucket):
-    """Helper function to mock encrypt creds and put on s3"""
-    creds_string = json.dumps(creds)
-
-    kms_client = boto3.client('kms', region_name=REGION)
-    enc_creds = _encrypt_with_kms(kms_client, creds_string)
-
-    s3_client = boto3.client('s3', region_name=REGION)
-    _put_s3_test_object(s3_client, bucket, output_name, enc_creds)
-
-
-def _put_s3_test_object(client, bucket, key, data):
-    client.create_bucket(Bucket=bucket)
-    client.put_object(
-        Body=data,
-        Bucket=bucket,
-        Key=key,
-        ServerSideEncryption='AES256'
-    )

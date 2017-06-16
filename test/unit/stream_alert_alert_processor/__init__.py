@@ -18,3 +18,4 @@ from stream_alert.alert_processor.main import _load_output_config
 REGION = 'us-east-1'
 FUNCTION_NAME = 'corp-prefix_prod_streamalert_alert_processor'
 CONFIG = _load_output_config('test/unit/conf/outputs.json')
+KMS_ALIAS = 'alias/stream_alert_secrets_test'
