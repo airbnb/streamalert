@@ -76,7 +76,7 @@ def lambda_handler(options):
         rollback(options)
 
     elif options.subcommand == 'test':
-        stream_alert_test(options)
+        stream_alert_test(options, CONFIG)
 
 
 def terraform_check():

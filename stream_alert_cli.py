@@ -123,6 +123,11 @@ def build_parser():
         help='Names of rules to test, separated by spaces'
     )
 
+    lambda_parser.add_argument(
+        '-l', '--live',
+        help='Run end-to-end tests in the specified cluster'
+    )
+
     # terraform parser and defaults
     tf_parser = subparsers.add_parser(
         'terraform',
