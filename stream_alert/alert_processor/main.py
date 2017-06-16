@@ -21,7 +21,7 @@ from collections import OrderedDict
 from stream_alert.alert_processor.outputs import get_output_dispatcher
 
 logging.basicConfig()
-LOGGER = logging.getLogger('StreamOutput')
+LOGGER = logging.getLogger('StreamAlertOutput')
 LOGGER.setLevel(logging.DEBUG)
 
 def handler(event, context):
@@ -33,6 +33,9 @@ def handler(event, context):
             contains a 'Message' key pointing to the alert payload that
             has been sent from the main StreamAlert Rule processor function
         context [AWSLambdaContext]: basically a namedtuple of properties from AWS
+
+    Returns:
+        [generator] yields back the current status to the caller
     """
     records = event.get('Records', [])
     LOGGER.info('Running alert processor for %d records', len(records))
@@ -58,11 +61,14 @@ def handler(event, context):
             continue
 
         if not 'default' in loaded_sns_message:
-            if not 'AlarmName' in loaded_sns_message:  # do not log for messages related to alarms
+            # do not log for messages related to alarms
+            if not 'AlarmName' in loaded_sns_message:
                 LOGGER.error('Malformed SNS: %s', loaded_sns_message)
             continue
 
-        run(loaded_sns_message, region, function_name, config)
+        # Yield back the current status to the caller
+        for status in run(loaded_sns_message, region, function_name, config):
+            yield status
 
 def run(loaded_sns_message, region, function_name, config):
     """Send an Alert to its described outputs.
@@ -94,6 +100,9 @@ def run(loaded_sns_message, region, function_name, config):
         region [string]: the AWS region being used
         function_name [string]: the name of the lambda function
         config [dict]: the loaded configuration for outputs from conf/outputs.json
+
+    Returns:
+        [generator] yields back dispatch status and name of the output to the handler
     """
     LOGGER.debug(loaded_sns_message)
     alert = loaded_sns_message['default']
@@ -124,13 +133,19 @@ def run(loaded_sns_message, region, function_name, config):
 
         LOGGER.debug('Sending alert to %s:%s', service, descriptor)
 
+        sent = False
         try:
-            output_dispatcher.dispatch(descriptor=descriptor,
-                                       rule_name=rule_name,
-                                       alert=alert)
+            sent = output_dispatcher.dispatch(descriptor=descriptor,
+                                              rule_name=rule_name,
+                                              alert=alert)
+
         except Exception as err:
-            LOGGER.error('An error occurred while sending alert to %s:%s: %s. alert:\n%s',
-                         service, descriptor, err, json.dumps(alert, indent=4))
+            LOGGER.exception('An error occurred while sending alert '
+                             'to %s:%s: %s. alert:\n%s', service, descriptor,
+                             err, json.dumps(alert, indent=2))
+
+        # Yield back the result to the handler
+        yield sent, output
 
 def _sort_dict(unordered_dict):
     """Recursively sort a dictionary
