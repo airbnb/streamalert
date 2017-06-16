@@ -294,6 +294,36 @@ To extract these nested records, use the ``configuration`` option ``json_path``:
     }
   }
 
+Log Patterns
+~~~~~~~~~~~~
+
+Log patterns provide the ability to differentiate log schemas that are identical or very close in nature. They can be added by
+using the ``configuration`` option ``log_patterns``. The value of ``log_patterns`` in the configuration should be a map, where the keys
+are strings and the values are an array of possible values to match on. The log parsers will compare the values provided as ``log_patterns``
+to the value contained in the field of the log corresponding to the key of the log pattern. This feature is especially helpful to reduce
+false positives. Wild card log patterns are supported using the ``*`` symbol, as shown in the example below::
+
+  {
+    "log_name": {
+      "schema": {
+        "process_id": "string",
+        "server_name": "string",
+        "timestamp": "float",
+        "hostname": "string",
+        "computer_name": "string",
+        "type": "string"
+      },
+      "parser": "json",
+      "configuration": {
+        "log_patterns": {
+          "type": [
+            "*real_bad_log_event*"
+          ]
+        }
+      }
+    }
+  }
+
 Envelope Keys
 ~~~~~~~~~~~~~
 
