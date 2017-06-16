@@ -17,14 +17,14 @@ If you're interested in demo'ing StreamAlert, you can create a hassle free-tier 
 account_id
 ~~~~~~~~~~
 
-Find your AWS Account ID by following these instructions: https://docs.aws.amazon.com/IAM/latest/UserGuide/console_account-alias.html
+Find your AWS Account ID by following these `instructions <https://docs.aws.amazon.com/IAM/latest/UserGuide/console_account-alias.html>`_.
 
-Open ``variables.json`` and set ``account_id`` to this value.
+Open ``conf/global.json`` and replace ``AWS_ACCOUNT_ID_GOES_HERE`` with this value.
 
 prefix
 ~~~~~~
 
-Open ``variables.json`` and set ``prefix`` to your company or organization name.
+Open ``conf/global.json`` and ``conf/lambda.json`` and replace ``PREFIX_GOES_HERE`` with your company or organization name.
 
 Administrator
 ~~~~~~~~~~~~~
@@ -39,7 +39,7 @@ Steps:
 * Access type: Programmatic access
 * Click: Next
 * Select: Attach existing policies directly
-* Attach the following policies:
+* Attach the following policies::
 
   * AmazonKinesisFirehoseFullAccess
   * AmazonKinesisFullAccess

@@ -6,10 +6,13 @@ For background on supported datasource types, read `datasources <datasources.htm
 Overview
 --------
 
-* Datasources defined in ``conf/sources.json`` control which datasources can send to and be analyzed by StreamAlert.
-* Each datasource (``kinesis``, ``s3``) contains a mapping of specific datasource names (kinesis stream names, s3 bucket IDs) along with a list of logs coming from that source.
-* Logs are defined in ``conf/logs.json``
-* Each log in the list of ``logs`` dictates to StreamAlert how to parse incoming data from that entity.  Data will only be analyzed if their type is defined here.
+Datasources defined in ``conf/sources.json`` control which datasources can send to and be analyzed by StreamAlert.
+
+Each datasource (``kinesis``, ``s3``, or ``sns``) contains a mapping of specific datasource names (kinesis stream names, s3 bucket IDs) along with a list of logs coming from that source.
+
+Log schemas are defined in ``conf/logs.json``
+
+Each log in the list of ``logs`` dictates to StreamAlert how to parse incoming data from that entity.  Data will only be analyzed if its type is defined here.
 
 Example::
 
@@ -41,6 +44,13 @@ Example::
           ]
         },
         ...
+      },
+      "sns": {
+        "abc_sns_topic": {
+          "logs": [
+            "logstash"
+          ]
+        }
       }
     }
 
