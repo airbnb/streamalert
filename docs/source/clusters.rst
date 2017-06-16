@@ -79,7 +79,7 @@ An example ``production`` cluster::
 Customizing Clusters
 ~~~~~~~~~~~~~~~~~~~~
 
-Each cluster can be broken up into multiple 'odules to make up a StreamAlert cluster.
+Each cluster can be broken up into multiple modules to make up a StreamAlert cluster.
 
 Each module corresponds to a Terraform module found in the ``terraform/modules`` directory, and serves a specific purpose in a StreamAlert cluster.
 
@@ -104,7 +104,7 @@ Module: CloudWatch Monitoring
 
 Amazon CloudWatch is a monitoring service for AWS cloud resources.
 
-To ensure a StreamAlert cluster is running properly, this module creates metric based alarms across various running services.
+To ensure a StreamAlert cluster is running properly, this module creates metric based alarms across all component services.  This ensures that ingesting, processing, and storage of data is operating normally.
 
 If any of the services cross a predefined threshold, an alarm is generated.
 
@@ -131,7 +131,7 @@ Template::
     "enabled": true
   }
 
-Module: Cloudtrail
+Module: CloudTrail
 ------------------
 
 AWS CloudTrail is a service that enables compliance, operational auditing, and risk auditing of your AWS account.

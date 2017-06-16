@@ -62,7 +62,7 @@ Key                  Required     Description
 ``timeout``          ``true``     The time (in seconds) the Lambda function is allowed to process an incoming record. The timeout can be set to any value between 1 and 300 seconds.
 ``memory``           ``true``     The amount of memory allocated for the Lambda function execution.
 ``current_version``  ``true``     The most current published version of the Lambda function.
-``outputs``          ``true``    A collection of S3 bucket Ids or AWS Lambda function names to configure as valid outputs.  By default, ``aws-s3`` should contain the bucket created by the ``stream_alert`` module: ``prefix.cluster.streamalerts``.  Optionally, if the alert processor needs to invoke other Lambda functions from within your AWS account, specify a list of function names.
+``outputs``          ``true``     A collection of S3 bucket IDs or AWS Lambda function names to configure as valid outputs.  By default, ``aws-s3`` should contain the bucket created by the ``stream_alert`` module: ``prefix.cluster.streamalerts``.  Optionally, if the alert processor needs to invoke other Lambda functions from within your AWS account, specify a list of function names.
 =============        =========    ======================
 
 vpc_config

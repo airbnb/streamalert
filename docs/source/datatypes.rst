@@ -7,7 +7,6 @@ JSON::
 
   {"type": "json"}
 
-
 CSV::
 
   csv,data,example
@@ -20,4 +19,4 @@ Syslog::
 
   Jun 15 00:00:40 host1.mydomain.io application[pid] syslog message.
 
-And gzipped JSON, CSV, Syslog or Key-Value (S3 only)
+And gzipped JSON, CSV, Syslog or Key-Value (only when ingested from S3)

@@ -59,8 +59,8 @@ Overview
 --------
 
 * StreamAlert supports using AWS Kinesis Firehose for storing incoming data into an S3 bucket; a separate S3 bucket is created for each `cluster <clusters.html>`_ you define
-* This can be utilized for long-term persistence, an audit trail, or historical search (soon)
-* Agents/code must send to both AWS Kinesis Streams and AWS Kinesis Firehose for this to work
+* This can be utilized for long-term persistence, an audit trail, or historical search (coming soon)
+* Agents/code must be configured to send to both AWS Kinesis Streams and AWS Kinesis Firehose for long term storage
 
 Limits
 ------
