@@ -73,56 +73,63 @@ For example, to replace a time based field with ``last_hour``::
     ]
   }
 
-  Running Tests
-  ~~~~~~~~~~~~~~~~~~~~~~~
 
-  To run integration tests for the rule processor::
+Running Tests
+~~~~~~~~~~~~~~
 
-    $ python stream_alert_cli.py lambda test --processor rule
+Tests can be run via the ``stream_alert_cli.py`` script. These tests include the ability to validate rules for
+accuracy and alert outputs for proper configuration.
 
-  To run integration tests for the alert processor::
+When adding new rules, it is only necessary to run tests for the **rule processor**. If making code changes to the alert
+processor, such as adding a new output integration to send alerts to, tests for the **alert processor** should also be performed.
 
-    $ python stream_alert_cli.py lambda test --processor rule
+To run integration tests for the **rule processor**::
 
-  To run end-to-end integration tests for both processors::
+  $ python stream_alert_cli.py lambda test --processor rule
 
-    $ python stream_alert_cli.py lambda test --processor all
+To run integration tests for the **alert processor**::
 
-  Integration tests can be restricted to specific rules to reduce time and output::
+  $ python stream_alert_cli.py lambda test --processor rule
 
-    $ python stream_alert_cli.py lambda test --processor all --rules <rule_01> <rule_02>
+To run end-to-end integration tests for **both processors**::
 
-  Integration tests for the alert processor (or end-to-end tests) can send live test alerts to
-  configured outputs for rules using a specified cluster::
+  $ python stream_alert_cli.py lambda test --processor all
 
-    $ python stream_alert_cli.py lambda test --processor all --live <cluster_name>
+Integration tests can be restricted to **specific rules** to reduce time and output::
 
-  Here is a sample command using the StreamAlert default configuration::
+  $ python stream_alert_cli.py lambda test --processor rule --rules <rule_01> <rule_02>
 
-    $ python stream_alert_cli.py lambda test --processor all --rules cloudtrail_critical_api
+Integration tests can send **live test alerts** to configured outputs for rules using a specified cluster.
+This can also be combined with an optional list of rules to use for tests (using the ``--rules`` argument)::
 
-  This will produce output similar to the following::
+  $ python stream_alert_cli.py live-test --cluster <cluster_name>
 
-    cloudtrail_put_bucket_acl
-    	[Pass]   [trigger=1]	rule	(kinesis): CloudTrail - PutBucketAcl - True Positive
-    	[Pass]              	alert	(phantom): sending alert to 'sample_integration'
-    	[Pass]              	alert	(slack): sending alert to 'sample_channel'
-    	[Pass]              	alert	(aws-lambda): sending alert to 'sample_lambda'
-    	[Pass]              	alert	(pagerduty): sending alert to 'sample_integration'
-    	[Pass]              	alert	(aws-s3): sending alert to 'sample_bucket'
-    	[Pass]   [trigger=0]	rule	(kinesis): CloudTrail - PutBucketAcl - False Positive
+Here is a sample command showing how to run tests against two rules included as integration tests in the default StreamAlert configuration::
 
-    cloudtrail_root_account
-    	[Pass]   [trigger=1]	rule	(kinesis): CloudTrail - Root Account Usage - True Positive
-    	[Pass]              	alert	(phantom): sending alert to 'sample_integration'
-    	[Pass]              	alert	(slack): sending alert to 'sample_channel'
-    	[Pass]              	alert	(aws-lambda): sending alert to 'sample_lambda'
-    	[Pass]              	alert	(pagerduty): sending alert to 'sample_integration'
-    	[Pass]              	alert	(aws-s3): sending alert to 'sample_bucket'
-    	[Pass]   [trigger=0]	rule	(kinesis): CloudTrail - Root Account Usage - False Positive
+  $ python stream_alert_cli.py lambda test --processor rule --rules cloudtrail_put_bucket_acl cloudtrail_root_account
+
+This will produce output similar to the following::
+
+  cloudtrail_put_bucket_acl
+  	[Pass]   [trigger=1]	rule	(kinesis): CloudTrail - PutBucketAcl - True Positive
+  	[Pass]              	alert	(phantom): sending alert to 'sample_integration'
+  	[Pass]              	alert	(slack): sending alert to 'sample_channel'
+  	[Pass]              	alert	(aws-lambda): sending alert to 'sample_lambda'
+  	[Pass]              	alert	(pagerduty): sending alert to 'sample_integration'
+  	[Pass]              	alert	(aws-s3): sending alert to 'sample_bucket'
+  	[Pass]   [trigger=0]	rule	(kinesis): CloudTrail - PutBucketAcl - False Positive
+
+  cloudtrail_root_account
+  	[Pass]   [trigger=1]	rule	(kinesis): CloudTrail - Root Account Usage - True Positive
+  	[Pass]              	alert	(phantom): sending alert to 'sample_integration'
+  	[Pass]              	alert	(slack): sending alert to 'sample_channel'
+  	[Pass]              	alert	(aws-lambda): sending alert to 'sample_lambda'
+  	[Pass]              	alert	(pagerduty): sending alert to 'sample_integration'
+  	[Pass]              	alert	(aws-s3): sending alert to 'sample_bucket'
+  	[Pass]   [trigger=0]	rule	(kinesis): CloudTrail - Root Account Usage - False Positive
 
 
 
-    (4/4)	Rule Tests Passed
-    (10/10)	Alert Tests Passed
-    StreamAlertCLI [INFO]: Completed
+  (4/4)	Rule Tests Passed
+  (10/10)	Alert Tests Passed
+  StreamAlertCLI [INFO]: Completed
