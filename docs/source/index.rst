@@ -63,7 +63,7 @@ Table of Contents
 
 .. toctree::
    :maxdepth: 2
-   :caption: Data Config Details
+   :caption: Data Config
 
    datasources
    conf-datasources
@@ -73,12 +73,11 @@ Table of Contents
 
 .. toctree::
    :maxdepth: 2
-   :caption: Infra Config Details
+   :caption: Infrastructure Config
 
    account
    clusters
-   kinesis-streams
-   kinesis-firehose
+   kinesis
    lambda
 
 .. _user_guide:
