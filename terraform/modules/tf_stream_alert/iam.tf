@@ -138,7 +138,7 @@ data "aws_iam_policy_document" "alert_processor_cloudwatch" {
 // Policy: Allow the Alert Processor to invoke Lambda functions
 resource "aws_iam_role_policy" "streamalert_alert_processor_lambda" {
   count = "${length(var.output_lambda_functions)}"
-  name  = "${var.prefix}_${var.cluster}_streamalert_alert_processor_lambda_${element(var.output_lambda_functions, count.index)}"
+  name  = "${var.prefix}_${var.cluster}_streamalert_alert_processor_lambda_${count.index}"
   role  = "${aws_iam_role.streamalert_alert_processor_role.id}"
 
   policy = <<EOF
@@ -160,7 +160,7 @@ EOF
 // Policy: Allow the Alert Processor to send to arbitrary S3 buckets as outputs
 resource "aws_iam_role_policy" "streamalert_alert_processor_s3_outputs" {
   count = "${length(var.output_s3_buckets)}"
-  name  = "${var.prefix}_${var.cluster}_streamalert_alert_processor_s3_output_${element(var.output_s3_buckets, count.index)}"
+  name  = "${var.prefix}_${var.cluster}_streamalert_alert_processor_s3_output_${count.index}"
   role  = "${aws_iam_role.streamalert_alert_processor_role.id}"
 
   policy = <<EOF
