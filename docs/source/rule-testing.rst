@@ -73,43 +73,56 @@ For example, to replace a time based field with ``last_hour``::
     ]
   }
 
-Running Tests
-~~~~~~~~~~~~~~~~~~~~~~~
+  Running Tests
+  ~~~~~~~~~~~~~~~~~~~~~~~
 
-To run integration tests::
+  To run integration tests for the rule processor::
 
-  $ ./test/scripts/rule_test.sh
+    $ python stream_alert_cli.py lambda test --processor rule
 
-This will produce output similar to the following::
+  To run integration tests for the alert processor::
 
-  invalid_subnet
-  	[Pass]	test (kinesis): user logging in from an untrusted subnet
-  	[Pass]	test (kinesis): user logging in from the trusted subnet
-  	[Pass]	test (s3): user logging in from an untrusted subnet
-  	[Pass]	test (s3): user logging in from the trusted subnet
+    $ python stream_alert_cli.py lambda test --processor rule
 
-  invalid_user
-  	[Pass]	test (kinesis): user not in the whitelist
-  	[Pass]	test (kinesis): user in the whitelist
-  	[Pass]	test (s3): user not in the whitelist
-  	[Pass]	test (s3): user in the whitelist
+  To run end-to-end integration tests for both processors::
 
-  sample_csv_rule
-  	[Pass]	test (kinesis): host is test-host-2
-  	[Pass]	test (s3): host is test-host-2
+    $ python stream_alert_cli.py lambda test --processor all
 
-  sample_json_rule
-  	[Pass]	test (kinesis): host is test-host-1
-  	[Pass]	test (s3): host is test-host-1
+  Integration tests can be restricted to specific rules to reduce time and output::
 
-  sample_kv_rule
-  	[Pass]	test (kinesis): fatal message from uid 100
-  	[Pass]	test (s3): fatal message from uid 100
+    $ python stream_alert_cli.py lambda test --processor all --rules <rule_01> <rule_02>
 
-  sample_kv_rule_last_hour
-  	[Pass]	test (kinesis): info message from uid 0 in the last hour
-  	[Pass]	test (s3): info message from uid 0 in the last hour
+  Integration tests for the alert processor (or end-to-end tests) can send live test alerts to
+  configured outputs for rules using a specified cluster::
 
-  sample_syslog_rule
-  	[Pass]	test (kinesis): sudo command ran
-  	[Pass]	test (s3): sudo command ran
+    $ python stream_alert_cli.py lambda test --processor all --live <cluster_name>
+
+  Here is a sample command using the StreamAlert default configuration::
+
+    $ python stream_alert_cli.py lambda test --processor all --rules cloudtrail_critical_api
+
+  This will produce output similar to the following::
+
+    cloudtrail_put_bucket_acl
+    	[Pass]   [trigger=1]	rule	(kinesis): CloudTrail - PutBucketAcl - True Positive
+    	[Pass]              	alert	(phantom): sending alert to 'sample_integration'
+    	[Pass]              	alert	(slack): sending alert to 'sample_channel'
+    	[Pass]              	alert	(aws-lambda): sending alert to 'sample_lambda'
+    	[Pass]              	alert	(pagerduty): sending alert to 'sample_integration'
+    	[Pass]              	alert	(aws-s3): sending alert to 'sample_bucket'
+    	[Pass]   [trigger=0]	rule	(kinesis): CloudTrail - PutBucketAcl - False Positive
+
+    cloudtrail_root_account
+    	[Pass]   [trigger=1]	rule	(kinesis): CloudTrail - Root Account Usage - True Positive
+    	[Pass]              	alert	(phantom): sending alert to 'sample_integration'
+    	[Pass]              	alert	(slack): sending alert to 'sample_channel'
+    	[Pass]              	alert	(aws-lambda): sending alert to 'sample_lambda'
+    	[Pass]              	alert	(pagerduty): sending alert to 'sample_integration'
+    	[Pass]              	alert	(aws-s3): sending alert to 'sample_bucket'
+    	[Pass]   [trigger=0]	rule	(kinesis): CloudTrail - Root Account Usage - False Positive
+
+
+
+    (4/4)	Rule Tests Passed
+    (10/10)	Alert Tests Passed
+    StreamAlertCLI [INFO]: Completed
