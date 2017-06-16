@@ -39,7 +39,7 @@ def generate_s3_bucket(**kwargs):
         'target_bucket': logging_bucket,
         'target_prefix': '{}/'.format(bucket_name)
     }
-    force_destroy = kwargs.get('force_destroy', True)
+    force_destroy = kwargs.get('force_destroy', False)
     versioning = kwargs.get('versioning', {'enabled': True})
     lifecycle_rule = kwargs.get('lifecycle_rule')
 
@@ -67,7 +67,7 @@ def generate_main(**kwargs):
     main_dict['provider']['aws'] = {}
 
     # Configure Terraform version requirement
-    main_dict['terraform']['required_version'] = '> 0.9.0'
+    main_dict['terraform']['required_version'] = '> 0.9.4'
 
     # Setup the Backend
     if init:
@@ -97,14 +97,14 @@ def generate_main(**kwargs):
     # Configure init S3 buckets
     main_dict['resource']['aws_s3_bucket'] = {
         'lambda_source': generate_s3_bucket(
-            bucket='{}.streamalert.source'.format(config['global']['account']['prefix']),
+            bucket=config['lambda']['rule_processor_config']['source_bucket'],
             logging=logging_bucket
         ),
         'stream_alert_secrets': generate_s3_bucket(
             bucket='{}.streamalert.secrets'.format(config['global']['account']['prefix']),
             logging=logging_bucket
         ),
-        'terraform_state': generate_s3_bucket(
+        'terraform_remote_state': generate_s3_bucket(
             bucket=config['global']['terraform']['tfstate_bucket'],
             logging=logging_bucket
         ),
@@ -163,10 +163,12 @@ def generate_cluster(**kwargs):
     # Add Alert Processor output config conditionally to the StreamAlert module
     output_config = modules['stream_alert']['alert_processor'].get('outputs')
     if output_config:
-        cluster_dict['module']['stream_alert_{}'.format(cluster_name)].update({
-            'output_lambda_functions': modules['stream_alert']['alert_processor']['outputs']['aws-lambda'],
-            'output_s3_buckets': modules['stream_alert']['alert_processor']['outputs']['aws-s3']
-        })
+        output_mapping = {'output_lambda_functions': 'aws-lambda', 'output_s3_buckets':'aws-s3'}
+        for tf_key, output in output_mapping.iteritems():
+            if output in output_config:
+                cluster_dict['module']['stream_alert_{}'.format(cluster_name)].update({
+                    tf_key: modules['stream_alert']['alert_processor']['outputs'][output]
+                })
 
     # Add Alert Processor input config conditionally to the StreamAlert module
     input_config = modules['stream_alert']['rule_processor'].get('inputs')
@@ -202,7 +204,9 @@ def generate_cluster(**kwargs):
         'account_id': account_id,
         'region': config['clusters'][cluster_name]['region'],
         'cluster_name': cluster_name,
-        'firehose_s3_bucket_name': '{}.{}.{}'.format(prefix, cluster_name, firehose_suffix),
+        'firehose_s3_bucket_name': '{}.{}.{}'.format(prefix,
+                                                     cluster_name.replace('_', '.'),
+                                                     firehose_suffix),
         'stream_name': '{}_{}_stream_alert_kinesis'.format(prefix, cluster_name),
         'firehose_name': '{}_{}_stream_alert_firehose'.format(prefix, cluster_name),
         'username': '{}_{}_stream_alert_user'.format(prefix, cluster_name),
