@@ -58,4 +58,3 @@ Frequently Asked Questions
 
 * This is on our `Roadmap <roadmap.html#historical-search>`_ . StreamAlert will utilize AWS Athena, a serverless, interactive query service that uses Presto. This will allow you to analyze your data using SQL for both ad-hoc and scheduled queries.
 
-
