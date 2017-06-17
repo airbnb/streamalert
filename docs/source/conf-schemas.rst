@@ -51,12 +51,25 @@ Options
 
 =============     ========     ======================
 Key               Required     Description
--------------     ---------    ----------
+-------------     --------     ----------------------
 ``parser``        ``true``     The name of the parser to use for a given log's data-type.   Options include ``json, json-gzip, csv, kv, or syslog``
 ``schema``        ``true``     A map of key/value pairs of the name of each field with its type
-``hints``         ``false``    A map of key/value pairs to assist in classification
-``configuration`` ``false``    Options for nested types, delimiters/separators, and more
+``configuration`` ``false``    Configuration options specific to this log type (see table below for more information)
 =============     =========    ======================
+
+Optional ``configuration`` Options
+----------------------------------
+
+=============                 ======================
+Key                           Description
+-------------                 ----------------------
+``optional_top_level_keys``   Keys that may or may not be present in a log being parsed
+``json_path``                 Path to nested records to be 'extracted' from within a JSON object
+``envelope_keys``             Used with nested records to identify keys that are at a higher level than the nested records, but still hold some value and should be stored
+``log_patterns``              Various patterns to enforce within a log given provided fields
+``delimiter``                 For use with key/value or csv logs to identify the delimiter character for the log
+``separator``                 For use with key/value logs to identify the separator character for the log
+=============                 ======================
 
 
 Writing Schemas
@@ -174,7 +187,9 @@ Optional Top Level Keys
 
 If incoming logs occasionally include/exclude certain fields, this can be expressed in the ``configuration`` settings as ``optional_top_level_keys``.
 
-If any of the ``optional_top_level_keys`` do not exist in the log, defaults are appended to the parsed log depending on the declared value.
+The value of ``optional_top_level_keys`` should be an array, with entries corresponding to the actual key in the schema that is optional. Any keys specified in this array should also be included in the defined schema.
+
+If any of the ``optional_top_level_keys`` do not exist in the log being parsed, defaults are appended to the parsed log depending on the declared value.
 
 Example Schema::
 
@@ -184,22 +199,24 @@ Example Schema::
       "key1": [],
       "key2": "string",
       "key3": "integer"
+      "key4": "boolean",
+      "key5": "string"
     },
     "configuration": {
-      "optional_top_level_keys": {
-        "key4": "boolean",
-        "key5": "string"
-      }
+      "optional_top_level_keys": [
+        "key4",
+        "key5"
+      ]
     }
   }
 
 Example logs before parsing::
-  
+
   '{"key1": [1, 2, 3], "key2": "test", "key3": 100}'
   '{"key1": [3, 4, 5], "key2": "test", "key3": 200, "key4": true}'
 
 Parsed logs::
-  
+
   [
     {
       'key1': [1, 2, 3],
@@ -290,6 +307,69 @@ To extract these nested records, use the ``configuration`` option ``json_path``:
     }
   }
 
+Log Patterns
+~~~~~~~~~~~~
+
+Log patterns provide the ability to differentiate log schemas that are identical or very close in nature.
+
+They can be added by using the ``configuration`` option ``log_patterns``.
+
+Log patterns are a collection of key/value pairs where the key is the name of the field, and the value is a list of
+expressions the log parser will search for in said field of the log. If *any* of the log patterns listed exists in
+a specific field, the parser will consider the data valid.
+
+This feature is especially helpful to reduce false positives, since it provides to ability to only match a schema if
+specific values are present in a log.
+
+Wild card log patterns are supported using the ``*`` or ``?`` symbols, as shown below::
+
+Example schema::
+
+  {
+    "log_name": {
+      "schema": {
+        "computer_name": "string",
+        "hostname": "string",
+        "instance_id": "string",
+        "process_id": "string",
+        "message": "string",
+        "timestamp": "float",
+        "type": "string"
+      },
+      "parser": "json",
+      "configuration": {
+        "log_patterns": {
+          "type": [
+            "*bad.log.type*"
+          ]
+        }
+      }
+    }
+  }
+
+Example logs::
+
+  {
+    "computer_name": "test-server-name",
+    "hostname": "okay_host",
+    "instance_id": "95909",
+    "process_id": "82571",
+    "message": "this is not important info"
+    "timestamp": "1427381694.88",
+    "type": "good.log.type.value"             # this will not match the configuration above
+  }
+
+  {
+    "computer_name": "fake-server-name",
+    "hostname": "bad_host",
+    "instance_id": "589891",
+    "process_id": "72491",
+    "message": "this is super important info",
+    "timestamp": "1486943917.12",
+    "type": "bad.log.type.value"              # this will match the configuration above
+  }
+
+
 Envelope Keys
 ~~~~~~~~~~~~~
 
@@ -333,7 +413,7 @@ The resultant parsed records::
         "id": 1431948983198,
         "application": "my-app"
       }
-    },
+    }
   ]
 
 Gzip JSON
@@ -356,13 +436,7 @@ Options
         "field": "type",
         ...
       },
-      "hints": {                   # Patterns that must exist in a field
-        "field": [                 
-          "expression1",
-          "expression2"
-        ]
-      },
-      "configuration": {           
+      "configuration": {
         "delimiter": ","           # Specify a custom delimiter
       }
     }
@@ -371,47 +445,6 @@ Options
 By default, the ``csv`` parser will use ``,`` as the delimiter.
 
 The ``configuration`` setting is optional.
-
-Hints
-~~~~~
-
-Because CSV data does non contain explicit keys (unlike JSON or KV), it is often necessary to search for an expression in the incoming record to determine its log type.
-
-To accomplish this, the ``csv`` parser uses ``hints``.
-
-Hints are a collection of key/value pairs where the key is the name of the field, and the value is a list of expressions to search for in data.
-
-If *any* of the hints exists in a specific field, the parser will consider the data valid.
-
-Example schema::
-
-  "example_csv_log_type": {
-    "parser": "csv",          
-    "schema": {
-      "time": "integer",      
-      "user": "string",
-      "message": "string"
-    },
-    "hints": {                # hints are used to aid in data classification
-      "user": [
-        "john_adams"          # user must be john_adams
-      ],
-      "message": [            # message must be "apple*" OR "*orange"
-        "apple*",
-        "*orange"
-      ]
-    }
-  },
-
-Example logs::
-
-  1485729127,john_adams,apple            # match: yes (john_adams, apple*)
-  1485729127,john_adams,apple tree       # match: yes (john_adams, apple*)
-  1485729127,john_adams,fuji apple       # match: no
-  1485729127,john_adams,orange           # match: yes (john_adams, *orange)
-  1485729127,john_adams,bright orange    # match: yes (john_adams, *orange)
-  1485729127,chris_doey,bright orange    # match: no
-  
 
 Nested CSV
 ~~~~~~~~~~
@@ -453,7 +486,7 @@ Options
         "field": "type",
         ...
       },
-      "configuration": {           
+      "configuration": {
         "delimiter": " "           # Specify a custom pair delimiter
         "separator": "="           # Specify a custom field separator
       }
@@ -467,9 +500,9 @@ The ``configuration`` setting is optional.
 Example schema::
 
   "example_kv_log_type": {
-    "parser": "kv",          
+    "parser": "kv",
     "schema": {
-      "time": "integer",      
+      "time": "integer",
       "user": "string",
       "result": "string"
     }
@@ -478,7 +511,7 @@ Example schema::
 Example log::
 
   "time=1039395819 user=bob result=pass"
-  
+
 Syslog Parsing
 --------------
 
@@ -497,7 +530,7 @@ Options
     }
   }
 
-The ``syslog`` parser has no ``configuration`` options.  
+The ``syslog`` parser has no ``configuration`` options.
 
 The schema is also static for this parser because of the regex used to parse records.
 
