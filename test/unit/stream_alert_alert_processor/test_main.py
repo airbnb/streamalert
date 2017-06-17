@@ -34,42 +34,26 @@ from unit.stream_alert_alert_processor import (
 from unit.stream_alert_alert_processor.helpers import _get_mock_context
 
 
-@patch('logging.Logger.error')
-def test_handler_malformed_message(log_mock):
-    """Main handler decode failure logging"""
-    # The @patch() decorator allows us to 'introspect' what occurs down the chain
-    # and verify the params a function was LAST called with. For instance, here
-    # we are checking the last call to `logging.Logger.error` and verifying that the
-    # function was called with two params, the first being 'Malformed SNS: %s' and
-    # the second being the dictionary contained within `message`
-    # This call should happen at stream_alert/alert_processor/main.py:62
-    context = _get_mock_context()
-    message = {'not_default': {'record': {'size': '9982'}}}
-    event = {'Records': [{'Sns': {'Message': json.dumps(message)}}]}
-    handler(event, context)
-
-    log_mock.assert_called_with('Malformed SNS: %s', message)
-
-
-@patch('logging.Logger.error')
-def test_handler_bad_message(log_mock):
-    """Main handler decode failure logging"""
-    context = _get_mock_context()
-    event = {'Records': [{'Sns': {'Message': 'this\nvalue\nshould\nfail\nto\ndecode'}}]}
-    handler(event, context)
-
-    assert_equal(str(log_mock.call_args_list[0]),
-                 str(call('An error occurred while decoding message to JSON: %s',
-                          ValueError('No JSON object could be decoded',))))
-
-
 @patch('stream_alert.alert_processor.main.run')
 def test_handler_run(run_mock):
     """Main handler `run` call params"""
     context = _get_mock_context()
-    message = {'default': {'record': {'size': '9982'}}}
-    event = {'Records': [{'Sns': {'Message': json.dumps(message)}}]}
-    handler(event, context)
+    message = {
+        'record': {'value': 'data'},
+        'metadata': {
+            'rule_name': 'rule_name',
+            'rule_description': 'rule_description',
+            'log': 'log_source',
+            'outputs': ['rule:output01', 'rule:output02'],
+            'type': 'payload.type',
+            'source': {
+                'service': 'payload.service',
+                'entity': 'payload.entity'
+            }
+        }
+    }
+    for _ in handler(message, context):
+        pass
 
     # This test will load the actual config, so we should compare the
     # function call against the same config here.

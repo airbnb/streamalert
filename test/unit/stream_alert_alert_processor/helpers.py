@@ -36,7 +36,7 @@ def _construct_event(count):
     event = {'Records': []}
     for index in range(count):
         event['Records'] = event['Records'] + \
-            [{'Sns': {'Message': json.dumps(_get_sns_message(index))}}]
+            [{'Sns': {'Message': json.dumps(_get_alert(index))}}]
 
     return event
 
@@ -76,33 +76,31 @@ def _get_random_alert(key_count, rule_name, omit_rule_desc=False):
     return alert
 
 
-def _get_sns_message(index):
+def _get_alert(index=0):
     return {
-        'default': {
-            'record': {
-                'test_index': index,
-                'compressed_size': '9982',
-                'timestamp': '1496947381.18',
-                'node_id': '1',
-                'cb_server': 'cbserver',
-                'size': '21504',
-                'type': 'binarystore.file.added',
-                'file_path': '/tmp/5DA/AD8/0F9AA55DA3BDE84B35656AD8911A22E1.zip',
-                'md5': '0F9AA55DA3BDE84B35656AD8911A22E1'
+        'record': {
+            'test_index': index,
+            'compressed_size': '9982',
+            'timestamp': '1496947381.18',
+            'node_id': '1',
+            'cb_server': 'cbserver',
+            'size': '21504',
+            'type': 'binarystore.file.added',
+            'file_path': '/tmp/5DA/AD8/0F9AA55DA3BDE84B35656AD8911A22E1.zip',
+            'md5': '0F9AA55DA3BDE84B35656AD8911A22E1'
+        },
+        'metadata': {
+            'log': 'carbonblack:binarystore.file.added',
+            'rule_name': 'cb_binarystore_file_added',
+            'outputs': [
+                'slack:unit_test_channel'
+            ],
+            'source': {
+                'service': 's3',
+                'entity': 'corp-prefix.prod.cb.region'
             },
-            'metadata': {
-                'log': 'carbonblack:binarystore.file.added',
-                'rule_name': 'cb_binarystore_file_added',
-                'outputs': [
-                    'slack:unit_test_channel'
-                ],
-                'source': {
-                    'service': 's3',
-                    'entity': 'corp-prefix.prod.cb.region'
-                },
-                'type': 'json',
-                'rule_description': 'Info about this rule and what actions to take'
-            }
+            'type': 'json',
+            'rule_description': 'Info about this rule and what actions to take'
         }
     }
 

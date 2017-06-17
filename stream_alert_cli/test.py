@@ -337,11 +337,15 @@ class AlertProcessorTester(object):
         # Set the logger level to info so its not too noisy
         StreamOutput.LOGGER.setLevel(logging.ERROR)
         for alert in alerts:
-            # Establish the mocked outputs if the context is being mocked
-            if self.context.mocked:
-                self.setup_outputs(alert)
-            event = {'Records': [{'Sns': {'Message': json.dumps({'default': alert})}}]}
-            for passed, output in StreamOutput.handler(event, self.context):
+            outputs = alert['metadata'].get('outputs', [])
+            self.setup_outputs(outputs, url_mock)
+            event = json.dumps(alert)
+            context = Mock()
+            context.invoked_function_arn = (
+                'arn:aws:lambda:us-east-1:0123456789012:'
+                'function:streamalert_alert_processor:production')
+            context.function_name = 'test_streamalert_alert_processor'
+            for passed, output in StreamOutput.handler(event, context):
                 status = status and passed
                 service, descriptor = output.split(':')
                 message = 'sending alert to \'{}\''.format(descriptor)
