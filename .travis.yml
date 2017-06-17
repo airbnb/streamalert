@@ -10,3 +10,5 @@ install:
 script:
   - ./test/scripts/unit_tests.sh
   - ./stream_alert_cli.py lambda test --processor all
+after_success:
+  coveralls

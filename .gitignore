@@ -15,6 +15,9 @@ Thumbs.db
 *.swp
 terminal.glue
 
+# Coveralls repo token
+.coveralls.yml
+
 # nose coverage file
 .coverage
 

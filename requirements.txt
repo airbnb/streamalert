@@ -6,6 +6,7 @@ boto3==1.4.4
 botocore==1.5.19
 colorama==0.3.3
 coverage==4.3.4
+coveralls==1.1
 decorator==4.0.11
 docutils==0.13.1
 extras==1.0.0
