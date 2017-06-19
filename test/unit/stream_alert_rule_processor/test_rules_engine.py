@@ -174,18 +174,16 @@ class TestStreamRules(object):
 
         # check alert output
         assert_equal(len(alerts), 3)
+        rule_outputs_map = {
+            'chef_logs': ['pagerduty:sample_integration'],
+            'minimal_rule': ['s3:sample_bucket'],
+            'test_nest': ['pagerduty:sample_integration']
+        }
+        # doing this because after kinesis_data is read in, types are casted per the schema
+        for alert in alerts:
+            assert_equal(set(alert['record'].keys()), set(kinesis_data.keys()))
+            assert_equal(alert['metadata']['outputs'], rule_outputs_map[alert['metadata']['rule_name']])
 
-        # alert 2 tests
-        assert_equal(alerts[2]['metadata']['rule_name'], 'chef_logs')
-        assert_equal(alerts[2]['metadata']['outputs'], ['pagerduty:sample_integration'])
-
-        # alert 1 tests
-        assert_equal(alerts[1]['metadata']['rule_name'], 'minimal_rule')
-        assert_equal(alerts[1]['metadata']['outputs'], ['s3:sample_bucket'])
-
-        # alert 0 tests
-        assert_equal(alerts[0]['metadata']['rule_name'], 'test_nest')
-        assert_equal(alerts[0]['metadata']['outputs'], ['pagerduty:sample_integration'])
 
     def test_process_req_subkeys(self):
         """Rule Engine - Req Subkeys"""

@@ -23,7 +23,7 @@ from getpass import getpass
 
 from stream_alert_cli.package import RuleProcessorPackage, AlertProcessorPackage
 from stream_alert_cli.test import stream_alert_test
-from stream_alert_cli.helpers import CLIHelpers
+from stream_alert_cli import helpers
 from stream_alert_cli.config import CLIConfig
 from stream_alert_cli.logger import LOGGER_CLI
 from stream_alert_cli.version import LambdaVersion
@@ -199,7 +199,7 @@ def terraform_handler(options):
 
 def run_command(args=None, **kwargs):
     """Alias to CLI Helpers.run_command"""
-    return CLIHelpers.run_command(args, **kwargs)
+    return helpers.run_command(args, **kwargs)
 
 
 def continue_prompt():

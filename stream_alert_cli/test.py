@@ -14,7 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 
-import base64
 import json
 import logging
 import os
@@ -36,8 +35,9 @@ from stream_alert_cli.helpers import (
     _put_mock_s3_object
 )
 
-from stream_alert_cli.outputs import load_outputs_config
+from stream_alert_cli import helpers
 from stream_alert_cli.logger import LOGGER_CLI, LOGGER_SA
+from stream_alert_cli.outputs import load_outputs_config
 
 # import all rules loaded from the main handler
 # pylint: disable=unused-import
@@ -45,7 +45,6 @@ import stream_alert.rule_processor.main
 # pylint: enable=unused-import
 
 DIR_RULES = 'test/integration/rules'
-DIR_TEMPLATES = 'test/integration/templates'
 COLOR_RED = '\033[0;31;1m'
 COLOR_YELLOW = '\033[0;33;1m'
 COLOR_GREEN = '\033[0;32;1m'
@@ -133,7 +132,7 @@ class RuleProcessorTester(object):
                 alerts, expected_alerts = self.test_rule(
                     rule_name,
                     test_record,
-                    self.format_record(test_record))
+                    helpers.format_lambda_test_record(test_record))
 
                 current_test_passed = len(alerts) == expected_alerts
 
@@ -305,77 +304,6 @@ class RuleProcessorTester(object):
                   if alert['metadata']['rule_name'] == rule_name]
 
         return alerts, expected_alert_count
-
-    @staticmethod
-    def format_record(test_record):
-        """Create a properly formatted Kinesis, S3, or SNS record.
-
-        Supports a dictionary or string based data record.  Reads in
-        event templates from the test/integration/templates folder.
-
-        Args:
-            test_record: Test record metadata dict with the following structure:
-                data - string or dict of the raw data
-                description - a string describing the test that is being performed
-                trigger - bool of if the record should produce an alert
-                source - which stream/s3 bucket originated the data
-                service - which aws service originated the data
-                compress (optional) - if the payload needs to be gzip compressed or not
-
-        Returns:
-            dict in the format of the specific service
-        """
-        service = test_record['service']
-        source = test_record['source']
-        compress = test_record.get('compress')
-
-        data_type = type(test_record['data'])
-        if data_type == dict:
-            data = json.dumps(test_record['data'])
-        elif data_type in (unicode, str):
-            data = test_record['data']
-        else:
-            LOGGER_CLI.info('Invalid data type: %s', type(test_record['data']))
-            return
-
-        # Get the template file for this particular service
-        template_path = os.path.join(DIR_TEMPLATES, '{}.json'.format(service))
-        with open(template_path, 'r') as service_template:
-            try:
-                template = json.load(service_template)
-            except ValueError as err:
-                LOGGER_CLI.error('Error loading %s.json: %s', service, err)
-                return
-
-        if service == 's3':
-            # Set the S3 object key to a random value for testing
-            test_record['key'] = ('{:032X}'.format(random.randrange(16**32)))
-            template['s3']['object']['key'] = test_record['key']
-            template['s3']['object']['size'] = len(data)
-            template['s3']['bucket']['arn'] = 'arn:aws:s3:::{}'.format(source)
-            template['s3']['bucket']['name'] = source
-
-            # Create the mocked s3 object in the designated bucket with the random key
-            _put_mock_s3_object(source, test_record['key'], data, 'us-east-1')
-
-        elif service == 'kinesis':
-            if compress:
-                kinesis_data = base64.b64encode(zlib.compress(data))
-            else:
-                kinesis_data = base64.b64encode(data)
-
-            template['kinesis']['data'] = kinesis_data
-            template['eventSourceARN'] = 'arn:aws:kinesis:us-east-1:111222333:stream/{}'.format(
-                source)
-
-        elif service == 'sns':
-            template['Sns']['Message'] = data
-            template['EventSubscriptionArn'] = 'arn:aws:sns:us-east-1:111222333:{}'.format(
-                source)
-        else:
-            LOGGER_CLI.info('Invalid service %s', service)
-
-        return template
 
 
 class AlertProcessorTester(object):
