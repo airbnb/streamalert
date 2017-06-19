@@ -58,6 +58,9 @@ def cli_runner(options):
     elif options.command == 'lambda':
         lambda_handler(options)
 
+    elif options.command == 'live-test':
+        stream_alert_test(options, CONFIG)
+
     elif options.command == 'terraform':
         terraform_handler(options)
 
@@ -76,7 +79,7 @@ def lambda_handler(options):
         rollback(options)
 
     elif options.subcommand == 'test':
-        stream_alert_test(options, CONFIG)
+        stream_alert_test(options)
 
 
 def terraform_check():

@@ -24,6 +24,7 @@ To run terraform by hand, change to the terraform directory and run:
 
 terraform <cmd> -var-file=../terraform.tfvars -var-file=../variables.json
 '''
+import os
 
 from argparse import ArgumentParser, RawTextHelpFormatter
 
@@ -44,11 +45,12 @@ def build_parser():
     stream_alert_cli.py lambda deploy --processor 'all'
 
     Rolling Back:
-    stream_alert_cli.py lambda rollback --func 'rule'
+    stream_alert_cli.py lambda rollback --processor 'rule'
 
     Running Integration Tests:
     stream_alert_cli.py lambda test --processor 'rule'
     stream_alert_cli.py lambda test --processor 'alert'
+    stream_alert_cli.py lambda test --processor 'all'
 
     Building Infrastructure:
     stream_alert_cli.py terraform init
@@ -70,9 +72,9 @@ def build_parser():
         'output',
         help='Define a new output to send alerts to'
     )
-    output_parser.set_defaults(
-        command='output'
-    )
+
+    # set the name of this parser to 'output'
+    output_parser.set_defaults(command='output')
 
     # output parser arguments. the cli will handle the logic to set these up
     output_parser.add_argument(
@@ -88,44 +90,80 @@ def build_parser():
         required=True
     )
 
-    # lambda parser and defaults
+    # live-test parser
+    live_test_parser = subparsers.add_parser(
+        'live-test',
+        help='Run end-to-end tests that will attempt to send alerts'
+    )
+
+    # set the name of this parser to 'live-test'
+    live_test_parser.set_defaults(command='live-test')
+
+    # get cluster choices from available files
+    clusters = []
+    for _, _, files in os.walk('conf/clusters'):
+        clusters.extend(os.path.splitext(cluster)[0] for cluster in files)
+
+    # add clusters for user to pick from
+    live_test_parser.add_argument(
+        '-c', '--cluster',
+        choices=clusters,
+        help='Specific cluster to use for live testing',
+        required=True
+    )
+
+    # add the optional ability to test against a rule/set of rules
+    live_test_parser.add_argument(
+        '-r', '--rules',
+        nargs='+',
+        help='Names of rules to test, separated by spaces'
+    )
+
+    # allow verbose output for the CLI with te --debug option
+    live_test_parser.add_argument(
+        '--debug',
+        action='store_true',
+        help='Enable DEBUG logger output'
+    )
+
+    # lambda parser
     lambda_parser = subparsers.add_parser(
         'lambda',
         help='Deploy, Rollback, and Test StreamAlert Lambda functions'
     )
-    lambda_parser.set_defaults(
-        command='lambda'
-    )
 
-    # lambda parser arguments
+    # set the name of this parser to 'lambda'
+    lambda_parser.set_defaults(command='lambda')
+
+    # add subcommand options for the lambda sub-parser
     lambda_parser.add_argument(
         'subcommand',
         choices=['deploy', 'rollback', 'test'],
-        help=('Deploy: Build Lambda package, upload to S3, and deploy with Terraform\n'
-              'Rollback: Roll a Lambda function back by one production vpersion\n'
-              'Test: Run integration tests on a Lambda function')
+        help=('deploy: Build Lambda package, upload to S3, and deploy with Terraform\n'
+              'rollback: Roll a Lambda function back by one production vpersion\n'
+              'test: Run integration tests on a Lambda function')
     )
+
+    # require the name of the processor being deployed/rolled back/tested
     lambda_parser.add_argument(
         '--processor',
         choices=['alert', 'all', 'rule'],
-        help='The name of the AWS Lambda function to deploy',
+        help='The name of the AWS Lambda function to deploy, rollback, or test',
         required=True
     )
+
+    # allow verbose output for the CLI with te --debug option
     lambda_parser.add_argument(
         '--debug',
         action='store_true',
         help='Enable DEBUG logger output'
     )
 
+    # add the optional ability to test against a rule/set of rules
     lambda_parser.add_argument(
         '-r', '--rules',
         nargs='+',
         help='Names of rules to test, separated by spaces'
-    )
-
-    lambda_parser.add_argument(
-        '-l', '--live',
-        help='Run end-to-end tests in the specified cluster'
     )
 
     # terraform parser and defaults
@@ -133,10 +171,16 @@ def build_parser():
         'terraform',
         help='Build the stream alert infrastructure'
     )
+
+    # set the name of this parser to 'terraform'
+    tf_parser.set_defaults(command='terraform')
+
+    # add subcommand options for the terraform sub-parser
     tf_parser.add_argument(
         'subcommand',
         choices=['build', 'destroy', 'init', 'init-backend', 'generate', 'status']
     )
+
     tf_parser.add_argument(
         '--target',
         choices=['stream_alert', 'kinesis', 'kinesis_events', 's3_events',
@@ -144,7 +188,6 @@ def build_parser():
         help='A specific Terraform module to build',
         nargs='?'
     )
-    tf_parser.set_defaults(command='terraform')
 
     return parser
 

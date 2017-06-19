@@ -30,8 +30,9 @@ from moto import mock_lambda, mock_kms, mock_s3, mock_sns
 from stream_alert.alert_processor import main as StreamOutput
 from stream_alert.rule_processor.handler import StreamAlert
 from stream_alert_cli import helpers
-from stream_alert_cli.logger import LOGGER_CLI, LOGGER_SA
+from stream_alert_cli.logger import LOGGER_CLI, LOGGER_SA, LOGGER_SO
 from stream_alert_cli.outputs import load_outputs_config
+
 
 # import all rules loaded from the main handler
 # pylint: disable=unused-import
@@ -481,14 +482,14 @@ def mock_me(context):
 
     return wrap
 
-def get_context_from_config(config, cluster):
+def get_context_from_config(cluster, config):
     """Return a constructed context to be used for testing
 
     Args:
+        cluster [str]: Name of the cluster to be used for live testing
         config [CLIConfig]: Configuration for this StreamAlert setup that
             includes cluster info, etc that can be used for constructing
             an aws context object
-        cluster [str]: Name of the cluster to be used for live testing
     """
     context = namedtuple('aws_context', ['invoked_function_arn',
                                          'function_name'
@@ -516,7 +517,7 @@ def get_context_from_config(config, cluster):
 
     return context
 
-def stream_alert_test(options, config):
+def stream_alert_test(options, config=None):
     """High level function to wrap the integration testing entry point.
     This encapsulates the testing function and is used to specify if calls
     should be mocked.
@@ -527,12 +528,9 @@ def stream_alert_test(options, config):
             includes cluster info, etc that can be used for constructing
             an aws context object
     """
-    if options.live and options.live not in config.clusters():
-        LOGGER_CLI.error('Specified cluster \'%s\' does not exist '
-                         'in config', options.live)
-        return
-
-    context = get_context_from_config(config, options.live)
+    # get the options in a dictionary so we can do easy lookups
+    run_options = vars(options)
+    context = get_context_from_config(run_options.get('cluster'), config)
 
     @mock_me(context)
     def run_tests(options, context):
@@ -548,20 +546,26 @@ def stream_alert_test(options, config):
 
         if options.debug:
             LOGGER_SA.setLevel(logging.DEBUG)
+            LOGGER_SO.setLevel(logging.DEBUG)
             LOGGER_CLI.setLevel(logging.DEBUG)
         else:
             # Add a filter to suppress a few noisy log messages
             LOGGER_SA.addFilter(TestingSuppressFilter())
 
-        test_alerts = options.processor == 'alert'
-        # See if the alert processor should be run for these tests
-        run_ap = test_alerts or options.processor == 'all'
-        rule_proc_tester = RuleProcessorTester(not test_alerts)
+        # Check if the rule processor should be run for these tests
+        test_rules = (run_options.get('processor') in {'rule', 'all'} or
+                      run_options.get('command') == 'live-test')
+
+        # Check if the alert processor should be run for these tests
+        test_alerts = (run_options.get('processor') in {'alert', 'all'} or
+                       run_options.get('command') == 'live-test')
+
+        rule_proc_tester = RuleProcessorTester(test_rules)
         # Run the rule processor for all rules or designated rule set
         for status, alerts in rule_proc_tester.test_processor(options.rules):
             # If the alert processor should be tested, pass any alerts to it
             # and store the status over time
-            if run_ap:
+            if test_alerts:
                 # Update the overall alert processor status with the ongoing status
                 ap_status = AlertProcessorTester(
                     context).test_processor(alerts) and ap_status
@@ -570,7 +574,7 @@ def stream_alert_test(options, config):
             rp_status = status and rp_status
 
         # Report summary information for the alert processor if it was ran
-        if run_ap:
+        if test_alerts:
             AlertProcessorTester.report_output_summary()
 
         if not (rp_status and ap_status):
