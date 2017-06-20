@@ -18,14 +18,28 @@ limitations under the License.
 # specific test: nosetests -v -s test/unit/file.py:TestStreamPayload.test_name
 
 from collections import namedtuple
+from mock import mock_open, patch
 
 from nose.tools import assert_equal, raises
 
 from stream_alert.rule_processor.config import (
     ConfigError,
+    load_config,
+    load_env,
     validate_config,
-    load_env
 )
+
+@raises(ConfigError)
+def test_load_config_invalid():
+    """Config Validator - Load Config - Invalid"""
+    m = mock_open()
+    with patch('__builtin__.open', m, create=True):
+        with open('conf/logs.json', 'w') as conf_logs:
+            conf_logs.write('test logs string that will throw an error')
+        with open('conf/sources.json', 'w') as conf_sources:
+            conf_sources.write('test sources string that will throw an error')
+        config = load_config()
+
 
 def test_validate_config_valid():
     """Config Validator - Valid Config"""
@@ -60,9 +74,10 @@ def test_validate_config_valid():
     validate_result = validate_config(config)
     assert_equal(validate_result, True)
 
+
 @raises(ConfigError)
 def test_validate_config_no_parsers():
-    """Config Validator - No Parsers"""
+    """Config Validator - No Parsers in Log"""
     config = {
         'logs': {
             'json_log': {
@@ -91,9 +106,10 @@ def test_validate_config_no_parsers():
 
     validate_config(config)
 
+
 @raises(ConfigError)
-def test_validate_config_no_logs():
-    """Config Validator - No Logs"""
+def test_validate_config_no_logs_key():
+    """Config Validator - No Logs Key in Source"""
     config = {
         'logs': {
             'json_log': {
@@ -117,8 +133,65 @@ def test_validate_config_no_logs():
 
     validate_config(config)
 
+
+@raises(ConfigError)
+def test_validate_config_empty_logs_list():
+    """Config Validator - Empty Logs List in Source"""
+    config = {
+        'logs': {
+            'json_log': {
+                'schema': {
+                    'name': 'string'
+                }
+            },
+            'csv_log': {
+                'schema': {
+                    'data': 'string',
+                    'uid': 'integer'
+                }
+            }
+        },
+        'sources': {
+            'kinesis': {
+                'stream_1': {
+                    'logs': []
+                }
+            }
+        }
+    }
+
+    validate_config(config)
+
+
+@raises(ConfigError)
+def test_validate_config_invalid_datasources():
+    """Config Validator - Invalid Datasources"""
+    config = {
+        'logs': {
+            'json_log': {
+                'schema': {
+                    'name': 'string'
+                }
+            },
+            'csv_log': {
+                'schema': {
+                    'data': 'string',
+                    'uid': 'integer'
+                }
+            }
+        },
+        'sources': {
+            'sqs': {
+                'queue_1': {}
+            }
+        }
+    }
+
+    validate_config(config)
+
+
 def test_load_env():
-    """Config Environment Validator"""
+    """Config - Environment Loader"""
     context = namedtuple('Context', ['invoked_function_arn'])
     context.invoked_function_arn = ('arn:aws:lambda:us-east-1:555555555555:'
                                     'function:streamalert_testing:production')
@@ -128,3 +201,14 @@ def test_load_env():
     assert_equal(env['account_id'], '555555555555')
     assert_equal(env['lambda_function_name'], 'streamalert_testing')
     assert_equal(env['lambda_alias'], 'production')
+
+
+def test_load_env_development():
+    """Config - Load Development Environment"""
+    env = load_env(None)
+
+    assert_equal(env['lambda_alias'], 'development')
+    assert_equal(env['lambda_function_name'], 'test_streamalert_rule_processor')
+    assert_equal(env['lambda_region'], 'us-east-1')
+    assert_equal(env['account_id'], '123456789012')
+
