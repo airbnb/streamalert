@@ -89,7 +89,7 @@ To run integration tests for the **rule processor**::
 
 To run integration tests for the **alert processor**::
 
-  $ python stream_alert_cli.py lambda test --processor rule
+  $ python stream_alert_cli.py lambda test --processor alert
 
 To run end-to-end integration tests for **both processors**::
 
