@@ -38,7 +38,7 @@ def test_load_config_invalid():
             conf_logs.write('test logs string that will throw an error')
         with open('conf/sources.json', 'w') as conf_sources:
             conf_sources.write('test sources string that will throw an error')
-        config = load_config()
+        load_config()
 
 
 def test_validate_config_valid():

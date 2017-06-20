@@ -353,11 +353,11 @@ def generate_flow_logs(cluster_name, cluster_dict, config):
             'source': 'modules/tf_stream_alert_flow_logs',
             'destination_stream_arn': '${{module.kinesis_{}.arn}}'.format(cluster_name),
             'flow_log_group_name': modules['flow_logs']['log_group_name']}
-        for input in ('vpcs', 'subnets', 'enis'):
-            input_data = modules['flow_logs'].get(input)
+        for flow_log_input in ('vpcs', 'subnets', 'enis'):
+            input_data = modules['flow_logs'].get(flow_log_input)
             if input_data:
                 cluster_dict['module']['flow_logs_{}'.format(
-                    cluster_name)][input] = input_data
+                    cluster_name)][flow_log_input] = input_data
 
 
 def generate_s3_events(cluster_name, cluster_dict, config):

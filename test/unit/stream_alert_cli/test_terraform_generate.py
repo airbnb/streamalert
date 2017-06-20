@@ -17,23 +17,13 @@ limitations under the License.
 import base64
 import json
 
-from nose.tools import assert_equal, assert_not_equal
+from nose.tools import assert_equal
 
 from stream_alert_cli import terraform_generate
 
 
 class TestTerraformGenerate(object):
     """Test class for the Terraform Cluster Generating"""
-
-    @classmethod
-    def setup_class(cls):
-        """Setup the class before any methods"""
-        pass
-
-    @classmethod
-    def teardown_class(cls):
-        """Teardown the class after all methods"""
-        pass
 
     def setup(self):
         """Setup before each method"""
@@ -204,10 +194,9 @@ class TestTerraformGenerate(object):
     def test_generate_main(self):
         """CLI - Terraform Generate Main"""
         init = False
-        config = self.config
 
         tf_main = terraform_generate.generate_main(
-            config=config,
+            config=self.config,
             init=init
         )
 
@@ -308,6 +297,7 @@ class TestTerraformGenerate(object):
 
     def test_generate_stream_alert(self):
         """CLI - Terraform Generate stream_alert Module"""
+        #TODO(jacknagz): Write this test
         pass
 
     def test_generate_cloudwatch_monitoring(self):
@@ -335,10 +325,9 @@ class TestTerraformGenerate(object):
 
     def test_generate_cluster_test(self):
         """CLI - Terraform Generate 'Test' Cluster"""
-        config = self.config
 
         tf_cluster = terraform_generate.generate_cluster(
-            config=config,
+            config=self.config,
             cluster_name='test'
         )
 
@@ -359,10 +348,9 @@ class TestTerraformGenerate(object):
 
     def test_generate_cluster_advanced(self):
         """CLI - Terraform Generate 'Advanced' Cluster"""
-        config = self.config
 
         tf_cluster = terraform_generate.generate_cluster(
-            config=config,
+            config=self.config,
             cluster_name='advanced'
         )
 

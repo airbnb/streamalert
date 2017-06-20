@@ -16,7 +16,7 @@ limitations under the License.
 import base64
 import json
 
-from nose.tools import assert_equal
+from nose.tools import assert_equal, assert_list_equal
 
 from stream_alert.rule_processor.classifier import StreamPayload, StreamClassifier
 from stream_alert.rule_processor.pre_parsers import StreamPreParsers
@@ -181,7 +181,7 @@ class TestStreamRules(object):
         }
         # doing this because after kinesis_data is read in, types are casted per the schema
         for alert in alerts:
-            assert_equal(set(alert['record'].keys()), set(kinesis_data.keys()))
+            assert_list_equal(alert['record'].keys(), kinesis_data.keys())
             assert_equal(alert['metadata']['outputs'], rule_outputs_map[alert['metadata']['rule_name']])
 
 

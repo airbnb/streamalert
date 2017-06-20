@@ -16,8 +16,10 @@ limitations under the License.
 import base64
 import json
 import os
+import random
 import subprocess
 import zipfile
+import zlib
 
 from StringIO import StringIO
 
@@ -28,7 +30,7 @@ from stream_alert_cli.logger import LOGGER_CLI
 
 DIR_TEMPLATES = 'test/integration/templates'
 
-def run_command(cls, runner_args, **kwargs):
+def run_command(runner_args, **kwargs):
     """Helper function to run commands with error handling.
 
     Args:
@@ -53,8 +55,9 @@ def run_command(cls, runner_args, **kwargs):
 
     try:
         subprocess.check_call(runner_args, stdout=stdout_option, cwd=cwd)
-    except subprocess.CalledProcessError as e:
-        LOGGER_CLI.error('Return Code %s - %s', e.returncode, e.cmd)
+    except subprocess.CalledProcessError as err:
+        LOGGER_CLI.error('%s\n%s', error_message)
+        LOGGER_CLI.error(err.cmd)
         return False
 
     return True
@@ -88,7 +91,7 @@ def format_lambda_test_record(test_record):
     elif data_type in (unicode, str):
         data = test_record['data']
     else:
-        LOGGER_CLI.info('Invalid data type: %s', type(test_record['data']))
+        LOGGER_CLI.info('Invalid data type: %s', data_type)
         return
 
     # Get the template file for this particular service
