@@ -23,7 +23,7 @@ from getpass import getpass
 
 from stream_alert_cli.package import RuleProcessorPackage, AlertProcessorPackage
 from stream_alert_cli.test import stream_alert_test
-from stream_alert_cli.helpers import CLIHelpers
+from stream_alert_cli import helpers
 from stream_alert_cli.config import CLIConfig
 from stream_alert_cli.logger import LOGGER_CLI
 from stream_alert_cli.version import LambdaVersion
@@ -199,7 +199,7 @@ def terraform_handler(options):
 
 def run_command(args=None, **kwargs):
     """Alias to CLI Helpers.run_command"""
-    return CLIHelpers.run_command(args, **kwargs)
+    return helpers.run_command(args, **kwargs)
 
 
 def continue_prompt():
@@ -463,13 +463,15 @@ def configure_output(options):
 
     # Encrypt the creds and push them to S3
     # then update the local output configuration with properties
-    if config_outputs.encrypt_and_push_creds_to_s3(region, secrets_bucket, secrets_key, props):
+    if config_outputs.encrypt_and_push_creds_to_s3(
+            region, secrets_bucket, secrets_key, props):
         updated_config = output.format_output_config(config, props)
         config_outputs.update_outputs_config(config, updated_config, service)
 
-        LOGGER_CLI.info('Successfully saved \'%s\' output configuration for service \'%s\'',
-                        props['descriptor'].value,
-                        options.service)
+        LOGGER_CLI.info(
+            'Successfully saved \'%s\' output configuration for service \'%s\'',
+            props['descriptor'].value,
+            options.service)
     else:
         LOGGER_CLI.error('An error occurred while saving \'%s\' '
                          'output configuration for service \'%s\'',

@@ -13,10 +13,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+import base64
 import json
 import os
+import random
 import subprocess
 import zipfile
+import zlib
 
 from StringIO import StringIO
 
@@ -25,42 +28,113 @@ import boto3
 from stream_alert_cli.logger import LOGGER_CLI
 
 
-class CLIHelpers(object):
-    """Common helpers between StreamAlert CLI classes"""
-    @classmethod
-    def run_command(cls, runner_args, **kwargs):
-        """Helper function to run commands with error handling.
+DIR_TEMPLATES = 'test/integration/templates'
 
-        Args:
-            runner_args (list): Commands to run via subprocess
-            kwargs:
-                cwd (string): A path to execute commands from
-                error_message (string): Message to show if command fails
-                quiet (boolean): Whether to show command output or hide it
 
-        """
-        default_error_message = "An error occurred while running: {}".format(
-            ' '.join(runner_args)
-        )
-        error_message = kwargs.get('error_message', default_error_message)
+def run_command(runner_args, **kwargs):
+    """Helper function to run commands with error handling.
 
-        default_cwd = 'terraform'
-        cwd = kwargs.get('cwd', default_cwd)
+    Args:
+        runner_args (list): Commands to run via subprocess
+        kwargs:
+            cwd (string): A path to execute commands from
+            error_message (string): Message to show if command fails
+            quiet (boolean): Whether to show command output or hide it
 
-        stdout_option = None
-        if kwargs.get('quiet'):
-            stdout_option = open(os.devnull, 'w')
+    """
+    default_error_message = "An error occurred while running: {}".format(
+        ' '.join(runner_args)
+    )
+    error_message = kwargs.get('error_message', default_error_message)
 
+    default_cwd = 'terraform'
+    cwd = kwargs.get('cwd', default_cwd)
+
+    stdout_option = None
+    if kwargs.get('quiet'):
+        stdout_option = open(os.devnull, 'w')
+
+    try:
+        subprocess.check_call(runner_args, stdout=stdout_option, cwd=cwd)
+    except subprocess.CalledProcessError as err:
+        LOGGER_CLI.error('%s\n%s', error_message, err.cmd)
+        return False
+
+    return True
+
+
+def format_lambda_test_record(test_record):
+    """Create a properly formatted Kinesis, S3, or SNS record.
+
+    Supports a dictionary or string based data record.  Reads in
+    event templates from the test/integration/templates folder.
+
+    Args:
+        test_record: Test record metadata dict with the following structure:
+            data - string or dict of the raw data
+            description - a string describing the test that is being performed
+            trigger - bool of if the record should produce an alert
+            source - which stream/s3 bucket originated the data
+            service - which aws service originated the data
+            compress (optional) - if the payload needs to be gzip compressed or not
+
+    Returns:
+        dict in the format of the specific service
+    """
+    service = test_record['service']
+    source = test_record['source']
+    compress = test_record.get('compress')
+
+    data_type = type(test_record['data'])
+    if data_type == dict:
+        data = json.dumps(test_record['data'])
+    elif data_type in (unicode, str):
+        data = test_record['data']
+    else:
+        LOGGER_CLI.info('Invalid data type: %s', data_type)
+        return
+
+    # Get the template file for this particular service
+    template_path = os.path.join(DIR_TEMPLATES, '{}.json'.format(service))
+    with open(template_path, 'r') as service_template:
         try:
-            subprocess.check_call(runner_args, stdout=stdout_option, cwd=cwd)
-        except subprocess.CalledProcessError as e:
-            LOGGER_CLI.error('Return Code %s - %s', e.returncode, e.cmd)
-            return False
+            template = json.load(service_template)
+        except ValueError as err:
+            LOGGER_CLI.error('Error loading %s.json: %s', service, err)
+            return
 
-        return True
+    if service == 's3':
+        # Set the S3 object key to a random value for testing
+        test_record['key'] = ('{:032X}'.format(random.randrange(16**32)))
+        template['s3']['object']['key'] = test_record['key']
+        template['s3']['object']['size'] = len(data)
+        template['s3']['bucket']['arn'] = 'arn:aws:s3:::{}'.format(source)
+        template['s3']['bucket']['name'] = source
+
+        # Create the mocked s3 object in the designated bucket with the random key
+        put_mock_s3_object(source, test_record['key'], data, 'us-east-1')
+
+    elif service == 'kinesis':
+        if compress:
+            kinesis_data = base64.b64encode(zlib.compress(data))
+        else:
+            kinesis_data = base64.b64encode(data)
+
+        template['kinesis']['data'] = kinesis_data
+        template['eventSourceARN'] = 'arn:aws:kinesis:us-east-1:111222333:stream/{}'.format(
+            source)
+
+    elif service == 'sns':
+        template['Sns']['Message'] = data
+        template['EventSubscriptionArn'] = 'arn:aws:sns:us-east-1:111222333:{}'.format(
+            source)
+    else:
+        LOGGER_CLI.info('Invalid service %s', service)
+
+    return template
 
 
-def _create_lambda_function(function_name, region):
+def create_lambda_function(function_name, region):
     """Helper function to create mock lambda function"""
     boto3.client('lambda', region_name=region).create_function(
         FunctionName=function_name,
@@ -76,7 +150,8 @@ def _create_lambda_function(function_name, region):
         }
     )
 
-def _encrypt_with_kms(data, region, alias):
+
+def encrypt_with_kms(data, region, alias):
     kms_client = boto3.client('kms', region_name=region)
     response = kms_client.encrypt(KeyId=alias,
                                   Plaintext=data)
@@ -99,16 +174,16 @@ return event
     return package_output.read()
 
 
-def _put_mock_creds(output_name, creds, bucket, region, alias):
+def put_mock_creds(output_name, creds, bucket, region, alias):
     """Helper function to mock encrypt creds and put on s3"""
     creds_string = json.dumps(creds)
 
-    enc_creds = _encrypt_with_kms(creds_string, region, alias)
+    enc_creds = encrypt_with_kms(creds_string, region, alias)
 
-    _put_mock_s3_object(bucket, output_name, enc_creds, region)
+    put_mock_s3_object(bucket, output_name, enc_creds, region)
 
 
-def _put_mock_s3_object(bucket, key, data, region):
+def put_mock_s3_object(bucket, key, data, region):
     """Create a mock AWS S3 object for testing
 
     Args:

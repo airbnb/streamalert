@@ -18,8 +18,6 @@ import json
 import os
 import sys
 
-from collections import defaultdict
-
 from stream_alert_cli.logger import LOGGER_CLI
 
 
