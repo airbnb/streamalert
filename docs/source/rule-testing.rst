@@ -73,43 +73,63 @@ For example, to replace a time based field with ``last_hour``::
     ]
   }
 
+
 Running Tests
-~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~
 
-To run integration tests::
+Tests can be run via the ``stream_alert_cli.py`` script. These tests include the ability to validate rules for
+accuracy and alert outputs for proper configuration.
 
-  $ ./test/scripts/rule_test.sh
+When adding new rules, it is only necessary to run tests for the **rule processor**. If making code changes to the alert
+processor, such as adding a new output integration to send alerts to, tests for the **alert processor** should also be performed.
+
+To run integration tests for the **rule processor**::
+
+  $ python stream_alert_cli.py lambda test --processor rule
+
+To run integration tests for the **alert processor**::
+
+  $ python stream_alert_cli.py lambda test --processor alert
+
+To run end-to-end integration tests for **both processors**::
+
+  $ python stream_alert_cli.py lambda test --processor all
+
+Integration tests can be restricted to **specific rules** to reduce time and output::
+
+  $ python stream_alert_cli.py lambda test --processor rule --rules <rule_01> <rule_02>
+
+Integration tests can send **live test alerts** to configured outputs for rules using a specified cluster.
+This can also be combined with an optional list of rules to use for tests (using the ``--rules`` argument)::
+
+  $ python stream_alert_cli.py live-test --cluster <cluster_name>
+
+Here is a sample command showing how to run tests against two rules included as integration tests in the default StreamAlert configuration::
+
+  $ python stream_alert_cli.py lambda test --processor rule --rules cloudtrail_put_bucket_acl cloudtrail_root_account
 
 This will produce output similar to the following::
 
-  invalid_subnet
-  	[Pass]	test (kinesis): user logging in from an untrusted subnet
-  	[Pass]	test (kinesis): user logging in from the trusted subnet
-  	[Pass]	test (s3): user logging in from an untrusted subnet
-  	[Pass]	test (s3): user logging in from the trusted subnet
+  cloudtrail_put_bucket_acl
+  	[Pass]   [trigger=1]	rule	(kinesis): CloudTrail - PutBucketAcl - True Positive
+  	[Pass]              	alert	(phantom): sending alert to 'sample_integration'
+  	[Pass]              	alert	(slack): sending alert to 'sample_channel'
+  	[Pass]              	alert	(aws-lambda): sending alert to 'sample_lambda'
+  	[Pass]              	alert	(pagerduty): sending alert to 'sample_integration'
+  	[Pass]              	alert	(aws-s3): sending alert to 'sample_bucket'
+  	[Pass]   [trigger=0]	rule	(kinesis): CloudTrail - PutBucketAcl - False Positive
 
-  invalid_user
-  	[Pass]	test (kinesis): user not in the whitelist
-  	[Pass]	test (kinesis): user in the whitelist
-  	[Pass]	test (s3): user not in the whitelist
-  	[Pass]	test (s3): user in the whitelist
+  cloudtrail_root_account
+  	[Pass]   [trigger=1]	rule	(kinesis): CloudTrail - Root Account Usage - True Positive
+  	[Pass]              	alert	(phantom): sending alert to 'sample_integration'
+  	[Pass]              	alert	(slack): sending alert to 'sample_channel'
+  	[Pass]              	alert	(aws-lambda): sending alert to 'sample_lambda'
+  	[Pass]              	alert	(pagerduty): sending alert to 'sample_integration'
+  	[Pass]              	alert	(aws-s3): sending alert to 'sample_bucket'
+  	[Pass]   [trigger=0]	rule	(kinesis): CloudTrail - Root Account Usage - False Positive
 
-  sample_csv_rule
-  	[Pass]	test (kinesis): host is test-host-2
-  	[Pass]	test (s3): host is test-host-2
 
-  sample_json_rule
-  	[Pass]	test (kinesis): host is test-host-1
-  	[Pass]	test (s3): host is test-host-1
 
-  sample_kv_rule
-  	[Pass]	test (kinesis): fatal message from uid 100
-  	[Pass]	test (s3): fatal message from uid 100
-
-  sample_kv_rule_last_hour
-  	[Pass]	test (kinesis): info message from uid 0 in the last hour
-  	[Pass]	test (s3): info message from uid 0 in the last hour
-
-  sample_syslog_rule
-  	[Pass]	test (kinesis): sudo command ran
-  	[Pass]	test (s3): sudo command ran
+  (4/4)	Rule Tests Passed
+  (10/10)	Alert Tests Passed
+  StreamAlertCLI [INFO]: Completed
