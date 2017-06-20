@@ -463,13 +463,15 @@ def configure_output(options):
 
     # Encrypt the creds and push them to S3
     # then update the local output configuration with properties
-    if config_outputs.encrypt_and_push_creds_to_s3(region, secrets_bucket, secrets_key, props):
+    if config_outputs.encrypt_and_push_creds_to_s3(
+            region, secrets_bucket, secrets_key, props):
         updated_config = output.format_output_config(config, props)
         config_outputs.update_outputs_config(config, updated_config, service)
 
-        LOGGER_CLI.info('Successfully saved \'%s\' output configuration for service \'%s\'',
-                        props['descriptor'].value,
-                        options.service)
+        LOGGER_CLI.info(
+            'Successfully saved \'%s\' output configuration for service \'%s\'',
+            props['descriptor'].value,
+            options.service)
     else:
         LOGGER_CLI.error('An error occurred while saving \'%s\' '
                          'output configuration for service \'%s\'',

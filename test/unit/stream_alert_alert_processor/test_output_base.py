@@ -28,9 +28,9 @@ from stream_alert.alert_processor.output_base import (
 )
 
 from stream_alert_cli.helpers import (
-    _encrypt_with_kms,
-    _put_mock_creds,
-    _put_mock_s3_object
+    encrypt_with_kms,
+    put_mock_creds,
+    put_mock_s3_object
 )
 
 from unit.stream_alert_alert_processor import (
@@ -103,7 +103,7 @@ class TestStreamOutputBase(object):
 
         local_cred_location = os.path.join(self.__dispatcher._local_temp_dir(), key)
 
-        _put_mock_s3_object(bucket_name, key, test_data, REGION)
+        put_mock_s3_object(bucket_name, key, test_data, REGION)
 
         self.__dispatcher._get_creds_from_s3(local_cred_location, descriptor)
 
@@ -116,7 +116,7 @@ class TestStreamOutputBase(object):
     def test_kms_decrypt(self):
         """StreamOutputBase KMS Decrypt"""
         test_data = 'data to encrypt'
-        encrypted = _encrypt_with_kms(test_data, REGION, KMS_ALIAS)
+        encrypted = encrypt_with_kms(test_data, REGION, KMS_ALIAS)
         decrypted = self.__dispatcher._kms_decrypt(encrypted)
 
         assert_equal(decrypted, test_data)
@@ -156,7 +156,7 @@ class TestStreamOutputBase(object):
         creds = {'url': 'http://www.foo.bar/test',
                  'token': 'token_to_encrypt'}
 
-        _put_mock_creds(output_name, creds, self.__dispatcher.secrets_bucket,
+        put_mock_creds(output_name, creds, self.__dispatcher.secrets_bucket,
                         REGION, KMS_ALIAS)
 
         loaded_creds = self.__dispatcher._load_creds(self.__descriptor)

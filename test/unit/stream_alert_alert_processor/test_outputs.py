@@ -33,8 +33,8 @@ from nose.tools import (
 from stream_alert.alert_processor import outputs
 from stream_alert.alert_processor.output_base import OutputProperty
 from stream_alert_cli.helpers import (
-    _create_lambda_function,
-    _put_mock_creds
+    create_lambda_function,
+    put_mock_creds
 )
 
 from unit.stream_alert_alert_processor import (
@@ -125,7 +125,7 @@ class TestPagerDutyOutput(object):
         creds = {'url': 'http://pagerduty.foo.bar/create_event.json',
                  'service_key': 'mocked_service_key'}
 
-        _put_mock_creds(output_name, creds, self.__dispatcher.secrets_bucket,
+        put_mock_creds(output_name, creds, self.__dispatcher.secrets_bucket,
                         REGION, KMS_ALIAS)
 
         return _get_sns_message(0)['default']
@@ -211,7 +211,7 @@ class TestPhantomOutput(object):
         creds = {'url': url,
                  'ph_auth_token': 'mocked_auth_token'}
 
-        _put_mock_creds(output_name, creds, self.__dispatcher.secrets_bucket,
+        put_mock_creds(output_name, creds, self.__dispatcher.secrets_bucket,
                         REGION, KMS_ALIAS)
 
         return _get_sns_message(0)['default']
@@ -448,7 +448,7 @@ class TestSlackOutput(object):
 
         creds = {'url': 'https://api.slack.com/web-hook-key'}
 
-        _put_mock_creds(output_name, creds, self.__dispatcher.secrets_bucket,
+        put_mock_creds(output_name, creds, self.__dispatcher.secrets_bucket,
                         REGION, KMS_ALIAS)
 
         return _get_sns_message(0)['default']
@@ -605,7 +605,7 @@ class TestLambdaOuput(object):
     def _setup_dispatch(self):
         """Helper for setting up LambdaOutput dispatch"""
         function_name = CONFIG[self.__service][self.__descriptor]
-        _create_lambda_function(function_name, REGION)
+        create_lambda_function(function_name, REGION)
         return _get_sns_message(0)['default']
 
     @mock_lambda

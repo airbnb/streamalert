@@ -17,10 +17,9 @@ limitations under the License.
 import json
 import logging
 import os
-import random
 import re
+import sys
 import time
-import zlib
 
 from mock import Mock, patch
 
@@ -29,12 +28,6 @@ from moto import mock_lambda, mock_kms, mock_s3, mock_sns
 
 from stream_alert.alert_processor import main as StreamOutput
 from stream_alert.rule_processor.handler import StreamAlert
-from stream_alert_cli.helpers import (
-    _create_lambda_function,
-    _put_mock_creds,
-    _put_mock_s3_object
-)
-
 from stream_alert_cli import helpers
 from stream_alert_cli.logger import LOGGER_CLI, LOGGER_SA
 from stream_alert_cli.outputs import load_outputs_config
@@ -196,7 +189,6 @@ class RuleProcessorTester(object):
             # Remove the key(s) and just warn the user that they are extra
             record_keys.difference_update(key_diff)
             self.rules_fail_pass_warn[2].append((rule_name, message))
-
 
         return record_keys.issubset(required_keys | optional_keys)
 
@@ -388,12 +380,12 @@ class AlertProcessorTester(object):
                 boto3.client('s3', region_name='us-east-1').create_bucket(Bucket=bucket)
             elif service == 'aws-lambda':
                 function = self.outputs_config[service][descriptor]
-                _create_lambda_function(function, 'us-east-1')
+                helpers.create_lambda_function(function, 'us-east-1')
             elif service == 'pagerduty':
                 output_name = ('/').join([service, descriptor])
                 creds = {'service_key': '247b97499078a015cc6c586bc0a92de6'}
-                _put_mock_creds(output_name, creds, self.secrets_bucket,
-                                'us-east-1', self.kms_alias)
+                helpers.put_mock_creds(output_name, creds, self.secrets_bucket,
+                                       'us-east-1', self.kms_alias)
 
                 # Set the patched urlopen.getcode return value to 200
                 url_mock.return_value.getcode.return_value = 200
@@ -401,8 +393,8 @@ class AlertProcessorTester(object):
                 output_name = ('/').join([service, descriptor])
                 creds = {'ph_auth_token': '6c586bc047b9749a92de29078a015cc6',
                          'url': 'phantom.foo.bar'}
-                _put_mock_creds(output_name, creds, self.secrets_bucket,
-                                'us-east-1', self.kms_alias)
+                helpers.put_mock_creds(output_name, creds, self.secrets_bucket,
+                                       'us-east-1', self.kms_alias)
 
                 # Set the patched urlopen.getcode return value to 200
                 url_mock.return_value.getcode.return_value = 200
@@ -411,8 +403,8 @@ class AlertProcessorTester(object):
             elif service == 'slack':
                 output_name = ('/').join([service, descriptor])
                 creds = {'url': 'https://api.slack.com/web-hook-key'}
-                _put_mock_creds(output_name, creds, self.secrets_bucket,
-                                'us-east-1', self.kms_alias)
+                helpers.put_mock_creds(output_name, creds, self.secrets_bucket,
+                                       'us-east-1', self.kms_alias)
 
                 # Set the patched urlopen.getcode return value to 200
                 url_mock.return_value.getcode.return_value = 200
@@ -494,4 +486,4 @@ def stream_alert_test(options):
         AlertProcessorTester.report_output_summary()
 
     if not (rp_status and ap_status):
-        os._exit(1)
+        sys.exit(1)

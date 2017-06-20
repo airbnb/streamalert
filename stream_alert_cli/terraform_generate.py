@@ -33,6 +33,19 @@ def infinitedict():
 
 
 def generate_s3_bucket(**kwargs):
+    """Generate an S3 Bucket dict
+
+    Keyword Args:
+        bucket [string]: The name of the bucket
+        acl [string]: The S3 bucket ACL
+        logging_bucket [string]: The S3 bucket to send access logs to
+        force_destroy [bool]: To enable or disable force destroy of the bucket
+        versioning [bool]: To enable or disable S3 object versioning
+        lifecycle_rule [dict]: The S3 bucket lifecycle rule
+
+    Returns:
+        [dict] S3 bucket Terraform dict to be used in clusters/main.tf
+    """
     bucket_name = kwargs.get('bucket')
     acl = kwargs.get('acl', 'private')
     logging_bucket = kwargs.get('logging')
@@ -41,14 +54,16 @@ def generate_s3_bucket(**kwargs):
         'target_prefix': '{}/'.format(bucket_name)
     }
     force_destroy = kwargs.get('force_destroy', False)
-    versioning = kwargs.get('versioning', {'enabled': True})
+    versioning = kwargs.get('versioning', True)
     lifecycle_rule = kwargs.get('lifecycle_rule')
 
     bucket = {
         'bucket': bucket_name,
         'acl': acl,
         'force_destroy': force_destroy,
-        'versioning': versioning,
+        'versioning': {
+            'enabled': versioning
+        },
         'logging': logging
     }
 
@@ -59,6 +74,15 @@ def generate_s3_bucket(**kwargs):
 
 
 def generate_main(**kwargs):
+    """Generate the main.tf Terraform dict
+
+    Keyword Args:
+        init [string]: If Terraform is running in the init phase or not
+        config [CLIConfig]: The loaded CLI config
+
+    Returns:
+        [dict] main.tf Terraform dict
+    """
     init = kwargs.get('init')
     config = kwargs.get('config')
 
@@ -304,7 +328,8 @@ def generate_kinesis_events(cluster_name, cluster_dict, config):
                                     a given cluster.
         config [dict]: The loaded config from the 'conf/' directory
     """
-    kinesis_events_enabled = bool(config['clusters'][cluster_name]['modules']['kinesis_events']['enabled'])
+    kinesis_events_enabled = bool(
+        config['clusters'][cluster_name]['modules']['kinesis_events']['enabled'])
     # Kinesis events module
     cluster_dict['module']['kinesis_events_{}'.format(cluster_name)] = {
         'source': 'modules/tf_stream_alert_kinesis_events',
@@ -381,7 +406,9 @@ def generate_s3_events(cluster_name, cluster_dict, config):
             's3_bucket_id': s3_bucket_id,
             's3_bucket_arn': 'arn:aws:s3:::{}'.format(s3_bucket_id)}
     else:
-        LOGGER_CLI.error('Config Error: Missing S3 bucket in %s s3_events module', cluster_name)
+        LOGGER_CLI.error(
+            'Config Error: Missing S3 bucket in %s s3_events module',
+            cluster_name)
         sys.exit(1)
 
 
@@ -396,10 +423,6 @@ def generate_cluster(**kwargs):
     cluster_name = kwargs.get('cluster_name')
 
     account = config['global']['account']
-    prefix = account['prefix']
-    logging_bucket = '{}.streamalert.s3-logging'.format(
-        config['global']['account']['prefix'])
-    account_id = account['aws_account_id']
 
     modules = config['clusters'][cluster_name]['modules']
     cluster_dict = infinitedict()

@@ -14,16 +14,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 
-import base64
-import json
+from stream_alert_cli import terraform_generate
 
 from nose.tools import assert_equal
-
-from stream_alert_cli import terraform_generate
 
 
 class TestTerraformGenerate(object):
     """Test class for the Terraform Cluster Generating"""
+
+    def __init__(self):
+        self.cluster_dict = {}
+        self.config = {}
 
     def setup(self):
         """Setup before each method"""
@@ -50,7 +51,7 @@ class TestTerraformGenerate(object):
                     'id': 'test',
                     'modules': {
                         'cloudwatch_monitoring': {
-                          'enabled': True
+                            'enabled': True
                         },
                         'kinesis': {
                             'firehose': {
@@ -91,7 +92,7 @@ class TestTerraformGenerate(object):
                     'id': 'advanced',
                     'modules': {
                         'cloudwatch_monitoring': {
-                          'enabled': True
+                            'enabled': True
                         },
                         'kinesis': {
                             'firehose': {
@@ -152,8 +153,10 @@ class TestTerraformGenerate(object):
 
     def teardown(self):
         """Teardown after each method"""
+        pass
 
-    def test_generate_s3_bucket(self):
+    @staticmethod
+    def test_generate_s3_bucket():
         """CLI - Terraform Generate S3 Bucket """
         bucket = terraform_generate.generate_s3_bucket(
             bucket='unit.test.bucket',
@@ -173,7 +176,8 @@ class TestTerraformGenerate(object):
         assert_equal(bucket['bucket'], 'unit.test.bucket')
         assert_equal(set(bucket.keys()), required_keys)
 
-    def test_generate_s3_bucket_lifecycle(self):
+    @staticmethod
+    def test_generate_s3_bucket_lifecycle():
         """CLI - Terraform Generate S3 Bucket with Lifecycle"""
         bucket = terraform_generate.generate_s3_bucket(
             bucket='unit.test.bucket',
@@ -297,7 +301,7 @@ class TestTerraformGenerate(object):
 
     def test_generate_stream_alert(self):
         """CLI - Terraform Generate stream_alert Module"""
-        #TODO(jacknagz): Write this test
+        # TODO(jacknagz): Write this test
         pass
 
     def test_generate_cloudwatch_monitoring(self):

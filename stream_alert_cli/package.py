@@ -172,7 +172,7 @@ class LambdaPackage(object):
         third_party_libs = self.config['lambda'][self.config_key]['third_party_libraries']
         if third_party_libs:
             LOGGER_CLI.info(
-                'Installing third-party libraries: {}'.format(', '.join(third_party_libs)))
+                'Installing third-party libraries: %s', ', '.join(third_party_libs))
             pip_command = ['install']
             pip_command.extend(third_party_libs)
             pip_command.extend(['--upgrade', '--target', temp_package_path])

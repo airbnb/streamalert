@@ -30,6 +30,7 @@ from stream_alert_cli.logger import LOGGER_CLI
 
 DIR_TEMPLATES = 'test/integration/templates'
 
+
 def run_command(runner_args, **kwargs):
     """Helper function to run commands with error handling.
 
@@ -56,8 +57,7 @@ def run_command(runner_args, **kwargs):
     try:
         subprocess.check_call(runner_args, stdout=stdout_option, cwd=cwd)
     except subprocess.CalledProcessError as err:
-        LOGGER_CLI.error('%s\n%s', error_message)
-        LOGGER_CLI.error(err.cmd)
+        LOGGER_CLI.error('%s\n%s', error_message, err.cmd)
         return False
 
     return True
@@ -112,7 +112,7 @@ def format_lambda_test_record(test_record):
         template['s3']['bucket']['name'] = source
 
         # Create the mocked s3 object in the designated bucket with the random key
-        _put_mock_s3_object(source, test_record['key'], data, 'us-east-1')
+        put_mock_s3_object(source, test_record['key'], data, 'us-east-1')
 
     elif service == 'kinesis':
         if compress:
@@ -134,7 +134,7 @@ def format_lambda_test_record(test_record):
     return template
 
 
-def _create_lambda_function(function_name, region):
+def create_lambda_function(function_name, region):
     """Helper function to create mock lambda function"""
     boto3.client('lambda', region_name=region).create_function(
         FunctionName=function_name,
@@ -150,7 +150,8 @@ def _create_lambda_function(function_name, region):
         }
     )
 
-def _encrypt_with_kms(data, region, alias):
+
+def encrypt_with_kms(data, region, alias):
     kms_client = boto3.client('kms', region_name=region)
     response = kms_client.encrypt(KeyId=alias,
                                   Plaintext=data)
@@ -173,16 +174,16 @@ return event
     return package_output.read()
 
 
-def _put_mock_creds(output_name, creds, bucket, region, alias):
+def put_mock_creds(output_name, creds, bucket, region, alias):
     """Helper function to mock encrypt creds and put on s3"""
     creds_string = json.dumps(creds)
 
-    enc_creds = _encrypt_with_kms(creds_string, region, alias)
+    enc_creds = encrypt_with_kms(creds_string, region, alias)
 
-    _put_mock_s3_object(bucket, output_name, enc_creds, region)
+    put_mock_s3_object(bucket, output_name, enc_creds, region)
 
 
-def _put_mock_s3_object(bucket, key, data, region):
+def put_mock_s3_object(bucket, key, data, region):
     """Create a mock AWS S3 object for testing
 
     Args:
