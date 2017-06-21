@@ -81,11 +81,6 @@ def test_load_config():
     assert_false(loaded)
 
 
-"""OutputProperty = namedtuple('OutputProperty',
-                            'description, value, input_restrictions, mask_input, cred_requirement')
-OutputProperty.__new__.__defaults__ = ('', '', {' ', ':'}, False, False)"""
-
-
 @mock_kms
 @mock_s3
 def test_encrypt_and_push_creds_to_s3():
