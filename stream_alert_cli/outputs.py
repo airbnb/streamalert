@@ -41,6 +41,7 @@ def load_outputs_config(conf_dir='conf'):
             LOGGER_CLI.exception(
                 'the %s file could not be loaded into json',
                 OUTPUTS_CONFIG)
+            return
 
     return values
 
