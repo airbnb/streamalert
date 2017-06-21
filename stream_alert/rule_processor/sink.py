@@ -120,9 +120,9 @@ class StreamSink(object):
                 Message=message,
                 Subject='StreamAlert Rules Triggered'
             )
-        except ClientError as err:
-            LOGGER.error('An error occurred while publishing alert: %s', err.response)
-            raise err
+        except ClientError:
+            LOGGER.exception('An error occurred while publishing alert to sns')
+            return
 
         if response['ResponseMetadata']['HTTPStatusCode'] != 200:
             LOGGER.error('Failed to publish message to sns topic: %s', self.topic.split(':')[-1])
