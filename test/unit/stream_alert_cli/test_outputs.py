@@ -70,12 +70,16 @@ def test_write_outputs_config():
         )
 
 
-def test_load_config():
+@patch('stream_alert_cli.outputs.load_outputs_config')
+def test_load_config(method_mock):
     """Load config - check for existing output"""
+    # Patch the return value of the load_outputs_config method to return
+    # the unit testing outputs configuration
+    method_mock.return_value = load_outputs_config(conf_dir="test/unit/conf")
     props = {
         'descriptor': OutputProperty(
             'short description',
-            'sample_lambda')}
+            'unit_test_lambda')}
     loaded = load_config(props, 'aws-lambda')
 
     assert_false(loaded)
