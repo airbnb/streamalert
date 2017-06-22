@@ -581,12 +581,30 @@ class LambdaOutput(AWSOutput):
         alert = kwargs['alert']
         alert_string = json.dumps(alert['record'])
         function_name = self.config[self.__service__][kwargs['descriptor']]
+        parts = function_name.split(':')
+
+        # Check to see if there is an optional qualifier included here
+        if len(parts) == 2 or len(parts) == 8:
+            function = parts[-2]
+            qualifier = parts[-1]
+        else:
+            function = parts[-1]
+            qualifier = None
 
         LOGGER.debug('Sending alert to Lambda function %s', function_name)
 
         client = boto3.client('lambda', region_name=self.region)
-        resp = client.invoke(FunctionName=function_name,
-                             InvocationType='Event',
-                             Payload=alert_string)
+        # Use the qualifier if it's available. Passing an empty qualifier in
+        # with `Qualifier=''` or `Qualifier=None` does not work and thus we
+        # have to perform different calls to client.invoke().
+        if qualifier:
+            resp = client.invoke(FunctionName=function,
+                                 InvocationType='Event',
+                                 Payload=alert_string,
+                                 Qualifier=qualifier)
+        else:
+            resp = client.invoke(FunctionName=function,
+                                 InvocationType='Event',
+                                 Payload=alert_string)
 
         return self._log_status(resp)
