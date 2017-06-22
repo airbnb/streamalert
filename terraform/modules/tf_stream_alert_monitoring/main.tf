@@ -7,7 +7,7 @@ resource "aws_cloudwatch_metric_alarm" "streamalert_lambda_invocation_errors" {
   alarm_name          = "${element(var.lambda_functions, count.index)}_invocation_errors"
   namespace           = "AWS/Lambda"
   metric_name         = "Errors"
-  statistic           = "Average"
+  statistic           = "Sum"
   comparison_operator = "GreaterThanThreshold"
   threshold           = "0"
   evaluation_periods  = "1"
