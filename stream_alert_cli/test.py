@@ -391,6 +391,11 @@ class AlertProcessorTester(object):
                 boto3.client('s3', region_name='us-east-1').create_bucket(Bucket=bucket)
             elif service == 'aws-lambda':
                 function = self.outputs_config[service][descriptor]
+                parts = function.split(':')
+                if len(parts) == 2 or len(parts) == 8:
+                    function = parts[-2]
+                else:
+                    function = parts[-1]
                 helpers.create_lambda_function(function, 'us-east-1')
             elif service == 'pagerduty':
                 output_name = ('/').join([service, descriptor])
