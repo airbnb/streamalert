@@ -581,9 +581,16 @@ class LambdaOutput(AWSOutput):
         alert = kwargs['alert']
         alert_string = json.dumps(alert['record'])
         function_name = self.config[self.__service__][kwargs['descriptor']]
-        parts = function_name.split(':')
 
         # Check to see if there is an optional qualifier included here
+        # Acceptable values for the output configuration are the full ARN,
+        # a function name followed by a qualifier, or just a function name:
+        #   'arn:aws:lambda:aws-region:acct-id:function:function-name:prod'
+        #   'function-name:prod'
+        #   'function-name'
+        # Checking the length of the list for 2 or 8 should account for all
+        # times a qualifier is provided.
+        parts = function_name.split(':')
         if len(parts) == 2 or len(parts) == 8:
             function = parts[-2]
             qualifier = parts[-1]
