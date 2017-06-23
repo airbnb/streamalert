@@ -35,7 +35,10 @@ def handler(event, context):
         context [AWSLambdaContext]: basically a namedtuple of properties from AWS
 
     Returns:
-        [generator] yields back the current status to the caller
+        [list] list of status values, each entry in the list is a tuple
+            consisting of two values. The first value is a boolean that
+            indicates if sending was successful and the second value is the
+            output configuration info (ie - 'slack:sample_channel')
     """
     records = event.get('Records', [])
     LOGGER.info('Running alert processor for %d records', len(records))
@@ -47,6 +50,8 @@ def handler(event, context):
 
     region = context.invoked_function_arn.split(':')[3]
     function_name = context.function_name
+
+    status_values = []
 
     for record in records:
         sns_payload = record.get('Sns')
@@ -66,9 +71,10 @@ def handler(event, context):
                 LOGGER.error('Malformed SNS: %s', loaded_sns_message)
             continue
 
-        # Yield back the current status to the caller
-        for status in run(loaded_sns_message, region, function_name, config):
-            yield status
+        status_values.extend(run(loaded_sns_message, region, function_name, config))
+
+    # Return the current status back to the caller
+    return status_values
 
 def run(loaded_sns_message, region, function_name, config):
     """Send an Alert to its described outputs.

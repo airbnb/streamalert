@@ -46,8 +46,8 @@ def test_handler_malformed_message(log_mock):
     context = _get_mock_context()
     message = {'not_default': {'record': {'size': '9982'}}}
     event = {'Records': [{'Sns': {'Message': json.dumps(message)}}]}
-    for _ in handler(event, context):
-        pass
+    handler(event, context)
+
     log_mock.assert_called_with('Malformed SNS: %s', message)
 
 
@@ -56,8 +56,8 @@ def test_handler_bad_message(log_mock):
     """Main handler decode failure logging"""
     context = _get_mock_context()
     event = {'Records': [{'Sns': {'Message': 'this\nvalue\nshould\nfail\nto\ndecode'}}]}
-    for _ in handler(event, context):
-        pass
+    handler(event, context)
+
     assert_equal(str(log_mock.call_args_list[0]),
                  str(call('An error occurred while decoding message to JSON: %s',
                           ValueError('No JSON object could be decoded',))))
@@ -69,8 +69,7 @@ def test_handler_run(run_mock):
     context = _get_mock_context()
     message = {'default': {'record': {'size': '9982'}}}
     event = {'Records': [{'Sns': {'Message': json.dumps(message)}}]}
-    for _ in handler(event, context):
-        pass
+    handler(event, context)
 
     # This test will load the actual config, so we should compare the
     # function call against the same config here.
