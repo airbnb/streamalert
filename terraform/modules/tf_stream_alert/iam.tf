@@ -150,7 +150,7 @@ resource "aws_iam_role_policy" "streamalert_alert_processor_lambda" {
         "lambda:InvokeFunction"
       ],
       "Effect": "Allow",
-      "Resource": "arn:aws:lambda:${var.region}:${var.account_id}:function:${element(var.output_lambda_functions, count.index)}"
+      "Resource": "arn:aws:lambda:${var.region}:${var.account_id}:function:${element(split(":", element(var.output_lambda_functions, count.index)), 0)}"
     }
   ]
 }
