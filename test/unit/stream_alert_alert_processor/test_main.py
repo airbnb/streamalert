@@ -18,7 +18,7 @@ import json
 from collections import OrderedDict
 from mock import patch, call
 
-from nose.tools import assert_equal
+from nose.tools import assert_equal, assert_is_instance
 
 from stream_alert.alert_processor.main import (
     _load_output_config,
@@ -46,8 +46,8 @@ def test_handler_malformed_message(log_mock):
     context = _get_mock_context()
     message = {'not_default': {'record': {'size': '9982'}}}
     event = {'Records': [{'Sns': {'Message': json.dumps(message)}}]}
-    for _ in handler(event, context):
-        pass
+    handler(event, context)
+
     log_mock.assert_called_with('Malformed SNS: %s', message)
 
 
@@ -56,8 +56,8 @@ def test_handler_bad_message(log_mock):
     """Main handler decode failure logging"""
     context = _get_mock_context()
     event = {'Records': [{'Sns': {'Message': 'this\nvalue\nshould\nfail\nto\ndecode'}}]}
-    for _ in handler(event, context):
-        pass
+    handler(event, context)
+
     assert_equal(str(log_mock.call_args_list[0]),
                  str(call('An error occurred while decoding message to JSON: %s',
                           ValueError('No JSON object could be decoded',))))
@@ -69,12 +69,20 @@ def test_handler_run(run_mock):
     context = _get_mock_context()
     message = {'default': {'record': {'size': '9982'}}}
     event = {'Records': [{'Sns': {'Message': json.dumps(message)}}]}
-    for _ in handler(event, context):
-        pass
+    handler(event, context)
 
     # This test will load the actual config, so we should compare the
     # function call against the same config here.
     run_mock.assert_called_with(message, REGION, FUNCTION_NAME, _load_output_config())
+
+
+def test_handler_return():
+    """Main handler return value"""
+    context = _get_mock_context()
+    event = {'Records': []}
+    value = handler(event, context)
+
+    assert_is_instance(value, list)
 
 
 def test_load_output_config():
