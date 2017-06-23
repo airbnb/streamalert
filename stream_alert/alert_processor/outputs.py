@@ -560,10 +560,9 @@ class LambdaOutput(AWSOutput):
              OutputProperty(description='a short and unique descriptor for this Lambda function '
                                         'configuration (ie: abbreviated name)')),
             ('aws_value',
-             OutputProperty(description='the AWS arn, with the optional qualifier, that '
-                                        'represents the Lambda function to use for this '
-                                        'configuration (ie: arn:aws:lambda:aws-region:acct-id:'
-                                        'function:output_function:qualifier)',
+             OutputProperty(description='the AWS Lambda function name, with the optional '
+                                        'qualifier (aka \'alias\'), to use for this '
+                                        'configuration (ie: output_function:qualifier)',
                             input_restrictions={' '})),
         ])
 
