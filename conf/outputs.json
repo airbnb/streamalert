@@ -3,7 +3,7 @@
     "sample_bucket": "sample.bucket.name"
   },
   "aws-lambda": {
-    "sample_lambda": "function-name"
+    "sample_lambda": "function-name:qualifier"
   },
   "pagerduty": [
     "sample_integration"
