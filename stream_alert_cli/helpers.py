@@ -59,6 +59,9 @@ def run_command(runner_args, **kwargs):
     except subprocess.CalledProcessError as err:
         LOGGER_CLI.error('%s\n%s', error_message, err.cmd)
         return False
+    except OSError as err:
+        LOGGER_CLI.error('%s\n%s (%s)', error_message, err.strerror, runner_args[0])
+        return False
 
     return True
 
