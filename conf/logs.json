@@ -448,6 +448,18 @@
       }
     }
   },
+  "carbonblack:feed.synchronized": {
+    "schema": {
+      "cb_server": "string",
+      "feed_id": "integer",
+      "feed_name": "string",
+      "feed_update_time": "string",
+      "scan_start_time": "string",
+      "timestamp": "float",
+      "type": "string"
+    },
+    "parser": "json"
+  },
   "cloudwatch:events": {
     "schema": {
       "account": "integer",
