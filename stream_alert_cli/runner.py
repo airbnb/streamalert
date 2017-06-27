@@ -84,9 +84,9 @@ def lambda_handler(options):
 
 def terraform_check():
     """Verify that Terraform is configured correctly"""
-    prereqs_message = ('Terraform not found! Please install and add to'
+    prereqs_message = ('Terraform not found! Please install and add to '
                        'your $PATH:\n'
-                       '$ export PATH=$PATH:/usr/local/terraform/bin')
+                       '\t$ export PATH=$PATH:/usr/local/terraform/bin')
     run_command(['terraform', 'version'],
                 error_message=prereqs_message,
                 quiet=True)
@@ -95,7 +95,8 @@ def terraform_check():
 def terraform_handler(options):
     """Handle all Terraform CLI operations"""
     # verify terraform is installed
-    terraform_check()
+    if not terraform_check():
+        return
     # use a named tuple to match the 'processor' attribute in the argparse options
     deploy_opts = namedtuple('DeployOptions', ['processor'])
 
