@@ -178,7 +178,13 @@ def build_parser():
     # add subcommand options for the terraform sub-parser
     tf_parser.add_argument(
         'subcommand',
-        choices=['build', 'destroy', 'init', 'init-backend', 'generate', 'status']
+        choices=['build',
+                 'clean',
+                 'destroy',
+                 'init',
+                 'init-backend',
+                 'generate',
+                 'status']
     )
 
     tf_parser.add_argument(

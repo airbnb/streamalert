@@ -162,6 +162,9 @@ def terraform_handler(options):
         LOGGER_CLI.info('Building Remainder Infrastructure')
         tf_runner()
 
+    elif options.subcommand == 'clean':
+        terraform_clean()
+
     elif options.subcommand == 'destroy':
         if options.target:
             target = options.target
@@ -181,24 +184,32 @@ def terraform_handler(options):
             sys.exit(1)
 
         # Remove old Terraform files
-        LOGGER_CLI.info('Removing old Terraform files')
-        cleanup_files = ['{}.tf'.format(cluster) for cluster in CONFIG.clusters()]
-        cleanup_files.extend([
-            'main.tf',
-            'terraform.tfstate',
-            'terraform.tfstate.backup'
-        ])
-        for tf_file in cleanup_files:
-            file_to_remove = 'terraform/{}'.format(tf_file)
-            if not os.path.isfile(file_to_remove):
-                continue
-            os.remove(file_to_remove)
-        # Finally, delete the Terraform directory
-        shutil.rmtree('terraform/.terraform/')
+        terraform_clean()
 
     # get a quick status on our declared infrastructure
     elif options.subcommand == 'status':
         status()
+
+
+def terraform_clean():
+    """Remove leftover Terraform statefiles and main/cluster files"""
+    LOGGER_CLI.info('Cleaning Terraform files')
+
+    cleanup_files = ['{}.tf'.format(cluster) for cluster in CONFIG.clusters()]
+    cleanup_files.extend([
+        'main.tf',
+        'terraform.tfstate',
+        'terraform.tfstate.backup'
+    ])
+    for tf_file in cleanup_files:
+        file_to_remove = 'terraform/{}'.format(tf_file)
+        if not os.path.isfile(file_to_remove):
+            continue
+        os.remove(file_to_remove)
+
+    # Finally, delete the Terraform directory
+    if os.path.isdir('terraform/.terraform/'):
+        shutil.rmtree('terraform/.terraform/')
 
 
 def run_command(args=None, **kwargs):
