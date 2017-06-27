@@ -299,10 +299,26 @@ class TestTerraformGenerate(object):
         assert_equal(tf_main['terraform'], tf_main_expected['terraform'])
         assert_equal(tf_main['resource'], tf_main_expected['resource'])
 
+
     def test_generate_stream_alert(self):
         """CLI - Terraform Generate stream_alert Module"""
         # TODO(jacknagz): Write this test
         pass
+
+
+    def test_generate_flow_logs(self):
+        """CLI - Terraform Generate flow_logs Module"""
+        cluster_name = 'advanced'
+        terraform_generate.generate_flow_logs(
+            cluster_name,
+            self.cluster_dict,
+            self.config
+        )
+
+        flow_log_config = self.cluster_dict['module']['flow_logs_advanced']
+        assert_equal(flow_log_config['flow_log_group_name'], 'unit-test-advanced')
+        assert_equal(flow_log_config['vpcs'], ['vpc-id-1', 'vpc-id-2'])
+
 
     def test_generate_cloudtrail_basic(self):
         """CLI - Terraform Generate cloudtrail Module"""

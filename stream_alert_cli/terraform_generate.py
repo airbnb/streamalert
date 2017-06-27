@@ -403,11 +403,17 @@ def generate_flow_logs(cluster_name, cluster_dict, config):
         config [dict]: The loaded config from the 'conf/' directory
     """
     modules = config['clusters'][cluster_name]['modules']
+    flow_log_group_name_default = '{}_{}_streamalert_flow_logs'.format(
+        config['global']['account']['prefix'],
+        cluster_name
+    )
+    flow_log_group_name = modules['flow_logs'].get('log_group_name', flow_log_group_name_default)
+
     if modules['flow_logs']['enabled']:
         cluster_dict['module']['flow_logs_{}'.format(cluster_name)] = {
             'source': 'modules/tf_stream_alert_flow_logs',
             'destination_stream_arn': '${{module.kinesis_{}.arn}}'.format(cluster_name),
-            'flow_log_group_name': modules['flow_logs']['log_group_name']}
+            'flow_log_group_name': flow_log_group_name}
         for flow_log_input in ('vpcs', 'subnets', 'enis'):
             input_data = modules['flow_logs'].get(flow_log_input)
             if input_data:
