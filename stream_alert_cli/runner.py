@@ -70,12 +70,14 @@ def lambda_handler(options):
 
     if options.subcommand == 'deploy':
         # Make sure the Terraform code is up to date
-        terraform_generate(config=CONFIG)
+        if not terraform_generate(config=CONFIG):
+            return
         deploy(options)
 
     elif options.subcommand == 'rollback':
         # Make sure the Terraform code is up to date
-        terraform_generate(config=CONFIG)
+        if not terraform_generate(config=CONFIG):
+            return
         rollback(options)
 
     elif options.subcommand == 'test':
@@ -87,7 +89,7 @@ def terraform_check():
     prereqs_message = ('Terraform not found! Please install and add to '
                        'your $PATH:\n'
                        '\t$ export PATH=$PATH:/usr/local/terraform/bin')
-    run_command(['terraform', 'version'],
+    return run_command(['terraform', 'version'],
                 error_message=prereqs_message,
                 quiet=True)
 
@@ -103,7 +105,8 @@ def terraform_handler(options):
     # plan/apply our streamalert infrastructure
     if options.subcommand == 'build':
         # Make sure the Terraform is completely up to date
-        terraform_generate(config=CONFIG)
+        if not terraform_generate(config=CONFIG):
+            return
         # --target is for terraforming a specific streamalert module
         if options.target:
             target = options.target
@@ -115,7 +118,8 @@ def terraform_handler(options):
 
     # generate terraform files
     elif options.subcommand == 'generate':
-        terraform_generate(config=CONFIG)
+        if not terraform_generate(config=CONFIG):
+            return
 
     elif options.subcommand == 'init-backend':
         run_command(['terraform', 'init'])
@@ -126,8 +130,7 @@ def terraform_handler(options):
 
         # generate init Terraform files
         if not terraform_generate(config=CONFIG, init=True):
-            LOGGER_CLI.error('An error occured while generating Terraform files')
-            sys.exit(1)
+            return
 
         LOGGER_CLI.info('Initializing Terraform')
         if not run_command(['terraform', 'init']):
@@ -149,9 +152,11 @@ def terraform_handler(options):
 
         # generate the main.tf with remote state enabled
         LOGGER_CLI.info('Configuring Terraform Remote State')
-        terraform_generate(config=CONFIG)
+        if not terraform_generate(config=CONFIG):
+            return
+
         if not run_command(['terraform', 'init']):
-            sys.exit(1)
+            return
 
         LOGGER_CLI.info('Deploying Lambda Functions')
         # deploy both lambda functions
@@ -174,13 +179,15 @@ def terraform_handler(options):
 
         # Migrate back to local state so Terraform can successfully
         # destroy the S3 bucket used by the backend.
-        terraform_generate(config=CONFIG, init=True)
+        if not terraform_generate(config=CONFIG, init=True):
+            return
+
         if not run_command(['terraform', 'init']):
-            sys.exit(1)
+            return
 
         # Destroy all of the infrastructure
         if not tf_runner(action='destroy'):
-            sys.exit(1)
+            return
 
         # Remove old Terraform files
         terraform_clean()
@@ -333,7 +340,9 @@ def rollback(options):
     targets = ['module.stream_alert_{}'.format(x)
                for x in CONFIG.clusters()]
 
-    terraform_generate(config=CONFIG)
+    if not terraform_generate(config=CONFIG):
+        return
+
     tf_runner(targets=targets)
 
 
@@ -400,7 +409,8 @@ def deploy(options):
     publish_version(packages)
     # after the version is published and the config is written, generate the files
     # to ensure the alias is properly updated
-    terraform_generate(config=CONFIG)
+    if not terraform_generate(config=CONFIG):
+        return
     # apply the changes from publishing
     tf_runner(targets=targets)
 
