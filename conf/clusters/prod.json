@@ -19,12 +19,12 @@
     },
     "stream_alert": {
       "alert_processor": {
-        "current_version": 7,
+        "current_version": "$LATEST",
         "memory": 128,
         "timeout": 25
       },
       "rule_processor": {
-        "current_version": 8,
+        "current_version": "$LATEST",
         "memory": 256,
         "timeout": 10
       }
