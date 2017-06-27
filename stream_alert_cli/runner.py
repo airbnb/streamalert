@@ -137,10 +137,9 @@ def terraform_handler(options):
         LOGGER_CLI.info('Building Initial Infrastructure')
         init_targets = [
             'aws_s3_bucket.lambda_source',
-            'aws_s3_bucket.integration_testing',
-            'aws_s3_bucket.terraform_state',
-            'aws_s3_bucket.stream_alert_secrets',
             'aws_s3_bucket.logging_bucket',
+            'aws_s3_bucket.stream_alert_secrets',
+            'aws_s3_bucket.terraform_remote_state',
             'aws_kms_key.stream_alert_secrets',
             'aws_kms_alias.stream_alert_secrets'
         ]
