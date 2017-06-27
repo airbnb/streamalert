@@ -26,33 +26,61 @@ prefix
 
 Open ``conf/global.json`` and ``conf/lambda.json`` and replace ``PREFIX_GOES_HERE`` with your company or organization name.
 
-Administrator
-~~~~~~~~~~~~~
+user account
+~~~~~~~~~~~~
 
-To successfully deploy StreamAlert, you need to create an administrative user in the AWS account.
+To deploy StreamAlert, you need to create an AWS user for administration.
 
-Steps:
+First, create the policy to attach to the user:
+
+* Go to: Services => IAM => Policies
+* Click: Create policy
+* Select: Create your Own Policy
+* Name the policy ``streamalert``, and paste the following as the ``Policy Document``:
+* Clock: Create Policy
+
+.. code-block::
+
+  {
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "athena:*",
+                "cloudtrail:*",
+                "cloudwatch:*",
+                "ec2:*FlowLogs",
+                "events:*",
+                "firehose:*",
+                "iam:*",
+                "kinesis:*",
+                "kms:*",
+                "lambda:*",
+                "logs:*",
+                "s3:*",
+                "sns:*"
+            ],
+            "Resource": "*"
+        }
+    ]
+  }
+
+Next, create the user:
 
 * Go to: Services => IAM => Users
 * Click: Add user
-* Username: streamalert
+* Username: ``streamalert``
 * Access type: Programmatic access
-* Click: Next
+* Click: ``Next: Permissions``
 * Select: Attach existing policies directly
-* Attach the following policies::
+* Attach the previously created ``streamalert`` policy
+* Click: ``Next: Review``, and then ``Create user``
 
-  * AmazonKinesisFirehoseFullAccess
-  * AmazonKinesisFullAccess
-  * AmazonS3FullAccess
-  * AmazonSNSFullAccess
-  * AWSLambdaFullAccess
-  * CloudWatchFullAccess
-  * CloudWatchLogsFullAccess
-  * IAMFullAccess
-* Click:  Next (Review), and then Create User
-
-Take the Access Key and Secret Key and export them to your environment variables::
+Copy the Access Key ID and Secret Access Key and export them to your environment variables::
 
   $ export AWS_ACCESS_KEY_ID="REPLACE_ME"
   $ export AWS_SECRET_ACCESS_KEY="REPLACE_ME"
   $ export AWS_DEFAULT_REGION="us-east-1"
+
+.. note:: Remember to save your credentials in a safe place!

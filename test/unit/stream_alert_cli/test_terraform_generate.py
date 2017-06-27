@@ -238,7 +238,7 @@ class TestTerraformGenerate(object):
                     'lambda_source': {
                         'bucket': 'unit.testing.source.bucket',
                         'acl': 'private',
-                        'force_destroy': False,
+                        'force_destroy': True,
                         'versioning': {
                             'enabled': True
                         },
@@ -250,7 +250,7 @@ class TestTerraformGenerate(object):
                     'stream_alert_secrets': {
                         'bucket': 'unit-testing.streamalert.secrets',
                         'acl': 'private',
-                        'force_destroy': False,
+                        'force_destroy': True,
                         'versioning': {
                             'enabled': True
                         },
@@ -262,7 +262,7 @@ class TestTerraformGenerate(object):
                     'terraform_remote_state': {
                         'bucket': 'unit-testing.terraform.tfstate',
                         'acl': 'private',
-                        'force_destroy': False,
+                        'force_destroy': True,
                         'versioning': {
                             'enabled': True
                         },
@@ -274,7 +274,7 @@ class TestTerraformGenerate(object):
                     'logging_bucket': {
                         'bucket': 'unit-testing.streamalert.s3-logging',
                         'acl': 'log-delivery-write',
-                        'force_destroy': False,
+                        'force_destroy': True,
                         'versioning': {
                             'enabled': True
                         },
@@ -299,10 +299,84 @@ class TestTerraformGenerate(object):
         assert_equal(tf_main['terraform'], tf_main_expected['terraform'])
         assert_equal(tf_main['resource'], tf_main_expected['resource'])
 
+
     def test_generate_stream_alert(self):
         """CLI - Terraform Generate stream_alert Module"""
         # TODO(jacknagz): Write this test
         pass
+
+
+    def test_generate_flow_logs(self):
+        """CLI - Terraform Generate flow_logs Module"""
+        cluster_name = 'advanced'
+        terraform_generate.generate_flow_logs(
+            cluster_name,
+            self.cluster_dict,
+            self.config
+        )
+
+        flow_log_config = self.cluster_dict['module']['flow_logs_advanced']
+        assert_equal(flow_log_config['flow_log_group_name'], 'unit-test-advanced')
+        assert_equal(flow_log_config['vpcs'], ['vpc-id-1', 'vpc-id-2'])
+
+
+    def test_generate_cloudtrail_basic(self):
+        """CLI - Terraform Generate cloudtrail Module"""
+        cluster_name = 'advanced'
+        terraform_generate.generate_cloudtrail(
+            cluster_name,
+            self.cluster_dict,
+            self.config
+        )
+
+        assert_equal('cloudtrail_advanced' in self.cluster_dict['module'], True)
+        assert_equal(self.cluster_dict['module']['cloudtrail_advanced'], {
+            'account_id': '12345678910',
+            'cluster': 'advanced',
+            'kinesis_arn': '${module.kinesis_advanced.arn}',
+            'prefix': 'unit-testing',
+            'enable_logging': True,
+            'source': 'modules/tf_stream_alert_cloudtrail',
+            's3_logging_bucket': 'unit-testing.streamalert.s3-logging',
+            'existing_trail': False,
+            'is_global_trail': True,
+            'event_pattern': '{"account": ["12345678910"]}'
+        })
+
+    def test_generate_cloudtrail_all_options(self):
+        """CLI - Terraform Generate cloudtrail Module All Options"""
+        cluster_name = 'advanced'
+        self.config['clusters']['advanced']['modules']['cloudtrail'] = {
+            'enabled': True,
+            'existing_trail': False,
+            'is_global_trail': False,
+            'event_pattern': {
+                'source': ['aws.ec2'],
+                'account': '12345678910',
+                'detail': {
+                    'state': ['running']
+                }
+            }
+        }
+        terraform_generate.generate_cloudtrail(
+            cluster_name,
+            self.cluster_dict,
+            self.config
+        )
+
+        assert_equal('cloudtrail_advanced' in self.cluster_dict['module'], True)
+        assert_equal(self.cluster_dict['module']['cloudtrail_advanced'], {
+            'account_id': '12345678910',
+            'cluster': 'advanced',
+            'existing_trail': False,
+            'is_global_trail': False,
+            'kinesis_arn': '${module.kinesis_advanced.arn}',
+            'prefix': 'unit-testing',
+            'enable_logging': True,
+            'source': 'modules/tf_stream_alert_cloudtrail',
+            's3_logging_bucket': 'unit-testing.streamalert.s3-logging',
+            'event_pattern': '{"source": ["aws.ec2"], "account": "12345678910", "detail": {"state": ["running"]}}'
+        })
 
     def test_generate_cloudwatch_monitoring(self):
         """CLI - Terraform Generate cloudwatch_monitoring Module"""

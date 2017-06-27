@@ -79,11 +79,11 @@ An example ``production`` cluster::
 Customizing Clusters
 ~~~~~~~~~~~~~~~~~~~~
 
-Each cluster can be broken up into multiple modules to make up a StreamAlert cluster.
+Each StreamAlert cluster is made up of multiple modules.
 
 Each module corresponds to a Terraform module found in the ``terraform/modules`` directory, and serves a specific purpose in a StreamAlert cluster.
 
-After making modifications to a cluster's file, make sure you apply it with::
+After making modifications to a cluster file, make sure you apply the changes with::
 
   $ python stream_alert_cli.py terraform build
   
@@ -92,12 +92,18 @@ This will regenerate the necessary Terraform files and then apply the changes.
 Module: StreamAlert
 --------------------
 
-See `Lambda Settings <lambda.html>`_ for customization options.
+The main module for StreamAlert.
+
+It creates both AWS Lambda functions, aliases, an SNS topic, IAM permissions, and more.
+
+See `Lambda Settings <lambda.html>`_ for all customization options.
 
 Module: Kinesis
 ---------------
 
-See `Kinesis <kinesis.html>`_ for customization options.
+This module contains configuration for the Kinesis Streams and Kinesis Firehose infrastructure.
+
+See `Kinesis <kinesis.html>`_ for all customization options.
 
 Module: CloudWatch Monitoring
 -----------------------------
@@ -134,7 +140,7 @@ Template::
 Module: CloudTrail
 ------------------
 
-AWS CloudTrail is a service that enables compliance, operational auditing, and risk auditing of your AWS account.
+`AWS CloudTrail <https://aws.amazon.com/cloudtrail/>`_ is a service that enables compliance, operational auditing, and risk auditing of your AWS account.
 
 StreamAlert has native support for enabling and monitoring CloudTrail logs with the ``cloudtrail`` module.
 
@@ -142,11 +148,24 @@ When writing rules for CloudTrail data, use the ``cloudwatch:event`` log source.
 
 By default, all API calls will be logged and accessible from rules.
 
-Template::
+**template**
 
-  "cloudtrail": {
-    "enabled": true
-  }
+.. code-block::
+
+    "cloudtrail": {
+      "enabled": true
+    }
+
+**options**
+
+=============        ========     =======                            ===========
+Key                  Required     Default                            Description
+-------------        ---------    -------                            -----------
+``enabled``          Yes          -                                  To enable/disable the CloudTrail.
+``existing_trail``   No           ``false``                          Set to ``true`` if the account has an existing CloudTrail.  This is to avoid duplication of data collected by multiple CloudTrails.
+``is_global_trail``  No           ``true``                           If the CloudTrail should collect events from any region.
+``event_pattern``    No           ``{"account": ["<accound_id>"]}``  The CloudWatch Events pattern to send to Kinesis.  `More information <http://docs.aws.amazon.com/AmazonCloudWatch/latest/events/EventTypes.html>`_.
+=============        =========    =======                            ===========
 
 Module: Flow Logs
 -----------------
@@ -157,7 +176,9 @@ In the settings below, an arbitrary amount of subnets, vpcs, and enis can be ena
 
 When writing rules for this data, use the ``cloudwatch:flow_logs`` log source.
 
-Template::
+**template**
+
+.. code-block::
 
   "flow_logs": {
     "enabled": true,
@@ -175,3 +196,16 @@ Template::
       "..."
     ]
   }
+
+**options**
+
+=============        ========     =======                              ===========
+Key                  Required     Default                              Description
+-------------        ---------    -------                              -----------
+``enabled``          Yes          -                                    To enable/disable the Flow log creation.
+``log_group_name``   No           prefix_cluster_streamalert_flow_logs The name of the CloudWatch Log group.
+``subnets``          No           None                                 The list of AWS VPC subnet IDs to collect flow logs from.
+``vpcs``             No           None                                 The list of AWS VPC IDs to collect flow logs from.
+``enis``             No           None                                 The list of AWS ENIs to collect flow logs from.
+=============        =========    =======                            ===========
+  

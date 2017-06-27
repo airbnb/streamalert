@@ -29,3 +29,7 @@ variable "is_global_trail" {
 variable "s3_logging_bucket" {
   type = "string"
 }
+
+variable "event_pattern" {
+  type = "string"
+}
