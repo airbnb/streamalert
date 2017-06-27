@@ -383,7 +383,8 @@ def generate_cloudtrail(cluster_name, cluster_dict, config):
     existing_trail_default = False
     existing_trail = modules['cloudtrail'].get('existing_trail', existing_trail_default)
     is_global_trail_default = True
-    is_global_trail = modules['cloudtrail'].get('is_global_trail', is_global_trail_default)
+    is_global_trail = modules['cloudtrail'].get(
+        'is_global_trail', is_global_trail_default)
     event_pattern_default = {
         'account': [config['global']['account']['aws_account_id']]
     }
@@ -440,7 +441,8 @@ def generate_flow_logs(cluster_name, cluster_dict, config):
         config['global']['account']['prefix'],
         cluster_name
     )
-    flow_log_group_name = modules['flow_logs'].get('log_group_name', flow_log_group_name_default)
+    flow_log_group_name = modules['flow_logs'].get(
+        'log_group_name', flow_log_group_name_default)
 
     if modules['flow_logs']['enabled']:
         cluster_dict['module']['flow_logs_{}'.format(cluster_name)] = {
@@ -578,7 +580,8 @@ def terraform_generate(**kwargs):
         LOGGER_CLI.info('Generating cluster file: %s.tf', cluster)
         cluster_dict = generate_cluster(cluster_name=cluster, config=config)
         if not cluster_dict:
-            LOGGER_CLI.error('An error was generated while creating the %s cluster', cluster)
+            LOGGER_CLI.error(
+                'An error was generated while creating the %s cluster', cluster)
             return False
 
         cluster_json = json.dumps(

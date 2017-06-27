@@ -90,8 +90,8 @@ def terraform_check():
                        'your $PATH:\n'
                        '\t$ export PATH=$PATH:/usr/local/terraform/bin')
     return run_command(['terraform', 'version'],
-                error_message=prereqs_message,
-                quiet=True)
+                       error_message=prereqs_message,
+                       quiet=True)
 
 
 def terraform_handler(options):
