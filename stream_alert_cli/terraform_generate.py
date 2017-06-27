@@ -352,6 +352,32 @@ def generate_cloudtrail(cluster_name, cluster_dict, config):
     """
     modules = config['clusters'][cluster_name]['modules']
     cloudtrail_enabled = bool(modules['cloudtrail']['enabled'])
+    existing_trail_default = False
+    existing_trail = modules['cloudtrail'].get('existing_trail', existing_trail_default)
+    is_global_trail_default = True
+    is_global_trail = modules['cloudtrail'].get('is_global_trail', is_global_trail_default)
+    event_pattern_default = {
+        'account': [config['global']['account']['aws_account_id']]
+    }
+    event_pattern = modules['cloudtrail'].get('event_pattern', event_pattern_default)
+
+    # From here:
+    # http://docs.aws.amazon.com/AmazonCloudWatch/latest/events/CloudWatchEventsandEventPatterns.html
+    valid_event_pattern_keys = {
+        'version',
+        'id',
+        'detail-type',
+        'source',
+        'account',
+        'time',
+        'region',
+        'resources',
+        'detail'
+    }
+    if not set(event_pattern.keys()).issubset(valid_event_pattern_keys):
+        LOGGER_CLI.error('Invalid CloudWatch Event Pattern!')
+        sys.exit(1)
+
     cluster_dict['module']['cloudtrail_{}'.format(cluster_name)] = {
         'account_id': config['global']['account']['aws_account_id'],
         'cluster': cluster_name,
@@ -360,7 +386,11 @@ def generate_cloudtrail(cluster_name, cluster_dict, config):
         'enable_logging': cloudtrail_enabled,
         'source': 'modules/tf_stream_alert_cloudtrail',
         's3_logging_bucket': '{}.streamalert.s3-logging'.format(
-            config['global']['account']['prefix'])}
+            config['global']['account']['prefix']),
+        'existing_trail': existing_trail,
+        'is_global_trail': is_global_trail,
+        'event_pattern': json.dumps(event_pattern)
+    }
 
 
 def generate_flow_logs(cluster_name, cluster_dict, config):

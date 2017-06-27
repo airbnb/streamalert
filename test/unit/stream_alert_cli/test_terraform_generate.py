@@ -304,6 +304,64 @@ class TestTerraformGenerate(object):
         # TODO(jacknagz): Write this test
         pass
 
+    def test_generate_cloudtrail_basic(self):
+        """CLI - Terraform Generate cloudtrail Module"""
+        cluster_name = 'advanced'
+        terraform_generate.generate_cloudtrail(
+            cluster_name,
+            self.cluster_dict,
+            self.config
+        )
+
+        assert_equal('cloudtrail_advanced' in self.cluster_dict['module'], True)
+        assert_equal(self.cluster_dict['module']['cloudtrail_advanced'], {
+            'account_id': '12345678910',
+            'cluster': 'advanced',
+            'kinesis_arn': '${module.kinesis_advanced.arn}',
+            'prefix': 'unit-testing',
+            'enable_logging': True,
+            'source': 'modules/tf_stream_alert_cloudtrail',
+            's3_logging_bucket': 'unit-testing.streamalert.s3-logging',
+            'existing_trail': False,
+            'is_global_trail': True,
+            'event_pattern': '{"account": ["12345678910"]}'
+        })
+
+    def test_generate_cloudtrail_all_options(self):
+        """CLI - Terraform Generate cloudtrail Module All Options"""
+        cluster_name = 'advanced'
+        self.config['clusters']['advanced']['modules']['cloudtrail'] = {
+            'enabled': True,
+            'existing_trail': False,
+            'is_global_trail': False,
+            'event_pattern': {
+                'source': ['aws.ec2'],
+                'account': '12345678910',
+                'detail': {
+                    'state': ['running']
+                }
+            }
+        }
+        terraform_generate.generate_cloudtrail(
+            cluster_name,
+            self.cluster_dict,
+            self.config
+        )
+
+        assert_equal('cloudtrail_advanced' in self.cluster_dict['module'], True)
+        assert_equal(self.cluster_dict['module']['cloudtrail_advanced'], {
+            'account_id': '12345678910',
+            'cluster': 'advanced',
+            'existing_trail': False,
+            'is_global_trail': False,
+            'kinesis_arn': '${module.kinesis_advanced.arn}',
+            'prefix': 'unit-testing',
+            'enable_logging': True,
+            'source': 'modules/tf_stream_alert_cloudtrail',
+            's3_logging_bucket': 'unit-testing.streamalert.s3-logging',
+            'event_pattern': '{"source": ["aws.ec2"], "account": "12345678910", "detail": {"state": ["running"]}}'
+        })
+
     def test_generate_cloudwatch_monitoring(self):
         """CLI - Terraform Generate cloudwatch_monitoring Module"""
         cluster_name = 'test'
