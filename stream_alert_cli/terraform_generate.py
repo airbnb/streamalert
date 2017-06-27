@@ -53,7 +53,7 @@ def generate_s3_bucket(**kwargs):
         'target_bucket': logging_bucket,
         'target_prefix': '{}/'.format(bucket_name)
     }
-    force_destroy = kwargs.get('force_destroy', False)
+    force_destroy = kwargs.get('force_destroy', True)
     versioning = kwargs.get('versioning', True)
     lifecycle_rule = kwargs.get('lifecycle_rule')
 

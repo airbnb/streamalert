@@ -238,7 +238,7 @@ class TestTerraformGenerate(object):
                     'lambda_source': {
                         'bucket': 'unit.testing.source.bucket',
                         'acl': 'private',
-                        'force_destroy': False,
+                        'force_destroy': True,
                         'versioning': {
                             'enabled': True
                         },
@@ -250,7 +250,7 @@ class TestTerraformGenerate(object):
                     'stream_alert_secrets': {
                         'bucket': 'unit-testing.streamalert.secrets',
                         'acl': 'private',
-                        'force_destroy': False,
+                        'force_destroy': True,
                         'versioning': {
                             'enabled': True
                         },
@@ -262,7 +262,7 @@ class TestTerraformGenerate(object):
                     'terraform_remote_state': {
                         'bucket': 'unit-testing.terraform.tfstate',
                         'acl': 'private',
-                        'force_destroy': False,
+                        'force_destroy': True,
                         'versioning': {
                             'enabled': True
                         },
@@ -274,7 +274,7 @@ class TestTerraformGenerate(object):
                     'logging_bucket': {
                         'bucket': 'unit-testing.streamalert.s3-logging',
                         'acl': 'log-delivery-write',
-                        'force_destroy': False,
+                        'force_destroy': True,
                         'versioning': {
                             'enabled': True
                         },
