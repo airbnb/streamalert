@@ -278,7 +278,7 @@
       "product_version": "string",
       "server_added_timestamp": "string",
       "signed": "string",
-      "timestamp": "float"
+      "timestamp": "string"
     },
     "parser": "json",
     "configuration": {
