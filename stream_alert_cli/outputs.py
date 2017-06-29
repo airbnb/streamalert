@@ -94,7 +94,7 @@ def encrypt_and_push_creds_to_s3(region, bucket, key, props):
     # Check if we have any creds to send to s3
     # Some services (ie: AWS) do not require this, so it's not an error
     if not creds:
-        return
+        return True
 
     creds_json = json.dumps(creds)
     enc_creds = kms_encrypt(region, creds_json)

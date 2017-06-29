@@ -20,7 +20,7 @@ from botocore.exceptions import ClientError
 
 from moto import mock_kms, mock_s3
 
-from nose.tools import assert_false, assert_is_none, assert_list_equal, assert_true
+from nose.tools import assert_false, assert_list_equal, assert_true
 
 from stream_alert.alert_processor.output_base import OutputProperty
 from stream_alert_cli.outputs import (
@@ -85,9 +85,10 @@ def test_load_config(method_mock):
     assert_false(loaded)
 
 
+@patch('stream_alert_cli.outputs.encrypt_and_push_creds_to_s3')
 @mock_kms
 @mock_s3
-def test_encrypt_and_push_creds_to_s3():
+def test_encrypt_and_push_creds_to_s3(cli_mock):
     """Encrypt and push creds to s3"""
     props = {
         'non-secret': OutputProperty(
@@ -96,7 +97,8 @@ def test_encrypt_and_push_creds_to_s3():
 
     return_value = encrypt_and_push_creds_to_s3('us-east-1', 'bucket', 'key', props)
 
-    assert_is_none(return_value)
+    assert_true(return_value)
+    cli_mock.assert_not_called()
 
     props['secret'] = OutputProperty(
         description='short description of secret needed',
