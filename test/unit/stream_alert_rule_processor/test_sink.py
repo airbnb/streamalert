@@ -56,40 +56,38 @@ class TestStreamSink(object):
     def test_json_from_dict():
         """Sink SNS Messaging - Dictionary to JSON Marshalling"""
         # Create a dictionary with an empty alert list
-        sns_dict = {"default": []}
+        sns_dict = {"default": {}}
         json_message = sink.json_dump(sns_dict)
 
         # Test empty dictionary
-        assert_equal(json_message, '{"default": []}')
+        assert_equal(json_message, '{"default": {}}')
 
         # Create a dictionary with a single alert in the list
-        sns_dict = {"default": [
-            {
-                'rule_name': "test_rule_01",
-                'record': {
-                    'record_data_key01_01': "record_data_value01_01",
-                    'record_data_key02_01': "record_data_value02_01"
-                    },
-                'metadata': {
-                    'log': "payload_data_01",
-                    'outputs': "rule.outputs_01",
-                    'type': "payload_type_01",
-                    'source': {
-                        'service': "payload_service_01",
-                        'entity': "payload_entity_01"
-                    }
+        sns_dict = {"default": {
+            'rule_name': "test_rule_01",
+            'record': {
+                'record_data_key01_01': "record_data_value01_01",
+                'record_data_key02_01': "record_data_value02_01"
+                },
+            'metadata': {
+                'log': "payload_data_01",
+                'outputs': "rule.outputs_01",
+                'type': "payload_type_01",
+                'source': {
+                    'service': "payload_service_01",
+                    'entity': "payload_entity_01"
                 }
             }
-        ]}
+        }}
 
         json_message = sink.json_dump(sns_dict)
 
         # Test with single alert entry
-        assert_equal(json_message, '{"default": [{"rule_name": "test_rule_01", ' \
+        assert_equal(json_message, '{"default": {"rule_name": "test_rule_01", ' \
             '"metadata": {"outputs": "rule.outputs_01", "type": "payload_type_01", ' \
             '"log": "payload_data_01", "source": {"service": "payload_service_01", ' \
             '"entity": "payload_entity_01"}}, "record": {"record_data_key02_01": ' \
-            '"record_data_value02_01", "record_data_key01_01": "record_data_value01_01"}}]}')
+            '"record_data_value02_01", "record_data_key01_01": "record_data_value01_01"}}}')
 
 def get_payload(byte_size):
     """Returns a base64 encoded random payload of (roughly) byte_size length
