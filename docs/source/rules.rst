@@ -188,7 +188,7 @@ Example usage of the function above in a rule:
 
     # rules/prod.py
     
-    from rules.helpers.base import in_set
+    from helpers.base import in_set
 
     @rule(logs=['example'],
           outputs=['slack'])

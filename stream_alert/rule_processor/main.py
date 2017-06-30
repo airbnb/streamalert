@@ -18,25 +18,27 @@ import importlib
 import os
 
 from stream_alert.rule_processor.handler import StreamAlert
-from rules import (
-    sample_matchers
-)
 
 modules_to_import = set()
 # walk the rules directory to dymanically import
-for root, dirs, files in os.walk('rules/'):
-    # ignore old rule files and helpers
-    if root in ['rules/helpers', 'rules/']:
-        continue
-    # ignore __init__.py files
-    filtered_files = filter(lambda x: not x.startswith('.') and
-                                      not x.endswith('.pyc') and
-                                      not x.startswith('__init__'), files)
-    for import_file in filtered_files:
-        package_path = root.replace('/', '.')
-        import_module = os.path.splitext(import_file)[0]
-        modules_to_import.add('{}.{}'.format(package_path, import_module))
+for folder in ('matchers/', 'rules/'):
+    for root, dirs, files in os.walk(folder):
+        filtered_files = filter(lambda x: not x.startswith('.') and
+                                          not x.endswith('.pyc') and
+                                          not x.startswith('__init__'),
+                                          files)
+        for import_file in filtered_files:
+            # Greater than two because that indicates there's only one folder
+            if len(root.split('/')) > 2:
+                package_path = root.replace('/', '.')
+            else:
+                package_path = root.rstrip('/')
+            import_module = os.path.splitext(import_file)[0]
+            print package_path, import_module
+            if package_path and import_module:
+                modules_to_import.add('{}.{}'.format(package_path, import_module))
 
+print modules_to_import
 for module_name in modules_to_import:
     importlib.import_module(module_name)
 
