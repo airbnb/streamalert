@@ -606,7 +606,8 @@
     "parser": "json",
     "configuration": {
       "optional_top_level_keys": [
-        "log_type"
+        "log_type",
+        "decorations"
       ]
     }
   },
