@@ -1,36 +1,32 @@
 Rules
 =====
 
-* Rules encompass data analysis and alerting logic
+* Rules contain data analysis and alerting logic
 * Rules are written in native Python, not a proprietary language
 * A Rule can utilize any Python function or library
 * A Rule can be run against multiple log sources if desired
 * Rules can be isolated into defined environments/clusters
 * Rule alerts can be sent to one or more outputs, like S3, PagerDuty or Slack
-* Rules can be unit tested and integration tested
+* Rules can be unit and integration tested
 
 Getting Started
 ---------------
 
-* Rules are located in the ``rules/`` sub-directory.
-* A separate rule file for each cluster defined in the ``variables.json`` file is best practice.
-* Examples: ``corp.py``, ``pci.py``, or ``production.py``
-* This structure is optional, you can organize rules however you like.
+All rules are located in the ``rules/`` directory.
 
-All rule files must be explicitly imported in ``stream_alert/rule_processor/main.py``.
+Within this directory are two folders: ``community/`` and ``default/``.
 
-Example:
+``community/`` rules are publicly shared from StreamAlert contributors.
 
-.. code-block:: python
+``default/`` can be used as a generic container for rules files.
 
-  from rules import (
-      corp,
-      pci,
-      production
-  )
+You may create any folder structure desired, as all rules folders are imported recursively. Here are some examples:
 
-.. note:: If you skip the step above, your rules will not be load into StreamAlert.
+* ``rules/intrusion-detection/malware.py``
+* ``rules/compliance/pci.py``
+* ``rules/default/infrastructure.py``
 
+.. note:: If you create additional folders within the ``rules`` directory, be sure to include a blank ``__init__.py`` file.
 
 Overview
 --------
@@ -39,9 +35,7 @@ Each Rule file must contain the following at the top:
 
 .. code-block:: python
 
-  from stream_alert import rule_helpers
   from stream_alert.rule_processor.rules_engine import StreamRules
-
   rule = StreamRules.rule
 
 All rules take this structure:
@@ -57,13 +51,13 @@ All rules take this structure:
 
 You define a list of ``logs`` that the rule is applicable to. 
 
-Rules will only be evaluated against incoming records that match the declared log types.
+Rules will only be evaluated against incoming records that match the declared log types found in ``conf/logs.json``.
 
 
 Example
 -------
 
-Here’s an example that alerts on the use of sudo in a PCI environment:
+Here’s an example rule that alerts on the use of sudo in a PCI environment:
 
 .. code-block:: python
 
@@ -71,7 +65,7 @@ Here’s an example that alerts on the use of sudo in a PCI environment:
 
     @rule(logs=['osquery'],                           # applicable datasource(s)
           matchers=['pci'],                           # matcher(s) to evaluate
-          outputs=['aws-s3', 'pagerduty', 'slack'])   # where to send alerts
+          outputs=['pagerduty:cirt', 'slack:cirt'])   # where to send alerts
     def production_sudo(record):                      # incoming record/log
         table_name = record['name']
         tag = record['columns']['tag']
@@ -88,7 +82,7 @@ Parameter Details
 -----------------
 
 logs
-~~~~~~~~~~~
+~~~~
 
 ``logs`` define the log sources the rule supports; The ``def`` function block is not run unless this condition is satisfied. Your rule(s) must define at least one log source.
 
@@ -162,13 +156,13 @@ Helpers
 -------
 To improve readability and writability of rules, you can extract commonly used ``Python`` logic into custom helper methods.
 
-These helpers are defined in ``rules/helpers/base.py`` and can be called from within a matcher or rule.
+These helpers are defined in ``helpers/base.py`` and can be called from within a matcher or rule.
 
 Example function:
 
 .. code-block:: python
 
-    # rules/helpers/base.py
+    # helpers/base.py
 
     def in_set(data, whitelist):
         """Checks if some data exists in any elements of a whitelist.
@@ -186,7 +180,7 @@ Example usage of the function above in a rule:
 
 .. code-block:: python
 
-    # rules/prod.py
+    # rules/default/prod.py
     
     from helpers.base import in_set
 
