@@ -96,22 +96,23 @@ def terraform_check():
 
 def terraform_handler(options):
     """Handle all Terraform CLI operations"""
-    # verify terraform is installed
+    # Verify terraform is installed
     if not terraform_check():
         return
-    # use a named tuple to match the 'processor' attribute in the argparse options
+    # Use a named tuple to match the 'processor' attribute in the argparse options
     deploy_opts = namedtuple('DeployOptions', ['processor'])
 
-    # plan/apply our streamalert infrastructure
+    # Plan and Apply our streamalert infrastructure
     if options.subcommand == 'build':
-        # Make sure the Terraform is completely up to date
+        # Generate Terraform files
         if not terraform_generate(config=CONFIG):
             return
-        # --target is for terraforming a specific streamalert module
+        # Target is for terraforming a specific streamalert module.
+        # This value is passed as a list
         if options.target:
-            target = options.target
             targets = ['module.{}_{}'.format(target, cluster)
-                       for cluster in CONFIG.clusters()]
+                       for cluster in CONFIG.clusters()
+                       for target in options.target]
             tf_runner(targets=targets)
         else:
             tf_runner()

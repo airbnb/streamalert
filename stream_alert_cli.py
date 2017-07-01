@@ -27,73 +27,111 @@ terraform <cmd> -var-file=../terraform.tfvars -var-file=../variables.json
 import os
 
 from argparse import ArgumentParser, RawTextHelpFormatter
+from argparse import SUPPRESS as argparse_suppress
 
 from stream_alert_cli.runner import cli_runner
 from stream_alert_cli.logger import LOGGER_CLI
+from stream_alert_cli import __version__ as version
 
 
 def build_parser():
-    description = (
-        """Build, Deploy, and Test StreamAlert Infrastructure
+    description = ("""
+StreamAlertCLI v{}
+Build, Deploy, Configure, and Test StreamAlert Infrastructure
 
-    Define New Outputs:
-    stream_alert_cli.py output new --service 'service_name'
+Available Commands:
 
-    Deploying Lambda Functions:
-    stream_alert_cli.py lambda deploy --processor 'rule'
-    stream_alert_cli.py lambda deploy --processor 'alert'
-    stream_alert_cli.py lambda deploy --processor 'all'
+    stream_alert_cli.py terraform               Manage StreamAlert infrastructure
+    stream_alert_cli.py output                  Configure new StreamAlert outputs
+    stream_alert_cli.py lambda                  Deploy, test, and rollback StreamAlert AWS Lambda functions
 
-    Rolling Back:
-    stream_alert_cli.py lambda rollback --processor 'rule'
+For additional details on the available commands, try:
 
-    Running Integration Tests:
-    stream_alert_cli.py lambda test --processor 'rule'
-    stream_alert_cli.py lambda test --processor 'alert'
-    stream_alert_cli.py lambda test --processor 'all'
+    stream_alert_cli.py [command] --help
 
-    Building Infrastructure:
-    stream_alert_cli.py terraform init
-    stream_alert_cli.py terraform build
-    stream_alert_cli.py terraform build --target kinesis
-    stream_alert_cli.py terraform build --target stream_alert
-    """
-    )
+""".format(version))
+    usage = '%(prog)s [command] [subcommand] [options]'
 
     parser = ArgumentParser(
         description=description,
         prog='stream_alert_cli.py',
+        usage=usage,
         formatter_class=RawTextHelpFormatter
     )
     subparsers = parser.add_subparsers()
 
-    # defining new outputs
+    #
+    # Output Parser
+    #
+    output_usage = 'stream_alert_cli.py output [subcommand] [options]'
+    output_description = ("""
+StreamAlertCLI v{}
+Define new StreamAlert outputs to send alerts to
+
+Available Subcommands:
+
+    stream_alert_cli.py output new [options]    Create a new StreamAlert output
+
+Examples:
+
+    stream_alert_cli.py output new --service <service_name>
+    stream_alert_cli.py output new --service aws-s3
+    stream_alert_cli.py output new --service pagerduty
+    stream_alert_cli.py output new --service slack
+
+""".format(version))
     output_parser = subparsers.add_parser(
         'output',
+        description=output_description,
+        usage=output_usage,
+        formatter_class=RawTextHelpFormatter,
         help='Define a new output to send alerts to'
     )
 
-    # set the name of this parser to 'output'
+    # Set the name of this parser to 'output'
     output_parser.set_defaults(command='output')
 
-    # output parser arguments. the cli will handle the logic to set these up
+    # Output parser arguments
+    # The CLI library handles all configuration logic
     output_parser.add_argument(
         'subcommand',
         choices=['new'],
-        help=('new: create a new output to send alerts to\n')
+        help=argparse_suppress
     )
-    # output service options
+    # Output service options
     output_parser.add_argument(
         '--service',
         choices=['aws-lambda', 'aws-s3', 'pagerduty', 'phantom', 'slack'],
-        help='The name of the service to send alerts to',
-        required=True
+        required=True,
+        help=argparse_suppress
     )
 
-    # live-test parser
+    #
+    # Live Test Parser
+    #
+    live_test_usage = 'stream_alert_cli.py live-test [options]'
+    live_test_description = ("""
+StreamAlertCLI v{}
+Run end-to-end tests that will attempt to send alerts
+
+Available Options:
+
+    --cluster               The cluster name to use for live testing
+    --rules                 Name of rules to test, separated by spaces
+    --debug                 Enable Debug logger output
+
+Examples:
+
+    stream_alert_cli.py live-test --cluster prod
+    stream_alert_cli.py live-test --rules
+
+""".format(version))
     live_test_parser = subparsers.add_parser(
         'live-test',
-        help='Run end-to-end tests that will attempt to send alerts'
+        description=live_test_description,
+        usage=live_test_usage,
+        formatter_class=RawTextHelpFormatter,
+        help=argparse_suppress
     )
 
     # set the name of this parser to 'live-test'
@@ -108,7 +146,7 @@ def build_parser():
     live_test_parser.add_argument(
         '-c', '--cluster',
         choices=clusters,
-        help='Specific cluster to use for live testing',
+        help=argparse_suppress,
         required=True
     )
 
@@ -116,39 +154,67 @@ def build_parser():
     live_test_parser.add_argument(
         '-r', '--rules',
         nargs='+',
-        help='Names of rules to test, separated by spaces'
+        help=argparse_suppress
     )
 
     # allow verbose output for the CLI with te --debug option
     live_test_parser.add_argument(
         '--debug',
         action='store_true',
-        help='Enable DEBUG logger output'
+        help=argparse_suppress
     )
 
-    # lambda parser
+    #
+    # Lambda Parser
+    #
+    lambda_usage = 'stream_alert_cli.py lambda [subcommand] [options]'
+    lambda_description = ("""
+StreamAlertCLI v{}
+Deploy, Rollback, and Test StreamAlert Lambda functions
+
+Available Subcommands:
+
+    stream_alert_cli.py lambda deploy [options]         Deploy Lambda functions
+    stream_alert_cli.py lambda rollback [options]       Rollback Lambda functions
+    stream_alert_cli.py lambda test [options]           Run rule tests
+
+Available Options:
+
+    --processor                                         The name of the Lambda function to manage.
+                                                        Valid options include: rule, alert, or all.
+    --debug                                             Enable Debug logger output.
+    --rules                                             List of rules to test, separated by spaces.
+
+Examples:
+
+    stream_alert_cli.py lambda deploy --processor all
+    stream_alert_cli.py lambda rollback --processor all
+    stream_alert_cli.py lambda test --processor rule --rules lateral_movement root_logins
+
+""".format(version))
     lambda_parser = subparsers.add_parser(
         'lambda',
-        help='Deploy, Rollback, and Test StreamAlert Lambda functions'
+        usage=lambda_usage,
+        description=lambda_description,
+        help=argparse_suppress,
+        formatter_class=RawTextHelpFormatter
     )
 
-    # set the name of this parser to 'lambda'
+    # Set the name of this parser to 'lambda'
     lambda_parser.set_defaults(command='lambda')
 
-    # add subcommand options for the lambda sub-parser
+    # Add subcommand options for the lambda sub-parser
     lambda_parser.add_argument(
         'subcommand',
         choices=['deploy', 'rollback', 'test'],
-        help=('deploy: Build Lambda package, upload to S3, and deploy with Terraform\n'
-              'rollback: Roll a Lambda function back by one production vpersion\n'
-              'test: Run integration tests on a Lambda function')
+        help=argparse_suppress
     )
 
     # require the name of the processor being deployed/rolled back/tested
     lambda_parser.add_argument(
         '--processor',
         choices=['alert', 'all', 'rule'],
-        help='The name of the AWS Lambda function to deploy, rollback, or test',
+        help=argparse_suppress,
         required=True
     )
 
@@ -156,20 +222,59 @@ def build_parser():
     lambda_parser.add_argument(
         '--debug',
         action='store_true',
-        help='Enable DEBUG logger output'
+        help=argparse_suppress
     )
 
     # add the optional ability to test against a rule/set of rules
     lambda_parser.add_argument(
         '-r', '--rules',
         nargs='+',
-        help='Names of rules to test, separated by spaces'
+        help=argparse_suppress
     )
 
-    # terraform parser and defaults
+    #
+    # Terraform Parser
+    #
+    terraform_usage = 'stream_alert_cli.py terraform [subcommand] [options]'
+    terraform_description = ("""
+StreamAlertCLI v{}
+Plan and Apply StreamAlert Infrastructure with Terraform
+
+Available Subcommands:
+
+    stream_alert_cli.py terraform init                      Initialize StreamAlert infrastructure
+    stream_alert_cli.py terraform init-backend              Initialize the Terraform backend
+    stream_alert_cli.py terraform build [options]           Run Terraform on all StreamAlert modules
+    stream_alert_cli.py terraform clean                     Remove Terraform files (only use this when destroying all infrastructure)
+    stream_alert_cli.py terraform destroy [options]         Destroy StreamAlert infrastructure
+    stream_alert_cli.py terraform generate                  Generate Terraform files from JSON cluster files
+    stream_alert_cli.py terraform status                    Show cluster health, and other currently configured infrastructure information
+
+Available Options:
+
+    --target                                                The Terraform module name to apply.
+                                                            Valid options: stream_alert, kinesis, kinesis_events,
+                                                            cloudtrail, monitoring, and s3_events.
+Examples:
+
+    stream_alert_cli.py terraform init
+    stream_alert_cli.py terraform init-backend
+    stream_alert_cli.py terraform generate
+
+    stream_alert_cli.py terraform build
+    stream_alert_cli.py terraform build --target kinesis
+    stream_alert_cli.py terraform build --target stream_alert
+
+    stream_alert_cli.py terraform destroy
+    stream_alert_cli.py terraform destroy -target cloudtrail
+
+""".format(version))
     tf_parser = subparsers.add_parser(
         'terraform',
-        help='Build the stream alert infrastructure'
+        usage=terraform_usage,
+        description=terraform_description,
+        help=argparse_suppress,
+        formatter_class=RawTextHelpFormatter
     )
 
     # set the name of this parser to 'terraform'
@@ -184,15 +289,21 @@ def build_parser():
                  'init',
                  'init-backend',
                  'generate',
-                 'status']
+                 'status'],
+        help=argparse_suppress
     )
 
     tf_parser.add_argument(
         '--target',
-        choices=['stream_alert', 'kinesis', 'kinesis_events', 's3_events',
-                 'cloudwatch_monitoring'],
-        help='A specific Terraform module to build',
-        nargs='?'
+        choices=['stream_alert',
+                'kinesis',
+                'kinesis_events',
+                's3_events',
+                'cloudwatch_monitoring'
+                'cloudtrail',
+                'flow_logs'],
+        help=argparse_suppress,
+        nargs='+'
     )
 
     return parser
