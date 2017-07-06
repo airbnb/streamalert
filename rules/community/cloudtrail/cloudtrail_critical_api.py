@@ -1,5 +1,5 @@
 from stream_alert.rule_processor.rules_engine import StreamRules
-from rules.helpers.base import in_set
+from helpers.base import in_set
 
 rule = StreamRules.rule
 disable = StreamRules.disable()

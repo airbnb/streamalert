@@ -17,18 +17,11 @@ from stream_alert.rule_processor.rules_engine import StreamRules
 
 matcher = StreamRules.matcher()
 
-# basic matcher for checking environments
+# Basic matcher for checking environments
+# based on a key within a record
 @matcher
 def production_env(rec):
-    env = rec['env']
-    return env == 'production'
-
-
-# matcher layout
-@matcher
-def matcher_name(rec):
-    """Description"""
-    return True
+    return rec['env'] == 'production'
 
 @matcher
 def json_test_matcher(rec):

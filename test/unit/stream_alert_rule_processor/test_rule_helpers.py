@@ -17,7 +17,7 @@ import time
 
 from nose.tools import assert_equal
 
-from rules.helpers import base
+from helpers import base
 
 def test_in_set():
     """Helpers - In Set"""

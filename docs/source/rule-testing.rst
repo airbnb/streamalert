@@ -44,8 +44,8 @@ Helpers
 
 It's often necessary to stub (dynamically fill in) values in our test data.  This could be due to time-based rules which utilize the ``last_hour`` `rule helper <rules.html#helpers>`_.  In order to test in these scenarios, a testing helper can be used.
 
-All Helpers
------------
+Helpers Functions
+-----------------
 
 ``last_hour``: Generates a unix epoch time within the last hour (ex: ``1489105783``).
 
