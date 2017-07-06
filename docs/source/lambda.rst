@@ -73,7 +73,7 @@ vpc_config
 
 To enable StreamAlert's Alert Processor to access resources inside a VPC, you must provide additional VPC-specific configuration information.
 
-`More information<http://docs.aws.amazon.com/lambda/latest/dg/vpc.html>`_
+`More information <http://docs.aws.amazon.com/lambda/latest/dg/vpc.html>`_
 
 **Template:**
 
