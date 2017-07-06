@@ -23,24 +23,21 @@ modules_to_import = set()
 # walk the rules directory to dymanically import
 for folder in ('matchers/', 'rules/'):
     for root, dirs, files in os.walk(folder):
-        filtered_files = filter(lambda x: not x.startswith('.') and
-                                          not x.endswith('.pyc') and
-                                          not x.startswith('__init__'),
-                                          files)
+        filtered_files = [rule_file for rule_file in files if not (rule_file.startswith((
+            '.', '__init__')) or rule_file.endswith('.pyc'))]
         for import_file in filtered_files:
-            # Greater than two because that indicates there's only one folder
-            if len(root.split('/')) > 2:
+            # Greater than one because that indicates there's only one folder
+            if root.count('/') > 1:
                 package_path = root.replace('/', '.')
             else:
                 package_path = root.rstrip('/')
             import_module = os.path.splitext(import_file)[0]
-            print package_path, import_module
             if package_path and import_module:
                 modules_to_import.add('{}.{}'.format(package_path, import_module))
 
-print modules_to_import
 for module_name in modules_to_import:
     importlib.import_module(module_name)
+
 
 def handler(event, context):
     """Main Lambda handler function"""
