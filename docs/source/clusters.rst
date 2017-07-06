@@ -32,7 +32,9 @@ Each cluster lives in its own ``json`` file in the ``conf/clusters`` directory.
 
 A cluster file contains name, region, modules, and outputs.
 
-An example ``production`` cluster::
+An example ``production`` cluster:
+
+.. code-block:: json
 
   {
     "id": "production",
@@ -83,10 +85,12 @@ Each StreamAlert cluster is made up of multiple modules.
 
 Each module corresponds to a Terraform module found in the ``terraform/modules`` directory, and serves a specific purpose in a StreamAlert cluster.
 
-After making modifications to a cluster file, make sure you apply the changes with::
+After making modifications to a cluster file, make sure you apply the changes with:
+
+.. code-block:: bash
 
   $ python stream_alert_cli.py terraform build
-  
+
 This will regenerate the necessary Terraform files and then apply the changes.
 
 Module: StreamAlert
@@ -116,10 +120,14 @@ If any of the services cross a predefined threshold, an alarm is generated.
 
 To disable CloudWatch alarms, set to ``false``.
 
-Template::
+**Template:**
 
-  "cloudwatch_monitoring": {
-    "enabled": true
+.. code-block:: json
+
+  {
+    "cloudwatch_monitoring": {
+      "enabled": true
+    }
   }
 
 Module: Kinesis Events
@@ -131,10 +139,14 @@ By default, this connects the ``stream_alert`` module to the ``kinesis`` module.
 
 To disable this mapping, set to ``false``
 
-Template::
+**Template:**
 
-  "kinesis_events": {
-    "enabled": true
+.. code-block:: json
+
+  {
+    "kinesis_events": {
+      "enabled": true
+    }
   }
 
 Module: CloudTrail
@@ -148,24 +160,26 @@ When writing rules for CloudTrail data, use the ``cloudwatch:event`` log source.
 
 By default, all API calls will be logged and accessible from rules.
 
-**template**
+**Template:**
 
-.. code-block::
+.. code-block:: json
 
+  {
     "cloudtrail": {
       "enabled": true
     }
+  }
 
-**options**
+**Options:**
 
-=============        ========     =======                            ===========
-Key                  Required     Default                            Description
--------------        ---------    -------                            -----------
-``enabled``          Yes          -                                  To enable/disable the CloudTrail.
-``existing_trail``   No           ``false``                          Set to ``true`` if the account has an existing CloudTrail.  This is to avoid duplication of data collected by multiple CloudTrails.
-``is_global_trail``  No           ``true``                           If the CloudTrail should collect events from any region.
-``event_pattern``    No           ``{"account": ["<accound_id>"]}``  The CloudWatch Events pattern to send to Kinesis.  `More information <http://docs.aws.amazon.com/AmazonCloudWatch/latest/events/EventTypes.html>`_.
-=============        =========    =======                            ===========
+===================  ========  ==================================  ===========
+Key                  Required  Default                             Description
+-------------------  --------  ----------------------------------  -----------
+``enabled``          Yes       -                                   To enable/disable the CloudTrail.
+``existing_trail``   No        ``false``                           Set to ``true`` if the account has an existing CloudTrail.  This is to avoid duplication of data collected by multiple CloudTrails.
+``is_global_trail``  No        ``true``                            If the CloudTrail should collect events from any region.
+``event_pattern``    No        ``{"account": ["<accound_id>"]}``   The CloudWatch Events pattern to send to Kinesis.  `More information <http://docs.aws.amazon.com/AmazonCloudWatch/latest/events/EventTypes.html>`_.
+===================  ========  ==================================  ===========
 
 Module: Flow Logs
 -----------------
@@ -176,36 +190,37 @@ In the settings below, an arbitrary amount of subnets, vpcs, and enis can be ena
 
 When writing rules for this data, use the ``cloudwatch:flow_logs`` log source.
 
-**template**
+**Template:**
 
-.. code-block::
+.. code-block:: json
 
-  "flow_logs": {
-    "enabled": true,
-    "log_group_name": "<name-of-cloudwatch-log-group>",
-    "subnets": [
-      "subnet-id-1",
-      "..."
-    ],
-    "vpcs": [
-      "vpc-id-1",
-      "..."
-    ],
-    "enis": [
-      "eni-id-1",
-      "..."
-    ]
+  {
+    "flow_logs": {
+      "enabled": true,
+      "log_group_name": "<name-of-cloudwatch-log-group>",
+      "subnets": [
+        "subnet-id-1",
+        "..."
+      ],
+      "vpcs": [
+        "vpc-id-1",
+        "..."
+      ],
+      "enis": [
+        "eni-id-1",
+        "..."
+      ]
+    }
   }
 
-**options**
+**Options:**
 
-=============        ========     =======                              ===========
-Key                  Required     Default                              Description
--------------        ---------    -------                              -----------
-``enabled``          Yes          -                                    To enable/disable the Flow log creation.
-``log_group_name``   No           prefix_cluster_streamalert_flow_logs The name of the CloudWatch Log group.
-``subnets``          No           None                                 The list of AWS VPC subnet IDs to collect flow logs from.
-``vpcs``             No           None                                 The list of AWS VPC IDs to collect flow logs from.
-``enis``             No           None                                 The list of AWS ENIs to collect flow logs from.
-=============        =========    =======                            ===========
-  
+==================  ========  ====================================  ===========
+Key                 Required  Default                               Description
+------------------  --------  ------------------------------------  -----------
+``enabled``         Yes       -                                     To enable/disable the Flow log creation.
+``log_group_name``  No        prefix_cluster_streamalert_flow_logs  The name of the CloudWatch Log group.
+``subnets``         No        None                                  The list of AWS VPC subnet IDs to collect flow logs from.
+``vpcs``            No        None                                  The list of AWS VPC IDs to collect flow logs from.
+``enis``            No        None                                  The list of AWS ENIs to collect flow logs from.
+==================  ========  ====================================  ===========

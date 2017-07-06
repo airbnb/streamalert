@@ -14,20 +14,26 @@ Install:
 1. `Pip <https://pip.pypa.io/en/stable/installing/>`_
 2. `Terraform <https://www.terraform.io/intro/getting-started/install.html>`_
 
-Fork the StreamAlert repository from the UI, and then clone it locally::
+Fork the StreamAlert repository from the UI, and then clone it locally:
+
+.. code-block:: bash
 
   $ git clone https://github.com/<your-username>/streamalert.git
 
-Change into the cloned StreamAlert repo, and install Python dependencies::
-  
+Change into the cloned StreamAlert repo, and install Python dependencies:
+
+.. code-block:: bash
+
   $ cd streamalert
   $ pip install -r requirements.txt
 
 Making Changes
 --------------
 
-Checkout a new branch::
-  
+Checkout a new branch:
+
+.. code-block:: bash
+
   git checkout -b <branch-name>
 
 Make changes, add features, or fix bugs.
@@ -63,25 +69,31 @@ Scenario: You have unstaged changes that you want to add into your last commit::
   $ git add -u           # add all tracked files
   $ git commit --amend   # commit these changes to the last commit
 
-Scenario: You have two commits you want to merge into one::
+Scenario: You have two commits you want to merge into one:
+
+.. code-block:: bash
 
   $ git log --oneline
   c3dbbe9 [docs] add contributing guide
   f5b038e [docs] add streamalert authors
   04e52c1 [setup] add jinja2 to requirements.txt
   ...
-  
-In this case, let's merge the two ``[docs]`` commits::
+
+In this case, let's merge the two ``[docs]`` commits:
+
+.. code-block:: bash
 
   $ git rebase -i f5b038e~1
   pick f5b038e [docs] add streamalert authors
   squash c3dbbe9 [docs] add contributing guide
-  
+
 If your editor is `vim`, type `:wq` once you enter the above changes.
 
 This will now open a new window to modify your combined commit message.  Make your edits, and exit once again.
 
-After rebasing, you will need to force push your branch if it already exists upstream::
+After rebasing, you will need to force push your branch if it already exists upstream:
+
+.. code-block:: bash
 
   $ git push origin <mybranch> -f
 
@@ -91,7 +103,9 @@ Tests
 Unit Testing
 ~~~~~~~~~~~~
 
-StreamAlert contains unit tests for many parts of the code.  When making changes, you need to ensure that you do  not break existing functionality.  To run unit tests locally::
+StreamAlert contains unit tests for many parts of the code.  When making changes, you need to ensure that you do  not break existing functionality.  To run unit tests locally:
+
+.. code-block:: bash
 
   # run this from the repo root
   $ nosetests -v test/unit
@@ -105,7 +119,7 @@ If you are adding features to existing classes with tests, you must add test cas
 Integration Testing
 ~~~~~~~~~~~~~~~~~~~
 
-To verify StreamAlert works from end-to-end, locally, follow the testing instructions `here <https://streamalert.io/rules.html>`_. 
+To verify StreamAlert works from end-to-end, locally, follow the testing instructions `here <https://streamalert.io/rules.html>`_.
 
 Pull Request
 ------------
@@ -123,7 +137,7 @@ In your pull request body, use the following template::
 
   * summary of changes 1
   * summary of changes 2
-  
+
 All pull requests must pass continuous integration tests (nosetests) and receive a code review from one of the maintainers.
 
 After your branch has been accepted, you are free to merge into ``master``!

@@ -49,7 +49,7 @@ All rules take this structure:
         # code                    # analyze the incoming record w/ your logic
         return True               # return True if an alert should be sent
 
-You define a list of ``logs`` that the rule is applicable to. 
+You define a list of ``logs`` that the rule is applicable to.
 
 Rules will only be evaluated against incoming records that match the declared log types found in ``conf/logs.json``.
 
@@ -100,7 +100,9 @@ matchers
 * To extract common logic from rules, which improves readability and writability
 * To ensure necessary conditions are met before full analysis of an incoming record
 
-Matchers are normally defined in ``rules/matchers.py``. If desired, matchers can also be defined in rule files if the following line is added to the top::
+Matchers are normally defined in ``rules/matchers.py``. If desired, matchers can also be defined in rule files if the following line is added to the top:
+
+.. code-block:: python
 
   matcher = StreamRules.matcher()
 
@@ -181,7 +183,7 @@ Example usage of the function above in a rule:
 .. code-block:: python
 
     # rules/default/prod.py
-    
+
     from helpers.base import in_set
 
     @rule(logs=['example'],
@@ -192,7 +194,7 @@ Example usage of the function above in a rule:
           'mike',
           'jin',
           'jack',
-          'mary' 
+          'mary'
         }
 
         return in_set(user, user_whitelist)
@@ -217,7 +219,7 @@ In the following example, ``@disable`` prevents the first rule from analyzing in
         outputs=['slack'])
   def example_rule(record):
       host = record['host']
-    
+
     return host == 'jump-server-1.network.com'
 
 
@@ -229,7 +231,7 @@ In the following example, ``@disable`` prevents the first rule from analyzing in
         'mike',
         'jin',
         'jack',
-        'mary' 
+        'mary'
       }
 
       return in_set(user, user_whitelist)

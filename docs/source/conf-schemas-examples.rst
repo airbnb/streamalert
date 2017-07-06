@@ -9,7 +9,9 @@ JSON Examples
 CloudWatch
 ~~~~~~~~~~
 
-Example Log::
+Example Log:
+
+.. code-block:: json
 
   {
     "version": "0",
@@ -28,30 +30,36 @@ Example Log::
     }
   }
 
-Schema::
+Schema:
 
-  "cloudwatch:ec2_event": {               # log name
-    "schema": {
-      "version": "string",                # type checking
-      "id": "string",
-      "detail-type": "string",
-      "source": "string",
-      "account": "integer",
-      "time": "string",
-      "region": "string",
-      "resources": [],
-      "detail": {
-        "instance-id": "string",
-        "state": "string"
-      }
-    },
-    "parser": "json"
+.. code-block:: json
+
+  {
+    "cloudwatch:ec2_event": {
+      "schema": {
+        "version": "string",
+        "id": "string",
+        "detail-type": "string",
+        "source": "string",
+        "account": "integer",
+        "time": "string",
+        "region": "string",
+        "resources": [],
+        "detail": {
+          "instance-id": "string",
+          "state": "string"
+        }
+      },
+      "parser": "json"
+    }
   }
 
 Inspec
 ~~~~~~
 
-Example Log::
+Example Log:
+
+.. code-block:: json
 
   {
     "version": "1.4.1",
@@ -119,33 +127,39 @@ Example Log::
     }
   }
 
-Schema::
+Schema:
 
-  "inspec": {
-    "schema": {
-      "title": "string",
-      "desc": "string",
-      "impact": "float",
-      "refs": [],
-      "tags": {},
-      "code": "string",
-      "id": "string",
-      "source_location": {
-        "ref": "string",
-        "line": "integer"
+.. code-block:: json
+
+  {
+    "inspec": {
+      "schema": {
+        "title": "string",
+        "desc": "string",
+        "impact": "float",
+        "refs": [],
+        "tags": {},
+        "code": "string",
+        "id": "string",
+        "source_location": {
+          "ref": "string",
+          "line": "integer"
+        },
+        "results": []
       },
-      "results": []
-    },
-    "parser": "json",
-    "configuration": {
-      "json_path": "profiles[*].controls[*]"
+      "parser": "json",
+      "configuration": {
+        "json_path": "profiles[*].controls[*]"
+      }
     }
   }
 
 Box.com
 ~~~~~~~
 
-Example Log::
+Example Log:
+
+.. code-block:: json
 
   {
     "source": {
@@ -180,70 +194,78 @@ Example Log::
     }
   }
 
-Schema::
+Schema:
 
-  "box": {
-    "schema": {
-      "source": {
-        "item_type": "string",
-        "item_id": "integer",
-        "item_name": "string",
-        "parent": {
+.. code-block:: json
+
+  {
+    "box": {
+      "schema": {
+        "source": {
+          "item_type": "string",
+          "item_id": "integer",
+          "item_name": "string",
+          "parent": {
+            "type": "string",
+            "name": "string",
+            "id": "integer"
+          }
+        },
+        "created_by": {
           "type": "string",
+          "id": "integer",
           "name": "string",
-          "id": "integer"
-        }
-      },
-      "created_by": {
+          "login": "string"
+        },
+        "created_at": "string",
+        "event_id": "string",
+        "event_type": "string",
+        "ip_address": "string",
         "type": "string",
-        "id": "integer",
-        "name": "string",
-        "login": "string"
+        "session_id": "string",
+        "additional_details": {}
       },
-      "created_at": "string",
-      "event_id": "string",
-      "event_type": "string",
-      "ip_address": "string",
-      "type": "string",
-      "session_id": "string",
-      "additional_details": {}
-    },
-    "parser": "json"
-  },
+      "parser": "json"
+    }
+  }
 
-Cloudwatch VPC Flow Logs
+CloudWatch VPC Flow Logs
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 AWS VPC Flow Logs can be delivered to StreamAlert via CloudWatch.
 
 As they are compressed with deflate, we can use the special ``gzip-json`` for parsing and analysis.
 
-CloudWatch logs are delivered as a nested record, so we will need to pass ``configuration`` options to the parser to find the nested records::
+CloudWatch logs are delivered as a nested record, so we will need to pass ``configuration`` options to the parser to find the nested records:
 
-  "cloudwatch:flow_logs": {
-    "schema": {
-      "protocol": "integer",
-      "source": "string",
-      "destination": "string",
-      "srcport": "integer",
-      "destport": "integer",
-      "action": "string",
-      "packets": "integer",
-      "bytes": "integer",
-      "windowstart": "integer",
-      "windowend": "integer",
-      "version": "integer",
-      "eni": "string",
-      "account": "integer",
-      "flowlogstatus": "string"
-    },
-    "parser": "gzip-json",
-    "configuration": {
-      "json_path": "logEvents[*].extractedFields",
-      "envelope_keys": {
-        "logGroup": "string",
-        "logStream": "string",
-        "owner": "integer"
+.. code-block:: json
+
+  {
+    "cloudwatch:flow_logs": {
+      "schema": {
+        "protocol": "integer",
+        "source": "string",
+        "destination": "string",
+        "srcport": "integer",
+        "destport": "integer",
+        "action": "string",
+        "packets": "integer",
+        "bytes": "integer",
+        "windowstart": "integer",
+        "windowend": "integer",
+        "version": "integer",
+        "eni": "string",
+        "account": "integer",
+        "flowlogstatus": "string"
+      },
+      "parser": "gzip-json",
+      "configuration": {
+        "json_path": "logEvents[*].extractedFields",
+        "envelope_keys": {
+          "logGroup": "string",
+          "logStream": "string",
+          "owner": "integer"
+        }
       }
     }
   }
@@ -253,54 +275,61 @@ osquery
 
 Osquery's schema changes depending on the ``SELECT`` statement used and the table queried.  There are several options when writing schemas for these logs.
 
-**Option 1**: Define a schema for each table used::
+**Option 1**: Define a schema for each table used:
 
-  "osquery:etc_hosts": {
-    "parser": "json",
-    "schema": {
-      "name": "string",
-      ...
-      "columns": {
-        "address": "string",
-        "hostnames": "string"
-      },
-      "action": "string",
-      ...
+.. code-block:: json
+
+  {
+    "osquery:etc_hosts": {
+      "parser": "json",
+      "schema": {
+        "name": "string",
+        "columns": {
+          "address": "string",
+          "hostnames": "string"
+        },
+        "action": "string",
+        "field...": "type..."
+      }
+    },
+    "osquery:listening_ports": {
+      "parser": "json",
+      "schema": {
+        "name": "string",
+        "columns": {
+          "pid": "integer",
+          "port": "integer",
+          "protocol": "integer",
+          "field...": "type..."
+        },
+        "action": "string",
+        "field...": "type..."
+      }
     }
-  },
-  "osquery:listening_ports": {
-    "parser": "json",
-    "schema": {
-      "name": "string",
-      ...
-      "columns": {
-        "pid": "integer",
-        "port": "integer",
-        "protocol": "integer",
-        ...
-      },
-      "action": "string",
-      ...
-    }
-  },
-  ...
+  }
 
 This approach promotes Rule safety, but requires additional time to define the schemas.
 
 
-**Option 2**: Define a "loose" schema which captures arbitrary values for a given field::
+**Option 2**: Define a "loose" schema which captures arbitrary values for a given field:
 
-  "osquery": {
-    "parser": "json",
-    "schema": {
-      "name": "string",
-      "hostIdentifier": "string",
-      "calendarTime": "string",
-      "unixTime": "integer",
-      "columns": {},                 # {} = any keys
-      "action": "string"
+.. code-block:: json
+
+  {
+    "osquery": {
+      "parser": "json",
+      "schema": {
+        "name": "string",
+        "hostIdentifier": "string",
+        "calendarTime": "string",
+        "unixTime": "integer",
+        "columns": {},
+        "action": "string"
+      }
     }
-  },
+  }
+
+.. note:: The value for ``columns`` above of ``{}`` indicates that a map with any key/value pairs is acceptable.
 
 .. warning:: In Option 2, the schema definition is flexible, but Rule safety is lost because you will need to use defensive programming when accessing and analyzing fields in `columns`. The use of `req_subkeys` will be advised in this case, see `Rules <rules.html>`_ for additional details.
 
@@ -314,66 +343,74 @@ See `Schemas <conf-schemas.html>`_
 Key-Value (KV) Example
 ----------------------
 
-Example schema::
+Example schema:
 
-  "example_auditd": {
-    "parser": "kv",          # define the parser as kv (key-value)
-    "delimiter": " ",        # define the delimiter
-    "separator": "=",        # define the separator
-    "schema": {
-      "type": "string",
-      "msg": "string",
-      "arch": "string",
-      "syscall": "string",
-      "success": "string",
-      "exit": "string",
-      "a0": "string",
-      "a1": "string",
-      "a2": "string",
-      "a3": "string",
-      "items": "string",
-      "ppid": "integer",
-      "pid": "integer",
-      "auid": "integer",
-      "uid": "integer",
-      "gid": "integer",
-      "euid": "integer",
-      "suid": "integer",
-      "fsuid": "integer",
-      "egid": "integer",
-      "sgid": "integer",
-      "fsgid": "integer",
-      "tty": "string",
-      "ses": "string",
-      "comm": "string",
-      "exe": "string",
-      "subj": "string",
-      "key": "string",
-      "type_2": "string",
-      "msg_2": "string",
-      "cwd": "string",
-      "type_3": "string",
-      "msg_3": "string",
-      "item": "string",
-      "name": "string",
-      "inode": "string",
-      "dev": "string",
-      "mode": "integer",
-      "ouid": "integer",
-      "ogid": "integer",
-      "rdev": "string",
-      "obj": "string"
+.. code-block:: json
+
+  {
+    "example_auditd": {
+      "parser": "kv",
+      "schema": {
+        "type": "string",
+        "msg": "string",
+        "arch": "string",
+        "syscall": "string",
+        "success": "string",
+        "exit": "string",
+        "a0": "string",
+        "a1": "string",
+        "a2": "string",
+        "a3": "string",
+        "items": "string",
+        "ppid": "integer",
+        "pid": "integer",
+        "auid": "integer",
+        "uid": "integer",
+        "gid": "integer",
+        "euid": "integer",
+        "suid": "integer",
+        "fsuid": "integer",
+        "egid": "integer",
+        "sgid": "integer",
+        "fsgid": "integer",
+        "tty": "string",
+        "ses": "string",
+        "comm": "string",
+        "exe": "string",
+        "subj": "string",
+        "key": "string",
+        "type_2": "string",
+        "msg_2": "string",
+        "cwd": "string",
+        "type_3": "string",
+        "msg_3": "string",
+        "item": "string",
+        "name": "string",
+        "inode": "string",
+        "dev": "string",
+        "mode": "integer",
+        "ouid": "integer",
+        "ogid": "integer",
+        "rdev": "string",
+        "obj": "string"
+      },
+      "configuration": {
+        "delimiter": " ",
+        "separator": "="
+      }
     }
   }
 
+.. note:: The value for ``parser`` above should be set to ``kv`` for key-value parsing. The ``delimiter`` and ``separator`` keys within ``configuration`` indicate the values to use for delimiter and field separator, respectively.
+
 Example log::
 
-  type=SYSCALL msg=audit(1364481363.243:24287): arch=c000003e syscall=2 success=no exit=-13 
-  a0=7fffd19c5592 a1=0 a2=7fffd19c4b50 a3=a items=1 ppid=2686 pid=3538 auid=500 uid=500 
-  gid=500 euid=500 suid=500 fsuid=500 egid=500 sgid=500 fsgid=500 tty=pts0 ses=1 comm="cat" 
-  exe="/bin/cat" subj=unconfined_u:unconfined_r:unconfined_t:s0-s0:c0.c1023 key="sshd_config" 
-  type=CWD msg=audit(1364481363.243:24287):  cwd="/home/shadowman" type=PATH msg=audit(1364481363.243:24287): 
-  item=0 name="/etc/ssh/sshd_config" inode=409248 dev=fd:00 mode=0100600 ouid=0 ogid=0 
+  type=SYSCALL msg=audit(1364481363.243:24287): arch=c000003e syscall=2 success=no exit=-13
+  a0=7fffd19c5592 a1=0 a2=7fffd19c4b50 a3=a items=1 ppid=2686 pid=3538 auid=500 uid=500
+  gid=500 euid=500 suid=500 fsuid=500 egid=500 sgid=500 fsgid=500 tty=pts0 ses=1 comm="cat"
+  exe="/bin/cat" subj=unconfined_u:unconfined_r:unconfined_t:s0-s0:c0.c1023 key="sshd_config"
+  type=CWD msg=audit(1364481363.243:24287):  cwd="/home/shadowman" type=PATH msg=audit(1364481363.243:24287):
+  item=0 name="/etc/ssh/sshd_config" inode=409248 dev=fd:00 mode=0100600 ouid=0 ogid=0
   rdev=00:00 obj=system_u:object_r:etc_t:s0
 
 

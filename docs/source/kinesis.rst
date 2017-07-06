@@ -30,27 +30,31 @@ Fields
 
 The following configuration settings are defined in each cluster file (``conf/clusters/cluster-name.json``)
 
-kinesis
+Kinesis
 ~~~~~~~
 
-Kinesis Streams settings for each cluster::
+Kinesis Streams settings for each cluster:
 
-  "kinesis": {
-    "streams": {
-      "retention": 36,
-      "shards": 5
+.. code-block:: json
+
+  {
+    "kinesis": {
+      "streams": {
+        "retention": 36,
+        "shards": 5
+      }
     }
   }
 
-options
+Options
 ~~~~~~~
 
-=============     ========     ======================
-Key               Required     Description
--------------     ---------    ----------
-``retention``     ``true``     The data record retention period of your stream.
-``shards``        ``true``     A shard provides a fixed unit of capacity to your stream. 
-=============     =========    ======================
+=============  =========  ===========
+Key            Required   Description
+-------------  ---------  -----------
+``retention``  ``true``   The data record retention period of your stream.
+``shards``     ``true``   A shard provides a fixed unit of capacity to your stream.
+=============  =========  ===========
 
 Kinesis Firehose
 ================
@@ -74,24 +78,28 @@ Fields
 
 The following configuration settings are defined in each cluster file (``conf/clusters/cluster-name.json``)
 
-firehose
+Firehose
 ~~~~~~~~
 
-Example::
+Example:
 
-  "kinesis": {
-    "firehose": {
-      "enabled": true,
-      "s3_bucket_suffix": "streamalert.results"
+.. code-block:: json
+
+  {
+    "kinesis": {
+      "firehose": {
+        "enabled": true,
+        "s3_bucket_suffix": "streamalert.results"
+      }
     }
   }
 
-options
+Options
 ~~~~~~~
 
-================     ========     ======================
-Key                  Required     Description
-----------------     ---------    ----------
-``enabled``          ``true``     If set to ``false``, will not create a Kinesis Firehose
-``s3_bucket_suffix`` ``true``     The suffix of the S3 bucket used for Kinesis Firehose data. The naming scheme is: ``prefix.cluster.suffix``
-================     =========    ======================
+====================  ========  ===========
+Key                   Required  Description
+--------------------  --------  -----------
+``enabled``           ``true``  If set to ``false``, will not create a Kinesis Firehose
+``s3_bucket_suffix``  ``true``  The suffix of the S3 bucket used for Kinesis Firehose data. The naming scheme is: ``prefix.cluster.suffix``
+====================  ========  ===========

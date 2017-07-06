@@ -39,7 +39,7 @@ First, create the policy to attach to the user:
 * Name the policy ``streamalert``, and paste the following as the ``Policy Document``:
 * Clock: Create Policy
 
-.. code-block::
+.. code-block:: json
 
   {
     "Version": "2012-10-17",
@@ -77,7 +77,9 @@ Next, create the user:
 * Attach the previously created ``streamalert`` policy
 * Click: ``Next: Review``, and then ``Create user``
 
-Copy the Access Key ID and Secret Access Key and export them to your environment variables::
+Copy the Access Key ID and Secret Access Key and export them to your environment variables:
+
+.. code-block:: bash
 
   $ export AWS_ACCESS_KEY_ID="REPLACE_ME"
   $ export AWS_SECRET_ACCESS_KEY="REPLACE_ME"
