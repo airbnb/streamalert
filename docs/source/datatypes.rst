@@ -3,7 +3,9 @@ Datatypes
 
 StreamAlert supports the following datatypes:
 
-JSON::
+JSON:
+
+.. code-block:: json
 
   {"type": "json"}
 

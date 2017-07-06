@@ -49,27 +49,27 @@ Example rule:
 Options
 -------
 
-=============     ========     ======================
-Key               Required     Description
--------------     --------     ----------------------
-``parser``        ``true``     The name of the parser to use for a given log's data-type.   Options include ``json, json-gzip, csv, kv, or syslog``
-``schema``        ``true``     A map of key/value pairs of the name of each field with its type
-``configuration`` ``false``    Configuration options specific to this log type (see table below for more information)
-=============     =========    ======================
+=================  =========  ======================
+Key                Required   Description
+-----------------  ---------  ----------------------
+``parser``         ``true``   The name of the parser to use for a given log's data-type.   Options include ``json, json-gzip, csv, kv, or syslog``
+``schema``         ``true``   A map of key/value pairs of the name of each field with its type
+``configuration``  ``false``  Configuration options specific to this log type (see table below for more information)
+=================  =========  ======================
 
 Optional ``configuration`` Options
 ----------------------------------
 
-=============                 ======================
-Key                           Description
--------------                 ----------------------
-``optional_top_level_keys``   Keys that may or may not be present in a log being parsed
-``json_path``                 Path to nested records to be 'extracted' from within a JSON object
-``envelope_keys``             Used with nested records to identify keys that are at a higher level than the nested records, but still hold some value and should be stored
-``log_patterns``              Various patterns to enforce within a log given provided fields
-``delimiter``                 For use with key/value or csv logs to identify the delimiter character for the log
-``separator``                 For use with key/value logs to identify the separator character for the log
-=============                 ======================
+===========================  ======================
+Key                          Description
+---------------------------  ----------------------
+``optional_top_level_keys``  Keys that may or may not be present in a log being parsed
+``json_path``                Path to nested records to be 'extracted' from within a JSON object
+``envelope_keys``            Used with nested records to identify keys that are at a higher level than the nested records, but still hold some value and should be stored
+``log_patterns``             Various patterns to enforce within a log given provided fields
+``delimiter``                For use with key/value or csv logs to identify the delimiter character for the log
+``separator``                For use with key/value logs to identify the separator character for the log
+===========================  ======================
 
 
 Writing Schemas
@@ -91,7 +91,9 @@ Special types:
 Casting Normal Types
 ~~~~~~~~~~~~~~~~~~~~
 
-Example Schema::
+Example Schema:
+
+.. code-block:: json
 
   {
     "example_log_name": {
@@ -108,7 +110,9 @@ Example Log Before Parse::
 
   '{"field_1": "test-string", "field_2": "100", "field_3": "true"}'
 
-Example Log After Parsing::
+Example Log After Parsing:
+
+.. code-block:: python
 
   {
     'field_1': 'test-string',
@@ -135,7 +139,9 @@ Schemas can be as rigid or permissive as you want (see Example: osquery).
 
 Usage of the special types normally indicates a loose schema, in that not every part of the incoming data is described.
 
-Example Schema::
+Example Schema:
+
+.. code-block:: json
 
   {
     "example_log_name": {
@@ -143,7 +149,7 @@ Example Schema::
       "schema": {
         "field_1": "string",
         "field_2": "integer",
-        "field_3": {}                     # zero or more key/value pairs of any type
+        "field_3": {}
       }
     }
   }
@@ -152,7 +158,9 @@ Example Log Before Parse::
 
   '{"field_1": "test-string", "field_2": "100", "field_3": {"data": "misc-data", "time": "1491584265"}}'
 
-Example Log After Parsing::
+Example Log After Parsing:
+
+.. code-block:: python
 
   {
     'field_1': 'test-string',
@@ -191,31 +199,36 @@ The value of ``optional_top_level_keys`` should be an array, with entries corres
 
 If any of the ``optional_top_level_keys`` do not exist in the log being parsed, defaults are appended to the parsed log depending on the declared value.
 
-Example Schema::
+Example Schema:
 
-  "test_log_type_json": {
-    "parser": "json",
-    "schema": {
-      "key1": [],
-      "key2": "string",
-      "key3": "integer"
-      "key4": "boolean",
-      "key5": "string"
-    },
-    "configuration": {
-      "optional_top_level_keys": [
-        "key4",
-        "key5"
-      ]
+.. code-block: json
+  {
+    "test_log_type_json": {
+      "parser": "json",
+      "schema": {
+        "key1": [],
+        "key2": "string",
+        "key3": "integer"
+        "key4": "boolean",
+        "key5": "string"
+      },
+      "configuration": {
+        "optional_top_level_keys": [
+          "key4",
+          "key5"
+        ]
+      }
     }
   }
 
-Example logs before parsing::
+Example Logs Before Parse::
 
   '{"key1": [1, 2, 3], "key2": "test", "key3": 100}'
   '{"key1": [3, 4, 5], "key2": "test", "key3": 200, "key4": true}'
 
-Parsed logs::
+Example Logs After Parsing:
+
+.. code-block:: python
 
   [
     {
@@ -241,28 +254,33 @@ JSON Parsing
 Options
 ~~~~~~~
 
-.. code-block::
+.. code-block:: json
 
   {
     "log_name": {
       "parser": "json",
       "schema": {
         "field": "type",
-        ...
+        "field...": "type..."
       },
-      "configuration": {                      # Nested JSON options
-        "json_path": "jsonpath expression",   # JSONPath to the records
-        "envelope_keys": {                    # Also capture keys in the root of our nested structure
-          "key": "type"
+      "configuration": {
+        "json_path": "jsonpath expression",
+        "envelope_keys": {
+          "field": "type",
+          "field...": "type..."
         }
       }
     }
   }
 
+.. note:: Options related to nested JSON are defined within ``configuration``. The ``json_path`` key should hold the JSON path to the records, while ``envelope_keys`` is utilized to capture keys in the root of our nested structure.
+
 Nested JSON
 ~~~~~~~~~~~
 
-Normally, a log contains all fields to be parsed at the top level::
+Normally, a log contains all fields to be parsed at the top level:
+
+.. code-block:: json
 
   {
     "example": 1,
@@ -270,7 +288,9 @@ Normally, a log contains all fields to be parsed at the top level::
     "time": "10:00 AM"
   }
 
-In some cases, the fields to be parsed and analyzed may be nested several layers into the data::
+In some cases, the fields to be parsed and analyzed may be nested several layers into the data:
+
+.. code-block:: json
 
   {
     "logs": {
@@ -291,7 +311,9 @@ In some cases, the fields to be parsed and analyzed may be nested several layers
     "application": "my-app"
   }
 
-To extract these nested records, use the ``configuration`` option ``json_path``::
+To extract these nested records, use the ``configuration`` option ``json_path``:
+
+.. code-block:: json
 
   {
     "log_name": {
@@ -301,7 +323,7 @@ To extract these nested records, use the ``configuration`` option ``json_path``:
         "host": "string",
         "time": "string"
       },
-      "configuration": {                      # Nested JSON only
+      "configuration": {
         "json_path": "logs.results[*]"
       }
     }
@@ -321,9 +343,11 @@ a specific field, the parser will consider the data valid.
 This feature is especially helpful to reduce false positives, since it provides to ability to only match a schema if
 specific values are present in a log.
 
-Wild card log patterns are supported using the ``*`` or ``?`` symbols, as shown below::
+Wild card log patterns are supported using the ``*`` or ``?`` symbols, as shown below.
 
-Example schema::
+Example schema:
+
+.. code-block:: json
 
   {
     "log_name": {
@@ -347,17 +371,22 @@ Example schema::
     }
   }
 
-Example logs::
+Example logs:
+
+.. code-block:: json
 
   {
     "computer_name": "test-server-name",
     "hostname": "okay_host",
     "instance_id": "95909",
     "process_id": "82571",
-    "message": "this is not important info"
+    "message": "this is not important info",
     "timestamp": "1427381694.88",
-    "type": "good.log.type.value"             # this will not match the configuration above
+    "type": "good.log.type.value"
   }
+.. note:: The above schema will **not** match the configuration above.
+
+.. code-block:: json
 
   {
     "computer_name": "fake-server-name",
@@ -366,14 +395,16 @@ Example logs::
     "process_id": "72491",
     "message": "this is super important info",
     "timestamp": "1486943917.12",
-    "type": "bad.log.type.value"              # this will match the configuration above
+    "type": "bad.log.type.value"
   }
-
+.. note:: The above schema **will** match the configuration above.
 
 Envelope Keys
 ~~~~~~~~~~~~~
 
-Continuing with the above example, if the ``id`` and ``application`` keys in the root of the log are needed for analysis, they can be added by using the ``configuration`` option ``envelope_keys``::
+Continuing with the above example, if the ``id`` and ``application`` keys in the root of the log are needed for analysis, they can be added by using the ``configuration`` option ``envelope_keys``:
+
+.. code-block:: json
 
   {
     "log_name": {
@@ -383,7 +414,7 @@ Continuing with the above example, if the ``id`` and ``application`` keys in the
         "host": "string",
         "time": "string"
       },
-      "configuration": {                      # Nested JSON only
+      "configuration": {
         "json_path": "logs.results[*]",
         "envelope_keys": {
           "id": "integer",
@@ -393,7 +424,9 @@ Continuing with the above example, if the ``id`` and ``application`` keys in the
     }
   }
 
-The resultant parsed records::
+The resultant parsed records:
+
+.. code-block:: json
 
   [
     {
@@ -427,20 +460,22 @@ CSV Parsing
 Options
 ~~~~~~~
 
-.. code-block::
+.. code-block:: json
 
   {
     "csv_log_name": {
       "parser": "csv",
       "schema": {
         "field": "type",
-        ...
+        "field...": "type..."
       },
       "configuration": {
-        "delimiter": ","           # Specify a custom delimiter
+        "delimiter": ","
       }
     }
   }
+
+.. note:: A custom delimiter is specified within ``configuration`` above.
 
 By default, the ``csv`` parser will use ``,`` as the delimiter.
 
@@ -457,16 +492,20 @@ Example logs::
   "1485729127","john_adams","mysqldb,us-west1"
 
 
-You can support this with a schema like the following::
+You can support this with a schema similar to the following:
 
-  "example_csv_with_nesting": {
-    "parser": "csv",
-    "schema": {
-      "time": "integer",
-      "user": "string",
-      "message": {
-        "role": "string",
-        "region": "string"
+.. code-block:: json
+
+  {
+    "example_csv_with_nesting": {
+      "parser": "csv",
+      "schema": {
+        "time": "integer",
+        "user": "string",
+        "message": {
+          "role": "string",
+          "region": "string"
+        }
       }
     }
   }
@@ -477,34 +516,40 @@ KV Parsing
 Options
 ~~~~~~~
 
-.. code-block::
+.. code-block:: json
 
   {
     "kv_log_name": {
       "parser": "kv",
       "schema": {
         "field": "type",
-        ...
+        "field...": "type..."
       },
       "configuration": {
-        "delimiter": " "           # Specify a custom pair delimiter
-        "separator": "="           # Specify a custom field separator
+        "delimiter": " ",
+        "separator": "="
       }
     }
   }
 
-By default, the ``kv`` parser will use `` `` as the delimiter and ``=`` as the field separator.
+.. note:: The ``delimiter`` and ``separator`` keys within ``configuration`` indicate the values to use for delimiter and field separator, respectively.
+
+By default, the ``kv`` parser will use a single space as the delimiter and ``=`` as the field separator.
 
 The ``configuration`` setting is optional.
 
-Example schema::
+Example schema:
 
-  "example_kv_log_type": {
-    "parser": "kv",
-    "schema": {
-      "time": "integer",
-      "user": "string",
-      "result": "string"
+.. code-block:: json
+
+  {
+    "example_kv_log_type": {
+      "parser": "kv",
+      "schema": {
+        "time": "integer",
+        "user": "string",
+        "result": "string"
+      }
     }
   }
 
@@ -518,15 +563,17 @@ Syslog Parsing
 Options
 ~~~~~~~
 
-.. code-block::
+.. code-block:: json
 
-  "syslog_log_name": {
-    "parser": "syslog",
-    "schema": {
-      "timestamp": "string",
-      "host": "string",
-      "application": "string",
-      "message": "string"
+  {
+    "syslog_log_name": {
+      "parser": "syslog",
+      "schema": {
+        "timestamp": "string",
+        "host": "string",
+        "application": "string",
+        "message": "string"
+      }
     }
   }
 

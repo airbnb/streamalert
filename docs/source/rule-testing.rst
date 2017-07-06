@@ -25,17 +25,17 @@ To test a new rule, first create a new file under ``test/integration/rules`` nam
 Rule Test Reference
 -------------------
 
-=============      ================================= ========  ===========
-Key                Type                              Required  Description
--------------      --------------------------------- --------- ----------
-``data``           ``{}`` or ``string``              Yes       All ``json`` log types should be in Map format while others (``csv, kv, syslog``) should be ``string``
-``description``    ``string``                        Yes       A short sentence describing the intent of the test
-``trigger``        ``boolean``                       Yes       Whether or not a record should produce an alert
-``trigger_count``  ``integer``                       No        The amount of alerts that should be generated.  Used for nested data
-``source``         ``string``                        Yes       The name of the Kinesis Stream or S3 bucket where the data originated from.  This value should match a source provided in ``conf/sources.json``
-``service``        ``string``                        Yes       The name of the AWS service which sent the log (Kinesis or S3)
-``compress``       ``boolean``                       No        Whether or not to compress records with ``gzip`` prior to testing (used for ``gzip-json`` logs)
-=============      ================================= ========  ===========
+=================  ====================  ========  ===========
+Key                Type                  Required  Description
+-----------------  --------------------  --------  -----------
+``data``           ``{}`` or ``string``  Yes       All ``json`` log types should be in Map format while others (``csv, kv, syslog``) should be ``string``
+``description``    ``string``            Yes       A short sentence describing the intent of the test
+``trigger``        ``boolean``           Yes       Whether or not a record should produce an alert
+``trigger_count``  ``integer``           No        The amount of alerts that should be generated.  Used for nested data
+``source``         ``string``            Yes       The name of the Kinesis Stream or S3 bucket where the data originated from.  This value should match a source provided in ``conf/sources.json``
+``service``        ``string``            Yes       The name of the AWS service which sent the log (Kinesis or S3)
+``compress``       ``boolean``           No        Whether or not to compress records with ``gzip`` prior to testing (used for ``gzip-json`` logs)
+=================  ====================  ========  ===========
 
 For more examples, see the provided default rule tests in ``test/integration/rules``
 
@@ -56,7 +56,9 @@ To use these helpers in rule testing, replace a specific log field value with th
 
   "<helper:helper_name_goes_here>"
 
-For example, to replace a time based field with ``last_hour``::
+For example, to replace a time based field with ``last_hour``:
+
+.. code-block:: json
 
   {
     "records": [
@@ -83,28 +85,40 @@ accuracy and alert outputs for proper configuration.
 When adding new rules, it is only necessary to run tests for the **rule processor**. If making code changes to the alert
 processor, such as adding a new output integration to send alerts to, tests for the **alert processor** should also be performed.
 
-To run integration tests for the **rule processor**::
+To run integration tests for the **rule processor**:
+
+.. code-block:: bash
 
   $ python stream_alert_cli.py lambda test --processor rule
 
-To run integration tests for the **alert processor**::
+To run integration tests for the **alert processor**:
+
+.. code-block:: bash
 
   $ python stream_alert_cli.py lambda test --processor alert
 
-To run end-to-end integration tests for **both processors**::
+To run end-to-end integration tests for **both processors**:
+
+.. code-block:: bash
 
   $ python stream_alert_cli.py lambda test --processor all
 
-Integration tests can be restricted to **specific rules** to reduce time and output::
+Integration tests can be restricted to **specific rules** to reduce time and output:
+
+.. code-block:: bash
 
   $ python stream_alert_cli.py lambda test --processor rule --rules <rule_01> <rule_02>
 
 Integration tests can send **live test alerts** to configured outputs for rules using a specified cluster.
-This can also be combined with an optional list of rules to use for tests (using the ``--rules`` argument)::
+This can also be combined with an optional list of rules to use for tests (using the ``--rules`` argument):
+
+.. code-block:: bash
 
   $ python stream_alert_cli.py live-test --cluster <cluster_name>
 
-Here is a sample command showing how to run tests against two rules included as integration tests in the default StreamAlert configuration::
+Here is a sample command showing how to run tests against two rules included as integration tests in the default StreamAlert configuration:
+
+.. code-block:: bash
 
   $ python stream_alert_cli.py lambda test --processor rule --rules cloudtrail_put_bucket_acl cloudtrail_root_account
 

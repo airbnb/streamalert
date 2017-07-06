@@ -4,7 +4,7 @@
    contain the root `toctree` directive.
 
 StreamAlert
-=======================================
+===========
 
 .. image:: ../images/high-level-overview.png
 
@@ -33,7 +33,7 @@ Other Links:
 
 
 Table of Contents
-=======================================
+=================
 
 .. _introduction:
 
@@ -68,6 +68,7 @@ Table of Contents
    datasources
    conf-datasources
    conf-schemas
+   conf-schemas-examples
 
 .. _infra_configuration:
 
