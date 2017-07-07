@@ -221,7 +221,12 @@ class LambdaPackage(object):
 
 class RuleProcessorPackage(LambdaPackage):
     """Deployment package class for the StreamAlert Rule Processor function"""
-    package_folders = {'stream_alert/rule_processor', 'rules', 'conf'}
+    package_folders = {
+        'stream_alert/rule_processor',
+        'rules',
+        'matchers',
+        'helpers',
+        'conf'}
     package_files = {'stream_alert/__init__.py'}
     package_root_dir = '.'
     package_name = 'rule_processor'
