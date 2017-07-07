@@ -1,18 +1,16 @@
-.. streamalert documentation master file, created by
-   sphinx-quickstart on Mon Jan 23 21:19:26 2017.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
 StreamAlert
 ===========
 
-.. image:: ../images/high-level-overview.png
+.. image:: ../images/sa-banner.png
+  :align: center
+  :alt: StreamAlert
 
 StreamAlert is a serverless, realtime data analysis framework which empowers you to ingest, analyze, and alert on data from any environment, using datasources and alerting logic you define.
 
 For more details, see our `announcement post <https://medium.com/@airbnbeng/e8619e3e5043>`_.
 
-At a high-level:
+At a high-level
+---------------
 
 * Deployment is automated: simple, safe and repeatable for any AWS account
 * Easily scalable from megabytes to terabytes per day
@@ -23,7 +21,18 @@ At a high-level:
 * Supports different types of data (Ex: JSON, CSV, Key-Value, and Syslog)
 * Supports different use-cases like security, infrastructure, compliance and more
 
-Other Links:
+Components
+----------
+
+.. figure:: ../images/sa-cloudcraft.png
+  :alt: StreamAlert Components
+  :align: center
+  :target: _images/sa-cloudcraft.png
+
+  (Click figure to enlarge)
+
+Other Links
+-----------
 
 * `Github <https://github.com/airbnb/streamalert>`_
 * `Twitter (unofficial) <https://twitter.com/streamalert_io>`_
