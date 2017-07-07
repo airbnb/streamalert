@@ -515,7 +515,7 @@ class S3Output(AWSOutput):
         service = alert['metadata']['source']['service']
         entity = alert['metadata']['source']['entity']
         current_date = datetime.now()
-        alert_string = json.dumps(alert['record'])
+        alert_string = json.dumps(alert)
         bucket = self.config[self.__service__][kwargs['descriptor']]
         key = '{}/{}/{}/dt={}/streamalerts_{}.json'.format(
             service,
