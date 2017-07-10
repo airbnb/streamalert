@@ -42,6 +42,8 @@ requests==2.13.0
 rsa==3.3
 s3transfer==0.1.10
 six==1.10.0
+Sphinx==1.6.3
+sphinx-rtd-theme==0.2.4
 testtools==2.2.0
 traceback2==1.4.0
 unittest2==1.1.0
