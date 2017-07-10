@@ -112,7 +112,7 @@ class StreamAlert(object):
         """
         classifier.classify_record(payload, data)
         if not payload.valid:
-            LOGGER.error('Invalid data: %s\n%s', payload, payload.raw_record)
+            LOGGER.error('Invalid data: %s\n%s', payload, data)
             return
 
         alerts = StreamRules.process(payload)
