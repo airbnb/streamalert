@@ -449,7 +449,7 @@ class TestSlackOutput(object):
         creds = {'url': 'https://api.slack.com/web-hook-key'}
 
         put_mock_creds(output_name, creds, self.__dispatcher.secrets_bucket,
-                        REGION, KMS_ALIAS)
+                       REGION, KMS_ALIAS)
 
         return _get_alert()
 
@@ -605,7 +605,7 @@ class TestLambdaOuput(object):
     def _setup_dispatch(self):
         """Helper for setting up LambdaOutput dispatch"""
         function_name = CONFIG[self.__service][self.__descriptor]
-        _create_lambda_function(function_name, REGION)
+        create_lambda_function(function_name, REGION)
         return _get_alert()
 
     @mock_lambda

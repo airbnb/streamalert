@@ -18,6 +18,7 @@ import logging
 
 from collections import OrderedDict
 
+from stream_alert.alert_processor.helpers import validate_alert
 from stream_alert.alert_processor.outputs import get_output_dispatcher
 
 logging.basicConfig()
@@ -50,10 +51,8 @@ def handler(event, context):
     region = context.invoked_function_arn.split(':')[3]
     function_name = context.function_name
 
-    # Yield back the current status to the caller
-    for status in run(event, region, function_name, config):
-        yield status
-
+    # Return the current list of statuses back to the caller
+    return [status for status in run(event, region, function_name, config)]
 
 def run(alert, region, function_name, config):
     """Send an Alert to its described outputs.
@@ -84,6 +83,10 @@ def run(alert, region, function_name, config):
     Returns:
         [generator] yields back dispatch status and name of the output to the handler
     """
+    if not validate_alert(alert):
+        LOGGER.error('Invalid alert:\n%s', json.dumps(alert, indent=2))
+        return
+
     LOGGER.debug('Sending alert to outputs:\n%s', json.dumps(alert, indent=2))
     rule_name = alert['metadata']['rule_name']
 
