@@ -624,7 +624,12 @@
       "decorations": {},
       "log_type": "string"
     },
-    "parser": "json"
+    "parser": "json",
+    "configuration": {
+      "optional_top_level_keys": [
+        "decorations"
+      ]
+    }
   },
   "pan": {
     "schema": {
