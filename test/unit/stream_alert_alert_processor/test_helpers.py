@@ -17,34 +17,16 @@ from copy import deepcopy
 
 from nose.tools import assert_true, assert_false, assert_is_instance
 
-
 from stream_alert.alert_processor.helpers import (
     validate_alert
 )
 
+from unit.stream_alert_alert_processor.helpers import _get_alert
 
 def test_alert_validate_root():
     """Alert Structure Validation"""
     # Default valid alert to be copied/modified
-    valid_alert = {
-        'record': {
-            'name': 'testing testing',
-            'action': 'no action required'
-        },
-        'metadata': {
-            'log': 'osquery',
-            'rule_name': 'valid_alert_test',
-            'outputs': [
-                'slack:alerts'
-            ],
-            'source': {
-                'service': 'kinesis',
-                'entity': 'org_prefix_stream_alert_kinesis'
-            },
-            'type': 'json',
-            'rule_description': 'Sample rule description \n\nthat can be multiple lines.\n'
-        }
-    }
+    valid_alert = _get_alert()
 
     # Test with a valid alert structure
     assert_true(validate_alert(valid_alert))
@@ -104,18 +86,3 @@ def test_alert_validate_root():
 
     # Test with invalid metadata non-string value
     assert_false(validate_alert(invalid_metadata_non_string))
-
-
-
-
-
-
-
-
-#
-#
-# {
-#   'default': {
-#
-#   }
-# }

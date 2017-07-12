@@ -161,7 +161,7 @@ def _load_output_config(config_path='conf/outputs.json'):
         try:
             config = json.load(outputs)
         except ValueError:
-            LOGGER.error('The conf/outputs.json file could not be loaded into json')
+            LOGGER.error('The \'%s\' file could not be loaded into json', config_path)
             return
 
     return config
