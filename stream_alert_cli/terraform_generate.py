@@ -155,6 +155,13 @@ def generate_main(**kwargs):
         'target_key_id': '${aws_kms_key.stream_alert_secrets.key_id}'
     }
 
+    infrastructure_config = config['global'].get('infrastructure')
+    if infrastructure_config and 'monitoring' in infrastructure_config:
+        if infrastructure_config['monitoring'].get('create_sns_topic'):
+            main_dict['resource']['aws_sns_topic']['stream_alert_monitoring'] = {
+                'name': 'stream_alert_monitoring'
+            }
+
     return main_dict
 
 
@@ -277,9 +284,27 @@ def generate_cloudwatch_monitoring(cluster_name, cluster_dict, config):
         [bool] Result of applying the cloudwatch_monitoring module
     """
     prefix = config['global']['account']['prefix']
+    infrastructure_config = config['global'].get('infrastructure')
+    if infrastructure_config and 'monitoring' in infrastructure_config:
+        if infrastructure_config['monitoring'].get('create_sns_topic'):
+            sns_topic_arn = 'arn:aws:sns:{region}:{account_id}:{topic}'.format(
+                region=config['global']['account']['region'],
+                account_id=config['global']['account']['aws_account_id'],
+                topic='stream_alert_monitoring'
+            )
+        elif infrastructure_config['monitoring'].get('sns_topic_name'):
+            sns_topic_arn = 'arn:aws:sns:{region}:{account_id}:{topic}'.format(
+                region=config['global']['account']['region'],
+                account_id=config['global']['account']['aws_account_id'],
+                topic=infrastructure_config['monitoring']['sns_topic_name']
+            )
+    else:
+        LOGGER_CLI.error('Invalid config: Make sure you declare global infrastructure options!')
+        return False
+
     cluster_dict['module']['cloudwatch_monitoring_{}'.format(cluster_name)] = {
         'source': 'modules/tf_stream_alert_monitoring',
-        'sns_topic_arn': '${{module.stream_alert_{}.sns_topic_arn}}'.format(cluster_name),
+        'sns_topic_arn': sns_topic_arn,
         'lambda_functions': [
             '{}_{}_streamalert_rule_processor'.format(prefix, cluster_name),
             '{}_{}_streamalert_alert_processor'.format(prefix, cluster_name)

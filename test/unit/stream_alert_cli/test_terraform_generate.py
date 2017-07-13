@@ -39,6 +39,11 @@ class TestTerraformGenerate(object):
                 },
                 'terraform': {
                     'tfstate_bucket': 'unit-testing.terraform.tfstate'
+                },
+                'infrastructure': {
+                    'monitoring': {
+                        'create_sns_topic': True
+                    }
                 }
             },
             'lambda': {
@@ -312,6 +317,11 @@ class TestTerraformGenerate(object):
                             'target_prefix': 'unit-testing.streamalerts/'
                         }
                     }
+                },
+                'aws_sns_topic': {
+                    'stream_alert_monitoring': {
+                        'name': 'stream_alert_monitoring'
+                    }
                 }
             }
         }
@@ -474,9 +484,10 @@ class TestTerraformGenerate(object):
             self.config
         )
 
+        # Test a the default SNS topic option
         expected_cloudwatch_tf = {
             'source': 'modules/tf_stream_alert_monitoring',
-            'sns_topic_arn': '${module.stream_alert_test.sns_topic_arn}',
+            'sns_topic_arn': 'arn:aws:sns:us-west-1:12345678910:stream_alert_monitoring',
             'lambda_functions': [
                 'unit-testing_test_streamalert_rule_processor',
                 'unit-testing_test_streamalert_alert_processor'
@@ -487,6 +498,29 @@ class TestTerraformGenerate(object):
         assert_equal(
             self.cluster_dict['module']['cloudwatch_monitoring_test'],
             expected_cloudwatch_tf)
+
+        # Test a pre-defined SNS topic
+        self.config['global']['infrastructure']['monitoring']['create_sns_topic'] = False
+        self.config['global']['infrastructure']['monitoring']['sns_topic_name'] = 'unit_test_monitoring'
+        terraform_generate.generate_cloudwatch_monitoring(
+            cluster_name,
+            self.cluster_dict,
+            self.config
+        )
+
+        expected_cloudwatch_tf_custom = {
+            'source': 'modules/tf_stream_alert_monitoring',
+            'sns_topic_arn': 'arn:aws:sns:us-west-1:12345678910:unit_test_monitoring',
+            'lambda_functions': [
+                'unit-testing_test_streamalert_rule_processor',
+                'unit-testing_test_streamalert_alert_processor'
+            ],
+            'kinesis_stream': 'unit-testing_test_stream_alert_kinesis'
+        }
+
+        assert_equal(
+            self.cluster_dict['module']['cloudwatch_monitoring_test'],
+            expected_cloudwatch_tf_custom)
 
     def test_generate_cluster_test(self):
         """CLI - Terraform Generate 'Test' Cluster"""
