@@ -119,12 +119,25 @@ class TestTerraformGenerate(object):
                                     'security_group_ids': [
                                         'sg-id-1'
                                     ]
+                                },
+                                'outputs': {
+                                    'aws-lambda': [
+                                        'my-lambda-function:production'
+                                    ],
+                                    'aws-s3': [
+                                        'my-s3-bucket.with.data'
+                                    ]
                                 }
                             },
                             'rule_processor': {
                                 'current_version': '$LATEST',
                                 'memory': 128,
-                                'timeout': 25
+                                'timeout': 25,
+                                'inputs': {
+                                    'aws-sns': [
+                                        'my-sns-topic-name'
+                                    ]
+                                }
                             }
                         },
                         'cloudtrail': {
@@ -150,10 +163,6 @@ class TestTerraformGenerate(object):
                 }
             }
         }
-
-    def teardown(self):
-        """Teardown after each method"""
-        pass
 
     @staticmethod
     def test_generate_s3_bucket():
@@ -290,6 +299,18 @@ class TestTerraformGenerate(object):
                                 'storage_class': 'GLACIER'
                             }
                         }
+                    },
+                    'streamalerts': {
+                        'bucket': 'unit-testing.streamalerts',
+                        'acl': 'private',
+                        'force_destroy': True,
+                        'versioning': {
+                            'enabled': True
+                        },
+                        'logging': {
+                            'target_bucket': 'unit-testing.streamalert.s3-logging',
+                            'target_prefix': 'unit-testing.streamalerts/'
+                        }
                     }
                 }
             }
@@ -300,10 +321,76 @@ class TestTerraformGenerate(object):
         assert_equal(tf_main['resource'], tf_main_expected['resource'])
 
 
-    def test_generate_stream_alert(self):
-        """CLI - Terraform Generate stream_alert Module"""
-        # TODO(jacknagz): Write this test
-        pass
+    def test_generate_stream_alert_test(self):
+        """CLI - Terraform Generate stream_alert Module (test cluster)"""
+        terraform_generate.generate_stream_alert(
+            'test',
+            self.cluster_dict,
+            self.config
+        )
+
+        expected_test_cluster = {
+            'module': {
+                'stream_alert_test': {
+                    'source': 'modules/tf_stream_alert',
+                    'account_id': '12345678910',
+                    'region': 'us-west-1',
+                    'prefix': 'unit-testing',
+                    'cluster': 'test',
+                    'kms_key_arn': '${aws_kms_key.stream_alert_secrets.arn}',
+                    'rule_processor_memory': 128,
+                    'rule_processor_timeout': 25,
+                    'rule_processor_version': '$LATEST',
+                    'rule_processor_config': '${var.rule_processor_config}',
+                    'alert_processor_memory': 128,
+                    'alert_processor_timeout': 25,
+                    'alert_processor_version': '$LATEST',
+                    'alert_processor_config': '${var.alert_processor_config}',
+                }
+            }
+        }
+
+        assert_equal(self.cluster_dict['module']['stream_alert_test'],
+                     expected_test_cluster['module']['stream_alert_test'])
+
+
+    def test_generate_stream_alert_advanced(self):
+        """CLI - Terraform Generate stream_alert Module (advanced cluster)"""
+        terraform_generate.generate_stream_alert(
+            'advanced',
+            self.cluster_dict,
+            self.config
+        )
+
+        expected_advanced_cluster = {
+            'module': {
+                'stream_alert_advanced': {
+                    'source': 'modules/tf_stream_alert',
+                    'account_id': '12345678910',
+                    'region': 'us-west-1',
+                    'prefix': 'unit-testing',
+                    'cluster': 'advanced',
+                    'kms_key_arn': '${aws_kms_key.stream_alert_secrets.arn}',
+                    'rule_processor_memory': 128,
+                    'rule_processor_timeout': 25,
+                    'rule_processor_version': '$LATEST',
+                    'rule_processor_config': '${var.rule_processor_config}',
+                    'alert_processor_memory': 128,
+                    'alert_processor_timeout': 25,
+                    'alert_processor_version': '$LATEST',
+                    'alert_processor_config': '${var.alert_processor_config}',
+                    'output_lambda_functions': ['my-lambda-function:production'],
+                    'output_s3_buckets': ['my-s3-bucket.with.data'],
+                    'input_sns_topics': ['my-sns-topic-name'],
+                    'alert_processor_vpc_enabled': True,
+                    'alert_processor_vpc_subnet_ids': ['subnet-id-1'],
+                    'alert_processor_vpc_security_group_ids': ['sg-id-1']
+                }
+            }
+        }
+
+        assert_equal(self.cluster_dict['module']['stream_alert_advanced'],
+                     expected_advanced_cluster['module']['stream_alert_advanced'])
 
 
     def test_generate_flow_logs(self):
