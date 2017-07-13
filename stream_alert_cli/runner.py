@@ -144,6 +144,7 @@ def terraform_handler(options):
             'aws_s3_bucket.logging_bucket',
             'aws_s3_bucket.stream_alert_secrets',
             'aws_s3_bucket.terraform_remote_state',
+            'aws_s3_bucket.streamalerts',
             'aws_kms_key.stream_alert_secrets',
             'aws_kms_alias.stream_alert_secrets'
         ]
