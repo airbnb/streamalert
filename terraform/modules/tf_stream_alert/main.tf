@@ -122,19 +122,3 @@ resource "aws_lambda_permission" "with_sns" {
   qualifier     = "production"
   depends_on    = ["aws_lambda_alias.alert_processor_production"]
 }
-
-// S3 bucket for S3 outputs
-resource "aws_s3_bucket" "streamalerts" {
-  bucket        = "${replace("${var.prefix}.${var.cluster}.streamalerts", "_", ".")}"
-  acl           = "private"
-  force_destroy = false
-
-  versioning {
-    enabled = true
-  }
-
-  logging {
-    target_bucket = "${var.s3_logging_bucket}"
-    target_prefix = "${replace("${var.prefix}.${var.cluster}.streamalerts", "_", ".")}/"
-  }
-}

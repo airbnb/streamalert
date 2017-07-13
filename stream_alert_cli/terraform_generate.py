@@ -138,6 +138,10 @@ def generate_main(**kwargs):
             acl='log-delivery-write',
             logging=logging_bucket,
             lifecycle_rule=logging_bucket_lifecycle
+        ),
+        'streamalerts': generate_s3_bucket(
+            bucket='{}.streamalerts'.format(config['global']['account']['prefix']),
+            logging=logging_bucket
         )
     }
 
@@ -219,14 +223,13 @@ def generate_stream_alert(cluster_name, cluster_dict, config):
         'alert_processor_config': '${var.alert_processor_config}',
         'alert_processor_memory': modules['stream_alert']['alert_processor']['memory'],
         'alert_processor_timeout': modules['stream_alert']['alert_processor']['timeout'],
-        'alert_processor_version': modules['stream_alert']['alert_processor']['current_version'],
-        's3_logging_bucket': '{}.streamalert.s3-logging'.format(
-            config['global']['account']['prefix'])
+        'alert_processor_version': modules['stream_alert']['alert_processor']['current_version']
     }
 
-    # Add Alert Processor output config
+    # Add Alert Processor output config from the loaded cluster file
     output_config = modules['stream_alert']['alert_processor'].get('outputs')
     if output_config:
+        # Mapping of Terraform input variables to output config variables
         output_mapping = {
             'output_lambda_functions': 'aws-lambda',
             'output_s3_buckets': 'aws-s3'
@@ -237,14 +240,19 @@ def generate_stream_alert(cluster_name, cluster_dict, config):
                     tf_key: modules['stream_alert']['alert_processor']['outputs'][output]
                 })
 
-    # Add Rule Processor input config
+    # Add Rule Processor input config from the loaded cluster file
     input_config = modules['stream_alert']['rule_processor'].get('inputs')
     if input_config:
-        cluster_dict['module']['stream_alert_{}'.format(cluster_name)].update({
-            'input_sns_topics': input_config['aws-sns']
-        })
+        input_mapping = {
+            'input_sns_topics': 'aws-sns'
+        }
+        for tf_key, input_key in input_mapping.iteritems():
+            if input_key in input_config:
+                cluster_dict['module']['stream_alert_{}'.format(cluster_name)].update({
+                    tf_key: input_config[input_key]
+                })
 
-    # Add the Alert Processor VPC config
+    # Add the Alert Processor VPC config from the loaded cluster file
     vpc_config = modules['stream_alert']['alert_processor'].get('vpc_config')
     if vpc_config:
         cluster_dict['module']['stream_alert_{}'.format(cluster_name)].update({

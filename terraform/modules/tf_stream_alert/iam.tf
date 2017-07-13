@@ -94,7 +94,7 @@ data "aws_iam_policy_document" "alert_processor_s3" {
     ]
 
     resources = [
-      "${aws_s3_bucket.streamalerts.arn}/*",
+      "arn:aws:s3:::${var.prefix}.streamalerts/*",
     ]
   }
 
