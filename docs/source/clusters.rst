@@ -135,24 +135,32 @@ To configure the SNS topic used to receive CloudWatch metric alarms, use one of 
 Option 1: Create a new topic.  This tells the StreamAlert CLI to create a new topic called ``stream_alert_monitoring``.  All clusters will send alarms to this topic.
 
 .. code-block:: json
-  
+
   {
-    "account": {...},
-    "terraform": {...}
+    "account": {
+      "...": "..."
+    },
+    "terraform": {
+      "...": "..."
+    },
     "infrastructure": {
       "monitoring": {
         "create_sns_topic": true
       }
     }
   }
-  
+
 Option 2: Use an existing SNS topic within your AWS account (created outside of the scope of StreamAlert).
 
 .. code-block:: json
-  
+
   {
-    "account": {...},
-    "terraform": {...}
+    "account": {
+      "...": "..."
+    },
+    "terraform": {
+      "...": "..."
+    },
     "infrastructure": {
       "monitoring": {
         "sns_topic_name": "my_sns_topic"
