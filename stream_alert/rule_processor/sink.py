@@ -78,12 +78,13 @@ class StreamSink(object):
                 response = self.client_lambda.invoke(
                     FunctionName=self.function,
                     InvocationType='Event',
-                    Payload=data
+                    Payload=data,
+                    Qualifier='production'
                 )
 
             except ClientError as err:
                 LOGGER.exception('An error occurred while sending alert to '
-                                 '\'%s\'. Error is: %s. Alert: %s',
+                                 '\'%s:production\'. Error is: %s. Alert: %s',
                                  self.function,
                                  err.response,
                                  data)
