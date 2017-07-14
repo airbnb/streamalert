@@ -23,7 +23,7 @@ resource "aws_iam_role_policy" "streamalert_rule_processor_lambda" {
   name = "${var.prefix}_${var.cluster}_streamalert_rule_processor_invoke_alert_proc"
   role = "${aws_iam_role.streamalert_rule_processor_role.id}"
 
-  policy = "${data.aws_iam_policy_document.rule_processor_sns.json}"
+  policy = "${data.aws_iam_policy_document.rule_processor_invoke_alert_proc.json}"
 }
 
 // IAM Policy Doc: Allow the Rule Processor to invoke the Alert Processor

@@ -89,7 +89,7 @@ resource "aws_lambda_alias" "alert_processor_production" {
   function_version = "${var.alert_processor_version}"
 }
 
-// Lambda Permission: Allow SNS to invoke the Alert Processor
+// Lambda Permission: Allow Lambda to invoke the Alert Processor
 //    VPC
 resource "aws_lambda_permission" "rule_processor_vpc" {
   count         = "${var.alert_processor_vpc_enabled ? 1 : 0}"
@@ -102,7 +102,7 @@ resource "aws_lambda_permission" "rule_processor_vpc" {
   depends_on    = ["aws_lambda_alias.alert_processor_production_vpc"]
 }
 
-// Lambda Permission: Allow SNS to invoke the Alert Processor
+// Lambda Permission: Allow Lambda to invoke the Alert Processor
 //    Non VPC
 resource "aws_lambda_permission" "rule_processor" {
   count         = "${var.alert_processor_vpc_enabled ? 0 : 1}"
