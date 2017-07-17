@@ -69,12 +69,13 @@ class TestStreamSink(object):
         json_message = sink._json_dump(alert)
 
         # Test with single alert entry
-        assert_equal(json_message, '{"record": {"record_data_key02_01": ' \
-            '"record_data_value02_01", "record_data_key01_01": "record_data_value01_01"}, ' \
-            '"metadata": {"source": {"service": "payload_service_01", ' \
-            '"entity": "payload_entity_01"}, "rule_name": "test_rule_01", ' \
-            '"type": "payload_type_01", "log": "payload_data_01", ' \
-            '"outputs": "rule.outputs_01"}}')
+        assert_equal(json_message, '{"record": {"record_data_key02_01": '
+                     '"record_data_value02_01", "record_data_key01_01": '
+                     '"record_data_value01_01"}, "metadata": {"source": '
+                     '{"service": "payload_service_01", "entity": '
+                     '"payload_entity_01"}, "rule_name": "test_rule_01", '
+                     '"type": "payload_type_01", "log": "payload_data_01", '
+                     '"outputs": "rule.outputs_01"}}')
 
 def get_payload(byte_size):
     """Returns a base64 encoded random payload of (roughly) byte_size length

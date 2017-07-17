@@ -34,7 +34,7 @@ from stream_alert_cli.outputs import (
 
 def test_load_output_config():
     """Load outputs configuration"""
-    config = load_outputs_config()
+    config = load_outputs_config('test/unit/conf')
     loaded_config_keys = sorted(config.keys())
 
     expected_config_keys = [u'aws-lambda', u'aws-s3', u'pagerduty', u'phantom', u'slack']

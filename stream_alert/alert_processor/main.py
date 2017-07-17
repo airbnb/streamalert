@@ -52,7 +52,7 @@ def handler(event, context):
     function_name = context.function_name
 
     # Return the current list of statuses back to the caller
-    return list(status for status in run(event, region, function_name, config))
+    return list(run(event, region, function_name, config))
 
 def run(alert, region, function_name, config):
     """Send an Alert to its described outputs.
