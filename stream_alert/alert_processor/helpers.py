@@ -34,7 +34,7 @@ def validate_alert(alert):
     metadata_keys = {'log', 'rule_name', 'rule_description', 'type', 'source', 'outputs'}
     if not set(alert['metadata'].keys()) == metadata_keys:
         LOGGER.error('The value of the \'metadata\' key must be a map (dict) '
-                     'that contains the following keys: %s',
+                     'that contains only the following keys: %s',
                      ', '.join('\'{}\''.format(key) for key in metadata_keys))
         return False
 
@@ -44,7 +44,7 @@ def validate_alert(alert):
             if not (isinstance(alert['metadata'][key], dict) and
                     set(alert['metadata'][key].keys()) == {'service', 'entity'}):
                 LOGGER.error('The value of the \'source\' key must be a map (dict) that '
-                             'contains \'service\' and \'entity\' keys.')
+                             'contains only \'service\' and \'entity\' keys.')
                 valid = False
                 continue
 
@@ -53,7 +53,6 @@ def validate_alert(alert):
                     LOGGER.error('The value of the \'%s\' key within \'%s\' must be '
                                  'a string (str).', entry, key)
                     valid = False
-                    continue
 
         elif key == 'outputs':
             if not (isinstance(alert['metadata'][key], list) and
@@ -69,13 +68,11 @@ def validate_alert(alert):
                     LOGGER.error('The value of each entry in the \'outputs\' list '
                                  'must be a string (str).')
                     valid = False
-                    continue
 
         elif not isinstance(alert['metadata'][key], (str, unicode)):
             LOGGER.error('The value of the \'%s\' key must be a string (str), not %s',
                          key, type(alert['metadata'][key]))
             valid = False
-            continue
 
     return valid
 
@@ -91,8 +88,8 @@ def _validate_root(alert):
     """
     if not (isinstance(alert, dict) and
             set(alert.keys()) == {'record', 'metadata'}):
-        LOGGER.error('The alert must be a map (dict) that contains \'record\' '
-                     'and \'metadata\' keys.')
+        LOGGER.error('The alert must be a map (dict) that contains only '
+                     '\'record\' and \'metadata\' keys.')
         return False
 
     if not (isinstance(alert['record'], dict) and

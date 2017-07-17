@@ -52,7 +52,7 @@ def handler(event, context):
     function_name = context.function_name
 
     # Return the current list of statuses back to the caller
-    return [status for status in run(event, region, function_name, config)]
+    return list(status for status in run(event, region, function_name, config))
 
 def run(alert, region, function_name, config):
     """Send an Alert to its described outputs.
@@ -76,12 +76,12 @@ def run(alert, region, function_name, config):
                 }
             }
 
-        region [string]: the AWS region being used
-        function_name [string]: the name of the lambda function
-        config [dict]: the loaded configuration for outputs from conf/outputs.json
+        region [string]: The AWS region of the currently executing Lambda function
+        function_name [string]: The name of the lambda function
+        config [dict]: The loaded configuration for outputs from conf/outputs.json
 
     Returns:
-        [generator] yields back dispatch status and name of the output to the handler
+        [generator] Yields back dispatch status and name of the output to the handler
     """
     if not validate_alert(alert):
         LOGGER.error('Invalid alert:\n%s', json.dumps(alert, indent=2))
