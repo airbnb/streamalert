@@ -12,7 +12,7 @@ They represent the structure of a given log in the form of key/value pairs.
 
 Each key in a schema corresponds to the name of a field referenced by rules.  Its value is the data type the field is cast to.
 
-Ordering is strict.
+Ordering is strict for the ``csv`` parser.
 
 Example log schema::
 
@@ -480,6 +480,8 @@ Options
 By default, the ``csv`` parser will use ``,`` as the delimiter.
 
 The ``configuration`` setting is optional.
+
+Ordering of the fields within ``schema`` is strict.
 
 Nested CSV
 ~~~~~~~~~~
