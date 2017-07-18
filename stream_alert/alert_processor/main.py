@@ -18,11 +18,13 @@ import logging
 
 from collections import OrderedDict
 
+from stream_alert.alert_processor.helpers import validate_alert
 from stream_alert.alert_processor.outputs import get_output_dispatcher
 
 logging.basicConfig()
 LOGGER = logging.getLogger('StreamAlertOutput')
 LOGGER.setLevel(logging.DEBUG)
+
 
 def handler(event, context):
     """StreamAlert Alert Processor
@@ -40,10 +42,8 @@ def handler(event, context):
             indicates if sending was successful and the second value is the
             output configuration info (ie - 'slack:sample_channel')
     """
-    records = event.get('Records', [])
-    LOGGER.info('Running alert processor for %d records', len(records))
-
-    # A failure to load the config will log the error in load_output_config and return here
+    # A failure to load the config will log the error in load_output_config
+    # and return here
     config = _load_output_config()
     if not config:
         return
@@ -51,67 +51,43 @@ def handler(event, context):
     region = context.invoked_function_arn.split(':')[3]
     function_name = context.function_name
 
-    status_values = []
+    # Return the current list of statuses back to the caller
+    return list(run(event, region, function_name, config))
 
-    for record in records:
-        sns_payload = record.get('Sns')
-        if not sns_payload:
-            continue
-
-        sns_message = sns_payload['Message']
-        try:
-            loaded_sns_message = json.loads(sns_message)
-        except ValueError as err:
-            LOGGER.error('An error occurred while decoding message to JSON: %s', err)
-            continue
-
-        if not 'default' in loaded_sns_message:
-            # do not log for messages related to alarms
-            if not 'AlarmName' in loaded_sns_message:
-                LOGGER.error('Malformed SNS: %s', loaded_sns_message)
-            continue
-
-        status_values.extend(run(loaded_sns_message, region, function_name, config))
-
-    # Return the current status back to the caller
-    return status_values
-
-def run(loaded_sns_message, region, function_name, config):
+def run(alert, region, function_name, config):
     """Send an Alert to its described outputs.
 
     Args:
-        loaded_sns_message [dict]: SNS message dictionary with the following structure:
+        alert [dict]: dictionary representating an alert with the
+            following structure:
 
-        {
-            'default': alert
-        }
-
-        The alert is another dict with the following structure:
-
-        {
-            'record': record,
-            'metadata': {
-                'rule_name': rule.rule_name,
-                'rule_description': rule.rule_function.__doc__,
-                'log': str(payload.log_source),
-                'outputs': rule.outputs,
-                'type': payload.type,
-                'source': {
-                    'service': payload.service,
-                    'entity': payload.entity
+            {
+                'record': record,
+                'metadata': {
+                    'rule_name': rule.rule_name,
+                    'rule_description': rule.rule_function.__doc__,
+                    'log': str(payload.log_source),
+                    'outputs': rule.outputs,
+                    'type': payload.type,
+                    'source': {
+                        'service': payload.service,
+                        'entity': payload.entity
+                    }
                 }
             }
-        }
 
-        region [string]: the AWS region being used
-        function_name [string]: the name of the lambda function
-        config [dict]: the loaded configuration for outputs from conf/outputs.json
+        region [string]: The AWS region of the currently executing Lambda function
+        function_name [string]: The name of the lambda function
+        config [dict]: The loaded configuration for outputs from conf/outputs.json
 
     Returns:
-        [generator] yields back dispatch status and name of the output to the handler
+        [generator] Yields back dispatch status and name of the output to the handler
     """
-    LOGGER.debug(loaded_sns_message)
-    alert = loaded_sns_message['default']
+    if not validate_alert(alert):
+        LOGGER.error('Invalid alert:\n%s', json.dumps(alert, indent=2))
+        return
+
+    LOGGER.debug('Sending alert to outputs:\n%s', json.dumps(alert, indent=2))
     rule_name = alert['metadata']['rule_name']
 
     # strip out unnecessary keys and sort
@@ -154,6 +130,7 @@ def run(loaded_sns_message, region, function_name, config):
         # Yield back the result to the handler
         yield sent, output
 
+
 def _sort_dict(unordered_dict):
     """Recursively sort a dictionary
 
@@ -173,6 +150,7 @@ def _sort_dict(unordered_dict):
 
     return result
 
+
 def _load_output_config(config_path='conf/outputs.json'):
     """Load the outputs configuration file from disk
 
@@ -183,7 +161,7 @@ def _load_output_config(config_path='conf/outputs.json'):
         try:
             config = json.load(outputs)
         except ValueError:
-            LOGGER.error('The conf/outputs.json file could not be loaded into json')
+            LOGGER.error('The \'%s\' file could not be loaded into json', config_path)
             return
 
     return config

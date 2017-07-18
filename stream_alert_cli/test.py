@@ -328,7 +328,6 @@ class AlertProcessorTester(object):
         Args:
             alerts [list]: list of alerts to be processed that have been fed in
                 from the rule processor.
-            url_mock [mock.patch]: patch to mock out urlopen calls
 
         Return:
             [bool] boolean indicating the status of the alert processor dispatching
@@ -337,11 +336,10 @@ class AlertProcessorTester(object):
         # Set the logger level to info so its not too noisy
         StreamOutput.LOGGER.setLevel(logging.ERROR)
         for alert in alerts:
-            # Establish the mocked outputs if the context is being mocked
             if self.context.mocked:
                 self.setup_outputs(alert)
-            event = {'Records': [{'Sns': {'Message': json.dumps({'default': alert})}}]}
-            for passed, output in StreamOutput.handler(event, self.context):
+
+            for passed, output in StreamOutput.handler(alert, self.context):
                 status = status and passed
                 service, descriptor = output.split(':')
                 message = 'sending alert to \'{}\''.format(descriptor)

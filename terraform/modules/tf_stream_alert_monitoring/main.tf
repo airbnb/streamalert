@@ -49,7 +49,7 @@ resource "aws_cloudwatch_metric_alarm" "streamalert_lambda_iterator_age" {
   metric_name         = "IteratorAge"
   statistic           = "Maximum"
   comparison_operator = "GreaterThanThreshold"
-  threshold           = "43000000"
+  threshold           = "1000000"
   evaluation_periods  = "1"
   period              = "300"
   alarm_description   = "StreamAlert Lambda High Iterator Age: ${element(var.lambda_functions, count.index)}"
