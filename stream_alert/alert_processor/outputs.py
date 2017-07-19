@@ -17,6 +17,7 @@ import cgi
 import json
 import logging
 import os
+import uuid
 
 from abc import abstractmethod
 from collections import OrderedDict
@@ -514,18 +515,24 @@ class S3Output(AWSOutput):
         alert = kwargs['alert']
         service = alert['metadata']['source']['service']
         entity = alert['metadata']['source']['entity']
+
         current_date = datetime.now()
         alert_string = json.dumps(alert)
         bucket = self.config[self.__service__][kwargs['descriptor']]
-        key = '{}/{}/{}/dt={}/streamalerts_{}.json'.format(
+
+        # Prefix with alerts to account for generic non-streamalert buckets
+        # Produces the following key format:
+        #   alerts/dt=2017-01-25-00-15/kinesis_mystream_myrule_<uuid>.json
+        key = 'alerts/dt={}/{}_{}_{}_{}.json'.format(
+            current_date.strftime('%Y-%m-%d-%H-%M'),
             service,
             entity,
-            kwargs['rule_name'],
-            current_date.strftime('%Y-%m-%d-%H-%M'),
-            current_date.isoformat('-')
+            alert['metadata'][rule_name],
+            # keys need to be unique to avoid object overwriting
+            uuid.uuid4()
         )
 
-        LOGGER.debug('sending alert to S3 bucket %s with key %s', bucket, key)
+        LOGGER.debug('Sending alert to S3 bucket %s with key %s', bucket, key)
 
         client = boto3.client('s3', region_name=self.region)
         resp = client.put_object(Body=alert_string,
