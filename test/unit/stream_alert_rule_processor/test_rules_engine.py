@@ -109,20 +109,26 @@ class TestStreamRules(object):
         # process payloads
         alerts = StreamRules.process(payload)
 
-        alert_keys = {'metadata', 'record'}
-        metadata_keys = {'rule_name', 'rule_description', 'log', 'outputs', 'type', 'source'}
+        alert_keys = {
+            'record',
+            'rule_name',
+            'rule_description',
+            'log_type',
+            'log_source',
+            'outputs',
+            'source_service',
+            'source_entity'
+        }
         assert_equal(set(alerts[0].keys()), alert_keys)
-        assert_equal(type(alerts[0]['metadata']), dict)
-        assert_equal(set(alerts[0]['metadata'].keys()), metadata_keys)
+        assert_equal(type(alerts[0]['record']), dict)
+        assert_equal(type(alerts[0]['outputs']), list)
 
         # test alert fields
-        assert_equal(type(alerts[0]['record']), dict)
-        assert_equal(type(alerts[0]['metadata']['rule_name']), str)
-        assert_equal(type(alerts[0]['metadata']['rule_description']), str)
-        assert_equal(type(alerts[0]['metadata']['outputs']), list)
-        assert_equal(type(alerts[0]['metadata']['type']), str)
-        assert_equal(type(alerts[0]['metadata']['source']), dict)
-        assert_equal(type(alerts[0]['metadata']['log']), str)
+        assert_equal(type(alerts[0]['rule_name']), str)
+        assert_equal(type(alerts[0]['rule_description']), str)
+        assert_equal(type(alerts[0]['outputs']), list)
+        assert_equal(type(alerts[0]['log_type']), str)
+        assert_equal(type(alerts[0]['log_source']), str)
 
 
     def test_basic_rule_matcher_process(self):
@@ -182,7 +188,7 @@ class TestStreamRules(object):
         # doing this because after kinesis_data is read in, types are casted per the schema
         for alert in alerts:
             assert_list_equal(alert['record'].keys(), kinesis_data.keys())
-            assert_equal(alert['metadata']['outputs'], rule_outputs_map[alert['metadata']['rule_name']])
+            assert_equal(alert['outputs'], rule_outputs_map[alert['rule_name']])
 
 
     def test_process_req_subkeys(self):
@@ -236,8 +242,8 @@ class TestStreamRules(object):
         assert_equal(len(alerts), 2)
 
         # alert tests
-        assert_equal(alerts[0]['metadata']['rule_name'], 'web_server')
-        assert_equal(alerts[1]['metadata']['rule_name'], 'data_location')
+        assert_equal(alerts[0]['rule_name'], 'web_server')
+        assert_equal(alerts[1]['rule_name'], 'data_location')
 
     def test_syslog_rule(self):
         """Rule Engine - Syslog Rule"""
@@ -263,9 +269,9 @@ class TestStreamRules(object):
 
         # alert tests
         assert_equal(len(alerts), 1)
-        assert_equal(alerts[0]['metadata']['rule_name'], 'syslog_sudo')
+        assert_equal(alerts[0]['rule_name'], 'syslog_sudo')
         assert_equal(alerts[0]['record']['host'], 'vagrant-ubuntu-trusty-64')
-        assert_equal(alerts[0]['metadata']['type'], 'syslog')
+        assert_equal(alerts[0]['log_type'], 'syslog')
 
     def test_csv_rule(self):
         """Rule Engine - CSV Rule"""
@@ -289,7 +295,7 @@ class TestStreamRules(object):
 
         # alert tests
         assert_equal(len(alerts), 1)
-        assert_equal(alerts[0]['metadata']['rule_name'], 'nested_csv')
+        assert_equal(alerts[0]['rule_name'], 'nested_csv')
 
     def test_rule_disable(self):
         """Rule Engine - Disable Rule"""
@@ -354,5 +360,5 @@ class TestStreamRules(object):
         # alert tests
         assert_equal(len(alerts), 2)
 
-        rule_name_alerts = set([x['metadata']['rule_name'] for x in alerts])
+        rule_name_alerts = set([x['rule_name'] for x in alerts])
         assert_equal(rule_name_alerts, set(['gid_500', 'auditd_bin_cat']))
