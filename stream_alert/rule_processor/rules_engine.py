@@ -216,17 +216,13 @@ class StreamRules(object):
                 if rule_result:
                     alert = {
                         'record': record,
-                        'metadata': {
-                            'rule_name': rule.rule_name,
-                            'rule_description': rule.rule_function.__doc__,
-                            'log': str(payload.log_source),
-                            'outputs': rule.outputs,
-                            'type': payload.type,
-                            'source': {
-                                'service': payload.service,
-                                'entity': payload.entity
-                            }
-                        }
+                        'rule_name': rule.rule_name,
+                        'rule_description': rule.rule_function.__doc__,
+                        'log_source': str(payload.log_source),
+                        'log_type': payload.type,
+                        'outputs': rule.outputs,
+                        'source_service': payload.service,
+                        'source_entity': payload.entity
                     }
                     alerts.append(alert)
 

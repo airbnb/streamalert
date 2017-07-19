@@ -105,7 +105,7 @@ class PagerDutyOutput(StreamOutputBase):
             return self._log_status(False)
 
         message = 'StreamAlert Rule Triggered - {}'.format(kwargs['rule_name'])
-        rule_desc = kwargs['alert']['metadata']['rule_description'] or DEFAULT_RULE_DESCRIPTION
+        rule_desc = kwargs['alert']['rule_description'] or DEFAULT_RULE_DESCRIPTION
         details = {
             'rule_description': rule_desc,
             'record': kwargs['alert']['record']
@@ -213,7 +213,7 @@ class PhantomOutput(StreamOutputBase):
             return self._log_status(False)
 
         headers = {"ph-auth-token": creds['ph_auth_token']}
-        rule_desc = kwargs['alert']['metadata']['rule_description'] or DEFAULT_RULE_DESCRIPTION
+        rule_desc = kwargs['alert']['rule_description'] or DEFAULT_RULE_DESCRIPTION
         container_id = self._setup_container(kwargs['rule_name'], rule_desc,
                                              creds['url'], headers)
 
@@ -320,7 +320,7 @@ class SlackOutput(StreamOutputBase):
             rule_desc = ''
             # Only print the rule description on the first attachment
             if index == 0:
-                rule_desc = alert['metadata']['rule_description'] or DEFAULT_RULE_DESCRIPTION
+                rule_desc = alert['rule_description'] or DEFAULT_RULE_DESCRIPTION
                 rule_desc = '*Rule Description:*\n{}\n'.format(rule_desc)
 
             # Add this attachemnt to the full message array of attachments
@@ -513,11 +513,18 @@ class S3Output(AWSOutput):
                 alert [dict]: Alert relevant to the triggered rule
         """
         alert = kwargs['alert']
-        service = alert['metadata']['source']['service']
-        entity = alert['metadata']['source']['entity']
+        service = alert['source_service']
+        entity = alert['source_entity']
 
         current_date = datetime.now()
-        alert_string = json.dumps(alert)
+
+        s3_alert = alert
+        # JSON dump the alert to retain a consistent alerts schema across log types.
+        # This will get replaced by a UUID which references a record in a 
+        # different table in the future.
+        s3_alert['record'] = json.dumps(s3_alert['record'])
+        alert_string = json.dumps(s3_alert)
+
         bucket = self.config[self.__service__][kwargs['descriptor']]
 
         # Prefix with alerts to account for generic non-streamalert buckets
@@ -527,7 +534,7 @@ class S3Output(AWSOutput):
             current_date.strftime('%Y-%m-%d-%H-%M'),
             service,
             entity,
-            alert['metadata'][rule_name],
+            alert['rule_name'],
             # keys need to be unique to avoid object overwriting
             uuid.uuid4()
         )

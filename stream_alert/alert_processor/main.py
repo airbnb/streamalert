@@ -63,17 +63,13 @@ def run(alert, region, function_name, config):
 
             {
                 'record': record,
-                'metadata': {
-                    'rule_name': rule.rule_name,
-                    'rule_description': rule.rule_function.__doc__,
-                    'log': str(payload.log_source),
-                    'outputs': rule.outputs,
-                    'type': payload.type,
-                    'source': {
-                        'service': payload.service,
-                        'entity': payload.entity
-                    }
-                }
+                'rule_name': rule.rule_name,
+                'rule_description': rule.rule_function.__doc__,
+                'log_source': str(payload.log_source),
+                'log_type': payload.type,
+                'outputs': rule.outputs,
+                'source_service': payload.service,
+                'source_entity': payload.entity
             }
 
         region [string]: The AWS region of the currently executing Lambda function
@@ -84,16 +80,15 @@ def run(alert, region, function_name, config):
         [generator] Yields back dispatch status and name of the output to the handler
     """
     if not validate_alert(alert):
-        LOGGER.error('Invalid alert:\n%s', json.dumps(alert, indent=2))
+        LOGGER.error('Invalid alert format:\n%s', json.dumps(alert, indent=2))
         return
 
     LOGGER.debug('Sending alert to outputs:\n%s', json.dumps(alert, indent=2))
-    rule_name = alert['metadata']['rule_name']
 
     # strip out unnecessary keys and sort
     alert = _sort_dict(alert)
 
-    outputs = alert['metadata']['outputs']
+    outputs = alert['outputs']
     # Get the output configuration for this rule and send the alert to each
     for output in set(outputs):
         try:
@@ -119,7 +114,7 @@ def run(alert, region, function_name, config):
         sent = False
         try:
             sent = output_dispatcher.dispatch(descriptor=descriptor,
-                                              rule_name=rule_name,
+                                              rule_name=alert['rule_name'],
                                               alert=alert)
 
         except Exception as err:
