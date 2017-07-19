@@ -410,8 +410,8 @@ class SyslogParser(ParserBase):
             data: Data to be parsed
 
         Returns:
-            - A list of syslog records.
-            - False if the data does not match the syslog regex.
+            [list] A list of syslog records.
+            [boolean] False if the data does not match the syslog regex.
         """
         syslog_regex = re.compile(r"(?P<timestamp>^\w{3}\s\d{2}\s(\d{2}:?)+)\s"
                                   r"(?P<host>(\w[-]*)+)\s"
