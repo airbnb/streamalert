@@ -32,20 +32,31 @@ def test_valid_alert():
 
 def test_valid_alert_type():
     """Alert Processor Input Validation - Invalid Alert Type"""
-    # Test with invalid root keys
     assert_false(validate_alert('not-a-real-alert-object'))
 
 
 def test_alert_keys():
     """Alert Processor Input Validation - Alert Keys Missing"""
     # Default valid alert to be modified
-    invalid_metadata_keys = _get_alert()
+    missing_alert_key = _get_alert()
 
     # Alter 'metadata' keys to break validation (not all required keys)
-    invalid_metadata_keys.pop('rule_name')
+    missing_alert_key.pop('rule_name')
 
     # Test with invalid metadata keys
-    assert_false(validate_alert(invalid_metadata_keys))
+    assert_false(validate_alert(missing_alert_key))
+
+
+def test_invalid_record():
+    """Alert Processor Input Validation - Invalid Alert Record"""
+    # Default valid alert to be modified
+    invalid_alert = _get_alert()
+
+    # metadata > source value validation
+    invalid_alert['record'] = 100
+
+    # Test with invalid metadata source values
+    assert_false(validate_alert(invalid_alert))
 
 
 def test_metadata_source_value():
