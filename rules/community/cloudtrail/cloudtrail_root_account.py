@@ -6,7 +6,9 @@ disable = StreamRules.disable()
 
 @rule(logs=['cloudwatch:events'],
       matchers=[],
-      outputs=['aws-s3:sample_bucket'],
+      outputs=['aws-s3:sample_bucket', 'aws-lambda:sample_lambda',
+               'pagerduty:sample_integration', 'phantom:sample_integration',
+               'slack:sample_channel'],
       req_subkeys={'detail': ['userIdentity', 'eventType']})
 def cloudtrail_root_account(rec):
     """

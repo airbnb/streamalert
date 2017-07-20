@@ -23,8 +23,8 @@ import shutil
 import tempfile
 
 import boto3
-import pip
 
+from stream_alert_cli.helpers import run_command
 from stream_alert_cli.logger import LOGGER_CLI
 
 
@@ -170,19 +170,18 @@ class LambdaPackage(object):
             [boolean] False if the pip command failed to install requirements, True otherwise
         """
         third_party_libs = self.config['lambda'][self.config_key]['third_party_libraries']
-        if third_party_libs:
-            LOGGER_CLI.info(
-                'Installing third-party libraries: {}'.format(', '.join(third_party_libs)))
-            pip_command = ['install']
-            pip_command.extend(third_party_libs)
-            pip_command.extend(['--upgrade', '--target', temp_package_path])
-            # Return True if the pip result code is 0
-            return pip.main(pip_command) == 0
-        else:
+        # Return a default of True here if no libraries to install
+        if not third_party_libs:
             LOGGER_CLI.info('No third-party libraries to install.')
+            return True
 
-        # Return a default of True here if pip is not called
-        return True
+        LOGGER_CLI.info('Installing third-party libraries: %s', ', '.join(third_party_libs))
+        pip_command = ['pip', 'install']
+        pip_command.extend(third_party_libs)
+        pip_command.extend(['--upgrade', '--target', temp_package_path])
+
+        # Return True if the pip command is successfully run
+        return run_command(pip_command, cwd=temp_package_path)
 
     def _upload(self, package_path):
         """Upload the StreamAlert package and sha256 to S3.
@@ -221,7 +220,12 @@ class LambdaPackage(object):
 
 class RuleProcessorPackage(LambdaPackage):
     """Deployment package class for the StreamAlert Rule Processor function"""
-    package_folders = {'stream_alert/rule_processor', 'rules', 'conf'}
+    package_folders = {
+        'stream_alert/rule_processor',
+        'rules',
+        'matchers',
+        'helpers',
+        'conf'}
     package_files = {'stream_alert/__init__.py'}
     package_root_dir = '.'
     package_name = 'rule_processor'

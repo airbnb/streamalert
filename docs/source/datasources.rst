@@ -5,6 +5,7 @@ StreamAlert supports the following services as primary datasources:
 
 * Amazon S3
 * AWS Kinesis Streams
+* AWS SNS
 
 The services above can accept data from:
 
@@ -40,19 +41,6 @@ AWS Kinesis Streams
 StreamAlert also utilizes AWS Kinesis Streams for real-time data ingestion and analysis.
 By default, StreamAlert creates an AWS Kinesis stream per `cluster <clusters.html>`_.
 
-Optionally, StreamAlert can also utilize existing Kinesis streams as a source
-by adding the following into a Terraform cluster file (found in ``terraform/cluster-name.tf``)::
-
-  // Enable a Kinesis Stream to send events to Lambda
-  module "kinesis_events_<cluster-name>" {
-    source                    = "modules/tf_stream_alert_kinesis_events"
-    lambda_production_enabled = true
-    lambda_role_id            = "${module.stream_alert_<cluster-name>.lambda_role_id}"
-    lambda_function_arn       = "${module.stream_alert_<cluster-name>.lambda_arn}"
-    kinesis_stream_arn        = "arn:aws:kinesis:region:account-id:stream/stream-name"
-    role_policy_prefix        = "<cluster-name>"
-  }
-
 Sending to AWS Kinesis Streams 
 ------------------------------
 
@@ -72,3 +60,14 @@ Code/Applications
 Code can send data to an AWS Kinesis Stream via:
 
 * `AWS KPL (Amazon Kinesis Producer Library) <http://docs.aws.amazon.com/streams/latest/dev/developing-producers-with-kpl.html>`_
+
+AWS SNS
+-------
+
+Amazon Simple Notification Service (SNS) is a flexible, fully managed pub/sub messaging notification service for coordinating the delivery of messages to subscribing endpoints and clients.
+
+StreamAlert can utilize SNS as an input for processing.
+
+Use-cases:
+
+* Receiving messages from other AWS services

@@ -38,58 +38,44 @@ class TestStreamSink(object):
         """Teardown the class after any methods"""
         cls.env = None
 
-    def test_sns_topic_arn(self):
-        """Sink SNS Messaging - Topic ARN"""
-        sinker = sink.StreamSink(self.env)
-        arn = sinker._get_sns_topic_arn()
-        assert_equal(arn, 'arn:aws:sns:us-east-1:123456789012:unittest_prod_streamalerts')
-
-    def test_message_size_check(self):
-        """Sink SNS Messaging - Message Blob Size Check"""
-        sinker = sink.StreamSink(self.env)
-        passed = sinker._sns_message_size_check(get_payload(1000))
-        assert_equal(passed, True)
-        passed = sinker._sns_message_size_check(get_payload((256*1024)+1))
-        assert_equal(passed, False)
-
     @staticmethod
     def test_json_from_dict():
         """Sink SNS Messaging - Dictionary to JSON Marshalling"""
         # Create a dictionary with an empty alert list
-        sns_dict = {"default": []}
-        json_message = sink.json_dump(sns_dict)
+        alert = {"test": "alert"}
+        json_message = sink._json_dump(alert)
 
         # Test empty dictionary
-        assert_equal(json_message, '{"default": []}')
+        assert_equal(json_message, '{"test": "alert"}')
 
         # Create a dictionary with a single alert in the list
-        sns_dict = {"default": [
-            {
+        alert = {
+            'record': {
+                'record_data_key01_01': "record_data_value01_01",
+                'record_data_key02_01': "record_data_value02_01"
+                },
+            'metadata': {
                 'rule_name': "test_rule_01",
-                'record': {
-                    'record_data_key01_01': "record_data_value01_01",
-                    'record_data_key02_01': "record_data_value02_01"
-                    },
-                'metadata': {
-                    'log': "payload_data_01",
-                    'outputs': "rule.outputs_01",
-                    'type': "payload_type_01",
-                    'source': {
-                        'service': "payload_service_01",
-                        'entity': "payload_entity_01"
-                    }
+                'log': "payload_data_01",
+                'outputs': "rule.outputs_01",
+                'type': "payload_type_01",
+                'source': {
+                    'service': "payload_service_01",
+                    'entity': "payload_entity_01"
                 }
             }
-        ]}
+        }
 
-        json_message = sink.json_dump(sns_dict)
+        json_message = sink._json_dump(alert)
 
         # Test with single alert entry
-        assert_equal(json_message, '{"default": [{"rule_name": "test_rule_01", ' \
-            '"metadata": {"outputs": "rule.outputs_01", "type": "payload_type_01", ' \
-            '"log": "payload_data_01", "source": {"service": "payload_service_01", ' \
-            '"entity": "payload_entity_01"}}, "record": {"record_data_key02_01": ' \
-            '"record_data_value02_01", "record_data_key01_01": "record_data_value01_01"}}]}')
+        assert_equal(json_message, '{"record": {"record_data_key02_01": '
+                     '"record_data_value02_01", "record_data_key01_01": '
+                     '"record_data_value01_01"}, "metadata": {"source": '
+                     '{"service": "payload_service_01", "entity": '
+                     '"payload_entity_01"}, "rule_name": "test_rule_01", '
+                     '"type": "payload_type_01", "log": "payload_data_01", '
+                     '"outputs": "rule.outputs_01"}}')
 
 def get_payload(byte_size):
     """Returns a base64 encoded random payload of (roughly) byte_size length

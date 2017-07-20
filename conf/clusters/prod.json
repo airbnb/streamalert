@@ -10,8 +10,8 @@
         "s3_bucket_suffix": "streamalert.results"
       },
       "streams": {
-        "retention": 36,
-        "shards": 5
+        "retention": 24,
+        "shards": 1
       }
     },
     "kinesis_events": {
@@ -19,13 +19,13 @@
     },
     "stream_alert": {
       "alert_processor": {
-        "current_version": 7,
+        "current_version": "$LATEST",
         "memory": 128,
-        "timeout": 25
+        "timeout": 10
       },
       "rule_processor": {
-        "current_version": 8,
-        "memory": 256,
+        "current_version": "$LATEST",
+        "memory": 128,
         "timeout": 10
       }
     }

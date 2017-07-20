@@ -32,18 +32,22 @@ from nose.tools import (
 
 from stream_alert.alert_processor import outputs
 from stream_alert.alert_processor.output_base import OutputProperty
+from stream_alert_cli.helpers import (
+    create_lambda_function,
+    put_mock_creds
+)
 
 from unit.stream_alert_alert_processor import (
-    REGION,
+    CONFIG,
     FUNCTION_NAME,
-    CONFIG
+    KMS_ALIAS,
+    REGION
 )
 
 from unit.stream_alert_alert_processor.helpers import (
     _get_random_alert,
-    _get_sns_message,
-    _remove_temp_secrets,
-    _put_mock_creds,
+    _get_alert,
+    _remove_temp_secrets
 )
 
 
@@ -121,9 +125,10 @@ class TestPagerDutyOutput(object):
         creds = {'url': 'http://pagerduty.foo.bar/create_event.json',
                  'service_key': 'mocked_service_key'}
 
-        _put_mock_creds(output_name, creds, self.__dispatcher.secrets_bucket)
+        put_mock_creds(output_name, creds, self.__dispatcher.secrets_bucket,
+                        REGION, KMS_ALIAS)
 
-        return _get_sns_message(0)['default']
+        return _get_alert()
 
     def _teardown_dispatch(self):
         """Replace method with cached method"""
@@ -144,7 +149,7 @@ class TestPagerDutyOutput(object):
 
         self._teardown_dispatch()
 
-        log_info_mock.assert_called_with('successfully sent alert to %s', self.__service)
+        log_info_mock.assert_called_with('Successfully sent alert to %s', self.__service)
 
     @patch('logging.Logger.error')
     @patch('urllib2.urlopen')
@@ -163,7 +168,7 @@ class TestPagerDutyOutput(object):
 
         self._teardown_dispatch()
 
-        log_error_mock.assert_called_with('failed to send alert to %s', self.__service)
+        log_error_mock.assert_called_with('Failed to send alert to %s', self.__service)
 
     @patch('logging.Logger.error')
     @mock_s3
@@ -177,7 +182,7 @@ class TestPagerDutyOutput(object):
 
         self._teardown_dispatch()
 
-        log_error_mock.assert_called_with('failed to send alert to %s', self.__service)
+        log_error_mock.assert_called_with('Failed to send alert to %s', self.__service)
 
 
 class TestPhantomOutput(object):
@@ -206,9 +211,10 @@ class TestPhantomOutput(object):
         creds = {'url': url,
                  'ph_auth_token': 'mocked_auth_token'}
 
-        _put_mock_creds(output_name, creds, self.__dispatcher.secrets_bucket)
+        put_mock_creds(output_name, creds, self.__dispatcher.secrets_bucket,
+                        REGION, KMS_ALIAS)
 
-        return _get_sns_message(0)['default']
+        return _get_alert()
 
     @patch('logging.Logger.info')
     @patch('urllib2.urlopen')
@@ -224,7 +230,7 @@ class TestPhantomOutput(object):
                                    rule_name='rule_name',
                                    alert=alert)
 
-        log_mock.assert_called_with('successfully sent alert to %s', self.__service)
+        log_mock.assert_called_with('Successfully sent alert to %s', self.__service)
 
     @patch('logging.Logger.error')
     @patch('urllib2.urlopen')
@@ -238,7 +244,7 @@ class TestPhantomOutput(object):
                                    rule_name='rule_name',
                                    alert=alert)
 
-        log_mock.assert_called_with('failed to send alert to %s', self.__service)
+        log_mock.assert_called_with('Failed to send alert to %s', self.__service)
 
     @patch('logging.Logger.error')
     @patch('urllib2.urlopen')
@@ -276,7 +282,7 @@ class TestPhantomOutput(object):
                                    rule_name='rule_name',
                                    alert=alert)
 
-        log_mock.assert_called_with('failed to send alert to %s', self.__service)
+        log_mock.assert_called_with('Failed to send alert to %s', self.__service)
 
     @patch('logging.Logger.error')
     @mock_s3
@@ -288,7 +294,7 @@ class TestPhantomOutput(object):
                                    rule_name='rule_name',
                                    alert=alert)
 
-        log_error_mock.assert_called_with('failed to send alert to %s', self.__service)
+        log_error_mock.assert_called_with('Failed to send alert to %s', self.__service)
 
 
 class TestSlackOutput(object):
@@ -442,9 +448,10 @@ class TestSlackOutput(object):
 
         creds = {'url': 'https://api.slack.com/web-hook-key'}
 
-        _put_mock_creds(output_name, creds, self.__dispatcher.secrets_bucket)
+        put_mock_creds(output_name, creds, self.__dispatcher.secrets_bucket,
+                       REGION, KMS_ALIAS)
 
-        return _get_sns_message(0)['default']
+        return _get_alert()
 
     @patch('logging.Logger.info')
     @patch('urllib2.urlopen')
@@ -459,7 +466,7 @@ class TestSlackOutput(object):
                                    rule_name='rule_name',
                                    alert=alert)
 
-        log_info_mock.assert_called_with('successfully sent alert to %s', self.__service)
+        log_info_mock.assert_called_with('Successfully sent alert to %s', self.__service)
 
     @patch('logging.Logger.error')
     @patch('urllib2.urlopen')
@@ -478,7 +485,7 @@ class TestSlackOutput(object):
 
         log_error_mock.assert_any_call('Encountered an error while sending to Slack: %s',
                                        error_message)
-        log_error_mock.assert_any_call('failed to send alert to %s', self.__service)
+        log_error_mock.assert_any_call('Failed to send alert to %s', self.__service)
 
     @patch('logging.Logger.error')
     @mock_s3
@@ -490,7 +497,7 @@ class TestSlackOutput(object):
                                    rule_name='rule_name',
                                    alert=alert)
 
-        log_error_mock.assert_called_with('failed to send alert to %s', self.__service)
+        log_error_mock.assert_called_with('Failed to send alert to %s', self.__service)
 
 
 class TestAWSOutput(object):
@@ -559,7 +566,7 @@ class TestS3Ouput(object):
         bucket = CONFIG[self.__service][self.__descriptor]
         boto3.client('s3', region_name=REGION).create_bucket(Bucket=bucket)
 
-        return _get_sns_message(0)['default']
+        return _get_alert()
 
     @patch('logging.Logger.info')
     @mock_s3
@@ -570,7 +577,7 @@ class TestS3Ouput(object):
                                    rule_name='rule_name',
                                    alert=alert)
 
-        log_mock.assert_called_with('successfully sent alert to %s', self.__service)
+        log_mock.assert_called_with('Successfully sent alert to %s', self.__service)
 
 
 class TestLambdaOuput(object):
@@ -586,21 +593,6 @@ class TestLambdaOuput(object):
                                                          CONFIG)
 
     @classmethod
-    def _make_lambda_package(cls):
-        """Helper function to create mock lambda package"""
-        mock_lambda_function = """
-def handler(event, context):
-    return event
-"""
-        package_output = StringIO()
-        package = zipfile.ZipFile(package_output, 'w', zipfile.ZIP_DEFLATED)
-        package.writestr('function.zip', mock_lambda_function)
-        package.close()
-        package_output.seek(0)
-
-        return package_output.read()
-
-    @classmethod
     def teardown_class(cls):
         """Teardown the class after all methods"""
         cls.dispatcher = None
@@ -610,28 +602,11 @@ def handler(event, context):
         assert_equal(self.__dispatcher.__class__.__name__, 'LambdaOutput')
         assert_equal(self.__dispatcher.__service__, self.__service)
 
-    def _create_lambda_function(self):
-        """Helper function to create mock lambda function"""
-        function_name = CONFIG[self.__service][self.__descriptor]
-
-        boto3.client('lambda', region_name=REGION).create_function(
-            FunctionName=function_name,
-            Runtime='python2.7',
-            Role='test-iam-role',
-            Handler='function.handler',
-            Description='test lambda function',
-            Timeout=3,
-            MemorySize=128,
-            Publish=True,
-            Code={
-                'ZipFile': self._make_lambda_package()
-            }
-        )
-
     def _setup_dispatch(self):
         """Helper for setting up LambdaOutput dispatch"""
-        self._create_lambda_function()
-        return _get_sns_message(0)['default']
+        function_name = CONFIG[self.__service][self.__descriptor]
+        create_lambda_function(function_name, REGION)
+        return _get_alert()
 
     @mock_lambda
     @patch('logging.Logger.info')
@@ -642,4 +617,4 @@ def handler(event, context):
                                    rule_name='rule_name',
                                    alert=alert)
 
-        log_mock.assert_called_with('successfully sent alert to %s', self.__service)
+        log_mock.assert_called_with('Successfully sent alert to %s', self.__service)

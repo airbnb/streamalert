@@ -24,6 +24,7 @@ from stream_alert_cli.logger import LOGGER_CLI
 
 OUTPUTS_CONFIG = 'outputs.json'
 
+
 def load_outputs_config(conf_dir='conf'):
     """Load the outputs configuration file from disk
 
@@ -37,9 +38,13 @@ def load_outputs_config(conf_dir='conf'):
         try:
             values = json.load(outputs)
         except ValueError:
-            LOGGER_CLI.exception('the %s file could not be loaded into json', OUTPUTS_CONFIG)
+            LOGGER_CLI.exception(
+                'the %s file could not be loaded into json',
+                OUTPUTS_CONFIG)
+            return
 
     return values
+
 
 def write_outputs_config(data, conf_dir='conf'):
     """Write the outputs configuration file back to disk
@@ -55,6 +60,7 @@ def write_outputs_config(data, conf_dir='conf'):
             separators=(',', ': '),
             sort_keys=True
         ))
+
 
 def load_config(props, service):
     """Gets the outputs config from disk and checks if the output already exists
@@ -72,6 +78,7 @@ def load_config(props, service):
 
     return config
 
+
 def encrypt_and_push_creds_to_s3(region, bucket, key, props):
     """Construct a dictionary of the credentials we want to encrypt and send to s3
 
@@ -87,11 +94,12 @@ def encrypt_and_push_creds_to_s3(region, bucket, key, props):
     # Check if we have any creds to send to s3
     # Some services (ie: AWS) do not require this, so it's not an error
     if not creds:
-        return
+        return True
 
     creds_json = json.dumps(creds)
     enc_creds = kms_encrypt(region, creds_json)
     return send_creds_to_s3(region, bucket, key, enc_creds)
+
 
 def kms_encrypt(region, data):
     """Encrypt data with AWS KMS.
@@ -110,6 +118,7 @@ def kms_encrypt(region, data):
         return response['CiphertextBlob']
     except ClientError:
         LOGGER_CLI.exception('an error occurred during credential encryption')
+
 
 def send_creds_to_s3(region, bucket, key, blob_data):
     """Put the encrypted credential blob for this service and destination in s3
@@ -131,12 +140,14 @@ def send_creds_to_s3(region, bucket, key, blob_data):
 
         return True
     except ClientError as err:
-        LOGGER_CLI.error('An error occurred while sending credentials to S3 for key [%s]: '
-                         '%s [%s]',
-                         key,
-                         err.response['Error']['Message'],
-                         err.response['Error']['BucketName'])
+        LOGGER_CLI.error(
+            'An error occurred while sending credentials to S3 for key [%s]: '
+            '%s [%s]',
+            key,
+            err.response['Error']['Message'],
+            err.response['Error']['BucketName'])
         return False
+
 
 def check_output_exists(config, props, service):
     """Determine if this service and destination combo has already been created
@@ -155,6 +166,7 @@ def check_output_exists(config, props, service):
         return False
 
     return True
+
 
 def update_outputs_config(config, updated_config, service):
     """Updates and writes the outputs config back to disk

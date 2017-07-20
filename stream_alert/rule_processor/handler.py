@@ -112,7 +112,7 @@ class StreamAlert(object):
         """
         classifier.classify_record(payload, data)
         if not payload.valid:
-            LOGGER.error('Invalid data: %s\n%s', payload, json.dumps(payload.raw_record, indent=4))
+            LOGGER.error('Invalid data: %s\n%s', payload, data)
             return
 
         alerts = StreamRules.process(payload)
@@ -120,7 +120,9 @@ class StreamAlert(object):
             LOGGER.debug('Valid data, no alerts')
             return
 
+        # If we want alerts returned to the caller, extend the list. Otherwise
+        # attempt to send them to the alert processor
         if self.return_alerts:
             self.alerts.extend(alerts)
-
-        self.sinker.sink(alerts)
+        else:
+            self.sinker.sink(alerts)

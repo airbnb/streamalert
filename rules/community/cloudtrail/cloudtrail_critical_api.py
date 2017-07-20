@@ -1,5 +1,5 @@
 from stream_alert.rule_processor.rules_engine import StreamRules
-from rules.helpers.base import in_set
+from helpers.base import in_set
 
 rule = StreamRules.rule
 disable = StreamRules.disable()
@@ -7,7 +7,9 @@ disable = StreamRules.disable()
 
 @rule(logs=['cloudtrail:api_events'],
       matchers=[],
-      outputs=['aws-s3:sample_bucket'])
+      outputs=['aws-s3:sample_bucket', 'aws-lambda:sample_lambda',
+               'pagerduty:sample_integration', 'phantom:sample_integration',
+               'slack:sample_channel'])
 def cloudtrail_critical_api(rec):
     """
     author:           airbnb_csirt

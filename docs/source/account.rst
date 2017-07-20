@@ -17,42 +17,72 @@ If you're interested in demo'ing StreamAlert, you can create a hassle free-tier 
 account_id
 ~~~~~~~~~~
 
-Find your AWS Account ID by following these instructions: https://docs.aws.amazon.com/IAM/latest/UserGuide/console_account-alias.html
+Find your AWS Account ID by following these `instructions <https://docs.aws.amazon.com/IAM/latest/UserGuide/console_account-alias.html>`_.
 
-Open ``variables.json`` and set ``account_id`` to this value.
+Open ``conf/global.json`` and replace ``AWS_ACCOUNT_ID_GOES_HERE`` with this value.
 
 prefix
 ~~~~~~
 
-Open ``variables.json`` and set ``prefix`` to your company or organization name.
+Open ``conf/global.json`` and ``conf/lambda.json`` and replace ``PREFIX_GOES_HERE`` with your company or organization name.
 
-Administrator
-~~~~~~~~~~~~~
+user account
+~~~~~~~~~~~~
 
-To successfully deploy StreamAlert, you need to create an administrative user in the AWS account.
+To deploy StreamAlert, you need to create an AWS user for administration.
 
-Steps:
+First, create the policy to attach to the user:
+
+* Go to: Services => IAM => Policies
+* Click: Create policy
+* Select: Create your Own Policy
+* Name the policy ``streamalert``, and paste the following as the ``Policy Document``:
+* Clock: Create Policy
+
+.. code-block:: json
+
+  {
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "athena:*",
+                "cloudtrail:*",
+                "cloudwatch:*",
+                "ec2:*FlowLogs",
+                "events:*",
+                "firehose:*",
+                "iam:*",
+                "kinesis:*",
+                "kms:*",
+                "lambda:*",
+                "logs:*",
+                "s3:*",
+                "sns:*"
+            ],
+            "Resource": "*"
+        }
+    ]
+  }
+
+Next, create the user:
 
 * Go to: Services => IAM => Users
 * Click: Add user
-* Username: streamalert
+* Username: ``streamalert``
 * Access type: Programmatic access
-* Click: Next
+* Click: ``Next: Permissions``
 * Select: Attach existing policies directly
-* Attach the following policies:
+* Attach the previously created ``streamalert`` policy
+* Click: ``Next: Review``, and then ``Create user``
 
-  * AmazonKinesisFirehoseFullAccess
-  * AmazonKinesisFullAccess
-  * AmazonS3FullAccess
-  * AmazonSNSFullAccess
-  * AWSLambdaFullAccess
-  * CloudWatchFullAccess
-  * CloudWatchLogsFullAccess
-  * IAMFullAccess
-* Click:  Next (Review), and then Create User
+Copy the Access Key ID and Secret Access Key and export them to your environment variables:
 
-Take the Access Key and Secret Key and export them to your environment variables::
+.. code-block:: bash
 
   $ export AWS_ACCESS_KEY_ID="REPLACE_ME"
   $ export AWS_SECRET_ACCESS_KEY="REPLACE_ME"
   $ export AWS_DEFAULT_REGION="us-east-1"
+
+.. note:: Remember to save your credentials in a safe place!

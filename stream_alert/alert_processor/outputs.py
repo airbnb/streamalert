@@ -27,7 +27,7 @@ import boto3
 from stream_alert.alert_processor.output_base import StreamOutputBase, OutputProperty
 
 logging.basicConfig()
-LOGGER = logging.getLogger('StreamOutput')
+LOGGER = logging.getLogger('StreamAlertOutput')
 
 # STREAM_OUTPUTS will contain each subclass of the StreamOutputBase
 # All included subclasses are designated using the '@output' class decorator
@@ -101,8 +101,7 @@ class PagerDutyOutput(StreamOutputBase):
         """
         creds = self._load_creds(kwargs['descriptor'])
         if not creds:
-            self._log_status(False)
-            return
+            return self._log_status(False)
 
         message = 'StreamAlert Rule Triggered - {}'.format(kwargs['rule_name'])
         rule_desc = kwargs['alert']['metadata']['rule_description'] or DEFAULT_RULE_DESCRIPTION
@@ -129,7 +128,7 @@ class PagerDutyOutput(StreamOutputBase):
                          error_message,
                          '\n'.join(detailed_errors))
 
-        self._log_status(success)
+        return self._log_status(success)
 
 
 @output
@@ -189,7 +188,6 @@ class PhantomOutput(StreamOutputBase):
         resp = self._request_helper(container_url, container_string, headers, False)
 
         if not self._check_http_response(resp):
-            self._log_status(False)
             return False
 
         try:
@@ -211,8 +209,7 @@ class PhantomOutput(StreamOutputBase):
         """
         creds = self._load_creds(kwargs['descriptor'])
         if not creds:
-            self._log_status(False)
-            return
+            return self._log_status(False)
 
         headers = {"ph-auth-token": creds['ph_auth_token']}
         rule_desc = kwargs['alert']['metadata']['rule_description'] or DEFAULT_RULE_DESCRIPTION
@@ -234,7 +231,7 @@ class PhantomOutput(StreamOutputBase):
 
             success = self._check_http_response(resp)
 
-        self._log_status(success)
+        return self._log_status(success)
 
 
 @output
@@ -432,21 +429,18 @@ class SlackOutput(StreamOutputBase):
         """
         creds = self._load_creds(kwargs['descriptor'])
         if not creds:
-            self._log_status(False)
-            return
-
-        url = os.path.join(creds['url'])
+            return self._log_status(False)
 
         slack_message = self._format_message(kwargs['rule_name'], kwargs['alert'])
 
-        resp = self._request_helper(url, slack_message)
+        resp = self._request_helper(creds['url'], slack_message)
         success = self._check_http_response(resp)
 
         if not success:
             LOGGER.error('Encountered an error while sending to Slack: %s',
                          resp.read())
 
-        self._log_status(success)
+        return self._log_status(success)
 
 class AWSOutput(StreamOutputBase):
     """Subclass to be inherited from for all AWS service outputs"""
@@ -521,7 +515,7 @@ class S3Output(AWSOutput):
         service = alert['metadata']['source']['service']
         entity = alert['metadata']['source']['entity']
         current_date = datetime.now()
-        alert_string = json.dumps(alert['record'])
+        alert_string = json.dumps(alert)
         bucket = self.config[self.__service__][kwargs['descriptor']]
         key = '{}/{}/{}/dt={}/streamalerts_{}.json'.format(
             service,
@@ -538,7 +532,7 @@ class S3Output(AWSOutput):
                                  Bucket=bucket,
                                  Key=key)
 
-        self._log_status(resp)
+        return self._log_status(resp)
 
 @output
 class LambdaOutput(AWSOutput):
@@ -566,10 +560,9 @@ class LambdaOutput(AWSOutput):
              OutputProperty(description='a short and unique descriptor for this Lambda function '
                                         'configuration (ie: abbreviated name)')),
             ('aws_value',
-             OutputProperty(description='the AWS arn, with the optional qualifier, that '
-                                        'represents the Lambda function to use for this '
-                                        'configuration (ie: arn:aws:lambda:aws-region:acct-id:'
-                                        'function:output_function:qualifier)',
+             OutputProperty(description='the AWS Lambda function name, with the optional '
+                                        'qualifier (aka \'alias\'), to use for this '
+                                        'configuration (ie: output_function:qualifier)',
                             input_restrictions={' '})),
         ])
 
@@ -588,11 +581,36 @@ class LambdaOutput(AWSOutput):
         alert_string = json.dumps(alert['record'])
         function_name = self.config[self.__service__][kwargs['descriptor']]
 
+        # Check to see if there is an optional qualifier included here
+        # Acceptable values for the output configuration are the full ARN,
+        # a function name followed by a qualifier, or just a function name:
+        #   'arn:aws:lambda:aws-region:acct-id:function:function-name:prod'
+        #   'function-name:prod'
+        #   'function-name'
+        # Checking the length of the list for 2 or 8 should account for all
+        # times a qualifier is provided.
+        parts = function_name.split(':')
+        if len(parts) == 2 or len(parts) == 8:
+            function = parts[-2]
+            qualifier = parts[-1]
+        else:
+            function = parts[-1]
+            qualifier = None
+
         LOGGER.debug('Sending alert to Lambda function %s', function_name)
 
         client = boto3.client('lambda', region_name=self.region)
-        resp = client.invoke(FunctionName=function_name,
-                             InvocationType='Event',
-                             Payload=alert_string)
+        # Use the qualifier if it's available. Passing an empty qualifier in
+        # with `Qualifier=''` or `Qualifier=None` does not work and thus we
+        # have to perform different calls to client.invoke().
+        if qualifier:
+            resp = client.invoke(FunctionName=function,
+                                 InvocationType='Event',
+                                 Payload=alert_string,
+                                 Qualifier=qualifier)
+        else:
+            resp = client.invoke(FunctionName=function,
+                                 InvocationType='Event',
+                                 Payload=alert_string)
 
-        self._log_status(resp)
+        return self._log_status(resp)

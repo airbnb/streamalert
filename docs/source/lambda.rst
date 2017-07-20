@@ -16,53 +16,135 @@ Each StreamAlert cluster creates two Lambda functions:
 Concepts
 --------
 * AWS Lambda `details`_
-* AWS Lambda `faq`_
+* AWS Lambda `FAQ`_
 * AWS Lambda `pricing`_
 
 .. _details: https://docs.aws.amazon.com/lambda/latest/dg/welcome.html
 .. _faq: https://aws.amazon.com/lambda/faqs/
 .. _pricing: https://aws.amazon.com/lambda/pricing/
 
-Fields
-------
 
-The following configuration settings are defined in ``variables.json``
+Per Cluster Lambda Settings
+---------------------------
 
-Both the ```rule_processor`` and ``alert_processor`` have the same settings.
+``stream_alert`` is the main configuration module which manages:
 
-Lambda Processor Settings
-~~~~~~~~~~~~~~~~~~~~~~~~~
+1) Lambda Functions for rule and alert processing
+2) IAM roles and policies
+3) SNS topic for alerts
 
-.. code-block::
+**Template:**
 
-  "rule_processor_config": {
-      "handler": "stream_alert.rule_processor.main.handler",
-      "source_bucket": "prefix.streamalert.source",
-      "source_current_hash": "auto_generated_hash",
-      "source_object_key": "auto_generated_s3_object_key",
-      "third_party_libraries": [
-          "jsonpath_rw",
-          "netaddr"
-      ]
-  },
-  "rule_processor_lambda_config": {
-      "prod": [                    # Cluster name
-          10,                      # Lambda timeout
-          128                      # Lambda memory
-      ]
+.. code-block:: json
+  :caption: `conf/clusters/cluster-name.json`
+
+  {
+    "stream_alert": {
+      "alert_processor": {
+        "timeout": 25,
+        "memory": 128,
+        "current_version": "$LATEST",
+        "outputs": {
+          "aws-s3": [],
+          "aws-lambda": []
+        }
+      },
+      "rule_processor": {
+        "timeout": 10,
+        "memory": 256,
+        "current_version": "$LATEST"
+      }
+    }
   }
 
-Lambda Config
-~~~~~~~~~~~~~
+**Options:**
 
-The ``timeout``: The time (in seconds) the Lambda function is allowed to process an incoming record.
+===================  ========  ===========
+Key                  Required  Description
+-------------------  --------  -----------
+``timeout``          ``true``  The time (in seconds) the Lambda function is allowed to process an incoming record. The timeout can be set to any value between 1 and 300 seconds.
+``memory``           ``true``  The amount of memory allocated for the Lambda function execution.
+``current_version``  ``true``  The most current published version of the Lambda function.
+``outputs``          ``true``  A collection of S3 bucket IDs or AWS Lambda function names to configure as valid outputs.  By default, ``aws-s3`` should contain the bucket created by the ``stream_alert`` module: ``prefix.cluster.streamalerts``.  Optionally, if the alert processor needs to invoke other Lambda functions from within your AWS account, specify a list of function names.
+===================  ========  ===========
 
-The ``memory``: The amount of memory allocated for the Lambda function execution.
+vpc_config
+~~~~~~~~~~
 
-Per documentation: *"All calls made to AWS Lambda must complete execution within 300 seconds. The default timeout is 3 seconds, but you can set the timeout to any value between 1 and 300 seconds."*
+To enable StreamAlert's Alert Processor to access resources inside a VPC, you must provide additional VPC-specific configuration information.
 
-Processor Config
-~~~~~~~~~~~~~~~~
+`More information <http://docs.aws.amazon.com/lambda/latest/dg/vpc.html>`_
+
+**Template:**
+
+.. code-block:: json
+  :caption: `conf/clusters/cluster-name.json`
+
+  {
+    "alert_processor": {
+      "vpc_config": {
+        "subnet_ids": [],
+        "security_group_ids": []
+      }
+    }
+  }
+
+**Options:**
+
+======================  ========  ===========
+Key                     Required  Description
+----------------------  --------  -----------
+``subnet_ids``          ``true``  A list of VPC subnet IDs to run the Alert Processor in
+``security_group_ids``  ``true``  A list of security group IDs to apply to the Alert Processor
+======================  ========  ===========
+
+inputs
+~~~~~~
+
+StreamAlert's Rule Processor can be configured to support SNS as an input data source.
+
+**Template:**
+
+.. code-block:: json
+  :caption: `conf/clusters/cluster-name.json`
+
+  {
+    "rule_processor": {
+      "inputs": {
+        "aws-sns:": []
+      }
+    }
+  }
+
+Global Lambda Config
+--------------------
+
+The ``conf/lambda.json`` configuration file controls common settings across all Lambda functions.
+
+**Template:**
+
+.. code-block:: json
+  :caption: `conf/lambda.json`
+
+  {
+    "alert_processor_config": {
+        "handler": "stream_alert.rule_processor.main.handler",
+        "source_bucket": "prefix.streamalert.source",
+        "source_current_hash": "auto_generated_hash",
+        "source_object_key": "auto_generated_s3_object_key",
+        "third_party_libraries": [
+            "jsonpath_rw",
+            "netaddr"
+        ]
+    },
+    "rule_processor_config": {
+        "handler": "stream_alert.rule_processor.main.handler",
+        "source_bucket": "prefix.streamalert.source",
+        "source_current_hash": "auto_generated_hash",
+        "source_object_key": "auto_generated_s3_object_key",
+        "third_party_libraries": []
+    }
+  }
 
 ``source_bucket``: The S3 bucket for uploading and storing the StreamAlert application code.  Open ``variables.json`` and replace the prefix with your company name.
 
@@ -75,5 +157,3 @@ Processor Config
 .. note:: If third-party libraries are used in rules but not specified below, they will not work.
 
 ``third_party_libraries``: Third-party Python libraries to package into the Lambda deployment package.
-
-

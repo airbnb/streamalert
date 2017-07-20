@@ -36,21 +36,9 @@ def _construct_event(count):
     event = {'Records': []}
     for index in range(count):
         event['Records'] = event['Records'] + \
-            [{'Sns': {'Message': json.dumps(_get_sns_message(index))}}]
+            [{'Sns': {'Message': json.dumps(_get_alert(index))}}]
 
     return event
-
-
-def _encrypt_with_kms(client, data):
-    alias = 'alias/stream_alert_secrets_test'
-    client.create_alias(
-        AliasName=alias,
-        TargetKeyId='1234abcd-12ab-34cd-56ef-1234567890ab')
-
-    response = client.encrypt(KeyId=alias,
-                              Plaintext=data)
-
-    return response['CiphertextBlob']
 
 
 def _get_mock_context():
@@ -88,33 +76,31 @@ def _get_random_alert(key_count, rule_name, omit_rule_desc=False):
     return alert
 
 
-def _get_sns_message(index):
+def _get_alert(index=0):
     return {
-        'default': {
-            'record': {
-                'test_index': index,
-                'compressed_size': '9982',
-                'timestamp': '1496947381.18',
-                'node_id': '1',
-                'cb_server': 'cbserver',
-                'size': '21504',
-                'type': 'binarystore.file.added',
-                'file_path': '/tmp/5DA/AD8/0F9AA55DA3BDE84B35656AD8911A22E1.zip',
-                'md5': '0F9AA55DA3BDE84B35656AD8911A22E1'
+        'record': {
+            'test_index': index,
+            'compressed_size': '9982',
+            'timestamp': '1496947381.18',
+            'node_id': '1',
+            'cb_server': 'cbserver',
+            'size': '21504',
+            'type': 'binarystore.file.added',
+            'file_path': '/tmp/5DA/AD8/0F9AA55DA3BDE84B35656AD8911A22E1.zip',
+            'md5': '0F9AA55DA3BDE84B35656AD8911A22E1'
+        },
+        'metadata': {
+            'log': 'carbonblack:binarystore.file.added',
+            'rule_name': 'cb_binarystore_file_added',
+            'outputs': [
+                'slack:unit_test_channel'
+            ],
+            'source': {
+                'service': 's3',
+                'entity': 'corp-prefix.prod.cb.region'
             },
-            'metadata': {
-                'log': 'carbonblack:binarystore.file.added',
-                'rule_name': 'cb_binarystore_file_added',
-                'outputs': [
-                    'slack:unit_test_channel'
-                ],
-                'source': {
-                    'service': 's3',
-                    'entity': 'corp-prefix.prod.cb.region'
-                },
-                'type': 'json',
-                'rule_description': 'Info about this rule and what actions to take'
-            }
+            'type': 'json',
+            'rule_description': 'Info about this rule and what actions to take'
         }
     }
 
@@ -123,24 +109,3 @@ def _remove_temp_secrets():
     """"Blow away the stream_alert_secrets directory in temp"""
     secrets_dir = os.path.join(tempfile.gettempdir(), "stream_alert_secrets")
     shutil.rmtree(secrets_dir)
-
-
-def _put_mock_creds(output_name, creds, bucket):
-    """Helper function to mock encrypt creds and put on s3"""
-    creds_string = json.dumps(creds)
-
-    kms_client = boto3.client('kms', region_name=REGION)
-    enc_creds = _encrypt_with_kms(kms_client, creds_string)
-
-    s3_client = boto3.client('s3', region_name=REGION)
-    _put_s3_test_object(s3_client, bucket, output_name, enc_creds)
-
-
-def _put_s3_test_object(client, bucket, key, data):
-    client.create_bucket(Bucket=bucket)
-    client.put_object(
-        Body=data,
-        Bucket=bucket,
-        Key=key,
-        ServerSideEncryption='AES256'
-    )

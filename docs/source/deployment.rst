@@ -6,9 +6,11 @@ Make sure you've completed the `Getting Started <getting-started.html>`_ instruc
 Initial Build
 -------------
 
-To initialize StreamAlert::
+To initialize StreamAlert:
 
-  $ ./stream_alert_cli.py terraform init
+.. code-block:: bash
+
+  $ python stream_alert_cli.py terraform init
 
 This will perform the following:
 
@@ -26,27 +28,35 @@ As new rules, sources, or outputs are added to StreamAlert, new versions of the 
 
 To accomplish this, ``stream_alert_cli.py`` contains a ``lambda deploy`` command.
 
-To publish new changes for all AWS Lambda functions::
+To publish new changes for all AWS Lambda functions:
 
-  $ ./stream_alert_cli.py lambda deploy --processor all
+.. code-block:: bash
 
-Optionally, to publish changes for only a specific AWS Lambda function::
+  $ python stream_alert_cli.py lambda deploy --processor all
 
-  $ ./stream_alert_cli.py lambda deploy --processor rule
-  $ ./stream_alert_cli.py lambda deploy --processor alert
+Optionally, to publish changes for only a specific AWS Lambda function:
 
-To apply infrastructure level changes (additional Kinesis shards, Lambda memory, etc), run::
+.. code-block:: bash
 
-  $ ./stream_alert_cli.py terraform build
+  $ python stream_alert_cli.py lambda deploy --processor rule
+  $ python stream_alert_cli.py lambda deploy --processor alert
 
-To speed up the Terraform run, the module name may be specified with the ``target`` parameter::
+To apply infrastructure level changes (additional Kinesis shards, Lambda memory, etc), run:
 
-  $ ./stream_alert_cli.py terraform build --target kinesis            # corresponds to the tf_stream_alert_kinesis module
-  $ ./stream_alert_cli.py terraform build --target stream_alert       # corresponds to the tf_stream_alert module
+.. code-block:: bash
+
+  $ python stream_alert_cli.py terraform build
+
+To speed up the Terraform run, the module name may be specified with the ``target`` parameter:
+
+.. code-block:: bash
+
+  $ python stream_alert_cli.py terraform build --target kinesis            # corresponds to the tf_stream_alert_kinesis module
+  $ python stream_alert_cli.py terraform build --target stream_alert       # corresponds to the tf_stream_alert module
 
 Monitoring Functions
 --------------------
 
 StreamAlert clusters contain a module to create CloudWatch Alarms for monitoring AWS Lambda invocation errors.
 
-These ensure that the currently running code is reliable.  To access these monitors, login to AWS Console and go to CloudWatch, and then click Alarms. 
+These ensure that the currently running code is reliable.  To access these monitors, login to AWS Console and go to CloudWatch, and then click Alarms.

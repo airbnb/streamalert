@@ -23,7 +23,7 @@ from getpass import getpass
 
 from stream_alert_cli.package import RuleProcessorPackage, AlertProcessorPackage
 from stream_alert_cli.test import stream_alert_test
-from stream_alert_cli.helpers import CLIHelpers
+from stream_alert_cli import helpers
 from stream_alert_cli.config import CLIConfig
 from stream_alert_cli.logger import LOGGER_CLI
 from stream_alert_cli.version import LambdaVersion
@@ -58,6 +58,9 @@ def cli_runner(options):
     elif options.command == 'lambda':
         lambda_handler(options)
 
+    elif options.command == 'live-test':
+        stream_alert_test(options, CONFIG)
+
     elif options.command == 'terraform':
         terraform_handler(options)
 
@@ -67,12 +70,14 @@ def lambda_handler(options):
 
     if options.subcommand == 'deploy':
         # Make sure the Terraform code is up to date
-        terraform_generate(config=CONFIG)
+        if not terraform_generate(config=CONFIG):
+            return
         deploy(options)
 
     elif options.subcommand == 'rollback':
         # Make sure the Terraform code is up to date
-        terraform_generate(config=CONFIG)
+        if not terraform_generate(config=CONFIG):
+            return
         rollback(options)
 
     elif options.subcommand == 'test':
@@ -81,37 +86,41 @@ def lambda_handler(options):
 
 def terraform_check():
     """Verify that Terraform is configured correctly"""
-    prereqs_message = ('Terraform not found! Please install and add to'
+    prereqs_message = ('Terraform not found! Please install and add to '
                        'your $PATH:\n'
-                       '$ export PATH=$PATH:/usr/local/terraform/bin')
-    run_command(['terraform', 'version'],
-                error_message=prereqs_message,
-                quiet=True)
+                       '\t$ export PATH=$PATH:/usr/local/terraform/bin')
+    return run_command(['terraform', 'version'],
+                       error_message=prereqs_message,
+                       quiet=True)
 
 
 def terraform_handler(options):
     """Handle all Terraform CLI operations"""
-    # verify terraform is installed
-    terraform_check()
-    # use a named tuple to match the 'processor' attribute in the argparse options
+    # Verify terraform is installed
+    if not terraform_check():
+        return
+    # Use a named tuple to match the 'processor' attribute in the argparse options
     deploy_opts = namedtuple('DeployOptions', ['processor'])
 
-    # plan/apply our streamalert infrastructure
+    # Plan and Apply our streamalert infrastructure
     if options.subcommand == 'build':
-        # Make sure the Terraform is completely up to date
-        terraform_generate(config=CONFIG)
-        # --target is for terraforming a specific streamalert module
+        # Generate Terraform files
+        if not terraform_generate(config=CONFIG):
+            return
+        # Target is for terraforming a specific streamalert module.
+        # This value is passed as a list
         if options.target:
-            target = options.target
             targets = ['module.{}_{}'.format(target, cluster)
-                       for cluster in CONFIG.clusters()]
+                       for cluster in CONFIG.clusters()
+                       for target in options.target]
             tf_runner(targets=targets)
         else:
             tf_runner()
 
     # generate terraform files
     elif options.subcommand == 'generate':
-        terraform_generate(config=CONFIG)
+        if not terraform_generate(config=CONFIG):
+            return
 
     elif options.subcommand == 'init-backend':
         run_command(['terraform', 'init'])
@@ -122,8 +131,7 @@ def terraform_handler(options):
 
         # generate init Terraform files
         if not terraform_generate(config=CONFIG, init=True):
-            LOGGER_CLI.error('An error occured while generating Terraform files')
-            sys.exit(1)
+            return
 
         LOGGER_CLI.info('Initializing Terraform')
         if not run_command(['terraform', 'init']):
@@ -133,10 +141,10 @@ def terraform_handler(options):
         LOGGER_CLI.info('Building Initial Infrastructure')
         init_targets = [
             'aws_s3_bucket.lambda_source',
-            'aws_s3_bucket.integration_testing',
-            'aws_s3_bucket.terraform_state',
-            'aws_s3_bucket.stream_alert_secrets',
             'aws_s3_bucket.logging_bucket',
+            'aws_s3_bucket.stream_alert_secrets',
+            'aws_s3_bucket.terraform_remote_state',
+            'aws_s3_bucket.streamalerts',
             'aws_kms_key.stream_alert_secrets',
             'aws_kms_alias.stream_alert_secrets'
         ]
@@ -146,9 +154,11 @@ def terraform_handler(options):
 
         # generate the main.tf with remote state enabled
         LOGGER_CLI.info('Configuring Terraform Remote State')
-        terraform_generate(config=CONFIG)
+        if not terraform_generate(config=CONFIG):
+            return
+
         if not run_command(['terraform', 'init']):
-            sys.exit(1)
+            return
 
         LOGGER_CLI.info('Deploying Lambda Functions')
         # deploy both lambda functions
@@ -157,6 +167,9 @@ def terraform_handler(options):
 
         LOGGER_CLI.info('Building Remainder Infrastructure')
         tf_runner()
+
+    elif options.subcommand == 'clean':
+        terraform_clean()
 
     elif options.subcommand == 'destroy':
         if options.target:
@@ -168,38 +181,48 @@ def terraform_handler(options):
 
         # Migrate back to local state so Terraform can successfully
         # destroy the S3 bucket used by the backend.
-        terraform_generate(config=CONFIG, init=True)
+        if not terraform_generate(config=CONFIG, init=True):
+            return
+
         if not run_command(['terraform', 'init']):
-            sys.exit(1)
+            return
 
         # Destroy all of the infrastructure
         if not tf_runner(action='destroy'):
-            sys.exit(1)
+            return
 
         # Remove old Terraform files
-        LOGGER_CLI.info('Removing old Terraform files')
-        cleanup_files = ['{}.tf'.format(cluster) for cluster in CONFIG.clusters()]
-        cleanup_files.extend([
-            'main.tf',
-            'terraform.tfstate',
-            'terraform.tfstate.backup'
-        ])
-        for tf_file in cleanup_files:
-            file_to_remove = 'terraform/{}'.format(tf_file)
-            if not os.path.isfile(file_to_remove):
-                continue
-            os.remove(file_to_remove)
-        # Finally, delete the Terraform directory
-        shutil.rmtree('terraform/.terraform/')
+        terraform_clean()
 
     # get a quick status on our declared infrastructure
     elif options.subcommand == 'status':
         status()
 
 
+def terraform_clean():
+    """Remove leftover Terraform statefiles and main/cluster files"""
+    LOGGER_CLI.info('Cleaning Terraform files')
+
+    cleanup_files = ['{}.tf'.format(cluster) for cluster in CONFIG.clusters()]
+    cleanup_files.extend([
+        'main.tf',
+        'terraform.tfstate',
+        'terraform.tfstate.backup'
+    ])
+    for tf_file in cleanup_files:
+        file_to_remove = 'terraform/{}'.format(tf_file)
+        if not os.path.isfile(file_to_remove):
+            continue
+        os.remove(file_to_remove)
+
+    # Finally, delete the Terraform directory
+    if os.path.isdir('terraform/.terraform/'):
+        shutil.rmtree('terraform/.terraform/')
+
+
 def run_command(args=None, **kwargs):
     """Alias to CLI Helpers.run_command"""
-    return CLIHelpers.run_command(args, **kwargs)
+    return helpers.run_command(args, **kwargs)
 
 
 def continue_prompt():
@@ -319,7 +342,9 @@ def rollback(options):
     targets = ['module.stream_alert_{}'.format(x)
                for x in CONFIG.clusters()]
 
-    terraform_generate(config=CONFIG)
+    if not terraform_generate(config=CONFIG):
+        return
+
     tf_runner(targets=targets)
 
 
@@ -386,7 +411,8 @@ def deploy(options):
     publish_version(packages)
     # after the version is published and the config is written, generate the files
     # to ensure the alias is properly updated
-    terraform_generate(config=CONFIG)
+    if not terraform_generate(config=CONFIG):
+        return
     # apply the changes from publishing
     tf_runner(targets=targets)
 
@@ -463,13 +489,15 @@ def configure_output(options):
 
     # Encrypt the creds and push them to S3
     # then update the local output configuration with properties
-    if config_outputs.encrypt_and_push_creds_to_s3(region, secrets_bucket, secrets_key, props):
+    if config_outputs.encrypt_and_push_creds_to_s3(
+            region, secrets_bucket, secrets_key, props):
         updated_config = output.format_output_config(config, props)
         config_outputs.update_outputs_config(config, updated_config, service)
 
-        LOGGER_CLI.info('Successfully saved \'%s\' output configuration for service \'%s\'',
-                        props['descriptor'].value,
-                        options.service)
+        LOGGER_CLI.info(
+            'Successfully saved \'%s\' output configuration for service \'%s\'',
+            props['descriptor'].value,
+            options.service)
     else:
         LOGGER_CLI.error('An error occurred while saving \'%s\' '
                          'output configuration for service \'%s\'',

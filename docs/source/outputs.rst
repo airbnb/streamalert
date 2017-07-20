@@ -34,7 +34,7 @@ Adding a new configuration for a currently supported service is handled using ``
 For example:
  - ``python stream_alert_cli.py output new --service slack``
 
-.. Note:: If this is the first time you have configured new outputs via the cli, you may see this error for certain services:
+.. note:: If this is the first time you have configured new outputs via the cli, you may see this error for certain services:
  `An error occurred while sending credentials to S3 for key [<SERVICE>/<KEY>]: The specified bucket does not exist [<PREFIX>.streamalert.secrets]`.
  If you encounter this error, first make sure you've followed the `Quick Start <getting-started.html#quick-start>`_ steps.
  If you've already configured StreamAlert in the past, you may just have to run `python stream_alert_cli.py terraform build`.
@@ -48,7 +48,7 @@ After a ``descriptor`` is provided, the user is then prompted for the Slack webh
 
  Please supply the full Slack webhook url, including the secret:
 
-.. Note:: The user input for the Slack webhook URL will be masked. This 'masking' approach currently applies to any potentially sensitive information the user may have to enter on the cli and can be enforced through any new services that are implemented.
+.. note:: The user input for the Slack webhook URL will be masked. This 'masking' approach currently applies to any potentially sensitive information the user may have to enter on the cli and can be enforced through any new services that are implemented.
 
 Adding Support for New Services
 -------------------------------
@@ -117,7 +117,7 @@ Adding support for a new service involves five steps:
    - The ``output_parser`` contains a ``choices`` list for ``--service`` that must include this new service.
 
 
-.. Note:: New AWS Service outputs should subclass ``AWSOutput`` instead of ``StreamOutputBase``
+.. note:: New AWS Service outputs should subclass ``AWSOutput`` instead of ``StreamOutputBase``
 
 Strategy
 --------
