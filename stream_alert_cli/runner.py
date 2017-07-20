@@ -15,6 +15,7 @@ limitations under the License.
 '''
 
 import os
+import re
 import shutil
 import sys
 
@@ -64,6 +65,9 @@ def cli_runner(options):
     elif options.command == 'terraform':
         terraform_handler(options)
 
+    elif options.command == 'configure':
+        configure_handler(options)
+
 
 def lambda_handler(options):
     """Handle all Lambda CLI operations"""
@@ -82,6 +86,25 @@ def lambda_handler(options):
 
     elif options.subcommand == 'test':
         stream_alert_test(options)
+
+
+def configure_handler(options):
+    """Configure StreamAlert main settings
+
+    Args:
+        options [named_tuple]: ArgParse command result
+    """
+    if options.config_key == 'prefix':
+        if type(options.config_key) not in (unicode, str):
+            LOGGER_CLI.error('Invalid prefix type, must be string')
+            return
+        CONFIG.set_prefix(options.config_value)
+
+    elif options.config_key == 'aws_account_id':
+        if not re.search(r'\A\d{12}\Z', options.config_value):
+            LOGGER_CLI.error('Invalid AWS Account ID, must be 12 digits long')
+            return
+        CONFIG.set_aws_account_id(options.config_value)
 
 
 def terraform_check():
