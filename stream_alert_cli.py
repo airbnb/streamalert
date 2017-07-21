@@ -44,6 +44,8 @@ Available Commands:
     stream_alert_cli.py terraform               Manage StreamAlert infrastructure
     stream_alert_cli.py output                  Configure new StreamAlert outputs
     stream_alert_cli.py lambda                  Deploy, test, and rollback StreamAlert AWS Lambda functions
+    stream_alert_cli.py live-test               Send alerts to configured outputs
+    stream_alert_cli.py configure               Configure StreamAlert settings
 
 For additional details on the available commands, try:
 

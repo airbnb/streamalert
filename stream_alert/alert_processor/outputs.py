@@ -530,12 +530,12 @@ class S3Output(AWSOutput):
         # Prefix with alerts to account for generic non-streamalert buckets
         # Produces the following key format:
         #   alerts/dt=2017-01-25-00-15/kinesis_mystream_myrule_<uuid>.json
+        # Keys need to be unique to avoid object overwriting
         key = 'alerts/dt={}/{}_{}_{}_{}.json'.format(
             current_date.strftime('%Y-%m-%d-%H-%M'),
             service,
             entity,
             alert['rule_name'],
-            # keys need to be unique to avoid object overwriting
             uuid.uuid4()
         )
 

@@ -27,10 +27,10 @@ class CLIConfig(object):
     '''Provide an object to load, modify, and display the StreamAlertCLI Config'''
 
     def __init__(self):
-        self.config_files = OrderedDict({
-            'global': 'conf/global.json',
-            'lambda': 'conf/lambda.json'
-        })
+        self.config_files = OrderedDict([
+            ('global', 'conf/global.json'),
+            ('lambda', 'conf/lambda.json')
+        ])
         self.config = self.load()
 
     def __repr__(self):
