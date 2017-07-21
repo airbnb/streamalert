@@ -18,6 +18,8 @@ import json
 import os
 import sys
 
+from collections import OrderedDict
+
 from stream_alert_cli.logger import LOGGER_CLI
 
 
@@ -25,10 +27,10 @@ class CLIConfig(object):
     '''Provide an object to load, modify, and display the StreamAlertCLI Config'''
 
     def __init__(self):
-        self.config_files = {
-            'global': 'conf/global.json',
-            'lambda': 'conf/lambda.json'
-        }
+        self.config_files = OrderedDict([
+            ('global', 'conf/global.json'),
+            ('lambda', 'conf/lambda.json')
+        ])
         self.config = self.load()
 
     def __repr__(self):
@@ -46,6 +48,20 @@ class CLIConfig(object):
 
     def clusters(self):
         return self.config['clusters'].keys()
+
+    def set_prefix(self, prefix):
+        self.config['global']['account']['prefix'] = prefix
+        self.config['global']['terraform']['tfstate_bucket'] = self.config['global']['terraform']['tfstate_bucket'].replace(
+            'PREFIX_GOES_HERE', prefix)
+        self.config['lambda']['alert_processor_config']['source_bucket'] = self.config['lambda'][
+            'alert_processor_config']['source_bucket'].replace('PREFIX_GOES_HERE', prefix)
+        self.config['lambda']['rule_processor_config']['source_bucket'] = self.config['lambda']['rule_processor_config']['source_bucket'].replace(
+            'PREFIX_GOES_HERE', prefix)
+        self.write()
+
+    def set_aws_account_id(self, aws_account_id):
+        self.config['global']['account']['aws_account_id'] = aws_account_id
+        self.write()
 
     def load(self):
         """Load the cluster, global, and lambda configuration files

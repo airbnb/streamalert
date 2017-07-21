@@ -295,7 +295,7 @@ class RuleProcessorTester(object):
 
         # we only want alerts for the specific rule being tested
         alerts = [alert for alert in alerts
-                  if alert['metadata']['rule_name'] == rule_name]
+                  if alert['rule_name'] == rule_name]
 
         return alerts, expected_alert_count
 
@@ -374,7 +374,7 @@ class AlertProcessorTester(object):
 
     def setup_outputs(self, alert):
         """Helper function to handler any output setup"""
-        outputs = alert['metadata'].get('outputs', [])
+        outputs = alert.get('outputs', [])
         # Patch the urllib2.urlopen event to override HTTPStatusCode, etc
         url_mock = Mock()
         patch('urllib2.urlopen', url_mock).start()

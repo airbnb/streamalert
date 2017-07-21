@@ -30,52 +30,33 @@ def test_valid_alert():
     assert_true(validate_alert(valid_alert))
 
 
-def test_root_keys():
-    """Alert Processor Input Validation - Invalid Root Keys"""
+def test_valid_alert_type():
+    """Alert Processor Input Validation - Invalid Alert Type"""
+    assert_false(validate_alert('not-a-real-alert-object'))
+
+
+def test_alert_keys():
+    """Alert Processor Input Validation - Alert Keys Missing"""
     # Default valid alert to be modified
-    invalid_root_keys = _get_alert()
-
-    # Remove 'metadata' key to break root key validation
-    invalid_root_keys.pop('metadata')
-
-    # Test with invalid root keys
-    assert_false(validate_alert(invalid_root_keys))
-
-
-def test_metadata_value():
-    """Alert Processor Input Validation - Invalid Root Metadata Value"""
-    # Default valid alert to be modified
-    invalid_root_values = _get_alert()
-
-    # Make the 'metadata' key's value a list to break root value validation
-    invalid_root_values['metadata'] = ['value']
-
-    # Test with invalid root values
-    assert_false(validate_alert(invalid_root_values))
-
-
-def test_metadata_keys():
-    """Alert Processor Input Validation - Metadata Keys Missing"""
-    # Default valid alert to be modified
-    invalid_metadata_keys = _get_alert()
+    missing_alert_key = _get_alert()
 
     # Alter 'metadata' keys to break validation (not all required keys)
-    invalid_metadata_keys['metadata'] = {'log': 'osquery'}
+    missing_alert_key.pop('rule_name')
 
     # Test with invalid metadata keys
-    assert_false(validate_alert(invalid_metadata_keys))
+    assert_false(validate_alert(missing_alert_key))
 
 
-def test_metadata_source_keys():
-    """Alert Processor Input Validation - Source Keys Missing"""
+def test_invalid_record():
+    """Alert Processor Input Validation - Invalid Alert Record"""
     # Default valid alert to be modified
-    invalid_metadata_source = _get_alert()
+    invalid_alert = _get_alert()
 
-    # metadata > source key validation
-    invalid_metadata_source['metadata']['source'] = {'service': 'kinesis'}
+    # metadata > source value validation
+    invalid_alert['record'] = 100
 
-    # Test with invalid metadata source keys
-    assert_false(validate_alert(invalid_metadata_source))
+    # Test with invalid metadata source values
+    assert_false(validate_alert(invalid_alert))
 
 
 def test_metadata_source_value():
@@ -84,7 +65,7 @@ def test_metadata_source_value():
     invalid_metadata_source = _get_alert()
 
     # metadata > source value validation
-    invalid_metadata_source['metadata']['source']['entity'] = 100
+    invalid_metadata_source['source_entity'] = 100
 
     # Test with invalid metadata source values
     assert_false(validate_alert(invalid_metadata_source))
@@ -96,7 +77,7 @@ def test_outputs_type():
     invalid_metadata_outputs = _get_alert()
 
     # metadata > outputs type validation
-    invalid_metadata_outputs['metadata']['outputs'] = {'bad': 'value'}
+    invalid_metadata_outputs['outputs'] = {'bad': 'value'}
 
     # Test with invalid metadata outputs type
     assert_false(validate_alert(invalid_metadata_outputs))
@@ -108,7 +89,7 @@ def test_outputs_value_type():
     invalid_metadata_outputs = _get_alert()
 
     # metadata > outputs value validation
-    invalid_metadata_outputs['metadata']['outputs'] = ['good', 100]
+    invalid_metadata_outputs['outputs'] = ['good', 100]
 
     # Test with invalid metadata outputs value
     assert_false(validate_alert(invalid_metadata_outputs))
@@ -120,7 +101,7 @@ def test_metadata_non_string_type():
     invalid_metadata_non_string = _get_alert()
 
     # metadata > non-string value validation
-    invalid_metadata_non_string['metadata']['type'] = 4.5
+    invalid_metadata_non_string['log_type'] = 4.5
 
     # Test with invalid metadata non-string value
     assert_false(validate_alert(invalid_metadata_non_string))

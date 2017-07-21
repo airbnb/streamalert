@@ -19,12 +19,20 @@ account_id
 
 Find your AWS Account ID by following these `instructions <https://docs.aws.amazon.com/IAM/latest/UserGuide/console_account-alias.html>`_.
 
-Open ``conf/global.json`` and replace ``AWS_ACCOUNT_ID_GOES_HERE`` with this value.
+Add your AWS Accound ID to the StreamAlert config:
+
+.. code-block:: bash
+
+  $ python stream_alert_cli.py configure aws_account_id <account_number>
 
 prefix
 ~~~~~~
 
-Open ``conf/global.json`` and ``conf/lambda.json`` and replace ``PREFIX_GOES_HERE`` with your company or organization name.
+Add your company or organization name to the StreamAlert config:
+
+.. code-block:: bash
+
+  $ python stream_alert_cli.py configure prefix <company/org name>
 
 user account
 ~~~~~~~~~~~~

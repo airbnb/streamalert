@@ -44,6 +44,8 @@ Available Commands:
     stream_alert_cli.py terraform               Manage StreamAlert infrastructure
     stream_alert_cli.py output                  Configure new StreamAlert outputs
     stream_alert_cli.py lambda                  Deploy, test, and rollback StreamAlert AWS Lambda functions
+    stream_alert_cli.py live-test               Send alerts to configured outputs
+    stream_alert_cli.py configure               Configure StreamAlert settings
 
 For additional details on the available commands, try:
 
@@ -304,6 +306,46 @@ Examples:
                 'flow_logs'],
         help=argparse_suppress,
         nargs='+'
+    )
+
+    #
+    # Configure Parser
+    #
+    configure_usage = 'stream_alert_cli.py configure [config_key] [config_value]'
+    configure_description = ("""
+StreamAlertCLI v{}
+Configure StreamAlert options
+
+Available Keys:
+
+    prefix                     Resource prefix
+    aws_account_id             AWS account number
+
+Examples:
+
+    stream_alert_cli.py configure prefix my-organization
+
+""".format(version))
+    configure_parser = subparsers.add_parser(
+        'configure',
+        usage=configure_usage,
+        description=configure_description,
+        help=argparse_suppress,
+        formatter_class=RawTextHelpFormatter
+    )
+
+    configure_parser.set_defaults(command='configure')
+
+    configure_parser.add_argument(
+        'config_key',
+        choices=['prefix',
+                 'aws_account_id'],
+        help=argparse_suppress
+    )
+
+    configure_parser.add_argument(
+        'config_value',
+        help=argparse_suppress
     )
 
     return parser
