@@ -131,7 +131,7 @@ def test_running_bad_output(config_mock, log_mock):
     config_mock.return_value = _load_output_config('test/unit/conf/outputs.json')
 
     alert = _get_alert()
-    alert['metadata']['outputs'] = ['slack']
+    alert['outputs'] = ['slack']
     context = _get_mock_context()
 
     handler(alert, context)
@@ -141,7 +141,7 @@ def test_running_bad_output(config_mock, log_mock):
         'be declared with both a service and a descriptor for the '
         'integration (ie: \'slack:my_channel\')', 'slack')
 
-    alert['metadata']['outputs'] = ['slakc:test']
+    alert['outputs'] = ['slakc:test']
 
     handler(alert, context)
 
