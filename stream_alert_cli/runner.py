@@ -20,6 +20,7 @@ import shutil
 import sys
 
 from collections import namedtuple
+from datetime import datetime
 from getpass import getpass
 
 from stream_alert_cli.package import RuleProcessorPackage, AlertProcessorPackage
@@ -33,6 +34,7 @@ import stream_alert_cli.outputs as config_outputs
 
 from stream_alert.alert_processor import __version__ as alert_processor_version
 from stream_alert.alert_processor.outputs import get_output_dispatcher
+from stream_alert.athena_partition_refresh.main import run_athena_query, check_database_exists, check_table_exists
 from stream_alert.rule_processor import __version__ as rule_processor_version
 
 
@@ -67,6 +69,77 @@ def cli_runner(options):
 
     elif options.command == 'configure':
         configure_handler(options)
+
+    elif options.command == 'athena':
+        athena_handler(options)
+
+
+def athena_handler(options):
+    """Handle Athena operations"""
+    # Define in the outer scope so multiple subcommands can use
+    # these variables.
+    # Athena queries need an S3 bucket for results
+    athena_results_bucket = 's3://aws-athena-query-results-{}-{}'.format(
+        CONFIG['global']['account']['aws_account_id'],
+        CONFIG['global']['account']['region']
+    )
+    # Produces athena_partition_refresh/2017/01/01 keys
+    athena_results_path = 'stream_alert_cli/{}'.format(datetime.now().strftime('%Y/%m/%d'))
+
+    if options.subcommand == 'init':
+        CONFIG.generate_athena()
+
+    elif options.subcommand == 'enable':
+        CONFIG.set_athena_lambda_enable()
+
+    elif options.subcommand == 'create-db':
+        if check_database_exists(athena_results_bucket, athena_results_path):
+            LOGGER_CLI.info('The streamalert database exists, nothing to do')
+            return
+
+        create_db_result = run_athena_query(
+            query='CREATE DATABASE streamalert',
+            results_bucket=athena_results_bucket,
+            results_path=athena_results_path
+        )
+
+        if create_db_result:
+            LOGGER_CLI.info('streamalert database successfully created!')
+            LOGGER_CLI.info('results: %s', create_db_result['ResultSet']['Rows'])
+
+    elif options.subcommand == 'create-table':
+        if options.type == 'alerts':
+            if not options.bucket:
+                LOGGER_CLI.error('Missing command line argument --bucket')
+                return
+
+            if check_table_exists(athena_results_bucket, athena_results_path, options.type):
+                LOGGER_CLI.info('The alerts table already exists.')
+
+            query = ('CREATE EXTERNAL TABLE alerts ('
+                        'log_source string,'
+                        'log_type string,'
+                        'outputs array<string>,'
+                        'record string,'
+                        'rule_description string,'
+                        'rule_name string,'
+                        'source_entity string,'
+                        'source_service string)'
+                     'PARTITIONED BY (dt string)'
+                     'ROW FORMAT SERDE \'org.openx.data.jsonserde.JsonSerDe\''
+                     'LOCATION \'s3://{bucket}/alerts/\''.format(bucket=options.bucket))
+
+            create_table_result = run_athena_query(
+                query=query,
+                database='streamalert',
+                results_bucket=athena_results_bucket,
+                results_path=athena_results_path
+            )
+
+            if create_table_result:
+                CONFIG['lambda']['athena_partition_refresh_config']['partitioning']['normal'][options.bucket] = 'alerts'
+                CONFIG.write()
+                LOGGER_CLI.info('alerts table successfully created!')
 
 
 def lambda_handler(options):

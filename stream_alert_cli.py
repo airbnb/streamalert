@@ -348,6 +348,57 @@ Examples:
         help=argparse_suppress
     )
 
+    #
+    # Athena Parser
+    #
+    athena_usage = 'stream_alert_cli.py athena'
+    athena_description = ("""
+StreamAlertCLI v{}
+Athena StreamAlert options
+
+Available Subcommands:
+
+    stream_alert_cli.py athena init                 Create the Athena base config
+    stream_alert_cli.py athena enable               Enable Athena Partition Refresh Lambda function
+    stream_alert_cli.py athena create-db            Initialize the Athena Database (streamalert)
+    stream_alert_cli.py athena create-table         Create an Athena table
+
+Examples:
+
+    stream_alert_cli.py athena create-db
+    stream_alert_cli.py athena create-table --type alerts --bucket s3.bucket.name
+
+""".format(version))
+    athena_parser = subparsers.add_parser(
+        'athena',
+        usage=athena_usage,
+        description=athena_description,
+        help=argparse_suppress,
+        formatter_class=RawTextHelpFormatter
+    )
+
+    athena_parser.set_defaults(command='athena')
+
+    athena_parser.add_argument(
+        'subcommand',
+        choices=['init', 'enable', 'create-db', 'create-table'],
+        help=argparse_suppress
+    )
+
+    # TODO(jacknagz): Create a second choice for data tables, and accept a
+    #                 log name argument.
+    athena_parser.add_argument(
+        '--type',
+        choices=['alerts'],
+        required=True,
+        help=argparse_suppress
+    )
+
+    athena_parser.add_argument(
+        '--bucket',
+        help=argparse_suppress
+    )
+
     return parser
 
 
