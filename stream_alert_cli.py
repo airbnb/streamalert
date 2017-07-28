@@ -215,7 +215,7 @@ Examples:
     # require the name of the processor being deployed/rolled back/tested
     lambda_parser.add_argument(
         '--processor',
-        choices=['alert', 'all', 'rule'],
+        choices=['alert', 'all', 'athena', 'rule'],
         help=argparse_suppress,
         required=True
     )

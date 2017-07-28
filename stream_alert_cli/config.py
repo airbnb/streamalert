@@ -53,6 +53,7 @@ class CLIConfig(object):
         """Generate a base Athena config"""
         athena_config_template = {
             'enabled': True,
+            'current_version': '$LATEST',
             'partitioning': {
                 'normal': {},
                 'firehose': {}

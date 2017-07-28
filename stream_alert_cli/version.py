@@ -13,51 +13,133 @@ limitations under the License.
 
 from datetime import datetime
 
-import logging
-
 import boto3
+
+from botocore.exceptions import ClientError
+
+from stream_alert_cli.logger import LOGGER_CLI
 
 
 class LambdaVersion(object):
-    """
-    Publish versions of the StreamAlert Lambda function.
-    There are two environments, staging and production.  They are configured
-    as Lambda alises, which are pointers to certain published versions
-    of code.  Versions can be either: the most recently uploaded code,
-    which is represented as $LATEST, or a published version (0, 1, 2, etc).
-    Staging always points to $LATEST, and production always points to a
-    published version.  These are both defined in `variables.json`.
-    The goal of this class is to publish production Lambda versions.
+    """Publish new versions of the StreamAlert Lambda functions.
+
+    Each Lambda function is configured with a production alias.
+    This alias points to the latest published version of the
+    Lambda function.
+
+    After a Lambda package is versioned, the StreamAlert config
+    is updated, and then Terraform runs to update the alias with
+    the new version number.
+
+    All StreamAlert setups should start with "$LATEST".
     """
 
     def __init__(self, **kwargs):
+        """Initialize the version publishing
+
+        Keyword Args:
+            config [CLIConfig]: Loaded StreamAlert CLI Config
+            package [LambdaPackage]: The created Lambda Package
+            clustered_deploy [Boolean]: Identifies cluster based Lambdas
+        """
         self.config = kwargs['config']
         self.package = kwargs['package']
+        self.clustered_deploy = kwargs.get('clustered_deploy', True)
 
-    def publish_function(self):
-        logging.info('Publishing New Function Version')
+    @staticmethod
+    def _version_helper(**kwargs):
+        """Make the API call to publish the Lambda function
+
+        Keyword Arguments:
+            client [boto3.client]: Lambda boto3 client
+            function_name [string]: Lambda function name to publish
+            code_sha_256 [string]: The SHA256 of the current $LATEST package
+            date [datetime]: Current time
+
+        Returns:
+            [False] If the publish fails
+            [Int] If the publish is successful
+        """
+        client = kwargs.get('client')
+        if not client:
+            LOGGER_CLI.error('No AWS client provided')
+            return False
+
+        try:
+            version = client.publish_version(
+                FunctionName=kwargs['function_name'],
+                CodeSha256=kwargs['code_sha_256'],
+                Description='Publish Lambda {} on {}'.format(kwargs['function_name'],
+                                                             kwargs['date'])
+            )['Version']
+        except ClientError as err:
+            LOGGER_CLI.error(err)
+            return False
+
+        return int(version)
+
+    def _publish_helper(self, **kwargs):
+        """Handle clustered or single Lambda function publishing
+
+        Keyword Arguments:
+            cluster [string]: The cluster to deploy to, this is optional
+
+        Returns:
+            [Boolean]: Result of the function publishes
+        """
+        cluster = kwargs.get('cluster')
         date = datetime.utcnow().strftime("%Y%m%d_T%H%M%S")
-        new_versions = {}
 
-        for cluster in self.config.clusters():
+        # Clustered Lambda functions have a different naming pattern
+        if cluster:
             region = self.config['clusters'][cluster]['region']
-            client = boto3.client('lambda', region_name=region)
             function_name = '{}_{}_streamalert_{}'.format(
                 self.config['global']['account']['prefix'],
                 cluster,
                 self.package.package_name
             )
-            logging.info('Publishing %s', function_name)
-            response = client.publish_version(
-                FunctionName=function_name,
-                CodeSha256=self.config['lambda'][self.package.config_key]['source_current_hash'],
-                Description='Publish Lambda {} on {}'.format(function_name, date)
+        else:
+            region = self.config['global']['account']['region']
+            function_name = '{}_streamalert_{}'.format(
+                self.config['global']['account']['prefix'],
+                self.package.package_name
             )
-            version = response['Version']
-            new_versions[cluster] = int(version)
-            logging.info('Published version %s for %s:%s',
-                         version, cluster, function_name)
 
-        for cluster, new_version in new_versions.iteritems():
+        # Configure the Lambda client
+        client = boto3.client('lambda', region_name=region)
+        code_sha_256 = self.config['lambda'][self.package.config_key]['source_current_hash']
+
+        # Publish the function
+        LOGGER_CLI.info('Publishing %s', function_name)
+        new_version = self._version_helper(
+            client=client,
+            function_name=function_name,
+            code_sha_256=code_sha_256,
+            date=date)
+
+        if not new_version:
+            return False
+
+        # Update the config
+        if cluster:
+            LOGGER_CLI.info('Published version %s for %s:%s',
+                            new_version, cluster, function_name)
             self.config['clusters'][cluster]['modules']['stream_alert'][self.package.package_name]['current_version'] = new_version
+        else:
+            LOGGER_CLI.info('Published version %s for %s',
+                            new_version, function_name)
+            self.config['lambda'][self.package.config_key]['current_version'] = new_version
         self.config.write()
+
+        return True
+
+    def publish_function(self):
+        """Main Publish Function method"""
+        LOGGER_CLI.info('Publishing new function version')
+        if self.clustered_deploy:
+            for cluster in self.config.clusters():
+                if not self._publish_helper(cluster=cluster):
+                    return False
+        else:
+            if not self._publish_helper():
+                return False

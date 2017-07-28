@@ -17,42 +17,77 @@ from datetime import datetime
 
 import uuid
 
+from botocore.exceptions import ClientError
 
-def get_start_query_execution(**kwargs):
-    return {
-        'QueryExecution': {
-            'QueryExecutionId': uuid.uuid4(),
-            'Query': kwargs.get('QueryString'),
-            'ResultConfiguration': {
-                'OutputLocation': kwargs.get('OutputLocation', ''),
-                'EncryptionConfiguration': kwargs.get('EncryptionConfiguration', {})
-            },
-            'QueryExecutionContext': kwargs.get('QueryExecutionContext', {}),
-            'Status': {
-                'State': 'QUEUED',
-                'StateChangeReason': 'string',
-                'SubmissionDateTime': datetime(2017, 1, 1),
-                'CompletionDateTime': datetime(2017, 1, 1)
-            },
-            'Statistics': {
-                'EngineExecutionTimeInMillis': 123,
-                'DataScannedInBytes': 123
-            }
+
+class MockLambdaClient(object):
+    """http://boto3.readthedocs.io/en/latest/reference/services/lambda.html"""
+
+    def __init__(self, name, **kwargs):
+        self.region = kwargs.get('region')
+        self.throw_exception = kwargs.get('throw_exception')
+        self.current_version = 10
+        self.name = name
+
+    def publish_version(self, **kwargs):
+        # Test error handling
+        if self.throw_exception:
+            raise ClientError({'Error': {}}, 'test')
+
+        function_name = kwargs.get('FunctionName')
+        code_sha_256 = kwargs.get('CodeSha256')
+        description = kwargs.get('Description')
+
+        return {
+            'FunctionName': function_name,
+            'FunctionArn': 'arn:aws:lambda:region:account-id:function:{}'.format(function_name),
+            'Runtime': 'python2.7',
+            'Role': 'string',
+            'Handler': 'main.handler',
+            'CodeSize': 128,
+            'Description': 'string',
+            'Timeout': 60,
+            'MemorySize': 128,
+            'LastModified': 'string',
+            'CodeSha256': code_sha_256,
+            'Version': self.current_version + 1
         }
-    }
 
 
 class MockAthenaClient(object):
-    """http://boto3.readthedocs.io/en/latest/reference/services/athena.html#client"""
+    """http://boto3.readthedocs.io/en/latest/reference/services/athena.html"""
 
     def __init__(self, **kwargs):
         self.query_executions = {}
         self.results = kwargs.get('results', [{'test': 'test'}])
         self.result_state = kwargs.get('result_state', 'SUCCEEDED')
 
+    def get_start_query_execution(self, **kwargs):
+        return {
+            'QueryExecution': {
+                'QueryExecutionId': uuid.uuid4(),
+                'Query': kwargs.get('QueryString'),
+                'ResultConfiguration': {
+                    'OutputLocation': kwargs.get('OutputLocation', ''),
+                    'EncryptionConfiguration': kwargs.get('EncryptionConfiguration', {})
+                },
+                'QueryExecutionContext': kwargs.get('QueryExecutionContext', {}),
+                'Status': {
+                    'State': 'QUEUED',
+                    'StateChangeReason': 'string',
+                    'SubmissionDateTime': datetime(2017, 1, 1),
+                    'CompletionDateTime': datetime(2017, 1, 1)
+                },
+                'Statistics': {
+                    'EngineExecutionTimeInMillis': 123,
+                    'DataScannedInBytes': 123
+                }
+            }
+        }
+
     def start_query_execution(self, **kwargs):
         """Start an Athena Query Exectuion."""
-        new_query_execution = get_start_query_execution(**kwargs)
+        new_query_execution = self.get_start_query_execution(**kwargs)
         new_query_id = new_query_execution['QueryExecution']['QueryExecutionId']
         self.query_executions[new_query_id] = new_query_execution
 

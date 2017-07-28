@@ -1,9 +1,12 @@
 import io
+import json
 
 from contextlib import contextmanager
 import mock
 
 # Borrowed from http://bit.ly/2uyWD9X
+
+
 @contextmanager
 def mock_open(filename, contents=None, complain=True):
     """Mock the open() builtin function on a specific filename.
@@ -40,3 +43,130 @@ def mock_open(filename, contents=None, complain=True):
         if e.filename != filename:
             raise
     mocked_file.stop()
+
+
+class MockCLIConfig(object):
+    '''Fake CLI Config Class'''
+
+    def __init__(self, **kwargs):
+        self.config = kwargs['config']
+
+    def __repr__(self):
+        return json.dumps(self.config)
+
+    def __getitem__(self, key):
+        return self.config[key]
+
+    def __setitem__(self, key, new_value):
+        self.config.__setitem__(key, new_value)
+        self.write()
+
+    def get(self, key):
+        return self.config.get(key)
+
+    def write(self):
+        pass
+
+
+def basic_streamalert_config():
+    return {
+        'global': {
+            'account': {
+                'aws_account_id': '123456789123',
+                'kms_key_alias': 'stream_alert_secrets',
+                'prefix': 'unit-testing',
+                'region': 'us-west-2'
+            },
+            'terraform': {
+                'tfstate_bucket': 'unit-testing.streamalert.terraform.state',
+                'tfstate_s3_key': 'stream_alert_state/terraform.tfstate',
+                'tfvars': 'terraform.tfvars'
+            },
+            'infrastructure': {
+                'monitoring': {
+                    'create_sns_topic': True
+                }
+            }
+        },
+        'lambda': {
+            'alert_processor_config': {
+                'handler': 'stream_alert.alert_processor.main.handler',
+                'source_bucket': 'unit-testing.streamalert.source',
+                'source_current_hash': '<auto_generated>',
+                'source_object_key': '<auto_generated>',
+                'third_party_libraries': []
+            },
+            'rule_processor_config': {
+                'handler': 'stream_alert.rule_processor.main.handler',
+                'source_bucket': 'unit-testing.streamalert.source',
+                'source_current_hash': '<auto_generated>',
+                'source_object_key': '<auto_generated>',
+                'third_party_libraries': [
+                    'jsonpath_rw',
+                    'netaddr'
+                ]
+            },
+            'athena_partition_refresh_config': {
+                'current_version': '$LATEST',
+                'enabled': True,
+                'handler': 'main.handler',
+                'memory': 128,
+                'partitioning': {
+                    'firehose': {},
+                    'normal': {
+                        'unit-testing.streamalerts': 'alerts'
+                    }
+                },
+                'source_bucket': 'unit-testing.streamalert.source',
+                'source_current_hash': '<auto_generated>',
+                'source_object_key': '<auto_generated>',
+                'third_party_libraries': [
+                    'backoff'
+                ],
+                'timeout': 60
+            },
+        },
+        'clusters': {
+            'prod': {
+                'id': 'prod',
+                'modules': {
+                    'cloudwatch_monitoring': {
+                      'enabled': True
+                    },
+                    'kinesis': {
+                        'firehose': {
+                            'enabled': True,
+                            's3_bucket_suffix': 'streamalert.results'
+                        },
+                        'streams': {
+                            'retention': 24,
+                            'shards': 1
+                        }
+                    },
+                    'kinesis_events': {
+                        'enabled': True
+                    },
+                    'stream_alert': {
+                        'alert_processor': {
+                            'current_version': '$LATEST',
+                            'memory': 128,
+                            'timeout': 10
+                        },
+                        'rule_processor': {
+                            'current_version': '$LATEST',
+                            'memory': 128,
+                            'timeout': 10
+                        }
+                    }
+                },
+                'outputs': {
+                    'kinesis': [
+                        'username',
+                        'access_key_id',
+                        'secret_key'
+                    ]
+                },
+                'region': 'us-east-1'
+            }
+        }
+    }
