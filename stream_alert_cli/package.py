@@ -60,6 +60,7 @@ class LambdaPackage(object):
             package_sha256: Checksum of package_path
             package_sha256_path: Full path to package_path checksum file
         """
+        LOGGER_CLI.info('Creating package for %s', self.package_name)
         # get tmp dir and copy files
         temp_package_path = self._get_tmpdir()
         self._copy_files(temp_package_path)
@@ -103,7 +104,7 @@ class LambdaPackage(object):
         Args:
             files [tuple]: File paths to remove after uploading to S3.
         """
-        LOGGER_CLI.info('Removing local files')
+        LOGGER_CLI.debug('Removing local files')
         for obj in files:
             os.remove(obj)
 
@@ -136,10 +137,10 @@ class LambdaPackage(object):
         Returns:
             [string] Deployment package full path
         """
-        LOGGER_CLI.info('Creating Lambda package: %s',
+        LOGGER_CLI.debug('Creating Lambda package: %s',
                         ''.join([temp_package_path, '.zip']))
         package_path = shutil.make_archive(temp_package_path, 'zip', temp_package_path)
-        LOGGER_CLI.info('Package Successfully Created!')
+        LOGGER_CLI.info('Package successfully created')
 
         return package_path
 
@@ -193,7 +194,7 @@ class LambdaPackage(object):
         pip_command.extend(['--upgrade', '--target', temp_package_path])
 
         # Return True if the pip command is successfully run
-        return run_command(pip_command, cwd=temp_package_path)
+        return run_command(pip_command, cwd=temp_package_path, quiet=True)
 
     def _upload(self, package_path):
         """Upload the StreamAlert package and sha256 sum to S3.
@@ -227,7 +228,7 @@ class LambdaPackage(object):
                 return False
 
             package_fh.close()
-            LOGGER_CLI.info('Uploaded %s to S3', package_name)
+            LOGGER_CLI.debug('Uploaded %s to S3', package_name)
 
         return True
 

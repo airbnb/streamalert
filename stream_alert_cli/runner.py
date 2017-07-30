@@ -55,6 +55,9 @@ def cli_runner(options):
                         'https://github.com/airbnb/streamalert/issues')
     LOGGER_CLI.info(cli_load_message)
 
+    if options.debug:
+        LOGGER_CLI.setLevel('DEBUG')
+
     if options.command == 'output':
         configure_output(options)
 
@@ -358,7 +361,7 @@ def tf_runner(**kwargs):
     if action == 'destroy':
         tf_command.append('-destroy')
 
-    LOGGER_CLI.info('Resolving Terraform modules')
+    LOGGER_CLI.debug('Resolving Terraform modules')
     if not run_command(['terraform', 'get'], quiet=True):
         return False
 
@@ -474,6 +477,8 @@ def deploy(options):
                                           ).publish_function()
             if not published:
                 return False
+
+        return True
 
     def _deploy_rule_processor():
         """Create Rule Processor package and publish versions"""

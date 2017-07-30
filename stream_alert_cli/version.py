@@ -110,7 +110,7 @@ class LambdaVersion(object):
         code_sha_256 = self.config['lambda'][self.package.config_key]['source_current_hash']
 
         # Publish the function
-        LOGGER_CLI.info('Publishing %s', function_name)
+        LOGGER_CLI.debug('Publishing %s', function_name)
         new_version = self._version_helper(
             client=client,
             function_name=function_name,
@@ -135,7 +135,6 @@ class LambdaVersion(object):
 
     def publish_function(self):
         """Main Publish Function method"""
-        LOGGER_CLI.info('Publishing new function version')
         if self.clustered_deploy:
             for cluster in self.config.clusters():
                 if not self._publish_helper(cluster=cluster):
@@ -143,3 +142,5 @@ class LambdaVersion(object):
         else:
             if not self._publish_helper():
                 return False
+
+        return True

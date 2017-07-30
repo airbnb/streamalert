@@ -107,6 +107,11 @@ Examples:
         required=True,
         help=argparse_suppress
     )
+    output_parser.add_argument(
+        '--debug',
+        action='store_true',
+        help=argparse_suppress
+    )
 
     #
     # Live Test Parser
@@ -220,7 +225,7 @@ Examples:
         required=True
     )
 
-    # allow verbose output for the CLI with te --debug option
+    # allow verbose output for the CLI with the --debug option
     lambda_parser.add_argument(
         '--debug',
         action='store_true',
@@ -307,6 +312,12 @@ Examples:
         help=argparse_suppress,
         nargs='+'
     )
+    
+    tf_parser.add_argument(
+        '--debug',
+        action='store_true',
+        help=argparse_suppress
+    )
 
     #
     # Configure Parser
@@ -345,6 +356,12 @@ Examples:
 
     configure_parser.add_argument(
         'config_value',
+        help=argparse_suppress
+    )
+    
+    configure_parser.add_argument(
+        '--debug',
+        action='store_true',
         help=argparse_suppress
     )
 
@@ -396,6 +413,12 @@ Examples:
 
     athena_parser.add_argument(
         '--bucket',
+        help=argparse_suppress
+    )
+    
+    athena_parser.add_argument(
+        '--debug',
+        action='store_true',
         help=argparse_suppress
     )
 
