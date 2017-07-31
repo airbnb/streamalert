@@ -58,7 +58,7 @@ class CLIConfig(object):
                 'normal': {},
                 'firehose': {}
             },
-            'handler': 'main.handler',
+            'handler': 'stream_alert.athena_partition_refresh.main.handler',
             'timeout': '60',
             'memory': '128',
             'source_bucket': 'PREFIX_GOES_HERE.streamalert.source',

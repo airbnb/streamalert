@@ -208,7 +208,9 @@ def terraform_handler(options):
             return
         # Target is for terraforming a specific streamalert module.
         # This value is passed as a list
-        if options.target:
+        if options.target == ['athena']:
+            tf_runner(targets=['module.stream_alert_athena'])
+        elif options.target:
             targets = ['module.{}_{}'.format(target, cluster)
                        for cluster in CONFIG.clusters()
                        for target in options.target]

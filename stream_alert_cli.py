@@ -302,13 +302,14 @@ Examples:
 
     tf_parser.add_argument(
         '--target',
-        choices=['stream_alert',
+        choices=['athena',
+                'cloudwatch_monitoring',
+                'cloudtrail',
+                'flow_logs',
                 'kinesis',
                 'kinesis_events',
-                's3_events',
-                'cloudwatch_monitoring'
-                'cloudtrail',
-                'flow_logs'],
+                'stream_alert',
+                's3_events'],
         help=argparse_suppress,
         nargs='+'
     )
