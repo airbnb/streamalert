@@ -55,5 +55,29 @@ module "stream_alert_athena" {
     <td>None</td>
     <td>True</td>
   </tr>
+  <tr>
+    <td>lambda_log_level</td>
+    <td>The current log level of the Lambda function</td>
+    <td>info</td>
+    <td>False</td>
+  </tr>
+  <tr>
+    <td>current_version</td>
+    <td>The currently published version of the Lambda production alias</td>
+    <td>None</td>
+    <td>True</td>
+  </tr>
+  <tr>
+    <td>athean_data_buckets</td>
+    <td>A list of buckets to monitor changes to for Hive partitioning</td>
+    <td>None</td>
+    <td>True</td>
+  </tr>
+  <tr>
+    <td>prefix</td>
+    <td>The resource prefix, normally an organizational name or descriptor</td>
+    <td>None</td>
+    <td>True</td>
+  </tr>
 </table>
 

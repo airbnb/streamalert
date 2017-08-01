@@ -19,7 +19,7 @@ data "aws_iam_policy_document" "lambda_assume_role_policy" {
 }
 
 // IAM Role Policy: Allow the Lambda function to execute Athena queries
-// Ref: http://amzn.to/2vJqUAA
+// Ref: http://amzn.to/2tSyxUV
 resource "aws_iam_role_policy" "athena_query_permissions" {
   name = "streamalert_athena_partition_refresh"
   role = "${aws_iam_role.athena_partition_role.id}"
@@ -47,11 +47,7 @@ data "aws_iam_policy_document" "athena_query_policy" {
     effect = "Allow"
 
     actions = [
-      "athena:RunQuery",
-      "athena:GetQueryExecution",
-      "athena:GetQueryExecutions",
-      "athena:GetQueryResults",
-      "athena:StartQueryExecution",
+      "athena:*",
     ]
 
     resources = [
@@ -68,11 +64,45 @@ data "aws_iam_policy_document" "athena_query_policy" {
       "s3:ListBucket",
       "s3:ListBucketMultipartUploads",
       "s3:ListMultipartUploadParts",
+      "s3:AbortMultipartUpload",
+      "s3:CreateBucket",
       "s3:PutObject",
     ]
 
     resources = [
       "arn:aws:s3:::aws-athena-query-results-*",
+    ]
+  }
+}
+
+// IAM Role Policy: Allow the Lambda function to read data buckets.
+resource "aws_iam_role_policy" "athena_query_data_bucket_permissions" {
+  name = "streamalert_athena_partition_refresh_data_buckets"
+  role = "${aws_iam_role.athena_partition_role.id}"
+
+  policy = "${data.aws_iam_policy_document.athena_data_bucket_read.json}"
+}
+
+// IAM Policy Doc: Allow Athena to read data from configured buckets.
+//                 This is necessary for table repairs.
+data "aws_iam_policy_document" "athena_data_bucket_read" {
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "s3:GetBucketLocation",
+      "s3:GetObject",
+      "s3:ListBucket",
+      "s3:ListBucketMultipartUploads",
+      "s3:ListMultipartUploadParts",
+      "s3:AbortMultipartUpload",
+      "s3:CreateBucket",
+      "s3:PutObject",
+    ]
+
+    resources = [
+      "${formatlist("arn:aws:s3:::%s/*", var.athena_data_buckets)}",
+      "${formatlist("arn:aws:s3:::%s", var.athena_data_buckets)}",
     ]
   }
 }
@@ -133,5 +163,5 @@ resource "aws_s3_bucket_notification" "bucket_notification" {
 // Log Retention Policy
 resource "aws_cloudwatch_log_group" "athena" {
   name              = "/aws/lambda/${var.prefix}_streamalert_athena_partition_refresh"
-  retention_in_days = 30
+  retention_in_days = 60
 }
