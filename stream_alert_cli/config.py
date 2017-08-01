@@ -51,6 +51,10 @@ class CLIConfig(object):
 
     def generate_athena(self):
         """Generate a base Athena config"""
+        if 'athena_partition_refresh_config' in self.config['lambda']:
+            LOGGER_CLI.warn('The Athena configuration already exists, skipping.')
+            return
+
         athena_config_template = {
             'enabled': True,
             'current_version': '$LATEST',
@@ -68,16 +72,18 @@ class CLIConfig(object):
               'backoff'
             ]
         }
+
         if self.config['global']['account']['prefix'] != 'PREFIX_GOES_HERE':
             athena_config_template['source_bucket'] = athena_config_template['source_bucket'].replace(
                 'PREFIX_GOES_HERE',
                 self.config['global']['account']['prefix']
             )
+
         self.config['lambda']['athena_partition_refresh_config'] = athena_config_template
         self.write()
 
     def set_athena_lambda_enable(self):
-        if not self.config['lambda']['athena_partition_refresh_config']:
+        if 'athena_partition_refresh_config' not in self.config['lambda']:
             LOGGER_CLI.error('No configuration found for Athena Partition Refresh. '
                              'Please run: $ python stream_alert_cli.py athena init')
             return

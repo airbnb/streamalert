@@ -408,7 +408,6 @@ Examples:
     athena_parser.add_argument(
         '--type',
         choices=['alerts'],
-        required=True,
         help=argparse_suppress
     )
 
