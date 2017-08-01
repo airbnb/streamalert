@@ -128,12 +128,12 @@ class RuleProcessorTester(object):
                 self.apply_helpers(test_record)
 
                 # Run tests on the formatted record
-                alerts, expected_alerts = self.test_rule(
+                alerts, expected_alerts, success = self.test_rule(
                     rule_name,
                     test_record,
                     helpers.format_lambda_test_record(test_record))
 
-                current_test_passed = len(alerts) == expected_alerts
+                current_test_passed = (len(alerts) == expected_alerts) and success
 
                 # Print rule name for section header, but only if we get
                 # to a point where there is a record to actually be tested.
@@ -312,7 +312,7 @@ class RuleProcessorTester(object):
         alerts = [alert for alert in alerts
                   if alert['rule_name'] == rule_name]
 
-        return alerts, expected_alert_count
+        return alerts, expected_alert_count, success
 
     def analyze_log_delta(self, logs, rule_name, test_record):
         """Provide some additional context on why this test failed
