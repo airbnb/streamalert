@@ -16,6 +16,7 @@ limitations under the License.
 
 # command: nosetests -v -s test/unit/
 # specific test: nosetests -v -s test/unit/file.py:TestStreamPayload.test_name
+from datetime import datetime
 
 import json
 
@@ -24,223 +25,215 @@ from mock import patch, MagicMock
 
 from nose.tools import assert_equal, raises, nottest, assert_true, assert_false
 
-from stream_alert.athena_partition_refresh import main
+from stream_alert.athena_partition_refresh.main import StreamAlertAthenaClient, ConfigError
 from unit.helpers.base import mock_open
 from unit.helpers.aws_mocks import MockAthenaClient
 
 GLOBAL_FILE = 'conf/global.json'
 LAMBDA_FILE = 'conf/lambda.json'
 
-@nottest
-def test_handler(mock_logging):
-    """Athena - Main"""
-    main.handler(None, None)
+class TestStreamAlertAthenaClient(object):
+    """Test class for StreamAlertAthenaClient"""
+    def __init__(self):
+        self.config_data = {
+            'global': {
+                'account': {
+                    'aws_account_id': '111111111111',
+                    'kms_key_alias': 'stream_alert_secrets',
+                    'prefix': 'unit-testing',
+                    'region': 'us-east-2'
+                },
+                'terraform': {
+                    'tfstate_bucket': 'unit-testing.streamalert.terraform.state',
+                    'tfstate_s3_key': 'stream_alert_state/terraform.tfstate',
+                    'tfvars': 'terraform.tfvars'
+                },
+                'infrastructure': {
+                    'monitoring': {
+                        'create_sns_topic': True
+                    }
+                }
+            },
+            'lambda': {
+                'alert_processor_config': {
+                    'handler': 'stream_alert.alert_processor.main.handler',
+                    'source_bucket': 'unit-testing.streamalert.source',
+                    'source_current_hash': '<auto_generated>',
+                    'source_object_key': '<auto_generated>',
+                    'third_party_libraries': []
+                },
+                'rule_processor_config': {
+                    'handler': 'stream_alert.rule_processor.main.handler',
+                    'source_bucket': 'unit-testing.streamalert.source',
+                    'source_current_hash': '<auto_generated>',
+                    'source_object_key': '<auto_generated>',
+                    'third_party_libraries': [
+                        'jsonpath_rw',
+                        'netaddr'
+                    ]
+                },
+                'athena_partition_refresh_config': {
+                    "enabled": True,
+                    "partitioning": {
+                      "normal": {
+                        "unit-testing.streamalerts": "alerts"
+                      },
+                      "firehose": {}
+                    },
+                    "handler": "main.handler",
+                    "timeout": "60",
+                    "memory": "128",
+                    "source_bucket": "unit-testing.streamalert.source",
+                    "source_current_hash": "<auto_generated>",
+                    "source_object_key": "<auto_generated",
+                    "third_party_libraries": [
+                      "backoff"
+                    ]
+                }
+            }
+        }
+
+    def setup(self):
+        self.client = StreamAlertAthenaClient(config=self.config_data,
+                                              results_key_prefix='unit-testing')
+
+    @raises(ConfigError)
+    def test_invalid_json_config(self):
+        """Athena - Load Invalid Config"""
+        invalid_config_data = 'This is not JSON!!!'
+        with mock_open(LAMBDA_FILE, invalid_config_data):
+            with mock_open(GLOBAL_FILE, invalid_config_data):
+                client = StreamAlertAthenaClient()
 
 
-@patch('stream_alert.athena_partition_refresh.main.LOGGER')
-def test_invalid_json_config(mock_logging):
-    """Athena - Load Invalid Config"""
-    invalid_config_data = 'This is not JSON!!!'
-    with mock_open(LAMBDA_FILE, invalid_config_data):
-        config = main._load_config()
+    @raises(ConfigError)
+    def test_invalid_missing_config(self):
+        """Athena - Load Missing Config File"""
+        invalid_config_data = 'test'
+        with mock_open(LAMBDA_FILE, invalid_config_data):
+            with mock_open(GLOBAL_FILE, invalid_config_data):
+                with patch('os.path.exists') as mock_exists:
+                    mock_exists.return_value = False
+                    client = StreamAlertAthenaClient()
+
+
+    def test_load_valid_config(self):
+        """Athena - Load Config"""
+        global_contents = json.dumps(self.config_data['global'], indent=4)
+        lambda_contents = json.dumps(self.config_data['lambda'], indent=4)
+
+        with mock_open(GLOBAL_FILE, global_contents):
+            with mock_open(LAMBDA_FILE, lambda_contents):
+                client = StreamAlertAthenaClient()
+
+                assert_equal(type(client.config), dict)
+                assert_equal(set(client.config.keys()), {'global', 'lambda'})
+
+
+    @patch('stream_alert.athena_partition_refresh.main.LOGGER')
+    @raises(NotImplementedError)
+    def test_firehose_partition_refresh(self, mock_logging):
+        """Athena - Test Firehose Parition Refresh"""
+        self.client.firehose_partition_refresh(None)
+
         assert_true(mock_logging.error.called)
 
 
-def test_load_valid_config():
-    """Athena - Load Config"""
-    config_data = {
-        'global': {
-            'account': {
-                'aws_account_id': 'AWS_ACCOUNT_ID_GOES_HERE',
-                'kms_key_alias': 'stream_alert_secrets',
-                'prefix': 'unit-testing',
-                'region': 'us-east-2'
-            },
-            'terraform': {
-                'tfstate_bucket': 'unit-testing.streamalert.terraform.state',
-                'tfstate_s3_key': 'stream_alert_state/terraform.tfstate',
-                'tfvars': 'terraform.tfvars'
-            },
-            'infrastructure': {
-                'monitoring': {
-                    'create_sns_topic': True
-                }
-            }
-        },
-        'lambda': {
-            'alert_processor_config': {
-                'handler': 'stream_alert.alert_processor.main.handler',
-                'source_bucket': 'unit-testing.streamalert.source',
-                'source_current_hash': '<auto_generated>',
-                'source_object_key': '<auto_generated>',
-                'third_party_libraries': []
-            },
-            'rule_processor_config': {
-                'handler': 'stream_alert.rule_processor.main.handler',
-                'source_bucket': 'unit-testing.streamalert.source',
-                'source_current_hash': '<auto_generated>',
-                'source_object_key': '<auto_generated>',
-                'third_party_libraries': [
-                    'jsonpath_rw',
-                    'netaddr'
-                ]
-            },
-            'athena_partition_refresh_config': {
-                "enabled": True,
-                "partitioning": {
-                  "normal": {
-                    "unit-testing.streamalerts": "alerts"
-                  },
-                  "firehose": {}
-                },
-                "handler": "main.handler",
-                "timeout": "60",
-                "memory": "128",
-                "source_bucket": "unit-testing.streamalert.source",
-                "source_current_hash": "<auto_generated>",
-                "source_object_key": "<auto_generated",
-                "third_party_libraries": [
-                  "backoff"
-                ]
-            }
-        }
-    }
-    global_contents = json.dumps(config_data['global'], indent=4)
-    lambda_contents = json.dumps(config_data['lambda'], indent=4)
+    @patch('stream_alert.athena_partition_refresh.main.LOGGER')
+    def test_backoff_and_success_handlers(self, mock_logging):
+        """Athena - Test Backoff Handlers"""
+        self.client._backoff_handler({'wait': 1.0, 'tries': 3, 'target': 'backoff'})
+        assert_true(mock_logging.debug.called)
 
-    with mock_open(GLOBAL_FILE, global_contents):
-        with mock_open(LAMBDA_FILE, lambda_contents):
-            config = main._load_config()
-
-            assert_equal(type(config), dict)
-            assert_equal(set(config.keys()), {'global', 'lambda'})
+        self.client._success_handler({'tries': 3, 'target': 'backoff'})
+        assert_true(mock_logging.debug.called)
 
 
-@patch('stream_alert.athena_partition_refresh.main.LOGGER')
-@raises(NotImplementedError)
-def test_firehose_partition_refresh(mock_logging):
-    """Athena - Test Firehose Parition Refresh"""
-    main.firehose_partition_refresh(None)
+    def test_check_table_exists(self):
+        """Athena - Check Table Exists"""
+        query_result = [{'alerts': True}]
+        self.client.athena_client = MockAthenaClient(results=query_result)
 
-    assert_true(mock_logging.error.called)
+        result = self.client.check_table_exists('unit-test')
+        assert_true(result)
 
-
-@patch('stream_alert.athena_partition_refresh.main.LOGGER')
-def test_backoff_handler(mock_logging):
-    """Athena - Test Backoff Handler"""
-    main._backoff_handler({'wait': 1.0, 'tries': 3, 'target': 'backoff'})
-
-    assert_true(mock_logging.debug.called)
+        generated_results_key = 'unit-testing/{}'.format(datetime.now().strftime('%Y/%m/%d'))
+        assert_equal(self.client.athena_results_key, generated_results_key)
 
 
-@patch('stream_alert.athena_partition_refresh.main.LOGGER')
-def test_success_handler(mock_logging):
-    """Athena - Test Success Handler"""
-    main._success_handler({'tries': 3, 'target': 'backoff'})
+    @patch('stream_alert.athena_partition_refresh.main.LOGGER')
+    def test_check_table_exists_invalid(self, mock_logging):
+        """Athena - Check Table Exists - Does Not Exist"""
+        query_result = None
+        self.client.athena_client = MockAthenaClient(results=query_result)
 
-    assert_true(mock_logging.debug.called)
-
-
-@patch('stream_alert.athena_partition_refresh.main.ATHENA_CLIENT',
-       MockAthenaClient(results=[{'alerts': True}]))
-def test_check_table_exists():
-    """Athena - Check Table Exists"""
-    result = main.check_table_exists('s3://unit-test-results', '/athena', 'unit-test')
-
-    assert_true(result)
+        result = self.client.check_table_exists('unit-test')
+        assert_false(result)
+        assert_true(mock_logging.info.called)
 
 
-@patch('stream_alert.athena_partition_refresh.main.ATHENA_CLIENT',
-       MockAthenaClient(results=None))
-def test_check_table_exists_invalid():
-    """Athena - Check Table Exists - Does Not Exist"""
-    result = main.check_table_exists('s3://unit-test-results', '/athena', 'unit-test')
+    def test_check_database_exists_invalid(self):
+        """Athena - Check Database Exists - Does Not Exist"""
+        query_result = None
+        self.client.athena_client = MockAthenaClient(results=query_result)
 
-    assert_false(result)
-
-
-@patch('stream_alert.athena_partition_refresh.main.ATHENA_CLIENT',
-       MockAthenaClient(results=None))
-def test_check_database_exists_invalid():
-    """Athena - Check Database Exists - Does Not Exist"""
-    result = main.check_database_exists('s3://unit-test-results', '/athena')
-
-    assert_false(result)
+        assert_false(self.client.check_database_exists())
 
 
-@patch('stream_alert.athena_partition_refresh.main.ATHENA_CLIENT',
-       MockAthenaClient(results=[{'streamalert': True}]))
-def test_check_database_exists():
-    """Athena - Check Database Exists"""
-    result = main.check_database_exists('s3://unit-test-results', '/athena')
+    def test_check_database_exists(self):
+        """Athena - Check Database Exists"""
+        query_result = [{'streamalert': True}]
+        self.client.athena_client = MockAthenaClient(results=query_result)
 
-    assert_true(result)
-
-
-@patch('stream_alert.athena_partition_refresh.main.LOGGER')
-def test_check_query_status(mock_logging):
-    """Athena - Check Query Status"""
-    pass
+        assert_true(self.client.check_database_exists())
 
 
-@patch('stream_alert.athena_partition_refresh.main.LOGGER')
-@patch('stream_alert.athena_partition_refresh.main.ATHENA_CLIENT',
-       MockAthenaClient(results=None))
-def test_run_athena_query_empty(mock_logging):
-    """Athena - Run Athena Query"""
-    query_results = main.run_athena_query(
-        query='SHOW DATABASES;',
-        results_bucket='s3://unit-test-results',
-        results_path='/athena'
-    )
+    @patch('stream_alert.athena_partition_refresh.main.LOGGER')
+    def test_run_athena_query_empty(self, mock_logging):
+        """Athena - Run Athena Query"""
+        query_result = None
+        self.client.athena_client = MockAthenaClient(results=query_result)
 
-    assert_equal(query_results['ResultSet']['Rows'], [])
-    assert_true(mock_logging.debug.called)
+        query_success, query_results = self.client.run_athena_query(
+            query='SHOW DATABASES;'
+        )
 
-
-@patch('stream_alert.athena_partition_refresh.main.LOGGER')
-@patch('stream_alert.athena_partition_refresh.main.ATHENA_CLIENT',
-       MockAthenaClient(results=None, result_state='FAILED'))
-def test_run_athena_query_error(mock_logging):
-    """Athena - Run Athena Query"""
-    query_results = main.run_athena_query(
-        query='SHOW DATABASES;',
-        results_bucket='s3://unit-test-results',
-        results_path='/athena'
-    )
-
-    assert_true(mock_logging.error.called)
-    assert_false(query_results)
+        assert_true(query_success)
+        assert_equal(query_results['ResultSet']['Rows'], [])
+        assert_true(mock_logging.debug.called)
 
 
-@patch('stream_alert.athena_partition_refresh.main.LOGGER')
-@patch('stream_alert.athena_partition_refresh.main.ATHENA_CLIENT',
-       MockAthenaClient(results=[{'Status': 'Success'}]))
-def test_normal_partition_refresh(mock_logging):
-    """Athena - Normal Parition Refresh"""
-    config = {
-        'lambda': {
-            'athena_partition_refresh_config': {
-                'partitioning': {
-                    'normal': {
-                        'my-bucket.name': 'my-athena-table-name'
-                    }
-                }
-            }
-        }
-    }
-    main.normal_partition_refresh(config, 's3://unit-test-results', '/athena') 
-    assert_true(mock_logging.info.called)
+    @patch('stream_alert.athena_partition_refresh.main.LOGGER')
+    def test_run_athena_query_error(self, mock_logging):
+        """Athena - Run Athena Query"""
+        self.client.athena_client = MockAthenaClient(results=None, result_state='FAILED')
+
+        query_success, query_results = self.client.run_athena_query(
+            query='SHOW DATABASES;'
+        )
+
+        assert_true(mock_logging.error.called)
+        assert_false(query_success)
+        assert_equal(query_results, {})
 
 
-@patch('stream_alert.athena_partition_refresh.main.ATHENA_CLIENT',
-       MockAthenaClient())
-def test_run_athena_query():
-    """Athena - Run Athena Query"""
-    query_results = main.run_athena_query(
-        query='SHOW DATABASES;',
-        results_bucket='s3://unit-test-results',
-        results_path='/athena'
-    )
+    @patch('stream_alert.athena_partition_refresh.main.LOGGER')
+    def test_normal_partition_refresh(self, mock_logging):
+        """Athena - Normal Parition Refresh"""
+        query_result = [{'Status': 'Success'}]
+        self.client.athena_client = MockAthenaClient(results=query_result)
 
-    assert_equal(query_results['ResultSet']['Rows'], [{'Data': [{'test':'test'}]}])
+        self.client.normal_partition_refresh() 
+        assert_true(mock_logging.info.called)
+
+
+    def test_run_athena_query(self):
+        """Athena - Run Athena Query"""
+        self.client.athena_client = MockAthenaClient()
+
+        query_success, query_results = self.client.run_athena_query(
+            query='SHOW DATABASES;'
+        )
+
+        assert_true(query_success)
+        assert_equal(query_results['ResultSet']['Rows'], [{'Data': [{'test':'test'}]}])

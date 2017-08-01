@@ -5,6 +5,11 @@ from contextlib import contextmanager
 import mock
 
 # Borrowed from http://bit.ly/2uyWD9X
+class NotMocked(Exception):
+    def __init__(self, filename):
+        super(NotMocked, self).__init__(
+            "The file %s was opened, but not mocked." % filename)
+        self.filename = filename
 
 
 @contextmanager
@@ -42,6 +47,7 @@ def mock_open(filename, contents=None, complain=True):
     except NotMocked as e:
         if e.filename != filename:
             raise
+
     mocked_file.stop()
 
 

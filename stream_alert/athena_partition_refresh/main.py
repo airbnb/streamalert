@@ -28,179 +28,214 @@ LEVEL = os.environ.get('LOGGER_LEVEL', 'INFO')
 LOGGER = logging.getLogger('StreamAlertAthena')
 LOGGER.setLevel(LEVEL.upper())
 
-ATHENA_CLIENT = None
-DATABASE_DEFAULT = 'default'
+
+class ConfigError(Exception):
+    """Custom StreamAlertAthena Config Exception Class"""
+    pass
 
 
-def _load_config():
-    """Load the Athena Lambda configuration file
+class StreamAlertAthenaClient(object):
+    DATABASE_DEFAULT = 'default'
+    DATABASE_STREAMALERT = 'streamalert'
+    DEFAULT_S3_PREFIX = 'athena_partition_refresh'
 
-    Returns:
-        [dict] Configuration settings by file, includes two keys:
-            lambda: All lambda function settings
-            global: StreamAlert global settings
-    """
-    config_files = ('lambda', 'global')
-    config = {}
-    for config_file in config_files:
-        with open('conf/{}.json'.format(config_file)) as config_fh:
-            try:
-                config[config_file] = json.load(config_fh)
-            except ValueError:
-                LOGGER.error('The \'%s\' file could not be loaded into json', config_file)
-                return
+    def __init__(self, **kwargs):
+        """Initialize the Boto3 Athena Client, and S3 results bucket/key
 
-    return config
+        Keyword Arguments:
+            config [CLIConfig]: Loaded StreamAlert configuration (optional)
+            results_key_prefix [string]: The S3 key prefix to store Athena results (optional)
+        """
+        # Load the config from files or accept it as an argument
+        self.config = kwargs.get('config') or self._load_config()
+        region = self.config['global']['account']['region']
+        self.athena_client = boto3.client('athena', region_name=region)
 
+        # Format the S3 bucket to store Athena query results
+        self.athena_results_bucket = 's3://aws-athena-query-results-{}-{}'.format(
+            self.config['global']['account']['aws_account_id'],
+            self.config['global']['account']['region'])
 
-def _backoff_handler(details):
-    """Simple logging handler for when polling backoff occurs."""
-    LOGGER.debug('Trying again in %f seconds after %d tries calling %s',
-                 details['wait'],
-                 details['tries'],
-                 details['target'])
+        # Format the S3 key to store specific objects
+        results_key_prefix = kwargs.get('results_key_prefix', self.DEFAULT_S3_PREFIX)
+        # Produces athena_partition_refresh/YYYY/MM/DD S3 keys
+        self.athena_results_key = os.path.join(
+            results_key_prefix,
+            datetime.now().strftime('%Y/%m/%d'))
 
+    @staticmethod
+    def _load_config():
+        """Load the StreamAlert Athena configuration files
 
-def _success_handler(details):
-    """Simple logging handler for when polling backoff occurs."""
-    LOGGER.debug('Completed after %d tries calling %s',
-                 details['tries'],
-                 details['target'])
+        Returns:
+            [dict] Configuration settings by file, includes two keys:
+                lambda: All lambda function settings
+                global: StreamAlert global settings
 
+        Raises:
+            [ConfigError] For invalid or missing configuration files.
+        """
+        config_files = ('lambda', 'global')
+        config = {}
+        for config_file in config_files:
+            config_file_path = 'conf/{}.json'.format(config_file)
 
-def check_query_status(query_execution_id):
-    """Check in on the running query, back off if the job is running or queued
+            if not os.path.exists(config_file_path):
+                raise ConfigError('The \'{}\' config file was not found'.format(
+                    config_file_path))
 
-    Returns:
-        [string]: The result of the query, this can be SUCCEEDED, FAILED, or CANCELLED.
-                  Reference http://bit.ly/2uuRtda
-    """
-    @backoff.on_predicate(backoff.fibo,
-                          lambda status: status in ('QUEUED', 'RUNNING'),
-                          max_value=10,
-                          jitter=backoff.full_jitter,
-                          on_backoff=_backoff_handler,
-                          on_success=_success_handler)
-    def _get_query_execution(query_execution_id):
-        return ATHENA_CLIENT.get_query_execution(
-            QueryExecutionId=query_execution_id
-        )['QueryExecution']['Status']['State']
+            with open(config_file_path) as config_fh:
+                try:
+                    config[config_file] = json.load(config_fh)
+                except ValueError:
+                    raise ConfigError('The \'{}\' config file is not valid JSON'.format(
+                        config_file))
 
-    return _get_query_execution(query_execution_id)
+        return config
 
+    @staticmethod
+    def _backoff_handler(details):
+        """Simple logging handler for when polling backoff occurs."""
+        LOGGER.debug('[Backoff]: Trying again in %f seconds after %d tries calling %s',
+                     details['wait'],
+                     details['tries'],
+                     details['target'])
 
-def run_athena_query(**kwargs):
-    """Helper function to run Athena queries
+    @staticmethod
+    def _success_handler(details):
+        """Simple logging handler for when polling backoff occurs."""
+        LOGGER.debug('[Backoff]: Completed after %d tries calling %s',
+                     details['tries'],
+                     details['target'])
 
-    Keyword Args:
-        query [string]: The SQL query to execute
-        database [string]: The database to execute the query against
-        results_bucket [string]: The S3 bucket to store query results
-        results_path [string]: The S3 key to store results
+    def check_query_status(self, query_execution_id):
+        """Check in on the running query, back off if the job is running or queued
 
-    Returns (one or the other):
-        [bool]: Query success
-        [dict]: Query result response
-    """
-    LOGGER.debug('Executing query: %s', kwargs['query'])
-    query_execution_resp = ATHENA_CLIENT.start_query_execution(
-        QueryString=kwargs['query'],
-        QueryExecutionContext={'Database': kwargs.get('database', DATABASE_DEFAULT)},
-        ResultConfiguration={'OutputLocation': '{}/{}'.format(
-            kwargs['results_bucket'],
-            kwargs['results_path']
-        )}
-    )
-    query_execution_result = check_query_status(query_execution_resp['QueryExecutionId'])
-    if query_execution_result != 'SUCCEEDED':
-        LOGGER.error(
-            'The query %s returned %s, exiting!',
-            kwargs['query'],
-            query_execution_result)
-        return False
+        Returns:
+            [string]: The result of the query, this can be SUCCEEDED, FAILED, or CANCELLED.
+                      Reference http://bit.ly/2uuRtda
+        """
+        @backoff.on_predicate(backoff.fibo,
+                              lambda status: status in ('QUEUED', 'RUNNING'),
+                              max_value=10,
+                              jitter=backoff.full_jitter,
+                              on_backoff=self._backoff_handler,
+                              on_success=self._success_handler)
+        def _get_query_execution(query_execution_id):
+            return self.athena_client.get_query_execution(
+                QueryExecutionId=query_execution_id
+            )['QueryExecution']['Status']['State']
 
-    query_results_resp = ATHENA_CLIENT.get_query_results(
-        QueryExecutionId=query_execution_resp['QueryExecutionId'],
-    )
+        return _get_query_execution(query_execution_id)
 
-    # The idea here is to leave the processing logic to the calling functions.
-    # No data being returned isn't always an indication that something is wrong.
-    if not query_results_resp['ResultSet']['Rows']:
-        LOGGER.debug('The query %s returned no data', kwargs['query'])
+    def run_athena_query(self, **kwargs):
+        """Helper function to run Athena queries
 
-    return query_results_resp
+        Keyword Args:
+            query [string]: The SQL query to execute
+            database [string]: The database context to execute the query in
 
-
-def check_database_exists(results_bucket, results_path):
-    """Verify the StreamAlert Athena database exists."""
-    query_resp = run_athena_query(
-        query='SHOW DATABASES LIKE \'streamalert\';',
-        results_bucket=results_bucket,
-        results_path=results_path
-    )
-    if isinstance(query_resp, dict) and not query_resp['ResultSet']['Rows']:
-        LOGGER.info('The \'streamalert\' database does not exist, please create it.')
-        return False
-
-    return True
-
-
-def check_table_exists(results_bucket, results_path, table_name):
-    """Verify a given StreamAlert Athena table exists."""
-    query_resp = run_athena_query(
-        query='SHOW TABLES LIKE \'{}\';'.format(table_name),
-        database='streamalert',
-        results_bucket=results_bucket,
-        results_path=results_path
-    )
-    if isinstance(query_resp, dict) and not query_resp['ResultSet']['Rows']:
-        LOGGER.info('The streamalert table \'%s\' does not exist, please create it.', table_name)
-        return False
-
-    return True
-
-
-def normal_partition_refresh(config, athena_results_bucket, athena_results_path):
-    normal_partition_config = config['lambda']['athena_partition_refresh_config']['partitioning']['normal']
-    for _, athena_table in normal_partition_config.iteritems():
-        resp = run_athena_query(
-            query='MSCK REPAIR TABLE {};'.format(athena_table),
-            database='streamalert',
-            results_bucket=athena_results_bucket,
-            results_path=athena_results_path
+        Returns:
+            tuple: [bool]: Query success, [dict]: Query result response
+        """
+        LOGGER.debug('Executing query: %s', kwargs['query'])
+        query_execution_resp = self.athena_client.start_query_execution(
+            QueryString=kwargs['query'],
+            QueryExecutionContext={'Database': kwargs.get('database', self.DATABASE_DEFAULT)},
+            ResultConfiguration={'OutputLocation': '{}/{}'.format(
+                self.athena_results_bucket,
+                self.athena_results_key
+            )}
         )
-        if resp:
-            LOGGER.info('Query results:')
-            for row in resp['ResultSet']['Rows']:
-                LOGGER.info(row)
+
+        query_execution_result = self.check_query_status(
+            query_execution_resp['QueryExecutionId'])
+
+        if query_execution_result != 'SUCCEEDED':
+            LOGGER.error(
+                'The query %s returned %s, exiting!',
+                kwargs['query'],
+                query_execution_result)
+            return False, {}
+
+        query_results_resp = self.athena_client.get_query_results(
+            QueryExecutionId=query_execution_resp['QueryExecutionId'],
+        )
+
+        # The idea here is to leave the processing logic to the calling functions.
+        # No data being returned isn't always an indication that something is wrong.
+        # When handling the query result data, iterate over each element in the Row,
+        # and parse the Data key.
+        # Reference: http://bit.ly/2tWOQ2N
+        if not query_results_resp['ResultSet']['Rows']:
+            LOGGER.debug('The query %s returned empty rows of data', kwargs['query'])
+
+        return True, query_results_resp
+
+    def check_database_exists(self, **kwargs):
+        """Verify the StreamAlert Athena database exists."""
+        database = kwargs.get('database', self.DATABASE_STREAMALERT)
+        query_success, query_resp = self.run_athena_query(
+            query='SHOW DATABASES LIKE \'{}\';'.format(database),
+        )
+
+        if query_success and query_resp['ResultSet']['Rows']:
+            return True
+        else:
+            LOGGER.error('The \'%s\' database does not exist. '
+                         'Create it with the following command: \n'
+                         '$ python stream_alert_cli.py athena create-db',
+                         database)
+            return False
+
+    def check_table_exists(self, table_name):
+        """Verify a given StreamAlert Athena table exists."""
+        query_success, query_resp = self.run_athena_query(
+            query='SHOW TABLES LIKE \'{}\';'.format(table_name),
+            database=self.DATABASE_STREAMALERT
+        )
+
+        if query_success and query_resp['ResultSet']['Rows']:
+            return True
+        else:
+            LOGGER.info('The streamalert table \'%s\' does not exist. '
+                        'For alert buckets, create it with the following command: \n'
+                        '$ python stream_alert_cli.py athena create-table '
+                        '--type alerts --bucket s3.bucket.id',
+                        table_name)
+            return False
+
+    def normal_partition_refresh(self):
+        """Execute a normal MSCK REPAIR TABLE command on a given data bucket"""
+        athena_config = self.config['lambda']['athena_partition_refresh_config']
+        normal_partition_config = athena_config['partitioning']['normal']
+
+        for athena_table in normal_partition_config.itervalues():
+            query_success, query_resp = self.run_athena_query(
+                query='MSCK REPAIR TABLE {};'.format(athena_table),
+                database=self.DATABASE_STREAMALERT
+            )
+            if query_success:
+                LOGGER.info('Query results:')
+                for row in query_resp['ResultSet']['Rows']:
+                    LOGGER.info(row['Data'])
+            else:
+                logger.error('Partition refresh of the Athena table '
+                             '%s has failed.', athena_table)
+
+    @staticmethod
+    def firehose_partition_refresh(_):
+        """Execute a Firehose specific partition update"""
+        LOGGER.error('Firehose partition refresh is not yet supported, exiting!')
+        raise NotImplementedError
 
 
-def firehose_partition_refresh(_):
-    LOGGER.error('Firehose partition refresh is not yet supported, exiting!')
-    raise NotImplementedError
-
-
-def handler(event, context):
+def handler(event, _):
     """Athena Partition Refresher Handler Function"""
-    config = _load_config()
-    if not config:
-        LOGGER.error('No config found, exiting!')
-        return
-
-    global ATHENA_CLIENT
-    ATHENA_CLIENT = boto3.client('athena', region_name=config['global']['account']['region'])
-
-    # Athena queries need an S3 bucket for results
-    athena_results_bucket = 's3://aws-athena-query-results-{}-{}'.format(
-        config['global']['account']['aws_account_id'],
-        config['global']['account']['region']
-    )
-    # Produces athena_partition_refresh/2017/01/01 keys
-    athena_results_path = 'athena_partition_refresh/{}'.format(
-        datetime.now().strftime('%Y/%m/%d'))
+    stream_alert_athena = StreamAlertAthenaClient()
 
     # The StreamAlert database needs to exist before we run queries.
-    if not check_database_exists(athena_results_bucket, athena_results_path):
+    if not stream_alert_athena.check_database_exists():
         return
 
-    normal_partition_refresh(config, athena_results_bucket, athena_results_path)
+    stream_alert_athena.normal_partition_refresh()
