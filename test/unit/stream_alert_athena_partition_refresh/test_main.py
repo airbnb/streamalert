@@ -141,7 +141,8 @@ def test_success_handler(mock_logging):
     assert_true(mock_logging.debug.called)
 
 
-@patch('stream_alert.athena_partition_refresh.main.ATHENA_CLIENT', MockAthenaClient(results=[{'alerts': True}]))
+@patch('stream_alert.athena_partition_refresh.main.ATHENA_CLIENT',
+       MockAthenaClient(results=[{'alerts': True}]))
 def test_check_table_exists():
     """Athena - Check Table Exists"""
     result = main.check_table_exists('s3://unit-test-results', '/athena', 'unit-test')
@@ -149,7 +150,8 @@ def test_check_table_exists():
     assert_true(result)
 
 
-@patch('stream_alert.athena_partition_refresh.main.ATHENA_CLIENT', MockAthenaClient(results=None))
+@patch('stream_alert.athena_partition_refresh.main.ATHENA_CLIENT',
+       MockAthenaClient(results=None))
 def test_check_table_exists_invalid():
     """Athena - Check Table Exists - Does Not Exist"""
     result = main.check_table_exists('s3://unit-test-results', '/athena', 'unit-test')
@@ -157,7 +159,8 @@ def test_check_table_exists_invalid():
     assert_false(result)
 
 
-@patch('stream_alert.athena_partition_refresh.main.ATHENA_CLIENT', MockAthenaClient(results=None))
+@patch('stream_alert.athena_partition_refresh.main.ATHENA_CLIENT',
+       MockAthenaClient(results=None))
 def test_check_database_exists_invalid():
     """Athena - Check Database Exists - Does Not Exist"""
     result = main.check_database_exists('s3://unit-test-results', '/athena')
@@ -165,7 +168,8 @@ def test_check_database_exists_invalid():
     assert_false(result)
 
 
-@patch('stream_alert.athena_partition_refresh.main.ATHENA_CLIENT', MockAthenaClient(results=[{'streamalert': True}]))
+@patch('stream_alert.athena_partition_refresh.main.ATHENA_CLIENT',
+       MockAthenaClient(results=[{'streamalert': True}]))
 def test_check_database_exists():
     """Athena - Check Database Exists"""
     result = main.check_database_exists('s3://unit-test-results', '/athena')
@@ -180,7 +184,8 @@ def test_check_query_status(mock_logging):
 
 
 @patch('stream_alert.athena_partition_refresh.main.LOGGER')
-@patch('stream_alert.athena_partition_refresh.main.ATHENA_CLIENT', MockAthenaClient(results=None))
+@patch('stream_alert.athena_partition_refresh.main.ATHENA_CLIENT',
+       MockAthenaClient(results=None))
 def test_run_athena_query_empty(mock_logging):
     """Athena - Run Athena Query"""
     query_results = main.run_athena_query(
@@ -194,7 +199,8 @@ def test_run_athena_query_empty(mock_logging):
 
 
 @patch('stream_alert.athena_partition_refresh.main.LOGGER')
-@patch('stream_alert.athena_partition_refresh.main.ATHENA_CLIENT', MockAthenaClient(results=None, result_state='FAILED'))
+@patch('stream_alert.athena_partition_refresh.main.ATHENA_CLIENT',
+       MockAthenaClient(results=None, result_state='FAILED'))
 def test_run_athena_query_error(mock_logging):
     """Athena - Run Athena Query"""
     query_results = main.run_athena_query(
@@ -208,7 +214,8 @@ def test_run_athena_query_error(mock_logging):
 
 
 @patch('stream_alert.athena_partition_refresh.main.LOGGER')
-@patch('stream_alert.athena_partition_refresh.main.ATHENA_CLIENT', MockAthenaClient(results=[{'Status': 'Success'}]))
+@patch('stream_alert.athena_partition_refresh.main.ATHENA_CLIENT',
+       MockAthenaClient(results=[{'Status': 'Success'}]))
 def test_normal_partition_refresh(mock_logging):
     """Athena - Normal Parition Refresh"""
     config = {
@@ -226,7 +233,8 @@ def test_normal_partition_refresh(mock_logging):
     assert_true(mock_logging.info.called)
 
 
-@patch('stream_alert.athena_partition_refresh.main.ATHENA_CLIENT', MockAthenaClient())
+@patch('stream_alert.athena_partition_refresh.main.ATHENA_CLIENT',
+       MockAthenaClient())
 def test_run_athena_query():
     """Athena - Run Athena Query"""
     query_results = main.run_athena_query(

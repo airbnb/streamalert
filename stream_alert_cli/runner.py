@@ -142,7 +142,7 @@ def athena_handler(options):
             if create_table_result:
                 CONFIG['lambda']['athena_partition_refresh_config']['partitioning']['normal'][options.bucket] = 'alerts'
                 CONFIG.write()
-                LOGGER_CLI.info('alerts table successfully created!')
+                LOGGER_CLI.info('The alerts table was successfully created!')
 
 
 def lambda_handler(options):

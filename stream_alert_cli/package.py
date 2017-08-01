@@ -203,10 +203,7 @@ class LambdaPackage(object):
             package path [string]:  Full path to the zipped dpeloyment package
 
         Returns:
-            [boolean] Indicating a successful upload
-
-        Raises:
-            Exception if the Lambda package put object fails to S3
+            [boolean] Indicating a successful S3 upload
         """
         LOGGER_CLI.info('Uploading StreamAlert package to S3')
         client = boto3.client(
@@ -224,7 +221,8 @@ class LambdaPackage(object):
                     ServerSideEncryption='AES256'
                 )
             except ClientError as err:
-                LOGGER_CLI.info(err)
+                LOGGER_CLI.exception('An error occurred while uploading %s',
+                                     package_name)
                 return False
 
             package_fh.close()

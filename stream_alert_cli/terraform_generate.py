@@ -641,7 +641,7 @@ def terraform_generate(**kwargs):
     # Setup cluster files
     for cluster in config.clusters():
         if cluster in RESTRICTED_CLUSTER_NAMES:
-            raise InvalidClusterName('Rename cluster "main" to something else!')
+            raise InvalidClusterName('Rename cluster "main" or "athena" to something else!')
 
         LOGGER_CLI.debug('Generating cluster file: %s.tf', cluster)
         cluster_dict = generate_cluster(cluster_name=cluster, config=config)
