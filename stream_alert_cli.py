@@ -107,6 +107,11 @@ Examples:
         required=True,
         help=argparse_suppress
     )
+    output_parser.add_argument(
+        '--debug',
+        action='store_true',
+        help=argparse_suppress
+    )
 
     #
     # Live Test Parser
@@ -215,12 +220,12 @@ Examples:
     # require the name of the processor being deployed/rolled back/tested
     lambda_parser.add_argument(
         '--processor',
-        choices=['alert', 'all', 'rule'],
+        choices=['alert', 'all', 'athena', 'rule'],
         help=argparse_suppress,
         required=True
     )
 
-    # allow verbose output for the CLI with te --debug option
+    # allow verbose output for the CLI with the --debug option
     lambda_parser.add_argument(
         '--debug',
         action='store_true',
@@ -297,15 +302,22 @@ Examples:
 
     tf_parser.add_argument(
         '--target',
-        choices=['stream_alert',
+        choices=['athena',
+                'cloudwatch_monitoring',
+                'cloudtrail',
+                'flow_logs',
                 'kinesis',
                 'kinesis_events',
-                's3_events',
-                'cloudwatch_monitoring'
-                'cloudtrail',
-                'flow_logs'],
+                'stream_alert',
+                's3_events'],
         help=argparse_suppress,
         nargs='+'
+    )
+    
+    tf_parser.add_argument(
+        '--debug',
+        action='store_true',
+        help=argparse_suppress
     )
 
     #
@@ -345,6 +357,68 @@ Examples:
 
     configure_parser.add_argument(
         'config_value',
+        help=argparse_suppress
+    )
+    
+    configure_parser.add_argument(
+        '--debug',
+        action='store_true',
+        help=argparse_suppress
+    )
+
+    #
+    # Athena Parser
+    #
+    athena_usage = 'stream_alert_cli.py athena'
+    athena_description = ("""
+StreamAlertCLI v{}
+Athena StreamAlert options
+
+Available Subcommands:
+
+    stream_alert_cli.py athena init                 Create the Athena base config
+    stream_alert_cli.py athena enable               Enable Athena Partition Refresh Lambda function
+    stream_alert_cli.py athena create-db            Initialize the Athena Database (streamalert)
+    stream_alert_cli.py athena create-table         Create an Athena table
+
+Examples:
+
+    stream_alert_cli.py athena create-db
+    stream_alert_cli.py athena create-table --type alerts --bucket s3.bucket.name
+
+""".format(version))
+    athena_parser = subparsers.add_parser(
+        'athena',
+        usage=athena_usage,
+        description=athena_description,
+        help=argparse_suppress,
+        formatter_class=RawTextHelpFormatter
+    )
+
+    athena_parser.set_defaults(command='athena')
+
+    athena_parser.add_argument(
+        'subcommand',
+        choices=['init', 'enable', 'create-db', 'create-table'],
+        help=argparse_suppress
+    )
+
+    # TODO(jacknagz): Create a second choice for data tables, and accept a
+    #                 log name argument.
+    athena_parser.add_argument(
+        '--type',
+        choices=['alerts'],
+        help=argparse_suppress
+    )
+
+    athena_parser.add_argument(
+        '--bucket',
+        help=argparse_suppress
+    )
+    
+    athena_parser.add_argument(
+        '--debug',
+        action='store_true',
         help=argparse_suppress
     )
 

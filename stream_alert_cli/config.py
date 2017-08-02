@@ -49,7 +49,50 @@ class CLIConfig(object):
     def clusters(self):
         return self.config['clusters'].keys()
 
+    def generate_athena(self):
+        """Generate a base Athena config"""
+        if 'athena_partition_refresh_config' in self.config['lambda']:
+            LOGGER_CLI.warn('The Athena configuration already exists, skipping.')
+            return
+
+        athena_config_template = {
+            'enabled': True,
+            'current_version': '$LATEST',
+            'refresh_type': {
+                'add_hive_partition': {},
+                'repair_hive_table': {}
+            },
+            'handler': 'stream_alert.athena_partition_refresh.main.handler',
+            'timeout': '60',
+            'memory': '128',
+            'source_bucket': 'PREFIX_GOES_HERE.streamalert.source',
+            'source_current_hash': '<auto_generated>',
+            'source_object_key': '<auto_generated',
+            'third_party_libraries': [
+              'backoff'
+            ]
+        }
+
+        if self.config['global']['account']['prefix'] != 'PREFIX_GOES_HERE':
+            athena_config_template['source_bucket'] = athena_config_template['source_bucket'].replace(
+                'PREFIX_GOES_HERE',
+                self.config['global']['account']['prefix']
+            )
+
+        self.config['lambda']['athena_partition_refresh_config'] = athena_config_template
+        self.write()
+
+    def set_athena_lambda_enable(self):
+        if 'athena_partition_refresh_config' not in self.config['lambda']:
+            LOGGER_CLI.error('No configuration found for Athena Partition Refresh. '
+                             'Please run: $ python stream_alert_cli.py athena init')
+            return
+
+        self.config['lambda']['athena_partition_refresh_config']['enabled'] = True
+        self.write()
+
     def set_prefix(self, prefix):
+        """Set the Org Prefix in Global settings"""
         self.config['global']['account']['prefix'] = prefix
         self.config['global']['terraform']['tfstate_bucket'] = self.config['global']['terraform']['tfstate_bucket'].replace(
             'PREFIX_GOES_HERE', prefix)
@@ -60,6 +103,7 @@ class CLIConfig(object):
         self.write()
 
     def set_aws_account_id(self, aws_account_id):
+        """Set the AWS Account ID in Global settings"""
         self.config['global']['account']['aws_account_id'] = aws_account_id
         self.write()
 

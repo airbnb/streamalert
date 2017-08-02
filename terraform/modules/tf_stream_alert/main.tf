@@ -11,6 +11,12 @@ resource "aws_lambda_function" "streamalert_rule_processor" {
   s3_bucket     = "${lookup(var.rule_processor_config, "source_bucket")}"
   s3_key        = "${lookup(var.rule_processor_config, "source_object_key")}"
 
+  environment {
+    variables = {
+      CLUSTER = "${var.cluster}"
+    }
+  }
+
   tags {
     Name = "StreamAlert"
   }
@@ -39,6 +45,12 @@ resource "aws_lambda_function" "streamalert_alert_processor_vpc" {
   s3_bucket     = "${lookup(var.alert_processor_config, "source_bucket")}"
   s3_key        = "${lookup(var.alert_processor_config, "source_object_key")}"
 
+  environment {
+    variables = {
+      CLUSTER = "${var.cluster}"
+    }
+  }
+
   vpc_config {
     subnet_ids         = "${var.alert_processor_vpc_subnet_ids}"
     security_group_ids = "${var.alert_processor_vpc_security_group_ids}"
@@ -63,6 +75,12 @@ resource "aws_lambda_function" "streamalert_alert_processor" {
   timeout       = "${var.alert_processor_timeout}"
   s3_bucket     = "${lookup(var.alert_processor_config, "source_bucket")}"
   s3_key        = "${lookup(var.alert_processor_config, "source_object_key")}"
+
+  environment {
+    variables = {
+      CLUSTER = "${var.cluster}"
+    }
+  }
 
   tags {
     Name = "StreamAlert"

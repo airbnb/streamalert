@@ -22,6 +22,8 @@ from collections import defaultdict
 from stream_alert_cli.logger import LOGGER_CLI
 
 
+RESTRICTED_CLUSTER_NAMES = ('main', 'athena')
+
 class InvalidClusterName(Exception):
     """Exception for invalid cluster names"""
     pass
@@ -578,6 +580,37 @@ def generate_cluster(**kwargs):
     return cluster_dict
 
 
+def generate_athena(config):
+    """Generate Athena Terraform.
+
+    Args:
+        config [dict]: The loaded config from the 'conf/' directory
+
+    Returns:
+        [dict]: Athena dict to be marshalled to JSON
+    """
+    athena_dict = infinitedict()
+    athena_config = config['lambda']['athena_partition_refresh_config']
+
+    data_buckets = []
+    for refresh_type in athena_config['refresh_type']:
+        data_buckets.extend(athena_config['refresh_type'][refresh_type].keys())
+
+    athena_dict['module']['stream_alert_athena'] = {
+        'source': 'modules/tf_stream_alert_athena',
+        'lambda_handler': athena_config['handler'],
+        'lambda_memory': athena_config['memory'],
+        'lambda_timeout': athena_config['timeout'],
+        'lambda_s3_bucket': athena_config['source_bucket'],
+        'lambda_s3_key': athena_config['source_object_key'],
+        'athena_data_buckets': data_buckets,
+        'current_version': athena_config['current_version'],
+        'prefix': config['global']['account']['prefix']
+    }
+
+    return athena_dict
+
+
 def terraform_generate(**kwargs):
     """Generate all Terraform plans for the configured clusters.
 
@@ -591,8 +624,8 @@ def terraform_generate(**kwargs):
     config = kwargs.get('config')
     init = kwargs.get('init', False)
 
-    # Setup main
-    LOGGER_CLI.info('Generating cluster file: main.tf')
+    # Setup the main.tf file
+    LOGGER_CLI.debug('Generating cluster file: main.tf')
     main_json = json.dumps(
         generate_main(init=init, config=config),
         indent=2,
@@ -601,16 +634,16 @@ def terraform_generate(**kwargs):
     with open('terraform/main.tf', 'w') as tf_file:
         tf_file.write(main_json)
 
-    # Break out early during the init process, clusters aren't needed yet
+    # Return early during the init process, clusters are not needed yet
     if init:
         return True
 
-    # Setup clusters
+    # Setup cluster files
     for cluster in config.clusters():
-        if cluster == 'main':
-            raise InvalidClusterName('Rename cluster "main" to something else!')
+        if cluster in RESTRICTED_CLUSTER_NAMES:
+            raise InvalidClusterName('Rename cluster "main" or "athena" to something else!')
 
-        LOGGER_CLI.info('Generating cluster file: %s.tf', cluster)
+        LOGGER_CLI.debug('Generating cluster file: %s.tf', cluster)
         cluster_dict = generate_cluster(cluster_name=cluster, config=config)
         if not cluster_dict:
             LOGGER_CLI.error(
@@ -624,5 +657,24 @@ def terraform_generate(**kwargs):
         )
         with open('terraform/{}.tf'.format(cluster), 'w') as tf_file:
             tf_file.write(cluster_json)
+
+    # Setup Athena if it is enabled
+    athena_config = config['lambda'].get('athena_partition_refresh_config')
+    if athena_config:
+        athena_file = 'terraform/athena.tf'
+        if athena_config['enabled']:
+            athena_json = json.dumps(
+                generate_athena(config=config),
+                indent=2,
+                sort_keys=True
+            )
+            if athena_json:
+                with open(athena_file, 'w') as tf_file:
+                    tf_file.write(athena_json)
+        # Remove Athena file if it's disabled
+        else:
+            if os.path.isfile(athena_file):
+                LOGGER_CLI.info('Removing old Athena Terraform file')
+                os.remove(athena_file)
 
     return True

@@ -24,12 +24,22 @@ import tempfile
 
 import boto3
 
+from botocore.exceptions import ClientError
+
 from stream_alert_cli.helpers import run_command
 from stream_alert_cli.logger import LOGGER_CLI
 
 
 class LambdaPackage(object):
-    """Build and upload a StreamAlert deployment package to S3."""
+    """Build and upload a StreamAlert deployment package to S3.
+
+    Class Variables:
+        package_folders [set]: The folders to zip into the Lambda package
+        package_files [set]: The set of files to add to the Lambda package
+        package_name [string]: The name of the zip file to put on S3
+        package_root_dir [string]: Working directory to begin the zip
+        config_key [string]: The configuration key to update after creation
+    """
     package_folders = set()
     package_files = set()
     package_name = None
@@ -50,6 +60,7 @@ class LambdaPackage(object):
             package_sha256: Checksum of package_path
             package_sha256_path: Full path to package_path checksum file
         """
+        LOGGER_CLI.info('Creating package for %s', self.package_name)
         # get tmp dir and copy files
         temp_package_path = self._get_tmpdir()
         self._copy_files(temp_package_path)
@@ -93,7 +104,7 @@ class LambdaPackage(object):
         Args:
             files [tuple]: File paths to remove after uploading to S3.
         """
-        LOGGER_CLI.info('Removing local files')
+        LOGGER_CLI.debug('Removing local files')
         for obj in files:
             os.remove(obj)
 
@@ -126,10 +137,10 @@ class LambdaPackage(object):
         Returns:
             [string] Deployment package full path
         """
-        LOGGER_CLI.info('Creating Lambda package: %s',
+        LOGGER_CLI.debug('Creating Lambda package: %s',
                         ''.join([temp_package_path, '.zip']))
         package_path = shutil.make_archive(temp_package_path, 'zip', temp_package_path)
-        LOGGER_CLI.info('Package Successfully Created!')
+        LOGGER_CLI.info('Package successfully created')
 
         return package_path
 
@@ -175,33 +186,33 @@ class LambdaPackage(object):
             LOGGER_CLI.info('No third-party libraries to install.')
             return True
 
-        LOGGER_CLI.info('Installing third-party libraries: %s', ', '.join(third_party_libs))
+        LOGGER_CLI.info(
+            'Installing third-party libraries: %s',
+            ', '.join(third_party_libs))
         pip_command = ['pip', 'install']
         pip_command.extend(third_party_libs)
         pip_command.extend(['--upgrade', '--target', temp_package_path])
 
         # Return True if the pip command is successfully run
-        return run_command(pip_command, cwd=temp_package_path)
+        return run_command(pip_command, cwd=temp_package_path, quiet=True)
 
     def _upload(self, package_path):
-        """Upload the StreamAlert package and sha256 to S3.
+        """Upload the StreamAlert package and sha256 sum to S3.
 
         Args:
             package path [string]:  Full path to the zipped dpeloyment package
 
         Returns:
-            [boolean] Indicating a successful upload
-
-        Raises:
-            Exception if client put_object fails
+            [boolean] Indicating a successful S3 upload
         """
         LOGGER_CLI.info('Uploading StreamAlert package to S3')
         client = boto3.client(
             's3', region_name=self.config['global']['account']['region'])
-        # the zip and the checksum file
+
         for package_file in (package_path, '{}.sha256'.format(package_path)):
             package_name = package_file.split('/')[-1]
             package_fh = open(package_file, 'r')
+
             try:
                 client.put_object(
                     Bucket=self.config['lambda'][self.config_key]['source_bucket'],
@@ -209,11 +220,13 @@ class LambdaPackage(object):
                     Body=package_fh,
                     ServerSideEncryption='AES256'
                 )
-            except BaseException:
-                LOGGER_CLI.info('An error occurred while uploading %s', package_name)
-                raise
+            except ClientError as err:
+                LOGGER_CLI.exception('An error occurred while uploading %s',
+                                     package_name)
+                return False
+
             package_fh.close()
-            LOGGER_CLI.info('Uploaded %s to S3', package_name)
+            LOGGER_CLI.debug('Uploaded %s to S3', package_name)
 
         return True
 
@@ -239,3 +252,12 @@ class AlertProcessorPackage(LambdaPackage):
     package_root_dir = '.'
     package_name = 'alert_processor'
     config_key = 'alert_processor_config'
+
+
+class AthenaPackage(LambdaPackage):
+    """Create the Athena Partition Refresh Lambda function package"""
+    package_folders = {'stream_alert/athena_partition_refresh', 'conf'}
+    package_files = {'stream_alert/__init__.py'}
+    package_root_dir = '.'
+    package_name = 'athena_partition_refresh'
+    config_key = 'athena_partition_refresh_config'

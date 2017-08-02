@@ -330,7 +330,6 @@ class TestTerraformGenerate(object):
         assert_equal(tf_main['terraform'], tf_main_expected['terraform'])
         assert_equal(tf_main['resource'], tf_main_expected['resource'])
 
-
     def test_generate_stream_alert_test(self):
         """CLI - Terraform Generate stream_alert Module (test cluster)"""
         terraform_generate.generate_stream_alert(
@@ -362,7 +361,6 @@ class TestTerraformGenerate(object):
 
         assert_equal(self.cluster_dict['module']['stream_alert_test'],
                      expected_test_cluster['module']['stream_alert_test'])
-
 
     def test_generate_stream_alert_advanced(self):
         """CLI - Terraform Generate stream_alert Module (advanced cluster)"""
@@ -402,7 +400,6 @@ class TestTerraformGenerate(object):
         assert_equal(self.cluster_dict['module']['stream_alert_advanced'],
                      expected_advanced_cluster['module']['stream_alert_advanced'])
 
-
     def test_generate_flow_logs(self):
         """CLI - Terraform Generate flow_logs Module"""
         cluster_name = 'advanced'
@@ -415,7 +412,6 @@ class TestTerraformGenerate(object):
         flow_log_config = self.cluster_dict['module']['flow_logs_advanced']
         assert_equal(flow_log_config['flow_log_group_name'], 'unit-test-advanced')
         assert_equal(flow_log_config['vpcs'], ['vpc-id-1', 'vpc-id-2'])
-
 
     def test_generate_cloudtrail_basic(self):
         """CLI - Terraform Generate cloudtrail Module"""
@@ -569,3 +565,54 @@ class TestTerraformGenerate(object):
 
         assert_equal(set(tf_cluster['module'].keys()), advanced_modules)
         assert_equal(set(tf_cluster.keys()), cluster_keys)
+
+    def test_generate_athena(self):
+        """CLI - Terraform Generate Athena"""
+
+        config = {
+            'global': {
+                'account': {
+                    'prefix': 'unit-testing'
+                }
+            },
+            'lambda': {
+                'athena_partition_refresh_config': {
+                    'enabled': True,
+                    'current_version': '$LATEST',
+                    'refresh_type': {
+                        'repair_hive_table': {
+                            'unit-testing.streamalerts': 'alerts'
+                        },
+                        'add_hive_partition': {}
+                    },
+                    'handler': 'main.handler',
+                    'timeout': '60',
+                    'memory': '128',
+                    'source_bucket': 'unit-testing.streamalert.source',
+                    'source_current_hash': '12345',
+                    'source_object_key': 'lambda/athena/source.zip',
+                    'third_party_libraries': [
+                        'backoff'
+                    ]
+                }
+            }
+        }
+        expected_athena_config = {
+            'module': {
+                'stream_alert_athena': {
+                    'source': 'modules/tf_stream_alert_athena',
+                    'current_version': '$LATEST',
+                    'lambda_handler': 'main.handler',
+                    'lambda_memory': '128',
+                    'lambda_timeout': '60',
+                    'lambda_s3_bucket': 'unit-testing.streamalert.source',
+                    'lambda_s3_key': 'lambda/athena/source.zip',
+                    'athena_data_buckets': ['unit-testing.streamalerts'],
+                    'prefix': 'unit-testing'
+                }
+            }
+        }
+
+        athena_config = terraform_generate.generate_athena(config=config)
+
+        assert_equal(athena_config, expected_athena_config)
