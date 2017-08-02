@@ -579,11 +579,11 @@ class TestTerraformGenerate(object):
                 'athena_partition_refresh_config': {
                     'enabled': True,
                     'current_version': '$LATEST',
-                    'partitioning': {
-                        'normal': {
+                    'refresh_type': {
+                        'repair_hive_table': {
                             'unit-testing.streamalerts': 'alerts'
                         },
-                        'firehose': {}
+                        'add_hive_partition': {}
                     },
                     'handler': 'main.handler',
                     'timeout': '60',

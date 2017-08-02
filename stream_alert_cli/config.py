@@ -58,9 +58,9 @@ class CLIConfig(object):
         athena_config_template = {
             'enabled': True,
             'current_version': '$LATEST',
-            'partitioning': {
-                'normal': {},
-                'firehose': {}
+            'refresh_type': {
+                'add_hive_partition': {},
+                'repair_hive_table': {}
             },
             'handler': 'stream_alert.athena_partition_refresh.main.handler',
             'timeout': '60',

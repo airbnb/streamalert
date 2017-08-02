@@ -593,8 +593,8 @@ def generate_athena(config):
     athena_config = config['lambda']['athena_partition_refresh_config']
 
     data_buckets = []
-    for partition_type in athena_config['partitioning']:
-        data_buckets.extend(athena_config['partitioning'][partition_type].keys())
+    for refresh_type in athena_config['refresh_type']:
+        data_buckets.extend(athena_config['refresh_type'][refresh_type].keys())
 
     athena_dict['module']['stream_alert_athena'] = {
         'source': 'modules/tf_stream_alert_athena',

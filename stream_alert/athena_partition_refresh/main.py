@@ -113,7 +113,7 @@ class StreamAlertAthenaClient(object):
 
         Returns:
             [string]: The result of the query, this can be SUCCEEDED, FAILED, or CANCELLED.
-                      Reference http://bit.ly/2uuRtda
+                      Reference https://bit.ly/2uuRtda
         """
         @backoff.on_predicate(backoff.fibo,
                               lambda status: status in ('QUEUED', 'RUNNING'),
@@ -166,7 +166,7 @@ class StreamAlertAthenaClient(object):
         # No data being returned isn't always an indication that something is wrong.
         # When handling the query result data, iterate over each element in the Row,
         # and parse the Data key.
-        # Reference: http://bit.ly/2tWOQ2N
+        # Reference: https://bit.ly/2tWOQ2N
         if not query_results_resp['ResultSet']['Rows']:
             LOGGER.debug('The query %s returned empty rows of data', kwargs['query'])
 
@@ -205,12 +205,12 @@ class StreamAlertAthenaClient(object):
                         table_name)
             return False
 
-    def normal_partition_refresh(self):
-        """Execute a normal MSCK REPAIR TABLE command on a given data bucket"""
+    def repair_hive_table(self):
+        """Execute a MSCK REPAIR TABLE on a given Athena table"""
         athena_config = self.config['lambda']['athena_partition_refresh_config']
-        normal_partition_config = athena_config['partitioning']['normal']
+        repair_hive_table_config = athena_config['refresh_type']['repair_hive_table']
 
-        for athena_table in normal_partition_config.itervalues():
+        for athena_table in repair_hive_table_config.itervalues():
             query_success, query_resp = self.run_athena_query(
                 query='MSCK REPAIR TABLE {};'.format(athena_table),
                 database=self.DATABASE_STREAMALERT
@@ -238,4 +238,4 @@ def handler(event, _):
     if not stream_alert_athena.check_database_exists():
         return
 
-    stream_alert_athena.normal_partition_refresh()
+    stream_alert_athena.repair_hive_table()

@@ -33,19 +33,19 @@ module "stream_alert_athena" {
   </tr>
   <tr>
     <td>lambda_timeout</td>
-    <td>The max runtime in seconds for the lambda function</td>
+    <td>The max runtime in seconds for the Lambda function</td>
     <td>60 seconds</td>
     <td>False</td>
   </tr>
   <tr>
     <td>lambda_memory</td>
-    <td>The memory allocation in MB for the lambda function</td>
+    <td>The memory allocation in MB for the Lambda function</td>
     <td>128MB</td>
     <td>False</td>
   </tr>
   <tr>
     <td>lambda_s3_bucket</td>
-    <td>The name of the S3 bucket to store lambda deployment packages</td>
+    <td>The name of the S3 bucket to store Lambda deployment packages</td>
     <td>None</td>
     <td>True</td>
   </tr>

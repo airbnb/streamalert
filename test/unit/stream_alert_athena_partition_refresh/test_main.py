@@ -74,11 +74,11 @@ class TestStreamAlertAthenaClient(object):
                 },
                 'athena_partition_refresh_config': {
                     "enabled": True,
-                    "partitioning": {
-                      "normal": {
+                    "refresh_type": {
+                      "repair_hive_table": {
                         "unit-testing.streamalerts": "alerts"
                       },
-                      "firehose": {}
+                      "add_hive_partition": {}
                     },
                     "handler": "main.handler",
                     "timeout": "60",
@@ -218,12 +218,12 @@ class TestStreamAlertAthenaClient(object):
 
 
     @patch('stream_alert.athena_partition_refresh.main.LOGGER')
-    def test_normal_partition_refresh(self, mock_logging):
-        """Athena - Normal Parition Refresh"""
+    def test_repair_hive_table(self, mock_logging):
+        """Athena - Repair Hive Table"""
         query_result = [{'Status': 'Success'}]
         self.client.athena_client = MockAthenaClient(results=query_result)
 
-        self.client.normal_partition_refresh() 
+        self.client.repair_hive_table() 
         assert_true(mock_logging.info.called)
 
 

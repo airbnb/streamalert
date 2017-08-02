@@ -129,7 +129,7 @@ def athena_handler(options):
             )
 
             if create_table_success:
-                CONFIG['lambda']['athena_partition_refresh_config']['partitioning']['normal'][options.bucket] = 'alerts'
+                CONFIG['lambda']['athena_partition_refresh_config']['refresh_type']['repair_hive_table'][options.bucket] = 'alerts'
                 CONFIG.write()
                 LOGGER_CLI.info('The alerts table was successfully created!')
 
