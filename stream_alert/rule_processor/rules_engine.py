@@ -40,6 +40,11 @@ class StreamRules(object):
     __matchers = {}
 
     @classmethod
+    def get_rules(cls):
+        """Helper method to return private class property of __rules"""
+        return cls.__rules
+
+    @classmethod
     def rule(cls, **opts):
         """Register a rule that evaluates records against rules.
 

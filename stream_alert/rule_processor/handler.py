@@ -16,13 +16,17 @@ LOGGER.setLevel(LEVEL.upper())
 
 class StreamAlert(object):
     """Wrapper class for handling all StreamAlert classificaiton and processing"""
-    def __init__(self, context):
+    def __init__(self, context, send_alerts=True):
         """
         Args:
             context: An AWS context object which provides metadata on the currently
                 executing lambda function.
+            send_alerts: If the user wants to send the alerts using their own
+                methods instead of the StreamAlert alert processor, send_alerts
+                can be set to True to suppress sending.
         """
         self.env = load_env(context)
+        self.send_alerts = send_alerts
         # Instantiate the sink here to handle sending the triggered alerts to the alert processor
         self.sinker = StreamSink(self.env)
         self._failed_log_count = 0
@@ -74,7 +78,7 @@ class StreamAlert(object):
         """Public method to return alerts from class. Useful for testing.
 
         Returns:
-            [list] list of alerts in json format
+            [list] list of alerts as dictionaries
         """
         return self._alerts
 
@@ -114,22 +118,25 @@ class StreamAlert(object):
             payload [StreamPayload]: StreamAlert payload object being processed
             data [string]: Pre parsed data string from a raw_event to be parsed
         """
-        is_production = self.env['lambda_alias'] != 'development'
         classifier.classify_record(payload, data)
         if not payload.valid:
-            if is_production:
+            # Log a message about this failure if this is not a development env
+            if self.env['lambda_alias'] != 'development':
                 LOGGER.error('Log failed to match any defined schemas: %s\n%s', payload, data)
             self._failed_log_count += 1
             return
 
         alerts = StreamRules.process(payload)
         if not alerts:
-            LOGGER.debug('Valid data, no alerts')
+            pluralize = 's' if len(payload.records) > 1 else ''
+            LOGGER.debug('Processed %d valid record%s that resulted in no alerts.',
+                         len(payload.records),
+                         pluralize)
             return
 
-        # Extend the list of alerts with any new ones
+        # Extend the list of alerts with any new ones so they can be returned
         self._alerts.extend(alerts)
 
-        # If in production, attempt to send them to the alert processor
-        if is_production:
+        # If sending is enabled, send alerts to the alert processor
+        if self.send_alerts:
             self.sinker.sink(alerts)

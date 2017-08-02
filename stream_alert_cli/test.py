@@ -128,12 +128,12 @@ class RuleProcessorTester(object):
                 self.apply_helpers(test_record)
 
                 # Run tests on the formatted record
-                alerts, expected_alerts, success = self.test_rule(
+                alerts, expected_alerts, all_valid_logs = self.test_rule(
                     rule_name,
                     test_record,
                     helpers.format_lambda_test_record(test_record))
 
-                current_test_passed = (len(alerts) == expected_alerts) and success
+                current_test_passed = (len(alerts) == expected_alerts) and all_valid_logs
 
                 # Print rule name for section header, but only if we get
                 # to a point where there is a record to actually be tested.
@@ -296,10 +296,10 @@ class RuleProcessorTester(object):
 
         # Run the rule processor. Passing mocked context object with fake
         # values and False for suppressing sending of alerts
-        processor = StreamAlert(self.context)
-        success = processor.run(event)
+        processor = StreamAlert(self.context, False)
+        all_valid_logs = processor.run(event)
 
-        if not success:
+        if not all_valid_logs:
             payload = StreamPayload(raw_record=formatted_record)
             classifier = StreamClassifier(config=load_config())
             classifier.map_source(payload)
@@ -312,18 +312,20 @@ class RuleProcessorTester(object):
         alerts = [alert for alert in alerts
                   if alert['rule_name'] == rule_name]
 
-        return alerts, expected_alert_count, success
+        return alerts, expected_alert_count, all_valid_logs
 
     def analyze_log_delta(self, logs, rule_name, test_record):
-        """Provide some additional context on why this test failed
+        """Provide some additional context on why this test failed. This will
+        perform some analysis of the test record to determine if keys are
+        missing or if there are unnecessary keys. Any errors are appended to
+        a list of errors so they can be printed at the end of the test run.
 
         Args:
-            logs [dict]: dictionary containing all of the log schema
-                information for the source/entity
-            rule_name [str]: name of rule being tested
-            test_record [dict]: actual record data being tested
+            logs [dict]: All of the log schema information for the source/entity
+            rule_name [str]: Name of rule being tested
+            test_record [dict]: Actual record data being tested
         """
-        rule_info = StreamRules._StreamRules__rules[rule_name]
+        rule_info = StreamRules.get_rules()[rule_name]
         test_record_keys = set(test_record['data'])
         for log in rule_info.logs:
             log_keys = set(logs[log]['schema'])
