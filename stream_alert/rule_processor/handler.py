@@ -16,20 +16,21 @@ LOGGER.setLevel(LEVEL.upper())
 
 class StreamAlert(object):
     """Wrapper class for handling all StreamAlert classificaiton and processing"""
-    def __init__(self, context, return_alerts=False):
+    def __init__(self, context, enable_alert_processor=True):
         """
         Args:
             context: An AWS context object which provides metadata on the currently
                 executing lambda function.
-            return_alerts: If the user wants to handle the sinking
-                of alerts to external endpoints, return a list of
-                generated alerts.
+            enable_alert_processor: If the user wants to send the alerts using their
+                own methods, 'enable_alert_processor' can be set to False to suppress
+                sending with the StreamAlert alert processor.
         """
-        self.return_alerts = return_alerts
         self.env = load_env(context)
+        self.enable_alert_processor = enable_alert_processor
         # Instantiate the sink here to handle sending the triggered alerts to the alert processor
         self.sinker = StreamSink(self.env)
-        self.alerts = []
+        self._failed_record_count = 0
+        self._alerts = []
 
     def run(self, event):
         """StreamAlert Lambda function handler.
@@ -44,7 +45,7 @@ class StreamAlert(object):
                 an s3 bucket event) containing data emitted to the stream.
 
         Returns:
-            None
+            [boolean] True if all logs being parsed match a schema
         """
         LOGGER.debug('Number of Records: %d', len(event.get('Records', [])))
 
@@ -66,13 +67,20 @@ class StreamAlert(object):
             elif payload.service == 'sns':
                 self._sns_process(payload, classifier)
             else:
-                LOGGER.info('Unsupported service: %s', payload.service)
+                LOGGER.error('Unsupported service: %s', payload.service)
 
-        LOGGER.debug('%s alerts triggered', len(self.alerts))
-        LOGGER.debug('\n%s\n', json.dumps(self.alerts, indent=4))
+        LOGGER.debug('%s alerts triggered', len(self._alerts))
+        LOGGER.debug('\n%s\n', json.dumps(self._alerts, indent=4))
 
-        if self.return_alerts:
-            return self.alerts
+        return self._failed_record_count == 0
+
+    def get_alerts(self):
+        """Public method to return alerts from class. Useful for testing.
+
+        Returns:
+            [list] list of alerts as dictionaries
+        """
+        return self._alerts
 
     def _kinesis_process(self, payload, classifier):
         """Process Kinesis data for alerts"""
@@ -112,17 +120,22 @@ class StreamAlert(object):
         """
         classifier.classify_record(payload, data)
         if not payload.valid:
-            LOGGER.error('Invalid data: %s\n%s', payload, data)
+            if self.env['lambda_alias'] != 'development':
+                LOGGER.error('Record does not match any defined schemas: %s\n%s', payload, data)
+            self._failed_record_count += 1
             return
 
         alerts = StreamRules.process(payload)
+
+        LOGGER.debug('Processed %d valid record(s) that resulted in %d alert(s).',
+                     len(payload.records),
+                     len(alerts))
+
         if not alerts:
-            LOGGER.debug('Valid data, no alerts')
             return
 
-        # If we want alerts returned to the caller, extend the list. Otherwise
-        # attempt to send them to the alert processor
-        if self.return_alerts:
-            self.alerts.extend(alerts)
-        else:
+        # Extend the list of alerts with any new ones so they can be returned
+        self._alerts.extend(alerts)
+
+        if self.enable_alert_processor:
             self.sinker.sink(alerts)
