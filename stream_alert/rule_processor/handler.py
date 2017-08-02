@@ -16,20 +16,20 @@ LOGGER.setLevel(LEVEL.upper())
 
 class StreamAlert(object):
     """Wrapper class for handling all StreamAlert classificaiton and processing"""
-    def __init__(self, context, send_alerts=True):
+    def __init__(self, context, enable_alert_processor=True):
         """
         Args:
             context: An AWS context object which provides metadata on the currently
                 executing lambda function.
-            send_alerts: If the user wants to send the alerts using their own
-                methods instead of the StreamAlert alert processor, send_alerts
-                can be set to True to suppress sending.
+            enable_alert_processor: If the user wants to send the alerts using their
+                own methods, 'enable_alert_processor' can be set to False to suppress
+                sending with the StreamAlert alert processor.
         """
         self.env = load_env(context)
-        self.send_alerts = send_alerts
+        self.enable_alert_processor = enable_alert_processor
         # Instantiate the sink here to handle sending the triggered alerts to the alert processor
         self.sinker = StreamSink(self.env)
-        self._failed_log_count = 0
+        self._failed_record_count = 0
         self._alerts = []
 
     def run(self, event):
@@ -67,12 +67,12 @@ class StreamAlert(object):
             elif payload.service == 'sns':
                 self._sns_process(payload, classifier)
             else:
-                LOGGER.info('Unsupported service: %s', payload.service)
+                LOGGER.error('Unsupported service: %s', payload.service)
 
         LOGGER.debug('%s alerts triggered', len(self._alerts))
         LOGGER.debug('\n%s\n', json.dumps(self._alerts, indent=4))
 
-        return self._failed_log_count == 0
+        return self._failed_record_count == 0
 
     def get_alerts(self):
         """Public method to return alerts from class. Useful for testing.
@@ -120,23 +120,22 @@ class StreamAlert(object):
         """
         classifier.classify_record(payload, data)
         if not payload.valid:
-            # Log a message about this failure if this is not a development env
             if self.env['lambda_alias'] != 'development':
-                LOGGER.error('Log failed to match any defined schemas: %s\n%s', payload, data)
-            self._failed_log_count += 1
+                LOGGER.error('Record does not match any defined schemas: %s\n%s', payload, data)
+            self._failed_record_count += 1
             return
 
         alerts = StreamRules.process(payload)
+
+        LOGGER.debug('Processed %d valid record(s) that resulted in %d alert(s).',
+                     len(payload.records),
+                     len(alerts))
+
         if not alerts:
-            pluralize = 's' if len(payload.records) > 1 else ''
-            LOGGER.debug('Processed %d valid record%s that resulted in no alerts.',
-                         len(payload.records),
-                         pluralize)
             return
 
         # Extend the list of alerts with any new ones so they can be returned
         self._alerts.extend(alerts)
 
-        # If sending is enabled, send alerts to the alert processor
-        if self.send_alerts:
+        if self.enable_alert_processor:
             self.sinker.sink(alerts)
