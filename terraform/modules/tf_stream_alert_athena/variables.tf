@@ -37,3 +37,8 @@ variable "athena_data_buckets" {
 variable "prefix" {
   type = "string"
 }
+
+variable "refresh_interval" {
+  type    = "string"
+  default = "rate(10 minutes)"
+}
