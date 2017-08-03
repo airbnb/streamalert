@@ -13,14 +13,15 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-
 import json
 import os
 
 from collections import OrderedDict
 
+
 class ConfigError(Exception):
     pass
+
 
 def load_config(conf_dir='conf/'):
     """Load the configuration for StreamAlert.
@@ -58,23 +59,30 @@ def validate_config(config):
         - the sources contains either kinesis or s3 keys
         - each sources has a list of logs declared
     """
-    for config_key, settings in config.iteritems():
-        # check log declarations
-        if config_key == 'logs':
-            for log, attrs in settings.iteritems():
-                if not {'schema', 'parser'}.issubset(set(attrs.keys())):
-                    raise ConfigError('Schema or parser missing for {}'.format(log))
+    # Check the log declarations
+    for log, attrs in config['logs'].iteritems():
+        if 'schema' not in attrs:
+            raise ConfigError('The \'schema\' is missing for {}'.format(log))
 
-        # check sources attributes
-        elif config_key == 'sources':
-            if not set(settings.keys()).issubset({'kinesis', 's3', 'sns'}):
-                raise ConfigError('Sources missing \'kinesis\', \'s3\', or \'sns\' keys')
-            for log, attrs in settings.iteritems():
-                for entity, entity_attrs in attrs.iteritems():
-                    if 'logs' not in set(entity_attrs.keys()):
-                        raise ConfigError('Logs are not declared for {}'.format(entity))
-                    if len(entity_attrs['logs']) == 0:
-                        raise ConfigError('Log list is empty for {}'.format(entity))
+        if 'parser' not in attrs:
+            raise ConfigError('The \'parser\' is missing for {}'.format(log))
+
+    # check sources attributes
+    if not set(config['sources']).issubset({'kinesis', 's3', 'sns'}):
+        missing_sources = {'kinesis', 's3', 'sns'} - set(config['sources'])
+        raise ConfigError(
+            'Sources contains invalid key(s): %s',
+            ', '.join('\'{}\''.format(key) for key in missing_sources))
+
+    # check sources attributes
+    for attrs in config['sources'].values():
+        for entity, entity_attrs in attrs.iteritems():
+            if 'logs' not in entity_attrs:
+                raise ConfigError('Missing \'logs\' key for entity: {}'.format(entity))
+
+            if not entity_attrs['logs']:
+                raise ConfigError(
+                    'List of \'logs\' is empty for entity: {}'.format(entity))
 
     return True
 

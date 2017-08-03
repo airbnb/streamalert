@@ -13,19 +13,15 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+from collections import namedtuple
 
-import logging
-
-from collections import namedtuple, OrderedDict
-
+from stream_alert.rule_processor import LOGGER
 from stream_alert.rule_processor.parsers import get_parser
-
-logging.basicConfig()
-LOGGER = logging.getLogger('StreamAlert')
 
 # Set the below to True when we want to support matching on multiple schemas
 # and then log_patterns will be used as a fall back for key/value matching
 SUPPORT_MULTIPLE_SCHEMA_MATCHING = False
+
 
 class InvalidSchemaError(Exception):
     """Raise this exception if a declared schema field type does not match

@@ -13,14 +13,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-import logging
-
 from collections import namedtuple
 from copy import copy
 
-logging.basicConfig()
-LOGGER = logging.getLogger('StreamAlert')
-LOGGER.setLevel(logging.INFO)
+from stream_alert.rule_processor import LOGGER
+
 
 class StreamRules(object):
     """Container class for StreamAlert Rules

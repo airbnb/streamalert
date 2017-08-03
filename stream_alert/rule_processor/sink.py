@@ -14,14 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 import json
-import logging
-import sys
 
 import boto3
 from botocore.exceptions import ClientError
 
-logging.basicConfig()
-LOGGER = logging.getLogger('StreamAlert')
+from stream_alert.rule_processor import LOGGER
+
 
 def _json_dump(alert, indent_value=None):
     def json_dict_serializer(obj):
