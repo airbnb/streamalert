@@ -23,12 +23,6 @@ from stream_alert.rule_processor.parsers import get_parser
 SUPPORT_MULTIPLE_SCHEMA_MATCHING = False
 
 
-class InvalidSchemaError(Exception):
-    """Raise this exception if a declared schema field type does not match
-    the data passed."""
-    pass
-
-
 class StreamPayload(object):
     """Container class for the StreamAlert payload object.
 
