@@ -21,20 +21,9 @@ from botocore.exceptions import ClientError
 from stream_alert.rule_processor import LOGGER
 
 
-def _json_dump(alert, indent_value=None):
-    def json_dict_serializer(obj):
-        """Helper method for marshalling dictionary objects to JSON"""
-        return obj.__dict__
-
-    try:
-        return json.dumps(alert, indent=indent_value, default=json_dict_serializer)
-    except AttributeError as err:
-        LOGGER.error('An error occurred while dumping object to JSON: %s', err)
-        return ""
-
-
 class StreamSink(object):
     """StreamSink class is used for sending actual alerts to the alert processor"""
+
     def __init__(self, env):
         """StreamSink initializer
 
@@ -70,7 +59,12 @@ class StreamSink(object):
             }
         """
         for alert in alerts:
-            data = _json_dump(alert)
+            try:
+                data = json.dumps(alert, default=lambda o: o.__dict__)
+            except AttributeError as err:
+                LOGGER.error('An error occurred while dumping object to JSON: %s',
+                             err.message)
+                continue
 
             try:
                 response = self.client_lambda.invoke(
@@ -86,12 +80,12 @@ class StreamSink(object):
                                  self.function,
                                  err.response,
                                  data)
-                return
+                continue
 
             if response['ResponseMetadata']['HTTPStatusCode'] != 202:
                 LOGGER.error('Failed to send alert to \'%s\': %s',
                              self.function, data)
-                return
+                continue
 
             if self.env['lambda_alias'] != 'development':
                 LOGGER.info('Sent alert to \'%s\' with Lambda request ID \'%s\'',

@@ -13,75 +13,99 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+from datetime import datetime
+from mock import patch
 
-import random
-import base64
+from botocore.exceptions import ClientError
 
 from nose.tools import assert_equal
 
-import stream_alert.rule_processor.sink as sink
+from stream_alert.rule_processor.sink import StreamSink
+
+from stream_alert.rule_processor.config import load_env
+
+from unit.stream_alert_rule_processor.test_helpers import _get_mock_context
+
 
 class TestStreamSink(object):
     """Test class for StreamSink"""
     @classmethod
     def setup_class(cls):
         """Setup the class before any methods"""
-        cls.env = {
-            'lambda_region': 'us-east-1',
-            'account_id': '123456789012',
-            'lambda_function_name': 'unittest_prod_streamalert_rule_processor',
-            'lambda_alias': 'production'
-        }
+        patcher = patch('stream_alert.rule_processor.sink.boto3.client')
+        cls.boto_mock = patcher.start()
+        context = _get_mock_context()
+        env = load_env(context)
+        cls.sinker = StreamSink(env)
 
     @classmethod
     def teardown_class(cls):
         """Teardown the class after any methods"""
-        cls.env = None
+        cls.sinker = None
+        cls.boto_mock.stop()
 
-    @staticmethod
-    def test_json_from_dict():
-        """Sink SNS Messaging - Dictionary to JSON Marshalling"""
-        # Create a dictionary with an empty alert list
-        alert = {"test": "alert"}
-        json_message = sink._json_dump(alert)
+    def teardown(self):
+        """Teardown the class after each methods"""
+        self.sinker.env['lambda_alias'] = 'development'
 
-        # Test empty dictionary
-        assert_equal(json_message, '{"test": "alert"}')
+    def test_streamsink_init(self):
+        """StreamSink - Init"""
+        assert_equal(self.sinker.function, 'corp-prefix_prod_streamalert_alert_processor')
 
-        # Create a dictionary with a single alert in the list
-        alert = {
-            'record': {
-                'record_data_key01_01': "record_data_value01_01",
-                'record_data_key02_01': "record_data_value02_01"
-                },
-            'metadata': {
-                'rule_name': "test_rule_01",
-                'log': "payload_data_01",
-                'outputs': "rule.outputs_01",
-                'type': "payload_type_01",
-                'source': {
-                    'service': "payload_service_01",
-                    'entity': "payload_entity_01"
-                }
+    @patch('stream_alert.rule_processor.sink.LOGGER.exception')
+    def test_streamsink_sink_boto_error(self, log_mock):
+        """StreamSink - Boto Error"""
+
+        err_response = {'Error': {'Code': 100}}
+
+        # Add ClientError side_effect to mock
+        self.boto_mock.return_value.invoke.side_effect = ClientError(
+            err_response, 'operation')
+
+        self.sinker.sink(['alert!!!'])
+
+        log_mock.assert_called_with('An error occurred while sending alert to '
+                                    '\'%s:production\'. Error is: %s. Alert: %s',
+                                    'corp-prefix_prod_streamalert_alert_processor',
+                                    err_response,
+                                    '"alert!!!"')
+
+    @patch('stream_alert.rule_processor.sink.LOGGER.error')
+    def test_streamsink_sink_resp_error(self, log_mock):
+        """StreamSink - Boto Response Error"""
+        self.boto_mock.return_value.invoke.side_effect = [{
+            'ResponseMetadata': {'HTTPStatusCode': 201}}]
+
+        self.sinker.sink(['alert!!!'])
+
+        log_mock.assert_called_with('Failed to send alert to \'%s\': %s',
+                                    'corp-prefix_prod_streamalert_alert_processor',
+                                    '"alert!!!"')
+
+    @patch('stream_alert.rule_processor.sink.LOGGER.info')
+    def test_streamsink_sink_success(self, log_mock):
+        """StreamSink - Successful Sink"""
+        self.boto_mock.return_value.invoke.side_effect = [{
+            'ResponseMetadata': {
+                'HTTPStatusCode': 202,
+                'RequestId': 'reqID'
             }
-        }
+        }]
 
-        json_message = sink._json_dump(alert)
+        # Swap out the alias so the logging occurs
+        self.sinker.env['lambda_alias'] = 'production'
 
-        # Test with single alert entry
-        assert_equal(json_message, '{"record": {"record_data_key02_01": '
-                     '"record_data_value02_01", "record_data_key01_01": '
-                     '"record_data_value01_01"}, "metadata": {"source": '
-                     '{"service": "payload_service_01", "entity": '
-                     '"payload_entity_01"}, "rule_name": "test_rule_01", '
-                     '"type": "payload_type_01", "log": "payload_data_01", '
-                     '"outputs": "rule.outputs_01"}}')
+        self.sinker.sink(['alert!!!'])
 
-def get_payload(byte_size):
-    """Returns a base64 encoded random payload of (roughly) byte_size length
+        log_mock.assert_called_with('Sent alert to \'%s\' with Lambda request ID \'%s\'',
+                                    'corp-prefix_prod_streamalert_alert_processor',
+                                    'reqID')
 
-    Args:
-        byte_size: The number of bytes to return after base64 encoding
-    """
-    size_before_b64 = (byte_size / 4) * 3
-    return base64.b64encode(bytearray(random.getrandbits(8) for _ in range(size_before_b64)))
+    @patch('stream_alert.rule_processor.sink.LOGGER.error')
+    def test_streamsink_sink_bad_obj(self, log_mock):
+        """StreamSink - JSON Dump Bad Object"""
+        self.sinker.sink([datetime.utcnow()])
+
+        log_mock.assert_called_with(
+            'An error occurred while dumping object to JSON: %s',
+            "'datetime.datetime' object has no attribute '__dict__'")

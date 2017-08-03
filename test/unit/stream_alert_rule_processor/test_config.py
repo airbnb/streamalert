@@ -20,7 +20,7 @@ limitations under the License.
 from collections import namedtuple
 from mock import mock_open, patch
 
-from nose.tools import assert_equal, raises
+from nose.tools import assert_equal, assert_is_none, raises
 
 from stream_alert.rule_processor.config import (
     ConfigError,
@@ -43,18 +43,22 @@ def test_load_config_invalid():
         load_config()
 
 
-def test_validate_config_valid():
-    """Config Validator - Valid Config"""
+@raises(ConfigError)
+def test_config_no_schema():
+    """Config Validator - No Schema in Log"""
     # Load a valid config
     config = _get_valid_config()
 
-    validate_result = _validate_config(config)
-    assert_equal(validate_result, True)
+    # Remove the 'schema' keys from the config
+    config['logs']['json_log'].pop('schema')
+    config['logs']['csv_log'].pop('schema')
+
+    _validate_config(config)
 
 
 @raises(ConfigError)
 def test_config_no_parsers():
-    """Config Validator - No Parsers in Log"""
+    """Config Validator - No Parser in Log"""
     # Load a valid config
     config = _get_valid_config()
 

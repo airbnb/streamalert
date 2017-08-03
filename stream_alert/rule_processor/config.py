@@ -85,8 +85,6 @@ def _validate_config(config):
                 raise ConfigError(
                     'List of \'logs\' is empty for entity: {}'.format(entity))
 
-    return True
-
 
 def load_env(context):
     """Get the current environment for the running Lambda function.
