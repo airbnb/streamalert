@@ -140,13 +140,11 @@ class StreamAlertAthenaClient(object):
         """
         LOGGER.debug('Executing query: %s', kwargs['query'])
         query_execution_resp = self.athena_client.start_query_execution(
-            QueryString=kwargs['query'],
-            QueryExecutionContext={'Database': kwargs.get('database', self.DATABASE_DEFAULT)},
-            ResultConfiguration={'OutputLocation': '{}/{}'.format(
-                self.athena_results_bucket,
-                self.athena_results_key
-            )}
-        )
+            QueryString=kwargs['query'], QueryExecutionContext={
+                'Database': kwargs.get(
+                    'database', self.DATABASE_DEFAULT)}, ResultConfiguration={
+                'OutputLocation': '{}/{}'.format(
+                    self.athena_results_bucket, self.athena_results_key)})
 
         query_execution_result = self.check_query_status(
             query_execution_resp['QueryExecutionId'])
@@ -181,12 +179,13 @@ class StreamAlertAthenaClient(object):
 
         if query_success and query_resp['ResultSet']['Rows']:
             return True
-        else:
-            LOGGER.error('The \'%s\' database does not exist. '
-                         'Create it with the following command: \n'
-                         '$ python stream_alert_cli.py athena create-db',
-                         database)
-            return False
+
+        LOGGER.error('The \'%s\' database does not exist. '
+                     'Create it with the following command: \n'
+                     '$ python stream_alert_cli.py athena create-db',
+                     database)
+
+        return False
 
     def check_table_exists(self, table_name):
         """Verify a given StreamAlert Athena table exists."""
@@ -197,13 +196,13 @@ class StreamAlertAthenaClient(object):
 
         if query_success and query_resp['ResultSet']['Rows']:
             return True
-        else:
-            LOGGER.info('The streamalert table \'%s\' does not exist. '
-                        'For alert buckets, create it with the following command: \n'
-                        '$ python stream_alert_cli.py athena create-table '
-                        '--type alerts --bucket s3.bucket.id',
-                        table_name)
-            return False
+
+        LOGGER.info('The streamalert table \'%s\' does not exist. '
+                    'For alert buckets, create it with the following command: \n'
+                    '$ python stream_alert_cli.py athena create-table '
+                    '--type alerts --bucket s3.bucket.id',
+                    table_name)
+        return False
 
     def repair_hive_table(self):
         """Execute a MSCK REPAIR TABLE on a given Athena table"""
@@ -220,7 +219,7 @@ class StreamAlertAthenaClient(object):
                 for row in query_resp['ResultSet']['Rows']:
                     LOGGER.info(row['Data'])
             else:
-                logger.error('Partition refresh of the Athena table '
+                LOGGER.error('Partition refresh of the Athena table '
                              '%s has failed.', athena_table)
 
     @staticmethod
