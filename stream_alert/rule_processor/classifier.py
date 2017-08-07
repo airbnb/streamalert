@@ -308,7 +308,9 @@ class StreamClassifier(object):
             # Convert data types per the schema
             # Use the root schema for the parser due to updates caused by
             # configuration settings such as envelope_keys and optional_keys
-            if not self._convert_type(data, valid_parse.parser.type(), valid_parse.root_schema, valid_parse.parser.options):
+            if not self._convert_type(
+                    parsed_data_value,
+                    valid_parse.root_schema):
                 return False
 
         payload.log_source = valid_parse.log_name
@@ -317,7 +319,8 @@ class StreamClassifier(object):
 
         return True
 
-    def _convert_type(self, payload, parser_type, schema, options):
+    @classmethod
+    def _convert_type(cls, payload, schema):
         """Convert a parsed payload's values into their declared types.
 
         If the schema is incorrectly defined for a particular field,
@@ -325,7 +328,7 @@ class StreamClassifier(object):
         invalid.
 
         Args:
-            parsed_data: Parsed payload dict
+            payload: Parsed payload dict
             schema: data schema for a specific log source
             options: parser options dict
 
@@ -344,14 +347,16 @@ class StreamClassifier(object):
                 try:
                     payload[key] = int(payload[key])
                 except ValueError:
-                    LOGGER.error('Invalid schema - %s is not an int', key)
+                    LOGGER.error('Invalid schema. Value for key [%s] is not an int: %s',
+                                 key, payload[key])
                     return False
 
             elif value == 'float':
                 try:
                     payload[key] = float(payload[key])
                 except ValueError:
-                    LOGGER.error('Invalid schema - %s is not a float', key)
+                    LOGGER.error('Invalid schema. Value for key [%s] is not a float: %s',
+                                 key, payload[key])
                     return False
 
             elif value == 'boolean':
@@ -359,17 +364,14 @@ class StreamClassifier(object):
 
             elif isinstance(value, dict):
                 if not value:
-                    continue # allow empty maps (dict)
+                    continue  # allow empty maps (dict)
 
-                # handle nested values
-                # skip the 'streamalert:envelope_keys' key that we've added during parsing
-                if key == 'streamalert:envelope_keys' and isinstance(payload[key], dict):
+                # Skip the values for the 'streamalert:envelope_keys' key that we've
+                # added during parsing if the do not conform to being a dict
+                if key == 'streamalert:envelope_keys' and not isinstance(payload[key], dict):
                     continue
 
-                if 'log_patterns' in options:
-                    options['log_patterns'] = options['log_patterns'][key]
-
-                self._convert_type(payload[key], parser_type, schema[key], options)
+                cls._convert_type(payload[key], schema[key])
 
             elif isinstance(value, list):
                 pass
