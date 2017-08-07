@@ -15,16 +15,19 @@ limitations under the License.
 '''
 import json
 
+from logging import DEBUG as log_level_debug
+
 from stream_alert.rule_processor import LOGGER
 from stream_alert.rule_processor.config import load_config, load_env
-from stream_alert.rule_processor.classifier import StreamPayload, StreamClassifier
-from stream_alert.rule_processor.pre_parsers import StreamPreParsers
+from stream_alert.rule_processor.classifier import StreamClassifier
+from stream_alert.rule_processor.payload import load_stream_payload
 from stream_alert.rule_processor.rules_engine import StreamRules
 from stream_alert.rule_processor.sink import StreamSink
 
 
 class StreamAlert(object):
     """Wrapper class for handling all StreamAlert classificaiton and processing"""
+
     def __init__(self, context, enable_alert_processor=True):
         """
         Args:
@@ -34,10 +37,21 @@ class StreamAlert(object):
                 own methods, 'enable_alert_processor' can be set to False to suppress
                 sending with the StreamAlert alert processor.
         """
+        # Load the config. Validation occurs during load, which will
+        # raise exceptions on any ConfigErrors
+        config = load_config()
+
+        # Load the environment from the context arn
         self.env = load_env(context)
-        self.enable_alert_processor = enable_alert_processor
-        # Instantiate the sink here to handle sending the triggered alerts to the alert processor
+
+        # Instantiate the sink here to handle sending the triggered alerts to the
+        # alert processor
         self.sinker = StreamSink(self.env)
+
+        # Instantiate a classifier that is used for this run
+        self.classifier = StreamClassifier(config=config)
+
+        self.enable_alert_processor = enable_alert_processor
         self._failed_record_count = 0
         self._alerts = []
 
@@ -56,30 +70,46 @@ class StreamAlert(object):
         Returns:
             [boolean] True if all logs being parsed match a schema
         """
-        LOGGER.debug('Number of Records: %d', len(event.get('Records', [])))
+        records = event.get('Records', [])
+        LOGGER.debug('Number of Records: %d', len(records))
+        if not records:
+            return False
 
-        config = load_config()
+        for raw_record in records:
+            # Get the service and entity from the payload. If the service/entity
+            # is not in our config, log and error and go onto the next record
+            service, entity = self.classifier.extract_service_and_entity(raw_record)
+            if not service:
+                LOGGER.error('No valid service found in payload\'s raw record')
 
-        for record in event.get('Records', []):
-            payload = StreamPayload(raw_record=record)
-            classifier = StreamClassifier(config=config)
+            if not entity:
+                LOGGER.error(
+                    'Unable to map entity from payload\'s raw record for service %s',
+                    service)
 
-            # If the kinesis stream, s3 bucket, or sns topic is not in our config,
-            # go onto the next record
-            if not classifier.map_source(payload):
+            if not (service and entity):
                 continue
 
-            if payload.service == 's3':
-                self._s3_process(payload, classifier)
-            elif payload.service == 'kinesis':
-                self._kinesis_process(payload, classifier)
-            elif payload.service == 'sns':
-                self._sns_process(payload, classifier)
-            else:
-                LOGGER.error('Unsupported service: %s', payload.service)
+            # If the payload's service and entity are found in the config and
+            # contains logs then load the sources for this log
+            if not self.classifier.load_sources(service, entity):
+                continue
+
+            # Create the StreamPayload to use for encapsulating parsed info
+            payload = load_stream_payload(service, entity, raw_record)
+            if not payload:
+                continue
+
+            self._process_alerts(payload)
+
+        LOGGER.debug('Invalid record count: %d', self._failed_record_count)
 
         LOGGER.debug('%s alerts triggered', len(self._alerts))
-        LOGGER.debug('\n%s\n', json.dumps(self._alerts, indent=4))
+
+        # Check if debugging logging is on before json dumping alerts since
+        # this can be time consuming if there are a lot of alerts
+        if self._alerts and LOGGER.isEnabledFor(log_level_debug):
+            LOGGER.debug('Alerts:\n%s', json.dumps(self._alerts, indent=2))
 
         return self._failed_record_count == 0
 
@@ -91,60 +121,35 @@ class StreamAlert(object):
         """
         return self._alerts
 
-    def _kinesis_process(self, payload, classifier):
-        """Process Kinesis data for alerts"""
-        data = StreamPreParsers.pre_parse_kinesis(payload.raw_record)
-        self._process_alerts(classifier, payload, data)
-
-    def _s3_process(self, payload, classifier):
-        """Process S3 data for alerts"""
-        s3_file, s3_object_size = StreamPreParsers.pre_parse_s3(payload.raw_record)
-        count, processed_size = 0, 0
-        for data in StreamPreParsers.read_s3_file(s3_file):
-            payload.refresh_record(data)
-            self._process_alerts(classifier, payload, data)
-            # Add the current data to the total processed size, +1 to account for line feed
-            processed_size += (len(data) + 1)
-            count += 1
-            # Log an info message on every 100 lines processed
-            if count % 100 == 0:
-                avg_record_size = ((processed_size - 1) / count)
-                approx_record_count = s3_object_size / avg_record_size
-                LOGGER.info('Processed %s records out of an approximate total of %s '
-                            '(average record size: %s bytes, total size: %s bytes)',
-                            count, approx_record_count, avg_record_size, s3_object_size)
-
-    def _sns_process(self, payload, classifier):
-        """Process SNS data for alerts"""
-        data = StreamPreParsers.pre_parse_sns(payload.raw_record)
-        self._process_alerts(classifier, payload, data)
-
-    def _process_alerts(self, classifier, payload, data):
+    def _process_alerts(self, payload):
         """Process records for alerts and send them to the correct places
 
         Args:
-            classifier [StreamClassifier]: Handler for classifying a record's data
             payload [StreamPayload]: StreamAlert payload object being processed
-            data [string]: Pre parsed data string from a raw_event to be parsed
         """
-        classifier.classify_record(payload, data)
-        if not payload.valid:
-            if self.env['lambda_alias'] != 'development':
-                LOGGER.error('Record does not match any defined schemas: %s\n%s', payload, data)
-            self._failed_record_count += 1
-            return
+        for record in payload.pre_parse():
+            self.classifier.classify_record(record)
+            if not record.valid:
+                if self.env['lambda_alias'] != 'development':
+                    LOGGER.error('Record does not match any defined schemas: %s\n%s',
+                                 record, record.pre_parsed_record)
 
-        alerts = StreamRules.process(payload)
+                self._failed_record_count += 1
+                continue
 
-        LOGGER.debug('Processed %d valid record(s) that resulted in %d alert(s).',
-                     len(payload.records),
-                     len(alerts))
+            LOGGER.debug('Payload: %s', record)
 
-        if not alerts:
-            return
+            record_alerts = StreamRules.process(record)
 
-        # Extend the list of alerts with any new ones so they can be returned
-        self._alerts.extend(alerts)
+            LOGGER.debug('Processed %d valid record(s) that resulted in %d alert(s).',
+                         len(payload.records),
+                         len(record_alerts))
 
-        if self.enable_alert_processor:
-            self.sinker.sink(alerts)
+            if not record_alerts:
+                continue
+
+            # Extend the list of alerts with any new ones so they can be returned
+            self._alerts.extend(record_alerts)
+
+            if self.enable_alert_processor:
+                self.sinker.sink(record_alerts)
