@@ -20,195 +20,98 @@ limitations under the License.
 from collections import namedtuple
 from mock import mock_open, patch
 
-from nose.tools import assert_equal, raises
+from nose.tools import assert_equal, assert_is_none, raises
 
 from stream_alert.rule_processor.config import (
     ConfigError,
     load_config,
     load_env,
-    validate_config,
+    _validate_config,
 )
+
+from unit.stream_alert_rule_processor.test_helpers import (
+    _get_valid_config,
+    _get_mock_context
+)
+
 
 @raises(ConfigError)
 def test_load_config_invalid():
     """Config Validator - Load Config - Invalid"""
-    m = mock_open()
-    with patch('__builtin__.open', m, create=True):
-        with open('conf/logs.json', 'w') as conf_logs:
-            conf_logs.write('test logs string that will throw an error')
-        with open('conf/sources.json', 'w') as conf_sources:
-            conf_sources.write('test sources string that will throw an error')
+    mocker = mock_open(read_data='test string that will throw an error')
+    with patch('__builtin__.open', mocker):
         load_config()
 
 
-def test_validate_config_valid():
-    """Config Validator - Valid Config"""
-    config = {
-        'logs': {
-            'json_log': {
-                'schema': {
-                    'name': 'string'
-                },
-                'parser': 'json'
-            },
-            'csv_log': {
-                'schema': {
-                    'data': 'string',
-                    'uid': 'integer'
-                },
-                'parser': 'csv'
-            }
-        },
-        'sources': {
-            'kinesis': {
-                'stream_1': {
-                    'logs': [
-                        'json_log',
-                        'csv_log'
-                    ]
-                }
-            }
-        }
-    }
+@raises(ConfigError)
+def test_config_no_schema():
+    """Config Validator - No Schema in Log"""
+    # Load a valid config
+    config = _get_valid_config()
 
-    validate_result = validate_config(config)
-    assert_equal(validate_result, True)
+    # Remove the 'schema' keys from the config
+    config['logs']['json_log'].pop('schema')
+    config['logs']['csv_log'].pop('schema')
+
+    _validate_config(config)
 
 
 @raises(ConfigError)
-def test_validate_config_no_parsers():
-    """Config Validator - No Parsers in Log"""
-    config = {
-        'logs': {
-            'json_log': {
-                'schema': {
-                    'name': 'string'
-                }
-            },
-            'csv_log': {
-                'schema': {
-                    'data': 'string',
-                    'uid': 'integer'
-                }
-            }
-        },
-        'sources': {
-            'kinesis': {
-                'stream_1': {
-                    'logs': [
-                        'json_log',
-                        'csv_log'
-                    ]
-                }
-            }
-        }
-    }
+def test_config_no_parsers():
+    """Config Validator - No Parser in Log"""
+    # Load a valid config
+    config = _get_valid_config()
 
-    validate_config(config)
+    # Remove the 'parser' keys from the config
+    config['logs']['json_log'].pop('parser')
+    config['logs']['csv_log'].pop('parser')
+
+    _validate_config(config)
 
 
 @raises(ConfigError)
-def test_validate_config_no_logs_key():
+def test_config_no_logs_key():
     """Config Validator - No Logs Key in Source"""
-    config = {
-        'logs': {
-            'json_log': {
-                'schema': {
-                    'name': 'string'
-                }
-            },
-            'csv_log': {
-                'schema': {
-                    'data': 'string',
-                    'uid': 'integer'
-                }
-            }
-        },
-        'sources': {
-            'kinesis': {
-                'stream_1': {}
-            }
-        }
-    }
+    # Load a valid config
+    config = _get_valid_config()
 
-    validate_config(config)
+    # Remove everything from the sources entry
+    config['sources']['kinesis']['stream_1'] = {}
+
+    _validate_config(config)
 
 
 @raises(ConfigError)
-def test_validate_config_empty_logs_list():
+def test_config_empty_logs_list():
     """Config Validator - Empty Logs List in Source"""
-    config = {
-        'logs': {
-            'json_log': {
-                'schema': {
-                    'name': 'string'
-                }
-            },
-            'csv_log': {
-                'schema': {
-                    'data': 'string',
-                    'uid': 'integer'
-                }
-            }
-        },
-        'sources': {
-            'kinesis': {
-                'stream_1': {
-                    'logs': []
-                }
-            }
-        }
-    }
+    # Load a valid config
+    config = _get_valid_config()
 
-    validate_config(config)
+    # Set the logs key to an empty list
+    config['sources']['kinesis']['stream_1']['logs'] = []
+
+    _validate_config(config)
 
 
 @raises(ConfigError)
-def test_validate_config_invalid_datasources():
+def test_config_invalid_datasources():
     """Config Validator - Invalid Datasources"""
-    config = {
-        'logs': {
-            'json_log': {
-                'schema': {
-                    'name': 'string'
-                }
-            },
-            'csv_log': {
-                'schema': {
-                    'data': 'string',
-                    'uid': 'integer'
-                }
-            }
-        },
-        'sources': {
-            'sqs': {
-                'queue_1': {}
-            }
-        }
-    }
+    # Load a valid config
+    config = _get_valid_config()
 
-    validate_config(config)
+    # Set the sources value to contain an invalid data source ('sqs')
+    config['sources'] = {'sqs': {'queue_1': {}}}
+
+    _validate_config(config)
 
 
 def test_load_env():
     """Config - Environment Loader"""
-    context = namedtuple('Context', ['invoked_function_arn'])
-    context.invoked_function_arn = ('arn:aws:lambda:us-east-1:555555555555:'
-                                    'function:streamalert_testing:production')
+    context = _get_mock_context()
 
     env = load_env(context)
     assert_equal(env['lambda_region'], 'us-east-1')
-    assert_equal(env['account_id'], '555555555555')
-    assert_equal(env['lambda_function_name'], 'streamalert_testing')
-    assert_equal(env['lambda_alias'], 'production')
-
-
-def test_load_env_development():
-    """Config - Load Development Environment"""
-    env = load_env(None)
-
-    assert_equal(env['lambda_alias'], 'development')
-    assert_equal(env['lambda_function_name'], 'test_streamalert_rule_processor')
-    assert_equal(env['lambda_region'], 'us-east-1')
     assert_equal(env['account_id'], '123456789012')
-
+    assert_equal(env['lambda_function_name'],
+                 'corp-prefix_prod_streamalert_rule_processor')
+    assert_equal(env['lambda_alias'], 'development')

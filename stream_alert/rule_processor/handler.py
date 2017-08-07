@@ -1,17 +1,26 @@
-import json
-import logging
-import os
+'''
+Copyright 2017-present, Airbnb Inc.
 
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+'''
+import json
+
+from stream_alert.rule_processor import LOGGER
 from stream_alert.rule_processor.config import load_config, load_env
 from stream_alert.rule_processor.classifier import StreamPayload, StreamClassifier
 from stream_alert.rule_processor.pre_parsers import StreamPreParsers
 from stream_alert.rule_processor.rules_engine import StreamRules
 from stream_alert.rule_processor.sink import StreamSink
-
-logging.basicConfig()
-LEVEL = os.environ.get('LOGGER_LEVEL', 'INFO')
-LOGGER = logging.getLogger('StreamAlert')
-LOGGER.setLevel(LEVEL.upper())
 
 
 class StreamAlert(object):

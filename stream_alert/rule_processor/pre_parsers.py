@@ -15,7 +15,6 @@ limitations under the License.
 '''
 import base64
 import gzip
-import logging
 import os
 import tempfile
 import time
@@ -23,11 +22,12 @@ import urllib
 
 import boto3
 
-logging.basicConfig()
-LOGGER = logging.getLogger('StreamAlert')
+from stream_alert.rule_processor import LOGGER
+
 
 class S3ObjectSizeError(Exception):
     pass
+
 
 class StreamPreParsers(object):
     """A collection of pre-parsers to get data for classificaiton
