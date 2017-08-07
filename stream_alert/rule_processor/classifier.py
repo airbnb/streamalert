@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-from collections import namedtuple
+from collections import namedtuple, OrderedDict
 
 from stream_alert.rule_processor import LOGGER
 from stream_alert.rule_processor.parsers import get_parser
@@ -180,15 +180,11 @@ class StreamClassifier(object):
                 }
             }
         """
-        config_logs = self.config['logs']
+        # Get the logs configuration
+        logs = self._config['logs']
 
-        for log_source in config_logs:
-            category = log_source.split(':')[0]
-            # Remove this log type if it's not one of the sources for this entity
-            if not category in self._entity_log_sources:
-                config_logs.pop(log_source)
-
-        return config_logs
+        return OrderedDict((source, logs[source]) for source in logs.keys()
+                           if source.split(':')[0] in self._entity_log_sources)
 
     def classify_record(self, payload):
         """Classify and type raw record passed into StreamAlert.
