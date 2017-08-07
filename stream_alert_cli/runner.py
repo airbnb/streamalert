@@ -252,7 +252,7 @@ def terraform_handler(options):
 
         LOGGER_CLI.info('Deploying Lambda Functions')
         # deploy both lambda functions
-        deploy(deploy_opts('all'))
+        deploy(deploy_opts(['rule', 'alert']))
         # create all remainder infrastructure
 
         LOGGER_CLI.info('Building Remainder Infrastructure')
@@ -500,24 +500,24 @@ def deploy(options):
         return athena_package
 
 
-    if processor == 'rule':
+    if 'rule' in processor:
         targets.extend(['module.stream_alert_{}'.format(x)
                    for x in CONFIG.clusters()])
 
         packages.append(_deploy_rule_processor())
 
-    elif processor == 'alert':
+    if 'alert' in processor:
         targets.extend(['module.stream_alert_{}'.format(x)
                    for x in CONFIG.clusters()])
 
         packages.append(_deploy_alert_processor())
 
-    elif processor == 'athena':
+    if 'athena' in processor:
         targets.append('module.stream_alert_athena')
 
         packages.append(_deploy_athena_partition_refresh())
-    
-    elif processor == 'all':
+
+    if 'all' in processor:
         targets.extend(['module.stream_alert_{}'.format(x)
                    for x in CONFIG.clusters()])
         targets.append('module.stream_alert_athena')
