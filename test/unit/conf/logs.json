@@ -1,4 +1,11 @@
 {
+  "unit_test_simple_log": {
+    "parser": "json",
+    "schema": {
+      "unit_key_01": "integer",
+      "unit_key_02": "string"
+    }
+  },
   "test_log_type_json": {
     "parser": "json",
     "schema": {
