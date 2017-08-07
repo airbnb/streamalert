@@ -20,7 +20,6 @@ import shutil
 import sys
 
 from collections import namedtuple
-from datetime import datetime
 from getpass import getpass
 
 from stream_alert_cli.package import RuleProcessorPackage, AlertProcessorPackage, AthenaPackage
@@ -110,25 +109,26 @@ def athena_handler(options):
                 return
 
             query = ('CREATE EXTERNAL TABLE alerts ('
-                        'log_source string,'
-                        'log_type string,'
-                        'outputs array<string>,'
-                        'record string,'
-                        'rule_description string,'
-                        'rule_name string,'
-                        'source_entity string,'
-                        'source_service string)'
+                     'log_source string,'
+                     'log_type string,'
+                     'outputs array<string>,'
+                     'record string,'
+                     'rule_description string,'
+                     'rule_name string,'
+                     'source_entity string,'
+                     'source_service string)'
                      'PARTITIONED BY (dt string)'
                      'ROW FORMAT SERDE \'org.openx.data.jsonserde.JsonSerDe\''
                      'LOCATION \'s3://{bucket}/alerts/\''.format(bucket=options.bucket))
 
-            create_table_success, create_table_result = athena_client.run_athena_query(
+            create_table_success, _ = athena_client.run_athena_query(
                 query=query,
                 database='streamalert'
             )
 
             if create_table_success:
-                CONFIG['lambda']['athena_partition_refresh_config']['refresh_type']['repair_hive_table'][options.bucket] = 'alerts'
+                CONFIG['lambda']['athena_partition_refresh_config'] \
+                    ['refresh_type']['repair_hive_table'][options.bucket] = 'alerts'
                 CONFIG.write()
                 LOGGER_CLI.info('The alerts table was successfully created!')
 
@@ -159,7 +159,7 @@ def configure_handler(options):
         options [named_tuple]: ArgParse command result
     """
     if options.config_key == 'prefix':
-        if type(options.config_key) not in (unicode, str):
+        if isinstance(options.config_key, (unicode, str)):
             LOGGER_CLI.error('Invalid prefix type, must be string')
             return
         CONFIG.set_prefix(options.config_value)
@@ -425,7 +425,8 @@ def rollback(options):
                 current_vers = int(current_vers)
                 if current_vers > 1:
                     new_vers = current_vers - 1
-                    CONFIG['clusters'][cluster]['modules']['stream_alert'][lambda_function]['current_version'] = new_vers
+                    CONFIG['clusters'][cluster]['modules']['stream_alert'] \
+                        [lambda_function]['current_version'] = new_vers
                     CONFIG.write()
 
     targets = ['module.stream_alert_{}'.format(x)
@@ -460,11 +461,11 @@ def deploy(options):
                 published = LambdaVersion(config=CONFIG,
                                           package=package,
                                           clustered_deploy=False
-                                          ).publish_function()
+                                         ).publish_function()
             else:
                 published = LambdaVersion(config=CONFIG,
                                           package=package
-                                          ).publish_function()
+                                         ).publish_function()
             if not published:
                 return False
 
@@ -501,13 +502,13 @@ def deploy(options):
 
     if 'rule' in processor:
         targets.extend(['module.stream_alert_{}'.format(x)
-                   for x in CONFIG.clusters()])
+                        for x in CONFIG.clusters()])
 
         packages.append(_deploy_rule_processor())
 
     if 'alert' in processor:
         targets.extend(['module.stream_alert_{}'.format(x)
-                   for x in CONFIG.clusters()])
+                        for x in CONFIG.clusters()])
 
         packages.append(_deploy_alert_processor())
 
@@ -518,7 +519,7 @@ def deploy(options):
 
     if 'all' in processor:
         targets.extend(['module.stream_alert_{}'.format(x)
-                   for x in CONFIG.clusters()])
+                        for x in CONFIG.clusters()])
         targets.append('module.stream_alert_athena')
 
         packages.append(_deploy_rule_processor())
