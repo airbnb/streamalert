@@ -606,11 +606,11 @@ def stream_alert_test(options, config=None):
             LOGGER_SA.addFilter(TestingSuppressFilter())
 
         # Check if the rule processor should be run for these tests
-        test_rules = (run_options.get('processor') in {'rule', 'all'} or
+        test_rules = (set(run_options.get('processor')).issubset({'rule', 'all'}) or
                       run_options.get('command') == 'live-test')
 
         # Check if the alert processor should be run for these tests
-        test_alerts = (run_options.get('processor') in {'alert', 'all'} or
+        test_alerts = (set(run_options.get('processor')).issubset({'alert', 'all'}) or
                        run_options.get('command') == 'live-test')
 
         rule_proc_tester = RuleProcessorTester(context, test_rules)

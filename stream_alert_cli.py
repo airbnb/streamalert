@@ -222,6 +222,7 @@ Examples:
         '--processor',
         choices=['alert', 'all', 'athena', 'rule'],
         help=argparse_suppress,
+        action='append',
         required=True
     )
 
