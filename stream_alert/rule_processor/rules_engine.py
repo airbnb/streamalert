@@ -64,8 +64,12 @@ class StreamRules(object):
             matchers = opts.get('matchers')
             req_subkeys = opts.get('req_subkeys')
 
-            if not all([logs, outputs]):
-                LOGGER.error('Invalid rule [%s]', rule_name)
+            if not logs:
+                LOGGER.error('Invalid rule [%s] - rule must have \'logs\' declared', rule_name)
+                return
+
+            if not outputs:
+                LOGGER.error('Invalid rule [%s] - rule must have \'outputs\' declared', rule_name)
                 return
 
             if rule_name in cls.__rules:
@@ -145,7 +149,7 @@ class StreamRules(object):
             rule_result = rule.rule_function(record)
         except Exception as e:
             rule_result = False
-            LOGGER.exception('%s: %s', rule.rule_function.__name__, e.message)
+            LOGGER.exception('Encountered error with rule: %s', rule.rule_function.__name__)
         return rule_result
 
     @classmethod
@@ -193,11 +197,10 @@ class StreamRules(object):
         alerts = []
         payload = copy(input_payload)
 
-        for _, rule_attrs in cls.__rules.iteritems():
-            if payload.log_source in rule_attrs.logs:
-                rules.append(rule_attrs)
+        rules = [rule_attrs for rule_attrs in cls.__rules.values()
+                 if payload.log_source in rule_attrs.logs]
 
-        if len(rules) == 0:
+        if not rules:
             LOGGER.debug('No rules to process for %s', payload)
             return alerts
 
@@ -223,7 +226,7 @@ class StreamRules(object):
                         'log_source': str(payload.log_source),
                         'log_type': payload.type,
                         'outputs': rule.outputs,
-                        'source_service': payload.service,
+                        'source_service': payload.service(),
                         'source_entity': payload.entity
                     }
                     alerts.append(alert)
