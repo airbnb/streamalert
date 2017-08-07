@@ -31,7 +31,9 @@ def _get_mock_context():
 
 
 def _get_valid_config():
-    """Helper function to return a config that is valid
+    """Helper function to return a valid config for the rule processor. This
+    simulates what stream_alert.rule_processor.load_config will return in a
+    very simplified format.
 
     Returns:
         [dict] contents of a valid config file

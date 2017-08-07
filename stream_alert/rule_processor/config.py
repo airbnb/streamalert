@@ -35,7 +35,7 @@ def load_config(conf_dir='conf/'):
     key denotes the name of the log type, and includes 'keys' used to match
     rules to log fields.
     """
-    conf_files = {'sources', 'logs'}
+    conf_files = ('sources', 'logs')
     config = dict()
     for base_name in conf_files:
         path = '{}.json'.format(os.path.join(conf_dir, base_name))
@@ -68,14 +68,17 @@ def _validate_config(config):
         if 'parser' not in attrs:
             raise ConfigError('The \'parser\' is missing for {}'.format(log))
 
-    # check sources attributes
-    if not set(config['sources']).issubset({'kinesis', 's3', 'sns'}):
-        missing_sources = {'kinesis', 's3', 'sns'} - set(config['sources'])
+    # Check if the defined sources are supported and report any invalid entries
+    supported_sources = {'kinesis', 's3', 'sns'}
+    if not set(config['sources']).issubset(supported_sources):
+        missing_sources = supported_sources - set(config['sources'])
         raise ConfigError(
-            'Sources contains invalid key(s): %s',
-            ', '.join('\'{}\''.format(key) for key in missing_sources))
+            'The \'sources.json\' file contains invalid source entries: %s ',
+            'The following sources are supported: %s',
+            ', '.join('\'{}\''.format(source) for source in missing_sources),
+            ', '.join('\'{}\''.format(source) for source in supported_sources))
 
-    # check sources attributes
+    # Iterate over each defined source and make sure the required subkeys exist
     for attrs in config['sources'].values():
         for entity, entity_attrs in attrs.iteritems():
             if 'logs' not in entity_attrs:

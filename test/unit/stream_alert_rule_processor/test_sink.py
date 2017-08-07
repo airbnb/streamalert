@@ -104,8 +104,10 @@ class TestStreamSink(object):
     @patch('stream_alert.rule_processor.sink.LOGGER.error')
     def test_streamsink_sink_bad_obj(self, log_mock):
         """StreamSink - JSON Dump Bad Object"""
-        self.sinker.sink([datetime.utcnow()])
+        bad_object = datetime.utcnow()
+        self.sinker.sink([bad_object])
 
         log_mock.assert_called_with(
-            'An error occurred while dumping object to JSON: %s',
-            "'datetime.datetime' object has no attribute '__dict__'")
+            'An error occurred while dumping alert to JSON: %s Alert: %s',
+            '\'datetime.datetime\' object has no attribute \'__dict__\'',
+            bad_object)

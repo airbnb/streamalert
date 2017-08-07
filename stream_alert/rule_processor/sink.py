@@ -62,8 +62,10 @@ class StreamSink(object):
             try:
                 data = json.dumps(alert, default=lambda o: o.__dict__)
             except AttributeError as err:
-                LOGGER.error('An error occurred while dumping object to JSON: %s',
-                             err.message)
+                LOGGER.error('An error occurred while dumping alert to JSON: %s '
+                             'Alert: %s',
+                             err.message,
+                             alert)
                 continue
 
             try:

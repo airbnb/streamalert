@@ -32,10 +32,9 @@ from stream_alert_cli.version import LambdaVersion
 from stream_alert_cli.terraform_generate import terraform_generate
 import stream_alert_cli.outputs as config_outputs
 
-from stream_alert.alert_processor import __version__ as alert_processor_version
+from stream_alert import __version__ as current_version
 from stream_alert.alert_processor.outputs import get_output_dispatcher
 from stream_alert.athena_partition_refresh.main import StreamAlertAthenaClient
-from stream_alert.rule_processor import __version__ as rule_processor_version
 
 
 CONFIG = CLIConfig()
@@ -475,7 +474,7 @@ def deploy(options):
         """Create Rule Processor package and publish versions"""
         rule_package = RuleProcessorPackage(
             config=CONFIG,
-            version=rule_processor_version
+            version=current_version
         )
         rule_package.create_and_upload()
         return rule_package
@@ -484,7 +483,7 @@ def deploy(options):
         """Create Alert Processor package and publish versions"""
         alert_package = AlertProcessorPackage(
             config=CONFIG,
-            version=alert_processor_version
+            version=current_version
         )
         alert_package.create_and_upload()
         return alert_package
@@ -494,7 +493,7 @@ def deploy(options):
         """Create Athena Partition Refresh package and publish"""
         athena_package = AthenaPackage(
             config=CONFIG,
-            version=alert_processor_version
+            version=current_version
         )
         athena_package.create_and_upload()
         return athena_package
