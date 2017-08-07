@@ -16,12 +16,20 @@ limitations under the License.
 import base64
 import json
 
-from nose.tools import assert_equal, assert_list_equal
+from nose.tools import assert_equal, assert_is_instance, assert_items_equal
 
-from stream_alert.rule_processor.classifier import StreamPayload, StreamClassifier
-from stream_alert.rule_processor.pre_parsers import StreamPreParsers
+from stream_alert.rule_processor.classifier import StreamClassifier
+from stream_alert.rule_processor.payload import StreamPayload
 from stream_alert.rule_processor.config import load_config
 from stream_alert.rule_processor.rules_engine import StreamRules
+
+from stream_alert.rule_processor.config import load_env
+
+from unit.stream_alert_rule_processor.test_helpers import (
+    _get_mock_context,
+    _load_and_classify_payload,
+    _make_kinesis_raw_record
+)
 
 rule = StreamRules.rule
 matcher = StreamRules.matcher()
@@ -30,56 +38,18 @@ disable = StreamRules.disable()
 
 class TestStreamRules(object):
     """Test class for StreamRules"""
-    def __init__(self):
-        self.config = {}
-
     @classmethod
     def setup_class(cls):
         """Setup the class before any methods"""
-        cls.env = {
-            'lambda_region': 'us-east-1',
-            'account_id': '123456789012',
-            'lambda_function_name': 'stream_alert_test',
-            'lambda_alias': 'production'
-        }
+        context = _get_mock_context()
+        cls.env = load_env(context)
+        cls.config = load_config('test/unit/conf')
 
     @classmethod
     def teardown_class(cls):
         """Teardown the class after all methods"""
         cls.env = None
-
-    def setup(self):
-        """Setup before each method"""
-        self.config = load_config('test/unit/conf')
-
-    def teardown(self):
-        """Teardown after each method"""
-        self.config = None
-
-    @staticmethod
-    def pre_parse_kinesis(payload):
-        """Call through to the pre_parse_kinesis on StreamPreParsers"""
-        return StreamPreParsers.pre_parse_kinesis(payload.raw_record)
-
-    def make_kinesis_payload(self, kinesis_stream, kinesis_data):
-        """Helper for creating the kinesis payload"""
-        raw_record = {
-            'eventSource': 'aws:kinesis',
-            'eventSourceARN': 'arn:aws:kinesis:us-east-1:123456789012:stream/{}'
-                              .format(kinesis_stream),
-            'kinesis': {
-                'data': base64.b64encode(kinesis_data)
-            }
-        }
-        payload = StreamPayload(raw_record=raw_record)
-        classifier = StreamClassifier(config=self.config)
-
-        classifier.map_source(payload)
-        data = self.pre_parse_kinesis(payload)
-        classifier.classify_record(payload, data)
-
-        if payload.valid:
-            return payload
+        cls.config = None
 
     def test_alert_format(self):
         """Rule Engine - Alert Format"""
@@ -89,7 +59,7 @@ class TestStreamRules(object):
             """'alert_format_test' docstring for testing rule_description"""
             return rec['application'] == 'web-app'
 
-        kinesis_data = {
+        kinesis_data = json.dumps({
             'date': 'Dec 01 2016',
             'unixtime': '1483139547',
             'host': 'host1.web.prod.net',
@@ -100,11 +70,12 @@ class TestStreamRules(object):
                 'type': '1',
                 'source': 'eu'
             }
-        }
+        })
+
         # prepare the payloads
-        kinesis_data_json = json.dumps(kinesis_data)
-        payload = self.make_kinesis_payload(kinesis_stream='test_kinesis_stream',
-                                            kinesis_data=kinesis_data_json)
+        service, entity = 'kinesis', 'test_kinesis_stream'
+        raw_record = _make_kinesis_raw_record(entity, kinesis_data)
+        payload = _load_and_classify_payload(self.config, service, entity, raw_record)
 
         # process payloads
         alerts = StreamRules.process(payload)
@@ -119,17 +90,16 @@ class TestStreamRules(object):
             'source_service',
             'source_entity'
         }
-        assert_equal(set(alerts[0].keys()), alert_keys)
-        assert_equal(type(alerts[0]['record']), dict)
-        assert_equal(type(alerts[0]['outputs']), list)
+        assert_items_equal(alerts[0].keys(), alert_keys)
+        assert_is_instance(alerts[0]['record'], dict)
+        assert_is_instance(alerts[0]['outputs'], list)
 
         # test alert fields
-        assert_equal(type(alerts[0]['rule_name']), str)
-        assert_equal(type(alerts[0]['rule_description']), str)
-        assert_equal(type(alerts[0]['outputs']), list)
-        assert_equal(type(alerts[0]['log_type']), str)
-        assert_equal(type(alerts[0]['log_source']), str)
-
+        assert_is_instance(alerts[0]['rule_name'], str)
+        assert_is_instance(alerts[0]['rule_description'], str)
+        assert_is_instance(alerts[0]['outputs'], list)
+        assert_is_instance(alerts[0]['log_type'], str)
+        assert_is_instance(alerts[0]['log_source'], str)
 
     def test_basic_rule_matcher_process(self):
         """Rule Engine - Basic Rule/Matcher"""
@@ -170,10 +140,11 @@ class TestStreamRules(object):
                 'source': 'eu'
             }
         }
+
         # prepare the payloads
-        kinesis_data_json = json.dumps(kinesis_data)
-        payload = self.make_kinesis_payload(kinesis_stream='test_kinesis_stream',
-                                            kinesis_data=kinesis_data_json)
+        service, entity = 'kinesis', 'test_kinesis_stream'
+        raw_record = _make_kinesis_raw_record(entity, json.dumps(kinesis_data))
+        payload = _load_and_classify_payload(self.config, service, entity, raw_record)
 
         # process payloads
         alerts = StreamRules.process(payload)
@@ -187,8 +158,8 @@ class TestStreamRules(object):
         }
         # doing this because after kinesis_data is read in, types are casted per the schema
         for alert in alerts:
-            assert_list_equal(alert['record'].keys(), kinesis_data.keys())
-            assert_equal(alert['outputs'], rule_outputs_map[alert['rule_name']])
+            assert_items_equal(alert['record'].keys(), kinesis_data.keys())
+            assert_items_equal(alert['outputs'], rule_outputs_map[alert['rule_name']])
 
 
     def test_process_req_subkeys(self):
@@ -205,7 +176,7 @@ class TestStreamRules(object):
         def web_server(rec):
             return rec['data']['category'] == 'web-server'
 
-        kinesis_data = [
+        kinesis_data_items = [
             {
                 'date': 'Dec 01 2016',
                 'unixtime': '1483139547',
@@ -225,17 +196,16 @@ class TestStreamRules(object):
                 }
             }
         ]
-        # prepare payloads
-        payloads = []
-        for data in kinesis_data:
-            kinesis_data_json = json.dumps(data)
-            payload = self.make_kinesis_payload(kinesis_stream='test_kinesis_stream',
-                                                kinesis_data=kinesis_data_json)
-            payloads.append(payload)
 
+        # prepare payloads
         alerts = []
-        for payload in payloads:
-            # process payloads
+        for data in kinesis_data_items:
+            kinesis_data = json.dumps(data)
+            # prepare the payloads
+            service, entity = 'kinesis', 'test_kinesis_stream'
+            raw_record = _make_kinesis_raw_record(entity, kinesis_data)
+            payload = _load_and_classify_payload(self.config, service, entity, raw_record)
+
             alerts.extend(StreamRules.process(payload))
 
         # check alert output
@@ -261,8 +231,9 @@ class TestStreamRules(object):
             'session opened for user root by (uid=0)'
         )
         # prepare the payloads
-        payload = self.make_kinesis_payload(kinesis_stream='test_stream_2',
-                                            kinesis_data=kinesis_data)
+        service, entity = 'kinesis', 'test_stream_2'
+        raw_record = _make_kinesis_raw_record(entity, kinesis_data)
+        payload = _load_and_classify_payload(self.config, service, entity, raw_record)
 
         # process payloads
         alerts = StreamRules.process(payload)
@@ -288,8 +259,10 @@ class TestStreamRules(object):
             '"chef,web-server,1,100,fail"'
         )
         # prepare the payloads
-        payload = self.make_kinesis_payload(kinesis_stream='test_kinesis_stream',
-                                            kinesis_data=kinesis_data)
+        service, entity = 'kinesis', 'test_kinesis_stream'
+        raw_record = _make_kinesis_raw_record(entity, kinesis_data)
+        payload = _load_and_classify_payload(self.config, service, entity, raw_record)
+
         # process payloads
         alerts = StreamRules.process(payload)
 
@@ -311,9 +284,12 @@ class TestStreamRules(object):
             'key6': 1,
             'key7': False
         })
+
         # prepare the payloads
-        payload = self.make_kinesis_payload(kinesis_stream='test_kinesis_stream',
-                                            kinesis_data=kinesis_data)
+        service, entity = 'kinesis', 'test_kinesis_stream'
+        raw_record = _make_kinesis_raw_record(entity, kinesis_data)
+        payload = _load_and_classify_payload(self.config, service, entity, raw_record)
+
         # process payloads
         alerts = StreamRules.process(payload)
 
@@ -351,14 +327,17 @@ class TestStreamRules(object):
             'inode=409248 dev=fd:00 mode=0100600 ouid=0 ogid=0 '
             'rdev=00:00 obj=system_u:object_r:etc_t:s0'
         )
+
         # prepare the payloads
-        payload = self.make_kinesis_payload(kinesis_stream='test_kinesis_stream',
-                                            kinesis_data=auditd_test_data)
+        service, entity = 'kinesis', 'test_kinesis_stream'
+        raw_record = _make_kinesis_raw_record(entity, auditd_test_data)
+        payload = _load_and_classify_payload(self.config, service, entity, raw_record)
+
         # process payloads
         alerts = StreamRules.process(payload)
 
         # alert tests
         assert_equal(len(alerts), 2)
 
-        rule_name_alerts = set([x['rule_name'] for x in alerts])
-        assert_equal(rule_name_alerts, set(['gid_500', 'auditd_bin_cat']))
+        rule_name_alerts = [x['rule_name'] for x in alerts]
+        assert_items_equal(rule_name_alerts, ['gid_500', 'auditd_bin_cat'])
