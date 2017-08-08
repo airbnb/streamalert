@@ -88,6 +88,7 @@ class StreamAlert(object):
                     service)
 
             if not (service and entity):
+                LOGGER.error('Skipping record: %s', raw_record)
                 continue
 
             # If the payload's service and entity are found in the config and

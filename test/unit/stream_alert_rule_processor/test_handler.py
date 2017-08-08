@@ -107,11 +107,11 @@ class TestStreamAlert(object):
         extract_mock.return_value = ('kinesis', '')
 
         self.__sa_handler.run({'Records': ['record']})
+        calls = [call('Unable to map entity from payload\'s raw record for service %s',
+                      'kinesis'),
+                 call('Skipping record: %s', 'record')]
 
-        log_mock.assert_called_with(
-            'Unable to map entity from payload\'s raw record for service %s',
-            'kinesis'
-        )
+        log_mock.assert_has_calls(calls)
 
     @patch('stream_alert.rule_processor.handler.load_stream_payload')
     @patch('stream_alert.rule_processor.handler.StreamClassifier.load_sources')

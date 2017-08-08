@@ -14,9 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 import json
+import gzip
 import logging
+import os
+import tempfile
 
-from mock import call, Mock, patch
+from mock import call, patch
 
 from nose.tools import (
     assert_equal,
@@ -156,7 +159,7 @@ def test_pre_parse_sns(log_mock):
 
 @patch('stream_alert.rule_processor.payload.S3Payload._get_object')
 @patch('stream_alert.rule_processor.payload.S3Payload._read_s3_file')
-def test_pre_parse_s3(s3_mock, __):
+def test_pre_parse_s3(s3_mock, _):
     """S3Payload - Pre Parse"""
     records = ['{"record01": "value01"}', '{"record02": "value02"}']
     s3_mock.side_effect = [((0, records[0]), (1, records[1]))]
@@ -230,10 +233,11 @@ def test_get_object(log_mock, _):
     )
 
 
-@patch('logging.Logger.info')
+
 @patch('stream_alert.rule_processor.payload.boto3.client')
 @patch('stream_alert.rule_processor.payload.S3Payload._read_s3_file')
-def test_s3_download_object(_, __, log_mock):
+@patch('logging.Logger.info')
+def test_s3_download_object(log_mock, *_):
     """S3Payload - Download Object"""
     raw_record = _make_s3_raw_record('unit_bucket_name', 'unit_key_name')
     s3_payload = load_stream_payload('s3', 'unit_key_name', raw_record)
@@ -243,10 +247,10 @@ def test_s3_download_object(_, __, log_mock):
 
 
 @with_setup(setup=None, teardown=teardown_s3)
-@patch('logging.Logger.info')
 @patch('stream_alert.rule_processor.payload.boto3.client')
 @patch('stream_alert.rule_processor.payload.S3Payload._read_s3_file')
-def test_s3_download_object_mb(_, __, log_mock):
+@patch('logging.Logger.info')
+def test_s3_download_object_mb(log_mock, *_):
     """S3Payload - Download Object, Size in MB"""
     raw_record = _make_s3_raw_record('unit_bucket_name', 'unit_key_name')
     s3_payload = load_stream_payload('s3', 'unit_key_name', raw_record)
@@ -258,3 +262,42 @@ def test_s3_download_object_mb(_, __, log_mock):
                       'unit_bucket_name', 'unit_key_name', '127.8MB'))
 
     assert_equal(log_mock.call_args_list[1][0][0], 'Completed download in %s seconds')
+
+
+def test_read_s3_file_gz():
+    """S3Payload - Read S3 Object On Disk, gzipped"""
+    temp_gzip_file_path = os.path.join(tempfile.gettempdir(), 's3_test.gz')
+
+    with gzip.open(temp_gzip_file_path, 'w') as temp_gzip_file:
+        temp_gzip_file.write('test line of gzip data')
+
+    for line_num, line in S3Payload._read_s3_file(temp_gzip_file_path):
+        assert_equal(line_num, 1)
+        assert_equal(line, 'test line of gzip data')
+
+
+def test_read_s3_file_non_gz():
+    """S3Payload - Read S3 Object On Disk, non-gzipped"""
+    temp_file_path = os.path.join(tempfile.gettempdir(), 's3_test.json')
+
+    with open(temp_file_path, 'w') as temp_file:
+        temp_file.write('test line of data')
+
+    for line_num, line in S3Payload._read_s3_file(temp_file_path):
+        assert_equal(line_num, 1)
+        assert_equal(line, 'test line of data')
+
+
+@patch('stream_alert.rule_processor.payload.LOGGER.error')
+@patch('stream_alert.rule_processor.payload.os.path.exists', return_value=True)
+def test_read_s3_failed_remove(_, log_mock):
+    """S3Payload - Read S3 Object On Disk, Removal Failure"""
+
+    temp_file_path = os.path.join(tempfile.gettempdir(), 's3_test.json')
+
+    with open(temp_file_path, 'w') as temp_file:
+        temp_file.write('test line of data')
+
+    _ = [_ for _ in S3Payload._read_s3_file(temp_file_path)]
+
+    log_mock.assert_called_with('Failed to remove temp file: %s', temp_file_path)

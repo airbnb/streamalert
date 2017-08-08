@@ -135,7 +135,6 @@ class StreamPayload(object):
 
 class S3ObjectSizeError(Exception):
     """Exception indicating the S3 object is too large to process"""
-    pass
 
 
 class S3Payload(StreamPayload):
@@ -173,7 +172,7 @@ class S3Payload(StreamPayload):
             processed_size += (len(data) + 1)
 
             # Log a debug message on every 100 lines processed
-            if line_num and line_num % 100 == 0:
+            if line_num % 100 == 0:
                 avg_record_size = ((processed_size - 1) / line_num)
                 if avg_record_size:
                     approx_record_count = self.s3_object_size / avg_record_size
@@ -263,10 +262,10 @@ class S3Payload(StreamPayload):
         _, extension = os.path.splitext(s3_object)
 
         if extension == '.gz':
-            for num, line in enumerate(gzip.open(s3_object, 'r')):
+            for num, line in enumerate(gzip.open(s3_object, 'r'), start=1):
                 yield num, line.rstrip()
         else:
-            for num, line in enumerate(open(s3_object, 'r')):
+            for num, line in enumerate(open(s3_object, 'r'), start=1):
                 yield num, line.rstrip()
 
         # AWS Lambda apparently does not reallocate disk space when files are

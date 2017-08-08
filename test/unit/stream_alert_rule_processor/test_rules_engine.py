@@ -16,6 +16,9 @@ limitations under the License.
 import base64
 import json
 
+from collections import namedtuple
+from mock import patch
+
 from nose.tools import assert_equal, assert_is_instance, assert_items_equal
 
 from stream_alert.rule_processor.classifier import StreamClassifier
@@ -100,6 +103,21 @@ class TestStreamRules(object):
         assert_is_instance(alerts[0]['outputs'], list)
         assert_is_instance(alerts[0]['log_type'], str)
         assert_is_instance(alerts[0]['log_source'], str)
+
+    @patch('stream_alert.rule_processor.rules_engine.LOGGER.exception')
+    def test_bad_rule(self, log_mock):
+        """Rule Engine - Process Bad Rule Function"""
+        bad_rule = namedtuple('BadRule', 'rule_function')
+        def bad_rule_function(rec):
+            """A simple function that will raise an exception"""
+            raise AttributeError('This rule raises an error')
+
+        test_rule = bad_rule(bad_rule_function)
+
+        StreamRules.process_rule({}, test_rule)
+
+        log_mock.assert_called_with('Encountered error with rule: %s',
+                                    'bad_rule_function')
 
     def test_basic_rule_matcher_process(self):
         """Rule Engine - Basic Rule/Matcher"""
