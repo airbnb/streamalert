@@ -40,24 +40,15 @@ from unit.stream_alert_rule_processor.test_helpers import (
 
 class TestStreamAlert(object):
     """Test class for StreamAlert class"""
-    @classmethod
+
+    def __init__(self):
+        self.__sa_handler = None
+
     @patch('stream_alert.rule_processor.handler.load_config',
            lambda: load_config('test/unit/conf/'))
-    def setup_class(cls):
+    def setup(self):
         """Setup the class before any methods"""
-        cls.__sa_handler = StreamAlert(_get_mock_context(), False)
-
-    @classmethod
-    def teardown_class(cls):
-        """Teardown the class after all methods"""
-        cls.__sa_handler = None
-
-    def teardown(self):
-        """Teardown the class after each methods"""
-        del self.__sa_handler._alerts[:]
-        self.__sa_handler._failed_record_count = 0
-        self.__sa_handler.env['lambda_alias'] = 'development'
-        self.__sa_handler.enable_alert_processor = False
+        self.__sa_handler = StreamAlert(_get_mock_context(), False)
 
     def test_run_no_records(self):
         """StreamAlert Class - Run, No Records"""

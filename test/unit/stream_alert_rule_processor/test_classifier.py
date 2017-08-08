@@ -36,21 +36,14 @@ from unit.stream_alert_rule_processor.test_helpers import (
 
 class TestStreamClassifier(object):
     """Test class for StreamClassifier"""
-    @classmethod
-    def setup_class(cls):
+
+    def __init__(self):
+        self.classifier = None
+
+    def setup(self):
         """Setup the class before any methods"""
         config = load_config('test/unit/conf')
-        cls.classifier = sa_classifier.StreamClassifier(config)
-
-    @classmethod
-    def teardown_class(cls):
-        """Teardown the class after all methods"""
-        cls.classifier = None
-
-    def teardown(self):
-        """Teardown after each method"""
-        del self.classifier._entity_log_sources[:]
-        sa_classifier.SUPPORT_MULTIPLE_SCHEMA_MATCHING = False
+        self.classifier = sa_classifier.StreamClassifier(config)
 
     def _prepare_and_classify_payload(self, service, entity, raw_record):
         """Helper method to return a preparsed and classified payload"""

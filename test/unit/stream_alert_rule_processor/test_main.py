@@ -30,7 +30,6 @@ def test_imports():
                'rules.community.cloudtrail.cloudtrail_put_bucket_acl',
                'rules.community.cloudtrail.cloudtrail_put_object_acl'}
 
-
     assert_set_equal(main.modules_to_import, imports)
 
 
