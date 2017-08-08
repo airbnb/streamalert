@@ -25,3 +25,4 @@ terminal.glue
 venv/
 
 .vagrant/
+htmlcov/

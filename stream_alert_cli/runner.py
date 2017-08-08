@@ -77,7 +77,7 @@ def cli_runner(options):
 
 def athena_handler(options):
     """Handle Athena operations"""
-    athena_client = StreamAlertAthenaClient(config=CONFIG,
+    athena_client = StreamAlertAthenaClient(CONFIG,
                                             results_key_prefix='stream_alert_cli')
 
     if options.subcommand == 'init':

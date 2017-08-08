@@ -608,6 +608,10 @@ def generate_athena(config):
         'prefix': config['global']['account']['prefix']
     }
 
+    log_level = athena_config.get('log_level')
+    if log_level:
+        athena_dict['module']['stream_alert_athena']['lambda_log_level'] = log_level
+
     return athena_dict
 
 
