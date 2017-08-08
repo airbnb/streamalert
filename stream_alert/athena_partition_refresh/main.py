@@ -58,12 +58,12 @@ def _load_config():
     """Load the StreamAlert Athena configuration files
 
     Returns:
-        [dict] Configuration settings by file, includes two keys:
-            lambda: All lambda function settings
-            global: StreamAlert global settings
+        dict: Configuration settings by file, includes two keys:
+            lambda, All lambda function settings
+            global, StreamAlert global settings
 
     Raises:
-        [ConfigError] For invalid or missing configuration files.
+        ConfigError: For invalid or missing configuration files.
     """
     config_files = ('lambda', 'global')
     config = {}
@@ -107,14 +107,16 @@ class StreamAlertAthenaClient(object):
     DATABASE_STREAMALERT = 'streamalert'
     DEFAULT_S3_PREFIX = 'athena_partition_refresh'
 
-    def __init__(self, **kwargs):
+    def __init__(self, config, **kwargs):
         """Initialize the Boto3 Athena Client, and S3 results bucket/key
 
-        Keyword Args:
+        Args:
             config (CLIConfig): Loaded StreamAlert configuration
-            results_key_prefix (string): The S3 key prefix to store Athena results (optional)
+
+        Keyword Args:
+            results_key_prefix (string): The S3 key prefix to store Athena results
         """
-        self.config = kwargs['config']
+        self.config = config
         region = self.config['global']['account']['region']
         self.athena_client = boto3.client('athena', region_name=region)
 
@@ -281,8 +283,13 @@ class StreamAlertSQSClient(object):
     """
     QUEUENAME = 'streamalert_athena_data_bucket_notifications'
 
-    def __init__(self, **kwargs):
-        self.config = kwargs['config']
+    def __init__(self, config):
+        """Initialize the StreamAlertSQS Client
+
+        Args:
+            config (CLIConfig): Loaded StreamAlert configuration
+        """
+        self.config = config
         self.received_messages = []
         self.processed_messages = []
 
@@ -314,10 +321,9 @@ class StreamAlertSQSClient(object):
                 MaxNumberOfMessages=10
             )
 
-            if 'Messages' in polled_messages:
-                self.received_messages.extend(polled_messages['Messages'])
-            else:
+            if not 'Messages' in polled_messages:
                 return False
+            self.received_messages.extend(polled_messages['Messages'])
 
         _receive_messages()
         LOGGER.info('Received %s messages', len(self.received_messages))
@@ -348,7 +354,7 @@ class StreamAlertSQSClient(object):
         """Filter a list of unique s3 buckets from the received messages
 
         Returns:
-            (set) Unique s3 buckets derived from s3 event notifications
+            set: Unique s3 buckets derived from s3 event notifications
         """
         buckets = set()
 
@@ -369,7 +375,7 @@ class StreamAlertSQSClient(object):
 
             for record in loaded_message['Records']:
                 if 's3' not in record:
-                    LOGGER.info('Skipping non s3 bucket notification message')
+                    LOGGER.info('Skipping non-s3 bucket notification message')
                     LOGGER.debug(record)
                     continue
 
@@ -385,7 +391,7 @@ def handler(*_):
     config = _load_config()
 
     # Initialize the SQS client and recieve messages
-    stream_alert_sqs = StreamAlertSQSClient(config=config)
+    stream_alert_sqs = StreamAlertSQSClient(config)
     stream_alert_sqs.get_messages()
 
     if not stream_alert_sqs.received_messages:
@@ -398,7 +404,7 @@ def handler(*_):
         return
 
     # Initialize the Athena client and run queries
-    stream_alert_athena = StreamAlertAthenaClient(config=config)
+    stream_alert_athena = StreamAlertAthenaClient(config)
 
     # Check that the `streamalert` database exists before running queries
     if not stream_alert_athena.check_database_exists():

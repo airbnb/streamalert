@@ -192,7 +192,7 @@ class TestStreamAlertSQSClient(object):
     def setup(self):
         sqs = boto3.resource('sqs', region_name=TEST_REGION)
         self.queue = sqs.create_queue(QueueName=StreamAlertSQSClient.QUEUENAME)
-        self.client = StreamAlertSQSClient(config=CONFIG_DATA)
+        self.client = StreamAlertSQSClient(CONFIG_DATA)
 
         # Create a fake s3 notification message to send
         bucket = 'unit-testing.streamalerts'
@@ -319,7 +319,7 @@ class TestStreamAlertSQSClient(object):
 class TestStreamAlertAthenaClient(object):
     """Test class for StreamAlertAthenaClient"""
     def setup(self):
-        self.client = StreamAlertAthenaClient(config=CONFIG_DATA,
+        self.client = StreamAlertAthenaClient(CONFIG_DATA,
                                               results_key_prefix='unit-testing')
 
 
