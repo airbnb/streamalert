@@ -51,8 +51,8 @@ class StreamPayload(object):
     """Container class for the StreamAlert payload object.
 
     Attributes:
-        entity: The instance of the sending service. Can be either a
-            specific kinesis stream or S3 bucket name.
+        entity: The name of the sending service. Can be a kinesis stream name,
+            SNS topic, or S3 bucket name.
 
         raw_record: The record from the AWS Lambda Records dictionary.
 
@@ -110,7 +110,7 @@ class StreamPayload(object):
         """Replace the currently loaded record with a new one.
 
         Used mainly when S3 is used as a source, due to looping over files
-        downloadd from S3 events versus all records being readily available
+        downloaded from S3 events versus all records being readily available
         from a Kinesis stream.
 
         Args:
@@ -176,7 +176,7 @@ class S3Payload(StreamPayload):
         """Download an object from S3.
 
         Verifies the S3 object is less than or equal to 128MB, and
-        stores into a temp file.  Lambda can only execute for a
+        downloads it into a temp file.  Lambda can only execute for a
         maximum of 300 seconds, and the file to download
         greatly impacts that time.
 
@@ -257,12 +257,11 @@ class S3Payload(StreamPayload):
         # removed using os.remove(), so we must truncate them before removal
         open(s3_object, 'w')
 
-        # Remove the file
         os.remove(s3_object)
         if not os.path.exists(s3_object):
-            LOGGER.debug('Removed temp file: %s', s3_object)
+            LOGGER.debug('Removed temp S3 file: %s', s3_object)
         else:
-            LOGGER.error('Failed to remove temp file: %s', s3_object)
+            LOGGER.error('Failed to remove temp S3 file: %s', s3_object)
 
 
 class SnsPayload(StreamPayload):

@@ -288,14 +288,14 @@ class TestStreamClassifier(object):
 
         payload = payload.pre_parse().next()
 
-        valid_parses = self.classifier._process_log_schemas(payload)
+        schema_matches = self.classifier._process_log_schemas(payload)
 
-        assert_equal(len(valid_parses), 2)
-        assert_equal(valid_parses[0].log_name, 'test_multiple_schemas:01')
-        assert_equal(valid_parses[1].log_name, 'test_multiple_schemas:02')
-        valid_parse = self.classifier._check_valid_parse(valid_parses)
+        assert_equal(len(schema_matches), 2)
+        assert_equal(schema_matches[0].log_name, 'test_multiple_schemas:01')
+        assert_equal(schema_matches[1].log_name, 'test_multiple_schemas:02')
+        schema_match = self.classifier._check_schema_match(schema_matches)
 
-        assert_equal(valid_parse.log_name, 'test_multiple_schemas:01')
+        assert_equal(schema_match.log_name, 'test_multiple_schemas:01')
 
     @patch('logging.Logger.error')
     def test_mult_schema_match_failure(self, log_mock):
@@ -317,10 +317,10 @@ class TestStreamClassifier(object):
 
         payload = payload.pre_parse().next()
 
-        valid_parses = self.classifier._process_log_schemas(payload)
+        schema_matches = self.classifier._process_log_schemas(payload)
 
-        assert_equal(len(valid_parses), 2)
-        self.classifier._check_valid_parse(valid_parses)
+        assert_equal(len(schema_matches), 2)
+        self.classifier._check_schema_match(schema_matches)
 
         log_mock.assert_called_with(
             'Proceeding with schema for: %s', 'test_multiple_schemas:01'
@@ -346,10 +346,10 @@ class TestStreamClassifier(object):
 
         payload = payload.pre_parse().next()
 
-        valid_parses = self.classifier._process_log_schemas(payload)
+        schema_matches = self.classifier._process_log_schemas(payload)
 
-        assert_equal(len(valid_parses), 2)
-        self.classifier._check_valid_parse(valid_parses)
+        assert_equal(len(schema_matches), 2)
+        self.classifier._check_schema_match(schema_matches)
 
         calls = [call('Log classification matched for multiple schemas: %s',
                       'test_multiple_schemas:01, test_multiple_schemas:02'),

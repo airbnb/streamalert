@@ -178,7 +178,7 @@ def test_pre_parse_s3(s3_mock, _):
 def test_pre_parse_s3_debug(s3_mock, log_mock, _):
     """S3Payload - Pre Parse, Debug On"""
     # Cache the logger level
-    lvl = LOGGER.getEffectiveLevel()
+    log_level = LOGGER.getEffectiveLevel()
 
     # Increase the logger level to debug
     LOGGER.setLevel(logging.DEBUG)
@@ -205,7 +205,7 @@ def test_pre_parse_s3_debug(s3_mock, log_mock, _):
     log_mock.assert_has_calls(calls)
 
     # Reset the logger level and stop the patchers
-    LOGGER.setLevel(lvl)
+    LOGGER.setLevel(log_level)
 
 
 @with_setup(setup=None, teardown=teardown_s3)
@@ -300,4 +300,4 @@ def test_read_s3_failed_remove(_, log_mock):
 
     _ = [_ for _ in S3Payload._read_downloaded_s3_object(temp_file_path)]
 
-    log_mock.assert_called_with('Failed to remove temp file: %s', temp_file_path)
+    log_mock.assert_called_with('Failed to remove temp S3 file: %s', temp_file_path)

@@ -192,7 +192,7 @@ class TestStreamAlert(object):
         rules_mock.return_value = ['success!!']
 
         # Cache the logger level
-        lvl = LOGGER.getEffectiveLevel()
+        log_level = LOGGER.getEffectiveLevel()
 
         # Increase the logger level to debug
         LOGGER.setLevel(logging.DEBUG)
@@ -200,7 +200,7 @@ class TestStreamAlert(object):
         self.__sa_handler.run(_get_valid_event())
 
         # Reset the logger level
-        LOGGER.setLevel(lvl)
+        LOGGER.setLevel(log_level)
 
         log_mock.assert_called_with('Alerts:\n%s', '[\n  "success!!"\n]')
 

@@ -91,8 +91,7 @@ class StreamAlert(object):
                 LOGGER.error('Skipping record: %s', raw_record)
                 continue
 
-            # If the payload's service and entity are found in the config and
-            # contains logs then load the sources for this log
+            # Cache the log sources for this service and entity on the classifier
             if not self.classifier.load_sources(service, entity):
                 continue
 

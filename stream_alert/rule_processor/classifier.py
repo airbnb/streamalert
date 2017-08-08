@@ -145,14 +145,14 @@ class StreamClassifier(object):
             payload.valid = True
 
     @staticmethod
-    def _check_valid_parse(valid_parses):
-        """Check to see if there are multiple schemas that have validly parsed this
-        log. If so, fall back on using log_patterns to look for the proper log. If no
-        log_patterns exist, or they do not resolve the problem, fall back on using the
+    def _check_schema_match(schema_matches):
+        """Check to see if the log matches multiple schemas. If so, fall back
+        on using log_patterns to look for the proper log. If no log_patterns
+        exist, or they do not resolve the problem, fall back on using the
         first matched schema.
 
         Args:
-            [valid_parses] A list of tuples containing the info for schemas that have
+            [schema_matches] A list of tuples containing the info for schemas that have
                 validly parsed this record. Each tuple is: (log_name, parser, parsed_data)
 
         Returns:
@@ -160,33 +160,33 @@ class StreamClassifier(object):
         """
         # If there is only one parse or we do not have support for multiple schemas
         # enabled, then just return the first parse that was valid
-        if len(valid_parses) == 1 or not SUPPORT_MULTIPLE_SCHEMA_MATCHING:
-            return valid_parses[0]
+        if len(schema_matches) == 1 or not SUPPORT_MULTIPLE_SCHEMA_MATCHING:
+            return schema_matches[0]
 
-        matched_parses = []
-        for i, valid_parse in enumerate(valid_parses):
-            log_patterns = valid_parse.parser.options.get('log_patterns', {})
-            if (all(valid_parse.parser.matched_log_pattern(data, log_patterns)
-                    for data in valid_parse.parsed_data)):
-                matched_parses.append(valid_parses[i])
+        matches = []
+        for i, schema_match in enumerate(schema_matches):
+            log_patterns = schema_match.parser.options.get('log_patterns', {})
+            if (all(schema_match.parser.matched_log_pattern(data, log_patterns)
+                    for data in schema_match.parsed_data)):
+                matches.append(schema_matches[i])
             else:
                 LOGGER.debug(
                     'Log pattern matching failed for schema: %s',
-                    valid_parse.root_schema)
+                    schema_match.root_schema)
 
-        if matched_parses:
-            if len(matched_parses) > 1:
+        if matches:
+            if len(matches) > 1:
                 LOGGER.error('Log patterns matched for multiple schemas: %s',
-                             ', '.join(parse.log_name for parse in matched_parses))
-                LOGGER.error('Proceeding with schema for: %s', matched_parses[0].log_name)
+                             ', '.join(match.log_name for match in matches))
+                LOGGER.error('Proceeding with schema for: %s', matches[0].log_name)
 
-            return matched_parses[0]
+            return matches[0]
 
         LOGGER.error('Log classification matched for multiple schemas: %s',
-                     ', '.join(parse.log_name for parse in valid_parses))
-        LOGGER.error('Proceeding with schema for: %s', valid_parses[0].log_name)
+                     ', '.join(match.log_name for match in schema_matches))
+        LOGGER.error('Proceeding with schema for: %s', schema_matches[0].log_name)
 
-        return valid_parses[0]
+        return schema_matches[0]
 
     def _process_log_schemas(self, payload):
         """Get any log schemas that matched this log format
@@ -196,12 +196,12 @@ class StreamClassifier(object):
 
         Returns:
             [list] A list containing any schemas that matched this log format
-                Each list entry contains the namedtuple of 'ClassifiedLog' with
+                Each list entry contains the namedtuple of 'SchemaMatch' with
                 values of log_name, root_schema, parser, and parsed_data
         """
-        classified_log = namedtuple('ClassifiedLog',
-                                    'log_name, root_schema, parser, parsed_data')
-        valid_parses = []
+        schema_match = namedtuple('SchemaMatch',
+                                  'log_name, root_schema, parser, parsed_data')
+        schema_matches = []
         log_info = self.get_log_info_for_source()
 
         # Loop over all logs declared in logs.json
@@ -224,14 +224,14 @@ class StreamClassifier(object):
                 continue
 
             if SUPPORT_MULTIPLE_SCHEMA_MATCHING:
-                valid_parses.append(classified_log(log_name, schema, parser, parsed_data))
+                schema_matches.append(schema_match(log_name, schema, parser, parsed_data))
                 continue
 
             log_patterns = parser.options.get('log_patterns')
             if all(parser.matched_log_pattern(rec, log_patterns) for rec in parsed_data):
-                return [classified_log(log_name, schema, parser, parsed_data)]
+                return [schema_match(log_name, schema, parser, parsed_data)]
 
-        return valid_parses
+        return schema_matches
 
     def _parse(self, payload):
         """Parse a record into a declared type.
@@ -247,28 +247,28 @@ class StreamClassifier(object):
         Returns:
             A boolean representing the success of the parse.
         """
-        valid_parses = self._process_log_schemas(payload)
+        schema_matches = self._process_log_schemas(payload)
 
-        if not valid_parses:
+        if not schema_matches:
             return False
 
-        valid_parse = self._check_valid_parse(valid_parses)
+        schema_match = self._check_schema_match(schema_matches)
 
-        LOGGER.debug('Log name: %s', valid_parse.log_name)
-        LOGGER.debug('Parsed data: %s', valid_parse.parsed_data)
+        LOGGER.debug('Log name: %s', schema_match.log_name)
+        LOGGER.debug('Parsed data: %s', schema_match.parsed_data)
 
-        for parsed_data_value in valid_parse.parsed_data:
+        for parsed_data_value in schema_match.parsed_data:
             # Convert data types per the schema
             # Use the root schema for the parser due to updates caused by
             # configuration settings such as envelope_keys and optional_keys
             if not self._convert_type(
                     parsed_data_value,
-                    valid_parse.root_schema):
+                    schema_match.root_schema):
                 return False
 
-        payload.log_source = valid_parse.log_name
-        payload.type = valid_parse.parser.type()
-        payload.records = valid_parse.parsed_data
+        payload.log_source = schema_match.log_name
+        payload.type = schema_match.parser.type()
+        payload.records = schema_match.parsed_data
 
         return True
 
