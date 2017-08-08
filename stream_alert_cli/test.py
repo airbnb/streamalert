@@ -576,6 +576,7 @@ def get_context_from_config(cluster, config):
 
 def stream_alert_test(options, config=None):
     """High level function to wrap the integration testing entry point.
+
     This encapsulates the testing function and is used to specify if calls
     should be mocked.
 
@@ -585,7 +586,7 @@ def stream_alert_test(options, config=None):
             includes cluster info, etc that can be used for constructing
             an aws context object
     """
-    # get the options in a dictionary so we can do easy lookups
+    # Convert the options to a dictionary to do easy lookups
     run_options = vars(options)
     context = get_context_from_config(run_options.get('cluster'), config)
 
@@ -606,12 +607,12 @@ def stream_alert_test(options, config=None):
             LOGGER_SA.addFilter(TestingSuppressFilter())
 
         # Check if the rule processor should be run for these tests
-        test_rules = (set(run_options.get('processor')).issubset({'rule', 'all'}) or
-                      run_options.get('command') == 'live-test')
+        test_rules = (run_options.get('command') == 'live-test' or
+                      set(run_options.get('processor', '')).issubset({'rule', 'all'}))
 
         # Check if the alert processor should be run for these tests
-        test_alerts = (set(run_options.get('processor')).issubset({'alert', 'all'}) or
-                       run_options.get('command') == 'live-test')
+        test_alerts = (run_options.get('command') == 'live-test' or
+                       set(run_options.get('processor', '')).issubset({'alert', 'all'}))
 
         rule_proc_tester = RuleProcessorTester(context, test_rules)
         alert_proc_tester = AlertProcessorTester(context)
