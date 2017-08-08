@@ -112,7 +112,7 @@ def test_refresh_record():
     s3_payload.records = ['rec1']
     s3_payload.valid = True
 
-    s3_payload.refresh_record('new pre_parsed_record')
+    s3_payload._refresh_record('new pre_parsed_record')
 
     assert_equal(s3_payload.pre_parsed_record, 'new pre_parsed_record')
     assert_is_none(s3_payload.type)
@@ -158,7 +158,7 @@ def test_pre_parse_sns(log_mock):
 
 
 @patch('stream_alert.rule_processor.payload.S3Payload._get_object')
-@patch('stream_alert.rule_processor.payload.S3Payload._read_s3_file')
+@patch('stream_alert.rule_processor.payload.S3Payload._read_downloaded_s3_object')
 def test_pre_parse_s3(s3_mock, _):
     """S3Payload - Pre Parse"""
     records = ['{"record01": "value01"}', '{"record02": "value02"}']
@@ -174,7 +174,7 @@ def test_pre_parse_s3(s3_mock, _):
 @with_setup(setup=None, teardown=teardown_s3)
 @patch('stream_alert.rule_processor.payload.S3Payload._get_object')
 @patch('logging.Logger.debug')
-@patch('stream_alert.rule_processor.payload.S3Payload._read_s3_file')
+@patch('stream_alert.rule_processor.payload.S3Payload._read_downloaded_s3_object')
 def test_pre_parse_s3_debug(s3_mock, log_mock, _):
     """S3Payload - Pre Parse, Debug On"""
     # Cache the logger level
@@ -235,7 +235,7 @@ def test_get_object(log_mock, _):
 
 
 @patch('stream_alert.rule_processor.payload.boto3.client')
-@patch('stream_alert.rule_processor.payload.S3Payload._read_s3_file')
+@patch('stream_alert.rule_processor.payload.S3Payload._read_downloaded_s3_object')
 @patch('logging.Logger.info')
 def test_s3_download_object(log_mock, *_):
     """S3Payload - Download Object"""
@@ -248,7 +248,7 @@ def test_s3_download_object(log_mock, *_):
 
 @with_setup(setup=None, teardown=teardown_s3)
 @patch('stream_alert.rule_processor.payload.boto3.client')
-@patch('stream_alert.rule_processor.payload.S3Payload._read_s3_file')
+@patch('stream_alert.rule_processor.payload.S3Payload._read_downloaded_s3_object')
 @patch('logging.Logger.info')
 def test_s3_download_object_mb(log_mock, *_):
     """S3Payload - Download Object, Size in MB"""
@@ -264,26 +264,26 @@ def test_s3_download_object_mb(log_mock, *_):
     assert_equal(log_mock.call_args_list[1][0][0], 'Completed download in %s seconds')
 
 
-def test_read_s3_file_gz():
+def test_read_local_s3_obj_gz():
     """S3Payload - Read S3 Object On Disk, gzipped"""
     temp_gzip_file_path = os.path.join(tempfile.gettempdir(), 's3_test.gz')
 
     with gzip.open(temp_gzip_file_path, 'w') as temp_gzip_file:
         temp_gzip_file.write('test line of gzip data')
 
-    for line_num, line in S3Payload._read_s3_file(temp_gzip_file_path):
+    for line_num, line in S3Payload._read_downloaded_s3_object(temp_gzip_file_path):
         assert_equal(line_num, 1)
         assert_equal(line, 'test line of gzip data')
 
 
-def test_read_s3_file_non_gz():
+def test_read_local_s3_obj_non_gz():
     """S3Payload - Read S3 Object On Disk, non-gzipped"""
     temp_file_path = os.path.join(tempfile.gettempdir(), 's3_test.json')
 
     with open(temp_file_path, 'w') as temp_file:
         temp_file.write('test line of data')
 
-    for line_num, line in S3Payload._read_s3_file(temp_file_path):
+    for line_num, line in S3Payload._read_downloaded_s3_object(temp_file_path):
         assert_equal(line_num, 1)
         assert_equal(line, 'test line of data')
 
@@ -298,6 +298,6 @@ def test_read_s3_failed_remove(_, log_mock):
     with open(temp_file_path, 'w') as temp_file:
         temp_file.write('test line of data')
 
-    _ = [_ for _ in S3Payload._read_s3_file(temp_file_path)]
+    _ = [_ for _ in S3Payload._read_downloaded_s3_object(temp_file_path)]
 
     log_mock.assert_called_with('Failed to remove temp file: %s', temp_file_path)

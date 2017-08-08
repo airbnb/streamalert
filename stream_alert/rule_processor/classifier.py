@@ -32,11 +32,12 @@ class StreamClassifier(object):
 
     @staticmethod
     def extract_service_and_entity(raw_record):
-        """Map a record to its originating AWS service and entity.
+        """Extract the originating AWS service and corresponding entity
+        from a raw record.
 
-        Each raw record contains a set of keys to represent its source.
+        Each raw record contains a set of keys that represent its source.
         A Kinesis record will contain a `kinesis` key while a
-        S3 record contains `s3`.
+        S3 record contains `s3` and an SNS record contains an `Sns` key
 
         Args:
             raw_record [dict]: A raw payload as a dictionary
@@ -76,7 +77,7 @@ class StreamClassifier(object):
         # Clear the list from any previous runs
         del self._entity_log_sources[:]
 
-        # get all logs for the configured service/entity (s3, kinesis, or sns)
+        # Get all logs for the configured service/entity (s3, kinesis, or sns)
         service_entities = self._config['sources'].get(service)
         if not service_entities:
             LOGGER.error('Service [%s] not declared in sources configuration',

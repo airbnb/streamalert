@@ -51,26 +51,20 @@ class StreamPayload(object):
     """Container class for the StreamAlert payload object.
 
     Attributes:
-        raw_record: The record from the AWS Lambda Records dictionary.
-
-        valid: A boolean representing if the record is deemed valid by
-            parsing and classification.
-
-        service: The aws service where the record originated from. Can be
-            either S3 or kinesis.
-
         entity: The instance of the sending service. Can be either a
             specific kinesis stream or S3 bucket name.
+
+        raw_record: The record from the AWS Lambda Records dictionary.
 
         log_source: The name of the logging application which the data
             originated from.  This could be osquery, auditd, etc.
 
+        records: A list of parsed and typed record(s).
+
         type: The data type of the record - json, csv, syslog, etc.
 
-        record: A list of parsed and typed record(s).
-
-    Public Methods:
-        refresh_record
+        valid: A boolean representing if the record is deemed valid by
+            parsing and classification.
     """
     __metaclass__ = ABCMeta
 
@@ -79,14 +73,10 @@ class StreamPayload(object):
         Keyword Args:
             raw_record (dict): The record to be parsed - in AWS event format
         """
-        self.raw_record = kwargs['raw_record']
         self.entity = kwargs['entity']
+        self.raw_record = kwargs['raw_record']
 
-        self.pre_parsed_record = None
-        self.type = None
-        self.log_source = None
-        self.records = None
-        self.valid = False
+        self._refresh_record(None)
 
     def __repr__(self):
         repr_str = ('<{} valid:{} log_source:{} entity:{} type:{} '
@@ -116,7 +106,7 @@ class StreamPayload(object):
                 payloads, such as those similar to S3.
         """
 
-    def refresh_record(self, new_record):
+    def _refresh_record(self, new_record):
         """Replace the currently loaded record with a new one.
 
         Used mainly when S3 is used as a source, due to looping over files
@@ -127,11 +117,10 @@ class StreamPayload(object):
             new_record [string]: A new raw record to be parsed
         """
         self.pre_parsed_record = new_record
-        self.type = None
         self.log_source = None
         self.records = None
+        self.type = None
         self.valid = False
-
 
 class S3ObjectSizeError(Exception):
     """Exception indicating the S3 object is too large to process"""
@@ -141,8 +130,7 @@ class S3Payload(StreamPayload):
     """S3Payload class"""
     s3_object_size = 0
 
-    def service(self):
-        return 's3'
+    def service(self): return 's3'
 
     def pre_parse(self):
         """Pre-parsing method for S3 objects that will download the s3 object,
@@ -158,17 +146,17 @@ class S3Payload(StreamPayload):
         """
         s3_file = self._get_object()
         line_num, processed_size = 0, 0
-        for line_num, data in S3Payload._read_s3_file(s3_file):
+        for line_num, data in self._read_downloaded_s3_object(s3_file):
 
-            self.refresh_record(data)
+            self._refresh_record(data)
             yield self
 
             # Only do the extra calculations below if debug logging is enabled
             if not LOGGER.isEnabledFor(log_level_debug):
                 continue
 
-            # Add the current data to the total processed size, +1 to account for line
-            # feed
+            # Add the current data to the total processed size
+            # +1 to account for line feed
             processed_size += (len(data) + 1)
 
             # Log a debug message on every 100 lines processed
@@ -194,7 +182,7 @@ class S3Payload(StreamPayload):
 
         Args:
             region [string]: AWS region to use for boto client instance.
-            bucket (string): S3 bucket to download object from.
+            bucket [string]: S3 bucket to download object from.
             key [string]: Key of s3 object.
 
         Returns:
@@ -208,10 +196,7 @@ class S3Payload(StreamPayload):
         LOGGER.debug('/tmp directory contents:%s ', os.listdir('/tmp'))
         LOGGER.debug(os.popen('df -h /tmp | tail -1').read().strip())
 
-        if size_mb:
-            display_size = '{}MB'.format(size_mb)
-        else:
-            display_size = '{}KB'.format(size_kb)
+        display_size = '{}MB'.format(size_mb) if size_mb else '{}KB'.format(size_kb)
 
         LOGGER.info('Starting download from S3: %s/%s [%s]', bucket, key, display_size)
 
@@ -233,6 +218,8 @@ class S3Payload(StreamPayload):
         Returns:
             [string] Path to the downloaded s3 object.
         """
+        # Use the urllib unquote method to decode any url encoded characters
+        # (ie - %26 --> &) from the bucket and key names
         unquoted = lambda data: unquote(data).decode('utf8')
         region = self.raw_record['awsRegion']
         bucket = unquoted(self.raw_record['s3']['bucket']['name'])
@@ -242,12 +229,10 @@ class S3Payload(StreamPayload):
         LOGGER.debug('Pre-parsing record from S3. Bucket: %s, Key: %s, Size: %d',
                      bucket, key, self.s3_object_size)
 
-        downloaded_s3_object = self._download_object(region, bucket, key)
-
-        return downloaded_s3_object
+        return self._download_object(region, bucket, key)
 
     @staticmethod
-    def _read_s3_file(s3_object):
+    def _read_downloaded_s3_object(s3_object):
         """Read lines from a downloaded file from S3
 
         Supports reading both gzipped files and plaintext files.
@@ -283,8 +268,7 @@ class S3Payload(StreamPayload):
 class SnsPayload(StreamPayload):
     """SnsPayload class"""
 
-    def service(self):
-        return 'sns'
+    def service(self): return 'sns'
 
     def pre_parse(self):
         """Pre-parsing method for SNS records. Extracts the SNS payload from the
@@ -307,8 +291,7 @@ class SnsPayload(StreamPayload):
 class KinesisPayload(StreamPayload):
     """KinesisPayload class"""
 
-    def service(self):
-        return 'kinesis'
+    def service(self): return 'kinesis'
 
     def pre_parse(self):
         """Pre-parsing method for Kinesis records. Extracts the base64 encoded
