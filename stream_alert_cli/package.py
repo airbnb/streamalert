@@ -235,6 +235,7 @@ class RuleProcessorPackage(LambdaPackage):
     """Deployment package class for the StreamAlert Rule Processor function"""
     package_folders = {
         'stream_alert/rule_processor',
+        'stream_alert/shared',
         'rules',
         'matchers',
         'helpers',

@@ -26,7 +26,7 @@ from urllib import unquote
 import boto3
 
 from stream_alert.rule_processor import LOGGER
-from stream_alert.rule_processor.metrics import Metrics
+from stream_alert.shared.metrics import Metrics
 
 
 def load_stream_payload(service, entity, raw_record, metrics):

@@ -17,7 +17,7 @@ from mock import patch
 
 from botocore.exceptions import ClientError
 
-from stream_alert.rule_processor.metrics import Metrics
+from stream_alert.shared.metrics import Metrics
 
 from unit.stream_alert_rule_processor import REGION
 
@@ -48,7 +48,7 @@ class TestMetrics(object):
 
         log_mock.assert_called_with('Metric unit not defined: %s', 'Total')
 
-    @patch('stream_alert.rule_processor.metrics.Metrics._put_metric')
+    @patch('stream_alert.shared.metrics.Metrics._put_metric')
     def test_valid_metric(self, metric_mock):
         """Metrics - Valid Metric"""
         self.__metrics.put_metric_data('RuleProcessorFailedParses', 100, 'Count')
@@ -56,7 +56,7 @@ class TestMetrics(object):
         metric_mock.assert_called()
 
     @staticmethod
-    @patch('stream_alert.rule_processor.metrics.boto3')
+    @patch('stream_alert.shared.metrics.boto3')
     def test_boto_call(boto_mock):
         """Metrics - Boto Call Params"""
 
@@ -65,7 +65,7 @@ class TestMetrics(object):
             Namespace='StreamAlert', MetricData=[{'test': 'info'}])
 
     @staticmethod
-    @patch('stream_alert.rule_processor.metrics.boto3')
+    @patch('stream_alert.shared.metrics.boto3')
     @patch('logging.Logger.exception')
     def test_boto_failed(log_mock, boto_mock):
         """Metrics - Boto Call Failed"""

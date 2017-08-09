@@ -20,10 +20,10 @@ from logging import DEBUG as log_level_debug
 from stream_alert.rule_processor import LOGGER
 from stream_alert.rule_processor.config import load_config, load_env
 from stream_alert.rule_processor.classifier import StreamClassifier
-from stream_alert.rule_processor.metrics import Metrics
 from stream_alert.rule_processor.payload import load_stream_payload
 from stream_alert.rule_processor.rules_engine import StreamRules
 from stream_alert.rule_processor.sink import StreamSink
+from stream_alert.shared.metrics import Metrics
 
 
 class StreamAlert(object):

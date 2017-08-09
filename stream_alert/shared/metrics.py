@@ -21,7 +21,7 @@ import boto3
 
 from botocore.exceptions import ClientError
 
-from stream_alert.rule_processor import LOGGER
+from stream_alert.shared import LOGGER
 
 
 class Metrics(object):

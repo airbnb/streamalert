@@ -38,7 +38,7 @@ from unit.stream_alert_rule_processor.test_helpers import (
 )
 
 
-@patch('stream_alert.rule_processor.metrics.Metrics.put_metric_data', Mock())
+@patch('stream_alert.shared.metrics.Metrics.put_metric_data', Mock())
 class TestStreamAlert(object):
     """Test class for StreamAlert class"""
 
