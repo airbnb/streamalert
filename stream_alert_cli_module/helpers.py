@@ -1,4 +1,4 @@
-'''
+"""
 Copyright 2017-present, Airbnb Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,20 +12,19 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-'''
+"""
 import base64
 import json
 import os
 import random
 import subprocess
+from StringIO import StringIO
 import zipfile
 import zlib
 
-from StringIO import StringIO
-
 import boto3
 
-from stream_alert_cli.logger import LOGGER_CLI
+from stream_alert_cli_module.logger import LOGGER_CLI
 
 
 DIR_TEMPLATES = 'test/integration/templates'
@@ -155,6 +154,7 @@ def create_lambda_function(function_name, region):
 
 
 def encrypt_with_kms(data, region, alias):
+    """Encrypt the given data with KMS."""
     kms_client = boto3.client('kms', region_name=region)
     response = kms_client.encrypt(KeyId=alias,
                                   Plaintext=data)

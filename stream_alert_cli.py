@@ -1,6 +1,5 @@
 #! /usr/bin/env python
-
-'''
+"""
 Copyright 2017-present, Airbnb Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,48 +22,18 @@ deploying to AWS Lambda, and publishing production versions.
 To run terraform by hand, change to the terraform directory and run:
 
 terraform <cmd> -var-file=../terraform.tfvars -var-file=../variables.json
-'''
+"""
+from argparse import ArgumentParser, RawTextHelpFormatter
+from argparse import SUPPRESS as ARGPARSE_SUPPRESS
 import os
 
-from argparse import ArgumentParser, RawTextHelpFormatter
-from argparse import SUPPRESS as argparse_suppress
-
-from stream_alert_cli.runner import cli_runner
-from stream_alert_cli.logger import LOGGER_CLI
-from stream_alert_cli import __version__ as version
+from stream_alert_cli_module import __version__ as version
+from stream_alert_cli_module.logger import LOGGER_CLI
+from stream_alert_cli_module.runner import cli_runner
 
 
-def build_parser():
-    description = ("""
-StreamAlertCLI v{}
-Build, Deploy, Configure, and Test StreamAlert Infrastructure
-
-Available Commands:
-
-    stream_alert_cli.py terraform               Manage StreamAlert infrastructure
-    stream_alert_cli.py output                  Configure new StreamAlert outputs
-    stream_alert_cli.py lambda                  Deploy, test, and rollback StreamAlert AWS Lambda functions
-    stream_alert_cli.py live-test               Send alerts to configured outputs
-    stream_alert_cli.py configure               Configure StreamAlert settings
-
-For additional details on the available commands, try:
-
-    stream_alert_cli.py [command] --help
-
-""".format(version))
-    usage = '%(prog)s [command] [subcommand] [options]'
-
-    parser = ArgumentParser(
-        description=description,
-        prog='stream_alert_cli.py',
-        usage=usage,
-        formatter_class=RawTextHelpFormatter
-    )
-    subparsers = parser.add_subparsers()
-
-    #
-    # Output Parser
-    #
+def _add_output_subparser(subparsers):
+    """Add the output subparser: stream_alert_cli.py output [subcommand] [options]"""
     output_usage = 'stream_alert_cli.py output [subcommand] [options]'
     output_description = ("""
 StreamAlertCLI v{}
@@ -98,24 +67,24 @@ Examples:
     output_parser.add_argument(
         'subcommand',
         choices=['new'],
-        help=argparse_suppress
+        help=ARGPARSE_SUPPRESS
     )
     # Output service options
     output_parser.add_argument(
         '--service',
         choices=['aws-lambda', 'aws-s3', 'pagerduty', 'phantom', 'slack'],
         required=True,
-        help=argparse_suppress
+        help=ARGPARSE_SUPPRESS
     )
     output_parser.add_argument(
         '--debug',
         action='store_true',
-        help=argparse_suppress
+        help=ARGPARSE_SUPPRESS
     )
 
-    #
-    # Live Test Parser
-    #
+
+def _add_live_test_subparser(subparsers):
+    """Add the live-test subparser: stream_alert_cli.py live-test [options]"""
     live_test_usage = 'stream_alert_cli.py live-test [options]'
     live_test_description = ("""
 StreamAlertCLI v{}
@@ -138,7 +107,7 @@ Examples:
         description=live_test_description,
         usage=live_test_usage,
         formatter_class=RawTextHelpFormatter,
-        help=argparse_suppress
+        help=ARGPARSE_SUPPRESS
     )
 
     # set the name of this parser to 'live-test'
@@ -153,7 +122,7 @@ Examples:
     live_test_parser.add_argument(
         '-c', '--cluster',
         choices=clusters,
-        help=argparse_suppress,
+        help=ARGPARSE_SUPPRESS,
         required=True
     )
 
@@ -161,19 +130,19 @@ Examples:
     live_test_parser.add_argument(
         '-r', '--rules',
         nargs='+',
-        help=argparse_suppress
+        help=ARGPARSE_SUPPRESS
     )
 
     # allow verbose output for the CLI with te --debug option
     live_test_parser.add_argument(
         '--debug',
         action='store_true',
-        help=argparse_suppress
+        help=ARGPARSE_SUPPRESS
     )
 
-    #
-    # Lambda Parser
-    #
+
+def _add_lambda_subparser(subparsers):
+    """Add the Lambda subparser: stream_alert_cli.py lambda [subcommand] [options]"""
     lambda_usage = 'stream_alert_cli.py lambda [subcommand] [options]'
     lambda_description = ("""
 StreamAlertCLI v{}
@@ -203,7 +172,7 @@ Examples:
         'lambda',
         usage=lambda_usage,
         description=lambda_description,
-        help=argparse_suppress,
+        help=ARGPARSE_SUPPRESS,
         formatter_class=RawTextHelpFormatter
     )
 
@@ -214,14 +183,14 @@ Examples:
     lambda_parser.add_argument(
         'subcommand',
         choices=['deploy', 'rollback', 'test'],
-        help=argparse_suppress
+        help=ARGPARSE_SUPPRESS
     )
 
     # require the name of the processor being deployed/rolled back/tested
     lambda_parser.add_argument(
         '--processor',
         choices=['alert', 'all', 'athena', 'rule'],
-        help=argparse_suppress,
+        help=ARGPARSE_SUPPRESS,
         action='append',
         required=True
     )
@@ -230,19 +199,19 @@ Examples:
     lambda_parser.add_argument(
         '--debug',
         action='store_true',
-        help=argparse_suppress
+        help=ARGPARSE_SUPPRESS
     )
 
     # add the optional ability to test against a rule/set of rules
     lambda_parser.add_argument(
         '-r', '--rules',
         nargs='+',
-        help=argparse_suppress
+        help=ARGPARSE_SUPPRESS
     )
 
-    #
-    # Terraform Parser
-    #
+
+def _add_terraform_subparser(subparsers):
+    """Add Terraform subparser: stream_alert_cli.py terraform [subcommand] [options]"""
     terraform_usage = 'stream_alert_cli.py terraform [subcommand] [options]'
     terraform_description = ("""
 StreamAlertCLI v{}
@@ -281,7 +250,7 @@ Examples:
         'terraform',
         usage=terraform_usage,
         description=terraform_description,
-        help=argparse_suppress,
+        help=ARGPARSE_SUPPRESS,
         formatter_class=RawTextHelpFormatter
     )
 
@@ -298,32 +267,32 @@ Examples:
                  'init-backend',
                  'generate',
                  'status'],
-        help=argparse_suppress
+        help=ARGPARSE_SUPPRESS
     )
 
     tf_parser.add_argument(
         '--target',
         choices=['athena',
-                'cloudwatch_monitoring',
-                'cloudtrail',
-                'flow_logs',
-                'kinesis',
-                'kinesis_events',
-                'stream_alert',
-                's3_events'],
-        help=argparse_suppress,
+                 'cloudwatch_monitoring',
+                 'cloudtrail',
+                 'flow_logs',
+                 'kinesis',
+                 'kinesis_events',
+                 'stream_alert',
+                 's3_events'],
+        help=ARGPARSE_SUPPRESS,
         nargs='+'
     )
-    
+
     tf_parser.add_argument(
         '--debug',
         action='store_true',
-        help=argparse_suppress
+        help=ARGPARSE_SUPPRESS
     )
 
-    #
-    # Configure Parser
-    #
+
+def _add_configure_subparser(subparsers):
+    """Add configure subparser: stream_alert_cli.py configure [config_key] [config_value]"""
     configure_usage = 'stream_alert_cli.py configure [config_key] [config_value]'
     configure_description = ("""
 StreamAlertCLI v{}
@@ -343,7 +312,7 @@ Examples:
         'configure',
         usage=configure_usage,
         description=configure_description,
-        help=argparse_suppress,
+        help=ARGPARSE_SUPPRESS,
         formatter_class=RawTextHelpFormatter
     )
 
@@ -353,24 +322,24 @@ Examples:
         'config_key',
         choices=['prefix',
                  'aws_account_id'],
-        help=argparse_suppress
+        help=ARGPARSE_SUPPRESS
     )
 
     configure_parser.add_argument(
         'config_value',
-        help=argparse_suppress
+        help=ARGPARSE_SUPPRESS
     )
-    
+
     configure_parser.add_argument(
         '--debug',
         action='store_true',
-        help=argparse_suppress
+        help=ARGPARSE_SUPPRESS
     )
 
-    #
-    # Athena Parser
-    #
-    athena_usage = 'stream_alert_cli.py athena'
+
+def _add_athena_subparser(subparsers):
+    """Add athena subparser: stream_alert_cli.py athena [subcommand]"""
+    athena_usage = 'stream_alert_cli.py athena [subcommand]'
     athena_description = ("""
 StreamAlertCLI v{}
 Athena StreamAlert options
@@ -392,7 +361,7 @@ Examples:
         'athena',
         usage=athena_usage,
         description=athena_description,
-        help=argparse_suppress,
+        help=ARGPARSE_SUPPRESS,
         formatter_class=RawTextHelpFormatter
     )
 
@@ -401,32 +370,68 @@ Examples:
     athena_parser.add_argument(
         'subcommand',
         choices=['init', 'enable', 'create-db', 'create-table'],
-        help=argparse_suppress
+        help=ARGPARSE_SUPPRESS
     )
 
-    # TODO(jacknagz): Create a second choice for data tables, and accept a
-    #                 log name argument.
+    # TODO(jacknagz): Create a second choice for data tables, and accept a log name argument.
     athena_parser.add_argument(
         '--type',
         choices=['alerts'],
-        help=argparse_suppress
+        help=ARGPARSE_SUPPRESS
     )
 
     athena_parser.add_argument(
         '--bucket',
-        help=argparse_suppress
+        help=ARGPARSE_SUPPRESS
     )
-    
+
     athena_parser.add_argument(
         '--debug',
         action='store_true',
-        help=argparse_suppress
+        help=ARGPARSE_SUPPRESS
     )
+
+
+def build_parser():
+    """Build the argument parser."""
+    description = ("""
+StreamAlertCLI v{}
+Build, Deploy, Configure, and Test StreamAlert Infrastructure
+
+Available Commands:
+
+    stream_alert_cli.py terraform        Manage StreamAlert infrastructure
+    stream_alert_cli.py output           Configure new StreamAlert outputs
+    stream_alert_cli.py lambda           Deploy, test, and rollback StreamAlert AWS Lambda functions
+    stream_alert_cli.py live-test        Send alerts to configured outputs
+    stream_alert_cli.py configure        Configure StreamAlert settings
+
+For additional details on the available commands, try:
+
+    stream_alert_cli.py [command] --help
+
+""".format(version))
+    usage = '%(prog)s [command] [subcommand] [options]'
+
+    parser = ArgumentParser(
+        description=description,
+        prog='stream_alert_cli.py',
+        usage=usage,
+        formatter_class=RawTextHelpFormatter
+    )
+    subparsers = parser.add_subparsers()
+    _add_output_subparser(subparsers)
+    _add_live_test_subparser(subparsers)
+    _add_lambda_subparser(subparsers)
+    _add_terraform_subparser(subparsers)
+    _add_configure_subparser(subparsers)
+    _add_athena_subparser(subparsers)
 
     return parser
 
 
 def main():
+    """Entry point for the CLI."""
     parser = build_parser()
     options = parser.parse_args()
     cli_runner(options)

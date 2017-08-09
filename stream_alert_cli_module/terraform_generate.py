@@ -1,4 +1,4 @@
-'''
+"""
 Copyright 2017-present, Airbnb Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,17 +12,15 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-'''
-
-import json
-import sys
-
+"""
 from collections import defaultdict
+import json
+import os
 
-from stream_alert_cli.logger import LOGGER_CLI
-
+from stream_alert_cli_module.logger import LOGGER_CLI
 
 RESTRICTED_CLUSTER_NAMES = ('main', 'athena')
+
 
 class InvalidClusterName(Exception):
     """Exception for invalid cluster names"""
@@ -103,7 +101,8 @@ def generate_main(**kwargs):
         }
     else:
         main_dict['terraform']['backend']['s3'] = {
-            'bucket': '{}.streamalert.terraform.state'.format(config['global']['account']['prefix']),
+            'bucket': '{}.streamalert.terraform.state'.format(
+                config['global']['account']['prefix']),
             'key': 'stream_alert_state/terraform.tfstate',
             'region': config['global']['account']['region'],
             'encrypt': True,
@@ -287,6 +286,7 @@ def generate_cloudwatch_monitoring(cluster_name, cluster_dict, config):
     """
     prefix = config['global']['account']['prefix']
     infrastructure_config = config['global'].get('infrastructure')
+    sns_topic_arn = None
     if infrastructure_config and 'monitoring' in infrastructure_config:
         if infrastructure_config['monitoring'].get('create_sns_topic'):
             sns_topic_arn = 'arn:aws:sns:{region}:{account_id}:{topic}'.format(
@@ -331,7 +331,8 @@ def generate_kinesis(cluster_name, cluster_dict, config):
     """
     logging_bucket = '{}.streamalert.s3-logging'.format(
         config['global']['account']['prefix'])
-    firehose_suffix = config['clusters'][cluster_name]['modules']['kinesis']['firehose']['s3_bucket_suffix']
+    firehose_suffix = config['clusters'][cluster_name]['modules']['kinesis']['firehose'][
+        's3_bucket_suffix']
     prefix = config['global']['account']['prefix']
     modules = config['clusters'][cluster_name]['modules']
 
@@ -490,9 +491,9 @@ def generate_flow_logs(cluster_name, cluster_dict, config):
                 cluster_dict['module']['flow_logs_{}'.format(
                     cluster_name)][flow_log_input] = input_data
         return True
-    else:
-        LOGGER_CLI.info('Flow logs disabled, nothing to do')
-        return False
+
+    LOGGER_CLI.info('Flow logs disabled, nothing to do')
+    return False
 
 
 def generate_s3_events(cluster_name, cluster_dict, config):
@@ -520,11 +521,11 @@ def generate_s3_events(cluster_name, cluster_dict, config):
             's3_bucket_id': s3_bucket_id,
             's3_bucket_arn': 'arn:aws:s3:::{}'.format(s3_bucket_id)}
         return True
-    else:
-        LOGGER_CLI.error(
-            'Config Error: Missing S3 bucket in %s s3_events module',
-            cluster_name)
-        return False
+
+    LOGGER_CLI.error(
+        'Config Error: Missing S3 bucket in %s s3_events module',
+        cluster_name)
+    return False
 
 
 def generate_cluster(**kwargs):
@@ -540,7 +541,6 @@ def generate_cluster(**kwargs):
     config = kwargs.get('config')
     cluster_name = kwargs.get('cluster_name')
 
-    account = config['global']['account']
     modules = config['clusters'][cluster_name]['modules']
     cluster_dict = infinitedict()
 

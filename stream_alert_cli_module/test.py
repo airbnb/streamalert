@@ -1,4 +1,4 @@
-'''
+"""
 Copyright 2017-present, Airbnb Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,8 +12,7 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-'''
-
+"""
 import json
 import logging
 import os
@@ -28,19 +27,13 @@ import boto3
 from moto import mock_cloudwatch, mock_lambda, mock_kms, mock_s3, mock_sns
 
 from stream_alert.alert_processor import main as StreamOutput
-from stream_alert.rule_processor.classifier import StreamClassifier
-from stream_alert.rule_processor.config import load_config
 from stream_alert.rule_processor.handler import StreamAlert
-from stream_alert.rule_processor.rules_engine import StreamRules
-from stream_alert_cli import helpers
-from stream_alert_cli.logger import LOGGER_CLI, LOGGER_SA, LOGGER_SO
-from stream_alert_cli.outputs import load_outputs_config
-
-
 # import all rules loaded from the main handler
-# pylint: disable=unused-import
-import stream_alert.rule_processor.main
-# pylint: enable=unused-import
+import stream_alert.rule_processor.main  # pylint: disable=unused-import
+from stream_alert.rule_processor.rules_engine import StreamRules
+from stream_alert_cli_module import helpers
+from stream_alert_cli_module.logger import LOGGER_CLI, LOGGER_SA, LOGGER_SO
+from stream_alert_cli_module.outputs import load_outputs_config
 
 DIR_RULES = 'test/integration/rules'
 COLOR_RED = '\033[0;31;1m'
@@ -168,7 +161,7 @@ class RuleProcessorTester(object):
         Args:
             rule_name: The name of the rule being tested. This is passed in
                 here strictly for reporting any errors with key checks.
-            test_record [dict]: Test record metadata dict
+            test_record: [dict] Test record metadata dict
 
         Returns:
             [bool] boolean result indicating if the proper keys are present
@@ -210,18 +203,18 @@ class RuleProcessorTester(object):
             test_record: loaded fixture file JSON as a dict.
         """
         # declare all helper functions here, they should always return a string
-        helpers = {
+        helper_map = {
             'last_hour': lambda: str(int(time.time()) - 60)
         }
-        helper_regex = re.compile(r'\<helper:(?P<helper>\w+)\>')
+        helper_regex = re.compile(r'<helper:(?P<helper>\w+)>')
 
         def find_and_apply_helpers(test_record):
             """Apply any helpers to the passed in test_record"""
             for key, value in test_record.iteritems():
-                if isinstance(value, str) or isinstance(value, unicode):
+                if isinstance(value, (str, unicode)):
                     test_record[key] = re.sub(
                         helper_regex,
-                        lambda match: helpers[match.group('helper')](),
+                        lambda match: helper_map[match.group('helper')](),
                         test_record[key]
                     )
                 elif isinstance(value, dict):
@@ -350,6 +343,7 @@ class RuleProcessorTester(object):
 
                 self.invalid_log_messages.append(message)
 
+
 class AlertProcessorTester(object):
     """Class to encapsulate testing the alert processor"""
     _alert_fail_pass = [0, 0]
@@ -452,7 +446,7 @@ class AlertProcessorTester(object):
                 # Set the patched urlopen.getcode return value to 200
                 url_mock.return_value.getcode.return_value = 200
             elif service == 'phantom':
-                output_name = ('/').join([service, descriptor])
+                output_name = '/'.join([service, descriptor])
                 creds = {'ph_auth_token': '6c586bc047b9749a92de29078a015cc6',
                          'url': 'phantom.foo.bar'}
                 helpers.put_mock_creds(output_name, creds, self.secrets_bucket,
@@ -463,7 +457,7 @@ class AlertProcessorTester(object):
                 # Phantom needs a container 'id' value in the http response
                 url_mock.return_value.read.return_value = '{"id": 1948}'
             elif service == 'slack':
-                output_name = ('/').join([service, descriptor])
+                output_name = '{}/{}'.format(service, descriptor)
                 creds = {'url': 'https://api.slack.com/web-hook-key'}
                 helpers.put_mock_creds(output_name, creds, self.secrets_bucket,
                                        'us-east-1', self.kms_alias)
@@ -474,12 +468,12 @@ class AlertProcessorTester(object):
 
 def report_output(cols):
     """Helper function to pretty print columns for reporting results
+
     Args:
         cols [list]: A list of columns to print as output
     """
-
-    status = ('{}[Fail]{}'.format(COLOR_RED, COLOR_RESET),
-              '{}[Pass]{}'.format(COLOR_GREEN, COLOR_RESET))[cols[0]]
+    status = ('{}[Pass]{}'.format(COLOR_GREEN, COLOR_RESET) if cols[0]
+              else '{}[Fail]{}'.format(COLOR_RED, COLOR_RESET))
 
     print '\t{}{:>14}\t{}\t({}): {}'.format(status, *cols[1:])
 
@@ -526,11 +520,11 @@ def mock_me(context):
                 us to mock out all calls that happen below this scope."""
                 return func(options, context)
             return mocked
-        else:
-            def unmocked(options, context):
-                """This function will remain unmocked and operate normally"""
-                return func(options, context)
-            return unmocked
+
+        def unmocked(options, context):
+            """This function will remain unmocked and operate normally"""
+            return func(options, context)
+        return unmocked
 
     return wrap
 

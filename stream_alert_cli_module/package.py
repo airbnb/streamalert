@@ -1,4 +1,4 @@
-'''
+"""
 Copyright 2017-present, Airbnb Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,22 +12,19 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-'''
-
-from datetime import datetime
-
+"""
 import base64
+from datetime import datetime
 import hashlib
 import os
 import shutil
 import tempfile
 
 import boto3
-
 from botocore.exceptions import ClientError
 
-from stream_alert_cli.helpers import run_command
-from stream_alert_cli.logger import LOGGER_CLI
+from stream_alert_cli_module.helpers import run_command
+from stream_alert_cli_module.logger import LOGGER_CLI
 
 
 class LambdaPackage(object):
@@ -137,8 +134,7 @@ class LambdaPackage(object):
         Returns:
             [string] Deployment package full path
         """
-        LOGGER_CLI.debug('Creating Lambda package: %s',
-                        ''.join([temp_package_path, '.zip']))
+        LOGGER_CLI.debug('Creating Lambda package: %s', temp_package_path + '.zip')
         package_path = shutil.make_archive(temp_package_path, 'zip', temp_package_path)
         LOGGER_CLI.info('Package successfully created')
 
@@ -220,9 +216,8 @@ class LambdaPackage(object):
                     Body=package_fh,
                     ServerSideEncryption='AES256'
                 )
-            except ClientError as err:
-                LOGGER_CLI.exception('An error occurred while uploading %s',
-                                     package_name)
+            except ClientError:
+                LOGGER_CLI.exception('An error occurred while uploading %s', package_name)
                 return False
 
             package_fh.close()
