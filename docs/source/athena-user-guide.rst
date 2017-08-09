@@ -11,9 +11,9 @@ Concepts
 Querying Data
 -------------
 
-After completion of the `Athena Setup <athena-setup.html>`_ and `Athena Deploy <athena-deploy.html>`_, alert data is now searchable in the Athena UI.
+After completion of the `Athena Setup <athena-setup.html>`_ and `Athena Deploy <athena-deploy.html>`_, alerts generated from StreamAlert are now searchable in the Athena UI.
 
-To get started with searching, navigate to the AWS Console, click Services, and type Athena.
+To get started with querying of this data, navigate to the AWS Console, click Services, and type Athena.
 
 When the service loads, switch the ``DATABASE`` option in the dropdown to ``streamalert``:
 

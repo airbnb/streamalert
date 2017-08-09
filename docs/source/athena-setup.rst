@@ -6,11 +6,11 @@ Overview
 
 AWS Athena is a Serverless query service used to analyze large volumes of data stored in S3.
 
-Data in Athena is searchable via ANSI SQL.
+Data in Athena is searchable via ANSI SQL and powered by Presto.
 
 StreamAlert uses AWS Athena for historical searching of:
 
-* Generated StreamAlerts (currently supported)
+* Generated alerts from StreamAlert (currently supported)
 * All incoming Data sent to StreamAlert (coming soon)
 
 This works by:

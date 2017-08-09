@@ -15,7 +15,7 @@ The default refresh interval is 10 minutes.
 Concepts
 --------
 
-This function utilizes:
+The Athena Partition Refresh function utilizes:
 
 * `AWS S3 Event Notifications <http://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html>`_
 * `AWS SQS <https://aws.amazon.com/sqs/details/>`_
@@ -36,7 +36,8 @@ Internals
 Each time the Athena Partition Refresh Lambda function starts up, it does the following:
 
 * Polls the SQS Queue for the latest S3 event notifications (up to 50)
-* Deduplicates a set of S3 Bucket IDs from the notifications
+* S3 event notifications contain context around any new object written to a data bucket (as configured below)
+* A set of unique S3 Bucket IDs is deduplicated from the notifications
 * Queries Athena to verify the ``streamalert`` database exists
 * Refreshes the Athena tables as configured below in the ``repair_type.repair_hive_table`` key
 * Deletes messages off the Queue once the Athena table(s) is successfully refreshed
@@ -54,11 +55,11 @@ Open ``conf/lambda.json``, and fill in the following ``Required`` options:
 Key                                  Required  Default            Description
 -----------------------------------  --------  ---------          -----------
 ``enabled``                          ``Yes``   ``True``           Enables/Disables the Athena Partition Refresh Lambda function
-``log_level``                        ``No``    ``info``           The log level for the Lambda function
+``log_level``                        ``No``    ``info``           The log level for the Lambda function, can be either ``info`` or ``debug``.  Debug will help with diagnosing errors with polling SQS or sending Athena queries.
 ``memory``                           ``No``    ``128``            The amount of memory (in MB) allocated to the Lambda function
 ``timeout``                          ``No``    ``60``             The maximum duration of the Lambda function (in seconds)
-``refresh_type.add_hive_partition``  ``No``    ``{}``             No currently supported
-``refresh_type.repair_hive_table``   ``Yes``   ``{}``             Key value pairs of S3 buckets and Athena table names.  Currently only supports the default alerts bucket created with every cluster.
+``refresh_type.add_hive_partition``  ``No``    ``{}``             Not currently supported
+``refresh_type.repair_hive_table``   ``Yes``   ``{}``             Key value pairs of S3 buckets and associated Athena table names.  Currently only supports the default alerts bucket created with every cluster.
 ===================================  ========  =========          ===========
 
 **Example:**
@@ -72,7 +73,7 @@ Key                                  Required  Default            Description
       "memory": 128,
       "refresh_type": {
         "add_hive_partition": {
-          "not_currently": "supported"
+          "...": "..."
         },
         "repair_hive_table": {
           "<prefix>.streamalerts": "alerts"
