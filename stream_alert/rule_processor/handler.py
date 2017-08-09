@@ -102,7 +102,7 @@ class StreamAlert(object):
                 continue
 
             # Create the StreamPayload to use for encapsulating parsed info
-            payload = load_stream_payload(service, entity, raw_record)
+            payload = load_stream_payload(service, entity, raw_record, self.metrics)
             if not payload:
                 continue
 
