@@ -262,3 +262,22 @@ Key                 Required  Default                               Description
 ``vpcs``            No        None                                  The list of AWS VPC IDs to collect flow logs from.
 ``enis``            No        None                                  The list of AWS ENIs to collect flow logs from.
 ==================  ========  ====================================  ===========
+
+Module: S3 Events
+-----------------
+
+Amazon S3 is one of the default datasources for StreamAlert.
+
+S3 Object event notifications can be configured to send to Lambda each time an object is written.
+
+When StreamAlert receives this notification, it fetches the object from S3 and analyzes it according to configured rules.
+
+**Template**
+
+.. code-block:: json
+
+  {
+    "s3_events": {
+      "s3_bucket_id": "<input-bucket-id>"
+    }
+  }
