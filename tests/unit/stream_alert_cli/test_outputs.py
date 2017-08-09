@@ -67,7 +67,7 @@ def test_write_outputs_config():
         )
 
 
-@patch('stream_alert_cli.outputs.load_outputs_config')
+@patch('stream_alert_cli_module.outputs.load_outputs_config')
 def test_load_config(method_mock):
     """Load config - check for existing output"""
     # Patch the return value of the load_outputs_config method to return
@@ -82,7 +82,7 @@ def test_load_config(method_mock):
     assert_false(loaded)
 
 
-@patch('stream_alert_cli.outputs.encrypt_and_push_creds_to_s3')
+@patch('stream_alert_cli_module.outputs.encrypt_and_push_creds_to_s3')
 @mock_kms
 @mock_s3
 def test_encrypt_and_push_creds_to_s3(cli_mock):

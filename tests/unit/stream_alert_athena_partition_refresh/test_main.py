@@ -179,12 +179,14 @@ class TestStreamAlertAthenaGlobals(object):
         mock_logging.error.assert_called_with('No s3 buckets to refresh, exiting')
 
 
-@mock_sqs
 class TestStreamAlertSQSClient(object):
     """Test class for StreamAlertSQSClient"""
 
     def setup(self):
         """Add a fake message to the queue."""
+        self.mock_sqs = mock_sqs()
+        self.mock_sqs.start()
+
         sqs = boto3.resource('sqs', region_name=TEST_REGION)
         self.queue = sqs.create_queue(QueueName=StreamAlertSQSClient.QUEUENAME)
         self.client = StreamAlertSQSClient(CONFIG_DATA)
@@ -232,6 +234,9 @@ class TestStreamAlertSQSClient(object):
         }
         self.queue.send_message(MessageBody=json.dumps(test_s3_notification),
                                 QueueUrl=self.client.athena_sqs_url)
+
+    def teardown(self):
+        self.mock_sqs.stop()
 
     @patch('stream_alert.athena_partition_refresh.main.LOGGER')
     def test_delete_messages_none(self, mock_logging):
