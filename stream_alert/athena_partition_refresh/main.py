@@ -167,11 +167,13 @@ class StreamAlertAthenaClient(object):
         """
         LOGGER.debug('Executing query: %s', kwargs['query'])
         query_execution_resp = self.athena_client.start_query_execution(
-            QueryString=kwargs['query'], QueryExecutionContext={
-                'Database': kwargs.get(
-                    'database', self.DATABASE_DEFAULT)}, ResultConfiguration={
+            QueryString=kwargs['query'],
+            QueryExecutionContext={'Database': kwargs.get('database', self.DATABASE_DEFAULT)},
+            ResultConfiguration={
                 'OutputLocation': '{}/{}'.format(
-                    self.athena_results_bucket, self.athena_results_key)})
+                    self.athena_results_bucket, self.athena_results_key)
+            }
+        )
 
         query_execution_result = self.check_query_status(
             query_execution_resp['QueryExecutionId'])

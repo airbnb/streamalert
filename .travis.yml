@@ -12,6 +12,6 @@ script:
   - ./tests/scripts/unit_tests.sh
   - ./stream_alert_cli.py lambda test --processor all
   - sphinx-build -W docs/source docs/build
-  - find . -name '*.py' -exec pylint '{}' +
+  - find . -name '*.py' -not -path './docs/source/*' -exec pylint '{}' +
 after_success:
   coveralls
