@@ -80,15 +80,14 @@ class StreamAlert(object):
             # is not in our config, log and error and go onto the next record
             service, entity = self.classifier.extract_service_and_entity(raw_record)
             if not service:
-                LOGGER.error('No valid service found in payload\'s raw record')
+                LOGGER.error('No valid service found in payload\'s raw record. Skipping '
+                             'record: %s', raw_record)
+                continue
 
             if not entity:
                 LOGGER.error(
-                    'Unable to map entity from payload\'s raw record for service %s',
-                    service)
-
-            if not (service and entity):
-                LOGGER.error('Skipping record: %s', raw_record)
+                    'Unable to extract entity from payload\'s raw record for service %s. '
+                    'Skipping record: %s', service, raw_record)
                 continue
 
             # Cache the log sources for this service and entity on the classifier

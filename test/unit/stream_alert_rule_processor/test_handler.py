@@ -89,7 +89,8 @@ class TestStreamAlert(object):
 
         self.__sa_handler.run({'Records': ['record']})
 
-        log_mock.assert_any_call('No valid service found in payload\'s raw record')
+        log_mock.assert_called_with('No valid service found in payload\'s raw record. '
+                                    'Skipping record: %s', 'record')
 
     @patch('logging.Logger.error')
     @patch('stream_alert.rule_processor.handler.StreamClassifier.extract_service_and_entity')
@@ -98,11 +99,9 @@ class TestStreamAlert(object):
         extract_mock.return_value = ('kinesis', '')
 
         self.__sa_handler.run({'Records': ['record']})
-        calls = [call('Unable to map entity from payload\'s raw record for service %s',
-                      'kinesis'),
-                 call('Skipping record: %s', 'record')]
 
-        log_mock.assert_has_calls(calls)
+        log_mock.assert_called_with('Unable to extract entity from payload\'s raw record for '
+                                    'service %s. Skipping record: %s', 'kinesis', 'record')
 
     @patch('stream_alert.rule_processor.handler.load_stream_payload')
     @patch('stream_alert.rule_processor.handler.StreamClassifier.load_sources')
