@@ -128,32 +128,34 @@ The ``conf/lambda.json`` configuration file controls common settings across all 
 
   {
     "alert_processor_config": {
-        "handler": "stream_alert.rule_processor.main.handler",
-        "source_bucket": "prefix.streamalert.source",
-        "source_current_hash": "auto_generated_hash",
-        "source_object_key": "auto_generated_s3_object_key",
-        "third_party_libraries": [
-            "jsonpath_rw",
-            "netaddr"
-        ]
+      "handler": "stream_alert.rule_processor.main.handler",
+      "source_bucket": "prefix.streamalert.source",
+      "source_current_hash": "auto_generated_hash",
+      "source_object_key": "auto_generated_s3_object_key",
+      "third_party_libraries": [
+        "jsonpath_rw",
+        "netaddr"
+      ]
     },
     "rule_processor_config": {
-        "handler": "stream_alert.rule_processor.main.handler",
-        "source_bucket": "prefix.streamalert.source",
-        "source_current_hash": "auto_generated_hash",
-        "source_object_key": "auto_generated_s3_object_key",
-        "third_party_libraries": []
+      "handler": "stream_alert.rule_processor.main.handler",
+      "source_bucket": "prefix.streamalert.source",
+      "source_current_hash": "auto_generated_hash",
+      "source_object_key": "auto_generated_s3_object_key",
+      "third_party_libraries": []
     }
   }
 
-``source_bucket``: The S3 bucket for uploading and storing the StreamAlert application code.  Open ``variables.json`` and replace the prefix with your company name.
+**Options:**
 
-``source_current_hash``: The checksum of the currently running Lambda function.  Used for version publishing.
-
-``source_object_key``: The full path in S3 to the currently running Lambda function source code zip.
-
-``handler``: The entry point to the Lambda function where events are passed into StreamAlert.
+=========================    ========  ===========
+Key                          Required  Description
+-------------------------    --------  -----------
+``source_bucket``            ``true``  The S3 bucket for uploading and storing the StreamAlert application code.  Open ``variables.json`` and replace the prefix with your company name.
+``source_current_hash``      ``true``  The checksum of the currently running Lambda function.  Used for version publishing.
+``source_object_key``        ``true``  The full path in S3 to the currently running Lambda function source code zip.
+``handler``                  ``true``  The entry point to the Lambda function where events are passed into StreamAlert.
+``third_party_libraries``    ``true``  Third-party Python libraries to package into the Lambda deployment package.
+=========================    ========  =========== 
 
 .. note:: If third-party libraries are used in rules but not specified below, they will not work.
-
-``third_party_libraries``: Third-party Python libraries to package into the Lambda deployment package.
