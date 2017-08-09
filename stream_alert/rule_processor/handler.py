@@ -20,6 +20,7 @@ from logging import DEBUG as log_level_debug
 from stream_alert.rule_processor import LOGGER
 from stream_alert.rule_processor.config import load_config, load_env
 from stream_alert.rule_processor.classifier import StreamClassifier
+from stream_alert.rule_processor.metrics import Metrics
 from stream_alert.rule_processor.payload import load_stream_payload
 from stream_alert.rule_processor.rules_engine import StreamRules
 from stream_alert.rule_processor.sink import StreamSink
@@ -51,6 +52,7 @@ class StreamAlert(object):
         # Instantiate a classifier that is used for this run
         self.classifier = StreamClassifier(config=config)
 
+        self.metrics = Metrics(self.env['lambda_region'])
         self.enable_alert_processor = enable_alert_processor
         self._failed_record_count = 0
         self._alerts = []
@@ -74,6 +76,11 @@ class StreamAlert(object):
         LOGGER.debug('Number of Records: %d', len(records))
         if not records:
             return False
+
+        self.metrics.put_metric_data(
+            Metrics.Name.TOTAL_RECORDS,
+            len(records),
+            Metrics.Unit.COUNT)
 
         for raw_record in records:
             # Get the service and entity from the payload. If the service/entity
@@ -103,7 +110,16 @@ class StreamAlert(object):
 
         LOGGER.debug('Invalid record count: %d', self._failed_record_count)
 
+        self.metrics.put_metric_data(
+            Metrics.Name.FAILED_PARSES,
+            self._failed_record_count,
+            Metrics.Unit.COUNT)
+
         LOGGER.debug('%s alerts triggered', len(self._alerts))
+
+        self.metrics.put_metric_data(
+            Metrics.Name.TRIGGERED_ALERTS, len(
+                self._alerts), Metrics.Unit.COUNT)
 
         # Check if debugging logging is on before json dumping alerts since
         # this can be time consuming if there are a lot of alerts
