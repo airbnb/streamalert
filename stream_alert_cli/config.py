@@ -65,6 +65,7 @@ class CLIConfig(object):
             'handler': 'stream_alert.athena_partition_refresh.main.handler',
             'timeout': '60',
             'memory': '128',
+            'log_level': 'info',
             'source_bucket': 'PREFIX_GOES_HERE.streamalert.source',
             'source_current_hash': '<auto_generated>',
             'source_object_key': '<auto_generated',
