@@ -104,3 +104,12 @@ Table of Contents
    report-bugs-features
    questions
 
+.. _historical_search:
+
+.. toctree::
+  :maxdepth: 2
+  :caption: Historical Search
+
+  athena-setup
+  athena-deploy
+  athena-user-guide
