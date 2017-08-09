@@ -23,6 +23,11 @@
       "logs": [
         "test_cloudtrail"
       ]
+    },
+    "unit_test_default_stream": {
+      "logs": [
+        "unit_test_simple_log"
+      ]
     }
   }
 }

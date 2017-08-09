@@ -28,7 +28,7 @@ import boto3
 from moto import mock_cloudwatch, mock_lambda, mock_kms, mock_s3, mock_sns
 
 from stream_alert.alert_processor import main as StreamOutput
-from stream_alert.rule_processor.classifier import StreamClassifier, StreamPayload
+from stream_alert.rule_processor.classifier import StreamClassifier
 from stream_alert.rule_processor.config import load_config
 from stream_alert.rule_processor.handler import StreamAlert
 from stream_alert.rule_processor.rules_engine import StreamRules
@@ -302,10 +302,7 @@ class RuleProcessorTester(object):
         all_records_matched_schema = processor.run(event)
 
         if not all_records_matched_schema:
-            payload = StreamPayload(raw_record=formatted_record)
-            classifier = StreamClassifier(config=load_config())
-            classifier.map_source(payload)
-            logs = classifier._log_metadata()
+            logs = processor.classifier.get_log_info_for_source()
             self.analyze_record_delta(logs, rule_name, test_record)
 
         alerts = processor.get_alerts()

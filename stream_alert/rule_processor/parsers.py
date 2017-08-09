@@ -72,7 +72,6 @@ class ParserBase:
         Returns:
             [list] A list of dictionaries representing parsed records.
         """
-        pass
 
     def type(self):
         """Returns the type of parser. Overriden in GzipJSONParser to just return json"""
