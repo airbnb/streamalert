@@ -40,6 +40,11 @@ COLOR_YELLOW = '\033[0;33;1m'
 COLOR_GREEN = '\033[0;32;1m'
 COLOR_RESET = '\033[0m'
 
+StatusMessage = namedtuple('StatusMessage', 'type, rule, message')
+STATUS_WARNING = -1
+STATUS_FAILURE = 0
+STATUS_SUCCESS = 1
+
 
 class TestingSuppressFilter(logging.Filter):
     """Simple logging filter for suppressing specific log messagses that we
@@ -77,7 +82,7 @@ class RuleProcessorTester(object):
         # Create a list for pass/fails. The first value in the list is a
         # list of tuples for failures, and the second is list of tuples for
         # passes. Tuple is (rule_name, rule_description)
-        self.rules_fail_pass_warn = ([], [], [])
+        self.status_messages = []
         self.print_output = print_output
         self.invalid_log_messages = []
 
@@ -99,14 +104,15 @@ class RuleProcessorTester(object):
                     self.all_tests_passed = False
                     message = 'Improperly formatted file - {}: {}'.format(
                         type(err).__name__, err)
-                    self.rules_fail_pass_warn[2].append((rule_name, message))
+                    self.status_messages.append(StatusMessage(STATUS_WARNING, rule_name, message))
                     continue
 
             test_records = contents.get('records')
             if not test_records:
                 self.all_tests_passed = False
-                self.rules_fail_pass_warn[2].append(
-                    (rule_name, 'No records to test in file'))
+                self.status_messages.append(
+                    StatusMessage(STATUS_WARNING, rule_name, 'No records to test in file')
+                )
                 continue
 
             # Go over the records and test the applicable rule
@@ -146,9 +152,11 @@ class RuleProcessorTester(object):
                 # yield the result and alerts back to caller
                 yield alerts
 
-                # Add the name of the rule to the applicable pass or fail list
-                self.rules_fail_pass_warn[current_test_passed].append(
-                    (rule_name, test_record['description']))
+                # Add the status of the rule to messages list
+                message_type = STATUS_SUCCESS if current_test_passed else STATUS_FAILURE
+                message = ('' if current_test_passed else
+                           'Rule failure: {}'.format(test_record['description']))
+                self.status_messages.append(StatusMessage(message_type, rule_name, message))
 
         # Report on the final test results
         self.report_output_summary()
@@ -171,7 +179,7 @@ class RuleProcessorTester(object):
             req_key_diff = required_keys.difference(record_keys)
             missing_keys = ','.join('\'{}\''.format(key) for key in req_key_diff)
             message = 'Missing required key(s) in log: {}'.format(missing_keys)
-            self.rules_fail_pass_warn[0].append((rule_name, message))
+            self.status_messages.append(StatusMessage(STATUS_FAILURE, rule_name, message))
             return False
 
         optional_keys = {'trigger_count', 'compress'}
@@ -184,7 +192,9 @@ class RuleProcessorTester(object):
             message = 'Additional unnecessary keys in log: {}'.format(extra_keys)
             # Remove the key(s) and just warn the user that they are extra
             record_keys.difference_update(key_diff)
-            self.rules_fail_pass_warn[2].append((rule_name, message))
+            self.status_messages.append(
+                StatusMessage(STATUS_WARNING, rule_name, message)
+            )
 
         return record_keys.issubset(required_keys | optional_keys)
 
@@ -223,10 +233,10 @@ class RuleProcessorTester(object):
 
     def report_output_summary(self):
         """Helper function to print the summary results of all rule tests"""
-        failed_tests = len(self.rules_fail_pass_warn[0])
-        passed_tests = len(self.rules_fail_pass_warn[1])
-        total_tests = failed_tests + passed_tests
-
+        failure_messages = [item for item in self.status_messages if item.type == STATUS_FAILURE]
+        warning_messages = [item for item in self.status_messages if item.type == STATUS_WARNING]
+        passed_tests = len([item for item in self.status_messages if item.type == STATUS_SUCCESS])
+        total_tests = len(failure_messages) + passed_tests
         # Print some lines at the bottom of output to make it more readable
         # This occurs here so there is always space and not only when the
         # successful test info prints
@@ -240,31 +250,31 @@ class RuleProcessorTester(object):
                 COLOR_GREEN, passed_tests, total_tests, COLOR_RESET)
 
         # Check if there were failed tests and report on them appropriately
-        if self.rules_fail_pass_warn[0]:
+        if failure_messages:
             color = COLOR_RED
             # Print a message indicating how many of the total tests failed
-            print '{}({}/{})\tRule Tests Failed'.format(color, failed_tests, total_tests)
+            print '{}({}/{})\tRule Tests Failed'.format(color, len(failure_messages), total_tests)
 
             # Iterate over the rule_name values in the failed list and report on them
-            for index, failure in enumerate(self.rules_fail_pass_warn[0]):
-                if index == failed_tests - 1:
+            for index, failure in enumerate(failure_messages, start=1):
+                if index == len(failure_messages):
                     # Change the color back so std out is not red
                     color = COLOR_RESET
                 print '\t({}/{}) [{}] {}{}'.format(
-                    index + 1, failed_tests, failure[0], failure[1], color)
+                    index + 1, len(failure_messages), failure.rule, failure.message, color)
 
         # Check if there were any warnings and report on them
-        if self.rules_fail_pass_warn[2]:
+        if warning_messages:
             color = COLOR_YELLOW
-            warning_count = len(self.rules_fail_pass_warn[2])
+            warning_count = len(warning_messages)
             print '{}{} \tRule Warning{}'.format(color, warning_count, ('', 's')[warning_count > 1])
 
-            for index, failure in enumerate(self.rules_fail_pass_warn[2]):
-                if index == warning_count - 1:
+            for index, failure in enumerate(warning_messages, start=1):
+                if index == warning_count:
                     # Change the color back so std out is not yellow
                     color = COLOR_RESET
-                print '\t({}/{}) [{}] {}{}'.format(index + 1, warning_count, failure[0],
-                                                   failure[1], color)
+                print '\t({}/{}) [{}] {}{}'.format(index + 1, warning_count, failure.rule,
+                                                   failure.message, color)
 
     def test_rule(self, rule_name, test_record, formatted_record):
         """Feed formatted records into StreamAlert and check for alerts
@@ -568,7 +578,6 @@ def get_context_from_config(cluster, config):
 
 def stream_alert_test(options, config=None):
     """High level function to wrap the integration testing entry point.
-
     This encapsulates the testing function and is used to specify if calls
     should be mocked.
 
@@ -578,7 +587,7 @@ def stream_alert_test(options, config=None):
             includes cluster info, etc that can be used for constructing
             an aws context object
     """
-    # Convert the options to a dictionary to do easy lookups
+    # get the options in a dictionary so we can do easy lookups
     run_options = vars(options)
     context = get_context_from_config(run_options.get('cluster'), config)
 
@@ -608,12 +617,12 @@ def stream_alert_test(options, config=None):
             LOGGER_SA.addFilter(TestingSuppressFilter())
 
         # Check if the rule processor should be run for these tests
-        test_rules = (run_options.get('command') == 'live-test' or
-                      set(run_options.get('processor', '')).issubset({'rule', 'all'}))
+        test_rules = (set(run_options.get('processor')).issubset({'rule', 'all'}) or
+                      run_options.get('command') == 'live-test')
 
         # Check if the alert processor should be run for these tests
-        test_alerts = (run_options.get('command') == 'live-test' or
-                       set(run_options.get('processor', '')).issubset({'alert', 'all'}))
+        test_alerts = (set(run_options.get('processor')).issubset({'alert', 'all'}) or
+                       run_options.get('command') == 'live-test')
 
         rule_proc_tester = RuleProcessorTester(context, test_rules)
         alert_proc_tester = AlertProcessorTester(context)
