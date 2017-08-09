@@ -1,4 +1,4 @@
-'''
+"""
 Copyright 2017-present, Airbnb Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,7 +12,7 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-'''
+"""
 from collections import namedtuple, OrderedDict
 
 from stream_alert.rule_processor import LOGGER
@@ -69,7 +69,8 @@ class StreamClassifier(object):
         """Load the sources for this payload.
 
         Args:
-            payload: A StreamPayload object
+            service: [String] Source service
+            entity: [String] Entity within the service
 
         Returns:
             [boolean] True if the entity's log sources loaded properly
@@ -99,9 +100,6 @@ class StreamClassifier(object):
 
     def get_log_info_for_source(self):
         """Return a mapping of all log sources to a given entity with attributes.
-
-        Args:
-            payload: A StreamAlert payload object to be mapped
 
         Returns:
             (dict) log sources and their attributes for the entity:
@@ -133,7 +131,6 @@ class StreamClassifier(object):
 
         Args:
             payload: A StreamAlert payload object
-            data: Pre parsed data string from a raw_event to be parsed
         """
         parse_result = self._parse(payload)
         if all([parse_result,
@@ -283,7 +280,6 @@ class StreamClassifier(object):
         Args:
             payload: Parsed payload dict
             schema: data schema for a specific log source
-            options: parser options dict
 
         Returns:
             parsed dict payload with typed values

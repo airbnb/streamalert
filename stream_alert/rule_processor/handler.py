@@ -1,4 +1,4 @@
-'''
+"""
 Copyright 2017-present, Airbnb Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,10 +12,10 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-'''
+"""
 import json
 
-from logging import DEBUG as log_level_debug
+from logging import DEBUG as LOG_LEVEL_DEBUG
 
 from stream_alert.rule_processor import LOGGER
 from stream_alert.rule_processor.config import load_config, load_env
@@ -107,7 +107,7 @@ class StreamAlert(object):
 
         # Check if debugging logging is on before json dumping alerts since
         # this can be time consuming if there are a lot of alerts
-        if self._alerts and LOGGER.isEnabledFor(log_level_debug):
+        if self._alerts and LOGGER.isEnabledFor(LOG_LEVEL_DEBUG):
             LOGGER.debug('Alerts:\n%s', json.dumps(self._alerts, indent=2))
 
         return self._failed_record_count == 0

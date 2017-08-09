@@ -1,4 +1,4 @@
-'''
+"""
 Copyright 2017-present, Airbnb Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,7 +12,7 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-'''
+"""
 import base64
 import gzip
 import os
@@ -20,7 +20,7 @@ import tempfile
 import time
 
 from abc import ABCMeta, abstractmethod, abstractproperty
-from logging import DEBUG as log_level_debug
+from logging import DEBUG as LOG_LEVEL_DEBUG
 from urllib import unquote
 
 import boto3
@@ -75,6 +75,7 @@ class StreamPayload(object):
         """
         self.entity = kwargs['entity']
         self.raw_record = kwargs['raw_record']
+        self.pre_parsed_record = None
 
         self._refresh_record(None)
 
@@ -122,6 +123,7 @@ class StreamPayload(object):
         self.type = None
         self.valid = False
 
+
 class S3ObjectSizeError(Exception):
     """Exception indicating the S3 object is too large to process"""
 
@@ -130,7 +132,8 @@ class S3Payload(StreamPayload):
     """S3Payload class"""
     s3_object_size = 0
 
-    def service(self): return 's3'
+    def service(self):
+        return 's3'
 
     def pre_parse(self):
         """Pre-parsing method for S3 objects that will download the s3 object,
@@ -152,7 +155,7 @@ class S3Payload(StreamPayload):
             yield self
 
             # Only do the extra calculations below if debug logging is enabled
-            if not LOGGER.isEnabledFor(log_level_debug):
+            if not LOGGER.isEnabledFor(LOG_LEVEL_DEBUG):
                 continue
 
             # Add the current data to the total processed size
@@ -267,7 +270,8 @@ class S3Payload(StreamPayload):
 class SnsPayload(StreamPayload):
     """SnsPayload class"""
 
-    def service(self): return 'sns'
+    def service(self):
+        return 'sns'
 
     def pre_parse(self):
         """Pre-parsing method for SNS records. Extracts the SNS payload from the
@@ -290,7 +294,8 @@ class SnsPayload(StreamPayload):
 class KinesisPayload(StreamPayload):
     """KinesisPayload class"""
 
-    def service(self): return 'kinesis'
+    def service(self):
+        return 'kinesis'
 
     def pre_parse(self):
         """Pre-parsing method for Kinesis records. Extracts the base64 encoded

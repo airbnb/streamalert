@@ -1,4 +1,4 @@
-'''
+"""
 Copyright 2017-present, Airbnb Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,7 +12,7 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-'''
+"""
 import csv
 import json
 import re
@@ -57,7 +57,6 @@ class ParserBase:
         """Setup required parser properties
 
         Args:
-            schema: Dict of log data schema.
             options: Parser options dict - delimiter, separator, or log_patterns
         """
         self.options = options or {}
@@ -113,6 +112,7 @@ class ParserBase:
 
 @parser
 class JSONParser(ParserBase):
+    """JSON record parser."""
     __parserid__ = 'json'
 
     def _key_check(self, schema, json_records):
@@ -135,7 +135,8 @@ class JSONParser(ParserBase):
             if json_keys == schema_keys:
                 schema_match = True
                 for key, key_type in schema.iteritems():
-                    if key == 'streamalert:envelope_keys' and isinstance(json_records[index][key], dict):
+                    if key == 'streamalert:envelope_keys' and isinstance(
+                            json_records[index][key], dict):
                         continue
                     # Nested key check
                     if key_type and isinstance(key_type, dict):
@@ -254,8 +255,10 @@ class JSONParser(ParserBase):
 
         return json_records
 
+
 @parser
 class GzipJSONParser(JSONParser):
+    """Compressed JSON record parser."""
     __parserid__ = 'gzip-json'
 
     def parse(self, schema, data):
@@ -278,8 +281,10 @@ class GzipJSONParser(JSONParser):
         """Return the parserid for the super of this (json, not gzip-json)"""
         return super(GzipJSONParser, self).__parserid__
 
+
 @parser
 class CSVParser(ParserBase):
+    """CSV record parser."""
     __parserid__ = 'csv'
     __default_delimiter = ','
 
@@ -345,6 +350,7 @@ class CSVParser(ParserBase):
 
 @parser
 class KVParser(ParserBase):
+    """Parser for key-value type records."""
     __parserid__ = 'kv'
     __default_separator = '='
     __default_delimiter = ' '
@@ -395,6 +401,7 @@ class KVParser(ParserBase):
 
 @parser
 class SyslogParser(ParserBase):
+    """Parser for syslog records."""
     __parserid__ = 'syslog'
 
     def parse(self, schema, data):
@@ -407,6 +414,7 @@ class SyslogParser(ParserBase):
             Jan 10 19:35:13 vagrant-ubuntu-precise-32 ssh[13941]: login for mike
 
         Args:
+            schema: [Dict] Syslog schema
             data: Data to be parsed
 
         Returns:
