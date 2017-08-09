@@ -1,4 +1,4 @@
-'''
+"""
 Copyright 2017-present, Airbnb Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,7 +12,7 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-'''
+"""
 import json
 import logging
 
@@ -53,6 +53,7 @@ def handler(event, context):
 
     # Return the current list of statuses back to the caller
     return list(run(event, region, function_name, config))
+
 
 def run(alert, region, function_name, config):
     """Send an Alert to its described outputs.
@@ -99,7 +100,7 @@ def run(alert, region, function_name, config):
                          'integration (ie: \'slack:my_channel\')', output)
             continue
 
-        if not service in config or not descriptor in config[service]:
+        if service not in config or descriptor not in config[service]:
             LOGGER.error('The output \'%s\' does not exist!', output)
             continue
 
@@ -117,7 +118,7 @@ def run(alert, region, function_name, config):
                                               rule_name=alert['rule_name'],
                                               alert=alert)
 
-        except Exception as err:
+        except Exception as err:  # pylint: disable=broad-except
             LOGGER.exception('An error occurred while sending alert '
                              'to %s:%s: %s. alert:\n%s', service, descriptor,
                              err, json.dumps(alert, indent=2))

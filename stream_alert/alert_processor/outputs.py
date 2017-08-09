@@ -1,4 +1,4 @@
-'''
+"""
 Copyright 2017-present, Airbnb Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,7 +12,7 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-'''
+"""
 import cgi
 import json
 import logging
@@ -38,9 +38,11 @@ STREAM_OUTPUTS = {}
 
 DEFAULT_RULE_DESCRIPTION = 'No rule description provided'
 
+
 def output(cls):
     """Class decorator to register all stream outputs"""
     STREAM_OUTPUTS[cls.__service__] = cls
+
 
 def get_output_dispatcher(service, region, function_name, config):
     """Returns the subclass that should handle this particular service"""
@@ -182,8 +184,7 @@ class PhantomOutput(StreamOutputBase):
         """
         # Try to use the rule_description from the rule as the container description
         message = 'StreamAlert Rule Triggered - {}'.format(rule_name)
-        ph_container = {'name' : message,
-                        'description' : rule_description}
+        ph_container = {'name': message, 'description': rule_description}
         container_url = os.path.join(base_url, self.CONTAINER_ENDPOINT)
         container_string = json.dumps(ph_container)
         resp = self._request_helper(container_url, container_string, headers, False)
@@ -443,6 +444,7 @@ class SlackOutput(StreamOutputBase):
 
         return self._log_status(success)
 
+
 class AWSOutput(StreamOutputBase):
     """Subclass to be inherited from for all AWS service outputs"""
     def format_output_config(self, service_config, values):
@@ -493,8 +495,8 @@ class S3Output(AWSOutput):
         """
         return OrderedDict([
             ('descriptor',
-             OutputProperty(description=
-                            'a short and unique descriptor for this S3 bucket (ie: bucket name)')),
+             OutputProperty(
+                 description='a short and unique descriptor for this S3 bucket (ie: bucket name)')),
             ('aws_value',
              OutputProperty(description='the AWS S3 bucket name to use for this S3 configuration'))
         ])
@@ -520,7 +522,7 @@ class S3Output(AWSOutput):
 
         s3_alert = alert
         # JSON dump the alert to retain a consistent alerts schema across log types.
-        # This will get replaced by a UUID which references a record in a 
+        # This will get replaced by a UUID which references a record in a
         # different table in the future.
         s3_alert['record'] = json.dumps(s3_alert['record'])
         alert_string = json.dumps(s3_alert)
@@ -547,6 +549,7 @@ class S3Output(AWSOutput):
                                  Key=key)
 
         return self._log_status(resp)
+
 
 @output
 class LambdaOutput(AWSOutput):

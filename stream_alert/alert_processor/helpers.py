@@ -1,4 +1,4 @@
-'''
+"""
 Copyright 2017-present, Airbnb Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,15 +12,16 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-'''
+"""
 import logging
 
 logging.basicConfig()
 LOGGER = logging.getLogger('StreamAlertOutput')
 LOGGER.setLevel(logging.DEBUG)
 
+
 def validate_alert(alert):
-    """Helper function to perform simple validatation of an alert's keys and structure
+    """Helper function to perform simple validation of an alert's keys and structure
 
     Args:
         alert [dict]: the alert record to test that should be in the form of a dict
@@ -29,7 +30,7 @@ def validate_alert(alert):
         [bool] a boolean value indicating whether or not the alert has the proper structure
     """
 
-    if not (isinstance(alert, dict)):
+    if not isinstance(alert, dict):
         LOGGER.error('The alert must be a map (dict)')
         return False
 
@@ -52,12 +53,12 @@ def validate_alert(alert):
 
     for key in alert_keys:
         if key == 'record':
-            if not (isinstance(alert['record'], dict)):
+            if not isinstance(alert['record'], dict):
                 LOGGER.error('The alert record must be a map (dict)')
                 return False
 
         elif key == 'outputs':
-            if not (isinstance(alert[key], list)):
+            if not isinstance(alert[key], list):
                 LOGGER.error(
                     'The value of the \'outputs\' key must be an array (list) that '
                     'contains at least one configured output.')

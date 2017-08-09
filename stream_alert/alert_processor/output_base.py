@@ -1,4 +1,4 @@
-'''
+"""
 Copyright 2017-present, Airbnb Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,7 +12,7 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-'''
+"""
 import json
 import logging
 import os
@@ -205,8 +205,7 @@ class StreamOutputBase(object):
             resp = urllib2.urlopen(request, context=context)
             return resp
         except urllib2.HTTPError as err:
-            raise OutputRequestFailure('Failed to send to {} - [{}]'.format(err.url,
-                                                                            err.code))
+            raise OutputRequestFailure('Failed to send to {} - [{}]'.format(err.url, err.code))
 
     @staticmethod
     def _check_http_response(resp):
@@ -249,17 +248,17 @@ class StreamOutputBase(object):
 
         return cred_name
 
-    def format_output_config(self, config, props):
+    def format_output_config(self, service_config, values):
         """Add this descriptor to the list of descriptor this service
            If the service doesn't exist, a new entry is added to an empty list
 
         Args:
-            config [dict]: Loaded configuration as a dictionary
-            props [OrderedDict]: Contains various OutputProperty items
+            service_config [dict]: Loaded configuration as a dictionary
+            values [OrderedDict]: Contains various OutputProperty items
         Returns:
             [list<string>] List of descriptors for this service
         """
-        return config.get(self.__service__, []) + [props['descriptor'].value]
+        return service_config.get(self.__service__, []) + [values['descriptor'].value]
 
     @abstractmethod
     def get_user_defined_properties(self):
