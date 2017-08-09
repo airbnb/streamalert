@@ -38,6 +38,7 @@ from unit.stream_alert_rule_processor.test_helpers import (
 )
 
 
+@patch('stream_alert.rule_processor.metrics.Metrics.put_metric_data', Mock())
 class TestStreamAlert(object):
     """Test class for StreamAlert class"""
 
@@ -57,7 +58,7 @@ class TestStreamAlert(object):
 
     @staticmethod
     @raises(ConfigError)
-    def test_run_config_error():
+    def test_run_config_error(_):
         """StreamAlert Class - Run, Config Error"""
         mock = mock_open(read_data='non-json string that will raise an exception')
         with patch('__builtin__.open', mock):
@@ -120,7 +121,8 @@ class TestStreamAlert(object):
         load_payload_mock.assert_called_with(
             'lambda',
             'entity',
-            'record'
+            'record',
+            self.__sa_handler.metrics
         )
 
     @patch('stream_alert.rule_processor.handler.StreamRules.process')

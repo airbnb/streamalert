@@ -88,7 +88,7 @@ def _get_valid_event(count=1):
 def _load_and_classify_payload(config, service, entity, raw_record):
 
     # prepare the payloads
-    payload = load_stream_payload(service, entity, raw_record)
+    payload = load_stream_payload(service, entity, raw_record, None)
 
     payload = payload.pre_parse().next()
     classifier = StreamClassifier(config=config)
