@@ -1,4 +1,4 @@
-'''
+"""
 Copyright 2017-present, Airbnb Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,13 +12,11 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-'''
-
+"""
+from datetime import datetime
 import json
 import logging
 import os
-
-from datetime import datetime
 
 import backoff
 import boto3
@@ -42,6 +40,7 @@ def _backoff_handler(details):
                  details['tries'],
                  details['target'])
 
+
 def _success_handler(details):
     """Backoff logging handler for when backoff succeeds.
 
@@ -53,6 +52,7 @@ def _success_handler(details):
     LOGGER.debug('[Backoff]: Completed after %d tries calling %s',
                  details['tries'],
                  details['target'])
+
 
 def _load_config():
     """Load the StreamAlert Athena configuration files
@@ -321,7 +321,7 @@ class StreamAlertSQSClient(object):
                 MaxNumberOfMessages=10
             )
 
-            if not 'Messages' in polled_messages:
+            if 'Messages' not in polled_messages:
                 return False
             self.received_messages.extend(polled_messages['Messages'])
 
