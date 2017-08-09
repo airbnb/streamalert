@@ -86,80 +86,131 @@ class RuleProcessorTester(object):
         self.print_output = print_output
         self.invalid_log_messages = []
 
-    def test_processor(self, rules):
+    def test_processor(self, filter_rules):
         """Perform integration tests for the 'rule' Lambda function
 
         Args:
-            rules (list|None): Specific rule names (or None) to restrict
+            filter_rules [list or None]: Specific rule names (or None) to restrict
                 testing to. This is passed in from the CLI using the --rules option.
 
         Yields:
             tuple (bool, list): test status, list of alerts to run through the alert processor
         """
-        for rule_file, rule_name in get_rule_test_files(rules):
-            with open(os.path.join(DIR_RULES, rule_file), 'r') as rule_file_handle:
-                try:
-                    contents = json.load(rule_file_handle)
-                except (ValueError, TypeError) as err:
-                    self.all_tests_passed = False
-                    message = 'Improperly formatted file - {}: {}'.format(
-                        type(err).__name__, err)
-                    self.status_messages.append(StatusMessage(STATUS_WARNING, rule_name, message))
-                    continue
-
-            test_records = contents.get('records')
-            if not test_records:
-                self.all_tests_passed = False
-                self.status_messages.append(
-                    StatusMessage(STATUS_WARNING, rule_name, 'No records to test in file')
-                )
-                continue
+        for rule_name, contents in self._get_rule_test_files(filter_rules):
 
             # Go over the records and test the applicable rule
-            for index, test_record in enumerate(test_records):
+            for index, test_record in enumerate(contents.get('records')):
                 if not self.check_keys(rule_name, test_record):
                     self.all_tests_passed = False
                     continue
 
                 self.apply_helpers(test_record)
 
-                # Run tests on the formatted record
-                alerts, expected_alerts, all_records_matched_schema = self.test_rule(
-                    rule_name,
-                    test_record,
-                    helpers.format_lambda_test_record(test_record))
+                print_header_line = index == 0
 
-                current_test_passed = ((len(alerts) == expected_alerts) and
-                                       all_records_matched_schema)
-
-                self.all_tests_passed = current_test_passed and self.all_tests_passed
-
-                # Print rule name for section header, but only if we get
-                # to a point where there is a record to actually be tested.
-                # This avoids potentialy blank sections
-                if index == 0:
-                    if alerts or self.print_output:
-                        print '\n{}'.format(rule_name)
-
-                if self.print_output:
-                    report_output([
-                        current_test_passed,
-                        '[trigger={}]'.format(expected_alerts),
-                        'rule',
-                        test_record['service'],
-                        test_record['description']])
-
-                # yield the result and alerts back to caller
-                yield alerts
-
-                # Add the status of the rule to messages list
-                message_type = STATUS_SUCCESS if current_test_passed else STATUS_FAILURE
-                message = ('' if current_test_passed else
-                           'Rule failure: {}'.format(test_record['description']))
-                self.status_messages.append(StatusMessage(message_type, rule_name, message))
+                yield self._run_rule_tests(rule_name, test_record, print_header_line)
 
         # Report on the final test results
         self.report_output_summary()
+
+    def _run_rule_tests(self, rule_name, test_record, print_header_line):
+        """Run tests on a test record for a given rule
+
+        Args:
+            rule_name [str]: The name of the rule being tested.
+            test_record [dict]: The loaded test event from json
+            print_header_line [bool]: Indicates if this is the first record from
+                a test file, and therefore we should print some header information
+
+        Returns:
+            [list] alerts that were generated from this test event
+        """
+        # Run tests on the formatted record
+        alerts, expected_alerts, all_records_matched_schema = self.test_rule(
+            rule_name,
+            test_record,
+            helpers.format_lambda_test_record(test_record))
+
+        current_test_passed = ((len(alerts) == expected_alerts) and
+                               all_records_matched_schema)
+
+        self.all_tests_passed = current_test_passed and self.all_tests_passed
+
+        # Print rule name for section header, but only if we get
+        # to a point where there is a record to actually be tested.
+        # This avoids potentialy blank sections
+        if print_header_line and (alerts or self.print_output):
+            print '\n{}'.format(rule_name)
+
+        if self.print_output:
+            report_output([
+                current_test_passed,
+                '[trigger={}]'.format(expected_alerts),
+                'rule',
+                test_record['service'],
+                test_record['description']])
+
+        # Add the status of the rule to messages list
+        message_type = STATUS_SUCCESS if current_test_passed else STATUS_FAILURE
+        message = ('' if current_test_passed else
+                   'Rule failure: {}'.format(test_record['description']))
+
+        self.status_messages.append(StatusMessage(message_type, rule_name, message))
+
+        # Return the alerts back to caller
+        return alerts
+
+    def _get_rule_test_files(self, filter_rules):
+        """Helper to get rule files to be tested
+
+        Args:
+            filter_rules [list or None]: List of specific rule names (or None) that
+                has been fed in from the CLI to restrict testing to
+
+        Returns:
+            [generator] Yields back the rule name and the json loaded contents of
+                the respective test event file.
+        """
+        for _, _, test_rule_files in os.walk(DIR_RULES):
+            for rule_file in test_rule_files:
+                rule_name = rule_file.split('.')[0]
+
+                # If only specific rules are being tested,
+                # skip files that do not match those rules
+                if filter_rules:
+                    if rule_name not in filter_rules:
+                        continue
+
+                    del filter_rules[filter_rules.index(rule_name)]
+
+                with open(os.path.join(DIR_RULES, rule_file), 'r') as rule_file_handle:
+                    try:
+                        contents = json.load(rule_file_handle)
+                    except (ValueError, TypeError) as err:
+                        self.all_tests_passed = False
+                        message = 'Improperly formatted file - {}: {}'.format(
+                            type(err).__name__, err)
+                        self.status_messages.append(
+                            StatusMessage(STATUS_WARNING, rule_name, message))
+                        continue
+
+                if not contents.get('records'):
+                    self.all_tests_passed = False
+                    self.status_messages.append(
+                        StatusMessage(
+                            STATUS_WARNING,
+                            rule_name,
+                            'No records to test in file'))
+                    continue
+
+                yield rule_name, contents
+
+        # Print any of the filtered rules that do not have tests configured
+        if filter_rules:
+            self.all_tests_passed = False
+            for filter_rule in filter_rules:
+                message = 'No test events configured for designated rule.'
+                self.status_messages.append(StatusMessage(STATUS_WARNING, filter_rule, message))
 
     def check_keys(self, rule_name, test_record):
         """Check the test_record contains the required keys
@@ -233,9 +284,12 @@ class RuleProcessorTester(object):
 
     def report_output_summary(self):
         """Helper function to print the summary results of all rule tests"""
-        failure_messages = [item for item in self.status_messages if item.type == STATUS_FAILURE]
-        warning_messages = [item for item in self.status_messages if item.type == STATUS_WARNING]
-        passed_tests = len([item for item in self.status_messages if item.type == STATUS_SUCCESS])
+        failure_messages = [
+            item for item in self.status_messages if item.type == STATUS_FAILURE]
+        warning_messages = [
+            item for item in self.status_messages if item.type == STATUS_WARNING]
+        passed_tests = len(
+            [item for item in self.status_messages if item.type == STATUS_SUCCESS])
         total_tests = len(failure_messages) + passed_tests
         # Print some lines at the bottom of output to make it more readable
         # This occurs here so there is always space and not only when the
@@ -261,7 +315,7 @@ class RuleProcessorTester(object):
                     # Change the color back so std out is not red
                     color = COLOR_RESET
                 print '\t({}/{}) [{}] {}{}'.format(
-                    index + 1, len(failure_messages), failure.rule, failure.message, color)
+                    index, len(failure_messages), failure.rule, failure.message, color)
 
         # Check if there were any warnings and report on them
         if warning_messages:
@@ -273,7 +327,7 @@ class RuleProcessorTester(object):
                 if index == warning_count:
                     # Change the color back so std out is not yellow
                     color = COLOR_RESET
-                print '\t({}/{}) [{}] {}{}'.format(index + 1, warning_count, failure.rule,
+                print '\t({}/{}) [{}] {}{}'.format(index, warning_count, failure.rule,
                                                    failure.message, color)
 
     def test_rule(self, rule_name, test_record, formatted_record):
@@ -345,11 +399,13 @@ class RuleProcessorTester(object):
 
             unexpected_record_keys = test_record_keys.difference(record_schema_keys)
             if unexpected_record_keys:
-                message = ('Data is invalid due to unexpected key(s) in test record: {}. '
-                           'Rule: \'{}\'. Description: \'{}\''.format(
-                               ', '.join('\'{}\''.format(key) for key in unexpected_record_keys),
-                               rule_info.rule_name,
-                               test_record['description']))
+                message = (
+                    'Data is invalid due to unexpected key(s) in test record: {}. '
+                    'Rule: \'{}\'. Description: \'{}\''.format(
+                        ', '.join(
+                            '\'{}\''.format(key) for key in unexpected_record_keys),
+                        rule_info.rule_name,
+                        test_record['description']))
 
                 self.invalid_log_messages.append(message)
 
@@ -486,28 +542,6 @@ def report_output(cols):
               else '{}[Fail]{}'.format(COLOR_RED, COLOR_RESET))
 
     print '\t{}{:>14}\t{}\t({}): {}'.format(status, *cols[1:])
-
-
-def get_rule_test_files(filter_rules):
-    """Helper to get rule files to be tested
-
-    Args:
-        filter_rules (str): Comma separated list of rules to run tests against
-
-    Yields:
-        str: file path
-        str: rule name
-    """
-    for _, _, test_rule_files in os.walk(DIR_RULES):
-        for rule_file in test_rule_files:
-            rule_name = rule_file.split('.')[0]
-
-            # If specific rules are being tested, skip files
-            # that do not match those rules
-            if filter_rules and rule_name not in filter_rules:
-                continue
-
-            yield rule_file, rule_name
 
 
 def mock_me(context):
