@@ -27,7 +27,7 @@ import boto3
 from stream_alert_cli_module.logger import LOGGER_CLI
 
 
-DIR_TEMPLATES = 'test/integration/templates'
+DIR_TEMPLATES = 'tests/integration/templates'
 
 
 def run_command(runner_args, **kwargs):
@@ -69,7 +69,7 @@ def format_lambda_test_record(test_record):
     """Create a properly formatted Kinesis, S3, or SNS record.
 
     Supports a dictionary or string based data record.  Reads in
-    event templates from the test/integration/templates folder.
+    event templates from the tests/integration/templates folder.
 
     Args:
         test_record: Test record metadata dict with the following structure:

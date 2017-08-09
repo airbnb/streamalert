@@ -26,3 +26,6 @@ venv/
 
 .vagrant/
 htmlcov/
+
+# Pycharm IDE
+.idea/

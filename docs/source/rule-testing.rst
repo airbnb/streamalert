@@ -6,7 +6,7 @@ To test the accuracy of new rules, local tests can be written to verify that ale
 Configuration
 ~~~~~~~~~~~~~
 
-To test a new rule, first create a new file under ``test/integration/rules`` named ``rule_name_goes_here.json``.  This file should contain this exact structure::
+To test a new rule, first create a new file under ``tests/integration/rules`` named ``rule_name_goes_here.json``.  This file should contain this exact structure::
 
   {
     "records": [
@@ -37,7 +37,7 @@ Key                Type                  Required  Description
 ``compress``       ``boolean``           No        Whether or not to compress records with ``gzip`` prior to testing (used for ``gzip-json`` logs)
 =================  ====================  ========  ===========
 
-For more examples, see the provided default rule tests in ``test/integration/rules``
+For more examples, see the provided default rule tests in ``tests/integration/rules``
 
 Helpers
 ~~~~~~~

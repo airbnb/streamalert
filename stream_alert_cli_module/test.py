@@ -35,7 +35,7 @@ from stream_alert_cli_module import helpers
 from stream_alert_cli_module.logger import LOGGER_CLI, LOGGER_SA, LOGGER_SO
 from stream_alert_cli_module.outputs import load_outputs_config
 
-DIR_RULES = 'test/integration/rules'
+DIR_RULES = 'tests/integration/rules'
 COLOR_RED = '\033[0;31;1m'
 COLOR_YELLOW = '\033[0;33;1m'
 COLOR_GREEN = '\033[0;32;1m'
@@ -275,7 +275,7 @@ class RuleProcessorTester(object):
             formatted_record [dict]: A dictionary that includes the 'data' from the
                 test record, formatted into a structure that is resemblant of how
                 an incoming record from a service would format it.
-                See test/integration/templates for example of how each service
+                See tests/integration/templates for example of how each service
                 formats records.
 
         Returns:
