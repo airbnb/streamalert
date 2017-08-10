@@ -29,7 +29,7 @@ from nose.tools import (
 
 from stream_alert.alert_processor import outputs
 from stream_alert.alert_processor.output_base import OutputProperty
-from stream_alert_cli_module.helpers import create_lambda_function, put_mock_creds
+from stream_alert_cli.helpers import create_lambda_function, put_mock_creds
 from tests.unit.stream_alert_alert_processor import CONFIG, FUNCTION_NAME, KMS_ALIAS, REGION
 from tests.unit.stream_alert_alert_processor.helpers import (
     get_random_alert,

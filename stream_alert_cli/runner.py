@@ -24,15 +24,15 @@ from stream_alert import __version__ as current_version
 from stream_alert.alert_processor.outputs import get_output_dispatcher
 from stream_alert.athena_partition_refresh.main import StreamAlertAthenaClient
 
-from stream_alert_cli_module import helpers
-from stream_alert_cli_module.config import CLIConfig
-from stream_alert_cli_module.logger import LOGGER_CLI
-import stream_alert_cli_module.outputs as config_outputs
-from stream_alert_cli_module.package import (
+from stream_alert_cli import helpers
+from stream_alert_cli.config import CLIConfig
+from stream_alert_cli.logger import LOGGER_CLI
+import stream_alert_cli.outputs as config_outputs
+from stream_alert_cli.package import (
     RuleProcessorPackage, AlertProcessorPackage, AthenaPackage)
-from stream_alert_cli_module.terraform_generate import terraform_generate
-from stream_alert_cli_module.test import stream_alert_test
-from stream_alert_cli_module.version import LambdaVersion
+from stream_alert_cli.terraform_generate import terraform_generate
+from stream_alert_cli.test import stream_alert_test
+from stream_alert_cli.version import LambdaVersion
 
 CONFIG = CLIConfig()
 

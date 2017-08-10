@@ -18,7 +18,7 @@ import json
 from nose.tools import assert_equal
 
 from tests.unit.helpers.base import mock_open
-from stream_alert_cli_module.config import CLIConfig
+from stream_alert_cli.config import CLIConfig
 
 
 def test_load_config():

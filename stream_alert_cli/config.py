@@ -18,7 +18,7 @@ import json
 import os
 import sys
 
-from stream_alert_cli_module.logger import LOGGER_CLI
+from stream_alert_cli.logger import LOGGER_CLI
 
 
 class CLIConfig(object):

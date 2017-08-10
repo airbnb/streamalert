@@ -26,9 +26,9 @@ terraform <cmd> -var-file=../terraform.tfvars -var-file=../variables.json
 from argparse import ArgumentParser, RawTextHelpFormatter, SUPPRESS as ARGPARSE_SUPPRESS
 import os
 
-from stream_alert_cli_module import __version__ as version
-from stream_alert_cli_module.logger import LOGGER_CLI
-from stream_alert_cli_module.runner import cli_runner
+from stream_alert_cli import __version__ as version
+from stream_alert_cli.logger import LOGGER_CLI
+from stream_alert_cli.runner import cli_runner
 
 
 def _add_output_subparser(subparsers):

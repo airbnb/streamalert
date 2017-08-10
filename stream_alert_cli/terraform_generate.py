@@ -17,7 +17,7 @@ from collections import defaultdict
 import json
 import os
 
-from stream_alert_cli_module.logger import LOGGER_CLI
+from stream_alert_cli.logger import LOGGER_CLI
 
 RESTRICTED_CLUSTER_NAMES = ('main', 'athena')
 

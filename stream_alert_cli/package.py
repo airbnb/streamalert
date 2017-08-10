@@ -23,8 +23,8 @@ import tempfile
 import boto3
 from botocore.exceptions import ClientError
 
-from stream_alert_cli_module.helpers import run_command
-from stream_alert_cli_module.logger import LOGGER_CLI
+from stream_alert_cli.helpers import run_command
+from stream_alert_cli.logger import LOGGER_CLI
 
 
 class LambdaPackage(object):

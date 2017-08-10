@@ -19,7 +19,7 @@ import os
 import boto3
 from botocore.exceptions import ClientError
 
-from stream_alert_cli_module.logger import LOGGER_CLI
+from stream_alert_cli.logger import LOGGER_CLI
 
 OUTPUTS_CONFIG = 'outputs.json'
 

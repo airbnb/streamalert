@@ -30,9 +30,9 @@ from stream_alert.rule_processor.handler import StreamAlert
 # import all rules loaded from the main handler
 import stream_alert.rule_processor.main  # pylint: disable=unused-import
 from stream_alert.rule_processor.rules_engine import StreamRules
-from stream_alert_cli_module import helpers
-from stream_alert_cli_module.logger import LOGGER_CLI, LOGGER_SA, LOGGER_SO
-from stream_alert_cli_module.outputs import load_outputs_config
+from stream_alert_cli import helpers
+from stream_alert_cli.logger import LOGGER_CLI, LOGGER_SA, LOGGER_SO
+from stream_alert_cli.outputs import load_outputs_config
 
 DIR_RULES = 'tests/integration/rules'
 COLOR_RED = '\033[0;31;1m'

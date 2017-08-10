@@ -24,7 +24,7 @@ import zlib
 
 import boto3
 
-from stream_alert_cli_module.logger import LOGGER_CLI
+from stream_alert_cli.logger import LOGGER_CLI
 
 
 DIR_TEMPLATES = 'tests/integration/templates'

@@ -21,7 +21,7 @@ from moto import mock_kms, mock_s3
 from nose.tools import assert_equal, assert_is_not_none
 
 from stream_alert.alert_processor.output_base import OutputProperty, StreamOutputBase
-from stream_alert_cli_module.helpers import encrypt_with_kms, put_mock_creds, put_mock_s3_object
+from stream_alert_cli.helpers import encrypt_with_kms, put_mock_creds, put_mock_s3_object
 from tests.unit.stream_alert_alert_processor import CONFIG, FUNCTION_NAME, KMS_ALIAS, REGION
 from tests.unit.stream_alert_alert_processor.helpers import remove_temp_secrets
 

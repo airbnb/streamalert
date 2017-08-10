@@ -17,13 +17,13 @@ limitations under the License.
 from mock import patch
 from nose.tools import assert_equal, assert_true, assert_false, nottest
 
-from stream_alert_cli_module.package import AthenaPackage, RuleProcessorPackage
-from stream_alert_cli_module.version import LambdaVersion
+from stream_alert_cli.package import AthenaPackage, RuleProcessorPackage
+from stream_alert_cli.version import LambdaVersion
 from tests.unit.helpers.aws_mocks import MockLambdaClient
 from tests.unit.helpers.base import basic_streamalert_config, MockCLIConfig
 
 
-# @patch('stream_alert_cli_module.athena_partition_refresh.main.ATHENA_CLIENT',
+# @patch('stream_alert_cli.athena_partition_refresh.main.ATHENA_CLIENT',
 #        MockAthenaClient(results=[{'alerts': True}]))
 @nottest
 def test_publish_clustered():
@@ -94,7 +94,7 @@ def test_version_helper():
     assert_equal(result, current_version + 1)
 
 
-@patch('stream_alert_cli_module.version.LOGGER_CLI')
+@patch('stream_alert_cli.version.LOGGER_CLI')
 def test_version_helper_error(mock_logging):
     """CLI - Publish Helper Raises Error"""
     package = AthenaPackage(
