@@ -174,7 +174,7 @@ class S3Payload(StreamPayload):
                         avg_record_size,
                         self.s3_object_size)
 
-        self.metrics.put_metric_data(Metrics.Name.TOTAL_S3_RECORDS, line_num, Metrics.Unit.COUNT)
+        self.metrics.add_metric(Metrics.Name.TOTAL_S3_RECORDS, line_num, Metrics.Unit.COUNT)
 
     def _download_object(self, region, bucket, key):
         """Download an object from S3.
@@ -215,7 +215,7 @@ class S3Payload(StreamPayload):
         LOGGER.info('Completed download in %s seconds', round(total_time, 2))
 
         # Publish a metric on how long this object took to download
-        self.metrics.put_metric_data(
+        self.metrics.add_metric(
             Metrics.Name.S3_DOWNLOAD_TIME, total_time, Metrics.Unit.SECONDS)
 
         return downloaded_s3_object

@@ -77,7 +77,7 @@ class StreamAlert(object):
         if not records:
             return False
 
-        self.metrics.put_metric_data(
+        self.metrics.add_metric(
             Metrics.Name.TOTAL_RECORDS,
             len(records),
             Metrics.Unit.COUNT)
@@ -110,14 +110,14 @@ class StreamAlert(object):
 
         LOGGER.debug('Invalid record count: %d', self._failed_record_count)
 
-        self.metrics.put_metric_data(
+        self.metrics.add_metric(
             Metrics.Name.FAILED_PARSES,
             self._failed_record_count,
             Metrics.Unit.COUNT)
 
         LOGGER.debug('%s alerts triggered', len(self._alerts))
 
-        self.metrics.put_metric_data(
+        self.metrics.add_metric(
             Metrics.Name.TRIGGERED_ALERTS, len(
                 self._alerts), Metrics.Unit.COUNT)
 
@@ -125,6 +125,9 @@ class StreamAlert(object):
         # this can be time consuming if there are a lot of alerts
         if self._alerts and LOGGER.isEnabledFor(log_level_debug):
             LOGGER.debug('Alerts:\n%s', json.dumps(self._alerts, indent=2))
+
+        # Send any cached metrics to CloudWatch before returning
+        self.metrics.send_metrics()
 
         return self._failed_record_count == 0
 

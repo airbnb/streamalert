@@ -32,6 +32,7 @@ class Metrics(object):
 
     def __init__(self, region):
         self.boto_cloudwatch = boto3.client('cloudwatch', region_name=region)
+        self._metric_data = []
 
     class Name(object):
         """Constant metric names used in the rule processor"""
@@ -71,8 +72,8 @@ class Metrics(object):
         COUNT_PER_SECOND = 'Count/Second'
         NONE = 'None'
 
-    def put_metric_data(self, metric_name, value, unit):
-        """Publish custom metric data to CloudWatch.
+    def add_metric(self, metric_name, value, unit):
+        """Add a metric to the list of metrics to be sent to CloudWatch
 
         Args:
             metric_name [string]: Name of metric to publish to. Choices are in
@@ -91,32 +92,34 @@ class Metrics(object):
             LOGGER.error('Metric unit not defined: %s', unit)
             return
 
-        LOGGER.debug('Sending metric data to CloudWatch: %s', metric_name)
-        metric_data = [
+        self._metric_data.append(
             {
                 'MetricName': metric_name,
                 'Timestamp': datetime.utcnow(),
                 'Unit': unit,
                 'Value': value
             }
-        ]
+        )
 
-        self._put_metric(metric_data)
+    def send_metrics(self):
+        """Public method for publishing custom metric data to CloudWatch."""
+        for metric in self._metric_data:
+            LOGGER.debug('Sending metric data to CloudWatch: %s', metric['MetricName'])
 
-    def _put_metric(self, data):
-        """Helper function to publish custom metric data for StreamAlert to CloudWatch
+        self._put_metrics()
 
-        Args:
-            data [list<dict>] a list of dictionary items to publish that conforms to
-                the format expected by CloudWatch
+    def _put_metrics(self):
+        """Protected method for publishing custom metric data to CloudWatch that
+        handles all of the boto3 calls and error handling.
         """
         try:
-            self.boto_cloudwatch.put_metric_data(Namespace='StreamAlert', MetricData=data)
+            self.boto_cloudwatch.put_metric_data(
+                Namespace='StreamAlert', MetricData=self._metric_data)
         except ClientError as err:
             LOGGER.exception(
                 'Failed to send metric to CloudWatch. Error: %s\nMetric data:\n%s',
                 err.response,
                 json.dumps(
-                    data,
+                    self._metric_data,
                     indent=2,
                     default=lambda d: d.isoformat()))

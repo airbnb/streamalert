@@ -41,7 +41,7 @@ class TestStreamClassifier(object):
         self.classifier = None
 
     def setup(self):
-        """Setup the class before any methods"""
+        """Setup before each method"""
         config = load_config('test/unit/conf')
         self.classifier = sa_classifier.StreamClassifier(config)
 

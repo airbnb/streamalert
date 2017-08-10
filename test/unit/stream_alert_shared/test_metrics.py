@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-from mock import patch
+from mock import Mock, patch
 
 from botocore.exceptions import ClientError
 
@@ -24,58 +24,53 @@ from unit.stream_alert_rule_processor import REGION
 
 class TestMetrics(object):
     """Test class for Metrics class"""
-    @classmethod
-    def setup_class(cls):
-        """Setup the class before any methods"""
-        cls.__metrics = Metrics(REGION)
 
-    @classmethod
-    def teardown_class(cls):
-        """Teardown the class after all methods"""
-        cls.__metrics = None
+    def __init__(self):
+        self.__metrics = None
+
+    def setup(self):
+        """Setup before each method"""
+        self.__metrics = Metrics(REGION)
+
+    def teardown(self):
+        """Teardown after each method"""
+        self.__metrics = None
 
     @patch('logging.Logger.error')
     def test_invalid_metric_name(self, log_mock):
         """Metrics - Invalid Name"""
-        self.__metrics.put_metric_data('bad metric name', 100, 'Seconds')
+        self.__metrics.add_metric('bad metric name', 100, 'Seconds')
 
         log_mock.assert_called_with('Metric name not defined: %s', 'bad metric name')
 
     @patch('logging.Logger.error')
     def test_invalid_metric_unit(self, log_mock):
         """Metrics - Invalid Unit Type"""
-        self.__metrics.put_metric_data('RuleProcessorFailedParses', 100, 'Total')
+        self.__metrics.add_metric('RuleProcessorFailedParses', 100, 'Total')
 
         log_mock.assert_called_with('Metric unit not defined: %s', 'Total')
 
-    @patch('stream_alert.shared.metrics.Metrics._put_metric')
+    @patch('stream_alert.shared.metrics.Metrics._put_metrics')
     def test_valid_metric(self, metric_mock):
         """Metrics - Valid Metric"""
-        self.__metrics.put_metric_data('RuleProcessorFailedParses', 100, 'Count')
+        self.__metrics.add_metric('RuleProcessorFailedParses', 100, 'Count')
+        self.__metrics.send_metrics()
 
         metric_mock.assert_called()
 
-    @staticmethod
-    @patch('stream_alert.shared.metrics.boto3')
-    def test_boto_call(boto_mock):
-        """Metrics - Boto Call Params"""
-
-        Metrics(REGION)._put_metric([{'test': 'info'}])
-        boto_mock.client.return_value.put_metric_data.assert_called_with(
-            Namespace='StreamAlert', MetricData=[{'test': 'info'}])
-
-    @staticmethod
-    @patch('stream_alert.shared.metrics.boto3')
     @patch('logging.Logger.exception')
-    def test_boto_failed(log_mock, boto_mock):
+    def test_boto_failed(self, log_mock):
         """Metrics - Boto Call Failed"""
+        self.__metrics.boto_cloudwatch = Mock()
+
         err_response = {'Error': {'Code': 100}}
 
         # Add ClientError side_effect to mock
-        boto_mock.client.return_value.put_metric_data.side_effect = ClientError(
+        self.__metrics.boto_cloudwatch.put_metric_data.side_effect = ClientError(
             err_response, 'operation')
 
-        Metrics(REGION)._put_metric([{'test': 'info'}])
+        self.__metrics._metric_data.append({'test': 'info'})
+        self.__metrics._put_metrics()
 
         log_mock.assert_called_with(
             'Failed to send metric to CloudWatch. Error: %s\nMetric data:\n%s',
