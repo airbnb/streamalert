@@ -230,6 +230,7 @@ class RuleProcessorPackage(LambdaPackage):
     """Deployment package class for the StreamAlert Rule Processor function"""
     package_folders = {
         'stream_alert/rule_processor',
+        'stream_alert/shared',
         'rules',
         'matchers',
         'helpers',
@@ -242,7 +243,10 @@ class RuleProcessorPackage(LambdaPackage):
 
 class AlertProcessorPackage(LambdaPackage):
     """Deployment package class for the StreamAlert Alert Processor function"""
-    package_folders = {'stream_alert/alert_processor', 'conf'}
+    package_folders = {
+        'stream_alert/alert_processor',
+        'stream_alert/shared',
+        'conf'}
     package_files = {'stream_alert/__init__.py'}
     package_root_dir = '.'
     package_name = 'alert_processor'
@@ -251,7 +255,10 @@ class AlertProcessorPackage(LambdaPackage):
 
 class AthenaPackage(LambdaPackage):
     """Create the Athena Partition Refresh Lambda function package"""
-    package_folders = {'stream_alert/athena_partition_refresh', 'conf'}
+    package_folders = {
+        'stream_alert/athena_partition_refresh',
+        'stream_alert/shared',
+        'conf'}
     package_files = {'stream_alert/__init__.py'}
     package_root_dir = '.'
     package_name = 'athena_partition_refresh'

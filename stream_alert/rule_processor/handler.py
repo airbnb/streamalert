@@ -22,6 +22,7 @@ from stream_alert.rule_processor.config import load_config, load_env
 from stream_alert.rule_processor.payload import load_stream_payload
 from stream_alert.rule_processor.rules_engine import StreamRules
 from stream_alert.rule_processor.sink import StreamSink
+from stream_alert.shared.metrics import Metrics
 
 
 class StreamAlert(object):
@@ -50,6 +51,7 @@ class StreamAlert(object):
         # Instantiate a classifier that is used for this run
         self.classifier = StreamClassifier(config=config)
 
+        self.metrics = Metrics(self.env['lambda_region'])
         self.enable_alert_processor = enable_alert_processor
         self._failed_record_count = 0
         self._alerts = []
@@ -74,6 +76,11 @@ class StreamAlert(object):
         if not records:
             return False
 
+        self.metrics.add_metric(
+            Metrics.Name.TOTAL_RECORDS,
+            len(records),
+            Metrics.Unit.COUNT)
+
         for raw_record in records:
             # Get the service and entity from the payload. If the service/entity
             # is not in our config, log and error and go onto the next record
@@ -94,7 +101,7 @@ class StreamAlert(object):
                 continue
 
             # Create the StreamPayload to use for encapsulating parsed info
-            payload = load_stream_payload(service, entity, raw_record)
+            payload = load_stream_payload(service, entity, raw_record, self.metrics)
             if not payload:
                 continue
 
@@ -102,12 +109,24 @@ class StreamAlert(object):
 
         LOGGER.debug('Invalid record count: %d', self._failed_record_count)
 
+        self.metrics.add_metric(
+            Metrics.Name.FAILED_PARSES,
+            self._failed_record_count,
+            Metrics.Unit.COUNT)
+
         LOGGER.debug('%s alerts triggered', len(self._alerts))
+
+        self.metrics.add_metric(
+            Metrics.Name.TRIGGERED_ALERTS, len(
+                self._alerts), Metrics.Unit.COUNT)
 
         # Check if debugging logging is on before json dumping alerts since
         # this can be time consuming if there are a lot of alerts
         if self._alerts and LOGGER.isEnabledFor(LOG_LEVEL_DEBUG):
             LOGGER.debug('Alerts:\n%s', json.dumps(self._alerts, indent=2))
+
+        # Send any cached metrics to CloudWatch before returning
+        self.metrics.send_metrics()
 
         return self._failed_record_count == 0
 

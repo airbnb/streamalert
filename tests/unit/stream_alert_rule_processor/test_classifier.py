@@ -38,13 +38,13 @@ class TestStreamClassifier(object):
         self.classifier = None
 
     def setup(self):
-        """Setup the class before any methods"""
+        """Setup before each method"""
         config = load_config('tests/unit/conf')
         self.classifier = sa_classifier.StreamClassifier(config)
 
     def _prepare_and_classify_payload(self, service, entity, raw_record):
         """Helper method to return a preparsed and classified payload"""
-        payload = load_stream_payload(service, entity, raw_record)
+        payload = load_stream_payload(service, entity, raw_record, None)
 
         payload = payload.pre_parse().next()
         self.classifier.load_sources(service, entity)
@@ -253,7 +253,7 @@ class TestStreamClassifier(object):
         })
 
         raw_record = make_kinesis_raw_record(entity, kinesis_data)
-        payload = load_stream_payload(service, entity, raw_record)
+        payload = load_stream_payload(service, entity, raw_record, None)
         payload = payload.pre_parse().next()
 
         result = self.classifier._parse(payload)
@@ -279,7 +279,7 @@ class TestStreamClassifier(object):
 
         service, entity = 'kinesis', 'test_stream_2'
         raw_record = make_kinesis_raw_record(entity, kinesis_data)
-        payload = load_stream_payload(service, entity, raw_record)
+        payload = load_stream_payload(service, entity, raw_record, None)
 
         self.classifier.load_sources(service, entity)
 
@@ -308,7 +308,7 @@ class TestStreamClassifier(object):
 
         service, entity = 'kinesis', 'test_stream_2'
         raw_record = make_kinesis_raw_record(entity, kinesis_data)
-        payload = load_stream_payload(service, entity, raw_record)
+        payload = load_stream_payload(service, entity, raw_record, None)
 
         self.classifier.load_sources(service, entity)
 
@@ -337,7 +337,7 @@ class TestStreamClassifier(object):
 
         service, entity = 'kinesis', 'test_stream_2'
         raw_record = make_kinesis_raw_record(entity, kinesis_data)
-        payload = load_stream_payload(service, entity, raw_record)
+        payload = load_stream_payload(service, entity, raw_record, None)
 
         self.classifier.load_sources(service, entity)
 
