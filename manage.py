@@ -140,6 +140,48 @@ Examples:
     )
 
 
+def _add_validate_schema_subparser(subparsers):
+    schema_validation_usage = 'manage.py validate-schemas [options]'
+    schema_validation_description = ("""
+StreamAlertCLI v{}
+Run end-to-end tests that will attempt to send alerts
+
+Available Options:
+
+    --files                 Name (not full path) of test file(s) to validate, separated by spaces
+    --debug                 Enable Debug logger output
+
+Examples:
+
+    stream_alert_cli.py validate-schemas --files
+
+""".format(version))
+    schema_validation_parser = subparsers.add_parser(
+        'validate-schemas',
+        description=schema_validation_description,
+        usage=schema_validation_usage,
+        formatter_class=RawTextHelpFormatter,
+        help=ARGPARSE_SUPPRESS
+    )
+
+    # Set the name of this parser to 'validate-schemas'
+    schema_validation_parser.set_defaults(command='validate-schemas')
+
+    # add the optional ability to test against specific files
+    schema_validation_parser.add_argument(
+        '-f', '--files',
+        nargs='+',
+        help=ARGPARSE_SUPPRESS
+    )
+
+    # allow verbose output for the CLI with te --debug option
+    schema_validation_parser.add_argument(
+        '--debug',
+        action='store_true',
+        help=ARGPARSE_SUPPRESS
+    )
+
+
 def _add_lambda_subparser(subparsers):
     """Add the Lambda subparser: manage.py lambda [subcommand] [options]"""
     lambda_usage = 'manage.py lambda [subcommand] [options]'
@@ -427,6 +469,7 @@ For additional details on the available commands, try:
     subparsers = parser.add_subparsers()
     _add_output_subparser(subparsers)
     _add_live_test_subparser(subparsers)
+    _add_validate_schema_subparser(subparsers)
     _add_lambda_subparser(subparsers)
     _add_terraform_subparser(subparsers)
     _add_configure_subparser(subparsers)
