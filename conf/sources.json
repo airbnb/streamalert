@@ -2,17 +2,13 @@
   "kinesis": {
     "prefix_cluster1_stream_alert_kinesis": {
       "logs": [
-        "osquery",
-        "cloudwatch",
-        "cloudtrail"
+        "cloudwatch"
       ]
     }
   },
   "s3": {
-    "example_s3_bucket": {
+    "prefix.cluster.sample.bucket": {
       "logs": [
-        "carbonblack",
-        "osquery",
         "cloudtrail"
       ]
     }
