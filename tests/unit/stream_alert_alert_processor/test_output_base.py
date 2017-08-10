@@ -17,13 +17,13 @@ limitations under the License.
 import os
 
 from mock import patch
-from moto import mock_s3, mock_kms
+from moto import mock_kms, mock_s3
 from nose.tools import assert_equal, assert_is_not_none
 
 from stream_alert.alert_processor.output_base import OutputProperty, StreamOutputBase
 from stream_alert_cli_module.helpers import encrypt_with_kms, put_mock_creds, put_mock_s3_object
 from tests.unit.stream_alert_alert_processor import CONFIG, FUNCTION_NAME, KMS_ALIAS, REGION
-from tests.unit.stream_alert_alert_processor.helpers import _remove_temp_secrets
+from tests.unit.stream_alert_alert_processor.helpers import remove_temp_secrets
 
 # Remove all abstractmethods from __abstractmethods__ so we can
 # instantiate StreamOutputBase for testing
@@ -133,7 +133,7 @@ class TestStreamOutputBase(object):
     @mock_kms
     def test_load_creds(self):
         """Load Credentials"""
-        _remove_temp_secrets()
+        remove_temp_secrets()
         output_name = self.__dispatcher.output_cred_name(self.__descriptor)
 
         creds = {'url': 'http://www.foo.bar/test',

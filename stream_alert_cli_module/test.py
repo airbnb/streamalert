@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from collections import namedtuple
 import json
 import logging
 import os
@@ -20,10 +21,8 @@ import re
 import sys
 import time
 
-from collections import namedtuple
-from mock import Mock, patch
-
 import boto3
+from mock import Mock, patch
 from moto import mock_cloudwatch, mock_lambda, mock_kms, mock_s3, mock_sns
 
 from stream_alert.alert_processor import main as StreamOutput
@@ -430,15 +429,15 @@ class AlertProcessorTester(object):
                 bucket = self.outputs_config[service][descriptor]
                 boto3.client('s3', region_name='us-east-1').create_bucket(Bucket=bucket)
             elif service == 'aws-lambda':
-                function = self.outputs_config[service][descriptor]
-                parts = function.split(':')
+                lambda_function = self.outputs_config[service][descriptor]
+                parts = lambda_function.split(':')
                 if len(parts) == 2 or len(parts) == 8:
-                    function = parts[-2]
+                    lambda_function = parts[-2]
                 else:
-                    function = parts[-1]
-                helpers.create_lambda_function(function, 'us-east-1')
+                    lambda_function = parts[-1]
+                helpers.create_lambda_function(lambda_function, 'us-east-1')
             elif service == 'pagerduty':
-                output_name = ('/').join([service, descriptor])
+                output_name = '/'.join([service, descriptor])
                 creds = {'service_key': '247b97499078a015cc6c586bc0a92de6'}
                 helpers.put_mock_creds(output_name, creds, self.secrets_bucket,
                                        'us-east-1', self.kms_alias)

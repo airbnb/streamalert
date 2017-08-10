@@ -367,10 +367,10 @@ def generate_outputs(cluster_name, cluster_dict, config):
     Returns:
         [bool] Result of applying all outputs
     """
-    for module, output_vars in config['clusters'][cluster_name]['outputs'].iteritems():
+    for tf_module, output_vars in config['clusters'][cluster_name]['outputs'].iteritems():
         for output_var in output_vars:
-            cluster_dict['output']['{}_{}_{}'.format(module, cluster_name, output_var)] = {
-                'value': '${{module.{}_{}.{}}}'.format(module, cluster_name, output_var)}
+            cluster_dict['output']['{}_{}_{}'.format(tf_module, cluster_name, output_var)] = {
+                'value': '${{module.{}_{}.{}}}'.format(tf_module, cluster_name, output_var)}
 
     return True
 

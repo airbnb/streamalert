@@ -19,8 +19,8 @@ from botocore.exceptions import ClientError
 from mock import patch
 from nose.tools import assert_equal
 
-from stream_alert.rule_processor.sink import StreamSink
 from stream_alert.rule_processor.config import load_env
+from stream_alert.rule_processor.sink import StreamSink
 from tests.unit.stream_alert_rule_processor.test_helpers import get_mock_context
 
 

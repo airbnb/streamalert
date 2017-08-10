@@ -1,6 +1,6 @@
 """Alert on destructive AWS API calls."""
-from stream_alert.rule_processor.rules_engine import StreamRules
 from helpers.base import in_set
+from stream_alert.rule_processor.rules_engine import StreamRules
 
 rule = StreamRules.rule
 disable = StreamRules.disable()

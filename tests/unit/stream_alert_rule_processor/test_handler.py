@@ -28,8 +28,7 @@ from nose.tools import (
 
 from stream_alert.rule_processor import LOGGER
 from stream_alert.rule_processor.config import ConfigError
-from stream_alert.rule_processor.handler import StreamAlert
-from stream_alert.rule_processor.handler import load_config
+from stream_alert.rule_processor.handler import load_config, StreamAlert
 from tests.unit.stream_alert_rule_processor.test_helpers import get_mock_context, get_valid_event
 
 

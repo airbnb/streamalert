@@ -25,17 +25,17 @@ from mock import Mock
 from tests.unit.stream_alert_alert_processor import FUNCTION_NAME, REGION
 
 
-def _construct_event(count):
+def construct_event(count):
     """Helper to construct a valid test 'event' with an arbitrary number of records"""
     event = {'Records': []}
     for index in range(count):
         event['Records'] = event['Records'] + \
-            [{'Sns': {'Message': json.dumps(_get_alert(index))}}]
+            [{'Sns': {'Message': json.dumps(get_alert(index))}}]
 
     return event
 
 
-def _get_mock_context():
+def get_mock_context():
     """Create a fake context object using Mock"""
     arn = 'arn:aws:lambda:{}:555555555555:function:{}:production'
     context = Mock(invoked_function_arn=(arn.format(REGION, FUNCTION_NAME)),
@@ -44,7 +44,7 @@ def _get_mock_context():
     return context
 
 
-def _get_random_alert(key_count, rule_name, omit_rule_desc=False):
+def get_random_alert(key_count, rule_name, omit_rule_desc=False):
     """This loop generates key/value pairs with a key of length 6 and
         value of length 148. when formatted, each line should consume
         160 characters, account for newline and asterisk for bold.
@@ -71,7 +71,7 @@ def _get_random_alert(key_count, rule_name, omit_rule_desc=False):
     return alert
 
 
-def _get_alert(index=0):
+def get_alert(index=0):
     return {
         'record': {
             'test_index': index,
@@ -96,7 +96,7 @@ def _get_alert(index=0):
     }
 
 
-def _remove_temp_secrets():
+def remove_temp_secrets():
     """"Blow away the stream_alert_secrets directory in temp"""
     secrets_dir = os.path.join(tempfile.gettempdir(), "stream_alert_secrets")
     shutil.rmtree(secrets_dir)

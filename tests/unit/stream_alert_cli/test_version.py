@@ -17,8 +17,8 @@ limitations under the License.
 from mock import patch
 from nose.tools import assert_equal, assert_true, assert_false, nottest
 
-from stream_alert_cli_module.version import LambdaVersion
 from stream_alert_cli_module.package import AthenaPackage, RuleProcessorPackage
+from stream_alert_cli_module.version import LambdaVersion
 from tests.unit.helpers.aws_mocks import MockLambdaClient
 from tests.unit.helpers.base import basic_streamalert_config, MockCLIConfig
 

@@ -16,8 +16,8 @@ limitations under the License.
 # pylint: disable=attribute-defined-outside-init,protected-access
 # command: nosetests -v -s tests/unit/
 # specific test: nosetests -v -s tests/unit/file.py:TestStreamPayload.test_name
-import json
 from datetime import datetime
+import json
 
 import boto3
 from mock import patch

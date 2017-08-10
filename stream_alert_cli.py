@@ -23,8 +23,7 @@ To run terraform by hand, change to the terraform directory and run:
 
 terraform <cmd> -var-file=../terraform.tfvars -var-file=../variables.json
 """
-from argparse import ArgumentParser, RawTextHelpFormatter
-from argparse import SUPPRESS as ARGPARSE_SUPPRESS
+from argparse import ArgumentParser, RawTextHelpFormatter, SUPPRESS as ARGPARSE_SUPPRESS
 import os
 
 from stream_alert_cli_module import __version__ as version

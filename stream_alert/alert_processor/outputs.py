@@ -13,19 +13,18 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from abc import abstractmethod
 import cgi
+from collections import OrderedDict
+from datetime import datetime
 import json
 import logging
 import os
 import uuid
 
-from abc import abstractmethod
-from collections import OrderedDict
-from datetime import datetime
-
 import boto3
 
-from stream_alert.alert_processor.output_base import StreamOutputBase, OutputProperty
+from stream_alert.alert_processor.output_base import OutputProperty, StreamOutputBase
 
 logging.basicConfig()
 LOGGER = logging.getLogger('StreamAlertOutput')

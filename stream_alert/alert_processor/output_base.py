@@ -13,6 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from abc import ABCMeta, abstractmethod
+from collections import namedtuple
 import json
 import logging
 import os
@@ -20,11 +22,7 @@ import ssl
 import tempfile
 import urllib2
 
-from abc import ABCMeta, abstractmethod
-from collections import namedtuple
-
 import boto3
-
 from botocore.exceptions import ClientError
 
 logging.basicConfig()

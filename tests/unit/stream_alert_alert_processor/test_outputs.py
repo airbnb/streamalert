@@ -32,9 +32,9 @@ from stream_alert.alert_processor.output_base import OutputProperty
 from stream_alert_cli_module.helpers import create_lambda_function, put_mock_creds
 from tests.unit.stream_alert_alert_processor import CONFIG, FUNCTION_NAME, KMS_ALIAS, REGION
 from tests.unit.stream_alert_alert_processor.helpers import (
-    _get_random_alert,
-    _get_alert,
-    _remove_temp_secrets
+    get_random_alert,
+    get_alert,
+    remove_temp_secrets
 )
 
 
@@ -101,7 +101,7 @@ class TestPagerDutyOutput(object):
 
     def _setup_dispatch(self):
         """Helper for setting up PagerDutyOutput dispatch"""
-        _remove_temp_secrets()
+        remove_temp_secrets()
 
         # Cache the _get_default_properties and set it to return None
         self.__backup_method = self.__dispatcher._get_default_properties
@@ -114,7 +114,7 @@ class TestPagerDutyOutput(object):
 
         put_mock_creds(output_name, creds, self.__dispatcher.secrets_bucket, REGION, KMS_ALIAS)
 
-        return _get_alert()
+        return get_alert()
 
     def _teardown_dispatch(self):
         """Replace method with cached method"""
@@ -190,7 +190,7 @@ class TestPhantomOutput(object):
 
     def _setup_dispatch(self, url):
         """Helper for setting up PhantomOutput dispatch"""
-        _remove_temp_secrets()
+        remove_temp_secrets()
 
         output_name = self.__dispatcher.output_cred_name(self.__descriptor)
 
@@ -199,7 +199,7 @@ class TestPhantomOutput(object):
 
         put_mock_creds(output_name, creds, self.__dispatcher.secrets_bucket, REGION, KMS_ALIAS)
 
-        return _get_alert()
+        return get_alert()
 
     @patch('logging.Logger.info')
     @patch('urllib2.urlopen')
@@ -302,7 +302,7 @@ class TestSlackOutput(object):
     def test_format_message_single(self):
         """Format Single Message - Slack"""
         rule_name = 'test_rule_single'
-        alert = _get_random_alert(25, rule_name)
+        alert = get_random_alert(25, rule_name)
         loaded_message = json.loads(self.__dispatcher._format_message(rule_name, alert))
 
         # tests
@@ -315,7 +315,7 @@ class TestSlackOutput(object):
     def test_format_message_mutliple(self):
         """Format Multi-Message - Slack"""
         rule_name = 'test_rule_multi-part'
-        alert = _get_random_alert(30, rule_name)
+        alert = get_random_alert(30, rule_name)
         loaded_message = json.loads(self.__dispatcher._format_message(rule_name, alert))
 
         # tests
@@ -330,7 +330,7 @@ class TestSlackOutput(object):
     def test_format_message_default_rule_description(self):
         """Format Message Default Rule Description - Slack"""
         rule_name = 'test_empty_rule_description'
-        alert = _get_random_alert(10, rule_name, True)
+        alert = get_random_alert(10, rule_name, True)
         loaded_message = json.loads(self.__dispatcher._format_message(rule_name, alert))
 
         # tests
@@ -427,7 +427,7 @@ class TestSlackOutput(object):
 
     def _setup_dispatch(self):
         """Helper for setting up SlackOutput dispatch"""
-        _remove_temp_secrets()
+        remove_temp_secrets()
 
         output_name = self.__dispatcher.output_cred_name(self.__descriptor)
 
@@ -436,7 +436,7 @@ class TestSlackOutput(object):
         put_mock_creds(output_name, creds, self.__dispatcher.secrets_bucket,
                        REGION, KMS_ALIAS)
 
-        return _get_alert()
+        return get_alert()
 
     @patch('logging.Logger.info')
     @patch('urllib2.urlopen')
@@ -551,7 +551,7 @@ class TestS3Ouput(object):
         bucket = CONFIG[self.__service][self.__descriptor]
         boto3.client('s3', region_name=REGION).create_bucket(Bucket=bucket)
 
-        return _get_alert()
+        return get_alert()
 
     @patch('logging.Logger.info')
     @mock_s3
@@ -591,7 +591,7 @@ class TestLambdaOuput(object):
         """Helper for setting up LambdaOutput dispatch"""
         function_name = CONFIG[self.__service][self.__descriptor]
         create_lambda_function(function_name, REGION)
-        return _get_alert()
+        return get_alert()
 
     @mock_lambda
     @patch('logging.Logger.info')

@@ -18,7 +18,6 @@ from collections import OrderedDict
 import json
 
 from mock import mock_open, patch
-
 from nose.tools import (
     assert_equal,
     assert_is_instance,
@@ -28,13 +27,13 @@ from nose.tools import (
 
 from stream_alert.alert_processor.main import _load_output_config, _sort_dict, handler
 from tests.unit.stream_alert_alert_processor import FUNCTION_NAME, REGION
-from tests.unit.stream_alert_alert_processor.helpers import _get_alert, _get_mock_context
+from tests.unit.stream_alert_alert_processor.helpers import get_alert, get_mock_context
 
 
 @patch('stream_alert.alert_processor.main.run')
 def test_handler_run(run_mock):
     """Main handler `run` call params"""
-    context = _get_mock_context()
+    context = get_mock_context()
     handler(None, context)
 
     # This test will load the actual config, so we should compare the
@@ -56,7 +55,7 @@ def test_bad_config(log_mock):
 
 def test_handler_return():
     """Main handler return value"""
-    context = _get_mock_context()
+    context = get_mock_context()
     event = {'Records': []}
     value = handler(event, context)
 
@@ -105,8 +104,8 @@ def test_running_success(creds_mock, config_mock, url_mock):
     creds_mock.return_value = {'url': 'mock.url'}
     url_mock.return_value.getcode.return_value = 200
 
-    alert = _get_alert()
-    context = _get_mock_context()
+    alert = get_alert()
+    context = get_mock_context()
 
     result = handler(alert, context)
     assert_is_instance(result, list)
@@ -120,9 +119,9 @@ def test_running_bad_output(config_mock, log_mock):
     """Alert Processor run handler - bad output"""
     config_mock.return_value = _load_output_config('tests/unit/conf/outputs.json')
 
-    alert = _get_alert()
+    alert = get_alert()
     alert['outputs'] = ['slack']
-    context = _get_mock_context()
+    context = get_mock_context()
 
     handler(alert, context)
 
@@ -146,8 +145,8 @@ def test_running_no_dispatcher(dispatch_mock, config_mock):
     config_mock.return_value = _load_output_config('tests/unit/conf/outputs.json')
     dispatch_mock.return_value = None
 
-    alert = _get_alert()
-    context = _get_mock_context()
+    alert = get_alert()
+    context = get_mock_context()
 
     result = handler(alert, context)
 
@@ -169,8 +168,8 @@ def test_running_exception_occurred(creds_mock, dispatch_mock, config_mock, url_
     config_mock.return_value = _load_output_config('tests/unit/conf/outputs.json')
     url_mock.return_value.getcode.return_value = 200
 
-    alert = _sort_dict(_get_alert())
-    context = _get_mock_context()
+    alert = _sort_dict(get_alert())
+    context = get_mock_context()
 
     handler(alert, context)
 

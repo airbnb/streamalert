@@ -13,13 +13,12 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from logging import DEBUG as LOG_LEVEL_DEBUG
 import json
 
-from logging import DEBUG as LOG_LEVEL_DEBUG
-
 from stream_alert.rule_processor import LOGGER
-from stream_alert.rule_processor.config import load_config, load_env
 from stream_alert.rule_processor.classifier import StreamClassifier
+from stream_alert.rule_processor.config import load_config, load_env
 from stream_alert.rule_processor.payload import load_stream_payload
 from stream_alert.rule_processor.rules_engine import StreamRules
 from stream_alert.rule_processor.sink import StreamSink

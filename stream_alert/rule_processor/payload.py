@@ -13,14 +13,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from abc import ABCMeta, abstractmethod, abstractproperty
 import base64
 import gzip
+from logging import DEBUG as LOG_LEVEL_DEBUG
 import os
 import tempfile
 import time
-
-from abc import ABCMeta, abstractmethod, abstractproperty
-from logging import DEBUG as LOG_LEVEL_DEBUG
 from urllib import unquote
 
 import boto3
@@ -223,7 +222,8 @@ class S3Payload(StreamPayload):
         """
         # Use the urllib unquote method to decode any url encoded characters
         # (ie - %26 --> &) from the bucket and key names
-        unquoted = lambda data: unquote(data).decode('utf8')
+        def unquoted(data):
+            return unquote(data).decode('utf-8')
         region = self.raw_record['awsRegion']
         bucket = unquoted(self.raw_record['s3']['bucket']['name'])
         key = unquoted(self.raw_record['s3']['object']['key'])

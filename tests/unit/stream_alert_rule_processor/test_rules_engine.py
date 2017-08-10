@@ -13,11 +13,10 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from collections import namedtuple
 import json
 
-from collections import namedtuple
 from mock import patch
-
 from nose.tools import assert_equal, assert_is_instance, assert_items_equal
 
 from stream_alert.rule_processor.config import load_config, load_env
