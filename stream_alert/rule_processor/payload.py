@@ -18,6 +18,7 @@ import gzip
 import os
 import tempfile
 import time
+import zlib
 
 from abc import ABCMeta, abstractmethod, abstractproperty
 from logging import DEBUG as log_level_debug
@@ -77,6 +78,7 @@ class StreamPayload(object):
         self.raw_record = kwargs['raw_record']
         self.entity = kwargs['entity']
         self.metrics = kwargs['metrics']
+        self.pre_parsed_record = None
 
         self._refresh_record(None)
 
@@ -312,6 +314,11 @@ class KinesisPayload(StreamPayload):
         LOGGER.debug('Pre-parsing record from Kinesis. eventID: %s, eventSourceARN: %s',
                      self.raw_record['eventID'], self.raw_record['eventSourceARN'])
 
-        self.pre_parsed_record = base64.b64decode(self.raw_record['kinesis']['data'])
+        # Kinesis records have to potential to be gzipped, so try to decompress
+        record = base64.b64decode(self.raw_record['kinesis']['data'])
+        try:
+            self.pre_parsed_record = zlib.decompress(record, 47)
+        except zlib.error:
+            self.pre_parsed_record = record
 
         yield self

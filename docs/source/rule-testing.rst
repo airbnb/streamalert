@@ -34,7 +34,7 @@ Key                Type                  Required  Description
 ``trigger_count``  ``integer``           No        The amount of alerts that should be generated.  Used for nested data
 ``source``         ``string``            Yes       The name of the Kinesis Stream or S3 bucket where the data originated from.  This value should match a source provided in ``conf/sources.json``
 ``service``        ``string``            Yes       The name of the AWS service which sent the log (Kinesis or S3)
-``compress``       ``boolean``           No        Whether or not to compress records with ``gzip`` prior to testing (used for ``gzip-json`` logs)
+``compress``       ``boolean``           No        Whether or not to compress records with ``gzip`` prior to testing
 =================  ====================  ========  ===========
 
 For more examples, see the provided default rule tests in ``test/integration/rules``

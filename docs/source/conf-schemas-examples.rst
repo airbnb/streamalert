@@ -234,8 +234,6 @@ CloudWatch VPC Flow Logs
 
 AWS VPC Flow Logs can be delivered to StreamAlert via CloudWatch.
 
-As they are compressed with deflate, we can use the special ``gzip-json`` for parsing and analysis.
-
 CloudWatch logs are delivered as a nested record, so we will need to pass ``configuration`` options to the parser to find the nested records:
 
 .. code-block:: json
@@ -258,7 +256,7 @@ CloudWatch logs are delivered as a nested record, so we will need to pass ``conf
         "account": "integer",
         "flowlogstatus": "string"
       },
-      "parser": "gzip-json",
+      "parser": "json",
       "configuration": {
         "json_path": "logEvents[*].extractedFields",
         "envelope_keys": {
