@@ -58,39 +58,6 @@ class TestParser(object):
         return parsed_result
 
 
-class TestGzipJsonParser(TestParser):
-    """Test class for GZIP JSON parser"""
-    @classmethod
-    def _parser_type(cls):
-        return 'gzip-json'
-
-    def test_cloudwatch(self):
-        """Parse CloudWatch JSON"""
-        schema = self.config['logs']['test_cloudwatch']['schema']
-        options = self.config['logs']['test_cloudwatch']['configuration']
-
-        with open('test/unit/fixtures/cloudwatch.json', 'r') as fixture_file:
-            data = zlib.compress(fixture_file.readline().strip())
-
-        parsed_result = self.parser_helper(data=data,
-                                           schema=schema,
-                                           options=options)
-
-        assert_not_equal(parsed_result, False)
-        assert_equal(80, len(parsed_result))
-
-        expected_keys = ['protocol', 'source', 'destination', 'srcport',
-                         'destport', 'eni', 'action', 'packets', 'bytes',
-                         'windowstart', 'windowend', 'version', 'account',
-                         'flowlogstatus', 'streamalert:envelope_keys']
-        expected_envelope_keys = ['logGroup', 'logStream', 'owner']
-
-        for result in parsed_result:
-            assert_items_equal(result.keys(), expected_keys)
-            assert_items_equal(result['streamalert:envelope_keys'].keys(),
-                               expected_envelope_keys)
-
-
 class TestKVParser(TestParser):
     """Test class for KVParser"""
     @classmethod
@@ -195,6 +162,32 @@ class TestJSONParser(TestParser):
                      'stream_alert_prod')
         assert_equal(parsed_result[1]['userIdentity']['userName'],
                      'stream_alert_prod_user')
+
+    def test_cloudwatch(self):
+        """Parse CloudWatch JSON, with envelope keys"""
+        schema = self.config['logs']['test_cloudwatch']['schema']
+        options = self.config['logs']['test_cloudwatch']['configuration']
+
+        with open('test/unit/fixtures/cloudwatch.json', 'r') as fixture_file:
+            data = fixture_file.readline().strip()
+
+        parsed_result = self.parser_helper(data=data,
+                                           schema=schema,
+                                           options=options)
+
+        assert_not_equal(parsed_result, False)
+        assert_equal(80, len(parsed_result))
+
+        expected_keys = ['protocol', 'source', 'destination', 'srcport',
+                         'destport', 'eni', 'action', 'packets', 'bytes',
+                         'windowstart', 'windowend', 'version', 'account',
+                         'flowlogstatus', 'streamalert:envelope_keys']
+        expected_envelope_keys = ['logGroup', 'logStream', 'owner']
+
+        for result in parsed_result:
+            assert_items_equal(result.keys(), expected_keys)
+            assert_items_equal(result['streamalert:envelope_keys'].keys(),
+                               expected_envelope_keys)
 
     def test_basic_json(self):
         """Parse Non-nested JSON objects"""
