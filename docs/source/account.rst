@@ -23,7 +23,7 @@ Add your AWS Accound ID to the StreamAlert config:
 
 .. code-block:: bash
 
-  $ python stream_alert_cli.py configure aws_account_id <account_number>
+  $ python manage.py configure aws_account_id <account_number>
 
 prefix
 ~~~~~~
@@ -32,7 +32,7 @@ Add your company or organization name to the StreamAlert config:
 
 .. code-block:: bash
 
-  $ python stream_alert_cli.py configure prefix <company/org name>
+  $ python manage.py configure prefix <company/org name>
 
 user account
 ~~~~~~~~~~~~

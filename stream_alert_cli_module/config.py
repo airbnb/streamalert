@@ -87,7 +87,7 @@ class CLIConfig(object):
         """Enable athena partition refreshes"""
         if 'athena_partition_refresh_config' not in self.config['lambda']:
             LOGGER_CLI.error('No configuration found for Athena Partition Refresh. '
-                             'Please run: $ python stream_alert_cli.py athena init')
+                             'Please run: $ python manage.py athena init')
             return
 
         self.config['lambda']['athena_partition_refresh_config']['enabled'] = True

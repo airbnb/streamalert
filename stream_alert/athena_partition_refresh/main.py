@@ -215,7 +215,7 @@ class StreamAlertAthenaClient(object):
 
         LOGGER.error('The \'%s\' database does not exist. '
                      'Create it with the following command: \n'
-                     '$ python stream_alert_cli.py athena create-db',
+                     '$ python manage.py athena create-db',
                      database)
 
         return False
@@ -232,7 +232,7 @@ class StreamAlertAthenaClient(object):
 
         LOGGER.info('The streamalert table \'%s\' does not exist. '
                     'For alert buckets, create it with the following command: \n'
-                    '$ python stream_alert_cli.py athena create-table '
+                    '$ python manage.py athena create-table '
                     '--type alerts --bucket s3.bucket.id',
                     table_name)
         return False

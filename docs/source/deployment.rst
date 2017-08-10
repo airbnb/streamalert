@@ -10,7 +10,7 @@ To initialize StreamAlert:
 
 .. code-block:: bash
 
-  $ python stream_alert_cli.py terraform init
+  $ python manage.py terraform init
 
 This will perform the following:
 
@@ -26,33 +26,33 @@ Continuous Deployment
 
 As new rules, sources, or outputs are added to StreamAlert, new versions of the AWS Lambda functions must be deployed for changes to become effective.
 
-To accomplish this, ``stream_alert_cli.py`` contains a ``lambda deploy`` command.
+To accomplish this, ``manage.py`` contains a ``lambda deploy`` command.
 
 To publish new changes for all AWS Lambda functions:
 
 .. code-block:: bash
 
-  $ python stream_alert_cli.py lambda deploy --processor all
+  $ python manage.py lambda deploy --processor all
 
 Optionally, to publish changes for only a specific AWS Lambda function:
 
 .. code-block:: bash
 
-  $ python stream_alert_cli.py lambda deploy --processor rule
-  $ python stream_alert_cli.py lambda deploy --processor alert
+  $ python manage.py lambda deploy --processor rule
+  $ python manage.py lambda deploy --processor alert
 
 To apply infrastructure level changes (additional Kinesis shards, Lambda memory, etc), run:
 
 .. code-block:: bash
 
-  $ python stream_alert_cli.py terraform build
+  $ python manage.py terraform build
 
 To speed up the Terraform run, the module name may be specified with the ``target`` parameter:
 
 .. code-block:: bash
 
-  $ python stream_alert_cli.py terraform build --target kinesis            # corresponds to the tf_stream_alert_kinesis module
-  $ python stream_alert_cli.py terraform build --target stream_alert       # corresponds to the tf_stream_alert module
+  $ python manage.py terraform build --target kinesis            # corresponds to the tf_stream_alert_kinesis module
+  $ python manage.py terraform build --target stream_alert       # corresponds to the tf_stream_alert module
 
 Monitoring Functions
 --------------------

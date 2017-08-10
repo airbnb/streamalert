@@ -1,2 +1,2 @@
 #! /bin/bash
-./stream_alert_cli.py lambda test --processor rule
+./manage.py lambda test --processor rule

@@ -32,22 +32,22 @@ from stream_alert_cli_module.runner import cli_runner
 
 
 def _add_output_subparser(subparsers):
-    """Add the output subparser: stream_alert_cli.py output [subcommand] [options]"""
-    output_usage = 'stream_alert_cli.py output [subcommand] [options]'
+    """Add the output subparser: manage.py output [subcommand] [options]"""
+    output_usage = 'manage.py output [subcommand] [options]'
     output_description = ("""
 StreamAlertCLI v{}
 Define new StreamAlert outputs to send alerts to
 
 Available Subcommands:
 
-    stream_alert_cli.py output new [options]    Create a new StreamAlert output
+    manage.py output new [options]    Create a new StreamAlert output
 
 Examples:
 
-    stream_alert_cli.py output new --service <service_name>
-    stream_alert_cli.py output new --service aws-s3
-    stream_alert_cli.py output new --service pagerduty
-    stream_alert_cli.py output new --service slack
+    manage.py output new --service <service_name>
+    manage.py output new --service aws-s3
+    manage.py output new --service pagerduty
+    manage.py output new --service slack
 
 """.format(version))
     output_parser = subparsers.add_parser(
@@ -83,8 +83,8 @@ Examples:
 
 
 def _add_live_test_subparser(subparsers):
-    """Add the live-test subparser: stream_alert_cli.py live-test [options]"""
-    live_test_usage = 'stream_alert_cli.py live-test [options]'
+    """Add the live-test subparser: manage.py live-test [options]"""
+    live_test_usage = 'manage.py live-test [options]'
     live_test_description = ("""
 StreamAlertCLI v{}
 Run end-to-end tests that will attempt to send alerts
@@ -97,8 +97,8 @@ Available Options:
 
 Examples:
 
-    stream_alert_cli.py live-test --cluster prod
-    stream_alert_cli.py live-test --rules
+    manage.py live-test --cluster prod
+    manage.py live-test --rules
 
 """.format(version))
     live_test_parser = subparsers.add_parser(
@@ -141,17 +141,17 @@ Examples:
 
 
 def _add_lambda_subparser(subparsers):
-    """Add the Lambda subparser: stream_alert_cli.py lambda [subcommand] [options]"""
-    lambda_usage = 'stream_alert_cli.py lambda [subcommand] [options]'
+    """Add the Lambda subparser: manage.py lambda [subcommand] [options]"""
+    lambda_usage = 'manage.py lambda [subcommand] [options]'
     lambda_description = ("""
 StreamAlertCLI v{}
 Deploy, Rollback, and Test StreamAlert Lambda functions
 
 Available Subcommands:
 
-    stream_alert_cli.py lambda deploy [options]         Deploy Lambda functions
-    stream_alert_cli.py lambda rollback [options]       Rollback Lambda functions
-    stream_alert_cli.py lambda test [options]           Run rule tests
+    manage.py lambda deploy [options]         Deploy Lambda functions
+    manage.py lambda rollback [options]       Rollback Lambda functions
+    manage.py lambda test [options]           Run rule tests
 
 Available Options:
 
@@ -162,9 +162,9 @@ Available Options:
 
 Examples:
 
-    stream_alert_cli.py lambda deploy --processor all
-    stream_alert_cli.py lambda rollback --processor all
-    stream_alert_cli.py lambda test --processor rule --rules lateral_movement root_logins
+    manage.py lambda deploy --processor all
+    manage.py lambda rollback --processor all
+    manage.py lambda test --processor rule --rules lateral_movement root_logins
 
 """.format(version))
     lambda_parser = subparsers.add_parser(
@@ -210,39 +210,39 @@ Examples:
 
 
 def _add_terraform_subparser(subparsers):
-    """Add Terraform subparser: stream_alert_cli.py terraform [subcommand] [options]"""
-    terraform_usage = 'stream_alert_cli.py terraform [subcommand] [options]'
+    """Add Terraform subparser: manage.py terraform [subcommand] [options]"""
+    terraform_usage = 'manage.py terraform [subcommand] [options]'
     terraform_description = ("""
 StreamAlertCLI v{}
 Plan and Apply StreamAlert Infrastructure with Terraform
 
 Available Subcommands:
 
-    stream_alert_cli.py terraform init                      Initialize StreamAlert infrastructure
-    stream_alert_cli.py terraform init-backend              Initialize the Terraform backend
-    stream_alert_cli.py terraform build [options]           Run Terraform on all StreamAlert modules
-    stream_alert_cli.py terraform clean                     Remove Terraform files (only use this when destroying all infrastructure)
-    stream_alert_cli.py terraform destroy [options]         Destroy StreamAlert infrastructure
-    stream_alert_cli.py terraform generate                  Generate Terraform files from JSON cluster files
-    stream_alert_cli.py terraform status                    Show cluster health, and other currently configured infrastructure information
+    manage.py terraform init                   Initialize StreamAlert infrastructure
+    manage.py terraform init-backend           Initialize the Terraform backend
+    manage.py terraform build [options]        Run Terraform on all StreamAlert modules
+    manage.py terraform clean                  Remove Terraform files (only use this when destroying all infrastructure)
+    manage.py terraform destroy [options]      Destroy StreamAlert infrastructure
+    manage.py terraform generate               Generate Terraform files from JSON cluster files
+    manage.py terraform status                 Show cluster health, and other currently configured infrastructure information
 
 Available Options:
 
-    --target                                                The Terraform module name to apply.
-                                                            Valid options: stream_alert, kinesis, kinesis_events,
-                                                            cloudtrail, monitoring, and s3_events.
+    --target                                   The Terraform module name to apply.
+                                               Valid options: stream_alert, kinesis, kinesis_events,
+                                               cloudtrail, monitoring, and s3_events.
 Examples:
 
-    stream_alert_cli.py terraform init
-    stream_alert_cli.py terraform init-backend
-    stream_alert_cli.py terraform generate
+    manage.py terraform init
+    manage.py terraform init-backend
+    manage.py terraform generate
 
-    stream_alert_cli.py terraform build
-    stream_alert_cli.py terraform build --target kinesis
-    stream_alert_cli.py terraform build --target stream_alert
+    manage.py terraform build
+    manage.py terraform build --target kinesis
+    manage.py terraform build --target stream_alert
 
-    stream_alert_cli.py terraform destroy
-    stream_alert_cli.py terraform destroy -target cloudtrail
+    manage.py terraform destroy
+    manage.py terraform destroy -target cloudtrail
 
 """.format(version))
     tf_parser = subparsers.add_parser(
@@ -291,8 +291,8 @@ Examples:
 
 
 def _add_configure_subparser(subparsers):
-    """Add configure subparser: stream_alert_cli.py configure [config_key] [config_value]"""
-    configure_usage = 'stream_alert_cli.py configure [config_key] [config_value]'
+    """Add configure subparser: manage.py configure [config_key] [config_value]"""
+    configure_usage = 'manage.py configure [config_key] [config_value]'
     configure_description = ("""
 StreamAlertCLI v{}
 Configure StreamAlert options
@@ -304,7 +304,7 @@ Available Keys:
 
 Examples:
 
-    stream_alert_cli.py configure prefix my-organization
+    manage.py configure prefix my-organization
 
 """.format(version))
     configure_parser = subparsers.add_parser(
@@ -337,23 +337,23 @@ Examples:
 
 
 def _add_athena_subparser(subparsers):
-    """Add athena subparser: stream_alert_cli.py athena [subcommand]"""
-    athena_usage = 'stream_alert_cli.py athena [subcommand]'
+    """Add athena subparser: manage.py athena [subcommand]"""
+    athena_usage = 'manage.py athena [subcommand]'
     athena_description = ("""
 StreamAlertCLI v{}
 Athena StreamAlert options
 
 Available Subcommands:
 
-    stream_alert_cli.py athena init                 Create the Athena base config
-    stream_alert_cli.py athena enable               Enable Athena Partition Refresh Lambda function
-    stream_alert_cli.py athena create-db            Initialize the Athena Database (streamalert)
-    stream_alert_cli.py athena create-table         Create an Athena table
+    manage.py athena init                 Create the Athena base config
+    manage.py athena enable               Enable Athena Partition Refresh Lambda function
+    manage.py athena create-db            Initialize the Athena Database (streamalert)
+    manage.py athena create-table         Create an Athena table
 
 Examples:
 
-    stream_alert_cli.py athena create-db
-    stream_alert_cli.py athena create-table --type alerts --bucket s3.bucket.name
+    manage.py athena create-db
+    manage.py athena create-table --type alerts --bucket s3.bucket.name
 
 """.format(version))
     athena_parser = subparsers.add_parser(
@@ -399,22 +399,22 @@ Build, Deploy, Configure, and Test StreamAlert Infrastructure
 
 Available Commands:
 
-    stream_alert_cli.py terraform        Manage StreamAlert infrastructure
-    stream_alert_cli.py output           Configure new StreamAlert outputs
-    stream_alert_cli.py lambda           Deploy, test, and rollback StreamAlert AWS Lambda functions
-    stream_alert_cli.py live-test        Send alerts to configured outputs
-    stream_alert_cli.py configure        Configure StreamAlert settings
+    manage.py terraform        Manage StreamAlert infrastructure
+    manage.py output           Configure new StreamAlert outputs
+    manage.py lambda           Deploy, test, and rollback StreamAlert AWS Lambda functions
+    manage.py live-test        Send alerts to configured outputs
+    manage.py configure        Configure StreamAlert settings
 
 For additional details on the available commands, try:
 
-    stream_alert_cli.py [command] --help
+    manage.py [command] --help
 
 """.format(version))
     usage = '%(prog)s [command] [subcommand] [options]'
 
     parser = ArgumentParser(
         description=description,
-        prog='stream_alert_cli.py',
+        prog='manage.py',
         usage=usage,
         formatter_class=RawTextHelpFormatter
     )

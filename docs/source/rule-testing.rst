@@ -1,7 +1,7 @@
 Rule Testing
 ============
 
-To test the accuracy of new rules, local tests can be written to verify that alerts trigger against valid input.  The ``stream_alert_cli.py`` CLI tool comes built-in with a ``lambda test`` command which does exactly this.
+To test the accuracy of new rules, local tests can be written to verify that alerts trigger against valid input.  The ``manage.py`` CLI tool comes built-in with a ``lambda test`` command which does exactly this.
 
 Configuration
 ~~~~~~~~~~~~~
@@ -79,7 +79,7 @@ For example, to replace a time based field with ``last_hour``:
 Running Tests
 ~~~~~~~~~~~~~~
 
-Tests can be run via the ``stream_alert_cli.py`` script. These tests include the ability to validate rules for
+Tests can be run via the ``manage.py`` script. These tests include the ability to validate rules for
 accuracy and alert outputs for proper configuration.
 
 When adding new rules, it is only necessary to run tests for the **rule processor**. If making code changes to the alert
@@ -89,38 +89,38 @@ To run integration tests for the **rule processor**:
 
 .. code-block:: bash
 
-  $ python stream_alert_cli.py lambda test --processor rule
+  $ python manage.py lambda test --processor rule
 
 To run integration tests for the **alert processor**:
 
 .. code-block:: bash
 
-  $ python stream_alert_cli.py lambda test --processor alert
+  $ python manage.py lambda test --processor alert
 
 To run end-to-end integration tests for **both processors**:
 
 .. code-block:: bash
 
-  $ python stream_alert_cli.py lambda test --processor all
+  $ python manage.py lambda test --processor all
 
 Integration tests can be restricted to **specific rules** to reduce time and output:
 
 .. code-block:: bash
 
-  $ python stream_alert_cli.py lambda test --processor rule --rules <rule_01> <rule_02>
+  $ python manage.py lambda test --processor rule --rules <rule_01> <rule_02>
 
 Integration tests can send **live test alerts** to configured outputs for rules using a specified cluster.
 This can also be combined with an optional list of rules to use for tests (using the ``--rules`` argument):
 
 .. code-block:: bash
 
-  $ python stream_alert_cli.py live-test --cluster <cluster_name>
+  $ python manage.py live-test --cluster <cluster_name>
 
 Here is a sample command showing how to run tests against two rules included as integration tests in the default StreamAlert configuration:
 
 .. code-block:: bash
 
-  $ python stream_alert_cli.py lambda test --processor rule --rules cloudtrail_put_bucket_acl cloudtrail_root_account
+  $ python manage.py lambda test --processor rule --rules cloudtrail_put_bucket_acl cloudtrail_root_account
 
 This will produce output similar to the following::
 

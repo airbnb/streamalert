@@ -89,7 +89,7 @@ After making modifications to a cluster file, make sure you apply the changes wi
 
 .. code-block:: bash
 
-  $ python stream_alert_cli.py terraform build
+  $ python manage.py terraform build
 
 This will regenerate the necessary Terraform files and then apply the changes.
 
