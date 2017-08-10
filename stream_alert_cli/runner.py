@@ -520,11 +520,15 @@ def deploy(options):
     if 'all' in processor:
         targets.extend(['module.stream_alert_{}'.format(x)
                         for x in CONFIG.clusters()])
-        targets.append('module.stream_alert_athena')
 
         packages.append(_deploy_rule_processor())
         packages.append(_deploy_alert_processor())
-        packages.append(_deploy_athena_partition_refresh())
+
+        # Only include the Athena function if it exists and is enabled
+        athena_config = CONFIG['lambda'].get('athena_partition_refresh_config')
+        if athena_config and athena_config.get('enabled', False):
+            targets.append('module.stream_alert_athena')
+            packages.append(_deploy_athena_partition_refresh())
 
     # Regenerate the Terraform configuration with the new S3 keys
     if not terraform_generate(config=CONFIG):
