@@ -68,7 +68,7 @@ resource "aws_cloudwatch_metric_alarm" "streamalert_kinesis_iterator_age" {
   metric_name         = "GetRecords.IteratorAgeMilliseconds"
   statistic           = "Maximum"
   comparison_operator = "GreaterThanThreshold"
-  threshold           = "43000000"                                                     // 12 hours
+  threshold           = "1000000"
   evaluation_periods  = "1"
   period              = "300"
   alarm_description   = "StreamAlert Kinesis High Iterator Age: ${var.kinesis_stream}"
@@ -87,7 +87,7 @@ resource "aws_cloudwatch_metric_alarm" "streamalert_kinesis_write_exceeded" {
   statistic           = "Sum"
   comparison_operator = "GreaterThanThreshold"
   threshold           = "0"
-  evaluation_periods  = "1"
+  evaluation_periods  = "2"
   period              = "300"
   alarm_description   = "StreamAlert Kinesis Write Throughput Exceeded: ${var.kinesis_stream}"
   alarm_actions       = ["${var.sns_topic_arn}"]

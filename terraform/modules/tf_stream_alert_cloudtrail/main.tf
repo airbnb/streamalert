@@ -3,6 +3,7 @@ resource "aws_cloudtrail" "streamalert" {
   name                          = "${var.prefix}.${var.cluster}.streamalert.cloudtrail"
   s3_bucket_name                = "${aws_s3_bucket.cloudtrail_bucket.id}"
   s3_key_prefix                 = "cloudtrail"
+  enable_log_file_validation    = true
   enable_logging                = "${var.enable_logging}"
   include_global_service_events = true
   is_multi_region_trail         = "${var.is_global_trail}"
