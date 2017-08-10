@@ -510,21 +510,24 @@ def generate_s3_events(cluster_name, cluster_dict, config):
     modules = config['clusters'][cluster_name]['modules']
     s3_bucket_id = modules['s3_events'].get('s3_bucket_id')
 
-    if s3_bucket_id:
-        cluster_dict['module']['s3_events_{}'.format(cluster_name)] = {
-            'source': 'modules/tf_stream_alert_s3_events',
-            'lambda_function_arn': '${{module.stream_alert_{}.lambda_arn}}'.format(cluster_name),
-            'lambda_function_name': '{}_{}_stream_alert_processor'.format(
-                config['global']['account']['prefix'],
-                cluster_name),
-            's3_bucket_id': s3_bucket_id,
-            's3_bucket_arn': 'arn:aws:s3:::{}'.format(s3_bucket_id)}
-        return True
-    else:
+    if not s3_bucket_id:
         LOGGER_CLI.error(
             'Config Error: Missing S3 bucket in %s s3_events module',
             cluster_name)
         return False
+
+    cluster_dict['module']['s3_events_{}'.format(cluster_name)] = {
+        'source': 'modules/tf_stream_alert_s3_events',
+        'lambda_function_arn': '${{module.stream_alert_{}.lambda_arn}}'.format(cluster_name),
+        'lambda_function_name': '{}_{}_stream_alert_processor'.format(
+            config['global']['account']['prefix'],
+            cluster_name),
+        's3_bucket_id': s3_bucket_id,
+        's3_bucket_arn': 'arn:aws:s3:::{}'.format(s3_bucket_id),
+        'lambda_role_id': '${{module.stream_alert_{}.lambda_role_id}}'.format(cluster_name),
+        'lambda_role_arn': '${{module.stream_alert_{}.lambda_role_arn}}'.format(cluster_name)}
+
+    return True
 
 
 def generate_cluster(**kwargs):
