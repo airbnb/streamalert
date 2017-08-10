@@ -75,10 +75,6 @@ class RuleProcessorTester(object):
         """
         self.all_tests_passed = True
         self.context = context
-        # Create the topic used for the mocking of alert sending
-        # This is used in stream_alert/rule_processor/sink.py to 'send' alerts
-        sns_client = boto3.client('sns', region_name='us-east-1')
-        sns_client.create_topic(Name='test_streamalerts')
         # Create a list for pass/fails. The first value in the list is a
         # list of tuples for failures, and the second is list of tuples for
         # passes. Tuple is (rule_name, rule_description)
@@ -556,7 +552,6 @@ def mock_me(context):
         if context.mocked:
             @mock_cloudwatch
             @mock_lambda
-            @mock_sns
             @mock_s3
             @mock_kms
             def mocked(options, context):
