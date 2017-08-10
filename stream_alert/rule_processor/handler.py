@@ -33,7 +33,7 @@ class StreamAlert(object):
         Args:
             context: An AWS context object which provides metadata on the currently
                 executing lambda function.
-            enable_alert_processor: If the user wants to send the alerts using their
+            enable_alert_processor (bool): If the user wants to send the alerts using their
                 own methods, 'enable_alert_processor' can be set to False to suppress
                 sending with the StreamAlert alert processor.
         """
@@ -69,7 +69,7 @@ class StreamAlert(object):
                 an s3 bucket event) containing data emitted to the stream.
 
         Returns:
-            [boolean] True if all logs being parsed match a schema
+            bool: True if all logs being parsed match a schema
         """
         records = event.get('Records', [])
         LOGGER.debug('Number of Records: %d', len(records))
@@ -134,7 +134,7 @@ class StreamAlert(object):
         """Public method to return alerts from class. Useful for testing.
 
         Returns:
-            [list] list of alerts as dictionaries
+            list: list of alerts as dictionaries
         """
         return self._alerts
 
@@ -142,7 +142,7 @@ class StreamAlert(object):
         """Process records for alerts and send them to the correct places
 
         Args:
-            payload [StreamPayload]: StreamAlert payload object being processed
+            payload (StreamPayload): StreamAlert payload object being processed
         """
         for record in payload.pre_parse():
             self.classifier.classify_record(record)

@@ -125,7 +125,7 @@ class StreamRules(object):
             rule: Rule containing the list of matchers
 
         Returns:
-            Boolean result of matcher processing.
+            bool: result of matcher processing
         """
         # matchers are optional for rules
         if not rule.matchers:
@@ -167,11 +167,11 @@ class StreamRules(object):
 
         Args:
             record: Payload record to process
-            payload_type: [String] type of the record
+            payload_type (str): type of the record
             rule: Rule attributes
 
         Returns:
-            Boolean result of subkey check.
+            bool: result of subkey check.
         """
         if not rule.req_subkeys or payload_type != 'json':
             return True
@@ -191,7 +191,7 @@ class StreamRules(object):
         and the rule itself to determine if a match occurs.
 
         Returns:
-            List of alerts.
+            list: alerts
 
             An alert is represented as a dictionary with the following keys:
                 rule_name: the name of the triggered rule

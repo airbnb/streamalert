@@ -29,14 +29,14 @@ def handler(event, context):
     """StreamAlert Alert Processor
 
     Args:
-        event [dict]: contains a 'Records' top level key that holds
+        event (dict): contains a 'Records' top level key that holds
             all of the records for this event. Each record dict then
             contains a 'Message' key pointing to the alert payload that
             has been sent from the main StreamAlert Rule processor function
-        context [AWSLambdaContext]: basically a namedtuple of properties from AWS
+        context (AWSLambdaContext): basically a namedtuple of properties from AWS
 
     Returns:
-        [list] list of status values, each entry in the list is a tuple
+        list: Status values. Each entry in the list is a tuple
             consisting of two values. The first value is a boolean that
             indicates if sending was successful and the second value is the
             output configuration info (ie - 'slack:sample_channel')
@@ -58,7 +58,7 @@ def run(alert, region, function_name, config):
     """Send an Alert to its described outputs.
 
     Args:
-        alert [dict]: dictionary representating an alert with the
+        alert (dict): dictionary representating an alert with the
             following structure:
 
             {
@@ -72,12 +72,12 @@ def run(alert, region, function_name, config):
                 'source_entity': payload.entity
             }
 
-        region [string]: The AWS region of the currently executing Lambda function
-        function_name [string]: The name of the lambda function
-        config [dict]: The loaded configuration for outputs from conf/outputs.json
+        region (str): The AWS region of the currently executing Lambda function
+        function_name (str): The name of the lambda function
+        config (dict): The loaded configuration for outputs from conf/outputs.json
 
-    Returns:
-        [generator] Yields back dispatch status and name of the output to the handler
+    Yields:
+        (bool, str): Dispatch status and name of the output to the handler
     """
     if not validate_alert(alert):
         LOGGER.error('Invalid alert format:\n%s', json.dumps(alert, indent=2))
@@ -130,10 +130,10 @@ def _sort_dict(unordered_dict):
     """Recursively sort a dictionary
 
     Args:
-        unordered_dict [dict]: an alert dictionary
+        unordered_dict (dict): an alert dictionary
 
     Returns:
-        [OrderedDict] a sorted version of the dictionary
+        OrderedDict: a sorted version of the dictionary
     """
     result = OrderedDict()
     for key, value in sorted(unordered_dict.items(), key=lambda t: t[0]):
@@ -150,7 +150,7 @@ def _load_output_config(config_path='conf/outputs.json'):
     """Load the outputs configuration file from disk
 
     Returns:
-        [dict] The output configuration settings
+        dict: the output configuration settings
     """
     with open(config_path) as outputs:
         try:

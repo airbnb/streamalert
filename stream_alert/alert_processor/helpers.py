@@ -24,10 +24,10 @@ def validate_alert(alert):
     """Helper function to perform simple validation of an alert's keys and structure
 
     Args:
-        alert [dict]: the alert record to test that should be in the form of a dict
+        alert (dict): the alert record to test that should be in the form of a dict
 
     Returns:
-        [bool] a boolean value indicating whether or not the alert has the proper structure
+        bool: whether or not the alert has the proper structure
     """
 
     if not isinstance(alert, dict):

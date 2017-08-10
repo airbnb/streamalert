@@ -38,7 +38,7 @@ def get_valid_config():
     very simplified format.
 
     Returns:
-        [dict] contents of a valid config file
+        dict: contents of a valid config file
     """
     return {
         'logs': {

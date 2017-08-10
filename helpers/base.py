@@ -42,7 +42,7 @@ def last_hour(unixtime, hours=1):
 
     Args:
         unixtime: epoch time
-        hours: number of hours
+        hours (int): number of hours
 
     Returns:
         True/False
@@ -56,7 +56,7 @@ def valid_ip(ip_address):
     """Verify that a ip_address string is valid
 
     Args:
-        ip_address: A string to cast into an IPAddress class
+        ip_address (string): address to be tested
 
     Returns:
         True if the ip_address is valid, otherwise False
@@ -72,8 +72,8 @@ def in_network(ip_address, cidrs):
     """Check that an ip_address is within a set of CIDRs
 
     Args:
-        ip_address: netaddr IPAddress object
-        cidrs: a set of string CIDRs
+        ip_address (netaddr.IPAddress): IP address to check
+        cidrs (set): String CIDRs
 
     Returns:
         Boolean representing if the given IP is within any CIDRs

@@ -114,7 +114,7 @@ class CLIConfig(object):
         """Load the cluster, global, and lambda configuration files
 
         Returns:
-            [dict] loaded config from all config files with the following keys:
+            dict: loaded config from all config files with the following keys:
                 'clusters', 'global', and 'lambda'
         """
         config = {'clusters': {}}

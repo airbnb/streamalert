@@ -28,8 +28,7 @@ from stream_alert_cli import helpers
 from stream_alert_cli.config import CLIConfig
 from stream_alert_cli.logger import LOGGER_CLI
 import stream_alert_cli.outputs as config_outputs
-from stream_alert_cli.package import (
-    RuleProcessorPackage, AlertProcessorPackage, AthenaPackage)
+from stream_alert_cli.package import AlertProcessorPackage, AthenaPackage, RuleProcessorPackage
 from stream_alert_cli.terraform_generate import terraform_generate
 from stream_alert_cli.test import stream_alert_test
 from stream_alert_cli.version import LambdaVersion
@@ -154,7 +153,7 @@ def configure_handler(options):
     """Configure StreamAlert main settings
 
     Args:
-        options [named_tuple]: ArgParse command result
+        options (namedtuple): ArgParse command result
     """
     if options.config_key == 'prefix':
         if isinstance(options.config_key, (unicode, str)):
@@ -335,8 +334,8 @@ def tf_runner(**kwargs):
         targets: a list of Terraform targets
         action: 'apply' or 'destroy'
 
-    Returns: Boolean result of if the terraform command
-             was successful or not
+    Returns:
+        bool: True if the terraform command was successful
     """
     targets = kwargs.get('targets', [])
     action = kwargs.get('action', None)
@@ -544,11 +543,11 @@ def user_input(requested_info, mask, input_restrictions):
     """Prompt user for requested information
 
     Args:
-        requested_info [string]: Description of the information needed
-        mask [boolean]: Decides whether to mask input or not
+        requested_info (str): Description of the information needed
+        mask (bool): Decides whether to mask input or not
 
     Returns:
-        [string] response provided by the user
+        str: response provided by the user
     """
     response = ''
     prompt = '\nPlease supply {}: '.format(requested_info)
@@ -576,7 +575,7 @@ def configure_output(options):
     """Configure a new output for this service
 
     Args:
-        options [argparse]: Basically a namedtuple with the service setting
+        options (argparser): Basically a namedtuple with the service setting
     """
     region = CONFIG['global']['account']['region']
     prefix = CONFIG['global']['account']['prefix']
@@ -596,7 +595,6 @@ def configure_output(options):
     props = output.get_user_defined_properties()
 
     for name, prop in props.iteritems():
-        # TODO: Don't use protected method here
         # pylint: disable=protected-access
         props[name] = prop._replace(value=user_input(prop.description,
                                                      prop.mask_input,

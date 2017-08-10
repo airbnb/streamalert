@@ -28,7 +28,7 @@ class StreamSink(object):
         """StreamSink initializer
 
         Args:
-            env [dict]: loaded dictionary containing environment information
+            env (dict): loaded dictionary containing environment information
         """
         self.env = env
         self.client_lambda = boto3.client('lambda',
@@ -40,7 +40,7 @@ class StreamSink(object):
         """Sink triggered alerts from the StreamRules engine.
 
         Args:
-            alerts [list]: a list of dictionaries representating json alerts
+            alerts (list): a list of dictionaries representating json alerts
 
         Sends a message to the alert processor with the following JSON format:
             {

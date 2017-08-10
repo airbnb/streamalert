@@ -28,10 +28,10 @@ def load_outputs_config(conf_dir='conf'):
     """Load the outputs configuration file from disk
 
     Args:
-        conf_dir [string='conf']: Directory to read outputs config from
+        conf_dir (str): Directory to read outputs config from
 
     Returns:
-        [dict] The output configuration settings
+        dict: The output configuration settings
     """
     with open(os.path.join(conf_dir, OUTPUTS_CONFIG)) as outputs:
         try:
@@ -49,8 +49,8 @@ def write_outputs_config(data, conf_dir='conf'):
     """Write the outputs configuration file back to disk
 
     Args:
-        data [dict]: Dictionary to be converted to json and written to disk
-        conf_dir [string='conf']: Directory to write outputs config to
+        data (dict): Dictionary to be converted to json and written to disk
+        conf_dir (str): Directory to write outputs config to
     """
     with open(os.path.join(conf_dir, OUTPUTS_CONFIG), 'w') as outputs:
         outputs.write(json.dumps(
@@ -65,11 +65,11 @@ def load_config(props, service):
     """Gets the outputs config from disk and checks if the output already exists
 
     Args:
-        props [OrderedDict]: Contains various OutputProperty items
-        service [string]: The service for which the user is adding a configuration
+        props (OrderedDict): Contains various OutputProperty items
+        service (str): The service for which the user is adding a configuration
 
     Returns:
-        [dict] If the output doesn't exist, return the configuration, otherwise return False
+        dict: If the output doesn't exist, return the configuration, otherwise return False
     """
     config = load_outputs_config()
     if not check_output_exists(config, props, service):
@@ -82,10 +82,10 @@ def encrypt_and_push_creds_to_s3(region, bucket, key, props):
     """Construct a dictionary of the credentials we want to encrypt and send to s3
 
     Args:
-        region [string]: The aws region to use for boto3 client
-        bucket [string]: The name of the s3 bucket to write the encrypted credentials to
-        key [string]: ID for the s3 object to write the encrypted credentials to
-        props [OrderedDict]: Contains various OutputProperty items
+        region (str): The aws region to use for boto3 client
+        bucket (str): The name of the s3 bucket to write the encrypted credentials to
+        key (str): ID for the s3 object to write the encrypted credentials to
+        props (OrderedDict): Contains various OutputProperty items
     """
     creds = {name: prop.value
              for (name, prop) in props.iteritems() if prop.cred_requirement}
@@ -104,11 +104,11 @@ def kms_encrypt(region, data):
     """Encrypt data with AWS KMS.
 
     Args:
-        region [string]: AWS region to use for boto3 client
-        data [string]: json string to be encrypted
+        region (str): AWS region to use for boto3 client
+        data (str): json string to be encrypted
 
     Returns:
-        [string] Encrypted ciphertext data blob
+        str: Encrypted ciphertext data blob
     """
     try:
         client = boto3.client('kms', region_name=region)
@@ -123,10 +123,10 @@ def send_creds_to_s3(region, bucket, key, blob_data):
     """Put the encrypted credential blob for this service and destination in s3
 
     Args:
-        region [string]: AWS region to use for boto3 client
-        bucket [string]: The name of the s3 bucket to write the encrypted credentials to
-        key [string]: ID for the s3 object to write the encrypted credentials to
-        blob_data [bytes]: Cipher text blob from the kms encryption
+        region (str): AWS region to use for boto3 client
+        bucket (str): The name of the s3 bucket to write the encrypted credentials to
+        key (str): ID for the s3 object to write the encrypted credentials to
+        blob_data (bytes): Cipher text blob from the kms encryption
     """
     try:
         client = boto3.client('s3', region_name=region)
@@ -152,9 +152,9 @@ def check_output_exists(config, props, service):
     """Determine if this service and destination combo has already been created
 
     Args:
-        config [dict]: The outputs config that has been read from disk
-        props [OrderedDict]: Contains various OutputProperty items
-        service [string]: The service for which the user is adding a configuration
+        config (dict): The outputs config that has been read from disk
+        props (OrderedDict): Contains various OutputProperty items
+        service (str): The service for which the user is adding a configuration
 
     Returns:
         [boolean] True if the service/destination exists already
@@ -171,10 +171,10 @@ def update_outputs_config(config, updated_config, service):
     """Updates and writes the outputs config back to disk
 
     Args:
-        config [dict]: The loaded configuration as a dictionary
-        updated_config [variant]: The updated configuration for this service. this could
+        config (dict): The loaded configuration as a dictionary
+        updated_config: The updated configuration for this service. this could
             be a list, dictionary, etc depending on how this services stores config info
-        service [string]: The service whose configuration is being updated
+        service (str): The service whose configuration is being updated
     """
     config[service] = updated_config
     write_outputs_config(config)

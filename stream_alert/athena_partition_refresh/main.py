@@ -114,7 +114,7 @@ class StreamAlertAthenaClient(object):
             config (CLIConfig): Loaded StreamAlert configuration
 
         Keyword Args:
-            results_key_prefix (string): The S3 key prefix to store Athena results
+            results_key_prefix (str): The S3 key prefix to store Athena results
         """
         self.config = config
         region = self.config['global']['account']['region']
@@ -136,10 +136,10 @@ class StreamAlertAthenaClient(object):
         """Check in on the running query, back off if the job is running or queued
 
         Args:
-            query_execution_id (string): The Athena query execution ID
+            query_execution_id (str): The Athena query execution ID
 
         Returns:
-            string: The result of the Query.  This value can be SUCCEEDED, FAILED, or CANCELLED.
+            str: The result of the Query.  This value can be SUCCEEDED, FAILED, or CANCELLED.
                 Reference https://bit.ly/2uuRtda.
         """
         @backoff.on_predicate(backoff.fibo,
@@ -159,11 +159,11 @@ class StreamAlertAthenaClient(object):
         """Helper function to run Athena queries
 
         Keyword Args:
-            query (string): The SQL query to execute
-            database (string): The database context to execute the query in
+            query (str): The SQL query to execute
+            database (str): The database context to execute the query in
 
         Returns:
-            tuple: (bool) Query success, (dict): Query result response
+            bool, dict: query success, query result response
         """
         LOGGER.debug('Executing query: %s', kwargs['query'])
         query_execution_resp = self.athena_client.start_query_execution(
@@ -203,7 +203,7 @@ class StreamAlertAthenaClient(object):
         """Verify the StreamAlert Athena database exists.
 
         Keyword Args:
-            database (string): The database name to execute the query under
+            database (str): The database name to execute the query under
         """
         database = kwargs.get('database', self.DATABASE_STREAMALERT)
         query_success, query_resp = self.run_athena_query(

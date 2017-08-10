@@ -103,7 +103,7 @@ def load_env(context):
         context: The AWS Lambda context object.
 
     Returns:
-        [dict] including the following items:
+        dict:
             {
                 'lambda_region': 'region_name',
                 'account_id': 'account_id',

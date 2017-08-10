@@ -32,9 +32,10 @@ def load_stream_payload(service, entity, raw_record, metrics):
     """Returns the right StreamPayload subclass for this service
 
     Args:
-        service [string]: service name to load class for
-        entity [string]: entity for this service
-        raw_record [string]: record raw payload data
+        service (str): service name to load class for
+        entity (str): entity for this service
+        raw_record (str): record raw payload data
+        metrics (Metrics): payload metrics
     """
     payload_map = {'s3': S3Payload,
                    'sns': SnsPayload,
@@ -51,20 +52,19 @@ class StreamPayload(object):
     """Container class for the StreamAlert payload object.
 
     Attributes:
-        entity: The name of the sending service. Can be a kinesis stream name,
+        entity (str): The name of the sending service. Can be a kinesis stream name,
             SNS topic, or S3 bucket name.
 
         raw_record: The record from the AWS Lambda Records dictionary.
 
-        log_source: The name of the logging application which the data
+        log_source (str): The name of the logging application which the data
             originated from.  This could be osquery, auditd, etc.
 
-        records: A list of parsed and typed record(s).
+        records (list): A list of parsed and typed record(s).
 
-        type: The data type of the record - json, csv, syslog, etc.
+        type (str): The data type of the record - json, csv, syslog, etc.
 
-        valid: A boolean representing if the record is deemed valid by
-            parsing and classification.
+        valid (bool): Whether the record is deemed valid by parsing and classification.
     """
     __metaclass__ = ABCMeta
 
@@ -93,7 +93,7 @@ class StreamPayload(object):
         """Read only service property enforced on subclasses.
 
         Returns:
-            [string] The service name for this payload type.
+            str: The service name for this payload type.
         """
 
     @abstractmethod
@@ -101,8 +101,8 @@ class StreamPayload(object):
         """Pre-parsing method that should be implemented by all subclasses.
         This establishes the `pre_parsed_record` property to allow for parsing.
 
-        Returns:
-            [generator] Yields instances of `self` back to the caller with the
+        Yields:
+            Instances of `self` back to the caller with the
                 proper `pre_parsed_record` set. Conforming to the interface of
                 returning a generator provides the ability to support multi-record
                 payloads, such as those similar to S3.
@@ -116,7 +116,7 @@ class StreamPayload(object):
         from a Kinesis stream.
 
         Args:
-            new_record [string]: A new raw record to be parsed
+            new_record (str): A new raw record to be parsed
         """
         self.pre_parsed_record = new_record
         self.log_source = None
@@ -142,8 +142,8 @@ class S3Payload(StreamPayload):
         This yields back references of this S3Payload instance to the caller
         with a propertly set `pre_parsed_record` for this record.
 
-        Returns:
-            [generator] Yields instances of `self` back to the caller with the
+        Yields:
+            Instances of `self` back to the caller with the
                 proper `pre_parsed_record` set. Conforms to the interface of
                 returning a generator, providing the ability to support
                 multi-record like this (s3).
@@ -187,12 +187,12 @@ class S3Payload(StreamPayload):
         greatly impacts that time.
 
         Args:
-            region [string]: AWS region to use for boto client instance.
-            bucket [string]: S3 bucket to download object from.
-            key [string]: Key of s3 object.
+            region (str): AWS region to use for boto client instance.
+            bucket (str): S3 bucket to download object from.
+            key (str): Key of s3 object.
 
         Returns:
-            [string] The downloaded path of the S3 object.
+            str: The downloaded path of the S3 object.
         """
         size_kb = self.s3_object_size / 1024.0
         size_mb = size_kb / 1024.0
@@ -226,7 +226,7 @@ class S3Payload(StreamPayload):
         """Given an S3 record, download and parse the data.
 
         Returns:
-            [string] Path to the downloaded s3 object.
+            str: Path to the downloaded s3 object.
         """
         # Use the urllib unquote method to decode any url encoded characters
         # (ie - %26 --> &) from the bucket and key names
@@ -249,11 +249,10 @@ class S3Payload(StreamPayload):
         Supports reading both gzipped files and plaintext files.
 
         Args:
-            s3_object [string]: A full path to the downloaded file.
+            s3_object (str): A full path to the downloaded file.
 
         Yields:
-            [generator] A generator that yields lines from the downloaded
-                s3 object.
+            (str) Lines from the downloaded s3 object.
         """
         _, extension = os.path.splitext(s3_object)
 
@@ -285,9 +284,8 @@ class SnsPayload(StreamPayload):
         """Pre-parsing method for SNS records. Extracts the SNS payload from the
         record itself and sets it as the `pre_parsed_record` property.
 
-        Returns:
-            [generator] yields this object with the pre_parsed_record now set
-                Confirming to the interface of returning a generator.
+        Yields:
+            This object with the pre_parsed_record now set
         """
         LOGGER.debug(
             'Pre-parsing record from SNS. MessageId: %s, EventSubscriptionArn: %s',
@@ -310,9 +308,8 @@ class KinesisPayload(StreamPayload):
         payload from the record itself, decodes it and sets it as the
         `pre_parsed_record` property.
 
-        Returns:
-            [generator] yields this object with the pre_parsed_record now set
-                Confirming to the interface of returning a generator.
+        Yields:
+            This object with the pre_parsed_record now set
         """
         LOGGER.debug('Pre-parsing record from Kinesis. eventID: %s, eventSourceARN: %s',
                      self.raw_record['eventID'], self.raw_record['eventSourceARN'])

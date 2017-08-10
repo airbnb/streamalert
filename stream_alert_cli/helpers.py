@@ -36,9 +36,9 @@ def run_command(runner_args, **kwargs):
     Args:
         runner_args (list): Commands to run via subprocess
         kwargs:
-            cwd (string): A path to execute commands from
-            error_message (string): Message to show if command fails
-            quiet (boolean): Whether to show command output or hide it
+            cwd (str): A path to execute commands from
+            error_message (str): Message to show if command fails
+            quiet (bool): Whether to show command output or hide it
 
     """
     default_error_message = "An error occurred while running: {}".format(
@@ -72,7 +72,7 @@ def format_lambda_test_record(test_record):
     event templates from the tests/integration/templates folder.
 
     Args:
-        test_record: Test record metadata dict with the following structure:
+        test_record (dict): Test record metadata dict with the following structure:
             data - string or dict of the raw data
             description - a string describing the test that is being performed
             trigger - bool of if the record should produce an alert
@@ -81,7 +81,7 @@ def format_lambda_test_record(test_record):
             compress (optional) - if the payload needs to be gzip compressed or not
 
     Returns:
-        dict in the format of the specific service
+        dict: in the format of the specific service
     """
     service = test_record['service']
     source = test_record['source']
@@ -190,10 +190,10 @@ def put_mock_s3_object(bucket, key, data, region):
     """Create a mock AWS S3 object for testing
 
     Args:
-        bucket: the bucket in which to place the object (string)
-        key: the key to use for the S3 object (string)
-        data: the actual value to use for the object (string)
-        region: the aws region to use for this boto3 client
+        bucket (str): the bucket in which to place the object
+        key (str): the key to use for the S3 object
+        data (str): the actual value to use for the object
+        region (str): the aws region to use for this boto3 client
     """
     s3_client = boto3.client('s3', region_name=region)
     s3_client.create_bucket(Bucket=bucket)
