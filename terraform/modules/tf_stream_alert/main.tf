@@ -132,3 +132,15 @@ resource "aws_lambda_permission" "rule_processor" {
   qualifier     = "production"
   depends_on    = ["aws_lambda_alias.alert_processor_production"]
 }
+
+// Log Retention Policy: Rule Processor
+resource "aws_cloudwatch_log_group" "rule_processor" {
+  name              = "/aws/lambda/${var.prefix}_${var.cluster}_streamalert_rule_processor"
+  retention_in_days = 60
+}
+
+// Log Retention Policy: Alert Processor
+resource "aws_cloudwatch_log_group" "alert_processor" {
+  name              = "/aws/lambda/${var.prefix}_${var.cluster}_streamalert_alert_processor"
+  retention_in_days = 60
+}
