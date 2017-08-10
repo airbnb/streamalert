@@ -17,7 +17,6 @@ import csv
 import json
 import re
 import StringIO
-import zlib
 
 from abc import ABCMeta, abstractmethod
 from collections import OrderedDict
@@ -254,29 +253,6 @@ class JSONParser(ParserBase):
 
         return json_records
 
-@parser
-class GzipJSONParser(JSONParser):
-    __parserid__ = 'gzip-json'
-
-    def parse(self, schema, data):
-        """Parse a gzipped string into JSON.
-
-        Args:
-            data [str]: Data to be parsed.
-
-        Returns:
-            [list] A list of dictionaries representing parsed records.
-            [boolean] False if the data is not Gzipped JSON or the columns do not match.
-        """
-        try:
-            data = zlib.decompress(data, 47)
-            return super(GzipJSONParser, self).parse(schema, data)
-        except zlib.error:
-            return False
-
-    def type(self):
-        """Return the parserid for the super of this (json, not gzip-json)"""
-        return super(GzipJSONParser, self).__parserid__
 
 @parser
 class CSVParser(ParserBase):
