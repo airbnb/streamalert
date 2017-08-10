@@ -38,6 +38,7 @@ from unit.stream_alert_rule_processor.test_helpers import (
 )
 
 
+@patch('stream_alert.rule_processor.handler.Metrics.send_metrics', Mock())
 class TestStreamAlert(object):
     """Test class for StreamAlert class"""
 
@@ -47,7 +48,7 @@ class TestStreamAlert(object):
     @patch('stream_alert.rule_processor.handler.load_config',
            lambda: load_config('test/unit/conf/'))
     def setup(self):
-        """Setup the class before any methods"""
+        """Setup before each method"""
         self.__sa_handler = StreamAlert(_get_mock_context(), False)
 
     def test_run_no_records(self):
@@ -57,7 +58,7 @@ class TestStreamAlert(object):
 
     @staticmethod
     @raises(ConfigError)
-    def test_run_config_error():
+    def test_run_config_error(_):
         """StreamAlert Class - Run, Config Error"""
         mock = mock_open(read_data='non-json string that will raise an exception')
         with patch('__builtin__.open', mock):
@@ -120,7 +121,8 @@ class TestStreamAlert(object):
         load_payload_mock.assert_called_with(
             'lambda',
             'entity',
-            'record'
+            'record',
+            self.__sa_handler.metrics
         )
 
     @patch('stream_alert.rule_processor.handler.StreamRules.process')
@@ -183,9 +185,10 @@ class TestStreamAlert(object):
         sink_mock.assert_called_with(['success!!'])
 
     @patch('logging.Logger.debug')
+    @patch('stream_alert.shared.metrics.Metrics.send_metrics')
     @patch('stream_alert.rule_processor.handler.StreamRules.process')
     @patch('stream_alert.rule_processor.handler.StreamClassifier.extract_service_and_entity')
-    def test_run_debug_log_alert(self, extract_mock, rules_mock, log_mock):
+    def test_run_debug_log_alert(self, extract_mock, rules_mock, _, log_mock):
         """StreamAlert Class - Run, Debug Log Alert"""
         extract_mock.return_value = ('kinesis', 'unit_test_default_stream')
         rules_mock.return_value = ['success!!']

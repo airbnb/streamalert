@@ -26,9 +26,10 @@ from urllib import unquote
 import boto3
 
 from stream_alert.rule_processor import LOGGER
+from stream_alert.shared.metrics import Metrics
 
 
-def load_stream_payload(service, entity, raw_record):
+def load_stream_payload(service, entity, raw_record, metrics):
     """Returns the right StreamPayload subclass for this service
 
     Args:
@@ -44,7 +45,7 @@ def load_stream_payload(service, entity, raw_record):
         LOGGER.error('Service payload not supported: %s', service)
         return
 
-    return payload_map[service](raw_record=raw_record, entity=entity)
+    return payload_map[service](raw_record=raw_record, entity=entity, metrics=metrics)
 
 
 class StreamPayload(object):
@@ -73,8 +74,9 @@ class StreamPayload(object):
         Keyword Args:
             raw_record (dict): The record to be parsed - in AWS event format
         """
-        self.entity = kwargs['entity']
         self.raw_record = kwargs['raw_record']
+        self.entity = kwargs['entity']
+        self.metrics = kwargs['metrics']
 
         self._refresh_record(None)
 
@@ -172,6 +174,8 @@ class S3Payload(StreamPayload):
                         avg_record_size,
                         self.s3_object_size)
 
+        self.metrics.add_metric(Metrics.Name.TOTAL_S3_RECORDS, line_num, Metrics.Unit.COUNT)
+
     def _download_object(self, region, bucket, key):
         """Download an object from S3.
 
@@ -209,6 +213,10 @@ class S3Payload(StreamPayload):
 
         total_time = time.time() - start_time
         LOGGER.info('Completed download in %s seconds', round(total_time, 2))
+
+        # Publish a metric on how long this object took to download
+        self.metrics.add_metric(
+            Metrics.Name.S3_DOWNLOAD_TIME, total_time, Metrics.Unit.SECONDS)
 
         return downloaded_s3_object
 
