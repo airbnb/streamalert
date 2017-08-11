@@ -159,7 +159,7 @@ def configure_handler(options):
         options [named_tuple]: ArgParse command result
     """
     if options.config_key == 'prefix':
-        if isinstance(options.config_key, (unicode, str)):
+        if not isinstance(options.config_value, (unicode, str)):
             LOGGER_CLI.error('Invalid prefix type, must be string')
             return
         CONFIG.set_prefix(options.config_value)
