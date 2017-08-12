@@ -181,6 +181,7 @@ def generate_stream_alert(cluster_name, cluster_dict, config):
         "stream_alert": {
           "alert_processor": {
             "current_version": "$LATEST",
+            "log_level": "info",
             "memory": 128,
             "outputs": {
               "aws-lambda": [
@@ -207,6 +208,7 @@ def generate_stream_alert(cluster_name, cluster_dict, config):
                 "sns_topic_arn"
               ]
             },
+            "log_level": "info",
             "memory": 128,
             "timeout": 10
           }
@@ -225,11 +227,15 @@ def generate_stream_alert(cluster_name, cluster_dict, config):
         'prefix': account['prefix'],
         'cluster': cluster_name,
         'kms_key_arn': '${aws_kms_key.stream_alert_secrets.arn}',
+        'rule_processor_log_level': modules['stream_alert'] \
+            ['rule_processor'].get('log_level', 'info'),
         'rule_processor_memory': modules['stream_alert']['rule_processor']['memory'],
         'rule_processor_timeout': modules['stream_alert']['rule_processor']['timeout'],
         'rule_processor_version': modules['stream_alert']['rule_processor']['current_version'],
         'rule_processor_config': '${var.rule_processor_config}',
         'alert_processor_config': '${var.alert_processor_config}',
+        'alert_processor_log_level': modules['stream_alert'] \
+            ['alert_processor'].get('log_level', 'info'),
         'alert_processor_memory': modules['stream_alert']['alert_processor']['memory'],
         'alert_processor_timeout': modules['stream_alert']['alert_processor']['timeout'],
         'alert_processor_version': modules['stream_alert']['alert_processor']['current_version']
