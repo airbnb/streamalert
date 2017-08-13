@@ -412,10 +412,14 @@ def rollback(options):
         Only rollsback if published version is greater than 1
     """
     clusters = CONFIG.clusters()
-    if options.processor == 'all':
-        lambda_functions = {'rule_processor', 'alert_processor'}
+
+    if 'all' in options.processor:
+        lambda_functions = {'rule_processor', 'alert_processor', 'athena_partition_refresh'}
     else:
-        lambda_functions = {'{}_processor'.format(options.processor)}
+        lambda_functions = {'{}_processor'.format(proc) for proc in options.processor
+                            if proc != 'athena'}
+        if 'athena' in options.processor:
+            lambda_functions.add('athena_partition_refresh')
 
     for cluster in clusters:
         for lambda_function in lambda_functions:
@@ -499,24 +503,6 @@ def deploy(options):
         athena_package.create_and_upload()
         return athena_package
 
-
-    if 'rule' in processor:
-        targets.extend(['module.stream_alert_{}'.format(x)
-                        for x in CONFIG.clusters()])
-
-        packages.append(_deploy_rule_processor())
-
-    if 'alert' in processor:
-        targets.extend(['module.stream_alert_{}'.format(x)
-                        for x in CONFIG.clusters()])
-
-        packages.append(_deploy_alert_processor())
-
-    if 'athena' in processor:
-        targets.append('module.stream_alert_athena')
-
-        packages.append(_deploy_athena_partition_refresh())
-
     if 'all' in processor:
         targets.extend(['module.stream_alert_{}'.format(x)
                         for x in CONFIG.clusters()])
@@ -528,6 +514,25 @@ def deploy(options):
         athena_config = CONFIG['lambda'].get('athena_partition_refresh_config')
         if athena_config and athena_config.get('enabled', False):
             targets.append('module.stream_alert_athena')
+            packages.append(_deploy_athena_partition_refresh())
+
+    else:
+
+        if 'rule' in processor:
+            targets.extend(['module.stream_alert_{}'.format(x)
+                            for x in CONFIG.clusters()])
+
+            packages.append(_deploy_rule_processor())
+
+        if 'alert' in processor:
+            targets.extend(['module.stream_alert_{}'.format(x)
+                            for x in CONFIG.clusters()])
+
+            packages.append(_deploy_alert_processor())
+
+        if 'athena' in processor:
+            targets.append('module.stream_alert_athena')
+
             packages.append(_deploy_athena_partition_refresh())
 
     # Regenerate the Terraform configuration with the new S3 keys
