@@ -28,6 +28,11 @@ variable "rule_processor_log_level" {
   default = "info"
 }
 
+variable "rule_processor_enable_metrics" {
+  type    = "boolean"
+  default = false
+}
+
 variable "rule_processor_version" {}
 
 variable "rule_processor_memory" {}
@@ -42,6 +47,11 @@ variable "alert_processor_config" {
 variable "alert_processor_log_level" {
   type    = "string"
   default = "info"
+}
+
+variable "alert_processor_enable_metrics" {
+  type    = "boolean"
+  default = false
 }
 
 variable "alert_processor_version" {}

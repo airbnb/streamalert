@@ -13,8 +13,9 @@ resource "aws_lambda_function" "streamalert_rule_processor" {
 
   environment {
     variables = {
-      CLUSTER      = "${var.cluster}"
-      LOGGER_LEVEL = "${var.rule_processor_log_level}"
+      CLUSTER        = "${var.cluster}"
+      LOGGER_LEVEL   = "${var.rule_processor_log_level}"
+      ENABLE_METRICS = "${var.rule_processor_enable_metrics}"
     }
   }
 
@@ -48,8 +49,9 @@ resource "aws_lambda_function" "streamalert_alert_processor_vpc" {
 
   environment {
     variables = {
-      CLUSTER      = "${var.cluster}"
-      LOGGER_LEVEL = "${var.alert_processor_log_level}"
+      CLUSTER        = "${var.cluster}"
+      LOGGER_LEVEL   = "${var.alert_processor_log_level}"
+      ENABLE_METRICS = "${var.alert_processor_enable_metrics}"
     }
   }
 
@@ -80,8 +82,9 @@ resource "aws_lambda_function" "streamalert_alert_processor" {
 
   environment {
     variables = {
-      CLUSTER      = "${var.cluster}"
-      LOGGER_LEVEL = "${var.alert_processor_log_level}"
+      CLUSTER        = "${var.cluster}"
+      LOGGER_LEVEL   = "${var.alert_processor_log_level}"
+      ENABLE_METRICS = "${var.alert_processor_enable_metrics}"
     }
   }
 
