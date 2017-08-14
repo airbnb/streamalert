@@ -54,7 +54,7 @@ Open ``conf/lambda.json``, and fill in the following ``Required`` options:
 ===================================  ========  =========          ===========
 Key                                  Required  Default            Description
 -----------------------------------  --------  ---------          -----------
-``enabled``                          ``Yes``   ``True``           Enables/Disables the Athena Partition Refresh Lambda function
+``enabled``                          ``Yes``   ``true``           Enables/Disables the Athena Partition Refresh Lambda function
 ``log_level``                        ``No``    ``info``           The log level for the Lambda function, can be either ``info`` or ``debug``.  Debug will help with diagnosing errors with polling SQS or sending Athena queries.
 ``memory``                           ``No``    ``128``            The amount of memory (in MB) allocated to the Lambda function
 ``timeout``                          ``No``    ``60``             The maximum duration of the Lambda function (in seconds)

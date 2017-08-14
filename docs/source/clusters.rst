@@ -213,10 +213,10 @@ By default, all API calls will be logged and accessible from rules.
 ===================  ========  ==================================  ===========
 Key                  Required  Default                             Description
 -------------------  --------  ----------------------------------  -----------
-``enabled``          Yes       -                                   To enable/disable the CloudTrail.
-``existing_trail``   No        ``false``                           Set to ``true`` if the account has an existing CloudTrail.  This is to avoid duplication of data collected by multiple CloudTrails.
-``is_global_trail``  No        ``true``                            If the CloudTrail should collect events from any region.
-``event_pattern``    No        ``{"account": ["<accound_id>"]}``   The CloudWatch Events pattern to send to Kinesis.  `More information <http://docs.aws.amazon.com/AmazonCloudWatch/latest/events/EventTypes.html>`_.
+``enabled``          ``Yes``   -                                   To enable/disable the CloudTrail.
+``existing_trail``   ``No``    ``false``                           Set to ``true`` if the account has an existing CloudTrail.  This is to avoid duplication of data collected by multiple CloudTrails.
+``is_global_trail``  ``No``    ``true``                            If the CloudTrail should collect events from any region.
+``event_pattern``    ``No``    ``{"account": ["<accound_id>"]}``   The CloudWatch Events pattern to send to Kinesis.  `More information <http://docs.aws.amazon.com/AmazonCloudWatch/latest/events/EventTypes.html>`_.
 ===================  ========  ==================================  ===========
 
 Module: Flow Logs

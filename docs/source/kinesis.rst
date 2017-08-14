@@ -52,8 +52,8 @@ Options
 =============  =========  ===========
 Key            Required   Description
 -------------  ---------  -----------
-``retention``  ``true``   The data record retention period of your stream.
-``shards``     ``true``   A shard provides a fixed unit of capacity to your stream.
+``retention``  ``Yes``    The data record retention period of your stream.
+``shards``     ``Yes``    A shard provides a fixed unit of capacity to your stream.
 =============  =========  ===========
 
 Kinesis Firehose
@@ -100,6 +100,6 @@ Options
 ====================  ========  ===========
 Key                   Required  Description
 --------------------  --------  -----------
-``enabled``           ``true``  If set to ``false``, will not create a Kinesis Firehose
-``s3_bucket_suffix``  ``true``  The suffix of the S3 bucket used for Kinesis Firehose data. The naming scheme is: ``prefix.cluster.suffix``
+``enabled``           ``Yes``   If set to ``false``, will not create a Kinesis Firehose
+``s3_bucket_suffix``  ``Yes``   The suffix of the S3 bucket used for Kinesis Firehose data. The naming scheme is: ``prefix.cluster.suffix``
 ====================  ========  ===========
