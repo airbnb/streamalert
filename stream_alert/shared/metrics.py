@@ -33,7 +33,7 @@ class Metrics(object):
     accessing properties and avoids doing dict lookups a ton.
     """
 
-    def __init__(self, function, region):
+    def __init__(self, lambda_function, region):
         self.boto_cloudwatch = boto3.client('cloudwatch', region_name=region)
         self._metric_data = []
         self._dimensions = [
@@ -43,7 +43,7 @@ class Metrics(object):
             },
             {
                 'Name': 'Function',
-                'Value': function
+                'Value': lambda_function
             }
         ]
 

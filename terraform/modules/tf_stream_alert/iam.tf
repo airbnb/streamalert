@@ -50,7 +50,15 @@ resource "aws_iam_role_policy" "streamalert_rule_processor_cloudwatch_put_metric
   policy = "${data.aws_iam_policy_document.put_metric_data.json}"
 }
 
-// IAM Policy Doc: Allow the Rule Processor to publish CloudWatch metrics
+// IAM Role Policy: Allow the Alert Processor to publish CloudWatch metrics
+resource "aws_iam_role_policy" "streamalert_alert_processor_cloudwatch_put_metric_data" {
+  name = "${var.prefix}_${var.cluster}_streamalert_alert_processor_put_metric_data"
+  role = "${aws_iam_role.streamalert_alert_processor_role.id}"
+
+  policy = "${data.aws_iam_policy_document.put_metric_data.json}"
+}
+
+// IAM Policy Doc: Allow the Lambda Functions to publish CloudWatch metrics
 data "aws_iam_policy_document" "put_metric_data" {
   statement {
     effect = "Allow"

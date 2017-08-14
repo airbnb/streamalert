@@ -76,3 +76,10 @@ class TestMetrics(object):
             'Failed to send metric to CloudWatch. Error: %s\nMetric data:\n%s',
             err_response,
             '[\n  {\n    "test": "info"\n  }\n]')
+
+    @patch('logging.Logger.debug')
+    def test_no_metrics_to_send(self, log_mock):
+        """Metrics - No Metrics To Send"""
+        self.__metrics.send_metrics()
+
+        log_mock.assert_called_with('No metric data to send to CloudWatch.')
