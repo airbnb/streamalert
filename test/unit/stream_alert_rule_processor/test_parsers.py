@@ -65,7 +65,7 @@ class TestKVParser(TestParser):
         return 'kv'
 
     def test_kv_parsing(self):
-        """Parse KV - 'key:value,key:value'"""
+        """KV Parser - 'key:value,key:value'"""
         # setup
         schema = {
             'name': 'string',
@@ -91,7 +91,7 @@ class TestJSONParser(TestParser):
         return 'json'
 
     def test_multi_nested_json(self):
-        """Parse Multi-layered JSON"""
+        """JSON Parser - Multi-nested JSON"""
         # setup
         schema = {
             'name': 'string',
@@ -115,7 +115,7 @@ class TestJSONParser(TestParser):
         assert_equal(parsed_data[0]['result'], 'fail')
 
     def test_inspec(self):
-        """Parse Inspec JSON"""
+        """JSON Parser - Inspec JSON"""
         schema = self.config['logs']['test_inspec']['schema']
         options = self.config['logs']['test_inspec']['configuration']
 
@@ -134,7 +134,7 @@ class TestJSONParser(TestParser):
         assert_items_equal(parsed_result[0].keys(), inspec_keys)
 
     def test_cloudtrail(self):
-        """Parse Cloudtrail JSON"""
+        """JSON Parser - Cloudtrail JSON"""
         schema = self.config['logs']['test_cloudtrail']['schema']
         options = self.config['logs']['test_cloudtrail']['configuration']
 
@@ -164,7 +164,7 @@ class TestJSONParser(TestParser):
                      'stream_alert_prod_user')
 
     def test_cloudwatch(self):
-        """Parse CloudWatch JSON, with envelope keys"""
+        """JSON Parser - CloudWatch JSON with envelope keys"""
         schema = self.config['logs']['test_cloudwatch']['schema']
         options = self.config['logs']['test_cloudwatch']['configuration']
 
@@ -190,7 +190,7 @@ class TestJSONParser(TestParser):
                                expected_envelope_keys)
 
     def test_basic_json(self):
-        """Parse Non-nested JSON objects"""
+        """JSON Parser - Non-nested JSON objects"""
         # setup
         schema = {
             'name': 'string',
@@ -210,7 +210,7 @@ class TestJSONParser(TestParser):
         assert_is_instance(parsed_data[0]['age'], int)
 
     def test_optional_keys_json(self):
-        """Parse JSON with optional top level keys"""
+        """JSON Parser - Optional top level keys"""
         schema = {
             'columns': {},
             'host': 'string',
@@ -250,7 +250,7 @@ class TestJSONParser(TestParser):
         assert_is_instance(parsed_result[0]['results'], dict)
 
     def test_optional_keys_with_json_path(self):
-        """Parse JSON with optional top level keys and json path to records"""
+        """JSON Parser - Optional top level keys and json path"""
         schema = {
             'internal_name': 'string',
             'is_64bit': 'boolean',
