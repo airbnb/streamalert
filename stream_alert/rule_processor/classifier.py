@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+import json
 from collections import namedtuple, OrderedDict
 
 from stream_alert.rule_processor import LOGGER
@@ -166,13 +167,14 @@ class StreamClassifier(object):
         matches = []
         for i, schema_match in enumerate(schema_matches):
             log_patterns = schema_match.parser.options.get('log_patterns', {})
+            LOGGER.debug('Log patterns: %s', log_patterns)
             if (all(schema_match.parser.matched_log_pattern(data, log_patterns)
                     for data in schema_match.parsed_data)):
                 matches.append(schema_matches[i])
             else:
                 LOGGER.debug(
-                    'Log pattern matching failed for schema: %s',
-                    schema_match.root_schema)
+                    'Log pattern matching failed for: \n%s',
+                    json.dumps(schema_match.parsed_data, indent=4))
 
         if matches:
             if len(matches) > 1:
@@ -217,11 +219,15 @@ class StreamClassifier(object):
             parser = parser_class(options)
 
             # Get a list of parsed records
+            LOGGER.debug('Trying schema: %s', log_name)
             parsed_data = parser.parse(schema, payload.pre_parsed_record)
 
-            LOGGER.debug('Schema: %s', schema)
+            # LOGGER.debug('Schema: %s', json.dumps(schema, indent=4))
             if not parsed_data:
                 continue
+
+            LOGGER.debug('Parsed %s records with schema %s',
+                         len(parsed_data), log_name)
 
             if SUPPORT_MULTIPLE_SCHEMA_MATCHING:
                 schema_matches.append(schema_match(log_name, schema, parser, parsed_data))
@@ -252,10 +258,12 @@ class StreamClassifier(object):
         if not schema_matches:
             return False
 
+        LOGGER.debug('Schema Matched Records: \n%s', json.dumps([schema_match.parsed_data for schema_match in schema_matches], indent=4))
+
         schema_match = self._check_schema_match(schema_matches)
 
         LOGGER.debug('Log name: %s', schema_match.log_name)
-        LOGGER.debug('Parsed data: %s', schema_match.parsed_data)
+        LOGGER.debug('Parsed data: \n%s', json.dumps(schema_match.parsed_data, indent=4))
 
         for parsed_data_value in schema_match.parsed_data:
             # Convert data types per the schema

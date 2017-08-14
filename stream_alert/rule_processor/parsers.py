@@ -90,21 +90,24 @@ class ParserBase:
                 return self.matched_log_pattern(record[field], pattern_list)
 
             if not isinstance(pattern_list, list):
-                LOGGER.debug('designated log_patterns should be a \'list\'')
+                LOGGER.debug('Configured `log_patterns` should be a \'list\'')
                 continue
 
-            # the pattern field value in the record
+            # The pattern field value in the record
             try:
                 value = record[field]
             except (KeyError, TypeError):
-                LOGGER.debug('declared log pattern field [%s] is not a valid field '
+                LOGGER.debug('Declared log pattern field [%s] is not a valid type '
                              'for this record: %s', field, record)
                 continue
-            # append the result of any of the log_patterns being True
+            # Append the result of any of the log_patterns being True
             pattern_result.append(any(fnmatch(value, pattern)
                                       for pattern in pattern_list))
 
-        LOGGER.debug('%s pattern result: %s', self.type(), pattern_result)
+        all_patterns_result = all(pattern_result)
+        LOGGER.debug('%s log pattern match result: %s', self.type(), all_patterns_result)
+        # if not all_patterns_result:
+            # LOGGER.debug('Failed Log Pattern Match: %s', json.dumps(record, indent=4))
 
         # if all pattern group results are True
         return all(pattern_result)
@@ -139,10 +142,11 @@ class JSONParser(ParserBase):
                     # Nested key check
                     if key_type and isinstance(key_type, dict):
                         schema_match = self._key_check(schema[key], [json_records[index][key]])
-            else:
-                LOGGER.debug('JSON Key mismatch: %s vs. %s', json_keys, schema_keys)
 
             if not schema_match:
+                LOGGER.debug('Schema: \n%s', json.dumps(schema, indent=4))
+                LOGGER.debug('Key Check Failure: \n%s', json.dumps(json_records[index], indent=4))
+                LOGGER.debug('Missing Keys in Record: %s', json.dumps(list(json_keys - schema_keys)))
                 del json_records[index]
 
         return bool(json_records)
@@ -297,7 +301,6 @@ class CSVParser(ParserBase):
             for row in reader:
                 # check number of columns match
                 if len(row) != len(schema):
-                    LOGGER.debug('csv key mismatch: %s vs. %s', len(row), len(schema))
                     return False
 
                 parsed_payload = {}
