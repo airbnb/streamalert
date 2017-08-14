@@ -68,7 +68,7 @@ class CLIConfig(object):
             'log_level': 'info',
             'source_bucket': 'PREFIX_GOES_HERE.streamalert.source',
             'source_current_hash': '<auto_generated>',
-            'source_object_key': '<auto_generated',
+            'source_object_key': '<auto_generated>',
             'third_party_libraries': [
               'backoff'
             ]
