@@ -1,6 +1,9 @@
 {
   "id": "prod",
   "modules": {
+    "cloudtrail": {
+      "enabled": true
+    },
     "cloudwatch_monitoring": {
       "enabled": true
     },
@@ -20,11 +23,13 @@
     "stream_alert": {
       "alert_processor": {
         "current_version": "$LATEST",
+        "log_level": "info",
         "memory": 128,
         "timeout": 10
       },
       "rule_processor": {
         "current_version": "$LATEST",
+        "log_level": "info",
         "memory": 128,
         "timeout": 10
       }

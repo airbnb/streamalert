@@ -52,9 +52,9 @@ Options
 =================  =========  ======================
 Key                Required   Description
 -----------------  ---------  ----------------------
-``parser``         ``true``   The name of the parser to use for a given log's data-type.   Options include ``json, csv, kv, or syslog``
-``schema``         ``true``   A map of key/value pairs of the name of each field with its type
-``configuration``  ``false``  Configuration options specific to this log type (see table below for more information)
+``parser``         ``Yes``    The name of the parser to use for a given log's data-type.   Options include ``json, csv, kv, or syslog``
+``schema``         ``Yes``    A map of key/value pairs of the name of each field with its type
+``configuration``  ``No``     Configuration options specific to this log type (see table below for more information)
 =================  =========  ======================
 
 Optional ``configuration`` Options

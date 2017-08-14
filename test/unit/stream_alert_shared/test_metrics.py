@@ -30,7 +30,7 @@ class TestMetrics(object):
 
     def setup(self):
         """Setup before each method"""
-        self.__metrics = Metrics(REGION)
+        self.__metrics = Metrics('TestFunction', REGION)
 
     def teardown(self):
         """Teardown after each method"""
@@ -46,14 +46,14 @@ class TestMetrics(object):
     @patch('logging.Logger.error')
     def test_invalid_metric_unit(self, log_mock):
         """Metrics - Invalid Unit Type"""
-        self.__metrics.add_metric('RuleProcessorFailedParses', 100, 'Total')
+        self.__metrics.add_metric('FailedParses', 100, 'Total')
 
         log_mock.assert_called_with('Metric unit not defined: %s', 'Total')
 
     @patch('stream_alert.shared.metrics.Metrics._put_metrics')
     def test_valid_metric(self, metric_mock):
         """Metrics - Valid Metric"""
-        self.__metrics.add_metric('RuleProcessorFailedParses', 100, 'Count')
+        self.__metrics.add_metric('FailedParses', 100, 'Count')
         self.__metrics.send_metrics()
 
         metric_mock.assert_called()
@@ -76,3 +76,10 @@ class TestMetrics(object):
             'Failed to send metric to CloudWatch. Error: %s\nMetric data:\n%s',
             err_response,
             '[\n  {\n    "test": "info"\n  }\n]')
+
+    @patch('logging.Logger.debug')
+    def test_no_metrics_to_send(self, log_mock):
+        """Metrics - No Metrics To Send"""
+        self.__metrics.send_metrics()
+
+        log_mock.assert_called_with('No metric data to send to CloudWatch.')
