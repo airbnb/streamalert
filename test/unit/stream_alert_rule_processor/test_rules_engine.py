@@ -54,6 +54,12 @@ class TestStreamRules(object):
         cls.env = None
         cls.config = None
 
+    def setup(self):
+        """Setup before each method"""
+        # Clear out the cached matchers and rules to avoid conflicts with production code
+        StreamRules._StreamRules__matchers.clear()
+        StreamRules._StreamRules__rules.clear()
+
     def test_alert_format(self):
         """Rule Engine - Alert Format"""
         @rule(logs=['test_log_type_json_nested_with_data'],
