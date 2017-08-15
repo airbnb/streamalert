@@ -29,7 +29,6 @@ variable "rule_processor_log_level" {
 }
 
 variable "rule_processor_enable_metrics" {
-  type    = "boolean"
   default = false
 }
 
@@ -50,7 +49,6 @@ variable "alert_processor_log_level" {
 }
 
 variable "alert_processor_enable_metrics" {
-  type    = "boolean"
   default = false
 }
 

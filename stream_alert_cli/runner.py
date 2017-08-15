@@ -344,7 +344,7 @@ def tf_runner(**kwargs):
     action = kwargs.get('action', None)
     tf_action_index = 1  # The index to the terraform 'action'
 
-    var_files = {'conf/lambda.json', 'conf/global.json'}
+    var_files = {'conf/lambda.json'}
     tf_opts = ['-var-file=../{}'.format(x) for x in var_files]
     tf_targets = ['-target={}'.format(x) for x in targets]
     tf_command = ['terraform', 'plan'] + tf_opts + tf_targets

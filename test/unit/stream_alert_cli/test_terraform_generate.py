@@ -581,6 +581,11 @@ class TestTerraformGenerate(object):
             'global': {
                 'account': {
                     'prefix': 'unit-testing'
+                },
+                'infrastructure': {
+                    'metrics': {
+                        'enabled': True
+                    }
                 }
             },
             'lambda': {
@@ -610,6 +615,7 @@ class TestTerraformGenerate(object):
                 'stream_alert_athena': {
                     'source': 'modules/tf_stream_alert_athena',
                     'current_version': '$LATEST',
+                    'enable_metrics': True,
                     'lambda_handler': 'main.handler',
                     'lambda_memory': '128',
                     'lambda_timeout': '60',

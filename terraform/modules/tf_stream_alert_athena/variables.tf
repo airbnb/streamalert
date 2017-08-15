@@ -44,6 +44,5 @@ variable "refresh_interval" {
 }
 
 variable "enabled_metrics" {
-  type    = "boolean"
   default = false
 }
