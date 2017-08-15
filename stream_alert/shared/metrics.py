@@ -26,6 +26,13 @@ from stream_alert.shared import LOGGER
 
 CLUSTER = os.environ.get('CLUSTER', 'unknown_cluster')
 
+try:
+    ENABLE_METRICS = bool(int(os.environ.get('ENABLE_METRICS', 0)))
+except ValueError as err:
+    ENABLE_METRICS = False
+    LOGGER.error('Invalid value for metric toggling, expected 0 or 1: %s',
+                 err.message)
+
 
 class Metrics(object):
     """Class to hold metric names and unit constants
@@ -117,6 +124,10 @@ class Metrics(object):
 
     def send_metrics(self):
         """Public method for publishing custom metric data to CloudWatch."""
+        if not ENABLE_METRICS:
+            LOGGER.debug('Sending of metric data is currently disabled.')
+            return
+
         if not self._metric_data:
             LOGGER.debug('No metric data to send to CloudWatch.')
             return

@@ -217,6 +217,8 @@ def generate_stream_alert(cluster_name, cluster_dict, config):
     Returns:
         [bool] Result of applying the stream_alert module
     """
+    enable_metrics = config['global'].get('infrastructure',
+                                          {}).get('metrics', {}).get('enabled', False)
     account = config['global']['account']
     modules = config['clusters'][cluster_name]['modules']
 
@@ -227,6 +229,7 @@ def generate_stream_alert(cluster_name, cluster_dict, config):
         'prefix': account['prefix'],
         'cluster': cluster_name,
         'kms_key_arn': '${aws_kms_key.stream_alert_secrets.arn}',
+        'rule_processor_enable_metrics': enable_metrics,
         'rule_processor_log_level': modules['stream_alert'] \
             ['rule_processor'].get('log_level', 'info'),
         'rule_processor_memory': modules['stream_alert']['rule_processor']['memory'],
@@ -234,6 +237,7 @@ def generate_stream_alert(cluster_name, cluster_dict, config):
         'rule_processor_version': modules['stream_alert']['rule_processor']['current_version'],
         'rule_processor_config': '${var.rule_processor_config}',
         'alert_processor_config': '${var.alert_processor_config}',
+        'alert_processor_enable_metrics': enable_metrics,
         'alert_processor_log_level': modules['stream_alert'] \
             ['alert_processor'].get('log_level', 'info'),
         'alert_processor_memory': modules['stream_alert']['alert_processor']['memory'],
@@ -549,7 +553,6 @@ def generate_cluster(**kwargs):
     config = kwargs.get('config')
     cluster_name = kwargs.get('cluster_name')
 
-    account = config['global']['account']
     modules = config['clusters'][cluster_name]['modules']
     cluster_dict = infinitedict()
 
@@ -620,6 +623,11 @@ def generate_athena(config):
     log_level = athena_config.get('log_level')
     if log_level:
         athena_dict['module']['stream_alert_athena']['lambda_log_level'] = log_level
+
+    enable_metrics = config['global'].get('infrastructure',
+                                          {}).get('metrics', {}).get('enabled', False)
+
+    athena_dict['module']['stream_alert_athena']['enable_metrics'] = enable_metrics
 
     return athena_dict
 

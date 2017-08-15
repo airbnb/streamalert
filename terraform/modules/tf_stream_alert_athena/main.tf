@@ -12,7 +12,8 @@ resource "aws_lambda_function" "athena_partition_refresh" {
 
   environment {
     variables = {
-      LOGGER_LEVEL = "${var.lambda_log_level}"
+      LOGGER_LEVEL   = "${var.lambda_log_level}"
+      ENABLE_METRICS = "${var.enable_metrics}"
     }
   }
 
