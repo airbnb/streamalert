@@ -199,7 +199,6 @@ class S3Payload(StreamPayload):
         if size_mb > 128:
             raise S3ObjectSizeError('S3 object to download is above 128MB')
 
-        LOGGER.debug('/tmp directory contents:%s ', os.listdir('/tmp'))
         LOGGER.debug(os.popen('df -h /tmp | tail -1').read().strip())
 
         display_size = '{}MB'.format(size_mb) if size_mb else '{}KB'.format(size_kb)

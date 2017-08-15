@@ -19,6 +19,7 @@ from copy import copy
 
 from stream_alert.rule_processor import LOGGER
 
+DEFAULT_RULE_DESCRIPTION = 'No rule description provided'
 
 class StreamRules(object):
     """Container class for StreamAlert Rules
@@ -231,7 +232,7 @@ class StreamRules(object):
                     alert = {
                         'record': record,
                         'rule_name': rule.rule_name,
-                        'rule_description': rule.rule_function.__doc__,
+                        'rule_description': rule.rule_function.__doc__ or DEFAULT_RULE_DESCRIPTION,
                         'log_source': str(payload.log_source),
                         'log_type': payload.type,
                         'outputs': rule.outputs,

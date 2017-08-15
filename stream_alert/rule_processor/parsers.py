@@ -130,9 +130,12 @@ class JSONParser(ParserBase):
             [bool] True if any log in the list matches the schema, False if not
         """
         schema_keys = set(schema.keys())
-        schema_match = False
+        LOGGER.debug('Checking %s records', len(json_records))
 
+        # Because elements are deleted off of json_records during
+        # iteration, this block uses a reverse range.
         for index in reversed(range(len(json_records))):
+            schema_match = False
             json_keys = set(json_records[index].keys())
             if json_keys == schema_keys:
                 schema_match = True

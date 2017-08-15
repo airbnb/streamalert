@@ -296,7 +296,6 @@ class StreamClassifier(object):
         Returns:
             parsed dict payload with typed values
         """
-        # check for list types here
         for key, value in schema.iteritems():
             key = str(key)
             # if the schema value is declared as string
