@@ -17,11 +17,17 @@ import os
 
 from mock import call, patch
 
-from nose.tools import assert_equal
+from nose.tools import assert_equal, with_setup
 
 import stream_alert.rule_processor as rp
 
 from unit.stream_alert_rule_processor.test_helpers import _get_mock_context
+
+
+def _teardown_env():
+    """Helper method to reset environment variables"""
+    if 'LOGGER_LEVEL' in os.environ:
+        del os.environ['LOGGER_LEVEL']
 
 
 @patch('stream_alert.rule_processor.main.StreamAlert.run')
@@ -33,6 +39,7 @@ def test_handler(mock_runner):
     mock_runner.assert_called_with('event')
 
 
+@with_setup(setup=None, teardown=_teardown_env)
 @patch('stream_alert.rule_processor.LOGGER.error')
 def test_init_logging_bad(log_mock):
     """Rule Processor Init - Logging, Bad Level"""
@@ -44,11 +51,12 @@ def test_init_logging_bad(log_mock):
     reload(rp)
 
     message = str(call('Defaulting to INFO logging: %s',
-                       ValueError("Unknown level: 'IFNO'",)))
+                       ValueError('Unknown level: \'IFNO\'',)))
 
     assert_equal(str(log_mock.call_args_list[0]), message)
 
 
+@with_setup(setup=None, teardown=_teardown_env)
 @patch('stream_alert.rule_processor.LOGGER.setLevel')
 def test_init_logging_int_level(log_mock):
     """Rule Processor Init - Logging, Integer Level"""

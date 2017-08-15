@@ -13,11 +13,14 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-from mock import Mock, patch
+import os
+
+from mock import call, Mock, patch
 
 from botocore.exceptions import ClientError
+from nose.tools import assert_equal
 
-from stream_alert.shared.metrics import Metrics
+import stream_alert.shared as shared
 
 from unit.stream_alert_rule_processor import REGION
 
@@ -30,11 +33,17 @@ class TestMetrics(object):
 
     def setup(self):
         """Setup before each method"""
-        self.__metrics = Metrics('TestFunction', REGION)
+        self.__metrics = shared.metrics.Metrics('TestFunction', REGION)
 
     def teardown(self):
         """Teardown after each method"""
         self.__metrics = None
+        if 'ENABLE_METRICS' in os.environ:
+            del os.environ['ENABLE_METRICS']
+
+        if 'LOGGER_LEVEL' in os.environ:
+            del os.environ['LOGGER_LEVEL']
+
 
     @patch('logging.Logger.error')
     def test_invalid_metric_name(self, log_mock):
@@ -53,6 +62,12 @@ class TestMetrics(object):
     @patch('stream_alert.shared.metrics.Metrics._put_metrics')
     def test_valid_metric(self, metric_mock):
         """Metrics - Valid Metric"""
+        # Enable the metrics
+        os.environ['ENABLE_METRICS'] = '1'
+
+        # Force reload the metrics package to trigger constant loading
+        reload(shared.metrics)
+
         self.__metrics.add_metric('FailedParses', 100, 'Count')
         self.__metrics.send_metrics()
 
@@ -80,6 +95,59 @@ class TestMetrics(object):
     @patch('logging.Logger.debug')
     def test_no_metrics_to_send(self, log_mock):
         """Metrics - No Metrics To Send"""
+        # Enable the metrics
+        os.environ['ENABLE_METRICS'] = '1'
+
+        # Force reload the metrics package to trigger constant loading
+        reload(shared.metrics)
+
         self.__metrics.send_metrics()
 
         log_mock.assert_called_with('No metric data to send to CloudWatch.')
+
+    @patch('logging.Logger.debug')
+    def test_disabled_metrics(self, log_mock):
+        """Metrics - Metrics Disabled"""
+        self.__metrics.send_metrics()
+
+        log_mock.assert_called_with('Sending of metric data is currently disabled.')
+
+    @patch('logging.Logger.error')
+    def test_disabled_metrics_error(self, log_mock):
+        """Metrics - Bad Boolean Value"""
+        os.environ['ENABLE_METRICS'] = 'bad'
+
+        # Force reload the metrics package to trigger constant loading
+        reload(shared.metrics)
+
+        log_mock.assert_called_with('Invalid value for metric toggling, '
+                                    'expected 0 or 1: %s',
+                                    'invalid literal for int() with '
+                                    'base 10: \'bad\'')
+
+    @patch('stream_alert.shared.LOGGER.error')
+    def test_init_logging_bad(self, log_mock):
+        """Shared Init - Logging, Bad Level"""
+        level = 'IFNO'
+
+        os.environ['LOGGER_LEVEL'] = level
+
+        # Force reload the shared package to trigger the init
+        reload(shared)
+
+        message = str(call('Defaulting to INFO logging: %s',
+                           ValueError('Unknown level: \'IFNO\'',)))
+
+        assert_equal(str(log_mock.call_args_list[0]), message)
+
+    @patch('stream_alert.shared.LOGGER.setLevel')
+    def test_init_logging_int_level(self, log_mock):
+        """Shared Init - Logging, Integer Level"""
+        level = '10'
+
+        os.environ['LOGGER_LEVEL'] = level
+
+        # Force reload the shared package to trigger the init
+        reload(shared)
+
+        log_mock.assert_called_with(10)
