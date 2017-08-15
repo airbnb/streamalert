@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+import json
 from collections import namedtuple
 from copy import copy
 
@@ -172,6 +173,14 @@ class StreamRules(object):
             return True
 
         for key, nested_keys in rule.req_subkeys.iteritems():
+            # This check is neceesary with loose schemas when a key's
+            # value will likely contain multiple types.  An example of this
+            # is CloudTrail logs.  The `requestParameters` field can either be
+            # null or a map.
+            if not record.get(key):
+                LOGGER.debug('The required subkey %s is not found when trying to process %s: \n%s',
+                             key, rule.rule_name, json.dumps(record, indent=4))
+                return False
             if not all(x in record[key] for x in nested_keys):
                 return False
 
