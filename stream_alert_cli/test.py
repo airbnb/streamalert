@@ -157,7 +157,7 @@ class RuleProcessorTester(object):
 
                 # Add the name of the rule to the applicable pass or fail list
                 self.rules_fail_pass_warn[current_test_passed].append(
-                    (rule_name, 'Rule failure: {}'.format(test_record['description'])))
+                    (rule_name, test_record['description']))
 
         # Report on the final test results
         self.report_output_summary()
@@ -276,6 +276,7 @@ class RuleProcessorTester(object):
 
     def test_rule(self, rule_name, test_record, formatted_record):
         """Feed formatted records into StreamAlert and check for alerts
+
         Args:
             rule_name [str]: The rule name being tested
             test_record [dict]: A single record to test
@@ -596,9 +597,17 @@ def stream_alert_test(options, config=None):
             context [namedtuple]: A constructed aws context object
         """
         if options.debug:
-            LOGGER_SA.setLevel(logging.DEBUG)
-            LOGGER_SO.setLevel(logging.DEBUG)
-            LOGGER_CLI.setLevel(logging.DEBUG)
+            # TODO(jack): Currently there is no (clean) way to set
+            #             the logger formatter to provide more verbose
+            #             output in debug mode.  Running basicConfig twice
+            #             does not actually change the formatter on the logger object.
+            #             This functionality can be added during the logging refactor
+            # Example Steps:
+            #   call .shutdown() on the existing logger
+            #   debug_formatter = logging.Formatter('%(name)s [%(levelname)s]: [%(module)s.%(funcName)s] %(message)s')
+            #   set the new logger to the formatter above
+            for streamalert_logger in (LOGGER_SA, LOGGER_SO, LOGGER_CLI):
+                streamalert_logger.setLevel(logging.DEBUG)
         else:
             # Add a filter to suppress a few noisy log messages
             LOGGER_SA.addFilter(TestingSuppressFilter())

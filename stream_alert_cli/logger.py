@@ -22,7 +22,7 @@ LOGGER_SA.setLevel(logging.INFO)
 LOGGER_SO = logging.getLogger('StreamAlertOutput')
 LOGGER_SO.setLevel(logging.INFO)
 
-logging.basicConfig(format='%(name)s [%(levelname)s] (%(module)s.%(funcName)s): %(message)s')
+logging.basicConfig(format='%(name)s [%(levelname)s]: %(message)s')
 LOGGER_CLI = logging.getLogger('StreamAlertCLI')
 LOGGER_CLI.setLevel(logging.INFO)
 
