@@ -36,8 +36,6 @@ LOGGER = logging.getLogger('StreamAlertOutput')
 # {cls.__service__: <cls>}
 STREAM_OUTPUTS = {}
 
-DEFAULT_RULE_DESCRIPTION = 'No rule description provided'
-
 def output(cls):
     """Class decorator to register all stream outputs"""
     STREAM_OUTPUTS[cls.__service__] = cls
@@ -105,7 +103,7 @@ class PagerDutyOutput(StreamOutputBase):
             return self._log_status(False)
 
         message = 'StreamAlert Rule Triggered - {}'.format(kwargs['rule_name'])
-        rule_desc = kwargs['alert']['rule_description'] or DEFAULT_RULE_DESCRIPTION
+        rule_desc = kwargs['alert']['rule_description']
         details = {
             'rule_description': rule_desc,
             'record': kwargs['alert']['record']
@@ -213,7 +211,7 @@ class PhantomOutput(StreamOutputBase):
             return self._log_status(False)
 
         headers = {"ph-auth-token": creds['ph_auth_token']}
-        rule_desc = kwargs['alert']['rule_description'] or DEFAULT_RULE_DESCRIPTION
+        rule_desc = kwargs['alert']['rule_description']
         container_id = self._setup_container(kwargs['rule_name'], rule_desc,
                                              creds['url'], headers)
 
@@ -320,7 +318,7 @@ class SlackOutput(StreamOutputBase):
             rule_desc = ''
             # Only print the rule description on the first attachment
             if index == 0:
-                rule_desc = alert['rule_description'] or DEFAULT_RULE_DESCRIPTION
+                rule_desc = alert['rule_description']
                 rule_desc = '*Rule Description:*\n{}\n'.format(rule_desc)
 
             # Add this attachemnt to the full message array of attachments

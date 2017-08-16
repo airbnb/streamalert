@@ -155,7 +155,8 @@ class StreamAlert(object):
                 self._failed_record_count += 1
                 continue
 
-            LOGGER.debug('Payload: %s', record)
+            LOGGER.debug('Classified and Parsed Payload: <Valid: %s, Log Source: %s, Entity: %s>',
+                         record.valid, record.log_source, record.entity)
 
             record_alerts = StreamRules.process(record)
 

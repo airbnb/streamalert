@@ -67,7 +67,8 @@ def _get_random_alert(key_count, rule_name, omit_rule_desc=False):
                            '{:0148X}'.format(random.randrange(16**128)))
                           for key in range(key_count)])
 
-    rule_description = ('rule test description', '')[omit_rule_desc]
+    # This default value is set in the rule processor's rules_engine.py
+    rule_description = ('rule test description', 'No rule description provided')[omit_rule_desc]
     alert = {
         'record': values,
         'rule_name': rule_name,

@@ -5,12 +5,12 @@ rule = StreamRules.rule
 disable = StreamRules.disable()
 
 
-@rule(logs=['cloudtrail:api_events'],
+@rule(logs=['cloudtrail:events'],
       matchers=[],
-      outputs=['aws-s3:sample_bucket', 'aws-lambda:sample_lambda',
-               'pagerduty:sample_integration', 'phantom:sample_integration',
-               'slack:sample_channel'])
-def cloudtrail_critical_api(rec):
+      outputs=['aws-s3:sample-bucket',
+               'pagerduty:sample-integration',
+               'slack:sample-channel'])
+def cloudtrail_critical_api_calls(rec):
     """
     author:           airbnb_csirt
     description:      Alert on AWS API calls that stop or delete security/infrastructure logs.

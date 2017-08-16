@@ -3,10 +3,10 @@
         {
             "data": {
                 "account": 12345,
-                "region": "...",
+                "region": "123456123456",
                 "detail-type": "...",
                 "source": "...",
-                "version": "...",
+                "version": "1.05",
                 "time": "...",
                 "id": "12345",
                 "resources": {
@@ -48,10 +48,10 @@
         {
             "data": {
                 "account": 12345,
-                "region": "...",
+                "region": "123456123456",
                 "detail-type": "...",
                 "source": "...",
-                "version": "...",
+                "version": "1.05",
                 "time": "...",
                 "id": "12345",
                 "resources": {

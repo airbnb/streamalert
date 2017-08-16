@@ -23,7 +23,7 @@ from datetime import datetime
 import backoff
 import boto3
 
-logging.basicConfig()
+logging.basicConfig(format='%(name)s [%(levelname)s]: [%(module)s.%(funcName)s] %(message)s')
 LEVEL = os.environ.get('LOGGER_LEVEL', 'INFO')
 LOGGER = logging.getLogger('StreamAlertAthena')
 LOGGER.setLevel(LEVEL.upper())
