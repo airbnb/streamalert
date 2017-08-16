@@ -33,7 +33,7 @@ from stream_alert.rule_processor.config import load_config
 from stream_alert.rule_processor.handler import StreamAlert
 from stream_alert.rule_processor.rules_engine import StreamRules
 from stream_alert_cli import helpers
-from stream_alert_cli.logger import LOGGER_CLI, LOGGER_SA, LOGGER_SO
+from stream_alert_cli.logger import LOGGER_CLI, LOGGER_SA, LOGGER_SH, LOGGER_SO
 from stream_alert_cli.outputs import load_outputs_config
 
 

@@ -25,6 +25,7 @@ from fnmatch import fnmatch
 import jsonpath_rw
 
 from stream_alert.rule_processor import LOGGER
+from stream_alert.shared.stats import timeme
 
 PARSERS = {}
 
@@ -240,6 +241,7 @@ class JSONParser(ParserBase):
 
         return json_records
 
+    @timeme
     def parse(self, schema, data):
         """Parse a string into a list of JSON payloads.
 
