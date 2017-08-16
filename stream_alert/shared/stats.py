@@ -18,7 +18,7 @@ import time
 from stream_alert.shared import LOGGER
 
 
-def timeme(func):
+def time_me(func):
     """Timing decorator for wrapping a function"""
 
     def timed(*args, **kw):

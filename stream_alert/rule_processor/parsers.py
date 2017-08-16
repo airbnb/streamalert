@@ -25,7 +25,7 @@ from fnmatch import fnmatch
 import jsonpath_rw
 
 from stream_alert.rule_processor import LOGGER
-from stream_alert.shared.stats import timeme
+from stream_alert.shared.stats import time_me
 
 PARSERS = {}
 
@@ -192,6 +192,7 @@ class JSONParser(ParserBase):
                     # Set default value
                     record[key_name] = _default_optional_values(schema[key_name])
 
+    @time_me
     def _parse_records(self, schema, json_payload):
         """Identify and extract nested payloads from parsed JSON records.
 
@@ -241,7 +242,7 @@ class JSONParser(ParserBase):
 
         return json_records
 
-    @timeme
+    @time_me
     def parse(self, schema, data):
         """Parse a string into a list of JSON payloads.
 

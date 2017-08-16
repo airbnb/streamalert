@@ -18,7 +18,7 @@ from collections import namedtuple, OrderedDict
 
 from stream_alert.rule_processor import LOGGER
 from stream_alert.rule_processor.parsers import get_parser
-from stream_alert.shared.stats import timeme
+from stream_alert.shared.stats import time_me
 
 # Set the below to True when we want to support matching on multiple schemas
 # and then log_patterns will be used as a fall back for key/value matching
@@ -125,7 +125,7 @@ class StreamClassifier(object):
         return OrderedDict((source, logs[source]) for source in logs.keys()
                            if source.split(':')[0] in self._entity_log_sources)
 
-    @timeme
+    @time_me
     def classify_record(self, payload):
         """Classify and type raw record passed into StreamAlert.
 
@@ -192,7 +192,7 @@ class StreamClassifier(object):
 
         return schema_matches[0]
 
-    @timeme
+    @time_me
     def _process_log_schemas(self, payload):
         """Get any log schemas that matched this log format
 
