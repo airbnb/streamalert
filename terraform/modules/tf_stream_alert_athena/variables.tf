@@ -43,6 +43,6 @@ variable "refresh_interval" {
   default = "rate(10 minutes)"
 }
 
-variable "enabled_metrics" {
+variable "enable_metrics" {
   default = false
 }
