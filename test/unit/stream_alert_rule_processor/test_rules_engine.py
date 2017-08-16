@@ -31,7 +31,7 @@ from stream_alert.rule_processor.classifier import StreamClassifier
 from stream_alert.rule_processor.config import load_config, load_env
 from stream_alert.rule_processor.parsers import get_parser
 from stream_alert.rule_processor.payload import StreamPayload
-from stream_alert.rule_processor.rules_engine import StreamRules, RULE_ATTRIBUTES
+from stream_alert.rule_processor.rules_engine import StreamRules, RuleAttributes
 from unit.stream_alert_rule_processor.test_helpers import (
     _get_mock_context,
     _load_and_classify_payload,
@@ -199,7 +199,7 @@ class TestStreamRules(object):
                 'us-east' in rec['awsRegion'] and
                 'AWS' in rec['requestParameters']['program']
             )
-        rule = RULE_ATTRIBUTES(rule_name='cloudtrail_us_east_logs',
+        rule = RuleAttributes(rule_name='cloudtrail_us_east_logs',
                                rule_function=cloudtrail_us_east_logs,
                                matchers=[],
                                logs=['test_log_type_json_nested'],

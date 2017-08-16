@@ -173,8 +173,8 @@ class StreamClassifier(object):
                 matches.append(schema_matches[i])
             else:
                 LOGGER.debug(
-                    'Log pattern matching failed for: \n%s',
-                    json.dumps(schema_match.parsed_data, indent=4))
+                    'Log pattern matching failed for:\n%s',
+                    json.dumps(schema_match.parsed_data, indent=2))
 
         if matches:
             if len(matches) > 1:
@@ -222,11 +222,10 @@ class StreamClassifier(object):
             LOGGER.debug('Trying schema: %s', log_name)
             parsed_data = parser.parse(schema, payload.pre_parsed_record)
 
-            # LOGGER.debug('Schema: %s', json.dumps(schema, indent=4))
             if not parsed_data:
                 continue
 
-            LOGGER.debug('Parsed %s records with schema %s',
+            LOGGER.debug('Parsed %d records with schema %s',
                          len(parsed_data), log_name)
 
             if SUPPORT_MULTIPLE_SCHEMA_MATCHING:
@@ -258,12 +257,13 @@ class StreamClassifier(object):
         if not schema_matches:
             return False
 
-        LOGGER.debug('Schema Matched Records: \n%s', json.dumps([schema_match.parsed_data for schema_match in schema_matches], indent=4))
+        LOGGER.debug('Schema Matched Records:\n%s', json.dumps(
+            [schema_match.parsed_data for schema_match in schema_matches], indent=2))
 
         schema_match = self._check_schema_match(schema_matches)
 
         LOGGER.debug('Log name: %s', schema_match.log_name)
-        LOGGER.debug('Parsed data: \n%s', json.dumps(schema_match.parsed_data, indent=4))
+        LOGGER.debug('Parsed data:\n%s', json.dumps(schema_match.parsed_data, indent=2))
 
         for parsed_data_value in schema_match.parsed_data:
             # Convert data types per the schema
@@ -328,7 +328,8 @@ class StreamClassifier(object):
 
                 # Skip the values for the 'streamalert:envelope_keys' key that we've
                 # added during parsing if the do not conform to being a dict
-                if key == 'streamalert:envelope_keys' and not isinstance(payload[key], dict):
+                if key == 'streamalert:envelope_keys' and not isinstance(
+                        payload[key], dict):
                     continue
 
                 cls._convert_type(payload[key], schema[key])

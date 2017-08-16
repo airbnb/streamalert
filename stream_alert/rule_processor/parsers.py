@@ -106,11 +106,9 @@ class ParserBase:
 
         all_patterns_result = all(pattern_result)
         LOGGER.debug('%s log pattern match result: %s', self.type(), all_patterns_result)
-        # if not all_patterns_result:
-            # LOGGER.debug('Failed Log Pattern Match: %s', json.dumps(record, indent=4))
 
         # if all pattern group results are True
-        return all(pattern_result)
+        return all_patterns_result
 
 
 @parser
@@ -130,7 +128,7 @@ class JSONParser(ParserBase):
             [bool] True if any log in the list matches the schema, False if not
         """
         schema_keys = set(schema.keys())
-        LOGGER.debug('Checking %s records', len(json_records))
+        LOGGER.debug('Checking %d records', len(json_records))
 
         # Because elements are deleted off of json_records during
         # iteration, this block uses a reverse range.
@@ -147,9 +145,9 @@ class JSONParser(ParserBase):
                         schema_match = self._key_check(schema[key], [json_records[index][key]])
 
             if not schema_match:
-                LOGGER.debug('Schema: \n%s', json.dumps(schema, indent=4))
-                LOGGER.debug('Key Check Failure: \n%s', json.dumps(json_records[index], indent=4))
-                LOGGER.debug('Missing Keys in Record: %s', json.dumps(list(json_keys - schema_keys)))
+                LOGGER.debug('Schema: \n%s', json.dumps(schema, indent=2))
+                LOGGER.debug('Key check failure: \n%s', json.dumps(json_records[index], indent=2))
+                LOGGER.debug('Missing keys in record: %s', json.dumps(list(json_keys - schema_keys)))
                 del json_records[index]
 
         return bool(json_records)
@@ -205,7 +203,7 @@ class JSONParser(ParserBase):
             json_payload [dict]: The parsed json data
 
         Returns:
-            [list] A list of JSONPath extracted JSON records.
+            [list] A list of JSON records extracted via JSONPath.
         """
         # Check options and return the payload if there is nothing special to do
         if not self.options:

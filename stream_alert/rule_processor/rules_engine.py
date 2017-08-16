@@ -21,12 +21,12 @@ from stream_alert.rule_processor import LOGGER
 
 DEFAULT_RULE_DESCRIPTION = 'No rule description provided'
 
-RULE_ATTRIBUTES = namedtuple('Rule', ['rule_name',
-                                      'rule_function',
-                                      'matchers',
-                                      'logs',
-                                      'outputs',
-                                      'req_subkeys'])
+RuleAttributes = namedtuple('Rule', ['rule_name',
+                                     'rule_function',
+                                     'matchers',
+                                     'logs',
+                                     'outputs',
+                                     'req_subkeys'])
 
 
 class StreamRules(object):
@@ -81,12 +81,12 @@ class StreamRules(object):
 
             if rule_name in cls.__rules:
                 raise ValueError('rule [{}] already defined'.format(rule_name))
-            cls.__rules[rule_name] = RULE_ATTRIBUTES(rule_name,
-                                                     rule,
-                                                     matchers,
-                                                     logs,
-                                                     outputs,
-                                                     req_subkeys)
+            cls.__rules[rule_name] = RuleAttributes(rule_name,
+                                                    rule,
+                                                    matchers,
+                                                    logs,
+                                                    outputs,
+                                                    req_subkeys)
             return rule
         return decorator
 
@@ -140,9 +140,9 @@ class StreamRules(object):
             if matcher_function:
                 try:
                     matcher_result = matcher_function(record)
-                except Exception as e:
+                except Exception as err:
                     matcher_result = False
-                    LOGGER.error('%s: %s', matcher_function.__name__, e.message)
+                    LOGGER.error('%s: %s', matcher_function.__name__, err.message)
                 if not matcher_result:
                     return False
             else:
@@ -152,9 +152,18 @@ class StreamRules(object):
 
     @classmethod
     def process_rule(cls, record, rule):
+        """Process rule functions on a given record
+
+        Args:
+            record (dict): Parsed payload of any type
+            rule (func): Rule function to process the record
+
+        Returns:
+            (bool): The return function of the rule
+        """
         try:
             rule_result = rule.rule_function(record)
-        except Exception as e:
+        except Exception:
             rule_result = False
             LOGGER.exception(
                 'Encountered error with rule: %s',
@@ -192,7 +201,7 @@ class StreamRules(object):
                     rule.rule_name,
                     json.dumps(
                         record,
-                        indent=4))
+                        indent=2))
                 return False
             if not all(x in record[key] for x in nested_keys):
                 return False
