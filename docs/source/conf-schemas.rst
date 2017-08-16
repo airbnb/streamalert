@@ -46,8 +46,8 @@ Example rule:
     )
 
 
-Options
--------
+Log Options
+-----------
 
 =================  =========  ======================
 Key                Required   Description
@@ -57,8 +57,8 @@ Key                Required   Description
 ``configuration``  ``No``     Configuration options specific to this log type (see table below for more information)
 =================  =========  ======================
 
-Optional ``configuration`` Options
-----------------------------------
+Configuration Options
+---------------------
 
 ===========================  ======================
 Key                          Description
