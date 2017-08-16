@@ -604,6 +604,9 @@ def generate_athena(config):
     athena_dict = infinitedict()
     athena_config = config['lambda']['athena_partition_refresh_config']
 
+    enable_metrics = config['global'].get('infrastructure',
+                                          {}).get('metrics', {}).get('enabled', False)
+
     data_buckets = []
     for refresh_type in athena_config['refresh_type']:
         data_buckets.extend(athena_config['refresh_type'][refresh_type].keys())
@@ -617,17 +620,13 @@ def generate_athena(config):
         'lambda_s3_key': athena_config['source_object_key'],
         'athena_data_buckets': data_buckets,
         'current_version': athena_config['current_version'],
+        'enable_metrics': enable_metrics,
         'prefix': config['global']['account']['prefix']
     }
 
     log_level = athena_config.get('log_level')
     if log_level:
         athena_dict['module']['stream_alert_athena']['lambda_log_level'] = log_level
-
-    enable_metrics = config['global'].get('infrastructure',
-                                          {}).get('metrics', {}).get('enabled', False)
-
-    athena_dict['module']['stream_alert_athena']['enable_metrics'] = enable_metrics
 
     return athena_dict
 

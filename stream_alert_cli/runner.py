@@ -262,9 +262,17 @@ def terraform_handler(options):
 
     elif options.subcommand == 'destroy':
         if options.target:
-            target = options.target
-            targets = ['module.{}_{}'.format(target, cluster)
-                       for cluster in CONFIG.clusters()]
+            targets = []
+            # Iterate over any targets to destroy. Global modules, like athena
+            # are prefixed with `stream_alert_` while cluster based modules
+            # are a combination of the target and cluster name
+            for target in options.target:
+                if target == 'athena':
+                    targets.append('module.stream_alert_{}'.format(target))
+                else:
+                    targets.extend(['module.{}_{}'.format(target, cluster)
+                                    for cluster in CONFIG.clusters()])
+
             tf_runner(targets=targets, action='destroy')
             return
 

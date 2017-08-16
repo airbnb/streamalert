@@ -57,6 +57,7 @@ class CLIConfig(object):
 
         athena_config_template = {
             'enabled': True,
+            'enable_metrics': False,
             'current_version': '$LATEST',
             'refresh_type': {
                 'add_hive_partition': {},
@@ -70,7 +71,7 @@ class CLIConfig(object):
             'source_current_hash': '<auto_generated>',
             'source_object_key': '<auto_generated>',
             'third_party_libraries': [
-              'backoff'
+                'backoff'
             ]
         }
 
