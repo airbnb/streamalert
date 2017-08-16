@@ -21,6 +21,14 @@ from stream_alert.rule_processor import LOGGER
 
 DEFAULT_RULE_DESCRIPTION = 'No rule description provided'
 
+RULE_ATTRIBUTES = namedtuple('Rule', ['rule_name',
+                                      'rule_function',
+                                      'matchers',
+                                      'logs',
+                                      'outputs',
+                                      'req_subkeys'])
+
+
 class StreamRules(object):
     """Container class for StreamAlert Rules
 
@@ -52,13 +60,6 @@ class StreamRules(object):
         passed on to the sink(s). If the function returns `False`, the event is
         dropped.
         """
-        rule_attrs = namedtuple('Rule', ['rule_name',
-                                         'rule_function',
-                                         'matchers',
-                                         'logs',
-                                         'outputs',
-                                         'req_subkeys'])
-
         def decorator(rule):
             rule_name = rule.__name__
             logs = opts.get('logs')
@@ -67,21 +68,25 @@ class StreamRules(object):
             req_subkeys = opts.get('req_subkeys')
 
             if not logs:
-                LOGGER.error('Invalid rule [%s] - rule must have \'logs\' declared', rule_name)
+                LOGGER.error(
+                    'Invalid rule [%s] - rule must have \'logs\' declared',
+                    rule_name)
                 return
 
             if not outputs:
-                LOGGER.error('Invalid rule [%s] - rule must have \'outputs\' declared', rule_name)
+                LOGGER.error(
+                    'Invalid rule [%s] - rule must have \'outputs\' declared',
+                    rule_name)
                 return
 
             if rule_name in cls.__rules:
                 raise ValueError('rule [{}] already defined'.format(rule_name))
-            cls.__rules[rule_name] = rule_attrs(rule_name,
-                                                rule,
-                                                matchers,
-                                                logs,
-                                                outputs,
-                                                req_subkeys)
+            cls.__rules[rule_name] = RULE_ATTRIBUTES(rule_name,
+                                                     rule,
+                                                     matchers,
+                                                     logs,
+                                                     outputs,
+                                                     req_subkeys)
             return rule
         return decorator
 
@@ -151,7 +156,9 @@ class StreamRules(object):
             rule_result = rule.rule_function(record)
         except Exception as e:
             rule_result = False
-            LOGGER.exception('Encountered error with rule: %s', rule.rule_function.__name__)
+            LOGGER.exception(
+                'Encountered error with rule: %s',
+                rule.rule_function.__name__)
         return rule_result
 
     @classmethod
@@ -174,13 +181,18 @@ class StreamRules(object):
             return True
 
         for key, nested_keys in rule.req_subkeys.iteritems():
-            # This check is neceesary with loose schemas when a key's
-            # value will likely contain multiple types.  An example of this
-            # is CloudTrail logs.  The `requestParameters` field can either be
-            # null or a map.
+            # This is an extra layer of protection when
+            # verifying a subkey exists in a record with a null value.
+            # In the case of CloudTrail, a top level key has been
+            # observed as either a map with subkeys, or null.
             if not record.get(key):
-                LOGGER.debug('The required subkey %s is not found when trying to process %s: \n%s',
-                             key, rule.rule_name, json.dumps(record, indent=4))
+                LOGGER.debug(
+                    'The required subkey %s is not found when trying to process %s: \n%s',
+                    key,
+                    rule.rule_name,
+                    json.dumps(
+                        record,
+                        indent=4))
                 return False
             if not all(x in record[key] for x in nested_keys):
                 return False
@@ -237,8 +249,7 @@ class StreamRules(object):
                         'log_type': payload.type,
                         'outputs': rule.outputs,
                         'source_service': payload.service(),
-                        'source_entity': payload.entity
-                    }
+                        'source_entity': payload.entity}
                     alerts.append(alert)
 
         return alerts

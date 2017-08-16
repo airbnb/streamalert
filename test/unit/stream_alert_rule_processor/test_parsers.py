@@ -20,7 +20,8 @@ from nose.tools import (
     assert_equal,
     assert_is_instance,
     assert_items_equal,
-    assert_not_equal
+    assert_not_equal,
+    assert_false
 )
 
 from stream_alert.rule_processor.config import load_config
@@ -248,6 +249,53 @@ class TestJSONParser(TestParser):
         assert_equal(parsed_result[0]['host-id'], 0)
         assert_is_instance(parsed_result[0]['ids'], list)
         assert_is_instance(parsed_result[0]['results'], dict)
+
+    def test_nested_records_with_missing_keys(self):
+        """JSON Parser - Nested records with missing keys"""
+        schema = {
+            'computer_name': 'string',
+            'date': 'string',
+            'time': 'string',
+            'group': 'integer',
+            'production': 'boolean'
+        }
+        options = {
+            'json_path': 'Records[*]'
+        }
+        data = json.dumps({
+            'Records': [
+                {
+                    'computer_name': 'wethebest-01.prod.streamalert.io',
+                    'date': 'Jan 01, 1980',
+                    'time': '1230',
+                    'group': 3,
+                    'production': True
+                },
+                {
+                    'computer_name': 'wethebest-02.prod.streamalert.io',
+                    'date': 'Jan 02, 1980',
+                    'time': '1330',
+                    'group': 3,
+                    'production': False
+                },
+                {
+                    'computer_name': 'wethebest-03.prod.streamalert.io',
+                    'date': 'Jan 03, 1980',
+                    'time': '1430',
+                    # Missing group key
+                    'production': True
+                }
+            ]
+        })
+
+        parsed_result = self.parser_helper(data=data,
+                                           schema=schema,
+                                           options=options)
+
+        assert_equal(len(parsed_result), 2)
+        # Verify the third record is not considered valid
+        assert_false(any([record['computer_name'] ==
+                          'wethebest-03.prod.streamalert.io' for record in parsed_result]))
 
     def test_optional_keys_with_json_path(self):
         """JSON Parser - Optional top level keys and json path"""
