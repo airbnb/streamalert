@@ -154,19 +154,58 @@ class JSONParser(ParserBase):
 
         return bool(json_records)
 
-    def _parse_records(self, schema, json_payload):
-        """Iterate over a json_payload. Identify and extract nested payloads.
-        Nested payloads can be detected with log_patterns (`records` should be a
-        JSONpath selector that yields the desired nested records).
+    def _add_optional_keys(self, json_records, schema):
+        """Add optional keys to a parsed JSON record.
 
-        If desired, fields present on the root record can be merged into child
-        events using the `envelope_keys` option.
+        Args:
+            json_records (list): JSONPath extracted JSON records
+        """
+        optional_keys = self.options.get('optional_top_level_keys')
+        if not optional_keys:
+            return
+
+        def _default_optional_values(key):
+            """Return a default value for a given schema type"""
+            if key == 'string':
+                return str()
+            elif key == 'integer':
+                return int()
+            elif key == 'float':
+                return float()
+            elif key == 'boolean':
+                return bool()
+            elif key == []:
+                return list()
+            elif key == OrderedDict():
+                return dict()
+
+        for key_name in optional_keys:
+            # Instead of doing a schema.update() here with a default value type,
+            # we should enforce having any optional keys declared within the schema
+            # and log an error if that is not the case
+            if key_name not in schema:
+                LOGGER.error('Optional top level key \'%s\' '
+                             'not found in declared log schema', key_name)
+                continue
+            # If the optional key isn't in our parsed json payload
+            for record in json_records:
+                if key_name not in record:
+                    # Set default value
+                    record[key_name] = _default_optional_values(schema[key_name])
+
+    def _parse_records(self, schema, json_payload):
+        """Identify and extract nested payloads from parsed JSON records.
+
+        Nested payloads can be detected with log_patterns (`records` should be a
+        JSONpath selector that yields the desired nested records). If desired,
+        fields present on the root record can be merged into child events
+        using the `envelope_keys` option.
 
         Args:
             json_payload [dict]: The parsed json data
 
         Returns:
-            [list] A list of dictionaries representing parsed records.
+            [list] A list of JSONPath extracted JSON records.
         """
         # Check options and return the payload if there is nothing special to do
         if not self.options:
@@ -201,39 +240,6 @@ class JSONParser(ParserBase):
         if not json_records:
             json_records.append(json_payload)
 
-        optional_keys = self.options.get('optional_top_level_keys')
-        # Handle optional keys
-        if optional_keys:
-
-            def default_optional_values(key):
-                """Return a default value for a given schema type"""
-                if key == 'string':
-                    return str()
-                elif key == 'integer':
-                    return int()
-                elif key == 'float':
-                    return float()
-                elif key == 'boolean':
-                    return bool()
-                elif key == []:
-                    return list()
-                elif key == OrderedDict():
-                    return dict()
-
-            for key_name in optional_keys:
-                # Instead of doing a schema.update() here with a default value type,
-                # we should enforce having any optional keys declared within the schema
-                # and log an error if that is not the case
-                if key_name not in schema:
-                    LOGGER.error('Optional top level key \'%s\' '
-                                 'not found in declared log schema', key_name)
-                    continue
-                # If the optional key isn't in our parsed json payload
-                for record in json_records:
-                    if key_name not in record:
-                        # Set default value
-                        record[key_name] = default_optional_values(schema[key_name])
-
         return json_records
 
     def parse(self, schema, data):
@@ -254,6 +260,7 @@ class JSONParser(ParserBase):
                 return False
 
         json_records = self._parse_records(schema, data)
+        self._add_optional_keys(json_records, schema)
         # Make sure all keys match the schema, including nests maps
         if not self._key_check(schema, json_records):
             return False
