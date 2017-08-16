@@ -24,10 +24,10 @@ At a high-level
 Components
 ----------
 
-.. figure:: ../images/sa-cloudcraft.png
-  :alt: StreamAlert Components
+.. figure:: ../images/sa-high-level-arch.png
+  :alt: StreamAlert High Level Architecture
   :align: center
-  :target: _images/sa-cloudcraft.png
+  :target: _images/sa-high-level-arch.png
 
   (Click figure to enlarge)
 
