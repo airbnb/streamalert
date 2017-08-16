@@ -40,7 +40,7 @@ def _backoff_handler(details):
     LOGGER.debug('[Backoff]: Trying again in %f seconds after %d tries calling %s',
                  details['wait'],
                  details['tries'],
-                 details['target'])
+                 details['target'].__name__)
 
 def _success_handler(details):
     """Backoff logging handler for when backoff succeeds.
@@ -52,7 +52,7 @@ def _success_handler(details):
     """
     LOGGER.debug('[Backoff]: Completed after %d tries calling %s',
                  details['tries'],
-                 details['target'])
+                 details['target'].__name__)
 
 def _load_config():
     """Load the StreamAlert Athena configuration files

@@ -145,10 +145,12 @@ class TestStreamAlertAthenaGlobals(object):
     @patch('stream_alert.athena_partition_refresh.main.LOGGER')
     def test_backoff_and_success_handlers(self, mock_logging):
         """Athena - Backoff Handlers"""
-        _backoff_handler({'wait': 1.0, 'tries': 3, 'target': 'backoff'})
+        def backoff():
+            pass
+        _backoff_handler({'wait': 1.0, 'tries': 3, 'target': backoff})
         assert_true(mock_logging.debug.called)
 
-        _success_handler({'tries': 3, 'target': 'backoff'})
+        _success_handler({'tries': 3, 'target': backoff})
         assert_true(mock_logging.debug.called)
 
     @patch('stream_alert.athena_partition_refresh.main.LOGGER')
@@ -245,7 +247,7 @@ class TestStreamAlertSQSClient(object):
         self.client.delete_messages()
 
         assert_true(mock_logging.error.called)
-        
+
 
     @patch('stream_alert.athena_partition_refresh.main.LOGGER')
     def test_delete_messages(self, mock_logging):
@@ -254,7 +256,7 @@ class TestStreamAlertSQSClient(object):
         self.client.unique_buckets_from_messages()
         self.client.delete_messages()
 
-        assert_true(mock_logging.info.called)        
+        assert_true(mock_logging.info.called)
 
 
     @patch('stream_alert.athena_partition_refresh.main.LOGGER')
@@ -406,7 +408,7 @@ class TestStreamAlertAthenaClient(object):
         self.client.athena_client = MockAthenaClient(result_state='SUCCEEDED')
 
         # This bucket is not in our `repair_hive_table` config map
-        self.client.repair_hive_table({'my-test.result.bucket'}) 
+        self.client.repair_hive_table({'my-test.result.bucket'})
         assert_true(mock_logging.warning.called)
 
 
@@ -416,7 +418,7 @@ class TestStreamAlertAthenaClient(object):
         self.client.athena_client = MockAthenaClient(result_state='FAILED')
 
         # This bucket is not in our `repair_hive_table` config map
-        self.client.repair_hive_table({'unit-testing.streamalerts'}) 
+        self.client.repair_hive_table({'unit-testing.streamalerts'})
         assert_true(mock_logging.error.called)
 
 
@@ -426,7 +428,7 @@ class TestStreamAlertAthenaClient(object):
         query_result = [{'Status': 'SUCCEEDED'}]
         self.client.athena_client = MockAthenaClient(results=query_result)
 
-        self.client.repair_hive_table({'unit-testing.streamalerts'}) 
+        self.client.repair_hive_table({'unit-testing.streamalerts'})
         assert_true(mock_logging.info.called)
 
 
