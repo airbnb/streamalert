@@ -33,7 +33,7 @@ from stream_alert.rule_processor.config import load_config
 from stream_alert.rule_processor.handler import StreamAlert
 from stream_alert.rule_processor.rules_engine import StreamRules
 from stream_alert_cli import helpers
-from stream_alert_cli.logger import LOGGER_CLI, LOGGER_SA, LOGGER_SO
+from stream_alert_cli.logger import LOGGER_CLI, LOGGER_SA, LOGGER_SH, LOGGER_SO
 from stream_alert_cli.outputs import load_outputs_config
 
 
@@ -606,7 +606,7 @@ def stream_alert_test(options, config=None):
             #   call .shutdown() on the existing logger
             #   debug_formatter = logging.Formatter('%(name)s [%(levelname)s]: [%(module)s.%(funcName)s] %(message)s')
             #   set the new logger to the formatter above
-            for streamalert_logger in (LOGGER_SA, LOGGER_SO, LOGGER_CLI):
+            for streamalert_logger in (LOGGER_SA, LOGGER_SH, LOGGER_SO, LOGGER_CLI):
                 streamalert_logger.setLevel(logging.DEBUG)
         else:
             # Add a filter to suppress a few noisy log messages
