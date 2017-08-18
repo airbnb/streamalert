@@ -16,6 +16,7 @@ limitations under the License.
 from collections import OrderedDict
 import json
 import os
+import re
 import sys
 
 from stream_alert_cli.logger import LOGGER_CLI
@@ -74,15 +75,15 @@ class CLIConfig(object):
             ]
         }
 
+        # Check if the prefix has ever been set
         if self.config['global']['account']['prefix'] != 'PREFIX_GOES_HERE':
-            athena_config_template['source_bucket'] = (
-                athena_config_template['source_bucket'].replace(
-                    'PREFIX_GOES_HERE', self.config['global']['account']['prefix']
-                )
-            )
+            athena_config_template['source_bucket'] = self.config['lambda'] \
+                ['rule_processor_config']['source_bucket']
 
         self.config['lambda']['athena_partition_refresh_config'] = athena_config_template
         self.write()
+
+        LOGGER_CLI.info('Athena configuration successfully created')
 
     def set_athena_lambda_enable(self):
         """Enable athena partition refreshes"""
@@ -94,8 +95,14 @@ class CLIConfig(object):
         self.config['lambda']['athena_partition_refresh_config']['enabled'] = True
         self.write()
 
+        LOGGER_CLI.info('Athena configuration successfully enabled')
+
     def set_prefix(self, prefix):
         """Set the Org Prefix in Global settings"""
+        if not isinstance(prefix, (unicode, str)):
+            LOGGER_CLI.error('Invalid prefix type, must be string')
+            return
+
         self.config['global']['account']['prefix'] = prefix
         self.config['global']['terraform']['tfstate_bucket'] = self.config['global']['terraform'][
             'tfstate_bucket'].replace('PREFIX_GOES_HERE', prefix)
@@ -106,10 +113,18 @@ class CLIConfig(object):
             'rule_processor_config']['source_bucket'].replace('PREFIX_GOES_HERE', prefix)
         self.write()
 
+        LOGGER_CLI.info('Prefix successfully configured')
+
     def set_aws_account_id(self, aws_account_id):
         """Set the AWS Account ID in Global settings"""
+        if not re.search(r'\A\d{12}\Z', aws_account_id):
+            LOGGER_CLI.error('Invalid AWS Account ID, must be 12 digits long')
+            return
+
         self.config['global']['account']['aws_account_id'] = aws_account_id
         self.write()
+
+        LOGGER_CLI.info('AWS Account ID successfully configured')
 
     def load(self):
         """Load the cluster, global, and lambda configuration files

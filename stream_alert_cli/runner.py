@@ -16,7 +16,6 @@ limitations under the License.
 from collections import namedtuple
 from getpass import getpass
 import os
-import re
 import shutil
 import sys
 
@@ -156,15 +155,9 @@ def configure_handler(options):
         options (namedtuple): ArgParse command result
     """
     if options.config_key == 'prefix':
-        if not isinstance(options.config_value, (unicode, str)):
-            LOGGER_CLI.error('Invalid prefix type, must be string')
-            return
         CONFIG.set_prefix(options.config_value)
 
     elif options.config_key == 'aws_account_id':
-        if not re.search(r'\A\d{12}\Z', options.config_value):
-            LOGGER_CLI.error('Invalid AWS Account ID, must be 12 digits long')
-            return
         CONFIG.set_aws_account_id(options.config_value)
 
 
