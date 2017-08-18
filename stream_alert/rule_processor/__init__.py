@@ -16,3 +16,5 @@ try:
 except (TypeError, ValueError) as err:
     LOGGER.setLevel('INFO')
     LOGGER.error('Defaulting to INFO logging: %s', err)
+
+LOGGER_DEBUG_ENABLED = LOGGER.isEnabledFor(logging.DEBUG)
