@@ -24,7 +24,7 @@ from fnmatch import fnmatch
 
 import jsonpath_rw
 
-from stream_alert.rule_processor import LOGGER
+from stream_alert.rule_processor import LOGGER_DEBUG_ENABLED, LOGGER
 from stream_alert.shared.stats import time_me
 
 PARSERS = {}
@@ -146,9 +146,10 @@ class JSONParser(ParserBase):
                         schema_match = self._key_check(schema[key], [json_records[index][key]])
 
             if not schema_match:
-                LOGGER.debug('Schema: \n%s', json.dumps(schema, indent=2))
-                LOGGER.debug('Key check failure: \n%s', json.dumps(json_records[index], indent=2))
-                LOGGER.debug('Missing keys in record: %s', json.dumps(list(json_keys - schema_keys)))
+                if LOGGER_DEBUG_ENABLED:
+                    LOGGER.debug('Schema: \n%s', json.dumps(schema, indent=2))
+                    LOGGER.debug('Key check failure: \n%s', json.dumps(json_records[index], indent=2))
+                    LOGGER.debug('Missing keys in record: %s', json.dumps(list(json_keys - schema_keys)))
                 del json_records[index]
 
         return bool(json_records)
@@ -360,7 +361,6 @@ class KVParser(ParserBase):
             fields = filter(None, data.split(delimiter))
             # first check the field length matches our # of keys
             if len(fields) != len(schema):
-                LOGGER.debug('KV field length mismatch: %s vs %s', fields, schema)
                 return False
 
             regex = re.compile('.+{}.+'.format(separator))

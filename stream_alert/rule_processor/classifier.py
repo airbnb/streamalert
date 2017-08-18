@@ -16,14 +16,13 @@ limitations under the License.
 import json
 from collections import namedtuple, OrderedDict
 
-from stream_alert.rule_processor import LOGGER
+from stream_alert.rule_processor import LOGGER_DEBUG_ENABLED, LOGGER
 from stream_alert.rule_processor.parsers import get_parser
 from stream_alert.shared.stats import time_me
 
 # Set the below to True when we want to support matching on multiple schemas
 # and then log_patterns will be used as a fall back for key/value matching
 SUPPORT_MULTIPLE_SCHEMA_MATCHING = False
-
 
 class StreamClassifier(object):
     """Classify, map source, and parse a raw record into its declared type."""
@@ -174,9 +173,10 @@ class StreamClassifier(object):
                     for data in schema_match.parsed_data)):
                 matches.append(schema_matches[i])
             else:
-                LOGGER.debug(
-                    'Log pattern matching failed for:\n%s',
-                    json.dumps(schema_match.parsed_data, indent=2))
+                if LOGGER_DEBUG_ENABLED:
+                    LOGGER.debug(
+                        'Log pattern matching failed for:\n%s',
+                        json.dumps(schema_match.parsed_data, indent=2))
 
         if matches:
             if len(matches) > 1:
@@ -260,13 +260,15 @@ class StreamClassifier(object):
         if not schema_matches:
             return False
 
-        LOGGER.debug('Schema Matched Records:\n%s', json.dumps(
-            [schema_match.parsed_data for schema_match in schema_matches], indent=2))
+        if LOGGER_DEBUG_ENABLED:
+            LOGGER.debug('Schema Matched Records:\n%s', json.dumps(
+                [schema_match.parsed_data for schema_match in schema_matches], indent=2))
 
         schema_match = self._check_schema_match(schema_matches)
 
-        LOGGER.debug('Log name: %s', schema_match.log_name)
-        LOGGER.debug('Parsed data:\n%s', json.dumps(schema_match.parsed_data, indent=2))
+        if LOGGER_DEBUG_ENABLED:
+            LOGGER.debug('Log name: %s', schema_match.log_name)
+            LOGGER.debug('Parsed data:\n%s', json.dumps(schema_match.parsed_data, indent=2))
 
         for parsed_data_value in schema_match.parsed_data:
             # Convert data types per the schema
@@ -303,7 +305,10 @@ class StreamClassifier(object):
             key = str(key)
             # if the schema value is declared as string
             if value == 'string':
-                payload[key] = str(payload[key])
+                try:
+                    payload[key] = str(payload[key])
+                except UnicodeEncodeError:
+                    payload[key] = unicode(payload[key])
 
             # if the schema value is declared as integer
             elif value == 'integer':
