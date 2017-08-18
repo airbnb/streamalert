@@ -588,8 +588,14 @@ def configure_output(options):
     Args:
         options (argparser): Basically a namedtuple with the service setting
     """
-    region = CONFIG['global']['account']['region']
-    prefix = CONFIG['global']['account']['prefix']
+    account_config = CONFIG['global']['account']
+    region = account_config['region']
+    prefix = account_config['prefix']
+    kms_key_alias = account_config['kms_key_alias']
+    # Verify that the word alias is not in the config.
+    # It is interpolated when the API call is made.
+    if 'alias/' in kms_key_alias:
+        kms_key_alias = kms_key_alias.split('/')[1]
 
     # Retrieve the proper service class to handle dispatching the alerts of this services
     output = get_output_dispatcher(options.service,
@@ -623,8 +629,11 @@ def configure_output(options):
 
     # Encrypt the creds and push them to S3
     # then update the local output configuration with properties
-    if config_outputs.encrypt_and_push_creds_to_s3(
-            region, secrets_bucket, secrets_key, props):
+    if config_outputs.encrypt_and_push_creds_to_s3(region,
+                                                   secrets_bucket,
+                                                   secrets_key,
+                                                   props,
+                                                   kms_key_alias):
         updated_config = output.format_output_config(config, props)
         config_outputs.update_outputs_config(config, updated_config, service)
 
