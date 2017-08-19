@@ -129,7 +129,7 @@ class StreamAlert(object):
             self._failed_record_count,
             Metrics.Unit.COUNT)
 
-        LOGGER.debug('%s alerts triggered', len(self._alerts))
+        LOGGER.info('%s alerts triggered', len(self._alerts))
 
         self.metrics.add_metric(
             Metrics.Name.TRIGGERED_ALERTS, len(
@@ -210,7 +210,7 @@ class StreamAlert(object):
             record_alerts = StreamRules.process(record)
 
             LOGGER.debug('Processed %d valid record(s) that resulted in %d alert(s).',
-                         len(payload.records),
+                         len(record.records),
                          len(record_alerts))
 
             if not record_alerts:
