@@ -17,6 +17,7 @@ import base64
 import logging
 
 from mock import call, Mock, mock_open, patch
+from multiprocessing import Manager
 
 from nose.tools import (
     assert_equal,
@@ -33,6 +34,7 @@ from stream_alert.rule_processor.handler import load_config
 
 
 from unit.stream_alert_rule_processor.test_helpers import (
+    MultiprocProcessMock,
     _get_mock_context,
     _get_valid_event
 )
@@ -67,7 +69,9 @@ class TestStreamAlert(object):
     def test_get_alerts(self):
         """StreamAlert Class - Get Alerts"""
         default_list = ['alert1', 'alert2']
-        self.__sa_handler._alerts = default_list
+        proxy_list = Manager().list()
+        proxy_list.extend(default_list)
+        self.__sa_handler._alerts = proxy_list
 
         assert_list_equal(self.__sa_handler.get_alerts(), default_list)
 
@@ -143,12 +147,13 @@ class TestStreamAlert(object):
         extract_mock.return_value = ('kinesis', 'unit_test_default_stream')
         self.__sa_handler.run(_get_valid_event())
 
-        calls = [call('Processed %d valid record(s) that resulted in %d alert(s).', 1, 0),
-                 call('Invalid record count: %d', 0),
-                 call('%s alerts triggered', 0)]
+        calls = [call('Running worker #%d for %d-%d of %d records', 1, 1, 1, 1),
+                 call('Number of running workers: %d', 1),
+                 call('Invalid record count: %d', 0)]
 
         log_mock.assert_has_calls(calls)
 
+    @patch('stream_alert.rule_processor.handler.multiproc.Process', MultiprocProcessMock)
     @patch('logging.Logger.error')
     @patch('stream_alert.rule_processor.handler.StreamClassifier.extract_service_and_entity')
     def test_run_invalid_data(self, extract_mock, log_mock):
@@ -166,6 +171,7 @@ class TestStreamAlert(object):
         assert_equal(log_mock.call_args[0][0], 'Record does not match any defined schemas: %s\n%s')
         assert_equal(log_mock.call_args[0][2], '{"bad": "data"}')
 
+    @patch('stream_alert.rule_processor.handler.multiproc.Process', MultiprocProcessMock)
     @patch('stream_alert.rule_processor.sink.StreamSink.sink')
     @patch('stream_alert.rule_processor.handler.StreamRules.process')
     @patch('stream_alert.rule_processor.handler.StreamClassifier.extract_service_and_entity')

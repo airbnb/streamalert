@@ -27,6 +27,22 @@ from unit.stream_alert_rule_processor import (
 )
 
 
+class MultiprocProcessMock(object):
+    """Mock class to house multiprocessing.Process mock methods"""
+
+    def __init__(self, **kwargs):
+        self.target = kwargs.get('target')
+        self.args = kwargs.get('args')
+
+    def start(self):
+        """Mock 'start' method"""
+        self.target(self.args[0], self.args[1])
+
+    def join(self):
+        """Mock 'join' method"""
+        pass
+
+
 def _get_mock_context():
     """Create a fake context object using Mock"""
     arn = 'arn:aws:lambda:{}:123456789012:function:{}:development'
