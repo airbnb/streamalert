@@ -153,7 +153,7 @@ class TestStreamAlert(object):
 
         log_mock.assert_has_calls(calls)
 
-    @patch('stream_alert.rule_processor.handler.multiproc.Process', MultiprocProcessMock)
+    @patch('stream_alert.rule_processor.handler.Process', MultiprocProcessMock)
     @patch('logging.Logger.error')
     @patch('stream_alert.rule_processor.handler.StreamClassifier.extract_service_and_entity')
     def test_run_invalid_data(self, extract_mock, log_mock):
@@ -171,7 +171,7 @@ class TestStreamAlert(object):
         assert_equal(log_mock.call_args[0][0], 'Record does not match any defined schemas: %s\n%s')
         assert_equal(log_mock.call_args[0][2], '{"bad": "data"}')
 
-    @patch('stream_alert.rule_processor.handler.multiproc.Process', MultiprocProcessMock)
+    @patch('stream_alert.rule_processor.handler.Process', MultiprocProcessMock)
     @patch('stream_alert.rule_processor.sink.StreamSink.sink')
     @patch('stream_alert.rule_processor.handler.StreamRules.process')
     @patch('stream_alert.rule_processor.handler.StreamClassifier.extract_service_and_entity')
