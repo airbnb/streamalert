@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 import json
+import multiprocessing as multiproc
 
 from logging import DEBUG as log_level_debug
 
@@ -24,6 +25,7 @@ from stream_alert.rule_processor.payload import load_stream_payload
 from stream_alert.rule_processor.rules_engine import StreamRules
 from stream_alert.rule_processor.sink import StreamSink
 from stream_alert.shared.metrics import Metrics
+PROC_MANAGER = multiproc.Manager()
 
 
 class StreamAlert(object):
@@ -55,7 +57,7 @@ class StreamAlert(object):
         self.metrics = Metrics('RuleProcessor', self.env['lambda_region'])
         self.enable_alert_processor = enable_alert_processor
         self._failed_record_count = 0
-        self._alerts = []
+        self._alerts = PROC_MANAGER.list()
 
     def run(self, event):
         """StreamAlert Lambda function handler.
@@ -124,7 +126,7 @@ class StreamAlert(object):
         # Check if debugging logging is on before json dumping alerts since
         # this can be time consuming if there are a lot of alerts
         if self._alerts and LOGGER.isEnabledFor(log_level_debug):
-            LOGGER.debug('Alerts:\n%s', json.dumps(self._alerts, indent=2))
+            LOGGER.debug('Alerts:\n%s', json.dumps(self.get_alerts(), indent=2))
 
         # Send any cached metrics to CloudWatch before returning
         self.metrics.send_metrics()
@@ -137,7 +139,7 @@ class StreamAlert(object):
         Returns:
             [list] list of alerts as dictionaries
         """
-        return self._alerts
+        return self._alerts._getvalue()
 
     def _process_alerts(self, payload):
         """Process records for alerts and send them to the correct places
