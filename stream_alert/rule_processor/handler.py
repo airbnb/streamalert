@@ -176,21 +176,24 @@ class StreamAlert(object):
         record_groups = [payload_records[index:interval+index]
                          for index in range(0, len(payload_records), interval)]
 
-        for worker_index, sublist in enumerate(record_groups, start=1):
+        # Create a lock that can be used within spawned processes
+        mutex = multiproc.Lock()
+
+        for worker_index, record_group in enumerate(record_groups, start=1):
             offset = (worker_index - 1) * interval
             LOGGER.debug('Running worker #%d for %d-%d of %d records',
-                         worker_index, offset + 1, offset + len(sublist),
+                         worker_index, offset + 1, offset + len(record_group),
                          len(payload_records))
             # Create a copy of the classifier for each worker being created
             # to avoid conflicts with the workers sharing the cached classifier
             worker_classifier = copy(self.classifier)
-            processor = Process(
-                target=self._process_alerts, args=(worker_classifier, sublist))
+            processor = multiproc.Process(
+                target=self._process_alerts, args=(worker_classifier, record_group, mutex))
             workers.append(processor)
             processor.start()
 
     @time_me
-    def _process_alerts(self, worker_classifier, records):
+    def _process_alerts(self, worker_classifier, records, mutex):
         """Process records for alerts and send them to the correct places
 
         Args:
@@ -222,8 +225,10 @@ class StreamAlert(object):
             if not record_alerts:
                 continue
 
-            # Extend the list of alerts with any new ones so they can be returned
-            self._alerts.extend(record_alerts)
+            # Get a lock in this process so we can extend the list of alerts
+            # with any new ones and try to send them to the alert processor
+            with mutex:
+                self._alerts.extend(record_alerts)
 
-            if self.enable_alert_processor:
-                self.sinker.sink(record_alerts)
+                if self.enable_alert_processor:
+                    self.sinker.sink(record_alerts)
