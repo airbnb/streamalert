@@ -161,6 +161,8 @@ class StreamAlertAthenaClient(object):
         Keyword Args:
             query (str): The SQL query to execute
             database (str): The database context to execute the query in
+            async (bool): If the function should asynchronously run queries
+                without backing off until completion.
 
         Returns:
             bool, dict: query success, query result response
@@ -174,6 +176,11 @@ class StreamAlertAthenaClient(object):
                     self.athena_results_bucket, self.athena_results_key)
             }
         )
+
+        # If asynchronous invocation is enabled, and a valid query
+        # execution ID was returned.
+        if kwargs.get('async') and query_execution_resp.get('QueryExecutionId'):
+            return True, query_execution_resp
 
         query_execution_result = self.check_query_status(
             query_execution_resp['QueryExecutionId'])
@@ -366,13 +373,13 @@ class StreamAlertSQSClient(object):
 
         for message in self.received_messages:
             if 'Body' not in message:
-                LOGGER.error('Missing `Body` key, trying next SQS message')
+                LOGGER.error('Missing \'Body\' key, trying next SQS message')
                 continue
 
             loaded_message = json.loads(message['Body'])
 
             if 'Records' not in loaded_message:
-                LOGGER.error('Missing `Records` key, trying next SQS message')
+                LOGGER.error('Missing \'Records\' key, trying next SQS message')
                 continue
 
             for record in loaded_message['Records']:
@@ -408,9 +415,9 @@ def handler(*_):
     # Initialize the Athena client and run queries
     stream_alert_athena = StreamAlertAthenaClient(config)
 
-    # Check that the `streamalert` database exists before running queries
+    # Check that the 'streamalert' database exists before running queries
     if not stream_alert_athena.check_database_exists():
-        raise AthenaPartitionRefreshError('The `streamalert` database does not exist')
+        raise AthenaPartitionRefreshError('The \'streamalert\' database does not exist')
 
     if not stream_alert_athena.repair_hive_table(unique_buckets):
         raise AthenaPartitionRefreshError('Partiton refresh has failed')
