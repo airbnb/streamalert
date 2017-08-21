@@ -18,7 +18,7 @@ import math
 
 from copy import copy
 from logging import DEBUG as log_level_debug
-from multiprocessing import Process, Manager, Value
+import multiprocessing as multiproc
 
 from stream_alert.rule_processor import LOGGER
 from stream_alert.rule_processor.config import load_config, load_env
@@ -29,8 +29,7 @@ from stream_alert.rule_processor.sink import StreamSink
 from stream_alert.shared.metrics import Metrics
 from stream_alert.shared.stats import time_me
 
-NUM_WORKERS = 6
-PROC_MANAGER = Manager()
+PROC_MANAGER = multiproc.Manager()
 
 
 class StreamAlert(object):
@@ -61,7 +60,7 @@ class StreamAlert(object):
 
         self.metrics = Metrics('RuleProcessor', self.env['lambda_region'])
         self.enable_alert_processor = enable_alert_processor
-        self._failed_record_count = Value('I', 0)
+        self._failed_record_count = multiproc.Value('I', 0)
         self._alerts = PROC_MANAGER.list()
 
     def run(self, event):
@@ -151,6 +150,7 @@ class StreamAlert(object):
         Returns:
             [list] list of alerts as dictionaries
         """
+        # Call through to return the underlying list value from the ListProxy
         return self._alerts._getvalue()
 
     def _run_batches(self, payload, workers):
@@ -162,16 +162,21 @@ class StreamAlert(object):
             workers [list<mutliprocessing.Process>]: The complete list of
                 multiprocessing jobs to append this job to
         """
-        # Get all of the pre-parsed records for this payload
-        payload_records = [record for record in payload.pre_parse()]
+        # Get all of the pre-parsed records from the generator for this payload
+        payload_records = list(payload.pre_parse())
+
+        # Default to spawning 2 processes per available CPU
+        num_workers = multiproc.cpu_count() * 2
+
+        LOGGER.debug('Creating a maximum of %d workers for processing', num_workers)
 
         # Get the interval that we should segment the list of alerts on and
         # arrange them into sublists of this size. Default to minimum of 1
-        interval = int(math.ceil(len(payload_records)/float(NUM_WORKERS))) or 1
-        record_sublists = [payload_records[index:interval+index]
-                           for index in range(0, len(payload_records), interval)]
+        interval = int(math.ceil(len(payload_records)/float(num_workers))) or 1
+        record_groups = [payload_records[index:interval+index]
+                         for index in range(0, len(payload_records), interval)]
 
-        for worker_index, sublist in enumerate(record_sublists, start=1):
+        for worker_index, sublist in enumerate(record_groups, start=1):
             offset = (worker_index - 1) * interval
             LOGGER.debug('Running worker #%d for %d-%d of %d records',
                          worker_index, offset + 1, offset + len(sublist),
