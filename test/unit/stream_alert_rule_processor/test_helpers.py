@@ -36,7 +36,7 @@ class MultiprocProcessMock(object):
 
     def start(self):
         """Mock 'start' method"""
-        self.target(self.args[0], self.args[1])
+        self.target(*self.args)
 
     def join(self):
         """Mock 'join' method"""

@@ -148,12 +148,11 @@ class TestStreamAlert(object):
         self.__sa_handler.run(_get_valid_event())
 
         calls = [call('Running worker #%d for %d-%d of %d records', 1, 1, 1, 1),
-                 call('Number of running workers: %d', 1),
-                 call('Invalid record count: %d', 0)]
+                 call('Number of running workers: %d', 1)]
 
         log_mock.assert_has_calls(calls)
 
-    @patch('stream_alert.rule_processor.handler.Process', MultiprocProcessMock)
+    @patch('stream_alert.rule_processor.handler.multiproc.Process', MultiprocProcessMock)
     @patch('logging.Logger.error')
     @patch('stream_alert.rule_processor.handler.StreamClassifier.extract_service_and_entity')
     def test_run_invalid_data(self, extract_mock, log_mock):
@@ -171,7 +170,7 @@ class TestStreamAlert(object):
         assert_equal(log_mock.call_args[0][0], 'Record does not match any defined schemas: %s\n%s')
         assert_equal(log_mock.call_args[0][2], '{"bad": "data"}')
 
-    @patch('stream_alert.rule_processor.handler.Process', MultiprocProcessMock)
+    @patch('stream_alert.rule_processor.handler.multiproc.Process', MultiprocProcessMock)
     @patch('stream_alert.rule_processor.sink.StreamSink.sink')
     @patch('stream_alert.rule_processor.handler.StreamRules.process')
     @patch('stream_alert.rule_processor.handler.StreamClassifier.extract_service_and_entity')
@@ -211,6 +210,52 @@ class TestStreamAlert(object):
         LOGGER.setLevel(log_level)
 
         log_mock.assert_called_with('Alerts:\n%s', '[\n  "success!!"\n]')
+
+    @patch('stream_alert.rule_processor.handler.copy')
+    @patch('stream_alert.rule_processor.handler.multiproc.Process')
+    @patch('stream_alert.rule_processor.payload.StreamPayload')
+    @patch('stream_alert.rule_processor.handler.multiproc.cpu_count')
+    @patch('stream_alert.rule_processor.handler.multiproc.Lock')
+    def test_record_grouping(
+            self,
+            mp_lock_mock,
+            mp_cpu_mock,
+            payload_mock,
+            process_mock,
+            copy_mock):
+        """StreamAlert Class - Record Grouping for Multiprocessing"""
+        # Set the cpu_count return value to a predetermined value
+        mp_cpu_mock.return_value = 2
+        # Disable the actual creation of a mutex
+        mp_lock_mock.return_value = None
+        # Create a list of predetermined values to compare against
+        payload_mock.pre_parse.return_value = range(22)
+        # Force copy to return the actual object instead of a copy
+        copy_mock.return_value = self.__sa_handler.classifier
+
+        self.__sa_handler._run_batches(payload_mock, [])
+
+        # Set the groups we expect to be created from the segmentation logic
+        groups = [[0, 1, 2, 3, 4, 5],
+                  [6, 7, 8, 9, 10, 11],
+                  [12, 13, 14, 15, 16, 17],
+                  [18, 19, 20, 21]]
+
+        # Create all of the calls we expect to be found
+        call_01 = call(args=(self.__sa_handler.classifier, groups[0], None),
+                       target=self.__sa_handler._process_alerts)
+        call_02 = call(args=(self.__sa_handler.classifier, groups[1], None),
+                       target=self.__sa_handler._process_alerts)
+        call_03 = call(args=(self.__sa_handler.classifier, groups[2], None),
+                       target=self.__sa_handler._process_alerts)
+        call_04 = call(args=(self.__sa_handler.classifier, groups[3], None),
+                       target=self.__sa_handler._process_alerts)
+
+        all_calls = [call_01, call_01.start(), call_02, call_02.start(),
+                     call_03, call_03.start(), call_04, call_04.start()]
+
+        # Check that the calls exist
+        process_mock.assert_has_calls(all_calls)
 
     @patch('stream_alert.rule_processor.handler.load_stream_payload')
     @patch('stream_alert.rule_processor.handler.StreamClassifier.load_sources')

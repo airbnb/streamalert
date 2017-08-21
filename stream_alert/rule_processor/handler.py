@@ -60,7 +60,7 @@ class StreamAlert(object):
 
         self.metrics = Metrics('RuleProcessor', self.env['lambda_region'])
         self.enable_alert_processor = enable_alert_processor
-        self._failed_record_count = multiproc.Value('I', 0)
+        self._unmatched_record_count = multiproc.Value('i', 0)
         self._alerts = PROC_MANAGER.list()
 
     def run(self, event):
@@ -121,11 +121,12 @@ class StreamAlert(object):
         for worker in workers:
             worker.join()
 
-        LOGGER.debug('Invalid record count: %d', self._failed_record_count.value)
+        if self._unmatched_record_count.value:
+            LOGGER.debug('Invalid record count: %d', self._unmatched_record_count.value)
 
         self.metrics.add_metric(
             Metrics.Name.FAILED_PARSES,
-            self._failed_record_count.value,
+            self._unmatched_record_count.value,
             Metrics.Unit.COUNT)
 
         LOGGER.info('%s alerts triggered', len(self._alerts))
@@ -142,7 +143,7 @@ class StreamAlert(object):
         # Send any cached metrics to CloudWatch before returning
         self.metrics.send_metrics()
 
-        return self._failed_record_count.value == 0
+        return self._unmatched_record_count.value == 0
 
     def get_alerts(self):
         """Public method to return alerts from class. Useful for testing.
@@ -209,8 +210,8 @@ class StreamAlert(object):
                     LOGGER.error('Record does not match any defined schemas: %s\n%s',
                                  record, record.pre_parsed_record)
 
-                with self._failed_record_count.get_lock():
-                    self._failed_record_count.value += 1
+                with self._unmatched_record_count.get_lock():
+                    self._unmatched_record_count.value += 1
                 continue
 
             LOGGER.debug('Classified and Parsed Payload: <Valid: %s, Log Source: %s, Entity: %s>',
