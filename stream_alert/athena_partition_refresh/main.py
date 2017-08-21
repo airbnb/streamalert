@@ -13,15 +13,19 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from collections import defaultdict
 from datetime import datetime
 import json
 import logging
 import os
+import re
+import urllib
 
 import backoff
 import boto3
 
-logging.basicConfig(format='%(name)s [%(levelname)s]: [%(module)s.%(funcName)s] %(message)s')
+logging.basicConfig(
+    format='%(name)s [%(levelname)s]: [%(module)s.%(funcName)s] %(message)s')
 LEVEL = os.environ.get('LOGGER_LEVEL', 'INFO')
 LOGGER = logging.getLogger('StreamAlertAthena')
 LOGGER.setLevel(LEVEL.upper())
@@ -106,6 +110,16 @@ class StreamAlertAthenaClient(object):
     DATABASE_DEFAULT = 'default'
     DATABASE_STREAMALERT = 'streamalert'
     DEFAULT_S3_PREFIX = 'athena_partition_refresh'
+
+    STREAMALERTS_REGEX = re.compile(r'alerts/dt=(?P<year>\d{4})'
+                                    r'\-(?P<month>\d{2})'
+                                    r'\-(?P<day>\d{2})'
+                                    r'\-(?P<hour>\d{2})'
+                                    r'\-.*.json')
+    FIREHOSE_REGEX = re.compile(r'(?P<year>\d{4})'
+                                r'\/(?P<month>\d{2})'
+                                r'\/(?P<day>\d{2})'
+                                r'\/(?P<hour>\d{2})\/.*')
 
     def __init__(self, config, **kwargs):
         """Initialize the Boto3 Athena Client, and S3 results bucket/key
@@ -245,7 +259,14 @@ class StreamAlertAthenaClient(object):
         return False
 
     def repair_hive_table(self, unique_buckets):
-        """Execute a MSCK REPAIR TABLE on a given Athena table"""
+        """Execute a MSCK REPAIR TABLE on a given Athena table
+
+        Args:
+            unique_buckets (list): S3 buckets to repair
+
+        Returns:
+            (bool): If the repair was successful for not
+        """
         athena_config = self.config['lambda']['athena_partition_refresh_config']
         repair_hive_table_config = athena_config['refresh_type']['repair_hive_table']
 
@@ -273,11 +294,69 @@ class StreamAlertAthenaClient(object):
 
         return True
 
-    @staticmethod
-    def add_hive_partition(_):
-        """Execute a Hive Add Partition command on a given Athena table"""
-        LOGGER.error('Add Hive Parition is not yet supported, exiting!')
-        raise NotImplementedError
+    def add_hive_partition(self, s3_buckets_and_keys):
+        """Execute a Hive Add Partition command on a given Athena table
+
+        Args:
+            s3_buckets_and_keys (dict): Buckets and unique keys to add partitions
+
+        Returns:
+            (bool): If the repair was successful for not
+        """
+        athena_config = self.config['lambda']['athena_partition_refresh_config']
+        add_hive_partition_config = athena_config['refresh_type']['add_hive_partition']
+        partitions = set()
+
+        for bucket, keys in s3_buckets_and_keys.iteritems():
+            athena_table = add_hive_partition_config.get(bucket)
+            if not athena_table:
+                LOGGER.error('%s not found in add_hive_partition config. '
+                             'Please add this bucket to enable additions '
+                             'of Hive partitions.',
+                             athena_table)
+                continue
+
+            # Gather all of the partitions to add per bucket
+            s3_key_regex = self.STREAMALERTS_REGEX if athena_table == 'alerts' else self.FIREHOSE_REGEX
+            for key in keys:
+                match = s3_key_regex.search(key)
+                if len(match.groups()) != 4:
+                    LOGGER.warning('%s does not match the regex: %s',
+                                   key, s3_key_regex.pattern)
+                    continue
+
+                # Convert the match groups to a dict for easy access
+                match_dict = match.groupdict()
+                # Get the path to the objects in S3
+                path = '/'.join(key.split('/')[:-1])
+
+                partitions.add("PARTITION (dt = '{year}-{month}-{day}-{hour}') "
+                               "LOCATION 's3://{bucket}/{path}'".format(
+                                   year=match_dict['year'],
+                                   month=match_dict['month'],
+                                   day=match_dict['day'],
+                                   hour=match_dict['hour'],
+                                   bucket=bucket,
+                                   path=path
+                               ))
+
+            query = ('ALTER TABLE {athena_table} '
+                     'ADD IF NOT EXISTS {partition_statements};'.format(
+                         athena_table=athena_table,
+                         partition_statements=' '.join(partitions)))
+            query_success, query_resp = self.run_athena_query(
+                query=query,
+                database=self.DATABASE_STREAMALERT
+            )
+
+            if not query_success:
+                LOGGER.error('The following query has failed: %s', query)
+                return False
+
+            LOGGER.info('Query results:')
+            for row in query_resp['ResultSet']['Rows']:
+                LOGGER.info(row.get('Data'))
+            return True
 
 
 class StreamAlertSQSClient(object):
@@ -359,13 +438,13 @@ class StreamAlertSQSClient(object):
             LOGGER.info('Successfully deleted %s messages from the queue',
                         len(resp['Successful']))
 
-    def unique_buckets_from_messages(self):
-        """Filter a list of unique s3 buckets from the received messages
+    def unique_s3_buckets_and_keys(self):
+        """Filter a list of unique s3 buckets and S3 keys from event notifications
 
         Returns:
-            set: Unique s3 buckets derived from s3 event notifications
+            (dict): Keys of bucket names, and values of unique S3 keys
         """
-        buckets = set()
+        s3_buckets_and_keys = defaultdict(set)
 
         if not self.received_messages:
             LOGGER.error('No messages to filter, fetch the messages with get_messages()')
@@ -388,11 +467,15 @@ class StreamAlertSQSClient(object):
                     LOGGER.debug(record)
                     continue
 
-                buckets.add(record['s3']['bucket']['name'])
+                bucket_name = record['s3']['bucket']['name']
+                # Account for special characters in the S3 object key
+                object_key = urllib.unquote(record['s3']['object']['key']).decode('utf8')
+                s3_buckets_and_keys[bucket_name].add(object_key)
+
                 # Add to a new list to denote processed messages
                 self.processed_messages.append(message)
 
-        return buckets
+        return s3_buckets_and_keys
 
 
 def handler(*_):
@@ -407,9 +490,9 @@ def handler(*_):
         LOGGER.info('No messages recieved, exiting')
         return
 
-    unique_buckets = stream_alert_sqs.unique_buckets_from_messages()
-    if not unique_buckets:
-        LOGGER.error('No s3 buckets to refresh, exiting')
+    s3_buckets_and_keys = stream_alert_sqs.unique_s3_buckets_and_keys()
+    if not s3_buckets_and_keys:
+        LOGGER.error('No partitions to refresh, exiting')
         return
 
     # Initialize the Athena client and run queries
@@ -419,7 +502,7 @@ def handler(*_):
     if not stream_alert_athena.check_database_exists():
         raise AthenaPartitionRefreshError('The \'streamalert\' database does not exist')
 
-    if not stream_alert_athena.repair_hive_table(unique_buckets):
-        raise AthenaPartitionRefreshError('Partiton refresh has failed')
+    if not stream_alert_athena.add_hive_partition(s3_buckets_and_keys):
+        raise AthenaPartitionRefreshError('Adding partition(s) has failed')
 
     stream_alert_sqs.delete_messages()

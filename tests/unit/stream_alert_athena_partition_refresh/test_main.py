@@ -83,12 +83,14 @@ CONFIG_DATA = {
             ]
         },
         'athena_partition_refresh_config': {
-            'enabled': True,
-            'refresh_type': {
-                'repair_hive_table': {
-                    'unit-testing.streamalerts': 'alerts'
-                },
-                'add_hive_partition': {}
+            "enabled": True,
+            "refresh_type": {
+              "repair_hive_table": {
+                "unit-testing.streamalerts": "alerts"
+              },
+              "add_hive_partition": {
+                "unit-testing.streamalerts": "alerts"
+              }
             },
             'handler': 'main.handler',
             'timeout': '60',
@@ -167,8 +169,8 @@ class TestStreamAlertAthenaGlobals(object):
     @patch('stream_alert.athena_partition_refresh.main.LOGGER')
     @patch('stream_alert.athena_partition_refresh.main._load_config',
            return_value=CONFIG_DATA)
-    @patch('stream_alert.athena_partition_refresh.main.StreamAlertSQSClient.'
-           'unique_buckets_from_messages', return_value=set())
+    @patch('stream_alert.athena_partition_refresh.main.StreamAlertSQSClient.unique_s3_buckets_and_keys',
+           return_value={})
     @mock_sqs
     def test_handler_no_unique_buckets(self, _, mock_config, mock_logging):
         """Athena - Handler - No Unique Buckets"""
@@ -178,7 +180,7 @@ class TestStreamAlertAthenaGlobals(object):
         handler(None, None)
 
         mock_config.assert_called()
-        mock_logging.error.assert_called_with('No s3 buckets to refresh, exiting')
+        mock_logging.error.assert_called_with('No partitions to refresh, exiting')
 
 
 class TestStreamAlertSQSClient(object):
@@ -195,42 +197,76 @@ class TestStreamAlertSQSClient(object):
 
         # Create a fake s3 notification message to send
         bucket = 'unit-testing.streamalerts'
-        test_s3_notification = {
-            'Records': [
-                {
-                    'eventVersion': '2.0',
-                    'eventSource': 'aws:s3',
-                    'awsRegion': 'us-east-1',
-                    'eventTime': '2017-08-07T18:26:30.956Z',
-                    'eventName': 'ObjectCreated:Put',
-                    'userIdentity': {
-                        'principalId': 'AWS:AAAAAAAAAAAAAAA'
-                    },
-                    'requestParameters': {
-                        'sourceIPAddress': '127.0.0.1'
-                    },
-                    'responseElements': {
-                        'x-amz-request-id': 'FOO',
-                        'x-amz-id-2': 'BAR'
-                    },
-                    's3': {
-                        's3SchemaVersion': '1.0',
-                        'configurationId': 'queue',
-                        'bucket': {
-                            'name': bucket,
-                            'ownerIdentity': {
-                                'principalId': 'AAAAAAAAAAAAAAA'
-                            },
-                            'arn': 'arn:aws:s3:::{}'.format(bucket)
-                        },
-                        'object': {
-                            'key': 'alerts/foo.json',
-                            'size': 1494,
-                            'eTag': '12214134141431431',
-                            'versionId': 'asdfasdfasdf.dfadCJkj1',
-                            'sequencer': '1212312321312321321'
-                        }
-                    }
+        test_s3_notificaiton = {
+          'Records': [
+            {
+              'eventVersion': '2.0',
+              'eventSource': 'aws:s3',
+              'awsRegion': 'us-east-1',
+              'eventTime': '2017-08-07T18:26:30.956Z',
+              'eventName': 'ObjectCreated:Put',
+              'userIdentity': {
+                'principalId': 'AWS:AAAAAAAAAAAAAAA'
+              },
+              'requestParameters': {
+                'sourceIPAddress': '127.0.0.1'
+              },
+              'responseElements': {
+                'x-amz-request-id': 'FOO',
+                'x-amz-id-2': 'BAR'
+              },
+              's3': {
+                's3SchemaVersion': '1.0',
+                'configurationId': 'queue',
+                'bucket': {
+                  'name': bucket,
+                  'ownerIdentity': {
+                    'principalId': 'AAAAAAAAAAAAAAA'
+                  },
+                  'arn': 'arn:aws:s3:::{}'.format(bucket)
+                },
+                'object': {
+                  'key': 'alerts/dt=2017-08-26-14-02/rule_name_alerts-1304134918401.json',
+                  'size': 1494,
+                  'eTag': '12214134141431431',
+                  'versionId': 'asdfasdfasdf.dfadCJkj1',
+                  'sequencer': '1212312321312321321'
+                }
+              }
+            },
+            {
+              'eventVersion': '2.0',
+              'eventSource': 'aws:s3',
+              'awsRegion': 'us-east-1',
+              'eventTime': '2017-08-07T18:26:30.956Z',
+              'eventName': 'ObjectCreated:Put',
+              'userIdentity': {
+                'principalId': 'AWS:AAAAAAAAAAAAAAA'
+              },
+              'requestParameters': {
+                'sourceIPAddress': '127.0.0.1'
+              },
+              'responseElements': {
+                'x-amz-request-id': 'FOO',
+                'x-amz-id-2': 'BAR'
+              },
+              's3': {
+                's3SchemaVersion': '1.0',
+                'configurationId': 'queue',
+                'bucket': {
+                  'name': bucket,
+                  'ownerIdentity': {
+                    'principalId': 'AAAAAAAAAAAAAAA'
+                  },
+                  'arn': 'arn:aws:s3:::{}'.format(bucket)
+                },
+                'object': {
+                  # Different day than the above record
+                  'key': 'alerts/dt=2017-08-27-14-02/rule_name_alerts-1304134918401.json',
+                  'size': 1494,
+                  'eTag': '12214134141431431',
+                  'versionId': 'asdfasdfasdf.dfadCJkj1',
+                  'sequencer': '1212312321312321321'
                 }
             ]
         }
@@ -251,7 +287,7 @@ class TestStreamAlertSQSClient(object):
     def test_delete_messages(self, mock_logging):
         """Athena SQS - Delete Messages"""
         self.client.get_messages()
-        self.client.unique_buckets_from_messages()
+        self.client.unique_s3_buckets_and_keys()
         self.client.delete_messages()
 
         assert_true(mock_logging.info.called)
@@ -264,47 +300,52 @@ class TestStreamAlertSQSClient(object):
         assert_equal(len(self.client.received_messages), 1)
         assert_true(mock_logging.info.called)
 
-    def test_unique_buckets_from_messages(self):
+    def test_unique_s3_buckets_and_keys(self):
         """Athena SQS - Get Unique Bucket Ids"""
         self.client.get_messages()
-        unique_buckets = self.client.unique_buckets_from_messages()
+        unique_buckets = self.client.unique_s3_buckets_and_keys()
 
-        assert_equal(unique_buckets, {'unit-testing.streamalerts'})
-        assert_equal(len(self.client.processed_messages), 1)
+        assert_equal(unique_buckets, {
+            'unit-testing.streamalerts': set([
+                'alerts/dt=2017-08-26-14-02/rule_name_alerts-1304134918401.json',
+                'alerts/dt=2017-08-27-14-02/rule_name_alerts-1304134918401.json',
+            ])
+        })
+        assert_equal(len(self.client.processed_messages), 2)
 
     @patch('stream_alert.athena_partition_refresh.main.LOGGER')
-    def test_unique_buckets_invalid_sqs(self, mock_logging):
+    def test_unique_s3_buckets_and_keys_invalid_sqs(self, mock_logging):
         """Athena SQS - Unique Buckets - Invalid SQS Message"""
         self.client.received_messages = ['wrong-format-test']
-        unique_buckets = self.client.unique_buckets_from_messages()
+        unique_buckets = self.client.unique_s3_buckets_and_keys()
 
         assert_false(unique_buckets)
         assert_true(mock_logging.error.called)
 
     @patch('stream_alert.athena_partition_refresh.main.LOGGER')
-    def test_unique_buckets_invalid_record(self, mock_logging):
+    def test_unique_s3_buckets_and_keys_invalid_record(self, mock_logging):
         """Athena SQS - Unique Buckets - Missing Records Key in SQS Message"""
-        self.client.received_messages = [{'Body': '{"missing-key": 1}'}]
-        unique_buckets = self.client.unique_buckets_from_messages()
+        self.client.received_messages = [{'Body': '{"missing-records-key": 1}'}]
+        unique_buckets = self.client.unique_s3_buckets_and_keys()
 
         assert_false(unique_buckets)
         assert_true(mock_logging.error.called)
 
     @patch('stream_alert.athena_partition_refresh.main.LOGGER')
-    def test_unique_buckets_non_s3_notification(self, mock_logging):
+    def test_unique_s3_buckets_and_keys_non_s3_notification(self, mock_logging):
         """Athena SQS - Unique Buckets - Non S3 Notification"""
         self.client.received_messages = [{'Body': '{"Records": [{"kinesis": 1}]}'}]
-        unique_buckets = self.client.unique_buckets_from_messages()
+        unique_buckets = self.client.unique_s3_buckets_and_keys()
 
         assert_false(unique_buckets)
         assert_true(mock_logging.info.called)
         assert_true(mock_logging.debug.called)
 
     @patch('stream_alert.athena_partition_refresh.main.LOGGER')
-    def test_unique_buckets_no_mesages(self, mock_logging):
+    def test_unique_s3_buckets_and_keys_no_mesages(self, mock_logging):
         """Athena SQS - Unique Buckets - No Receieved Messages"""
         self.client.received_messages = []
-        unique_buckets = self.client.unique_buckets_from_messages()
+        unique_buckets = self.client.unique_s3_buckets_and_keys()
 
         assert_equal(unique_buckets, None)
         assert_true(mock_logging.error.called)
@@ -317,12 +358,21 @@ class TestStreamAlertAthenaClient(object):
                                               results_key_prefix='unit-testing')
 
     @patch('stream_alert.athena_partition_refresh.main.LOGGER')
-    @raises(NotImplementedError)
     def test_add_hive_partition(self, mock_logging):
         """Athena - Add Hive Partition"""
-        self.client.add_hive_partition(None)
+        query_result = [
+            {'Repair: added data to metastore:foobar'},
+            {'Repair: added data to metastore:foobaz'}
+        ]
+        self.client.athena_client = MockAthenaClient(results=query_result)
+        result = self.client.add_hive_partition({
+            'unit-testing.streamalerts': set([
+                'alerts/dt=2017-08-26-14-02/rule_name_alerts-1304134918401.json',
+                'alerts/dt=2017-08-27-14-02/rule_name_alerts-1304134918401.json',
+            ])
+        })
 
-        assert_true(mock_logging.error.called)
+        assert_true(result)
 
     def test_check_table_exists(self):
         """Athena - Check Table Exists"""
