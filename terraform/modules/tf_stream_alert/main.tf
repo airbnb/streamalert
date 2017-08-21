@@ -13,7 +13,9 @@ resource "aws_lambda_function" "streamalert_rule_processor" {
 
   environment {
     variables = {
-      CLUSTER = "${var.cluster}"
+      CLUSTER        = "${var.cluster}"
+      LOGGER_LEVEL   = "${var.rule_processor_log_level}"
+      ENABLE_METRICS = "${var.rule_processor_enable_metrics}"
     }
   }
 
@@ -47,7 +49,9 @@ resource "aws_lambda_function" "streamalert_alert_processor_vpc" {
 
   environment {
     variables = {
-      CLUSTER = "${var.cluster}"
+      CLUSTER        = "${var.cluster}"
+      LOGGER_LEVEL   = "${var.alert_processor_log_level}"
+      ENABLE_METRICS = "${var.alert_processor_enable_metrics}"
     }
   }
 
@@ -78,7 +82,9 @@ resource "aws_lambda_function" "streamalert_alert_processor" {
 
   environment {
     variables = {
-      CLUSTER = "${var.cluster}"
+      CLUSTER        = "${var.cluster}"
+      LOGGER_LEVEL   = "${var.alert_processor_log_level}"
+      ENABLE_METRICS = "${var.alert_processor_enable_metrics}"
     }
   }
 
@@ -131,4 +137,16 @@ resource "aws_lambda_permission" "rule_processor" {
   source_arn    = "${aws_lambda_function.streamalert_rule_processor.arn}"
   qualifier     = "production"
   depends_on    = ["aws_lambda_alias.alert_processor_production"]
+}
+
+// Log Retention Policy: Rule Processor
+resource "aws_cloudwatch_log_group" "rule_processor" {
+  name              = "/aws/lambda/${var.prefix}_${var.cluster}_streamalert_rule_processor"
+  retention_in_days = 60
+}
+
+// Log Retention Policy: Alert Processor
+resource "aws_cloudwatch_log_group" "alert_processor" {
+  name              = "/aws/lambda/${var.prefix}_${var.cluster}_streamalert_alert_processor"
+  retention_in_days = 60
 }

@@ -59,8 +59,9 @@
                 }
             },
             "description": "CloudTrail - PutObjectAcl - True Positive",
-            "service": "kinesis",
-            "source": "prefix_cluster1_stream_alert_kinesis",
+            "service": "s3",
+            "source": "prefix.cluster.sample.bucket",
+            "trigger_count": 1,
             "trigger": true
         },
         {
@@ -116,8 +117,8 @@
                 }
             },
             "description": "CloudTrail - PutObjectAcl - False Positive",
-            "service": "kinesis",
-            "source": "prefix_cluster1_stream_alert_kinesis",
+            "service": "s3",
+            "source": "prefix.cluster.sample.bucket",
             "trigger": false
         }
     ]

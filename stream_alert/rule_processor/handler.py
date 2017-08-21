@@ -51,7 +51,7 @@ class StreamAlert(object):
         # Instantiate a classifier that is used for this run
         self.classifier = StreamClassifier(config=config)
 
-        self.metrics = Metrics(self.env['lambda_region'])
+        self.metrics = Metrics('RuleProcessor', self.env['lambda_region'])
         self.enable_alert_processor = enable_alert_processor
         self._failed_record_count = 0
         self._alerts = []
@@ -154,7 +154,8 @@ class StreamAlert(object):
                 self._failed_record_count += 1
                 continue
 
-            LOGGER.debug('Payload: %s', record)
+            LOGGER.debug('Classified and Parsed Payload: <Valid: %s, Log Source: %s, Entity: %s>',
+                         record.valid, record.log_source, record.entity)
 
             record_alerts = StreamRules.process(record)
 

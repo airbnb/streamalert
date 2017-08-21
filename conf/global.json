@@ -8,6 +8,9 @@
   "infrastructure": {
     "monitoring": {
       "create_sns_topic": true
+    },
+    "metrics": {
+      "enabled": false
     }
   },
   "terraform": {

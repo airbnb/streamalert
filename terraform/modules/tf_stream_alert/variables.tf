@@ -23,6 +23,15 @@ variable "rule_processor_config" {
   default = {}
 }
 
+variable "rule_processor_log_level" {
+  type    = "string"
+  default = "info"
+}
+
+variable "rule_processor_enable_metrics" {
+  default = false
+}
+
 variable "rule_processor_version" {}
 
 variable "rule_processor_memory" {}
@@ -32,6 +41,15 @@ variable "rule_processor_timeout" {}
 variable "alert_processor_config" {
   type    = "map"
   default = {}
+}
+
+variable "alert_processor_log_level" {
+  type    = "string"
+  default = "info"
+}
+
+variable "alert_processor_enable_metrics" {
+  default = false
 }
 
 variable "alert_processor_version" {}

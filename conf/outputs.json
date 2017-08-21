@@ -1,17 +1,17 @@
 {
   "aws-s3": {
-    "sample_bucket": "sample.bucket.name"
+    "sample-bucket": "sample.bucket.name"
   },
   "aws-lambda": {
-    "sample_lambda": "function-name:qualifier"
+    "sample-lambda": "function-name:qualifier"
   },
   "pagerduty": [
-    "sample_integration"
+    "sample-integration"
   ],
   "phantom": [
-    "sample_integration"
+    "sample-integration"
   ],
   "slack": [
-    "sample_channel"
+    "sample-channel"
   ]
 }

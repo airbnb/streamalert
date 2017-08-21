@@ -179,6 +179,7 @@ def generate_stream_alert(cluster_name, cluster_dict, config):
         "stream_alert": {
           "alert_processor": {
             "current_version": "$LATEST",
+            "log_level": "info",
             "memory": 128,
             "outputs": {
               "aws-lambda": [
@@ -205,6 +206,7 @@ def generate_stream_alert(cluster_name, cluster_dict, config):
                 "sns_topic_arn"
               ]
             },
+            "log_level": "info",
             "memory": 128,
             "timeout": 10
           }
@@ -213,6 +215,8 @@ def generate_stream_alert(cluster_name, cluster_dict, config):
     Returns:
         bool: Result of applying the stream_alert module
     """
+    enable_metrics = config['global'].get('infrastructure',
+                                          {}).get('metrics', {}).get('enabled', False)
     account = config['global']['account']
     modules = config['clusters'][cluster_name]['modules']
 
@@ -223,11 +227,17 @@ def generate_stream_alert(cluster_name, cluster_dict, config):
         'prefix': account['prefix'],
         'cluster': cluster_name,
         'kms_key_arn': '${aws_kms_key.stream_alert_secrets.arn}',
+        'rule_processor_enable_metrics': enable_metrics,
+        'rule_processor_log_level': modules['stream_alert'] \
+            ['rule_processor'].get('log_level', 'info'),
         'rule_processor_memory': modules['stream_alert']['rule_processor']['memory'],
         'rule_processor_timeout': modules['stream_alert']['rule_processor']['timeout'],
         'rule_processor_version': modules['stream_alert']['rule_processor']['current_version'],
         'rule_processor_config': '${var.rule_processor_config}',
         'alert_processor_config': '${var.alert_processor_config}',
+        'alert_processor_enable_metrics': enable_metrics,
+        'alert_processor_log_level': modules['stream_alert'] \
+            ['alert_processor'].get('log_level', 'info'),
         'alert_processor_memory': modules['stream_alert']['alert_processor']['memory'],
         'alert_processor_timeout': modules['stream_alert']['alert_processor']['timeout'],
         'alert_processor_version': modules['stream_alert']['alert_processor']['current_version']
@@ -506,21 +516,24 @@ def generate_s3_events(cluster_name, cluster_dict, config):
     modules = config['clusters'][cluster_name]['modules']
     s3_bucket_id = modules['s3_events'].get('s3_bucket_id')
 
-    if s3_bucket_id:
-        cluster_dict['module']['s3_events_{}'.format(cluster_name)] = {
-            'source': 'modules/tf_stream_alert_s3_events',
-            'lambda_function_arn': '${{module.stream_alert_{}.lambda_arn}}'.format(cluster_name),
-            'lambda_function_name': '{}_{}_stream_alert_processor'.format(
-                config['global']['account']['prefix'],
-                cluster_name),
-            's3_bucket_id': s3_bucket_id,
-            's3_bucket_arn': 'arn:aws:s3:::{}'.format(s3_bucket_id)}
-        return True
+    if not s3_bucket_id:
+        LOGGER_CLI.error(
+            'Config Error: Missing S3 bucket in %s s3_events module',
+            cluster_name)
+        return False
 
-    LOGGER_CLI.error(
-        'Config Error: Missing S3 bucket in %s s3_events module',
-        cluster_name)
-    return False
+    cluster_dict['module']['s3_events_{}'.format(cluster_name)] = {
+        'source': 'modules/tf_stream_alert_s3_events',
+        'lambda_function_arn': '${{module.stream_alert_{}.lambda_arn}}'.format(cluster_name),
+        'lambda_function_name': '{}_{}_stream_alert_processor'.format(
+            config['global']['account']['prefix'],
+            cluster_name),
+        's3_bucket_id': s3_bucket_id,
+        's3_bucket_arn': 'arn:aws:s3:::{}'.format(s3_bucket_id),
+        'lambda_role_id': '${{module.stream_alert_{}.lambda_role_id}}'.format(cluster_name),
+        'lambda_role_arn': '${{module.stream_alert_{}.lambda_role_arn}}'.format(cluster_name)}
+
+    return True
 
 
 def generate_cluster(**kwargs):
@@ -586,6 +599,8 @@ def generate_athena(config):
     """
     athena_dict = infinitedict()
     athena_config = config['lambda']['athena_partition_refresh_config']
+    enable_metrics = config['global'].get('infrastructure',
+                                          {}).get('metrics', {}).get('enabled', False)
 
     data_buckets = []
     for refresh_type in athena_config['refresh_type']:
@@ -598,14 +613,13 @@ def generate_athena(config):
         'lambda_timeout': athena_config['timeout'],
         'lambda_s3_bucket': athena_config['source_bucket'],
         'lambda_s3_key': athena_config['source_object_key'],
+        'lambda_log_level': athena_config.get('log_level', 'info'),
         'athena_data_buckets': data_buckets,
+        'refresh_interval': athena_config.get('refresh_interval', 'rate(10 minutes)'),
         'current_version': athena_config['current_version'],
+        'enable_metrics': enable_metrics,
         'prefix': config['global']['account']['prefix']
     }
-
-    log_level = athena_config.get('log_level')
-    if log_level:
-        athena_dict['module']['stream_alert_athena']['lambda_log_level'] = log_level
 
     return athena_dict
 

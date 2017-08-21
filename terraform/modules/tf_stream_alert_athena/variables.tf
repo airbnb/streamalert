@@ -42,3 +42,7 @@ variable "refresh_interval" {
   type    = "string"
   default = "rate(10 minutes)"
 }
+
+variable "enable_metrics" {
+  default = false
+}

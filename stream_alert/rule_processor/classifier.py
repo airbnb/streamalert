@@ -14,9 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from collections import namedtuple, OrderedDict
+import json
 
-from stream_alert.rule_processor import LOGGER
+from stream_alert.rule_processor import LOGGER, LOGGER_DEBUG_ENABLED
 from stream_alert.rule_processor.parsers import get_parser
+from stream_alert.shared.stats import time_me
 
 # Set the below to True when we want to support matching on multiple schemas
 # and then log_patterns will be used as a fall back for key/value matching
@@ -121,6 +123,7 @@ class StreamClassifier(object):
         return OrderedDict((source, logs[source]) for source in logs.keys()
                            if source.split(':')[0] in self._entity_log_sources)
 
+    @time_me
     def classify_record(self, payload):
         """Classify and type raw record passed into StreamAlert.
 
@@ -163,13 +166,15 @@ class StreamClassifier(object):
         matches = []
         for i, schema_match in enumerate(schema_matches):
             log_patterns = schema_match.parser.options.get('log_patterns', {})
+            LOGGER.debug('Log patterns: %s', log_patterns)
             if (all(schema_match.parser.matched_log_pattern(data, log_patterns)
                     for data in schema_match.parsed_data)):
                 matches.append(schema_matches[i])
             else:
-                LOGGER.debug(
-                    'Log pattern matching failed for schema: %s',
-                    schema_match.root_schema)
+                if LOGGER_DEBUG_ENABLED:
+                    LOGGER.debug(
+                        'Log pattern matching failed for:\n%s',
+                        json.dumps(schema_match.parsed_data, indent=2))
 
         if matches:
             if len(matches) > 1:
@@ -185,6 +190,7 @@ class StreamClassifier(object):
 
         return schema_matches[0]
 
+    @time_me
     def _process_log_schemas(self, payload):
         """Get any log schemas that matched this log format
 
@@ -214,11 +220,13 @@ class StreamClassifier(object):
             parser = parser_class(options)
 
             # Get a list of parsed records
+            LOGGER.debug('Trying schema: %s', log_name)
             parsed_data = parser.parse(schema, payload.pre_parsed_record)
 
-            LOGGER.debug('Schema: %s', schema)
             if not parsed_data:
                 continue
+
+            LOGGER.debug('Parsed %d records with schema %s', len(parsed_data), log_name)
 
             if SUPPORT_MULTIPLE_SCHEMA_MATCHING:
                 schema_matches.append(schema_match(log_name, schema, parser, parsed_data))
@@ -249,10 +257,15 @@ class StreamClassifier(object):
         if not schema_matches:
             return False
 
+        if LOGGER_DEBUG_ENABLED:
+            LOGGER.debug('Schema Matched Records:\n%s', json.dumps(
+                [schema_match.parsed_data for schema_match in schema_matches], indent=2))
+
         schema_match = self._check_schema_match(schema_matches)
 
-        LOGGER.debug('Log name: %s', schema_match.log_name)
-        LOGGER.debug('Parsed data: %s', schema_match.parsed_data)
+        if LOGGER_DEBUG_ENABLED:
+            LOGGER.debug('Log name: %s', schema_match.log_name)
+            LOGGER.debug('Parsed data:\n%s', json.dumps(schema_match.parsed_data, indent=2))
 
         for parsed_data_value in schema_match.parsed_data:
             # Convert data types per the schema
@@ -284,12 +297,14 @@ class StreamClassifier(object):
         Returns:
             dict: parsed dict payload with typed values
         """
-        # check for list types here
         for key, value in schema.iteritems():
             key = str(key)
             # if the schema value is declared as string
             if value == 'string':
-                payload[key] = str(payload[key])
+                try:
+                    payload[key] = str(payload[key])
+                except UnicodeEncodeError:
+                    payload[key] = unicode(payload[key])
 
             # if the schema value is declared as integer
             elif value == 'integer':

@@ -140,10 +140,12 @@ class TestStreamAlertAthenaGlobals(object):
     @patch('stream_alert.athena_partition_refresh.main.LOGGER')
     def test_backoff_and_success_handlers(self, mock_logging):
         """Athena - Backoff Handlers"""
-        _backoff_handler({'wait': 1.0, 'tries': 3, 'target': 'backoff'})
+        def backoff():
+            pass
+        _backoff_handler({'wait': 1.0, 'tries': 3, 'target': backoff})
         assert_true(mock_logging.debug.called)
 
-        _success_handler({'tries': 3, 'target': 'backoff'})
+        _success_handler({'tries': 3, 'target': backoff})
         assert_true(mock_logging.debug.called)
 
     @patch('stream_alert.athena_partition_refresh.main.LOGGER')

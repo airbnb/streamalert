@@ -15,30 +15,51 @@ limitations under the License.
 """
 from datetime import datetime
 import json
+import os
 
 import boto3
 from botocore.exceptions import ClientError
 
 from stream_alert.shared import LOGGER
 
+CLUSTER = os.environ.get('CLUSTER', 'unknown_cluster')
+
+try:
+    ENABLE_METRICS = bool(int(os.environ.get('ENABLE_METRICS', 0)))
+except ValueError as err:
+    ENABLE_METRICS = False
+    LOGGER.error('Invalid value for metric toggling, expected 0 or 1: %s',
+                 err.message)
+
 
 class Metrics(object):
-    """Class to hold Rule Processor metric name and unit constants
+    """Class to hold metric names and unit constants.
+
     This basically acts as an enum, allowing for the use of dot notation for
     accessing properties and avoids doing dict lookups a ton.
     """
 
-    def __init__(self, region):
+    def __init__(self, lambda_function, region):
         self.boto_cloudwatch = boto3.client('cloudwatch', region_name=region)
         self._metric_data = []
+        self._dimensions = [
+            {
+                'Name': 'Cluster',
+                'Value': CLUSTER
+            },
+            {
+                'Name': 'Function',
+                'Value': lambda_function
+            }
+        ]
 
     class Name(object):
-        """Constant metric names used in the rule processor"""
-        FAILED_PARSES = 'RuleProcessorFailedParses'
-        S3_DOWNLOAD_TIME = 'RuleProcessorS3DownloadTime'
-        TOTAL_RECORDS = 'RuleProcessorTotalRecords'
-        TOTAL_S3_RECORDS = 'RuleProcessorTotalS3Records'
-        TRIGGERED_ALERTS = 'RuleProcessorTriggeredAlerts'
+        """Constant metric names used for CloudWatch"""
+        FAILED_PARSES = 'FailedParses'
+        S3_DOWNLOAD_TIME = 'S3DownloadTime'
+        TOTAL_RECORDS = 'TotalRecords'
+        TOTAL_S3_RECORDS = 'TotalS3Records'
+        TRIGGERED_ALERTS = 'TriggeredAlerts'
 
     class Unit(object):
         """Unit names for metrics. These are taken from the boto3 CloudWatch page"""
@@ -93,12 +114,21 @@ class Metrics(object):
                 'MetricName': metric_name,
                 'Timestamp': datetime.utcnow(),
                 'Unit': unit,
-                'Value': value
+                'Value': value,
+                "Dimensions": self._dimensions
             }
         )
 
     def send_metrics(self):
         """Public method for publishing custom metric data to CloudWatch."""
+        if not ENABLE_METRICS:
+            LOGGER.debug('Sending of metric data is currently disabled.')
+            return
+
+        if not self._metric_data:
+            LOGGER.debug('No metric data to send to CloudWatch.')
+            return
+
         for metric in self._metric_data:
             LOGGER.debug('Sending metric data to CloudWatch: %s', metric['MetricName'])
 

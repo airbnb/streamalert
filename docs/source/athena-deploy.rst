@@ -51,16 +51,17 @@ Configure Lambda Settings
 Open ``conf/lambda.json``, and fill in the following ``Required`` options:
 
 
-===================================  ========  =========          ===========
-Key                                  Required  Default            Description
------------------------------------  --------  ---------          -----------
-``enabled``                          ``Yes``   ``True``           Enables/Disables the Athena Partition Refresh Lambda function
-``log_level``                        ``No``    ``info``           The log level for the Lambda function, can be either ``info`` or ``debug``.  Debug will help with diagnosing errors with polling SQS or sending Athena queries.
-``memory``                           ``No``    ``128``            The amount of memory (in MB) allocated to the Lambda function
-``timeout``                          ``No``    ``60``             The maximum duration of the Lambda function (in seconds)
-``refresh_type.add_hive_partition``  ``No``    ``{}``             Not currently supported
-``refresh_type.repair_hive_table``   ``Yes``   ``{}``             Key value pairs of S3 buckets and associated Athena table names.  Currently only supports the default alerts bucket created with every cluster.
-===================================  ========  =========          ===========
+===================================  ========  ====================   ===========
+Key                                  Required  Default                Description
+-----------------------------------  --------  --------------------   -----------
+``enabled``                          ``Yes``   ``true``               Enables/Disables the Athena Partition Refresh Lambda function
+``log_level``                        ``No``    ``info``               The log level for the Lambda function, can be either ``info`` or ``debug``.  Debug will help with diagnosing errors with polling SQS or sending Athena queries.
+``memory``                           ``No``    ``128``                The amount of memory (in MB) allocated to the Lambda function
+``timeout``                          ``No``    ``60``                 The maximum duration of the Lambda function (in seconds)
+``refresh_interval``                 ``No``    ``rate(10 minutes)``   The rate of which the Athena Lambda function is invoked in the form of a `CloudWatch schedule expression <http://amzn.to/2u5t0hS>`_.
+``refresh_type.add_hive_partition``  ``No``    ``{}``                 Not currently supported
+``refresh_type.repair_hive_table``   ``Yes``   ``{}``                 Key value pairs of S3 buckets and associated Athena table names.  Currently only supports the default alerts bucket created with every cluster.
+===================================  ========  ====================   ===========
 
 **Example:**
 

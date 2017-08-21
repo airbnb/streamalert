@@ -12,7 +12,8 @@ resource "aws_lambda_function" "athena_partition_refresh" {
 
   environment {
     variables = {
-      LOGGER_LEVEL = "${var.lambda_log_level}"
+      LOGGER_LEVEL   = "${var.lambda_log_level}"
+      ENABLE_METRICS = "${var.enable_metrics}"
     }
   }
 
@@ -57,6 +58,8 @@ resource "aws_lambda_permission" "allow_cloudwatch_events_invocation" {
   principal     = "events.amazonaws.com"
   source_arn    = "${aws_cloudwatch_event_rule.invoke_athena_refresh.arn}"
   qualifier     = "production"
+
+  depends_on = ["aws_lambda_alias.athena_partition_refresh_production"]
 }
 
 // Cloudwatch Event Rule: Invoke the Athena function refresh every minute
@@ -72,6 +75,8 @@ resource "aws_cloudwatch_event_rule" "invoke_athena_refresh" {
 resource "aws_cloudwatch_event_target" "athena_lambda_function" {
   rule = "${aws_cloudwatch_event_rule.invoke_athena_refresh.name}"
   arn  = "${aws_lambda_function.athena_partition_refresh.arn}:production"
+
+  depends_on = ["aws_lambda_alias.athena_partition_refresh_production"]
 }
 
 // S3 Bucekt Notificaiton: Configure S3 to notify Lambda

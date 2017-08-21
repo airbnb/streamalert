@@ -331,7 +331,7 @@ class TestTerraformGenerate(object):
         assert_equal(tf_main['resource'], tf_main_expected['resource'])
 
     def test_generate_stream_alert_test(self):
-        """CLI - Terraform Generate stream_alert Module (test cluster)"""
+        """CLI - Terraform Generate StreamAlert - Test Cluster"""
         terraform_generate.generate_stream_alert(
             'test',
             self.cluster_dict,
@@ -347,10 +347,14 @@ class TestTerraformGenerate(object):
                     'prefix': 'unit-testing',
                     'cluster': 'test',
                     'kms_key_arn': '${aws_kms_key.stream_alert_secrets.arn}',
+                    'rule_processor_enable_metrics': False,
+                    'rule_processor_log_level': 'info',
                     'rule_processor_memory': 128,
                     'rule_processor_timeout': 25,
                     'rule_processor_version': '$LATEST',
                     'rule_processor_config': '${var.rule_processor_config}',
+                    'alert_processor_enable_metrics': False,
+                    'alert_processor_log_level': 'info',
                     'alert_processor_memory': 128,
                     'alert_processor_timeout': 25,
                     'alert_processor_version': '$LATEST',
@@ -363,7 +367,7 @@ class TestTerraformGenerate(object):
                      expected_test_cluster['module']['stream_alert_test'])
 
     def test_generate_stream_alert_advanced(self):
-        """CLI - Terraform Generate stream_alert Module (advanced cluster)"""
+        """CLI - Terraform Generate StreamAlert - Advanced Cluster)"""
         terraform_generate.generate_stream_alert(
             'advanced',
             self.cluster_dict,
@@ -379,10 +383,14 @@ class TestTerraformGenerate(object):
                     'prefix': 'unit-testing',
                     'cluster': 'advanced',
                     'kms_key_arn': '${aws_kms_key.stream_alert_secrets.arn}',
+                    'rule_processor_enable_metrics': False,
+                    'rule_processor_log_level': 'info',
                     'rule_processor_memory': 128,
                     'rule_processor_timeout': 25,
                     'rule_processor_version': '$LATEST',
                     'rule_processor_config': '${var.rule_processor_config}',
+                    'alert_processor_enable_metrics': False,
+                    'alert_processor_log_level': 'info',
                     'alert_processor_memory': 128,
                     'alert_processor_timeout': 25,
                     'alert_processor_version': '$LATEST',
@@ -401,7 +409,7 @@ class TestTerraformGenerate(object):
                      expected_advanced_cluster['module']['stream_alert_advanced'])
 
     def test_generate_flow_logs(self):
-        """CLI - Terraform Generate flow_logs Module"""
+        """CLI - Terraform Generate Flow Logs"""
         cluster_name = 'advanced'
         terraform_generate.generate_flow_logs(
             cluster_name,
@@ -437,7 +445,7 @@ class TestTerraformGenerate(object):
         })
 
     def test_generate_cloudtrail_all_options(self):
-        """CLI - Terraform Generate cloudtrail Module All Options"""
+        """CLI - Terraform Generate Cloudtrail Module - All Options"""
         cluster_name = 'advanced'
         self.config['clusters']['advanced']['modules']['cloudtrail'] = {
             'enabled': True,
@@ -473,7 +481,7 @@ class TestTerraformGenerate(object):
         })
 
     def test_generate_cloudwatch_monitoring(self):
-        """CLI - Terraform Generate cloudwatch_monitoring Module"""
+        """CLI - Terraform Generate Cloudwatch Monitoring"""
         cluster_name = 'test'
         terraform_generate.generate_cloudwatch_monitoring(
             cluster_name,
@@ -521,7 +529,7 @@ class TestTerraformGenerate(object):
             expected_cloudwatch_tf_custom)
 
     def test_generate_cluster_test(self):
-        """CLI - Terraform Generate 'Test' Cluster"""
+        """CLI - Terraform Generate Test Cluster"""
 
         tf_cluster = terraform_generate.generate_cluster(
             config=self.config,
@@ -544,7 +552,7 @@ class TestTerraformGenerate(object):
         assert_equal(set(tf_cluster.keys()), cluster_keys)
 
     def test_generate_cluster_advanced(self):
-        """CLI - Terraform Generate 'Advanced' Cluster"""
+        """CLI - Terraform Generate Advanced Cluster"""
 
         tf_cluster = terraform_generate.generate_cluster(
             config=self.config,
@@ -575,6 +583,11 @@ class TestTerraformGenerate(object):
             'global': {
                 'account': {
                     'prefix': 'unit-testing'
+                },
+                'infrastructure': {
+                    'metrics': {
+                        'enabled': True
+                    }
                 }
             },
             'lambda': {
@@ -604,13 +617,16 @@ class TestTerraformGenerate(object):
                 'stream_alert_athena': {
                     'source': 'modules/tf_stream_alert_athena',
                     'current_version': '$LATEST',
+                    'enable_metrics': True,
                     'lambda_handler': 'main.handler',
+                    'lambda_log_level': 'info',
                     'lambda_memory': '128',
                     'lambda_timeout': '60',
                     'lambda_s3_bucket': 'unit-testing.streamalert.source',
                     'lambda_s3_key': 'lambda/athena/source.zip',
                     'athena_data_buckets': ['unit-testing.streamalerts'],
-                    'prefix': 'unit-testing'
+                    'prefix': 'unit-testing',
+                    'refresh_interval': 'rate(10 minutes)'
                 }
             }
         }

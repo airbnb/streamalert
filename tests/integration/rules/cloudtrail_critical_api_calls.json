@@ -2,14 +2,14 @@
     "records": [
         {
             "data": {
-                "awsRegion": "...",
-                "eventID": "...",
+                "awsRegion": "us-west-2",
+                "eventID": "123aaac1-123d-456a-1k29a4dd2kea",
                 "eventName": "DeleteSubnet",
                 "eventSource": "ec2.amazonaws.com",
-                "eventTime": "...",
+                "eventTime": "2017-01-01T00:20:50Z",
                 "eventType": "AwsApiCall",
-                "eventVersion": "...",
-                "recipientAccountId": "12345",
+                "eventVersion": "1.05",
+                "recipientAccountId": "123456789123",
                 "requestID": "...",
                 "requestParameters": {
                     "subnetId": "..."
@@ -34,20 +34,20 @@
                 }
             },
             "description": "CloudTrail - Critical API - DeleteSubnet",
-            "service": "kinesis",
-            "source": "prefix_cluster1_stream_alert_kinesis",
+            "service": "s3",
+            "source": "prefix.cluster.sample.bucket",
             "trigger": true
         },
         {
             "data": {
-                "awsRegion": "...",
-                "eventID": "...",
+                "awsRegion": "us-west-2",
+                "eventID": "123aaac1-123d-456a-1k29a4dd2kea",
                 "eventName": "DeleteVpc",
                 "eventSource": "ec2.amazonaws.com",
-                "eventTime": "...",
+                "eventTime": "2017-01-01T00:20:50Z",
                 "eventType": "AwsApiCall",
-                "eventVersion": "...",
-                "recipientAccountId": "12345",
+                "eventVersion": "1.05",
+                "recipientAccountId": "123456789123",
                 "requestID": "...",
                 "requestParameters": {
                     "vpcId": "..."
@@ -72,20 +72,20 @@
                 }
             },
             "description": "CloudTrail - Critical API - DeleteVpc",
-            "service": "kinesis",
-            "source": "prefix_cluster1_stream_alert_kinesis",
+            "service": "s3",
+            "source": "prefix.cluster.sample.bucket",
             "trigger": true
         },
         {
             "data": {
-                "awsRegion": "...",
-                "eventID": "...",
+                "awsRegion": "us-west-2",
+                "eventID": "123aaac1-123d-456a-1k29a4dd2kea",
                 "eventName": "UpdateTrail",
                 "eventSource": "cloudtrail.amazonaws.com",
-                "eventTime": "...",
+                "eventTime": "2017-01-01T00:20:50Z",
                 "eventType": "AwsApiCall",
-                "eventVersion": "...",
-                "recipientAccountId": "12345",
+                "eventVersion": "1.05",
+                "recipientAccountId": "123456789123",
                 "requestID": "...",
                 "requestParameters": {
                     "cloudWatchLogsLogGroupArn": "...",
@@ -122,20 +122,20 @@
                 }
             },
             "description": "CloudTrail - Critical API - UpdateTrail",
-            "service": "kinesis",
-            "source": "prefix_cluster1_stream_alert_kinesis",
+            "service": "s3",
+            "source": "prefix.cluster.sample.bucket",
             "trigger": true
         },
         {
             "data": {
-                "awsRegion": "...",
-                "eventID": "...",
+                "awsRegion": "us-west-2",
+                "eventID": "123aaac1-123d-456a-1k29a4dd2kea",
                 "eventName": "StopLogging",
                 "eventSource": "cloudtrail.amazonaws.com",
-                "eventTime": "...",
+                "eventTime": "2017-01-01T00:20:50Z",
                 "eventType": "AwsApiCall",
-                "eventVersion": "...",
-                "recipientAccountId": "12345",
+                "eventVersion": "1.05",
+                "recipientAccountId": "123456789123",
                 "requestID": "...",
                 "requestParameters": {
                     "name": "..."
@@ -158,20 +158,20 @@
                 }
             },
             "description": "CloudTrail - Critical API - StopLogging",
-            "service": "kinesis",
-            "source": "prefix_cluster1_stream_alert_kinesis",
+            "service": "s3",
+            "source": "prefix.cluster.sample.bucket",
             "trigger": true
         },
         {
             "data": {
-                "awsRegion": "...",
-                "eventID": "...",
+                "awsRegion": "us-west-2",
+                "eventID": "123aaac1-123d-456a-1k29a4dd2kea",
                 "eventName": "DeleteDBCluster",
                 "eventSource": "rds.amazonaws.com",
-                "eventTime": "...",
+                "eventTime": "2017-01-01T00:20:50Z",
                 "eventType": "AwsApiCall",
-                "eventVersion": "...",
-                "recipientAccountId": "12345",
+                "eventVersion": "1.05",
+                "recipientAccountId": "123456789123",
                 "requestID": "...",
                 "requestParameters": {
                     "dBClusterIdentifier": "...",
@@ -249,20 +249,20 @@
                 }
             },
             "description": "CloudTrail - Critical API - DeleteDBCluster",
-            "service": "kinesis",
-            "source": "prefix_cluster1_stream_alert_kinesis",
+            "service": "s3",
+            "source": "prefix.cluster.sample.bucket",
             "trigger": true
         },
         {
             "data": {
-                "awsRegion": "...",
-                "eventID": "...",
+                "awsRegion": "us-west-2",
+                "eventID": "123aaac1-123d-456a-1k29a4dd2kea",
                 "eventName": "StopConfigurationRecorder",
                 "eventSource": "config.amazonaws.com",
-                "eventTime": "...",
+                "eventTime": "2017-01-01T00:20:50Z",
                 "eventType": "AwsApiCall",
-                "eventVersion": "...",
-                "recipientAccountId": "12345",
+                "eventVersion": "1.05",
+                "recipientAccountId": "123456789123",
                 "requestID": "...",
                 "requestParameters": {
                     "configurationRecorderName": "..."
@@ -285,20 +285,20 @@
                 }
             },
             "description": "CloudTrail - Critical API - StopConfigurationRecorder",
-            "service": "kinesis",
-            "source": "prefix_cluster1_stream_alert_kinesis",
+            "service": "s3",
+            "source": "prefix.cluster.sample.bucket",
             "trigger": true
         },
         {
             "data": {
-                "awsRegion": "...",
-                "eventID": "...",
+                "awsRegion": "us-west-2",
+                "eventID": "123aaac1-123d-456a-1k29a4dd2kea",
                 "eventName": "DeleteFlowLogs",
                 "eventSource": "ec2.amazonaws.com",
-                "eventTime": "...",
+                "eventTime": "2017-01-01T00:20:50Z",
                 "eventType": "AwsApiCall",
-                "eventVersion": "...",
-                "recipientAccountId": "12345",
+                "eventVersion": "1.05",
+                "recipientAccountId": "123456789123",
                 "requestID": "...",
                 "requestParameters": {
                     "flowLogId": [
@@ -327,20 +327,20 @@
                 }
             },
             "description": "CloudTrail - Critical API - DeleteFlowLogs",
-            "service": "kinesis",
-            "source": "prefix_cluster1_stream_alert_kinesis",
+            "service": "s3",
+            "source": "prefix.cluster.sample.bucket",
             "trigger": true
         },
         {
             "data": {
-                "awsRegion": "...",
-                "eventID": "...",
+                "awsRegion": "us-west-2",
+                "eventID": "123aaac1-123d-456a-1k29a4dd2kea",
                 "eventName": "DeleteFalsePositiveCase",
                 "eventSource": "ec2.amazonaws.com",
-                "eventTime": "...",
+                "eventTime": "2017-01-01T00:20:50Z",
                 "eventType": "AwsApiCall",
-                "eventVersion": "...",
-                "recipientAccountId": "12345",
+                "eventVersion": "1.05",
+                "recipientAccountId": "123456789123",
                 "requestID": "...",
                 "requestParameters": {
                     "flowLogId": [
@@ -369,8 +369,8 @@
                 }
             },
             "description": "CloudTrail - Critical API - False Positive Case",
-            "service": "kinesis",
-            "source": "prefix_cluster1_stream_alert_kinesis",
+            "service": "s3",
+            "source": "prefix.cluster.sample.bucket",
             "trigger": false
         }
     ]

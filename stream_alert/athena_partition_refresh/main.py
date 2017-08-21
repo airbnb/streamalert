@@ -21,7 +21,7 @@ import os
 import backoff
 import boto3
 
-logging.basicConfig()
+logging.basicConfig(format='%(name)s [%(levelname)s]: [%(module)s.%(funcName)s] %(message)s')
 LEVEL = os.environ.get('LOGGER_LEVEL', 'INFO')
 LOGGER = logging.getLogger('StreamAlertAthena')
 LOGGER.setLevel(LEVEL.upper())
@@ -38,7 +38,7 @@ def _backoff_handler(details):
     LOGGER.debug('[Backoff]: Trying again in %f seconds after %d tries calling %s',
                  details['wait'],
                  details['tries'],
-                 details['target'])
+                 details['target'].__name__)
 
 
 def _success_handler(details):
@@ -51,7 +51,7 @@ def _success_handler(details):
     """
     LOGGER.debug('[Backoff]: Completed after %d tries calling %s',
                  details['tries'],
-                 details['target'])
+                 details['target'].__name__)
 
 
 def _load_config():

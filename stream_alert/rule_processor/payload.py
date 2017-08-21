@@ -21,6 +21,7 @@ import os
 import tempfile
 import time
 from urllib import unquote
+import zlib
 
 import boto3
 
@@ -199,7 +200,6 @@ class S3Payload(StreamPayload):
         if size_mb > 128:
             raise S3ObjectSizeError('S3 object to download is above 128MB')
 
-        LOGGER.debug('/tmp directory contents:%s ', os.listdir('/tmp'))
         LOGGER.debug(os.popen('df -h /tmp | tail -1').read().strip())
 
         display_size = '{}MB'.format(size_mb) if size_mb else '{}KB'.format(size_kb)
@@ -314,6 +314,11 @@ class KinesisPayload(StreamPayload):
         LOGGER.debug('Pre-parsing record from Kinesis. eventID: %s, eventSourceARN: %s',
                      self.raw_record['eventID'], self.raw_record['eventSourceARN'])
 
-        self.pre_parsed_record = base64.b64decode(self.raw_record['kinesis']['data'])
+        # Kinesis records have to potential to be gzipped, so try to decompress
+        record = base64.b64decode(self.raw_record['kinesis']['data'])
+        try:
+            self.pre_parsed_record = zlib.decompress(record, 47)
+        except zlib.error:
+            self.pre_parsed_record = record
 
         yield self

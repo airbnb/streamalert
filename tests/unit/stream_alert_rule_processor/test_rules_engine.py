@@ -13,18 +13,26 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+# pylint: disable=no-self-use,protected-access
 from collections import namedtuple
 import json
 
 from mock import patch
-from nose.tools import assert_equal, assert_is_instance, assert_items_equal
+from nose.tools import (
+    assert_equal,
+    assert_false,
+    assert_is_instance,
+    assert_items_equal,
+    assert_true,
+)
 
 from stream_alert.rule_processor.config import load_config, load_env
-from stream_alert.rule_processor.rules_engine import StreamRules
+from stream_alert.rule_processor.parsers import get_parser
+from stream_alert.rule_processor.rules_engine import RuleAttributes, StreamRules
 from tests.unit.stream_alert_rule_processor.test_helpers import (
     get_mock_context,
     load_and_classify_payload,
-    make_kinesis_raw_record
+    make_kinesis_raw_record,
 )
 
 rule = StreamRules.rule
@@ -47,8 +55,14 @@ class TestStreamRules(object):
         cls.env = None
         cls.config = None
 
+    def setup(self):
+        """Setup before each method"""
+        # Clear out the cached matchers and rules to avoid conflicts with production code
+        StreamRules._StreamRules__matchers.clear()  # pylint: disable=no-member
+        StreamRules._StreamRules__rules.clear()  # pylint: disable=no-member
+
     def test_alert_format(self):
-        """Rule Engine - Alert Format"""
+        """Rules Engine - Alert Format"""
         @rule(logs=['test_log_type_json_nested_with_data'],
               outputs=['s3:sample_bucket'])
         def alert_format_test(rec):  # pylint: disable=unused-variable
@@ -98,8 +112,8 @@ class TestStreamRules(object):
         assert_is_instance(alerts[0]['log_source'], str)
 
     @patch('stream_alert.rule_processor.rules_engine.LOGGER.exception')
-    def test_bad_rule(self, log_mock):  # pylint: disable=no-self-use
-        """Rule Engine - Process Bad Rule Function"""
+    def test_bad_rule(self, log_mock):
+        """Rules Engine - Process Bad Rule Function"""
         bad_rule = namedtuple('BadRule', 'rule_function')
 
         def bad_rule_function(_):
@@ -114,7 +128,7 @@ class TestStreamRules(object):
                                     'bad_rule_function')
 
     def test_basic_rule_matcher_process(self):
-        """Rule Engine - Basic Rule/Matcher"""
+        """Rules Engine - Basic Rule/Matcher"""
         @matcher
         def prod(rec):  # pylint: disable=unused-variable
             return rec['environment'] == 'prod'
@@ -168,13 +182,114 @@ class TestStreamRules(object):
             'minimal_rule': ['s3:sample_bucket'],
             'test_nest': ['pagerduty:sample_integration']
         }
-        # doing this because after kinesis_data is read in, types are casted per the schema
+        # doing this because after kinesis_data is read in, types are casted per
+        # the schema
         for alert in alerts:
             assert_items_equal(alert['record'].keys(), kinesis_data.keys())
             assert_items_equal(alert['outputs'], rule_outputs_map[alert['rule_name']])
 
-    def test_process_req_subkeys(self):
-        """Rule Engine - Req Subkeys"""
+    def test_process_subkeys_nested_records(self):
+        """Rules Engine - Required Subkeys with Nested Records"""
+        def cloudtrail_us_east_logs(rec):
+            return (
+                'us-east' in rec['awsRegion'] and
+                'AWS' in rec['requestParameters']['program']
+            )
+        rule_attrs = RuleAttributes(
+            rule_name='cloudtrail_us_east_logs',
+            rule_function=cloudtrail_us_east_logs,
+            matchers=[],
+            logs=['test_log_type_json_nested'],
+            outputs=['s3:sample_bucket'],
+            req_subkeys={'requestParameters': ['program']}
+        )
+
+        data = json.dumps({
+            'Records': [
+                {
+                    'eventVersion': '1.05',
+                    'eventID': '2',
+                    'eventTime': '3',
+                    'requestParameters': {
+                        'program': 'AWS CLI'
+                    },
+                    'eventType': 'CreateSomeResource',
+                    'responseElements': 'Response',
+                    'awsRegion': 'us-east-1',
+                    'eventName': 'CreateResource',
+                    'userIdentity': {
+                        'name': 'john',
+                        'key': 'AVC124313414'
+                    },
+                    'eventSource': 'Kinesis',
+                    'requestID': '12345',
+                    'userAgent': 'AWS CLI v1.3109',
+                    'sourceIPAddress': '127.0.0.1',
+                    'recipientAccountId': '123456123456'
+                },
+                {
+                    'eventVersion': '1.05',
+                    'eventID': '2',
+                    'eventTime': '3',
+                    'requestParameters': {
+                        'program': 'AWS UI'
+                    },
+                    'eventType': 'CreateSomeOtherResource',
+                    'responseElements': 'Response',
+                    'awsRegion': 'us-east-2',
+                    'eventName': 'CreateResource',
+                    'userIdentity': {
+                        'name': 'ann',
+                        'key': 'AD114313414'
+                    },
+                    'eventSource': 'Lambda',
+                    'requestID': '12345',
+                    'userAgent': 'Google Chrome 42',
+                    'sourceIPAddress': '127.0.0.2',
+                    'recipientAccountId': '123456123456'
+                },
+                {
+                    'eventVersion': '1.05',
+                    'eventID': '2',
+                    'eventTime': '3',
+                    # Translates from null in JSON to None in Python
+                    'requestParameters': None,
+                    'eventType': 'CreateSomeResource',
+                    'responseElements': 'Response',
+                    'awsRegion': 'us-east-1',
+                    'eventName': 'CreateResource',
+                    'userIdentity': {
+                        'name': 'john',
+                        'key': 'AVC124313414'
+                    },
+                    'eventSource': 'Kinesis',
+                    'requestID': '12345',
+                    'userAgent': 'AWS CLI',
+                    'sourceIPAddress': '127.0.0.1',
+                    'recipientAccountId': '123456123456'
+                }
+            ]
+        })
+
+        schema = self.config['logs']['test_cloudtrail']['schema']
+        options = self.config['logs']['test_cloudtrail']['configuration']
+
+        parser_class = get_parser('json')
+        parser = parser_class(options)
+        parsed_result = parser.parse(schema, data)
+
+        valid_record = [
+            rec for rec in parsed_result if rec['requestParameters'] is not None][0]
+        valid_subkey_check = StreamRules.process_subkeys(valid_record, 'json', rule_attrs)
+        assert_true(valid_subkey_check)
+
+        invalid_record = [
+            rec for rec in parsed_result if rec['requestParameters'] is None][0]
+        invalid_subkey_check = StreamRules.process_subkeys(invalid_record, 'json', rule_attrs)
+        assert_false(invalid_subkey_check)
+
+    def test_process_subkeys(self):
+        """Rules Engine - Req Subkeys"""
         @rule(logs=['test_log_type_json_nested'],
               outputs=['s3:sample_bucket'],
               req_subkeys={'data': ['location']})
@@ -227,7 +342,7 @@ class TestStreamRules(object):
         assert_equal(alerts[1]['rule_name'], 'data_location')
 
     def test_syslog_rule(self):
-        """Rule Engine - Syslog Rule"""
+        """Rules Engine - Syslog Rule"""
         @rule(logs=['test_log_type_syslog'],
               outputs=['s3:sample_bucket'])
         def syslog_sudo(rec):  # pylint: disable=unused-variable
@@ -256,7 +371,7 @@ class TestStreamRules(object):
         assert_equal(alerts[0]['log_type'], 'syslog')
 
     def test_csv_rule(self):
-        """Rule Engine - CSV Rule"""
+        """Rules Engine - CSV Rule"""
         @rule(logs=['test_log_type_csv_nested'],
               outputs=['pagerduty:sample_integration'])
         def nested_csv(rec):  # pylint: disable=unused-variable
@@ -282,7 +397,7 @@ class TestStreamRules(object):
         assert_equal(alerts[0]['rule_name'], 'nested_csv')
 
     def test_rule_disable(self):
-        """Rule Engine - Disable Rule"""
+        """Rules Engine - Disable Rule"""
         @disable
         @rule(logs=['test_log_type_json_2'],
               outputs=['pagerduty:sample_integration'])
@@ -308,7 +423,7 @@ class TestStreamRules(object):
         assert_equal(len(alerts), 0)
 
     def test_kv_rule(self):
-        """Rule Engine - KV Rule"""
+        """Rules Engine - KV Rule"""
         @rule(logs=['test_log_type_kv_auditd'],
               outputs=['pagerduty:sample_integration'])
         def auditd_bin_cat(rec):  # pylint: disable=unused-variable

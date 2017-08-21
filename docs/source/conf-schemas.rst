@@ -46,19 +46,19 @@ Example rule:
     )
 
 
-Options
--------
+Log Options
+-----------
 
 =================  =========  ======================
 Key                Required   Description
 -----------------  ---------  ----------------------
-``parser``         ``true``   The name of the parser to use for a given log's data-type.   Options include ``json, json-gzip, csv, kv, or syslog``
-``schema``         ``true``   A map of key/value pairs of the name of each field with its type
-``configuration``  ``false``  Configuration options specific to this log type (see table below for more information)
+``parser``         ``Yes``    The name of the parser to use for a given log's data-type.   Options include ``json, csv, kv, or syslog``
+``schema``         ``Yes``    A map of key/value pairs of the name of each field with its type
+``configuration``  ``No``     Configuration options specific to this log type (see table below for more information)
 =================  =========  ======================
 
-Optional ``configuration`` Options
-----------------------------------
+Configuration Options
+---------------------
 
 ===========================  ======================
 Key                          Description
@@ -448,11 +448,6 @@ The resultant parsed records:
       }
     }
   ]
-
-Gzip JSON
-~~~~~~~~~
-
-If incoming records are gzip compressed, use the same options as above but with the ``json-gzip`` parser.
 
 CSV Parsing
 -----------

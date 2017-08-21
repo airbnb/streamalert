@@ -156,7 +156,7 @@ def configure_handler(options):
         options (namedtuple): ArgParse command result
     """
     if options.config_key == 'prefix':
-        if isinstance(options.config_key, (unicode, str)):
+        if not isinstance(options.config_value, (unicode, str)):
             LOGGER_CLI.error('Invalid prefix type, must be string')
             return
         CONFIG.set_prefix(options.config_value)
@@ -259,9 +259,17 @@ def terraform_handler(options):
 
     elif options.subcommand == 'destroy':
         if options.target:
-            target = options.target
-            targets = ['module.{}_{}'.format(target, cluster)
-                       for cluster in CONFIG.clusters()]
+            targets = []
+            # Iterate over any targets to destroy. Global modules, like athena
+            # are prefixed with `stream_alert_` while cluster based modules
+            # are a combination of the target and cluster name
+            for target in options.target:
+                if target == 'athena':
+                    targets.append('module.stream_alert_{}'.format(target))
+                else:
+                    targets.extend(['module.{}_{}'.format(target, cluster)
+                                    for cluster in CONFIG.clusters()])
+
             tf_runner(targets=targets, action='destroy')
             return
 
@@ -341,7 +349,7 @@ def tf_runner(**kwargs):
     action = kwargs.get('action', None)
     tf_action_index = 1  # The index to the terraform 'action'
 
-    var_files = {'conf/lambda.json', 'conf/global.json'}
+    var_files = {'conf/lambda.json'}
     tf_opts = ['-var-file=../{}'.format(x) for x in var_files]
     tf_targets = ['-target={}'.format(x) for x in targets]
     tf_command = ['terraform', 'plan'] + tf_opts + tf_targets
@@ -409,10 +417,14 @@ def rollback(options):
         Only rollsback if published version is greater than 1
     """
     clusters = CONFIG.clusters()
-    if options.processor == 'all':
-        lambda_functions = {'rule_processor', 'alert_processor'}
+
+    if 'all' in options.processor:
+        lambda_functions = {'rule_processor', 'alert_processor', 'athena_partition_refresh'}
     else:
-        lambda_functions = {'{}_processor'.format(options.processor)}
+        lambda_functions = {'{}_processor'.format(proc) for proc in options.processor
+                            if proc != 'athena'}
+        if 'athena' in options.processor:
+            lambda_functions.add('athena_partition_refresh')
 
     for cluster in clusters:
         for lambda_function in lambda_functions:
@@ -491,31 +503,37 @@ def deploy(options):
         athena_package.create_and_upload()
         return athena_package
 
-    if 'rule' in processor:
-        targets.extend(['module.stream_alert_{}'.format(x)
-                        for x in CONFIG.clusters()])
-
-        packages.append(_deploy_rule_processor())
-
-    if 'alert' in processor:
-        targets.extend(['module.stream_alert_{}'.format(x)
-                        for x in CONFIG.clusters()])
-
-        packages.append(_deploy_alert_processor())
-
-    if 'athena' in processor:
-        targets.append('module.stream_alert_athena')
-
-        packages.append(_deploy_athena_partition_refresh())
-
     if 'all' in processor:
         targets.extend(['module.stream_alert_{}'.format(x)
                         for x in CONFIG.clusters()])
-        targets.append('module.stream_alert_athena')
 
         packages.append(_deploy_rule_processor())
         packages.append(_deploy_alert_processor())
-        packages.append(_deploy_athena_partition_refresh())
+
+        # Only include the Athena function if it exists and is enabled
+        athena_config = CONFIG['lambda'].get('athena_partition_refresh_config')
+        if athena_config and athena_config.get('enabled', False):
+            targets.append('module.stream_alert_athena')
+            packages.append(_deploy_athena_partition_refresh())
+
+    else:
+
+        if 'rule' in processor:
+            targets.extend(['module.stream_alert_{}'.format(x)
+                            for x in CONFIG.clusters()])
+
+            packages.append(_deploy_rule_processor())
+
+        if 'alert' in processor:
+            targets.extend(['module.stream_alert_{}'.format(x)
+                            for x in CONFIG.clusters()])
+
+            packages.append(_deploy_alert_processor())
+
+        if 'athena' in processor:
+            targets.append('module.stream_alert_athena')
+
+            packages.append(_deploy_athena_partition_refresh())
 
     # Regenerate the Terraform configuration with the new S3 keys
     if not terraform_generate(config=CONFIG):
