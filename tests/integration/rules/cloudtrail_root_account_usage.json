@@ -5,7 +5,7 @@
                 "account": 12345,
                 "region": "123456123456",
                 "detail-type": "...",
-                "source": "...",
+                "source": "1.1.1.2",
                 "version": "1.05",
                 "time": "...",
                 "id": "12345",

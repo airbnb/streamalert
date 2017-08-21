@@ -87,3 +87,30 @@ def in_network(ip_address, cidrs):
         if ip_address in network:
             return True
     return False
+
+def fetch_values_by_datatype(rec, datatype):
+    """Fetch values of normalized_type.
+
+    Args:
+        rec (dict): parsed payload of any log
+        datatype (str): normalized type user interested
+
+    Returns:
+        (list) The values of normalized types
+    """
+    results = []
+    if not datatype in rec['normalized_types'].keys():
+        return results
+
+    for key in rec['normalized_types'][datatype]:
+        # Normalized type may be in nested subkeys, we only support one level of
+        # nested subkey.
+        if isinstance(key, list):
+            if len(key) == 2:
+                results.append(rec[key[0]][key[1]])
+            else:
+                LOGGER.error('Invalid length of keys: %s, it should be 2', key)
+        else:
+            results.append(rec[key])
+
+    return results

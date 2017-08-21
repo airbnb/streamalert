@@ -34,6 +34,7 @@ from tests.unit.stream_alert_rule_processor.test_helpers import (
     load_and_classify_payload,
     make_kinesis_raw_record,
 )
+from helpers.base import fetch_values_by_datatype
 
 rule = StreamRules.rule
 matcher = StreamRules.matcher()
@@ -185,7 +186,9 @@ class TestStreamRules(object):
         # doing this because after kinesis_data is read in, types are casted per
         # the schema
         for alert in alerts:
-            assert_items_equal(alert['record'].keys(), kinesis_data.keys())
+            record_keys = alert['record'].keys()
+            record_keys.remove('normalized_types')
+            assert_items_equal(record_keys, kinesis_data.keys())
             assert_items_equal(alert['outputs'], rule_outputs_map[alert['rule_name']])
 
     def test_process_subkeys_nested_records(self):
@@ -199,6 +202,7 @@ class TestStreamRules(object):
             rule_name='cloudtrail_us_east_logs',
             rule_function=cloudtrail_us_east_logs,
             matchers=[],
+            datatypes=[],
             logs=['test_log_type_json_nested'],
             outputs=['s3:sample_bucket'],
             req_subkeys={'requestParameters': ['program']}
@@ -467,3 +471,95 @@ class TestStreamRules(object):
 
         rule_name_alerts = [x['rule_name'] for x in alerts]
         assert_items_equal(rule_name_alerts, ['gid_500', 'auditd_bin_cat'])
+
+    def test_match_types(self):
+        """Rules Engine - Match normalized types against record"""
+        @rule(logs=['cloudwatch:test_match_types'],
+              outputs=['s3:sample_bucket'],
+              datatypes=['ipaddress'])
+        def match_ipaddress(rec): # pylint: disable=unused-variable
+            """Testing rule to detect matching IP address"""
+            results = fetch_values_by_datatype(rec, 'ipaddress')
+
+            for result in results:
+                if result == '1.1.1.2':
+                    return True
+            return False
+
+        @rule(logs=['cloudwatch:test_match_types'],
+              outputs=['s3:sample_bucket'],
+              datatypes=['ipaddress', 'command'])
+        def mismatch_types(rec): # pylint: disable=unused-variable
+            """Testing rule with non-existing normalized type in the record. It
+            should not trigger alert.
+            """
+            results = fetch_values_by_datatype(rec, 'ipaddress')
+
+            for result in results:
+                if result == '2.2.2.2':
+                    return True
+            return False
+
+        kinesis_data_items = [
+            {
+                'account': 123456,
+                'region': '123456123456',
+                'source': '1.1.1.2',
+                'detail': {
+                    'eventName': 'ConsoleLogin',
+                    'sourceIPAddress': '1.1.1.2',
+                    'recipientAccountId': '654321'
+                }
+            },
+            {
+                'account': 654321,
+                'region': '654321654321',
+                'source': '2.2.2.2',
+                'detail': {
+                    'eventName': 'ConsoleLogin',
+                    'sourceIPAddress': '2.2.2.2',
+                    'recipientAccountId': '123456'
+                }
+            }
+        ]
+
+        # prepare payloads
+        alerts = []
+        for data in kinesis_data_items:
+            kinesis_data = json.dumps(data)
+            # prepare the payloads
+            service, entity = 'kinesis', 'test_kinesis_stream'
+            raw_record = make_kinesis_raw_record(entity, kinesis_data)
+            payload = load_and_classify_payload(self.config, service, entity, raw_record)
+
+            alerts.extend(StreamRules.process(payload))
+
+        # check alert output
+        assert_equal(len(alerts), 1)
+
+        # alert tests
+        assert_equal(alerts[0]['rule_name'], 'match_ipaddress')
+
+    def test_validate_datatypes(self):
+        """Rules Engine - validate datatypes"""
+        normalized_types, datatypes = None, ['type1']
+        assert_equal(
+            StreamRules.validate_datatypes(normalized_types, datatypes),
+            False
+            )
+
+        normalized_types = {
+            'type1': ['key1'],
+            'type2': ['key2']
+            }
+        datatypes = ['type1']
+        assert_equal(
+            StreamRules.validate_datatypes(normalized_types, datatypes),
+            True
+            )
+
+        datatypes = ['type1', 'type3']
+        assert_equal(
+            StreamRules.validate_datatypes(normalized_types, datatypes),
+            False
+            )

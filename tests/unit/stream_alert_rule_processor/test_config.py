@@ -104,3 +104,18 @@ def test_load_env():
     assert_equal(env['lambda_function_name'],
                  'corp-prefix_prod_streamalert_rule_processor')
     assert_equal(env['lambda_alias'], 'development')
+
+@raises(ConfigError)
+def test_config_invalid_types():
+    """Config Validator - invalid normalized types"""
+    # Load a valid config
+    config = get_valid_config()
+
+    _validate_config(config)
+
+def test_config_valid_types():
+    """Config Validator - valid normalized types"""
+    # Load a valid config
+    config = load_config()
+
+    _validate_config(config)

@@ -276,9 +276,12 @@ class StreamClassifier(object):
                     schema_match.root_schema):
                 return False
 
+        normalized_types = self._config['types']
+
         payload.log_source = schema_match.log_name
         payload.type = schema_match.parser.type()
         payload.records = schema_match.parsed_data
+        payload.normalized_types = normalized_types.get(payload.log_source.split(':')[0])
 
         return True
 

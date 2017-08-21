@@ -1,0 +1,13 @@
+{
+  "cloudwatch":{
+    "username": ["userName", "owner", "invokedBy"],
+    "account": ["account", "recipientAccountId"],
+    "protocol": ["protocol"],
+    "event_type": ["eventType"],
+    "event_name": ["eventName"],
+    "region": ["region"],
+    "user_agent": ["userAgent"],
+    "ipaddress": ["destination", "source", "sourceIPAddress"],
+    "port": ["srcport", "destport"]
+  }
+}

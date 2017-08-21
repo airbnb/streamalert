@@ -1,0 +1,65 @@
+{
+  "carbonblack":{
+    "username": ["username"],
+    "domain": ["domain"],
+    "process_path": ["parent_path", "process_path", "path"],
+    "protocol": ["protocol"],
+    "feed_source": ["feed_name"],
+    "process": ["parent_name", "process_name"],
+    "filename": ["observed_filename", "file_path"],
+    "command": ["cmdline"],
+    "md5_hash": ["process_md5", "parent_md5", "expect_followon_w_md5", "md5"],
+    "binary_score": ["report_score"],
+    "os_type": ["host_type", "os_type"],
+    "ipaddress": ["ipv4", "comms_ip", "interface_ip", "remote_ip", "local_ip"],
+    "port": ["port", "remote_port", "local_port"],
+    "src_host": ["other_hostnames", "server_name", "hostname", "computer_name"]
+  },
+  "cloudwatch":{
+    "username": ["userName", "owner", "invokedBy"],
+    "account": ["account", "recipientAccountId"],
+    "protocol": ["protocol"],
+    "event_type": ["eventType"],
+    "event_name": ["eventName"],
+    "region": ["region"],
+    "user_agent": ["userAgent"],
+    "ipaddress": ["destination", "source", "sourceIPAddress"],
+    "port": ["srcport", "destport"]
+  },
+  "cloudtrail": {
+    "account": ["account", "recipientAccountId", "accountId"],
+    "event_type": ["eventType"],
+    "event_name": ["eventName"],
+    "region": ["region", "awsRegion"],
+    "user_type": ["type"],
+    "user_agent": ["userAgent"],
+    "ipaddress": ["sourceIPAddress"]
+  },
+  "ghe": {
+    "process": ["program"],
+    "username": ["current_user"],
+    "ipaddress": ["remote_address"],
+    "port": ["port"],
+    "src_host": ["host"]
+  },
+  "osquery": {
+    "username": ["username", "user"],
+    "process_path": ["path"],
+    "protocol": ["protocol"],
+    "severity": ["severity"],
+    "cluster": ["envIdentifier"],
+    "role": ["roleIdentifier"],
+    "command": ["cmdline", "command"],
+    "message": ["message"],
+    "ipaddress": ["destination", "remote_address", "host", "source", "local_address", "gateway", "address"],
+    "port": ["local_port", "remote_port", "port"],
+    "src_host": ["hostIdentifier"]
+  },
+  "pan": {
+    "username": ["srcuser", "dstuser"],
+    "protocol": ["proto"],
+    "ipaddress": ["src", "natsrc", "dst", "natdst"],
+    "port": ["dport", "sport", "natsport", "natdport"],
+    "src_host": ["sourceName"]
+  }
+}

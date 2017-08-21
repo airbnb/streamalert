@@ -1,0 +1,153 @@
+{
+    "records": [
+        {
+            "data": {
+                "account": 12345,
+                "region": "123456123456",
+                "detail-type": "...",
+                "source": "1.1.1.2",
+                "version": "1.05",
+                "time": "...",
+                "id": "12345",
+                "resources": {
+                    "test": "..."
+                },
+                "detail": {
+                    "eventVersion": "...",
+                    "userIdentity": {
+                        "type": "Root",
+                        "principalId": "12345",
+                        "arn": "arn:aws:iam::12345:root",
+                        "accountId": "12345"
+                    },
+                    "eventTime": "...",
+                    "eventSource": "...",
+                    "eventName": "ConsoleLogin",
+                    "awsRegion": "...",
+                    "sourceIPAddress": "1.1.1.2",
+                    "userAgent": "...",
+                    "requestParameters": null,
+                    "responseElements": {
+                        "ConsoleLogin": "..."
+                    },
+                    "additionalEventData": {
+                        "LoginTo": "...",
+                        "MobileVersion": "No",
+                        "MFAUsed": "Yes"
+                    },
+                    "eventID": "...",
+                    "eventType": "AwsConsoleSignIn",
+                    "recipientAccountId": "12345"
+                }
+            },
+            "description": "CloudTrail - AWS Access by Evil - True Positive",
+            "trigger": true,
+            "source": "prefix_cluster1_stream_alert_kinesis",
+            "service": "kinesis"
+        },
+        {
+            "data": {
+                "account": 12345,
+                "region": "123456123456",
+                "detail-type": "...",
+                "source": "2.2.2.2",
+                "version": "1.05",
+                "time": "...",
+                "id": "12345",
+                "resources": {
+                    "test": "..."
+                },
+                "detail": {
+                    "eventVersion": "...",
+                    "userIdentity": {
+                        "type": "Root",
+                        "principalId": "...",
+                        "arn": "...",
+                        "accountId": "12345",
+                        "userName": "...",
+                        "sessionContext": {
+                            "attributes": {
+                                "mfaAuthenticated": "true",
+                                "creationDate": "..."
+                            }
+                        },
+                        "invokedBy": "signin.amazonaws.com"
+                    },
+                    "eventTime": "...",
+                    "eventSource": "...",
+                    "eventName": "...",
+                    "awsRegion": "...",
+                    "sourceIPAddress": "2.2.2.2",
+                    "userAgent": "...",
+                    "requestParameters": {
+                        "bucketName": "...",
+                        "AccessControlPolicy": {
+                            "AccessControlList": {
+                                "Grant": [
+                                    {
+                                        "Grantee": {
+                                            "xsi:type": "CanonicalUser",
+                                            "DisplayName": "...",
+                                            "xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
+                                            "ID": "..."
+                                        },
+                                        "Permission": "FULL_CONTROL"
+                                    },
+                                    {
+                                        "Grantee": {
+                                            "xsi:type": "Group",
+                                            "xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
+                                            "URI": "http://acs.amazonaws.com/groups/global/AuthenticatedUsers"
+                                        },
+                                        "Permission": "READ"
+                                    },
+                                    {
+                                        "Grantee": {
+                                            "xsi:type": "Group",
+                                            "xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
+                                            "URI": "http://acs.amazonaws.com/groups/global/AuthenticatedUsers"
+                                        },
+                                        "Permission": "READ_ACP"
+                                    },
+                                    {
+                                        "Grantee": {
+                                            "xsi:type": "Group",
+                                            "xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
+                                            "URI": "http://acs.amazonaws.com/groups/global/AllUsers"
+                                        },
+                                        "Permission": "READ"
+                                    },
+                                    {
+                                        "Grantee": {
+                                            "xsi:type": "Group",
+                                            "xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
+                                            "URI": "http://acs.amazonaws.com/groups/global/AllUsers"
+                                        },
+                                        "Permission": "READ_ACP"
+                                    }
+                                ]
+                            },
+                            "xmlns": "http://s3.amazonaws.com/doc/2006-03-01/",
+                            "Owner": {
+                                "DisplayName": "...",
+                                "ID": "..."
+                            }
+                        },
+                        "acl": [
+                            ""
+                        ]
+                    },
+                    "responseElements": null,
+                    "requestID": "...",
+                    "eventID": "...",
+                    "eventType": "AwsApiCall",
+                    "recipientAccountId": "12345"
+                }
+            },
+            "description": "CloudTrail - AWS Access by Evil - False Positive",
+            "trigger": false,
+            "source": "prefix_cluster1_stream_alert_kinesis",
+            "service": "kinesis"
+        }
+    ]
+}
