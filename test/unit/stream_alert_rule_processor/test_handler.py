@@ -215,10 +215,10 @@ class TestStreamAlert(object):
     @patch('stream_alert.rule_processor.handler.multiproc.Process')
     @patch('stream_alert.rule_processor.payload.StreamPayload')
     @patch('stream_alert.rule_processor.handler.multiproc.cpu_count')
-    @patch('stream_alert.rule_processor.handler.multiproc.Lock')
+    @patch('stream_alert.rule_processor.handler.PROC_MANAGER')
     def test_record_grouping(
             self,
-            mp_lock_mock,
+            mp_manager_mock,
             mp_cpu_mock,
             payload_mock,
             process_mock,
@@ -227,7 +227,7 @@ class TestStreamAlert(object):
         # Set the cpu_count return value to a predetermined value
         mp_cpu_mock.return_value = 2
         # Disable the actual creation of a mutex
-        mp_lock_mock.return_value = None
+        mp_manager_mock.Lock.return_value = None
         # Create a list of predetermined values to compare against
         payload_mock.pre_parse.return_value = range(22)
         # Force copy to return the actual object instead of a copy

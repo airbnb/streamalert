@@ -60,7 +60,7 @@ class StreamAlert(object):
 
         self.metrics = Metrics('RuleProcessor', self.env['lambda_region'])
         self.enable_alert_processor = enable_alert_processor
-        self._unmatched_record_count = multiproc.Value('i', 0)
+        self._unmatched_record_count = PROC_MANAGER.Value('i', 0)
         self._alerts = PROC_MANAGER.list()
 
     def run(self, event):
@@ -178,7 +178,7 @@ class StreamAlert(object):
                          for index in range(0, len(payload_records), interval)]
 
         # Create a lock that can be used within spawned processes
-        mutex = multiproc.Lock()
+        mutex = PROC_MANAGER.Lock()
 
         for worker_index, record_group in enumerate(record_groups, start=1):
             offset = (worker_index - 1) * interval
@@ -210,7 +210,7 @@ class StreamAlert(object):
                     LOGGER.error('Record does not match any defined schemas: %s\n%s',
                                  record, record.pre_parsed_record)
 
-                with self._unmatched_record_count.get_lock():
+                with mutex:
                     self._unmatched_record_count.value += 1
                 continue
 
