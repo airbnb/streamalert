@@ -164,7 +164,7 @@ class TestStreamAlertAthenaGlobals(object):
         handler(None, None)
 
         mock_config.assert_called()
-        mock_logging.info.assert_called_with('No messages recieved, exiting')
+        assert_true(mock_logging.info.called)
 
     @patch('stream_alert.athena_partition_refresh.main.LOGGER')
     @patch('stream_alert.athena_partition_refresh.main._load_config',
@@ -180,7 +180,7 @@ class TestStreamAlertAthenaGlobals(object):
         handler(None, None)
 
         mock_config.assert_called()
-        mock_logging.error.assert_called_with('No partitions to refresh, exiting')
+        assert_true(mock_logging.error.called)
 
 
 class TestStreamAlertSQSClient(object):

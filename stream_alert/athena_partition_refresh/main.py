@@ -115,7 +115,7 @@ class StreamAlertAthenaClient(object):
                                     r'\-(?P<month>\d{2})'
                                     r'\-(?P<day>\d{2})'
                                     r'\-(?P<hour>\d{2})'
-                                    r'\-.*.json')
+                                    r'\/.*.json')
     FIREHOSE_REGEX = re.compile(r'(?P<year>\d{4})'
                                 r'\/(?P<month>\d{2})'
                                 r'\/(?P<day>\d{2})'
@@ -270,6 +270,7 @@ class StreamAlertAthenaClient(object):
         athena_config = self.config['lambda']['athena_partition_refresh_config']
         repair_hive_table_config = athena_config['refresh_type']['repair_hive_table']
 
+        LOGGER.info('Processing Hive repair table...')
         for data_bucket in unique_buckets:
             athena_table = repair_hive_table_config.get(data_bucket)
             if not athena_table:
@@ -305,8 +306,9 @@ class StreamAlertAthenaClient(object):
         """
         athena_config = self.config['lambda']['athena_partition_refresh_config']
         add_hive_partition_config = athena_config['refresh_type']['add_hive_partition']
-        partitions = set()
+        partitions = {}
 
+        LOGGER.info('Processing new Hive partitions...')
         for bucket, keys in s3_buckets_and_keys.iteritems():
             athena_table = add_hive_partition_config.get(bucket)
             if not athena_table:
@@ -320,9 +322,9 @@ class StreamAlertAthenaClient(object):
             s3_key_regex = self.STREAMALERTS_REGEX if athena_table == 'alerts' else self.FIREHOSE_REGEX
             for key in keys:
                 match = s3_key_regex.search(key)
-                if len(match.groups()) != 4:
-                    LOGGER.warning('%s does not match the regex: %s',
-                                   key, s3_key_regex.pattern)
+                if not match:
+                    LOGGER.error('The key %s does not match the regex %s, skipping',
+                                 key, s3_key_regex.pattern)
                     continue
 
                 # Convert the match groups to a dict for easy access
@@ -330,32 +332,39 @@ class StreamAlertAthenaClient(object):
                 # Get the path to the objects in S3
                 path = '/'.join(key.split('/')[:-1])
 
-                partitions.add("PARTITION (dt = '{year}-{month}-{day}-{hour}') "
-                               "LOCATION 's3://{bucket}/{path}'".format(
-                                   year=match_dict['year'],
-                                   month=match_dict['month'],
-                                   day=match_dict['day'],
-                                   hour=match_dict['hour'],
-                                   bucket=bucket,
-                                   path=path
-                               ))
+                # PARTITION (dt = '2017-01-01-01') LOCATION 's3://bucket/path/'
+                partition = '(dt = \'{year}-{month}-{day}-{hour}\')'.format(
+                    year=match_dict['year'],
+                    month=match_dict['month'],
+                    day=match_dict['day'],
+                    hour=match_dict['hour'])
+                location = '\'s3://{bucket}/{path}\''.format(
+                    bucket=bucket,
+                    path=path)
+                # By using the partition as the dict key, this ensures that
+                # Athena will not try to add the same partition twice.
+                partitions[partition] = location
 
+            partition_statement = ' '.join(
+                ['PARTITION {0} LOCATION {1}'.format(
+                 partition, location) for partition, location in partitions.iteritems()])
             query = ('ALTER TABLE {athena_table} '
-                     'ADD IF NOT EXISTS {partition_statements};'.format(
+                     'ADD IF NOT EXISTS {partition_statement};'.format(
                          athena_table=athena_table,
-                         partition_statements=' '.join(partitions)))
+                         partition_statement=partition_statement))
+
             query_success, query_resp = self.run_athena_query(
                 query=query,
                 database=self.DATABASE_STREAMALERT
             )
 
             if not query_success:
-                LOGGER.error('The following query has failed: %s', query)
+                LOGGER.error('The following query has failed:\n%s', query)
                 return False
 
-            LOGGER.info('Query results:')
-            for row in query_resp['ResultSet']['Rows']:
-                LOGGER.info(row.get('Data'))
+            LOGGER.info('Successfully added the following partitions:\n%s',
+                        '\n'.join(partitions))
+
             return True
 
 
@@ -392,21 +401,33 @@ class StreamAlertSQSClient(object):
             QueueNamePrefix=self.QUEUENAME
         )['QueueUrls'][0]
 
-    def get_messages(self):
-        """Poll the queue for messages"""
+    def get_messages(self, **kwargs):
+        """Poll the SQS queue for new messages
+
+        Keyword Args:
+            max_tries (int): The number of times to backoff
+            max_value (int): The max wait interval between backoffs
+            max_messages (int): The max number of messages to get from SQS
+        """
+        start_message_count = len(self.received_messages)
+
+        max_tries = kwargs.get('max_tries', 5)
+        max_value = kwargs.get('max_value', 5)
+        max_messages = kwargs.get('max_messages', 10)
+
         @backoff.on_predicate(backoff.fibo,
                               # Backoff up to 5 times
-                              max_tries=5,
+                              max_tries=max_tries,
                               # Don't backoff for longer than 5 seconds
                               # This constrains the total max backoff to 25 seconds
-                              max_value=5,
+                              max_value=max_value,
                               jitter=backoff.full_jitter,
                               on_backoff=_backoff_handler,
                               on_success=_success_handler)
         def _receive_messages():
             polled_messages = self.sqs_client.receive_message(
                 QueueUrl=self.athena_sqs_url,
-                MaxNumberOfMessages=10
+                MaxNumberOfMessages=max_messages
             )
 
             if 'Messages' not in polled_messages:
@@ -414,7 +435,8 @@ class StreamAlertSQSClient(object):
             self.received_messages.extend(polled_messages['Messages'])
 
         _receive_messages()
-        LOGGER.info('Received %s messages', len(self.received_messages))
+        batch_count = len(self.received_messages) - start_message_count
+        LOGGER.info('Received %d message(s) from SQS', batch_count)
 
     def delete_messages(self):
         """Delete messages off the queue once processed"""
@@ -422,6 +444,7 @@ class StreamAlertSQSClient(object):
             LOGGER.error('No processed messages to delete')
             return
 
+        deleted_messages = 0
         while self.processed_messages:
             len_processed_messages = len(self.processed_messages)
             batch = len_processed_messages if len_processed_messages < 10 else 10
@@ -435,8 +458,10 @@ class StreamAlertSQSClient(object):
                           'ReceiptHandle': message['ReceiptHandle']}
                          for message in message_batch]
             )
-            LOGGER.info('Successfully deleted %s messages from the queue',
-                        len(resp['Successful']))
+            deleted_messages += len(resp['Successful'])
+
+        LOGGER.info('Successfully deleted %d messages from SQS',
+                    deleted_messages)
 
     def unique_s3_buckets_and_keys(self):
         """Filter a list of unique s3 buckets and S3 keys from event notifications
@@ -452,13 +477,18 @@ class StreamAlertSQSClient(object):
 
         for message in self.received_messages:
             if 'Body' not in message:
-                LOGGER.error('Missing \'Body\' key, trying next SQS message')
+                LOGGER.error('Missing \'Body\' key in SQS message, skipping')
                 continue
 
             loaded_message = json.loads(message['Body'])
 
+            if loaded_message.get('Event') == 'S3:TestEvent':
+                LOGGER.debug('Skipping S3:TestEvent')
+                continue
+
             if 'Records' not in loaded_message:
-                LOGGER.error('Missing \'Records\' key, trying next SQS message')
+                LOGGER.error('Missing \'Records\' key in SQS message, skipping:\n%s',
+                             json.dumps(loaded_message, indent=4))
                 continue
 
             for record in loaded_message['Records']:
@@ -484,15 +514,22 @@ def handler(*_):
 
     # Initialize the SQS client and recieve messages
     stream_alert_sqs = StreamAlertSQSClient(config)
-    stream_alert_sqs.get_messages()
+    # Get the first batch of messages from SQS.  If there are no
+    # messages, this will exit early.
+    stream_alert_sqs.get_messages(max_tries=2)
 
     if not stream_alert_sqs.received_messages:
-        LOGGER.info('No messages recieved, exiting')
+        LOGGER.info('No SQS messages recieved, exiting')
         return
+
+    # If the max amount of messages was initially returned,
+    # then get the next batch of messages
+    if len(stream_alert_sqs.received_messages) == 20:
+        stream_alert_sqs.get_messages(max_tries=8)
 
     s3_buckets_and_keys = stream_alert_sqs.unique_s3_buckets_and_keys()
     if not s3_buckets_and_keys:
-        LOGGER.error('No partitions to refresh, exiting')
+        LOGGER.error('No new Athena partitions to add, exiting')
         return
 
     # Initialize the Athena client and run queries
