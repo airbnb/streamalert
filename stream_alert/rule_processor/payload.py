@@ -21,6 +21,7 @@ import time
 import zlib
 
 from abc import ABCMeta, abstractmethod, abstractproperty
+from copy import copy
 from logging import DEBUG as log_level_debug
 from urllib import unquote
 
@@ -153,7 +154,9 @@ class S3Payload(StreamPayload):
         for line_num, data in self._read_downloaded_s3_object(s3_file):
 
             self._refresh_record(data)
-            yield self
+
+            # Yield a copy of this payload so multiprocessing can be performed
+            yield copy(self)
 
             # Only do the extra calculations below if debug logging is enabled
             if not LOGGER.isEnabledFor(log_level_debug):
