@@ -38,8 +38,8 @@ from stream_alert.athena_partition_refresh.main import (
     StreamAlertAthenaClient,
     StreamAlertSQSClient,
 )
-from tests.unit.helpers.base import mock_open
 from tests.unit.helpers.aws_mocks import MockAthenaClient
+from tests.unit.helpers.base import mock_open
 
 GLOBAL_FILE = 'conf/global.json'
 LAMBDA_FILE = 'conf/lambda.json'
