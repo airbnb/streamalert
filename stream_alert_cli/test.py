@@ -646,11 +646,14 @@ def stream_alert_test(options, config=None):
             LOGGER_SA.addFilter(TestingSuppressFilter())
 
         # Check if the rule processor should be run for these tests
-        test_rules = (set(run_options.get('processor')).issubset({'rule', 'all'}) or
-                      run_options.get('command') == 'live-test')
+        test_rules = (set(run_options.get('processor')).issubset({'rule', 'all'})
+                      if run_options.get('processor') else
+                      run_options.get('command') == 'live-test' or
+                      run_options.get('command') == 'validate-schemas')
 
         # Check if the alert processor should be run for these tests
-        test_alerts = (set(run_options.get('processor')).issubset({'alert', 'all'}) or
+        test_alerts = (set(run_options.get('processor')).issubset({'alert', 'all'})
+                       if run_options.get('processor') else
                        run_options.get('command') == 'live-test')
 
         rule_proc_tester = RuleProcessorTester(context, test_rules)
