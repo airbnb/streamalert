@@ -38,10 +38,10 @@ def load_outputs_config(conf_dir='conf'):
         try:
             values = json.load(outputs)
         except ValueError:
-            LOGGER_CLI.exception(
-                'the %s file could not be loaded into json',
+            LOGGER_CLI.error(
+                'The %s file could not be loaded into json',
                 OUTPUTS_CONFIG)
-            return
+            raise
 
     return values
 
@@ -73,7 +73,7 @@ def load_config(props, service):
         [dict] If the output doesn't exist, return the configuration, otherwise return False
     """
     config = load_outputs_config()
-    if not check_output_exists(config, props, service):
+    if output_exists(config, props, service):
         return False
 
     return config
@@ -149,7 +149,7 @@ def send_creds_to_s3(region, bucket, key, blob_data):
         return False
 
 
-def check_output_exists(config, props, service):
+def output_exists(config, props, service):
     """Determine if this service and destination combo has already been created
 
     Args:
@@ -161,11 +161,11 @@ def check_output_exists(config, props, service):
         [boolean] True if the service/destination exists already
     """
     if service in config and props['descriptor'].value in config[service]:
-        LOGGER_CLI.error('this descriptor is already configured for %s. '
-                         'please select a new and unique descriptor', service)
-        return False
+        LOGGER_CLI.error('This descriptor is already configured for %s. '
+                         'Please select a new and unique descriptor', service)
+        return True
 
-    return True
+    return False
 
 
 def update_outputs_config(config, updated_config, service):
