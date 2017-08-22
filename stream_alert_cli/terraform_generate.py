@@ -602,9 +602,9 @@ def generate_athena(config):
     enable_metrics = config['global'].get('infrastructure',
                                           {}).get('metrics', {}).get('enabled', False)
 
-    data_buckets = []
+    data_buckets = set()
     for refresh_type in athena_config['refresh_type']:
-        data_buckets.extend(athena_config['refresh_type'][refresh_type].keys())
+        data_buckets.update(set(athena_config['refresh_type'][refresh_type]))
 
     athena_dict['module']['stream_alert_athena'] = {
         'source': 'modules/tf_stream_alert_athena',
@@ -614,7 +614,7 @@ def generate_athena(config):
         'lambda_s3_bucket': athena_config['source_bucket'],
         'lambda_s3_key': athena_config['source_object_key'],
         'lambda_log_level': athena_config.get('log_level', 'info'),
-        'athena_data_buckets': data_buckets,
+        'athena_data_buckets': list(data_buckets),
         'refresh_interval': athena_config.get('refresh_interval', 'rate(10 minutes)'),
         'current_version': athena_config['current_version'],
         'enable_metrics': enable_metrics,

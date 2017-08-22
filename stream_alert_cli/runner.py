@@ -84,7 +84,7 @@ def athena_handler(options):
 
     elif options.subcommand == 'create-db':
         if athena_client.check_database_exists():
-            LOGGER_CLI.info('The `streamalert` database exists, nothing to do')
+            LOGGER_CLI.info('The \'streamalert\' database already exists, nothing to do')
             return
 
         create_db_success, create_db_result = athena_client.run_athena_query(
@@ -101,7 +101,7 @@ def athena_handler(options):
                 return
 
             if athena_client.check_table_exists(options.type):
-                LOGGER_CLI.info('The `alerts` table already exists.')
+                LOGGER_CLI.info('The \'alerts\' table already exists.')
                 return
 
             query = ('CREATE EXTERNAL TABLE alerts ('
@@ -123,8 +123,8 @@ def athena_handler(options):
             )
 
             if create_table_success:
-                CONFIG['lambda']['athena_partition_refresh_config']['refresh_type'][
-                    'repair_hive_table'][options.bucket] = 'alerts'
+                CONFIG['lambda']['athena_partition_refresh_config'] \
+                    ['refresh_type'][options.refresh_type][options.bucket] = 'alerts'
                 CONFIG.write()
                 LOGGER_CLI.info('The alerts table was successfully created!')
 
