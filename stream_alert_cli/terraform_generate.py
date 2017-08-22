@@ -295,6 +295,8 @@ def generate_cloudwatch_monitoring(cluster_name, cluster_dict, config):
     prefix = config['global']['account']['prefix']
     infrastructure_config = config['global'].get('infrastructure')
     sns_topic_arn = None
+
+>>>>>>> [cli] add cloudwatch alarms for athena lambda
     if infrastructure_config and 'monitoring' in infrastructure_config:
         if infrastructure_config['monitoring'].get('create_sns_topic'):
             sns_topic_arn = 'arn:aws:sns:{region}:{account_id}:{topic}'.format(
@@ -312,13 +314,20 @@ def generate_cloudwatch_monitoring(cluster_name, cluster_dict, config):
         LOGGER_CLI.error('Invalid config: Make sure you declare global infrastructure options!')
         return False
 
+    lambda_functions = [
+        '{}_{}_streamalert_rule_processor'.format(prefix, cluster_name),
+        '{}_{}_streamalert_alert_processor'.format(prefix, cluster_name)
+    ]
+    # Conditionally add the Athena Lambda function for CloudWatch Alarms
+    if config['lambda'].get('athena_partition_refresh_config', {}).get('enabled'):
+        lambda_functions.append('{}_streamalert_athena_partition_refresh'.format(
+            prefix
+        ))
+
     cluster_dict['module']['cloudwatch_monitoring_{}'.format(cluster_name)] = {
         'source': 'modules/tf_stream_alert_monitoring',
         'sns_topic_arn': sns_topic_arn,
-        'lambda_functions': [
-            '{}_{}_streamalert_rule_processor'.format(prefix, cluster_name),
-            '{}_{}_streamalert_alert_processor'.format(prefix, cluster_name)
-        ],
+        'lambda_functions': lambda_functions,
         'kinesis_stream': '{}_{}_stream_alert_kinesis'.format(prefix, cluster_name)
     }
 
@@ -609,8 +618,8 @@ def generate_athena(config):
     athena_dict['module']['stream_alert_athena'] = {
         'source': 'modules/tf_stream_alert_athena',
         'lambda_handler': athena_config['handler'],
-        'lambda_memory': athena_config['memory'],
-        'lambda_timeout': athena_config['timeout'],
+        'lambda_memory': athena_config.get('memory', '128'),
+        'lambda_timeout': athena_config.get('timeout', '60'),
         'lambda_s3_bucket': athena_config['source_bucket'],
         'lambda_s3_key': athena_config['source_object_key'],
         'lambda_log_level': athena_config.get('log_level', 'info'),
