@@ -139,8 +139,7 @@ class RuleProcessorTester(object):
             print '\n{}'.format(rule_name)
 
         if self.print_output:
-            report_output([
-                current_test_passed,
+            report_output(current_test_passed, [
                 '[trigger={}]'.format(expected_alerts),
                 'rule',
                 test_record['service'],
@@ -177,15 +176,15 @@ class RuleProcessorTester(object):
                     if rule_name not in filter_rules:
                         continue
 
-                    del filter_rules[filter_rules.index(rule_name)]
+                    filter_rules_copy.remove(rule_name)
 
                 with open(os.path.join(DIR_RULES, rule_file), 'r') as rule_file_handle:
                     try:
                         contents = json.load(rule_file_handle)
                     except (ValueError, TypeError) as err:
                         self.all_tests_passed = False
-                        message = 'Improperly formatted file - {}: {}'.format(
-                            type(err).__name__, err)
+                        message = 'Improperly formatted file ({}): {}'.format(
+                            rule_file, err.message)
                         self.status_messages.append(
                             StatusMessage(STATUS_WARNING, rule_name, message))
                         continue
@@ -449,8 +448,7 @@ class AlertProcessorTester(object):
                 self.all_tests_passed = current_test_passed and self.all_tests_passed
                 service, descriptor = output.split(':')
                 message = 'sending alert to \'{}\''.format(descriptor)
-                report_output([
-                    current_test_passed,
+                report_output(current_test_passed, [
                     '',
                     'alert',
                     service,
@@ -486,6 +484,7 @@ class AlertProcessorTester(object):
             try:
                 service, descriptor = output.split(':')
             except ValueError:
+                LOGGER_CLI.error('Outputs should be declared in the format <SERVICE>:<DESCRIPTOR>')
                 continue
 
             if service == 'aws-s3':
@@ -528,16 +527,18 @@ class AlertProcessorTester(object):
                 url_mock.return_value.getcode.return_value = 200
 
 
-def report_output(cols):
+def report_output(passed, cols):
     """Helper function to pretty print columns for reporting results
 
     Args:
-        cols (list): A list of columns to print as output
+        passed [bool]: The pass status of the current test case
+        cols [list]: A list of columns to print as output
     """
-    status = ('{}[Pass]{}'.format(COLOR_GREEN, COLOR_RESET) if cols[0]
-              else '{}[Fail]{}'.format(COLOR_RED, COLOR_RESET))
 
-    print '\t{}{:>14}\t{}\t({}): {}'.format(status, *cols[1:])
+    status = ('{}[Pass]{}'.format(COLOR_GREEN, COLOR_RESET) if passed else
+              '{}[Fail]{}'.format(COLOR_RED, COLOR_RESET))
+
+    print '\t{}{:>14}\t{}\t({}): {}'.format(status, *cols)
 
 
 def mock_me(context):
