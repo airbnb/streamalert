@@ -58,6 +58,19 @@ def _success_handler(details):
                  details['target'].__name__)
 
 
+def _giveup_handler(details):
+    """Backoff logging handler for when backoff gives up.
+
+    Args:
+        details (dict): Backoff context containing the number of tries,
+            target function currently executing, kwargs, args, value,
+            and wait time.
+    """
+    LOGGER.debug('[Backoff]: Exiting after %d tries calling %s',
+                 details['tries'],
+                 details['target'].__name__)
+
+
 def _load_config():
     """Load the StreamAlert Athena configuration files
 
@@ -185,11 +198,8 @@ class StreamAlertAthenaClient(object):
         query_execution_resp = self.athena_client.start_query_execution(
             QueryString=kwargs['query'],
             QueryExecutionContext={'Database': kwargs.get('database', self.DATABASE_DEFAULT)},
-            ResultConfiguration={
-                'OutputLocation': '{}/{}'.format(
-                    self.athena_results_bucket, self.athena_results_key)
-            }
-        )
+            ResultConfiguration={'OutputLocation': '{}/{}'.format(self.athena_results_bucket,
+                                                                  self.athena_results_key)})
 
         # If asynchronous invocation is enabled, and a valid query
         # execution ID was returned.
@@ -312,14 +322,15 @@ class StreamAlertAthenaClient(object):
         for bucket, keys in s3_buckets_and_keys.iteritems():
             athena_table = add_hive_partition_config.get(bucket)
             if not athena_table:
-                LOGGER.error('%s not found in add_hive_partition config. '
+                LOGGER.error('%s not found in \'add_hive_partition\' config. '
                              'Please add this bucket to enable additions '
                              'of Hive partitions.',
                              athena_table)
                 continue
 
             # Gather all of the partitions to add per bucket
-            s3_key_regex = self.STREAMALERTS_REGEX if athena_table == 'alerts' else self.FIREHOSE_REGEX
+            s3_key_regex = self.STREAMALERTS_REGEX if athena_table == 'alerts' \
+                                                   else self.FIREHOSE_REGEX
             for key in keys:
                 match = s3_key_regex.search(key)
                 if not match:
@@ -330,7 +341,7 @@ class StreamAlertAthenaClient(object):
                 # Convert the match groups to a dict for easy access
                 match_dict = match.groupdict()
                 # Get the path to the objects in S3
-                path = '/'.join(key.split('/')[:-1])
+                path = os.path.dirname(key)
 
                 # PARTITION (dt = '2017-01-01-01') LOCATION 's3://bucket/path/'
                 partition = '(dt = \'{year}-{month}-{day}-{hour}\')'.format(
@@ -347,13 +358,13 @@ class StreamAlertAthenaClient(object):
 
             partition_statement = ' '.join(
                 ['PARTITION {0} LOCATION {1}'.format(
-                 partition, location) for partition, location in partitions.iteritems()])
+                    partition, location) for partition, location in partitions.iteritems()])
             query = ('ALTER TABLE {athena_table} '
                      'ADD IF NOT EXISTS {partition_statement};'.format(
                          athena_table=athena_table,
                          partition_statement=partition_statement))
 
-            query_success, query_resp = self.run_athena_query(
+            query_success, _ = self.run_athena_query(
                 query=query,
                 database=self.DATABASE_STREAMALERT
             )
@@ -379,6 +390,7 @@ class StreamAlertSQSClient(object):
         processed_messages: A list of processed SQS messages
     """
     QUEUENAME = 'streamalert_athena_data_bucket_notifications'
+    MAX_SQS_GET_MESSAGE_COUNT = 10
 
     def __init__(self, config):
         """Initialize the StreamAlertSQS Client
@@ -389,6 +401,7 @@ class StreamAlertSQSClient(object):
         self.config = config
         self.received_messages = []
         self.processed_messages = []
+        self.deleted_messages = 0
 
         self.setup()
 
@@ -411,19 +424,26 @@ class StreamAlertSQSClient(object):
         """
         start_message_count = len(self.received_messages)
 
+        # Backoff up to 5 times to limit the time spent in this operation
+        # relative to the entire Lambda duration.
         max_tries = kwargs.get('max_tries', 5)
+        # This value restricts the max time of backoff each try.
+        # This means the total backoff time for one function call is:
+        #   max_tries (attempts) * max_value (seconds)
         max_value = kwargs.get('max_value', 5)
-        max_messages = kwargs.get('max_messages', 10)
+        # Number of messages to poll from the stream.
+        max_messages = kwargs.get('max_messages', self.MAX_SQS_GET_MESSAGE_COUNT)
+        if max_messages > 10:
+            LOGGER.error('SQS can only request up to 10 messages in one request')
+            return
 
         @backoff.on_predicate(backoff.fibo,
-                              # Backoff up to 5 times
                               max_tries=max_tries,
-                              # Don't backoff for longer than 5 seconds
-                              # This constrains the total max backoff to 25 seconds
                               max_value=max_value,
                               jitter=backoff.full_jitter,
                               on_backoff=_backoff_handler,
-                              on_success=_success_handler)
+                              on_success=_success_handler,
+                              on_giveup=_giveup_handler)
         def _receive_messages():
             polled_messages = self.sqs_client.receive_message(
                 QueueUrl=self.athena_sqs_url,
@@ -444,24 +464,40 @@ class StreamAlertSQSClient(object):
             LOGGER.error('No processed messages to delete')
             return
 
-        deleted_messages = 0
-        while self.processed_messages:
+        @backoff.on_predicate(backoff.fibo,
+                              lambda len_messages: len_messages > 0,
+                              max_value=10,
+                              jitter=backoff.full_jitter,
+                              on_backoff=_backoff_handler,
+                              on_success=_success_handler)
+        def _delete_messages_from_queue():
+            # Determine the message batch for SQS message deletion
             len_processed_messages = len(self.processed_messages)
             batch = len_processed_messages if len_processed_messages < 10 else 10
-
-            # Delete_batch can only process up to 10 messages
             message_batch = [self.processed_messages.pop() for _ in range(batch)]
 
+            # Try to delete the batch
             resp = self.sqs_client.delete_message_batch(
                 QueueUrl=self.athena_sqs_url,
                 Entries=[{'Id': message['MessageId'],
                           'ReceiptHandle': message['ReceiptHandle']}
-                         for message in message_batch]
-            )
-            deleted_messages += len(resp['Successful'])
+                         for message in message_batch])
 
-        LOGGER.info('Successfully deleted %d messages from SQS',
-                    deleted_messages)
+            # Handle successful deletions
+            self.deleted_messages += len(resp['Successful'])
+
+            # Handle failure deletion
+            if resp.get('Failed'):
+                LOGGER.error('Failed to delete the following (%d) messages:\n%s',
+                             len(resp['Failed']), json.dumps(resp['Failed']))
+                # Add the failed messages back to the processed_messages attribute
+                failed_from_batch = [[message for message in message_batch if message['MessageId']
+                                      == failed_message['Id']] for failed_message in resp['Failed']]
+                self.processed_messages.extend(failed_from_batch)
+
+            return len(self.processed_messages)
+
+        _delete_messages_from_queue()
 
     def unique_s3_buckets_and_keys(self):
         """Filter a list of unique s3 buckets and S3 keys from event notifications
@@ -482,8 +518,19 @@ class StreamAlertSQSClient(object):
 
             loaded_message = json.loads(message['Body'])
 
-            if loaded_message.get('Event') == 'S3:TestEvent':
-                LOGGER.debug('Skipping S3:TestEvent')
+            # From AWS documentation: http://amzn.to/2w4fcSq
+            # When you configure an event notification on a bucket,
+            # Amazon S3 sends the following test message:
+            # {
+            #    "Service":"Amazon S3",
+            #    "Event":"s3:TestEvent",
+            #    "Time":"2014-10-13T15:57:02.089Z",
+            #    "Bucket":"bucketname",
+            #    "RequestId":"5582815E1AEA5ADF",
+            #    "HostId":"8cLeGAmw098X5cv4Zkwcmo8vvZa3eH3eKxsPzbB9wrR+YstdA6Knx4Ip8EXAMPLE"
+            # }
+            if loaded_message.get('Event') == 's3:TestEvent':
+                LOGGER.debug('Skipping S3 bucket notification test event')
                 continue
 
             if 'Records' not in loaded_message:
@@ -499,6 +546,7 @@ class StreamAlertSQSClient(object):
 
                 bucket_name = record['s3']['bucket']['name']
                 # Account for special characters in the S3 object key
+                # Example: Usage of '=' in the key name
                 object_key = urllib.unquote(record['s3']['object']['key']).decode('utf8')
                 s3_buckets_and_keys[bucket_name].add(object_key)
 
@@ -523,7 +571,8 @@ def handler(*_):
         return
 
     # If the max amount of messages was initially returned,
-    # then get the next batch of messages
+    # then get the next batch of messages.  The max is determined based
+    # on (number of tries) * (number of possible max messages returned)
     if len(stream_alert_sqs.received_messages) == 20:
         stream_alert_sqs.get_messages(max_tries=8)
 
@@ -543,3 +592,5 @@ def handler(*_):
         raise AthenaPartitionRefreshError('Adding partition(s) has failed')
 
     stream_alert_sqs.delete_messages()
+    LOGGER.info('Deleted %d messages from SQS',
+                stream_alert_sqs.deleted_messages)
