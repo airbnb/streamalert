@@ -17,7 +17,7 @@ import boto3
 from botocore.exceptions import ClientError
 from mock import mock_open, patch
 from moto import mock_kms, mock_s3
-from nose.tools import assert_false, assert_list_equal, assert_true
+from nose.tools import assert_false, assert_list_equal, assert_true, raises
 
 from stream_alert.alert_processor.output_base import OutputProperty
 from stream_alert_cli.outputs import (
@@ -39,16 +39,12 @@ def test_load_output_config():
     assert_list_equal(loaded_config_keys, expected_config_keys)
 
 
-@patch('logging.Logger.exception')
-def test_load_output_config_error(log_mock):
+@raises(ValueError)
+def test_load_output_config_error():
     """Load outputs configuration - exception"""
     mock = mock_open(read_data='non-json string that will raise an exception')
     with patch('__builtin__.open', mock):
         load_outputs_config()
-
-    log_mock.assert_called_with(
-        'the %s file could not be loaded into json',
-        'outputs.json')
 
 
 def test_write_outputs_config():
