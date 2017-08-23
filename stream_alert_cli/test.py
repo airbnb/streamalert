@@ -161,9 +161,18 @@ class RuleProcessorTester(object):
             [generator] Yields back the rule name and the json loaded contents of
                 the respective test event file.
         """
+        if filter_rules:
+            for index, rule in enumerate(filter_rules):
+                parts = os.path.splitext(rule)
+                if parts[1] == '.json':
+                    filter_rules[index] = parts[0]
+
+            # Create a copy of the filtered rules that can be altered
+            filter_rules_copy = filter_rules[:]
+
         for _, _, test_rule_files in os.walk(DIR_RULES):
             for rule_file in test_rule_files:
-                rule_name = rule_file.split('.')[0]
+                rule_name = os.path.splitext(rule_file)[0]
 
                 # If only specific rules are being tested,
                 # skip files that do not match those rules
@@ -195,8 +204,9 @@ class RuleProcessorTester(object):
 
                 yield rule_name, contents
 
-        # Print any of the filtered rules that do not have tests configured
-        if filter_rules:
+        # Print any of the filtered rules that remain in the list
+        # This means that there are not tests configured for them
+        if filter_rules and filter_rules_copy:
             self.all_tests_passed = False
             for filter_rule in filter_rules:
                 message = 'No test events configured for designated rule.'
