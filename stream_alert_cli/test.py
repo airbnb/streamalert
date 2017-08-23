@@ -600,6 +600,22 @@ def report_output(passed, cols):
     print '\t{}{:>14}\t{}\t({}): {}'.format(status, *cols)
 
 
+def check_untested_rules():
+    """Function that prints warning log messages for rules that exist but do
+    not have proper integration tests configured.
+    """
+    all_test_files = {os.path.splitext(test_file)[0] for _, _, test_rule_files
+                      in os.walk(DIR_RULES) for test_file in test_rule_files}
+
+    untested_rules = set(StreamRules.get_rules()).difference(all_test_files)
+
+    for rule in untested_rules:
+        LOGGER_CLI.warn('%sNo tests configured for rule: \'%s\'. Please add a '
+                        'corresponding test file for this rule in \'%s\' with the '
+                        'name \'%s.json\' to avoid seeing this warning%s', COLOR_YELLOW,
+                        rule, DIR_RULES, rule, COLOR_RESET)
+
+
 def stream_alert_test(options, config=None):
     """High level function to wrap the integration testing entry point.
     This encapsulates the testing function and is used to specify if calls
@@ -668,6 +684,8 @@ def stream_alert_test(options, config=None):
         if test_alerts:
             AlertProcessorTester.report_output_summary()
 
+        # Check all of the rule files to make sure they have tests configured
+        check_untested_rules()
 
         if not (rule_proc_tester.all_tests_passed and
                 alert_proc_tester.all_tests_passed):
