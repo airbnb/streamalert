@@ -31,7 +31,15 @@ from stream_alert.rule_processor.handler import StreamAlert
 import stream_alert.rule_processor.main  # pylint: disable=unused-import
 from stream_alert.rule_processor.rules_engine import StreamRules
 from stream_alert_cli import helpers
-from stream_alert_cli.logger import LOGGER_CLI, LOGGER_SA, LOGGER_SH, LOGGER_SO
+from stream_alert_cli.logger import (
+    LOG_ERROR_HANDLER,
+    LOGGER_CLI,
+    LOGGER_SA,
+    LOGGER_SH,
+    LOGGER_SO,
+    SuppressNoise
+)
+
 from stream_alert_cli.outputs import load_outputs_config
 
 DIR_RULES = 'tests/integration/rules'
@@ -44,19 +52,6 @@ StatusMessage = namedtuple('StatusMessage', 'type, rule, message')
 STATUS_WARNING = -1
 STATUS_FAILURE = 0
 STATUS_SUCCESS = 1
-
-
-class TestingSuppressFilter(logging.Filter):
-    """Simple logging filter for suppressing specific log messagses that we
-    do not want to print during testing. Add any suppressions to the tuple.
-    """
-
-    def filter(self, record):
-        suppress_starts_with = (
-            'Starting download from S3',
-            'Completed download in'
-        )
-        return not record.getMessage().startswith(suppress_starts_with)
 
 
 class RuleProcessorTester(object):
@@ -649,7 +644,7 @@ def stream_alert_test(options, config=None):
                 streamalert_logger.setLevel(logging.DEBUG)
         else:
             # Add a filter to suppress a few noisy log messages
-            LOGGER_SA.addFilter(TestingSuppressFilter())
+            LOGGER_SA.addFilter(SuppressNoise())
 
         # Check if the rule processor should be run for these tests
         test_rules = (set(run_options.get('processor')).issubset({'rule', 'all'})
@@ -681,6 +676,19 @@ def stream_alert_test(options, config=None):
         if not (rule_proc_tester.all_tests_passed and
                 alert_proc_tester.all_tests_passed and
                 (not rule_proc_tester.invalid_log_messages)):
+            sys.exit(1)
+
+        # If there are any log records in the memory buffer, then errors occured somewhere
+        if LOG_ERROR_HANDLER.buffer:
+            # Release the MemoryHandler so we can do some other logging now
+            logging.getLogger().removeHandler(LOG_ERROR_HANDLER)
+            LOGGER_CLI.error('%sSee %d miscellaneous error(s) below '
+                             'that were encountered and may need to be addressed%s',
+                             COLOR_RED, len(LOG_ERROR_HANDLER.buffer), COLOR_RESET)
+
+            LOG_ERROR_HANDLER.setTarget(LOGGER_CLI)
+            LOG_ERROR_HANDLER.flush()
+
             sys.exit(1)
 
     run_tests(options, context)
