@@ -28,6 +28,7 @@ from stream_alert.alert_processor import main as StreamOutput
 from stream_alert.rule_processor.handler import StreamAlert
 # import all rules loaded from the main handler
 import stream_alert.rule_processor.main  # pylint: disable=unused-import
+from stream_alert.rule_processor.payload import load_stream_payload
 from stream_alert.rule_processor.rules_engine import StreamRules
 from stream_alert_cli import helpers
 from stream_alert_cli.logger import (
@@ -75,23 +76,29 @@ class RuleProcessorTester(object):
         self.processor = StreamAlert(context, False)
         # Use a list of status_messages to store pass/fail/warning info
         self.status_messages = []
+        self.total_tests = 0
         self.all_tests_passed = True
         self.print_output = print_output
 
-    def test_processor(self, filter_rules):
+    def test_processor(self, filter_rules, validate_only=False):
         """Perform integration tests for the 'rule' Lambda function
 
         Args:
             filter_rules [list or None]: Specific rule names (or None) to restrict
                 testing to. This is passed in from the CLI using the --rules option.
+            validate_only [bool=False]: If true, validation of test records will occur
+                without the rules engine being applied to events.
 
         Yields:
-            tuple (bool, list): test status, list of alerts to run through the alert processor
+            tuple (bool, list) or None: If testing rules, this yields a tuple containig a
+                boolean of test status and a list of alerts to run through the alert
+                processor. If validating test records only, this does not yield.
         """
-        for rule_name, contents in self._get_rule_test_files(filter_rules):
-
+        for rule_name, contents in self._get_rule_test_files(filter_rules, validate_only):
             # Go over the records and test the applicable rule
             for index, test_record in enumerate(contents.get('records')):
+                self.total_tests += 1
+
                 if not self.check_keys(rule_name, test_record):
                     self.all_tests_passed = False
                     continue
@@ -100,28 +107,72 @@ class RuleProcessorTester(object):
 
                 print_header_line = index == 0
 
-                yield self._run_rule_tests(rule_name, test_record, print_header_line)
+                formatted_record = helpers.format_lambda_test_record(test_record)
+
+                if validate_only:
+                    self._validate_test_records(rule_name, test_record, formatted_record)
+                    continue
+
+                yield self._run_rule_tests(rule_name, test_record,
+                                           formatted_record, print_header_line)
 
         # Report on the final test results
         self.report_output_summary()
 
-    def _run_rule_tests(self, rule_name, test_record, print_header_line):
+    def _validate_test_records(self, rule_name, test_record, formatted_record):
+        """Function to validate test records and log any errors
+
+        Args:
+            rule_name [str]: The rule name being tested
+            test_record [dict]: A single record to test
+            formatted_record [dict]: A dictionary that includes the 'data' from the
+                test record, formatted into a structure that is resemblant of how
+                an incoming record from a service would format it.
+                See test/integration/templates for example of how each service
+                formats records.
+        """
+        service, entity = self.processor.classifier.extract_service_and_entity(formatted_record)
+
+        if not self.processor.classifier.load_sources(service, entity):
+            self.all_tests_passed = False
+            return
+
+        # Create the StreamPayload to use for encapsulating parsed info
+        payload = load_stream_payload(service, entity, formatted_record, Mock())
+        if not payload:
+            self.all_tests_passed = False
+            return
+
+        for record in payload.pre_parse():
+            self.processor.classifier.classify_record(record)
+
+            if not record.valid:
+                self.all_tests_passed = False
+                self.analyze_record_delta(rule_name, test_record)
+
+    def _run_rule_tests(self, rule_name, test_record, formatted_record, print_header_line):
         """Run tests on a test record for a given rule
 
         Args:
             rule_name [str]: The name of the rule being tested.
             test_record [dict]: The loaded test event from json
+            formatted_record [dict]: A dictionary that includes the 'data' from the
+                test record, formatted into a structure that is resemblant of how
+                an incoming record from a service would format it.
+                See test/integration/templates for example of how each service
+                formats records.
             print_header_line [bool]: Indicates if this is the first record from
                 a test file, and therefore we should print some header information
 
         Returns:
             [list] alerts that were generated from this test event
         """
+        event = {'Records': [formatted_record]}
         # Run tests on the formatted record
         alerts, expected_alerts, all_records_matched_schema = self.test_rule(
             rule_name,
             test_record,
-            helpers.format_lambda_test_record(test_record))
+            event)
 
         alerted_properly = (len(alerts) == expected_alerts)
         current_test_passed = alerted_properly and all_records_matched_schema
@@ -151,17 +202,20 @@ class RuleProcessorTester(object):
         # Return the alerts back to caller
         return alerts
 
-    def _get_rule_test_files(self, filter_rules):
+    def _get_rule_test_files(self, filter_rules, validate_only):
         """Helper to get rule files to be tested
 
         Args:
-            filter_rules [list or None]: List of specific rule names (or None) that
-                has been fed in from the CLI to restrict testing to
+            filter_rules [list or None]: List of specific rule names or file names
+                (or None) that has been fed in from the CLI to restrict testing to
 
         Returns:
             [generator] Yields back the rule name and the json loaded contents of
                 the respective test event file.
         """
+        # Since filter_rules can be either a list of rule names or rule files,
+        # we should check to see if there is a '.json' extension and just use the
+        # base filename. This approach avoids two functions that do largely the same thing
         if filter_rules:
             for index, rule in enumerate(filter_rules):
                 parts = os.path.splitext(rule)
@@ -211,6 +265,9 @@ class RuleProcessorTester(object):
             self.all_tests_passed = False
             message = 'No test events configured for designated rule'
             for filter_rule in filter_rules:
+                if validate_only:
+                    message = 'Designated file ({}.json) does not exist within \'{}\''.format(
+                        filter_rule, DIR_RULES)
                 self.status_messages.append(
                     StatusMessage(StatusMessage.WARNING, filter_rule, message))
 
@@ -220,7 +277,7 @@ class RuleProcessorTester(object):
         Args:
             rule_name (str): The name of the rule being tested. This is passed in
                 here strictly for reporting any errors with key checks.
-            test_record (dict): Test record metadata dict
+            test_record (dict): The raw test record being processed
 
         Returns:
             bool: True if the proper keys are present
@@ -265,7 +322,7 @@ class RuleProcessorTester(object):
             test_record (dict): loaded fixture file JSON as a dict.
         """
         # declare all helper functions here, they should always return a string
-        helper_map = {
+        record_helpers = {
             'last_hour': lambda: str(int(time.time()) - 60)
         }
         helper_regex = re.compile(r'<helper:(?P<helper>\w+)>')
@@ -276,7 +333,7 @@ class RuleProcessorTester(object):
                 if isinstance(value, (str, unicode)):
                     test_record[key] = re.sub(
                         helper_regex,
-                        lambda match: helper_map[match.group('helper')](),
+                        lambda match: record_helpers[match.group('helper')](),
                         test_record[key]
                     )
                 elif isinstance(value, dict):
@@ -360,7 +417,7 @@ class RuleProcessorTester(object):
 
         return alerts, expected_alert_count, all_records_matched_schema
 
-    def analyze_record_delta(self, logs, rule_name, test_record):
+    def analyze_record_delta(self, rule_name, test_record):
         """Provide some additional context on why this test failed. This will
         perform some analysis of the test record to determine which keys are
         missing or which unnecessary keys are causing the test to fail. Any
@@ -368,10 +425,10 @@ class RuleProcessorTester(object):
         the end of the test run.
 
         Args:
-            logs (dict): All of the log schema information for the source/entity
             rule_name (str): Name of rule being tested
             test_record (dict): Actual record data being tested
         """
+        logs = self.processor.classifier.get_log_info_for_source()
         rule_info = StreamRules.get_rules()[rule_name]
         test_record_keys = set(test_record['data'])
         for log in rule_info.logs:
@@ -596,8 +653,13 @@ def stream_alert_test(options, config=None):
 
         rule_proc_tester = RuleProcessorTester(context, test_rules)
         alert_proc_tester = AlertProcessorTester(context)
+
+        validate_schemas = options.command == 'validate-schemas'
+
+        filters = options.files if validate_schemas else options.rules
+
         # Run the rule processor for all rules or designated rule set
-        for alerts in rule_proc_tester.test_processor(options.rules):
+        for alerts in rule_proc_tester.test_processor(filters, validate_schemas):
             # If the alert processor should be tested, process any alerts
             if test_alerts:
                 alert_proc_tester.test_processor(alerts)
