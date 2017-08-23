@@ -74,7 +74,6 @@ class RuleProcessorTester(object):
         # passes. Tuple is (rule_name, rule_description)
         self.status_messages = []
         self.print_output = print_output
-        self.invalid_log_messages = []
 
     def test_processor(self, filter_rules):
         """Perform integration tests for the 'rule' Lambda function
@@ -398,7 +397,8 @@ class RuleProcessorTester(object):
                                rule_info.rule_name,
                                test_record['description']))
 
-                self.invalid_log_messages.append(message)
+                self.status_messages.append(
+                    StatusMessage(StatusMessage.FAILURE, rule_name, message))
                 continue
 
             unexpected_record_keys = test_record_keys.difference(all_record_schema_keys)
@@ -411,7 +411,8 @@ class RuleProcessorTester(object):
                         rule_info.rule_name,
                         test_record['description']))
 
-                self.invalid_log_messages.append(message)
+                self.status_messages.append(
+                    StatusMessage(StatusMessage.FAILURE, rule_name, message))
 
 
 class AlertProcessorTester(object):
@@ -613,13 +614,9 @@ def stream_alert_test(options, config=None):
         if test_alerts:
             AlertProcessorTester.report_output_summary()
 
-        # Print any invalid log messages that we accumulated over this run
-        for message in rule_proc_tester.invalid_log_messages:
-            LOGGER_CLI.error('%s%s%s', COLOR_RED, message, COLOR_RESET)
 
         if not (rule_proc_tester.all_tests_passed and
-                alert_proc_tester.all_tests_passed and
-                (not rule_proc_tester.invalid_log_messages)):
+                alert_proc_tester.all_tests_passed):
             sys.exit(1)
 
         # If there are any log records in the memory buffer, then errors occured somewhere
