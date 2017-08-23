@@ -380,9 +380,13 @@ class RuleProcessorTester(object):
         rule_info = StreamRules.get_rules()[rule_name]
         test_record_keys = set(test_record['data'])
         for log in rule_info.logs:
-            record_schema_keys = set(logs[log]['schema'])
+            all_record_schema_keys = set(logs[log]['schema'])
+            optional_keys = set(logs[log].get('configuration',
+                                              {}).get('optional_top_level_keys', {}))
 
-            schema_diff = record_schema_keys.difference(test_record_keys)
+            min_req_record_schema_keys = all_record_schema_keys.difference(optional_keys)
+
+            schema_diff = min_req_record_schema_keys.difference(test_record_keys)
             if schema_diff:
                 message = ('Data is invalid due to missing key(s) in test record: {}. '
                            'Rule: \'{}\'. Description: \'{}\''.format(
@@ -391,8 +395,9 @@ class RuleProcessorTester(object):
                                test_record['description']))
 
                 self.invalid_log_messages.append(message)
+                continue
 
-            unexpected_record_keys = test_record_keys.difference(record_schema_keys)
+            unexpected_record_keys = test_record_keys.difference(all_record_schema_keys)
             if unexpected_record_keys:
                 message = (
                     'Data is invalid due to unexpected key(s) in test record: {}. '
