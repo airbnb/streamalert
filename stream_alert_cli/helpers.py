@@ -24,7 +24,6 @@ import zipfile
 import zlib
 
 import boto3
-
 from moto import mock_cloudwatch, mock_lambda, mock_kms, mock_s3
 
 from stream_alert_cli.logger import LOGGER_CLI

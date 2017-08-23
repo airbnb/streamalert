@@ -153,7 +153,7 @@ Available Options:
 
 Examples:
 
-    stream_alert_cli.py validate-schemas --files
+    manage.py validate-schemas --files
 
 """.format(version))
     schema_validation_parser = subparsers.add_parser(

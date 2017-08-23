@@ -84,7 +84,7 @@ class RuleProcessorTester(object):
         """Perform integration tests for the 'rule' Lambda function
 
         Args:
-            filter_rules [list or None]: Specific rule names (or None) to restrict
+            filter_rules (list|None): Specific rule names (or None) to restrict
                 testing to. This is passed in from the CLI using the --rules option.
             validate_only [bool=False]: If true, validation of test records will occur
                 without the rules engine being applied to events.
@@ -123,9 +123,9 @@ class RuleProcessorTester(object):
         """Function to validate test records and log any errors
 
         Args:
-            rule_name [str]: The rule name being tested
-            test_record [dict]: A single record to test
-            formatted_record [dict]: A dictionary that includes the 'data' from the
+            rule_name (str): The rule name being tested
+            test_record (dict): A single record to test
+            formatted_record (dict): A dictionary that includes the 'data' from the
                 test record, formatted into a structure that is resemblant of how
                 an incoming record from a service would format it.
                 See test/integration/templates for example of how each service
@@ -154,18 +154,18 @@ class RuleProcessorTester(object):
         """Run tests on a test record for a given rule
 
         Args:
-            rule_name [str]: The name of the rule being tested.
-            test_record [dict]: The loaded test event from json
-            formatted_record [dict]: A dictionary that includes the 'data' from the
+            rule_name (str): The name of the rule being tested.
+            test_record (dict): The loaded test event from json
+            formatted_record (dict): A dictionary that includes the 'data' from the
                 test record, formatted into a structure that is resemblant of how
                 an incoming record from a service would format it.
                 See test/integration/templates for example of how each service
                 formats records.
-            print_header_line [bool]: Indicates if this is the first record from
+            print_header_line (bool): Indicates if this is the first record from
                 a test file, and therefore we should print some header information
 
         Returns:
-            [list] alerts that were generated from this test event
+            list: alerts that were generated from this test event
         """
         event = {'Records': [formatted_record]}
         # Run tests on the formatted record
@@ -206,12 +206,12 @@ class RuleProcessorTester(object):
         """Helper to get rule files to be tested
 
         Args:
-            filter_rules [list or None]: List of specific rule names or file names
+            filter_rules (list|None): List of specific rule names or file names
                 (or None) that has been fed in from the CLI to restrict testing to
 
-        Returns:
-            [generator] Yields back the rule name and the json loaded contents of
-                the respective test event file.
+        Yields:
+            str: rule name
+            dict: loaded json contents of the respective test event file
         """
         # Since filter_rules can be either a list of rule names or rule files,
         # we should check to see if there is a '.json' extension and just use the
@@ -399,6 +399,7 @@ class RuleProcessorTester(object):
             bool: False if errors occurred during processing
         """
         # Clear out any old alerts or errors from the previous test run
+        # pylint: disable=protected-access
         del self.processor._alerts[:]
         self.processor._failed_record_count = 0
 
@@ -534,7 +535,11 @@ class AlertProcessorTester(object):
                              failed_tests, total_tests, COLOR_RESET)
 
     def setup_outputs(self, alert):
-        """Helper function to handler any output setup"""
+        """Helper function to handler any output setup
+
+        Args:
+            alert (dict): The alert dictionary containing outputs the need mocking out
+        """
         outputs = alert.get('outputs', [])
         # Patch the urllib2.urlopen event to override HTTPStatusCode, etc
         url_mock = Mock()
@@ -590,8 +595,8 @@ def report_output(passed, cols):
     """Helper function to pretty print columns for reporting results
 
     Args:
-        passed [bool]: The pass status of the current test case
-        cols [list]: A list of columns to print as output
+        passed (bool): The pass status of the current test case
+        cols (list): A list of columns to print as output
     """
 
     status = ('{}[Pass]{}'.format(COLOR_GREEN, COLOR_RESET) if passed else
