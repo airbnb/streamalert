@@ -1,4 +1,4 @@
-'''
+"""
 Copyright 2017-present, Airbnb Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,29 +12,26 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-'''
-
+"""
+from collections import namedtuple
+from getpass import getpass
 import os
 import re
 import shutil
 import sys
 
-from collections import namedtuple
-from getpass import getpass
-
-from stream_alert_cli.package import RuleProcessorPackage, AlertProcessorPackage, AthenaPackage
-from stream_alert_cli.test import stream_alert_test
-from stream_alert_cli import helpers
-from stream_alert_cli.config import CLIConfig
-from stream_alert_cli.logger import LOGGER_CLI
-from stream_alert_cli.version import LambdaVersion
-from stream_alert_cli.terraform_generate import terraform_generate
-import stream_alert_cli.outputs as config_outputs
-
 from stream_alert import __version__ as current_version
 from stream_alert.alert_processor.outputs import get_output_dispatcher
 from stream_alert.athena_partition_refresh.main import StreamAlertAthenaClient
 
+from stream_alert_cli import helpers
+from stream_alert_cli.config import CLIConfig
+from stream_alert_cli.logger import LOGGER_CLI
+import stream_alert_cli.outputs as config_outputs
+from stream_alert_cli.package import AlertProcessorPackage, AthenaPackage, RuleProcessorPackage
+from stream_alert_cli.terraform_generate import terraform_generate
+from stream_alert_cli.test import stream_alert_test
+from stream_alert_cli.version import LambdaVersion
 
 CONFIG = CLIConfig()
 
@@ -127,8 +124,8 @@ def athena_handler(options):
             )
 
             if create_table_success:
-                CONFIG['lambda']['athena_partition_refresh_config'] \
-                    ['refresh_type']['repair_hive_table'][options.bucket] = 'alerts'
+                CONFIG['lambda']['athena_partition_refresh_config']['refresh_type'][
+                    'repair_hive_table'][options.bucket] = 'alerts'
                 CONFIG.write()
                 LOGGER_CLI.info('The alerts table was successfully created!')
 
@@ -156,7 +153,7 @@ def configure_handler(options):
     """Configure StreamAlert main settings
 
     Args:
-        options [named_tuple]: ArgParse command result
+        options (namedtuple): ArgParse command result
     """
     if options.config_key == 'prefix':
         if not isinstance(options.config_value, (unicode, str)):
@@ -345,8 +342,8 @@ def tf_runner(**kwargs):
         targets: a list of Terraform targets
         action: 'apply' or 'destroy'
 
-    Returns: Boolean result of if the terraform command
-             was successful or not
+    Returns:
+        bool: True if the terraform command was successful
     """
     targets = kwargs.get('targets', [])
     action = kwargs.get('action', None)
@@ -437,8 +434,8 @@ def rollback(options):
                 current_vers = int(current_vers)
                 if current_vers > 1:
                     new_vers = current_vers - 1
-                    CONFIG['clusters'][cluster]['modules']['stream_alert'] \
-                        [lambda_function]['current_version'] = new_vers
+                    CONFIG['clusters'][cluster]['modules']['stream_alert'][lambda_function][
+                        'current_version'] = new_vers
                     CONFIG.write()
 
     targets = ['module.stream_alert_{}'.format(x)
@@ -470,14 +467,10 @@ def deploy(options):
         """Publish Lambda versions"""
         for package in packages:
             if package.package_name == 'athena_partition_refresh':
-                published = LambdaVersion(config=CONFIG,
-                                          package=package,
-                                          clustered_deploy=False
-                                         ).publish_function()
+                published = LambdaVersion(
+                    config=CONFIG, package=package, clustered_deploy=False).publish_function()
             else:
-                published = LambdaVersion(config=CONFIG,
-                                          package=package
-                                         ).publish_function()
+                published = LambdaVersion(config=CONFIG, package=package).publish_function()
             if not published:
                 return False
 
@@ -500,7 +493,6 @@ def deploy(options):
         )
         alert_package.create_and_upload()
         return alert_package
-
 
     def _deploy_athena_partition_refresh():
         """Create Athena Partition Refresh package and publish"""
@@ -569,11 +561,11 @@ def user_input(requested_info, mask, input_restrictions):
     """Prompt user for requested information
 
     Args:
-        requested_info [string]: Description of the information needed
-        mask [boolean]: Decides whether to mask input or not
+        requested_info (str): Description of the information needed
+        mask (bool): Decides whether to mask input or not
 
     Returns:
-        [string] response provided by the user
+        str: response provided by the user
     """
     response = ''
     prompt = '\nPlease supply {}: '.format(requested_info)
@@ -601,7 +593,7 @@ def configure_output(options):
     """Configure a new output for this service
 
     Args:
-        options [argparse]: Basically a namedtuple with the service setting
+        options (argparser): Basically a namedtuple with the service setting
     """
     region = CONFIG['global']['account']['region']
     prefix = CONFIG['global']['account']['prefix']
@@ -621,6 +613,7 @@ def configure_output(options):
     props = output.get_user_defined_properties()
 
     for name, prop in props.iteritems():
+        # pylint: disable=protected-access
         props[name] = prop._replace(value=user_input(prop.description,
                                                      prop.mask_input,
                                                      prop.input_restrictions))

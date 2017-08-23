@@ -1,4 +1,4 @@
-'''
+"""
 Copyright 2017-present, Airbnb Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,8 +12,8 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-'''
-
+"""
+from collections import namedtuple
 import json
 import logging
 import os
@@ -21,28 +21,20 @@ import re
 import sys
 import time
 
-from collections import namedtuple
-from mock import Mock, patch
-
 import boto3
+from mock import Mock, patch
 from moto import mock_cloudwatch, mock_lambda, mock_kms, mock_s3, mock_sns
 
 from stream_alert.alert_processor import main as StreamOutput
-from stream_alert.rule_processor.classifier import StreamClassifier
-from stream_alert.rule_processor.config import load_config
 from stream_alert.rule_processor.handler import StreamAlert
+# import all rules loaded from the main handler
+import stream_alert.rule_processor.main  # pylint: disable=unused-import
 from stream_alert.rule_processor.rules_engine import StreamRules
 from stream_alert_cli import helpers
 from stream_alert_cli.logger import LOGGER_CLI, LOGGER_SA, LOGGER_SH, LOGGER_SO
 from stream_alert_cli.outputs import load_outputs_config
 
-
-# import all rules loaded from the main handler
-# pylint: disable=unused-import
-import stream_alert.rule_processor.main
-# pylint: enable=unused-import
-
-DIR_RULES = 'test/integration/rules'
+DIR_RULES = 'tests/integration/rules'
 COLOR_RED = '\033[0;31;1m'
 COLOR_YELLOW = '\033[0;33;1m'
 COLOR_GREEN = '\033[0;32;1m'
@@ -69,7 +61,7 @@ class RuleProcessorTester(object):
         """RuleProcessorTester initializer
 
         Args:
-            print_output [bool]: Boolean indicating whether this processor test
+            print_output (bool): Whether this processor test
                 should print results to stdout. This is set to false when the
                 alert processor is explicitly being testing alone, and set to
                 true for rule processor tests and end-to-end tests.
@@ -93,12 +85,11 @@ class RuleProcessorTester(object):
         """Perform integration tests for the 'rule' Lambda function
 
         Args:
-            rules [list or None]: Specific rule names (or None) to restrict
+            rules (list|None): Specific rule names (or None) to restrict
                 testing to. This is passed in from the CLI using the --rules option.
 
-        Returns:
-            [generator] yields a tuple containig a boolean of test status and
-                a list of alerts to run through the alert processor
+        Yields:
+            tuple (bool, list): test status, list of alerts to run through the alert processor
         """
         for rule_file, rule_name in get_rule_test_files(rules):
             with open(os.path.join(DIR_RULES, rule_file), 'r') as rule_file_handle:
@@ -166,12 +157,12 @@ class RuleProcessorTester(object):
         """Check the test_record contains the required keys
 
         Args:
-            rule_name: The name of the rule being tested. This is passed in
+            rule_name (str): The name of the rule being tested. This is passed in
                 here strictly for reporting any errors with key checks.
-            test_record [dict]: Test record metadata dict
+            test_record (dict): Test record metadata dict
 
         Returns:
-            [bool] boolean result indicating if the proper keys are present
+            bool: True if the proper keys are present
         """
         required_keys = {'data', 'description', 'service', 'source', 'trigger'}
 
@@ -206,22 +197,23 @@ class RuleProcessorTester(object):
         Supported helper functions:
             last_hour: return the current epoch time minus 60 seconds to pass the
                        last_hour rule helper.
+
         Args:
-            test_record: loaded fixture file JSON as a dict.
+            test_record (dict): loaded fixture file JSON as a dict.
         """
         # declare all helper functions here, they should always return a string
-        helpers = {
+        helper_map = {
             'last_hour': lambda: str(int(time.time()) - 60)
         }
-        helper_regex = re.compile(r'\<helper:(?P<helper>\w+)\>')
+        helper_regex = re.compile(r'<helper:(?P<helper>\w+)>')
 
         def find_and_apply_helpers(test_record):
             """Apply any helpers to the passed in test_record"""
             for key, value in test_record.iteritems():
-                if isinstance(value, str) or isinstance(value, unicode):
+                if isinstance(value, (str, unicode)):
                     test_record[key] = re.sub(
                         helper_regex,
-                        lambda match: helpers[match.group('helper')](),
+                        lambda match: helper_map[match.group('helper')](),
                         test_record[key]
                     )
                 elif isinstance(value, dict):
@@ -278,18 +270,18 @@ class RuleProcessorTester(object):
         """Feed formatted records into StreamAlert and check for alerts
 
         Args:
-            rule_name [str]: The rule name being tested
-            test_record [dict]: A single record to test
-            formatted_record [dict]: A dictionary that includes the 'data' from the
+            rule_name (str): The rule name being tested
+            test_record (dict): A single record to test
+            formatted_record (dict): A dictionary that includes the 'data' from the
                 test record, formatted into a structure that is resemblant of how
                 an incoming record from a service would format it.
-                See test/integration/templates for example of how each service
+                See tests/integration/templates for example of how each service
                 formats records.
 
         Returns:
-            [list] alerts that hit for this rule
-            [integer] count of expected alerts for this rule
-            [bool] boolean where False indicates errors occurred during processing
+            list: alerts that hit for this rule
+            int: count of expected alerts for this rule
+            bool: False if errors occurred during processing
         """
         event = {'Records': [formatted_record]}
 
@@ -322,9 +314,9 @@ class RuleProcessorTester(object):
         the end of the test run.
 
         Args:
-            logs [dict]: All of the log schema information for the source/entity
-            rule_name [str]: Name of rule being tested
-            test_record [dict]: Actual record data being tested
+            logs (dict): All of the log schema information for the source/entity
+            rule_name (str): Name of rule being tested
+            test_record (dict): Actual record data being tested
         """
         rule_info = StreamRules.get_rules()[rule_name]
         test_record_keys = set(test_record['data'])
@@ -351,6 +343,7 @@ class RuleProcessorTester(object):
 
                 self.invalid_log_messages.append(message)
 
+
 class AlertProcessorTester(object):
     """Class to encapsulate testing the alert processor"""
     _alert_fail_pass = [0, 0]
@@ -359,7 +352,7 @@ class AlertProcessorTester(object):
         """AlertProcessorTester initializer
 
         Args:
-            context [namedtuple]: Constructed aws context object. The
+            context (namedtuple): Constructed aws context object. The
                 namedtuple contains an attribute of `mocked` that indicates
                 if all dispatch calls should be mocked out instead of actually
                 performed. If not mocked, the tests will attempt to actually
@@ -378,11 +371,11 @@ class AlertProcessorTester(object):
         that would result in an alert being sent.
 
         Args:
-            alerts [list]: list of alerts to be processed that have been fed in
+            alerts (list): list of alerts to be processed that have been fed in
                 from the rule processor.
 
         Return:
-            [bool] boolean indicating the status of the alert processor dispatching
+            bool: status of the alert processor dispatching
         """
         # Set the logger level to info so its not too noisy
         StreamOutput.LOGGER.setLevel(logging.ERROR)
@@ -437,15 +430,15 @@ class AlertProcessorTester(object):
                 bucket = self.outputs_config[service][descriptor]
                 boto3.client('s3', region_name='us-east-1').create_bucket(Bucket=bucket)
             elif service == 'aws-lambda':
-                function = self.outputs_config[service][descriptor]
-                parts = function.split(':')
+                lambda_function = self.outputs_config[service][descriptor]
+                parts = lambda_function.split(':')
                 if len(parts) == 2 or len(parts) == 8:
-                    function = parts[-2]
+                    lambda_function = parts[-2]
                 else:
-                    function = parts[-1]
-                helpers.create_lambda_function(function, 'us-east-1')
+                    lambda_function = parts[-1]
+                helpers.create_lambda_function(lambda_function, 'us-east-1')
             elif service == 'pagerduty':
-                output_name = ('/').join([service, descriptor])
+                output_name = '{}/{}'.format(service, descriptor)
                 creds = {'service_key': '247b97499078a015cc6c586bc0a92de6'}
                 helpers.put_mock_creds(output_name, creds, self.secrets_bucket,
                                        'us-east-1', self.kms_alias)
@@ -453,7 +446,7 @@ class AlertProcessorTester(object):
                 # Set the patched urlopen.getcode return value to 200
                 url_mock.return_value.getcode.return_value = 200
             elif service == 'phantom':
-                output_name = ('/').join([service, descriptor])
+                output_name = '{}/{}'.format(service, descriptor)
                 creds = {'ph_auth_token': '6c586bc047b9749a92de29078a015cc6',
                          'url': 'phantom.foo.bar'}
                 helpers.put_mock_creds(output_name, creds, self.secrets_bucket,
@@ -464,7 +457,7 @@ class AlertProcessorTester(object):
                 # Phantom needs a container 'id' value in the http response
                 url_mock.return_value.read.return_value = '{"id": 1948}'
             elif service == 'slack':
-                output_name = ('/').join([service, descriptor])
+                output_name = '{}/{}'.format(service, descriptor)
                 creds = {'url': 'https://api.slack.com/web-hook-key'}
                 helpers.put_mock_creds(output_name, creds, self.secrets_bucket,
                                        'us-east-1', self.kms_alias)
@@ -475,12 +468,12 @@ class AlertProcessorTester(object):
 
 def report_output(cols):
     """Helper function to pretty print columns for reporting results
-    Args:
-        cols [list]: A list of columns to print as output
-    """
 
-    status = ('{}[Fail]{}'.format(COLOR_RED, COLOR_RESET),
-              '{}[Pass]{}'.format(COLOR_GREEN, COLOR_RESET))[cols[0]]
+    Args:
+        cols (list): A list of columns to print as output
+    """
+    status = ('{}[Pass]{}'.format(COLOR_GREEN, COLOR_RESET) if cols[0]
+              else '{}[Fail]{}'.format(COLOR_RED, COLOR_RESET))
 
     print '\t{}{:>14}\t{}\t({}): {}'.format(status, *cols[1:])
 
@@ -489,10 +482,11 @@ def get_rule_test_files(filter_rules):
     """Helper to get rule files to be tested
 
     Args:
-        filter_rules [str]: Comma separated list of rules to run tests against
+        filter_rules (str): Comma separated list of rules to run tests against
 
-    Returns:
-        [generator] Yields back the rule file path and rule name
+    Yields:
+        str: file path
+        str: rule name
     """
     for _, _, test_rule_files in os.walk(DIR_RULES):
         for rule_file in test_rule_files:
@@ -511,7 +505,7 @@ def mock_me(context):
     for running local tests, and omitting mocks if testing live
 
     Args:
-        context [namedtuple]: A constructed aws context object
+        context (namedtuple): A constructed aws context object
     """
     def wrap(func):
         """Wrap the returned function with or without mocks"""
@@ -527,11 +521,11 @@ def mock_me(context):
                 us to mock out all calls that happen below this scope."""
                 return func(options, context)
             return mocked
-        else:
-            def unmocked(options, context):
-                """This function will remain unmocked and operate normally"""
-                return func(options, context)
-            return unmocked
+
+        def unmocked(options, context):
+            """This function will remain unmocked and operate normally"""
+            return func(options, context)
+        return unmocked
 
     return wrap
 
@@ -540,8 +534,8 @@ def get_context_from_config(cluster, config):
     """Return a constructed context to be used for testing
 
     Args:
-        cluster [str]: Name of the cluster to be used for live testing
-        config [CLIConfig]: Configuration for this StreamAlert setup that
+        cluster (str): Name of the cluster to be used for live testing
+        config (CLIConfig): Configuration for this StreamAlert setup that
             includes cluster info, etc that can be used for constructing
             an aws context object
     """
@@ -579,8 +573,8 @@ def stream_alert_test(options, config=None):
     should be mocked.
 
     Args:
-        options [namedtuple]: CLI options (debug, processor, etc)
-        config [CLIConfig]: Configuration for this StreamAlert setup that
+        options (namedtuple): CLI options (debug, processor, etc)
+        config (CLIConfig): Configuration for this StreamAlert setup that
             includes cluster info, etc that can be used for constructing
             an aws context object
     """
@@ -593,8 +587,8 @@ def stream_alert_test(options, config=None):
         """Actual protected function for running tests
 
         Args:
-            options [namedtuple]: CLI options (debug, processor, etc)
-            context [namedtuple]: A constructed aws context object
+            options (namedtuple): CLI options (debug, processor, etc)
+            context (namedtuple): A constructed aws context object
         """
         if options.debug:
             # TODO(jack): Currently there is no (clean) way to set
@@ -604,7 +598,8 @@ def stream_alert_test(options, config=None):
             #             This functionality can be added during the logging refactor
             # Example Steps:
             #   call .shutdown() on the existing logger
-            #   debug_formatter = logging.Formatter('%(name)s [%(levelname)s]: [%(module)s.%(funcName)s] %(message)s')
+            #   debug_formatter = logging.Formatter(
+            #       '%(name)s [%(levelname)s]: [%(module)s.%(funcName)s] %(message)s')
             #   set the new logger to the formatter above
             for streamalert_logger in (LOGGER_SA, LOGGER_SH, LOGGER_SO, LOGGER_CLI):
                 streamalert_logger.setLevel(logging.DEBUG)

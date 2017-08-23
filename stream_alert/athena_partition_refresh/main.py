@@ -1,4 +1,4 @@
-'''
+"""
 Copyright 2017-present, Airbnb Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,13 +12,11 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-'''
-
+"""
+from datetime import datetime
 import json
 import logging
 import os
-
-from datetime import datetime
 
 import backoff
 import boto3
@@ -42,6 +40,7 @@ def _backoff_handler(details):
                  details['tries'],
                  details['target'].__name__)
 
+
 def _success_handler(details):
     """Backoff logging handler for when backoff succeeds.
 
@@ -53,6 +52,7 @@ def _success_handler(details):
     LOGGER.debug('[Backoff]: Completed after %d tries calling %s',
                  details['tries'],
                  details['target'].__name__)
+
 
 def _load_config():
     """Load the StreamAlert Athena configuration files
@@ -114,7 +114,7 @@ class StreamAlertAthenaClient(object):
             config (CLIConfig): Loaded StreamAlert configuration
 
         Keyword Args:
-            results_key_prefix (string): The S3 key prefix to store Athena results
+            results_key_prefix (str): The S3 key prefix to store Athena results
         """
         self.config = config
         region = self.config['global']['account']['region']
@@ -136,10 +136,10 @@ class StreamAlertAthenaClient(object):
         """Check in on the running query, back off if the job is running or queued
 
         Args:
-            query_execution_id (string): The Athena query execution ID
+            query_execution_id (str): The Athena query execution ID
 
         Returns:
-            string: The result of the Query.  This value can be SUCCEEDED, FAILED, or CANCELLED.
+            str: The result of the Query.  This value can be SUCCEEDED, FAILED, or CANCELLED.
                 Reference https://bit.ly/2uuRtda.
         """
         @backoff.on_predicate(backoff.fibo,
@@ -159,19 +159,21 @@ class StreamAlertAthenaClient(object):
         """Helper function to run Athena queries
 
         Keyword Args:
-            query (string): The SQL query to execute
-            database (string): The database context to execute the query in
+            query (str): The SQL query to execute
+            database (str): The database context to execute the query in
 
         Returns:
-            tuple: (bool) Query success, (dict): Query result response
+            bool, dict: query success, query result response
         """
         LOGGER.debug('Executing query: %s', kwargs['query'])
         query_execution_resp = self.athena_client.start_query_execution(
-            QueryString=kwargs['query'], QueryExecutionContext={
-                'Database': kwargs.get(
-                    'database', self.DATABASE_DEFAULT)}, ResultConfiguration={
+            QueryString=kwargs['query'],
+            QueryExecutionContext={'Database': kwargs.get('database', self.DATABASE_DEFAULT)},
+            ResultConfiguration={
                 'OutputLocation': '{}/{}'.format(
-                    self.athena_results_bucket, self.athena_results_key)})
+                    self.athena_results_bucket, self.athena_results_key)
+            }
+        )
 
         query_execution_result = self.check_query_status(
             query_execution_resp['QueryExecutionId'])
@@ -201,7 +203,7 @@ class StreamAlertAthenaClient(object):
         """Verify the StreamAlert Athena database exists.
 
         Keyword Args:
-            database (string): The database name to execute the query under
+            database (str): The database name to execute the query under
         """
         database = kwargs.get('database', self.DATABASE_STREAMALERT)
         query_success, query_resp = self.run_athena_query(
@@ -213,7 +215,7 @@ class StreamAlertAthenaClient(object):
 
         LOGGER.error('The \'%s\' database does not exist. '
                      'Create it with the following command: \n'
-                     '$ python stream_alert_cli.py athena create-db',
+                     '$ python manage.py athena create-db',
                      database)
 
         return False
@@ -230,7 +232,7 @@ class StreamAlertAthenaClient(object):
 
         LOGGER.info('The streamalert table \'%s\' does not exist. '
                     'For alert buckets, create it with the following command: \n'
-                    '$ python stream_alert_cli.py athena create-table '
+                    '$ python manage.py athena create-table '
                     '--type alerts --bucket s3.bucket.id',
                     table_name)
         return False
@@ -321,7 +323,7 @@ class StreamAlertSQSClient(object):
                 MaxNumberOfMessages=10
             )
 
-            if not 'Messages' in polled_messages:
+            if 'Messages' not in polled_messages:
                 return False
             self.received_messages.extend(polled_messages['Messages'])
 

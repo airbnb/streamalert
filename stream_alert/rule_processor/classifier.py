@@ -1,4 +1,4 @@
-'''
+"""
 Copyright 2017-present, Airbnb Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,17 +12,18 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-'''
-import json
+"""
 from collections import namedtuple, OrderedDict
+import json
 
-from stream_alert.rule_processor import LOGGER_DEBUG_ENABLED, LOGGER
+from stream_alert.rule_processor import LOGGER, LOGGER_DEBUG_ENABLED
 from stream_alert.rule_processor.parsers import get_parser
 from stream_alert.shared.stats import time_me
 
 # Set the below to True when we want to support matching on multiple schemas
 # and then log_patterns will be used as a fall back for key/value matching
 SUPPORT_MULTIPLE_SCHEMA_MATCHING = False
+
 
 class StreamClassifier(object):
     """Classify, map source, and parse a raw record into its declared type."""
@@ -41,11 +42,11 @@ class StreamClassifier(object):
         S3 record contains `s3` and an SNS record contains an `Sns` key
 
         Args:
-            raw_record [dict]: A raw payload as a dictionary
+            raw_record (dict): A raw payload as a dictionary
 
         Returns:
-            service [string]: The AWS service which sent the record
-            entity [string]: The specific instance of a service which sent the record
+            str: The AWS service which sent the record
+            str: The specific instance of a service which sent the record
         """
         # Sns is capitalized below because this is how AWS stores it within the Record
         # Other services, like s3, are not stored like this. Do not alter it!
@@ -70,10 +71,11 @@ class StreamClassifier(object):
         """Load the sources for this payload.
 
         Args:
-            payload: A StreamPayload object
+            service (str): Source service
+            entity (str): Entity within the service
 
         Returns:
-            [boolean] True if the entity's log sources loaded properly
+            bool: True if the entity's log sources loaded properly
         """
         # Clear the list from any previous runs
         del self._entity_log_sources[:]
@@ -101,11 +103,8 @@ class StreamClassifier(object):
     def get_log_info_for_source(self):
         """Return a mapping of all log sources to a given entity with attributes.
 
-        Args:
-            payload: A StreamAlert payload object to be mapped
-
         Returns:
-            (dict) log sources and their attributes for the entity:
+            dict: log sources and their attributes for the entity:
             {
                 'log_source_1': {
                     'parser': 'json',
@@ -135,7 +134,6 @@ class StreamClassifier(object):
 
         Args:
             payload: A StreamAlert payload object
-            data: Pre parsed data string from a raw_event to be parsed
         """
         parse_result = self._parse(payload)
         if all([parse_result,
@@ -154,11 +152,11 @@ class StreamClassifier(object):
         first matched schema.
 
         Args:
-            [schema_matches] A list of tuples containing the info for schemas that have
+            schema_matches (list): A list of tuples containing the info for schemas that have
                 validly parsed this record. Each tuple is: (log_name, parser, parsed_data)
 
         Returns:
-            [tuple] The proper tuple to use for parsing from the list of tuples
+            tuple: The proper tuple to use for parsing from the list of tuples
         """
         # If there is only one parse or we do not have support for multiple schemas
         # enabled, then just return the first parse that was valid
@@ -200,7 +198,7 @@ class StreamClassifier(object):
             payload: A StreamAlert payload object
 
         Returns:
-            [list] A list containing any schemas that matched this log format
+            list: Contains any schemas that matched this log format
                 Each list entry contains the namedtuple of 'SchemaMatch' with
                 values of log_name, root_schema, parser, and parsed_data
         """
@@ -228,8 +226,7 @@ class StreamClassifier(object):
             if not parsed_data:
                 continue
 
-            LOGGER.debug('Parsed %d records with schema %s',
-                         len(parsed_data), log_name)
+            LOGGER.debug('Parsed %d records with schema %s', len(parsed_data), log_name)
 
             if SUPPORT_MULTIPLE_SCHEMA_MATCHING:
                 schema_matches.append(schema_match(log_name, schema, parser, parsed_data))
@@ -253,7 +250,7 @@ class StreamClassifier(object):
             payload.records: The parsed records as a list.
 
         Returns:
-            A boolean representing the success of the parse.
+            bool: the success of the parse.
         """
         schema_matches = self._process_log_schemas(payload)
 
@@ -294,12 +291,11 @@ class StreamClassifier(object):
         invalid.
 
         Args:
-            payload: Parsed payload dict
-            schema: data schema for a specific log source
-            options: parser options dict
+            payload (dict): Parsed payload dict
+            schema (dict): data schema for a specific log source
 
         Returns:
-            parsed dict payload with typed values
+            dict: parsed dict payload with typed values
         """
         for key, value in schema.iteritems():
             key = str(key)
@@ -336,8 +332,7 @@ class StreamClassifier(object):
 
                 # Skip the values for the 'streamalert:envelope_keys' key that we've
                 # added during parsing if the do not conform to being a dict
-                if key == 'streamalert:envelope_keys' and not isinstance(
-                        payload[key], dict):
+                if key == 'streamalert:envelope_keys' and not isinstance(payload[key], dict):
                     continue
 
                 cls._convert_type(payload[key], schema[key])

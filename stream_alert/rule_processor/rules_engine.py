@@ -1,4 +1,4 @@
-'''
+"""
 Copyright 2017-present, Airbnb Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,10 +12,10 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-'''
-import json
+"""
 from collections import namedtuple
 from copy import copy
+import json
 
 from stream_alert.rule_processor import LOGGER
 
@@ -61,6 +61,7 @@ class StreamRules(object):
         dropped.
         """
         def decorator(rule):
+            """Rule decorator logic."""
             rule_name = rule.__name__
             logs = opts.get('logs')
             outputs = opts.get('outputs')
@@ -98,6 +99,7 @@ class StreamRules(object):
         into helper functions. Each rule can contain multiple matchers.
         """
         def decorator(matcher):
+            """Match decorator."""
             name = matcher.__name__
             if name in cls.__matchers:
                 raise ValueError('matcher already defined: {}'.format(name))
@@ -109,6 +111,7 @@ class StreamRules(object):
     def disable(cls):
         """Disables a rule from being run by removing it from the internal rules dict"""
         def decorator(rule):
+            """Rule disable decorator."""
             rule_name = rule.__name__
             if rule_name in cls.__rules:
                 del cls.__rules[rule_name]
@@ -125,11 +128,11 @@ class StreamRules(object):
         Otherwise, returns True.
 
         Args:
-            payload: The log to process.
-            matcher_names: All matchers for a given rule to process.
+            record: Record to be matched
+            rule: Rule containing the list of matchers
 
         Returns:
-            Boolean result of matcher processing.
+            bool: result of matcher processing
         """
         # matchers are optional for rules
         if not rule.matchers:
@@ -140,7 +143,7 @@ class StreamRules(object):
             if matcher_function:
                 try:
                     matcher_result = matcher_function(record)
-                except Exception as err:
+                except Exception as err:  # pylint: disable=broad-except
                     matcher_result = False
                     LOGGER.error('%s: %s', matcher_function.__name__, err.message)
                 if not matcher_result:
@@ -163,7 +166,7 @@ class StreamRules(object):
         """
         try:
             rule_result = rule.rule_function(record)
-        except Exception:
+        except Exception:  # pylint: disable=broad-except
             rule_result = False
             LOGGER.exception(
                 'Encountered error with rule: %s',
@@ -180,11 +183,12 @@ class StreamRules(object):
         in a rule are contained in the JSON payload prior to rule processing.
 
         Args:
-            payload: Log to process
+            record: Payload record to process
+            payload_type (str): type of the record
             rule: Rule attributes
 
         Returns:
-            Boolean result of subkey check.
+            bool: result of subkey check.
         """
         if not rule.req_subkeys or payload_type != 'json':
             return True
@@ -217,14 +221,13 @@ class StreamRules(object):
         and the rule itself to determine if a match occurs.
 
         Returns:
-            List of alerts.
+            list: alerts
 
             An alert is represented as a dictionary with the following keys:
                 rule_name: the name of the triggered rule
                 payload: the StreamPayload object
                 outputs: list of outputs to send to
         """
-        rules = []
         alerts = []
         payload = copy(input_payload)
 

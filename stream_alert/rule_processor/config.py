@@ -1,4 +1,4 @@
-'''
+"""
 Copyright 2017-present, Airbnb Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,11 +12,10 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-'''
+"""
+from collections import OrderedDict
 import json
 import os
-
-from collections import OrderedDict
 
 
 class ConfigError(Exception):
@@ -104,7 +103,7 @@ def load_env(context):
         context: The AWS Lambda context object.
 
     Returns:
-        [dict] including the following items:
+        dict:
             {
                 'lambda_region': 'region_name',
                 'account_id': 'account_id',

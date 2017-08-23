@@ -1,4 +1,4 @@
-'''
+"""
 Copyright 2017-present, Airbnb Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -9,12 +9,10 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-'''
-
+"""
 from datetime import datetime
 
 import boto3
-
 from botocore.exceptions import ClientError
 
 from stream_alert_cli.logger import LOGGER_CLI
@@ -38,9 +36,9 @@ class LambdaVersion(object):
         """Initialize the version publishing
 
         Keyword Args:
-            config [CLIConfig]: Loaded StreamAlert CLI Config
-            package [LambdaPackage]: The created Lambda Package
-            clustered_deploy [Boolean]: Identifies cluster based Lambdas
+            config (CLIConfig): Loaded StreamAlert CLI Config
+            package (LambdaPackage): The created Lambda Package
+            clustered_deploy (bool): Identifies cluster based Lambdas
         """
         self.config = kwargs['config']
         self.package = kwargs['package']
@@ -51,14 +49,13 @@ class LambdaVersion(object):
         """Make the API call to publish the Lambda function
 
         Keyword Arguments:
-            client [boto3.client]: Lambda boto3 client
-            function_name [string]: Lambda function name to publish
-            code_sha_256 [string]: The SHA256 of the current $LATEST package
-            date [datetime]: Current time
+            client (boto3.client): Lambda boto3 client
+            function_name (str): Lambda function name to publish
+            code_sha_256 (str): The SHA256 of the current $LATEST package
+            date (datetime): Current time
 
         Returns:
-            [False] If the publish fails
-            [Int] If the publish is successful
+            int: Version OR False if the publish fails
         """
         client = kwargs.get('client')
         if not client:
@@ -82,10 +79,10 @@ class LambdaVersion(object):
         """Handle clustered or single Lambda function publishing
 
         Keyword Arguments:
-            cluster [string]: The cluster to deploy to, this is optional
+            cluster (str): The cluster to deploy to, this is optional
 
         Returns:
-            [Boolean]: Result of the function publishes
+            bool: Result of the function publishes
         """
         cluster = kwargs.get('cluster')
         date = datetime.utcnow().strftime("%Y%m%d_T%H%M%S")
@@ -124,7 +121,8 @@ class LambdaVersion(object):
         if cluster:
             LOGGER_CLI.info('Published version %s for %s:%s',
                             new_version, cluster, function_name)
-            self.config['clusters'][cluster]['modules']['stream_alert'][self.package.package_name]['current_version'] = new_version
+            self.config['clusters'][cluster]['modules']['stream_alert'][self.package.package_name][
+                'current_version'] = new_version
         else:
             LOGGER_CLI.info('Published version %s for %s',
                             new_version, function_name)

@@ -1,4 +1,4 @@
-'''
+"""
 Copyright 2017-present, Airbnb Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,7 +12,9 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-'''
+"""
+from abc import ABCMeta, abstractmethod
+from collections import namedtuple
 import json
 import logging
 import os
@@ -20,11 +22,7 @@ import ssl
 import tempfile
 import urllib2
 
-from abc import ABCMeta, abstractmethod
-from collections import namedtuple
-
 import boto3
-
 from botocore.exceptions import ClientError
 
 logging.basicConfig()
@@ -70,7 +68,7 @@ class StreamOutputBase(object):
         """Get the local tmp directory for caching the encrypted service credentials
 
         Returns:
-            [string] local path for stream_alert_secrets tmp directory
+            str: local path for stream_alert_secrets tmp directory
         """
         temp_dir = os.path.join(tempfile.gettempdir(), "stream_alert_secrets")
 
@@ -89,10 +87,10 @@ class StreamOutputBase(object):
         the credentials from S3 if they are not cached locally
 
         Args:
-            descriptor [string]: unique identifier used to look up these credentials
+            descriptor (str): unique identifier used to look up these credentials
 
         Returns:
-            [dict] the loaded credential info needed for sending alerts to this service
+            dict: the loaded credential info needed for sending alerts to this service
                 or None if nothing gets loaded
         """
         local_cred_location = os.path.join(self._local_temp_dir(),
@@ -132,11 +130,11 @@ class StreamOutputBase(object):
         """Pull the encrypted credential blob for this service and destination from s3
 
         Args:
-            cred_location [string]: The tmp path on disk to to store the encrypted blob
-            descriptor [string]: Service destination (ie: slack channel, pd integration)
+            cred_location (str): The tmp path on disk to to store the encrypted blob
+            descriptor (str): Service destination (ie: slack channel, pd integration)
 
         Returns:
-            [boolean] True if download of creds from s3 was a success
+            bool: True if download of creds from s3 was a success
         """
         try:
             if not os.path.exists(os.path.dirname(cred_location)):
@@ -158,10 +156,10 @@ class StreamOutputBase(object):
         """Decrypt data with AWS KMS.
 
         Args:
-            data [string]: An encrypted ciphertext data blob
+            data (str): An encrypted ciphertext data blob
 
         Returns:
-            [string] Decrypted json string
+            str: Decrypted json string
         """
         try:
             client = boto3.client('kms', region_name=self.region)
@@ -174,7 +172,7 @@ class StreamOutputBase(object):
         """Log the status of sending the alerts
 
         Args:
-            success [boolean]: Indicates if the dispatching of alerts was successful
+            success (bool): Indicates if the dispatching of alerts was successful
         """
         if success:
             LOGGER.info('Successfully sent alert to %s', self.__service__)
@@ -188,12 +186,12 @@ class StreamOutputBase(object):
         """URL request helper to send a payload to an endpoint
 
         Args:
-            url [string]: Endpoint for this request
-            data [string]: Payload to send with this request
-            headers [dict=None]: Dictionary containing request-specific header parameters
-            verify [boolean=True]: Whether or not SSL should be used for this request
+            url (str): Endpoint for this request
+            data (str): Payload to send with this request
+            headers (dict): Dictionary containing request-specific header parameters
+            verify (bool): Whether or not SSL should be used for this request
         Returns:
-            [file handle] Contains the http response to be read
+            file handle: Contains the http response to be read
         """
         try:
             context = None
@@ -205,8 +203,7 @@ class StreamOutputBase(object):
             resp = urllib2.urlopen(request, context=context)
             return resp
         except urllib2.HTTPError as err:
-            raise OutputRequestFailure('Failed to send to {} - [{}]'.format(err.url,
-                                                                            err.code))
+            raise OutputRequestFailure('Failed to send to {} - [{}]'.format(err.url, err.code))
 
     @staticmethod
     def _check_http_response(resp):
@@ -227,7 +224,7 @@ class StreamOutputBase(object):
         information is then sent to kms for encryption and s3 for storage.
 
         Returns:
-            [dict] Contains various default items for this output (ie: url)
+            dict: Contains various default items for this output (ie: url)
         """
         pass
 
@@ -236,10 +233,10 @@ class StreamOutputBase(object):
         and the descriptor.
 
         Args:
-            descriptor [string]: Service destination (ie: slack channel, pd integration)
+            descriptor (str): Service destination (ie: slack channel, pd integration)
 
-        Return:
-            [string] Formatted credential name (ie: slack_ryandchannel)
+        Returns:
+            str: Formatted credential name (ie: slack_ryandchannel)
         """
         cred_name = str(self.__service__)
 
@@ -249,17 +246,17 @@ class StreamOutputBase(object):
 
         return cred_name
 
-    def format_output_config(self, config, props):
+    def format_output_config(self, service_config, values):
         """Add this descriptor to the list of descriptor this service
            If the service doesn't exist, a new entry is added to an empty list
 
         Args:
-            config [dict]: Loaded configuration as a dictionary
-            props [OrderedDict]: Contains various OutputProperty items
+            service_config (dict): Loaded configuration as a dictionary
+            values (OrderedDict): Contains various OutputProperty items
         Returns:
             [list<string>] List of descriptors for this service
         """
-        return config.get(self.__service__, []) + [props['descriptor'].value]
+        return service_config.get(self.__service__, []) + [values['descriptor'].value]
 
     @abstractmethod
     def get_user_defined_properties(self):
@@ -275,7 +272,7 @@ class StreamOutputBase(object):
         the key 'descriptor' with a description of the integration being configured
 
         Returns:
-            [OrderedDict] Contains various OutputProperty items
+            OrderedDict: Contains various OutputProperty items
         """
         pass
 
@@ -286,8 +283,8 @@ class StreamOutputBase(object):
 
         Args:
             **kwargs: consists of any combination of the following items:
-                descriptor [string]: Service descriptor (ie: slack channel, pd integration)
-                rule_name [string]: Name of the triggered rule
-                alert [dict]: Alert relevant to the triggered rule
+                descriptor (str): Service descriptor (ie: slack channel, pd integration)
+                rule_name (str): Name of the triggered rule
+                alert (dict): Alert relevant to the triggered rule
         """
         pass

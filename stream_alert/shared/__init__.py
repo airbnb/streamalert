@@ -1,3 +1,4 @@
+"""Define logger for shared functionality."""
 import logging
 import os
 

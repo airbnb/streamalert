@@ -108,7 +108,7 @@ StreamAlert contains unit tests for many parts of the code.  When making changes
 .. code-block:: bash
 
   # run this from the repo root
-  $ nosetests -v test/unit
+  $ nosetests -v tests/unit
 
 Each test should end with ``... ok``, and finally you should see ``OK`` at the end.
 

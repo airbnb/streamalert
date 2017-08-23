@@ -7,9 +7,9 @@ When production AWS Lambda functions are published, they become immutable.  If f
 
 To initiate a rollback for a specific Lambda function:
 
-``$ ./stream_alert_cli.py lambda rollback --processor rule``
-``$ ./stream_alert_cli.py lambda rollback --processor alert``
+``$ ./manage.py lambda rollback --processor rule``
+``$ ./manage.py lambda rollback --processor alert``
 
 To initiate a rollback for all functions:
 
-``$ ./stream_alert_cli.py lambda rollback --processor all``
+``$ ./manage.py lambda rollback --processor all``

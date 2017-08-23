@@ -92,7 +92,7 @@ After configuring the above settings, deploy the Lambda function:
 
 .. code-block:: bash
 
-  $ python stream_alert_cli.py lambda deploy --processor athena
+  $ python manage.py lambda deploy --processor athena
 
 This will create all of the underlying infrastructure to automatically refresh Athena tables.
 

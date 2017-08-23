@@ -1,5 +1,6 @@
-from stream_alert.rule_processor.rules_engine import StreamRules
+"""Alert on destructive AWS API calls."""
 from helpers.base import in_set
+from stream_alert.rule_processor.rules_engine import StreamRules
 
 rule = StreamRules.rule
 disable = StreamRules.disable()
@@ -14,13 +15,15 @@ def cloudtrail_critical_api_calls(rec):
     """
     author:           airbnb_csirt
     description:      Alert on AWS API calls that stop or delete security/infrastructure logs.
-                      Additionally, alert on AWS API calls that delete critical resources (VPCs, Subnets, DB's, ...)
-    reference:        https://medium.com/@robwitoff/proactive-cloud-security-w-aws-organizations-d58695bcae16#.tx2e6iju0
+                      Additionally, alert on AWS API calls that delete critical resources
+                      (VPCs, Subnets, DB's, ...)
+    reference:        https://medium.com/@robwitoff/
+                          proactive-cloud-security-w-aws-organizations-d58695bcae16#.tx2e6iju0
     playbook:         (a) identify the AWS account in the log
                       (b) identify what resource(s) are impacted by the API call
                       (c) determine if the intent is valid, malicious or accidental
     """
-    events_whitelist = {
+    critical_events = {
         # VPC Flow Logs (~netflow)
         'DeleteFlowLogs',
         # Critical, large resources
@@ -40,4 +43,4 @@ def cloudtrail_critical_api_calls(rec):
         'DisableRule'
     }
 
-    return in_set(rec['eventName'], events_whitelist)
+    return in_set(rec['eventName'], critical_events)

@@ -1,3 +1,4 @@
+"""Initialize logging for the rule processor."""
 import logging
 import os
 

@@ -1,4 +1,4 @@
-'''
+"""
 Copyright 2017-present, Airbnb Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,18 +12,15 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-'''
-
-from datetime import datetime
-
+"""
 import base64
+from datetime import datetime
 import hashlib
 import os
 import shutil
 import tempfile
 
 import boto3
-
 from botocore.exceptions import ClientError
 
 from stream_alert_cli.helpers import run_command
@@ -34,11 +31,11 @@ class LambdaPackage(object):
     """Build and upload a StreamAlert deployment package to S3.
 
     Class Variables:
-        package_folders [set]: The folders to zip into the Lambda package
-        package_files [set]: The set of files to add to the Lambda package
-        package_name [string]: The name of the zip file to put on S3
-        package_root_dir [string]: Working directory to begin the zip
-        config_key [string]: The configuration key to update after creation
+        package_folders (set): The folders to zip into the Lambda package
+        package_files (set): The set of files to add to the Lambda package
+        package_name (str): The name of the zip file to put on S3
+        package_root_dir (str): Working directory to begin the zip
+        config_key (str): The configuration key to update after creation
     """
     package_folders = set()
     package_files = set()
@@ -89,8 +86,7 @@ class LambdaPackage(object):
         """Generate a temporary directory and package name
 
         Returns:
-            [string] A temporary directory to write files to.
-                     ex: tmpfolder/rule_processor_1.0.0_date_time/
+            str: A temp directory to write files to, e.g. tmpfolder/rule_processor_1.0.0_date_time/
         """
         date = datetime.utcnow().strftime("%Y%m%d_T%H%M%S")
         package_name = '_'.join([self.package_name, self.version, date])
@@ -102,7 +98,7 @@ class LambdaPackage(object):
         """Removes the temporary StreamAlert package and checksum.
 
         Args:
-            files [tuple]: File paths to remove after uploading to S3.
+            files (str): File paths to remove after uploading to S3.
         """
         LOGGER_CLI.debug('Removing local files')
         for obj in files:
@@ -132,13 +128,12 @@ class LambdaPackage(object):
             for creation of lambda functions.
 
         Args:
-            temp_package_path [string]: the temporary file path to store the zip.
+            temp_package_path (str): the temporary file path to store the zip.
 
         Returns:
-            [string] Deployment package full path
+            str: Deployment package full path
         """
-        LOGGER_CLI.debug('Creating Lambda package: %s',
-                        ''.join([temp_package_path, '.zip']))
+        LOGGER_CLI.debug('Creating Lambda package: %s', temp_package_path + '.zip')
         package_path = shutil.make_archive(temp_package_path, 'zip', temp_package_path)
         LOGGER_CLI.info('Package successfully created')
 
@@ -153,10 +148,10 @@ class LambdaPackage(object):
         AWS Lambda function to `production`.
 
         Args:
-            package_path [string]: Full path to our zipped deployment package
+            package_path (str): Full path to our zipped deployment package
 
         Returns:
-            [string tuple](SHA256 checksum of the package, checksum file path)
+            str, str: SHA256 checksum of the package, checksum file path
         """
         hasher = hashlib.sha256()
         with open(package_path, 'rb') as package_fh:
@@ -175,10 +170,10 @@ class LambdaPackage(object):
         """Install all third-party packages into the deployment package folder
 
         Args:
-            temp_package_path [string]: Full path to temp package path
+            temp_package_path (str): Full path to temp package path
 
         Returns:
-            [boolean] False if the pip command failed to install requirements, True otherwise
+            bool: False if the pip command failed to install requirements, True otherwise
         """
         third_party_libs = self.config['lambda'][self.config_key]['third_party_libraries']
         # Return a default of True here if no libraries to install
@@ -200,10 +195,10 @@ class LambdaPackage(object):
         """Upload the StreamAlert package and sha256 sum to S3.
 
         Args:
-            package path [string]:  Full path to the zipped dpeloyment package
+            package path (str): Full path to the zipped dpeloyment package
 
         Returns:
-            [boolean] Indicating a successful S3 upload
+            bool: Indicating a successful S3 upload
         """
         LOGGER_CLI.info('Uploading StreamAlert package to S3')
         client = boto3.client(
@@ -220,9 +215,8 @@ class LambdaPackage(object):
                     Body=package_fh,
                     ServerSideEncryption='AES256'
                 )
-            except ClientError as err:
-                LOGGER_CLI.exception('An error occurred while uploading %s',
-                                     package_name)
+            except ClientError:
+                LOGGER_CLI.exception('An error occurred while uploading %s', package_name)
                 return False
 
             package_fh.close()

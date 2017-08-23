@@ -38,8 +38,8 @@ To get started with Athena, run the following commands:
 
 .. code-block:: bash
 
-  $ python stream_alert_cli.py athena init
-  $ python stream_alert_cli.py athena enable
+  $ python manage.py athena init
+  $ python manage.py athena enable
 
 This will initialize and enable the configuration for StreamAlert's usage of Athena.
 
@@ -47,13 +47,13 @@ Next, create the ``streamalert`` database:
 
 .. code-block:: bash
 
-  $ python stream_alert_cli.py athena create-db
+  $ python manage.py athena create-db
 
 Finally, create the ``alerts`` table for searching generated StreamAlerts:
 
 .. code-block:: bash
 
-  $ python stream_alert_cli.py athena create-table --type alerts --bucket <s3.bucket.id.goes.here>
+  $ python manage.py athena create-table --type alerts --bucket <s3.bucket.id.goes.here>
 
 Next Steps
 ~~~~~~~~~~

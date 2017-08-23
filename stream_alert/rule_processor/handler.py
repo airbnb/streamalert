@@ -1,4 +1,4 @@
-'''
+"""
 Copyright 2017-present, Airbnb Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,14 +12,13 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-'''
+"""
+from logging import DEBUG as LOG_LEVEL_DEBUG
 import json
 
-from logging import DEBUG as log_level_debug
-
 from stream_alert.rule_processor import LOGGER
-from stream_alert.rule_processor.config import load_config, load_env
 from stream_alert.rule_processor.classifier import StreamClassifier
+from stream_alert.rule_processor.config import load_config, load_env
 from stream_alert.rule_processor.payload import load_stream_payload
 from stream_alert.rule_processor.rules_engine import StreamRules
 from stream_alert.rule_processor.sink import StreamSink
@@ -34,7 +33,7 @@ class StreamAlert(object):
         Args:
             context: An AWS context object which provides metadata on the currently
                 executing lambda function.
-            enable_alert_processor: If the user wants to send the alerts using their
+            enable_alert_processor (bool): If the user wants to send the alerts using their
                 own methods, 'enable_alert_processor' can be set to False to suppress
                 sending with the StreamAlert alert processor.
         """
@@ -70,7 +69,7 @@ class StreamAlert(object):
                 an s3 bucket event) containing data emitted to the stream.
 
         Returns:
-            [boolean] True if all logs being parsed match a schema
+            bool: True if all logs being parsed match a schema
         """
         records = event.get('Records', [])
         LOGGER.debug('Number of Records: %d', len(records))
@@ -123,7 +122,7 @@ class StreamAlert(object):
 
         # Check if debugging logging is on before json dumping alerts since
         # this can be time consuming if there are a lot of alerts
-        if self._alerts and LOGGER.isEnabledFor(log_level_debug):
+        if self._alerts and LOGGER.isEnabledFor(LOG_LEVEL_DEBUG):
             LOGGER.debug('Alerts:\n%s', json.dumps(self._alerts, indent=2))
 
         # Send any cached metrics to CloudWatch before returning
@@ -135,7 +134,7 @@ class StreamAlert(object):
         """Public method to return alerts from class. Useful for testing.
 
         Returns:
-            [list] list of alerts as dictionaries
+            list: list of alerts as dictionaries
         """
         return self._alerts
 
@@ -143,7 +142,7 @@ class StreamAlert(object):
         """Process records for alerts and send them to the correct places
 
         Args:
-            payload [StreamPayload]: StreamAlert payload object being processed
+            payload (StreamPayload): StreamAlert payload object being processed
         """
         for record in payload.pre_parse():
             self.classifier.classify_record(record)

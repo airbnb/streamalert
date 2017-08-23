@@ -26,18 +26,18 @@ Credentials are never cached on disk in a decrypted state.
 Configuration
 -------------
 
-Adding a new configuration for a currently supported service is handled using ``stream_alert_cli.py``:
+Adding a new configuration for a currently supported service is handled using ``manage.py``:
 
- - ``python stream_alert_cli.py output new --service <SERVICE_NAME>``
+ - ``python manage.py output new --service <SERVICE_NAME>``
     - ``<SERVICE_NAME>`` above should be one of the following supported service identifiers: ``aws-lambda``, ``aws-s3``, ``pagerduty``, ``phantom``, or ``slack``
 
 For example:
- - ``python stream_alert_cli.py output new --service slack``
+ - ``python manage.py output new --service slack``
 
 .. note:: If this is the first time you have configured new outputs via the cli, you may see this error for certain services:
  `An error occurred while sending credentials to S3 for key [<SERVICE>/<KEY>]: The specified bucket does not exist [<PREFIX>.streamalert.secrets]`.
  If you encounter this error, first make sure you've followed the `Quick Start <getting-started.html#quick-start>`_ steps.
- If you've already configured StreamAlert in the past, you may just have to run `python stream_alert_cli.py terraform build`.
+ If you've already configured StreamAlert in the past, you may just have to run `python manage.py terraform build`.
  This ensures the S3 bucket used for storing encrypted secrets is created and only needs to be run once.
 
 The above command will then prompt the user for a ``descriptor`` to use for this configuration::
@@ -112,7 +112,7 @@ Adding support for a new service involves five steps:
 
 4. Add the ``@output`` class decorator to the new subclass so it registered when the `outputs` module is loaded.
 
-5. To allow the cli to configure a new integration for this service, add the value used above for the ``__service__`` property to the ``stream_alert_cli.py`` file.
+5. To allow the cli to configure a new integration for this service, add the value used above for the ``__service__`` property to the ``manage.py`` file.
 
    - The ``output_parser`` contains a ``choices`` list for ``--service`` that must include this new service.
 

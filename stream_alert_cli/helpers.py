@@ -1,4 +1,4 @@
-'''
+"""
 Copyright 2017-present, Airbnb Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,23 +12,22 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-'''
+"""
 import base64
 import json
 import os
 import random
+from StringIO import StringIO
 import subprocess
 import zipfile
 import zlib
-
-from StringIO import StringIO
 
 import boto3
 
 from stream_alert_cli.logger import LOGGER_CLI
 
 
-DIR_TEMPLATES = 'test/integration/templates'
+DIR_TEMPLATES = 'tests/integration/templates'
 
 
 def run_command(runner_args, **kwargs):
@@ -37,9 +36,9 @@ def run_command(runner_args, **kwargs):
     Args:
         runner_args (list): Commands to run via subprocess
         kwargs:
-            cwd (string): A path to execute commands from
-            error_message (string): Message to show if command fails
-            quiet (boolean): Whether to show command output or hide it
+            cwd (str): A path to execute commands from
+            error_message (str): Message to show if command fails
+            quiet (bool): Whether to show command output or hide it
 
     """
     default_error_message = "An error occurred while running: {}".format(
@@ -70,10 +69,10 @@ def format_lambda_test_record(test_record):
     """Create a properly formatted Kinesis, S3, or SNS record.
 
     Supports a dictionary or string based data record.  Reads in
-    event templates from the test/integration/templates folder.
+    event templates from the tests/integration/templates folder.
 
     Args:
-        test_record: Test record metadata dict with the following structure:
+        test_record (dict): Test record metadata dict with the following structure:
             data - string or dict of the raw data
             description - a string describing the test that is being performed
             trigger - bool of if the record should produce an alert
@@ -82,7 +81,7 @@ def format_lambda_test_record(test_record):
             compress (optional) - if the payload needs to be gzip compressed or not
 
     Returns:
-        dict in the format of the specific service
+        dict: in the format of the specific service
     """
     service = test_record['service']
     source = test_record['source']
@@ -155,6 +154,7 @@ def create_lambda_function(function_name, region):
 
 
 def encrypt_with_kms(data, region, alias):
+    """Encrypt the given data with KMS."""
     kms_client = boto3.client('kms', region_name=region)
     response = kms_client.encrypt(KeyId=alias,
                                   Plaintext=data)
@@ -190,10 +190,10 @@ def put_mock_s3_object(bucket, key, data, region):
     """Create a mock AWS S3 object for testing
 
     Args:
-        bucket: the bucket in which to place the object (string)
-        key: the key to use for the S3 object (string)
-        data: the actual value to use for the object (string)
-        region: the aws region to use for this boto3 client
+        bucket (str): the bucket in which to place the object
+        key (str): the key to use for the S3 object
+        data (str): the actual value to use for the object
+        region (str): the aws region to use for this boto3 client
     """
     s3_client = boto3.client('s3', region_name=region)
     s3_client.create_bucket(Bucket=bucket)
