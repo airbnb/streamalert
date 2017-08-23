@@ -23,7 +23,6 @@ import time
 
 import boto3
 from mock import Mock, patch
-from moto import mock_cloudwatch, mock_lambda, mock_kms, mock_s3, mock_sns
 
 from stream_alert.alert_processor import main as StreamOutput
 from stream_alert.rule_processor.handler import StreamAlert
@@ -551,71 +550,6 @@ def report_output(passed, cols):
     print '\t{}{:>14}\t{}\t({}): {}'.format(status, *cols)
 
 
-def mock_me(context):
-    """Decorator function for wrapping framework in mock calls
-    for running local tests, and omitting mocks if testing live
-
-    Args:
-        context (namedtuple): A constructed aws context object
-    """
-    def wrap(func):
-        """Wrap the returned function with or without mocks"""
-        if context.mocked:
-            @mock_cloudwatch
-            @mock_lambda
-            @mock_s3
-            @mock_kms
-            def mocked(options, context):
-                """This function is now mocked using moto mock decorators to
-                override any boto3 calls. Wrapping this function here allows
-                us to mock out all calls that happen below this scope."""
-                return func(options, context)
-            return mocked
-
-        def unmocked(options, context):
-            """This function will remain unmocked and operate normally"""
-            return func(options, context)
-        return unmocked
-
-    return wrap
-
-
-def get_context_from_config(cluster, config):
-    """Return a constructed context to be used for testing
-
-    Args:
-        cluster (str): Name of the cluster to be used for live testing
-        config (CLIConfig): Configuration for this StreamAlert setup that
-            includes cluster info, etc that can be used for constructing
-            an aws context object
-    """
-    context = namedtuple('aws_context', ['invoked_function_arn',
-                                         'function_name'
-                                         'mocked'])
-
-    # Return a mocked context if the cluster is not provided
-    # Otherwise construct the context from the config using the cluster
-    if not cluster:
-        context.invoked_function_arn = (
-            'arn:aws:lambda:us-east-1:123456789012:'
-            'function:test_streamalert_processor:development')
-        context.function_name = 'test_streamalert_alert_processor'
-        context.mocked = True
-    else:
-        prefix = config['global']['account']['prefix']
-        account = config['global']['account']['aws_account_id']
-        region = config['global']['account']['region']
-        function_name = '{}_{}_streamalert_alert_processor'.format(prefix, cluster)
-        arn = 'arn:aws:lambda:{}:{}:function:{}:testing'.format(
-            region, account, function_name)
-
-        context.invoked_function_arn = arn
-        context.function_name = function_name
-        context.mocked = False
-
-    return context
-
-
 def stream_alert_test(options, config=None):
     """High level function to wrap the integration testing entry point.
     This encapsulates the testing function and is used to specify if calls
@@ -629,9 +563,9 @@ def stream_alert_test(options, config=None):
     """
     # get the options in a dictionary so we can do easy lookups
     run_options = vars(options)
-    context = get_context_from_config(run_options.get('cluster'), config)
+    context = helpers.get_context_from_config(run_options.get('cluster'), config)
 
-    @mock_me(context)
+    @helpers.mock_me(context)
     def run_tests(options, context):
         """Actual protected function for running tests
 
