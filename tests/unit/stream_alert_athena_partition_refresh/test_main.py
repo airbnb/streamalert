@@ -25,8 +25,10 @@ from moto import mock_sqs
 from nose.tools import (
     assert_equal,
     assert_false,
+    assert_is_none,
     assert_true,
-    raises
+    raises,
+    nottest
 )
 
 from stream_alert.athena_partition_refresh.main import (
@@ -89,7 +91,8 @@ CONFIG_DATA = {
                 "unit-testing.streamalerts": "alerts"
               },
               "add_hive_partition": {
-                "unit-testing.streamalerts": "alerts"
+                "unit-testing.streamalerts": "alerts",
+                "test-bucket-with-data": "data-type-1"
               }
             },
             'handler': 'main.handler',
@@ -204,7 +207,7 @@ class TestStreamAlertSQSClient(object):
               'eventSource': 'aws:s3',
               'awsRegion': 'us-east-1',
               'eventTime': '2017-08-07T18:26:30.956Z',
-              'eventName': 'ObjectCreated:Put',
+              'eventName': 'S3:PutObject',
               'userIdentity': {
                 'principalId': 'AWS:AAAAAAAAAAAAAAA'
               },
@@ -239,7 +242,7 @@ class TestStreamAlertSQSClient(object):
               'eventSource': 'aws:s3',
               'awsRegion': 'us-east-1',
               'eventTime': '2017-08-07T18:26:30.956Z',
-              'eventName': 'ObjectCreated:Put',
+              'eventName': 'S3:GetObject',
               'userIdentity': {
                 'principalId': 'AWS:AAAAAAAAAAAAAAA'
               },
@@ -274,14 +277,44 @@ class TestStreamAlertSQSClient(object):
                                 QueueUrl=self.client.athena_sqs_url)
 
     def teardown(self):
-        self.mock_sqs.stop()
+        self.client.sqs_client.purge_queue(QueueUrl=self.client.athena_sqs_url)
+        self.client = None
+
 
     @patch('stream_alert.athena_partition_refresh.main.LOGGER')
-    def test_delete_messages_none(self, mock_logging):
+    def test_delete_messages_none_received(self, mock_logging):
         """Athena SQS - Delete Messages - No Receieved Messages"""
         self.client.delete_messages()
 
         assert_true(mock_logging.error.called)
+
+
+    # The return value is not being mocked successfully
+    @nottest
+    @patch('stream_alert.athena_partition_refresh.main.StreamAlertSQSClient')
+    @patch('stream_alert.athena_partition_refresh.main.LOGGER')
+    def test_delete_messages_failure(self, mock_logging, mock_sqs_client):
+        """Athena SQS - Delete Messages - Failure Response"""
+        instance = mock_sqs_client.return_value
+        instance.sqs_client.delete_message_batch.return_value = {'Successful': [{'Id': '2'}],
+                                                                 'Failed': [{'Id': '1'}]}
+
+        self.client.get_messages()
+        self.client.unique_s3_buckets_and_keys()
+        self.client.delete_messages()
+
+        assert_true(mock_logging.error.called)
+
+
+    @patch('stream_alert.athena_partition_refresh.main.LOGGER')
+    def test_delete_messages_none_processed(self, mock_logging):
+        """Athena SQS - Delete Messages - No Processed Messages"""
+        self.client.processed_messages = []
+        result = self.client.delete_messages()
+
+        assert_true(mock_logging.error.called)
+        assert_false(result)
+
 
     @patch('stream_alert.athena_partition_refresh.main.LOGGER')
     def test_delete_messages(self, mock_logging):
@@ -293,9 +326,18 @@ class TestStreamAlertSQSClient(object):
         assert_true(mock_logging.info.called)
 
     @patch('stream_alert.athena_partition_refresh.main.LOGGER')
+    def test_get_messages_invalid_max_messages(self, mock_logging):
+        """Athena SQS - Invalid Max Message Request"""
+        resp = self.client.get_messages(max_messages=100)
+
+        assert_true(mock_logging.error.called)
+        assert_is_none(resp)
+
+
+    @patch('stream_alert.athena_partition_refresh.main.LOGGER')
     def test_get_messages(self, mock_logging):
-        """Athena SQS - Get Messages - Valid"""
-        self.client.get_messages()
+        """Athena SQS - Get Valid Messages"""
+        self.client.get_messages(max_tries=1)
 
         assert_equal(len(self.client.received_messages), 1)
         assert_true(mock_logging.info.called)
@@ -323,6 +365,23 @@ class TestStreamAlertSQSClient(object):
         assert_true(mock_logging.error.called)
 
     @patch('stream_alert.athena_partition_refresh.main.LOGGER')
+    def test_unique_s3_buckets_and_keys_s3_test_event(self, mock_logging):
+        """Athena SQS - Unique Buckets - S3 Test Event"""
+        s3_test_event = {'Body': json.dumps({
+            'HostId': '8cLeGAmw098X5cv4Zkwcmo8vvZa3eH3eKxsPzbB9wrR+YstdA6Knx4Ip8EXAMPLE',
+            'Service': 'Amazon S3',
+            'Bucket': 'bucketname',
+            'RequestId': '5582815E1AEA5ADF',
+            'Time': '2014-10-13T15:57:02.089Z',
+            'Event': 's3:TestEvent'})}
+        self.client.received_messages = [s3_test_event]
+        unique_buckets = self.client.unique_s3_buckets_and_keys()
+
+        assert_false(unique_buckets)
+        assert_true(mock_logging.debug.called_with('Skipping S3 bucket notification test event'))
+
+
+    @patch('stream_alert.athena_partition_refresh.main.LOGGER')
     def test_unique_s3_buckets_and_keys_invalid_record(self, mock_logging):
         """Athena SQS - Unique Buckets - Missing Records Key in SQS Message"""
         self.client.received_messages = [{'Body': '{"missing-records-key": 1}'}]
@@ -347,7 +406,7 @@ class TestStreamAlertSQSClient(object):
         self.client.received_messages = []
         unique_buckets = self.client.unique_s3_buckets_and_keys()
 
-        assert_equal(unique_buckets, None)
+        assert_is_none(unique_buckets)
         assert_true(mock_logging.error.called)
 
 
@@ -367,12 +426,51 @@ class TestStreamAlertAthenaClient(object):
         self.client.athena_client = MockAthenaClient(results=query_result)
         result = self.client.add_hive_partition({
             'unit-testing.streamalerts': set([
-                'alerts/dt=2017-08-26-14-02/rule_name_alerts-1304134918401.json',
-                'alerts/dt=2017-08-27-14-02/rule_name_alerts-1304134918401.json',
+                'alerts/dt=2017-08-26-14/rule_name_alerts-1304134918401.json',
+                'alerts/dt=2017-08-27-14/rule_name_alerts-1304134918401.json',
+            ]),
+            'test-bucket-with-data': set([
+                '2017/08/26/14/rule_name_alerts-1304134918401.json',
+                '2017/08/28/14/rule_name_alerts-1304134918401.json',
+                '2017/07/30/14/rule_name_alerts-1304134918401.json',
             ])
         })
 
+        assert_true(mock_logging.info.called)
         assert_true(result)
+
+
+    @patch('stream_alert.athena_partition_refresh.main.LOGGER')
+    def test_add_hive_partition_unknown_bucket(self, mock_logging):
+        """Athena - Add Hive Partition - Unknown Bucket"""
+        self.client.athena_client = MockAthenaClient(results=[])
+        result = self.client.add_hive_partition({
+            'bucket-not-in-config.streamalerts': set([
+                'alerts/dt=2017-08-26-14/rule_name_alerts-1304134918401.json',
+                'alerts/dt=2017-08-27-14/rule_name_alerts-1304134918401.json',
+            ])
+        })
+
+        assert_true(mock_logging.error.called)
+        assert_false(result)
+
+
+    @patch('stream_alert.athena_partition_refresh.main.LOGGER')
+    def test_add_hive_partition_unexpected_s3_key(self, mock_logging):
+        """Athena - Add Hive Partition - Unexpected S3 Key"""
+        self.client.athena_client = MockAthenaClient(results=[])
+        result = self.client.add_hive_partition({
+            'unit-testing.streamalerts': set([
+                'a/pattern/that/does/not-match'
+            ]),
+            'test-bucket-with-data': set([
+                'another/pattern/that/does/not-match'
+            ])
+        })
+
+        assert_true(mock_logging.error.called)
+        assert_false(result)
+
 
     def test_check_table_exists(self):
         """Athena - Check Table Exists"""
@@ -422,6 +520,20 @@ class TestStreamAlertAthenaClient(object):
         assert_true(query_success)
         assert_equal(query_results['ResultSet']['Rows'], [])
         assert_true(mock_logging.debug.called)
+
+    @patch('stream_alert.athena_partition_refresh.main.LOGGER')
+    def test_run_athena_query_async(self, mock_logging):
+        """Athena - Run Athena Query - Async Call"""
+        query_result = []
+        self.client.athena_client = MockAthenaClient(results=query_result)
+
+        query_success, query_results = self.client.run_athena_query(
+            query='SHOW DATABASES;',
+            async=True
+        )
+
+        assert_true(query_success)
+
 
     @patch('stream_alert.athena_partition_refresh.main.LOGGER')
     def test_run_athena_query_error(self, mock_logging):

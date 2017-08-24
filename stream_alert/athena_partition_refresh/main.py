@@ -331,6 +331,7 @@ class StreamAlertAthenaClient(object):
             # Gather all of the partitions to add per bucket
             s3_key_regex = self.STREAMALERTS_REGEX if athena_table == 'alerts' \
                                                    else self.FIREHOSE_REGEX
+            # Iterate over each key
             for key in keys:
                 match = s3_key_regex.search(key)
                 if not match:
@@ -356,27 +357,30 @@ class StreamAlertAthenaClient(object):
                 # Athena will not try to add the same partition twice.
                 partitions[partition] = location
 
-            partition_statement = ' '.join(
-                ['PARTITION {0} LOCATION {1}'.format(
-                    partition, location) for partition, location in partitions.iteritems()])
-            query = ('ALTER TABLE {athena_table} '
-                     'ADD IF NOT EXISTS {partition_statement};'.format(
-                         athena_table=athena_table,
-                         partition_statement=partition_statement))
+        if not partitions:
+            LOGGER.error('No partitons to add')
+            return False
 
-            query_success, _ = self.run_athena_query(
-                query=query,
-                database=self.DATABASE_STREAMALERT
-            )
+        partition_statement = ' '.join(
+            ['PARTITION {0} LOCATION {1}'.format(
+                partition, location) for partition, location in partitions.iteritems()])
+        query = ('ALTER TABLE {athena_table} '
+                 'ADD IF NOT EXISTS {partition_statement};'.format(
+                     athena_table=athena_table,
+                     partition_statement=partition_statement))
 
-            if not query_success:
-                LOGGER.error('The following query has failed:\n%s', query)
-                return False
+        query_success, _ = self.run_athena_query(
+            query=query,
+            database=self.DATABASE_STREAMALERT
+        )
 
-            LOGGER.info('Successfully added the following partitions:\n%s',
-                        '\n'.join(partitions))
+        if not query_success:
+            LOGGER.error('The add hive partition query has failed:\n%s', query)
+            return False
 
-            return True
+        LOGGER.info('Successfully added the following partitions:\n%s',
+                    '\n'.join(partitions))
+        return True
 
 
 class StreamAlertSQSClient(object):
@@ -433,7 +437,7 @@ class StreamAlertSQSClient(object):
         max_value = kwargs.get('max_value', 5)
         # Number of messages to poll from the stream.
         max_messages = kwargs.get('max_messages', self.MAX_SQS_GET_MESSAGE_COUNT)
-        if max_messages > 10:
+        if max_messages > self.MAX_SQS_GET_MESSAGE_COUNT:
             LOGGER.error('SQS can only request up to 10 messages in one request')
             return
 
