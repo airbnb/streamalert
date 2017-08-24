@@ -173,9 +173,9 @@ class TestStreamAlertAthenaGlobals(object):
     @patch('stream_alert.athena_partition_refresh.main.LOGGER')
     @patch('stream_alert.athena_partition_refresh.main._load_config',
            return_value=CONFIG_DATA)
-    @patch(
-        'stream_alert.athena_partition_refresh.main.StreamAlertSQSClient.unique_s3_buckets_and_keys',
-        return_value={})
+    @patch('stream_alert.athena_partition_refresh.main.'
+           'StreamAlertSQSClient.unique_s3_buckets_and_keys',
+           return_value={})
     @mock_sqs
     def test_handler_no_unique_buckets(self, _, mock_config, mock_logging):
         """Athena - Handler - No Unique Buckets"""
@@ -281,6 +281,7 @@ class TestStreamAlertSQSClient(object):
                                 QueueUrl=self.client.athena_sqs_url)
 
     def teardown(self):
+        """Purge the Queue and reset the client between runs"""
         self.client.sqs_client.purge_queue(QueueUrl=self.client.athena_sqs_url)
         self.client = None
 
@@ -519,13 +520,12 @@ class TestStreamAlertAthenaClient(object):
         assert_equal(query_results['ResultSet']['Rows'], [])
         assert_true(mock_logging.debug.called)
 
-    @patch('stream_alert.athena_partition_refresh.main.LOGGER')
-    def test_run_athena_query_async(self, mock_logging):
+    def test_run_athena_query_async(self):
         """Athena - Run Athena Query - Async Call"""
         query_result = []
         self.client.athena_client = MockAthenaClient(results=query_result)
 
-        query_success, query_results = self.client.run_athena_query(
+        query_success, _ = self.client.run_athena_query(
             query='SHOW DATABASES;',
             async=True
         )

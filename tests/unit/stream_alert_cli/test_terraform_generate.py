@@ -641,7 +641,8 @@ class TestTerraformGenerate(object):
 
         # List order messes up the comparison between both dictionaries
         assert_equal(set(athena_config['module']['stream_alert_athena']['athena_data_buckets']),
-                     set(expected_athena_config['module']['stream_alert_athena']['athena_data_buckets']))
+                     set(expected_athena_config['module']['stream_alert_athena']\
+                                               ['athena_data_buckets']))
 
         del athena_config['module']['stream_alert_athena']['athena_data_buckets']
         del expected_athena_config['module']['stream_alert_athena']['athena_data_buckets']
