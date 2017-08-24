@@ -14,8 +14,8 @@ To test a new rule, first create a new file under ``tests/integration/rules`` na
         "data": {} or "",
         "description": "of the test",
         "trigger": true or false,
-        "source": "kinesis_stream_name" or "s3_bucket_id",
-        "service": "kinesis" or "s3"
+        "source": "kinesis_stream_name" or "s3_bucket_id" or "sns_topic_name",
+        "service": "kinesis" or "s3" or "sns"
       }
     ]
   }
@@ -74,6 +74,84 @@ For example, to replace a time based field with ``last_hour``:
       }
     ]
   }
+
+
+Validating Log Schemas
+~~~~~~~~~~~~~~~~~~~~~~
+
+In some cases, there may be logs coming into StreamAlert that are of a known type, but you do not have a current need to apply rule
+logic to them. However, it is still advantageous to add schemas for these logs and *test* to ensure your new schemas are valid.
+
+This is possible through the addition of log schema(s) to ``conf/logs.json`` and creation of test record(s) in ``tests/integration/rules/``
+using known samples of logs (without actually adding a corresponding rule). Running the ``manage.py`` script with the ``validate-schemas``
+option will iterate over all json test files and attempt to match records within them to a defined log schema.
+
+To simply run schema validation on all test files:
+
+.. code-block:: bash
+
+  $ python manage.py validate-schemas
+
+
+To run schema validation on a specific test file within ``tests/integration/rules/``:
+
+.. code-block:: bash
+
+  $ python manage.py validate-schemas --test-files <test_rule_file.json>
+
+Or:
+
+.. code-block:: bash
+
+  $ python manage.py validate-schemas --test-files <test_rule_file>
+
+
+Example of running schema validation on two valid test files:
+
+.. code-block:: bash
+
+  $ python manage.py validate-schemas --test-files cloudtrail_critical_api_calls cloudtrail_put_bucket_acl.json
+
+This will produce output similar to the following::
+
+  cloudtrail_critical_api_calls
+         [Pass]  [log='cloudtrail:events']     validation  (s3): CloudTrail - Critical API - DeleteSubnet
+         [Pass]  [log='cloudtrail:events']     validation  (s3): CloudTrail - Critical API - DeleteVpc
+         [Pass]  [log='cloudtrail:events']     validation  (s3): CloudTrail - Critical API - UpdateTrail
+         [Pass]  [log='cloudtrail:events']     validation  (s3): CloudTrail - Critical API - StopLogging
+         [Pass]  [log='cloudtrail:events']     validation  (s3): CloudTrail - Critical API - DeleteDBCluster
+         [Pass]  [log='cloudtrail:events']     validation  (s3): CloudTrail - Critical API - StopConfigurationRecorder
+         [Pass]  [log='cloudtrail:events']     validation  (s3): CloudTrail - Critical API - DeleteFlowLogs
+         [Pass]  [log='cloudtrail:events']     validation  (s3): CloudTrail - Critical API - False Positive Case
+
+  cloudtrail_put_bucket_acl
+         [Pass]  [log='cloudwatch:events']     validation  (kinesis): CloudTrail - PutBucketAcl - True Positive
+         [Pass]  [log='cloudwatch:events']     validation  (kinesis): CloudTrail - PutBucketAcl - False Positive
+
+
+
+  StreamAlertCLI [INFO]: (10/10) Successful Tests
+  StreamAlertCLI [INFO]: Completed
+
+
+Example of running schema validation on a test file that contains one valid record and one invalid record:
+
+.. code-block:: bash
+
+  $ python manage.py validate-schemas --test-files cloudtrail_put_object_acl.json
+
+
+This will produce output similar to the following::
+
+  cloudtrail_put_object_acl
+         [Pass]  [log='cloudtrail:events']     validation  (s3): CloudTrail - PutObjectAcl - True Positive
+         [Fail]  [log='unknown']               validation  (s3): CloudTrail - PutObjectAcl - False Positive
+
+
+
+  StreamAlertCLI [INFO]: (1/2) Successful Tests
+  StreamAlertCLI [ERROR]: (1/2) Failures
+  StreamAlertCLI [ERROR]: (1/1) [cloudtrail_put_object_acl] Data is invalid due to missing key(s) in test record: 'eventVersion'. Rule: 'cloudtrail_put_object_acl'. Description: 'CloudTrail - PutObjectAcl - False Positive'
 
 
 Running Tests
@@ -141,7 +219,6 @@ This will produce output similar to the following::
   	[Pass]              	alert	(pagerduty): sending alert to 'sample_integration'
   	[Pass]              	alert	(aws-s3): sending alert to 'sample_bucket'
   	[Pass]   [trigger=0]	rule	(kinesis): CloudTrail - Root Account Usage - False Positive
-
 
 
   (4/4)	Rule Tests Passed
