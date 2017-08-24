@@ -296,7 +296,6 @@ def generate_cloudwatch_monitoring(cluster_name, cluster_dict, config):
     infrastructure_config = config['global'].get('infrastructure')
     sns_topic_arn = None
 
->>>>>>> [cli] add cloudwatch alarms for athena lambda
     if infrastructure_config and 'monitoring' in infrastructure_config:
         if infrastructure_config['monitoring'].get('create_sns_topic'):
             sns_topic_arn = 'arn:aws:sns:{region}:{account_id}:{topic}'.format(

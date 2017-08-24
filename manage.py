@@ -387,7 +387,7 @@ Examples:
     athena_parser.add_argument(
         '--refresh_type',
         choices=['add_hive_partition', 'repair_hive_table'],
-        help=argparse_suppress
+        help=ARGPARSE_SUPPRESS
     )
 
     athena_parser.add_argument(
