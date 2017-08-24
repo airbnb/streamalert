@@ -141,6 +141,7 @@ Examples:
 
 
 def _add_validate_schema_subparser(subparsers):
+    """Add the validate-schemas subparser: manage.py validate-schemas [options]"""
     schema_validation_usage = 'manage.py validate-schemas [options]'
     schema_validation_description = ("""
 StreamAlertCLI v{}
@@ -148,12 +149,19 @@ Run end-to-end tests that will attempt to send alerts
 
 Available Options:
 
-    --files                 Name (not full path) of test file(s) to validate, separated by spaces
-    --debug                 Enable Debug logger output
+    --test-files         Name(s) of test files to validate, separated by spaces (not full path)
+                           These files should be located within 'tests/integration/rules/' and each
+                           should be named according to the rule they are meant to test. The
+                           contents should be json, in the form of `{{"records": [ <records as maps> ]}}`.
+                           See the sample test files in 'tests/integration/rules/' for an example.
+                           The '--test-files' flag will accept the full file name, with extension,
+                           or the base file name, without extension (ie: test_file_name.json or
+                           test_file_name are both acceptable arguments)
+    --debug              Enable Debug logger output
 
 Examples:
 
-    manage.py validate-schemas --files
+    manage.py validate-schemas --test-files <test_file_name_01.json> <test_file_name_02.json>
 
 """.format(version))
     schema_validation_parser = subparsers.add_parser(
@@ -169,7 +177,7 @@ Examples:
 
     # add the optional ability to test against specific files
     schema_validation_parser.add_argument(
-        '-f', '--files',
+        '-f', '--test-files',
         nargs='+',
         help=ARGPARSE_SUPPRESS
     )

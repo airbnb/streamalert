@@ -710,7 +710,7 @@ def stream_alert_test(options, config=None):
 
         validate_schemas = options.command == 'validate-schemas'
 
-        filters = options.files if validate_schemas else options.rules
+        filters = options.test_files if validate_schemas else options.rules
 
         # Run the rule processor for all rules or designated rule set
         for alerts in rule_proc_tester.test_processor(filters, validate_schemas):
