@@ -32,7 +32,7 @@ from stream_alert.rule_processor.payload import load_stream_payload
 from stream_alert.rule_processor.rules_engine import StreamRules
 from stream_alert_cli import helpers
 from stream_alert_cli.logger import (
-    LOG_ERROR_HANDLER,
+    get_log_memory_hanlder,
     LOGGER_CLI,
     LOGGER_SA,
     LOGGER_SH,
@@ -694,6 +694,9 @@ def stream_alert_test(options, config=None):
             # Add a filter to suppress a few noisy log messages
             LOGGER_SA.addFilter(SuppressNoise())
 
+        # Create an in memory logging buffer to be used to caching all error messages
+        log_mem_hanlder = get_log_memory_hanlder()
+
         # Check if the rule processor should be run for these tests
         test_rules = (set(run_options.get('processor')).issubset({'rule', 'all'})
                       if run_options.get('processor') else
@@ -735,15 +738,15 @@ def stream_alert_test(options, config=None):
             sys.exit(1)
 
         # If there are any log records in the memory buffer, then errors occured somewhere
-        if LOG_ERROR_HANDLER.buffer:
+        if log_mem_hanlder.buffer:
             # Release the MemoryHandler so we can do some other logging now
-            logging.getLogger().removeHandler(LOG_ERROR_HANDLER)
+            logging.getLogger().removeHandler(log_mem_hanlder)
             LOGGER_CLI.error('%sSee %d miscellaneous error(s) below '
                              'that were encountered and may need to be addressed%s',
-                             COLOR_RED, len(LOG_ERROR_HANDLER.buffer), COLOR_RESET)
+                             COLOR_RED, len(log_mem_hanlder.buffer), COLOR_RESET)
 
-            LOG_ERROR_HANDLER.setTarget(LOGGER_CLI)
-            LOG_ERROR_HANDLER.flush()
+            log_mem_hanlder.setTarget(LOGGER_CLI)
+            log_mem_hanlder.flush()
 
             sys.exit(1)
 
