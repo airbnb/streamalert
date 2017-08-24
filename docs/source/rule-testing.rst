@@ -76,17 +76,17 @@ For example, to replace a time based field with ``last_hour``:
   }
 
 
-Validating Log Schemas
-~~~~~~~~~~~~~~~~~~~~~~
+Validate Log Schemas
+~~~~~~~~~~~~~~~~~~~~
 
-In some cases, there may be logs coming into StreamAlert that are of a known type, but you do not have a current need to apply rule
-logic to them. However, it is still advantageous to add schemas for these logs and *test* to ensure your new schemas are valid.
+In some cases, there may be incoming logs to StreamAlert with a known type, but without specific rules that apply to them.
+However, it is best practice to write schemas for these logs and *verify* that they are valid.
 
-This is possible through the addition of log schema(s) to ``conf/logs.json`` and creation of test record(s) in ``tests/integration/rules/``
-using known samples of logs (without actually adding a corresponding rule). Running the ``manage.py`` script with the ``validate-schemas``
-option will iterate over all json test files and attempt to match records within them to a defined log schema.
+This is possible by first adding the new schema(s) to ``conf/logs.json`` along with creation of test record(s) in ``tests/integration/rules/``
+containing samples of real logs (without actually adding a corresponding rule). Running the ``manage.py`` script with the ``validate-schemas``
+option will iterate over all json test files and attempt to classify each record.
 
-To simply run schema validation on all test files:
+To run schema validation on all test files:
 
 .. code-block:: bash
 
@@ -106,7 +106,7 @@ Or:
   $ python manage.py validate-schemas --test-files <test_rule_file>
 
 
-Example of running schema validation on two valid test files:
+Schema validation on two valid test files:
 
 .. code-block:: bash
 
@@ -134,7 +134,7 @@ This will produce output similar to the following::
   StreamAlertCLI [INFO]: Completed
 
 
-Example of running schema validation on a test file that contains one valid record and one invalid record:
+Schema validation failure on a test file containing one valid record and one invalid record:
 
 .. code-block:: bash
 

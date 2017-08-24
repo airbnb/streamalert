@@ -132,7 +132,7 @@ Examples:
         help=ARGPARSE_SUPPRESS
     )
 
-    # allow verbose output for the CLI with te --debug option
+    # allow verbose output for the CLI with the --debug option
     live_test_parser.add_argument(
         '--debug',
         action='store_true',
@@ -182,7 +182,7 @@ Examples:
         help=ARGPARSE_SUPPRESS
     )
 
-    # allow verbose output for the CLI with te --debug option
+    # allow verbose output for the CLI with the --debug option
     schema_validation_parser.add_argument(
         '--debug',
         action='store_true',

@@ -86,7 +86,7 @@ class RuleProcessorTester(object):
         Args:
             filter_rules (list|None): Specific rule names (or None) to restrict
                 testing to. This is passed in from the CLI using the --rules option.
-            validate_only [bool=False]: If true, validation of test records will occur
+            validate_only (bool): If true, validation of test records will occur
                 without the rules engine being applied to events.
 
         Yields:
