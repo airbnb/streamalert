@@ -110,7 +110,8 @@ class RuleProcessorTester(object):
                 formatted_record = helpers.format_lambda_test_record(test_record)
 
                 if validate_only:
-                    self._validate_test_records(rule_name, test_record, formatted_record)
+                    self._validate_test_records(rule_name, test_record,
+                                                formatted_record, print_header_line)
                     continue
 
                 yield self._run_rule_tests(rule_name, test_record,
@@ -119,7 +120,7 @@ class RuleProcessorTester(object):
         # Report on the final test results
         self.report_output_summary()
 
-    def _validate_test_records(self, rule_name, test_record, formatted_record):
+    def _validate_test_records(self, rule_name, test_record, formatted_record, print_header_line):
         """Function to validate test records and log any errors
 
         Args:
@@ -143,12 +144,21 @@ class RuleProcessorTester(object):
             self.all_tests_passed = False
             return
 
+        if print_header_line:
+            print '\n{}'.format(rule_name)
+
         for record in payload.pre_parse():
             self.processor.classifier.classify_record(record)
 
             if not record.valid:
                 self.all_tests_passed = False
                 self.analyze_record_delta(rule_name, test_record)
+
+            report_output(record.valid, [
+                '[log=\'{}\']'.format(record.log_source or 'unknown'),
+                'validation',
+                record.service(),
+                test_record['description']])
 
     def _run_rule_tests(self, rule_name, test_record, formatted_record, print_header_line):
         """Run tests on a test record for a given rule
@@ -433,6 +443,12 @@ class RuleProcessorTester(object):
         rule_info = StreamRules.get_rules()[rule_name]
         test_record_keys = set(test_record['data'])
         for log in rule_info.logs:
+            if log not in logs:
+                message = 'Log declared in rule ({}) does not exist in logs.json'.format(
+                    log)
+                self.status_messages.append(
+                    StatusMessage(StatusMessage.FAILURE, rule_name, message))
+                continue
             all_record_schema_keys = set(logs[log]['schema'])
             optional_keys = set(logs[log].get('configuration',
                                               {}).get('optional_top_level_keys', {}))
@@ -602,7 +618,7 @@ def report_output(passed, cols):
     status = ('{}[Pass]{}'.format(COLOR_GREEN, COLOR_RESET) if passed else
               '{}[Fail]{}'.format(COLOR_RED, COLOR_RESET))
 
-    print '\t{}{:>14}\t{}\t({}): {}'.format(status, *cols)
+    print '{:>26}  {:<28}  {:<8}  ({}): {}'.format(status, *cols)
 
 
 def check_untested_rules():
@@ -619,6 +635,23 @@ def check_untested_rules():
                         'corresponding test file for this rule in \'%s\' with the '
                         'name \'%s.json\' to avoid seeing this warning%s', COLOR_YELLOW,
                         rule, DIR_RULES, rule, COLOR_RESET)
+
+
+def check_untested_files():
+    """Function that prints warning log messages for integration test files
+    that exist but do not have a corresponding rule configured.
+    """
+    all_test_files = {os.path.splitext(test_file)[0] for _, _, test_rule_files
+                      in os.walk(DIR_RULES) for test_file in test_rule_files}
+
+    untested_rules = all_test_files.difference(set(StreamRules.get_rules()))
+
+    for rule in untested_rules:
+        LOGGER_CLI.warn('%sNo rules configured for test file: \'%s.json\'. Please '
+                        'add a corresponding rule for this test file in \'rules/\' with '
+                        'the name \'%s.py\' to avoid seeing this warning and any associated '
+                        'errors above%s', COLOR_YELLOW,
+                        rule, rule, COLOR_RESET)
 
 
 def stream_alert_test(options, config=None):
@@ -691,6 +724,11 @@ def stream_alert_test(options, config=None):
 
         # Check all of the rule files to make sure they have tests configured
         check_untested_rules()
+
+        # If this is not just a validation run, then warn the user
+        # if there are test files without corresponding rules
+        if not validate_schemas:
+            check_untested_files()
 
         if not (rule_proc_tester.all_tests_passed and
                 alert_proc_tester.all_tests_passed):
