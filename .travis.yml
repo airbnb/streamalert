@@ -12,6 +12,6 @@ script:
   - ./tests/scripts/unit_tests.sh
   - ./manage.py lambda test --processor all
   - sphinx-build -W docs/source docs/build
-  - find . -name '*.py' -not -path './docs/source/*' -exec pylint '{}' +
+  - ./tests/scripts/pylint.sh
 after_success:
   coveralls

@@ -598,7 +598,9 @@ class TestTerraformGenerate(object):
                         'repair_hive_table': {
                             'unit-testing.streamalerts': 'alerts'
                         },
-                        'add_hive_partition': {}
+                        'add_hive_partition': {
+                            'unit-testing-2.streamalerts': 'alerts'
+                        }
                     },
                     'handler': 'main.handler',
                     'timeout': '60',
@@ -612,6 +614,7 @@ class TestTerraformGenerate(object):
                 }
             }
         }
+
         expected_athena_config = {
             'module': {
                 'stream_alert_athena': {
@@ -624,7 +627,10 @@ class TestTerraformGenerate(object):
                     'lambda_timeout': '60',
                     'lambda_s3_bucket': 'unit-testing.streamalert.source',
                     'lambda_s3_key': 'lambda/athena/source.zip',
-                    'athena_data_buckets': ['unit-testing.streamalerts'],
+                    'athena_data_buckets': [
+                        'unit-testing.streamalerts',
+                        'unit-testing-2.streamalerts'
+                    ],
                     'prefix': 'unit-testing',
                     'refresh_interval': 'rate(10 minutes)'
                 }
@@ -632,5 +638,13 @@ class TestTerraformGenerate(object):
         }
 
         athena_config = terraform_generate.generate_athena(config=config)
+
+        # List order messes up the comparison between both dictionaries
+        assert_equal(set(athena_config['module']['stream_alert_athena']['athena_data_buckets']),
+                     set(expected_athena_config['module']['stream_alert_athena']\
+                                               ['athena_data_buckets']))
+
+        del athena_config['module']['stream_alert_athena']['athena_data_buckets']
+        del expected_athena_config['module']['stream_alert_athena']['athena_data_buckets']
 
         assert_equal(athena_config, expected_athena_config)

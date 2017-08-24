@@ -16,7 +16,6 @@ limitations under the License.
 from collections import namedtuple
 from getpass import getpass
 import os
-import re
 import shutil
 import sys
 
@@ -85,7 +84,7 @@ def athena_handler(options):
 
     elif options.subcommand == 'create-db':
         if athena_client.check_database_exists():
-            LOGGER_CLI.info('The `streamalert` database exists, nothing to do')
+            LOGGER_CLI.info('The \'streamalert\' database already exists, nothing to do')
             return
 
         create_db_success, create_db_result = athena_client.run_athena_query(
@@ -102,7 +101,7 @@ def athena_handler(options):
                 return
 
             if athena_client.check_table_exists(options.type):
-                LOGGER_CLI.info('The `alerts` table already exists.')
+                LOGGER_CLI.info('The \'alerts\' table already exists.')
                 return
 
             query = ('CREATE EXTERNAL TABLE alerts ('
@@ -124,8 +123,8 @@ def athena_handler(options):
             )
 
             if create_table_success:
-                CONFIG['lambda']['athena_partition_refresh_config']['refresh_type'][
-                    'repair_hive_table'][options.bucket] = 'alerts'
+                CONFIG['lambda']['athena_partition_refresh_config'] \
+                    ['refresh_type'][options.refresh_type][options.bucket] = 'alerts'
                 CONFIG.write()
                 LOGGER_CLI.info('The alerts table was successfully created!')
 
@@ -156,15 +155,9 @@ def configure_handler(options):
         options (namedtuple): ArgParse command result
     """
     if options.config_key == 'prefix':
-        if not isinstance(options.config_value, (unicode, str)):
-            LOGGER_CLI.error('Invalid prefix type, must be string')
-            return
         CONFIG.set_prefix(options.config_value)
 
     elif options.config_key == 'aws_account_id':
-        if not re.search(r'\A\d{12}\Z', options.config_value):
-            LOGGER_CLI.error('Invalid AWS Account ID, must be 12 digits long')
-            return
         CONFIG.set_aws_account_id(options.config_value)
 
 
@@ -595,8 +588,14 @@ def configure_output(options):
     Args:
         options (argparser): Basically a namedtuple with the service setting
     """
-    region = CONFIG['global']['account']['region']
-    prefix = CONFIG['global']['account']['prefix']
+    account_config = CONFIG['global']['account']
+    region = account_config['region']
+    prefix = account_config['prefix']
+    kms_key_alias = account_config['kms_key_alias']
+    # Verify that the word alias is not in the config.
+    # It is interpolated when the API call is made.
+    if 'alias/' in kms_key_alias:
+        kms_key_alias = kms_key_alias.split('/')[1]
 
     # Retrieve the proper service class to handle dispatching the alerts of this services
     output = get_output_dispatcher(options.service,
@@ -630,8 +629,11 @@ def configure_output(options):
 
     # Encrypt the creds and push them to S3
     # then update the local output configuration with properties
-    if config_outputs.encrypt_and_push_creds_to_s3(
-            region, secrets_bucket, secrets_key, props):
+    if config_outputs.encrypt_and_push_creds_to_s3(region,
+                                                   secrets_bucket,
+                                                   secrets_key,
+                                                   props,
+                                                   kms_key_alias):
         updated_config = output.format_output_config(config, props)
         config_outputs.update_outputs_config(config, updated_config, service)
 

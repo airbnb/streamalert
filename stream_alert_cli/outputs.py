@@ -78,7 +78,7 @@ def load_config(props, service):
     return config
 
 
-def encrypt_and_push_creds_to_s3(region, bucket, key, props):
+def encrypt_and_push_creds_to_s3(region, bucket, key, props, kms_key_alias):
     """Construct a dictionary of the credentials we want to encrypt and send to s3
 
     Args:
@@ -86,6 +86,7 @@ def encrypt_and_push_creds_to_s3(region, bucket, key, props):
         bucket (str): The name of the s3 bucket to write the encrypted credentials to
         key (str): ID for the s3 object to write the encrypted credentials to
         props (OrderedDict): Contains various OutputProperty items
+        kms_key_alias (string): The KMS key alias to use for encryption of S3 objects
     """
     creds = {name: prop.value
              for (name, prop) in props.iteritems() if prop.cred_requirement}
@@ -96,23 +97,24 @@ def encrypt_and_push_creds_to_s3(region, bucket, key, props):
         return True
 
     creds_json = json.dumps(creds)
-    enc_creds = kms_encrypt(region, creds_json)
+    enc_creds = kms_encrypt(region, creds_json, kms_key_alias)
     return send_creds_to_s3(region, bucket, key, enc_creds)
 
 
-def kms_encrypt(region, data):
+def kms_encrypt(region, data, kms_key_alias):
     """Encrypt data with AWS KMS.
 
     Args:
         region (str): AWS region to use for boto3 client
         data (str): json string to be encrypted
+        kms_key_alias (str): The KMS key alias to use for encryption of S3 objects
 
     Returns:
         str: Encrypted ciphertext data blob
     """
     try:
         client = boto3.client('kms', region_name=region)
-        response = client.encrypt(KeyId='alias/stream_alert_secrets',
+        response = client.encrypt(KeyId='alias/{}'.format(kms_key_alias),
                                   Plaintext=data)
         return response['CiphertextBlob']
     except ClientError:

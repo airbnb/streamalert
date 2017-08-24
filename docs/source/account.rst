@@ -67,7 +67,8 @@ First, create the policy to attach to the user:
                 "lambda:*",
                 "logs:*",
                 "s3:*",
-                "sns:*"
+                "sns:*",
+                "sqs:*"
             ],
             "Resource": "*"
         }
