@@ -61,6 +61,9 @@ def cli_runner(options):
     elif options.command == 'live-test':
         stream_alert_test(options, CONFIG)
 
+    elif options.command == 'validate-schemas':
+        stream_alert_test(options)
+
     elif options.command == 'terraform':
         terraform_handler(options)
 

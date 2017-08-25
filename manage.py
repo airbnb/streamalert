@@ -132,8 +132,58 @@ Examples:
         help=ARGPARSE_SUPPRESS
     )
 
-    # allow verbose output for the CLI with te --debug option
+    # allow verbose output for the CLI with the --debug option
     live_test_parser.add_argument(
+        '--debug',
+        action='store_true',
+        help=ARGPARSE_SUPPRESS
+    )
+
+
+def _add_validate_schema_subparser(subparsers):
+    """Add the validate-schemas subparser: manage.py validate-schemas [options]"""
+    schema_validation_usage = 'manage.py validate-schemas [options]'
+    schema_validation_description = ("""
+StreamAlertCLI v{}
+Run end-to-end tests that will attempt to send alerts
+
+Available Options:
+
+    --test-files         Name(s) of test files to validate, separated by spaces (not full path)
+                           These files should be located within 'tests/integration/rules/' and each
+                           should be named according to the rule they are meant to test. The
+                           contents should be json, in the form of `{{"records": [ <records as maps> ]}}`.
+                           See the sample test files in 'tests/integration/rules/' for an example.
+                           The '--test-files' flag will accept the full file name, with extension,
+                           or the base file name, without extension (ie: test_file_name.json or
+                           test_file_name are both acceptable arguments)
+    --debug              Enable Debug logger output
+
+Examples:
+
+    manage.py validate-schemas --test-files <test_file_name_01.json> <test_file_name_02.json>
+
+""".format(version))
+    schema_validation_parser = subparsers.add_parser(
+        'validate-schemas',
+        description=schema_validation_description,
+        usage=schema_validation_usage,
+        formatter_class=RawTextHelpFormatter,
+        help=ARGPARSE_SUPPRESS
+    )
+
+    # Set the name of this parser to 'validate-schemas'
+    schema_validation_parser.set_defaults(command='validate-schemas')
+
+    # add the optional ability to test against specific files
+    schema_validation_parser.add_argument(
+        '-f', '--test-files',
+        nargs='+',
+        help=ARGPARSE_SUPPRESS
+    )
+
+    # allow verbose output for the CLI with the --debug option
+    schema_validation_parser.add_argument(
         '--debug',
         action='store_true',
         help=ARGPARSE_SUPPRESS
@@ -427,6 +477,7 @@ For additional details on the available commands, try:
     subparsers = parser.add_subparsers()
     _add_output_subparser(subparsers)
     _add_live_test_subparser(subparsers)
+    _add_validate_schema_subparser(subparsers)
     _add_lambda_subparser(subparsers)
     _add_terraform_subparser(subparsers)
     _add_configure_subparser(subparsers)
