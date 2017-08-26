@@ -29,7 +29,7 @@ from stream_alert_cli.helpers import continue_prompt
 from stream_alert_cli.logger import LOGGER_CLI
 import stream_alert_cli.outputs as config_outputs
 from stream_alert_cli.package import AlertProcessorPackage, AthenaPackage, RuleProcessorPackage
-from stream_alert_cli.terraform_generate import terraform_generate
+from stream_alert_cli.terraform.generate import terraform_generate
 from stream_alert_cli.test import stream_alert_test
 from stream_alert_cli.version import LambdaVersion
 

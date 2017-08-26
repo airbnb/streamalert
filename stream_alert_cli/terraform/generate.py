@@ -13,26 +13,20 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from collections import defaultdict
 import json
 import os
 import string
 
 from stream_alert.shared import metrics
 from stream_alert_cli.logger import LOGGER_CLI
+from stream_alert_cli.terraform._common import (
+    enabled_firehose_logs,
+    InvalidClusterName,
+    infinitedict
+)
 
 DEFAULT_SNS_MONITORING_TOPIC = 'stream_alert_monitoring'
 RESTRICTED_CLUSTER_NAMES = ('main', 'athena')
-
-
-class InvalidClusterName(Exception):
-    """Exception for invalid cluster names"""
-    pass
-
-
-def infinitedict():
-    """Create arbitrary levels of dictionary key/values"""
-    return defaultdict(infinitedict)
 
 
 def generate_s3_bucket(**kwargs):
@@ -87,8 +81,7 @@ def generate_main(**kwargs):
         dict: main.tf Terraform dict
     """
     init = kwargs.get('init')
-    config = kwargs.get('config')
-
+    config = kwargs['config']
     main_dict = infinitedict()
 
     # Configure provider
@@ -97,11 +90,13 @@ def generate_main(**kwargs):
     # Configure Terraform version requirement
     main_dict['terraform']['required_version'] = '> 0.9.4'
 
-    # Setup the Backend
+    # Setup the Backend dependencing on the deployment phase.
+    # When first setting up StreamAlert, the Terraform statefile
+    # is stored locally.  After the first dependencies are created,
+    # this moves to S3.
     if init:
         main_dict['terraform']['backend']['local'] = {
-            'path': 'terraform.tfstate'
-        }
+            'path': 'terraform.tfstate'}
     else:
         main_dict['terraform']['backend']['s3'] = {
             'bucket': '{}.streamalert.terraform.state'.format(
@@ -110,8 +105,7 @@ def generate_main(**kwargs):
             'region': config['global']['account']['region'],
             'encrypt': True,
             'acl': 'private',
-            'kms_key_id': 'alias/{}'.format(config['global']['account']['kms_key_alias'])
-        }
+            'kms_key_id': 'alias/{}'.format(config['global']['account']['kms_key_alias'])}
 
     logging_bucket = '{}.streamalert.s3-logging'.format(
         config['global']['account']['prefix'])
@@ -120,10 +114,9 @@ def generate_main(**kwargs):
         'enabled': True,
         'transition': {
             'days': 30,
-            'storage_class': 'GLACIER'
-        }
-    }
-    # Configure init S3 buckets
+            'storage_class': 'GLACIER'}}
+
+    # Configure initial S3 buckets
     main_dict['resource']['aws_s3_bucket'] = {
         'lambda_source': generate_s3_bucket(
             bucket=config['lambda']['rule_processor_config']['source_bucket'],
@@ -149,11 +142,41 @@ def generate_main(**kwargs):
         )
     }
 
+    if config['global']['infrastructure'].get('firehose', {}).get('enabled'):
+        firehose_config = config['global']['infrastructure']['firehose']
+        firehose_s3_bucket_suffix = firehose_config.get('s3_bucket_suffix',
+                                                        'streamalert.data')
+        firehose_s3_bucket_name = '{}.{}'.format(config['global']['account']['prefix'],
+                                         firehose_s3_bucket_suffix)
+
+        # Configure the main Firehose module
+        main_dict['module']['kinesis_firehose'] = {
+            'source': 'modules/tf_stream_alert_kinesis_firehose',
+            'account_id': config['global']['account']['aws_account_id'],
+            'region': config['global']['account']['region'],
+            'prefix': config['global']['account']['prefix'],
+            'logs': enabled_firehose_logs(config),
+            'buffer_size': config['global']['infrastructure']\
+                           ['firehose'].get('buffer_size', 5),
+            'buffer_interval': config['global']['infrastructure']\
+                               ['firehose'].get('buffer_interval', 300),
+            'compression_format': config['global']['infrastructure']\
+                               ['firehose'].get('buffer_interval', 'Snappy'),
+            's3_logging_bucket': logging_bucket,
+            's3_bucket_name': firehose_s3_bucket_name
+        }
+
+        # Create the S3 bucket to store the StreamAlert Firehose data
+        main_dict['resource']['aws_s3_bucket']['streamalert_data'] = generate_s3_bucket(
+            bucket=firehose_s3_bucket_name,
+            logging=logging_bucket
+        )
+
+    # KMS Key and Alias creation
     main_dict['resource']['aws_kms_key']['stream_alert_secrets'] = {
         'enable_key_rotation': True,
         'description': 'StreamAlert secret management'
     }
-
     main_dict['resource']['aws_kms_alias']['stream_alert_secrets'] = {
         'name': 'alias/{}'.format(config['global']['account']['kms_key_alias']),
         'target_key_id': '${aws_kms_key.stream_alert_secrets.key_id}'
@@ -492,8 +515,8 @@ def generate_cloudwatch_monitoring(cluster_name, cluster_dict, config):
     return True
 
 
-def generate_kinesis(cluster_name, cluster_dict, config):
-    """Add the Kinesis module to the Terraform cluster dict.
+def generate_kinesis_streams(cluster_name, cluster_dict, config):
+    """Add the Kinesis Streams module to the Terraform cluster dict.
 
     Args:
         cluster_name (str): The name of the currently generating cluster
@@ -504,27 +527,45 @@ def generate_kinesis(cluster_name, cluster_dict, config):
     Returns:
         bool: Result of applying the kinesis module
     """
-    logging_bucket = '{}.streamalert.s3-logging'.format(
-        config['global']['account']['prefix'])
-    firehose_suffix = config['clusters'][cluster_name]['modules']['kinesis']['firehose'][
-        's3_bucket_suffix']
     prefix = config['global']['account']['prefix']
-    modules = config['clusters'][cluster_name]['modules']
+    config_modules = config['clusters'][cluster_name]['modules']
 
     cluster_dict['module']['kinesis_{}'.format(cluster_name)] = {
-        'source': 'modules/tf_stream_alert_kinesis',
+        'source': 'modules/tf_stream_alert_kinesis_streams',
         'account_id': config['global']['account']['aws_account_id'],
         'region': config['clusters'][cluster_name]['region'],
         'cluster_name': cluster_name,
-        'firehose_s3_bucket_name': '{}.{}.{}'.format(config['global']['account']['prefix'],
-                                                     cluster_name.replace('_', '.'),
-                                                     firehose_suffix),
         'stream_name': '{}_{}_stream_alert_kinesis'.format(prefix, cluster_name),
-        'firehose_name': '{}_{}_stream_alert_firehose'.format(prefix, cluster_name),
-        'username': '{}_{}_stream_alert_user'.format(prefix, cluster_name),
-        'shards': modules['kinesis']['streams']['shards'],
-        'retention': modules['kinesis']['streams']['retention'],
-        's3_logging_bucket': logging_bucket
+        'shards': config_modules['kinesis']['streams']['shards'],
+        'retention': config_modules['kinesis']['streams']['retention']
+    }
+
+    return True
+
+
+def generate_kinesis_firehose(cluster_name, cluster_dict, config):
+    """Add the Firehose module to the Terraform cluster dict.
+
+    Args:
+        cluster_name (str): The name of the currently generating cluster
+        cluster_dict (defaultdict): The dict containing all Terraform config for
+                                    a given cluster.
+        config (dict): The loaded config from the 'conf/' directory
+
+    Returns:
+        bool: Result of applying the kinesis module
+    """
+    prefix = config['global']['account']['prefix']
+    config_modules = config['clusters'][cluster_name]['modules']
+
+    cluster_dict['module']['kinesis_{}'.format(cluster_name)] = {
+        'source': 'modules/tf_stream_alert_kinesis_streams',
+        'account_id': config['global']['account']['aws_account_id'],
+        'region': config['clusters'][cluster_name]['region'],
+        'cluster_name': cluster_name,
+        'stream_name': '{}_{}_stream_alert_kinesis'.format(prefix, cluster_name),
+        'shards': config_modules['kinesis']['streams']['shards'],
+        'retention': config_modules['kinesis']['streams']['retention']
     }
 
     return True
@@ -542,10 +583,12 @@ def generate_outputs(cluster_name, cluster_dict, config):
     Returns:
         bool: Result of applying all outputs
     """
-    for tf_module, output_vars in config['clusters'][cluster_name]['outputs'].iteritems():
-        for output_var in output_vars:
-            cluster_dict['output']['{}_{}_{}'.format(tf_module, cluster_name, output_var)] = {
-                'value': '${{module.{}_{}.{}}}'.format(tf_module, cluster_name, output_var)}
+    output_config = config['clusters'][cluster_name].get('outputs')
+    if output_config:
+        for tf_module, output_vars in output_config.iteritems():
+            for output_var in output_vars:
+                cluster_dict['output']['{}_{}_{}'.format(tf_module, cluster_name, output_var)] = {
+                    'value': '${{module.{}_{}.{}}}'.format(tf_module, cluster_name, output_var)}
 
     return True
 
@@ -730,7 +773,7 @@ def generate_cluster(**kwargs):
         if not generate_cloudwatch_monitoring(cluster_name, cluster_dict, config):
             return
 
-    if not generate_kinesis(cluster_name, cluster_dict, config):
+    if not generate_kinesis_streams(cluster_name, cluster_dict, config):
         return
 
     outputs = config['clusters'][cluster_name].get('outputs')
