@@ -15,6 +15,8 @@ limitations under the License.
 """
 import json
 
+from stream_alert_cli.logger import LOGGER_CLI
+
 def generate_cloudtrail(cluster_name, cluster_dict, config):
     """Add the CloudTrail module to the Terraform cluster dict.
 

@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from collections import OrderedDict
+from fnmatch import fnmatch
 import json
 import os
 import re
@@ -25,13 +25,12 @@ from stream_alert_cli.logger import LOGGER_CLI
 
 
 class CLIConfig(object):
-    """Provide an object to load, modify, and display the StreamAlertCLI Config"""
-    def __init__(self):
-        self.config_files = OrderedDict([
-            ('global', 'conf/global.json'),
-            ('lambda', 'conf/lambda.json')
-        ])
-        self.config = self.load()
+    """A class to load, modify, and display the StreamAlertCLI Config"""
+    DEFAULT_CONFIG_PATH = 'conf'
+
+    def __init__(self, **kwargs):
+        self.config_path = kwargs.get('config_path', self.DEFAULT_CONFIG_PATH)
+        self.load()
 
     def __repr__(self):
         return json.dumps(self.config)
@@ -362,12 +361,11 @@ class CLIConfig(object):
         """Load the cluster, global, and lambda configuration files
 
         Returns:
-            dict: loaded config from all config files with the following keys:
-                'clusters', 'global', and 'lambda'
+            dict: loaded config from all config files
         """
         config = {'clusters': {}}
 
-        def _config_loader(key, filepath, cluster_file):
+        def _config_reader(key, filepath, cluster_file):
             if not os.path.isfile(filepath):
                 LOGGER_CLI.error('[Config Error]: %s not found', filepath)
                 sys.exit(1)
@@ -382,34 +380,43 @@ class CLIConfig(object):
                     LOGGER_CLI.error('[Config Error]: %s is not valid JSON', filepath)
                     sys.exit(1)
 
-        # Load individual files
-        for key, path in self.config_files.iteritems():
-            _config_loader(key, path, False)
+        # Load non cluster configuration files from the configured path
+        for config_file in os.listdir(self.config_path):
+            if fnmatch(config_file, '*.json'):
+                _config_reader(os.path.splitext(config_file)[0],
+                               os.path.join(self.config_path, config_file),
+                               False)
 
-        # Load cluster files
-        for cluster_file in os.listdir('conf/clusters'):
+        # Load cluster files from the configured path
+        for cluster_file in os.listdir(os.path.join(self.config_path, 'clusters')):
             key = os.path.splitext(cluster_file)[0]
-            _config_loader(key, 'conf/clusters/{}'.format(cluster_file), True)
+            _config_reader(key,
+                           os.path.join(self.config_path,
+                                        'clusters',
+                                        '{}.json'.format(key)),
+                           True)
 
-        return config
+        self.config = config
 
     def write(self):
         """Write the current config in memory to disk"""
         def _config_writer(config, path):
-            with open(path, 'r+') as varfile:
-                varfile.write(json.dumps(
-                    config,
-                    indent=2,
-                    separators=(',', ': '),
-                    sort_keys=True
-                ))
-                varfile.truncate()
+            with open(path, 'r+') as conf_file:
+                conf_file.write(json.dumps(config,
+                                           indent=2,
+                                           separators=(',', ': '),
+                                           sort_keys=True))
+                conf_file.truncate()
 
-        for key, path in self.config_files.iteritems():
-            _config_writer(self.config[key], path)
+        # Write loaded non cluster configuration files
+        for config_key in [key for key in self.config if key != 'clusters']:
+            _config_writer(self.config[config_key],
+                           os.path.join(self.config_path,
+                                        '{}.json'.format(config_key)))
 
-        for cluster_file in os.listdir('conf/clusters'):
-            key = os.path.splitext(cluster_file)[0]
-            _config_writer(
-                self.config['clusters'][key],
-                'conf/clusters/{}'.format(cluster_file))
+        # Write loaded cluster files
+        for cluster_key in self.config['clusters']:
+            _config_writer(self.config['clusters'][cluster_key],
+                           os.path.join(self.config_path,
+                                        'clusters',
+                                        '{}.json'.format(cluster_key)))

@@ -28,7 +28,6 @@ from stream_alert_cli.terraform.athena import generate_athena
 from stream_alert_cli.terraform.cloudtrail import generate_cloudtrail
 from stream_alert_cli.terraform.flow_logs import generate_flow_logs
 from stream_alert_cli.terraform.kinesis_events import generate_kinesis_events
-from stream_alert_cli.terraform.kinesis_firehose import generate_kinesis_firehose
 from stream_alert_cli.terraform.kinesis_streams import generate_kinesis_streams
 from stream_alert_cli.terraform.monitoring import generate_monitoring
 from stream_alert_cli.terraform.stream_alert import generate_stream_alert
