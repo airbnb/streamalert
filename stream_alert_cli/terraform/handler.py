@@ -188,7 +188,7 @@ def terraform_clean():
 
 def terraform_status():
     """Display current AWS infrastructure built by Terraform"""
-    for cluster, region in CONFIG['clusters'].iteritems():
+    for cluster, region in CONFIG['clusters'].items():
         print '\n======== {} ========'.format(cluster)
         print 'Region: {}'.format(region)
         print ('Alert Processor Lambda Settings: \n\tTimeout: {}\n\tMemory: {}'

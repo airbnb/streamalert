@@ -99,7 +99,7 @@ def generate_stream_alert(cluster_name, cluster_dict, config):
             'output_lambda_functions': 'aws-lambda',
             'output_s3_buckets': 'aws-s3'
         }
-        for tf_key, output in output_mapping.iteritems():
+        for tf_key, output in output_mapping.items():
             if output in output_config:
                 cluster_dict['module']['stream_alert_{}'.format(cluster_name)].update({
                     tf_key: modules['stream_alert']['alert_processor']['outputs'][output]
@@ -111,7 +111,7 @@ def generate_stream_alert(cluster_name, cluster_dict, config):
         input_mapping = {
             'input_sns_topics': 'aws-sns'
         }
-        for tf_key, input_key in input_mapping.iteritems():
+        for tf_key, input_key in input_mapping.items():
             if input_key in input_config:
                 cluster_dict['module']['stream_alert_{}'.format(cluster_name)].update({
                     tf_key: input_config[input_key]

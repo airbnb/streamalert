@@ -37,8 +37,8 @@ def enabled_firehose_logs(config):
     expanded_logs_with_subtypes = set()
     enabled_logs_from_sources = list()
 
-    for entities in config['sources'].itervalues():
-        for properties in entities.itervalues():
+    for entities in config['sources'].values():
+        for properties in entities.values():
             enabled_logs_from_sources.extend(properties['logs'])
 
     for log in config_logs:
