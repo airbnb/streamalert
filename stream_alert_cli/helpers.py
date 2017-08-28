@@ -13,13 +13,14 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-import base64
 from collections import namedtuple
+from StringIO import StringIO
+import base64
 import json
 import os
 import random
-from StringIO import StringIO
 import subprocess
+import sys
 import zipfile
 import zlib
 
@@ -67,15 +68,81 @@ def run_command(runner_args, **kwargs):
     return True
 
 
-def continue_prompt(prompt=''):
-    """Continue prompt used to check user's response"""
+def continue_prompt(**kwargs):
+    """Continue prompt used before applying Terraform plans.
+
+    This prompt is meant for changes that change the infrastructure by
+    either buliding or destroying.  Its purpose is to prevent accidental
+    changes that are difficult to reverse.
+
+    Keyword Args:
+        message (str): The message to display to the user
+    """
     required_responses = {'yes', 'no'}
+    default_message = 'Would you like to continue?'
+    message = kwargs.get('message', default_message)
+
     response = ''
     while response not in required_responses:
-        prompt = prompt or 'Would you like to continue?'
-        response = raw_input('\n{} (yes or no): '.format(prompt))
+        response = raw_input('\n{} (yes or no): '.format(message))
+    if response == 'no':
+        sys.exit(0)
 
-    return response == 'yes'
+
+def tf_runner(**kwargs):
+    """Terraform wrapper to build StreamAlert infrastructure.
+
+    Steps:
+        - resolve modules with `terraform get`
+        - run `terraform plan` for the given targets
+        - if plan is successful and user confirms prompt,
+          then the infrastructure is applied
+
+    kwargs:
+        targets: a list of Terraform targets
+        action: 'apply' or 'destroy'
+
+    Returns:
+        bool: True if the terraform command was successful
+    """
+    targets = kwargs.get('targets', [])
+    action = kwargs.get('action', None)
+    tf_action_index = 1  # The index to the terraform 'action'
+
+    var_files = {'conf/lambda.json'}
+    tf_opts = ['-var-file=../{}'.format(x) for x in var_files]
+    tf_targets = ['-target={}'.format(x) for x in targets]
+    tf_command = ['terraform', 'plan'] + tf_opts + tf_targets
+    if action == 'destroy':
+        tf_command.append('-destroy')
+
+    LOGGER_CLI.debug('Resolving Terraform modules')
+    if not run_command(['terraform', 'get'], quiet=True):
+        return False
+
+    LOGGER_CLI.info('Planning infrastructure')
+    if not run_command(tf_command):
+        return False
+
+    continue_prompt()
+
+    if action == 'destroy':
+        LOGGER_CLI.info('Destroying infrastructure')
+        tf_command[tf_action_index] = action
+        tf_command.remove('-destroy')
+        tf_command.append('-force')
+
+    elif action:
+        tf_command[tf_action_index] = action
+
+    else:
+        LOGGER_CLI.info('Creating infrastructure')
+        tf_command[tf_action_index] = 'apply'
+
+    if not run_command(tf_command):
+        return False
+
+    return True
 
 
 def format_lambda_test_record(test_record):
