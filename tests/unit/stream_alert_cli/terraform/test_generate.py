@@ -24,7 +24,7 @@ from stream_alert_cli.terraform import (
     stream_alert
 )
 
-from nose.tools import assert_equal
+from nose.tools import assert_equal, assert_true
 
 
 class TestTerraformGenerate(object):
@@ -200,6 +200,27 @@ class TestTerraformGenerate(object):
         assert_equal(tf_main['provider'], tf_main_expected['provider'])
         assert_equal(tf_main['terraform'], tf_main_expected['terraform'])
         assert_equal(tf_main['resource'], tf_main_expected['resource'])
+
+    def test_generate_main_with_firehose(self):
+        """CLI - Terraform Generate Main with Firehose Enabled"""
+        self.config['global']['infrastructure']['firehose'] = {
+            'enabled': True,
+            's3_bucket_suffix': 'my-data',
+            'buffer_size': 10,
+            'buffer_interval': 650
+        }
+        tf_main = generate.generate_main(
+            config=self.config,
+            init=False
+        )
+
+        generated_firehose = tf_main['module']['kinesis_firehose']
+
+        assert_equal(generated_firehose['s3_bucket_name'], 'unit-testing.my-data')
+        assert_equal(generated_firehose['buffer_size'], 10)
+        assert_equal(generated_firehose['buffer_interval'], 650)
+
+        assert_true('streamalert_data' in tf_main['resource']['aws_s3_bucket'])
 
     def test_generate_stream_alert_test(self):
         """CLI - Terraform Generate StreamAlert - Test Cluster"""
