@@ -13,7 +13,19 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from stream_alert_cli import terraform_generate
+from stream_alert_cli.terraform import (
+    _common,
+    athena,
+    cloudtrail,
+    flow_logs,
+    generate,
+    kinesis_events,
+    kinesis_firehose,
+    kinesis_streams,
+    monitoring,
+    s3_events,
+    stream_alert
+)
 
 from nose.tools import assert_equal
 
@@ -28,7 +40,7 @@ class TestTerraformGenerate(object):
 
     def setup(self):
         """Setup before each method"""
-        self.cluster_dict = terraform_generate.infinitedict()
+        self.cluster_dict = _common.infinitedict()
         self.config = {
             'global': {
                 'account': {
@@ -172,7 +184,7 @@ class TestTerraformGenerate(object):
     @staticmethod
     def test_generate_s3_bucket():
         """CLI - Terraform Generate S3 Bucket """
-        bucket = terraform_generate.generate_s3_bucket(
+        bucket = generate.generate_s3_bucket(
             bucket='unit.test.bucket',
             logging='my.s3-logging.bucket',
             force_destroy=True
@@ -193,7 +205,7 @@ class TestTerraformGenerate(object):
     @staticmethod
     def test_generate_s3_bucket_lifecycle():
         """CLI - Terraform Generate S3 Bucket with Lifecycle"""
-        bucket = terraform_generate.generate_s3_bucket(
+        bucket = generate.generate_s3_bucket(
             bucket='unit.test.bucket',
             logging='my.s3-logging.bucket',
             force_destroy=False,
@@ -213,7 +225,7 @@ class TestTerraformGenerate(object):
         """CLI - Terraform Generate Main"""
         init = False
 
-        tf_main = terraform_generate.generate_main(
+        tf_main = generate.generate_main(
             config=self.config,
             init=init
         )
@@ -332,7 +344,7 @@ class TestTerraformGenerate(object):
 
     def test_generate_stream_alert_test(self):
         """CLI - Terraform Generate StreamAlert - Test Cluster"""
-        terraform_generate.generate_stream_alert(
+        stream_alert.generate_stream_alert(
             'test',
             self.cluster_dict,
             self.config
@@ -368,7 +380,7 @@ class TestTerraformGenerate(object):
 
     def test_generate_stream_alert_advanced(self):
         """CLI - Terraform Generate StreamAlert - Advanced Cluster)"""
-        terraform_generate.generate_stream_alert(
+        stream_alert.generate_stream_alert(
             'advanced',
             self.cluster_dict,
             self.config
@@ -411,7 +423,7 @@ class TestTerraformGenerate(object):
     def test_generate_flow_logs(self):
         """CLI - Terraform Generate Flow Logs"""
         cluster_name = 'advanced'
-        terraform_generate.generate_flow_logs(
+        flow_logs.generate_flow_logs(
             cluster_name,
             self.cluster_dict,
             self.config
@@ -424,7 +436,7 @@ class TestTerraformGenerate(object):
     def test_generate_cloudtrail_basic(self):
         """CLI - Terraform Generate cloudtrail Module"""
         cluster_name = 'advanced'
-        terraform_generate.generate_cloudtrail(
+        cloudtrail.generate_cloudtrail(
             cluster_name,
             self.cluster_dict,
             self.config
@@ -459,7 +471,7 @@ class TestTerraformGenerate(object):
                 }
             }
         }
-        terraform_generate.generate_cloudtrail(
+        cloudtrail.generate_cloudtrail(
             cluster_name,
             self.cluster_dict,
             self.config
@@ -483,7 +495,7 @@ class TestTerraformGenerate(object):
     def test_generate_cloudwatch_monitoring(self):
         """CLI - Terraform Generate Cloudwatch Monitoring"""
         cluster_name = 'test'
-        terraform_generate.generate_cloudwatch_monitoring(
+        monitoring.generate_monitoring(
             cluster_name,
             self.cluster_dict,
             self.config
@@ -508,7 +520,7 @@ class TestTerraformGenerate(object):
         self.config['global']['infrastructure']['monitoring']['create_sns_topic'] = False
         self.config['global']['infrastructure']['monitoring'][
             'sns_topic_name'] = 'unit_test_monitoring'
-        terraform_generate.generate_cloudwatch_monitoring(
+        monitoring.generate_monitoring(
             cluster_name,
             self.cluster_dict,
             self.config
@@ -531,15 +543,12 @@ class TestTerraformGenerate(object):
     def test_generate_cluster_test(self):
         """CLI - Terraform Generate Test Cluster"""
 
-        tf_cluster = terraform_generate.generate_cluster(
+        tf_cluster = generate.generate_cluster(
             config=self.config,
             cluster_name='test'
         )
 
-        cluster_keys = {
-            'module',
-            'output'
-        }
+        cluster_keys = {'module', 'output'}
 
         test_modules = {
             'stream_alert_test',
@@ -554,7 +563,7 @@ class TestTerraformGenerate(object):
     def test_generate_cluster_advanced(self):
         """CLI - Terraform Generate Advanced Cluster"""
 
-        tf_cluster = terraform_generate.generate_cluster(
+        tf_cluster = generate.generate_cluster(
             config=self.config,
             cluster_name='advanced'
         )
@@ -639,7 +648,7 @@ class TestTerraformGenerate(object):
             }
         }
 
-        athena_config = terraform_generate.generate_athena(config=config)
+        athena_config = athena.generate_athena(config=config)
 
         # List order messes up the comparison between both dictionaries
         assert_equal(set(athena_config['module']['stream_alert_athena']['athena_data_buckets']),
