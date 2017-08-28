@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from stream_alert_cli.config import CLIConfig
 from stream_alert_cli.terraform import (
     _common,
     athena,
@@ -20,7 +21,6 @@ from stream_alert_cli.terraform import (
     flow_logs,
     generate,
     kinesis_events,
-    kinesis_firehose,
     kinesis_streams,
     monitoring,
     s3_events,
@@ -35,151 +35,13 @@ class TestTerraformGenerate(object):
     # pylint: disable=no-self-use
 
     def __init__(self):
-        self.cluster_dict = {}
-        self.config = {}
+        self.cluster_dict = None
+        self.config = None
 
     def setup(self):
         """Setup before each method"""
         self.cluster_dict = _common.infinitedict()
-        self.config = {
-            'global': {
-                'account': {
-                    'prefix': 'unit-testing',
-                    'kms_key_alias': 'unit-testing',
-                    'region': 'us-west-1',
-                    'aws_account_id': '12345678910'
-                },
-                'terraform': {
-                    'tfstate_bucket': 'unit-testing.terraform.tfstate'
-                },
-                'infrastructure': {
-                    'monitoring': {
-                        'create_sns_topic': True
-                    }
-                }
-            },
-            'lambda': {
-                'rule_processor_config': {
-                    'source_bucket': 'unit.testing.source.bucket'
-                }
-            },
-            'clusters': {
-                'test': {
-                    'id': 'test',
-                    'modules': {
-                        'cloudwatch_monitoring': {
-                            'enabled': True
-                        },
-                        'kinesis': {
-                            'firehose': {
-                                'enabled': True,
-                                's3_bucket_suffix': 'streamalert.results'
-                            },
-                            'streams': {
-                                'retention': 24,
-                                'shards': 1
-                            }
-                        },
-                        'kinesis_events': {
-                            'enabled': True
-                        },
-                        'stream_alert': {
-                            'alert_processor': {
-                                'current_version': '$LATEST',
-                                'memory': 128,
-                                'timeout': 25
-                            },
-                            'rule_processor': {
-                                'current_version': '$LATEST',
-                                'memory': 128,
-                                'timeout': 25
-                            }
-                        }
-                    },
-                    'outputs': {
-                        'kinesis': [
-                            'username',
-                            'access_key_id',
-                            'secret_key'
-                        ]
-                    },
-                    'region': 'us-west-1'
-                },
-                'advanced': {
-                    'id': 'advanced',
-                    'modules': {
-                        'cloudwatch_monitoring': {
-                            'enabled': True
-                        },
-                        'kinesis': {
-                            'firehose': {
-                                'enabled': True,
-                                's3_bucket_suffix': 'streamalert.results'
-                            },
-                            'streams': {
-                                'retention': 24,
-                                'shards': 1
-                            }
-                        },
-                        'kinesis_events': {
-                            'enabled': True
-                        },
-                        'stream_alert': {
-                            'alert_processor': {
-                                'current_version': '$LATEST',
-                                'memory': 128,
-                                'timeout': 25,
-                                'vpc_config': {
-                                    'subnet_ids': [
-                                        'subnet-id-1'
-                                    ],
-                                    'security_group_ids': [
-                                        'sg-id-1'
-                                    ]
-                                },
-                                'outputs': {
-                                    'aws-lambda': [
-                                        'my-lambda-function:production'
-                                    ],
-                                    'aws-s3': [
-                                        'my-s3-bucket.with.data'
-                                    ]
-                                }
-                            },
-                            'rule_processor': {
-                                'current_version': '$LATEST',
-                                'memory': 128,
-                                'timeout': 25,
-                                'inputs': {
-                                    'aws-sns': [
-                                        'my-sns-topic-name'
-                                    ]
-                                }
-                            }
-                        },
-                        'cloudtrail': {
-                            'enabled': True
-                        },
-                        'flow_logs': {
-                            'enabled': True,
-                            'vpcs': [
-                                'vpc-id-1',
-                                'vpc-id-2'
-                            ],
-                            'log_group_name': 'unit-test-advanced'
-                        }
-                    },
-                    'outputs': {
-                        'kinesis': [
-                            'username',
-                            'access_key_id',
-                            'secret_key'
-                        ]
-                    },
-                    'region': 'us-west-1'
-                }
-            }
-        }
+        self.config = CLIConfig(config_path='tests/unit/conf')
 
     @staticmethod
     def test_generate_s3_bucket():
@@ -379,7 +241,7 @@ class TestTerraformGenerate(object):
                      expected_test_cluster['module']['stream_alert_test'])
 
     def test_generate_stream_alert_advanced(self):
-        """CLI - Terraform Generate StreamAlert - Advanced Cluster)"""
+        """CLI - Terraform Generate StreamAlert - Advanced Cluster"""
         stream_alert.generate_stream_alert(
             'advanced',
             self.cluster_dict,

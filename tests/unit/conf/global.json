@@ -1,0 +1,16 @@
+{
+  "account": {
+    "prefix": "unit-testing",
+    "kms_key_alias": "unit-testing",
+    "region": "us-west-1",
+    "aws_account_id": "12345678910"
+  },
+  "terraform": {
+    "tfstate_bucket": "unit-testing.terraform.tfstate"
+  },
+  "infrastructure": {
+    "monitoring": {
+      "create_sns_topic": true
+    }
+  }
+}

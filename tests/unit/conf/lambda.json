@@ -1,0 +1,5 @@
+{
+  "rule_processor_config": {
+      "source_bucket": "unit.testing.source.bucket"
+  }
+}

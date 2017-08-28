@@ -1,0 +1,73 @@
+{
+  "id": "advanced",
+  "modules": {
+    "cloudwatch_monitoring": {
+      "enabled": true
+    },
+    "kinesis": {
+      "firehose": {
+        "enabled": true,
+        "s3_bucket_suffix": "streamalert.results"
+      },
+      "streams": {
+        "retention": 24,
+        "shards": 1
+      }
+    },
+    "kinesis_events": {
+      "enabled": true
+    },
+    "stream_alert": {
+      "alert_processor": {
+        "current_version": "$LATEST",
+        "memory": 128,
+        "timeout": 25,
+        "vpc_config": {
+          "subnet_ids": [
+            "subnet-id-1"
+          ],
+          "security_group_ids": [
+            "sg-id-1"
+          ]
+        },
+        "outputs": {
+          "aws-lambda": [
+            "my-lambda-function:production"
+          ],
+          "aws-s3": [
+            "my-s3-bucket.with.data"
+          ]
+        }
+      },
+      "rule_processor": {
+        "current_version": "$LATEST",
+        "memory": 128,
+        "timeout": 25,
+        "inputs": {
+          "aws-sns": [
+            "my-sns-topic-name"
+          ]
+        }
+      }
+    },
+    "cloudtrail": {
+      "enabled": true
+    },
+    "flow_logs": {
+      "enabled": true,
+      "vpcs": [
+        "vpc-id-1",
+        "vpc-id-2"
+      ],
+      "log_group_name": "unit-test-advanced"
+    }
+  },
+  "outputs": {
+    "kinesis": [
+      "username",
+      "access_key_id",
+      "secret_key"
+    ]
+  },
+  "region": "us-west-1"
+}
