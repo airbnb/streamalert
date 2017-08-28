@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from fnmatch import fnmatch
 import json
 import os
 import string
@@ -49,7 +50,7 @@ def generate_s3_bucket(**kwargs):
         lifecycle_rule (dict): The S3 bucket lifecycle rule
 
     Returns:
-        dict: S3 bucket Terraform dict to be used in clusters/main.tf
+        dict: S3 bucket Terraform dict to be used in clusters/main.tf.json
     """
     bucket_name = kwargs.get('bucket')
     acl = kwargs.get('acl', 'private')
@@ -79,14 +80,14 @@ def generate_s3_bucket(**kwargs):
 
 
 def generate_main(**kwargs):
-    """Generate the main.tf Terraform dict
+    """Generate the main.tf.json Terraform dict
 
     Keyword Args:
         init (bool): If Terraform is running in the init phase or not
         config (CLIConfig): The loaded CLI config
 
     Returns:
-        dict: main.tf Terraform dict
+        dict: main.tf.json Terraform dict
     """
     init = kwargs.get('init')
     config = kwargs['config']
@@ -316,12 +317,22 @@ def generate_cluster(**kwargs):
     return cluster_dict
 
 
+def cleanup_old_tf_files():
+    """Cleanup old .tf files, these are now .tf.json files per Hashicorp best practices"""
+    for terraform_file in os.listdir('terraform'):
+        if terraform_file == 'variables.tf':
+            continue
+
+        if fnmatch(terraform_file, '*.tf'):
+            os.remove(os.path.join('terraform', terraform_file))
+
+
 def terraform_generate(**kwargs):
     """Generate all Terraform plans for the configured clusters.
 
     Keyword Args:
         config (dict): The loaded config from the 'conf/' directory
-        init (bool): Indicates if main.tf is generated for `terraform init`
+        init (bool): Indicates if main.tf.json is generated for `terraform init`
 
     Returns:
         bool: Result of cluster generating
@@ -329,14 +340,16 @@ def terraform_generate(**kwargs):
     config = kwargs.get('config')
     init = kwargs.get('init', False)
 
-    # Setup the main.tf file
-    LOGGER_CLI.debug('Generating cluster file: main.tf')
+    cleanup_old_tf_files()
+
+    # Setup the main.tf.json file
+    LOGGER_CLI.debug('Generating cluster file: main.tf.json')
     main_json = json.dumps(
         generate_main(init=init, config=config),
         indent=2,
         sort_keys=True
     )
-    with open('terraform/main.tf', 'w') as tf_file:
+    with open('terraform/main.tf.json', 'w') as tf_file:
         tf_file.write(main_json)
 
     # Return early during the init process, clusters are not needed yet
@@ -348,7 +361,7 @@ def terraform_generate(**kwargs):
         if cluster in RESTRICTED_CLUSTER_NAMES:
             raise InvalidClusterName('Rename cluster "main" or "athena" to something else!')
 
-        LOGGER_CLI.debug('Generating cluster file: %s.tf', cluster)
+        LOGGER_CLI.debug('Generating cluster file: %s.tf.json', cluster)
         cluster_dict = generate_cluster(cluster_name=cluster, config=config)
         if not cluster_dict:
             LOGGER_CLI.error(
@@ -360,13 +373,13 @@ def terraform_generate(**kwargs):
             indent=2,
             sort_keys=True
         )
-        with open('terraform/{}.tf'.format(cluster), 'w') as tf_file:
+        with open('terraform/{}.tf.json'.format(cluster), 'w') as tf_file:
             tf_file.write(cluster_json)
 
     # Setup Athena if it is enabled
     athena_config = config['lambda'].get('athena_partition_refresh_config')
     if athena_config:
-        athena_file = 'terraform/athena.tf'
+        athena_file = 'terraform/athena.tf.json'
         if athena_config['enabled']:
             athena_json = json.dumps(
                 generate_athena(config=config),
