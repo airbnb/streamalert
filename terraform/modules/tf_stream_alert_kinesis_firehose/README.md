@@ -72,7 +72,7 @@ module "kinesis_firehose" {
     <td>False</td>
   </tr>
   <tr>
-    <td>buffer_size</td>
+    <td>buffer_interval</td>
     <td>The frequency of data delivery to Amazon S3</td>
     <td>300 (seconds)</td>
     <td>False</td>

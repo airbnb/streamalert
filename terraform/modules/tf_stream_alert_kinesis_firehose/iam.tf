@@ -31,6 +31,7 @@ data "aws_iam_policy_document" "firehose_s3" {
   statement {
     effect = "Allow"
 
+    # Ref: http://amzn.to/2u5t0hS
     actions = [
       "s3:AbortMultipartUpload",
       "s3:GetBucketLocation",
