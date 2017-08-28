@@ -5,10 +5,6 @@
       "enabled": true
     },
     "kinesis": {
-      "firehose": {
-        "enabled": true,
-        "s3_bucket_suffix": "streamalert.results"
-      },
       "streams": {
         "retention": 24,
         "shards": 1

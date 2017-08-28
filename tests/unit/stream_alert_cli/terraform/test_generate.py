@@ -20,10 +20,7 @@ from stream_alert_cli.terraform import (
     cloudtrail,
     flow_logs,
     generate,
-    kinesis_events,
-    kinesis_streams,
     monitoring,
-    s3_events,
     stream_alert
 )
 
