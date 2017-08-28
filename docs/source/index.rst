@@ -113,3 +113,4 @@ Table of Contents
   athena-setup
   athena-deploy
   athena-user-guide
+  firehose
