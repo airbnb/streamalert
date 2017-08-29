@@ -18,16 +18,13 @@ import cgi
 from collections import OrderedDict
 from datetime import datetime
 import json
-import logging
 import os
 import uuid
 
 import boto3
 
+from stream_alert.alert_processor import LOGGER
 from stream_alert.alert_processor.output_base import OutputProperty, StreamOutputBase
-
-logging.basicConfig()
-LOGGER = logging.getLogger('StreamAlertOutput')
 
 # STREAM_OUTPUTS will contain each subclass of the StreamOutputBase
 # All included subclasses are designated using the '@output' class decorator

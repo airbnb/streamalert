@@ -17,12 +17,9 @@ from collections import OrderedDict
 import json
 import logging
 
+from stream_alert.alert_processor import LOGGER
 from stream_alert.alert_processor.helpers import validate_alert
 from stream_alert.alert_processor.outputs import get_output_dispatcher
-
-logging.basicConfig()
-LOGGER = logging.getLogger('StreamAlertOutput')
-LOGGER.setLevel(logging.DEBUG)
 
 
 def handler(event, context):
