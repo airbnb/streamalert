@@ -20,7 +20,7 @@ import logging
 import os
 import tempfile
 
-from mock import call, Mock, patch
+from mock import call, patch
 from nose.tools import (
     assert_equal,
     assert_false,

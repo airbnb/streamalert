@@ -15,7 +15,6 @@ limitations under the License.
 """
 from collections import OrderedDict
 import json
-import logging
 
 from stream_alert.alert_processor import LOGGER
 from stream_alert.alert_processor.helpers import validate_alert

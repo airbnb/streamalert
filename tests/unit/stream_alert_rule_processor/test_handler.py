@@ -17,7 +17,7 @@ limitations under the License.
 import base64
 import logging
 
-from mock import call, Mock, mock_open, patch
+from mock import call, mock_open, patch
 from nose.tools import (
     assert_equal,
     assert_false,

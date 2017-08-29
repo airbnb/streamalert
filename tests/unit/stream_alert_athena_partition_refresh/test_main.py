@@ -18,9 +18,10 @@ limitations under the License.
 # specific test: nosetests -v -s tests/unit/file.py:TestStreamPayload.test_name
 from datetime import datetime
 import json
+import os
 
 import boto3
-from mock import patch
+from mock import call, patch
 from moto import mock_sqs
 from nose.tools import (
     assert_equal,
@@ -28,9 +29,11 @@ from nose.tools import (
     assert_is_none,
     assert_true,
     raises,
-    nottest
+    nottest,
+    with_setup
 )
 
+import stream_alert.athena_partition_refresh as apr
 from stream_alert.athena_partition_refresh.main import (
     _backoff_handler,
     _load_config,
@@ -582,3 +585,40 @@ class TestStreamAlertAthenaClient(object):
 
         assert_true(query_success)
         assert_equal(query_results['ResultSet']['Rows'], [{'Data': [{'test': 'test'}]}])
+
+
+def _teardown_env():
+    """Helper method to reset environment variables"""
+    if 'LOGGER_LEVEL' in os.environ:
+        del os.environ['LOGGER_LEVEL']
+
+
+@with_setup(setup=None, teardown=_teardown_env)
+@patch('stream_alert.athena_partition_refresh.LOGGER.error')
+def test_init_logging_bad(log_mock):
+    """Athena Parition Refresh Init - Logging, Bad Level"""
+    level = 'IFNO'
+
+    os.environ['LOGGER_LEVEL'] = level
+
+    # Force reload the athena_partition_refresh package to trigger the init
+    reload(apr)
+
+    message = str(call('Defaulting to INFO logging: %s',
+                       ValueError('Unknown level: \'IFNO\'',)))
+
+    assert_equal(str(log_mock.call_args_list[0]), message)
+
+
+@with_setup(setup=None, teardown=_teardown_env)
+@patch('stream_alert.athena_partition_refresh.LOGGER.setLevel')
+def test_init_logging_int_level(log_mock):
+    """Athena Parition Refresh Init - Logging, Integer Level"""
+    level = '10'
+
+    os.environ['LOGGER_LEVEL'] = level
+
+    # Force reload the athena_partition_refresh package to trigger the init
+    reload(apr)
+
+    log_mock.assert_called_with(10)
