@@ -175,12 +175,6 @@ def generate_main(**kwargs):
             's3_bucket_name': firehose_s3_bucket_name
         }
 
-        # Create the S3 bucket to store the StreamAlert Firehose data
-        main_dict['resource']['aws_s3_bucket']['streamalert_data'] = generate_s3_bucket(
-            bucket=firehose_s3_bucket_name,
-            logging=logging_bucket
-        )
-
     # KMS Key and Alias creation
     main_dict['resource']['aws_kms_key']['stream_alert_secrets'] = {
         'enable_key_rotation': True,

@@ -220,8 +220,6 @@ class TestTerraformGenerate(object):
         assert_equal(generated_firehose['buffer_size'], 10)
         assert_equal(generated_firehose['buffer_interval'], 650)
 
-        assert_true('streamalert_data' in tf_main['resource']['aws_s3_bucket'])
-
     def test_generate_stream_alert_test(self):
         """CLI - Terraform Generate StreamAlert - Test Cluster"""
         stream_alert.generate_stream_alert(
