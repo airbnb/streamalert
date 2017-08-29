@@ -97,3 +97,18 @@ resource "aws_cloudwatch_log_group" "athena" {
   name              = "/aws/lambda/${var.prefix}_streamalert_athena_partition_refresh"
   retention_in_days = 60
 }
+
+// CloudWatch metric filters for the athena partition refresh function
+// The split list is made up of: <filter_name>, <filter_pattern>, <value>
+resource "aws_cloudwatch_log_metric_filter" "athena_partition_refresh_cw_metric_filters" {
+  count          = "${length(var.athena_metric_filters)}"
+  name           = "${element(split(",", var.athena_metric_filters[count.index]), 0)}"
+  pattern        = "${element(split(",", var.athena_metric_filters[count.index]), 1)}"
+  log_group_name = "${aws_cloudwatch_log_group.athena.name}"
+
+  metric_transformation {
+    name      = "${element(split(",", var.athena_metric_filters[count.index]), 0)}"
+    namespace = "${var.namespace}"
+    value     = "${element(split(",", var.athena_metric_filters[count.index]), 2)}"
+  }
+}
