@@ -18,6 +18,7 @@ import json
 import os
 
 from stream_alert_cli.logger import LOGGER_CLI
+from stream_alert.shared import metrics
 
 RESTRICTED_CLUSTER_NAMES = ('main', 'athena')
 
@@ -277,6 +278,56 @@ def generate_stream_alert(cluster_name, cluster_dict, config):
             'alert_processor_vpc_subnet_ids': vpc_config['subnet_ids'],
             'alert_processor_vpc_security_group_ids': vpc_config['security_group_ids']
         })
+
+    return True
+
+def generate_cloudwatch_log_metrics(cluster_name, cluster_dict, config):
+    """Add the CloudWatch Metric Filters module to the Terraform cluster dict.
+
+    Args:
+        cluster_name (str): The name of the currently generating cluster
+        cluster_dict (defaultdict): The dict containing all Terraform config for a given cluster.
+        config (dict): The loaded config from the 'conf/' directory
+
+    Returns:
+        bool: Result of applying the cloudwatch metric filters to the stream_alert module
+    """
+    enable_metrics = config['global'].get('infrastructure',
+                                          {}).get('metrics', {}).get('enabled', False)
+    if not enable_metrics:
+        return True
+
+    current_metrics = metrics.MetricLogger.get_available_metrics()
+
+    # Add metric filters for the rule and alert processor
+    funcs = {metrics.ALERT_PROCESSOR: 'AlertProcessor',
+             metrics.RULE_PROCESSOR: 'RuleProcessor'}
+
+    for func in funcs:
+        if func not in current_metrics:
+            continue
+
+        metric_prefix = funcs[func]
+        filter_pattern_idx, filter_value_idx = 0, 1
+
+        # Add filters for the cluster and aggregate
+        # Use a list of strings that represnt the following comma separated values:
+        #   <filter_name>,<filter_pattern>,<value>
+        filters = []
+        for metric, settings in current_metrics[func].items():
+            filters.extend([
+                '{},{},{}'.format(
+                    '{}-{}-{}'.format(metric_prefix, metric, cluster_name.upper()),
+                    settings[filter_pattern_idx],
+                    settings[filter_value_idx]),
+                '{},{},{}'.format(
+                    '{}-{}'.format(metric_prefix, metric),
+                    settings[filter_pattern_idx],
+                    settings[filter_value_idx])
+            ])
+
+        cluster_dict['module']['stream_alert_{}'.format(cluster_name)] \
+            ['{}_metric_filters'.format(func)] = filters
 
     return True
 
@@ -563,6 +614,9 @@ def generate_cluster(**kwargs):
     if not generate_stream_alert(cluster_name, cluster_dict, config):
         return
 
+    if not generate_cloudwatch_log_metrics(cluster_name, cluster_dict, config):
+        return
+
     if modules['cloudwatch_monitoring']['enabled']:
         if not generate_cloudwatch_monitoring(cluster_name, cluster_dict, config):
             return
@@ -628,6 +682,27 @@ def generate_athena(config):
         'enable_metrics': enable_metrics,
         'prefix': config['global']['account']['prefix']
     }
+
+    if not enable_metrics:
+        return athena_dict
+
+    # Check to see if there are any metrics configured for the athena function
+    current_metrics = metrics.MetricLogger.get_available_metrics()
+    if metrics.ATHENA_PROCESSOR not in current_metrics:
+        return athena_dict
+
+    metric_prefix = 'AthenaRefresh'
+    filter_pattern_idx, filter_value_idx = 0, 1
+
+    # Add filters for the cluster and aggregate
+    # Use a list of strings that represnt the following comma separated values:
+    #   <filter_name>,<filter_pattern>,<value>
+    filters = ['{},{},{}'.format('{}-{}'.format(metric_prefix, metric),
+                                 settings[filter_pattern_idx],
+                                 settings[filter_value_idx])
+               for metric, settings in current_metrics[metrics.ATHENA_PROCESSOR].items()]
+
+    athena_dict['module']['stream_alert_athena']['athena_metric_filters'] = filters
 
     return athena_dict
 
