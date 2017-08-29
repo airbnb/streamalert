@@ -32,7 +32,6 @@ from stream_alert.rule_processor.handler import load_config, StreamAlert
 from tests.unit.stream_alert_rule_processor.test_helpers import get_mock_context, get_valid_event
 
 
-@patch('stream_alert.rule_processor.handler.Metrics.send_metrics', Mock())
 class TestStreamAlert(object):
     """Test class for StreamAlert class"""
 
@@ -52,7 +51,7 @@ class TestStreamAlert(object):
 
     @staticmethod
     @raises(ConfigError)
-    def test_run_config_error(_):
+    def test_run_config_error():
         """StreamAlert Class - Run, Config Error"""
         mock = mock_open(read_data='non-json string that will raise an exception')
         with patch('__builtin__.open', mock):
@@ -115,8 +114,7 @@ class TestStreamAlert(object):
         load_payload_mock.assert_called_with(
             'lambda',
             'entity',
-            'record',
-            self.__sa_handler.metrics
+            'record'
         )
 
     @patch('stream_alert.rule_processor.handler.StreamRules.process')
@@ -139,7 +137,9 @@ class TestStreamAlert(object):
 
         calls = [call('Processed %d valid record(s) that resulted in %d alert(s).', 1, 0),
                  call('Invalid record count: %d', 0),
-                 call('%s alerts triggered', 0)]
+                 call('Logging of metric data is currently disabled.'),
+                 call('%s alerts triggered', 0),
+                 call('Logging of metric data is currently disabled.')]
 
         log_mock.assert_has_calls(calls)
 
@@ -179,10 +179,9 @@ class TestStreamAlert(object):
         sink_mock.assert_called_with(['success!!'])
 
     @patch('logging.Logger.debug')
-    @patch('stream_alert.shared.metrics.Metrics.send_metrics')
     @patch('stream_alert.rule_processor.handler.StreamRules.process')
     @patch('stream_alert.rule_processor.handler.StreamClassifier.extract_service_and_entity')
-    def test_run_debug_log_alert(self, extract_mock, rules_mock, _, log_mock):
+    def test_run_debug_log_alert(self, extract_mock, rules_mock, log_mock):
         """StreamAlert Class - Run, Debug Log Alert"""
         extract_mock.return_value = ('kinesis', 'unit_test_default_stream')
         rules_mock.return_value = ['success!!']

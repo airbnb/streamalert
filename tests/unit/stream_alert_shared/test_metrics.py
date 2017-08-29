@@ -16,27 +16,23 @@ limitations under the License.
 # pylint: disable=no-self-use,protected-access
 import os
 
-from botocore.exceptions import ClientError
-from mock import call, Mock, patch
+from mock import call, patch
 from nose.tools import assert_equal
 
-import stream_alert.shared as shared
-from tests.unit.stream_alert_rule_processor import REGION
+from stream_alert import shared
 
 
 class TestMetrics(object):
     """Test class for Metrics class"""
 
-    def __init__(self):
-        self.__metrics = None
-
     def setup(self):
         """Setup before each method"""
-        self.__metrics = shared.metrics.Metrics('TestFunction', REGION)
+        os.environ['ENABLE_METRICS'] = '1'
+        # Force reload the metrics package to trigger env var loading
+        reload(shared.metrics)
 
     def teardown(self):
         """Teardown after each method"""
-        self.__metrics = None
         if 'ENABLE_METRICS' in os.environ:
             del os.environ['ENABLE_METRICS']
 
@@ -44,71 +40,43 @@ class TestMetrics(object):
             del os.environ['LOGGER_LEVEL']
 
     @patch('logging.Logger.error')
-    def test_invalid_metric_name(self, log_mock):
-        """Metrics - Invalid Name"""
-        self.__metrics.add_metric('bad metric name', 100, 'Seconds')
-
-        log_mock.assert_called_with('Metric name not defined: %s', 'bad metric name')
-
-    @patch('logging.Logger.error')
-    def test_invalid_metric_unit(self, log_mock):
-        """Metrics - Invalid Unit Type"""
-        self.__metrics.add_metric('FailedParses', 100, 'Total')
-
-        log_mock.assert_called_with('Metric unit not defined: %s', 'Total')
-
-    @patch('stream_alert.shared.metrics.Metrics._put_metrics')
-    def test_valid_metric(self, metric_mock):
-        """Metrics - Valid Metric"""
-        # Enable the metrics
-        os.environ['ENABLE_METRICS'] = '1'
-
-        # Force reload the metrics package to trigger constant loading
-        reload(shared.metrics)
-
-        self.__metrics.add_metric('FailedParses', 100, 'Count')
-        self.__metrics.send_metrics()
-
-        metric_mock.assert_called()
-
-    @patch('logging.Logger.exception')
-    def test_boto_failed(self, log_mock):
-        """Metrics - Boto Call Failed"""
-        self.__metrics.boto_cloudwatch = Mock()
-
-        err_response = {'Error': {'Code': 100}}
-
-        # Add ClientError side_effect to mock
-        self.__metrics.boto_cloudwatch.put_metric_data.side_effect = ClientError(
-            err_response, 'operation')
-
-        self.__metrics._metric_data.append({'test': 'info'})
-        self.__metrics._put_metrics()
+    def test_invalid_metric_function(self, log_mock):
+        """Metrics - Invalid Function Name"""
+        shared.metrics.MetricLogger.log_metric('rule_procesor', '', '')
 
         log_mock.assert_called_with(
-            'Failed to send metric to CloudWatch. Error: %s\nMetric data:\n%s',
-            err_response,
-            '[\n  {\n    "test": "info"\n  }\n]')
+            'Function \'%s\' not defined in available metrics. '
+            'Options are: %s', 'rule_procesor', '\'rule_processor\'')
 
-    @patch('logging.Logger.debug')
-    def test_no_metrics_to_send(self, log_mock):
-        """Metrics - No Metrics To Send"""
-        # Enable the metrics
-        os.environ['ENABLE_METRICS'] = '1'
+    @patch('logging.Logger.error')
+    def test_invalid_metric_name(self, log_mock):
+        """Metrics - Invalid Metric Name"""
+        shared.metrics.MetricLogger.log_metric('rule_processor', 'FailedParsed', '')
 
-        # Force reload the metrics package to trigger constant loading
-        reload(shared.metrics)
+        assert_equal(log_mock.call_args[0][0], 'Metric name (\'%s\') not defined for '
+                                               '\'%s\' function. Options are: %s')
+        assert_equal(log_mock.call_args[0][1], 'FailedParsed')
+        assert_equal(log_mock.call_args[0][2], 'rule_processor')
 
-        self.__metrics.send_metrics()
+    @patch('logging.Logger.info')
+    def test_valid_metric(self, log_mock):
+        """Metrics - Valid Metric"""
+        shared.metrics.MetricLogger.log_metric('rule_processor', 'FailedParses', 100)
 
-        log_mock.assert_called_with('No metric data to send to CloudWatch.')
+        log_mock.assert_called_with(
+            '%s', '{"metric_name": "FailedParses", "metric_value": 100}')
 
     @patch('logging.Logger.debug')
     def test_disabled_metrics(self, log_mock):
         """Metrics - Metrics Disabled"""
-        self.__metrics.send_metrics()
+        os.environ['ENABLE_METRICS'] = '0'
 
-        log_mock.assert_called_with('Sending of metric data is currently disabled.')
+        # Force reload the metrics package to trigger constant loading
+        reload(shared.metrics)
+
+        shared.metrics.MetricLogger.log_metric('', '', '')
+
+        log_mock.assert_called_with('Logging of metric data is currently disabled.')
 
     @patch('logging.Logger.error')
     def test_disabled_metrics_error(self, log_mock):
@@ -123,7 +91,7 @@ class TestMetrics(object):
                                     'invalid literal for int() with '
                                     'base 10: \'bad\'')
 
-    @patch('stream_alert.shared.LOGGER.error')
+    @patch('logging.Logger.error')
     def test_init_logging_bad(self, log_mock):
         """Shared Init - Logging, Bad Level"""
         level = 'IFNO'
@@ -138,7 +106,7 @@ class TestMetrics(object):
 
         assert_equal(str(log_mock.call_args_list[0]), message)
 
-    @patch('stream_alert.shared.LOGGER.setLevel')
+    @patch('logging.Logger.setLevel')
     def test_init_logging_int_level(self, log_mock):
         """Shared Init - Logging, Integer Level"""
         level = '10'

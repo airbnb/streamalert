@@ -139,7 +139,7 @@ class RuleProcessorTester(object):
             return
 
         # Create the StreamPayload to use for encapsulating parsed info
-        payload = load_stream_payload(service, entity, formatted_record, Mock())
+        payload = load_stream_payload(service, entity, formatted_record)
         if not payload:
             self.all_tests_passed = False
             return

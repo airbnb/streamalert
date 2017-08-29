@@ -46,7 +46,7 @@ def teardown_s3():
 
 def test_load_payload_valid():
     """StreamPayload - Loading Stream Payload, Valid"""
-    payload = load_stream_payload('s3', 'entity', 'record', None)
+    payload = load_stream_payload('s3', 'entity', 'record')
 
     assert_is_instance(payload, S3Payload)
 
@@ -54,14 +54,14 @@ def test_load_payload_valid():
 @patch('logging.Logger.error')
 def test_load_payload_invalid(log_mock):
     """StreamPayload - Loading Stream Payload, Invalid"""
-    load_stream_payload('blah', 'entity', 'record', None)
+    load_stream_payload('blah', 'entity', 'record')
 
     log_mock.assert_called_with('Service payload not supported: %s', 'blah')
 
 
 def test_repr_string():
     """StreamPayload - String Representation"""
-    s3_payload = load_stream_payload('s3', 'entity', 'record', None)
+    s3_payload = load_stream_payload('s3', 'entity', 'record')
 
     # Set some values that are different than the defaults
     s3_payload.type = 'unit_type'
@@ -77,28 +77,28 @@ def test_repr_string():
 
 def test_get_service_kinesis():
     """StreamPayload - Get Service, Kinesis"""
-    kinesis_payload = load_stream_payload('kinesis', 'entity', 'record', None)
+    kinesis_payload = load_stream_payload('kinesis', 'entity', 'record')
 
     assert_equal(kinesis_payload.service(), 'kinesis')
 
 
 def test_get_service_s3():
     """StreamPayload - Get Service, S3"""
-    s3_payload = load_stream_payload('s3', 'entity', 'record', None)
+    s3_payload = load_stream_payload('s3', 'entity', 'record')
 
     assert_equal(s3_payload.service(), 's3')
 
 
 def test_get_service_sns():
     """StreamPayload - Get Service, SNS"""
-    sns_payload = load_stream_payload('sns', 'entity', 'record', None)
+    sns_payload = load_stream_payload('sns', 'entity', 'record')
 
     assert_equal(sns_payload.service(), 'sns')
 
 
 def test_refresh_record():
     """StreamPayload - Refresh Record"""
-    s3_payload = load_stream_payload('s3', 'entity', 'record', None)
+    s3_payload = load_stream_payload('s3', 'entity', 'record')
 
     # Set some values that are different than the defaults
     s3_payload.type = 'unit_type'
@@ -121,7 +121,7 @@ def test_pre_parse_kinesis(log_mock):
     kinesis_data = json.dumps({'test': 'value'})
     entity = 'unit_test_entity'
     raw_record = make_kinesis_raw_record(entity, kinesis_data)
-    kinesis_payload = load_stream_payload('kinesis', entity, raw_record, Mock())
+    kinesis_payload = load_stream_payload('kinesis', entity, raw_record)
 
     kinesis_payload = kinesis_payload.pre_parse().next()
 
@@ -139,7 +139,7 @@ def test_pre_parse_sns(log_mock):
     """SNSPayload - Pre Parse"""
     sns_data = json.dumps({'test': 'value'})
     raw_record = make_sns_raw_record('unit_topic', sns_data)
-    sns_payload = load_stream_payload('sns', 'entity', raw_record, Mock())
+    sns_payload = load_stream_payload('sns', 'entity', raw_record)
 
     sns_payload = sns_payload.pre_parse().next()
 
@@ -159,7 +159,7 @@ def test_pre_parse_s3(s3_mock, *_):
     s3_mock.side_effect = [((0, records[0]), (1, records[1]))]
 
     raw_record = make_s3_raw_record('unit_bucket_name', 'unit_key_name')
-    s3_payload = load_stream_payload('s3', 'unit_key_name', raw_record, Mock())
+    s3_payload = load_stream_payload('s3', 'unit_key_name', raw_record)
 
     for index, record in enumerate(s3_payload.pre_parse()):
         assert_equal(record.pre_parsed_record, records[index])
@@ -183,7 +183,7 @@ def test_pre_parse_s3_debug(s3_mock, log_mock, _):
     s3_mock.side_effect = [((100, records[0]), (200, records[1]))]
 
     raw_record = make_s3_raw_record('unit_bucket_name', 'unit_key_name')
-    s3_payload = load_stream_payload('s3', 'unit_key_name', raw_record, Mock())
+    s3_payload = load_stream_payload('s3', 'unit_key_name', raw_record)
     S3Payload.s3_object_size = 350
 
     _ = [_ for _ in s3_payload.pre_parse()]
@@ -208,7 +208,7 @@ def test_pre_parse_s3_debug(s3_mock, log_mock, _):
 def test_s3_object_too_large():
     """S3Payload - S3ObjectSizeError, Object too Large"""
     raw_record = make_s3_raw_record('unit_bucket_name', 'unit_key_name')
-    s3_payload = load_stream_payload('s3', 'unit_key_name', raw_record, None)
+    s3_payload = load_stream_payload('s3', 'unit_key_name', raw_record)
     S3Payload.s3_object_size = (128 * 1024 * 1024) + 10
 
     s3_payload._download_object('region', 'bucket', 'key')
@@ -219,7 +219,7 @@ def test_s3_object_too_large():
 def test_get_object(log_mock, _):
     """S3Payload - Get S3 Info from Raw Record"""
     raw_record = make_s3_raw_record('unit_bucket_name', 'unit_key_name')
-    s3_payload = load_stream_payload('s3', 'unit_key_name', raw_record, None)
+    s3_payload = load_stream_payload('s3', 'unit_key_name', raw_record)
 
     s3_payload._get_object()
     log_mock.assert_called_with(
@@ -234,7 +234,7 @@ def test_get_object(log_mock, _):
 def test_s3_download_object(log_mock, *_):
     """S3Payload - Download Object"""
     raw_record = make_s3_raw_record('unit_bucket_name', 'unit_key_name')
-    s3_payload = load_stream_payload('s3', 'unit_key_name', raw_record, Mock())
+    s3_payload = load_stream_payload('s3', 'unit_key_name', raw_record)
     s3_payload._download_object('us-east-1', 'unit_bucket_name', 'unit_key_name')
 
     assert_equal(log_mock.call_args_list[1][0][0], 'Completed download in %s seconds')
@@ -247,7 +247,7 @@ def test_s3_download_object(log_mock, *_):
 def test_s3_download_object_mb(log_mock, *_):
     """S3Payload - Download Object, Size in MB"""
     raw_record = make_s3_raw_record('unit_bucket_name', 'unit_key_name')
-    s3_payload = load_stream_payload('s3', 'unit_key_name', raw_record, Mock())
+    s3_payload = load_stream_payload('s3', 'unit_key_name', raw_record)
     S3Payload.s3_object_size = (127.8 * 1024 * 1024)
     s3_payload._download_object('us-east-1', 'unit_bucket_name', 'unit_key_name')
 
