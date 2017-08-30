@@ -1,8 +1,19 @@
 {
   "id": "advanced",
   "modules": {
+    "cloudtrail": {
+      "enabled": true
+    },
     "cloudwatch_monitoring": {
       "enabled": true
+    },
+    "flow_logs": {
+      "enabled": true,
+      "log_group_name": "unit-test-advanced",
+      "vpcs": [
+        "vpc-id-1",
+        "vpc-id-2"
+      ]
     },
     "kinesis": {
       "streams": {
@@ -17,15 +28,6 @@
       "alert_processor": {
         "current_version": "$LATEST",
         "memory": 128,
-        "timeout": 25,
-        "vpc_config": {
-          "subnet_ids": [
-            "subnet-id-1"
-          ],
-          "security_group_ids": [
-            "sg-id-1"
-          ]
-        },
         "outputs": {
           "aws-lambda": [
             "my-lambda-function:production"
@@ -33,29 +35,27 @@
           "aws-s3": [
             "my-s3-bucket.with.data"
           ]
+        },
+        "timeout": 25,
+        "vpc_config": {
+          "security_group_ids": [
+            "sg-id-1"
+          ],
+          "subnet_ids": [
+            "subnet-id-1"
+          ]
         }
       },
       "rule_processor": {
         "current_version": "$LATEST",
-        "memory": 128,
-        "timeout": 25,
         "inputs": {
           "aws-sns": [
             "my-sns-topic-name"
           ]
-        }
+        },
+        "memory": 128,
+        "timeout": 25
       }
-    },
-    "cloudtrail": {
-      "enabled": true
-    },
-    "flow_logs": {
-      "enabled": true,
-      "vpcs": [
-        "vpc-id-1",
-        "vpc-id-2"
-      ],
-      "log_group_name": "unit-test-advanced"
     }
   },
   "outputs": {

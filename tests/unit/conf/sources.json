@@ -1,5 +1,10 @@
 {
   "kinesis": {
+    "test_cloudtrail_bucket": {
+      "logs": [
+        "test_cloudtrail"
+      ]
+    },
     "test_kinesis_stream": {
       "logs": [
         "test_log_type_json",
@@ -18,11 +23,6 @@
         "test_log_type_json_2",
         "test_log_type_json_nested_osquery",
         "test_log_type_syslog"
-      ]
-    },
-    "test_cloudtrail_bucket": {
-      "logs": [
-        "test_cloudtrail"
       ]
     },
     "unit_test_default_stream": {
