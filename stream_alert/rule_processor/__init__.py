@@ -2,7 +2,7 @@
 import logging
 import os
 
-FUNCTION_NAME = 'rule_processor'
+from stream_alert.shared import RULE_PROCESSOR_NAME as FUNCTION_NAME
 
 # Create a package level logger to import
 LEVEL = os.environ.get('LOGGER_LEVEL', 'INFO').upper()

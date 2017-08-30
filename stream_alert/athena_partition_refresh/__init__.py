@@ -2,7 +2,7 @@
 import logging
 import os
 
-FUNCTION_NAME = 'athena_partition_refresh'
+from stream_alert.shared import ATHENA_PARTITION_REFRESH_NAME as FUNCTION_NAME
 
 # Create a package level logger to import
 LEVEL = os.environ.get('LOGGER_LEVEL', 'INFO').upper()

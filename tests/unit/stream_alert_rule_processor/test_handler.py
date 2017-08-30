@@ -137,9 +137,7 @@ class TestStreamAlert(object):
 
         calls = [call('Processed %d valid record(s) that resulted in %d alert(s).', 1, 0),
                  call('Invalid record count: %d', 0),
-                 call('Logging of metric data is currently disabled.'),
-                 call('%s alerts triggered', 0),
-                 call('Logging of metric data is currently disabled.')]
+                 call('%s alerts triggered', 0)]
 
         log_mock.assert_has_calls(calls)
 

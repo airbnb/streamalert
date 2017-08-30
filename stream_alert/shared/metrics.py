@@ -13,25 +13,14 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-import json
 import os
 
-from stream_alert.shared import LOGGER
-# Since this is a shared package, try to import the relevant processor name
-try:
-    from stream_alert.alert_processor import FUNCTION_NAME as ALERT_PROCESSOR
-except ImportError:
-    ALERT_PROCESSOR = 'alert_processor'
-
-try:
-    from stream_alert.athena_partition_refresh import FUNCTION_NAME as ATHENA_PROCESSOR
-except ImportError:
-    ATHENA_PROCESSOR = 'athena_partition_refresh'
-
-try:
-    from stream_alert.rule_processor import FUNCTION_NAME as RULE_PROCESSOR
-except ImportError:
-    RULE_PROCESSOR = 'rule_processor'
+from stream_alert.shared import (
+    ALERT_PROCESSOR_NAME,
+    ATHENA_PARTITION_REFRESH_NAME,
+    LOGGER,
+    RULE_PROCESSOR_NAME
+)
 
 CLUSTER = os.environ.get('CLUSTER', 'unknown_cluster')
 
@@ -41,6 +30,9 @@ except ValueError as err:
     ENABLE_METRICS = False
     LOGGER.error('Invalid value for metric toggling, expected 0 or 1: %s',
                  err.message)
+
+if not ENABLE_METRICS:
+    LOGGER.debug('Logging of metric data is currently disabled.')
 
 
 class MetricLogger(object):
@@ -67,9 +59,9 @@ class MetricLogger(object):
     # If additional metric logging is added that does not conform to this default
     # configuration, new filters & lookups should be created to handle them as well.
     _available_metrics = {
-        ALERT_PROCESSOR: {},   # Placeholder for future alert processor metrics
-        ATHENA_PROCESSOR: {},  # Placeholder for future athena processor metrics
-        RULE_PROCESSOR: {
+        ALERT_PROCESSOR_NAME: {},   # Placeholder for future alert processor metrics
+        ATHENA_PARTITION_REFRESH_NAME: {},  # Placeholder for future athena processor metrics
+        RULE_PROCESSOR_NAME: {
             FAILED_PARSES: (_default_filter.format(FAILED_PARSES), _default_value_lookup),
             S3_DOWNLOAD_TIME: (_default_filter.format(S3_DOWNLOAD_TIME), _default_value_lookup),
             TOTAL_RECORDS: (_default_filter.format(TOTAL_RECORDS), _default_value_lookup),
@@ -88,8 +80,8 @@ class MetricLogger(object):
                 this to be of type 'float' but will accept any numeric value that
                 is not super small (negative) or super large.
         """
+        # Do not log any metrics if they have been disabled by the user
         if not ENABLE_METRICS:
-            LOGGER.debug('Logging of metric data is currently disabled.')
             return
 
         if lambda_function not in cls._available_metrics:
@@ -108,7 +100,7 @@ class MetricLogger(object):
             return
 
         # Use a default format for logging this metric that will get picked up by the filters
-        LOGGER.info('%s', json.dumps({'metric_name': metric_name, 'metric_value': value}))
+        LOGGER.info('{"metric_name": "%s", "metric_value": %s}', metric_name, value)
 
     @classmethod
     def get_available_metrics(cls):

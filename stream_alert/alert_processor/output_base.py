@@ -272,7 +272,6 @@ class StreamOutputBase(object):
         Returns:
             OrderedDict: Contains various OutputProperty items
         """
-        pass
 
     @abstractmethod
     def dispatch(self, **kwargs):
@@ -285,4 +284,3 @@ class StreamOutputBase(object):
                 rule_name (str): Name of the triggered rule
                 alert (dict): Alert relevant to the triggered rule
         """
-        pass

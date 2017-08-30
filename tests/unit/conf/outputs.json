@@ -3,7 +3,8 @@
     "unit_test_bucket": "unit.test.bucket.name"
   },
   "aws-lambda": {
-    "unit_test_lambda": "unit_test_function"
+    "unit_test_lambda": "unit_test_function",
+    "unit_test_lambda_qual": "unit_test_function:production"
   },
   "pagerduty": [
     "unit_test_pagerduty"

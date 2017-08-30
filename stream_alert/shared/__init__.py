@@ -1,6 +1,11 @@
-"""Define logger for shared functionality."""
+"""Define some shared resources."""
 import logging
 import os
+
+
+ALERT_PROCESSOR_NAME = 'alert_processor'
+ATHENA_PARTITION_REFRESH_NAME = 'athena_partition_refresh'
+RULE_PROCESSOR_NAME = 'rule_processor'
 
 # Create a package level logger to import
 LEVEL = os.environ.get('LOGGER_LEVEL', 'INFO').upper()

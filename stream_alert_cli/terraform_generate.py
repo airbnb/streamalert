@@ -17,8 +17,8 @@ from collections import defaultdict
 import json
 import os
 
-from stream_alert_cli.logger import LOGGER_CLI
 from stream_alert.shared import metrics
+from stream_alert_cli.logger import LOGGER_CLI
 
 RESTRICTED_CLUSTER_NAMES = ('main', 'athena')
 
@@ -294,14 +294,17 @@ def generate_cloudwatch_log_metrics(cluster_name, cluster_dict, config):
     """
     enable_metrics = config['global'].get('infrastructure',
                                           {}).get('metrics', {}).get('enabled', False)
+
+    # Do not add any metric filters if metrics are disabled
     if not enable_metrics:
-        return True
+        return
 
     current_metrics = metrics.MetricLogger.get_available_metrics()
 
     # Add metric filters for the rule and alert processor
-    funcs = {metrics.ALERT_PROCESSOR: 'AlertProcessor',
-             metrics.RULE_PROCESSOR: 'RuleProcessor'}
+    # The funcs dict acts as a simple map to a human-readable name
+    funcs = {metrics.ALERT_PROCESSOR_NAME: 'AlertProcessor',
+             metrics.RULE_PROCESSOR_NAME: 'RuleProcessor'}
 
     for func in funcs:
         if func not in current_metrics:
@@ -328,8 +331,6 @@ def generate_cloudwatch_log_metrics(cluster_name, cluster_dict, config):
 
         cluster_dict['module']['stream_alert_{}'.format(cluster_name)] \
             ['{}_metric_filters'.format(func)] = filters
-
-    return True
 
 
 def generate_cloudwatch_monitoring(cluster_name, cluster_dict, config):
@@ -614,8 +615,7 @@ def generate_cluster(**kwargs):
     if not generate_stream_alert(cluster_name, cluster_dict, config):
         return
 
-    if not generate_cloudwatch_log_metrics(cluster_name, cluster_dict, config):
-        return
+    generate_cloudwatch_log_metrics(cluster_name, cluster_dict, config)
 
     if modules['cloudwatch_monitoring']['enabled']:
         if not generate_cloudwatch_monitoring(cluster_name, cluster_dict, config):
@@ -688,7 +688,7 @@ def generate_athena(config):
 
     # Check to see if there are any metrics configured for the athena function
     current_metrics = metrics.MetricLogger.get_available_metrics()
-    if metrics.ATHENA_PROCESSOR not in current_metrics:
+    if metrics.ATHENA_PARTITION_REFRESH_NAME not in current_metrics:
         return athena_dict
 
     metric_prefix = 'AthenaRefresh'
@@ -700,7 +700,8 @@ def generate_athena(config):
     filters = ['{},{},{}'.format('{}-{}'.format(metric_prefix, metric),
                                  settings[filter_pattern_idx],
                                  settings[filter_value_idx])
-               for metric, settings in current_metrics[metrics.ATHENA_PROCESSOR].items()]
+               for metric, settings in
+               current_metrics[metrics.ATHENA_PARTITION_REFRESH_NAME].iteritems()]
 
     athena_dict['module']['stream_alert_athena']['athena_metric_filters'] = filters
 

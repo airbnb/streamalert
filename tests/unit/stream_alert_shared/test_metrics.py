@@ -63,8 +63,8 @@ class TestMetrics(object):
         """Metrics - Valid Metric"""
         shared.metrics.MetricLogger.log_metric('rule_processor', 'FailedParses', 100)
 
-        log_mock.assert_called_with(
-            '%s', '{"metric_name": "FailedParses", "metric_value": 100}')
+        log_mock.assert_called_with('{"metric_name": "%s", "metric_value": %s}',
+                                    'FailedParses', 100)
 
     @patch('logging.Logger.debug')
     def test_disabled_metrics(self, log_mock):
@@ -73,8 +73,6 @@ class TestMetrics(object):
 
         # Force reload the metrics package to trigger constant loading
         reload(shared.metrics)
-
-        shared.metrics.MetricLogger.log_metric('', '', '')
 
         log_mock.assert_called_with('Logging of metric data is currently disabled.')
 
