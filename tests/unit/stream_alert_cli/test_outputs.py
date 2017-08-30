@@ -106,8 +106,9 @@ def test_encrypt_and_push_creds_to_s3(cli_mock):
     assert_true(return_value)
 
 
+@raises(ClientError)
 @patch('boto3.client')
-@patch('logging.Logger.exception')
+@patch('logging.Logger.error')
 def test_encrypt_and_push_creds_to_s3_kms_failure(log_mock, boto_mock):
     """Encrypt and push creds to s3 - kms failure"""
     props = {
@@ -129,7 +130,7 @@ def test_encrypt_and_push_creds_to_s3_kms_failure(log_mock, boto_mock):
     boto_mock.side_effect = ClientError(err_response, 'operation')
     encrypt_and_push_creds_to_s3('us-east-1', 'bucket', 'key', props, 'test_alias')
 
-    log_mock.assert_called_with('an error occurred during credential encryption')
+    log_mock.assert_called_with('An error occurred during credential encryption')
 
 
 def test_update_outputs_config():
