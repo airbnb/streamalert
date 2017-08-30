@@ -21,7 +21,6 @@ from stream_alert_cli.terraform import _common, s3_events
 
 CONFIG = CLIConfig(config_path='tests/unit/conf')
 
-
 def test_generate_s3_events():
     """CLI - Terraform S3 Events with Valid Bucket"""
     cluster_dict = _common.infinitedict()

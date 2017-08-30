@@ -32,17 +32,16 @@ def generate_monitoring(cluster_name, cluster_dict, config):
 
     if infrastructure_config and 'monitoring' in infrastructure_config:
         if infrastructure_config['monitoring'].get('create_sns_topic'):
-            sns_topic_arn = 'arn:aws:sns:{region}:{account_id}:{topic}'.format(
-                region=config['global']['account']['region'],
-                account_id=config['global']['account']['aws_account_id'],
-                topic='stream_alert_monitoring'
-            )
+            topic_name = 'stream_alert_monitoring'
+
         elif infrastructure_config['monitoring'].get('sns_topic_name'):
-            sns_topic_arn = 'arn:aws:sns:{region}:{account_id}:{topic}'.format(
-                region=config['global']['account']['region'],
-                account_id=config['global']['account']['aws_account_id'],
-                topic=infrastructure_config['monitoring']['sns_topic_name']
-            )
+            topic_name = infrastructure_config['monitoring']['sns_topic_name']
+
+        sns_topic_arn = 'arn:aws:sns:{region}:{account_id}:{topic}'.format(
+            region=config['global']['account']['region'],
+            account_id=config['global']['account']['aws_account_id'],
+            topic=topic_name
+        )
     else:
         LOGGER_CLI.error('Invalid config: Make sure you declare global infrastructure options!')
         return False
@@ -51,11 +50,6 @@ def generate_monitoring(cluster_name, cluster_dict, config):
         '{}_{}_streamalert_rule_processor'.format(prefix, cluster_name),
         '{}_{}_streamalert_alert_processor'.format(prefix, cluster_name)
     ]
-    # Conditionally add the Athena Lambda function for CloudWatch Alarms
-    if config['lambda'].get('athena_partition_refresh_config', {}).get('enabled'):
-        lambda_functions.append('{}_streamalert_athena_partition_refresh'.format(
-            prefix
-        ))
 
     cluster_dict['module']['cloudwatch_monitoring_{}'.format(cluster_name)] = {
         'source': 'modules/tf_stream_alert_monitoring',

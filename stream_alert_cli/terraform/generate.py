@@ -21,6 +21,7 @@ import string
 from stream_alert.shared import metrics
 from stream_alert_cli.logger import LOGGER_CLI
 from stream_alert_cli.terraform._common import (
+    DEFAULT_SNS_MONITORING_TOPIC,
     enabled_firehose_logs,
     InvalidClusterName,
     infinitedict
@@ -36,7 +37,6 @@ from stream_alert_cli.terraform.s3_events import generate_s3_events
 
 DEFAULT_SNS_MONITORING_TOPIC = 'stream_alert_monitoring'
 RESTRICTED_CLUSTER_NAMES = ('main', 'athena')
-
 
 def generate_s3_bucket(**kwargs):
     """Generate an S3 Bucket dict
@@ -151,6 +151,7 @@ def generate_main(**kwargs):
         )
     }
 
+    # Conditionally configure Firehose
     if config['global']['infrastructure'].get('firehose', {}).get('enabled'):
         firehose_config = config['global']['infrastructure']['firehose']
         firehose_s3_bucket_suffix = firehose_config.get('s3_bucket_suffix',
@@ -158,7 +159,7 @@ def generate_main(**kwargs):
         firehose_s3_bucket_name = '{}.{}'.format(config['global']['account']['prefix'],
                                                  firehose_s3_bucket_suffix)
 
-        # Configure the main Firehose module
+        # Add the main Firehose module
         main_dict['module']['kinesis_firehose'] = {
             'source': 'modules/tf_stream_alert_kinesis_firehose',
             'account_id': config['global']['account']['aws_account_id'],
@@ -185,10 +186,11 @@ def generate_main(**kwargs):
         'target_key_id': '${aws_kms_key.stream_alert_secrets.key_id}'
     }
 
+    # Global infrastructure settings
     infrastructure_config = config['global'].get('infrastructure')
     if infrastructure_config and 'monitoring' in infrastructure_config:
         if infrastructure_config['monitoring'].get('create_sns_topic'):
-            main_dict['resource']['aws_sns_topic'][DEFAULT_SNS_MONITORING_TOPIC] = {
+            main_dict['resource']['aws_sns_topic']['stream_alert_monitoring'] = {
                 'name': DEFAULT_SNS_MONITORING_TOPIC
             }
 

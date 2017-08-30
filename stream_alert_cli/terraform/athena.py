@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from stream_alert_cli.terraform._common import infinitedict
+from stream_alert_cli.terraform._common import DEFAULT_SNS_MONITORING_TOPIC, infinitedict
 
 def generate_athena(config):
     """Generate Athena Terraform.
@@ -46,6 +46,7 @@ def generate_athena(config):
         'prefix': config['global']['account']['prefix']
     }
 
+    # Metrics setup
     if not athena_config.get('enable_metrics', False):
         return athena_dict
 
@@ -67,5 +68,21 @@ def generate_athena(config):
                current_metrics[metrics.ATHENA_PARTITION_REFRESH_NAME].iteritems()]
 
     athena_dict['module']['stream_alert_athena']['athena_metric_filters'] = filters
+
+    # Cloudwatch monitoring setup
+    monitoring_config = config['global'].get('infrastructure', {}).get('monitoring', {})
+    sns_topic_name = DEFAULT_SNS_MONITORING_TOPIC if monitoring_config.get('create_sns_topic') \
+                     else monitoring_config.get('sns_topic_name')
+    athena_dict['module']['athena_monitoring'] = {
+        'source': 'modules/tf_stream_alert_monitoring',
+        'sns_topic_arn': 'arn:aws:sns:{region}:{account_id}:{topic}'.format(
+            region=config['global']['account']['region'],
+            account_id=config['global']['account']['aws_account_id'],
+            topic=sns_topic_name
+        ),
+        'lambda_functions': ['{}_streamalert_athena_partition_refresh'.format(
+            config['global']['account']['prefix'])],
+        'kinesis_alarms_enabled': False
+    }
 
     return athena_dict

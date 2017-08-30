@@ -63,6 +63,7 @@ resource "aws_cloudwatch_metric_alarm" "streamalert_lambda_iterator_age" {
 
 // Kinesis: Iterator Age
 resource "aws_cloudwatch_metric_alarm" "streamalert_kinesis_iterator_age" {
+  count               = "${var.kinesis_alarms_enabled ? 1 : 0}"
   alarm_name          = "${var.kinesis_stream}_high_iterator_age"
   namespace           = "AWS/Kinesis"
   metric_name         = "GetRecords.IteratorAgeMilliseconds"
@@ -81,6 +82,7 @@ resource "aws_cloudwatch_metric_alarm" "streamalert_kinesis_iterator_age" {
 
 // Kinesis: Write Throughput Exceeded
 resource "aws_cloudwatch_metric_alarm" "streamalert_kinesis_write_exceeded" {
+  count               = "${var.kinesis_alarms_enabled ? 1 : 0}"
   alarm_name          = "${var.kinesis_stream}_write_exceeded"
   namespace           = "AWS/Kinesis"
   metric_name         = "WriteProvisionedThroughputExceeded"

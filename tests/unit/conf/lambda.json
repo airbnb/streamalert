@@ -2,6 +2,7 @@
   "athena_partition_refresh_config": {
     "current_version": "$LATEST",
     "enabled": true,
+    "enable_metrics": true,
     "handler": "main.handler",
     "memory": "128",
     "refresh_type": {

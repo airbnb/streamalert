@@ -16,15 +16,13 @@ limitations under the License.
 from stream_alert_cli.config import CLIConfig
 from stream_alert_cli.terraform import (
     _common,
-    athena,
     cloudtrail,
     flow_logs,
     generate,
-    monitoring,
     stream_alert
 )
 
-from nose.tools import assert_equal, assert_true
+from nose.tools import assert_equal
 
 
 class TestTerraformGenerate(object):
@@ -370,54 +368,6 @@ class TestTerraformGenerate(object):
                              ' "detail": {"state": ["running"]}}'
         })
 
-    def test_generate_cloudwatch_monitoring(self):
-        """CLI - Terraform Generate Cloudwatch Monitoring"""
-        cluster_name = 'test'
-        monitoring.generate_monitoring(
-            cluster_name,
-            self.cluster_dict,
-            self.config
-        )
-
-        # Test a the default SNS topic option
-        expected_cloudwatch_tf = {
-            'source': 'modules/tf_stream_alert_monitoring',
-            'sns_topic_arn': 'arn:aws:sns:us-west-1:12345678910:stream_alert_monitoring',
-            'lambda_functions': [
-                'unit-testing_test_streamalert_rule_processor',
-                'unit-testing_test_streamalert_alert_processor'
-            ],
-            'kinesis_stream': 'unit-testing_test_stream_alert_kinesis'
-        }
-
-        assert_equal(
-            self.cluster_dict['module']['cloudwatch_monitoring_test'],
-            expected_cloudwatch_tf)
-
-        # Test a pre-defined SNS topic
-        self.config['global']['infrastructure']['monitoring']['create_sns_topic'] = False
-        self.config['global']['infrastructure']['monitoring'][
-            'sns_topic_name'] = 'unit_test_monitoring'
-        monitoring.generate_monitoring(
-            cluster_name,
-            self.cluster_dict,
-            self.config
-        )
-
-        expected_cloudwatch_tf_custom = {
-            'source': 'modules/tf_stream_alert_monitoring',
-            'sns_topic_arn': 'arn:aws:sns:us-west-1:12345678910:unit_test_monitoring',
-            'lambda_functions': [
-                'unit-testing_test_streamalert_rule_processor',
-                'unit-testing_test_streamalert_alert_processor'
-            ],
-            'kinesis_stream': 'unit-testing_test_stream_alert_kinesis'
-        }
-
-        assert_equal(
-            self.cluster_dict['module']['cloudwatch_monitoring_test'],
-            expected_cloudwatch_tf_custom)
-
     def test_generate_cluster_test(self):
         """CLI - Terraform Generate Test Cluster"""
 
@@ -462,6 +412,7 @@ class TestTerraformGenerate(object):
 
         assert_equal(set(tf_cluster['module'].keys()), advanced_modules)
         assert_equal(set(tf_cluster.keys()), cluster_keys)
+<<<<<<< c4581cc61548049eef6c70cdb8b6a7120538d4d2
 
     def test_generate_athena(self):
         """CLI - Terraform Generate Athena"""
@@ -537,3 +488,5 @@ class TestTerraformGenerate(object):
         del expected_athena_config['module']['stream_alert_athena']['athena_data_buckets']
 
         assert_equal(athena_config, expected_athena_config)
+=======
+>>>>>>> [cli][tf] fix a bug in athena cloudwatch monitoring terraform configuration
