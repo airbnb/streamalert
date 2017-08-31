@@ -53,6 +53,7 @@ class StreamAlert(object):
 
         self.enable_alert_processor = enable_alert_processor
         self._failed_record_count = 0
+        self._processed_size = 0
         self._alerts = []
 
     def run(self, event):
@@ -103,6 +104,10 @@ class StreamAlert(object):
 
             self._process_alerts(payload)
 
+        MetricLogger.log_metric(FUNCTION_NAME,
+                                MetricLogger.TOTAL_PROCESSED_SIZE,
+                                self._processed_size)
+
         LOGGER.debug('Invalid record count: %d', self._failed_record_count)
 
         MetricLogger.log_metric(FUNCTION_NAME,
@@ -135,6 +140,8 @@ class StreamAlert(object):
             payload (StreamPayload): StreamAlert payload object being processed
         """
         for record in payload.pre_parse():
+            # Increment the processed size using the length of this record
+            self._processed_size += len(record.pre_parsed_record)
             self.classifier.classify_record(record)
             if not record.valid:
                 if self.env['lambda_alias'] != 'development':
