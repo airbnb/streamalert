@@ -132,8 +132,8 @@ class PagerDutyOutput(StreamOutputBase):
 class PhantomOutput(StreamOutputBase):
     """PhantomOutput handles all alert dispatching for Phantom"""
     __service__ = 'phantom'
-    CONTAINER_ENDPOINT = 'rest/container/'
-    ARTIFACT_ENDPOINT = 'rest/artifact/'
+    CONTAINER_ENDPOINT = 'rest/container'
+    ARTIFACT_ENDPOINT = 'rest/artifact'
 
     def get_user_defined_properties(self):
         """Get properties that must be asssigned by the user when configuring a new Phantom
