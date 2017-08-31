@@ -177,8 +177,7 @@ class PhantomOutput(StreamOutputBase):
                 or False if there is an issue getting the container id
         """
         # Try to use the rule_description from the rule as the container description
-        message = 'StreamAlert Rule Triggered - {}'.format(rule_name)
-        ph_container = {'name': message, 'description': rule_description}
+        ph_container = {'name': rule_name, 'description': rule_description}
         container_url = os.path.join(base_url, self.CONTAINER_ENDPOINT)
         container_string = json.dumps(ph_container)
         resp = self._request_helper(container_url, container_string, headers, False)
