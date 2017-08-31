@@ -13,14 +13,14 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from datetime import datetime
-import json
 import os
 
-import boto3
-from botocore.exceptions import ClientError
-
-from stream_alert.shared import LOGGER
+from stream_alert.shared import (
+    ALERT_PROCESSOR_NAME,
+    ATHENA_PARTITION_REFRESH_NAME,
+    LOGGER,
+    RULE_PROCESSOR_NAME
+)
 
 CLUSTER = os.environ.get('CLUSTER', 'unknown_cluster')
 
@@ -31,121 +31,78 @@ except ValueError as err:
     LOGGER.error('Invalid value for metric toggling, expected 0 or 1: %s',
                  err.message)
 
+if not ENABLE_METRICS:
+    LOGGER.debug('Logging of metric data is currently disabled.')
 
-class Metrics(object):
-    """Class to hold metric names and unit constants.
+
+class MetricLogger(object):
+    """Class to hold metric logging to be picked up by log metric filters.
 
     This basically acts as an enum, allowing for the use of dot notation for
     accessing properties and avoids doing dict lookups a ton.
     """
 
-    def __init__(self, lambda_function, region):
-        self.boto_cloudwatch = boto3.client('cloudwatch', region_name=region)
-        self._metric_data = []
-        self._dimensions = [
-            {
-                'Name': 'Cluster',
-                'Value': CLUSTER
-            },
-            {
-                'Name': 'Function',
-                'Value': lambda_function
-            }
-        ]
+    # Constant metric names used for CloudWatch
+    FAILED_PARSES = 'FailedParses'
+    S3_DOWNLOAD_TIME = 'S3DownloadTime'
+    TOTAL_RECORDS = 'TotalRecords'
+    TOTAL_S3_RECORDS = 'TotalS3Records'
+    TRIGGERED_ALERTS = 'TriggeredAlerts'
 
-    class Name(object):
-        """Constant metric names used for CloudWatch"""
-        FAILED_PARSES = 'FailedParses'
-        S3_DOWNLOAD_TIME = 'S3DownloadTime'
-        TOTAL_RECORDS = 'TotalRecords'
-        TOTAL_S3_RECORDS = 'TotalS3Records'
-        TRIGGERED_ALERTS = 'TriggeredAlerts'
+    _default_filter = '{{ $.metric_name = "{}" }}'
+    _default_value_lookup = '$.metric_value'
 
-    class Unit(object):
-        """Unit names for metrics. These are taken from the boto3 CloudWatch page"""
-        SECONDS = 'Seconds'
-        MICROSECONDS = 'Microseconds'
-        MILLISECONDS = 'Milliseconds'
-        BYTES = 'Bytes'
-        KILOBYTES = 'Kilobytes'
-        MEGABYTES = 'Megabytes'
-        GIGABYTES = 'Gigabytes'
-        TERABYTES = 'Terabytes'
-        BITS = 'Bits'
-        KILOBITS = 'Kilobits'
-        MEGABITS = 'Megabits'
-        GIGABITS = 'Gigabits'
-        TERABITS = 'Terabits'
-        PERCENT = 'Percent'
-        COUNT = 'Count'
-        BYTES_PER_SECOND = 'Bytes/Second'
-        KILOBYTES_PER_SECOND = 'Kilobytes/Second'
-        MEGABYTES_PER_SECOND = 'Megabytes/Second'
-        GIGABYTES_PER_SECOND = 'Gigabytes/Second'
-        TERABYTES_PER_SECOND = 'Terabytes/Second'
-        BITS_PER_SECOND = 'Bits/Second'
-        KILOBITS_PER_SECOND = 'Kilobits/Second'
-        MEGABITS_PER_SECOND = 'Megabits/Second'
-        GIGABITS_PER_SECOND = 'Gigabits/Second'
-        TERABITS_PER_SECOND = 'Terabits/Second'
-        COUNT_PER_SECOND = 'Count/Second'
-        NONE = 'None'
+    # Establish all the of available metrics for each processor. These use default
+    # values for the filter pattern and value lookup, created above, but can be
+    # overridden in special cases. The terraform generate code uses these values to
+    # create the actual CloudWatch metric filters that will be used for each function.
+    # If additional metric logging is added that does not conform to this default
+    # configuration, new filters & lookups should be created to handle them as well.
+    _available_metrics = {
+        ALERT_PROCESSOR_NAME: {},   # Placeholder for future alert processor metrics
+        ATHENA_PARTITION_REFRESH_NAME: {},  # Placeholder for future athena processor metrics
+        RULE_PROCESSOR_NAME: {
+            FAILED_PARSES: (_default_filter.format(FAILED_PARSES), _default_value_lookup),
+            S3_DOWNLOAD_TIME: (_default_filter.format(S3_DOWNLOAD_TIME), _default_value_lookup),
+            TOTAL_RECORDS: (_default_filter.format(TOTAL_RECORDS), _default_value_lookup),
+            TOTAL_S3_RECORDS: (_default_filter.format(TOTAL_S3_RECORDS), _default_value_lookup),
+            TRIGGERED_ALERTS: (_default_filter.format(TRIGGERED_ALERTS), _default_value_lookup)
+        }
+    }
 
-    def add_metric(self, metric_name, value, unit):
-        """Add a metric to the list of metrics to be sent to CloudWatch
+    @classmethod
+    def log_metric(cls, lambda_function, metric_name, value):
+        """Log a metric using the logger the list of metrics to be sent to CloudWatch
 
         Args:
             metric_name (str): Name of metric to publish to. Choices are in `Metrics.Name` above
             value (num): Numeric information to post to metric. AWS expects
                 this to be of type 'float' but will accept any numeric value that
                 is not super small (negative) or super large.
-            unit (str): Unit to use for this metric. Choices are in `Metrics.Unit` above.
         """
-        if metric_name not in self.Name.__dict__.values():
-            LOGGER.error('Metric name not defined: %s', metric_name)
-            return
-
-        if unit not in self.Unit.__dict__.values():
-            LOGGER.error('Metric unit not defined: %s', unit)
-            return
-
-        self._metric_data.append(
-            {
-                'MetricName': metric_name,
-                'Timestamp': datetime.utcnow(),
-                'Unit': unit,
-                'Value': value,
-                "Dimensions": self._dimensions
-            }
-        )
-
-    def send_metrics(self):
-        """Public method for publishing custom metric data to CloudWatch."""
+        # Do not log any metrics if they have been disabled by the user
         if not ENABLE_METRICS:
-            LOGGER.debug('Sending of metric data is currently disabled.')
             return
 
-        if not self._metric_data:
-            LOGGER.debug('No metric data to send to CloudWatch.')
+        if lambda_function not in cls._available_metrics:
+            LOGGER.error('Function \'%s\' not defined in available metrics. Options are: %s',
+                         lambda_function,
+                         ', '.join('\'{}\''.format(key) for key in cls._available_metrics
+                                   if cls._available_metrics[key]))
             return
 
-        for metric in self._metric_data:
-            LOGGER.debug('Sending metric data to CloudWatch: %s', metric['MetricName'])
+        if metric_name not in cls._available_metrics[lambda_function]:
+            LOGGER.error('Metric name (\'%s\') not defined for \'%s\' function. Options are: %s',
+                         metric_name,
+                         lambda_function,
+                         ', '.join('\'{}\''.format(value)
+                                   for value in cls._available_metrics[lambda_function]))
+            return
 
-        self._put_metrics()
+        # Use a default format for logging this metric that will get picked up by the filters
+        LOGGER.info('{"metric_name": "%s", "metric_value": %s}', metric_name, value)
 
-    def _put_metrics(self):
-        """Protected method for publishing custom metric data to CloudWatch that
-        handles all of the boto3 calls and error handling.
-        """
-        try:
-            self.boto_cloudwatch.put_metric_data(
-                Namespace='StreamAlert', MetricData=self._metric_data)
-        except ClientError as err:
-            LOGGER.exception(
-                'Failed to send metric to CloudWatch. Error: %s\nMetric data:\n%s',
-                err.response,
-                json.dumps(
-                    self._metric_data,
-                    indent=2,
-                    default=lambda d: d.isoformat()))
+    @classmethod
+    def get_available_metrics(cls):
+        """Return the protected dictionary of metrics for all functions"""
+        return cls._available_metrics

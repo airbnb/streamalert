@@ -6,11 +6,11 @@
     "region": "us-east-1"
   },
   "infrastructure": {
+    "metrics": {
+      "enabled": true
+    },
     "monitoring": {
       "create_sns_topic": true
-    },
-    "metrics": {
-      "enabled": false
     }
   },
   "terraform": {

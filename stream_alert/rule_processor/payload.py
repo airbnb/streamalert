@@ -25,18 +25,17 @@ import zlib
 
 import boto3
 
-from stream_alert.rule_processor import LOGGER
-from stream_alert.shared.metrics import Metrics
+from stream_alert.rule_processor import FUNCTION_NAME, LOGGER
+from stream_alert.shared.metrics import MetricLogger
 
 
-def load_stream_payload(service, entity, raw_record, metrics):
+def load_stream_payload(service, entity, raw_record):
     """Returns the right StreamPayload subclass for this service
 
     Args:
         service (str): service name to load class for
         entity (str): entity for this service
         raw_record (str): record raw payload data
-        metrics (Metrics): payload metrics
     """
     payload_map = {'s3': S3Payload,
                    'sns': SnsPayload,
@@ -46,7 +45,7 @@ def load_stream_payload(service, entity, raw_record, metrics):
         LOGGER.error('Service payload not supported: %s', service)
         return
 
-    return payload_map[service](raw_record=raw_record, entity=entity, metrics=metrics)
+    return payload_map[service](raw_record=raw_record, entity=entity)
 
 
 class StreamPayload(object):
@@ -76,7 +75,6 @@ class StreamPayload(object):
         """
         self.raw_record = kwargs['raw_record']
         self.entity = kwargs['entity']
-        self.metrics = kwargs['metrics']
         self.pre_parsed_record = None
 
         self._refresh_record(None)
@@ -177,7 +175,7 @@ class S3Payload(StreamPayload):
                         avg_record_size,
                         self.s3_object_size)
 
-        self.metrics.add_metric(Metrics.Name.TOTAL_S3_RECORDS, line_num, Metrics.Unit.COUNT)
+        MetricLogger.log_metric(FUNCTION_NAME, MetricLogger.TOTAL_S3_RECORDS, line_num)
 
     def _download_object(self, region, bucket, key):
         """Download an object from S3.
@@ -216,9 +214,8 @@ class S3Payload(StreamPayload):
         total_time = time.time() - start_time
         LOGGER.info('Completed download in %s seconds', round(total_time, 2))
 
-        # Publish a metric on how long this object took to download
-        self.metrics.add_metric(
-            Metrics.Name.S3_DOWNLOAD_TIME, total_time, Metrics.Unit.SECONDS)
+        # Log a metric on how long this object took to download
+        MetricLogger.log_metric(FUNCTION_NAME, MetricLogger.S3_DOWNLOAD_TIME, total_time)
 
         return downloaded_s3_object
 

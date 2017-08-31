@@ -632,7 +632,8 @@ class TestTerraformGenerate(object):
                         'unit-testing-2.streamalerts'
                     ],
                     'prefix': 'unit-testing',
-                    'refresh_interval': 'rate(10 minutes)'
+                    'refresh_interval': 'rate(10 minutes)',
+                    'athena_metric_filters': []
                 }
             }
         }

@@ -46,3 +46,13 @@ variable "refresh_interval" {
 variable "enable_metrics" {
   default = false
 }
+
+variable "athena_metric_filters" {
+  type    = "list"
+  default = []
+}
+
+variable "namespace" {
+  type    = "string"
+  default = "StreamAlert"
+}

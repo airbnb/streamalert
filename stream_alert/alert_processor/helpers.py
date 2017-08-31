@@ -13,11 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-import logging
-
-logging.basicConfig()
-LOGGER = logging.getLogger('StreamAlertOutput')
-LOGGER.setLevel(logging.DEBUG)
+from stream_alert.alert_processor import LOGGER
 
 
 def validate_alert(alert):

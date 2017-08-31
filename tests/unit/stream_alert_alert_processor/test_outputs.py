@@ -587,9 +587,9 @@ class TestLambdaOuput(object):
         assert_equal(self.__dispatcher.__class__.__name__, 'LambdaOutput')
         assert_equal(self.__dispatcher.__service__, self.__service)
 
-    def _setup_dispatch(self):
+    def _setup_dispatch(self, alt_descriptor=''):
         """Helper for setting up LambdaOutput dispatch"""
-        function_name = CONFIG[self.__service][self.__descriptor]
+        function_name = CONFIG[self.__service][alt_descriptor or self.__descriptor]
         create_lambda_function(function_name, REGION)
         return get_alert()
 
@@ -599,6 +599,18 @@ class TestLambdaOuput(object):
         """LambdaOutput dispatch"""
         alert = self._setup_dispatch()
         self.__dispatcher.dispatch(descriptor=self.__descriptor,
+                                   rule_name='rule_name',
+                                   alert=alert)
+
+        log_mock.assert_called_with('Successfully sent alert to %s', self.__service)
+
+    @mock_lambda
+    @patch('logging.Logger.info')
+    def test_dispatch_with_qualifier(self, log_mock):
+        """LambdaOutput dispatch with qualifier"""
+        alt_descriptor = '{}_qual'.format(self.__descriptor)
+        alert = self._setup_dispatch(alt_descriptor)
+        self.__dispatcher.dispatch(descriptor=alt_descriptor,
                                    rule_name='rule_name',
                                    alert=alert)
 
