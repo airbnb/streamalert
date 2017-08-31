@@ -197,7 +197,14 @@ class StreamOutputBase(object):
                 context = ssl.create_default_context()
                 context.check_hostname = False
                 context.verify_mode = ssl.CERT_NONE
-            request = urllib2.Request(url, data=data, headers=headers or {})
+
+            http_headers = headers or {}
+
+            # Omitting data means a GET request should occur, not POST
+            if not data:
+                request = urllib2.Request(url, headers=http_headers)
+            else:
+                request = urllib2.Request(url, data=data, headers=http_headers)
             resp = urllib2.urlopen(request, context=context)
             return resp
         except urllib2.HTTPError as err:
