@@ -7,7 +7,7 @@ rule = StreamRules.rule
 
 @rule(logs=['cloudwatch:events'],
       matchers=[],
-      datatypes=['ipaddress'],
+      datatypes=['ipv4'],
       outputs=['aws-s3:sample-bucket',
                'pagerduty:sample-integration',
                'slack:sample-channel'])
@@ -18,7 +18,7 @@ def cloudtrail_aws_access_by_evil(rec):
                       "ipaddress".
     """
 
-    results = fetch_values_by_datatype(rec, 'ipaddress')
+    results = fetch_values_by_datatype(rec, 'ipv4')
 
     for result in results:
         if result == '1.1.1.2':

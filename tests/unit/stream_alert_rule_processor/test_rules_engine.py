@@ -476,10 +476,10 @@ class TestStreamRules(object):
         """Rules Engine - Match normalized types against record"""
         @rule(logs=['cloudwatch:test_match_types'],
               outputs=['s3:sample_bucket'],
-              datatypes=['ipaddress'])
+              datatypes=['ipv4'])
         def match_ipaddress(rec): # pylint: disable=unused-variable
             """Testing rule to detect matching IP address"""
-            results = fetch_values_by_datatype(rec, 'ipaddress')
+            results = fetch_values_by_datatype(rec, 'ipv4')
 
             for result in results:
                 if result == '1.1.1.2':
@@ -488,12 +488,12 @@ class TestStreamRules(object):
 
         @rule(logs=['cloudwatch:test_match_types'],
               outputs=['s3:sample_bucket'],
-              datatypes=['ipaddress', 'command'])
+              datatypes=['ipv4', 'cmd'])
         def mismatch_types(rec): # pylint: disable=unused-variable
             """Testing rule with non-existing normalized type in the record. It
             should not trigger alert.
             """
-            results = fetch_values_by_datatype(rec, 'ipaddress')
+            results = fetch_values_by_datatype(rec, 'ipv4')
 
             for result in results:
                 if result == '2.2.2.2':

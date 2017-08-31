@@ -110,7 +110,7 @@ def test_fetch_values_by_datatype():
         u'source': '1.1.1.2',
         u'version': '1.05',
         'normalized_types': {
-            'ipaddress': [[u'detail', u'sourceIPAddress'], u'source']
+            'ipv4': [[u'detail', u'sourceIPAddress'], u'source']
         },
         u'time': '...',
         u'id': '12345',
@@ -118,5 +118,5 @@ def test_fetch_values_by_datatype():
             u'test': u'...'
         }
     }
-    assert_equal(len(base.fetch_values_by_datatype(rec, 'ipaddress')), 2)
-    assert_equal(len(base.fetch_values_by_datatype(rec, 'command')), 0)
+    assert_equal(len(base.fetch_values_by_datatype(rec, 'ipv4')), 2)
+    assert_equal(len(base.fetch_values_by_datatype(rec, 'cmd')), 0)

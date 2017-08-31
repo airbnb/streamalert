@@ -6,8 +6,8 @@
     "event_type": ["eventType"],
     "event_name": ["eventName"],
     "region": ["region"],
-    "user_agent": ["userAgent"],
-    "ipaddress": ["destination", "source", "sourceIPAddress"],
+    "agent": ["userAgent"],
+    "ipv4": ["destination", "source", "sourceIPAddress"],
     "port": ["srcport", "destport"]
   }
 }
