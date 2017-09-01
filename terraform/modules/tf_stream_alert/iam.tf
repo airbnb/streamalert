@@ -37,7 +37,7 @@ data "aws_iam_policy_document" "rule_processor_invoke_alert_proc" {
 
     # Use interpolation because of the different VPC/non vpc resources
     resources = [
-      "arn:aws:lambda:${var.region}:${var.account_id}:function:${var.prefix}_${var.cluster}_streamalert_alert_processor:production",
+      "arn:aws:lambda:${var.region}:${var.account_id}:function:${var.prefix}_${var.cluster}_streamalert_alert_processor",
     ]
   }
 }
@@ -151,8 +151,8 @@ resource "aws_iam_role_policy" "streamalert_alert_processor_lambda" {
         "lambda:InvokeFunction"
       ],
       "Effect": "Allow",
-      "Resource": "arn:aws:lambda:${var.region}:${var.account_id}:function:${
-        element(var.output_lambda_functions, count.index)}"
+      "Resource": "arn:aws:lambda:${var.region}:${var.account_id}:function:${element(
+        split(":", element(var.output_lambda_functions, count.index)), 0)}"
     }
   ]
 }
