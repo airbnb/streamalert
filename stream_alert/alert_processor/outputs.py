@@ -19,6 +19,7 @@ from collections import OrderedDict
 from datetime import datetime
 import json
 import os
+import urllib
 import uuid
 
 import boto3
@@ -132,8 +133,8 @@ class PagerDutyOutput(StreamOutputBase):
 class PhantomOutput(StreamOutputBase):
     """PhantomOutput handles all alert dispatching for Phantom"""
     __service__ = 'phantom'
-    CONTAINER_ENDPOINT = 'rest/container/'
-    ARTIFACT_ENDPOINT = 'rest/artifact/'
+    CONTAINER_ENDPOINT = 'rest/container'
+    ARTIFACT_ENDPOINT = 'rest/artifact'
 
     def get_user_defined_properties(self):
         """Get properties that must be asssigned by the user when configuring a new Phantom
@@ -164,8 +165,45 @@ class PhantomOutput(StreamOutputBase):
                             cred_requirement=True))
         ])
 
+    def _check_container_exists(self, rule_name, container_url, headers):
+        """Check to see if a Phantom container already exists for this rule
+
+        Args:
+            rule_name (str): The name of the rule that triggered the alert
+            container_url (str): The constructed container url for this Phantom instance
+            headers (dict): A dictionary containing header parameters
+
+        Returns:
+            int: ID of an existing Phantom container for this rule where the alerts
+                will be sent or False if a matching container does not yet exists
+        """
+        # Limit the query to 1 page, since we only care if one container exists with
+        # this name. This should not be a problem, but utilize urllib.quote to
+        # replace any unsafe characters in the rule_name
+        query_url = '{}?_filter_name="{}"&page_size=1'.format(container_url,
+                                                              urllib.quote(rule_name))
+
+        # Passing None for the data param ensures a GET request happens
+        resp = self._request_helper(query_url, None, headers, False)
+
+        if not self._check_http_response(resp):
+            return False
+
+        try:
+            resp_dict = json.loads(resp.read())
+        except ValueError as err:
+            LOGGER.error('An error occurred while decoding Phantom container query '
+                         'response to JSON: %s', err)
+            return False
+
+        # If the count == 0 then we know there are no containers with this name and this
+        # will evaluate to False. Otherwise there is at least one item in the list
+        # of 'data' with a container id we can use
+        return resp_dict and resp_dict['count'] and resp_dict['data'][0]['id']
+
     def _setup_container(self, rule_name, rule_description, base_url, headers):
-        """Establish a Phantom container to write the alerts to
+        """Establish a Phantom container to write the alerts to. This checks to see
+        if an appropriate containers exists first and returns the ID if so.
 
         Args:
             rule_name (str): The name of the rule that triggered the alert
@@ -176,9 +214,15 @@ class PhantomOutput(StreamOutputBase):
             int: ID of the Phantom container where the alerts will be sent
                 or False if there is an issue getting the container id
         """
+        container_url = os.path.join(base_url, self.CONTAINER_ENDPOINT)
+
+        # Check to see if there is a container already created for this rule name
+        existing_id = self._check_container_exists(rule_name, container_url, headers)
+        if existing_id:
+            return existing_id
+
         # Try to use the rule_description from the rule as the container description
         ph_container = {'name': rule_name, 'description': rule_description}
-        container_url = os.path.join(base_url, self.CONTAINER_ENDPOINT)
         container_string = json.dumps(ph_container)
         resp = self._request_helper(container_url, container_string, headers, False)
 
@@ -188,7 +232,8 @@ class PhantomOutput(StreamOutputBase):
         try:
             resp_dict = json.loads(resp.read())
         except ValueError as err:
-            LOGGER.error('An error occurred while decoding phantom response to JSON: %s', err)
+            LOGGER.error('An error occurred while decoding Phantom container creation '
+                         'response to JSON: %s', err)
             return False
 
         return resp_dict and resp_dict['id']
