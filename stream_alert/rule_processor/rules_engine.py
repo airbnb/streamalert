@@ -253,6 +253,9 @@ class StreamRules(object):
                 # rule analysis
                 rule_result = cls.process_rule(record, rule)
                 if rule_result:
+                    LOGGER.info('Rule [%s] triggered an alert on log type [%s] from entity \'%s\' '
+                                'in service \'%s\'', rule.rule_name, payload.log_source,
+                                payload.entity, payload.service())
                     alert = {
                         'record': record,
                         'rule_name': rule.rule_name,
