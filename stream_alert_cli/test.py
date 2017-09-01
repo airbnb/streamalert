@@ -596,7 +596,8 @@ class AlertProcessorTester(object):
                 # Set the patched urlopen.getcode return value to 200
                 url_mock.return_value.getcode.return_value = 200
                 # Phantom needs a container 'id' value in the http response
-                url_mock.return_value.read.return_value = '{"id": 1948}'
+                url_mock.return_value.read.side_effect = ['{"count": 0, "data": []}',
+                                                          '{"id": 1948}']
             elif service == 'slack':
                 output_name = '{}/{}'.format(service, descriptor)
                 creds = {'url': 'https://api.slack.com/web-hook-key'}
