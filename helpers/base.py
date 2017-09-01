@@ -99,18 +99,14 @@ def fetch_values_by_datatype(rec, datatype):
         (list) The values of normalized types
     """
     results = []
-    if not datatype in rec['normalized_types'].keys():
+    if not datatype in rec['normalized_types']:
         return results
 
-    for key in rec['normalized_types'][datatype]:
-        # Normalized type may be in nested subkeys, we only support one level of
-        # nested subkey.
-        if isinstance(key, list):
-            if len(key) == 2:
-                results.append(rec[key[0]][key[1]])
-            else:
-                LOGGER.error('Invalid length of keys: %s, it should be 2', key)
-        else:
-            results.append(rec[key])
+    for original_keys in rec['normalized_types'][datatype]:
+        result = rec
+        if isinstance(original_keys, list):
+            for original_key in original_keys:
+                result = result[original_key]
+        results.append(result)
 
     return results

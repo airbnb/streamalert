@@ -88,15 +88,6 @@ def _validate_config(config):
                 raise ConfigError(
                     'List of \'logs\' is empty for entity: {}'.format(entity))
 
-    # validate supported normalized types
-    supported_logs = [
-        'carbonblack', 'cloudwatch', 'cloudtrail', 'ghe', 'osquery', 'pan'
-    ]
-    for log_type in config['types'].keys():
-        if log_type not in supported_logs:
-            raise ConfigError('Log type {} is not supported'.format(log_type))
-
-
 def load_env(context):
     """Get the current environment for the running Lambda function.
 

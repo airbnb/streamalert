@@ -1,6 +1,6 @@
 """Alert on matching IP address from aws access."""
-from stream_alert.rule_processor.rules_engine import StreamRules
 from helpers.base import fetch_values_by_datatype
+from stream_alert.rule_processor.rules_engine import StreamRules
 
 rule = StreamRules.rule
 

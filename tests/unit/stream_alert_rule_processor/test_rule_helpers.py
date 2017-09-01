@@ -96,6 +96,7 @@ def test_fetch_values_by_datatype():
             u'awsRegion': u'...',
             u'eventName': u'ConsoleLogin',
             u'userIdentity': {
+                u'userName': u'alice',
                 u'type': u'Root',
                 u'principalId': u'12345',
                 u'arn': u'arn:aws:iam::12345:root',
@@ -110,7 +111,8 @@ def test_fetch_values_by_datatype():
         u'source': '1.1.1.2',
         u'version': '1.05',
         'normalized_types': {
-            'ipv4': [[u'detail', u'sourceIPAddress'], u'source']
+            'ipv4': [[u'detail', u'sourceIPAddress'], [u'source']],
+            'username': [['detail', 'userIdentity', 'userName']]
         },
         u'time': '...',
         u'id': '12345',
@@ -120,3 +122,4 @@ def test_fetch_values_by_datatype():
     }
     assert_equal(len(base.fetch_values_by_datatype(rec, 'ipv4')), 2)
     assert_equal(len(base.fetch_values_by_datatype(rec, 'cmd')), 0)
+    assert_equal(base.fetch_values_by_datatype(rec, 'username'), [u'alice'])

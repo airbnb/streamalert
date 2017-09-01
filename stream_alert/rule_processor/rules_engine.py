@@ -186,33 +186,71 @@ class StreamRules(object):
         if not (datatypes and cls.validate_datatypes(normalized_types, datatypes)):
             return results
 
-        for key, val in record.iteritems(): # pylint: disable=too-many-nested-blocks
-            # iterate nested keys if there is
-            # only support one sub-level nested keys right now
+        return cls.match_types_helper(record, normalized_types, datatypes)
+
+    @classmethod
+    def match_types_helper(cls, record, normalized_types, datatypes):
+        """Helper method to recursively visit all subkeys
+
+        Args:
+            record (dict): Parsed data
+            normalized_types (dict): Normalized types
+            datatypes (list): normalized types users interested in.
+
+        Returns:
+            (dict): A dict of normalized_types with original key names
+        """
+        results = dict()
+        for key, val in record.iteritems():
             if isinstance(val, dict):
-                for sub_key, _ in val.iteritems():
-                    for datatype in datatypes:
-                        original_key_names = normalized_types[datatype]
-                        nested_keys = [key]
-                        if sub_key in original_key_names:
-                            nested_keys.append(sub_key)
-                            if not datatype in results.keys():
-                                results[datatype] = [nested_keys]
-                            else:
-                                results[datatype].append(nested_keys)
+                nested_results = cls.match_types_helper(val, normalized_types, datatypes)
+                cls.update(results, key, nested_results)
             else:
                 for datatype in datatypes:
-                    original_key_names = normalized_types[datatype]
-                    if key in original_key_names:
-                        if not datatype in results.keys():
+                    if key in normalized_types[datatype]:
+                        if not datatype in results:
                             results[datatype] = [key]
                         else:
                             results[datatype].append(key)
         return results
 
     @classmethod
+    def update(cls, results, parent_key, nested_results):
+        """Update nested_results by inserting parent key to beginning of list.
+        Also combine results and nested_results into one dictionary
+
+        Example 1:
+            results = {
+                'ipv4': ['key1']
+            }
+            parent_key = 'key2'
+            nested_results = {
+                'username': ['sub_key1'],
+                'ipv4': ['sub_key2']
+            }
+
+            This method will update nested_results to:
+            {
+                'username': ['key2', 'sub_key1'],
+                'ipv4': ['key2', 'sub_key2']
+            }
+
+            Also it will combine nested_results to results:
+            {
+                'ipv4': ['key1', ['key2', 'sub_key2']],
+                'username': ['key2', 'sub_key1']
+            }
+        """
+        for key, val in nested_results.iteritems():
+            val.insert(0, parent_key)
+            if key in results:
+                results[key].append(val)
+            else:
+                results[key] = [val]
+
+    @classmethod
     def validate_datatypes(cls, normalized_types, datatypes):
-        """validate if datatypes valid in normalized_types for certain log
+        """Check is datatype valid
 
         Args:
             normalized_types (dict): normalized_types for certain log
@@ -222,11 +260,11 @@ class StreamRules(object):
             (boolean): return true if all datatypes are defined
         """
         if not normalized_types:
-            LOGGER.error('Normalized_types is empty.')
+            LOGGER.error('Normalized types dictionary is empty.')
             return False
 
         for datatype in datatypes:
-            if not datatype in normalized_types.keys():
+            if not datatype in normalized_types:
                 LOGGER.error('The datatype [%s] is not defined!', datatype)
                 return False
         return True
@@ -331,8 +369,7 @@ class StreamRules(object):
                 types_result = cls.match_types(record,
                                                payload.normalized_types,
                                                rule.datatypes)
-                record.update({'normalized_types': types_result})
-
+                record['normalized_types'] = types_result
                 # rule analysis
                 rule_result = cls.process_rule(record, rule)
                 if rule_result:
