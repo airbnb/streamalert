@@ -221,15 +221,16 @@ Required Arguments:
                                    GreaterThanThreshold
                                    LessThanThreshold
                                    LessThanOrEqualToThreshold
-    -an/--alarm-name             The name for the alarm. This name must be unique within the AWS account
+    -an/--alarm-name             The name for the alarm. This name must be unique within the AWS
+                                   account
     -ep/--evaluation-periods     The number of periods over which data is compared to the specified
                                    threshold. The minimum value for this is 1. Also see the 'Other
                                    Constraints' section below
-    -p/--period                  The period, in seconds, over which the specified statistic is applied.
-                                   Valid values are any multiple of 60. Also see the 'Other Constraints'
-                                   section below
-    -t/--threshold               The value against which the specified statistic is compared. This value
-                                   should be a double.
+    -p/--period                  The period, in seconds, over which the specified statistic is
+                                   applied. Valid values are any multiple of 60. Also see the
+                                   'Other Constraints' section below
+    -t/--threshold               The value against which the specified statistic is compared. This
+                                   value should be a double.
 
 Optional Arguments:
 
@@ -237,8 +238,8 @@ Optional Arguments:
     -c/--clusters                Space delimited list of clusters to apply this metric to. This is
                                    ignored if the --metric-target of 'aggregate' is used.
     -es/--extended-statistic     The percentile statistic for the metric associated with the alarm.
-                                   Specify a value between p0.0 and p100.  Cannot be used in conjunction
-                                   with the --statistic flag.
+                                   Specify a value between p0.0 and p100.  Cannot be used in
+                                   conjunction with the --statistic flag.
     -s/--statistic               The statistic for the metric associated with the alarm, other than
                                    percentile. For percentile statistics, use --extended-statistic.
                                    Cannot be used in conjunction with the --extended-statistic flag

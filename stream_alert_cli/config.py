@@ -39,6 +39,7 @@ class CLIConfig(object):
 
     def __setitem__(self, key, new_value):
         self.config.__setitem__(key, new_value)
+        print 'setting', key
         self.write()
 
     def get(self, key):
@@ -125,6 +126,39 @@ class CLIConfig(object):
         self.write()
 
         LOGGER_CLI.info('AWS Account ID successfully configured')
+
+    def add_metric_alarm(self, alarm_info):
+        """Add a metric alarm that corresponds to a predefined metrics"""
+        metrics = self.config['global']['infrastructure'].get('metrics')
+        if not metrics:
+            self.config['global']['infrastructure']['metrics'] = {}
+
+        # Check to see if metrics are enabled. If they are not, then alarms are useless.
+        enable_metrics = self.config['global']['infrastructure']['metrics'].get('enabled', False)
+
+        if not enable_metrics:
+            LOGGER_CLI.error('Metrics are not currently enabled in \'conf/global.json\'. '
+                             'Metrics must be enabled to create alarms.')
+            return
+
+        current_alarms = self.config['global']['infrastructure']['metrics'].get('alarms', {})
+
+        if alarm_info['alarm_name'] in current_alarms:
+            LOGGER_CLI.error('Alarm name \'%s\'already defined. Please remove the previous alarm '
+                             'from \'conf/global.json\' or pick a different name.',
+                             alarm_info['alarm_name'])
+            return
+
+        omitted_keys = {'debug', 'alarm_name', 'command'}
+
+        current_alarms[alarm_info['alarm_name']] = {
+            key: value for key, value in alarm_info.iteritems()
+            if key not in omitted_keys and value is not None
+        }
+
+        # Add the alarms to the config
+        self.config['global']['infrastructure']['metrics']['alarms'] = current_alarms
+        self.write()
 
     def load(self):
         """Load the cluster, global, and lambda configuration files

@@ -73,6 +73,9 @@ def cli_runner(options):
     elif options.command == 'athena':
         athena_handler(options)
 
+    elif options.command == 'create-alarm':
+        _create_alarm(options)
+
 
 def athena_handler(options):
     """Handle Athena operations"""
@@ -649,3 +652,30 @@ def configure_output(options):
                          'output configuration for service \'%s\'',
                          props['descriptor'].value,
                          options.service)
+
+def _create_alarm(options):
+    """Create a new CloudWatch alarm for the given metric
+
+    Args:
+        options (argparser): Contains all of the necessary info for configuring
+            a CloudWatch alarm
+    """
+    # Perform safety check for max total evaluation period. This logic cannot
+    # be performed by argparse so must be performed now.
+    seconds_in_day = 86400
+    if options.period * options.evaluation_periods > seconds_in_day:
+        LOGGER_CLI.error('The product of the value for period multiplied by the '
+                         'value for evaluation periods cannot exceed 86,400. 86,400 '
+                         'is the number of seconds in one day and an alarm\'s total '
+                         'current evaluation period can be no longer than one day.')
+        return
+
+    # Check to see if the user is specifying clusters when trying to create an
+    # alarm on an aggregate metric. Aggregate metrics encompass all clusters so
+    # specification of clusters doesn't have any real effect
+    if options.metric_target == 'aggregate' and options.clusters:
+        LOGGER_CLI.error('Specifying clusters when creating an alarm on an aggregate '
+                         'metric has no effect. Please remove the -c/--clusters flag.')
+        return
+
+    CONFIG.add_metric_alarm(vars(options))
