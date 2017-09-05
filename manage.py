@@ -192,6 +192,60 @@ Examples:
     )
 
 
+def _add_metrics_subparser(subparsers):
+    """Add the metrics subparser: manage.py metrics [options]"""
+    metrics_usage = 'manage.py metrics [options]'
+
+    metrics_description = ("""
+StreamAlertCLI v{}
+Enable or disable metrics for all lambda functions. This toggles the creation of metric filters.
+
+Available Options:
+
+    -e/--enable         Enable CloudWatch metrics through logging and metric filters
+    -d/--disable        Disable CloudWatch metrics through logging and metric filters
+    --debug             Enable Debug logger output
+
+Examples:
+
+    manage.py metrics --enable
+
+""".format(version))
+
+    metrics_parser = subparsers.add_parser(
+        'metrics',
+        description=metrics_description,
+        usage=metrics_usage,
+        formatter_class=RawTextHelpFormatter,
+        help=ARGPARSE_SUPPRESS
+    )
+
+    # Set the name of this parser to 'metrics'
+    metrics_parser.set_defaults(command='metrics')
+
+    # get the metric toggle value
+    toggle_group = metrics_parser.add_mutually_exclusive_group(required=True)
+
+    toggle_group.add_argument(
+        '-e', '--enable',
+        dest='enable_metrics',
+        action='store_true'
+    )
+
+    toggle_group.add_argument(
+        '-d', '--disable',
+        dest='enable_metrics',
+        action='store_false'
+    )
+
+    # allow verbose output for the CLI with the --debug option
+    metrics_parser.add_argument(
+        '--debug',
+        action='store_true',
+        help=ARGPARSE_SUPPRESS
+    )
+
+
 def _add_metric_alarm_subparser(subparsers):
     """Add the create-alarm subparser: manage.py create-alarm [options]"""
     metric_alarm_usage = 'manage.py create-alarm [options]'
@@ -277,6 +331,7 @@ Resources:
     Terraform:  https://www.terraform.io/docs/providers/aws/r/cloudwatch_metric_alarm.html
 
 """.format(version, metric_choices_block))
+
     metric_alarm_parser = subparsers.add_parser(
         'create-alarm',
         description=metric_alarm_description,
@@ -718,6 +773,7 @@ For additional details on the available commands, try:
     _add_output_subparser(subparsers)
     _add_live_test_subparser(subparsers)
     _add_validate_schema_subparser(subparsers)
+    _add_metrics_subparser(subparsers)
     _add_metric_alarm_subparser(subparsers)
     _add_lambda_subparser(subparsers)
     _add_terraform_subparser(subparsers)

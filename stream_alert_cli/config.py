@@ -128,6 +128,16 @@ class CLIConfig(object):
 
         LOGGER_CLI.info('AWS Account ID successfully configured')
 
+    def toggle_metrics(self, enabled):
+        """Toggle CloudWatch metric logging and filter creation"""
+        metrics = self.config['global']['infrastructure'].get('metrics')
+        if not metrics:
+            self.config['global']['infrastructure']['metrics'] = {}
+
+        metrics['enabled'] = enabled
+
+        self.write()
+
     def add_metric_alarm(self, alarm_info):
         """Add a metric alarm that corresponds to a predefined metrics"""
         metrics = self.config['global']['infrastructure'].get('metrics')

@@ -74,6 +74,9 @@ def cli_runner(options):
     elif options.command == 'athena':
         athena_handler(options)
 
+    elif options.command == 'metrics':
+        _toggle_metrics(options)
+
     elif options.command == 'create-alarm':
         _create_alarm(options)
 
@@ -644,6 +647,16 @@ def configure_output(options):
                          'output configuration for service \'%s\'',
                          props['descriptor'].value,
                          options.service)
+
+
+def _toggle_metrics(options):
+    """Enable or disable logging CloudWatch metrics
+
+    Args:
+        options (argparser): Contains boolean necessary for toggling metrics
+    """
+    CONFIG.toggle_metrics(options.enable_metrics)
+
 
 def _create_alarm(options):
     """Create a new CloudWatch alarm for the given metric
