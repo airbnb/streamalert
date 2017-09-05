@@ -19,6 +19,7 @@ import os
 import re
 import sys
 
+from stream_alert_cli.helpers import continue_prompt
 from stream_alert_cli.logger import LOGGER_CLI
 
 
@@ -137,17 +138,19 @@ class CLIConfig(object):
         enable_metrics = self.config['global']['infrastructure']['metrics'].get('enabled', False)
 
         if not enable_metrics:
-            LOGGER_CLI.error('Metrics are not currently enabled in \'conf/global.json\'. '
-                             'Metrics must be enabled to create alarms.')
-            return
+            prompt = ('Metrics are not currently enabled in \'conf/global.json\'. Creating a '
+                      'metric alarm will have no effect until metrics are enabled. '
+                      'Would you like to continue anyway?')
+            if not continue_prompt(prompt):
+                return
 
         current_alarms = self.config['global']['infrastructure']['metrics'].get('alarms', {})
 
         if alarm_info['alarm_name'] in current_alarms:
-            LOGGER_CLI.error('Alarm name \'%s\'already defined. Please remove the previous alarm '
-                             'from \'conf/global.json\' or pick a different name.',
-                             alarm_info['alarm_name'])
-            return
+            prompt = ('Alarm name \'{}\' already defined. Would you '
+                      'like to overwrite?').format(alarm_info['alarm_name'])
+            if not continue_prompt(prompt):
+                return
 
         omitted_keys = {'debug', 'alarm_name', 'command'}
 

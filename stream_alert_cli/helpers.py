@@ -67,6 +67,17 @@ def run_command(runner_args, **kwargs):
     return True
 
 
+def continue_prompt(prompt=''):
+    """Continue prompt used to check user's response"""
+    required_responses = {'yes', 'no'}
+    response = ''
+    while response not in required_responses:
+        prompt = prompt or 'Would you like to continue?'
+        response = raw_input('\n{} (yes or no): '.format(prompt))
+
+    return response == 'yes'
+
+
 def format_lambda_test_record(test_record):
     """Create a properly formatted Kinesis, S3, or SNS record.
 

@@ -25,6 +25,7 @@ from stream_alert.athena_partition_refresh.main import StreamAlertAthenaClient
 
 from stream_alert_cli import helpers
 from stream_alert_cli.config import CLIConfig
+from stream_alert_cli.helpers import continue_prompt
 from stream_alert_cli.logger import LOGGER_CLI
 import stream_alert_cli.outputs as config_outputs
 from stream_alert_cli.package import AlertProcessorPackage, AthenaPackage, RuleProcessorPackage
@@ -318,16 +319,6 @@ def run_command(args=None, **kwargs):
     return helpers.run_command(args, **kwargs)
 
 
-def continue_prompt():
-    """Continue prompt used before applying Terraform plans"""
-    required_responses = {'yes', 'no'}
-    response = ''
-    while response not in required_responses:
-        response = raw_input('\nWould you like to continue? (yes or no): ')
-    if response == 'no':
-        sys.exit(0)
-
-
 def tf_runner(**kwargs):
     """Terraform wrapper to build StreamAlert infrastructure.
 
@@ -363,7 +354,8 @@ def tf_runner(**kwargs):
     if not run_command(tf_command):
         return False
 
-    continue_prompt()
+    if not continue_prompt():
+        sys.exit(0)
 
     if action == 'destroy':
         LOGGER_CLI.info('Destroying infrastructure')
