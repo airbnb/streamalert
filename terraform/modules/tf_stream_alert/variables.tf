@@ -86,3 +86,18 @@ variable "alert_processor_vpc_security_group_ids" {
   type    = "list"
   default = []
 }
+
+variable "rule_processor_metric_filters" {
+  type    = "list"
+  default = []
+}
+
+variable "alert_processor_metric_filters" {
+  type    = "list"
+  default = []
+}
+
+variable "namespace" {
+  type    = "string"
+  default = "StreamAlert"
+}

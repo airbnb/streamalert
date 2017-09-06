@@ -16,7 +16,6 @@ limitations under the License.
 from abc import ABCMeta, abstractmethod
 from collections import namedtuple
 import json
-import logging
 import os
 import ssl
 import tempfile
@@ -25,8 +24,7 @@ import urllib2
 import boto3
 from botocore.exceptions import ClientError
 
-logging.basicConfig()
-LOGGER = logging.getLogger('StreamAlertOutput')
+from stream_alert.alert_processor import LOGGER
 
 OutputProperty = namedtuple('OutputProperty',
                             'description, value, input_restrictions, mask_input, cred_requirement')
@@ -199,7 +197,14 @@ class StreamOutputBase(object):
                 context = ssl.create_default_context()
                 context.check_hostname = False
                 context.verify_mode = ssl.CERT_NONE
-            request = urllib2.Request(url, data=data, headers=headers or {})
+
+            http_headers = headers or {}
+
+            # Omitting data means a GET request should occur, not POST
+            if not data:
+                request = urllib2.Request(url, headers=http_headers)
+            else:
+                request = urllib2.Request(url, data=data, headers=http_headers)
             resp = urllib2.urlopen(request, context=context)
             return resp
         except urllib2.HTTPError as err:
@@ -274,7 +279,6 @@ class StreamOutputBase(object):
         Returns:
             OrderedDict: Contains various OutputProperty items
         """
-        pass
 
     @abstractmethod
     def dispatch(self, **kwargs):
@@ -287,4 +291,3 @@ class StreamOutputBase(object):
                 rule_name (str): Name of the triggered rule
                 alert (dict): Alert relevant to the triggered rule
         """
-        pass

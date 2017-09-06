@@ -118,8 +118,8 @@ def kms_encrypt(region, data, kms_key_alias):
                                   Plaintext=data)
         return response['CiphertextBlob']
     except ClientError:
-        LOGGER_CLI.exception('an error occurred during credential encryption')
-
+        LOGGER_CLI.error('An error occurred during credential encryption')
+        raise
 
 def send_creds_to_s3(region, bucket, key, blob_data):
     """Put the encrypted credential blob for this service and destination in s3
@@ -142,11 +142,11 @@ def send_creds_to_s3(region, bucket, key, blob_data):
         return True
     except ClientError as err:
         LOGGER_CLI.error(
-            'An error occurred while sending credentials to S3 for key [%s]: '
-            '%s [%s]',
+            'An error occurred while sending credentials to S3 for key \'%s\' '
+            'in bucket \'%s\': %s',
             key,
-            err.response['Error']['Message'],
-            err.response['Error']['BucketName'])
+            bucket,
+            err.response['Error']['Message'])
         return False
 
 

@@ -16,15 +16,18 @@ limitations under the License.
 # pylint: disable=protected-access
 from collections import OrderedDict
 import json
+import os
 
-from mock import mock_open, patch
+from mock import call, mock_open, patch
 from nose.tools import (
     assert_equal,
     assert_is_instance,
     assert_list_equal,
-    assert_true
+    assert_true,
+    with_setup
 )
 
+import stream_alert.alert_processor as ap
 from stream_alert.alert_processor.main import _load_output_config, _sort_dict, handler
 from tests.unit.stream_alert_alert_processor import FUNCTION_NAME, REGION
 from tests.unit.stream_alert_alert_processor.helpers import get_alert, get_mock_context
@@ -177,3 +180,39 @@ def test_running_exception_occurred(creds_mock, dispatch_mock, config_mock, url_
         'An error occurred while sending alert '
         'to %s:%s: %s. alert:\n%s', 'slack', 'unit_test_channel',
         err, json.dumps(alert, indent=2))
+
+def _teardown_env():
+    """Helper method to reset environment variables"""
+    if 'LOGGER_LEVEL' in os.environ:
+        del os.environ['LOGGER_LEVEL']
+
+
+@with_setup(setup=None, teardown=_teardown_env)
+@patch('stream_alert.alert_processor.LOGGER.error')
+def test_init_logging_bad(log_mock):
+    """Alert Processor Init - Logging, Bad Level"""
+    level = 'IFNO'
+
+    os.environ['LOGGER_LEVEL'] = level
+
+    # Force reload the alert_processor package to trigger the init
+    reload(ap)
+
+    message = str(call('Defaulting to INFO logging: %s',
+                       ValueError('Unknown level: \'IFNO\'',)))
+
+    assert_equal(str(log_mock.call_args_list[0]), message)
+
+
+@with_setup(setup=None, teardown=_teardown_env)
+@patch('stream_alert.alert_processor.LOGGER.setLevel')
+def test_init_logging_int_level(log_mock):
+    """Alert Processor Init - Logging, Integer Level"""
+    level = '10'
+
+    os.environ['LOGGER_LEVEL'] = level
+
+    # Force reload the alert_processor package to trigger the init
+    reload(ap)
+
+    log_mock.assert_called_with(10)

@@ -16,7 +16,6 @@ limitations under the License.
 from collections import defaultdict
 from datetime import datetime
 import json
-import logging
 import os
 import re
 import urllib
@@ -24,11 +23,7 @@ import urllib
 import backoff
 import boto3
 
-logging.basicConfig(
-    format='%(name)s [%(levelname)s]: [%(module)s.%(funcName)s] %(message)s')
-LEVEL = os.environ.get('LOGGER_LEVEL', 'INFO')
-LOGGER = logging.getLogger('StreamAlertAthena')
-LOGGER.setLevel(LEVEL.upper())
+from stream_alert.athena_partition_refresh import LOGGER
 
 
 def _backoff_handler(details):

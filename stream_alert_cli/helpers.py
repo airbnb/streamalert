@@ -138,8 +138,11 @@ def format_lambda_test_record(test_record):
     return template
 
 
-def create_lambda_function(function_name, region):
+def  create_lambda_function(function_name, region):
     """Helper function to create mock lambda function"""
+    if function_name.find(':') != -1:
+        function_name = function_name.split(':')[0]
+
     boto3.client('lambda', region_name=region).create_function(
         FunctionName=function_name,
         Runtime='python2.7',
@@ -153,7 +156,6 @@ def create_lambda_function(function_name, region):
             'ZipFile': _make_lambda_package()
         }
     )
-
 
 def encrypt_with_kms(data, region, alias):
     """Encrypt the given data with KMS."""

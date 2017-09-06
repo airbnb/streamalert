@@ -40,7 +40,7 @@
                     "recipientAccountId": "12345"
                 }
             },
-            "description": "CloudTrail - Root Account Usage - True Positive",
+            "description": "Use of the AWS 'Root' account will create an alert.",
             "trigger": true,
             "source": "prefix_cluster1_stream_alert_kinesis",
             "service": "kinesis"
@@ -80,62 +80,6 @@
                     "sourceIPAddress": "AWS Internal",
                     "userAgent": "...",
                     "requestParameters": {
-                        "bucketName": "...",
-                        "AccessControlPolicy": {
-                            "AccessControlList": {
-                                "Grant": [
-                                    {
-                                        "Grantee": {
-                                            "xsi:type": "CanonicalUser",
-                                            "DisplayName": "...",
-                                            "xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
-                                            "ID": "..."
-                                        },
-                                        "Permission": "FULL_CONTROL"
-                                    },
-                                    {
-                                        "Grantee": {
-                                            "xsi:type": "Group",
-                                            "xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
-                                            "URI": "http://acs.amazonaws.com/groups/global/AuthenticatedUsers"
-                                        },
-                                        "Permission": "READ"
-                                    },
-                                    {
-                                        "Grantee": {
-                                            "xsi:type": "Group",
-                                            "xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
-                                            "URI": "http://acs.amazonaws.com/groups/global/AuthenticatedUsers"
-                                        },
-                                        "Permission": "READ_ACP"
-                                    },
-                                    {
-                                        "Grantee": {
-                                            "xsi:type": "Group",
-                                            "xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
-                                            "URI": "http://acs.amazonaws.com/groups/global/AllUsers"
-                                        },
-                                        "Permission": "READ"
-                                    },
-                                    {
-                                        "Grantee": {
-                                            "xsi:type": "Group",
-                                            "xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
-                                            "URI": "http://acs.amazonaws.com/groups/global/AllUsers"
-                                        },
-                                        "Permission": "READ_ACP"
-                                    }
-                                ]
-                            },
-                            "xmlns": "http://s3.amazonaws.com/doc/2006-03-01/",
-                            "Owner": {
-                                "DisplayName": "...",
-                                "ID": "..."
-                            }
-                        },
-                        "acl": [
-                            ""
-                        ]
                     },
                     "responseElements": null,
                     "requestID": "...",
@@ -144,7 +88,7 @@
                     "recipientAccountId": "12345"
                 }
             },
-            "description": "CloudTrail - Root Account Usage - False Positive",
+            "description": "AWS 'Root' account activity initiated automatically by an AWS service on your behalf will not create an alert.",
             "trigger": false,
             "source": "prefix_cluster1_stream_alert_kinesis",
             "service": "kinesis"
