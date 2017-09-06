@@ -1,66 +1,70 @@
 {
   "carbonblack":{
-    "userName": ["username"],
-    "destinationDomain": ["domain"],
-    "processPath": ["parent_path", "process_path", "path"],
-    "filePath": ["path"],
-    "transportProtocol": ["protocol"],
-    "processName": ["parent_name", "process_name"],
-    "fileName": ["observed_filename", "file_path"],
     "command": ["cmdline"],
-    "fileHash": ["process_md5", "parent_md5", "expect_followon_w_md5", "md5"],
-    "deviceAddress": ["interface_ip", "comms_ip"],
-    "sourceAddress": ["ipv4", "local_ip"],
     "destinationAddress": ["remote_ip"],
+    "destinationDomain": ["domain"],
+    "destinationPort": ["remote_port"],
+    "deviceAddress": ["interface_ip", "comms_ip"],
+    "fileHash": ["process_md5", "parent_md5", "expect_followon_w_md5", "md5"],
+    "fileName": ["observed_filename", "file_path"],
+    "filePath": ["path"],
+    "processName": ["parent_name", "process_name"],
+    "processPath": ["parent_path", "process_path", "path"],
+    "sourceAddress": ["ipv4", "local_ip"],
     "sourcePort": ["port", "local_port"],
-    "destinationPort": ["remote_port"]
+    "transportProtocol": ["protocol"],
+    "userName": ["username"]
   },
   "cloudwatch":{
-    "userName": ["userName", "owner", "invokedBy"],
-    "sourceAccount": ["account"],
     "destinationAccount": ["recipientAccountId"],
-    "transportProtocol": ["protocol"],
-    "eventType": ["eventType"],
-    "eventName": ["eventName"],
-    "region": ["region"],
-    "userAgent": ["userAgent"],
-    "sourceAddress": ["source", "sourceIPAddress"],
     "destinationAddress": ["destination"],
+    "destinationPort": ["destport"],
+    "eventName": ["eventName"],
+    "eventType": ["eventType"],
+    "region": ["region"],
+    "sourceAccount": ["account"],
+    "sourceAddress": ["source", "sourceIPAddress"],
     "sourcePort": ["srcport"],
-    "destinationPort": ["destport"]
+    "transportProtocol": ["protocol"],
+    "userAgent": ["userAgent"],
+    "userName": ["userName", "owner", "invokedBy"]
   },
   "cloudtrail": {
-    "sourceAccount": ["account", "accountId"],
     "destinationAccount": ["recipientAccountId"],
-    "eventType": ["eventType"],
     "eventName": ["eventName"],
+    "eventType": ["eventType"],
     "region": ["region", "awsRegion"],
-    "userAgent": ["userAgent"],
-    "sourceAddress": ["sourceIPAddress"]
+    "sourceAccount": ["account", "accountId"],
+    "sourceAddress": ["sourceIPAddress"],
+    "userAgent": ["userAgent"]
   },
   "ghe": {
-    "userName": ["current_user"],
     "destinationAddress": ["remote_address"],
-    "sourcePort": ["port"]
+    "sourcePort": ["port"],
+    "userName": ["current_user"]
   },
   "osquery": {
-    "userName": ["username", "user"],
-    "filePath": ["path"],
-    "transportProtocol": ["protocol"],
-    "severity": ["severity"],
     "command": ["cmdline", "command"],
-    "message": ["message"],
-    "sourceAddress": ["host", "source", "local_address", "address"],
     "destinationAddress": ["destination", "remote_address", "gateway"],
+    "destinationPort": ["remote_port"],
+    "fileHash": ["md5", "sha1", "sha256"],
+    "filePath": ["path", "directory"],
+    "fileSize": ["size"],
+    "message": ["message"],
+    "receiptTime": ["unixTime"],
+    "severity": ["severity"],
+    "sourceAddress": ["host", "source", "local_address", "address"],
     "sourcePort": ["local_port", "port"],
-    "destinationPort": ["remote_port"]
+    "sourceUserId": ["uid"],
+    "transportProtocol": ["protocol"],
+    "userName": ["username", "user"]
   },
   "pan": {
-    "userName": ["srcuser", "dstuser"],
-    "transportProtocol": ["proto"],
-    "sourceAddress": ["src", "natsrc"],
     "destinationAddress": ["dst", "natdst"],
+    "destinationPort": ["dport", "natdport"],
+    "sourceAddress": ["src", "natsrc"],
     "sourcePort": ["sport", "natsport"],
-    "destinationPort": ["dport", "natdport"]
+    "transportProtocol": ["proto"],
+    "userName": ["srcuser", "dstuser"]
   }
 }
