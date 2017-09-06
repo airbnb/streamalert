@@ -63,7 +63,7 @@ Here’s an example rule that alerts on the use of sudo in a PCI environment:
 
     from fnmatch import fnmatch
 
-    @rule(logs=['osquery'],                           # applicable datasource(s)
+    @rule(logs=['osquery:differential'],              # applicable datasource(s)
           matchers=['pci'],                           # matcher(s) to evaluate
           outputs=['pagerduty:cirt', 'slack:cirt'])   # where to send alerts
     def production_sudo(record):                      # incoming record/log
@@ -140,7 +140,7 @@ Examples:
   # The 'columns' key must contain
   # sub-keys of 'address' and 'hostnames'
 
-  @rule(logs=['osquery'],
+  @rule(logs=['osquery:differential'],
         outputs=['pagerduty', 'aws-s3'],
         req_subkeys={'columns':['address', 'hostnames']})
         ...
@@ -148,7 +148,7 @@ Examples:
   # The 'columns' key must contain
   # sub-keys of 'port' and 'protocol'
 
-  @rule(logs=['osquery'],
+  @rule(logs=['osquery:differential'],
         outputs=['pagerduty', 'aws-s3'],
         req_subkeys={'columns':['port', 'protocol']})
         ...

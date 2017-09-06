@@ -314,7 +314,7 @@ This approach promotes Rule safety, but requires additional time to define the s
 .. code-block:: json
 
   {
-    "osquery": {
+    "osquery:differential": {
       "parser": "json",
       "schema": {
         "name": "string",
@@ -416,4 +416,3 @@ Syslog Example
 --------------
 
 See `Schemas <conf-schemas.html>`_
-
