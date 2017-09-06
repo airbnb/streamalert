@@ -1,4 +1,4 @@
-'''
+"""
 Copyright 2017-present, Airbnb Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,28 +12,25 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-'''
-
+"""
+from collections import namedtuple
+from getpass import getpass
 import os
 import shutil
 import sys
 
-from collections import namedtuple
-from getpass import getpass
+from stream_alert import __version__ as current_version
+from stream_alert.alert_processor.outputs import get_output_dispatcher
+from stream_alert.athena_partition_refresh.main import StreamAlertAthenaClient
 
-from stream_alert_cli.package import RuleProcessorPackage, AlertProcessorPackage
-from stream_alert_cli.test import stream_alert_test
 from stream_alert_cli import helpers
 from stream_alert_cli.config import CLIConfig
 from stream_alert_cli.logger import LOGGER_CLI
-from stream_alert_cli.version import LambdaVersion
-from stream_alert_cli.terraform_generate import terraform_generate
 import stream_alert_cli.outputs as config_outputs
-
-from stream_alert.alert_processor import __version__ as alert_processor_version
-from stream_alert.alert_processor.outputs import get_output_dispatcher
-from stream_alert.rule_processor import __version__ as rule_processor_version
-
+from stream_alert_cli.package import AlertProcessorPackage, AthenaPackage, RuleProcessorPackage
+from stream_alert_cli.terraform_generate import terraform_generate
+from stream_alert_cli.test import stream_alert_test
+from stream_alert_cli.version import LambdaVersion
 
 CONFIG = CLIConfig()
 
@@ -52,6 +49,9 @@ def cli_runner(options):
                         'https://github.com/airbnb/streamalert/issues')
     LOGGER_CLI.info(cli_load_message)
 
+    if options.debug:
+        LOGGER_CLI.setLevel('DEBUG')
+
     if options.command == 'output':
         configure_output(options)
 
@@ -61,8 +61,75 @@ def cli_runner(options):
     elif options.command == 'live-test':
         stream_alert_test(options, CONFIG)
 
+    elif options.command == 'validate-schemas':
+        stream_alert_test(options)
+
     elif options.command == 'terraform':
         terraform_handler(options)
+
+    elif options.command == 'configure':
+        configure_handler(options)
+
+    elif options.command == 'athena':
+        athena_handler(options)
+
+
+def athena_handler(options):
+    """Handle Athena operations"""
+    athena_client = StreamAlertAthenaClient(CONFIG,
+                                            results_key_prefix='stream_alert_cli')
+
+    if options.subcommand == 'init':
+        CONFIG.generate_athena()
+
+    elif options.subcommand == 'enable':
+        CONFIG.set_athena_lambda_enable()
+
+    elif options.subcommand == 'create-db':
+        if athena_client.check_database_exists():
+            LOGGER_CLI.info('The \'streamalert\' database already exists, nothing to do')
+            return
+
+        create_db_success, create_db_result = athena_client.run_athena_query(
+            query='CREATE DATABASE streamalert')
+
+        if create_db_success and create_db_result['ResultSet'].get('Rows'):
+            LOGGER_CLI.info('streamalert database successfully created!')
+            LOGGER_CLI.info('results: %s', create_db_result['ResultSet']['Rows'])
+
+    elif options.subcommand == 'create-table':
+        if options.type == 'alerts':
+            if not options.bucket:
+                LOGGER_CLI.error('Missing command line argument --bucket')
+                return
+
+            if athena_client.check_table_exists(options.type):
+                LOGGER_CLI.info('The \'alerts\' table already exists.')
+                return
+
+            query = ('CREATE EXTERNAL TABLE alerts ('
+                     'log_source string,'
+                     'log_type string,'
+                     'outputs array<string>,'
+                     'record string,'
+                     'rule_description string,'
+                     'rule_name string,'
+                     'source_entity string,'
+                     'source_service string)'
+                     'PARTITIONED BY (dt string)'
+                     'ROW FORMAT SERDE \'org.openx.data.jsonserde.JsonSerDe\''
+                     'LOCATION \'s3://{bucket}/alerts/\''.format(bucket=options.bucket))
+
+            create_table_success, _ = athena_client.run_athena_query(
+                query=query,
+                database='streamalert'
+            )
+
+            if create_table_success:
+                CONFIG['lambda']['athena_partition_refresh_config'] \
+                    ['refresh_type'][options.refresh_type][options.bucket] = 'alerts'
+                CONFIG.write()
+                LOGGER_CLI.info('The alerts table was successfully created!')
 
 
 def lambda_handler(options):
@@ -82,6 +149,19 @@ def lambda_handler(options):
 
     elif options.subcommand == 'test':
         stream_alert_test(options)
+
+
+def configure_handler(options):
+    """Configure StreamAlert main settings
+
+    Args:
+        options (namedtuple): ArgParse command result
+    """
+    if options.config_key == 'prefix':
+        CONFIG.set_prefix(options.config_value)
+
+    elif options.config_key == 'aws_account_id':
+        CONFIG.set_aws_account_id(options.config_value)
 
 
 def terraform_check():
@@ -109,7 +189,9 @@ def terraform_handler(options):
             return
         # Target is for terraforming a specific streamalert module.
         # This value is passed as a list
-        if options.target:
+        if options.target == ['athena']:
+            tf_runner(targets=['module.stream_alert_athena'])
+        elif options.target:
             targets = ['module.{}_{}'.format(target, cluster)
                        for cluster in CONFIG.clusters()
                        for target in options.target]
@@ -162,7 +244,7 @@ def terraform_handler(options):
 
         LOGGER_CLI.info('Deploying Lambda Functions')
         # deploy both lambda functions
-        deploy(deploy_opts('all'))
+        deploy(deploy_opts(['rule', 'alert']))
         # create all remainder infrastructure
 
         LOGGER_CLI.info('Building Remainder Infrastructure')
@@ -173,9 +255,17 @@ def terraform_handler(options):
 
     elif options.subcommand == 'destroy':
         if options.target:
-            target = options.target
-            targets = ['module.{}_{}'.format(target, cluster)
-                       for cluster in CONFIG.clusters()]
+            targets = []
+            # Iterate over any targets to destroy. Global modules, like athena
+            # are prefixed with `stream_alert_` while cluster based modules
+            # are a combination of the target and cluster name
+            for target in options.target:
+                if target == 'athena':
+                    targets.append('module.stream_alert_{}'.format(target))
+                else:
+                    targets.extend(['module.{}_{}'.format(target, cluster)
+                                    for cluster in CONFIG.clusters()])
+
             tf_runner(targets=targets, action='destroy')
             return
 
@@ -248,21 +338,21 @@ def tf_runner(**kwargs):
         targets: a list of Terraform targets
         action: 'apply' or 'destroy'
 
-    Returns: Boolean result of if the terraform command
-             was successful or not
+    Returns:
+        bool: True if the terraform command was successful
     """
     targets = kwargs.get('targets', [])
     action = kwargs.get('action', None)
     tf_action_index = 1  # The index to the terraform 'action'
 
-    var_files = {'conf/lambda.json', 'conf/global.json'}
+    var_files = {'conf/lambda.json'}
     tf_opts = ['-var-file=../{}'.format(x) for x in var_files]
     tf_targets = ['-target={}'.format(x) for x in targets]
     tf_command = ['terraform', 'plan'] + tf_opts + tf_targets
     if action == 'destroy':
         tf_command.append('-destroy')
 
-    LOGGER_CLI.info('Resolving Terraform modules')
+    LOGGER_CLI.debug('Resolving Terraform modules')
     if not run_command(['terraform', 'get'], quiet=True):
         return False
 
@@ -323,10 +413,14 @@ def rollback(options):
         Only rollsback if published version is greater than 1
     """
     clusters = CONFIG.clusters()
-    if options.processor == 'all':
-        lambda_functions = {'rule_processor', 'alert_processor'}
+
+    if 'all' in options.processor:
+        lambda_functions = {'rule_processor', 'alert_processor', 'athena_partition_refresh'}
     else:
-        lambda_functions = {'{}_processor'.format(options.processor)}
+        lambda_functions = {'{}_processor'.format(proc) for proc in options.processor
+                            if proc != 'athena'}
+        if 'athena' in options.processor:
+            lambda_functions.add('athena_partition_refresh')
 
     for cluster in clusters:
         for lambda_function in lambda_functions:
@@ -336,7 +430,8 @@ def rollback(options):
                 current_vers = int(current_vers)
                 if current_vers > 1:
                     new_vers = current_vers - 1
-                    CONFIG['clusters'][cluster]['modules']['stream_alert'][lambda_function]['current_version'] = new_vers
+                    CONFIG['clusters'][cluster]['modules']['stream_alert'][lambda_function][
+                        'current_version'] = new_vers
                     CONFIG.write()
 
     targets = ['module.stream_alert_{}'.format(x)
@@ -349,71 +444,112 @@ def rollback(options):
 
 
 def deploy(options):
-    """Deploy new versions of both Lambda functions
+    """Deploy new versions of all Lambda functions
 
     Steps:
-    - build lambda deployment package
-    - upload to S3
-    - update variables.json with uploaded package hash/key
-    - publish latest version
-    - update variables.json with latest published version
-    - terraform apply
+    - Build AWS Lambda deployment package
+    - Upload to S3
+    - Update lambda.json with uploaded package checksum and S3 key
+    - Publish new version
+    - Update each cluster's Lambda configuration with latest published version
+    - Run Terraform Apply
     """
     processor = options.processor
-    # terraform apply only to the module which contains our lambda functions
-    targets = ['module.stream_alert_{}'.format(x)
-               for x in CONFIG.clusters()]
+    # Terraform apply only to the module which contains our lambda functions
+    targets = []
     packages = []
 
-    def publish_version(packages):
+    def _publish_version(packages):
         """Publish Lambda versions"""
         for package in packages:
-            LambdaVersion(
-                config=CONFIG,
-                package=package
-            ).publish_function()
+            if package.package_name == 'athena_partition_refresh':
+                published = LambdaVersion(
+                    config=CONFIG, package=package, clustered_deploy=False).publish_function()
+            else:
+                published = LambdaVersion(config=CONFIG, package=package).publish_function()
+            if not published:
+                return False
 
-    def deploy_rule_processor():
+        return True
+
+    def _deploy_rule_processor():
         """Create Rule Processor package and publish versions"""
         rule_package = RuleProcessorPackage(
             config=CONFIG,
-            version=rule_processor_version
+            version=current_version
         )
         rule_package.create_and_upload()
         return rule_package
 
-    def deploy_alert_processor():
+    def _deploy_alert_processor():
         """Create Alert Processor package and publish versions"""
         alert_package = AlertProcessorPackage(
             config=CONFIG,
-            version=alert_processor_version
+            version=current_version
         )
         alert_package.create_and_upload()
         return alert_package
 
-    if processor == 'rule':
-        packages.append(deploy_rule_processor())
+    def _deploy_athena_partition_refresh():
+        """Create Athena Partition Refresh package and publish"""
+        athena_package = AthenaPackage(
+            config=CONFIG,
+            version=current_version
+        )
+        athena_package.create_and_upload()
+        return athena_package
 
-    elif processor == 'alert':
-        packages.append(deploy_alert_processor())
+    if 'all' in processor:
+        targets.extend(['module.stream_alert_{}'.format(x)
+                        for x in CONFIG.clusters()])
 
-    elif processor == 'all':
-        packages.append(deploy_rule_processor())
-        packages.append(deploy_alert_processor())
+        packages.append(_deploy_rule_processor())
+        packages.append(_deploy_alert_processor())
 
-    # update the source code in $LATEST
+        # Only include the Athena function if it exists and is enabled
+        athena_config = CONFIG['lambda'].get('athena_partition_refresh_config')
+        if athena_config and athena_config.get('enabled', False):
+            targets.append('module.stream_alert_athena')
+            packages.append(_deploy_athena_partition_refresh())
+
+    else:
+
+        if 'rule' in processor:
+            targets.extend(['module.stream_alert_{}'.format(x)
+                            for x in CONFIG.clusters()])
+
+            packages.append(_deploy_rule_processor())
+
+        if 'alert' in processor:
+            targets.extend(['module.stream_alert_{}'.format(x)
+                            for x in CONFIG.clusters()])
+
+            packages.append(_deploy_alert_processor())
+
+        if 'athena' in processor:
+            targets.append('module.stream_alert_athena')
+
+            packages.append(_deploy_athena_partition_refresh())
+
+    # Regenerate the Terraform configuration with the new S3 keys
+    if not terraform_generate(config=CONFIG):
+        return
+
+    # Run Terraform: Update the Lambda source code in $LATEST
     if not tf_runner(targets=targets):
         sys.exit(1)
 
     # TODO(jack) write integration test to verify newly updated function
 
-    # create production version by running a second time
-    publish_version(packages)
-    # after the version is published and the config is written, generate the files
-    # to ensure the alias is properly updated
+    # Publish a new production Lambda version
+    if not _publish_version(packages):
+        return
+
+    # Regenerate the Terraform configuration with the new Lambda versions
     if not terraform_generate(config=CONFIG):
         return
-    # apply the changes from publishing
+
+    # Apply the changes to the Lambda aliases
     tf_runner(targets=targets)
 
 
@@ -421,11 +557,11 @@ def user_input(requested_info, mask, input_restrictions):
     """Prompt user for requested information
 
     Args:
-        requested_info [string]: Description of the information needed
-        mask [boolean]: Decides whether to mask input or not
+        requested_info (str): Description of the information needed
+        mask (bool): Decides whether to mask input or not
 
     Returns:
-        [string] response provided by the user
+        str: response provided by the user
     """
     response = ''
     prompt = '\nPlease supply {}: '.format(requested_info)
@@ -453,10 +589,16 @@ def configure_output(options):
     """Configure a new output for this service
 
     Args:
-        options [argparse]: Basically a namedtuple with the service setting
+        options (argparser): Basically a namedtuple with the service setting
     """
-    region = CONFIG['global']['account']['region']
-    prefix = CONFIG['global']['account']['prefix']
+    account_config = CONFIG['global']['account']
+    region = account_config['region']
+    prefix = account_config['prefix']
+    kms_key_alias = account_config['kms_key_alias']
+    # Verify that the word alias is not in the config.
+    # It is interpolated when the API call is made.
+    if 'alias/' in kms_key_alias:
+        kms_key_alias = kms_key_alias.split('/')[1]
 
     # Retrieve the proper service class to handle dispatching the alerts of this services
     output = get_output_dispatcher(options.service,
@@ -473,6 +615,7 @@ def configure_output(options):
     props = output.get_user_defined_properties()
 
     for name, prop in props.iteritems():
+        # pylint: disable=protected-access
         props[name] = prop._replace(value=user_input(prop.description,
                                                      prop.mask_input,
                                                      prop.input_restrictions))
@@ -489,8 +632,11 @@ def configure_output(options):
 
     # Encrypt the creds and push them to S3
     # then update the local output configuration with properties
-    if config_outputs.encrypt_and_push_creds_to_s3(
-            region, secrets_bucket, secrets_key, props):
+    if config_outputs.encrypt_and_push_creds_to_s3(region,
+                                                   secrets_bucket,
+                                                   secrets_key,
+                                                   props,
+                                                   kms_key_alias):
         updated_config = output.format_output_config(config, props)
         config_outputs.update_outputs_config(config, updated_config, service)
 

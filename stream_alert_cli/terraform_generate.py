@@ -1,4 +1,4 @@
-'''
+"""
 Copyright 2017-present, Airbnb Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,14 +12,15 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-'''
-
-import json
-import sys
-
+"""
 from collections import defaultdict
+import json
+import os
 
+from stream_alert.shared import metrics
 from stream_alert_cli.logger import LOGGER_CLI
+
+RESTRICTED_CLUSTER_NAMES = ('main', 'athena')
 
 
 class InvalidClusterName(Exception):
@@ -36,15 +37,15 @@ def generate_s3_bucket(**kwargs):
     """Generate an S3 Bucket dict
 
     Keyword Args:
-        bucket [string]: The name of the bucket
-        acl [string]: The S3 bucket ACL
-        logging_bucket [string]: The S3 bucket to send access logs to
-        force_destroy [bool]: To enable or disable force destroy of the bucket
-        versioning [bool]: To enable or disable S3 object versioning
-        lifecycle_rule [dict]: The S3 bucket lifecycle rule
+        bucket (str): The name of the bucket
+        acl (str): The S3 bucket ACL
+        logging_bucket (str): The S3 bucket to send access logs to
+        force_destroy (bool): To enable or disable force destroy of the bucket
+        versioning (bool): To enable or disable S3 object versioning
+        lifecycle_rule (dict): The S3 bucket lifecycle rule
 
     Returns:
-        [dict] S3 bucket Terraform dict to be used in clusters/main.tf
+        dict: S3 bucket Terraform dict to be used in clusters/main.tf
     """
     bucket_name = kwargs.get('bucket')
     acl = kwargs.get('acl', 'private')
@@ -77,11 +78,11 @@ def generate_main(**kwargs):
     """Generate the main.tf Terraform dict
 
     Keyword Args:
-        init [string]: If Terraform is running in the init phase or not
-        config [CLIConfig]: The loaded CLI config
+        init (bool): If Terraform is running in the init phase or not
+        config (CLIConfig): The loaded CLI config
 
     Returns:
-        [dict] main.tf Terraform dict
+        dict: main.tf Terraform dict
     """
     init = kwargs.get('init')
     config = kwargs.get('config')
@@ -101,7 +102,8 @@ def generate_main(**kwargs):
         }
     else:
         main_dict['terraform']['backend']['s3'] = {
-            'bucket': '{}.streamalert.terraform.state'.format(config['global']['account']['prefix']),
+            'bucket': '{}.streamalert.terraform.state'.format(
+                config['global']['account']['prefix']),
             'key': 'stream_alert_state/terraform.tfstate',
             'region': config['global']['account']['region'],
             'encrypt': True,
@@ -169,16 +171,16 @@ def generate_stream_alert(cluster_name, cluster_dict, config):
     """Add the StreamAlert module to the Terraform cluster dict.
 
     Args:
-        cluster_name [string]: The name of the currently generating cluster
-        cluster_dict [defaultdict]: The dict containing all Terraform config for
-                                    a given cluster.
-        config [dict]: The loaded config from the 'conf/' directory
+        cluster_name (str): The name of the currently generating cluster
+        cluster_dict (defaultdict): The dict containing all Terraform config for a given cluster.
+        config (dict): The loaded config from the 'conf/' directory
 
     JSON Input from the config:
 
         "stream_alert": {
           "alert_processor": {
             "current_version": "$LATEST",
+            "log_level": "info",
             "memory": 128,
             "outputs": {
               "aws-lambda": [
@@ -205,14 +207,17 @@ def generate_stream_alert(cluster_name, cluster_dict, config):
                 "sns_topic_arn"
               ]
             },
+            "log_level": "info",
             "memory": 128,
             "timeout": 10
           }
         }
 
     Returns:
-        [bool] Result of applying the stream_alert module
+        bool: Result of applying the stream_alert module
     """
+    enable_metrics = config['global'].get('infrastructure',
+                                          {}).get('metrics', {}).get('enabled', False)
     account = config['global']['account']
     modules = config['clusters'][cluster_name]['modules']
 
@@ -223,11 +228,17 @@ def generate_stream_alert(cluster_name, cluster_dict, config):
         'prefix': account['prefix'],
         'cluster': cluster_name,
         'kms_key_arn': '${aws_kms_key.stream_alert_secrets.arn}',
+        'rule_processor_enable_metrics': enable_metrics,
+        'rule_processor_log_level': modules['stream_alert'] \
+            ['rule_processor'].get('log_level', 'info'),
         'rule_processor_memory': modules['stream_alert']['rule_processor']['memory'],
         'rule_processor_timeout': modules['stream_alert']['rule_processor']['timeout'],
         'rule_processor_version': modules['stream_alert']['rule_processor']['current_version'],
         'rule_processor_config': '${var.rule_processor_config}',
         'alert_processor_config': '${var.alert_processor_config}',
+        'alert_processor_enable_metrics': enable_metrics,
+        'alert_processor_log_level': modules['stream_alert'] \
+            ['alert_processor'].get('log_level', 'info'),
         'alert_processor_memory': modules['stream_alert']['alert_processor']['memory'],
         'alert_processor_timeout': modules['stream_alert']['alert_processor']['timeout'],
         'alert_processor_version': modules['stream_alert']['alert_processor']['current_version']
@@ -270,21 +281,73 @@ def generate_stream_alert(cluster_name, cluster_dict, config):
 
     return True
 
+def generate_cloudwatch_log_metrics(cluster_name, cluster_dict, config):
+    """Add the CloudWatch Metric Filters module to the Terraform cluster dict.
+
+    Args:
+        cluster_name (str): The name of the currently generating cluster
+        cluster_dict (defaultdict): The dict containing all Terraform config for a given cluster.
+        config (dict): The loaded config from the 'conf/' directory
+
+    Returns:
+        bool: Result of applying the cloudwatch metric filters to the stream_alert module
+    """
+    enable_metrics = config['global'].get('infrastructure',
+                                          {}).get('metrics', {}).get('enabled', False)
+
+    # Do not add any metric filters if metrics are disabled
+    if not enable_metrics:
+        return
+
+    current_metrics = metrics.MetricLogger.get_available_metrics()
+
+    # Add metric filters for the rule and alert processor
+    # The funcs dict acts as a simple map to a human-readable name
+    funcs = {metrics.ALERT_PROCESSOR_NAME: 'AlertProcessor',
+             metrics.RULE_PROCESSOR_NAME: 'RuleProcessor'}
+
+    for func in funcs:
+        if func not in current_metrics:
+            continue
+
+        metric_prefix = funcs[func]
+        filter_pattern_idx, filter_value_idx = 0, 1
+
+        # Add filters for the cluster and aggregate
+        # Use a list of strings that represnt the following comma separated values:
+        #   <filter_name>,<filter_pattern>,<value>
+        filters = []
+        for metric, settings in current_metrics[func].items():
+            filters.extend([
+                '{},{},{}'.format(
+                    '{}-{}-{}'.format(metric_prefix, metric, cluster_name.upper()),
+                    settings[filter_pattern_idx],
+                    settings[filter_value_idx]),
+                '{},{},{}'.format(
+                    '{}-{}'.format(metric_prefix, metric),
+                    settings[filter_pattern_idx],
+                    settings[filter_value_idx])
+            ])
+
+        cluster_dict['module']['stream_alert_{}'.format(cluster_name)] \
+            ['{}_metric_filters'.format(func)] = filters
+
 
 def generate_cloudwatch_monitoring(cluster_name, cluster_dict, config):
     """Add the CloudWatch Monitoring module to the Terraform cluster dict.
 
     Args:
-        cluster_name [string]: The name of the currently generating cluster
-        cluster_dict [defaultdict]: The dict containing all Terraform config for
-                                    a given cluster.
-        config [dict]: The loaded config from the 'conf/' directory
+        cluster_name (str): The name of the currently generating cluster
+        cluster_dict (defaultdict): The dict containing all Terraform config for a given cluster.
+        config (dict): The loaded config from the 'conf/' directory
 
     Returns:
-        [bool] Result of applying the cloudwatch_monitoring module
+        bool: Result of applying the cloudwatch_monitoring module
     """
     prefix = config['global']['account']['prefix']
     infrastructure_config = config['global'].get('infrastructure')
+    sns_topic_arn = None
+
     if infrastructure_config and 'monitoring' in infrastructure_config:
         if infrastructure_config['monitoring'].get('create_sns_topic'):
             sns_topic_arn = 'arn:aws:sns:{region}:{account_id}:{topic}'.format(
@@ -302,13 +365,20 @@ def generate_cloudwatch_monitoring(cluster_name, cluster_dict, config):
         LOGGER_CLI.error('Invalid config: Make sure you declare global infrastructure options!')
         return False
 
+    lambda_functions = [
+        '{}_{}_streamalert_rule_processor'.format(prefix, cluster_name),
+        '{}_{}_streamalert_alert_processor'.format(prefix, cluster_name)
+    ]
+    # Conditionally add the Athena Lambda function for CloudWatch Alarms
+    if config['lambda'].get('athena_partition_refresh_config', {}).get('enabled'):
+        lambda_functions.append('{}_streamalert_athena_partition_refresh'.format(
+            prefix
+        ))
+
     cluster_dict['module']['cloudwatch_monitoring_{}'.format(cluster_name)] = {
         'source': 'modules/tf_stream_alert_monitoring',
         'sns_topic_arn': sns_topic_arn,
-        'lambda_functions': [
-            '{}_{}_streamalert_rule_processor'.format(prefix, cluster_name),
-            '{}_{}_streamalert_alert_processor'.format(prefix, cluster_name)
-        ],
+        'lambda_functions': lambda_functions,
         'kinesis_stream': '{}_{}_stream_alert_kinesis'.format(prefix, cluster_name)
     }
 
@@ -319,17 +389,18 @@ def generate_kinesis(cluster_name, cluster_dict, config):
     """Add the Kinesis module to the Terraform cluster dict.
 
     Args:
-        cluster_name [string]: The name of the currently generating cluster
-        cluster_dict [defaultdict]: The dict containing all Terraform config for
+        cluster_name (str): The name of the currently generating cluster
+        cluster_dict (defaultdict): The dict containing all Terraform config for
                                     a given cluster.
-        config [dict]: The loaded config from the 'conf/' directory
+        config (dict): The loaded config from the 'conf/' directory
 
     Returns:
-        [bool] Result of applying the kinesis module
+        bool: Result of applying the kinesis module
     """
     logging_bucket = '{}.streamalert.s3-logging'.format(
         config['global']['account']['prefix'])
-    firehose_suffix = config['clusters'][cluster_name]['modules']['kinesis']['firehose']['s3_bucket_suffix']
+    firehose_suffix = config['clusters'][cluster_name]['modules']['kinesis']['firehose'][
+        's3_bucket_suffix']
     prefix = config['global']['account']['prefix']
     modules = config['clusters'][cluster_name]['modules']
 
@@ -356,18 +427,18 @@ def generate_outputs(cluster_name, cluster_dict, config):
     """Add the outputs to the Terraform cluster dict.
 
     Args:
-        cluster_name [string]: The name of the currently generating cluster
-        cluster_dict [defaultdict]: The dict containing all Terraform config for
+        cluster_name (str): The name of the currently generating cluster
+        cluster_dict (defaultdict): The dict containing all Terraform config for
                                     a given cluster.
-        config [dict]: The loaded config from the 'conf/' directory
+        config (dict): The loaded config from the 'conf/' directory
 
     Returns:
-        [bool] Result of applying all outputs
+        bool: Result of applying all outputs
     """
-    for module, output_vars in config['clusters'][cluster_name]['outputs'].iteritems():
+    for tf_module, output_vars in config['clusters'][cluster_name]['outputs'].iteritems():
         for output_var in output_vars:
-            cluster_dict['output']['{}_{}_{}'.format(module, cluster_name, output_var)] = {
-                'value': '${{module.{}_{}.{}}}'.format(module, cluster_name, output_var)}
+            cluster_dict['output']['{}_{}_{}'.format(tf_module, cluster_name, output_var)] = {
+                'value': '${{module.{}_{}.{}}}'.format(tf_module, cluster_name, output_var)}
 
     return True
 
@@ -376,13 +447,13 @@ def generate_kinesis_events(cluster_name, cluster_dict, config):
     """Add the Kinesis Events module to the Terraform cluster dict.
 
     Args:
-        cluster_name [string]: The name of the currently generating cluster
-        cluster_dict [defaultdict]: The dict containing all Terraform config for
+        cluster_name (str): The name of the currently generating cluster
+        cluster_dict (defaultdict): The dict containing all Terraform config for
                                     a given cluster.
-        config [dict]: The loaded config from the 'conf/' directory
+        config (dict): The loaded config from the 'conf/' directory
 
     Returns:
-        [bool] Result of applying the kinesis_events module
+        bool: Result of applying the kinesis_events module
     """
     kinesis_events_enabled = bool(
         config['clusters'][cluster_name]['modules']['kinesis_events']['enabled'])
@@ -403,13 +474,12 @@ def generate_cloudtrail(cluster_name, cluster_dict, config):
     """Add the CloudTrail module to the Terraform cluster dict.
 
     Args:
-        cluster_name [string]: The name of the currently generating cluster
-        cluster_dict [defaultdict]: The dict containing all Terraform config for
-                                    a given cluster.
-        config [dict]: The loaded config from the 'conf/' directory
+        cluster_name (str): The name of the currently generating cluster
+        cluster_dict (defaultdict): The dict containing all Terraform config for a given cluster.
+        config (dict): The loaded config from the 'conf/' directory
 
     Returns:
-        [bool] Result of applying the cloudtrail module
+        bool: Result of applying the cloudtrail module
     """
     modules = config['clusters'][cluster_name]['modules']
     cloudtrail_enabled = bool(modules['cloudtrail']['enabled'])
@@ -461,13 +531,12 @@ def generate_flow_logs(cluster_name, cluster_dict, config):
     """Add the VPC Flow Logs module to the Terraform cluster dict.
 
     Args:
-        cluster_name [string]: The name of the currently generating cluster
-        cluster_dict [defaultdict]: The dict containing all Terraform config for
-                                    a given cluster.
-        config [dict]: The loaded config from the 'conf/' directory
+        cluster_name (str): The name of the currently generating cluster
+        cluster_dict (defaultdict): The dict containing all Terraform config for a given cluster.
+        config (dict): The loaded config from the 'conf/' directory
 
     Returns:
-        [bool] Result of applying the flow_logs module
+        bool: Result of applying the flow_logs module
     """
     modules = config['clusters'][cluster_name]['modules']
     flow_log_group_name_default = '{}_{}_streamalert_flow_logs'.format(
@@ -488,62 +557,65 @@ def generate_flow_logs(cluster_name, cluster_dict, config):
                 cluster_dict['module']['flow_logs_{}'.format(
                     cluster_name)][flow_log_input] = input_data
         return True
-    else:
-        LOGGER_CLI.info('Flow logs disabled, nothing to do')
-        return False
+
+    LOGGER_CLI.info('Flow logs disabled, nothing to do')
+    return False
 
 
 def generate_s3_events(cluster_name, cluster_dict, config):
     """Add the S3 Events module to the Terraform cluster dict.
 
     Args:
-        cluster_name [string]: The name of the currently generating cluster
-        cluster_dict [defaultdict]: The dict containing all Terraform config for
-                                    a given cluster.
-        config [dict]: The loaded config from the 'conf/' directory
+        cluster_name (str): The name of the currently generating cluster
+        cluster_dict (defaultdict): The dict containing all Terraform config for a given cluster.
+        config (dict): The loaded config from the 'conf/' directory
 
     Returns:
-        [bool] Result of applying the s3_events module
+        bool: Result of applying the s3_events module
     """
     modules = config['clusters'][cluster_name]['modules']
     s3_bucket_id = modules['s3_events'].get('s3_bucket_id')
 
-    if s3_bucket_id:
-        cluster_dict['module']['s3_events_{}'.format(cluster_name)] = {
-            'source': 'modules/tf_stream_alert_s3_events',
-            'lambda_function_arn': '${{module.stream_alert_{}.lambda_arn}}'.format(cluster_name),
-            'lambda_function_name': '{}_{}_stream_alert_processor'.format(
-                config['global']['account']['prefix'],
-                cluster_name),
-            's3_bucket_id': s3_bucket_id,
-            's3_bucket_arn': 'arn:aws:s3:::{}'.format(s3_bucket_id)}
-        return True
-    else:
+    if not s3_bucket_id:
         LOGGER_CLI.error(
             'Config Error: Missing S3 bucket in %s s3_events module',
             cluster_name)
         return False
+
+    cluster_dict['module']['s3_events_{}'.format(cluster_name)] = {
+        'source': 'modules/tf_stream_alert_s3_events',
+        'lambda_function_arn': '${{module.stream_alert_{}.lambda_arn}}'.format(cluster_name),
+        'lambda_function_name': '{}_{}_stream_alert_processor'.format(
+            config['global']['account']['prefix'],
+            cluster_name),
+        's3_bucket_id': s3_bucket_id,
+        's3_bucket_arn': 'arn:aws:s3:::{}'.format(s3_bucket_id),
+        'lambda_role_id': '${{module.stream_alert_{}.lambda_role_id}}'.format(cluster_name),
+        'lambda_role_arn': '${{module.stream_alert_{}.lambda_role_arn}}'.format(cluster_name)}
+
+    return True
 
 
 def generate_cluster(**kwargs):
     """Generate a StreamAlert cluster file.
 
     Keyword Args:
-        cluster_name [string]: The name of the currently generating cluster
-        config [dict]: The loaded config from the 'conf/' directory
+        cluster_name (str): The name of the currently generating cluster
+        config (dict): The loaded config from the 'conf/' directory
 
     Returns:
-        [dict] generated Terraform cluster dictionary
+        dict: generated Terraform cluster dictionary
     """
     config = kwargs.get('config')
     cluster_name = kwargs.get('cluster_name')
 
-    account = config['global']['account']
     modules = config['clusters'][cluster_name]['modules']
     cluster_dict = infinitedict()
 
     if not generate_stream_alert(cluster_name, cluster_dict, config):
         return
+
+    generate_cloudwatch_log_metrics(cluster_name, cluster_dict, config)
 
     if modules['cloudwatch_monitoring']['enabled']:
         if not generate_cloudwatch_monitoring(cluster_name, cluster_dict, config):
@@ -578,21 +650,79 @@ def generate_cluster(**kwargs):
     return cluster_dict
 
 
+def generate_athena(config):
+    """Generate Athena Terraform.
+
+    Args:
+        config (dict): The loaded config from the 'conf/' directory
+
+    Returns:
+        dict: Athena dict to be marshalled to JSON
+    """
+    athena_dict = infinitedict()
+    athena_config = config['lambda']['athena_partition_refresh_config']
+    enable_metrics = config['global'].get('infrastructure',
+                                          {}).get('metrics', {}).get('enabled', False)
+
+    data_buckets = set()
+    for refresh_type in athena_config['refresh_type']:
+        data_buckets.update(set(athena_config['refresh_type'][refresh_type]))
+
+    athena_dict['module']['stream_alert_athena'] = {
+        'source': 'modules/tf_stream_alert_athena',
+        'lambda_handler': athena_config['handler'],
+        'lambda_memory': athena_config.get('memory', '128'),
+        'lambda_timeout': athena_config.get('timeout', '60'),
+        'lambda_s3_bucket': athena_config['source_bucket'],
+        'lambda_s3_key': athena_config['source_object_key'],
+        'lambda_log_level': athena_config.get('log_level', 'info'),
+        'athena_data_buckets': list(data_buckets),
+        'refresh_interval': athena_config.get('refresh_interval', 'rate(10 minutes)'),
+        'current_version': athena_config['current_version'],
+        'enable_metrics': enable_metrics,
+        'prefix': config['global']['account']['prefix']
+    }
+
+    if not enable_metrics:
+        return athena_dict
+
+    # Check to see if there are any metrics configured for the athena function
+    current_metrics = metrics.MetricLogger.get_available_metrics()
+    if metrics.ATHENA_PARTITION_REFRESH_NAME not in current_metrics:
+        return athena_dict
+
+    metric_prefix = 'AthenaRefresh'
+    filter_pattern_idx, filter_value_idx = 0, 1
+
+    # Add filters for the cluster and aggregate
+    # Use a list of strings that represnt the following comma separated values:
+    #   <filter_name>,<filter_pattern>,<value>
+    filters = ['{},{},{}'.format('{}-{}'.format(metric_prefix, metric),
+                                 settings[filter_pattern_idx],
+                                 settings[filter_value_idx])
+               for metric, settings in
+               current_metrics[metrics.ATHENA_PARTITION_REFRESH_NAME].iteritems()]
+
+    athena_dict['module']['stream_alert_athena']['athena_metric_filters'] = filters
+
+    return athena_dict
+
+
 def terraform_generate(**kwargs):
     """Generate all Terraform plans for the configured clusters.
 
     Keyword Args:
-        config [dict]: The loaded config from the 'conf/' directory
-        init [bool]: Indicates if main.tf is generated for `terraform init`
+        config (dict): The loaded config from the 'conf/' directory
+        init (bool): Indicates if main.tf is generated for `terraform init`
 
     Returns:
-        [bool]: Result of cluster generating
+        bool: Result of cluster generating
     """
     config = kwargs.get('config')
     init = kwargs.get('init', False)
 
-    # Setup main
-    LOGGER_CLI.info('Generating cluster file: main.tf')
+    # Setup the main.tf file
+    LOGGER_CLI.debug('Generating cluster file: main.tf')
     main_json = json.dumps(
         generate_main(init=init, config=config),
         indent=2,
@@ -601,16 +731,16 @@ def terraform_generate(**kwargs):
     with open('terraform/main.tf', 'w') as tf_file:
         tf_file.write(main_json)
 
-    # Break out early during the init process, clusters aren't needed yet
+    # Return early during the init process, clusters are not needed yet
     if init:
         return True
 
-    # Setup clusters
+    # Setup cluster files
     for cluster in config.clusters():
-        if cluster == 'main':
-            raise InvalidClusterName('Rename cluster "main" to something else!')
+        if cluster in RESTRICTED_CLUSTER_NAMES:
+            raise InvalidClusterName('Rename cluster "main" or "athena" to something else!')
 
-        LOGGER_CLI.info('Generating cluster file: %s.tf', cluster)
+        LOGGER_CLI.debug('Generating cluster file: %s.tf', cluster)
         cluster_dict = generate_cluster(cluster_name=cluster, config=config)
         if not cluster_dict:
             LOGGER_CLI.error(
@@ -624,5 +754,24 @@ def terraform_generate(**kwargs):
         )
         with open('terraform/{}.tf'.format(cluster), 'w') as tf_file:
             tf_file.write(cluster_json)
+
+    # Setup Athena if it is enabled
+    athena_config = config['lambda'].get('athena_partition_refresh_config')
+    if athena_config:
+        athena_file = 'terraform/athena.tf'
+        if athena_config['enabled']:
+            athena_json = json.dumps(
+                generate_athena(config=config),
+                indent=2,
+                sort_keys=True
+            )
+            if athena_json:
+                with open(athena_file, 'w') as tf_file:
+                    tf_file.write(athena_json)
+        # Remove Athena file if it's disabled
+        else:
+            if os.path.isfile(athena_file):
+                LOGGER_CLI.info('Removing old Athena Terraform file')
+                os.remove(athena_file)
 
     return True

@@ -1,4 +1,4 @@
-'''
+"""
 Copyright 2017-present, Airbnb Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,23 +12,24 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-'''
+"""
 import base64
+from collections import namedtuple
 import json
 import os
 import random
+from StringIO import StringIO
 import subprocess
 import zipfile
 import zlib
 
-from StringIO import StringIO
-
 import boto3
+from moto import mock_cloudwatch, mock_kms, mock_lambda, mock_s3
 
 from stream_alert_cli.logger import LOGGER_CLI
 
 
-DIR_TEMPLATES = 'test/integration/templates'
+DIR_TEMPLATES = 'tests/integration/templates'
 
 
 def run_command(runner_args, **kwargs):
@@ -37,9 +38,9 @@ def run_command(runner_args, **kwargs):
     Args:
         runner_args (list): Commands to run via subprocess
         kwargs:
-            cwd (string): A path to execute commands from
-            error_message (string): Message to show if command fails
-            quiet (boolean): Whether to show command output or hide it
+            cwd (str): A path to execute commands from
+            error_message (str): Message to show if command fails
+            quiet (bool): Whether to show command output or hide it
 
     """
     default_error_message = "An error occurred while running: {}".format(
@@ -70,10 +71,10 @@ def format_lambda_test_record(test_record):
     """Create a properly formatted Kinesis, S3, or SNS record.
 
     Supports a dictionary or string based data record.  Reads in
-    event templates from the test/integration/templates folder.
+    event templates from the tests/integration/templates folder.
 
     Args:
-        test_record: Test record metadata dict with the following structure:
+        test_record (dict): Test record metadata dict with the following structure:
             data - string or dict of the raw data
             description - a string describing the test that is being performed
             trigger - bool of if the record should produce an alert
@@ -82,7 +83,7 @@ def format_lambda_test_record(test_record):
             compress (optional) - if the payload needs to be gzip compressed or not
 
     Returns:
-        dict in the format of the specific service
+        dict: in the format of the specific service
     """
     service = test_record['service']
     source = test_record['source']
@@ -137,8 +138,11 @@ def format_lambda_test_record(test_record):
     return template
 
 
-def create_lambda_function(function_name, region):
+def  create_lambda_function(function_name, region):
     """Helper function to create mock lambda function"""
+    if function_name.find(':') != -1:
+        function_name = function_name.split(':')[0]
+
     boto3.client('lambda', region_name=region).create_function(
         FunctionName=function_name,
         Runtime='python2.7',
@@ -153,8 +157,8 @@ def create_lambda_function(function_name, region):
         }
     )
 
-
 def encrypt_with_kms(data, region, alias):
+    """Encrypt the given data with KMS."""
     kms_client = boto3.client('kms', region_name=region)
     response = kms_client.encrypt(KeyId=alias,
                                   Plaintext=data)
@@ -190,10 +194,10 @@ def put_mock_s3_object(bucket, key, data, region):
     """Create a mock AWS S3 object for testing
 
     Args:
-        bucket: the bucket in which to place the object (string)
-        key: the key to use for the S3 object (string)
-        data: the actual value to use for the object (string)
-        region: the aws region to use for this boto3 client
+        bucket (str): the bucket in which to place the object
+        key (str): the key to use for the S3 object
+        data (str): the actual value to use for the object
+        region (str): the aws region to use for this boto3 client
     """
     s3_client = boto3.client('s3', region_name=region)
     s3_client.create_bucket(Bucket=bucket)
@@ -203,3 +207,68 @@ def put_mock_s3_object(bucket, key, data, region):
         Key=key,
         ServerSideEncryption='AES256'
     )
+
+
+def mock_me(context):
+    """Decorator function for wrapping framework in mock calls
+    for running local tests, and omitting mocks if testing live
+
+    Args:
+        context (namedtuple): A constructed aws context object
+    """
+    def wrap(func):
+        """Wrap the returned function with or without mocks"""
+        if context.mocked:
+            @mock_cloudwatch
+            @mock_lambda
+            @mock_s3
+            @mock_kms
+            def mocked(options, context):
+                """This function is now mocked using moto mock decorators to
+                override any boto3 calls. Wrapping this function here allows
+                us to mock out all calls that happen below this scope."""
+                return func(options, context)
+            return mocked
+
+        def unmocked(options, context):
+            """This function will remain unmocked and operate normally"""
+            return func(options, context)
+        return unmocked
+
+    return wrap
+
+
+def get_context_from_config(cluster, config):
+    """Return a constructed context to be used for testing
+
+    Args:
+        cluster (str): Name of the cluster to be used for live testing
+        config (CLIConfig): Configuration for this StreamAlert setup that
+            includes cluster info, etc that can be used for constructing
+            an aws context object
+    """
+    context = namedtuple('aws_context', ['invoked_function_arn',
+                                         'function_name'
+                                         'mocked'])
+
+    # Return a mocked context if the cluster is not provided
+    # Otherwise construct the context from the config using the cluster
+    if not cluster:
+        context.invoked_function_arn = (
+            'arn:aws:lambda:us-east-1:123456789012:'
+            'function:test_streamalert_processor:development')
+        context.function_name = 'test_streamalert_alert_processor'
+        context.mocked = True
+    else:
+        prefix = config['global']['account']['prefix']
+        account = config['global']['account']['aws_account_id']
+        region = config['global']['account']['region']
+        function_name = '{}_{}_streamalert_alert_processor'.format(prefix, cluster)
+        arn = 'arn:aws:lambda:{}:{}:function:{}:testing'.format(
+            region, account, function_name)
+
+        context.invoked_function_arn = arn
+        context.function_name = function_name
+        context.mocked = False
+
+    return context

@@ -1,4 +1,4 @@
-'''
+"""
 Copyright 2017-present, Airbnb Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,15 +12,15 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-'''
-
+"""
+from collections import OrderedDict
 import json
 import os
 
-from collections import OrderedDict
 
 class ConfigError(Exception):
-    pass
+    """Exception class for config file errors"""
+
 
 def load_config(conf_dir='conf/'):
     """Load the configuration for StreamAlert.
@@ -34,22 +34,24 @@ def load_config(conf_dir='conf/'):
     key denotes the name of the log type, and includes 'keys' used to match
     rules to log fields.
     """
-    conf_files = {
-        'sources': 'sources.json',
-        'logs': 'logs.json'
-    }
-    config = {}
-    for desc, filename in conf_files.iteritems():
-        with open(os.path.join(conf_dir, filename)) as data:
+    conf_files = ('sources', 'logs')
+    config = dict()
+    for base_name in conf_files:
+        path = '{}.json'.format(os.path.join(conf_dir, base_name))
+        with open(path) as data:
             try:
-                config[desc] = json.load(data, object_pairs_hook=OrderedDict)
+                config[base_name] = json.load(data, object_pairs_hook=OrderedDict)
             except ValueError:
-                raise ConfigError('Invalid JSON format for {}.json'.format(desc))
+                raise ConfigError('Invalid JSON format for {}.json'.format(base_name))
 
-    if validate_config(config):
-        return config
+    # Validate the config. This will raise an exception on any errors,
+    # which bubbles up and will immediately break execution of the function
+    _validate_config(config)
 
-def validate_config(config):
+    return config
+
+
+def _validate_config(config):
     """Validate the StreamAlert configuration contains a valid structure.
 
     Checks for `logs.json`:
@@ -58,25 +60,34 @@ def validate_config(config):
         - the sources contains either kinesis or s3 keys
         - each sources has a list of logs declared
     """
-    for config_key, settings in config.iteritems():
-        # check log declarations
-        if config_key == 'logs':
-            for log, attrs in settings.iteritems():
-                if not {'schema', 'parser'}.issubset(set(attrs.keys())):
-                    raise ConfigError('Schema or parser missing for {}'.format(log))
+    # Check the log declarations
+    for log, attrs in config['logs'].iteritems():
+        if 'schema' not in attrs:
+            raise ConfigError('The \'schema\' is missing for {}'.format(log))
 
-        # check sources attributes
-        elif config_key == 'sources':
-            if not set(settings.keys()).issubset({'kinesis', 's3', 'sns'}):
-                raise ConfigError('Sources missing \'kinesis\', \'s3\', or \'sns\' keys')
-            for log, attrs in settings.iteritems():
-                for entity, entity_attrs in attrs.iteritems():
-                    if 'logs' not in set(entity_attrs.keys()):
-                        raise ConfigError('Logs are not declared for {}'.format(entity))
-                    if len(entity_attrs['logs']) == 0:
-                        raise ConfigError('Log list is empty for {}'.format(entity))
+        if 'parser' not in attrs:
+            raise ConfigError('The \'parser\' is missing for {}'.format(log))
 
-    return True
+    # Check if the defined sources are supported and report any invalid entries
+    supported_sources = {'kinesis', 's3', 'sns'}
+    if not set(config['sources']).issubset(supported_sources):
+        missing_sources = supported_sources - set(config['sources'])
+        raise ConfigError(
+            'The \'sources.json\' file contains invalid source entries: %s ',
+            'The following sources are supported: %s',
+            ', '.join('\'{}\''.format(source) for source in missing_sources),
+            ', '.join('\'{}\''.format(source) for source in supported_sources))
+
+    # Iterate over each defined source and make sure the required subkeys exist
+    for attrs in config['sources'].values():
+        for entity, entity_attrs in attrs.iteritems():
+            if 'logs' not in entity_attrs:
+                raise ConfigError('Missing \'logs\' key for entity: {}'.format(entity))
+
+            if not entity_attrs['logs']:
+                raise ConfigError(
+                    'List of \'logs\' is empty for entity: {}'.format(entity))
+
 
 def load_env(context):
     """Get the current environment for the running Lambda function.
@@ -92,21 +103,18 @@ def load_env(context):
         context: The AWS Lambda context object.
 
     Returns:
-        {'lambda_region': 'region_name',
-         'account_id': <ACCOUNT_ID>,
-         'lambda_function_name': 'function_name',
-         'lambda_alias': 'qualifier'}
+        dict:
+            {
+                'lambda_region': 'region_name',
+                'account_id': 'account_id',
+                'lambda_function_name': 'function_name',
+                'lambda_alias': 'qualifier'
+            }
     """
-    env = {}
-    if context:
-        arn = context.invoked_function_arn.split(':')
-        env['lambda_region'] = arn[3]
-        env['account_id'] = arn[4]
-        env['lambda_function_name'] = arn[6]
-        env['lambda_alias'] = arn[7]
-    else:
-        env['lambda_region'] = 'us-east-1'
-        env['account_id'] = '123456789012'
-        env['lambda_function_name'] = 'test_streamalert_rule_processor'
-        env['lambda_alias'] = 'development'
-    return env
+    arn = context.invoked_function_arn.split(':')
+    return {
+        'lambda_region': arn[3],
+        'account_id': arn[4],
+        'lambda_function_name': arn[6],
+        'lambda_alias': arn[7]
+    }

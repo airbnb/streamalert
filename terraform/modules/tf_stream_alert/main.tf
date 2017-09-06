@@ -11,6 +11,14 @@ resource "aws_lambda_function" "streamalert_rule_processor" {
   s3_bucket     = "${lookup(var.rule_processor_config, "source_bucket")}"
   s3_key        = "${lookup(var.rule_processor_config, "source_object_key")}"
 
+  environment {
+    variables = {
+      CLUSTER        = "${var.cluster}"
+      LOGGER_LEVEL   = "${var.rule_processor_log_level}"
+      ENABLE_METRICS = "${var.rule_processor_enable_metrics}"
+    }
+  }
+
   tags {
     Name = "StreamAlert"
   }
@@ -39,6 +47,14 @@ resource "aws_lambda_function" "streamalert_alert_processor_vpc" {
   s3_bucket     = "${lookup(var.alert_processor_config, "source_bucket")}"
   s3_key        = "${lookup(var.alert_processor_config, "source_object_key")}"
 
+  environment {
+    variables = {
+      CLUSTER        = "${var.cluster}"
+      LOGGER_LEVEL   = "${var.alert_processor_log_level}"
+      ENABLE_METRICS = "${var.alert_processor_enable_metrics}"
+    }
+  }
+
   vpc_config {
     subnet_ids         = "${var.alert_processor_vpc_subnet_ids}"
     security_group_ids = "${var.alert_processor_vpc_security_group_ids}"
@@ -63,6 +79,14 @@ resource "aws_lambda_function" "streamalert_alert_processor" {
   timeout       = "${var.alert_processor_timeout}"
   s3_bucket     = "${lookup(var.alert_processor_config, "source_bucket")}"
   s3_key        = "${lookup(var.alert_processor_config, "source_object_key")}"
+
+  environment {
+    variables = {
+      CLUSTER        = "${var.cluster}"
+      LOGGER_LEVEL   = "${var.alert_processor_log_level}"
+      ENABLE_METRICS = "${var.alert_processor_enable_metrics}"
+    }
+  }
 
   tags {
     Name = "StreamAlert"
@@ -113,4 +137,46 @@ resource "aws_lambda_permission" "rule_processor" {
   source_arn    = "${aws_lambda_function.streamalert_rule_processor.arn}"
   qualifier     = "production"
   depends_on    = ["aws_lambda_alias.alert_processor_production"]
+}
+
+// Log Retention Policy: Rule Processor
+resource "aws_cloudwatch_log_group" "rule_processor" {
+  name              = "/aws/lambda/${var.prefix}_${var.cluster}_streamalert_rule_processor"
+  retention_in_days = 60
+}
+
+// Log Retention Policy: Alert Processor
+resource "aws_cloudwatch_log_group" "alert_processor" {
+  name              = "/aws/lambda/${var.prefix}_${var.cluster}_streamalert_alert_processor"
+  retention_in_days = 60
+}
+
+// CloudWatch metric filters for the rule processor
+// The split list is made up of: <filter_name>, <filter_pattern>, <value>
+resource "aws_cloudwatch_log_metric_filter" "rule_processor_cw_metric_filters" {
+  count          = "${length(var.rule_processor_metric_filters)}"
+  name           = "${element(split(",", var.rule_processor_metric_filters[count.index]), 0)}"
+  pattern        = "${element(split(",", var.rule_processor_metric_filters[count.index]), 1)}"
+  log_group_name = "${aws_cloudwatch_log_group.rule_processor.name}"
+
+  metric_transformation {
+    name      = "${element(split(",", var.rule_processor_metric_filters[count.index]), 0)}"
+    namespace = "${var.namespace}"
+    value     = "${element(split(",", var.rule_processor_metric_filters[count.index]), 2)}"
+  }
+}
+
+// CloudWatch metric filters for the alert processor
+// The split list is made up of: <filter_name>, <filter_pattern>, <value>
+resource "aws_cloudwatch_log_metric_filter" "alert_processor_cw_metric_filters" {
+  count          = "${length(var.alert_processor_metric_filters)}"
+  name           = "${element(split(",", var.alert_processor_metric_filters[count.index]), 0)}"
+  pattern        = "${element(split(",", var.alert_processor_metric_filters[count.index]), 1)}"
+  log_group_name = "${aws_cloudwatch_log_group.alert_processor.name}"
+
+  metric_transformation {
+    name      = "${element(split(",", var.alert_processor_metric_filters[count.index]), 0)}"
+    namespace = "${var.namespace}"
+    value     = "${element(split(",", var.alert_processor_metric_filters[count.index]), 2)}"
+  }
 }

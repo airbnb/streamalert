@@ -1,4 +1,4 @@
-'''
+"""
 Copyright 2017-present, Airbnb Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,90 +12,64 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-'''
-import logging
+"""
+from stream_alert.alert_processor import LOGGER
 
-logging.basicConfig()
-LOGGER = logging.getLogger('StreamAlertOutput')
-LOGGER.setLevel(logging.DEBUG)
 
 def validate_alert(alert):
-    """Helper function to perform simple validatation of an alert's keys and structure
+    """Helper function to perform simple validation of an alert's keys and structure
 
     Args:
-        alert [dict]: the alert record to test that should be in the form of a dict
+        alert (dict): the alert record to test that should be in the form of a dict
 
     Returns:
-        [bool] a boolean value indicating whether or not the alert has the proper structure
+        bool: whether or not the alert has the proper structure
     """
-    if not _validate_root(alert):
+
+    if not isinstance(alert, dict):
+        LOGGER.error('The alert must be a map (dict)')
         return False
 
-    metadata_keys = {'log', 'rule_name', 'rule_description', 'type', 'source', 'outputs'}
-    if not set(alert['metadata'].keys()) == metadata_keys:
-        LOGGER.error('The value of the \'metadata\' key must be a map (dict) '
-                     'that contains only the following keys: %s',
-                     ', '.join('\'{}\''.format(key) for key in metadata_keys))
+    alert_keys = {
+        'record',
+        'rule_name',
+        'rule_description',
+        'log_type',
+        'log_source',
+        'outputs',
+        'source_service',
+        'source_entity'
+    }
+    if not set(alert.keys()) == alert_keys:
+        LOGGER.error('The alert object must contain the following keys: %s',
+                     ', '.join(alert_keys))
         return False
 
     valid = True
-    for key in metadata_keys:
-        if key == 'source':
-            if not (isinstance(alert['metadata'][key], dict) and
-                    set(alert['metadata'][key].keys()) == {'service', 'entity'}):
-                LOGGER.error('The value of the \'source\' key must be a map (dict) that '
-                             'contains only \'service\' and \'entity\' keys.')
-                valid = False
-                continue
 
-            for entry in alert['metadata'][key].values():
-                if not isinstance(entry, (str, unicode)):
-                    LOGGER.error('The value of the \'%s\' key within \'%s\' must be '
-                                 'a string (str).', entry, key)
-                    valid = False
+    for key in alert_keys:
+        if key == 'record':
+            if not isinstance(alert['record'], dict):
+                LOGGER.error('The alert record must be a map (dict)')
+                return False
 
         elif key == 'outputs':
-            if not (isinstance(alert['metadata'][key], list) and
-                    alert['metadata'][key]):
+            if not isinstance(alert[key], list):
                 LOGGER.error(
                     'The value of the \'outputs\' key must be an array (list) that '
                     'contains at least one configured output.')
                 valid = False
                 continue
 
-            for entry in alert['metadata'][key]:
+            for entry in alert[key]:
                 if not isinstance(entry, (str, unicode)):
                     LOGGER.error('The value of each entry in the \'outputs\' list '
                                  'must be a string (str).')
                     valid = False
 
-        elif not isinstance(alert['metadata'][key], (str, unicode)):
+        elif not isinstance(alert[key], (str, unicode)):
             LOGGER.error('The value of the \'%s\' key must be a string (str), not %s',
-                         key, type(alert['metadata'][key]))
+                         key, type(alert[key]))
             valid = False
 
     return valid
-
-def _validate_root(alert):
-    """Private helper function to validate the root keys on an alert
-
-    Args:
-        alert [dict]: the alert record to test that should be in the form of a dict
-
-    Returns:
-        [bool] a boolean value indicating whether or not the expected root keys in
-            the alert exist and have the proper values
-    """
-    if not (isinstance(alert, dict) and
-            set(alert.keys()) == {'record', 'metadata'}):
-        LOGGER.error('The alert must be a map (dict) that contains only '
-                     '\'record\' and \'metadata\' keys.')
-        return False
-
-    if not (isinstance(alert['record'], dict) and
-            isinstance(alert['metadata'], dict)):
-        LOGGER.error('The value of both the \'record\' and \'metadata\' keys '
-                     'must be a map (dict).')
-        return False
-
-    return True

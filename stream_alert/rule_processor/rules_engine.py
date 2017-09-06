@@ -1,4 +1,4 @@
-'''
+"""
 Copyright 2017-present, Airbnb Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,15 +12,22 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-'''
-import logging
-
+"""
 from collections import namedtuple
 from copy import copy
+import json
 
-logging.basicConfig()
-LOGGER = logging.getLogger('StreamAlert')
-LOGGER.setLevel(logging.INFO)
+from stream_alert.rule_processor import LOGGER
+
+DEFAULT_RULE_DESCRIPTION = 'No rule description provided'
+
+RuleAttributes = namedtuple('Rule', ['rule_name',
+                                     'rule_function',
+                                     'matchers',
+                                     'logs',
+                                     'outputs',
+                                     'req_subkeys'])
+
 
 class StreamRules(object):
     """Container class for StreamAlert Rules
@@ -40,6 +47,11 @@ class StreamRules(object):
     __matchers = {}
 
     @classmethod
+    def get_rules(cls):
+        """Helper method to return private class property of __rules"""
+        return cls.__rules
+
+    @classmethod
     def rule(cls, **opts):
         """Register a rule that evaluates records against rules.
 
@@ -48,32 +60,34 @@ class StreamRules(object):
         passed on to the sink(s). If the function returns `False`, the event is
         dropped.
         """
-        rule_attrs = namedtuple('Rule', ['rule_name',
-                                         'rule_function',
-                                         'matchers',
-                                         'logs',
-                                         'outputs',
-                                         'req_subkeys'])
-
         def decorator(rule):
+            """Rule decorator logic."""
             rule_name = rule.__name__
             logs = opts.get('logs')
             outputs = opts.get('outputs')
             matchers = opts.get('matchers')
             req_subkeys = opts.get('req_subkeys')
 
-            if not all([logs, outputs]):
-                LOGGER.error('Invalid rule [%s]', rule_name)
+            if not logs:
+                LOGGER.error(
+                    'Invalid rule [%s] - rule must have \'logs\' declared',
+                    rule_name)
+                return
+
+            if not outputs:
+                LOGGER.error(
+                    'Invalid rule [%s] - rule must have \'outputs\' declared',
+                    rule_name)
                 return
 
             if rule_name in cls.__rules:
                 raise ValueError('rule [{}] already defined'.format(rule_name))
-            cls.__rules[rule_name] = rule_attrs(rule_name,
-                                                rule,
-                                                matchers,
-                                                logs,
-                                                outputs,
-                                                req_subkeys)
+            cls.__rules[rule_name] = RuleAttributes(rule_name,
+                                                    rule,
+                                                    matchers,
+                                                    logs,
+                                                    outputs,
+                                                    req_subkeys)
             return rule
         return decorator
 
@@ -85,6 +99,7 @@ class StreamRules(object):
         into helper functions. Each rule can contain multiple matchers.
         """
         def decorator(matcher):
+            """Match decorator."""
             name = matcher.__name__
             if name in cls.__matchers:
                 raise ValueError('matcher already defined: {}'.format(name))
@@ -96,6 +111,7 @@ class StreamRules(object):
     def disable(cls):
         """Disables a rule from being run by removing it from the internal rules dict"""
         def decorator(rule):
+            """Rule disable decorator."""
             rule_name = rule.__name__
             if rule_name in cls.__rules:
                 del cls.__rules[rule_name]
@@ -112,11 +128,11 @@ class StreamRules(object):
         Otherwise, returns True.
 
         Args:
-            payload: The log to process.
-            matcher_names: All matchers for a given rule to process.
+            record: Record to be matched
+            rule: Rule containing the list of matchers
 
         Returns:
-            Boolean result of matcher processing.
+            bool: result of matcher processing
         """
         # matchers are optional for rules
         if not rule.matchers:
@@ -127,9 +143,9 @@ class StreamRules(object):
             if matcher_function:
                 try:
                     matcher_result = matcher_function(record)
-                except Exception as e:
+                except Exception as err:  # pylint: disable=broad-except
                     matcher_result = False
-                    LOGGER.error('%s: %s', matcher_function.__name__, e.message)
+                    LOGGER.error('%s: %s', matcher_function.__name__, err.message)
                 if not matcher_result:
                     return False
             else:
@@ -139,11 +155,22 @@ class StreamRules(object):
 
     @classmethod
     def process_rule(cls, record, rule):
+        """Process rule functions on a given record
+
+        Args:
+            record (dict): Parsed payload of any type
+            rule (func): Rule function to process the record
+
+        Returns:
+            (bool): The return function of the rule
+        """
         try:
             rule_result = rule.rule_function(record)
-        except Exception as e:
+        except Exception:  # pylint: disable=broad-except
             rule_result = False
-            LOGGER.exception('%s: %s', rule.rule_function.__name__, e.message)
+            LOGGER.exception(
+                'Encountered error with rule: %s',
+                rule.rule_function.__name__)
         return rule_result
 
     @classmethod
@@ -156,16 +183,30 @@ class StreamRules(object):
         in a rule are contained in the JSON payload prior to rule processing.
 
         Args:
-            payload: Log to process
+            record: Payload record to process
+            payload_type (str): type of the record
             rule: Rule attributes
 
         Returns:
-            Boolean result of subkey check.
+            bool: result of subkey check.
         """
         if not rule.req_subkeys or payload_type != 'json':
             return True
 
         for key, nested_keys in rule.req_subkeys.iteritems():
+            # This is an extra layer of protection when
+            # verifying a subkey exists in a record with a null value.
+            # In the case of CloudTrail, a top level key has been
+            # observed as either a map with subkeys, or null.
+            if not record.get(key):
+                LOGGER.debug(
+                    'The required subkey %s is not found when trying to process %s: \n%s',
+                    key,
+                    rule.rule_name,
+                    json.dumps(
+                        record,
+                        indent=2))
+                return False
             if not all(x in record[key] for x in nested_keys):
                 return False
 
@@ -180,22 +221,20 @@ class StreamRules(object):
         and the rule itself to determine if a match occurs.
 
         Returns:
-            List of alerts.
+            list: alerts
 
             An alert is represented as a dictionary with the following keys:
                 rule_name: the name of the triggered rule
                 payload: the StreamPayload object
                 outputs: list of outputs to send to
         """
-        rules = []
         alerts = []
         payload = copy(input_payload)
 
-        for _, rule_attrs in cls.__rules.iteritems():
-            if payload.log_source in rule_attrs.logs:
-                rules.append(rule_attrs)
+        rules = [rule_attrs for rule_attrs in cls.__rules.values()
+                 if payload.log_source in rule_attrs.logs]
 
-        if len(rules) == 0:
+        if not rules:
             LOGGER.debug('No rules to process for %s', payload)
             return alerts
 
@@ -214,20 +253,18 @@ class StreamRules(object):
                 # rule analysis
                 rule_result = cls.process_rule(record, rule)
                 if rule_result:
+                    LOGGER.info('Rule [%s] triggered an alert on log type [%s] from entity \'%s\' '
+                                'in service \'%s\'', rule.rule_name, payload.log_source,
+                                payload.entity, payload.service())
                     alert = {
                         'record': record,
-                        'metadata': {
-                            'rule_name': rule.rule_name,
-                            'rule_description': rule.rule_function.__doc__,
-                            'log': str(payload.log_source),
-                            'outputs': rule.outputs,
-                            'type': payload.type,
-                            'source': {
-                                'service': payload.service,
-                                'entity': payload.entity
-                            }
-                        }
-                    }
+                        'rule_name': rule.rule_name,
+                        'rule_description': rule.rule_function.__doc__ or DEFAULT_RULE_DESCRIPTION,
+                        'log_source': str(payload.log_source),
+                        'log_type': payload.type,
+                        'outputs': rule.outputs,
+                        'source_service': payload.service(),
+                        'source_entity': payload.entity}
                     alerts.append(alert)
 
         return alerts

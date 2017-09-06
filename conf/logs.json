@@ -562,9 +562,13 @@
   "carbonblack:feed.query.hit.process": {
     "schema": {
       "alliance_data_srstrust": [],
+      "alliance_data_virustotal": [],
       "alliance_link_srstrust": "string",
-      "alliance_score_srstrust": "string",
+      "alliance_link_virustotal": "string",
+      "alliance_score_srstrust": "integer",
+      "alliance_score_virustotal": "integer",
       "alliance_updated_srstrust": "string",
+      "alliance_updated_virustotal": "string",
       "childproc_count": "integer",
       "cmdline": "string",
       "crossproc_count": "integer",
@@ -599,9 +603,13 @@
       "json_path": "docs[*]",
       "optional_top_level_keys": [
         "alliance_data_srstrust",
+        "alliance_data_virustotal",
         "alliance_link_srstrust",
+        "alliance_link_virustotal",
         "alliance_score_srstrust",
-        "alliance_updated_srstrust"
+        "alliance_score_virustotal",
+        "alliance_updated_srstrust",
+        "alliance_updated_virustotal"
       ],
       "envelope_keys": {
         "cb_server": "string",
@@ -670,7 +678,7 @@
       "account": "integer",
       "flowlogstatus": "string"
     },
-    "parser": "gzip-json",
+    "parser": "json",
     "configuration": {
       "json_path": "logEvents[*].extractedFields",
       "envelope_keys": {
@@ -683,7 +691,10 @@
   "cloudtrail:events": {
     "schema": {
       "additionalEventData": {},
+      "apiVersion": "string",
       "awsRegion": "string",
+      "errorCode": "string",
+      "errorMessage": "string",
       "eventID": "string",
       "eventName": "string",
       "eventSource": "string",
@@ -696,28 +707,42 @@
       "requestParameters": {},
       "resources": [],
       "responseElements": {},
+      "sharedEventID": "string",
       "sourceIPAddress": "string",
       "userAgent": "string",
       "userIdentity": {}
     },
-    "parser": "json"
+    "parser": "json",
+    "configuration": {
+      "json_path": "Records[*]",
+      "optional_top_level_keys": [
+        "additionalEventData",
+        "apiVersion",
+        "errorCode",
+        "errorMessage",
+        "readOnly",
+        "resources",
+        "sharedEventID"
+      ]
+    }
   },
-  "cloudtrail:api_events": {
+  "cloudtrail:digest": {
     "schema": {
-      "awsRegion": "string",
-      "eventID": "string",
-      "eventName": "string",
-      "eventSource": "string",
-      "eventTime": "string",
-      "eventType": "string",
-      "eventVersion": "string",
-      "recipientAccountId": "string",
-      "requestID": "string",
-      "requestParameters": {},
-      "responseElements": {},
-      "sourceIPAddress": "string",
-      "userAgent": "string",
-      "userIdentity": {}
+      "awsAccountId": "string",
+      "digestStartTime": "string",
+      "digestEndTime": "string",
+      "digestS3Bucket": "string",
+      "digestS3Object": "string",
+      "digestPublicKeyFingerprint": "string",
+      "digestSignatureAlgorithm": "string",
+      "newestEventTime": "string",
+      "oldestEventTime": "string",
+      "previousDigestS3Bucket": "string",
+      "previousDigestS3Object": "string",
+      "previousDigestHashValue": "string",
+      "previousDigestHashAlgorithm": "string",
+      "previousDigestSignature": "string",
+      "logFiles": []
     },
     "parser": "json"
   },

@@ -52,9 +52,37 @@ Options
 =============  =========  ===========
 Key            Required   Description
 -------------  ---------  -----------
-``retention``  ``true``   The data record retention period of your stream.
-``shards``     ``true``   A shard provides a fixed unit of capacity to your stream.
+``retention``  ``Yes``    The data record retention period of your stream.
+``shards``     ``Yes``    A shard provides a fixed unit of capacity to your stream.
 =============  =========  ===========
+
+Scaling
+~~~~~~~
+
+If the need arises to scale a Kinesis Stream, the process below is recommended.
+
+First, update the Kinesis Stream shard count with the following command:
+
+.. code-block:: bash
+
+  $ aws kinesis update-shard-count \
+    --stream-name <prefix>_<cluster>_stream_alert_kinesis \
+    --target-shard-count <new_shard_count> \
+    --scaling-type UNIFORM_SCALING
+
+`AWS CLI reference for update-shard-count <http://docs.aws.amazon.com/cli/latest/reference/kinesis/update-shard-count.html>`_
+
+Repeat this process for each cluster in your deployment.
+
+Note: It can take several minutes to create the new shards.
+
+Then, update each respective cluster configuration file with the updated shard count.
+
+Finally, Run Terraform to ensure a consistent state.
+
+.. code-block:: bash
+
+  $ python stream_alert_cli.py terraform build --target kinesis
 
 Kinesis Firehose
 ================
@@ -100,6 +128,6 @@ Options
 ====================  ========  ===========
 Key                   Required  Description
 --------------------  --------  -----------
-``enabled``           ``true``  If set to ``false``, will not create a Kinesis Firehose
-``s3_bucket_suffix``  ``true``  The suffix of the S3 bucket used for Kinesis Firehose data. The naming scheme is: ``prefix.cluster.suffix``
+``enabled``           ``Yes``   If set to ``false``, will not create a Kinesis Firehose
+``s3_bucket_suffix``  ``Yes``   The suffix of the S3 bucket used for Kinesis Firehose data. The naming scheme is: ``prefix.cluster.suffix``
 ====================  ========  ===========

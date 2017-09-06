@@ -25,3 +25,7 @@ terminal.glue
 venv/
 
 .vagrant/
+htmlcov/
+
+# Pycharm IDE
+.idea/

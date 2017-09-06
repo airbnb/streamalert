@@ -1,0 +1,97 @@
+{
+    "records": [
+        {
+            "data": {
+                "account": 12345,
+                "region": "123456123456",
+                "detail-type": "...",
+                "source": "...",
+                "version": "1.05",
+                "time": "...",
+                "id": "12345",
+                "resources": {
+                    "test": "..."
+                },
+                "detail": {
+                    "eventVersion": "...",
+                    "userIdentity": {
+                        "type": "Root",
+                        "principalId": "12345",
+                        "arn": "arn:aws:iam::12345:root",
+                        "accountId": "12345"
+                    },
+                    "eventTime": "...",
+                    "eventSource": "...",
+                    "eventName": "ConsoleLogin",
+                    "awsRegion": "...",
+                    "sourceIPAddress": "...",
+                    "userAgent": "...",
+                    "requestParameters": null,
+                    "responseElements": {
+                        "ConsoleLogin": "..."
+                    },
+                    "additionalEventData": {
+                        "LoginTo": "...",
+                        "MobileVersion": "No",
+                        "MFAUsed": "Yes"
+                    },
+                    "eventID": "...",
+                    "eventType": "AwsConsoleSignIn",
+                    "recipientAccountId": "12345"
+                }
+            },
+            "description": "Use of the AWS 'Root' account will create an alert.",
+            "trigger": true,
+            "source": "prefix_cluster1_stream_alert_kinesis",
+            "service": "kinesis"
+        },
+        {
+            "data": {
+                "account": 12345,
+                "region": "123456123456",
+                "detail-type": "...",
+                "source": "...",
+                "version": "1.05",
+                "time": "...",
+                "id": "12345",
+                "resources": {
+                    "test": "..."
+                },
+                "detail": {
+                    "eventVersion": "...",
+                    "userIdentity": {
+                        "type": "Root",
+                        "principalId": "...",
+                        "arn": "...",
+                        "accountId": "12345",
+                        "userName": "...",
+                        "sessionContext": {
+                            "attributes": {
+                                "mfaAuthenticated": "true",
+                                "creationDate": "..."
+                            }
+                        },
+                        "invokedBy": "signin.amazonaws.com"
+                    },
+                    "eventTime": "...",
+                    "eventSource": "...",
+                    "eventName": "...",
+                    "awsRegion": "...",
+                    "sourceIPAddress": "AWS Internal",
+                    "userAgent": "...",
+                    "requestParameters": {
+                    },
+                    "responseElements": null,
+                    "requestID": "...",
+                    "eventID": "...",
+                    "eventType": "AwsApiCall",
+                    "recipientAccountId": "12345"
+                }
+            },
+            "description": "AWS 'Root' account activity initiated automatically by an AWS service on your behalf will not create an alert.",
+            "trigger": false,
+            "source": "prefix_cluster1_stream_alert_kinesis",
+            "service": "kinesis"
+        }
+    ]
+}

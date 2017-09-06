@@ -89,7 +89,7 @@ After making modifications to a cluster file, make sure you apply the changes wi
 
 .. code-block:: bash
 
-  $ python stream_alert_cli.py terraform build
+  $ python manage.py terraform build
 
 This will regenerate the necessary Terraform files and then apply the changes.
 
@@ -213,10 +213,10 @@ By default, all API calls will be logged and accessible from rules.
 ===================  ========  ==================================  ===========
 Key                  Required  Default                             Description
 -------------------  --------  ----------------------------------  -----------
-``enabled``          Yes       -                                   To enable/disable the CloudTrail.
-``existing_trail``   No        ``false``                           Set to ``true`` if the account has an existing CloudTrail.  This is to avoid duplication of data collected by multiple CloudTrails.
-``is_global_trail``  No        ``true``                            If the CloudTrail should collect events from any region.
-``event_pattern``    No        ``{"account": ["<accound_id>"]}``   The CloudWatch Events pattern to send to Kinesis.  `More information <http://docs.aws.amazon.com/AmazonCloudWatch/latest/events/EventTypes.html>`_.
+``enabled``          ``Yes``   -                                   To enable/disable the CloudTrail.
+``existing_trail``   ``No``    ``false``                           Set to ``true`` if the account has an existing CloudTrail.  This is to avoid duplication of data collected by multiple CloudTrails.
+``is_global_trail``  ``No``    ``true``                            If the CloudTrail should collect events from any region.
+``event_pattern``    ``No``    ``{"account": ["<accound_id>"]}``   The CloudWatch Events pattern to send to Kinesis.  `More information <http://docs.aws.amazon.com/AmazonCloudWatch/latest/events/EventTypes.html>`_.
 ===================  ========  ==================================  ===========
 
 Module: Flow Logs
@@ -262,3 +262,22 @@ Key                 Required  Default                               Description
 ``vpcs``            No        None                                  The list of AWS VPC IDs to collect flow logs from.
 ``enis``            No        None                                  The list of AWS ENIs to collect flow logs from.
 ==================  ========  ====================================  ===========
+
+Module: S3 Events
+-----------------
+
+Amazon S3 is one of the default datasources for StreamAlert.
+
+S3 Object event notifications can be configured to send to Lambda each time an object is written.
+
+When StreamAlert receives this notification, it fetches the object from S3 and analyzes it according to configured rules.
+
+**Template**
+
+.. code-block:: json
+
+  {
+    "s3_events": {
+      "s3_bucket_id": "<input-bucket-id>"
+    }
+  }

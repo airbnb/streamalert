@@ -1,1 +1,2 @@
-__version__ = '0.2.1'
+"""Define the version of the CLI."""
+__version__ = '1.4.0'

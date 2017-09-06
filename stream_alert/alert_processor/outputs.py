@@ -1,4 +1,4 @@
-'''
+"""
 Copyright 2017-present, Airbnb Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,22 +12,20 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-'''
-import cgi
-import json
-import logging
-import os
-
+"""
 from abc import abstractmethod
+import cgi
 from collections import OrderedDict
 from datetime import datetime
+import json
+import os
+import urllib
+import uuid
 
 import boto3
 
-from stream_alert.alert_processor.output_base import StreamOutputBase, OutputProperty
-
-logging.basicConfig()
-LOGGER = logging.getLogger('StreamAlertOutput')
+from stream_alert.alert_processor import LOGGER
+from stream_alert.alert_processor.output_base import OutputProperty, StreamOutputBase
 
 # STREAM_OUTPUTS will contain each subclass of the StreamOutputBase
 # All included subclasses are designated using the '@output' class decorator
@@ -35,11 +33,11 @@ LOGGER = logging.getLogger('StreamAlertOutput')
 # {cls.__service__: <cls>}
 STREAM_OUTPUTS = {}
 
-DEFAULT_RULE_DESCRIPTION = 'No rule description provided'
 
 def output(cls):
     """Class decorator to register all stream outputs"""
     STREAM_OUTPUTS[cls.__service__] = cls
+
 
 def get_output_dispatcher(service, region, function_name, config):
     """Returns the subclass that should handle this particular service"""
@@ -60,7 +58,7 @@ class PagerDutyOutput(StreamOutputBase):
         is hard-coded here and does not need to be configured by the user
 
         Returns:
-            [dict] Contains various default items for this output (ie: url)
+            dict: Contains various default items for this output (ie: url)
         """
         return {
             'url': 'https://events.pagerduty.com/generic/2010-04-15/create_event.json'
@@ -78,7 +76,7 @@ class PagerDutyOutput(StreamOutputBase):
         value should be masked during input and is a credential requirement.
 
         Returns:
-            [OrderedDict] Contains various OutputProperty items
+            OrderedDict: Contains various OutputProperty items
         """
         return OrderedDict([
             ('descriptor',
@@ -95,16 +93,16 @@ class PagerDutyOutput(StreamOutputBase):
 
         Args:
             **kwargs: consists of any combination of the following items:
-                descriptor [string]: Service descriptor (ie: slack channel, pd integration)
-                rule_name [string]: Name of the triggered rule
-                alert [dict]: Alert relevant to the triggered rule
+                descriptor (str): Service descriptor (ie: slack channel, pd integration)
+                rule_name (str): Name of the triggered rule
+                alert (dict): Alert relevant to the triggered rule
         """
         creds = self._load_creds(kwargs['descriptor'])
         if not creds:
             return self._log_status(False)
 
         message = 'StreamAlert Rule Triggered - {}'.format(kwargs['rule_name'])
-        rule_desc = kwargs['alert']['metadata']['rule_description'] or DEFAULT_RULE_DESCRIPTION
+        rule_desc = kwargs['alert']['rule_description']
         details = {
             'rule_description': rule_desc,
             'record': kwargs['alert']['record']
@@ -135,8 +133,8 @@ class PagerDutyOutput(StreamOutputBase):
 class PhantomOutput(StreamOutputBase):
     """PhantomOutput handles all alert dispatching for Phantom"""
     __service__ = 'phantom'
-    CONTAINER_ENDPOINT = 'rest/container/'
-    ARTIFACT_ENDPOINT = 'rest/artifact/'
+    CONTAINER_ENDPOINT = 'rest/container'
+    ARTIFACT_ENDPOINT = 'rest/artifact'
 
     def get_user_defined_properties(self):
         """Get properties that must be asssigned by the user when configuring a new Phantom
@@ -151,7 +149,7 @@ class PhantomOutput(StreamOutputBase):
         masked during input and are credential requirements.
 
         Returns:
-            [OrderedDict] Contains various OutputProperty items
+            OrderedDict: Contains various OutputProperty items
         """
         return OrderedDict([
             ('descriptor',
@@ -167,23 +165,64 @@ class PhantomOutput(StreamOutputBase):
                             cred_requirement=True))
         ])
 
-    def _setup_container(self, rule_name, rule_description, base_url, headers):
-        """Establish a Phantom container to write the alerts to
+    def _check_container_exists(self, rule_name, container_url, headers):
+        """Check to see if a Phantom container already exists for this rule
 
         Args:
-            rule_name [string]: The name of the rule that triggered the alert
-            base_url [string]: The base url for this Phantom instance
-            headers [dict]: A dictionary containing header parameters
+            rule_name (str): The name of the rule that triggered the alert
+            container_url (str): The constructed container url for this Phantom instance
+            headers (dict): A dictionary containing header parameters
 
         Returns:
-            [integer] ID of the Phantom container where the alerts will be sent
+            int: ID of an existing Phantom container for this rule where the alerts
+                will be sent or False if a matching container does not yet exists
+        """
+        # Limit the query to 1 page, since we only care if one container exists with
+        # this name. This should not be a problem, but utilize urllib.quote to
+        # replace any unsafe characters in the rule_name
+        query_url = '{}?_filter_name="{}"&page_size=1'.format(container_url,
+                                                              urllib.quote(rule_name))
+
+        # Passing None for the data param ensures a GET request happens
+        resp = self._request_helper(query_url, None, headers, False)
+
+        if not self._check_http_response(resp):
+            return False
+
+        try:
+            resp_dict = json.loads(resp.read())
+        except ValueError as err:
+            LOGGER.error('An error occurred while decoding Phantom container query '
+                         'response to JSON: %s', err)
+            return False
+
+        # If the count == 0 then we know there are no containers with this name and this
+        # will evaluate to False. Otherwise there is at least one item in the list
+        # of 'data' with a container id we can use
+        return resp_dict and resp_dict['count'] and resp_dict['data'][0]['id']
+
+    def _setup_container(self, rule_name, rule_description, base_url, headers):
+        """Establish a Phantom container to write the alerts to. This checks to see
+        if an appropriate containers exists first and returns the ID if so.
+
+        Args:
+            rule_name (str): The name of the rule that triggered the alert
+            base_url (str): The base url for this Phantom instance
+            headers (dict): A dictionary containing header parameters
+
+        Returns:
+            int: ID of the Phantom container where the alerts will be sent
                 or False if there is an issue getting the container id
         """
-        # Try to use the rule_description from the rule as the container description
-        message = 'StreamAlert Rule Triggered - {}'.format(rule_name)
-        ph_container = {'name' : message,
-                        'description' : rule_description}
         container_url = os.path.join(base_url, self.CONTAINER_ENDPOINT)
+
+        # Check to see if there is a container already created for this rule name
+        existing_id = self._check_container_exists(rule_name, container_url, headers)
+        if existing_id:
+            return existing_id
+
+        # Try to use the rule_description from the rule as the container description
+        ph_container = {'name': rule_name, 'description': rule_description}
         container_string = json.dumps(ph_container)
         resp = self._request_helper(container_url, container_string, headers, False)
 
@@ -193,7 +232,8 @@ class PhantomOutput(StreamOutputBase):
         try:
             resp_dict = json.loads(resp.read())
         except ValueError as err:
-            LOGGER.error('An error occurred while decoding phantom response to JSON: %s', err)
+            LOGGER.error('An error occurred while decoding Phantom container creation '
+                         'response to JSON: %s', err)
             return False
 
         return resp_dict and resp_dict['id']
@@ -203,16 +243,16 @@ class PhantomOutput(StreamOutputBase):
 
         Args:
             **kwargs: consists of any combination of the following items:
-                descriptor [string]: Service descriptor (ie: slack channel, pd integration)
-                rule_name [string]: Name of the triggered rule
-                alert [dict]: Alert relevant to the triggered rule
+                descriptor (str): Service descriptor (ie: slack channel, pd integration)
+                rule_name (str): Name of the triggered rule
+                alert (dict): Alert relevant to the triggered rule
         """
         creds = self._load_creds(kwargs['descriptor'])
         if not creds:
             return self._log_status(False)
 
         headers = {"ph-auth-token": creds['ph_auth_token']}
-        rule_desc = kwargs['alert']['metadata']['rule_description'] or DEFAULT_RULE_DESCRIPTION
+        rule_desc = kwargs['alert']['rule_description']
         container_id = self._setup_container(kwargs['rule_name'], rule_desc,
                                              creds['url'], headers)
 
@@ -254,7 +294,7 @@ class SlackOutput(StreamOutputBase):
         during input and is a credential requirement.
 
         Returns:
-            [OrderedDict] Contains various OutputProperty items
+            OrderedDict: Contains various OutputProperty items
         """
         return OrderedDict([
             ('descriptor',
@@ -271,11 +311,11 @@ class SlackOutput(StreamOutputBase):
         """Format the message to be sent to slack.
 
         Args:
-            rule_name [string]: The name of the rule that triggered the alert
+            rule_name (str): The name of the rule that triggered the alert
             alert: Alert relevant to the triggered rule
 
         Returns:
-            [string] formatted message with attachments to send to Slack.
+            str: formatted message with attachments to send to Slack.
                 The message will look like:
                     StreamAlert Rule Triggered: rule_name
                     Rule Description:
@@ -319,7 +359,7 @@ class SlackOutput(StreamOutputBase):
             rule_desc = ''
             # Only print the rule description on the first attachment
             if index == 0:
-                rule_desc = alert['metadata']['rule_description'] or DEFAULT_RULE_DESCRIPTION
+                rule_desc = alert['rule_description']
                 rule_desc = '*Rule Description:*\n{}\n'.format(rule_desc)
 
             # Add this attachemnt to the full message array of attachments
@@ -341,11 +381,11 @@ class SlackOutput(StreamOutputBase):
         This will handle recursion of all nested maps and lists within the object
 
         Args:
-            json_values [object]: variant to be translated (could be json map, list, etc)
-            tab_indent_count [integer]: Number of tabs to prefix each line with
+            json_values: variant to be translated (could be json map, list, etc)
+            indent_count (int): Number of tabs to prefix each line with
 
         Returns:
-            [list] list of strings that have been properly tabbed and formatted for printing
+            list: strings that have been properly tabbed and formatted for printing
         """
         tab = '\t'
         all_lines = []
@@ -364,12 +404,12 @@ class SlackOutput(StreamOutputBase):
         This will handle recursion of all nested maps and lists within the map
 
         Args:
-            json_values [dict]: dictionary to be iterated over and formatted
-            tab [string]: string value to use for indentation
-            tab_indent_count [integer]: Number of tabs to prefix each line with
+            json_values (dict): dictionary to be iterated over and formatted
+            tab (str): string value to use for indentation
+            indent_count (int): Number of tabs to prefix each line with
 
         Returns:
-            [list] list of strings that have been properly tabbed and formatted for printing
+            list: strings that have been properly tabbed and formatted for printing
         """
         all_lines = []
         for key, value in json_values.iteritems():
@@ -394,12 +434,12 @@ class SlackOutput(StreamOutputBase):
         This will handle recursion of all nested maps and lists within the list
 
         Args:
-            json_values [list]: list to be iterated over and formatted
-            tab [string]: string value to use for indentation
-            tab_indent_count [integer]: Number of tabs to prefix each line with
+            json_values (list): list to be iterated over and formatted
+            tab (str): string value to use for indentation
+            indent_count (int): Number of tabs to prefix each line with
 
         Returns:
-            [list] list of strings that have been properly tabbed and formatted for printing
+            list: strings that have been properly tabbed and formatted for printing
         """
         all_lines = []
         for index, value in enumerate(json_values):
@@ -423,9 +463,9 @@ class SlackOutput(StreamOutputBase):
 
         Args:
             **kwargs: consists of any combination of the following items:
-                descriptor [string]: Service descriptor (ie: slack channel, pd integration)
-                rule_name [string]: Name of the triggered rule
-                alert [dict]: Alert relevant to the triggered rule
+                descriptor (str): Service descriptor (ie: slack channel, pd integration)
+                rule_name (str): Name of the triggered rule
+                alert (dict): Alert relevant to the triggered rule
         """
         creds = self._load_creds(kwargs['descriptor'])
         if not creds:
@@ -442,6 +482,7 @@ class SlackOutput(StreamOutputBase):
 
         return self._log_status(success)
 
+
 class AWSOutput(StreamOutputBase):
     """Subclass to be inherited from for all AWS service outputs"""
     def format_output_config(self, service_config, values):
@@ -450,11 +491,11 @@ class AWSOutput(StreamOutputBase):
         we have access to the AWS value (arn/bucket name/etc) for Terraform
 
         Args:
-            service_config [dict]: The actual outputs config that has been read in
-            values [OrderedDict]: Contains all the OutputProperty items for this service
+            service_config (dict): The actual outputs config that has been read in
+            values (OrderedDict): Contains all the OutputProperty items for this service
 
         Returns:
-            [dict{<string>: <string>}] Updated dictionary of descriptors and
+            dict{<string>: <string>}: Updated dictionary of descriptors and
                 values for this AWS service needed for the output configuration
             NOTE: S3 requires the bucket name, not an arn, for this value.
                 Instead of implementing this differently in subclasses, all AWSOutput
@@ -488,12 +529,12 @@ class S3Output(AWSOutput):
         that needs encrypted.
 
         Returns:
-            [OrderedDict] Contains various OutputProperty items
+            OrderedDict: Contains various OutputProperty items
         """
         return OrderedDict([
             ('descriptor',
-             OutputProperty(description=
-                            'a short and unique descriptor for this S3 bucket (ie: bucket name)')),
+             OutputProperty(
+                 description='a short and unique descriptor for this S3 bucket (ie: bucket name)')),
             ('aws_value',
              OutputProperty(description='the AWS S3 bucket name to use for this S3 configuration'))
         ])
@@ -507,25 +548,38 @@ class S3Output(AWSOutput):
 
         Args:
             **kwargs: consists of any combination of the following items:
-                descriptor [string]: Service descriptor (ie: slack channel, pd integration)
-                rule_name [string]: Name of the triggered rule
-                alert [dict]: Alert relevant to the triggered rule
+                descriptor (str): Service descriptor (ie: slack channel, pd integration)
+                rule_name (str): Name of the triggered rule
+                alert (dict): Alert relevant to the triggered rule
         """
         alert = kwargs['alert']
-        service = alert['metadata']['source']['service']
-        entity = alert['metadata']['source']['entity']
+        service = alert['source_service']
+        entity = alert['source_entity']
+
         current_date = datetime.now()
-        alert_string = json.dumps(alert)
+
+        s3_alert = alert
+        # JSON dump the alert to retain a consistent alerts schema across log types.
+        # This will get replaced by a UUID which references a record in a
+        # different table in the future.
+        s3_alert['record'] = json.dumps(s3_alert['record'])
+        alert_string = json.dumps(s3_alert)
+
         bucket = self.config[self.__service__][kwargs['descriptor']]
-        key = '{}/{}/{}/dt={}/streamalerts_{}.json'.format(
+
+        # Prefix with alerts to account for generic non-streamalert buckets
+        # Produces the following key format:
+        #   alerts/dt=2017-01-25-00/kinesis_my-stream_my-rule_uuid.json
+        # Keys need to be unique to avoid object overwriting
+        key = 'alerts/dt={}/{}_{}_{}_{}.json'.format(
+            current_date.strftime('%Y-%m-%d-%H'),
             service,
             entity,
-            kwargs['rule_name'],
-            current_date.strftime('%Y-%m-%d-%H-%M'),
-            current_date.isoformat('-')
+            alert['rule_name'],
+            uuid.uuid4()
         )
 
-        LOGGER.debug('sending alert to S3 bucket %s with key %s', bucket, key)
+        LOGGER.debug('Sending alert to S3 bucket %s with key %s', bucket, key)
 
         client = boto3.client('s3', region_name=self.region)
         resp = client.put_object(Body=alert_string,
@@ -533,6 +587,7 @@ class S3Output(AWSOutput):
                                  Key=key)
 
         return self._log_status(resp)
+
 
 @output
 class LambdaOutput(AWSOutput):
@@ -553,7 +608,7 @@ class LambdaOutput(AWSOutput):
         that needs encrypted.
 
         Returns:
-            [OrderedDict] Contains various OutputProperty items
+            OrderedDict: Contains various OutputProperty items
         """
         return OrderedDict([
             ('descriptor',
@@ -573,9 +628,9 @@ class LambdaOutput(AWSOutput):
 
         Args:
             **kwargs: consists of any combination of the following items:
-                descriptor [string]: Service descriptor (ie: slack channel, pd integration)
-                rule_name [string]: Name of the triggered rule
-                alert [dict]: Alert relevant to the triggered rule
+                descriptor (str): Service descriptor (ie: slack channel, pd integration)
+                rule_name (str): Name of the triggered rule
+                alert (dict): Alert relevant to the triggered rule
         """
         alert = kwargs['alert']
         alert_string = json.dumps(alert['record'])

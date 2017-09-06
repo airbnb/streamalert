@@ -4,11 +4,14 @@ cache: pip
 sudo: required
 python:
   - 2.7
+before_install:
+  - sudo rm -f /etc/boto.cfg
 install:
   - pip install -r requirements.txt
 script:
-  - ./test/scripts/unit_tests.sh
-  - ./stream_alert_cli.py lambda test --processor all
+  - ./tests/scripts/unit_tests.sh
+  - ./manage.py lambda test --processor all
   - sphinx-build -W docs/source docs/build
+  - ./tests/scripts/pylint.sh
 after_success:
   coveralls
