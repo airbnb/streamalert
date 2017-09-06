@@ -39,7 +39,6 @@
     "sourceAddress": ["sourceIPAddress"]
   },
   "ghe": {
-    "processName": ["program"],
     "userName": ["current_user"],
     "destinationAddress": ["remote_address"],
     "sourcePort": ["port"]
@@ -49,8 +48,6 @@
     "filePath": ["path"],
     "transportProtocol": ["protocol"],
     "severity": ["severity"],
-    "environmentIdentifier": ["envIdentifier"],
-    "roleIdentifier": ["roleIdentifier"],
     "command": ["cmdline", "command"],
     "message": ["message"],
     "sourceAddress": ["host", "source", "local_address", "address"],
