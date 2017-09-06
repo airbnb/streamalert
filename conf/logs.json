@@ -7,7 +7,7 @@
       "md5": "string",
       "node_id": "string",
       "size": "string",
-      "timestamp": "float",
+      "timestamp": "string",
       "type": "string"
     },
     "parser": "json"
@@ -151,13 +151,21 @@
       "alert_resolution": "string",
       "cb_server": "string",
       "feed_name": "string",
+      "ioc_query_index": "string",
+      "ioc_query_string": "string",
       "ioc_type": "string",
       "ioc_value": "string",
       "report_id": [],
       "timestamp": "string",
       "type": "string"
     },
-    "parser": "json"
+    "parser": "json",
+    "configuration": {
+      "optional_top_level_keys": [
+        "ioc_query_index",
+        "ioc_query_string"
+      ]
+    }
   },
   "carbonblack:alert.watchlist.hit.feedsearch.binary": {
     "schema": {
@@ -273,7 +281,7 @@
   },
   "carbonblack:alert.watchlist.hit.query.process": {
     "schema": {
-      "alert_severity": "integer",
+      "alert_severity": "float",
       "alert_type": "string",
       "assigned_to": "string",
       "cb_server": "string",
@@ -290,7 +298,7 @@
       "hostname": "string",
       "interface_ip": "string",
       "ioc_attr": "string",
-      "ioc_confidence": "integer",
+      "ioc_confidence": "float",
       "ioc_type": "string",
       "md5": "string",
       "modload_count": "integer",
@@ -804,6 +812,7 @@
       "hostIdentifier": "string",
       "calendarTime": "string",
       "unixTime": "string",
+      "epoch": "integer",
       "columns": {},
       "action": "string",
       "decorations": {},
@@ -812,8 +821,9 @@
     "parser": "json",
     "configuration": {
       "optional_top_level_keys": [
-        "log_type",
-        "decorations"
+        "decorations",
+        "epoch",
+        "log_type"
       ]
     }
   },
@@ -827,6 +837,24 @@
       "line": "integer",
       "message": "string",
       "version": "string",
+      "decorations": {},
+      "log_type": "string"
+    },
+    "parser": "json",
+    "configuration": {
+      "optional_top_level_keys": [
+        "decorations"
+      ]
+    }
+  },
+  "osquery_snapshot": {
+    "schema": {
+      "snapshot": [],
+      "name": "string",
+      "hostIdentifier": "string",
+      "calendarTime": "string",
+      "unixTime": "string",
+      "action": "string",
       "decorations": {},
       "log_type": "string"
     },
