@@ -178,8 +178,8 @@ class StreamRules(object):
             datatypes=['defined_type1', 'defined_type2']
             This method will return an dictionary :
                 {
-                    "defined_type1": [original_key1],
-                    "defined_type2": [[original_key2, sub_key2], original_key3]
+                    "defined_type1": [[original_key1]],
+                    "defined_type2": [[original_key2, sub_key2], [original_key3]]
                 }
         """
         results = dict()
@@ -209,9 +209,9 @@ class StreamRules(object):
                 for datatype in datatypes:
                     if key in normalized_types[datatype]:
                         if not datatype in results:
-                            results[datatype] = [key]
+                            results[datatype] = [[key]]
                         else:
-                            results[datatype].append(key)
+                            results[datatype].append([key])
         return results
 
     @classmethod
@@ -221,32 +221,40 @@ class StreamRules(object):
 
         Example 1:
             results = {
-                'ipv4': ['key1']
+                'ipv4': [['key1']]
             }
             parent_key = 'key2'
             nested_results = {
-                'username': ['sub_key1'],
-                'ipv4': ['sub_key2']
+                'username': [['sub_key1']],
+                'ipv4': [['sub_key2']]
             }
 
             This method will update nested_results to:
             {
-                'username': ['key2', 'sub_key1'],
-                'ipv4': ['key2', 'sub_key2']
+                'username': [['key2', 'sub_key1']],
+                'ipv4': [['key2', 'sub_key2']]
             }
 
             Also it will combine nested_results to results:
             {
-                'ipv4': ['key1', ['key2', 'sub_key2']],
-                'username': ['key2', 'sub_key1']
+                'ipv4': [['key1'], ['key2', 'sub_key2']],
+                'username': [['key2', 'sub_key1']]
             }
         """
         for key, val in nested_results.iteritems():
-            val.insert(0, parent_key)
-            if key in results:
-                results[key].append(val)
+            if isinstance(val, list):
+                for item in val:
+                    item.insert(0, parent_key)
             else:
-                results[key] = [val]
+                val.insert(0, parent_key)
+
+            if key in results:
+                results[key] += val
+            else:
+                if isinstance(val, list):
+                    results[key] = val
+                else:
+                    results[key] = [val]
 
     @classmethod
     def validate_datatypes(cls, normalized_types, datatypes):
