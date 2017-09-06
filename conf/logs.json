@@ -792,6 +792,8 @@
     "configuration": {
       "optional_top_level_keys": [
         "current_user",
+        "request_method",
+        "remote_address",
         "route"
       ]
     }
