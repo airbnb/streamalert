@@ -806,7 +806,7 @@
       ]
     }
   },
-  "osquery": {
+  "osquery:differential": {
     "schema": {
       "name": "string",
       "hostIdentifier": "string",
@@ -827,7 +827,7 @@
       ]
     }
   },
-  "osquery_status": {
+  "osquery:status": {
     "schema": {
       "hostIdentifier": "string",
       "calendarTime": "string",
@@ -847,7 +847,7 @@
       ]
     }
   },
-  "osquery_snapshot": {
+  "osquery:snapshot": {
     "schema": {
       "snapshot": [],
       "name": "string",
