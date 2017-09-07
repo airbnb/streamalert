@@ -19,10 +19,7 @@ import os
 import re
 import sys
 
-from stream_alert.shared import (
-    ATHENA_PARTITION_REFRESH_NAME,
-    metrics
-)
+from stream_alert.shared import metrics
 from stream_alert_cli.helpers import continue_prompt
 from stream_alert_cli.logger import LOGGER_CLI
 
@@ -141,7 +138,7 @@ class CLIConfig(object):
                 metrics on (rule, alert, or athena)
         """
         for function in lambda_functions:
-            if function == ATHENA_PARTITION_REFRESH_NAME:
+            if function == metrics.THENA_PARTITION_REFRESH_NAME:
                 if 'athena_partition_refresh_config' in self.config['lambda']:
                     self.config['lambda']['athena_partition_refresh_config'] \
                         ['enable_metrics'] = enabled
@@ -155,39 +152,127 @@ class CLIConfig(object):
 
         self.write()
 
-    def add_metric_alarm(self, alarm_info):
-        """Add a metric alarm that corresponds to a predefined metrics"""
-        metrics = self.config['global']['infrastructure'].get('metrics')
-        if not metrics:
-            self.config['global']['infrastructure']['metrics'] = {}
-
-        # Check to see if metrics are enabled. If they are not, then alarms are useless.
-        enable_metrics = self.config['global']['infrastructure']['metrics'].get('enabled', False)
-
-        if not enable_metrics:
-            prompt = ('Metrics are not currently enabled in \'conf/global.json\'. Creating a '
-                      'metric alarm will have no effect until metrics are enabled. '
-                      'Would you like to continue anyway?')
+    @staticmethod
+    def _add_metric_alarm_config(alarm_info, config, prompt_detail):
+        """Helper function to add the metric alarm to the respective config"""
+        metric_alarms = config.get('metric_alarms', {})
+        if alarm_info['alarm_name'] in metric_alarms:
+            prompt = ('Alarm name \'{}\' already defined {}. Would you like '
+                      'to overwrite?'.format(alarm_info['alarm_name'], prompt_detail))
             if not continue_prompt(prompt):
-                return
+                return False
 
-        current_alarms = self.config['global']['infrastructure']['metrics'].get('alarms', {})
+        # Some keys that come from the argparse options can be omitted
+        omitted_keys = {'debug', 'alarm_name', 'command', 'clusters', 'metric_target'}
 
-        if alarm_info['alarm_name'] in current_alarms:
-            prompt = ('Alarm name \'{}\' already defined. Would you '
-                      'like to overwrite?').format(alarm_info['alarm_name'])
-            if not continue_prompt(prompt):
-                return
-
-        omitted_keys = {'debug', 'alarm_name', 'command'}
-
-        current_alarms[alarm_info['alarm_name']] = {
+        metric_alarms[alarm_info['alarm_name']] = {
             key: value for key, value in alarm_info.iteritems()
             if key not in omitted_keys and value is not None
         }
 
-        # Add the alarms to the config
-        self.config['global']['infrastructure']['metrics']['alarms'] = current_alarms
+        config['metric_alarms'] = metric_alarms
+
+        return True
+
+    def _add_metric_alarm_per_cluster(self, alarm_info, function_name):
+        """Add a metric alarm for individual clusters"""
+        # If no clusters have been specified by the user, we can assume this alarm
+        # should be created for all available clusters, so fall back to that
+        clusters = (alarm_info['clusters'] if alarm_info['clusters'] else
+                    list(self.config['clusters']))
+
+        # Go over each of the clusters and see if enable_metrics == True and prompt
+        # the user to toggle metrics on if this is False
+        for cluster in clusters:
+            function_config = (self.config['clusters'][cluster]['modules']
+                               ['stream_alert'][function_name])
+
+            if not function_config.get('enable_metrics'):
+                prompt = ('Metrics are not currently enabled for the \'{}\' function '
+                          'within the \'{}\' cluster. Would you like to enable metrics '
+                          'for this cluster?'.format(function_name, cluster))
+
+                if continue_prompt(prompt):
+                    self.toggle_metrics(True, [cluster], [function_name])
+
+                elif not continue_prompt('Would you still like to add this alarm '
+                                         'even though metrics are disabled?'):
+                    continue
+
+            prompt_context = ('for the \'{}\' function in the \'{}\' '
+                              'cluster'.format(function_name, cluster))
+
+            if self._add_metric_alarm_config(alarm_info, function_config, prompt_context):
+                LOGGER_CLI.info('Successfully added \'%s\' metric alarm for the \'%s\' '
+                                'function to \'conf/clusters/%s.json.\'',
+                                alarm_info['alarm_name'], function_name, cluster)
+
+    def add_metric_alarm(self, alarm_info):
+        """Add a metric alarm that corresponds to a predefined metrics"""
+        # Get the current metrics for each function
+        current_metrics = metrics.MetricLogger.get_available_metrics()
+
+        # Extract the function name this metric is associated with
+        metric_function = {metric: function for function in current_metrics
+                           for metric in current_metrics[function]}[alarm_info['metric']]
+
+        # Do not continue if the user is trying to apply a metric alarm for an athena
+        # metric to a specific cluster (since the athena function operates on all clusters)
+        if (alarm_info['metric_target'] != 'aggregate' and
+                metric_function == metrics.ATHENA_PARTITION_REFRESH_NAME):
+            LOGGER_CLI.error('Metrics for the athena function can only be applied '
+                             'to an aggregate metric target, not on a per-cluster basis.')
+            return
+
+        # If the metric is related to either the rule processor or alert processor, we should
+        # check to see if any cluster has metrics enabled for that function before continuing
+        if (metric_function in {metrics.ALERT_PROCESSOR_NAME, metrics.RULE_PROCESSOR_NAME} and
+                not any(self.config['clusters'][cluster]['modules']['stream_alert']
+                        [metric_function].get('enable_metrics') for cluster in
+                        self.config['clusters'])):
+            prompt = ('Metrics are not currently enabled for the \'{}\' function '
+                      'within any cluster. Creating an alarm will have no effect '
+                      'until metrics are enabled for this function in at least one '
+                      'cluster. Would you still like to continue?'.format(metric_function))
+            if not continue_prompt(prompt):
+                return
+
+        elif metric_function == metrics.ATHENA_PARTITION_REFRESH_NAME:
+            # If the user is attempting to add a metric for athena, make sure the athena
+            # function is initialized first
+            if 'athena_partition_refresh_config' not in self.config['lambda']:
+                LOGGER_CLI.error('No configuration found for Athena Partition Refresh. '
+                                 'Please run: `$ python manage.py athena init` first.')
+                return
+
+            # If the athena function is initialized, but metrics are not enabled, ask
+            # the user if they would like to enable them now
+            if not self.config['lambda']['athena_partition_refresh_config'].get('enable_metrics'):
+                prompt = ('Metrics are not currently enabled for the \'athena\' function. '
+                          'Would you like to enable metrics for athena?')
+
+                if continue_prompt(prompt):
+                    self.toggle_metrics(True, None, [metric_function])
+
+                elif not continue_prompt('Would you still like to add this alarm '
+                                         'even though metrics are disabled?'):
+                    return
+
+        # Add metric alarms for the aggregate metrics - these are added to the global config
+        if (alarm_info['metric_target'] == 'aggregate' or
+                metric_function == metrics.ATHENA_PARTITION_REFRESH_NAME):
+            global_config = self.config['global']['infrastructure']['monitoring']
+
+            prompt_context = 'in the aggregate alarms within \'conf/globals.json\''
+            if self._add_metric_alarm_config(alarm_info, global_config, prompt_context):
+                LOGGER_CLI.info('Successfully added \'%s\' metric alarm to \'conf/global.json.\'',
+                                alarm_info['alarm_name'])
+
+        else:
+            # Add metric alarms on a per-cluster basis - these are added to the cluster config
+            self._add_metric_alarm_per_cluster(alarm_info, metric_function)
+
+        # Save all of the alarm updates to disk
         self.write()
 
     def load(self):

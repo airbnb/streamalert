@@ -228,7 +228,7 @@ def generate_stream_alert(cluster_name, cluster_dict, config):
         'cluster': cluster_name,
         'kms_key_arn': '${aws_kms_key.stream_alert_secrets.arn}',
         'rule_processor_enable_metrics': modules['stream_alert'] \
-            ['rule_processor']['enable_metrics'],
+            ['rule_processor'].get('enable_metrics', False),
         'rule_processor_log_level': modules['stream_alert'] \
             ['rule_processor'].get('log_level', 'info'),
         'rule_processor_memory': modules['stream_alert']['rule_processor']['memory'],
@@ -237,7 +237,7 @@ def generate_stream_alert(cluster_name, cluster_dict, config):
         'rule_processor_config': '${var.rule_processor_config}',
         'alert_processor_config': '${var.alert_processor_config}',
         'alert_processor_enable_metrics': modules['stream_alert'] \
-            ['alert_processor']['enable_metrics'],
+            ['alert_processor'].get('enable_metrics', False),
         'alert_processor_log_level': modules['stream_alert'] \
             ['alert_processor'].get('log_level', 'info'),
         'alert_processor_memory': modules['stream_alert']['alert_processor']['memory'],
@@ -283,15 +283,12 @@ def generate_stream_alert(cluster_name, cluster_dict, config):
     return True
 
 def generate_cloudwatch_log_metrics(cluster_name, cluster_dict, config):
-    """Add the CloudWatch Metric Filters module to the Terraform cluster dict.
+    """Add the CloudWatch Metric Filters information to the Terraform cluster dict.
 
     Args:
         cluster_name (str): The name of the currently generating cluster
         cluster_dict (defaultdict): The dict containing all Terraform config for a given cluster.
         config (dict): The loaded config from the 'conf/' directory
-
-    Returns:
-        bool: Result of applying the cloudwatch metric filters to the stream_alert module
     """
     stream_alert_config = config['clusters'][cluster_name]['modules']['stream_alert']
 

@@ -27,12 +27,7 @@ from argparse import Action, ArgumentParser, RawTextHelpFormatter, SUPPRESS as A
 import os
 import re
 
-from stream_alert.shared import (
-    ALERT_PROCESSOR_NAME,
-    ATHENA_PARTITION_REFRESH_NAME,
-    metrics,
-    RULE_PROCESSOR_NAME
-)
+from stream_alert.shared import metrics
 from stream_alert_cli import __version__ as version
 from stream_alert_cli.logger import LOGGER_CLI
 from stream_alert_cli.runner import cli_runner
@@ -52,9 +47,9 @@ class NormalizeFunctionAction(UniqueSetAction):
     def __call__(self, parser, namespace, values, option_string=None):
         super(NormalizeFunctionAction, self).__call__(parser, namespace, values, option_string)
         values = getattr(namespace, self.dest)
-        normalized_map = {'rule': RULE_PROCESSOR_NAME,
-                          'alert': ALERT_PROCESSOR_NAME,
-                          'athena': ATHENA_PARTITION_REFRESH_NAME}
+        normalized_map = {'rule': metrics.RULE_PROCESSOR_NAME,
+                          'alert': metrics.ALERT_PROCESSOR_NAME,
+                          'athena': metrics.ATHENA_PARTITION_REFRESH_NAME}
 
         for func, normalize_func in normalized_map.iteritems():
             if func in values:
