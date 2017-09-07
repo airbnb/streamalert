@@ -765,6 +765,38 @@
       }
     }
   },
+  "cloudwatch:flow_logs_no_data": {
+    "schema": {
+      "protocol": "string",
+      "source": "string",
+      "destination": "string",
+      "srcport": "string",
+      "destport": "string",
+      "action": "string",
+      "packets": "string",
+      "bytes": "string",
+      "windowstart": "integer",
+      "windowend": "integer",
+      "version": "integer",
+      "eni": "string",
+      "account": "integer",
+      "flowlogstatus": "string"
+    },
+    "parser": "json",
+    "configuration": {
+      "json_path": "logEvents[*].extractedFields",
+      "envelope_keys": {
+        "logGroup": "string",
+        "logStream": "string",
+        "owner": "integer"
+      },
+      "log_patterns": {
+        "flowlogstatus": [
+          "NODATA"
+        ]
+      }
+    }
+  },
   "cloudtrail:events": {
     "schema": {
       "additionalEventData": {},
