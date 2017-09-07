@@ -20,6 +20,7 @@ import os
 from stream_alert.shared import metrics
 from stream_alert_cli.logger import LOGGER_CLI
 
+DEFAULT_SNS_MONITORING_TOPIC = 'stream_alert_monitoring'
 RESTRICTED_CLUSTER_NAMES = ('main', 'athena')
 
 
@@ -160,8 +161,8 @@ def generate_main(**kwargs):
     infrastructure_config = config['global'].get('infrastructure')
     if infrastructure_config and 'monitoring' in infrastructure_config:
         if infrastructure_config['monitoring'].get('create_sns_topic'):
-            main_dict['resource']['aws_sns_topic']['stream_alert_monitoring'] = {
-                'name': 'stream_alert_monitoring'
+            main_dict['resource']['aws_sns_topic'][DEFAULT_SNS_MONITORING_TOPIC] = {
+                'name': DEFAULT_SNS_MONITORING_TOPIC
             }
 
     return main_dict
@@ -350,24 +351,20 @@ def generate_cloudwatch_monitoring(cluster_name, cluster_dict, config):
     """
     prefix = config['global']['account']['prefix']
     infrastructure_config = config['global'].get('infrastructure')
-    sns_topic_arn = None
 
-    if infrastructure_config and 'monitoring' in infrastructure_config:
-        if infrastructure_config['monitoring'].get('create_sns_topic'):
-            sns_topic_arn = 'arn:aws:sns:{region}:{account_id}:{topic}'.format(
-                region=config['global']['account']['region'],
-                account_id=config['global']['account']['aws_account_id'],
-                topic='stream_alert_monitoring'
-            )
-        elif infrastructure_config['monitoring'].get('sns_topic_name'):
-            sns_topic_arn = 'arn:aws:sns:{region}:{account_id}:{topic}'.format(
-                region=config['global']['account']['region'],
-                account_id=config['global']['account']['aws_account_id'],
-                topic=infrastructure_config['monitoring']['sns_topic_name']
-            )
-    else:
+    if not (infrastructure_config and 'monitoring' in infrastructure_config):
         LOGGER_CLI.error('Invalid config: Make sure you declare global infrastructure options!')
         return False
+
+    topic_name = DEFAULT_SNS_MONITORING_TOPIC if infrastructure_config \
+                 ['monitoring'].get('create_sns_topic') else \
+                 infrastructure_config['monitoring'].get('sns_topic_name')
+
+    sns_topic_arn = 'arn:aws:sns:{region}:{account_id}:{topic}'.format(
+        region=config['global']['account']['region'],
+        account_id=config['global']['account']['aws_account_id'],
+        topic=topic_name
+    )
 
     lambda_functions = [
         '{}_{}_streamalert_rule_processor'.format(prefix, cluster_name),
