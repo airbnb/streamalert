@@ -27,7 +27,12 @@ from argparse import Action, ArgumentParser, RawTextHelpFormatter, SUPPRESS as A
 import os
 import re
 
-from stream_alert.shared import metrics
+from stream_alert.shared import (
+    ALERT_PROCESSOR_NAME,
+    ATHENA_PARTITION_REFRESH_NAME,
+    metrics,
+    RULE_PROCESSOR_NAME
+)
 from stream_alert_cli import __version__ as version
 from stream_alert_cli.logger import LOGGER_CLI
 from stream_alert_cli.runner import cli_runner
@@ -38,6 +43,25 @@ class UniqueSetAction(Action):
     def __call__(self, parser, namespace, values, option_string=None):
         unique_items = set(values)
         setattr(namespace, self.dest, unique_items)
+
+
+class NormalizeFunctionAction(UniqueSetAction):
+    """Subclass of argparse.Action -> UniqueSetAction that will return a unique set of
+    normalized lambda function names.
+    """
+    def __call__(self, parser, namespace, values, option_string=None):
+        super(NormalizeFunctionAction, self).__call__(parser, namespace, values, option_string)
+        values = getattr(namespace, self.dest)
+        normalized_map = {'rule': RULE_PROCESSOR_NAME,
+                          'alert': ALERT_PROCESSOR_NAME,
+                          'athena': ATHENA_PARTITION_REFRESH_NAME}
+
+        for func, normalize_func in normalized_map.iteritems():
+            if func in values:
+                values.remove(func)
+                values.add(normalize_func)
+
+        setattr(namespace, self.dest, values)
 
 
 def _add_output_subparser(subparsers):
@@ -252,7 +276,7 @@ Examples:
         choices=['rule', 'alert', 'athena'],
         help=ARGPARSE_SUPPRESS,
         nargs='+',
-        action=UniqueSetAction,
+        action=NormalizeFunctionAction,
         required=True
     )
 

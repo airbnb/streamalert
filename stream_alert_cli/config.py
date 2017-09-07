@@ -19,7 +19,10 @@ import os
 import re
 import sys
 
-from stream_alert.shared import metrics
+from stream_alert.shared import (
+    ATHENA_PARTITION_REFRESH_NAME,
+    metrics
+)
 from stream_alert_cli.helpers import continue_prompt
 from stream_alert_cli.logger import LOGGER_CLI
 
@@ -41,7 +44,6 @@ class CLIConfig(object):
 
     def __setitem__(self, key, new_value):
         self.config.__setitem__(key, new_value)
-        print 'setting', key
         self.write()
 
     def get(self, key):
@@ -139,7 +141,7 @@ class CLIConfig(object):
                 metrics on (rule, alert, or athena)
         """
         for function in lambda_functions:
-            if function == 'athena':
+            if function == ATHENA_PARTITION_REFRESH_NAME:
                 if 'athena_partition_refresh_config' in self.config['lambda']:
                     self.config['lambda']['athena_partition_refresh_config'] \
                         ['enable_metrics'] = enabled
@@ -149,7 +151,7 @@ class CLIConfig(object):
 
             for cluster in clusters:
                 self.config['clusters'][cluster]['modules']['stream_alert'] \
-                    ['{}_processor'.format(function)]['enable_metrics'] = enabled
+                    [function]['enable_metrics'] = enabled
 
         self.write()
 
