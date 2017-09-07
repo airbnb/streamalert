@@ -25,15 +25,14 @@
         "current_version": "$LATEST",
         "log_level": "info",
         "memory": 128,
-        "timeout": 10,
-        "enable_metrics": true
+        "timeout": 10
       },
       "rule_processor": {
         "current_version": "$LATEST",
+        "enable_metrics": true,
         "log_level": "info",
         "memory": 128,
-        "timeout": 30,
-        "enable_metrics": true
+        "timeout": 30
       }
     }
   },

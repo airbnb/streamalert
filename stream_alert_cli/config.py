@@ -19,6 +19,7 @@ import os
 import re
 import sys
 
+from stream_alert.shared import metrics
 from stream_alert_cli.helpers import continue_prompt
 from stream_alert_cli.logger import LOGGER_CLI
 
@@ -128,13 +129,27 @@ class CLIConfig(object):
 
         LOGGER_CLI.info('AWS Account ID successfully configured')
 
-    def toggle_metrics(self, enabled):
-        """Toggle CloudWatch metric logging and filter creation"""
-        metrics = self.config['global']['infrastructure'].get('metrics')
-        if not metrics:
-            self.config['global']['infrastructure']['metrics'] = {}
+    def toggle_metrics(self, enabled, clusters, lambda_functions):
+        """Toggle CloudWatch metric logging and filter creation
 
-        metrics['enabled'] = enabled
+        Args:
+            enabled (bool): False if disabling metrics, true if enable_logging
+            clusters (list): Clusters to enable or disable metrics on
+            lambda_functions (list): Which lambda functions to enable or disable
+                metrics on (rule, alert, or athena)
+        """
+        for function in lambda_functions:
+            if function == 'athena':
+                if 'athena_partition_refresh_config' in self.config['lambda']:
+                    self.config['lambda']['athena_partition_refresh_config'] \
+                        ['enable_metrics'] = enabled
+                else:
+                    LOGGER_CLI.error('No Athena configuration found; please initialize first.')
+                continue
+
+            for cluster in clusters:
+                self.config['clusters'][cluster]['modules']['stream_alert'] \
+                    ['{}_processor'.format(function)]['enable_metrics'] = enabled
 
         self.write()
 

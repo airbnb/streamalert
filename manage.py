@@ -23,7 +23,7 @@ To run terraform by hand, change to the terraform directory and run:
 
 terraform <cmd> -var-file=../terraform.tfvars -var-file=../variables.json
 """
-from argparse import ArgumentParser, RawTextHelpFormatter, SUPPRESS as ARGPARSE_SUPPRESS
+from argparse import Action, ArgumentParser, RawTextHelpFormatter, SUPPRESS as ARGPARSE_SUPPRESS
 import os
 import re
 
@@ -31,6 +31,13 @@ from stream_alert.shared import metrics
 from stream_alert_cli import __version__ as version
 from stream_alert_cli.logger import LOGGER_CLI
 from stream_alert_cli.runner import cli_runner
+
+
+class UniqueSetAction(Action):
+    """Subclass of argparse.Action to avoid multiple of the same choice from a list"""
+    def __call__(self, parser, namespace, values, option_string=None):
+        unique_items = set(values)
+        setattr(namespace, self.dest, unique_items)
 
 
 def _add_output_subparser(subparsers):
@@ -196,6 +203,12 @@ def _add_metrics_subparser(subparsers):
     """Add the metrics subparser: manage.py metrics [options]"""
     metrics_usage = 'manage.py metrics [options]'
 
+    # get cluster choices from available files
+    clusters = [os.path.splitext(cluster)[0] for _, _, files
+                in os.walk('conf/clusters') for cluster in files]
+
+    cluster_choices_block = ('\n').join('{:>28}{}'.format('', cluster) for cluster in clusters)
+
     metrics_description = ("""
 StreamAlertCLI v{}
 Enable or disable metrics for all lambda functions. This toggles the creation of metric filters.
@@ -204,13 +217,23 @@ Available Options:
 
     -e/--enable         Enable CloudWatch metrics through logging and metric filters
     -d/--disable        Disable CloudWatch metrics through logging and metric filters
+    -f/--functions      Space delimited list of functions to enable metrics for
+                          Choices are:
+                            rule
+                            alert (not implemented)
+                            athena (not implemented)
     --debug             Enable Debug logger output
 
+Optional Arguemnts:
+
+    -c/--clusters       Space delimited list of clusters to enable metrics for. If
+                          omitted, this will enable metrics for all clusters. Choices are:
+{}
 Examples:
 
     manage.py metrics --enable
 
-""".format(version))
+""".format(version, cluster_choices_block))
 
     metrics_parser = subparsers.add_parser(
         'metrics',
@@ -222,6 +245,16 @@ Examples:
 
     # Set the name of this parser to 'metrics'
     metrics_parser.set_defaults(command='metrics')
+
+    # allow the user to select 1 or more functions to enable metrics for
+    metrics_parser.add_argument(
+        '-f', '--functions',
+        choices=['rule', 'alert', 'athena'],
+        help=ARGPARSE_SUPPRESS,
+        nargs='+',
+        action=UniqueSetAction,
+        required=True
+    )
 
     # get the metric toggle value
     toggle_group = metrics_parser.add_mutually_exclusive_group(required=True)
@@ -236,6 +269,16 @@ Examples:
         '-d', '--disable',
         dest='enable_metrics',
         action='store_false'
+    )
+
+    # allow the user to select 0 or more clusters to enable metrics for
+    metrics_parser.add_argument(
+        '-c', '--clusters',
+        choices=clusters,
+        help=ARGPARSE_SUPPRESS,
+        nargs='+',
+        action=UniqueSetAction,
+        default=clusters
     )
 
     # allow verbose output for the CLI with the --debug option
@@ -255,6 +298,12 @@ def _add_metric_alarm_subparser(subparsers):
     all_metrics = [metric for func in available_metrics for metric in available_metrics[func]]
 
     metric_choices_block = ('\n').join('{:>35}{}'.format('', metric) for metric in all_metrics)
+
+    # get cluster choices from available files
+    clusters = [os.path.splitext(cluster)[0] for _, _, files
+                in os.walk('conf/clusters') for cluster in files]
+
+    cluster_choices_block = ('\n').join('{:>37}{}'.format('', cluster) for cluster in clusters)
 
     metric_alarm_description = ("""
 StreamAlertCLI v{}
@@ -291,6 +340,8 @@ Optional Arguments:
     -ad/--alarm-description      The description for the alarm
     -c/--clusters                Space delimited list of clusters to apply this metric to. This is
                                    ignored if the --metric-target of 'aggregate' is used.
+                                   Choices are:
+{}
     -es/--extended-statistic     The percentile statistic for the metric associated with the alarm.
                                    Specify a value between p0.0 and p100.  Cannot be used in
                                    conjunction with the --statistic flag.
@@ -330,7 +381,7 @@ Resources:
     AWS:        https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_PutMetricAlarm.html
     Terraform:  https://www.terraform.io/docs/providers/aws/r/cloudwatch_metric_alarm.html
 
-""".format(version, metric_choices_block))
+""".format(version, metric_choices_block, cluster_choices_block))
 
     metric_alarm_parser = subparsers.add_parser(
         'create-alarm',
@@ -442,16 +493,13 @@ Resources:
         type=_alarm_description_validator
     )
 
-    # get cluster choices from available files
-    clusters = [os.path.splitext(cluster)[0] for _, _, files
-                in os.walk('conf/clusters') for cluster in files]
-
     # allow the user to select 0 or more clusters to apply this alarm to
     metric_alarm_parser.add_argument(
         '-c', '--clusters',
         choices=clusters,
         help=ARGPARSE_SUPPRESS,
         nargs='+',
+        action=UniqueSetAction,
         default=[]
     )
 

@@ -655,7 +655,7 @@ def _toggle_metrics(options):
     Args:
         options (argparser): Contains boolean necessary for toggling metrics
     """
-    CONFIG.toggle_metrics(options.enable_metrics)
+    CONFIG.toggle_metrics(options.enable_metrics, options.clusters, options.functions)
 
 
 def _create_alarm(options):
