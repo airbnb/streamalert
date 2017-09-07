@@ -216,8 +216,6 @@ def generate_stream_alert(cluster_name, cluster_dict, config):
     Returns:
         bool: Result of applying the stream_alert module
     """
-    enable_metrics = config['global'].get('infrastructure',
-                                          {}).get('metrics', {}).get('enabled', False)
     account = config['global']['account']
     modules = config['clusters'][cluster_name]['modules']
 
@@ -228,7 +226,8 @@ def generate_stream_alert(cluster_name, cluster_dict, config):
         'prefix': account['prefix'],
         'cluster': cluster_name,
         'kms_key_arn': '${aws_kms_key.stream_alert_secrets.arn}',
-        'rule_processor_enable_metrics': enable_metrics,
+        'rule_processor_enable_metrics': modules['stream_alert'] \
+            ['rule_processor']['enable_metrics'],
         'rule_processor_log_level': modules['stream_alert'] \
             ['rule_processor'].get('log_level', 'info'),
         'rule_processor_memory': modules['stream_alert']['rule_processor']['memory'],
@@ -236,7 +235,8 @@ def generate_stream_alert(cluster_name, cluster_dict, config):
         'rule_processor_version': modules['stream_alert']['rule_processor']['current_version'],
         'rule_processor_config': '${var.rule_processor_config}',
         'alert_processor_config': '${var.alert_processor_config}',
-        'alert_processor_enable_metrics': enable_metrics,
+        'alert_processor_enable_metrics': modules['stream_alert'] \
+            ['alert_processor']['enable_metrics'],
         'alert_processor_log_level': modules['stream_alert'] \
             ['alert_processor'].get('log_level', 'info'),
         'alert_processor_memory': modules['stream_alert']['alert_processor']['memory'],
@@ -292,12 +292,7 @@ def generate_cloudwatch_log_metrics(cluster_name, cluster_dict, config):
     Returns:
         bool: Result of applying the cloudwatch metric filters to the stream_alert module
     """
-    enable_metrics = config['global'].get('infrastructure',
-                                          {}).get('metrics', {}).get('enabled', False)
-
-    # Do not add any metric filters if metrics are disabled
-    if not enable_metrics:
-        return
+    stream_alert_config = config['clusters'][cluster_name]['modules']['stream_alert']
 
     current_metrics = metrics.MetricLogger.get_available_metrics()
 
@@ -308,6 +303,15 @@ def generate_cloudwatch_log_metrics(cluster_name, cluster_dict, config):
 
     for func in funcs:
         if func not in current_metrics:
+            continue
+
+        if func not in stream_alert_config:
+            LOGGER_CLI.error('Function for metrics \'%s\' is not defined in stream alert config. '
+                             'Options are: %s', func,
+                             ', '.join('\'{}\''.format(key) for key in stream_alert_config))
+            continue
+
+        if not stream_alert_config[func].get('enable_metrics'):
             continue
 
         metric_prefix = funcs[func]
@@ -661,8 +665,6 @@ def generate_athena(config):
     """
     athena_dict = infinitedict()
     athena_config = config['lambda']['athena_partition_refresh_config']
-    enable_metrics = config['global'].get('infrastructure',
-                                          {}).get('metrics', {}).get('enabled', False)
 
     data_buckets = set()
     for refresh_type in athena_config['refresh_type']:
@@ -679,11 +681,11 @@ def generate_athena(config):
         'athena_data_buckets': list(data_buckets),
         'refresh_interval': athena_config.get('refresh_interval', 'rate(10 minutes)'),
         'current_version': athena_config['current_version'],
-        'enable_metrics': enable_metrics,
+        'enable_metrics': athena_config.get('enable_metrics', False),
         'prefix': config['global']['account']['prefix']
     }
 
-    if not enable_metrics:
+    if not athena_config.get('enable_metrics', False):
         return athena_dict
 
     # Check to see if there are any metrics configured for the athena function
