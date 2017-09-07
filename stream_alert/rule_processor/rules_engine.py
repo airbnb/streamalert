@@ -195,7 +195,7 @@ class StreamRules(object):
         Args:
             record (dict): Parsed data
             normalized_types (dict): Normalized types
-            datatypes (list): normalized types users interested in.
+            datatypes (list): Normalized types users interested in
 
         Returns:
             (dict): A dict of normalized_types with original key names
@@ -218,6 +218,12 @@ class StreamRules(object):
     def update(cls, results, parent_key, nested_results):
         """Update nested_results by inserting parent key to beginning of list.
         Also combine results and nested_results into one dictionary
+
+        Args:
+            results (dict): A dict of normalized_types with original key names
+            parent_key (str): Parent key of values in nested_results. The values
+                in nested_results are original keys of normalized types.
+            nested_results (dict): A dict of normalized_types from nested record
 
         Example 1:
             results = {
