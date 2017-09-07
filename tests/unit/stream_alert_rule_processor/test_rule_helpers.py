@@ -73,3 +73,53 @@ def test_in_network():
 
     ip_not_in_cidr = '10.0.15.24'
     assert_equal(base.in_network(ip_not_in_cidr, cidrs), False)
+
+def test_fetch_values_by_datatype():
+    """Helpers - Fetch values from a record by normalized type"""
+    rec = {
+        'account': 12345,
+        'region': '123456123456',
+        'detail': {
+            'eventVersion': '...',
+            'eventID': '...',
+            'eventTime': '...',
+            'additionalEventData': {
+                'MFAUsed': 'Yes',
+                'LoginTo': '...',
+                'MobileVersion': 'No'
+            },
+            'requestParameters': None,
+            'eventType': 'AwsConsoleSignIn',
+            'responseElements': {
+                'ConsoleLogin': '...'
+            },
+            'awsRegion': '...',
+            'eventName': 'ConsoleLogin',
+            'userIdentity': {
+                'userName': 'alice',
+                'type': 'Root',
+                'principalId': '12345',
+                'arn': 'arn:aws:iam::12345:root',
+                'accountId': '12345'
+            },
+            'eventSource': '...',
+            'userAgent': '...',
+            'sourceIPAddress': '1.1.1.2',
+            'recipientAccountId': '12345'
+        },
+        'detail-type': '...',
+        'source': '1.1.1.2',
+        'version': '1.05',
+        'normalized_types': {
+            'ipv4': [['detail', 'sourceIPAddress'], ['source']],
+            'username': [['detail', 'userIdentity', 'userName']]
+        },
+        'time': '...',
+        'id': '12345',
+        'resources': {
+            'test': '...'
+        }
+    }
+    assert_equal(len(base.fetch_values_by_datatype(rec, 'ipv4')), 2)
+    assert_equal(len(base.fetch_values_by_datatype(rec, 'cmd')), 0)
+    assert_equal(base.fetch_values_by_datatype(rec, 'username'), ['alice'])

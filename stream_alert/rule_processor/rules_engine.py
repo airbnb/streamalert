@@ -24,6 +24,7 @@ DEFAULT_RULE_DESCRIPTION = 'No rule description provided'
 RuleAttributes = namedtuple('Rule', ['rule_name',
                                      'rule_function',
                                      'matchers',
+                                     'datatypes',
                                      'logs',
                                      'outputs',
                                      'req_subkeys'])
@@ -66,6 +67,7 @@ class StreamRules(object):
             logs = opts.get('logs')
             outputs = opts.get('outputs')
             matchers = opts.get('matchers')
+            datatypes = opts.get('datatypes')
             req_subkeys = opts.get('req_subkeys')
 
             if not logs:
@@ -85,6 +87,7 @@ class StreamRules(object):
             cls.__rules[rule_name] = RuleAttributes(rule_name,
                                                     rule,
                                                     matchers,
+                                                    datatypes,
                                                     logs,
                                                     outputs,
                                                     req_subkeys)
@@ -151,6 +154,133 @@ class StreamRules(object):
             else:
                 LOGGER.error('The matcher [%s] does not exist!', matcher)
 
+        return True
+
+    @classmethod
+    def match_types(cls, record, normalized_types, datatypes):
+        """Match normalized types against record
+
+        Args:
+            record (dict): Parsed payload of any log
+            normalized_types (dict): Normalized types
+            datatypes (list): defined in rule options, normalized_types users
+                interested in.
+
+        Returns:
+            (dict): A dict of normalized_types with original key names
+
+        Example 1:
+            datatypes=['defined_type1', 'defined_type2', 'not_defined_type']
+            This method will return an empty dictionary and log datatypes
+                "not defined" error to Logger.
+
+        Example 2:
+            datatypes=['defined_type1', 'defined_type2']
+            This method will return an dictionary :
+                {
+                    "defined_type1": [[original_key1]],
+                    "defined_type2": [[original_key2, sub_key2], [original_key3]]
+                }
+        """
+        results = dict()
+        if not (datatypes and cls.validate_datatypes(normalized_types, datatypes)):
+            return results
+
+        return cls.match_types_helper(record, normalized_types, datatypes)
+
+    @classmethod
+    def match_types_helper(cls, record, normalized_types, datatypes):
+        """Helper method to recursively visit all subkeys
+
+        Args:
+            record (dict): Parsed data
+            normalized_types (dict): Normalized types
+            datatypes (list): Normalized types users interested in
+
+        Returns:
+            (dict): A dict of normalized_types with original key names
+        """
+        results = dict()
+        for key, val in record.iteritems():
+            if isinstance(val, dict):
+                nested_results = cls.match_types_helper(val, normalized_types, datatypes)
+                cls.update(results, key, nested_results)
+            else:
+                for datatype in datatypes:
+                    if key in normalized_types[datatype]:
+                        if not datatype in results:
+                            results[datatype] = [[key]]
+                        else:
+                            results[datatype].append([key])
+        return results
+
+    @classmethod
+    def update(cls, results, parent_key, nested_results):
+        """Update nested_results by inserting parent key to beginning of list.
+        Also combine results and nested_results into one dictionary
+
+        Args:
+            results (dict): A dict of normalized_types with original key names
+            parent_key (str): Parent key of values in nested_results. The values
+                in nested_results are original keys of normalized types.
+            nested_results (dict): A dict of normalized_types from nested record
+
+        Example 1:
+            results = {
+                'ipv4': [['key1']]
+            }
+            parent_key = 'key2'
+            nested_results = {
+                'username': [['sub_key1']],
+                'ipv4': [['sub_key2']]
+            }
+
+            This method will update nested_results to:
+            {
+                'username': [['key2', 'sub_key1']],
+                'ipv4': [['key2', 'sub_key2']]
+            }
+
+            Also it will combine nested_results to results:
+            {
+                'ipv4': [['key1'], ['key2', 'sub_key2']],
+                'username': [['key2', 'sub_key1']]
+            }
+        """
+        for key, val in nested_results.iteritems():
+            if isinstance(val, list):
+                for item in val:
+                    item.insert(0, parent_key)
+            else:
+                val.insert(0, parent_key)
+
+            if key in results:
+                results[key] += val
+            else:
+                if isinstance(val, list):
+                    results[key] = val
+                else:
+                    results[key] = [val]
+
+    @classmethod
+    def validate_datatypes(cls, normalized_types, datatypes):
+        """Check is datatype valid
+
+        Args:
+            normalized_types (dict): normalized_types for certain log
+            datatypes (list): defined in rule options, users interested types
+
+        Returns:
+            (boolean): return true if all datatypes are defined
+        """
+        if not normalized_types:
+            LOGGER.error('Normalized types dictionary is empty.')
+            return False
+
+        for datatype in datatypes:
+            if not datatype in normalized_types:
+                LOGGER.error('The datatype [%s] is not defined!', datatype)
+                return False
         return True
 
     @classmethod
@@ -250,6 +380,10 @@ class StreamRules(object):
                 if not matcher_result:
                     continue
 
+                types_result = cls.match_types(record,
+                                               payload.normalized_types,
+                                               rule.datatypes)
+                record['normalized_types'] = types_result
                 # rule analysis
                 rule_result = cls.process_rule(record, rule)
                 if rule_result:

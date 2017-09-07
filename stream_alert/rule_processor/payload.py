@@ -80,10 +80,15 @@ class StreamPayload(object):
         self._refresh_record(None)
 
     def __repr__(self):
-        repr_str = ('<{} valid:{} log_source:{} entity:{} type:{} '
-                    'record:{}>').format(self.__class__.__name__, self.valid,
-                                         self.log_source, self.entity,
-                                         self.type, self.records)
+        repr_str = (
+            '<{} valid:{} log_source:{} entity:{} '
+            'type:{} record:{} normalized_types:{}>'
+            ).format(
+                self.__class__.__name__, self.valid,
+                self.log_source, self.entity,
+                self.type, self.records,
+                self.normalized_types
+                )
 
         return repr_str
 
@@ -122,6 +127,7 @@ class StreamPayload(object):
         self.records = None
         self.type = None
         self.valid = False
+        self.normalized_types = None
 
 
 class S3ObjectSizeError(Exception):

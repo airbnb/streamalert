@@ -34,7 +34,7 @@ def load_config(conf_dir='conf/'):
     key denotes the name of the log type, and includes 'keys' used to match
     rules to log fields.
     """
-    conf_files = ('sources', 'logs')
+    conf_files = ('sources', 'logs', 'types')
     config = dict()
     for base_name in conf_files:
         path = '{}.json'.format(os.path.join(conf_dir, base_name))
@@ -87,7 +87,6 @@ def _validate_config(config):
             if not entity_attrs['logs']:
                 raise ConfigError(
                     'List of \'logs\' is empty for entity: {}'.format(entity))
-
 
 def load_env(context):
     """Get the current environment for the running Lambda function.

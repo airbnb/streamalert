@@ -34,6 +34,7 @@ from tests.unit.stream_alert_rule_processor.test_helpers import (
     load_and_classify_payload,
     make_kinesis_raw_record,
 )
+from helpers.base import fetch_values_by_datatype
 
 rule = StreamRules.rule
 matcher = StreamRules.matcher()
@@ -185,7 +186,9 @@ class TestStreamRules(object):
         # doing this because after kinesis_data is read in, types are casted per
         # the schema
         for alert in alerts:
-            assert_items_equal(alert['record'].keys(), kinesis_data.keys())
+            record_keys = alert['record'].keys()
+            record_keys.remove('normalized_types')
+            assert_items_equal(record_keys, kinesis_data.keys())
             assert_items_equal(alert['outputs'], rule_outputs_map[alert['rule_name']])
 
     def test_process_subkeys_nested_records(self):
@@ -199,6 +202,7 @@ class TestStreamRules(object):
             rule_name='cloudtrail_us_east_logs',
             rule_function=cloudtrail_us_east_logs,
             matchers=[],
+            datatypes=[],
             logs=['test_log_type_json_nested'],
             outputs=['s3:sample_bucket'],
             req_subkeys={'requestParameters': ['program']}
@@ -467,3 +471,205 @@ class TestStreamRules(object):
 
         rule_name_alerts = [x['rule_name'] for x in alerts]
         assert_items_equal(rule_name_alerts, ['gid_500', 'auditd_bin_cat'])
+
+    def test_match_types(self):
+        """Rules Engine - Match normalized types against record"""
+        @rule(logs=['cloudwatch:test_match_types'],
+              outputs=['s3:sample_bucket'],
+              datatypes=['sourceAddress'])
+        def match_ipaddress(rec): # pylint: disable=unused-variable
+            """Testing rule to detect matching IP address"""
+            results = fetch_values_by_datatype(rec, 'sourceAddress')
+
+            for result in results:
+                if result == '1.1.1.2':
+                    return True
+            return False
+
+        @rule(logs=['cloudwatch:test_match_types'],
+              outputs=['s3:sample_bucket'],
+              datatypes=['sourceAddress', 'command'])
+        def mismatch_types(rec): # pylint: disable=unused-variable
+            """Testing rule with non-existing normalized type in the record. It
+            should not trigger alert.
+            """
+            results = fetch_values_by_datatype(rec, 'sourceAddress')
+
+            for result in results:
+                if result == '2.2.2.2':
+                    return True
+            return False
+
+        kinesis_data_items = [
+            {
+                'account': 123456,
+                'region': '123456123456',
+                'source': '1.1.1.2',
+                'detail': {
+                    'eventName': 'ConsoleLogin',
+                    'sourceIPAddress': '1.1.1.2',
+                    'recipientAccountId': '654321'
+                }
+            },
+            {
+                'account': 654321,
+                'region': '654321654321',
+                'source': '2.2.2.2',
+                'detail': {
+                    'eventName': 'ConsoleLogin',
+                    'sourceIPAddress': '2.2.2.2',
+                    'recipientAccountId': '123456'
+                }
+            }
+        ]
+
+        # prepare payloads
+        alerts = []
+        for data in kinesis_data_items:
+            kinesis_data = json.dumps(data)
+            # prepare the payloads
+            service, entity = 'kinesis', 'test_kinesis_stream'
+            raw_record = make_kinesis_raw_record(entity, kinesis_data)
+            payload = load_and_classify_payload(self.config, service, entity, raw_record)
+
+            alerts.extend(StreamRules.process(payload))
+
+        # check alert output
+        assert_equal(len(alerts), 1)
+
+        # alert tests
+        assert_equal(alerts[0]['rule_name'], 'match_ipaddress')
+
+    def test_validate_datatypes(self):
+        """Rules Engine - validate datatypes"""
+        normalized_types, datatypes = None, ['type1']
+        assert_equal(
+            StreamRules.validate_datatypes(normalized_types, datatypes),
+            False
+            )
+
+        normalized_types = {
+            'type1': ['key1'],
+            'type2': ['key2']
+            }
+        datatypes = ['type1']
+        assert_equal(
+            StreamRules.validate_datatypes(normalized_types, datatypes),
+            True
+            )
+
+        datatypes = ['type1', 'type3']
+        assert_equal(
+            StreamRules.validate_datatypes(normalized_types, datatypes),
+            False
+            )
+
+    def test_update(self):
+        """Rules Engine - Update results passed to update method"""
+        results = {
+            'ipv4': [['key1']]
+        }
+        parent_key = 'key2'
+        nested_results = {
+            'username': [['sub_key1']],
+            'ipv4': [['sub_key2']]
+        }
+        StreamRules.update(results, parent_key, nested_results)
+        expected_results = {
+            'username': [['key2', 'sub_key1']],
+            'ipv4': [['key1'], ['key2', 'sub_key2']]
+        }
+        assert_equal(results.keys(), expected_results.keys())
+        assert_equal(results['ipv4'], expected_results['ipv4'])
+        assert_equal(results['username'], expected_results['username'])
+
+        results = {
+            'ipv4': [['key1'], ['key3', 'sub_key3', 'sub_key4']],
+            'type': [['key4']]
+        }
+        parent_key = 'key2'
+        nested_results = {
+            'username': [['sub_key1', 'sub_key11']],
+            'type': [['sub_key2']]
+        }
+        StreamRules.update(results, parent_key, nested_results)
+        expected_results = {
+            'username': [['key2', 'sub_key1', 'sub_key11']],
+            'type': [['key4'], ['key2', 'sub_key2']],
+            'ipv4': [['key1'], ['key3', 'sub_key3', 'sub_key4']]
+        }
+        assert_equal(results.keys(), expected_results.keys())
+        assert_equal(results['ipv4'], expected_results['ipv4'])
+        assert_equal(results['username'], expected_results['username'])
+        assert_equal(results['type'], expected_results['type'])
+
+    def test_match_types_helper(self):
+        """Rules Engine - Recursively walk though all nested keys and update
+        return results.
+        """
+        record = {
+            'account': 123456,
+            'region': 'region_name',
+            'detail': {
+                'eventType': 'Decrypt',
+                'awsRegion': 'region_name',
+                'source': '1.1.1.2'
+            },
+            'sourceIPAddress': '1.1.1.2'
+        }
+        normalized_types = {
+            'account': ['account'],
+            'region': ['region', 'awsRegion'],
+            'ipv4': ['destination', 'source', 'sourceIPAddress']
+        }
+        datatypes = ['account', 'ipv4', 'region']
+        results = StreamRules.match_types_helper(
+            record,
+            normalized_types,
+            datatypes
+            )
+        expected_results = {
+            'account': [['account']],
+            'ipv4': [['sourceIPAddress'], ['detail', 'source']],
+            'region': [['region'], ['detail', 'awsRegion']]
+        }
+        assert_equal(results, expected_results)
+
+        # When multiple subkeys presented with same normalized type
+        record = {
+            'account': 123456,
+            'region': 'region_name',
+            'detail': {
+                'eventType': 'Decrypt',
+                'awsRegion': 'region_name',
+                'source': '1.1.1.2',
+                'userIdentity': {
+                    "userName": "Alice",
+                    "principalId": "...",
+                    "invokedBy": "signin.amazonaws.com"
+                }
+            },
+            'sourceIPAddress': '1.1.1.2'
+        }
+        normalized_types = {
+            'account': ['account'],
+            'region': ['region', 'awsRegion'],
+            'ipv4': ['destination', 'source', 'sourceIPAddress'],
+            'userName': ['userName', 'owner', 'invokedBy']
+        }
+        datatypes = ['account', 'ipv4', 'region', 'userName']
+        results = StreamRules.match_types_helper(
+            record,
+            normalized_types,
+            datatypes
+            )
+        expected_results = {
+            'account': [['account']],
+            'ipv4': [['sourceIPAddress'], ['detail', 'source']],
+            'region': [['region'], ['detail', 'awsRegion']],
+            'userName': [
+                ['detail', 'userIdentity', 'userName'],
+                ['detail', 'userIdentity', 'invokedBy']
+            ]
+        }
+        assert_equal(results, expected_results)

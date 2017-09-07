@@ -286,5 +286,17 @@
         ]
       }
     }
+  },
+  "cloudwatch:test_match_types": {
+    "schema": {
+      "account": "integer",
+      "region": "string",
+      "detail": {},
+      "source": "string"
+    },
+    "parser": "json",
+    "configuration": {
+      "json_path": "logEvents[*].extractedFields"
+    }
   }
 }

@@ -1,0 +1,70 @@
+{
+  "carbonblack":{
+    "command": ["cmdline"],
+    "destinationAddress": ["remote_ip"],
+    "destinationDomain": ["domain"],
+    "destinationPort": ["remote_port"],
+    "deviceAddress": ["interface_ip", "comms_ip"],
+    "fileHash": ["process_md5", "parent_md5", "expect_followon_w_md5", "md5"],
+    "fileName": ["observed_filename", "file_path"],
+    "filePath": ["path"],
+    "processName": ["parent_name", "process_name"],
+    "processPath": ["parent_path", "process_path", "path"],
+    "sourceAddress": ["ipv4", "local_ip"],
+    "sourcePort": ["port", "local_port"],
+    "transportProtocol": ["protocol"],
+    "userName": ["username"]
+  },
+  "cloudwatch":{
+    "destinationAccount": ["recipientAccountId"],
+    "destinationAddress": ["destination"],
+    "destinationPort": ["destport"],
+    "eventName": ["eventName"],
+    "eventType": ["eventType"],
+    "region": ["region"],
+    "sourceAccount": ["account"],
+    "sourceAddress": ["source", "sourceIPAddress"],
+    "sourcePort": ["srcport"],
+    "transportProtocol": ["protocol"],
+    "userAgent": ["userAgent"],
+    "userName": ["userName", "owner", "invokedBy"]
+  },
+  "cloudtrail": {
+    "destinationAccount": ["recipientAccountId"],
+    "eventName": ["eventName"],
+    "eventType": ["eventType"],
+    "region": ["region", "awsRegion"],
+    "sourceAccount": ["account", "accountId"],
+    "sourceAddress": ["sourceIPAddress"],
+    "userAgent": ["userAgent"]
+  },
+  "ghe": {
+    "destinationAddress": ["remote_address"],
+    "sourcePort": ["port"],
+    "userName": ["current_user"]
+  },
+  "osquery": {
+    "command": ["cmdline", "command"],
+    "destinationAddress": ["destination", "remote_address", "gateway"],
+    "destinationPort": ["remote_port"],
+    "fileHash": ["md5", "sha1", "sha256"],
+    "filePath": ["path", "directory"],
+    "fileSize": ["size"],
+    "message": ["message"],
+    "receiptTime": ["unixTime"],
+    "severity": ["severity"],
+    "sourceAddress": ["host", "source", "local_address", "address"],
+    "sourcePort": ["local_port", "port"],
+    "sourceUserId": ["uid"],
+    "transportProtocol": ["protocol"],
+    "userName": ["username", "user"]
+  },
+  "pan": {
+    "destinationAddress": ["dst", "natdst"],
+    "destinationPort": ["dport", "natdport"],
+    "sourceAddress": ["src", "natsrc"],
+    "sourcePort": ["sport", "natsport"],
+    "transportProtocol": ["proto"],
+    "userName": ["srcuser", "dstuser"]
+  }
+}

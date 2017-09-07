@@ -65,6 +65,11 @@ def get_valid_config():
                     ]
                 }
             }
+        },
+        'types': {
+            'log_type1': {
+                'command': ['cmdline', 'commandline']
+            }
         }
     }
 

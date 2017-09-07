@@ -87,3 +87,26 @@ def in_network(ip_address, cidrs):
         if ip_address in network:
             return True
     return False
+
+def fetch_values_by_datatype(rec, datatype):
+    """Fetch values of normalized_type.
+
+    Args:
+        rec (dict): parsed payload of any log
+        datatype (str): normalized type user interested
+
+    Returns:
+        (list) The values of normalized types
+    """
+    results = []
+    if not datatype in rec['normalized_types']:
+        return results
+
+    for original_keys in rec['normalized_types'][datatype]:
+        result = rec
+        if isinstance(original_keys, list):
+            for original_key in original_keys:
+                result = result[original_key]
+        results.append(result)
+
+    return results

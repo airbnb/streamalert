@@ -8,7 +8,8 @@
         "test_log_type_json_nested_with_data",
         "test_log_type_csv",
         "test_log_type_csv_nested",
-        "test_log_type_kv_auditd"
+        "test_log_type_kv_auditd",
+        "cloudwatch"
       ]
     },
     "test_stream_2": {
