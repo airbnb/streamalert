@@ -24,10 +24,6 @@ from stream_alert_cli.logger import LOGGER_CLI
 DEFAULT_SNS_MONITORING_TOPIC = 'stream_alert_monitoring'
 RESTRICTED_CLUSTER_NAMES = ('main', 'athena')
 
-# The FUNC_PREFIXES dict acts as a simple map to a human-readable name
-FUNC_PREFIXES = {metrics.ALERT_PROCESSOR_NAME: 'AlertProcessor',
-                 metrics.RULE_PROCESSOR_NAME: 'RuleProcessor'}
-
 
 class InvalidClusterName(Exception):
     """Exception for invalid cluster names"""
@@ -179,9 +175,19 @@ def generate_main(**kwargs):
     if not global_metrics:
         return main_dict
 
+    topic_name = (DEFAULT_SNS_MONITORING_TOPIC if infrastructure_config
+                  ['monitoring'].get('create_sns_topic') else
+                  infrastructure_config['monitoring'].get('sns_topic_name'))
+
+    sns_topic_arn = 'arn:aws:sns:{region}:{account_id}:{topic}'.format(
+        region=config['global']['account']['region'],
+        account_id=config['global']['account']['aws_account_id'],
+        topic=topic_name
+    )
+
     formatted_alarms = {}
     # Add global metric alarms for the rule and alert processors
-    for func in FUNC_PREFIXES:
+    for func in metrics.FUNC_PREFIXES:
         if not func in global_metrics:
             continue
 
@@ -189,9 +195,7 @@ def generate_main(**kwargs):
             alarm_info = settings.copy()
             alarm_info['alarm_name'] = name
             alarm_info['namespace'] = 'StreamAlert'
-            alarm_info['alarm_actions'] = ['${{aws_sns_topic.{}.arn}}'.format(
-                DEFAULT_SNS_MONITORING_TOPIC
-            )]
+            alarm_info['alarm_actions'] = [sns_topic_arn]
             # Terraform only allows certain characters in resource names, so strip the name
             acceptable_chars = ''.join([string.digits, string.letters, '_-'])
             name = filter(acceptable_chars.__contains__, name)
@@ -331,7 +335,7 @@ def generate_cloudwatch_metric_filters(cluster_name, cluster_dict, config):
     current_metrics = metrics.MetricLogger.get_available_metrics()
 
     # Add metric filters for the rule and alert processor
-    for func in FUNC_PREFIXES:
+    for func, metric_prefix in metrics.FUNC_PREFIXES.iteritems():
         if func not in current_metrics:
             continue
 
@@ -344,7 +348,6 @@ def generate_cloudwatch_metric_filters(cluster_name, cluster_dict, config):
         if not stream_alert_config[func].get('enable_metrics'):
             continue
 
-        metric_prefix = FUNC_PREFIXES[func]
         filter_pattern_idx, filter_value_idx = 0, 1
 
         # Add filters for the cluster and aggregate
@@ -367,28 +370,22 @@ def generate_cloudwatch_metric_filters(cluster_name, cluster_dict, config):
             ['{}_metric_filters'.format(func)] = filters
 
 
-def _format_metric_alarm(name, alarm_settings, function, cluster=''):
+def _format_metric_alarm(name, alarm_settings):
     """Helper function to format a metric alarm as a comma-separated string
 
     Args:
-        name (str):
-        alarm_info (dict):
-        function (str):
-        cluster (str):
+        name (str): The name of the alarm to create
+        alarm_info (dict): All other settings for this alarm (threshold, etc)
+        function (str): The respective function this alarm is being created for.
+            This is the RuleProcessor or AlertProcessor
+        cluster (str): The cluster that this metric is related to
 
     Returns:
         str: formatted and comma-separated string containing alarm settings
     """
     alarm_info = alarm_settings.copy()
     # The alarm description and name can potentially have commas so remove them
-    alarm_info['alarm_description'] = (alarm_info['alarm_description'].replace(',', '') if
-                                       alarm_info['alarm_description'] else '')
-
-    # Prepend a prefix for this function to the metric name and append a cluster
-    # name if there is one available
-    alarm_info['metric_name'] = '{}-{}'.format(function, alarm_info['metric_name'])
-    if cluster:
-        alarm_info['metric_name'] = '{}-{}'.format(alarm_info['metric_name'], cluster.upper())
+    alarm_info['alarm_description'] = alarm_info['alarm_description'].replace(',', '')
 
     attributes = list(alarm_info)
     attributes.sort()
@@ -414,9 +411,9 @@ def generate_cloudwatch_metric_alarms(cluster_name, cluster_dict, config):
         LOGGER_CLI.error('Invalid config: Make sure you declare global infrastructure options!')
         return
 
-    topic_name = DEFAULT_SNS_MONITORING_TOPIC if infrastructure_config \
-                 ['monitoring'].get('create_sns_topic') else \
-                 infrastructure_config['monitoring'].get('sns_topic_name')
+    topic_name = (DEFAULT_SNS_MONITORING_TOPIC if infrastructure_config
+                  ['monitoring'].get('create_sns_topic') else
+                  infrastructure_config['monitoring'].get('sns_topic_name'))
 
     sns_topic_arn = 'arn:aws:sns:{region}:{account_id}:{topic}'.format(
         region=config['global']['account']['region'],
@@ -431,14 +428,14 @@ def generate_cloudwatch_metric_alarms(cluster_name, cluster_dict, config):
 
     # Add cluster metric alarms for the rule and alert processors
     formatted_alarms = []
-    for func, func_config in stream_alert_config.iteritems():
+    for func_config in stream_alert_config.values():
         if 'metric_alarms' not in func_config:
             continue
 
         metric_alarms = func_config['metric_alarms']
         for name, alarm_info in metric_alarms.iteritems():
             formatted_alarms.append(
-                _format_metric_alarm(name, alarm_info, FUNC_PREFIXES[func], cluster_name)
+                _format_metric_alarm(name, alarm_info)
             )
 
     cluster_dict['module']['stream_alert_{}'.format(cluster_name)] \

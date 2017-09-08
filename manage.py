@@ -504,7 +504,8 @@ Resources:
     metric_alarm_parser.add_argument(
         '-ad', '--alarm-description',
         help=ARGPARSE_SUPPRESS,
-        type=_alarm_description_validator
+        type=_alarm_description_validator,
+        default=''
     )
 
     # allow the user to select 0 or more clusters to apply this alarm to
@@ -543,7 +544,8 @@ Resources:
     metric_alarm_parser.add_argument(
         '-s', '--statistic',
         choices=['SampleCount', 'Average', 'Sum', 'Minimum', 'Maximum'],
-        help=ARGPARSE_SUPPRESS
+        help=ARGPARSE_SUPPRESS,
+        default=''
     )
 
     # allow verbose output for the CLI with the --debug option

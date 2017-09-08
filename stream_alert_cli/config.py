@@ -208,12 +208,20 @@ class CLIConfig(object):
                     continue
 
             metric_alarms = function_config.get('metric_alarms', {})
-            new_alarms = self._add_metric_alarm_config(alarm_info, metric_alarms)
+
+            # Format the metric name for the cluster based metric
+            # Prepend a prefix for this function and append the cluster name
+            alarm_settings = alarm_info.copy()
+            alarm_settings['metric_name'] = '{}-{}-{}'.format(metrics.FUNC_PREFIXES[function_name],
+                                                              alarm_settings['metric_name'],
+                                                              cluster.upper())
+
+            new_alarms = self._add_metric_alarm_config(alarm_settings, metric_alarms)
             if new_alarms != False:
                 function_config['metric_alarms'] = new_alarms
                 LOGGER_CLI.info('Successfully added \'%s\' metric alarm for the \'%s\' '
                                 'function to \'conf/clusters/%s.json.\'',
-                                alarm_info['alarm_name'], function_name, cluster)
+                                alarm_settings['alarm_name'], function_name, cluster)
 
     def _alarm_exists(self, alarm_name):
         """Check if this alarm name is already used somewhere. CloudWatch alarm
@@ -332,11 +340,16 @@ class CLIConfig(object):
             if not metric_alarms:
                 global_config['metric_alarms'][metric_function] = {}
 
-            new_alarms = self._add_metric_alarm_config(alarm_info, metric_alarms)
+            # Format the metric name for the aggregate metric
+            alarm_settings = alarm_info.copy()
+            alarm_settings['metric_name'] = '{}-{}'.format(metrics.FUNC_PREFIXES[metric_function],
+                                                           alarm_info['metric_name'])
+
+            new_alarms = self._add_metric_alarm_config(alarm_settings, metric_alarms)
             if new_alarms != False:
                 global_config['metric_alarms'][metric_function] = new_alarms
                 LOGGER_CLI.info('Successfully added \'%s\' metric alarm to '
-                                '\'conf/global.json.\'', alarm_info['alarm_name'])
+                                '\'conf/global.json.\'', alarm_settings['alarm_name'])
 
         else:
             # Add metric alarms on a per-cluster basis - these are added to the cluster config
