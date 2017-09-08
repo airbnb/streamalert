@@ -1,6 +1,6 @@
 {
   "carbonblack":{
-    "command": ["cmdline"],
+    "command": ["cmdline", "command_line"],
     "destinationAddress": ["remote_ip"],
     "destinationDomain": ["domain"],
     "destinationPort": ["remote_port"],
