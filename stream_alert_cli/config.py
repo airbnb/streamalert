@@ -138,7 +138,7 @@ class CLIConfig(object):
                 metrics on (rule, alert, or athena)
         """
         for function in lambda_functions:
-            if function == metrics.THENA_PARTITION_REFRESH_NAME:
+            if function == metrics.ATHENA_PARTITION_REFRESH_NAME:
                 if 'athena_partition_refresh_config' in self.config['lambda']:
                     self.config['lambda']['athena_partition_refresh_config'] \
                         ['enable_metrics'] = enabled
@@ -207,8 +207,61 @@ class CLIConfig(object):
                                 'function to \'conf/clusters/%s.json.\'',
                                 alarm_info['alarm_name'], function_name, cluster)
 
+    def _alarm_exists(self, alarm_name):
+        """Check if this alarm name is already used somewhere. CloudWatch alarm
+        names must be unique to an AWS account
+
+        Args:
+            alarm_name (str): The name of the alarm being created
+
+        Returns:
+            bool: True if the the alarm name is already present in the config
+        """
+        message = ('CloudWatch metric alarm names must be unique '
+                   'within each AWS account. Please remove this alarm '
+                   'so it can be updated or choose another name.')
+        funcs = {metrics.ALERT_PROCESSOR_NAME, metrics.RULE_PROCESSOR_NAME}
+        for func in funcs:
+            for cluster in self.config['clusters']:
+                func_alarms = (self.config['clusters'][cluster]['modules']
+                               ['stream_alert'][func].get('metric_alarms', {}))
+                if alarm_name in func_alarms:
+                    LOGGER_CLI.error('An alarm with name \'%s\' already exists in the '
+                                     '\'conf/clusters/%s.json\' cluster. %s', alarm_name,
+                                     cluster, message)
+                    return True
+
+        global_config = self.config['global']['infrastructure'].get('monitoring')
+        if not global_config:
+            return False
+
+        metric_alarms = global_config.get('metric_alarms')
+        if not metric_alarms:
+            return False
+
+        # Check for athena metric alarms also, which are save in the global config
+        funcs.add(metrics.ATHENA_PARTITION_REFRESH_NAME)
+
+        for func in funcs:
+            global_func_alarms = global_config['metric_alarms'].get(func, {})
+            if alarm_name in global_func_alarms:
+                LOGGER_CLI.error('An alarm with name \'%s\' already exists in the '
+                                 '\'conf/globals.json\'. %s', alarm_name, message)
+                return True
+
+        return False
+
     def add_metric_alarm(self, alarm_info):
-        """Add a metric alarm that corresponds to a predefined metrics"""
+        """Add a metric alarm that corresponds to a predefined metrics
+
+        Args:
+            alarm_info (dict): All the necessary values needed to add a CloudWatch
+                metric alarm
+        """
+        # Check to see if an alarm with this name already exists
+        if self._alarm_exists(alarm_info['alarm_name']):
+            return
+
         # Get the current metrics for each function
         current_metrics = metrics.MetricLogger.get_available_metrics()
 
