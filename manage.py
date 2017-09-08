@@ -404,7 +404,7 @@ Resources:
         help=ARGPARSE_SUPPRESS
     )
 
-    # Set the name of this parser to 'validate-schemas'
+    # Set the name of this parser to 'create-alarm'
     metric_alarm_parser.set_defaults(command='create-alarm')
 
     # add all the required parameters

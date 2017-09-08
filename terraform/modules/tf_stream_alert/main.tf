@@ -185,6 +185,7 @@ resource "aws_cloudwatch_log_metric_filter" "alert_processor_cw_metric_filters" 
 // The split list is our way around poor tf support for lists of maps and is made up of:
 // <alarm_name>, <alarm_description>, <comparison_operator>, <evaluation_periods>,
 // <metric>, <period>, <statistic>, <threshold>
+// TODO: update this logic to simply use a variable that is a list of maps once Terraform fixes this
 resource "aws_cloudwatch_metric_alarm" "cw_metric_alarms" {
   count               = "${length(var.metric_alarms)}"
   alarm_name          = "${element(split(",", var.metric_alarms[count.index]), 0)}"

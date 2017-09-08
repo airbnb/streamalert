@@ -432,6 +432,8 @@ def generate_cloudwatch_metric_alarms(cluster_name, cluster_dict, config):
         if 'metric_alarms' not in func_config:
             continue
 
+        # TODO: update this logic to simply use a list of maps once Terraform fixes
+        # their support for this, instead of the comma-separated string this creates
         metric_alarms = func_config['metric_alarms']
         for name, alarm_info in metric_alarms.iteritems():
             formatted_alarms.append(
