@@ -25,7 +25,6 @@ terraform <cmd> -var-file=../terraform.tfvars -var-file=../variables.json
 """
 from argparse import Action, ArgumentParser, RawTextHelpFormatter, SUPPRESS as ARGPARSE_SUPPRESS
 import os
-import re
 
 from stream_alert.shared import metrics
 from stream_alert_cli import __version__ as version
@@ -361,12 +360,7 @@ Optional Arguments:
                                    ignored if the --metric-target of 'aggregate' is used.
                                    Choices are:
 {}
-    -es/--extended-statistic     The percentile statistic for the metric associated with the alarm.
-                                   Specify a value between p0.0 and p100.  Cannot be used in
-                                   conjunction with the --statistic flag.
-    -s/--statistic               The statistic for the metric associated with the alarm, other than
-                                   percentile. For percentile statistics, use --extended-statistic.
-                                   Cannot be used in conjunction with the --extended-statistic flag
+    -s/--statistic               The statistic for the metric associated with the alarm.
                                    Choices are:
                                      SampleCount
                                      Average
@@ -418,6 +412,7 @@ Resources:
     metric_alarm_parser.add_argument(
         '-m', '--metric',
         choices=all_metrics,
+        dest='metric_name',
         help=ARGPARSE_SUPPRESS,
         required=True
     )
@@ -522,22 +517,30 @@ Resources:
         default=[]
     )
 
-    # get the extended statistic or statistic value
-    statistic_group = metric_alarm_parser.add_mutually_exclusive_group()
-    def _extended_stat_validator(val):
-        if not re.search(r'p(\d{1,2}(\.\d{0,2})?|100)$', val):
-            raise metric_alarm_parser.error('extended statistic values must start with \'p\' '
-                                            'and be followed by a percentage value (ie: p0.0, '
-                                            'p10, p55.5, p100)')
-        return val
+    ### Commenting out the below until we can support 'extended-statistic' metrics
+    ### alongside 'statistic' metrics. Currently only 'statistic' are supported
+    # # get the extended statistic or statistic value
+    # statistic_group = metric_alarm_parser.add_mutually_exclusive_group()
+    # def _extended_stat_validator(val):
+    #     if not re.search(r'p(\d{1,2}(\.\d{0,2})?|100)$', val):
+    #         raise metric_alarm_parser.error('extended statistic values must start with \'p\' '
+    #                                         'and be followed by a percentage value (ie: p0.0, '
+    #                                         'p10, p55.5, p100)')
+    #     return val
+    #
+    # statistic_group.add_argument(
+    #     '-es', '--extended-statistic',
+    #     help=ARGPARSE_SUPPRESS,
+    #     type=_extended_stat_validator
+    # )
+    #
+    # statistic_group.add_argument(
+    #     '-s', '--statistic',
+    #     choices=['SampleCount', 'Average', 'Sum', 'Minimum', 'Maximum'],
+    #     help=ARGPARSE_SUPPRESS
+    # )
 
-    statistic_group.add_argument(
-        '-es', '--extended-statistic',
-        help=ARGPARSE_SUPPRESS,
-        type=_extended_stat_validator
-    )
-
-    statistic_group.add_argument(
+    metric_alarm_parser.add_argument(
         '-s', '--statistic',
         choices=['SampleCount', 'Average', 'Sum', 'Minimum', 'Maximum'],
         help=ARGPARSE_SUPPRESS

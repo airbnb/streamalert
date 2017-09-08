@@ -267,7 +267,7 @@ class CLIConfig(object):
 
         # Extract the function name this metric is associated with
         metric_function = {metric: function for function in current_metrics
-                           for metric in current_metrics[function]}[alarm_info['metric']]
+                           for metric in current_metrics[function]}[alarm_info['metric_name']]
 
         # Do not continue if the user is trying to apply a metric alarm for an athena
         # metric to a specific cluster (since the athena function operates on all clusters)
