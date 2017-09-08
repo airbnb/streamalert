@@ -24,7 +24,7 @@ class SuppressNonErrors(logging.Filter):
 
 
 class SuppressNoise(logging.Filter):
-    """Simple logging filter for suppressing specific log messagses that we
+    """Simple logging filter for suppressing specific log messages that we
     do not want to print during testing. Add any suppressions to the tuple.
     """
 
@@ -33,7 +33,10 @@ class SuppressNoise(logging.Filter):
             'Starting download from S3',
             'Completed download in'
         )
-        return not record.getMessage().startswith(suppress_starts_with)
+        return (
+            not record.getMessage().startswith(suppress_starts_with) and
+            'triggered an alert on log type' not in record.getMessage()
+        )
 
 
 LOGGER_SA = logging.getLogger('StreamAlert')
