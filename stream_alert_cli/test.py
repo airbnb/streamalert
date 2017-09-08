@@ -191,7 +191,7 @@ class RuleProcessorTester(object):
 
         # Print rule name for section header, but only if we get
         # to a point where there is a record to actually be tested.
-        # This avoids potentialy blank sections
+        # This avoids potentially blank sections
         if print_header_line and (alerts or self.print_output):
             print '\n{}'.format(rule_name)
 

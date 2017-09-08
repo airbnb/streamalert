@@ -249,7 +249,7 @@ Optional Arguemnts:
 {}
 Examples:
 
-    manage.py metrics --enable
+    manage.py metrics --enable --functions rule
 
 """.format(version, cluster_choices_block))
 

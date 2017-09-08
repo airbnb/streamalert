@@ -97,7 +97,14 @@ variable "alert_processor_metric_filters" {
   default = []
 }
 
+variable "metric_alarms" {
+  type    = "list"
+  default = []
+}
+
 variable "namespace" {
   type    = "string"
   default = "StreamAlert"
 }
+
+variable "sns_topic_arn" {}

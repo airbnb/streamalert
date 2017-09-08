@@ -153,29 +153,37 @@ class CLIConfig(object):
         self.write()
 
     @staticmethod
-    def _add_metric_alarm_config(alarm_info, config, prompt_detail):
-        """Helper function to add the metric alarm to the respective config"""
-        metric_alarms = config.get('metric_alarms', {})
-        if alarm_info['alarm_name'] in metric_alarms:
-            prompt = ('Alarm name \'{}\' already defined {}. Would you like '
-                      'to overwrite?'.format(alarm_info['alarm_name'], prompt_detail))
-            if not continue_prompt(prompt):
-                return False
+    def _add_metric_alarm_config(alarm_info, current_alarms):
+        """Helper function to add the metric alarm to the respective config
 
+        Args:
+            alarm_info (dict): All the necessary values needed to add a CloudWatch
+                metric alarm
+            current_alarms (dict): All of the current metric alarms from the config
+
+        Returns:
+            dict: The new metric alarms dictionary with the added metric alarm
+        """
         # Some keys that come from the argparse options can be omitted
         omitted_keys = {'debug', 'alarm_name', 'command', 'clusters', 'metric_target'}
 
-        metric_alarms[alarm_info['alarm_name']] = {
+        current_alarms[alarm_info['alarm_name']] = {
             key: value for key, value in alarm_info.iteritems()
-            if key not in omitted_keys and value is not None
+            if key not in omitted_keys
         }
 
-        config['metric_alarms'] = metric_alarms
-
-        return True
+        return current_alarms
 
     def _add_metric_alarm_per_cluster(self, alarm_info, function_name):
-        """Add a metric alarm for individual clusters"""
+        """Add a metric alarm for individual clusters. This is for non-aggregate
+        CloudWatch metric alarms.
+
+        Args:
+            alarm_info (dict): All the necessary values needed to add a CloudWatch
+                metric alarm.
+            function_name (str): The name of the lambda function this metric is
+                related to.
+        """
         # If no clusters have been specified by the user, we can assume this alarm
         # should be created for all available clusters, so fall back to that
         clusters = (alarm_info['clusters'] if alarm_info['clusters'] else
@@ -199,10 +207,10 @@ class CLIConfig(object):
                                          'even though metrics are disabled?'):
                     continue
 
-            prompt_context = ('for the \'{}\' function in the \'{}\' '
-                              'cluster'.format(function_name, cluster))
-
-            if self._add_metric_alarm_config(alarm_info, function_config, prompt_context):
+            metric_alarms = function_config.get('metric_alarms', {})
+            new_alarms = self._add_metric_alarm_config(alarm_info, metric_alarms)
+            if new_alarms != False:
+                function_config['metric_alarms'] = new_alarms
                 LOGGER_CLI.info('Successfully added \'%s\' metric alarm for the \'%s\' '
                                 'function to \'conf/clusters/%s.json.\'',
                                 alarm_info['alarm_name'], function_name, cluster)
@@ -316,10 +324,19 @@ class CLIConfig(object):
                 metric_function == metrics.ATHENA_PARTITION_REFRESH_NAME):
             global_config = self.config['global']['infrastructure']['monitoring']
 
-            prompt_context = 'in the aggregate alarms within \'conf/globals.json\''
-            if self._add_metric_alarm_config(alarm_info, global_config, prompt_context):
-                LOGGER_CLI.info('Successfully added \'%s\' metric alarm to \'conf/global.json.\'',
-                                alarm_info['alarm_name'])
+            metric_alarms = global_config.get('metric_alarms', {})
+            if not metric_alarms:
+                global_config['metric_alarms'] = {}
+
+            metric_alarms = global_config['metric_alarms'].get(metric_function, {})
+            if not metric_alarms:
+                global_config['metric_alarms'][metric_function] = {}
+
+            new_alarms = self._add_metric_alarm_config(alarm_info, metric_alarms)
+            if new_alarms != False:
+                global_config['metric_alarms'][metric_function] = new_alarms
+                LOGGER_CLI.info('Successfully added \'%s\' metric alarm to '
+                                '\'conf/global.json.\'', alarm_info['alarm_name'])
 
         else:
             # Add metric alarms on a per-cluster basis - these are added to the cluster config
