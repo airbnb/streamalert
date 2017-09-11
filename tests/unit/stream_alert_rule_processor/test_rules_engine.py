@@ -673,3 +673,96 @@ class TestStreamRules(object):
             ]
         }
         assert_equal(results, expected_results)
+
+    def test_process_optional_logs(self):
+        """Rules Engine - Logs is optional when datatypes presented
+        """
+        @rule(datatypes=['sourceAddress'],
+              outputs=['s3:sample_bucket'])
+        def no_logs_has_datatypes(rec): # pylint: disable=unused-variable
+            """Testing rule when logs is not present, datatypes is"""
+            results = fetch_values_by_datatype(rec, 'sourceAddress')
+
+            for result in results:
+                if result == '1.1.1.2':
+                    return True
+            return False
+
+        @rule(logs=['cloudwatch:test_match_types'],
+              outputs=['s3:sample_bucket'])
+        def has_logs_no_datatypes(rec): # pylint: disable=unused-variable
+            """Testing rule when logs is present, datatypes is not"""
+
+            return (
+                rec['source'] == '1.1.1.2' or
+                rec['detail']['sourceIPAddress'] == '1.1.1.2'
+            )
+
+        @rule(logs=['cloudwatch:test_match_types'],
+              datatypes=['sourceAddress'],
+              outputs=['s3:sample_bucket'])
+        def has_logs_datatypes(rec): # pylint: disable=unused-variable
+            """Testing rule when logs is present, datatypes is"""
+            results = fetch_values_by_datatype(rec, 'sourceAddress')
+
+            for result in results:
+                if result == '1.1.1.2':
+                    return True
+            return False
+
+        kinesis_data_items = [
+            {
+                'account': 123456,
+                'region': '123456123456',
+                'source': '1.1.1.2',
+                'detail': {
+                    'eventName': 'ConsoleLogin',
+                    'sourceIPAddress': '1.1.1.2',
+                    'recipientAccountId': '654321'
+                }
+            }
+        ]
+
+        alerts = []
+        for data in kinesis_data_items:
+            kinesis_data = json.dumps(data)
+            service, entity = 'kinesis', 'test_kinesis_stream'
+            raw_record = make_kinesis_raw_record(entity, kinesis_data)
+            payload = load_and_classify_payload(self.config, service, entity, raw_record)
+
+            alerts.extend(StreamRules.process(payload))
+
+        assert_equal(len(alerts), 3)
+        rule_names = ['no_logs_has_datatypes',
+                      'has_logs_no_datatypes',
+                      'has_logs_datatypes'
+                     ]
+        assert_items_equal([alerts[i]['rule_name'] for i in range(3)], rule_names)
+
+    def test_process_required_logs(self):
+        """Rules Engine - Logs is required when no datatypes defined."""
+        @rule(outputs=['s3:sample_bucket'])
+        def match_ipaddress(): # pylint: disable=unused-variable
+            """Testing rule to detect matching IP address"""
+            return True
+
+        kinesis_data_items = [
+            {
+                'account': 123456,
+                'region': '123456123456',
+                'source': '1.1.1.2',
+                'detail': {
+                    'eventName': 'ConsoleLogin',
+                    'sourceIPAddress': '1.1.1.2',
+                    'recipientAccountId': '654321'
+                }
+            }
+        ]
+
+        for data in kinesis_data_items:
+            kinesis_data = json.dumps(data)
+            service, entity = 'kinesis', 'test_kinesis_stream'
+            raw_record = make_kinesis_raw_record(entity, kinesis_data)
+            payload = load_and_classify_payload(self.config, service, entity, raw_record)
+
+            assert_false(StreamRules.process(payload))

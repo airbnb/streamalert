@@ -380,7 +380,7 @@ class StreamRules(object):
                 matcher_result = cls.match_event(record, rule)
                 if not matcher_result:
                     continue
-                if rule.datatypes is not None:
+                if rule.datatypes:
                     types_result = cls.match_types(record,
                                                    payload.normalized_types,
                                                    rule.datatypes)
