@@ -13,10 +13,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-# pylint: disable=protected-access
+# pylint: disable=protected-access,wrong-import-position
 import json
+import os
 
-from mock import call, patch
+from mock import patch
 from nose.tools import (
     assert_equal,
     assert_false,
@@ -24,6 +25,9 @@ from nose.tools import (
     assert_list_equal,
     assert_true
 )
+
+# Set the logger env variable before modules are loaded so they properly detect it
+os.environ['LOGGER_LEVEL'] = 'DEBUG'
 
 import stream_alert.rule_processor.classifier as sa_classifier
 from stream_alert.rule_processor.config import load_config
@@ -274,9 +278,6 @@ class TestStreamClassifier(object):
             'type': 'lol_file_added_event_test',
             'message': 'bad_001.txt was added'
         })
-        # Make sure support for multiple schema matching is ON
-        sa_classifier.SUPPORT_MULTIPLE_SCHEMA_MATCHING = True
-
         service, entity = 'kinesis', 'test_stream_2'
         raw_record = make_kinesis_raw_record(entity, kinesis_data)
         payload = load_stream_payload(service, entity, raw_record)
@@ -285,12 +286,7 @@ class TestStreamClassifier(object):
 
         payload = payload.pre_parse().next()
 
-        schema_matches = self.classifier._process_log_schemas(payload)
-
-        assert_equal(len(schema_matches), 2)
-        assert_equal(schema_matches[0].log_name, 'test_multiple_schemas:01')
-        assert_equal(schema_matches[1].log_name, 'test_multiple_schemas:02')
-        schema_match = self.classifier._check_schema_match(schema_matches)
+        schema_match = self.classifier._process_log_schemas(payload)
 
         assert_equal(schema_match.log_name, 'test_multiple_schemas:01')
 
@@ -304,8 +300,6 @@ class TestStreamClassifier(object):
             'type': 'file_removed_event_test_file_added_event',
             'message': 'bad_001.txt was removed'
         })
-        sa_classifier.SUPPORT_MULTIPLE_SCHEMA_MATCHING = True
-
         service, entity = 'kinesis', 'test_stream_2'
         raw_record = make_kinesis_raw_record(entity, kinesis_data)
         payload = load_stream_payload(service, entity, raw_record)
@@ -314,17 +308,14 @@ class TestStreamClassifier(object):
 
         payload = payload.pre_parse().next()
 
-        schema_matches = self.classifier._process_log_schemas(payload)
+        schema_match = self.classifier._parse(payload)
 
-        assert_equal(len(schema_matches), 2)
-        self.classifier._check_schema_match(schema_matches)
-
+        assert_true(schema_match)
         log_mock.assert_called_with(
             'Proceeding with schema for: %s', 'test_multiple_schemas:01'
         )
 
-    @patch('logging.Logger.error')
-    def test_mult_schema_match(self, log_mock):
+    def test_mult_schema_match(self):
         """StreamClassifier - Multiple Schema Matching with Log Patterns"""
         kinesis_data = json.dumps({
             'name': 'file removal test',
@@ -333,8 +324,6 @@ class TestStreamClassifier(object):
             'type': 'random',
             'message': 'bad_001.txt was removed'
         })
-        sa_classifier.SUPPORT_MULTIPLE_SCHEMA_MATCHING = True
-
         service, entity = 'kinesis', 'test_stream_2'
         raw_record = make_kinesis_raw_record(entity, kinesis_data)
         payload = load_stream_payload(service, entity, raw_record)
@@ -343,16 +332,9 @@ class TestStreamClassifier(object):
 
         payload = payload.pre_parse().next()
 
-        schema_matches = self.classifier._process_log_schemas(payload)
+        schema_match = self.classifier._process_log_schemas(payload)
 
-        assert_equal(len(schema_matches), 2)
-        self.classifier._check_schema_match(schema_matches)
-
-        calls = [call('Log classification matched for multiple schemas: %s',
-                      'test_multiple_schemas:01, test_multiple_schemas:02'),
-                 call('Proceeding with schema for: %s', 'test_multiple_schemas:01')]
-
-        log_mock.assert_has_calls(calls)
+        assert_false(schema_match)
 
     def test_classify_json_optional(self):
         """StreamClassifier - Classify JSON with optional fields"""
