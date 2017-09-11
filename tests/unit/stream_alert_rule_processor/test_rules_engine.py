@@ -186,9 +186,9 @@ class TestStreamRules(object):
         # doing this because after kinesis_data is read in, types are casted per
         # the schema
         for alert in alerts:
-            record_keys = alert['record'].keys()
-            record_keys.remove('normalized_types')
-            assert_items_equal(record_keys, kinesis_data.keys())
+            if 'normalized_types' in alert['record'].keys():
+                alert['record'].remove('normalized_types')
+            assert_items_equal(alert['record'].keys(), kinesis_data.keys())
             assert_items_equal(alert['outputs'], rule_outputs_map[alert['rule_name']])
 
     def test_process_subkeys_nested_records(self):

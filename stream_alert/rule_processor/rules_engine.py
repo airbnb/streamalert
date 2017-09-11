@@ -70,9 +70,10 @@ class StreamRules(object):
             datatypes = opts.get('datatypes')
             req_subkeys = opts.get('req_subkeys')
 
-            if not logs:
+            if not (logs or datatypes):
                 LOGGER.error(
-                    'Invalid rule [%s] - rule must have \'logs\' declared',
+                    'Invalid rule [%s] - rule must have either \'logs\' or \''
+                    'datatypes\' declared',
                     rule_name)
                 return
 
@@ -202,6 +203,8 @@ class StreamRules(object):
         """
         results = dict()
         for key, val in record.iteritems():
+            if key == 'normalized_types':
+                continue
             if isinstance(val, dict):
                 nested_results = cls.match_types_helper(val, normalized_types, datatypes)
                 cls.update(results, key, nested_results)
@@ -274,12 +277,10 @@ class StreamRules(object):
             (boolean): return true if all datatypes are defined
         """
         if not normalized_types:
-            LOGGER.error('Normalized types dictionary is empty.')
             return False
 
         for datatype in datatypes:
             if not datatype in normalized_types:
-                LOGGER.error('The datatype [%s] is not defined!', datatype)
                 return False
         return True
 
@@ -362,7 +363,7 @@ class StreamRules(object):
         payload = copy(input_payload)
 
         rules = [rule_attrs for rule_attrs in cls.__rules.values()
-                 if payload.log_source in rule_attrs.logs]
+                 if rule_attrs.logs is None or payload.log_source in rule_attrs.logs]
 
         if not rules:
             LOGGER.debug('No rules to process for %s', payload)
@@ -379,11 +380,11 @@ class StreamRules(object):
                 matcher_result = cls.match_event(record, rule)
                 if not matcher_result:
                     continue
-
-                types_result = cls.match_types(record,
-                                               payload.normalized_types,
-                                               rule.datatypes)
-                record['normalized_types'] = types_result
+                if rule.datatypes is not None:
+                    types_result = cls.match_types(record,
+                                                   payload.normalized_types,
+                                                   rule.datatypes)
+                    record['normalized_types'] = types_result
                 # rule analysis
                 rule_result = cls.process_rule(record, rule)
                 if rule_result:
