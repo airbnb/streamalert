@@ -23,12 +23,39 @@ To run terraform by hand, change to the terraform directory and run:
 
 terraform <cmd> -var-file=../terraform.tfvars -var-file=../variables.json
 """
-from argparse import ArgumentParser, RawTextHelpFormatter, SUPPRESS as ARGPARSE_SUPPRESS
+from argparse import Action, ArgumentParser, RawTextHelpFormatter, SUPPRESS as ARGPARSE_SUPPRESS
 import os
 
+from stream_alert.shared import metrics
 from stream_alert_cli import __version__ as version
 from stream_alert_cli.logger import LOGGER_CLI
 from stream_alert_cli.runner import cli_runner
+
+
+class UniqueSetAction(Action):
+    """Subclass of argparse.Action to avoid multiple of the same choice from a list"""
+    def __call__(self, parser, namespace, values, option_string=None):
+        unique_items = set(values)
+        setattr(namespace, self.dest, unique_items)
+
+
+class NormalizeFunctionAction(UniqueSetAction):
+    """Subclass of argparse.Action -> UniqueSetAction that will return a unique set of
+    normalized lambda function names.
+    """
+    def __call__(self, parser, namespace, values, option_string=None):
+        super(NormalizeFunctionAction, self).__call__(parser, namespace, values, option_string)
+        values = getattr(namespace, self.dest)
+        normalized_map = {'rule': metrics.RULE_PROCESSOR_NAME,
+                          'alert': metrics.ALERT_PROCESSOR_NAME,
+                          'athena': metrics.ATHENA_PARTITION_REFRESH_NAME}
+
+        for func, normalize_func in normalized_map.iteritems():
+            if func in values:
+                values.remove(func)
+                values.add(normalize_func)
+
+        setattr(namespace, self.dest, values)
 
 
 def _add_output_subparser(subparsers):
@@ -113,9 +140,8 @@ Examples:
     live_test_parser.set_defaults(command='live-test')
 
     # get cluster choices from available files
-    clusters = []
-    for _, _, files in os.walk('conf/clusters'):
-        clusters.extend(os.path.splitext(cluster)[0] for cluster in files)
+    clusters = [os.path.splitext(cluster)[0] for _, _, files
+                in os.walk('conf/clusters') for cluster in files]
 
     # add clusters for user to pick from
     live_test_parser.add_argument(
@@ -145,7 +171,8 @@ def _add_validate_schema_subparser(subparsers):
     schema_validation_usage = 'manage.py validate-schemas [options]'
     schema_validation_description = ("""
 StreamAlertCLI v{}
-Run end-to-end tests that will attempt to send alerts
+Run validation of schemas in logs.json using configured integration test files. Validation
+does not actually run the rules engine on test events.
 
 Available Options:
 
@@ -188,6 +215,346 @@ Examples:
         action='store_true',
         help=ARGPARSE_SUPPRESS
     )
+
+
+def _add_metrics_subparser(subparsers):
+    """Add the metrics subparser: manage.py metrics [options]"""
+    metrics_usage = 'manage.py metrics [options]'
+
+    # get cluster choices from available files
+    clusters = [os.path.splitext(cluster)[0] for _, _, files
+                in os.walk('conf/clusters') for cluster in files]
+
+    cluster_choices_block = ('\n').join('{:>28}{}'.format('', cluster) for cluster in clusters)
+
+    metrics_description = ("""
+StreamAlertCLI v{}
+Enable or disable metrics for all lambda functions. This toggles the creation of metric filters.
+
+Available Options:
+
+    -e/--enable         Enable CloudWatch metrics through logging and metric filters
+    -d/--disable        Disable CloudWatch metrics through logging and metric filters
+    -f/--functions      Space delimited list of functions to enable metrics for
+                          Choices are:
+                            rule
+                            alert (not implemented)
+                            athena (not implemented)
+    --debug             Enable Debug logger output
+
+Optional Arguemnts:
+
+    -c/--clusters       Space delimited list of clusters to enable metrics for. If
+                          omitted, this will enable metrics for all clusters. Choices are:
+{}
+Examples:
+
+    manage.py metrics --enable --functions rule
+
+""".format(version, cluster_choices_block))
+
+    metrics_parser = subparsers.add_parser(
+        'metrics',
+        description=metrics_description,
+        usage=metrics_usage,
+        formatter_class=RawTextHelpFormatter,
+        help=ARGPARSE_SUPPRESS
+    )
+
+    # Set the name of this parser to 'metrics'
+    metrics_parser.set_defaults(command='metrics')
+
+    # allow the user to select 1 or more functions to enable metrics for
+    metrics_parser.add_argument(
+        '-f', '--functions',
+        choices=['rule', 'alert', 'athena'],
+        help=ARGPARSE_SUPPRESS,
+        nargs='+',
+        action=NormalizeFunctionAction,
+        required=True
+    )
+
+    # get the metric toggle value
+    toggle_group = metrics_parser.add_mutually_exclusive_group(required=True)
+
+    toggle_group.add_argument(
+        '-e', '--enable',
+        dest='enable_metrics',
+        action='store_true'
+    )
+
+    toggle_group.add_argument(
+        '-d', '--disable',
+        dest='enable_metrics',
+        action='store_false'
+    )
+
+    # allow the user to select 0 or more clusters to enable metrics for
+    metrics_parser.add_argument(
+        '-c', '--clusters',
+        choices=clusters,
+        help=ARGPARSE_SUPPRESS,
+        nargs='+',
+        action=UniqueSetAction,
+        default=clusters
+    )
+
+    # allow verbose output for the CLI with the --debug option
+    metrics_parser.add_argument(
+        '--debug',
+        action='store_true',
+        help=ARGPARSE_SUPPRESS
+    )
+
+
+def _add_metric_alarm_subparser(subparsers):
+    """Add the create-alarm subparser: manage.py create-alarm [options]"""
+    metric_alarm_usage = 'manage.py create-alarm [options]'
+
+    # get the available metrics to be used
+    available_metrics = metrics.MetricLogger.get_available_metrics()
+    all_metrics = [metric for func in available_metrics for metric in available_metrics[func]]
+
+    metric_choices_block = ('\n').join('{:>35}{}'.format('', metric) for metric in all_metrics)
+
+    # get cluster choices from available files
+    clusters = [os.path.splitext(cluster)[0] for _, _, files
+                in os.walk('conf/clusters') for cluster in files]
+
+    cluster_choices_block = ('\n').join('{:>37}{}'.format('', cluster) for cluster in clusters)
+
+    metric_alarm_description = ("""
+StreamAlertCLI v{}
+Add a CloudWatch alarm for predefined metrics. These are save in the config and
+Terraform is used to create the alarms.
+
+Required Arguments:
+
+    -m/--metric                  The predefined metric to assign this alarm to. Choices are:
+{}
+    -mt/--metric-target          The target of this metric alarm, meaning either the cluster metric
+                                   or the aggrea metric. Choices are:
+                                     cluster
+                                     aggregate
+                                     all
+    -co/--comparison-operator    Comparison operator to use for this metric. Choices are:
+                                   GreaterThanOrEqualToThreshold
+                                   GreaterThanThreshold
+                                   LessThanThreshold
+                                   LessThanOrEqualToThreshold
+    -an/--alarm-name             The name for the alarm. This name must be unique within the AWS
+                                   account
+    -ep/--evaluation-periods     The number of periods over which data is compared to the specified
+                                   threshold. The minimum value for this is 1. Also see the 'Other
+                                   Constraints' section below
+    -p/--period                  The period, in seconds, over which the specified statistic is
+                                   applied. Valid values are any multiple of 60. Also see the
+                                   'Other Constraints' section below
+    -t/--threshold               The value against which the specified statistic is compared. This
+                                   value should be a double.
+
+Optional Arguments:
+
+    -ad/--alarm-description      The description for the alarm
+    -c/--clusters                Space delimited list of clusters to apply this metric to. This is
+                                   ignored if the --metric-target of 'aggregate' is used.
+                                   Choices are:
+{}
+    -s/--statistic               The statistic for the metric associated with the alarm.
+                                   Choices are:
+                                     SampleCount
+                                     Average
+                                     Sum
+                                     Minimum
+                                     Maximum
+    --debug                      Enable Debug logger output
+
+Other Constraints:
+
+    The product of the value for period multiplied by the value for evaluation periods cannot
+    exceed 86,400. 86,400 is the number of seconds in one day and an alarm's total current
+    evaluation period can be no longer than one day.
+
+Examples:
+
+    manage.py create-alarm \\
+      --metric FailedParses \\
+      --metric-target cluster \\
+      --comparison-operator GreaterThanOrEqualToThreshold \\
+      --alarm-name FailedParsesAlarm \\
+      --evaluation-periods 1 \\
+      --period 300 \\
+      --threshold 1.0 \\
+      --alarm-description 'Alarm for any failed parses that occur within a 5 minute period in the prod cluster' \\
+      --clusters prod \\
+      --statistic Sum
+
+Resources:
+
+    AWS:        https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_PutMetricAlarm.html
+    Terraform:  https://www.terraform.io/docs/providers/aws/r/cloudwatch_metric_alarm.html
+
+""".format(version, metric_choices_block, cluster_choices_block))
+
+    metric_alarm_parser = subparsers.add_parser(
+        'create-alarm',
+        description=metric_alarm_description,
+        usage=metric_alarm_usage,
+        formatter_class=RawTextHelpFormatter,
+        help=ARGPARSE_SUPPRESS
+    )
+
+    # Set the name of this parser to 'create-alarm'
+    metric_alarm_parser.set_defaults(command='create-alarm')
+
+    # add all the required parameters
+    # add metrics for user to pick from. Will be mapped to 'metric_name' in terraform
+    metric_alarm_parser.add_argument(
+        '-m', '--metric',
+        choices=all_metrics,
+        dest='metric_name',
+        help=ARGPARSE_SUPPRESS,
+        required=True
+    )
+
+    # check to see what the user wants to apply this metric to (cluster, aggregate, or both)
+    metric_alarm_parser.add_argument(
+        '-mt', '--metric-target',
+        choices=['cluster', 'aggregate', 'all'],
+        help=ARGPARSE_SUPPRESS,
+        required=True
+    )
+
+    # get the comparison type for this metric
+    metric_alarm_parser.add_argument(
+        '-co', '--comparison-operator',
+        choices=['GreaterThanOrEqualToThreshold', 'GreaterThanThreshold',
+                 'LessThanThreshold', 'LessThanOrEqualToThreshold'],
+        help=ARGPARSE_SUPPRESS,
+        required=True
+    )
+
+    # get the name of the alarm
+    def _alarm_name_validator(val):
+        if not 1 <= len(val) <= 255:
+            raise metric_alarm_parser.error('alarm name length must be between 1 and 255')
+        return val
+
+    metric_alarm_parser.add_argument(
+        '-an', '--alarm-name',
+        help=ARGPARSE_SUPPRESS,
+        required=True,
+        type=_alarm_name_validator
+    )
+
+    # get the evaluation period for this alarm
+    def _alarm_eval_periods_validator(val):
+        error = 'evaluation periods must be an integer greater than 0'
+        try:
+            period = int(val)
+        except ValueError:
+            raise metric_alarm_parser.error(error)
+
+        if period <= 0:
+            raise metric_alarm_parser.error(error)
+        return period
+
+    metric_alarm_parser.add_argument(
+        '-ep', '--evaluation-periods',
+        help=ARGPARSE_SUPPRESS,
+        required=True,
+        type=_alarm_eval_periods_validator
+    )
+
+    # get the period for this alarm
+    def _alarm_period_validator(val):
+        error = 'period must be an integer in multiples of 60'
+        try:
+            period = int(val)
+        except ValueError:
+            raise metric_alarm_parser.error(error)
+
+        if period <= 0 or period % 60 != 0:
+            raise metric_alarm_parser.error(error)
+
+        return period
+
+    metric_alarm_parser.add_argument(
+        '-p', '--period',
+        help=ARGPARSE_SUPPRESS,
+        required=True,
+        type=_alarm_period_validator
+    )
+
+    # get the threshold for this alarm
+    metric_alarm_parser.add_argument(
+        '-t', '--threshold',
+        help=ARGPARSE_SUPPRESS,
+        required=True,
+        type=float
+    )
+
+    # all other optional flags
+    # get the optional alarm description
+    def _alarm_description_validator(val):
+        if len(val) > 1024:
+            raise metric_alarm_parser.error('alarm description length must be less than 1024')
+        return val
+
+    metric_alarm_parser.add_argument(
+        '-ad', '--alarm-description',
+        help=ARGPARSE_SUPPRESS,
+        type=_alarm_description_validator,
+        default=''
+    )
+
+    # allow the user to select 0 or more clusters to apply this alarm to
+    metric_alarm_parser.add_argument(
+        '-c', '--clusters',
+        choices=clusters,
+        help=ARGPARSE_SUPPRESS,
+        nargs='+',
+        action=UniqueSetAction,
+        default=[]
+    )
+
+    ### Commenting out the below until we can support 'extended-statistic' metrics
+    ### alongside 'statistic' metrics. Currently only 'statistic' are supported
+    # # get the extended statistic or statistic value
+    # statistic_group = metric_alarm_parser.add_mutually_exclusive_group()
+    # def _extended_stat_validator(val):
+    #     if not re.search(r'p(\d{1,2}(\.\d{0,2})?|100)$', val):
+    #         raise metric_alarm_parser.error('extended statistic values must start with \'p\' '
+    #                                         'and be followed by a percentage value (ie: p0.0, '
+    #                                         'p10, p55.5, p100)')
+    #     return val
+    #
+    # statistic_group.add_argument(
+    #     '-es', '--extended-statistic',
+    #     help=ARGPARSE_SUPPRESS,
+    #     type=_extended_stat_validator
+    # )
+    #
+    # statistic_group.add_argument(
+    #     '-s', '--statistic',
+    #     choices=['SampleCount', 'Average', 'Sum', 'Minimum', 'Maximum'],
+    #     help=ARGPARSE_SUPPRESS
+    # )
+
+    metric_alarm_parser.add_argument(
+        '-s', '--statistic',
+        choices=['SampleCount', 'Average', 'Sum', 'Minimum', 'Maximum'],
+        help=ARGPARSE_SUPPRESS,
+        default=''
+    )
+
+    # allow verbose output for the CLI with the --debug option
+    metric_alarm_parser.add_argument(
+        '--debug',
+        action='store_true',
+        help=ARGPARSE_SUPPRESS
+    )
+
 
 
 def _add_lambda_subparser(subparsers):
@@ -478,6 +845,8 @@ For additional details on the available commands, try:
     _add_output_subparser(subparsers)
     _add_live_test_subparser(subparsers)
     _add_validate_schema_subparser(subparsers)
+    _add_metrics_subparser(subparsers)
+    _add_metric_alarm_subparser(subparsers)
     _add_lambda_subparser(subparsers)
     _add_terraform_subparser(subparsers)
     _add_configure_subparser(subparsers)

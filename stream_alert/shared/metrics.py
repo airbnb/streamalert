@@ -24,6 +24,12 @@ from stream_alert.shared import (
 
 CLUSTER = os.environ.get('CLUSTER', 'unknown_cluster')
 
+# The FUNC_PREFIXES dict acts as a simple map to a human-readable name
+# Add ATHENA_PARTITION_REFRESH_NAME: 'AthenaPartitionRefresh', to the
+# below when metrics are supported there
+FUNC_PREFIXES = {ALERT_PROCESSOR_NAME: 'AlertProcessor',
+                 RULE_PROCESSOR_NAME: 'RuleProcessor'}
+
 try:
     ENABLE_METRICS = bool(int(os.environ.get('ENABLE_METRICS', 0)))
 except ValueError as err:
@@ -45,6 +51,7 @@ class MetricLogger(object):
     # Constant metric names used for CloudWatch
     FAILED_PARSES = 'FailedParses'
     S3_DOWNLOAD_TIME = 'S3DownloadTime'
+    TOTAL_PROCESSED_SIZE = 'TotalProcessedSize'
     TOTAL_RECORDS = 'TotalRecords'
     TOTAL_S3_RECORDS = 'TotalS3Records'
     TRIGGERED_ALERTS = 'TriggeredAlerts'
@@ -64,6 +71,7 @@ class MetricLogger(object):
         RULE_PROCESSOR_NAME: {
             FAILED_PARSES: (_default_filter.format(FAILED_PARSES), _default_value_lookup),
             S3_DOWNLOAD_TIME: (_default_filter.format(S3_DOWNLOAD_TIME), _default_value_lookup),
+            TOTAL_PROCESSED_SIZE: (_default_filter.format(TOTAL_RECORDS), _default_value_lookup),
             TOTAL_RECORDS: (_default_filter.format(TOTAL_RECORDS), _default_value_lookup),
             TOTAL_S3_RECORDS: (_default_filter.format(TOTAL_S3_RECORDS), _default_value_lookup),
             TRIGGERED_ALERTS: (_default_filter.format(TRIGGERED_ALERTS), _default_value_lookup)

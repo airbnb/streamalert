@@ -16,10 +16,12 @@ limitations under the License.
 from collections import defaultdict
 import json
 import os
+import string
 
 from stream_alert.shared import metrics
 from stream_alert_cli.logger import LOGGER_CLI
 
+DEFAULT_SNS_MONITORING_TOPIC = 'stream_alert_monitoring'
 RESTRICTED_CLUSTER_NAMES = ('main', 'athena')
 
 
@@ -160,9 +162,47 @@ def generate_main(**kwargs):
     infrastructure_config = config['global'].get('infrastructure')
     if infrastructure_config and 'monitoring' in infrastructure_config:
         if infrastructure_config['monitoring'].get('create_sns_topic'):
-            main_dict['resource']['aws_sns_topic']['stream_alert_monitoring'] = {
-                'name': 'stream_alert_monitoring'
+            main_dict['resource']['aws_sns_topic'][DEFAULT_SNS_MONITORING_TOPIC] = {
+                'name': DEFAULT_SNS_MONITORING_TOPIC
             }
+
+    # Add any global cloudwatch alarms to the main.tf
+    monitoring_config = config['global']['infrastructure'].get('monitoring')
+    if not monitoring_config:
+        return main_dict
+
+    global_metrics = monitoring_config.get('metric_alarms')
+    if not global_metrics:
+        return main_dict
+
+    topic_name = (DEFAULT_SNS_MONITORING_TOPIC if infrastructure_config
+                  ['monitoring'].get('create_sns_topic') else
+                  infrastructure_config['monitoring'].get('sns_topic_name'))
+
+    sns_topic_arn = 'arn:aws:sns:{region}:{account_id}:{topic}'.format(
+        region=config['global']['account']['region'],
+        account_id=config['global']['account']['aws_account_id'],
+        topic=topic_name
+    )
+
+    formatted_alarms = {}
+    # Add global metric alarms for the rule and alert processors
+    for func in metrics.FUNC_PREFIXES:
+        if not func in global_metrics:
+            continue
+
+        for name, settings in global_metrics[func].iteritems():
+            alarm_info = settings.copy()
+            alarm_info['alarm_name'] = name
+            alarm_info['namespace'] = 'StreamAlert'
+            alarm_info['alarm_actions'] = [sns_topic_arn]
+            # Terraform only allows certain characters in resource names, so strip the name
+            acceptable_chars = ''.join([string.digits, string.letters, '_-'])
+            name = filter(acceptable_chars.__contains__, name)
+            formatted_alarms['metric_alarm_{}'.format(name)] = alarm_info
+
+    if formatted_alarms:
+        main_dict['resource']['aws_cloudwatch_metric_alarm'] = formatted_alarms
 
     return main_dict
 
@@ -216,8 +256,6 @@ def generate_stream_alert(cluster_name, cluster_dict, config):
     Returns:
         bool: Result of applying the stream_alert module
     """
-    enable_metrics = config['global'].get('infrastructure',
-                                          {}).get('metrics', {}).get('enabled', False)
     account = config['global']['account']
     modules = config['clusters'][cluster_name]['modules']
 
@@ -228,7 +266,8 @@ def generate_stream_alert(cluster_name, cluster_dict, config):
         'prefix': account['prefix'],
         'cluster': cluster_name,
         'kms_key_arn': '${aws_kms_key.stream_alert_secrets.arn}',
-        'rule_processor_enable_metrics': enable_metrics,
+        'rule_processor_enable_metrics': modules['stream_alert'] \
+            ['rule_processor'].get('enable_metrics', False),
         'rule_processor_log_level': modules['stream_alert'] \
             ['rule_processor'].get('log_level', 'info'),
         'rule_processor_memory': modules['stream_alert']['rule_processor']['memory'],
@@ -236,7 +275,8 @@ def generate_stream_alert(cluster_name, cluster_dict, config):
         'rule_processor_version': modules['stream_alert']['rule_processor']['current_version'],
         'rule_processor_config': '${var.rule_processor_config}',
         'alert_processor_config': '${var.alert_processor_config}',
-        'alert_processor_enable_metrics': enable_metrics,
+        'alert_processor_enable_metrics': modules['stream_alert'] \
+            ['alert_processor'].get('enable_metrics', False),
         'alert_processor_log_level': modules['stream_alert'] \
             ['alert_processor'].get('log_level', 'info'),
         'alert_processor_memory': modules['stream_alert']['alert_processor']['memory'],
@@ -281,36 +321,33 @@ def generate_stream_alert(cluster_name, cluster_dict, config):
 
     return True
 
-def generate_cloudwatch_log_metrics(cluster_name, cluster_dict, config):
-    """Add the CloudWatch Metric Filters module to the Terraform cluster dict.
+
+def generate_cloudwatch_metric_filters(cluster_name, cluster_dict, config):
+    """Add the CloudWatch Metric Filters information to the Terraform cluster dict.
 
     Args:
         cluster_name (str): The name of the currently generating cluster
         cluster_dict (defaultdict): The dict containing all Terraform config for a given cluster.
         config (dict): The loaded config from the 'conf/' directory
-
-    Returns:
-        bool: Result of applying the cloudwatch metric filters to the stream_alert module
     """
-    enable_metrics = config['global'].get('infrastructure',
-                                          {}).get('metrics', {}).get('enabled', False)
-
-    # Do not add any metric filters if metrics are disabled
-    if not enable_metrics:
-        return
+    stream_alert_config = config['clusters'][cluster_name]['modules']['stream_alert']
 
     current_metrics = metrics.MetricLogger.get_available_metrics()
 
     # Add metric filters for the rule and alert processor
-    # The funcs dict acts as a simple map to a human-readable name
-    funcs = {metrics.ALERT_PROCESSOR_NAME: 'AlertProcessor',
-             metrics.RULE_PROCESSOR_NAME: 'RuleProcessor'}
-
-    for func in funcs:
+    for func, metric_prefix in metrics.FUNC_PREFIXES.iteritems():
         if func not in current_metrics:
             continue
 
-        metric_prefix = funcs[func]
+        if func not in stream_alert_config:
+            LOGGER_CLI.error('Function for metrics \'%s\' is not defined in stream alert config. '
+                             'Options are: %s', func,
+                             ', '.join('\'{}\''.format(key) for key in stream_alert_config))
+            continue
+
+        if not stream_alert_config[func].get('enable_metrics'):
+            continue
+
         filter_pattern_idx, filter_value_idx = 0, 1
 
         # Add filters for the cluster and aggregate
@@ -333,6 +370,80 @@ def generate_cloudwatch_log_metrics(cluster_name, cluster_dict, config):
             ['{}_metric_filters'.format(func)] = filters
 
 
+def _format_metric_alarm(name, alarm_settings):
+    """Helper function to format a metric alarm as a comma-separated string
+
+    Args:
+        name (str): The name of the alarm to create
+        alarm_info (dict): All other settings for this alarm (threshold, etc)
+        function (str): The respective function this alarm is being created for.
+            This is the RuleProcessor or AlertProcessor
+        cluster (str): The cluster that this metric is related to
+
+    Returns:
+        str: formatted and comma-separated string containing alarm settings
+    """
+    alarm_info = alarm_settings.copy()
+    # The alarm description and name can potentially have commas so remove them
+    alarm_info['alarm_description'] = alarm_info['alarm_description'].replace(',', '')
+
+    attributes = list(alarm_info)
+    attributes.sort()
+    sorted_values = [str(alarm_info[attribute]) if alarm_info[attribute]
+                     else '' for attribute in attributes]
+
+    sorted_values.insert(0, name.replace(',', ''))
+
+    return ','.join(sorted_values)
+
+
+def generate_cloudwatch_metric_alarms(cluster_name, cluster_dict, config):
+    """Add the CloudWatch Metric Alarms information to the Terraform cluster dict.
+
+    Args:
+        cluster_name (str): The name of the currently generating cluster
+        cluster_dict (defaultdict): The dict containing all Terraform config for a given cluster.
+        config (dict): The loaded config from the 'conf/' directory
+    """
+    infrastructure_config = config['global'].get('infrastructure')
+
+    if not (infrastructure_config and 'monitoring' in infrastructure_config):
+        LOGGER_CLI.error('Invalid config: Make sure you declare global infrastructure options!')
+        return
+
+    topic_name = (DEFAULT_SNS_MONITORING_TOPIC if infrastructure_config
+                  ['monitoring'].get('create_sns_topic') else
+                  infrastructure_config['monitoring'].get('sns_topic_name'))
+
+    sns_topic_arn = 'arn:aws:sns:{region}:{account_id}:{topic}'.format(
+        region=config['global']['account']['region'],
+        account_id=config['global']['account']['aws_account_id'],
+        topic=topic_name
+    )
+
+    cluster_dict['module']['stream_alert_{}'.format(cluster_name)] \
+        ['sns_topic_arn'] = sns_topic_arn
+
+    stream_alert_config = config['clusters'][cluster_name]['modules']['stream_alert']
+
+    # Add cluster metric alarms for the rule and alert processors
+    formatted_alarms = []
+    for func_config in stream_alert_config.values():
+        if 'metric_alarms' not in func_config:
+            continue
+
+        # TODO: update this logic to simply use a list of maps once Terraform fixes
+        # their support for this, instead of the comma-separated string this creates
+        metric_alarms = func_config['metric_alarms']
+        for name, alarm_info in metric_alarms.iteritems():
+            formatted_alarms.append(
+                _format_metric_alarm(name, alarm_info)
+            )
+
+    cluster_dict['module']['stream_alert_{}'.format(cluster_name)] \
+        ['metric_alarms'] = formatted_alarms
+
+
 def generate_cloudwatch_monitoring(cluster_name, cluster_dict, config):
     """Add the CloudWatch Monitoring module to the Terraform cluster dict.
 
@@ -346,24 +457,20 @@ def generate_cloudwatch_monitoring(cluster_name, cluster_dict, config):
     """
     prefix = config['global']['account']['prefix']
     infrastructure_config = config['global'].get('infrastructure')
-    sns_topic_arn = None
 
-    if infrastructure_config and 'monitoring' in infrastructure_config:
-        if infrastructure_config['monitoring'].get('create_sns_topic'):
-            sns_topic_arn = 'arn:aws:sns:{region}:{account_id}:{topic}'.format(
-                region=config['global']['account']['region'],
-                account_id=config['global']['account']['aws_account_id'],
-                topic='stream_alert_monitoring'
-            )
-        elif infrastructure_config['monitoring'].get('sns_topic_name'):
-            sns_topic_arn = 'arn:aws:sns:{region}:{account_id}:{topic}'.format(
-                region=config['global']['account']['region'],
-                account_id=config['global']['account']['aws_account_id'],
-                topic=infrastructure_config['monitoring']['sns_topic_name']
-            )
-    else:
+    if not (infrastructure_config and 'monitoring' in infrastructure_config):
         LOGGER_CLI.error('Invalid config: Make sure you declare global infrastructure options!')
         return False
+
+    topic_name = DEFAULT_SNS_MONITORING_TOPIC if infrastructure_config \
+                 ['monitoring'].get('create_sns_topic') else \
+                 infrastructure_config['monitoring'].get('sns_topic_name')
+
+    sns_topic_arn = 'arn:aws:sns:{region}:{account_id}:{topic}'.format(
+        region=config['global']['account']['region'],
+        account_id=config['global']['account']['aws_account_id'],
+        topic=topic_name
+    )
 
     lambda_functions = [
         '{}_{}_streamalert_rule_processor'.format(prefix, cluster_name),
@@ -615,7 +722,9 @@ def generate_cluster(**kwargs):
     if not generate_stream_alert(cluster_name, cluster_dict, config):
         return
 
-    generate_cloudwatch_log_metrics(cluster_name, cluster_dict, config)
+    generate_cloudwatch_metric_filters(cluster_name, cluster_dict, config)
+
+    generate_cloudwatch_metric_alarms(cluster_name, cluster_dict, config)
 
     if modules['cloudwatch_monitoring']['enabled']:
         if not generate_cloudwatch_monitoring(cluster_name, cluster_dict, config):
@@ -661,8 +770,6 @@ def generate_athena(config):
     """
     athena_dict = infinitedict()
     athena_config = config['lambda']['athena_partition_refresh_config']
-    enable_metrics = config['global'].get('infrastructure',
-                                          {}).get('metrics', {}).get('enabled', False)
 
     data_buckets = set()
     for refresh_type in athena_config['refresh_type']:
@@ -679,11 +786,11 @@ def generate_athena(config):
         'athena_data_buckets': list(data_buckets),
         'refresh_interval': athena_config.get('refresh_interval', 'rate(10 minutes)'),
         'current_version': athena_config['current_version'],
-        'enable_metrics': enable_metrics,
+        'enable_metrics': athena_config.get('enable_metrics', False),
         'prefix': config['global']['account']['prefix']
     }
 
-    if not enable_metrics:
+    if not athena_config.get('enable_metrics', False):
         return athena_dict
 
     # Check to see if there are any metrics configured for the athena function

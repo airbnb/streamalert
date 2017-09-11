@@ -585,14 +585,15 @@ class TestTerraformGenerate(object):
                     'prefix': 'unit-testing'
                 },
                 'infrastructure': {
-                    'metrics': {
-                        'enabled': True
+                    'monitoring': {
+                        'create_sns_topic': True
                     }
                 }
             },
             'lambda': {
                 'athena_partition_refresh_config': {
                     'enabled': True,
+                    'enable_metrics': True,
                     'current_version': '$LATEST',
                     'refresh_type': {
                         'repair_hive_table': {

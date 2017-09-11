@@ -25,6 +25,7 @@ from stream_alert.athena_partition_refresh.main import StreamAlertAthenaClient
 
 from stream_alert_cli import helpers
 from stream_alert_cli.config import CLIConfig
+from stream_alert_cli.helpers import continue_prompt
 from stream_alert_cli.logger import LOGGER_CLI
 import stream_alert_cli.outputs as config_outputs
 from stream_alert_cli.package import AlertProcessorPackage, AthenaPackage, RuleProcessorPackage
@@ -72,6 +73,12 @@ def cli_runner(options):
 
     elif options.command == 'athena':
         athena_handler(options)
+
+    elif options.command == 'metrics':
+        _toggle_metrics(options)
+
+    elif options.command == 'create-alarm':
+        _create_alarm(options)
 
 
 def athena_handler(options):
@@ -315,16 +322,6 @@ def run_command(args=None, **kwargs):
     return helpers.run_command(args, **kwargs)
 
 
-def continue_prompt():
-    """Continue prompt used before applying Terraform plans"""
-    required_responses = {'yes', 'no'}
-    response = ''
-    while response not in required_responses:
-        response = raw_input('\nWould you like to continue? (yes or no): ')
-    if response == 'no':
-        sys.exit(0)
-
-
 def tf_runner(**kwargs):
     """Terraform wrapper to build StreamAlert infrastructure.
 
@@ -360,7 +357,8 @@ def tf_runner(**kwargs):
     if not run_command(tf_command):
         return False
 
-    continue_prompt()
+    if not continue_prompt():
+        sys.exit(0)
 
     if action == 'destroy':
         LOGGER_CLI.info('Destroying infrastructure')
@@ -649,3 +647,40 @@ def configure_output(options):
                          'output configuration for service \'%s\'',
                          props['descriptor'].value,
                          options.service)
+
+
+def _toggle_metrics(options):
+    """Enable or disable logging CloudWatch metrics
+
+    Args:
+        options (argparser): Contains boolean necessary for toggling metrics
+    """
+    CONFIG.toggle_metrics(options.enable_metrics, options.clusters, options.functions)
+
+
+def _create_alarm(options):
+    """Create a new CloudWatch alarm for the given metric
+
+    Args:
+        options (argparser): Contains all of the necessary info for configuring
+            a CloudWatch alarm
+    """
+    # Perform safety check for max total evaluation period. This logic cannot
+    # be performed by argparse so must be performed now.
+    seconds_in_day = 86400
+    if options.period * options.evaluation_periods > seconds_in_day:
+        LOGGER_CLI.error('The product of the value for period multiplied by the '
+                         'value for evaluation periods cannot exceed 86,400. 86,400 '
+                         'is the number of seconds in one day and an alarm\'s total '
+                         'current evaluation period can be no longer than one day.')
+        return
+
+    # Check to see if the user is specifying clusters when trying to create an
+    # alarm on an aggregate metric. Aggregate metrics encompass all clusters so
+    # specification of clusters doesn't have any real effect
+    if options.metric_target == 'aggregate' and options.clusters:
+        LOGGER_CLI.error('Specifying clusters when creating an alarm on an aggregate '
+                         'metric has no effect. Please remove the -c/--clusters flag.')
+        return
+
+    CONFIG.add_metric_alarm(vars(options))
