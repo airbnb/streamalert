@@ -69,8 +69,7 @@ def test_repr_string():
     s3_payload.records = ['rec1', 'rec2']
     print_value = ('<S3Payload valid:False log_source:unit_source '
                    'entity:entity type:unit_type '
-                   'record:[\'rec1\', \'rec2\'] '
-                   'normalized_types:None>')
+                   'record:[\'rec1\', \'rec2\']>')
 
     output_print = s3_payload.__repr__()
     assert_equal(output_print, print_value)
