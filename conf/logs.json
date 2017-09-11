@@ -653,6 +653,7 @@
       "filemod_count": "integer",
       "filtering_known_dlls": "boolean",
       "host_type": "string",
+      "interface_ip": "string",
       "last_server_update": "integer",
       "last_update": "string",
       "modload_count": "integer",
@@ -686,7 +687,8 @@
         "alliance_score_srstrust",
         "alliance_score_virustotal",
         "alliance_updated_srstrust",
-        "alliance_updated_virustotal"
+        "alliance_updated_virustotal",
+        "interface_ip"
       ],
       "envelope_keys": {
         "cb_server": "string",
