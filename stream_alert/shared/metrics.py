@@ -71,7 +71,8 @@ class MetricLogger(object):
         RULE_PROCESSOR_NAME: {
             FAILED_PARSES: (_default_filter.format(FAILED_PARSES), _default_value_lookup),
             S3_DOWNLOAD_TIME: (_default_filter.format(S3_DOWNLOAD_TIME), _default_value_lookup),
-            TOTAL_PROCESSED_SIZE: (_default_filter.format(TOTAL_RECORDS), _default_value_lookup),
+            TOTAL_PROCESSED_SIZE: (_default_filter.format(TOTAL_PROCESSED_SIZE),
+                                   _default_value_lookup),
             TOTAL_RECORDS: (_default_filter.format(TOTAL_RECORDS), _default_value_lookup),
             TOTAL_S3_RECORDS: (_default_filter.format(TOTAL_S3_RECORDS), _default_value_lookup),
             TRIGGERED_ALERTS: (_default_filter.format(TRIGGERED_ALERTS), _default_value_lookup)
