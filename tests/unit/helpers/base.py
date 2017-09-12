@@ -94,7 +94,20 @@ def basic_streamalert_config():
             },
             'infrastructure': {
                 'monitoring': {
-                    'create_sns_topic': True
+                    'create_sns_topic': True,
+                    'metric_alarms': {
+                        'rule_processor': {
+                            'Aggregate Unit Testing Failed Parses Alarm': {
+                                'alarm_description': '',
+                                'comparison_operator': 'GreaterThanOrEqualToThreshold',
+                                'evaluation_periods': 1,
+                                'metric_name': 'RuleProcessor-FailedParses',
+                                'period': 300,
+                                'statistic': 'Sum',
+                                'threshold': 1.0
+                            }
+                        }
+                    }
                 }
             }
         },
@@ -118,6 +131,7 @@ def basic_streamalert_config():
             },
             'athena_partition_refresh_config': {
                 'current_version': '$LATEST',
+                'enable_metrics': False,
                 'enabled': True,
                 'handler': 'main.handler',
                 'memory': 128,
@@ -164,7 +178,19 @@ def basic_streamalert_config():
                         },
                         'rule_processor': {
                             'current_version': '$LATEST',
+                            "enable_metrics": True,
                             'memory': 128,
+                            'metric_alarms': {
+                                'Prod Unit Testing Failed Parses Alarm': {
+                                    'alarm_description': '',
+                                    'comparison_operator': 'GreaterThanOrEqualToThreshold',
+                                    'evaluation_periods': 1,
+                                    'metric_name': 'RuleProcessor-FailedParses-PROD',
+                                    'period': 300,
+                                    'statistic': 'Sum',
+                                    'threshold': 1.0
+                                }
+                            },
                             'timeout': 10
                         }
                     }
