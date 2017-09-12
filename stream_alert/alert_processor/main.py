@@ -133,6 +133,8 @@ def _sort_dict(unordered_dict):
     """
     result = OrderedDict()
     for key, value in sorted(unordered_dict.items(), key=lambda t: t[0]):
+        if key == 'normalized_types':
+            continue
         if isinstance(value, dict):
             result[key] = _sort_dict(value)
             continue
