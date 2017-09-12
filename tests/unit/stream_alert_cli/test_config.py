@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 # pylint: disable=protected-access
+from contextlib import nested
 import json
 
 from mock import Mock, patch
@@ -23,38 +24,32 @@ from stream_alert_cli.config import CLIConfig
 from tests.unit.helpers.base import basic_streamalert_config, mock_open
 
 
-def test_load_config():
-    """CLI - Load config"""
-    config_data = basic_streamalert_config()
+class TestCLIConfig(object):
+    """Test class for CLIConfig"""
 
-    global_file = 'conf/global.json'
-    global_contents = json.dumps(config_data['global'], indent=2)
+    def __init__(self):
+        self.mocked_opens = None
 
-    lambda_file = 'conf/lambda.json'
-    lambda_contents = json.dumps(config_data['lambda'], indent=2)
+    def setup(self):
+        """Setup before each method"""
+        config_data = basic_streamalert_config()
+        self.mocked_opens = [
+            mock_open('conf/global.json', json.dumps(config_data['global'])),
+            mock_open('conf/lambda.json', json.dumps(config_data['lambda'])),
+            mock_open('conf/clusters/prod.json', json.dumps(config_data['clusters']['prod']))
+        ]
 
-    with mock_open(global_file, global_contents):
-        with mock_open(lambda_file, lambda_contents):
-            # mock os call
-            # test valid and invalid clusters
+    def test_load_config(self):
+        """CLI - Load config"""
+        with nested(*self.mocked_opens):
             config = CLIConfig()
             assert_equal(config['global']['account']['prefix'], 'unit-testing')
 
-
-@patch('logging.Logger.error')
-@patch('stream_alert_cli.config.CLIConfig.write')
-def test_toggle_metric(write_mock, log_mock):
-    """CLI - Metric toggling"""
-    config_data = basic_streamalert_config()
-
-    global_file = 'conf/global.json'
-    global_contents = json.dumps(config_data['global'], indent=2)
-
-    lambda_file = 'conf/lambda.json'
-    lambda_contents = json.dumps(config_data['lambda'], indent=2)
-
-    with mock_open(global_file, global_contents):
-        with mock_open(lambda_file, lambda_contents):
+    @patch('logging.Logger.error')
+    @patch('stream_alert_cli.config.CLIConfig.write')
+    def test_toggle_metric(self, write_mock, log_mock):
+        """CLI - Metric toggling"""
+        with nested(*self.mocked_opens):
             config = CLIConfig()
 
             config.toggle_metrics(True, [], ['athena_partition_refresh'])
@@ -67,118 +62,66 @@ def test_toggle_metric(write_mock, log_mock):
             config.toggle_metrics(True, ['prod'], ['alert_processor'])
             write_mock.assert_called()
 
-
-def test_aggregate_alarm_exists():
-    """CLI - Aggregate alarm check"""
-    config_data = basic_streamalert_config()
-
-    global_file = 'conf/global.json'
-    global_contents = json.dumps(config_data['global'], indent=2)
-
-    lambda_file = 'conf/lambda.json'
-    lambda_contents = json.dumps(config_data['lambda'], indent=2)
-
-    with mock_open(global_file, global_contents):
-        with mock_open(lambda_file, lambda_contents):
+    def test_aggregate_alarm_exists(self):
+        """CLI - Aggregate alarm check"""
+        with nested(*self.mocked_opens):
             config = CLIConfig()
             result = config._alarm_exists('Aggregate Unit Testing Failed Parses Alarm')
             assert_true(result)
 
+    def test_cluster_alarm_exists(self):
+        """CLI - Aggregate alarm check"""
+        with nested(*self.mocked_opens):
+            config = CLIConfig()
+            result = config._alarm_exists('Prod Unit Testing Failed Parses Alarm')
+            assert_true(result)
 
-def test_cluster_alarm_exists():
-    """CLI - Aggregate alarm check"""
-    config_data = basic_streamalert_config()
+    @patch('stream_alert_cli.config.CLIConfig.write', Mock())
+    @patch('logging.Logger.info')
+    def test_cluster_alarm_creation(self, log_mock):
+        """CLI - Adding CloudWatch metric alarm, cluster"""
+        alarm_info = {
+            'metric_target': 'cluster',
+            'metric_name': 'TotalRecords',
+            'evaluation_periods': 1,
+            'alarm_description': '',
+            'alarm_name': 'Prod Unit Testing Total Records Alarm',
+            'period': 300,
+            'threshold': 100.0,
+            'statistic': 'Sum',
+            'clusters': set(['prod']),
+            'comparison_operator': 'LessThanThreshold'
+        }
 
-    global_file = 'conf/global.json'
-    global_contents = json.dumps(config_data['global'], indent=2)
+        with nested(*self.mocked_opens):
+            config = CLIConfig()
+            config.add_metric_alarm(alarm_info)
+            log_mock.assert_called_with('Successfully added \'%s\' metric alarm for the '
+                                        '\'%s\' function to \'conf/clusters/%s.json\'.',
+                                        'Prod Unit Testing Total Records Alarm',
+                                        'rule_processor',
+                                        'prod')
 
-    lambda_file = 'conf/lambda.json'
-    lambda_contents = json.dumps(config_data['lambda'], indent=2)
+    @patch('stream_alert_cli.config.CLIConfig.write', Mock())
+    @patch('logging.Logger.info')
+    def test_aggregate_alarm_creation(self, log_mock):
+        """CLI - Adding CloudWatch metric alarm, aggregate"""
+        alarm_info = {
+            'metric_target': 'aggregate',
+            'metric_name': 'TotalRecords',
+            'evaluation_periods': 1,
+            'alarm_description': '',
+            'alarm_name': 'Aggregate Unit Testing Total Records Alarm',
+            'period': 300,
+            'threshold': 100.0,
+            'statistic': 'Sum',
+            'clusters': {},
+            'comparison_operator': 'LessThanThreshold'
+        }
 
-    cluster_file = 'conf/clusters/prod.json'
-    cluster_contents = json.dumps(config_data['clusters']['prod'], indent=2)
-
-    with mock_open(global_file, global_contents):
-        with mock_open(lambda_file, lambda_contents):
-            with mock_open(cluster_file, cluster_contents):
-                config = CLIConfig()
-                result = config._alarm_exists('Prod Unit Testing Failed Parses Alarm')
-                assert_true(result)
-
-
-@patch('stream_alert_cli.config.CLIConfig.write', Mock())
-@patch('logging.Logger.info')
-def test_cluster_alarm_creation(log_mock):
-    """CLI - Adding CloudWatch metric alarm, cluster"""
-    alarm_info = {
-        'metric_target': 'cluster',
-        'metric_name': 'TotalRecords',
-        'evaluation_periods': 1,
-        'alarm_description': '',
-        'alarm_name': 'Prod Unit Testing Total Records Alarm',
-        'period': 300,
-        'threshold': 100.0,
-        'statistic': 'Sum',
-        'clusters': set(['prod']),
-        'comparison_operator': 'LessThanThreshold'
-    }
-
-    config_data = basic_streamalert_config()
-
-    global_file = 'conf/global.json'
-    global_contents = json.dumps(config_data['global'], indent=2)
-
-    lambda_file = 'conf/lambda.json'
-    lambda_contents = json.dumps(config_data['lambda'], indent=2)
-
-    cluster_file = 'conf/clusters/prod.json'
-    cluster_contents = json.dumps(config_data['clusters']['prod'], indent=2)
-
-    with mock_open(global_file, global_contents):
-        with mock_open(lambda_file, lambda_contents):
-            with mock_open(cluster_file, cluster_contents):
-                config = CLIConfig()
-                config.add_metric_alarm(alarm_info)
-                log_mock.assert_called_with('Successfully added \'%s\' metric alarm for the '
-                                            '\'%s\' function to \'conf/clusters/%s.json\'.',
-                                            'Prod Unit Testing Total Records Alarm',
-                                            'rule_processor',
-                                            'prod')
-
-
-@patch('stream_alert_cli.config.CLIConfig.write', Mock())
-@patch('logging.Logger.info')
-def test_aggregate_alarm_creation(log_mock):
-    """CLI - Adding CloudWatch metric alarm, aggregate"""
-    alarm_info = {
-        'metric_target': 'aggregate',
-        'metric_name': 'TotalRecords',
-        'evaluation_periods': 1,
-        'alarm_description': '',
-        'alarm_name': 'Aggregate Unit Testing Total Records Alarm',
-        'period': 300,
-        'threshold': 100.0,
-        'statistic': 'Sum',
-        'clusters': {},
-        'comparison_operator': 'LessThanThreshold'
-    }
-
-    config_data = basic_streamalert_config()
-
-    global_file = 'conf/global.json'
-    global_contents = json.dumps(config_data['global'], indent=2)
-
-    lambda_file = 'conf/lambda.json'
-    lambda_contents = json.dumps(config_data['lambda'], indent=2)
-
-    cluster_file = 'conf/clusters/prod.json'
-    cluster_contents = json.dumps(config_data['clusters']['prod'], indent=2)
-
-    with mock_open(global_file, global_contents):
-        with mock_open(lambda_file, lambda_contents):
-            with mock_open(cluster_file, cluster_contents):
-                config = CLIConfig()
-                config.add_metric_alarm(alarm_info)
-                log_mock.assert_called_with('Successfully added \'%s\' metric alarm to '
-                                            '\'conf/global.json\'.',
-                                            'Aggregate Unit Testing Total Records Alarm')
+        with nested(*self.mocked_opens):
+            config = CLIConfig()
+            config.add_metric_alarm(alarm_info)
+            log_mock.assert_called_with('Successfully added \'%s\' metric alarm to '
+                                        '\'conf/global.json\'.',
+                                        'Aggregate Unit Testing Total Records Alarm')
