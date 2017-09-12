@@ -220,7 +220,7 @@ class CLIConfig(object):
             if new_alarms != False:
                 function_config['metric_alarms'] = new_alarms
                 LOGGER_CLI.info('Successfully added \'%s\' metric alarm for the \'%s\' '
-                                'function to \'conf/clusters/%s.json.\'',
+                                'function to \'conf/clusters/%s.json\'.',
                                 alarm_settings['alarm_name'], function_name, cluster)
 
     def _alarm_exists(self, alarm_name):
@@ -349,7 +349,7 @@ class CLIConfig(object):
             if new_alarms != False:
                 global_config['metric_alarms'][metric_function] = new_alarms
                 LOGGER_CLI.info('Successfully added \'%s\' metric alarm to '
-                                '\'conf/global.json.\'', alarm_settings['alarm_name'])
+                                '\'conf/global.json\'.', alarm_settings['alarm_name'])
 
         else:
             # Add metric alarms on a per-cluster basis - these are added to the cluster config
