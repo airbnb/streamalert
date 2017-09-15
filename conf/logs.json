@@ -996,12 +996,14 @@
       "unixTime": "string",
       "action": "string",
       "decorations": {},
-      "log_type": "string"
+      "log_type": "string",
+      "epoch": "integer"
     },
     "parser": "json",
     "configuration": {
       "optional_top_level_keys": [
-        "decorations"
+        "decorations",
+        "epoch"
       ]
     }
   },
