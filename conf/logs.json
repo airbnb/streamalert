@@ -210,6 +210,7 @@
       },
       "optional_top_level_keys": [
         "assigned_to",
+        "other_hostnames",
         "resolved_time",
         "segment_id"
       ]
