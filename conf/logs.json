@@ -762,7 +762,7 @@
       "windowend": "integer",
       "version": "integer",
       "eni": "string",
-      "account": "integer",
+      "account": "string",
       "flowlogstatus": "string"
     },
     "parser": "json",
@@ -794,7 +794,7 @@
       "windowend": "integer",
       "version": "integer",
       "eni": "string",
-      "account": "integer",
+      "account": "string",
       "flowlogstatus": "string"
     },
     "parser": "json",
@@ -826,7 +826,7 @@
       "windowend": "integer",
       "version": "integer",
       "eni": "string",
-      "account": "integer",
+      "account": "string",
       "flowlogstatus": "string"
     },
     "parser": "json",
