@@ -21,7 +21,6 @@ import string
 from stream_alert.shared.metrics import FUNC_PREFIXES
 from stream_alert_cli.logger import LOGGER_CLI
 from stream_alert_cli.terraform._common import (
-    DEFAULT_SNS_MONITORING_TOPIC,
     enabled_firehose_logs,
     InvalidClusterName,
     infinitedict
