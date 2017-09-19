@@ -69,14 +69,16 @@ def run_command(runner_args, **kwargs):
 
 
 def continue_prompt(**kwargs):
-    """Continue prompt used before applying Terraform plans.
+    """Continue prompt to verify that a user wants to continue or not.
 
-    This prompt is meant for changes that change the infrastructure by
-    either buliding or destroying.  Its purpose is to prevent accidental
-    changes that are difficult to reverse.
+    This prompt's purpose is to prevent accidental changes
+    that are difficult to reverse.
 
     Keyword Args:
         message (str): The message to display to the user
+
+    Returns:
+        bool: If the user wants to continue or not
     """
     required_responses = {'yes', 'no'}
     default_message = 'Would you like to continue?'
@@ -85,8 +87,8 @@ def continue_prompt(**kwargs):
     response = ''
     while response not in required_responses:
         response = raw_input('\n{} (yes or no): '.format(message))
-    if response == 'no':
-        sys.exit(0)
+
+    return response == 'yes'
 
 
 def tf_runner(**kwargs):
@@ -124,7 +126,8 @@ def tf_runner(**kwargs):
     if not run_command(tf_command):
         return False
 
-    continue_prompt()
+    if not continue_prompt():
+        sys.exit(1)
 
     if action == 'destroy':
         LOGGER_CLI.info('Destroying infrastructure')
