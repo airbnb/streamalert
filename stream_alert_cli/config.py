@@ -206,11 +206,11 @@ class CLIConfig(object):
                           'within the \'{}\' cluster. Would you like to enable metrics '
                           'for this cluster?'.format(function_name, cluster))
 
-                if continue_prompt(prompt):
+                if continue_prompt(message=prompt):
                     self.toggle_metrics(True, [cluster], [function_name])
 
-                elif not continue_prompt('Would you still like to add this alarm '
-                                         'even though metrics are disabled?'):
+                elif not continue_prompt(message='Would you still like to add this alarm '
+                                                 'even though metrics are disabled?'):
                     continue
 
             metric_alarms = function_config.get('metric_alarms', {})
@@ -309,7 +309,7 @@ class CLIConfig(object):
                       'within any cluster. Creating an alarm will have no effect '
                       'until metrics are enabled for this function in at least one '
                       'cluster. Would you still like to continue?'.format(metric_function))
-            if not continue_prompt(prompt):
+            if not continue_prompt(message=prompt):
                 return
 
         elif metric_function == metrics.ATHENA_PARTITION_REFRESH_NAME:
@@ -326,11 +326,11 @@ class CLIConfig(object):
                 prompt = ('Metrics are not currently enabled for the \'athena\' function. '
                           'Would you like to enable metrics for athena?')
 
-                if continue_prompt(prompt):
+                if continue_prompt(message=prompt):
                     self.toggle_metrics(True, None, [metric_function])
 
-                elif not continue_prompt('Would you still like to add this alarm '
-                                         'even though metrics are disabled?'):
+                elif not continue_prompt(message='Would you still like to add this alarm '
+                                                 'even though metrics are disabled?'):
                     return
 
         # Add metric alarms for the aggregate metrics - these are added to the global config
@@ -364,14 +364,12 @@ class CLIConfig(object):
         # Save all of the alarm updates to disk
         self.write()
 
-    def load(self):
-        """Load the cluster, global, and lambda configuration files
-
+    def _config_reader(self, key, file_path, **kwargs):
+        """Read a given file into a config key
         Args:
             key (str): The key in the config dictionary to place the loaded
                 config file.
             file_path (str): The location on disk to load the config file.
-
         Keyword Arguments:
             cluster_file (bool): If the file to load is a cluster file.
         """

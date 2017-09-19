@@ -19,7 +19,7 @@ from stream_alert_cli.terraform import (
     cloudtrail,
     flow_logs,
     generate,
-    stream_alert
+    streamalert
 )
 
 from nose.tools import assert_equal
@@ -220,7 +220,7 @@ class TestTerraformGenerate(object):
 
     def test_generate_stream_alert_test(self):
         """CLI - Terraform Generate StreamAlert - Test Cluster"""
-        stream_alert.generate_stream_alert(
+        streamalert.generate_stream_alert(
             'test',
             self.cluster_dict,
             self.config
@@ -256,7 +256,7 @@ class TestTerraformGenerate(object):
 
     def test_generate_stream_alert_advanced(self):
         """CLI - Terraform Generate StreamAlert - Advanced Cluster"""
-        stream_alert.generate_stream_alert(
+        streamalert.generate_stream_alert(
             'advanced',
             self.cluster_dict,
             self.config
@@ -412,81 +412,3 @@ class TestTerraformGenerate(object):
 
         assert_equal(set(tf_cluster['module'].keys()), advanced_modules)
         assert_equal(set(tf_cluster.keys()), cluster_keys)
-<<<<<<< c4581cc61548049eef6c70cdb8b6a7120538d4d2
-
-    def test_generate_athena(self):
-        """CLI - Terraform Generate Athena"""
-
-        config = {
-            'global': {
-                'account': {
-                    'prefix': 'unit-testing'
-                },
-                'infrastructure': {
-                    'monitoring': {
-                        'create_sns_topic': True
-                    }
-                }
-            },
-            'lambda': {
-                'athena_partition_refresh_config': {
-                    'enabled': True,
-                    'enable_metrics': True,
-                    'current_version': '$LATEST',
-                    'refresh_type': {
-                        'repair_hive_table': {
-                            'unit-testing.streamalerts': 'alerts'
-                        },
-                        'add_hive_partition': {
-                            'unit-testing-2.streamalerts': 'alerts'
-                        }
-                    },
-                    'handler': 'main.handler',
-                    'timeout': '60',
-                    'memory': '128',
-                    'source_bucket': 'unit-testing.streamalert.source',
-                    'source_current_hash': '12345',
-                    'source_object_key': 'lambda/athena/source.zip',
-                    'third_party_libraries': [
-                        'backoff'
-                    ]
-                }
-            }
-        }
-
-        expected_athena_config = {
-            'module': {
-                'stream_alert_athena': {
-                    'source': 'modules/tf_stream_alert_athena',
-                    'current_version': '$LATEST',
-                    'enable_metrics': True,
-                    'lambda_handler': 'main.handler',
-                    'lambda_log_level': 'info',
-                    'lambda_memory': '128',
-                    'lambda_timeout': '60',
-                    'lambda_s3_bucket': 'unit-testing.streamalert.source',
-                    'lambda_s3_key': 'lambda/athena/source.zip',
-                    'athena_data_buckets': [
-                        'unit-testing.streamalerts',
-                        'unit-testing-2.streamalerts'
-                    ],
-                    'prefix': 'unit-testing',
-                    'refresh_interval': 'rate(10 minutes)',
-                    'athena_metric_filters': []
-                }
-            }
-        }
-
-        athena_config = athena.generate_athena(config=config)
-
-        # List order messes up the comparison between both dictionaries
-        assert_equal(set(athena_config['module']['stream_alert_athena']['athena_data_buckets']),
-                     set(expected_athena_config['module']['stream_alert_athena']\
-                                               ['athena_data_buckets']))
-
-        del athena_config['module']['stream_alert_athena']['athena_data_buckets']
-        del expected_athena_config['module']['stream_alert_athena']['athena_data_buckets']
-
-        assert_equal(athena_config, expected_athena_config)
-=======
->>>>>>> [cli][tf] fix a bug in athena cloudwatch monitoring terraform configuration

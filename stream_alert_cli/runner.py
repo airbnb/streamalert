@@ -19,7 +19,6 @@ from stream_alert.alert_processor.outputs import get_output_dispatcher
 from stream_alert.athena_partition_refresh.main import StreamAlertAthenaClient
 from stream_alert_cli import helpers
 from stream_alert_cli.config import CLIConfig
-from stream_alert_cli.helpers import continue_prompt
 from stream_alert_cli.logger import LOGGER_CLI
 from stream_alert_cli.manage_lambda.handler import lambda_handler
 from stream_alert_cli.terraform.handler import terraform_handler

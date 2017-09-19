@@ -25,6 +25,7 @@ def test_enabled_firehose_logs():
     firehose_logs = set(_common.enabled_firehose_logs(CONFIG))
 
     expected_logs = {
+        'cloudwatch_test_match_types',
         'test_log_type_csv',
         'test_log_type_csv_nested',
         'test_log_type_json_nested',

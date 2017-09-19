@@ -18,7 +18,7 @@ import json
 import os
 import string
 
-from stream_alert.shared import metrics
+from stream_alert.shared.metrics import FUNC_PREFIXES
 from stream_alert_cli.logger import LOGGER_CLI
 from stream_alert_cli.terraform._common import (
     DEFAULT_SNS_MONITORING_TOPIC,
@@ -31,8 +31,12 @@ from stream_alert_cli.terraform.cloudtrail import generate_cloudtrail
 from stream_alert_cli.terraform.flow_logs import generate_flow_logs
 from stream_alert_cli.terraform.kinesis_events import generate_kinesis_events
 from stream_alert_cli.terraform.kinesis_streams import generate_kinesis_streams
+from stream_alert_cli.terraform.metrics import (
+    generate_cloudwatch_metric_filters,
+    generate_cloudwatch_metric_alarms
+)
 from stream_alert_cli.terraform.monitoring import generate_monitoring
-from stream_alert_cli.terraform.stream_alert import generate_stream_alert
+from stream_alert_cli.terraform.streamalert import generate_stream_alert
 from stream_alert_cli.terraform.s3_events import generate_s3_events
 
 DEFAULT_SNS_MONITORING_TOPIC = 'stream_alert_monitoring'
@@ -215,7 +219,7 @@ def generate_main(**kwargs):
 
     formatted_alarms = {}
     # Add global metric alarms for the rule and alert processors
-    for func in metrics.FUNC_PREFIXES:
+    for func in FUNC_PREFIXES:
         if not func in global_metrics:
             continue
 
