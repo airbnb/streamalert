@@ -18,13 +18,16 @@ from collections import defaultdict
 
 DEFAULT_SNS_MONITORING_TOPIC = 'stream_alert_monitoring'
 
+
 class InvalidClusterName(Exception):
     """Exception for invalid cluster names"""
     pass
 
+
 def infinitedict():
     """Create arbitrary levels of dictionary key/values"""
     return defaultdict(infinitedict)
+
 
 def enabled_firehose_logs(config):
     """Return a list of enabled log types via sources.json

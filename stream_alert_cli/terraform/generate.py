@@ -42,6 +42,7 @@ from stream_alert_cli.terraform.s3_events import generate_s3_events
 DEFAULT_SNS_MONITORING_TOPIC = 'stream_alert_monitoring'
 RESTRICTED_CLUSTER_NAMES = ('main', 'athena')
 
+
 def generate_s3_bucket(**kwargs):
     """Generate an S3 Bucket dict
 
@@ -170,12 +171,12 @@ def generate_main(**kwargs):
             'region': config['global']['account']['region'],
             'prefix': config['global']['account']['prefix'],
             'logs': enabled_firehose_logs(config),
-            'buffer_size': config['global']['infrastructure']\
+            'buffer_size': config['global']['infrastructure']
                            ['firehose'].get('buffer_size', 5),
-            'buffer_interval': config['global']['infrastructure']\
-                               ['firehose'].get('buffer_interval', 300),
-            'compression_format': config['global']['infrastructure']\
-                               ['firehose'].get('buffer_interval', 'Snappy'),
+            'buffer_interval': config['global']['infrastructure'] \
+                                     ['firehose'].get('buffer_interval', 300),
+            'compression_format': config['global']['infrastructure'] \
+                                        ['firehose'].get('buffer_interval', 'Snappy'),
             's3_logging_bucket': logging_bucket,
             's3_bucket_name': firehose_s3_bucket_name
         }
@@ -220,7 +221,7 @@ def generate_main(**kwargs):
     formatted_alarms = {}
     # Add global metric alarms for the rule and alert processors
     for func in FUNC_PREFIXES:
-        if not func in global_metrics:
+        if func not in global_metrics:
             continue
 
         for name, settings in global_metrics[func].iteritems():
@@ -228,7 +229,7 @@ def generate_main(**kwargs):
             alarm_info['alarm_name'] = name
             alarm_info['namespace'] = 'StreamAlert'
             alarm_info['alarm_actions'] = [sns_topic_arn]
-            # Terraform only allows certain characters in resource names, so strip the name
+            # Terraform only allows certain characters in resource names
             acceptable_chars = ''.join([string.digits, string.letters, '_-'])
             name = filter(acceptable_chars.__contains__, name)
             formatted_alarms['metric_alarm_{}'.format(name)] = alarm_info
@@ -359,7 +360,8 @@ def terraform_generate(**kwargs):
     # Setup cluster files
     for cluster in config.clusters():
         if cluster in RESTRICTED_CLUSTER_NAMES:
-            raise InvalidClusterName('Rename cluster "main" or "athena" to something else!')
+            raise InvalidClusterName(
+                'Rename cluster "main" or "athena" to something else!')
 
         LOGGER_CLI.debug('Generating cluster file: %s.tf.json', cluster)
         cluster_dict = generate_cluster(cluster_name=cluster, config=config)

@@ -17,6 +17,7 @@ from stream_alert.shared import metrics
 from stream_alert_cli.logger import LOGGER_CLI
 from stream_alert_cli.terraform._common import DEFAULT_SNS_MONITORING_TOPIC
 
+
 def generate_cloudwatch_metric_filters(cluster_name, cluster_dict, config):
     """Add the CloudWatch Metric Filters information to the Terraform cluster dict.
 
@@ -35,9 +36,10 @@ def generate_cloudwatch_metric_filters(cluster_name, cluster_dict, config):
             continue
 
         if func not in stream_alert_config:
-            LOGGER_CLI.error('Function for metrics \'%s\' is not defined in stream alert config. '
-                             'Options are: %s', func,
-                             ', '.join('\'{}\''.format(key) for key in stream_alert_config))
+            LOGGER_CLI.error(
+                'Function for metrics \'%s\' is not defined in stream alert config. '
+                'Options are: %s', func, ', '.join(
+                    '\'{}\''.format(key) for key in stream_alert_config))
             continue
 
         if not stream_alert_config[func].get('enable_metrics'):
@@ -61,8 +63,8 @@ def generate_cloudwatch_metric_filters(cluster_name, cluster_dict, config):
                     settings[filter_value_idx])
             ])
 
-        cluster_dict['module']['stream_alert_{}'.format(cluster_name)] \
-            ['{}_metric_filters'.format(func)] = filters
+        cluster_dict['module']['stream_alert_{}'.format(
+            cluster_name)]['{}_metric_filters'.format(func)] = filters
 
 
 def _format_metric_alarm(name, alarm_settings):
@@ -82,8 +84,7 @@ def _format_metric_alarm(name, alarm_settings):
     # The alarm description and name can potentially have commas so remove them
     alarm_info['alarm_description'] = alarm_info['alarm_description'].replace(',', '')
 
-    attributes = list(alarm_info)
-    attributes.sort()
+    attributes = sorted(alarm_info)
     sorted_values = [str(alarm_info[attribute]) if alarm_info[attribute]
                      else '' for attribute in attributes]
 
@@ -103,7 +104,8 @@ def generate_cloudwatch_metric_alarms(cluster_name, cluster_dict, config):
     infrastructure_config = config['global'].get('infrastructure')
 
     if not (infrastructure_config and 'monitoring' in infrastructure_config):
-        LOGGER_CLI.error('Invalid config: Make sure you declare global infrastructure options!')
+        LOGGER_CLI.error(
+            'Invalid config: Make sure you declare global infrastructure options!')
         return
 
     topic_name = (DEFAULT_SNS_MONITORING_TOPIC if infrastructure_config
@@ -116,8 +118,8 @@ def generate_cloudwatch_metric_alarms(cluster_name, cluster_dict, config):
         topic=topic_name
     )
 
-    cluster_dict['module']['stream_alert_{}'.format(cluster_name)] \
-        ['sns_topic_arn'] = sns_topic_arn
+    cluster_dict['module']['stream_alert_{}'.format(
+        cluster_name)]['sns_topic_arn'] = sns_topic_arn
 
     stream_alert_config = config['clusters'][cluster_name]['modules']['stream_alert']
 
@@ -135,5 +137,5 @@ def generate_cloudwatch_metric_alarms(cluster_name, cluster_dict, config):
                 _format_metric_alarm(name, alarm_info)
             )
 
-    cluster_dict['module']['stream_alert_{}'.format(cluster_name)] \
-        ['metric_alarms'] = formatted_alarms
+    cluster_dict['module']['stream_alert_{}'.format(
+        cluster_name)]['metric_alarms'] = formatted_alarms

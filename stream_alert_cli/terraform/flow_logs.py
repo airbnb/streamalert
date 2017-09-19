@@ -15,6 +15,7 @@ limitations under the License.
 """
 from stream_alert_cli.logger import LOGGER_CLI
 
+
 def generate_flow_logs(cluster_name, cluster_dict, config):
     """Add the VPC Flow Logs module to the Terraform cluster dict.
 

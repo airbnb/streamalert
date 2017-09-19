@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+
 def generate_kinesis_streams(cluster_name, cluster_dict, config):
     """Add the Kinesis Streams module to the Terraform cluster dict.
 

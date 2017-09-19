@@ -15,6 +15,7 @@ limitations under the License.
 """
 from stream_alert_cli.logger import LOGGER_CLI
 
+
 def generate_s3_events(cluster_name, cluster_dict, config):
     """Add the S3 Events module to the Terraform cluster dict.
 

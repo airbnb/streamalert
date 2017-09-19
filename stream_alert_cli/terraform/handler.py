@@ -27,6 +27,7 @@ from stream_alert_cli.terraform.generate import terraform_generate
 
 CONFIG = CLIConfig()
 
+
 def terraform_check():
     """Verify that Terraform is configured correctly
 
@@ -38,6 +39,7 @@ def terraform_check():
     return run_command(['terraform', 'version'],
                        error_message=prereqs_message,
                        quiet=True)
+
 
 def terraform_handler(options):
     """Handle all Terraform CLI operations
@@ -107,7 +109,8 @@ def terraform_handler(options):
         tf_runner()
 
     elif options.subcommand == 'clean':
-        continue_prompt(message='Are you sure you want to clean all Terraform files?')
+        if not continue_prompt(message='Are you sure you want to clean all Terraform files?'):
+            sys.exit(1)
         terraform_clean()
 
     elif options.subcommand == 'destroy':
@@ -145,6 +148,7 @@ def terraform_handler(options):
     elif options.subcommand == 'status':
         terraform_status()
 
+
 def terraform_build(options):
     """Run Terraform with an optional set of targets
 
@@ -166,6 +170,7 @@ def terraform_build(options):
     else:
         tf_runner()
 
+
 def terraform_clean():
     """Remove leftover Terraform statefiles and main/cluster files"""
     LOGGER_CLI.info('Cleaning Terraform files')
@@ -185,6 +190,7 @@ def terraform_clean():
     # Finally, delete the Terraform directory
     if os.path.isdir('terraform/.terraform/'):
         shutil.rmtree('terraform/.terraform/')
+
 
 def terraform_status():
     """Display current AWS infrastructure built by Terraform"""

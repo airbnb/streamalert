@@ -16,6 +16,7 @@ limitations under the License.
 from stream_alert.shared import metrics
 from stream_alert_cli.terraform._common import DEFAULT_SNS_MONITORING_TOPIC, infinitedict
 
+
 def generate_athena(config):
     """Generate Athena Terraform.
 
@@ -49,8 +50,8 @@ def generate_athena(config):
 
     # Cloudwatch monitoring setup
     monitoring_config = config['global'].get('infrastructure', {}).get('monitoring', {})
-    sns_topic_name = DEFAULT_SNS_MONITORING_TOPIC if monitoring_config.get('create_sns_topic') \
-                     else monitoring_config.get('sns_topic_name')
+    sns_topic_name = DEFAULT_SNS_MONITORING_TOPIC if monitoring_config.get(
+        'create_sns_topic') else monitoring_config.get('sns_topic_name')
     athena_dict['module']['athena_monitoring'] = {
         'source': 'modules/tf_stream_alert_monitoring',
         'sns_topic_arn': 'arn:aws:sns:{region}:{account_id}:{topic}'.format(

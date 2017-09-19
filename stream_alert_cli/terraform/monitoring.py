@@ -15,6 +15,7 @@ limitations under the License.
 """
 from stream_alert_cli.logger import LOGGER_CLI
 
+
 def generate_monitoring(cluster_name, cluster_dict, config):
     """Add the CloudWatch Monitoring module to the Terraform cluster dict.
 
@@ -43,7 +44,8 @@ def generate_monitoring(cluster_name, cluster_dict, config):
             topic=topic_name
         )
     else:
-        LOGGER_CLI.error('Invalid config: Make sure you declare global infrastructure options!')
+        LOGGER_CLI.error(
+            'Invalid config: Make sure you declare global infrastructure options!')
         return False
 
     lambda_functions = [
