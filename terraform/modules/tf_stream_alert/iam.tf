@@ -42,6 +42,31 @@ data "aws_iam_policy_document" "rule_processor_invoke_alert_proc" {
   }
 }
 
+// IAM Role Policy: Allow the Rule Processor to put records on Firehose
+resource "aws_iam_role_policy" "streamalert_rule_processor_firehose" {
+  name = "${var.prefix}_${var.cluster}_streamalert_rule_processor_firehose"
+  role = "${aws_iam_role.streamalert_rule_processor_role.id}"
+
+  policy = "${data.aws_iam_policy_document.streamalert_rule_processor_firehose.json}"
+}
+
+// IAM Policy Doc: Allow the Rule Processor to PutRecord* on any StreamAlert Firehose
+data "aws_iam_policy_document" "streamalert_rule_processor_firehose" {
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "firehose:PutRecord*",
+      "firehose:DescribeDeliveryStream",
+      "firehose:ListDeliveryStreams",
+    ]
+
+    resources = [
+      "arn:aws:firehose:${var.region}:${var.account_id}:deliverystream/streamalert_data_*",
+    ]
+  }
+}
+
 // IAM Role: Alert Processor Execution Role
 resource "aws_iam_role" "streamalert_alert_processor_role" {
   name = "${var.prefix}_${var.cluster}_streamalert_alert_processor_role"
