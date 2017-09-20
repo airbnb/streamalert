@@ -1,0 +1,41 @@
+{
+  "id": "test",
+  "modules": {
+    "cloudwatch_monitoring": {
+      "enabled": true
+    },
+    "kinesis": {
+      "firehose": {
+        "enabled": true,
+        "s3_bucket_suffix": "streamalert.results"
+      },
+      "streams": {
+        "retention": 24,
+        "shards": 1
+      }
+    },
+    "kinesis_events": {
+      "enabled": true
+    },
+    "stream_alert": {
+      "alert_processor": {
+        "current_version": "$LATEST",
+        "memory": 128,
+        "timeout": 25
+      },
+      "rule_processor": {
+        "current_version": "$LATEST",
+        "memory": 128,
+        "timeout": 25
+      }
+    }
+  },
+  "outputs": {
+    "kinesis": [
+      "username",
+      "access_key_id",
+      "secret_key"
+    ]
+  },
+  "region": "us-west-1"
+}

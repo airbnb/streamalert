@@ -13,7 +13,14 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from stream_alert_cli import terraform_generate
+from stream_alert_cli.config import CLIConfig
+from stream_alert_cli.terraform import (
+    _common,
+    cloudtrail,
+    flow_logs,
+    generate,
+    streamalert
+)
 
 from nose.tools import assert_equal
 
@@ -23,156 +30,18 @@ class TestTerraformGenerate(object):
     # pylint: disable=no-self-use
 
     def __init__(self):
-        self.cluster_dict = {}
-        self.config = {}
+        self.cluster_dict = None
+        self.config = None
 
     def setup(self):
         """Setup before each method"""
-        self.cluster_dict = terraform_generate.infinitedict()
-        self.config = {
-            'global': {
-                'account': {
-                    'prefix': 'unit-testing',
-                    'kms_key_alias': 'unit-testing',
-                    'region': 'us-west-1',
-                    'aws_account_id': '12345678910'
-                },
-                'terraform': {
-                    'tfstate_bucket': 'unit-testing.terraform.tfstate'
-                },
-                'infrastructure': {
-                    'monitoring': {
-                        'create_sns_topic': True
-                    }
-                }
-            },
-            'lambda': {
-                'rule_processor_config': {
-                    'source_bucket': 'unit.testing.source.bucket'
-                }
-            },
-            'clusters': {
-                'test': {
-                    'id': 'test',
-                    'modules': {
-                        'cloudwatch_monitoring': {
-                            'enabled': True
-                        },
-                        'kinesis': {
-                            'firehose': {
-                                'enabled': True,
-                                's3_bucket_suffix': 'streamalert.results'
-                            },
-                            'streams': {
-                                'retention': 24,
-                                'shards': 1
-                            }
-                        },
-                        'kinesis_events': {
-                            'enabled': True
-                        },
-                        'stream_alert': {
-                            'alert_processor': {
-                                'current_version': '$LATEST',
-                                'memory': 128,
-                                'timeout': 25
-                            },
-                            'rule_processor': {
-                                'current_version': '$LATEST',
-                                'memory': 128,
-                                'timeout': 25
-                            }
-                        }
-                    },
-                    'outputs': {
-                        'kinesis': [
-                            'username',
-                            'access_key_id',
-                            'secret_key'
-                        ]
-                    },
-                    'region': 'us-west-1'
-                },
-                'advanced': {
-                    'id': 'advanced',
-                    'modules': {
-                        'cloudwatch_monitoring': {
-                            'enabled': True
-                        },
-                        'kinesis': {
-                            'firehose': {
-                                'enabled': True,
-                                's3_bucket_suffix': 'streamalert.results'
-                            },
-                            'streams': {
-                                'retention': 24,
-                                'shards': 1
-                            }
-                        },
-                        'kinesis_events': {
-                            'enabled': True
-                        },
-                        'stream_alert': {
-                            'alert_processor': {
-                                'current_version': '$LATEST',
-                                'memory': 128,
-                                'timeout': 25,
-                                'vpc_config': {
-                                    'subnet_ids': [
-                                        'subnet-id-1'
-                                    ],
-                                    'security_group_ids': [
-                                        'sg-id-1'
-                                    ]
-                                },
-                                'outputs': {
-                                    'aws-lambda': [
-                                        'my-lambda-function:production'
-                                    ],
-                                    'aws-s3': [
-                                        'my-s3-bucket.with.data'
-                                    ]
-                                }
-                            },
-                            'rule_processor': {
-                                'current_version': '$LATEST',
-                                'memory': 128,
-                                'timeout': 25,
-                                'inputs': {
-                                    'aws-sns': [
-                                        'my-sns-topic-name'
-                                    ]
-                                }
-                            }
-                        },
-                        'cloudtrail': {
-                            'enabled': True
-                        },
-                        'flow_logs': {
-                            'enabled': True,
-                            'vpcs': [
-                                'vpc-id-1',
-                                'vpc-id-2'
-                            ],
-                            'log_group_name': 'unit-test-advanced'
-                        }
-                    },
-                    'outputs': {
-                        'kinesis': [
-                            'username',
-                            'access_key_id',
-                            'secret_key'
-                        ]
-                    },
-                    'region': 'us-west-1'
-                }
-            }
-        }
+        self.cluster_dict = _common.infinitedict()
+        self.config = CLIConfig(config_path='tests/unit/conf')
 
     @staticmethod
     def test_generate_s3_bucket():
         """CLI - Terraform Generate S3 Bucket """
-        bucket = terraform_generate.generate_s3_bucket(
+        bucket = generate.generate_s3_bucket(
             bucket='unit.test.bucket',
             logging='my.s3-logging.bucket',
             force_destroy=True
@@ -193,7 +62,7 @@ class TestTerraformGenerate(object):
     @staticmethod
     def test_generate_s3_bucket_lifecycle():
         """CLI - Terraform Generate S3 Bucket with Lifecycle"""
-        bucket = terraform_generate.generate_s3_bucket(
+        bucket = generate.generate_s3_bucket(
             bucket='unit.test.bucket',
             logging='my.s3-logging.bucket',
             force_destroy=False,
@@ -213,7 +82,7 @@ class TestTerraformGenerate(object):
         """CLI - Terraform Generate Main"""
         init = False
 
-        tf_main = terraform_generate.generate_main(
+        tf_main = generate.generate_main(
             config=self.config,
             init=init
         )
@@ -330,9 +199,28 @@ class TestTerraformGenerate(object):
         assert_equal(tf_main['terraform'], tf_main_expected['terraform'])
         assert_equal(tf_main['resource'], tf_main_expected['resource'])
 
+    def test_generate_main_with_firehose(self):
+        """CLI - Terraform Generate Main with Firehose Enabled"""
+        self.config['global']['infrastructure']['firehose'] = {
+            'enabled': True,
+            's3_bucket_suffix': 'my-data',
+            'buffer_size': 10,
+            'buffer_interval': 650
+        }
+        tf_main = generate.generate_main(
+            config=self.config,
+            init=False
+        )
+
+        generated_firehose = tf_main['module']['kinesis_firehose']
+
+        assert_equal(generated_firehose['s3_bucket_name'], 'unit-testing.my-data')
+        assert_equal(generated_firehose['buffer_size'], 10)
+        assert_equal(generated_firehose['buffer_interval'], 650)
+
     def test_generate_stream_alert_test(self):
         """CLI - Terraform Generate StreamAlert - Test Cluster"""
-        terraform_generate.generate_stream_alert(
+        streamalert.generate_stream_alert(
             'test',
             self.cluster_dict,
             self.config
@@ -367,8 +255,8 @@ class TestTerraformGenerate(object):
                      expected_test_cluster['module']['stream_alert_test'])
 
     def test_generate_stream_alert_advanced(self):
-        """CLI - Terraform Generate StreamAlert - Advanced Cluster)"""
-        terraform_generate.generate_stream_alert(
+        """CLI - Terraform Generate StreamAlert - Advanced Cluster"""
+        streamalert.generate_stream_alert(
             'advanced',
             self.cluster_dict,
             self.config
@@ -411,7 +299,7 @@ class TestTerraformGenerate(object):
     def test_generate_flow_logs(self):
         """CLI - Terraform Generate Flow Logs"""
         cluster_name = 'advanced'
-        terraform_generate.generate_flow_logs(
+        flow_logs.generate_flow_logs(
             cluster_name,
             self.cluster_dict,
             self.config
@@ -424,7 +312,7 @@ class TestTerraformGenerate(object):
     def test_generate_cloudtrail_basic(self):
         """CLI - Terraform Generate cloudtrail Module"""
         cluster_name = 'advanced'
-        terraform_generate.generate_cloudtrail(
+        cloudtrail.generate_cloudtrail(
             cluster_name,
             self.cluster_dict,
             self.config
@@ -459,7 +347,7 @@ class TestTerraformGenerate(object):
                 }
             }
         }
-        terraform_generate.generate_cloudtrail(
+        cloudtrail.generate_cloudtrail(
             cluster_name,
             self.cluster_dict,
             self.config
@@ -480,66 +368,15 @@ class TestTerraformGenerate(object):
                              ' "detail": {"state": ["running"]}}'
         })
 
-    def test_generate_cloudwatch_monitoring(self):
-        """CLI - Terraform Generate Cloudwatch Monitoring"""
-        cluster_name = 'test'
-        terraform_generate.generate_cloudwatch_monitoring(
-            cluster_name,
-            self.cluster_dict,
-            self.config
-        )
-
-        # Test a the default SNS topic option
-        expected_cloudwatch_tf = {
-            'source': 'modules/tf_stream_alert_monitoring',
-            'sns_topic_arn': 'arn:aws:sns:us-west-1:12345678910:stream_alert_monitoring',
-            'lambda_functions': [
-                'unit-testing_test_streamalert_rule_processor',
-                'unit-testing_test_streamalert_alert_processor'
-            ],
-            'kinesis_stream': 'unit-testing_test_stream_alert_kinesis'
-        }
-
-        assert_equal(
-            self.cluster_dict['module']['cloudwatch_monitoring_test'],
-            expected_cloudwatch_tf)
-
-        # Test a pre-defined SNS topic
-        self.config['global']['infrastructure']['monitoring']['create_sns_topic'] = False
-        self.config['global']['infrastructure']['monitoring'][
-            'sns_topic_name'] = 'unit_test_monitoring'
-        terraform_generate.generate_cloudwatch_monitoring(
-            cluster_name,
-            self.cluster_dict,
-            self.config
-        )
-
-        expected_cloudwatch_tf_custom = {
-            'source': 'modules/tf_stream_alert_monitoring',
-            'sns_topic_arn': 'arn:aws:sns:us-west-1:12345678910:unit_test_monitoring',
-            'lambda_functions': [
-                'unit-testing_test_streamalert_rule_processor',
-                'unit-testing_test_streamalert_alert_processor'
-            ],
-            'kinesis_stream': 'unit-testing_test_stream_alert_kinesis'
-        }
-
-        assert_equal(
-            self.cluster_dict['module']['cloudwatch_monitoring_test'],
-            expected_cloudwatch_tf_custom)
-
     def test_generate_cluster_test(self):
         """CLI - Terraform Generate Test Cluster"""
 
-        tf_cluster = terraform_generate.generate_cluster(
+        tf_cluster = generate.generate_cluster(
             config=self.config,
             cluster_name='test'
         )
 
-        cluster_keys = {
-            'module',
-            'output'
-        }
+        cluster_keys = {'module', 'output'}
 
         test_modules = {
             'stream_alert_test',
@@ -554,7 +391,7 @@ class TestTerraformGenerate(object):
     def test_generate_cluster_advanced(self):
         """CLI - Terraform Generate Advanced Cluster"""
 
-        tf_cluster = terraform_generate.generate_cluster(
+        tf_cluster = generate.generate_cluster(
             config=self.config,
             cluster_name='advanced'
         )
@@ -575,78 +412,3 @@ class TestTerraformGenerate(object):
 
         assert_equal(set(tf_cluster['module'].keys()), advanced_modules)
         assert_equal(set(tf_cluster.keys()), cluster_keys)
-
-    def test_generate_athena(self):
-        """CLI - Terraform Generate Athena"""
-
-        config = {
-            'global': {
-                'account': {
-                    'prefix': 'unit-testing'
-                },
-                'infrastructure': {
-                    'monitoring': {
-                        'create_sns_topic': True
-                    }
-                }
-            },
-            'lambda': {
-                'athena_partition_refresh_config': {
-                    'enabled': True,
-                    'enable_metrics': True,
-                    'current_version': '$LATEST',
-                    'refresh_type': {
-                        'repair_hive_table': {
-                            'unit-testing.streamalerts': 'alerts'
-                        },
-                        'add_hive_partition': {
-                            'unit-testing-2.streamalerts': 'alerts'
-                        }
-                    },
-                    'handler': 'main.handler',
-                    'timeout': '60',
-                    'memory': '128',
-                    'source_bucket': 'unit-testing.streamalert.source',
-                    'source_current_hash': '12345',
-                    'source_object_key': 'lambda/athena/source.zip',
-                    'third_party_libraries': [
-                        'backoff'
-                    ]
-                }
-            }
-        }
-
-        expected_athena_config = {
-            'module': {
-                'stream_alert_athena': {
-                    'source': 'modules/tf_stream_alert_athena',
-                    'current_version': '$LATEST',
-                    'enable_metrics': True,
-                    'lambda_handler': 'main.handler',
-                    'lambda_log_level': 'info',
-                    'lambda_memory': '128',
-                    'lambda_timeout': '60',
-                    'lambda_s3_bucket': 'unit-testing.streamalert.source',
-                    'lambda_s3_key': 'lambda/athena/source.zip',
-                    'athena_data_buckets': [
-                        'unit-testing.streamalerts',
-                        'unit-testing-2.streamalerts'
-                    ],
-                    'prefix': 'unit-testing',
-                    'refresh_interval': 'rate(10 minutes)',
-                    'athena_metric_filters': []
-                }
-            }
-        }
-
-        athena_config = terraform_generate.generate_athena(config=config)
-
-        # List order messes up the comparison between both dictionaries
-        assert_equal(set(athena_config['module']['stream_alert_athena']['athena_data_buckets']),
-                     set(expected_athena_config['module']['stream_alert_athena']\
-                                               ['athena_data_buckets']))
-
-        del athena_config['module']['stream_alert_athena']['athena_data_buckets']
-        del expected_athena_config['module']['stream_alert_athena']['athena_data_buckets']
-
-        assert_equal(athena_config, expected_athena_config)

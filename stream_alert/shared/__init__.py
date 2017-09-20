@@ -14,7 +14,7 @@ LEVEL = os.environ.get('LOGGER_LEVEL', 'INFO').upper()
 if LEVEL.isdigit():
     LEVEL = int(LEVEL)
 
-logging.basicConfig()
+logging.basicConfig(format='%(name)s [%(levelname)s]: %(message)s')
 LOGGER = logging.getLogger('StreamAlertShared')
 try:
     LOGGER.setLevel(LEVEL)

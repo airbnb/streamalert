@@ -17,24 +17,26 @@ from collections import OrderedDict
 import json
 import os
 import re
-import sys
 
 from stream_alert.shared import metrics
 from stream_alert_cli.helpers import continue_prompt
 from stream_alert_cli.logger import LOGGER_CLI
 
 
+class CLIConfigError(Exception):
+    pass
+
 class CLIConfig(object):
-    """Provide an object to load, modify, and display the StreamAlertCLI Config"""
-    def __init__(self):
-        self.config_files = OrderedDict([
-            ('global', 'conf/global.json'),
-            ('lambda', 'conf/lambda.json')
-        ])
-        self.config = self.load()
+    """A class to load, modify, and display the StreamAlertCLI Config"""
+    DEFAULT_CONFIG_PATH = 'conf'
+
+    def __init__(self, **kwargs):
+        self.config_path = kwargs.get('config_path', self.DEFAULT_CONFIG_PATH)
+        self.config = {'clusters': {}}
+        self.load()
 
     def __repr__(self):
-        return json.dumps(self.config)
+        return str(self.config)
 
     def __getitem__(self, key):
         return self.config[key]
@@ -46,6 +48,10 @@ class CLIConfig(object):
     def get(self, key):
         """Lookup a value based on its key"""
         return self.config.get(key)
+
+    def keys(self):
+        """Config keys"""
+        return self.config.keys()
 
     def clusters(self):
         """Return list of cluster configuration keys"""
@@ -200,11 +206,11 @@ class CLIConfig(object):
                           'within the \'{}\' cluster. Would you like to enable metrics '
                           'for this cluster?'.format(function_name, cluster))
 
-                if continue_prompt(prompt):
+                if continue_prompt(message=prompt):
                     self.toggle_metrics(True, [cluster], [function_name])
 
-                elif not continue_prompt('Would you still like to add this alarm '
-                                         'even though metrics are disabled?'):
+                elif not continue_prompt(message='Would you still like to add this alarm '
+                                                 'even though metrics are disabled?'):
                     continue
 
             metric_alarms = function_config.get('metric_alarms', {})
@@ -303,7 +309,7 @@ class CLIConfig(object):
                       'within any cluster. Creating an alarm will have no effect '
                       'until metrics are enabled for this function in at least one '
                       'cluster. Would you still like to continue?'.format(metric_function))
-            if not continue_prompt(prompt):
+            if not continue_prompt(message=prompt):
                 return
 
         elif metric_function == metrics.ATHENA_PARTITION_REFRESH_NAME:
@@ -320,11 +326,11 @@ class CLIConfig(object):
                 prompt = ('Metrics are not currently enabled for the \'athena\' function. '
                           'Would you like to enable metrics for athena?')
 
-                if continue_prompt(prompt):
+                if continue_prompt(message=prompt):
                     self.toggle_metrics(True, None, [metric_function])
 
-                elif not continue_prompt('Would you still like to add this alarm '
-                                         'even though metrics are disabled?'):
+                elif not continue_prompt(message='Would you still like to add this alarm '
+                                                 'even though metrics are disabled?'):
                     return
 
         # Add metric alarms for the aggregate metrics - these are added to the global config
@@ -358,58 +364,77 @@ class CLIConfig(object):
         # Save all of the alarm updates to disk
         self.write()
 
-    def load(self):
-        """Load the cluster, global, and lambda configuration files
-
-        Returns:
-            dict: loaded config from all config files with the following keys:
-                'clusters', 'global', and 'lambda'
+    def _config_reader(self, key, file_path, **kwargs):
+        """Read a given file into a config key
+        Args:
+            key (str): The key in the config dictionary to place the loaded
+                config file.
+            file_path (str): The location on disk to load the config file.
+        Keyword Arguments:
+            cluster_file (bool): If the file to load is a cluster file.
         """
-        config = {'clusters': {}}
+        # This accounts for non files passed in, such as a
+        # directory from os.listdir()
+        if not os.path.isfile(file_path):
+            return
 
-        def _config_loader(key, filepath, cluster_file):
-            if not os.path.isfile(filepath):
-                LOGGER_CLI.error('[Config Error]: %s not found', filepath)
-                sys.exit(1)
-
-            with open(filepath) as data:
-                try:
-                    if cluster_file:
-                        config['clusters'][key] = json.load(data)
+        with open(file_path) as data:
+            try:
+                if kwargs.get('cluster_file', False):
+                    self.config['clusters'][key] = json.load(data)
+                else:
+                    # For certain log types (csv), the order of the schema
+                    # must be retained.  By loading as an OrderedDict,
+                    # the configuration is gauaranteed to keep its order.
+                    if key == 'logs':
+                        self.config[key] = json.load(data,
+                                                     object_pairs_hook=OrderedDict)
                     else:
-                        config[key] = json.load(data)
-                except ValueError:
-                    LOGGER_CLI.error('[Config Error]: %s is not valid JSON', filepath)
-                    sys.exit(1)
+                        self.config[key] = json.load(data)
+            except ValueError:
+                raise CLIConfigError('[Config Error]: %s is not valid JSON', file_path)
 
-        # Load individual files
-        for key, path in self.config_files.iteritems():
-            _config_loader(key, path, False)
+    @staticmethod
+    def _config_writer(config, path, **kwargs):
+        with open(path, 'r+') as conf_file:
+            conf_file.write(json.dumps(config,
+                                       indent=2,
+                                       separators=(',', ': '),
+                                       sort_keys=kwargs.get('sort_keys', True)))
+            conf_file.truncate()
+
+    def load(self):
+        """Load all files found under conf, including cluster configurations"""
+        # Load configuration files
+        config_files = [conf for conf in os.listdir(self.config_path) if conf.endswith('.json')]
+        for config_file in config_files:
+            config_key = os.path.splitext(config_file)[0]
+            file_path = os.path.join(self.config_path, config_file)
+            self._config_reader(config_key, file_path)
 
         # Load cluster files
-        for cluster_file in os.listdir('conf/clusters'):
-            key = os.path.splitext(cluster_file)[0]
-            _config_loader(key, 'conf/clusters/{}'.format(cluster_file), True)
-
-        return config
+        for cluster_file in os.listdir(os.path.join(self.config_path, 'clusters')):
+            config_key = os.path.splitext(cluster_file)[0]
+            file_path = os.path.join(self.config_path, 'clusters', cluster_file)
+            self._config_reader(config_key, file_path, cluster_file=True)
 
     def write(self):
         """Write the current config in memory to disk"""
-        def _config_writer(config, path):
-            with open(path, 'r+') as varfile:
-                varfile.write(json.dumps(
-                    config,
-                    indent=2,
-                    separators=(',', ': '),
-                    sort_keys=True
-                ))
-                varfile.truncate()
+        # Write loaded configuration files
+        for config_key in [key for key in self.config if key != 'clusters']:
+            file_path = os.path.join(self.config_path,
+                                     '{}.json'.format(config_key))
+            if config_key == 'logs':
+                self._config_writer(self.config[config_key],
+                                    file_path,
+                                    sort_keys=False)
+            else:
+                self._config_writer(self.config[config_key], file_path)
 
-        for key, path in self.config_files.iteritems():
-            _config_writer(self.config[key], path)
-
-        for cluster_file in os.listdir('conf/clusters'):
-            key = os.path.splitext(cluster_file)[0]
-            _config_writer(
-                self.config['clusters'][key],
-                'conf/clusters/{}'.format(cluster_file))
+        # Write loaded cluster files
+        for cluster_key in self.config['clusters']:
+            file_path = os.path.join(self.config_path,
+                                     'clusters',
+                                     '{}.json'.format(cluster_key))
+            self._config_writer(self.config['clusters'][cluster_key],
+                                file_path)
