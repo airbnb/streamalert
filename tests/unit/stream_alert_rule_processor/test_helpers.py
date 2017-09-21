@@ -70,16 +70,36 @@ def get_valid_config():
             'log_type1': {
                 'command': ['cmdline', 'commandline']
             }
+        },
+        'global': {
+            'account': {
+                'aws_account_id': '123456123456'
+            },
+            'infrastructure': {
+                'monitoring': {
+                    'create_sns_topic': True
+                }
+            }
         }
     }
 
 
-def get_valid_event(count=1):
+def convert_events_to_kinesis(raw_records):
+    """Given a list of pre-defined raw records, make a valid kinesis test event"""
+    return {'Records': [make_kinesis_raw_record('unit_test_default_stream', json.dumps(record))
+                        for
+                        record
+                        in
+                        raw_records]}
+
+
+def get_valid_event(count=1, **kwargs):
     """Return a valid event with the given number of records."""
-    record_data = {
+    default_record = {
         'unit_key_01': '100',
         'unit_key_02': 'another bogus value'
     }
+    record_data = kwargs.get('record', default_record)
 
     data_json = json.dumps(record_data)
     raw_record = make_kinesis_raw_record('unit_test_default_stream', data_json)

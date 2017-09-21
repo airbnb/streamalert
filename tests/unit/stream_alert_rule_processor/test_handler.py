@@ -18,6 +18,7 @@ import base64
 import logging
 
 from mock import call, mock_open, patch
+from moto import mock_kinesis
 from nose.tools import (
     assert_equal,
     assert_false,
@@ -25,11 +26,16 @@ from nose.tools import (
     assert_true,
     raises
 )
+import boto3
 
 from stream_alert.rule_processor import LOGGER
 from stream_alert.rule_processor.config import ConfigError
 from stream_alert.rule_processor.handler import load_config, StreamAlert
-from tests.unit.stream_alert_rule_processor.test_helpers import get_mock_context, get_valid_event
+from tests.unit.stream_alert_rule_processor.test_helpers import (
+    convert_events_to_kinesis,
+    get_mock_context,
+    get_valid_event
+)
 
 
 class TestStreamAlert(object):
@@ -213,3 +219,49 @@ class TestStreamAlert(object):
         self.__sa_handler.run({'Records': ['record']})
 
         load_payload_mock.assert_called()
+
+    @mock_kinesis
+    def test_firehose_record_delivery(self):
+        """StreamAlert Class - Firehose Record Delivery"""
+        self.__sa_handler.firehose_client = boto3.client('firehose', region_name='us-east-1')
+
+        test_event = convert_events_to_kinesis([
+            # unit_test_simple_log
+            {
+                'unit_key_01': 1,
+                'unit_key_02': 'test'
+            },
+            {
+                'unit_key_01': 2,
+                'unit_key_02': 'test'
+            },
+            # test_log_type_json_nested
+            {
+                'date': 'January 01, 3005',
+                'unixtime': '32661446400',
+                'host': 'my-host.name.website.com',
+                'data': {
+                    'super': 'secret'
+                }
+            }
+        ])
+
+        delivery_stream_names = ['streamalert_data_test_log_type_json_nested',
+                                 'streamalert_data_unit_test_simple_log']
+
+        for delivery_stream in delivery_stream_names:
+            self.__sa_handler.firehose_client.create_delivery_stream(
+                DeliveryStreamName=delivery_stream,
+                S3DestinationConfiguration={
+                    'RoleARN': 'arn:aws:iam::123456789012:role/firehose_delivery_role',
+                    'BucketARN': 'arn:aws:s3:::kinesis-test',
+                    'Prefix': '{}/'.format(delivery_stream),
+                    'BufferingHints': {
+                        'SizeInMBs': 123,
+                        'IntervalInSeconds': 124
+                    },
+                    'CompressionFormat': 'Snappy',
+                }
+            )
+
+        self.__sa_handler.run(test_event)
