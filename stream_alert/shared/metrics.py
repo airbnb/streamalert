@@ -55,6 +55,8 @@ class MetricLogger(object):
     TOTAL_RECORDS = 'TotalRecords'
     TOTAL_S3_RECORDS = 'TotalS3Records'
     TRIGGERED_ALERTS = 'TriggeredAlerts'
+    FIREHOSE_RECORDS_SENT = 'FirehoseRecordsSent'
+    FIREHOSE_FAILED_RECORDS = 'FirehoseFailedRecords'
 
     _default_filter = '{{ $.metric_name = "{}" }}'
     _default_value_lookup = '$.metric_value'
@@ -69,13 +71,22 @@ class MetricLogger(object):
         ALERT_PROCESSOR_NAME: {},   # Placeholder for future alert processor metrics
         ATHENA_PARTITION_REFRESH_NAME: {},  # Placeholder for future athena processor metrics
         RULE_PROCESSOR_NAME: {
-            FAILED_PARSES: (_default_filter.format(FAILED_PARSES), _default_value_lookup),
-            S3_DOWNLOAD_TIME: (_default_filter.format(S3_DOWNLOAD_TIME), _default_value_lookup),
+            FAILED_PARSES: (_default_filter.format(FAILED_PARSES),
+                            _default_value_lookup),
+            S3_DOWNLOAD_TIME: (_default_filter.format(S3_DOWNLOAD_TIME),
+                               _default_value_lookup),
             TOTAL_PROCESSED_SIZE: (_default_filter.format(TOTAL_PROCESSED_SIZE),
                                    _default_value_lookup),
-            TOTAL_RECORDS: (_default_filter.format(TOTAL_RECORDS), _default_value_lookup),
-            TOTAL_S3_RECORDS: (_default_filter.format(TOTAL_S3_RECORDS), _default_value_lookup),
-            TRIGGERED_ALERTS: (_default_filter.format(TRIGGERED_ALERTS), _default_value_lookup)
+            TOTAL_RECORDS: (_default_filter.format(TOTAL_RECORDS),
+                            _default_value_lookup),
+            TOTAL_S3_RECORDS: (_default_filter.format(TOTAL_S3_RECORDS),
+                               _default_value_lookup),
+            TRIGGERED_ALERTS: (_default_filter.format(TRIGGERED_ALERTS),
+                               _default_value_lookup),
+            FIREHOSE_RECORDS_SENT: (_default_filter.format(FIREHOSE_RECORDS_SENT),
+                                    _default_value_lookup),
+            FIREHOSE_FAILED_RECORDS: (_default_filter.format(FIREHOSE_FAILED_RECORDS),
+                                      _default_value_lookup)
         }
     }
 
