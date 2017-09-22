@@ -117,3 +117,28 @@ def load_env(context):
         'lambda_function_name': arn[6],
         'lambda_alias': arn[7]
     }
+
+def load_threat_intel_conf(conf_file='conf/threat_intel.json'):
+    """Load configuration file for ThreatIntel feature
+
+    Args:
+        (str): conf_file: in JSON format, mapping between normalized types and
+            IOC types.
+
+    Returns:
+        (tuple):
+            First return value indicates if ThreatIntel feature enabled (True)
+                or not (False).
+            Second return value is a dictionary whose keys are normalized types
+                and values are IOC types.
+    """
+    config = None
+    try:
+        with open(conf_file) as data:
+            config = json.load(data)
+    except ValueError:
+        raise ConfigError('Invalid JSON format for {}.json'.format(conf_file))
+    except IOError:
+        raise ConfigError('File {} is not existing'.format(conf_file))
+
+    return config['enabled'], config['mapping']

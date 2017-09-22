@@ -31,8 +31,8 @@
         "current_version": "$LATEST",
         "enable_metrics": true,
         "log_level": "info",
-        "memory": 128,
-        "timeout": 10
+        "memory": 512,
+        "timeout": 120
       }
     }
   },

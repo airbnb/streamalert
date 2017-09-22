@@ -360,3 +360,39 @@ class TestStreamAlert(object):
 
         self.__sa_handler.run(test_event)
         assert_true(mock_logging.error.called)
+
+     @patch('stream_alert.rule_processor.handler.load_config')
+     @patch('stream_alert.rule_processor.handler.StreamRules.load_intelligence')
+     def test_invoke_threat_intel(
+             self,
+             load_intelligence_mock,
+             load_config_mock):
+         """StreamAlert Class - Invoke load_intelligence"""
+         load_config_mock.return_value = {
+             'threat_intel': {
+                 'enabled': True,
+                 'mapping': {
+                     'test_normalized_type': 'test_ioc_type'
+                 }
+             }
+         }
+         self.__sa_handler.run(get_valid_event())
+         load_intelligence_mock.assert_called()
+
+     @patch('stream_alert.rule_processor.handler.load_config')
+     @patch('stream_alert.rule_processor.handler.StreamRules.load_intelligence')
+     def test_do_not_invoke_threat_intel(
+             self,
+             load_intelligence_mock,
+             load_config_mock):
+         """StreamAlert Class - Do not invoke load_intelligence"""
+         load_config_mock.return_value = {
+             'threat_intel': {
+                 'enabled': False,
+                 'mapping': {
+                     'test_normalized_type': 'test_ioc_type'
+                 }
+             }
+         }
+         self.__sa_handler.run(get_valid_event())
+         load_intelligence_mock.assert_not_called()

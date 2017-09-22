@@ -228,6 +228,7 @@ class LambdaPackage(object):
 class RuleProcessorPackage(LambdaPackage):
     """Deployment package class for the StreamAlert Rule Processor function"""
     package_folders = {
+        'threat_intel',
         'stream_alert/rule_processor',
         'stream_alert/shared',
         'rules',
