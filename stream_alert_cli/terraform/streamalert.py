@@ -64,8 +64,6 @@ def generate_stream_alert(cluster_name, cluster_dict, config):
     Returns:
         bool: Result of applying the stream_alert module
     """
-    enable_metrics = config['global'].get('infrastructure',
-                                          {}).get('metrics', {}).get('enabled', False)
     account = config['global']['account']
     modules = config['clusters'][cluster_name]['modules']
 
@@ -76,17 +74,19 @@ def generate_stream_alert(cluster_name, cluster_dict, config):
         'prefix': account['prefix'],
         'cluster': cluster_name,
         'kms_key_arn': '${aws_kms_key.stream_alert_secrets.arn}',
-        'rule_processor_enable_metrics': enable_metrics,
+        'rule_processor_enable_metrics': modules['stream_alert'] \
+            ['rule_processor'].get('enable_metrics', True),
         'rule_processor_log_level': modules['stream_alert'] \
-                                           ['rule_processor'].get('log_level', 'info'),
+            ['rule_processor'].get('log_level', 'info'),
         'rule_processor_memory': modules['stream_alert']['rule_processor']['memory'],
         'rule_processor_timeout': modules['stream_alert']['rule_processor']['timeout'],
         'rule_processor_version': modules['stream_alert']['rule_processor']['current_version'],
         'rule_processor_config': '${var.rule_processor_config}',
         'alert_processor_config': '${var.alert_processor_config}',
-        'alert_processor_enable_metrics': enable_metrics,
+        'alert_processor_enable_metrics': modules['stream_alert'] \
+            ['alert_processor'].get('enable_metrics', True),
         'alert_processor_log_level': modules['stream_alert'] \
-                                            ['alert_processor'].get('log_level', 'info'),
+            ['alert_processor'].get('log_level', 'info'),
         'alert_processor_memory': modules['stream_alert']['alert_processor']['memory'],
         'alert_processor_timeout': modules['stream_alert']['alert_processor']['timeout'],
         'alert_processor_version': modules['stream_alert']['alert_processor']['current_version']
