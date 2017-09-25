@@ -16,6 +16,7 @@ limitations under the License.
 # pylint: disable=no-self-use,protected-access
 from collections import namedtuple
 import json
+import os
 
 from mock import patch
 from nose.tools import (
@@ -26,6 +27,7 @@ from nose.tools import (
     assert_true,
 )
 
+from stream_alert import rule_processor
 from stream_alert.rule_processor.config import load_config, load_env
 from stream_alert.rule_processor.parsers import get_parser
 from stream_alert.rule_processor.rules_engine import RuleAttributes, StreamRules
@@ -61,6 +63,8 @@ class TestStreamRules(object):
         # Clear out the cached matchers and rules to avoid conflicts with production code
         StreamRules._StreamRules__matchers.clear()  # pylint: disable=no-member
         StreamRules._StreamRules__rules.clear()  # pylint: disable=no-member
+        StreamRules._StreamRules__intelligence.clear() # pylint: disable=no-member
+        StreamRules.get_intelligence('tests/unit/fixtures')
 
     def test_alert_format(self):
         """Rules Engine - Alert Format"""
@@ -766,3 +770,106 @@ class TestStreamRules(object):
             payload = load_and_classify_payload(self.config, service, entity, raw_record)
 
             assert_false(StreamRules.process(payload))
+
+    def test_get_intelligence(self):
+        """Rules Engine - Load intelligence to memory"""
+        StreamRules.get_intelligence('tests/unit/fixtures')
+        intelligence = StreamRules._StreamRules__intelligence # pylint: disable=no-member
+        expected_keys = ['domain', 'md5', 'ip']
+        assert_items_equal(intelligence.keys(), expected_keys)
+        assert_equal(len(intelligence['domain']), 10)
+        assert_equal(len(intelligence['md5']), 10)
+        assert_equal(len(intelligence['ip']), 10)
+
+    def test_detect_ioc_rule(self):
+        """Rules Engine - A rule to detect IOC and find a match"""
+        @rule(datatypes=['sourceAddress'],
+              outputs=['s3:sample_bucket'])
+        def detect_ioc(rec): # pylint: disable=unused-variable
+            """Testing rule to find is there any ip IOC matching"""
+            return 'ioc' in rec
+
+        os.environ['ENABLE_THREAT_INTEL'] = '1'
+        reload(rule_processor.rules_engine)
+        kinesis_data_items = [
+            {
+                'account': 123456,
+                'region': '123456123456',
+                'source': '188.137.122.83',
+                'detail': {
+                    'eventName': 'ConsoleLogin',
+                    'sourceIPAddress': '188.137.122.83',
+                    'recipientAccountId': '654321'
+                }
+            },
+            {
+                'account': 123456,
+                'region': '123456123456',
+                'source': '1.1.1.2',
+                'detail': {
+                    'eventName': 'ConsoleLogin',
+                    'sourceIPAddress': '1.1.1.2',
+                    'recipientAccountId': '654321'
+                }
+            }
+        ]
+
+        alerts = []
+        for data in kinesis_data_items:
+            kinesis_data = json.dumps(data)
+            # prepare the payloads
+            service, entity = 'kinesis', 'test_kinesis_stream'
+            raw_record = make_kinesis_raw_record(entity, kinesis_data)
+            payload = load_and_classify_payload(self.config, service, entity, raw_record)
+
+            alerts.extend(StreamRules.process(payload))
+
+        assert_equal(len(alerts), 1)
+        expected_ioc_info = {'type': 'ip', 'value': '188.137.122.83'}
+        assert_equal(alerts[0]['record']['ioc'], expected_ioc_info)
+
+    def test_is_ioc_with_no_matching(self):
+        """Rules Engine - test IOC not matching"""
+        record_after_normalization = {
+            u'source': '1.1.1.2',
+            u'account': 123456,
+            u'region': '123456123456',
+            u'detail': {
+                u'eventName': u'ConsoleLogin',
+                u'sourceIPAddress': u'1.1.1.2',
+                u'recipientAccountId': u'654321'
+            },
+            'normalized_types': {
+                'sourceAddress': [
+                    [u'source'],
+                    [u'detail', u'sourceIPAddress']
+                ]
+            }
+        }
+        ioc_result, ioc_type, ioc_value = StreamRules.is_ioc(record_after_normalization)
+        assert_equal(ioc_result, False)
+        assert_equal(ioc_type, None)
+        assert_equal(ioc_value, None)
+
+    def test_is_ioc_with_matching(self):
+        """Rules Engine - test IOC matching"""
+        record_after_normalization = {
+            u'source': '188.137.122.83',
+            u'account': 123456,
+            u'region': '123456123456',
+            u'detail': {
+                u'eventName': u'ConsoleLogin',
+                u'sourceIPAddress': u'188.137.122.83',
+                u'recipientAccountId': u'654321'
+            },
+            'normalized_types': {
+                'sourceAddress': [
+                    [u'source'],
+                    [u'detail', u'sourceIPAddress']
+                ]
+            }
+        }
+        ioc_result, ioc_type, ioc_value = StreamRules.is_ioc(record_after_normalization)
+        assert_equal(ioc_result, True)
+        assert_equal(ioc_type, 'ip')
+        assert_equal(ioc_value, '188.137.122.83')
