@@ -249,6 +249,7 @@ class TestStreamAlert(object):
         delivery_stream_names = ['streamalert_data_test_log_type_json_nested',
                                  'streamalert_data_unit_test_simple_log']
 
+        # Setup mock delivery streams
         for delivery_stream in delivery_stream_names:
             self.__sa_handler.firehose_client.create_delivery_stream(
                 DeliveryStreamName=delivery_stream,
@@ -263,5 +264,94 @@ class TestStreamAlert(object):
                     'CompressionFormat': 'Snappy',
                 }
             )
+
+        self.__sa_handler.run(test_event)
+
+    @mock_kinesis
+    def test_firehose_record_delivery_large_data_size(self):
+        """StreamAlert Class - Firehose Record Delivery - Large Payload"""
+        self.__sa_handler.firehose_client = boto3.client('firehose', region_name='us-east-1')
+
+        test_event = convert_events_to_kinesis([
+            # unit_test_simple_log
+            {
+                'unit_key_01': 1,
+                'unit_key_02': 'test' * 250001 # is 4 bytes higher than max
+            },
+            {
+                'unit_key_01': 2,
+                'unit_key_02': 'test'
+            },
+            # test_log_type_json_nested
+            {
+                'date': 'January 01, 3005',
+                'unixtime': '32661446400',
+                'host': 'my-host.name.website.com',
+                'data': {
+                    'super': 'secret'
+                }
+            }
+        ])
+
+        delivery_stream_names = ['streamalert_data_test_log_type_json_nested',
+                                 'streamalert_data_unit_test_simple_log']
+
+        # Setup mock delivery streams
+        for delivery_stream in delivery_stream_names:
+            self.__sa_handler.firehose_client.create_delivery_stream(
+                DeliveryStreamName=delivery_stream,
+                S3DestinationConfiguration={
+                    'RoleARN': 'arn:aws:iam::123456789012:role/firehose_delivery_role',
+                    'BucketARN': 'arn:aws:s3:::kinesis-test',
+                    'Prefix': '{}/'.format(delivery_stream),
+                    'BufferingHints': {
+                        'SizeInMBs': 123,
+                        'IntervalInSeconds': 124
+                    },
+                    'CompressionFormat': 'Snappy',
+                }
+            )
+
+        self.__sa_handler.run(test_event)
+
+    @mock_kinesis
+    def test_firehose_record_delivery_failure(self):
+        """StreamAlert Class - Firehose Record Delivery - Failed PutRecord"""
+        class MockFirehoseClient(object):
+            @staticmethod
+            def put_record_batch(**kwargs):
+                return {
+                    'FailedPutCount': len(kwargs.get('Records')),
+                    'RequestResponses': [
+                        {
+                            'RecordId': '12345',
+                            'ErrorCode': '300',
+                            'ErrorMessage': 'Bad message!!!'
+                        },
+                    ]
+                }
+
+        self.__sa_handler.firehose_client = MockFirehoseClient()
+
+        test_event = convert_events_to_kinesis([
+            # unit_test_simple_log
+            {
+                'unit_key_01': 1,
+                'unit_key_02': 'test'
+            },
+            {
+                'unit_key_01': 2,
+                'unit_key_02': 'test'
+            },
+            # test_log_type_json_nested
+            {
+                'date': 'January 01, 3005',
+                'unixtime': '32661446400',
+                'host': 'my-host.name.website.com',
+                'data': {
+                    'super': 'secret'
+                }
+            }
+        ])
 
         self.__sa_handler.run(test_event)
