@@ -781,7 +781,8 @@ class TestStreamRules(object):
         assert_equal(len(intelligence['md5']), 10)
         assert_equal(len(intelligence['ip']), 10)
 
-    def test_detect_ioc_rule(self):
+    @patch('stream_alert.rule_processor.rules_engine.load_threat_intel_conf')
+    def test_detect_ioc_rule(self, threat_intel_conf_mock):
         """Rules Engine - A rule to detect IOC and find a match"""
         @rule(datatypes=['sourceAddress'],
               outputs=['s3:sample_bucket'])
@@ -789,8 +790,7 @@ class TestStreamRules(object):
             """Testing rule to find is there any ip IOC matching"""
             return 'ioc' in rec
 
-        os.environ['ENABLE_THREAT_INTEL'] = '1'
-        reload(rule_processor.rules_engine)
+        threat_intel_conf_mock.return_value = (True, {'sourceAddress': 'ip'})
         kinesis_data_items = [
             {
                 'account': 123456,

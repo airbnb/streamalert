@@ -132,7 +132,7 @@ def test_load_threat_intel_conf():
         'fileHash': 'md5',
         'sourceAddress': 'ip'
     }
-    assert_equal(enable_threat_intel, True)
+    assert_equal(enable_threat_intel, False)
     assert_equal(mapping, expected_mapping)
 
 @raises(ConfigError)

@@ -392,7 +392,6 @@ class StreamRules(object):
 
                     # if Threat Intel feature is enabled, call the function to
                     # detect if any data in the record is IOC.
-                    # if there is IOC matching, add IOC information to alert header
                     enable_threat_intel, _ = load_threat_intel_conf()
                     if enable_threat_intel:
                         ioc_result, ioc_type, ioc_value = cls.is_ioc(record)
@@ -438,7 +437,7 @@ class StreamRules(object):
         compromise) which store in class variable intelligence dictionary.
 
         Args:
-            record (dict): Payload record to process
+            rec (dict): Payload record to process
 
         Return:
             (tuple): (True or False, IOC type, IOC value)
