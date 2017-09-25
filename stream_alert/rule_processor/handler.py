@@ -195,7 +195,7 @@ class StreamAlert(object):
 
                 resp = self.firehose_client.put_record_batch(
                     DeliveryStreamName=stream_name,
-                    Records=[{'Data': json.dumps(record, separators=(",", ":"))}
+                    Records=[{'Data': json.dumps(record, separators=(",", ":")) + '\n'}
                              for record
                              in record_batch])
 
