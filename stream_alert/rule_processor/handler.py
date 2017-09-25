@@ -175,8 +175,11 @@ class StreamAlert(object):
             """Helper function to verify record size"""
             for index, record in enumerate(batch):
                 if len(str(record).encode('utf-8')) > MAX_RECORD_SIZE:
-                    LOGGER.error(
-                        'The following record is too large be send to Firehose: %s', record)
+                    LOGGER.error('The following record is too large'
+                                 'be sent to Firehose: %s', record)
+                    MetricLogger.log_metric(FUNCTION_NAME,
+                                            MetricLogger.FIREHOSE_FAILED_RECORDS,
+                                            1)
                     batch.pop(index)
 
         delivery_stream_name_pattern = 'streamalert_data_{}'
