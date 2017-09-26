@@ -25,6 +25,7 @@ from stream_alert_cli.terraform._common import (
     InvalidClusterName,
     infinitedict
 )
+from stream_alert_cli.terraform.app_integrations import generate_app_integrations
 from stream_alert_cli.terraform.athena import generate_athena
 from stream_alert_cli.terraform.cloudtrail import generate_cloudtrail
 from stream_alert_cli.terraform.flow_logs import generate_flow_logs
@@ -313,6 +314,8 @@ def generate_cluster(**kwargs):
     if s3_events_info:
         if not generate_s3_events(cluster_name, cluster_dict, config):
             return
+
+    generate_app_integrations(cluster_name, cluster_dict, config)
 
     return cluster_dict
 

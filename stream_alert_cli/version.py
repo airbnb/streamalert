@@ -85,8 +85,6 @@ class LambdaVersion(object):
             bool: Result of the function publishes
         """
         cluster = kwargs.get('cluster')
-        date = datetime.utcnow().strftime("%Y%m%d_T%H%M%S")
-
         # Clustered Lambda functions have a different naming pattern
         if cluster:
             region = self.config['clusters'][cluster]['region']
@@ -106,7 +104,45 @@ class LambdaVersion(object):
         client = boto3.client('lambda', region_name=region)
         code_sha_256 = self.config['lambda'][self.package.config_key]['source_current_hash']
 
-        # Publish the function
+        # Publish the function(s)
+        if self.package.package_name == 'stream_alert_app':
+            for app_name, app_info in self.config['clusters'][cluster]['modules'] \
+                ['stream_alert_apps'].iteritems():
+                # Name follows format: '<prefix>_<cluster>_<service>_<app_name>_app'
+                function_name = '_'.join([self.config['global']['account']['prefix'], cluster,
+                                          app_info['type'], app_name, 'app'])
+                new_version = self._publish(client, function_name, code_sha_256)
+                if not new_version:
+                    continue
+
+                LOGGER_CLI.info('Published version %s for %s:%s',
+                                new_version, cluster, function_name)
+
+                app_info['current_version'] = new_version
+
+        else:
+
+            new_version = self._publish(client, function_name, code_sha_256)
+            if not new_version:
+                return False
+
+            # Update the config
+            if cluster:
+                LOGGER_CLI.info('Published version %s for %s:%s',
+                                new_version, cluster, function_name)
+                self.config['clusters'][cluster]['modules']['stream_alert'] \
+                    [self.package.package_name]['current_version'] = new_version
+            else:
+                LOGGER_CLI.info('Published version %s for %s',
+                                new_version, function_name)
+                self.config['lambda'][self.package.config_key]['current_version'] = new_version
+        self.config.write()
+
+        return True
+
+    def _publish(self, client, function_name, code_sha_256):
+        """Publish the function"""
+        date = datetime.utcnow().strftime("%Y%m%d_T%H%M%S")
         LOGGER_CLI.debug('Publishing %s', function_name)
         new_version = self._version_helper(
             client=client,
@@ -114,22 +150,7 @@ class LambdaVersion(object):
             code_sha_256=code_sha_256,
             date=date)
 
-        if not new_version:
-            return False
-
-        # Update the config
-        if cluster:
-            LOGGER_CLI.info('Published version %s for %s:%s',
-                            new_version, cluster, function_name)
-            self.config['clusters'][cluster]['modules']['stream_alert'][self.package.package_name][
-                'current_version'] = new_version
-        else:
-            LOGGER_CLI.info('Published version %s for %s',
-                            new_version, function_name)
-            self.config['lambda'][self.package.config_key]['current_version'] = new_version
-        self.config.write()
-
-        return True
+        return new_version
 
     def publish_function(self):
         """Main Publish Function method"""

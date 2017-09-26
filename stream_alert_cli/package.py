@@ -220,7 +220,7 @@ class LambdaPackage(object):
                 return False
 
             package_fh.close()
-            LOGGER_CLI.debug('Uploaded %s to S3', package_name)
+            LOGGER_CLI.info('Uploaded %s to S3', package_name)
 
         return True
 
@@ -252,6 +252,15 @@ class AlertProcessorPackage(LambdaPackage):
     package_root_dir = '.'
     package_name = 'alert_processor'
     config_key = 'alert_processor_config'
+
+
+class AppIntegrationPackage(LambdaPackage):
+    """Deployment package class for App integration functions"""
+    package_folders = {'app_integrations'}
+    package_files = {'app_integrations/__init__.py'}
+    package_root_dir = '.'
+    package_name = 'stream_alert_app'
+    config_key = 'stream_alert_apps_config'
 
 
 class AthenaPackage(LambdaPackage):
