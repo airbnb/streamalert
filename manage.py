@@ -25,11 +25,14 @@ terraform <cmd> -var-file=../terraform.tfvars -var-file=../variables.json
 """
 from argparse import Action, ArgumentParser, RawTextHelpFormatter, SUPPRESS as ARGPARSE_SUPPRESS
 import os
+import string
 
 from stream_alert.shared import metrics
 from stream_alert_cli import __version__ as version
 from stream_alert_cli.logger import LOGGER_CLI
 from stream_alert_cli.runner import cli_runner
+from app_integrations.config import AWS_RATE_RE
+from app_integrations.apps.app_base import STREAMALERT_APPS
 
 
 class UniqueSetAction(Action):
@@ -211,6 +214,313 @@ Examples:
 
     # allow verbose output for the CLI with the --debug option
     schema_validation_parser.add_argument(
+        '--debug',
+        action='store_true',
+        help=ARGPARSE_SUPPRESS
+    )
+
+
+def _add_app_integration_subparser(subparsers):
+    """Add the app integration subparser: manage.py app [subcommand] [options]"""
+    app_integration_usage = 'manage.py app [subcommand] [options]'
+    app_integration_description = ("""
+StreamAlertCLI v{}
+Create, list, or update a StreamAlert app integration function to poll logs from various services
+
+Available Subcommands:
+
+    manage.py app new                 Configure a new app integration for collecting logs
+    manage.py app update-auth         Update the authentication information for an
+                                        existing app integration
+
+""".format(version))
+    app_integration_parser = subparsers.add_parser(
+        'app',
+        description=app_integration_description,
+        usage=app_integration_usage,
+        formatter_class=RawTextHelpFormatter,
+        help=ARGPARSE_SUPPRESS
+    )
+
+    # get cluster choices from available files
+    clusters = [os.path.splitext(cluster)[0] for _, _, files
+                in os.walk('conf/clusters') for cluster in files]
+
+    # Set the name of this parser to 'app'
+    app_integration_parser.set_defaults(command='app')
+
+    app_integration_subparsers = app_integration_parser.add_subparsers()
+
+    _add_app_integration_list_subparser(app_integration_subparsers)
+    _add_app_integration_new_subparser(app_integration_subparsers, set(STREAMALERT_APPS), clusters)
+    _add_app_integration_update_auth_subparser(app_integration_subparsers, clusters)
+
+
+def _add_app_integration_list_subparser(subparsers):
+    """Add the app list subparser: manage.py app list"""
+    app_integration_list_usage = 'manage.py app list'
+
+    app_integration_list_desc = ("""
+StreamAlertCLI v{}
+List all configured StreamAlert app integration functions, grouped by cluseter
+
+Command:
+
+    manage.py app list              List all configured app functions, grouped by cluster
+
+Optional Arguments:
+
+    --debug             Enable Debug logger output
+
+""".format(version))
+    app_integration_list_parser = subparsers.add_parser(
+        'list',
+        description=app_integration_list_desc,
+        usage=app_integration_list_usage,
+        formatter_class=RawTextHelpFormatter,
+        help=ARGPARSE_SUPPRESS
+    )
+
+    app_integration_list_parser.set_defaults(subcommand='list')
+
+    # allow verbose output for the CLI with the --debug option
+    app_integration_list_parser.add_argument(
+        '--debug',
+        action='store_true',
+        help=ARGPARSE_SUPPRESS
+    )
+
+
+def _add_app_integration_new_subparser(subparsers, types, clusters):
+    """Add the app new subparser: manage.py app new [options]"""
+    app_integration_new_usage = 'manage.py app new [options]'
+
+    types_block = ('\n').join('{:>26}{}'.format('', app_type) for app_type in types)
+
+    cluster_choices_block = ('\n').join('{:>28}{}'.format('', cluster) for cluster in clusters)
+
+    help_link = 'http://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html'
+
+    app_integration_new_description = ("""
+StreamAlertCLI v{}
+Create a new StreamAlert app integration function to poll logs from various services
+
+Command:
+
+    manage.py app new [options]      Configure a new app for collecting logs
+
+Required Arguments:
+
+    --type              Type of app integration function being configured Choices are:
+{}
+    --cluster           Applicable cluster this function should be configured against
+                          Choices are:
+{}
+    --name              Unique name to be assigned to this app integration function. This is
+                          useful when configuring multiple accounts per service.
+    --timeout           The AWS Lambda function timeout value, in seconds. This should
+                          be an integer between 10 and 300.
+    --memory            The AWS Lambda function max memory value, in megabytes. This should
+                          be an integer between 128 and 1536.
+    --interval          The interval, defined using a 'rate' or 'cron' expression, at
+                          which this app integration function should execute. Examples of
+                          acceptable input are:
+                            'rate(1 hour)'          # Every hour (note the singular 'hour')
+                            'rate(2 days)'          # Every 2 days
+                            'rate(20 minutes)'      # Every 20 minutes
+
+                          See the link in the Resources section below for more information.
+
+Optional Arguments:
+
+    --debug             Enable Debug logger output
+
+Examples:
+
+    manage.py app new \\
+      --type duo_auth \\
+      --cluster prod \\
+      --name duo_prod_collector \\
+      --interval 'rate(2 hours)' \\
+      --timeout 60 \\
+      --memory 256
+
+Resources:
+
+    AWS: {}
+
+""".format(version, types_block, cluster_choices_block, help_link))
+    app_integration_new_parser = subparsers.add_parser(
+        'new',
+        description=app_integration_new_description,
+        usage=app_integration_new_usage,
+        formatter_class=RawTextHelpFormatter,
+        help=ARGPARSE_SUPPRESS
+    )
+
+    app_integration_new_parser.set_defaults(subcommand='new')
+
+    _add_default_app_integration_args(app_integration_new_parser, clusters)
+
+    # App type options
+    app_integration_new_parser.add_argument(
+        '--type',
+        choices=types,
+        required=True,
+        help=ARGPARSE_SUPPRESS
+    )
+
+    # Validate the rate at which this should run
+    def _validate_scheduled_interval(val):
+        """Validate acceptable inputs for the schedule expression
+        These follow the format 'rate(5 minutes)' or 'cron(*/10 * * * *)'
+        """
+        rate_match = AWS_RATE_RE.match(val)
+        if rate_match:
+            return val
+
+        if val.startswith('rate('):
+            err = ('Invalid rate expression. For help '
+                   'see {}'.format('{}#RateExpressions'.format(help_link)))
+            raise app_integration_new_parser.error(err)
+
+        raise app_integration_new_parser.error('Invalid expression. For help '
+                                               'see {}'.format(help_link))
+
+    # App integration schedule expression (rate)
+    app_integration_new_parser.add_argument(
+        '--interval',
+        required=True,
+        help=ARGPARSE_SUPPRESS,
+        type=_validate_scheduled_interval
+    )
+
+    # Validate the timeout value to make sure it is between 10 and 300
+    def _validate_timeout(val):
+        """Validate acceptable inputs for the timeout of the function"""
+        error = 'The \'timeout\' value must be an integer between 10 and 300'
+        try:
+            timeout = int(val)
+        except ValueError:
+            raise app_integration_new_parser.error(error)
+
+        if not 10 <= timeout <= 300:
+            raise app_integration_new_parser.error(error)
+
+        return timeout
+
+    # App integration function timeout
+    app_integration_new_parser.add_argument(
+        '--timeout',
+        required=True,
+        help=ARGPARSE_SUPPRESS,
+        type=_validate_timeout
+    )
+
+    # Validate the memory value to make sure it is between 128 and 1536
+    def _validate_memory(val):
+        """Validate acceptable inputs for the memory of the function"""
+        error = 'The \'memory\' value must be an integer between 128 and 1536'
+        try:
+            memory = int(val)
+        except ValueError:
+            raise app_integration_new_parser.error(error)
+
+        if not 128 <= memory <= 1536:
+            raise app_integration_new_parser.error(error)
+
+        return memory
+
+    # App integration function max memory
+    app_integration_new_parser.add_argument(
+        '--memory',
+        required=True,
+        help=ARGPARSE_SUPPRESS,
+        type=_validate_memory
+    )
+
+
+def _add_app_integration_update_auth_subparser(subparsers, clusters):
+    """Add the app update-auth subparser: manage.py app update-auth [options]"""
+    app_integration_update_usage = 'manage.py app update-auth [options]'
+
+    cluster_choices_block = ('\n').join('{:>28}{}'.format('', cluster) for cluster in clusters)
+
+    help_link = 'http://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html'
+
+    app_integration_update_desc = ("""
+StreamAlertCLI v{}
+Update a StreamAlert app integration function's authentication information in Parameter Store
+
+Command:
+
+    manage.py app update-auth [options]      Update the authentication information for an
+                                               existing app integration within Parameter Store
+
+Required Arguments:
+
+    --cluster           Applicable cluster this function should be configured against
+                          Choices are:
+{}
+    --name              Unique name to be assigned to this app integration function. This is
+                          useful when configuring multiple accounts per service.
+
+Optional Arguments:
+
+    --debug             Enable Debug logger output
+
+Examples:
+
+    manage.py app update-auth \\
+      --cluster prod \\
+      --name duo_prod_collector
+
+""".format(version, cluster_choices_block, help_link))
+    app_integration_update_parser = subparsers.add_parser(
+        'update-auth',
+        description=app_integration_update_desc,
+        usage=app_integration_update_usage,
+        formatter_class=RawTextHelpFormatter,
+        help=ARGPARSE_SUPPRESS
+    )
+
+    app_integration_update_parser.set_defaults(subcommand='update-auth')
+
+    _add_default_app_integration_args(app_integration_update_parser, clusters)
+
+
+def _add_default_app_integration_args(app_integration_parser, clusters):
+    """Add the default arguments to the app integration parsers"""
+
+    # App integration cluster options
+    app_integration_parser.add_argument(
+        '--cluster',
+        choices=clusters,
+        required=True,
+        help=ARGPARSE_SUPPRESS
+    )
+
+    # Validate the name being used to make sure it does not contain specific characters
+    def _validate_name(val):
+        """Validate acceptable inputs for the name of the function"""
+        acceptable_chars = ''.join([string.digits, string.letters, '_-'])
+        if not set(str(val)).issubset(acceptable_chars):
+            raise app_integration_parser.error('Name must contain only letters, numbers, '
+                                               'hyphens, or underscores.')
+
+        return val
+
+    # App integration name to be used for this instance that must be unique per cluster
+    app_integration_parser.add_argument(
+        '--name',
+        dest='app_name',
+        required=True,
+        help=ARGPARSE_SUPPRESS,
+        type=_validate_name
+    )
+
+    # Allow verbose output for the CLI with the --debug option
+    app_integration_parser.add_argument(
         '--debug',
         action='store_true',
         help=ARGPARSE_SUPPRESS
@@ -605,7 +915,7 @@ Examples:
     # require the name of the processor being deployed/rolled back/tested
     lambda_parser.add_argument(
         '--processor',
-        choices=['alert', 'all', 'athena', 'rule'],
+        choices=['alert', 'all', 'athena', 'rule', 'apps'],
         help=ARGPARSE_SUPPRESS,
         action='append',
         required=True
@@ -851,6 +1161,7 @@ For additional details on the available commands, try:
     _add_terraform_subparser(subparsers)
     _add_configure_subparser(subparsers)
     _add_athena_subparser(subparsers)
+    _add_app_integration_subparser(subparsers)
 
     return parser
 
