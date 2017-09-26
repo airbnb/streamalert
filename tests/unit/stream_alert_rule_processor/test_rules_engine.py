@@ -16,7 +16,6 @@ limitations under the License.
 # pylint: disable=no-self-use,protected-access
 from collections import namedtuple
 import json
-import os
 
 from mock import patch
 from nose.tools import (
@@ -27,7 +26,6 @@ from nose.tools import (
     assert_true,
 )
 
-from stream_alert import rule_processor
 from stream_alert.rule_processor.config import load_config, load_env
 from stream_alert.rule_processor.parsers import get_parser
 from stream_alert.rule_processor.rules_engine import RuleAttributes, StreamRules
@@ -795,10 +793,10 @@ class TestStreamRules(object):
             {
                 'account': 123456,
                 'region': '123456123456',
-                'source': '188.137.122.83',
+                'source': '90.163.54.11',
                 'detail': {
                     'eventName': 'ConsoleLogin',
-                    'sourceIPAddress': '188.137.122.83',
+                    'sourceIPAddress': '90.163.54.11',
                     'recipientAccountId': '654321'
                 }
             },
@@ -825,24 +823,24 @@ class TestStreamRules(object):
             alerts.extend(StreamRules.process(payload))
 
         assert_equal(len(alerts), 1)
-        expected_ioc_info = {'type': 'ip', 'value': '188.137.122.83'}
+        expected_ioc_info = {'type': 'ip', 'value': '90.163.54.11'}
         assert_equal(alerts[0]['record']['ioc'], expected_ioc_info)
 
     def test_is_ioc_with_no_matching(self):
         """Rules Engine - test IOC not matching"""
         record_after_normalization = {
-            u'source': '1.1.1.2',
-            u'account': 123456,
-            u'region': '123456123456',
-            u'detail': {
-                u'eventName': u'ConsoleLogin',
-                u'sourceIPAddress': u'1.1.1.2',
-                u'recipientAccountId': u'654321'
+            'source': '1.1.1.2',
+            'account': 123456,
+            'region': '123456123456',
+            'detail': {
+                'eventName': 'ConsoleLogin',
+                'sourceIPAddress': '1.1.1.2',
+                'recipientAccountId': '654321'
             },
             'normalized_types': {
                 'sourceAddress': [
-                    [u'source'],
-                    [u'detail', u'sourceIPAddress']
+                    ['source'],
+                    ['detail', 'sourceIPAddress']
                 ]
             }
         }
@@ -854,22 +852,22 @@ class TestStreamRules(object):
     def test_is_ioc_with_matching(self):
         """Rules Engine - test IOC matching"""
         record_after_normalization = {
-            u'source': '188.137.122.83',
-            u'account': 123456,
-            u'region': '123456123456',
-            u'detail': {
-                u'eventName': u'ConsoleLogin',
-                u'sourceIPAddress': u'188.137.122.83',
-                u'recipientAccountId': u'654321'
+            'source': '90.163.54.11',
+            'account': 123456,
+            'region': '123456123456',
+            'detail': {
+                'eventName': 'ConsoleLogin',
+                'sourceIPAddress': '90.163.54.11',
+                'recipientAccountId': '654321'
             },
             'normalized_types': {
                 'sourceAddress': [
-                    [u'source'],
-                    [u'detail', u'sourceIPAddress']
+                    ['source'],
+                    ['detail', 'sourceIPAddress']
                 ]
             }
         }
         ioc_result, ioc_type, ioc_value = StreamRules.is_ioc(record_after_normalization)
         assert_equal(ioc_result, True)
         assert_equal(ioc_type, 'ip')
-        assert_equal(ioc_value, '188.137.122.83')
+        assert_equal(ioc_value, '90.163.54.11')
