@@ -53,7 +53,8 @@ class StreamClassifier(object):
         entity_mapper = {
             'kinesis': lambda r: r['eventSourceARN'].split('/')[1],
             's3': lambda r: r['s3']['bucket']['name'],
-            'Sns': lambda r: r['EventSubscriptionArn'].split(':')[5]
+            'Sns': lambda r: r['EventSubscriptionArn'].split(':')[5],
+            'stream_alert_app': lambda r: r['stream_alert_app']
         }
 
         service, entity = '', ''

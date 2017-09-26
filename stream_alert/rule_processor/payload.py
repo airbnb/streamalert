@@ -39,7 +39,8 @@ def load_stream_payload(service, entity, raw_record):
     """
     payload_map = {'s3': S3Payload,
                    'sns': SnsPayload,
-                   'kinesis': KinesisPayload}
+                   'kinesis': KinesisPayload,
+                   'stream_alert_app': StreamAlertAppPayload}
 
     if service not in payload_map:
         LOGGER.error('Service payload not supported: %s', service)
@@ -172,7 +173,7 @@ class S3Payload(StreamPayload):
                 if avg_record_size:
                     approx_record_count = self.s3_object_size / avg_record_size
                     LOGGER.debug(
-                        'Processed %s records out of an approximate total of %s '
+                        'Processed %s S3 records out of an approximate total of %s '
                         '(average record size: %s bytes, total size: %s bytes)',
                         line_num,
                         approx_record_count,
@@ -323,3 +324,28 @@ class KinesisPayload(StreamPayload):
             self.pre_parsed_record = record
 
         yield self
+
+
+class StreamAlertAppPayload(StreamPayload):
+    """StreamAlertAppPayload class"""
+
+    def service(self):
+        return 'stream_alert_app'
+
+    def pre_parse(self):
+        """Pre-parsing method for incoming app records that iterates over all the
+        incoming logs in the 'gathered_logs' list.
+
+        Yields:
+            Instances of `self` back to the caller with the proper
+                `pre_parsed_record` set to the current log data. This conforms
+                to the interface of returning a generator, providing the ability
+                to support multiple records like this.
+        """
+        for data in self.raw_record['gathered_logs']:
+
+            self._refresh_record(data)
+            yield self
+
+        MetricLogger.log_metric(FUNCTION_NAME, MetricLogger.TOTAL_STREAM_ALERT_APP_RECORDS,
+                                len(self.raw_record['gathered_logs']))

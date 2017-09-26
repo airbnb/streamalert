@@ -54,6 +54,7 @@ class MetricLogger(object):
     TOTAL_PROCESSED_SIZE = 'TotalProcessedSize'
     TOTAL_RECORDS = 'TotalRecords'
     TOTAL_S3_RECORDS = 'TotalS3Records'
+    TOTAL_STREAM_ALERT_APP_RECORDS = 'TotalStreamAlertAppRecords'
     TRIGGERED_ALERTS = 'TriggeredAlerts'
     FIREHOSE_RECORDS_SENT = 'FirehoseRecordsSent'
     FIREHOSE_FAILED_RECORDS = 'FirehoseFailedRecords'
@@ -86,7 +87,9 @@ class MetricLogger(object):
             FIREHOSE_RECORDS_SENT: (_default_filter.format(FIREHOSE_RECORDS_SENT),
                                     _default_value_lookup),
             FIREHOSE_FAILED_RECORDS: (_default_filter.format(FIREHOSE_FAILED_RECORDS),
-                                      _default_value_lookup)
+                                      _default_value_lookup),
+            TOTAL_STREAM_ALERT_APP_RECORDS:
+                (_default_filter.format(TOTAL_STREAM_ALERT_APP_RECORDS), _default_value_lookup)
         }
     }
 

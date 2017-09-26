@@ -12,5 +12,12 @@
         "cloudtrail"
       ]
     }
+  },
+  "stream_alert_app": {
+    "prefix_cluster_duo_auth_sm-app-name_app": {
+      "logs": [
+        "duo"
+      ]
+    }
   }
 }
