@@ -17,7 +17,6 @@ from collections import OrderedDict
 import json
 import os
 
-
 class ConfigError(Exception):
     """Exception class for config file errors"""
 
@@ -34,7 +33,7 @@ def load_config(conf_dir='conf/'):
     key denotes the name of the log type, and includes 'keys' used to match
     rules to log fields.
     """
-    conf_files = ('sources', 'logs', 'types', 'global')
+    conf_files = ('sources', 'logs', 'types', 'global', 'threat_intel')
     config = dict()
     for base_name in conf_files:
         path = '{}.json'.format(os.path.join(conf_dir, base_name))
@@ -117,28 +116,3 @@ def load_env(context):
         'lambda_function_name': arn[6],
         'lambda_alias': arn[7]
     }
-
-def load_threat_intel_conf(conf_file='conf/threat_intel.json'):
-    """Load configuration file for ThreatIntel feature
-
-    Args:
-        (str): conf_file: in JSON format, mapping between normalized types and
-            IOC types.
-
-    Returns:
-        (tuple):
-            First return value indicates if ThreatIntel feature enabled (True)
-                or not (False).
-            Second return value is a dictionary whose keys are normalized types
-                and values are IOC types.
-    """
-    config = None
-    try:
-        with open(conf_file) as data:
-            config = json.load(data)
-    except ValueError:
-        raise ConfigError('Invalid JSON format for {}.json'.format(conf_file))
-    except IOError:
-        raise ConfigError('File {} does not exist'.format(conf_file))
-
-    return config['enabled'], config['mapping']

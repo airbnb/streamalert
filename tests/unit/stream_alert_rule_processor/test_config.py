@@ -24,8 +24,7 @@ from stream_alert.rule_processor.config import (
     _validate_config,
     ConfigError,
     load_config,
-    load_env,
-    load_threat_intel_conf
+    load_env
 )
 
 from tests.unit.stream_alert_rule_processor.test_helpers import get_mock_context, get_valid_config
@@ -121,28 +120,3 @@ def test_config_valid_types():
     config = load_config()
 
     _validate_config(config)
-
-def test_load_threat_intel_conf():
-    """Config - valid config for Threat Intel"""
-    enable_threat_intel, mapping = load_threat_intel_conf()
-    expected_mapping = {
-        'destinationAddress': 'ip',
-        'destinationDomain': 'domain',
-        'deviceAddress': 'ip',
-        'fileHash': 'md5',
-        'sourceAddress': 'ip'
-    }
-    assert_equal(enable_threat_intel, False)
-    assert_equal(mapping, expected_mapping)
-
-@raises(ConfigError)
-def test_load_threat_intel_conf_nonexist():
-    """Config Error - Threat Intel configuration file does not exist"""
-    load_threat_intel_conf('conf/non_exist_config_file')
-
-@raises(ConfigError)
-def test_load_threat_intel_conf_invalid():
-    """Config Error - Threat Intel configuration file is not valid JSON file"""
-    mocker = mock_open(read_data='test string that will throw an error')
-    with patch('__builtin__.open', mocker):
-        load_threat_intel_conf()

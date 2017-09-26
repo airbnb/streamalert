@@ -62,7 +62,7 @@ class TestStreamRules(object):
         StreamRules._StreamRules__matchers.clear()  # pylint: disable=no-member
         StreamRules._StreamRules__rules.clear()  # pylint: disable=no-member
         StreamRules._StreamRules__intelligence.clear() # pylint: disable=no-member
-        StreamRules.get_intelligence('tests/unit/fixtures')
+        StreamRules.load_intelligence('tests/unit/fixtures')
 
     def test_alert_format(self):
         """Rules Engine - Alert Format"""
@@ -769,9 +769,9 @@ class TestStreamRules(object):
 
             assert_false(StreamRules.process(payload))
 
-    def test_get_intelligence(self):
+    def test_load_intelligence(self):
         """Rules Engine - Load intelligence to memory"""
-        StreamRules.get_intelligence('tests/unit/fixtures')
+        StreamRules.load_intelligence('tests/unit/fixtures')
         intelligence = StreamRules._StreamRules__intelligence # pylint: disable=no-member
         expected_keys = ['domain', 'md5', 'ip']
         assert_items_equal(intelligence.keys(), expected_keys)
@@ -779,16 +779,14 @@ class TestStreamRules(object):
         assert_equal(len(intelligence['md5']), 10)
         assert_equal(len(intelligence['ip']), 10)
 
-    @patch('stream_alert.rule_processor.rules_engine.load_threat_intel_conf')
-    def test_detect_ioc_rule(self, threat_intel_conf_mock):
+    def test_detect_ioc_rule(self):
         """Rules Engine - A rule to detect IOC and find a match"""
         @rule(datatypes=['sourceAddress'],
               outputs=['s3:sample_bucket'])
         def detect_ioc(rec): # pylint: disable=unused-variable
             """Testing rule to find is there any ip IOC matching"""
-            return 'ioc' in rec
+            return 'streamalert_ioc' in rec
 
-        threat_intel_conf_mock.return_value = (True, {'sourceAddress': 'ip'})
         kinesis_data_items = [
             {
                 'account': 123456,
@@ -819,15 +817,21 @@ class TestStreamRules(object):
             service, entity = 'kinesis', 'test_kinesis_stream'
             raw_record = make_kinesis_raw_record(entity, kinesis_data)
             payload = load_and_classify_payload(self.config, service, entity, raw_record)
-
-            alerts.extend(StreamRules.process(payload))
+            threat_intel_config = {
+                'enabled': True,
+                'mapping': {
+                    'sourceAddress': 'ip'
+                }
+            }
+            alerts.extend(StreamRules.process(payload, threat_intel_config))
 
         assert_equal(len(alerts), 1)
         expected_ioc_info = {'type': 'ip', 'value': '90.163.54.11'}
-        assert_equal(alerts[0]['record']['ioc'], expected_ioc_info)
+        assert_equal(alerts[0]['record']['streamalert_ioc'], expected_ioc_info)
 
     def test_is_ioc_with_no_matching(self):
         """Rules Engine - test IOC not matching"""
+
         record_after_normalization = {
             'source': '1.1.1.2',
             'account': 123456,
@@ -851,6 +855,7 @@ class TestStreamRules(object):
 
     def test_is_ioc_with_matching(self):
         """Rules Engine - test IOC matching"""
+
         record_after_normalization = {
             'source': '90.163.54.11',
             'account': 123456,
@@ -867,7 +872,10 @@ class TestStreamRules(object):
                 ]
             }
         }
-        ioc_result, ioc_type, ioc_value = StreamRules.is_ioc(record_after_normalization)
+        datatypes_ioc_mapping = {'sourceAddress': 'ip'}
+        ioc_result, ioc_type, ioc_value = StreamRules.is_ioc(
+            record_after_normalization,
+            datatypes_ioc_mapping)
         assert_equal(ioc_result, True)
         assert_equal(ioc_type, 'ip')
         assert_equal(ioc_value, '90.163.54.11')

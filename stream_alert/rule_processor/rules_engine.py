@@ -18,9 +18,8 @@ from copy import copy
 import json
 
 from helpers.base import fetch_values_by_datatype
-from stream_alert.rule_processor.config import load_threat_intel_conf
 from stream_alert.rule_processor import LOGGER
-from stream_alert.rule_processor.threat_intel import ThreatIntel
+from stream_alert.rule_processor.threat_intel import StreamThreatIntel
 
 DEFAULT_RULE_DESCRIPTION = 'No rule description provided'
 
@@ -348,7 +347,7 @@ class StreamRules(object):
         return True
 
     @classmethod
-    def process(cls, input_payload):
+    def process(cls, input_payload, threat_intel_config=None):
         """Process rules on a record.
 
         Gather a list of rules based on the record's datasource type.
@@ -390,15 +389,22 @@ class StreamRules(object):
                                                    rule.datatypes)
                     record['normalized_types'] = types_result
 
-                    # if Threat Intel feature is enabled, call the function to
-                    # detect if any data in the record is IOC.
-                    enable_threat_intel, _ = load_threat_intel_conf()
-                    if enable_threat_intel:
-                        ioc_result, ioc_type, ioc_value = cls.is_ioc(record)
+                    # If Threat Intel feature is enabled, it will detect if any
+                    # data in the record matching to known IOCs. If there is a
+                    # matching, IOC information will be added to record and sent
+                    # to outputs.
+                    if threat_intel_config and threat_intel_config.get('enabled'):
+                        ioc_result, ioc_type, ioc_value = cls.is_ioc(
+                            record,
+                            threat_intel_config.get('mapping'))
+
                         # if there is ioc mathing, append this ioc_type and
                         # ioc_value to the record which will be sent to outputs
                         if ioc_result:
-                            record['ioc'] = {'type': ioc_type, 'value': ioc_value}
+                            record['streamalert_ioc'] = {
+                                'type': ioc_type,
+                                'value': ioc_value
+                            }
 
                 # rule analysis
                 rule_result = cls.process_rule(record, rule)
@@ -420,21 +426,23 @@ class StreamRules(object):
         return alerts
 
     @classmethod
-    def get_intelligence(cls, intel_dir='threat_intel'):
+    def load_intelligence(cls, intel_dir='threat_intel'):
         """Load intelligence from csv.gz files into a dictionary
 
         Args:
             intel_dir (str): Location where stores compressed intelligence
         """
-        threat_intel = ThreatIntel(intel_dir)
         if cls.__intelligence:
             return
+        threat_intel = StreamThreatIntel(intel_dir)
         cls.__intelligence = threat_intel.read_compressed_files()
 
     @classmethod
-    def is_ioc(cls, rec):
-        """Detect if a record contains any data matching to IOC (Indicate of
-        compromise) which store in class variable intelligence dictionary.
+    def is_ioc(cls, rec, datatypes_ioc_mapping=None):
+        """Detect if a record contains any data matching to known IOCs
+
+        A class variable is defined to store IOCs (Indicator of Compromise) in a
+        dictionary.
 
         Args:
             rec (dict): Payload record to process
@@ -442,12 +450,12 @@ class StreamRules(object):
         Return:
             (tuple): (True or False, IOC type, IOC value)
         """
-        _, datatypes_ioc_mapping = load_threat_intel_conf()
-        for datatype in rec['normalized_types']:
-            if datatype not in datatypes_ioc_mapping:
-                continue
-            results = fetch_values_by_datatype(rec, datatype)
-            for result in results:
-                if result in cls.__intelligence[datatypes_ioc_mapping[datatype]]:
-                    return True, datatypes_ioc_mapping[datatype], result
+        if datatypes_ioc_mapping:
+            for datatype in rec['normalized_types']:
+                if datatype not in datatypes_ioc_mapping:
+                    continue
+                results = fetch_values_by_datatype(rec, datatype)
+                for result in results:
+                    if result in cls.__intelligence[datatypes_ioc_mapping[datatype]]:
+                        return True, datatypes_ioc_mapping[datatype], result
         return False, None, None

@@ -20,16 +20,16 @@ from nose.tools import (
     assert_is_instance
 )
 
-import stream_alert.rule_processor.threat_intel as threat_intel
+import stream_alert.rule_processor.threat_intel as ti
 
-class TestThreatIntel(object):
-    """Test class for ThreatIntel"""
+class TestStreamStreamThreatIntel(object):
+    """Test class for StreamThreatIntel"""
     def __init__(self):
         self.threat_intel = None
 
     def setup(self):
         """Setup before each test case"""
-        self.threat_intel = threat_intel.ThreatIntel('tests/unit/fixtures')
+        self.threat_intel = ti.StreamThreatIntel('tests/unit/fixtures')
 
     def test_read_compressed_files(self):
         """TheatIntel - Read compressed csv.gz files into a dictionary"""
@@ -42,7 +42,7 @@ class TestThreatIntel(object):
         assert_equal(len(intelligence['ip']), 10)
 
     def test_read_compressed_files_not_exist(self):
-        """ThreatIntel - Location of intelligence files not exist"""
-        self.threat_intel = threat_intel.ThreatIntel('not/exist/dir')
+        """StreamThreatIntel - Location of intelligence files not exist"""
+        self.threat_intel = ti.StreamThreatIntel('not/exist/dir')
         intelligence = self.threat_intel.read_compressed_files()
         assert_equal(intelligence, None)
