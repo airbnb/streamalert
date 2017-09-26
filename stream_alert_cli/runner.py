@@ -13,17 +13,17 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from getpass import getpass
-
 from stream_alert.alert_processor.outputs import get_output_dispatcher
 from stream_alert.athena_partition_refresh.main import StreamAlertAthenaClient
-from stream_alert_cli import helpers
+from stream_alert_cli.apps import save_app_auth_info
 from stream_alert_cli.config import CLIConfig
+from stream_alert_cli.helpers import user_input
 from stream_alert_cli.logger import LOGGER_CLI
 from stream_alert_cli.manage_lambda.handler import lambda_handler
 from stream_alert_cli.terraform.handler import terraform_handler
 from stream_alert_cli.test import stream_alert_test
 import stream_alert_cli.outputs as config_outputs
+from app_integrations.apps.app_base import get_app
 
 
 CONFIG = CLIConfig()
@@ -72,6 +72,9 @@ def cli_runner(options):
 
     elif options.command == 'create-alarm':
         _create_alarm(options)
+
+    elif options.command == 'app':
+        _app_integration_handler(options)
 
 
 def athena_handler(options):
@@ -143,43 +146,6 @@ def configure_handler(options):
 
     elif options.config_key == 'aws_account_id':
         CONFIG.set_aws_account_id(options.config_value)
-
-
-def run_command(args=None, **kwargs):
-    """Alias to CLI Helpers.run_command"""
-    return helpers.run_command(args, **kwargs)
-
-
-def user_input(requested_info, mask, input_restrictions):
-    """Prompt user for requested information
-
-    Args:
-        requested_info (str): Description of the information needed
-        mask (bool): Decides whether to mask input or not
-
-    Returns:
-        str: response provided by the user
-    """
-    response = ''
-    prompt = '\nPlease supply {}: '.format(requested_info)
-
-    if not mask:
-        while not response:
-            response = raw_input(prompt)
-
-        # Restrict having spaces or colons in items (applies to things like
-        # descriptors, etc)
-        if any(x in input_restrictions for x in response):
-            LOGGER_CLI.error(
-                'the supplied input should not contain any of the following: %s',
-                '"{}"'.format(
-                    '", "'.join(input_restrictions)))
-            return user_input(requested_info, mask, input_restrictions)
-    else:
-        while not response:
-            response = getpass(prompt=prompt)
-
-    return response
 
 
 def configure_output(options):
@@ -283,3 +249,71 @@ def _create_alarm(options):
         return
 
     CONFIG.add_metric_alarm(vars(options))
+
+
+def _app_integration_handler(options):
+    """Perform app integration related functions
+
+    Args:
+        options (argparser): Contains all of the necessary info for configuring
+            a new app integration or updating an existing one
+    """
+    if not options:
+        return
+
+    # Convert the options to a dict
+    app_info = vars(options)
+
+    # Add the region and prefix for this StreamAlert instance to the app info
+    app_info['region'] = str(CONFIG['global']['account']['region'])
+    app_info['prefix'] = str(CONFIG['global']['account']['prefix'])
+
+    # Function name follows the format: '<prefix>_<cluster>_<service>_<app_name>_app
+    func_parts = ['prefix', 'cluster', 'type', 'app_name']
+
+    # Create a new app integration function
+    if options.subcommand == 'new':
+        app_info['function_name'] = '_'.join([app_info.get(value)
+                                              for value in func_parts] + ['app'])
+
+        CONFIG.add_app_integration(app_info)
+        return
+
+    # Update the auth information for an existing app integration function
+    if options.subcommand == 'update-auth':
+        cluster_config = CONFIG['clusters'][app_info['cluster']]
+        if not app_info['app_name'] in cluster_config['modules'].get('stream_alert_apps', {}):
+            LOGGER_CLI.error('App integration with name \'%s\' does not exist for cluster \'%s\'',
+                             app_info['app_name'], app_info['cluster'])
+            return
+
+        # Get the type for this app integration from the current
+        # config so we can update it properly
+        app_info['type'] = cluster_config['modules']['stream_alert_apps'] \
+                               [app_info['app_name']]['type']
+
+        app_info['function_name'] = '_'.join([app_info.get(value)
+                                              for value in func_parts] + ['app'])
+
+        app = get_app(app_info)
+
+        if not save_app_auth_info(app, app_info, True):
+            return
+
+        return
+
+    # List all of the available app integrations, broken down by cluster
+    if options.subcommand == 'list':
+        all_info = {cluster: cluster_config['modules'].get('stream_alert_apps')
+                    for cluster, cluster_config in CONFIG['clusters'].iteritems()}
+
+        for cluster, info in all_info.iteritems():
+            print '\nCluster: {}\n'.format(cluster)
+            if not info:
+                print '\tNo app integrations configured\n'
+                continue
+
+            for name, details in info.iteritems():
+                print '\tName: {}'.format(name)
+                print '\n'.join(['\t\t{}:{:>12}{}'.format(key, '\t', val)
+                                 for key, val in details.iteritems()] + ['\n'])

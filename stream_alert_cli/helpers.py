@@ -13,12 +13,14 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from collections import namedtuple
-from StringIO import StringIO
 import base64
+from collections import namedtuple
+from getpass import getpass
 import json
 import os
 import random
+import re
+from StringIO import StringIO
 import subprocess
 import sys
 import zipfile
@@ -52,6 +54,12 @@ def run_command(runner_args, **kwargs):
     default_cwd = 'terraform'
     cwd = kwargs.get('cwd', default_cwd)
 
+    # Add the -force-copy flag for s3 state copying to suppress dialogs that
+    # the user must type 'yes' into.
+    if runner_args[0] == 'terraform':
+        if runner_args[1] == 'init':
+            runner_args.append('-force-copy')
+
     stdout_option = None
     if kwargs.get('quiet'):
         stdout_option = open(os.devnull, 'w')
@@ -68,7 +76,7 @@ def run_command(runner_args, **kwargs):
     return True
 
 
-def continue_prompt(**kwargs):
+def continue_prompt(message=''):
     """Continue prompt to verify that a user wants to continue or not.
 
     This prompt's purpose is to prevent accidental changes
@@ -81,8 +89,7 @@ def continue_prompt(**kwargs):
         bool: If the user wants to continue or not
     """
     required_responses = {'yes', 'no'}
-    default_message = 'Would you like to continue?'
-    message = kwargs.get('message', default_message)
+    message = message or 'Would you like to continue?'
 
     response = ''
     while response not in required_responses:
@@ -219,7 +226,7 @@ def format_lambda_test_record(test_record):
     return template
 
 
-def  create_lambda_function(function_name, region):
+def create_lambda_function(function_name, region):
     """Helper function to create mock lambda function"""
     if function_name.find(':') != -1:
         function_name = function_name.split(':')[0]
@@ -237,6 +244,7 @@ def  create_lambda_function(function_name, region):
             'ZipFile': _make_lambda_package()
         }
     )
+
 
 def encrypt_with_kms(data, region, alias):
     """Encrypt the given data with KMS."""
@@ -353,3 +361,41 @@ def get_context_from_config(cluster, config):
         context.mocked = False
 
     return context
+
+def user_input(requested_info, mask, input_restrictions):
+    """Prompt user for requested information
+
+    Args:
+        requested_info (str): Description of the information needed
+        mask (bool): Decides whether to mask input or not
+
+    Returns:
+        str: response provided by the user
+    """
+    # pylint: disable=protected-access
+    response = ''
+    prompt = '\nPlease supply {}: '.format(requested_info)
+
+    if not mask:
+        while not response:
+            response = raw_input(prompt)
+
+        # Restrict having spaces or colons in items (applies to things like
+        # descriptors, etc)
+        if isinstance(input_restrictions, re._pattern_type):
+            if not input_restrictions.match(response):
+                LOGGER_CLI.error('The supplied input should match the following '
+                                 'regular expression: %s', input_restrictions.pattern)
+                return user_input(requested_info, mask, input_restrictions)
+        else:
+            if any(x in input_restrictions for x in response):
+                LOGGER_CLI.error(
+                    'The supplied input should not contain any of the following: %s',
+                    '"{}"'.format(
+                        '", "'.join(input_restrictions)))
+                return user_input(requested_info, mask, input_restrictions)
+    else:
+        while not response:
+            response = getpass(prompt=prompt)
+
+    return response

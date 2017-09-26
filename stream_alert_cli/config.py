@@ -18,9 +18,11 @@ import json
 import os
 import re
 
+from app_integrations.apps.app_base import get_app
 from stream_alert.shared import metrics
 from stream_alert_cli.helpers import continue_prompt
 from stream_alert_cli.logger import LOGGER_CLI
+from stream_alert_cli.apps import save_app_auth_info
 
 
 class CLIConfigError(Exception):
@@ -119,6 +121,8 @@ class CLIConfig(object):
             'alert_processor_config']['source_bucket'].replace('PREFIX_GOES_HERE', prefix)
         self.config['lambda']['rule_processor_config']['source_bucket'] = self.config['lambda'][
             'rule_processor_config']['source_bucket'].replace('PREFIX_GOES_HERE', prefix)
+        self.config['lambda']['stream_alert_apps_config']['source_bucket'] = self.config['lambda'][
+            'stream_alert_apps_config']['source_bucket'].replace('PREFIX_GOES_HERE', prefix)
         self.write()
 
         LOGGER_CLI.info('Prefix successfully configured')
@@ -362,6 +366,67 @@ class CLIConfig(object):
             self._add_metric_alarm_per_cluster(alarm_info, metric_function)
 
         # Save all of the alarm updates to disk
+        self.write()
+
+    def add_app_integration(self, app_info):
+        """Add a configuration for a new streamalert app integration function
+
+        Args:
+            app_info (dict): The necessary values needed to begin configuring
+                a new app integration
+        """
+        exists, prompt_for_auth, overwrite = False, True, False
+        app = get_app(app_info)
+
+        # Check to see if there is an existing configuration for this app integration
+        cluster_config = self.config['clusters'][app_info['cluster']]
+        if app_info['app_name'] in cluster_config['modules'].get('stream_alert_apps', {}):
+            prompt = ('An app with the name \'{}\' is already configured for cluster '
+                      '\'{}\'. Would you like to update the existing app\'s configuration'
+                      '?'.format(app_info['app_name'], app_info['cluster']))
+
+            exists = True
+
+            # Return if the user is not deliberately updating an existing config
+            if not continue_prompt(message=prompt):
+                return
+
+            prompt = ('Would you also like to update the authentication information for '
+                      'app integration with name \'{}\'?'.format(app_info['app_name']))
+
+            # If this is true, we shouldn't prompt again to warn about overwriting
+            prompt_for_auth = overwrite = continue_prompt(message=prompt)
+
+        if prompt_for_auth and not save_app_auth_info(app, app_info, overwrite):
+            return
+
+        apps_config = cluster_config['modules'].get('stream_alert_apps', {})
+        local_config_keys = {'interval', 'timeout', 'memory'}
+        if not exists:
+            # Save a default log level as info to the config
+            app_info['log_level'] = 'info'
+            app_info['current_version'] = '$LATEST'
+            local_config_keys.update({'log_level', 'current_version', 'type'})
+
+            apps_config[app_info['app_name']] = {key: app_info[key]
+                                                 for key in local_config_keys}
+        else:
+            apps_config[app_info['app_name']].update({key: app_info[key]
+                                                      for key in local_config_keys})
+
+
+        cluster_config['modules']['stream_alert_apps'] = apps_config
+
+        # Add this service to the sources for this app integration
+        # The `stream_alert_app` is purposely singular here
+        app_sources = self.config['sources'].get('stream_alert_app', {})
+        app_sources[app_info['function_name']] = {'logs': [app.service()]}
+        self.config['sources']['stream_alert_app'] = app_sources
+
+        LOGGER_CLI.info('Successfully added \'%s\' app integration to \'conf/clusters/%s.json\' '
+                        'for service \'%s\'.', app_info['app_name'],
+                        app_info['cluster'], app_info['type'])
+
         self.write()
 
     def _config_reader(self, key, file_path, **kwargs):
