@@ -175,8 +175,10 @@ class StreamAlert(object):
             """Helper function to verify record size"""
             for index, record in enumerate(batch):
                 if len(str(record).encode('utf-8')) > MAX_RECORD_SIZE:
+                    # Show the first 1k bytes in order to not overload
+                    # CloudWatch logs
                     LOGGER.error('The following record is too large'
-                                 'be sent to Firehose: %s', record)
+                                 'be sent to Firehose: %s', str(record)[:1000])
                     MetricLogger.log_metric(FUNCTION_NAME,
                                             MetricLogger.FIREHOSE_FAILED_RECORDS,
                                             1)

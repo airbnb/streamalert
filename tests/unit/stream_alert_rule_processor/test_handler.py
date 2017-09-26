@@ -100,8 +100,9 @@ class TestStreamAlert(object):
 
         self.__sa_handler.run({'Records': ['record']})
 
-        log_mock.assert_called_with('Unable to extract entity from payload\'s raw record for '
-                                    'service %s. Skipping record: %s', 'kinesis', 'record')
+        log_mock.assert_called_with(
+            'Unable to extract entity from payload\'s raw record for '
+            'service %s. Skipping record: %s', 'kinesis', 'record')
 
     @patch('stream_alert.rule_processor.handler.load_stream_payload')
     @patch('stream_alert.rule_processor.handler.StreamClassifier.load_sources')
@@ -161,7 +162,9 @@ class TestStreamAlert(object):
         self.__sa_handler.env['lambda_alias'] = 'production'
         self.__sa_handler.run(event)
 
-        assert_equal(log_mock.call_args[0][0], 'Record does not match any defined schemas: %s\n%s')
+        assert_equal(
+            log_mock.call_args[0][0],
+            'Record does not match any defined schemas: %s\n%s')
         assert_equal(log_mock.call_args[0][2], '{"bad": "data"}')
 
     @patch('stream_alert.rule_processor.sink.StreamSink.sink')
@@ -220,10 +223,12 @@ class TestStreamAlert(object):
 
         load_payload_mock.assert_called()
 
+    @patch('stream_alert.rule_processor.handler.LOGGER')
     @mock_kinesis
-    def test_firehose_record_delivery(self):
+    def test_firehose_record_delivery(self, mock_logging):
         """StreamAlert Class - Firehose Record Delivery"""
-        self.__sa_handler.firehose_client = boto3.client('firehose', region_name='us-east-1')
+        self.__sa_handler.firehose_client = boto3.client(
+            'firehose', region_name='us-east-1')
 
         test_event = convert_events_to_kinesis([
             # unit_test_simple_log
@@ -265,18 +270,25 @@ class TestStreamAlert(object):
                 }
             )
 
-        self.__sa_handler.run(test_event)
+        with patch.object(self.__sa_handler.firehose_client, 'put_record_batch') as firehose_mock:
+            firehose_mock.return_value = {'FailedPutCount': 0}
+            self.__sa_handler.run(test_event)
 
+            firehose_mock.assert_called()
+            assert_true(mock_logging.info.called)
+
+    @patch('stream_alert.rule_processor.handler.LOGGER')
     @mock_kinesis
-    def test_firehose_record_delivery_large_data_size(self):
+    def test_firehose_record_delivery_large_data_size(self, mock_logging):
         """StreamAlert Class - Firehose Record Delivery - Large Payload"""
-        self.__sa_handler.firehose_client = boto3.client('firehose', region_name='us-east-1')
+        self.__sa_handler.firehose_client = boto3.client(
+            'firehose', region_name='us-east-1')
 
         test_event = convert_events_to_kinesis([
             # unit_test_simple_log
             {
                 'unit_key_01': 1,
-                'unit_key_02': 'test' * 250001 # is 4 bytes higher than max
+                'unit_key_02': 'test' * 250001  # is 4 bytes higher than max
             },
             {
                 'unit_key_01': 2,
@@ -313,9 +325,11 @@ class TestStreamAlert(object):
             )
 
         self.__sa_handler.run(test_event)
+        assert_true(mock_logging.error.called)
 
+    @patch('stream_alert.rule_processor.handler.LOGGER')
     @mock_kinesis
-    def test_firehose_record_delivery_failure(self):
+    def test_firehose_record_delivery_failure(self, mock_logging):
         """StreamAlert Class - Firehose Record Delivery - Failed PutRecord"""
         class MockFirehoseClient(object):
             @staticmethod
@@ -355,3 +369,4 @@ class TestStreamAlert(object):
         ])
 
         self.__sa_handler.run(test_event)
+        assert_true(mock_logging.error.called)
