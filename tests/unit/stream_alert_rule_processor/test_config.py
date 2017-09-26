@@ -137,7 +137,7 @@ def test_load_threat_intel_conf():
 
 @raises(ConfigError)
 def test_load_threat_intel_conf_nonexist():
-    """Config Error - Threat Intel configuration file is not existing"""
+    """Config Error - Threat Intel configuration file does not exist"""
     load_threat_intel_conf('conf/non_exist_config_file')
 
 @raises(ConfigError)

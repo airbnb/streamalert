@@ -139,6 +139,6 @@ def load_threat_intel_conf(conf_file='conf/threat_intel.json'):
     except ValueError:
         raise ConfigError('Invalid JSON format for {}.json'.format(conf_file))
     except IOError:
-        raise ConfigError('File {} is not existing'.format(conf_file))
+        raise ConfigError('File {} does not exist'.format(conf_file))
 
     return config['enabled'], config['mapping']

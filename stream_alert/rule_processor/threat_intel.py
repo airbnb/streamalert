@@ -46,9 +46,9 @@ class ThreatIntel(object):
         Returns:
             (dict): A dictionary stores intelligence in format
                 {
-                	"domain": {
-                		"evil1.com": ["apt_domain", "source1 reported evil1.com"],
-                		"evil2.com": ["c2_domain", "source2 reported evil2.com"]
+                    "domain": {
+                        "evil1.com": ["apt_domain", "source1 reported evil1.com"],
+                        "evil2.com": ["c2_domain", "source2 reported evil2.com"]
                     },
                     "ip": {
                     	"1.1.1.2": ["scan_ip", "source reported ip1"],
@@ -58,7 +58,7 @@ class ThreatIntel(object):
                         "www.hacker.com/evil_page": ["mal_url", "source_foo"]
                     },
                     "md5": {
-                        "deadbeefdeadbeef": ["mal_md5", "soure_bar"]
+                        "0123456789abcdef0123456789abcdef": ["mal_md5", "source_bar"]
                     }
                 }
             None: if location storing intelligence is not existed
@@ -78,7 +78,7 @@ class ThreatIntel(object):
                     self._intel_dict[ioc_type] = dict()
                 for row in csv_reader:
                     if len(row) < 2:
-                        LOGGER.debug('Warming, each row in CSV file should \
+                        LOGGER.debug('Warning, each row in CSV file should \
                             contain at least two fields. Bad row [%s]',
                                      row)
                         continue
