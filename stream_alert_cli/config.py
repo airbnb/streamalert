@@ -397,10 +397,11 @@ class CLIConfig(object):
     @staticmethod
     def _config_writer(config, path, **kwargs):
         with open(path, 'r+') as conf_file:
-            conf_file.write(json.dumps(config,
-                                       indent=2,
-                                       separators=(',', ': '),
-                                       sort_keys=kwargs.get('sort_keys', True)))
+            json.dump(config,
+                      conf_file,
+                      indent=2,
+                      separators=(',', ': '),
+                      sort_keys=kwargs.get('sort_keys', True))
             conf_file.truncate()
 
     def load(self):
