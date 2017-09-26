@@ -903,6 +903,32 @@
     },
     "parser": "json"
   },
+  "duo:administrator": {
+    "schema": {
+      "action": "string",
+      "description": "string",
+      "object": "string",
+      "timestamp": "integer",
+      "username": "string"
+    },
+    "parser": "json"
+  },
+  "duo:authentication": {
+    "schema": {
+      "access_device": {},
+      "device": "string",
+      "factor": "string",
+      "integration": "string",
+      "ip": "string",
+      "location": {},
+      "new_enrollment": "boolean",
+      "reason": "string",
+      "result": "string",
+      "timestamp": "integer",
+      "username": "string"
+    },
+    "parser": "json"
+  },
   "ghe:general": {
     "schema": {
       "@timestamp": "string",
