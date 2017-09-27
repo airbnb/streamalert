@@ -17,19 +17,23 @@ limitations under the License.
 import base64
 import logging
 
-from mock import call, mock_open, patch
+from mock import call, patch
+from moto import mock_kinesis
 from nose.tools import (
     assert_equal,
     assert_false,
     assert_list_equal,
-    assert_true,
-    raises
+    assert_true
 )
+import boto3
 
 from stream_alert.rule_processor import LOGGER
-from stream_alert.rule_processor.config import ConfigError
 from stream_alert.rule_processor.handler import load_config, StreamAlert
-from tests.unit.stream_alert_rule_processor.test_helpers import get_mock_context, get_valid_event
+from tests.unit.stream_alert_rule_processor.test_helpers import (
+    convert_events_to_kinesis,
+    get_mock_context,
+    get_valid_event
+)
 
 
 class TestStreamAlert(object):
@@ -48,14 +52,6 @@ class TestStreamAlert(object):
         """StreamAlert Class - Run, No Records"""
         passed = self.__sa_handler.run({'Records': []})
         assert_false(passed)
-
-    @staticmethod
-    @raises(ConfigError)
-    def test_run_config_error():
-        """StreamAlert Class - Run, Config Error"""
-        mock = mock_open(read_data='non-json string that will raise an exception')
-        with patch('__builtin__.open', mock):
-            StreamAlert(get_mock_context())
 
     def test_get_alerts(self):
         """StreamAlert Class - Get Alerts"""
@@ -94,8 +90,9 @@ class TestStreamAlert(object):
 
         self.__sa_handler.run({'Records': ['record']})
 
-        log_mock.assert_called_with('Unable to extract entity from payload\'s raw record for '
-                                    'service %s. Skipping record: %s', 'kinesis', 'record')
+        log_mock.assert_called_with(
+            'Unable to extract entity from payload\'s raw record for '
+            'service %s. Skipping record: %s', 'kinesis', 'record')
 
     @patch('stream_alert.rule_processor.handler.load_stream_payload')
     @patch('stream_alert.rule_processor.handler.StreamClassifier.load_sources')
@@ -155,7 +152,9 @@ class TestStreamAlert(object):
         self.__sa_handler.env['lambda_alias'] = 'production'
         self.__sa_handler.run(event)
 
-        assert_equal(log_mock.call_args[0][0], 'Record does not match any defined schemas: %s\n%s')
+        assert_equal(
+            log_mock.call_args[0][0],
+            'Record does not match any defined schemas: %s\n%s')
         assert_equal(log_mock.call_args[0][2], '{"bad": "data"}')
 
     @patch('stream_alert.rule_processor.sink.StreamSink.sink')
@@ -213,3 +212,151 @@ class TestStreamAlert(object):
         self.__sa_handler.run({'Records': ['record']})
 
         load_payload_mock.assert_called()
+
+    @patch('stream_alert.rule_processor.handler.LOGGER')
+    @mock_kinesis
+    def test_firehose_record_delivery(self, mock_logging):
+        """StreamAlert Class - Firehose Record Delivery"""
+        self.__sa_handler.firehose_client = boto3.client(
+            'firehose', region_name='us-east-1')
+
+        test_event = convert_events_to_kinesis([
+            # unit_test_simple_log
+            {
+                'unit_key_01': 1,
+                'unit_key_02': 'test'
+            },
+            {
+                'unit_key_01': 2,
+                'unit_key_02': 'test'
+            },
+            # test_log_type_json_nested
+            {
+                'date': 'January 01, 3005',
+                'unixtime': '32661446400',
+                'host': 'my-host.name.website.com',
+                'data': {
+                    'super': 'secret'
+                }
+            }
+        ])
+
+        delivery_stream_names = ['streamalert_data_test_log_type_json_nested',
+                                 'streamalert_data_unit_test_simple_log']
+
+        # Setup mock delivery streams
+        for delivery_stream in delivery_stream_names:
+            self.__sa_handler.firehose_client.create_delivery_stream(
+                DeliveryStreamName=delivery_stream,
+                S3DestinationConfiguration={
+                    'RoleARN': 'arn:aws:iam::123456789012:role/firehose_delivery_role',
+                    'BucketARN': 'arn:aws:s3:::kinesis-test',
+                    'Prefix': '{}/'.format(delivery_stream),
+                    'BufferingHints': {
+                        'SizeInMBs': 123,
+                        'IntervalInSeconds': 124
+                    },
+                    'CompressionFormat': 'Snappy',
+                }
+            )
+
+        with patch.object(self.__sa_handler.firehose_client, 'put_record_batch') as firehose_mock:
+            firehose_mock.return_value = {'FailedPutCount': 0}
+            self.__sa_handler.run(test_event)
+
+            firehose_mock.assert_called()
+            assert_true(mock_logging.info.called)
+
+    @patch('stream_alert.rule_processor.handler.LOGGER')
+    @mock_kinesis
+    def test_firehose_record_delivery_large_data_size(self, mock_logging):
+        """StreamAlert Class - Firehose Record Delivery - Large Payload"""
+        self.__sa_handler.firehose_client = boto3.client(
+            'firehose', region_name='us-east-1')
+
+        test_event = convert_events_to_kinesis([
+            # unit_test_simple_log
+            {
+                'unit_key_01': 1,
+                'unit_key_02': 'test' * 250001  # is 4 bytes higher than max
+            },
+            {
+                'unit_key_01': 2,
+                'unit_key_02': 'test'
+            },
+            # test_log_type_json_nested
+            {
+                'date': 'January 01, 3005',
+                'unixtime': '32661446400',
+                'host': 'my-host.name.website.com',
+                'data': {
+                    'super': 'secret'
+                }
+            }
+        ])
+
+        delivery_stream_names = ['streamalert_data_test_log_type_json_nested',
+                                 'streamalert_data_unit_test_simple_log']
+
+        # Setup mock delivery streams
+        for delivery_stream in delivery_stream_names:
+            self.__sa_handler.firehose_client.create_delivery_stream(
+                DeliveryStreamName=delivery_stream,
+                S3DestinationConfiguration={
+                    'RoleARN': 'arn:aws:iam::123456789012:role/firehose_delivery_role',
+                    'BucketARN': 'arn:aws:s3:::kinesis-test',
+                    'Prefix': '{}/'.format(delivery_stream),
+                    'BufferingHints': {
+                        'SizeInMBs': 123,
+                        'IntervalInSeconds': 124
+                    },
+                    'CompressionFormat': 'Snappy',
+                }
+            )
+
+        self.__sa_handler.run(test_event)
+        assert_true(mock_logging.error.called)
+
+    @patch('stream_alert.rule_processor.handler.LOGGER')
+    @mock_kinesis
+    def test_firehose_record_delivery_failure(self, mock_logging):
+        """StreamAlert Class - Firehose Record Delivery - Failed PutRecord"""
+        class MockFirehoseClient(object):
+            @staticmethod
+            def put_record_batch(**kwargs):
+                return {
+                    'FailedPutCount': len(kwargs.get('Records')),
+                    'RequestResponses': [
+                        {
+                            'RecordId': '12345',
+                            'ErrorCode': '300',
+                            'ErrorMessage': 'Bad message!!!'
+                        },
+                    ]
+                }
+
+        self.__sa_handler.firehose_client = MockFirehoseClient()
+
+        test_event = convert_events_to_kinesis([
+            # unit_test_simple_log
+            {
+                'unit_key_01': 1,
+                'unit_key_02': 'test'
+            },
+            {
+                'unit_key_01': 2,
+                'unit_key_02': 'test'
+            },
+            # test_log_type_json_nested
+            {
+                'date': 'January 01, 3005',
+                'unixtime': '32661446400',
+                'host': 'my-host.name.website.com',
+                'data': {
+                    'super': 'secret'
+                }
+            }
+        ])
+
+        self.__sa_handler.run(test_event)
+        assert_true(mock_logging.error.called)

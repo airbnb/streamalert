@@ -14,13 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from abc import ABCMeta, abstractmethod, abstractproperty
+from logging import DEBUG as LOG_LEVEL_DEBUG
+from urllib import unquote
 import base64
 import gzip
-from logging import DEBUG as LOG_LEVEL_DEBUG
 import os
 import tempfile
 import time
-from urllib import unquote
 import zlib
 
 import boto3

@@ -13,8 +13,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from collections import defaultdict
 from logging import DEBUG as LOG_LEVEL_DEBUG
 import json
+
+import boto3
 
 from stream_alert.rule_processor import FUNCTION_NAME, LOGGER
 from stream_alert.rule_processor.classifier import StreamClassifier
@@ -25,13 +28,19 @@ from stream_alert.rule_processor.sink import StreamSink
 from stream_alert.shared.metrics import MetricLogger
 
 
+MAX_RECORD_SIZE = 1000 * 1000
+MAX_BATCH_SIZE = 500
+
+
 class StreamAlert(object):
-    """Wrapper class for handling all StreamAlert classificaiton and processing"""
+    """Wrapper class for handling StreamAlert classificaiton and processing"""
+    __config = {}
 
     def __init__(self, context, enable_alert_processor=True):
-        """
+        """Initializer
+
         Args:
-            context: An AWS context object which provides metadata on the currently
+            context (dict): An AWS context object which provides metadata on the currently
                 executing lambda function.
             enable_alert_processor (bool): If the user wants to send the alerts using their
                 own methods, 'enable_alert_processor' can be set to False to suppress
@@ -39,7 +48,7 @@ class StreamAlert(object):
         """
         # Load the config. Validation occurs during load, which will
         # raise exceptions on any ConfigErrors
-        config = load_config()
+        StreamAlert.__config = StreamAlert.__config or load_config()
 
         # Load the environment from the context arn
         self.env = load_env(context)
@@ -49,24 +58,32 @@ class StreamAlert(object):
         self.sinker = StreamSink(self.env)
 
         # Instantiate a classifier that is used for this run
-        self.classifier = StreamClassifier(config=config)
+        self.classifier = StreamClassifier(config=self.__config)
 
         self.enable_alert_processor = enable_alert_processor
         self._failed_record_count = 0
         self._processed_size = 0
         self._alerts = []
 
+        # Create a dictionary to hold parsed payloads by log type.
+        # Firehose needs this information to send to its corresponding
+        # delivery stream.
+        self.categorized_payloads = defaultdict(list)
+
+        # Firehose client initialization
+        self.firehose_client = None
+
     def run(self, event):
         """StreamAlert Lambda function handler.
 
-        Loads the configuration for the StreamAlert function which contains:
-        available data sources, log formats, parser modes, and sinks.  Classifies
-        logs sent into the stream into a parsed type.  Matches records against
-        rules.
+        Loads the configuration for the StreamAlert function which contains
+        available data sources, log schemas, normalized types, and outputs.
+        Classifies logs sent into a parsed type.
+        Matches records against rules.
 
         Args:
-            event: An AWS event mapped to a specific source/entity (kinesis stream or
-                an s3 bucket event) containing data emitted to the stream.
+            event (dict): An AWS event mapped to a specific source/entity
+                containing data read by Lambda.
 
         Returns:
             bool: True if all logs being parsed match a schema
@@ -77,6 +94,12 @@ class StreamAlert(object):
             return False
 
         MetricLogger.log_metric(FUNCTION_NAME, MetricLogger.TOTAL_RECORDS, len(records))
+
+        firehose_config = self.__config['global'].get(
+            'infrastructure', {}).get('firehose', {})
+        if firehose_config.get('enabled'):
+            self.firehose_client = boto3.client('firehose',
+                                                region_name=self.env['lambda_region'])
 
         for raw_record in records:
             # Get the service and entity from the payload. If the service/entity
@@ -116,12 +139,17 @@ class StreamAlert(object):
 
         LOGGER.debug('%s alerts triggered', len(self._alerts))
 
-        MetricLogger.log_metric(FUNCTION_NAME, MetricLogger.TRIGGERED_ALERTS, len(self._alerts))
+        MetricLogger.log_metric(
+            FUNCTION_NAME, MetricLogger.TRIGGERED_ALERTS, len(
+                self._alerts))
 
         # Check if debugging logging is on before json dumping alerts since
         # this can be time consuming if there are a lot of alerts
         if self._alerts and LOGGER.isEnabledFor(LOG_LEVEL_DEBUG):
             LOGGER.debug('Alerts:\n%s', json.dumps(self._alerts, indent=2))
+
+        if self.firehose_client:
+            self._send_to_firehose()
 
         return self._failed_record_count == 0
 
@@ -132,6 +160,69 @@ class StreamAlert(object):
             list: list of alerts as dictionaries
         """
         return self._alerts
+
+    def _send_to_firehose(self):
+        """Send all classified records to a respective Firehose Delivery Stream"""
+        def _chunk(record_list, chunk_size):
+            """Helper function to chunk payloads"""
+            for item in range(0, len(record_list), chunk_size):
+                yield record_list[item:item + chunk_size]
+
+        def _check_record_batch(batch):
+            """Helper function to verify record size"""
+            for index, record in enumerate(batch):
+                if len(str(record)) > MAX_RECORD_SIZE:
+                    # Show the first 1k bytes in order to not overload
+                    # CloudWatch logs
+                    LOGGER.error('The following record is too large'
+                                 'be sent to Firehose: %s', str(record)[:1000])
+                    MetricLogger.log_metric(FUNCTION_NAME,
+                                            MetricLogger.FIREHOSE_FAILED_RECORDS,
+                                            1)
+                    batch.pop(index)
+
+        delivery_stream_name_pattern = 'streamalert_data_{}'
+
+        # Iterate through each payload type
+        for log_type, records in self.categorized_payloads.items():
+            # This same method is used when naming the Delivery Streams
+            formatted_log_type = log_type.replace(':', '_')
+
+            for record_batch in _chunk(records, MAX_BATCH_SIZE):
+                stream_name = delivery_stream_name_pattern.format(formatted_log_type)
+                _check_record_batch(record_batch)
+
+                resp = self.firehose_client.put_record_batch(
+                    DeliveryStreamName=stream_name,
+                    # The newline at the end is required by Firehose,
+                    # otherwise all records will be on a single line and
+                    # unsearchable in Athena.
+                    Records=[{'Data': json.dumps(record, separators=(",", ":")) + '\n'}
+                             for record
+                             in record_batch])
+
+                # Error handle if failures occured
+                # TODO(jack) implement backoff here once the rule processor is split
+                if resp.get('FailedPutCount') > 0:
+                    failed_records = [failed
+                                      for failed
+                                      in resp['RequestResponses']
+                                      if failed.get('ErrorCode')]
+                    MetricLogger.log_metric(FUNCTION_NAME,
+                                            MetricLogger.FIREHOSE_FAILED_RECORDS,
+                                            resp['FailedPutCount'])
+                    # Only print the first 100 failed records
+                    LOGGER.error('The following records failed to Put to the'
+                                 'Delivery stream %s: %s',
+                                 stream_name,
+                                 json.dumps(failed_records[:100], indent=2))
+                else:
+                    MetricLogger.log_metric(FUNCTION_NAME,
+                                            MetricLogger.FIREHOSE_RECORDS_SENT,
+                                            len(record_batch))
+                    LOGGER.info('Successfully sent %d messages to Firehose:%s',
+                                len(record_batch),
+                                stream_name)
 
     def _process_alerts(self, payload):
         """Process records for alerts and send them to the correct places
@@ -151,14 +242,22 @@ class StreamAlert(object):
                 self._failed_record_count += 1
                 continue
 
-            LOGGER.debug('Classified and Parsed Payload: <Valid: %s, Log Source: %s, Entity: %s>',
-                         record.valid, record.log_source, record.entity)
+            LOGGER.debug(
+                'Classified and Parsed Payload: <Valid: %s, Log Source: %s, Entity: %s>',
+                record.valid,
+                record.log_source,
+                record.entity)
 
             record_alerts = StreamRules.process(record)
 
             LOGGER.debug('Processed %d valid record(s) that resulted in %d alert(s).',
                          len(payload.records),
                          len(record_alerts))
+
+            # Add all parsed records to the categorized payload dict
+            # only if Firehose is enabled
+            if self.firehose_client:
+                self.categorized_payloads[payload.log_source].extend(payload.records)
 
             if not record_alerts:
                 continue
