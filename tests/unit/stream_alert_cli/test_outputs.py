@@ -47,20 +47,14 @@ def test_load_output_config_error():
         load_outputs_config()
 
 
-def test_write_outputs_config():
+@patch('json.dump')
+def test_write_outputs_config(json_mock):
     """Write outputs configuration"""
-    mock = mock_open()
-    with patch('__builtin__.open', mock):
-        # load_outputs_config()
+    with patch('__builtin__.open', new_callable=mock_open()) as mocker:
         data = {'test': 'values', 'to': 'write'}
         write_outputs_config(data)
-
-        mock.return_value.write.assert_called_with(
-            """{
-  "test": "values",
-  "to": "write"
-}"""
-        )
+        json_mock.assert_called_with(data, mocker.return_value.__enter__.return_value,
+                                     indent=2, separators=(',', ': '), sort_keys=True)
 
 
 @patch('stream_alert_cli.outputs.load_outputs_config')
@@ -133,22 +127,17 @@ def test_encrypt_and_push_creds_to_s3_kms_failure(log_mock, boto_mock):
     log_mock.assert_called_with('An error occurred during credential encryption')
 
 
-def test_update_outputs_config():
+@patch('json.dump')
+def test_update_outputs_config(json_mock):
     """Update outputs config"""
-    mock = mock_open()
-    with patch('__builtin__.open', mock):
+    with patch('__builtin__.open', new_callable=mock_open()) as mocker:
         service = 'mock_service'
-        config = {service: ['value01', 'value02']}
-        updated_config = ['value01', 'value02', 'value03']
+        original_config = {service: ['value01', 'value02']}
+        new_config_values = ['value01', 'value02', 'value03']
 
-        update_outputs_config(config, updated_config, service)
+        update_outputs_config(original_config, new_config_values, service)
 
-        mock.return_value.write.assert_called_with(
-            """{
-  "mock_service": [
-    "value01",
-    "value02",
-    "value03"
-  ]
-}"""
-        )
+        expected_value = {'mock_service': ['value01', 'value02', 'value03']}
+
+        json_mock.assert_called_with(expected_value, mocker.return_value.__enter__.return_value,
+                                     indent=2, separators=(',', ': '), sort_keys=True)

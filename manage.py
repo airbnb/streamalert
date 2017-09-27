@@ -23,6 +23,7 @@ To run terraform by hand, change to the terraform directory and run:
 
 terraform <cmd> -var-file=../terraform.tfvars -var-file=../variables.json
 """
+# pylint: disable=too-many-lines
 from argparse import Action, ArgumentParser, RawTextHelpFormatter, SUPPRESS as ARGPARSE_SUPPRESS
 import os
 import string
@@ -446,8 +447,6 @@ def _add_app_integration_update_auth_subparser(subparsers, clusters):
 
     cluster_choices_block = ('\n').join('{:>28}{}'.format('', cluster) for cluster in clusters)
 
-    help_link = 'http://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html'
-
     app_integration_update_desc = ("""
 StreamAlertCLI v{}
 Update a StreamAlert app integration function's authentication information in Parameter Store
@@ -475,7 +474,7 @@ Examples:
       --cluster prod \\
       --name duo_prod_collector
 
-""".format(version, cluster_choices_block, help_link))
+""".format(version, cluster_choices_block))
     app_integration_update_parser = subparsers.add_parser(
         'update-auth',
         description=app_integration_update_desc,
