@@ -25,11 +25,16 @@ from app_integrations.exceptions import AppIntegrationException, AppIntegrationC
 STREAMALERT_APPS = {}
 
 
-def app(cls):
-    """Class decorator to register all stream gatherer classes.
-    This should be applied to any subclass for the GathererBase.
+def app(subclass):
+    """Class decorator to register all AppIntegration classes.
+
+    This should be applied to any subclass for the AppIntegration as '@app'
+
+    Args:
+        subclass (AppIntegration): The subclass of AppIntegration that should
+            be stored within the STREAMALERT_APPS mapping
     """
-    STREAMALERT_APPS[cls.type()] = cls
+    STREAMALERT_APPS[subclass.type()] = subclass
 
 
 def get_app(config):
@@ -69,7 +74,11 @@ class AppIntegration(object):
     @classmethod
     @abstractproperty
     def service(cls):
-        """Read only service property enforced on subclasses.
+        """Get this log's origin service
+
+        This should be implemented by all subclasses.
+
+        Examples: 'duo', 'google', 'onelogin', 'box', etc
 
         Returns:
             str: The originating service name for these logs.
@@ -78,10 +87,12 @@ class AppIntegration(object):
     @classmethod
     @abstractproperty
     def _type(cls):
-        """Read only log type property enforced on subclasses.
+        """Get the specific type of log for this app
+
+        This should be implemented by all subclasses.
 
         Returns:
-            str: The specific type of log (auth, admin, etc)
+            str: The specific type of log (auth, admin, events etc)
         """
 
     @classmethod
@@ -95,8 +106,11 @@ class AppIntegration(object):
 
     @abstractmethod
     def required_auth_keys(self):
-        """Function to get the expected keys that this service's auth dictionary
-        should contain. To be implemented by subclasses
+        """Get the expected info that this service's auth dictionary should contain.
+
+        This should be implemented by subclasses and provide context as to what authentication
+        information is required as well as a description of the data and an optional regex
+        that the data should conform to.
 
         Returns:
             dict: Required authentication keys, with optional description and
@@ -105,17 +119,21 @@ class AppIntegration(object):
 
     @abstractmethod
     def _gather_logs(self):
-        """Function for actual gathering of logs that should be implemented by all
-        subclasses
+        """Get gathered logs from the service
+
+        This should be implemented by all subclasses.
 
         Returns:
-            bool: Inidcator of successful processing
+            list or bool: The list of logs fetched from the service, or False if
+                there was an error during log collection.
         """
 
     @abstractmethod
     def _sleep_seconds(self):
-        """Function for retrieving the amount of time this service should sleep before
-        trying to perform another poll. This should be implemented by all subclasses
+        """Get the amount of time this service should sleep before performing another poll.
+
+        This should be implemented by all subclasses and is necessary by some services
+        to avoid overloading the API with requests.
 
         Returns:
             int: Number of seconds the polling function should sleep for
@@ -166,7 +184,11 @@ class AppIntegration(object):
         self._config.last_timestamp = self._last_timestamp
 
     def _check_http_response(self, response):
-        """Method for checking for a valid HTTP response code"""
+        """Method for checking for a valid HTTP response code
+
+        Returns:
+            bool: Indicator of whether or not this request was successful
+        """
         success = response is not None and (200 <= response.status_code <= 299)
 
         if response is not None and not success:
@@ -187,6 +209,7 @@ class AppIntegration(object):
         if not self._config:
             raise AppIntegrationConfigError('Config for service \'{}\' is empty', self.type())
 
+        # The config validates that the 'auth' dict was loaded, but do a safety check here
         if not 'auth' in self._config:
             raise AppIntegrationConfigError('Auth config for service \'{}\' is empty', self.type())
 
@@ -210,6 +233,7 @@ class AppIntegration(object):
             logs = self._gather_logs()
 
             # Make sure there are logs, this can be False if there was an issue polling
+            # of if there are no new logs to be polled
             if not logs:
                 LOGGER.error('Gather process for service \'%s\' was not able to poll any logs',
                              self.type())

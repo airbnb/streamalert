@@ -220,7 +220,7 @@ class LambdaPackage(object):
                 return False
 
             package_fh.close()
-            LOGGER_CLI.info('Uploaded %s to S3', package_name)
+            LOGGER_CLI.debug('Uploaded %s to S3', package_name)
 
         return True
 

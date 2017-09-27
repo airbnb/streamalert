@@ -135,7 +135,8 @@ class AppConfig(dict):
                      invalid_params)
 
         # Check to see if there are any required parameters in the invalid params list
-        missing_required_params = [param for param in invalid_params
+        missing_required_params = [param
+                                   for param in invalid_params
                                    if param != param_names[cls.STATE_CONFIG_SUFFIX]]
 
         if missing_required_params:
@@ -228,7 +229,7 @@ class AppConfig(dict):
 
     def _determine_last_time(self):
         """Determine the last time this function was executed and fallback on
-        evaluting the rate value if there is no last timestamp available
+        evaluating the rate value if there is no last timestamp available
 
         Returns:
             int: The unix timestamp for the starting point to fetch logs back to

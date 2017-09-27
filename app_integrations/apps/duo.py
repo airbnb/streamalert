@@ -48,7 +48,7 @@ class DuoApp(AppIntegration):
         return 'duo'
 
     def _generate_auth(self, hostname, params):
-        """Duo request must be signed each time.
+        """Duo requests must be signed each time.
 
         This has been largely borrowed/updated from here:
             https://github.com/duosecurity/duo_client_python/blob/master/duo_client/admin.py
@@ -140,7 +140,7 @@ class DuoApp(AppIntegration):
         return {
             'api_hostname':
                 {
-                    'description': ('the API url for this duosecurity instance. This should '
+                    'description': ('the API hostname for this duosecurity instance. This should '
                                     'be in a format similar to \'api-abcdef12.duosecurity.com\''),
                     'format': re.compile(r'^api-[a-f0-9]{8}\.duosecurity\.com$')
                 },

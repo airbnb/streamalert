@@ -75,26 +75,26 @@ class TestAppBatcher(object):
 
     @patch('app_integrations.batcher.Batcher._send_logs_to_stream_alert')
     def test_segment_and_send(self, batcher_mock):
-        """App Integration Batcher - Segement and Send Logs to StreamAlert"""
+        """App Integration Batcher - Segment and Send Logs to StreamAlert"""
         logs = [{'timestamp': 'time',
                  'eventtype': 'authentication',
                  'host': 'host'} for _ in range(3000)]
-        self.batcher._segement_and_send('duo_auth', logs)
+        self.batcher._segment_and_send('duo_auth', logs)
 
         assert_equal(batcher_mock.call_count, 2)
 
     @patch('app_integrations.batcher.Batcher._send_logs_to_stream_alert')
     def test_segment_and_send_multi(self, batcher_mock):
-        """App Integration Batcher - Segement and Send Logs to StreamAlert, Multi-segment"""
+        """App Integration Batcher - Segment and Send Logs to StreamAlert, Multi-segment"""
         batcher_mock.side_effect = [False, True, True, True]
         logs = [{'timestamp': 'time',
                  'eventtype': 'authentication',
                  'host': 'host'} for _ in range(6000)]
-        self.batcher._segement_and_send('duo_auth', logs)
+        self.batcher._segment_and_send('duo_auth', logs)
 
         assert_equal(batcher_mock.call_count, 4)
 
-    @patch('app_integrations.batcher.Batcher._segement_and_send')
+    @patch('app_integrations.batcher.Batcher._segment_and_send')
     def test_send_logs_one_batch(self, batcher_mock):
         """App Integration Batcher - Send Logs, One batch"""
         logs = [{'timestamp': 'time',
@@ -104,7 +104,7 @@ class TestAppBatcher(object):
 
         batcher_mock.assert_not_called()
 
-    @patch('app_integrations.batcher.Batcher._segement_and_send')
+    @patch('app_integrations.batcher.Batcher._segment_and_send')
     def test_send_logs_multi_batch(self, batcher_mock):
         """App Integration Batcher - Send Logs, Multi-batch"""
         logs = [{'timestamp': 'time',

@@ -315,5 +315,9 @@ def _app_integration_handler(options):
 
             for name, details in info.iteritems():
                 print '\tName: {}'.format(name)
-                print '\n'.join(['\t\t{}:{:>12}{}'.format(key, '\t', val)
-                                 for key, val in details.iteritems()] + ['\n'])
+                print '\n'.join(['\t\t{key}:{padding_char:<{padding_count}}{value}'.format(
+                    key=key_name,
+                    padding_char=' ',
+                    padding_count=30-(len(key_name)),
+                    value=value
+                ) for key_name, value in details.iteritems()] + ['\n'])

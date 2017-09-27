@@ -334,7 +334,7 @@ class StreamAlertAppPayload(StreamPayload):
 
     def pre_parse(self):
         """Pre-parsing method for incoming app records that iterates over all the
-        incoming logs in the 'gathered_logs' list.
+        incoming logs in the 'logs' list.
 
         Yields:
             Instances of `self` back to the caller with the proper
@@ -342,10 +342,10 @@ class StreamAlertAppPayload(StreamPayload):
                 to the interface of returning a generator, providing the ability
                 to support multiple records like this.
         """
-        for data in self.raw_record['gathered_logs']:
+        for data in self.raw_record['logs']:
 
             self._refresh_record(data)
             yield self
 
         MetricLogger.log_metric(FUNCTION_NAME, MetricLogger.TOTAL_STREAM_ALERT_APP_RECORDS,
-                                len(self.raw_record['gathered_logs']))
+                                len(self.raw_record['logs']))

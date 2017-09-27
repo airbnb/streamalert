@@ -105,6 +105,7 @@ class LambdaVersion(object):
         code_sha_256 = self.config['lambda'][self.package.config_key]['source_current_hash']
 
         # Publish the function(s)
+        # TODO: move the extra logic into the LambdaPackage subclasses instead of this
         if self.package.package_name == 'stream_alert_app':
             for app_name, app_info in self.config['clusters'][cluster]['modules'] \
                 ['stream_alert_apps'].iteritems():

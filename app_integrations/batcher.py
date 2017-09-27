@@ -55,9 +55,9 @@ class Batcher(object):
 
         # Fall back on segmenting the list of logs into multiple requests
         # if they could not be sent at once
-        return self._segement_and_send(source_function, logs)
+        return self._segment_and_send(source_function, logs)
 
-    def _segement_and_send(self, source_function, logs):
+    def _segment_and_send(self, source_function, logs):
         """Protected method for segmenting a list of logs into smaller lists
         so they conform to the input limit of AWS Lambda
 
@@ -74,7 +74,7 @@ class Batcher(object):
             # Try to send this current subset to the rule processor
             # and segment again if they are too large to be sent at once
             if not self._send_logs_to_stream_alert(source_function, subset):
-                self._segement_and_send(source_function, subset)
+                self._segment_and_send(source_function, subset)
 
         return True
 
@@ -88,7 +88,7 @@ class Batcher(object):
         """
         # Create a payload to be sent to the rule processor that contains the
         # service these logs were collected from and the list of logs
-        payload = {'Records': [{'stream_alert_app': source_function, 'gathered_logs': logs}]}
+        payload = {'Records': [{'stream_alert_app': source_function, 'logs': logs}]}
         payload_json = json.dumps(payload, separators=(',', ':'))
         if len(payload_json) > MAX_LAMBDA_PAYLOAD_SIZE:
             LOGGER.debug('Log payload size for %d logs exceeds limit and will be '
