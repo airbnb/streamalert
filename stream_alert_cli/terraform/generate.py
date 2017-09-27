@@ -98,11 +98,11 @@ def generate_main(**kwargs):
     config = kwargs['config']
     main_dict = infinitedict()
 
-    # Configure provider
-    main_dict['provider']['aws'] = {}
+    # Configure provider along with the minimum version
+    main_dict['provider']['aws'] = {'version': '~> 0.1.4'}
 
     # Configure Terraform version requirement
-    main_dict['terraform']['required_version'] = '> 0.9.4'
+    main_dict['terraform']['required_version'] = '~> 0.10.6'
 
     # Setup the Backend dependencing on the deployment phase.
     # When first setting up StreamAlert, the Terraform statefile
