@@ -33,7 +33,8 @@ MAX_BATCH_SIZE = 500
 
 
 class StreamAlert(object):
-    """Fascade for handling StreamAlert classificaiton and processing"""
+    """Wrapper class for handling StreamAlert classificaiton and processing"""
+    __config = {}
 
     def __init__(self, context, enable_alert_processor=True):
         """Initializer
@@ -47,7 +48,7 @@ class StreamAlert(object):
         """
         # Load the config. Validation occurs during load, which will
         # raise exceptions on any ConfigErrors
-        self.config = load_config()
+        StreamAlert.__config = StreamAlert.__config or load_config()
 
         # Load the environment from the context arn
         self.env = load_env(context)
@@ -57,7 +58,7 @@ class StreamAlert(object):
         self.sinker = StreamSink(self.env)
 
         # Instantiate a classifier that is used for this run
-        self.classifier = StreamClassifier(config=self.config)
+        self.classifier = StreamClassifier(config=self.__config)
 
         self.enable_alert_processor = enable_alert_processor
         self._failed_record_count = 0
@@ -69,14 +70,8 @@ class StreamAlert(object):
         # delivery stream.
         self.categorized_payloads = defaultdict(list)
 
-        # Firehose initialization
-        firehose_config = self.config['global'].get(
-            'infrastructure', {}).get('firehose', {})
-        if firehose_config.get('enabled'):
-            self.firehose_client = boto3.client('firehose',
-                                                region_name=self.env['lambda_region'])
-        else:
-            self.firehose_client = None
+        # Firehose client initialization
+        self.firehose_client = None
 
     def run(self, event):
         """StreamAlert Lambda function handler.
@@ -99,6 +94,12 @@ class StreamAlert(object):
             return False
 
         MetricLogger.log_metric(FUNCTION_NAME, MetricLogger.TOTAL_RECORDS, len(records))
+
+        firehose_config = self.__config['global'].get(
+            'infrastructure', {}).get('firehose', {})
+        if firehose_config.get('enabled'):
+            self.firehose_client = boto3.client('firehose',
+                                                region_name=self.env['lambda_region'])
 
         for raw_record in records:
             # Get the service and entity from the payload. If the service/entity
@@ -161,11 +162,7 @@ class StreamAlert(object):
         return self._alerts
 
     def _send_to_firehose(self):
-        """Put all classified records into its respective Firehose Delivery Stream
-
-        Args:
-            categorized_payloads (defaultdict): Categorized set of payloads by classified type
-        """
+        """Send all classified records to a respective Firehose Delivery Stream"""
         def _chunk(record_list, chunk_size):
             """Helper function to chunk payloads"""
             for item in range(0, len(record_list), chunk_size):
@@ -174,7 +171,7 @@ class StreamAlert(object):
         def _check_record_batch(batch):
             """Helper function to verify record size"""
             for index, record in enumerate(batch):
-                if len(str(record).encode('utf-8')) > MAX_RECORD_SIZE:
+                if len(str(record)) > MAX_RECORD_SIZE:
                     # Show the first 1k bytes in order to not overload
                     # CloudWatch logs
                     LOGGER.error('The following record is too large'
@@ -197,6 +194,9 @@ class StreamAlert(object):
 
                 resp = self.firehose_client.put_record_batch(
                     DeliveryStreamName=stream_name,
+                    # The newline at the end is required by Firehose,
+                    # otherwise all records will be on a single line and
+                    # unsearchable in Athena.
                     Records=[{'Data': json.dumps(record, separators=(",", ":")) + '\n'}
                              for record
                              in record_batch])
@@ -211,10 +211,11 @@ class StreamAlert(object):
                     MetricLogger.log_metric(FUNCTION_NAME,
                                             MetricLogger.FIREHOSE_FAILED_RECORDS,
                                             resp['FailedPutCount'])
+                    # Only print the first 100 failed records
                     LOGGER.error('The following records failed to Put to the'
                                  'Delivery stream %s: %s',
                                  stream_name,
-                                 json.dumps(failed_records, indent=2))
+                                 json.dumps(failed_records[:100], indent=2))
                 else:
                     MetricLogger.log_metric(FUNCTION_NAME,
                                             MetricLogger.FIREHOSE_RECORDS_SENT,

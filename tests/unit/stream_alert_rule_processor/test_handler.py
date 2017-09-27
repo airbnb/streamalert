@@ -17,19 +17,17 @@ limitations under the License.
 import base64
 import logging
 
-from mock import call, mock_open, patch
+from mock import call, patch
 from moto import mock_kinesis
 from nose.tools import (
     assert_equal,
     assert_false,
     assert_list_equal,
-    assert_true,
-    raises
+    assert_true
 )
 import boto3
 
 from stream_alert.rule_processor import LOGGER
-from stream_alert.rule_processor.config import ConfigError
 from stream_alert.rule_processor.handler import load_config, StreamAlert
 from tests.unit.stream_alert_rule_processor.test_helpers import (
     convert_events_to_kinesis,
@@ -54,14 +52,6 @@ class TestStreamAlert(object):
         """StreamAlert Class - Run, No Records"""
         passed = self.__sa_handler.run({'Records': []})
         assert_false(passed)
-
-    @staticmethod
-    @raises(ConfigError)
-    def test_run_config_error():
-        """StreamAlert Class - Run, Config Error"""
-        mock = mock_open(read_data='non-json string that will raise an exception')
-        with patch('__builtin__.open', mock):
-            StreamAlert(get_mock_context())
 
     def test_get_alerts(self):
         """StreamAlert Class - Get Alerts"""
