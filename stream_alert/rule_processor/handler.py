@@ -16,6 +16,7 @@ limitations under the License.
 from collections import defaultdict
 from logging import DEBUG as LOG_LEVEL_DEBUG
 import json
+import re
 
 import boto3
 
@@ -187,6 +188,36 @@ class StreamAlert(object):
                                             1)
                     batch.pop(index)
 
+        special_char_regex = re.compile(r'[\`\~\!\@\#\$\%\^\&\*\(\)\-\+\
+                                           \=\[\]\\\{\}\;\'\:\"\,\.\/\<\>\?]')
+        special_char_sub = '_'
+
+        def _sanitize_keys(record):
+            """Remove special characters from parsed record keys
+
+            This is required when searching in Athena.  Keys can only have
+            a period or underscore
+
+            Returns:
+                dict: A sanitized record
+            """
+            new_record = {}
+            for key, value in record.iteritems():
+                # Set a default value of the original key
+                sanitized_key = key
+                if re.search(special_char_regex, key):
+                    sanitized_key = re.sub(special_char_regex,
+                                           special_char_sub,
+                                           key)
+
+                # Handle nested objects
+                if isinstance(value, dict):
+                    new_record[sanitized_key] = _sanitize_keys(record[key])
+                else:
+                    new_record[sanitized_key] = record[key]
+
+            return new_record
+
         delivery_stream_name_pattern = 'streamalert_data_{}'
 
         # Iterate through each payload type
@@ -203,7 +234,8 @@ class StreamAlert(object):
                     # The newline at the end is required by Firehose,
                     # otherwise all records will be on a single line and
                     # unsearchable in Athena.
-                    Records=[{'Data': json.dumps(record, separators=(",", ":")) + '\n'}
+                    Records=[{'Data': json.dumps(_sanitize_keys(record),
+                                                 separators=(",", ":")) + '\n'}
                              for record
                              in record_batch])
 

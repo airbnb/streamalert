@@ -368,3 +368,60 @@ class TestStreamAlert(object):
         """StreamAlert Class - Do not invoke load_intelligence"""
         self.__sa_handler.run(get_valid_event())
         load_intelligence_mock.assert_not_called()
+
+
+    @patch('stream_alert.rule_processor.handler.LOGGER')
+    @mock_kinesis
+    def test_firehose_record_delivery_sanitized_keys(self, mock_logging):
+        """StreamAlert Class - Firehose Record Delivery - Sanitized Keys"""
+        self.__sa_handler.firehose_client = boto3.client(
+            'firehose', region_name='us-east-1')
+
+        test_event = convert_events_to_kinesis([
+            # test_log_type_json_nested
+            {
+                'date': 'January 01, 3005',
+                'unixtime': '32661446400',
+                'host': 'my-host.name.website.com',
+                'data': {
+                    'super-duper': 'secret',
+                    'sanitize_me': 1,
+                    'example-key': 1,
+                    'moar**data': 2,
+                    'even.more': 3
+                }
+            }
+        ])
+
+        delivery_stream_names = ['streamalert_data_test_log_type_json_nested']
+
+        # Setup mock delivery streams
+        for delivery_stream in delivery_stream_names:
+            self.__sa_handler.firehose_client.create_delivery_stream(
+                DeliveryStreamName=delivery_stream,
+                S3DestinationConfiguration={
+                    'RoleARN': 'arn:aws:iam::123456789012:role/firehose_delivery_role',
+                    'BucketARN': 'arn:aws:s3:::kinesis-test',
+                    'Prefix': '{}/'.format(delivery_stream),
+                    'BufferingHints': {
+                        'SizeInMBs': 123,
+                        'IntervalInSeconds': 124
+                    },
+                    'CompressionFormat': 'Snappy',
+                }
+            )
+
+        with patch.object(self.__sa_handler.firehose_client, 'put_record_batch') as firehose_mock:
+            firehose_mock.return_value = {'FailedPutCount': 0}
+            self.__sa_handler.run(test_event)
+
+            firehose_mock.assert_called_with(
+                DeliveryStreamName='streamalert_data_test_log_type_json_nested',
+                Records=[{'Data': '{"date":"January 01, 3005",'
+                                  '"unixtime":32661446400,'
+                                  '"host":"my-host.name.website.com",'
+                                  '"data":{"sanitize_me":1,"super_duper":"secret",'
+                                  '"moar__data":2,'
+                                  '"example_key":1,"even_more":3}}\n'}]
+            )
+            assert_true(mock_logging.info.called)
