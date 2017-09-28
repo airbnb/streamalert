@@ -22,18 +22,23 @@ from app_integrations.exceptions import AppIntegrationConfigError
 from tests.unit.app_integrations import FUNCTION_NAME
 from tests.unit.app_integrations.test_helpers import (
     get_mock_context,
-    MockSSMClient,
-    put_mock_params
+    MockSSMClient
 )
 
+MOCK_SSM = MockSSMClient()
 
-@patch.object(AppConfig, 'SSM_CLIENT', MockSSMClient)
+
+@patch.object(AppConfig, 'SSM_CLIENT', MOCK_SSM)
 class TestAppIntegrationConfig(object):
     """Test class for AppIntegrationConfig"""
 
+    def __init__(self):
+        self._config = None
+
+    @patch.object(AppConfig, 'SSM_CLIENT', MOCK_SSM)
     def setup(self):
         """Setup before each method"""
-        put_mock_params()
+        self._config = AppConfig.load_config(get_mock_context())
 
     def test_parse_context(self):
         """AppIntegrationConfig - Parse Context"""
@@ -46,24 +51,21 @@ class TestAppIntegrationConfig(object):
 
     def test_load_config(self):
         """AppIntegrationConfig - Load config from SSM"""
-        config = AppConfig.load_config(get_mock_context())
-        assert_equal(len(config.keys()), 12)
+        assert_equal(len(self._config.keys()), 12)
 
     @raises(AppIntegrationConfigError)
     def test_load_config_bad(self):
         """AppIntegrationConfig - Load config from SSM, missing key"""
-        config = AppConfig.load_config(get_mock_context())
         # Remove one of the required keys from the state
-        del config['interval']
-        config._validate_config()
+        del self._config['qualifier']
+        self._config._validate_config()
 
     @raises(AppIntegrationConfigError)
     def test_load_config_empty(self):
         """AppIntegrationConfig - Load config from SSM, empty config"""
-        config = AppConfig.load_config(get_mock_context())
         # Empty the config so the dict validates to False
-        config.clear()
-        config._validate_config()
+        self._config.clear()
+        self._config._validate_config()
 
     def test_get_param(self):
         """AppIntegrationConfig - Get parameter"""
@@ -76,5 +78,46 @@ class TestAppIntegrationConfig(object):
     def test_get_param_bad_value(self):
         """AppIntegrationConfig - Get parameter, bad json value"""
         config_name = '{}_config'.format(FUNCTION_NAME)
-        MockSSMClient._PARAMETERS[config_name] = 'bad json string'
-        AppConfig._get_parameters([config_name])
+        with patch.dict(AppConfig.SSM_CLIENT._parameters, {config_name: 'bad json'}):
+            AppConfig._get_parameters([config_name])
+
+    @raises(AppIntegrationConfigError)
+    def test_evaluate_interval_no_interval(self):
+        """AppIntegrationConfig - Evaluate Interval, No Interval"""
+        del self._config['interval']
+        self._config.evaluate_interval()
+
+    @raises(AppIntegrationConfigError)
+    def test_evaluate_interval_invalid(self):
+        """AppIntegrationConfig - Evaluate Interval, Invalid Interval"""
+        self._config['interval'] = 'rate(1 hours)'
+        self._config.evaluate_interval()
+
+    def test_evaluate_interval(self):
+        """AppIntegrationConfig - Evaluate Interval"""
+        self._config['interval'] = 'rate(5 hours)'
+        assert_equal(self._config.evaluate_interval(), 3600 * 5)
+
+    @patch('time.mktime')
+    def test_determine_last_timestamp(self, time_mock):
+        """AppIntegrationConfig - Determine Last Timestamp"""
+        # Reset the last timestamp to None
+        self._config.last_timestamp = None
+
+        # Use a mocked current time
+        current_time = 1234567890
+        time_mock.return_value = current_time
+        self._config['interval'] = 'rate(5 hours)'
+        assert_equal(self._config._determine_last_time(), 1234567890 - (3600 * 5))
+
+    @patch('logging.Logger.error')
+    def test_set_item(self, log_mock):
+        """AppIntegrationConfig - Set Item, Bad Value"""
+        bad_state = 'bad value'
+        self._config['current_state'] = bad_state
+        log_mock.assert_called_with('Current state cannot be saved with value \'%s\'', bad_state)
+
+    def test_mark_failure(self):
+        """AppIntegrationConfig - Mark Failure"""
+        self._config.mark_failure()
+        assert_equal(self._config['current_state'], 'failed')

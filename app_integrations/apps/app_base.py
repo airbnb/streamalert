@@ -35,6 +35,7 @@ def app(subclass):
             be stored within the STREAMALERT_APPS mapping
     """
     STREAMALERT_APPS[subclass.type()] = subclass
+    return subclass
 
 
 def get_app(config):
@@ -103,7 +104,7 @@ class AppIntegration(object):
         return '_'.join([cls.service(), cls._type()])
 
     @abstractmethod
-    def required_auth_keys(self):
+    def required_auth_info(self):
         """Get the expected info that this service's auth dictionary should contain.
 
         This should be implemented by subclasses and provide context as to what authentication
@@ -215,8 +216,8 @@ class AppIntegration(object):
         if not 'auth' in self._config:
             raise AppIntegrationConfigError('Auth config for service \'{}\' is empty', self.type())
 
-        # Get the required authentication keys from the subclass and make sure they exist
-        required_keys = set(self.required_auth_keys())
+        # Get the required authentication keys from the info returned by the subclass
+        required_keys = set(self.required_auth_info())
         auth_key_diff = required_keys.difference(set(self._config['auth']))
         if not auth_key_diff:
             return

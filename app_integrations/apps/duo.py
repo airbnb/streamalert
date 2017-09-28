@@ -83,9 +83,9 @@ class DuoApp(AppIntegration):
             endpoint=self._endpoint()
         )
 
-        return self._get_auth_logs(hostname, full_url)
+        return self._get_duo_logs(hostname, full_url)
 
-    def _get_auth_logs(self, hostname, full_url):
+    def _get_duo_logs(self, hostname, full_url):
         """Get all logs from the endpoint for this timeframe
 
         Returns:
@@ -136,7 +136,7 @@ class DuoApp(AppIntegration):
         # Return the list of logs to the caller so they can be send to the batcher
         return logs
 
-    def required_auth_keys(self):
+    def required_auth_info(self):
         return {
             'api_hostname':
                 {

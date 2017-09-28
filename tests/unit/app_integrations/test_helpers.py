@@ -23,18 +23,20 @@ from tests.unit.app_integrations import FUNCTION_NAME, REGION
 
 class MockSSMClient(object):
     """Helper mock class to act as the ssm boto3 client"""
-    _PARAMETERS = dict()
 
-    @classmethod
-    def put_parameter(cls, **kwargs):
+    def __init__(self, suppress_params=False, app_type=''):
+        self._parameters = dict()
+        if not suppress_params:
+            self.put_mock_params(app_type or 'duo_auth')
+
+    def put_parameter(self, **kwargs):
         """Mocked put_parameter function that adds key/value pairs to a dict"""
-        if kwargs.get('Name') in cls._PARAMETERS and not kwargs.get('Overwrite'):
+        if kwargs.get('Name') in self._parameters and not kwargs.get('Overwrite'):
             return
 
-        cls._PARAMETERS[kwargs.get('Name')] = kwargs.get('Value')
+        self._parameters[kwargs.get('Name')] = kwargs.get('Value')
 
-    @classmethod
-    def get_parameter(cls, **kwargs):
+    def get_parameter(self, **kwargs):
         """Mocked get_parameter function that returns a value for the key from a dict
 
         Keyword Arguments:
@@ -44,14 +46,13 @@ class MockSSMClient(object):
             dict: Parameter dictionary containing this parameter's value
         """
         # Raise a botocore ClientError if the param doesn't exist
-        if kwargs.get('Name') not in cls._PARAMETERS:
+        if kwargs.get('Name') not in self._parameters:
             err = {'Error': {'Code': 403, 'Message': 'parameter does not exist'}}
             raise ClientError(err, 'get_parameter')
 
-        return {'Parameter': {'Value': cls._PARAMETERS.get(kwargs.get('Name'))}}
+        return {'Parameter': {'Value': self._parameters.get(kwargs.get('Name'))}}
 
-    @classmethod
-    def get_parameters(cls, **kwargs):
+    def get_parameters(self, **kwargs):
         """Mocked get_parameters function that returns a list of values for the keys from a dict
 
         Keyword Arguments:
@@ -60,10 +61,44 @@ class MockSSMClient(object):
         Returns:
             dict: Parameter dictionary containing the value for these parameter names
         """
-        return {'Parameters': [{'Name': name, 'Value': cls._PARAMETERS[name]}
-                               for name in kwargs.get('Names') if name in cls._PARAMETERS],
+        return {'Parameters': [{'Name': name, 'Value': self._parameters[name]}
+                               for name in kwargs.get('Names') if name in self._parameters],
                 'InvalidParameters': [name for name in kwargs.get('Names')
-                                      if name not in cls._PARAMETERS]}
+                                      if name not in self._parameters]}
+
+    def put_mock_params(self, app_type):
+        """Helper function to put mock parameters in parameter store for an app integration"""
+        config = {'cluster': 'unit_test_cluster',
+                  'app_name': 'unit_app',
+                  'prefix': 'unit_test_prefix',
+                  'type': app_type,
+                  'interval': 'rate(1 hour)'}
+        self.put_parameter(Name='{}_config'.format(FUNCTION_NAME),
+                           Value=json.dumps(config),
+                           Overwrite=True)
+
+        state = {'last_timestamp': 1505591798,
+                 'current_state': 'running'}
+        self.put_parameter(Name='{}_state'.format(FUNCTION_NAME),
+                           Value=json.dumps(state),
+                           Overwrite=True)
+
+        self.put_parameter(Name='{}_auth'.format(FUNCTION_NAME),
+                           Value=json.dumps(self.get_auth_info(app_type)),
+                           Overwrite=True)
+
+    @classmethod
+    def get_auth_info(cls, app_type):
+        """Helper to return valid auth info for a given app type"""
+        if app_type in {'duo', 'duo_admin', 'duo_auth'}:
+            return {
+                'api_hostname': 'api-abcdef12.duosecurity.com',
+                'integration_key': 'DI1234567890ABCDEF12',
+                'secret_key': 'abcdefghijklmnopqrstuvwxyz1234567890ABCD'
+            }
+
+        # Fill this out with future supported apps/services
+        return {}
 
 
 class MockLambdaClient(object):
@@ -116,34 +151,10 @@ def get_mock_context():
     return context
 
 
-def put_mock_params():
-    """Helper function to put mock parameters in parameter store for an app integration"""
-    config = {'cluster': 'unit_test_cluster',
-              'app_name': 'unit_app',
-              'prefix': 'unit_test_prefix',
-              'type': 'duo_auth',
-              'interval': 'rate(1 hour)'}
-    MockSSMClient.put_parameter(Name='{}_config'.format(FUNCTION_NAME),
-                                Value=json.dumps(config),
-                                Overwrite=True)
-
-    auth = {'api_hostname': 'api-abcdef12.duosecurity.com',
-            'integration_key': 'DI1234567890ABCDEF12',
-            'secret_key': 'unit_secret_key'}
-    MockSSMClient.put_parameter(Name='{}_auth'.format(FUNCTION_NAME),
-                                Value=json.dumps(auth),
-                                Overwrite=True)
-
-    state = {'last_timestamp': '1505591798',
-             'current_state': 'running'}
-    MockSSMClient.put_parameter(Name='{}_state'.format(FUNCTION_NAME),
-                                Value=json.dumps(state),
-                                Overwrite=True)
-
-def get_valid_config_dict():
+def get_valid_config_dict(app_type):
     """Helper function to get a dict that is reflective of a valid AppConfig"""
     return {
-        'type': 'duo_auth',
+        'type': app_type,
         'cluster': 'unit_test_cluster',
         'prefix': 'unit_test_prefix',
         'app_name': 'unit_app',
@@ -154,10 +165,5 @@ def get_valid_config_dict():
         'qualifier': 'production',
         'last_timestamp': 1505316432,
         'current_state': 'succeeded',
-        'auth': {
-            'api_hostname': 'api-abcdef12.duosecurity.com',
-            'integration_key': 'DIABCDEFGHIJKLMN1234',
-            'secret_key': 'abcdefghijklmnopqrstuvwxyz1234567890ABCD'
-
-        }
+        'auth': MockSSMClient.get_auth_info(app_type)
     }

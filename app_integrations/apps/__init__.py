@@ -5,7 +5,7 @@ import os
 # Import all files containing subclasses of AppIntegration, skipping the common base class
 for app_file in os.listdir(os.path.dirname(__file__)):
     # Skip the common base file and any non-py files
-    if app_file.startswith(('__init__', 'app_base')) or not app_file.endswith('py'):
+    if app_file.startswith(('__init__', 'app_base')) or not app_file.endswith('.py'):
         continue
 
     full_import = ['app_integrations', 'apps', os.path.splitext(app_file)[0]]

@@ -24,7 +24,6 @@ from nose.tools import (
     assert_true,
     raises
 )
- #, assert_items_equal
 
 from app_integrations.apps.app_base import AppIntegration, get_app
 from app_integrations.batcher import Batcher
@@ -39,7 +38,7 @@ from tests.unit.app_integrations.test_helpers import (
 
 def test_get_app():
     """App Integration - App Base, Get App"""
-    config = AppConfig(get_valid_config_dict())
+    config = AppConfig(get_valid_config_dict('duo_auth'))
     app = get_app(config)
     assert_is_not_none(app)
 
@@ -47,7 +46,7 @@ def test_get_app():
 @raises(AppIntegrationException)
 def test_get_app_exception_type():
     """App Integration - App Base, Get App Exception for No 'type'"""
-    config = AppConfig(get_valid_config_dict())
+    config = AppConfig(get_valid_config_dict('duo_auth'))
     del config['type']
     get_app(config)
 
@@ -55,17 +54,17 @@ def test_get_app_exception_type():
 @raises(AppIntegrationException)
 def test_get_app_exception_invalid():
     """App Integration - App Base, Get App Exception for Invalid Service"""
-    config = AppConfig(get_valid_config_dict())
+    config = AppConfig(get_valid_config_dict('duo_auth'))
     config['type'] = 'bad_service_type'
     get_app(config)
 
 
-# Patch the required_auth_keys method with values that a subclass _would_ return
+# Patch the required_auth_info method with values that a subclass _would_ return
 TEST_AUTH_KEYS = {'api_hostname', 'integration_key', 'secret_key'}
 
-@patch.object(AppConfig, 'SSM_CLIENT', MockSSMClient)
+@patch.object(AppConfig, 'SSM_CLIENT', MockSSMClient())
 @patch.object(AppIntegration, 'type', Mock(return_value='type'))
-@patch.object(AppIntegration, 'required_auth_keys', Mock(return_value=TEST_AUTH_KEYS))
+@patch.object(AppIntegration, 'required_auth_info', Mock(return_value=TEST_AUTH_KEYS))
 @patch.object(Batcher, 'LAMBDA_CLIENT', MockLambdaClient)
 class TestAppIntegration(object):
     """Test class for the AppIntegration"""
@@ -79,7 +78,7 @@ class TestAppIntegration(object):
     @patch.object(AppIntegration, '__abstractmethods__', frozenset())
     def setup(self):
         """Setup before each method"""
-        self._app = AppIntegration(AppConfig(get_valid_config_dict()))
+        self._app = AppIntegration(AppConfig(get_valid_config_dict('duo_admin')))
 
     @patch('logging.Logger.debug')
     def test_no_sleep(self, log_mock):
@@ -114,7 +113,7 @@ class TestAppIntegration(object):
     @raises(AppIntegrationConfigError)
     def test_validate_auth_missing_auth(self):
         """App Integration - Validate Authentication Info, Missing Auth Key Exception"""
-        with patch.object(AppIntegration, 'required_auth_keys') as auth_keys_mock:
+        with patch.object(AppIntegration, 'required_auth_info') as auth_keys_mock:
             auth_keys_mock.return_value = {'new_auth_key'}
             self._app._validate_auth()
 
