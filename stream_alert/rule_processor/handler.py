@@ -35,7 +35,10 @@ MAX_RECORD_SIZE = 1000 * 1000
 
 class StreamAlert(object):
     """Wrapper class for handling StreamAlert classificaiton and processing"""
-    __config = {}
+    config = {}
+    special_char_regex = re.compile(r'[\`\~\!\@\#\$\%\^\&\*\(\)\-\+\
+                                       \=\[\]\\\{\}\;\'\:\"\,\.\/\<\>\?]')
+    special_char_sub = '_'
 
     def __init__(self, context, enable_alert_processor=True):
         """Initializer
@@ -49,7 +52,7 @@ class StreamAlert(object):
         """
         # Load the config. Validation occurs during load, which will
         # raise exceptions on any ConfigErrors
-        StreamAlert.__config = StreamAlert.__config or load_config()
+        StreamAlert.config = StreamAlert.config or load_config()
 
         # Load the environment from the context arn
         self.env = load_env(context)
@@ -59,7 +62,7 @@ class StreamAlert(object):
         self.sinker = StreamSink(self.env)
 
         # Instantiate a classifier that is used for this run
-        self.classifier = StreamClassifier(config=self.__config)
+        self.classifier = StreamClassifier(config=self.config)
 
         self.enable_alert_processor = enable_alert_processor
         self._failed_record_count = 0
@@ -95,14 +98,14 @@ class StreamAlert(object):
             return False
 
         threat_intel_config = dict()
-        if (self.__config.get('threat_intel')
-                and self.__config.get('threat_intel', {}).get('enabled')):
+        if (self.config.get('threat_intel')
+                and self.config.get('threat_intel', {}).get('enabled')):
             StreamRules.load_intelligence()
-            threat_intel_config = self.__config.get('threat_intel')
+            threat_intel_config = self.config.get('threat_intel')
 
         MetricLogger.log_metric(FUNCTION_NAME, MetricLogger.TOTAL_RECORDS, len(records))
 
-        firehose_config = self.__config['global'].get(
+        firehose_config = self.config['global'].get(
             'infrastructure', {}).get('firehose', {})
         if firehose_config.get('enabled'):
             self.firehose_client = boto3.client('firehose',
@@ -168,119 +171,141 @@ class StreamAlert(object):
         """
         return self._alerts
 
-    def _send_to_firehose(self):
-        """Send all classified records to a respective Firehose Delivery Stream"""
+    @staticmethod
+    def _segment_records_by_count(record_list, max_count):
+        """Segment records by length
 
-        # Setup regex and delivery stream name pattern for functions below
-        special_char_regex = re.compile(r'[\`\~\!\@\#\$\%\^\&\*\(\)\-\+\
-                                           \=\[\]\\\{\}\;\'\:\"\,\.\/\<\>\?]')
-        special_char_sub = '_'
-        delivery_stream_name_pattern = 'streamalert_data_{}'
+        Args:
+            record_list (list): The original records list to be segmented
+            max_count (int): The max amount of records to yield per group
+        """
+        for item in range(0, len(record_list), max_count):
+            yield record_list[item:item + max_count]
 
-        def _segment_records_by_count(record_list, max_count):
-            """Helper function to chunk payloads"""
-            for item in range(0, len(record_list), max_count):
-                yield record_list[item:item + max_count]
+    def _segment_records_by_size(self, record_batch):
+        """Segment record groups by size
 
-        def _segment_records_by_size(record_batch):
-            split_factor = 1
-            len_batch = len(record_batch)
+        Args:
+            record_batch (list): The original record batch to measure and segment
 
-            while True:
-                if len(str(record_batch[:len_batch / split_factor])) > MAX_BATCH_SIZE:
-                    split_factor += 1
-                else:
-                    break
+        Returns:
+            generator: Used to iterate on each newly segmented group
+        """
+        split_factor = 1
+        len_batch = len(record_batch)
 
-            return _segment_records_by_count(record_batch, len_batch / split_factor)
+        while True:
+            if len(str(record_batch[:len_batch / split_factor])) > MAX_BATCH_SIZE:
+                split_factor += 1
+            else:
+                break
 
-        def _limit_record_size(batch):
-            """Helper function to verify record size"""
-            for index, record in enumerate(batch):
-                if len(str(record)) > MAX_RECORD_SIZE:
-                    # Show the first 1k bytes in order to not overload
-                    # CloudWatch logs
-                    LOGGER.error('The following record is too large'
-                                 'be sent to Firehose: %s', str(record)[:1000])
-                    MetricLogger.log_metric(FUNCTION_NAME,
-                                            MetricLogger.FIREHOSE_FAILED_RECORDS,
-                                            1)
-                    batch.pop(index)
+        return self._segment_records_by_count(record_batch, len_batch / split_factor)
 
-        def _sanitize_keys(record):
-            """Remove special characters from parsed record keys
+    @staticmethod
+    def _limit_record_size(batch):
+        """Limit the record size to be sent to Firehose
 
-            This is required when searching in Athena.  Keys can only have
-            a period or underscore
-
-            Returns:
-                dict: A sanitized record
-            """
-            new_record = {}
-            for key, value in record.iteritems():
-                # Set a default value of the original key
-                sanitized_key = key
-                if re.search(special_char_regex, key):
-                    sanitized_key = re.sub(special_char_regex,
-                                           special_char_sub,
-                                           key)
-
-                # Handle nested objects
-                if isinstance(value, dict):
-                    new_record[sanitized_key] = _sanitize_keys(record[key])
-                else:
-                    new_record[sanitized_key] = record[key]
-
-            return new_record
-
-        def _firehose_request(stream_name, record_batch):
-            """Send record batches to Firehose"""
-            LOGGER.debug('Sending %d records to Firehose:%s',
-                         len(record_batch),
-                         stream_name)
-            resp = self.firehose_client.put_record_batch(
-                DeliveryStreamName=stream_name,
-                # The newline at the end is required by Firehose,
-                # otherwise all records will be on a single line and
-                # unsearchable in Athena.
-                Records=[{'Data': json.dumps(_sanitize_keys(record),
-                                             separators=(",", ":")) + '\n'}
-                         for record
-                         in record_batch])
-
-            # Error handle if failures occured
-            # TODO(jack) implement backoff here once the rule processor is split
-            if resp.get('FailedPutCount') > 0:
-                failed_records = [failed
-                                  for failed
-                                  in resp['RequestResponses']
-                                  if failed.get('ErrorCode')]
+        Args:
+            batch (list): Record batch to iterate on
+        """
+        for index, record in enumerate(batch):
+            if len(str(record)) > MAX_RECORD_SIZE:
+                # Show the first 1k bytes in order to not overload
+                # CloudWatch logs
+                LOGGER.error('The following record is too large'
+                             'be sent to Firehose: %s', str(record)[:1000])
                 MetricLogger.log_metric(FUNCTION_NAME,
                                         MetricLogger.FIREHOSE_FAILED_RECORDS,
-                                        resp['FailedPutCount'])
-                # Only print the first 100 failed records to Cloudwatch logs
-                LOGGER.error('The following records failed to Put to the'
-                             'Delivery stream %s: %s',
-                             stream_name,
-                             json.dumps(failed_records[:100], indent=2))
+                                        1)
+                batch.pop(index)
+
+    def _sanitize_keys(self, record):
+        """Remove special characters from parsed record keys
+
+        This is required when searching in Athena.  Keys can only have
+        a period or underscore
+
+        Args:
+            record (dict): Original parsed record
+
+        Returns:
+            dict: A sanitized record
+        """
+        new_record = {}
+        for key, value in record.iteritems():
+            # Set a default value of the original key
+            sanitized_key = key
+            if re.search(self.special_char_regex, key):
+                sanitized_key = re.sub(self.special_char_regex,
+                                       self.special_char_sub,
+                                       key)
+
+            # Handle nested objects
+            if isinstance(value, dict):
+                new_record[sanitized_key] = self._sanitize_keys(record[key])
             else:
-                MetricLogger.log_metric(FUNCTION_NAME,
-                                        MetricLogger.FIREHOSE_RECORDS_SENT,
-                                        len(record_batch))
-                LOGGER.info('Successfully sent %d messages to Firehose:%s',
-                            len(record_batch),
-                            stream_name)
+                new_record[sanitized_key] = record[key]
+
+        return new_record
+
+    def _firehose_request_helper(self, stream_name, record_batch):
+        """Send record batches to Firehose
+
+        Args:
+            stream_name (str): The name of the Delivery Stream to send to
+            record_batch (list): The records to send
+        """
+        LOGGER.debug('Sending %d records to Firehose:%s',
+                     len(record_batch),
+                     stream_name)
+        resp = self.firehose_client.put_record_batch(
+            DeliveryStreamName=stream_name,
+            # The newline at the end is required by Firehose,
+            # otherwise all records will be on a single line and
+            # unsearchable in Athena.
+            Records=[{'Data': json.dumps(self._sanitize_keys(record),
+                                         separators=(",", ":")) + '\n'}
+                     for record
+                     in record_batch])
+
+        # Error handle if failures occured
+        # TODO(jack) implement backoff here once the rule processor is split
+        if resp.get('FailedPutCount') > 0:
+            failed_records = [failed
+                              for failed
+                              in resp['RequestResponses']
+                              if failed.get('ErrorCode')]
+            MetricLogger.log_metric(FUNCTION_NAME,
+                                    MetricLogger.FIREHOSE_FAILED_RECORDS,
+                                    resp['FailedPutCount'])
+            # Only print the first 100 failed records to Cloudwatch logs
+            LOGGER.error('The following records failed to Put to the'
+                         'Delivery stream %s: %s',
+                         stream_name,
+                         json.dumps(failed_records[:100], indent=2))
+        else:
+            MetricLogger.log_metric(FUNCTION_NAME,
+                                    MetricLogger.FIREHOSE_RECORDS_SENT,
+                                    len(record_batch))
+            LOGGER.info('Successfully sent %d messages to Firehose:%s',
+                        len(record_batch),
+                        stream_name)
+
+    def _send_to_firehose(self):
+        """Send all classified records to a respective Firehose Delivery Stream"""
+        delivery_stream_name_pattern = 'streamalert_data_{}'
 
         # Iterate through each payload type
         for log_type, records in self.categorized_payloads.items():
             # This same method is used when naming the Delivery Streams
             formatted_log_type = log_type.replace(':', '_')
 
-            for record_batch in _segment_records_by_count(records, MAX_BATCH_COUNT):
+            for record_batch in self._segment_records_by_count(records, MAX_BATCH_COUNT):
                 stream_name = delivery_stream_name_pattern.format(formatted_log_type)
-                _limit_record_size(record_batch)
-                for sized_batch in _segment_records_by_size(record_batch):
-                    _firehose_request(stream_name, sized_batch)
+                self._limit_record_size(record_batch)
+                for sized_batch in self._segment_records_by_size(record_batch):
+                    self._firehose_request_helper(stream_name, sized_batch)
 
     def _process_alerts(self, payload, threat_intel_config=None):
         """Process records for alerts and send them to the correct places
@@ -315,7 +340,10 @@ class StreamAlert(object):
             # Add all parsed records to the categorized payload dict
             # only if Firehose is enabled
             if self.firehose_client:
-                self.categorized_payloads[payload.log_source].extend(payload.records)
+                # Only send payloads with enabled types
+                if payload.log_source.split(':')[0] not in self.config['global'] \
+                    ['infrastructure'].get('firehose', {}).get('disabled_logs', []):
+                    self.categorized_payloads[payload.log_source].extend(payload.records)
 
             if not record_alerts:
                 continue

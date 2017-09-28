@@ -268,13 +268,9 @@ class TestStreamAlert(object):
             assert_true(mock_logging.info.called)
 
     @patch('stream_alert.rule_processor.handler.LOGGER')
-    @mock_kinesis
-    def test_firehose_record_delivery_large_data_size(self, mock_logging):
-        """StreamAlert Class - Firehose Record Delivery - Large Payload"""
-        self.__sa_handler.firehose_client = boto3.client(
-            'firehose', region_name='us-east-1')
-
-        test_event = convert_events_to_kinesis([
+    def test_firehose_limit_record_size(self, mock_logging):
+        """StreamAlert Class - Firehose - Record Size Check"""
+        test_events = [
             # unit_test_simple_log
             {
                 'unit_key_01': 1,
@@ -293,28 +289,11 @@ class TestStreamAlert(object):
                     'super': 'secret'
                 }
             }
-        ])
+        ]
 
-        delivery_stream_names = ['streamalert_data_test_log_type_json_nested',
-                                 'streamalert_data_unit_test_simple_log']
+        self.__sa_handler._limit_record_size(test_events)
 
-        # Setup mock delivery streams
-        for delivery_stream in delivery_stream_names:
-            self.__sa_handler.firehose_client.create_delivery_stream(
-                DeliveryStreamName=delivery_stream,
-                S3DestinationConfiguration={
-                    'RoleARN': 'arn:aws:iam::123456789012:role/firehose_delivery_role',
-                    'BucketARN': 'arn:aws:s3:::kinesis-test',
-                    'Prefix': '{}/'.format(delivery_stream),
-                    'BufferingHints': {
-                        'SizeInMBs': 123,
-                        'IntervalInSeconds': 124
-                    },
-                    'CompressionFormat': 'Snappy',
-                }
-            )
-
-        self.__sa_handler.run(test_event)
+        assert_true(len(test_events), 2)
         assert_true(mock_logging.error.called)
 
     @patch('stream_alert.rule_processor.handler.LOGGER')
@@ -369,75 +348,67 @@ class TestStreamAlert(object):
         self.__sa_handler.run(get_valid_event())
         load_intelligence_mock.assert_not_called()
 
-
-    @patch('stream_alert.rule_processor.handler.LOGGER')
-    @mock_kinesis
-    def test_firehose_record_delivery_sanitized_keys(self, mock_logging):
-        """StreamAlert Class - Firehose Record Delivery - Sanitized Keys"""
-        self.__sa_handler.firehose_client = boto3.client(
-            'firehose', region_name='us-east-1')
-
-        test_event = convert_events_to_kinesis([
-            # test_log_type_json_nested
-            {
-                'date': 'January 01, 3005',
-                'unixtime': '32661446400',
-                'host': 'my-host.name.website.com',
-                'data': {
-                    'super-duper': 'secret',
-                    'sanitize_me': 1,
-                    'example-key': 1,
-                    'moar**data': 2,
-                    'even.more': 3
-                }
+    def test_firehose_sanitize_keys(self):
+        """StreamAlert Class - Firehose - Sanitize Keys"""
+        # test_log_type_json_nested
+        test_event = {
+            'date': 'January 01, 3005',
+            'unixtime': '32661446400',
+            'host': 'my-host.name.website.com',
+            'data': {
+                'super-duper': 'secret',
+                'sanitize_me': 1,
+                'example-key': 1,
+                'moar**data': 2,
+                'even.more': 3
             }
-        ])
+        }
 
-        delivery_stream_names = ['streamalert_data_test_log_type_json_nested']
+        expected_sanitized_event = {
+            'date': 'January 01, 3005',
+            'unixtime': '32661446400',
+            'host': 'my-host.name.website.com',
+            'data': {
+                'super_duper': 'secret',
+                'sanitize_me': 1,
+                'example_key': 1,
+                'moar__data': 2,
+                'even_more': 3
+            }
+        }
 
-        # Setup mock delivery streams
-        for delivery_stream in delivery_stream_names:
-            self.__sa_handler.firehose_client.create_delivery_stream(
-                DeliveryStreamName=delivery_stream,
-                S3DestinationConfiguration={
-                    'RoleARN': 'arn:aws:iam::123456789012:role/firehose_delivery_role',
-                    'BucketARN': 'arn:aws:s3:::kinesis-test',
-                    'Prefix': '{}/'.format(delivery_stream),
-                    'BufferingHints': {
-                        'SizeInMBs': 123,
-                        'IntervalInSeconds': 124
-                    },
-                    'CompressionFormat': 'Snappy',
-                }
-            )
+        sanitized_event = self.__sa_handler._sanitize_keys(test_event)
+        assert_equal(sanitized_event, expected_sanitized_event)
 
-        with patch.object(self.__sa_handler.firehose_client, 'put_record_batch') as firehose_mock:
-            firehose_mock.return_value = {'FailedPutCount': 0}
-            self.__sa_handler.run(test_event)
+    def test_firehose_segment_records_by_size(self):
+        """StreamAlert Class - Firehose - Segment Large Records"""
 
-            firehose_mock.assert_called_with(
-                DeliveryStreamName='streamalert_data_test_log_type_json_nested',
-                Records=[{'Data': '{"date":"January 01, 3005",'
-                                  '"unixtime":32661446400,'
-                                  '"host":"my-host.name.website.com",'
-                                  '"data":{"sanitize_me":1,"super_duper":"secret",'
-                                  '"moar__data":2,'
-                                  '"example_key":1,"even_more":3}}\n'}]
-            )
-            assert_true(mock_logging.info.called)
+        record_batch = [
+            # unit_test_simple_log
+            {'unit_key_01': 2, 'unit_key_02': 'testtest' * 10000}
+            for _
+            in range(100)]
 
-    @patch('stream_alert.rule_processor.handler.LOGGER')
+        sized_batches = []
+
+        for sized_batch in self.__sa_handler._segment_records_by_size(record_batch):
+            sized_batches.append(sized_batch)
+
+        assert_true(len(str(sized_batches[0])) < 4000000)
+        assert_equal(len(sized_batches), 4)
+        assert_true(isinstance(sized_batches[3][0], dict))
+
     @mock_kinesis
-    def test_firehose_record_delivery_segment_large_payload(self, mock_logging):
-        """StreamAlert Class - Firehose Record Delivery - Large records"""
+    def test_firehose_record_delivery_disabled_logs(self):
+        """StreamAlert Class - Firehose Record Delivery - Disabled Logs"""
         self.__sa_handler.firehose_client = boto3.client(
             'firehose', region_name='us-east-1')
 
         test_event = convert_events_to_kinesis([
             # unit_test_simple_log
-            {'unit_key_01': 2, 'unit_key_02': 'testtest' * 10000}
+            {'unit_key_01': 2, 'unit_key_02': 'testtest'}
             for _
-            in range(100)])
+            in range(10)])
 
         delivery_stream_names = ['streamalert_data_unit_test_simple_log']
 
@@ -459,7 +430,9 @@ class TestStreamAlert(object):
 
         with patch.object(self.__sa_handler.firehose_client, 'put_record_batch') as firehose_mock:
             firehose_mock.return_value = {'FailedPutCount': 0}
+
+            self.__sa_handler.config['global']['infrastructure']['firehose'] = {
+                'disabled_logs': ['unit_test_simple_log']}
             self.__sa_handler.run(test_event)
 
-            firehose_mock.assert_called()
-            assert_true(mock_logging.info.called)
+            firehose_mock.assert_not_called()

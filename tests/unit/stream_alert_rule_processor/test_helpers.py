@@ -86,11 +86,10 @@ def get_valid_config():
 
 def convert_events_to_kinesis(raw_records):
     """Given a list of pre-defined raw records, make a valid kinesis test event"""
-    return {'Records': [make_kinesis_raw_record('unit_test_default_stream', json.dumps(record))
-                        for
-                        record
-                        in
-                        raw_records]}
+    return {'Records': [make_kinesis_raw_record('unit_test_default_stream',
+                                                json.dumps(record))
+                        for record
+                        in raw_records]}
 
 
 def get_valid_event(count=1, **kwargs):
@@ -127,9 +126,7 @@ def make_kinesis_raw_record(kinesis_stream, kinesis_data):
         'eventSource': 'aws:kinesis',
         'eventSourceARN': 'arn:aws:kinesis:us-east-1:123456789012:stream/{}'.format(kinesis_stream),
         'kinesis': {
-            'data': base64.b64encode(kinesis_data)
-        }
-    }
+            'data': base64.b64encode(kinesis_data)}}
     return raw_record
 
 
@@ -140,9 +137,7 @@ def make_sns_raw_record(topic_name, sns_data):
         'EventSubscriptionArn': 'arn:aws:sns:us-east-1:123456789012:{}'.format(topic_name),
         'Sns': {
             'MessageId': 'unit test message id',
-            'Message': sns_data
-        }
-    }
+            'Message': sns_data}}
     return raw_record
 
 
