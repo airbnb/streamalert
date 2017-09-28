@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from app_integrations.apps.app_base import get_app
 from stream_alert.alert_processor.outputs import get_output_dispatcher
 from stream_alert.athena_partition_refresh.main import StreamAlertAthenaClient
 from stream_alert_cli.apps import save_app_auth_info
@@ -23,7 +24,6 @@ from stream_alert_cli.manage_lambda.handler import lambda_handler
 from stream_alert_cli.terraform.handler import terraform_handler
 from stream_alert_cli.test import stream_alert_test
 import stream_alert_cli.outputs as config_outputs
-from app_integrations.apps.app_base import get_app
 
 
 CONFIG = CLIConfig()

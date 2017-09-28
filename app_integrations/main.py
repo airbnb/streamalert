@@ -13,8 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from app_integrations.config import AppConfig
 from app_integrations.apps.app_base import get_app
+from app_integrations.config import AppConfig
 
 
 def handler(event, context):
@@ -37,8 +37,6 @@ def handler(event, context):
 
         # Run the gather operation
         app.gather()
-    except:
-        raise
     finally:
         # If the config was loaded, save a bad state if the current state is not
         # marked as a success (aka running)

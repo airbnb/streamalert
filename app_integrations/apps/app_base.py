@@ -206,7 +206,7 @@ class AppIntegration(object):
         AWS Parameter Store
 
         Returns:
-            bool: Inidcator of successful validation
+            bool: Indicator of successful validation
         """
         if not self._config:
             raise AppIntegrationConfigError('Config for service \'{}\' is empty', self.type())

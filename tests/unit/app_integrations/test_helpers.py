@@ -161,5 +161,3 @@ def get_valid_config_dict():
 
         }
     }
-
-

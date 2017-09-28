@@ -87,9 +87,9 @@ def save_app_auth_info(app, info, overwrite=False):
     # Save these to the parameter store
     param_name = '{}_{}'.format(info['function_name'], AppConfig.AUTH_CONFIG_SUFFIX)
     saved = save_parameter(info['region'], param_name, auth_dict, description, overwrite)
-    if not saved:
-        LOGGER_CLI.error('App authentication info was not saved to parameter store.')
-    else:
+    if saved:
         LOGGER_CLI.info('App authentication info successfully saved to parameter store.')
+    else:
+        LOGGER_CLI.error('App authentication info was not saved to parameter store.')
 
     return saved
