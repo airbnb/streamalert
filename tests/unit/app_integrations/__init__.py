@@ -14,4 +14,4 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 REGION = 'us-east-1'
-FUNCTION_NAME = 'prefix_cluster_streamalert_rule_processor'
+FUNCTION_NAME = 'prefix_cluster_duo_auth_sample-app-name_app'

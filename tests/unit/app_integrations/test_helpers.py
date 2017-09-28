@@ -139,3 +139,27 @@ def put_mock_params():
     MockSSMClient.put_parameter(Name='{}_state'.format(FUNCTION_NAME),
                                 Value=json.dumps(state),
                                 Overwrite=True)
+
+def get_valid_config_dict():
+    """Helper function to get a dict that is reflective of a valid AppConfig"""
+    return {
+        'type': 'duo_auth',
+        'cluster': 'unit_test_cluster',
+        'prefix': 'unit_test_prefix',
+        'app_name': 'unit_app',
+        'interval': 'rate(1 hour)',
+        'region': 'us-east-1',
+        'account_id': '123456789012',
+        'function_name': FUNCTION_NAME,
+        'qualifier': 'production',
+        'last_timestamp': 1505316432,
+        'current_state': 'succeeded',
+        'auth': {
+            'api_hostname': 'api-abcdef12.duosecurity.com',
+            'integration_key': 'DIABCDEFGHIJKLMN1234',
+            'secret_key': 'abcdefghijklmnopqrstuvwxyz1234567890ABCD'
+
+        }
+    }
+
+

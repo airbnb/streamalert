@@ -48,8 +48,6 @@ def get_app(config):
     """
     try:
         return STREAMALERT_APPS[config['type']](config)
-    except AppIntegrationException:
-        raise
     except KeyError:
         if 'type' not in config:
             raise AppIntegrationException('The \'type\' is not defined in the config.')
@@ -174,6 +172,10 @@ class AppIntegration(object):
     def _finalize(self):
         """Method for performing any final steps, like saving applicable state"""
         self._config.mark_success()
+
+        if not self._last_timestamp:
+            LOGGER.error('Ending last timestamp is 0. This should not happen and is likely '
+                         'due to the subclass not setting this value.')
 
         if self._last_timestamp == self._config.start_last_timestamp:
             LOGGER.error('Ending last timestamp is the same as the beginning last timestamp')

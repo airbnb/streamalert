@@ -23,7 +23,8 @@ resource "aws_lambda_function" "stream_alert_app" {
   }
 
   tags {
-    Name = "App:${var.type}"
+    Name = "StreamAlert"
+    App  = "${var.type}"
   }
 }
 
