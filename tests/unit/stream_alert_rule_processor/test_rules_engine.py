@@ -785,7 +785,7 @@ class TestStreamRules(object):
               outputs=['s3:sample_bucket'])
         def detect_ioc(rec): # pylint: disable=unused-variable
             """Testing rule to find is there any ip IOC matching"""
-            return 'streamalert_ioc' in rec
+            return 'streamalert:ioc' in rec
 
         kinesis_data_items = [
             {
@@ -827,7 +827,7 @@ class TestStreamRules(object):
 
         assert_equal(len(alerts), 1)
         expected_ioc_info = {'type': 'ip', 'value': '90.163.54.11'}
-        assert_equal(alerts[0]['record']['streamalert_ioc'], expected_ioc_info)
+        assert_equal(alerts[0]['record']['streamalert:ioc'], expected_ioc_info)
 
     def test_is_ioc_with_no_matching(self):
         """Rules Engine - test IOC not matching"""

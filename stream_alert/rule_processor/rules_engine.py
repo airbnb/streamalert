@@ -401,10 +401,12 @@ class StreamRules(object):
                         # if there is ioc mathing, append this ioc_type and
                         # ioc_value to the record which will be sent to outputs
                         if ioc_result:
-                            record['streamalert_ioc'] = {
-                                'type': ioc_type,
-                                'value': ioc_value
-                            }
+                            record.update({
+                                'streamalert:ioc': {
+                                    'type': ioc_type,
+                                    'value': ioc_value
+                                }
+                            })
 
                 # rule analysis
                 rule_result = cls.process_rule(record, rule)
