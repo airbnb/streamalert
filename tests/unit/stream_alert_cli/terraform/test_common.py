@@ -22,6 +22,9 @@ CONFIG = CLIConfig(config_path='tests/unit/conf')
 
 def test_enabled_firehose_logs():
     """CLI - Terraform Common - Expected Firehose Logs """
+    CONFIG['global']['infrastructure']['firehose'] = {
+        'enabled': True
+    }
     firehose_logs = set(_common.enabled_firehose_logs(CONFIG))
 
     expected_logs = {
@@ -37,6 +40,37 @@ def test_enabled_firehose_logs():
         'test_log_type_json_2',
         'test_log_type_json_nested_osquery',
         'test_log_type_syslog',
+        'test_cloudtrail',
+        'unit_test_simple_log'
+    }
+
+    assert_equal(firehose_logs, expected_logs)
+
+def test_enabled_firehose_logs_disabled():
+    """CLI - Terraform Common - Expected Firehose Logs - Disable"""
+    CONFIG['global']['infrastructure']['firehose'] = {
+        'enabled': True,
+        'disabled_logs': [
+            'test_log_type_json',
+            'test_log_type_csv',
+            'test_log_type_syslog'
+        ]
+    }
+    firehose_logs = set(_common.enabled_firehose_logs(CONFIG))
+
+    expected_logs = {
+        'cloudwatch_test_match_types',
+        # 'test_log_type_csv',
+        'test_log_type_csv_nested',
+        'test_log_type_json_nested',
+        'test_log_type_json_nested_with_data',
+        # 'test_log_type_json',
+        'test_log_type_kv_auditd',
+        'test_multiple_schemas_01',
+        'test_multiple_schemas_02',
+        'test_log_type_json_2',
+        'test_log_type_json_nested_osquery',
+        # 'test_log_type_syslog',
         'test_cloudtrail',
         'unit_test_simple_log'
     }

@@ -39,6 +39,7 @@ def enabled_firehose_logs(config):
         list: All enabled logs sending to StreamAlert
     """
     config_logs = set(config['logs'])
+    disabled_logs = set(config['global']['infrastructure']['firehose'].get('disabled_logs', []))
     expanded_logs_with_subtypes = set()
     enabled_logs_from_sources = list()
 
@@ -47,8 +48,9 @@ def enabled_firehose_logs(config):
             enabled_logs_from_sources.extend(properties['logs'])
 
     for log in config_logs:
-        for enabled_log in set(enabled_logs_from_sources):
-            if log.split(':')[0] == enabled_log:
+        for enabled_log in set(enabled_logs_from_sources) - disabled_logs:
+            log_type = log.split(':')[0]
+            if log_type == enabled_log:
                 expanded_logs_with_subtypes.add(log)
 
     # Firehose Delivery Streams cannot have semicolons

@@ -175,7 +175,7 @@ def generate_main(**kwargs):
             'buffer_interval': config['global']['infrastructure'] \
                                      ['firehose'].get('buffer_interval', 300),
             'compression_format': config['global']['infrastructure'] \
-                                        ['firehose'].get('buffer_interval', 'Snappy'),
+                                        ['firehose'].get('compression_format', 'Snappy'),
             's3_logging_bucket': logging_bucket,
             's3_bucket_name': firehose_s3_bucket_name
         }
