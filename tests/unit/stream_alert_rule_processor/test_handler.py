@@ -436,3 +436,24 @@ class TestStreamAlert(object):
             self.__sa_handler.run(test_event)
 
             firehose_mock.assert_not_called()
+
+    @patch('stream_alert.rule_processor.handler.LOGGER')
+    @mock_kinesis
+    def test_firehose_record_delivery_client_errorr(self, mock_logging):
+        """StreamAlert Class - Firehose Record Delivery - Client Error"""
+        self.__sa_handler.firehose_client = boto3.client(
+            'firehose', region_name='us-east-1')
+
+        test_events = [
+            # unit_test_simple_log
+            {'unit_key_01': 2, 'unit_key_02': 'testtest'}
+            for _
+            in range(10)]
+
+        self.__sa_handler._firehose_request_helper('invalid_stream',
+                                                   test_events)
+
+        missing_stream_message = 'Client Error ... An error occurred ' \
+        '(ResourceNotFoundException) when calling the PutRecordBatch ' \
+        'operation: Stream invalid_stream under account 123456789012 not found.'
+        assert_true(mock_logging.error.called_with(missing_stream_message))
