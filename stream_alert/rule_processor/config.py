@@ -17,7 +17,6 @@ from collections import OrderedDict
 import json
 import os
 
-
 class ConfigError(Exception):
     """Exception class for config file errors"""
 
@@ -34,7 +33,7 @@ def load_config(conf_dir='conf/'):
     key denotes the name of the log type, and includes 'keys' used to match
     rules to log fields.
     """
-    conf_files = ('sources', 'logs', 'types', 'global')
+    conf_files = ('sources', 'logs', 'types', 'global', 'threat_intel')
     config = dict()
     for base_name in conf_files:
         path = '{}.json'.format(os.path.join(conf_dir, base_name))

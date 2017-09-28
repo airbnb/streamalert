@@ -20,7 +20,13 @@ limitations under the License.
 from mock import mock_open, patch
 from nose.tools import assert_equal, raises, nottest
 
-from stream_alert.rule_processor.config import _validate_config, ConfigError, load_config, load_env
+from stream_alert.rule_processor.config import (
+    _validate_config,
+    ConfigError,
+    load_config,
+    load_env
+)
+
 from tests.unit.stream_alert_rule_processor.test_helpers import get_mock_context, get_valid_config
 
 

@@ -1,0 +1,10 @@
+{
+  "enabled": false,
+  "mapping": {
+    "destinationAddress": "ip",
+    "destinationDomain": "domain",
+    "deviceAddress": "ip",
+    "fileHash": "md5",
+    "sourceAddress": "ip"
+  }
+}
