@@ -452,12 +452,15 @@ class StreamRules(object):
         Return:
             (tuple): (True or False, IOC type, IOC value)
         """
-        if datatypes_ioc_mapping:
-            for datatype in rec['normalized_types']:
-                if datatype not in datatypes_ioc_mapping:
-                    continue
-                results = fetch_values_by_datatype(rec, datatype)
-                for result in results:
-                    if result in cls.__intelligence[datatypes_ioc_mapping[datatype]]:
-                        return True, datatypes_ioc_mapping[datatype], result
+        if not datatypes_ioc_mapping:
+            return False, None, None
+
+        for datatype in rec['normalized_types']:
+            if datatype not in datatypes_ioc_mapping:
+                continue
+            results = fetch_values_by_datatype(rec, datatype)
+            for result in results:
+                if result in cls.__intelligence[datatypes_ioc_mapping[datatype]]:
+                    return True, datatypes_ioc_mapping[datatype], result
+
         return False, None, None

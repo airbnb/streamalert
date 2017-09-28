@@ -80,8 +80,8 @@ class StreamThreatIntel(object):
                     self._intel_dictionary[ioc_type] = dict()
                 for row in csv_reader:
                     if len(row) < 2:
-                        LOGGER.debug('Warning, each row in CSV file should \
-                            contain at least two fields. Bad row [%s]',
+                        LOGGER.debug('Warning, each row in CSV file should '
+                                     'contain at least two fields. Bad row [%s]',
                                      row)
                         continue
                     self._intel_dictionary[ioc_type][row[0]] = row[1:]

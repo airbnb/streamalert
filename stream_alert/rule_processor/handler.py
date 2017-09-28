@@ -21,11 +21,7 @@ import boto3
 
 from stream_alert.rule_processor import FUNCTION_NAME, LOGGER
 from stream_alert.rule_processor.classifier import StreamClassifier
-from stream_alert.rule_processor.config import (
-    load_config,
-    load_env
-)
-
+from stream_alert.rule_processor.config import load_config, load_env
 from stream_alert.rule_processor.payload import load_stream_payload
 from stream_alert.rule_processor.rules_engine import StreamRules
 from stream_alert.rule_processor.sink import StreamSink
