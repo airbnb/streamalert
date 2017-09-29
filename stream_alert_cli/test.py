@@ -31,6 +31,7 @@ import stream_alert.rule_processor.main  # pylint: disable=unused-import
 from stream_alert.rule_processor.payload import load_stream_payload
 from stream_alert.rule_processor.rules_engine import StreamRules
 from stream_alert_cli import helpers
+from stream_alert_cli.config import CLIConfig
 from stream_alert_cli.logger import (
     get_log_memory_hanlder,
     LOGGER_CLI,
@@ -47,6 +48,8 @@ COLOR_RED = '\033[0;31;1m'
 COLOR_YELLOW = '\033[0;33;1m'
 COLOR_GREEN = '\033[0;32;1m'
 COLOR_RESET = '\033[0m'
+
+CONFIG = CLIConfig()
 
 StatusMessageBase = namedtuple('StatusMessage', 'type, rule, message')
 
@@ -79,6 +82,7 @@ class RuleProcessorTester(object):
         self.total_tests = 0
         self.all_tests_passed = True
         self.print_output = print_output
+        helpers.setup_mock_firehose_delivery_streams(CONFIG)
 
     def test_processor(self, filter_rules, validate_only=False):
         """Perform integration tests for the 'rule' Lambda function

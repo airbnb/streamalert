@@ -27,10 +27,10 @@ import zipfile
 import zlib
 
 import boto3
-from moto import mock_cloudwatch, mock_kms, mock_lambda, mock_s3
+from moto import mock_cloudwatch, mock_kms, mock_kinesis, mock_lambda, mock_s3
 
 from stream_alert_cli.logger import LOGGER_CLI
-
+from stream_alert_cli.terraform._common import enabled_firehose_logs
 
 DIR_TEMPLATES = 'tests/integration/templates'
 
@@ -279,6 +279,30 @@ def put_mock_creds(output_name, creds, bucket, region, alias):
     put_mock_s3_object(bucket, output_name, enc_creds, region)
 
 
+def setup_mock_firehose_delivery_streams(config):
+    """Mock Kinesis Firehose Streams for rule testing
+
+    Args:
+        config (CLIConfig): The StreamAlert config
+    """
+    region = config['global']['account']['region']
+    firehose_client = boto3.client('firehose', region_name=region)
+    for log_type in enabled_firehose_logs(config):
+        firehose_client.create_delivery_stream(
+            DeliveryStreamName='streamalert_data_{}'.format(log_type),
+            S3DestinationConfiguration={
+                'RoleARN': 'arn:aws:iam::123456789012:role/firehose_delivery_role',
+                'BucketARN': 'arn:aws:s3:::kinesis-test',
+                'Prefix': '{}/'.format(log_type),
+                'BufferingHints': {
+                    'SizeInMBs': 123,
+                    'IntervalInSeconds': 124
+                },
+                'CompressionFormat': 'Snappy',
+            }
+        )
+
+
 def put_mock_s3_object(bucket, key, data, region):
     """Create a mock AWS S3 object for testing
 
@@ -312,6 +336,7 @@ def mock_me(context):
             @mock_lambda
             @mock_s3
             @mock_kms
+            @mock_kinesis
             def mocked(options, context):
                 """This function is now mocked using moto mock decorators to
                 override any boto3 calls. Wrapping this function here allows
