@@ -26,6 +26,7 @@ from stream_alert.rule_processor.classifier import StreamClassifier
 from stream_alert.rule_processor.config import load_config, load_env
 from stream_alert.rule_processor.payload import load_stream_payload
 from stream_alert.rule_processor.rules_engine import StreamRules
+from stream_alert.rule_processor.threat_intel import StreamThreatIntel
 from stream_alert.rule_processor.sink import StreamSink
 from stream_alert.shared.metrics import MetricLogger
 
@@ -80,6 +81,7 @@ class StreamAlert(object):
 
         # Firehose client initialization
         self.firehose_client = None
+        StreamThreatIntel.load_intelligence(self.config)
 
     def run(self, event):
         """StreamAlert Lambda function handler.
@@ -100,12 +102,6 @@ class StreamAlert(object):
         LOGGER.debug('Number of Records: %d', len(records))
         if not records:
             return False
-
-        threat_intel_config = dict()
-        if (self.config.get('threat_intel')
-                and self.config.get('threat_intel', {}).get('enabled')):
-            StreamRules.load_intelligence()
-            threat_intel_config = self.config.get('threat_intel')
 
         MetricLogger.log_metric(FUNCTION_NAME, MetricLogger.TOTAL_RECORDS, len(records))
 
@@ -139,7 +135,7 @@ class StreamAlert(object):
             if not payload:
                 continue
 
-            self._process_alerts(payload, threat_intel_config)
+            self._process_alerts(payload)
 
         MetricLogger.log_metric(FUNCTION_NAME,
                                 MetricLogger.TOTAL_PROCESSED_SIZE,
@@ -319,7 +315,7 @@ class StreamAlert(object):
                 for sized_batch in self._segment_records_by_size(record_batch):
                     self._firehose_request_helper(stream_name, sized_batch)
 
-    def _process_alerts(self, payload, threat_intel_config=None):
+    def _process_alerts(self, payload):
         """Process records for alerts and send them to the correct places
 
         Args:
@@ -343,7 +339,7 @@ class StreamAlert(object):
                 record.log_source,
                 record.entity)
 
-            record_alerts = StreamRules.process(record, threat_intel_config)
+            record_alerts = StreamRules.process(record)
 
             LOGGER.debug('Processed %d valid record(s) that resulted in %d alert(s).',
                          len(payload.records),
