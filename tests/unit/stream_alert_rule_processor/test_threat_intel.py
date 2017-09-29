@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-# pylint: disable=protected-access
+# pylint: disable=protected-access,no-self-use
 from nose.tools import (
     assert_list_equal,
     assert_equal,
@@ -22,6 +22,7 @@ from nose.tools import (
 )
 
 from stream_alert.rule_processor.threat_intel import StreamThreatIntel
+
 
 class TestStreamStreamThreatIntel(object):
     """Test class for StreamThreatIntel"""
