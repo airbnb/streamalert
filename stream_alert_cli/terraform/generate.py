@@ -25,6 +25,7 @@ from stream_alert_cli.terraform._common import (
     InvalidClusterName,
     infinitedict
 )
+from stream_alert_cli.terraform.app_integrations import generate_app_integrations
 from stream_alert_cli.terraform.athena import generate_athena
 from stream_alert_cli.terraform.cloudtrail import generate_cloudtrail
 from stream_alert_cli.terraform.flow_logs import generate_flow_logs
@@ -97,11 +98,11 @@ def generate_main(**kwargs):
     config = kwargs['config']
     main_dict = infinitedict()
 
-    # Configure provider
-    main_dict['provider']['aws'] = {}
+    # Configure provider along with the minimum version
+    main_dict['provider']['aws'] = {'version': '~> 0.1.4'}
 
     # Configure Terraform version requirement
-    main_dict['terraform']['required_version'] = '> 0.9.4'
+    main_dict['terraform']['required_version'] = '~> 0.10.6'
 
     # Setup the Backend dependencing on the deployment phase.
     # When first setting up StreamAlert, the Terraform statefile
@@ -314,6 +315,8 @@ def generate_cluster(**kwargs):
         if not generate_s3_events(cluster_name, cluster_dict, config):
             return
 
+    generate_app_integrations(cluster_name, cluster_dict, config)
+
     return cluster_dict
 
 
@@ -327,7 +330,7 @@ def cleanup_old_tf_files():
             os.remove(os.path.join('terraform', terraform_file))
 
 
-def terraform_generate(**kwargs):
+def terraform_generate(config, init=False):
     """Generate all Terraform plans for the configured clusters.
 
     Keyword Args:
@@ -337,20 +340,17 @@ def terraform_generate(**kwargs):
     Returns:
         bool: Result of cluster generating
     """
-    config = kwargs.get('config')
-    init = kwargs.get('init', False)
-
     cleanup_old_tf_files()
 
     # Setup the main.tf.json file
     LOGGER_CLI.debug('Generating cluster file: main.tf.json')
-    main_json = json.dumps(
-        generate_main(init=init, config=config),
-        indent=2,
-        sort_keys=True
-    )
     with open('terraform/main.tf.json', 'w') as tf_file:
-        tf_file.write(main_json)
+        json.dump(
+            generate_main(init=init, config=config),
+            tf_file,
+            indent=2,
+            sort_keys=True
+        )
 
     # Return early during the init process, clusters are not needed yet
     if init:
@@ -369,27 +369,28 @@ def terraform_generate(**kwargs):
                 'An error was generated while creating the %s cluster', cluster)
             return False
 
-        cluster_json = json.dumps(
-            cluster_dict,
-            indent=2,
-            sort_keys=True
-        )
         with open('terraform/{}.tf.json'.format(cluster), 'w') as tf_file:
-            tf_file.write(cluster_json)
+            json.dump(
+                cluster_dict,
+                tf_file,
+                indent=2,
+                sort_keys=True
+            )
 
     # Setup Athena if it is enabled
     athena_config = config['lambda'].get('athena_partition_refresh_config')
     if athena_config:
         athena_file = 'terraform/athena.tf.json'
         if athena_config['enabled']:
-            athena_json = json.dumps(
-                generate_athena(config=config),
-                indent=2,
-                sort_keys=True
-            )
-            if athena_json:
+            athena_generated_config = generate_athena(config=config)
+            if athena_generated_config:
                 with open(athena_file, 'w') as tf_file:
-                    tf_file.write(athena_json)
+                    json.dump(
+                        athena_generated_config,
+                        tf_file,
+                        indent=2,
+                        sort_keys=True
+                    )
         # Remove Athena file if it's disabled
         else:
             if os.path.isfile(athena_file):

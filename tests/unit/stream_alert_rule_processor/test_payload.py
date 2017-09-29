@@ -189,10 +189,10 @@ def test_pre_parse_s3_debug(s3_mock, log_mock, _):
     _ = [_ for _ in s3_payload.pre_parse()]
 
     calls = [
-        call('Processed %s records out of an approximate total of %s '
+        call('Processed %s S3 records out of an approximate total of %s '
              '(average record size: %s bytes, total size: %s bytes)',
              100, 350, 1, 350),
-        call('Processed %s records out of an approximate total of %s '
+        call('Processed %s S3 records out of an approximate total of %s '
              '(average record size: %s bytes, total size: %s bytes)',
              200, 350, 1, 350)
     ]

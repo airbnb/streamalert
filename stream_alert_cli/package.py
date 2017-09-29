@@ -254,6 +254,15 @@ class AlertProcessorPackage(LambdaPackage):
     config_key = 'alert_processor_config'
 
 
+class AppIntegrationPackage(LambdaPackage):
+    """Deployment package class for App integration functions"""
+    package_folders = {'app_integrations'}
+    package_files = {'app_integrations/__init__.py'}
+    package_root_dir = '.'
+    package_name = 'stream_alert_app'
+    config_key = 'stream_alert_apps_config'
+
+
 class AthenaPackage(LambdaPackage):
     """Create the Athena Partition Refresh Lambda function package"""
     package_folders = {

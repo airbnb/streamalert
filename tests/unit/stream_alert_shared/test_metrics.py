@@ -31,14 +31,6 @@ class TestMetrics(object):
         # Force reload the metrics package to trigger env var loading
         reload(shared.metrics)
 
-    def teardown(self):
-        """Teardown after each method"""
-        if 'ENABLE_METRICS' in os.environ:
-            del os.environ['ENABLE_METRICS']
-
-        if 'LOGGER_LEVEL' in os.environ:
-            del os.environ['LOGGER_LEVEL']
-
     @patch('logging.Logger.error')
     def test_invalid_metric_function(self, log_mock):
         """Metrics - Invalid Function Name"""
@@ -69,49 +61,41 @@ class TestMetrics(object):
     @patch('logging.Logger.debug')
     def test_disabled_metrics(self, log_mock):
         """Metrics - Metrics Disabled"""
-        os.environ['ENABLE_METRICS'] = '0'
+        with patch.dict('os.environ', {'ENABLE_METRICS': '0'}):
+            # Force reload the metrics package to trigger constant loading
+            reload(shared.metrics)
 
-        # Force reload the metrics package to trigger constant loading
-        reload(shared.metrics)
-
-        log_mock.assert_called_with('Logging of metric data is currently disabled.')
+            log_mock.assert_called_with('Logging of metric data is currently disabled.')
 
     @patch('logging.Logger.error')
     def test_disabled_metrics_error(self, log_mock):
         """Metrics - Bad Boolean Value"""
-        os.environ['ENABLE_METRICS'] = 'bad'
+        with patch.dict('os.environ', {'ENABLE_METRICS': 'bad'}):
+            # Force reload the metrics package to trigger constant loading
+            reload(shared.metrics)
 
-        # Force reload the metrics package to trigger constant loading
-        reload(shared.metrics)
-
-        log_mock.assert_called_with('Invalid value for metric toggling, '
-                                    'expected 0 or 1: %s',
-                                    'invalid literal for int() with '
-                                    'base 10: \'bad\'')
+            log_mock.assert_called_with('Invalid value for metric toggling, '
+                                        'expected 0 or 1: %s',
+                                        'invalid literal for int() with '
+                                        'base 10: \'bad\'')
 
     @patch('logging.Logger.error')
     def test_init_logging_bad(self, log_mock):
         """Shared Init - Logging, Bad Level"""
-        level = 'IFNO'
+        with patch.dict('os.environ', {'LOGGER_LEVEL': 'IFNO'}):
+            # Force reload the shared package to trigger the init
+            reload(shared)
 
-        os.environ['LOGGER_LEVEL'] = level
+            message = str(call('Defaulting to INFO logging: %s',
+                               ValueError('Unknown level: \'IFNO\'',)))
 
-        # Force reload the shared package to trigger the init
-        reload(shared)
-
-        message = str(call('Defaulting to INFO logging: %s',
-                           ValueError('Unknown level: \'IFNO\'',)))
-
-        assert_equal(str(log_mock.call_args_list[0]), message)
+            assert_equal(str(log_mock.call_args_list[0]), message)
 
     @patch('logging.Logger.setLevel')
     def test_init_logging_int_level(self, log_mock):
         """Shared Init - Logging, Integer Level"""
-        level = '10'
+        with patch.dict('os.environ', {'LOGGER_LEVEL': '10'}):
+            # Force reload the shared package to trigger the init
+            reload(shared)
 
-        os.environ['LOGGER_LEVEL'] = level
-
-        # Force reload the shared package to trigger the init
-        reload(shared)
-
-        log_mock.assert_called_with(10)
+            log_mock.assert_called_with(10)

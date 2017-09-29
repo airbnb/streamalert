@@ -53,12 +53,7 @@ def write_outputs_config(data, conf_dir='conf'):
         conf_dir (str): Directory to write outputs config to
     """
     with open(os.path.join(conf_dir, OUTPUTS_CONFIG), 'w') as outputs:
-        outputs.write(json.dumps(
-            data,
-            indent=2,
-            separators=(',', ': '),
-            sort_keys=True
-        ))
+        json.dump(data, outputs, indent=2, separators=(',', ': '), sort_keys=True)
 
 
 def load_config(props, service):

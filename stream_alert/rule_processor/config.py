@@ -68,14 +68,16 @@ def _validate_config(config):
             raise ConfigError('The \'parser\' is missing for {}'.format(log))
 
     # Check if the defined sources are supported and report any invalid entries
-    supported_sources = {'kinesis', 's3', 'sns'}
+    supported_sources = {'kinesis', 's3', 'sns', 'stream_alert_app'}
     if not set(config['sources']).issubset(supported_sources):
         missing_sources = supported_sources - set(config['sources'])
         raise ConfigError(
-            'The \'sources.json\' file contains invalid source entries: %s ',
-            'The following sources are supported: %s',
-            ', '.join('\'{}\''.format(source) for source in missing_sources),
-            ', '.join('\'{}\''.format(source) for source in supported_sources))
+            'The \'sources.json\' file contains invalid source entries: {}. '
+            'The following sources are supported: {}'.format(
+                ', '.join('\'{}\''.format(source) for source in missing_sources),
+                ', '.join('\'{}\''.format(source) for source in supported_sources)
+            )
+        )
 
     # Iterate over each defined source and make sure the required subkeys exist
     for attrs in config['sources'].values():

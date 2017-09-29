@@ -15,10 +15,16 @@ limitations under the License.
 """
 import sys
 
+from app_integrations import __version__ as apps_version
 from stream_alert import __version__ as current_version
 from stream_alert_cli import helpers
 from stream_alert_cli.config import CLIConfig
-from stream_alert_cli.package import AlertProcessorPackage, AthenaPackage, RuleProcessorPackage
+from stream_alert_cli.package import (
+    AlertProcessorPackage,
+    AthenaPackage,
+    AppIntegrationPackage,
+    RuleProcessorPackage
+)
 from stream_alert_cli.terraform.generate import terraform_generate
 from stream_alert_cli.version import LambdaVersion
 
@@ -38,7 +44,7 @@ def deploy(options):
     """
     processor = options.processor
     # Terraform apply only to the module which contains our lambda functions
-    targets = []
+    targets = set()
     packages = []
 
     def _publish_version(packages):
@@ -81,35 +87,57 @@ def deploy(options):
         athena_package.create_and_upload()
         return athena_package
 
+    def _deploy_apps_function():
+        """Create app integration package and publish versions"""
+        app_integration_package = AppIntegrationPackage(
+            config=CONFIG,
+            version=apps_version
+        )
+        app_integration_package.create_and_upload()
+        return app_integration_package
+
     if 'all' in processor:
-        targets.extend(['module.stream_alert_{}'.format(x)
-                        for x in CONFIG.clusters()])
+        targets.update({'module.stream_alert_{}'.format(x)
+                        for x in CONFIG.clusters()})
+
+        targets.update({'module.app_{}_{}'.format(app_name, cluster)
+                        for cluster, info in CONFIG['clusters'].iteritems()
+                        for app_name in info['modules'].get('stream_alert_apps', {})})
 
         packages.append(_deploy_rule_processor())
         packages.append(_deploy_alert_processor())
+        packages.append(_deploy_apps_function())
 
         # Only include the Athena function if it exists and is enabled
         athena_config = CONFIG['lambda'].get('athena_partition_refresh_config')
         if athena_config and athena_config.get('enabled', False):
-            targets.append('module.stream_alert_athena')
+            targets.add('module.stream_alert_athena')
             packages.append(_deploy_athena_partition_refresh())
 
     else:
 
         if 'rule' in processor:
-            targets.extend(['module.stream_alert_{}'.format(x)
-                            for x in CONFIG.clusters()])
+            targets.update({'module.stream_alert_{}'.format(x)
+                            for x in CONFIG.clusters()})
 
             packages.append(_deploy_rule_processor())
 
         if 'alert' in processor:
-            targets.extend(['module.stream_alert_{}'.format(x)
-                            for x in CONFIG.clusters()])
+            targets.update({'module.stream_alert_{}'.format(x)
+                            for x in CONFIG.clusters()})
 
             packages.append(_deploy_alert_processor())
 
+        if 'apps' in processor:
+
+            targets.update({'module.app_{}_{}'.format(app_name, cluster)
+                            for cluster, info in CONFIG['clusters'].iteritems()
+                            for app_name in info['modules'].get('stream_alert_apps', {})})
+
+            packages.append(_deploy_apps_function())
+
         if 'athena' in processor:
-            targets.append('module.stream_alert_athena')
+            targets.add('module.stream_alert_athena')
 
             packages.append(_deploy_athena_partition_refresh())
 

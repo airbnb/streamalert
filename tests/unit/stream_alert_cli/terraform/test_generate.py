@@ -89,10 +89,12 @@ class TestTerraformGenerate(object):
 
         tf_main_expected = {
             'provider': {
-                'aws': {}
+                'aws': {
+                    'version': '~> 0.1.4'
+                }
             },
             'terraform': {
-                'required_version': '> 0.9.4',
+                'required_version': '~> 0.10.6',
                 'backend': {
                     's3': {
                         'bucket': 'unit-testing.streamalert.terraform.state',

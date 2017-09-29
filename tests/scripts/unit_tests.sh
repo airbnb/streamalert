@@ -1,6 +1,7 @@
 #! /bin/bash
 nosetests tests/unit \
 --with-coverage \
+--cover-package=app_integrations \
 --cover-package=stream_alert.alert_processor \
 --cover-package=stream_alert.athena_partition_refresh \
 --cover-package=stream_alert.rule_processor \
