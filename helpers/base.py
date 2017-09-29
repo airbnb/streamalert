@@ -20,6 +20,8 @@ import time
 from netaddr import IPAddress, IPNetwork
 from netaddr.core import AddrFormatError
 
+from stream_alert.rule_processor.threat_intel import StreamThreatIntel
+
 logging.basicConfig()
 LOGGER = logging.getLogger('StreamAlert')
 
@@ -110,3 +112,35 @@ def fetch_values_by_datatype(rec, datatype):
         results.append(result)
 
     return results
+
+def is_ioc(rec):
+    """Detect is any data in a record matching to known IOC"""
+    intel = StreamThreatIntel.get_intelligence()
+    datatypes_ioc_mapping = StreamThreatIntel.get_config()
+
+    if not (datatypes_ioc_mapping and rec.get('normalized_types')):
+        return False
+
+    for datatype in rec['normalized_types']:
+        if datatype not in datatypes_ioc_mapping:
+            continue
+        results = fetch_values_by_datatype(rec, datatype)
+        for result in results:
+            if (intel.get(datatypes_ioc_mapping[datatype])
+                    and result in intel[datatypes_ioc_mapping[datatype]]):
+                if 'streamalert:ioc' in rec:
+                    rec['streamalert:ioc'].append({
+                        'type': datatypes_ioc_mapping[datatype],
+                        'value': result
+                    })
+                else:
+                    rec.update({
+                        'streamalert:ioc': {
+                            'type': datatypes_ioc_mapping[datatype],
+                            'value': result
+                        }
+                    })
+    if 'streamalert:ioc' in rec:
+        return True
+
+    return False

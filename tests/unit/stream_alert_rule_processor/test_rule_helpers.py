@@ -15,9 +15,10 @@ limitations under the License.
 """
 import time
 
-from nose.tools import assert_equal
+from nose.tools import assert_equal, with_setup
 
 from helpers import base
+from stream_alert.rule_processor.threat_intel import StreamThreatIntel
 
 
 def test_in_set():
@@ -123,3 +124,84 @@ def test_fetch_values_by_datatype():
     assert_equal(len(base.fetch_values_by_datatype(rec, 'ipv4')), 2)
     assert_equal(len(base.fetch_values_by_datatype(rec, 'cmd')), 0)
     assert_equal(base.fetch_values_by_datatype(rec, 'username'), ['alice'])
+
+def setup():
+    """Setup before each method"""
+    test_config = {
+        'threat_intel': {
+            'enabled': True,
+            'mapping': {
+                'sourceAddress': 'ip',
+                'destinationDomain': 'domain',
+                'fileHash': 'md5'
+            }
+        }
+    }
+    StreamThreatIntel.load_intelligence(test_config, 'tests/unit/fixtures')
+
+def teardown():
+    """Clear class variable after each method"""
+    StreamThreatIntel.get_intelligence().clear()
+
+@with_setup(setup=setup, teardown=teardown)
+def test_detect_ioc_rule():
+    """Helpers - There is IOC detected in a record"""
+    rec = {
+        'account': 12345,
+        'region': '123456123456',
+        'detail': {
+            'eventSource': '...',
+            'userAgent': '...',
+            'sourceIPAddress': '90.163.54.11',
+            'recipientAccountId': '12345'
+        },
+        'detail-type': '...',
+        'source': '1.1.1.2',
+        'version': '1.05',
+        'normalized_types': {
+            'sourceAddress': [['detail', 'sourceIPAddress'], ['source']],
+            'username': [['detail', 'userIdentity', 'userName']]
+        },
+        'time': '...',
+        'id': '12345',
+        'resources': {
+            'test': '...'
+        }
+    }
+
+    ioc_result = base.is_ioc(rec)
+    assert_equal(ioc_result, True)
+    expected_ioc_info = {
+        'type': 'ip',
+        'value': '90.163.54.11'
+    }
+    assert_equal(rec['streamalert:ioc'], expected_ioc_info)
+
+@with_setup(setup=setup, teardown=teardown)
+def test_is_ioc_with_no_matching():
+    """Helpers - No known IOC detected in a record"""
+    rec = {
+        'account': 12345,
+        'region': '123456123456',
+        'detail': {
+            'eventSource': '...',
+            'userAgent': '...',
+            'sourceIPAddress': '1.1.1.2',
+            'recipientAccountId': '12345'
+        },
+        'detail-type': '...',
+        'source': '1.1.1.2',
+        'version': '1.05',
+        'normalized_types': {
+            'sourceAddress': [['detail', 'sourceIPAddress'], ['source']],
+            'username': [['detail', 'userIdentity', 'userName']]
+        },
+        'time': '...',
+        'id': '12345',
+        'resources': {
+            'test': '...'
+        }
+    }
+
+    ioc_result = base.is_ioc(rec)
+    assert_equal(ioc_result, False)

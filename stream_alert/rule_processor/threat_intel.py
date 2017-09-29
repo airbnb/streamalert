@@ -22,22 +22,11 @@ from stream_alert.rule_processor import LOGGER
 class StreamThreatIntel(object):
     """Load intelligence from csv.gz files into a dictionary."""
 
-    def __init__(self, intel_dir, delimiter=','):
-        """Initialize class instance variables
-        Args:
-            intel_dir (str): Location where stores compressed intelligence files
+    __intelligence = {}
+    __config = {}
 
-        Instance variables:
-            self._intel_dictionary (dict): A dictionary to store all intelligence
-                read from *.csv.gz files
-            self._intel_dir (str):  Absolute directory path that contains the
-                threat intelligence files
-        """
-        self._intel_dictionary = dict()
-        self._intel_dir = intel_dir
-        self._delimiter = delimiter
-
-    def read_compressed_files(self):
+    @classmethod
+    def read_compressed_files(cls, intel_dir, delimiter=','):
         """Read intelligence into memory
 
         Read all intelligence from csv.gz files located in threat_intel
@@ -65,25 +54,48 @@ class StreamThreatIntel(object):
                 }
             None: if the intelligence directory does not exist
         """
-        if not os.path.exists(self._intel_dir):
+        if not os.path.exists(intel_dir):
             return
 
-        gz_files = [os.path.join(self._intel_dir, gz_file) for gz_file
-                    in os.listdir(self._intel_dir)
+        gz_files = [os.path.join(intel_dir, gz_file) for gz_file
+                    in os.listdir(intel_dir)
                     if gz_file.endswith('.gz')]
 
         for gz_file in gz_files:
             with gzip.open(gz_file, 'r') as ioc_file:
-                csv_reader = csv.reader(ioc_file, delimiter=self._delimiter)
+                csv_reader = csv.reader(ioc_file, delimiter=delimiter)
                 ioc_type = os.path.basename(gz_file).split('.')[0]
-                if ioc_type not in self._intel_dictionary:
-                    self._intel_dictionary[ioc_type] = dict()
+                if ioc_type not in cls.__intelligence:
+                    cls.__intelligence[ioc_type] = dict()
                 for row in csv_reader:
                     if len(row) < 2:
                         LOGGER.debug('Warning, each row in CSV file should '
                                      'contain at least two fields. Bad row [%s]',
                                      row)
                         continue
-                    self._intel_dictionary[ioc_type][row[0]] = row[1:]
+                    cls.__intelligence[ioc_type][row[0]] = row[1:]
 
-        return self._intel_dictionary
+        return cls.__intelligence
+
+    @classmethod
+    def load_intelligence(cls, config, intel_dir='threat_intel'):
+        """Load intelligence from csv.gz files into a dictionary
+
+        Args:
+            intel_dir (str): Location where stores compressed intelligence
+        """
+        if cls.__intelligence:
+            return
+        if (config.get('threat_intel')
+                and config['threat_intel'].get('enabled')
+                and config['threat_intel'].get('mapping')):
+            cls.__intelligence = cls.read_compressed_files(intel_dir)
+            cls.__config = config['threat_intel'].get('mapping')
+
+    @classmethod
+    def get_intelligence(cls):
+        return cls.__intelligence
+
+    @classmethod
+    def get_config(cls):
+        return cls.__config
