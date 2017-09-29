@@ -275,7 +275,6 @@ class StreamAlert(object):
                          for record
                          in record_batch])
         except ClientError as firehose_err:
-            print firehose_err
             LOGGER.error(firehose_err)
             MetricLogger.log_metric(FUNCTION_NAME,
                                     MetricLogger.FIREHOSE_FAILED_RECORDS,
