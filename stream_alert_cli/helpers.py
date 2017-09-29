@@ -220,6 +220,10 @@ def format_lambda_test_record(test_record):
         template['Sns']['Message'] = data
         template['EventSubscriptionArn'] = 'arn:aws:sns:us-east-1:111222333:{}'.format(
             source)
+
+    elif service == 'stream_alert_app':
+        template['stream_alert_app'] = source
+        template['logs'] = [data]
     else:
         LOGGER_CLI.info('Invalid service %s', service)
 

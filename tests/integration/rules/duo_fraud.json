@@ -1,0 +1,66 @@
+{
+  "records": [
+    {
+      "data": {
+        "username": "user.name@email.com",
+        "access_device": {
+          "flash_version": "27.0.0.0",
+          "java_version": "uninstalled",
+          "os_version": "10.12.6",
+          "browser_version": "60.0.0000.80",
+          "trusted_endpoint_status": "not trusted",
+          "os": "Mac OS X",
+          "browser": "Chrome"
+        },
+        "timestamp": 1505316499,
+        "new_enrollment": false,
+        "ip": "12.123.123.12",
+        "integration": "Test Integration",
+        "reason": "",
+        "location": {
+          "city": "Place",
+          "state": "State",
+          "country": "US"
+        },
+        "factor": "Duo Push",
+        "device": "555-123-4567",
+        "result": "FRAUD"
+      },
+      "description": "Duo authentication log marked as fraud that will create an alert",
+      "service": "stream_alert_app",
+      "source": "prefix_cluster_duo_auth_sm-app-name_app",
+      "trigger": true
+    },
+    {
+      "data": {
+        "username": "user.name@email.com",
+        "access_device": {
+          "flash_version": "27.0.0.0",
+          "java_version": "uninstalled",
+          "os_version": "10.12.6",
+          "browser_version": "60.0.0000.80",
+          "trusted_endpoint_status": "not trusted",
+          "os": "Mac OS X",
+          "browser": "Chrome"
+        },
+        "timestamp": 1505316499,
+        "new_enrollment": false,
+        "ip": "12.123.123.12",
+        "integration": "Test Integration",
+        "reason": "",
+        "location": {
+          "city": "Place",
+          "state": "State",
+          "country": "US"
+        },
+        "factor": "Duo Push",
+        "device": "555-123-5678",
+        "result": "SUCCESS"
+      },
+      "description": "Duo authentication log marked as success that will not create an alert",
+      "service": "stream_alert_app",
+      "source": "prefix_cluster_duo_auth_sm-app-name_app",
+      "trigger": false
+    }
+  ]
+}
