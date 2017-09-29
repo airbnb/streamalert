@@ -320,14 +320,16 @@ def generate_cluster(**kwargs):
     return cluster_dict
 
 
-def cleanup_old_tf_files():
+def cleanup_old_tf_files(config):
     """Cleanup old .tf files, these are now .tf.json files per Hashicorp best practices"""
     for terraform_file in os.listdir('terraform'):
         if terraform_file == 'variables.tf':
             continue
 
         if fnmatch(terraform_file, '*.tf'):
-            os.remove(os.path.join('terraform', terraform_file))
+            # Allow to retain misc files in the terraform/ directory
+            if terraform_file.split('.')[0] in config.clusters() + ['athena', 'main']:
+                os.remove(os.path.join('terraform', terraform_file))
 
 
 def terraform_generate(config, init=False):
@@ -340,7 +342,7 @@ def terraform_generate(config, init=False):
     Returns:
         bool: Result of cluster generating
     """
-    cleanup_old_tf_files()
+    cleanup_old_tf_files(config)
 
     # Setup the main.tf.json file
     LOGGER_CLI.debug('Generating cluster file: main.tf.json')
