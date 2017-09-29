@@ -983,19 +983,21 @@
   },
   "osquery:differential": {
     "schema": {
-      "name": "string",
-      "hostIdentifier": "string",
-      "calendarTime": "string",
-      "unixTime": "string",
-      "epoch": "integer",
-      "columns": {},
       "action": "string",
+      "calendarTime": "string",
+      "columns": {},
+      "counter": "integer",
       "decorations": {},
-      "log_type": "string"
+      "epoch": "integer",
+      "hostIdentifier": "string",
+      "log_type": "string",
+      "name": "string",
+      "unixTime": "integer"
     },
     "parser": "json",
     "configuration": {
       "optional_top_level_keys": [
+        "counter",
         "decorations",
         "epoch",
         "log_type"
