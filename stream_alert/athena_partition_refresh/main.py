@@ -139,6 +139,7 @@ class StreamAlertAthenaClient(object):
             results_key_prefix (str): The S3 key prefix to store Athena results
         """
         self.config = config
+
         region = self.config['global']['account']['region']
         self.athena_client = boto3.client('athena', region_name=region)
 
@@ -311,12 +312,13 @@ class StreamAlertAthenaClient(object):
         """
         athena_config = self.config['lambda']['athena_partition_refresh_config']
         add_hive_partition_config = athena_config['refresh_type']['add_hive_partition']
-        partitions = {}
+        partitions = defaultdict(dict)
 
         LOGGER.info('Processing new Hive partitions...')
         for bucket, keys in s3_buckets_and_keys.iteritems():
             athena_table = add_hive_partition_config.get(bucket)
             if not athena_table:
+                # TODO(jacknagz): Add this as a metric
                 LOGGER.error('%s not found in \'add_hive_partition\' config. '
                              'Please add this bucket to enable additions '
                              'of Hive partitions.',
@@ -325,7 +327,7 @@ class StreamAlertAthenaClient(object):
 
             # Gather all of the partitions to add per bucket
             s3_key_regex = self.STREAMALERTS_REGEX if athena_table == 'alerts' \
-                                                   else self.FIREHOSE_REGEX
+                else self.FIREHOSE_REGEX
             # Iterate over each key
             for key in keys:
                 match = s3_key_regex.search(key)
@@ -338,7 +340,17 @@ class StreamAlertAthenaClient(object):
                 match_dict = match.groupdict()
                 # Get the path to the objects in S3
                 path = os.path.dirname(key)
+                # The config does not need to store all possible tables
+                # for enabled log types because this can be inferred from
+                # the incoming S3 bucket notification.  Only enabled
+                # log types will be sending data to Firehose.
+                # This logic extracts out the name of the table from the
+                # first element in the S3 path, as that's how log types
+                # are configured to send to Firehose.
+                athena_table = path.split('/')[0] if athena_table != 'alerts' \
+                    else athena_table
 
+                # Example:
                 # PARTITION (dt = '2017-01-01-01') LOCATION 's3://bucket/path/'
                 partition = '(dt = \'{year}-{month}-{day}-{hour}\')'.format(
                     year=match_dict['year'],
@@ -350,31 +362,35 @@ class StreamAlertAthenaClient(object):
                     path=path)
                 # By using the partition as the dict key, this ensures that
                 # Athena will not try to add the same partition twice.
-                partitions[partition] = location
+                # TODO(jacknagz): Write this dictionary to Dyanmodb
+                # to increase idempotence of this Lambda function
+                partitions[athena_table][partition] = location
 
         if not partitions:
             LOGGER.error('No partitons to add')
             return False
 
-        partition_statement = ' '.join(
-            ['PARTITION {0} LOCATION {1}'.format(
-                partition, location) for partition, location in partitions.iteritems()])
-        query = ('ALTER TABLE {athena_table} '
-                 'ADD IF NOT EXISTS {partition_statement};'.format(
-                     athena_table=athena_table,
-                     partition_statement=partition_statement))
+        for athena_table in partitions:
+            partition_statement = ' '.join(
+                ['PARTITION {0} LOCATION {1}'.format(
+                    partition, location) for partition, location
+                 in partitions[athena_table].iteritems()])
+            query = ('ALTER TABLE {athena_table} '
+                     'ADD IF NOT EXISTS {partition_statement};'.format(
+                         athena_table=athena_table,
+                         partition_statement=partition_statement))
 
-        query_success, _ = self.run_athena_query(
-            query=query,
-            database=self.DATABASE_STREAMALERT
-        )
+            query_success, _ = self.run_athena_query(
+                query=query,
+                database=self.DATABASE_STREAMALERT
+            )
 
-        if not query_success:
-            LOGGER.error('The add hive partition query has failed:\n%s', query)
-            return False
+            if not query_success:
+                LOGGER.error('The add hive partition query has failed:\n%s', query)
+                return False
 
-        LOGGER.info('Successfully added the following partitions:\n%s',
-                    '\n'.join(partitions))
+            LOGGER.info('Successfully added the following partitions:\n%s',
+                        json.dumps(partitions[athena_table], indent=4))
         return True
 
 

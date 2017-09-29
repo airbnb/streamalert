@@ -95,7 +95,7 @@ CONFIG_DATA = {
                 },
                 "add_hive_partition": {
                     "unit-testing.streamalerts": "alerts",
-                    "test-bucket-with-data": "data-type-1"
+                    "unit-testing.streamalert.data": "data"
                 }
             },
             'handler': 'main.handler',
@@ -431,12 +431,20 @@ class TestStreamAlertAthenaClient(object):
         result = self.client.add_hive_partition({
             'unit-testing.streamalerts': set([
                 'alerts/dt=2017-08-26-14/rule_name_alerts-1304134918401.json',
-                'alerts/dt=2017-08-27-14/rule_name_alerts-1304134918401.json',
+                'alerts/dt=2017-08-27-14/rule_name_alerts-1304134918401.json'
+            ]),
+            'unit-testing.streamalert.data': set([
+                'log_type_1/2017/08/26/14/test-data-11111-22222-33333.snappy',
+                'log_type_2/2017/08/26/14/test-data-11111-22222-33333.snappy',
+                'log_type_2/2017/08/26/15/test-data-11111-22222-33333.snappy',
+                'log_type_2/2017/08/26/16/test-data-11111-22222-33333.snappy',
+                'log_type_3/2017/08/26/14/test-data-11111-22222-33333.snappy',
+                'log_type_1/2017/08/26/11/test-data-11111-22222-33333.snappy'
             ]),
             'test-bucket-with-data': set([
                 '2017/08/26/14/rule_name_alerts-1304134918401.json',
                 '2017/08/28/14/rule_name_alerts-1304134918401.json',
-                '2017/07/30/14/rule_name_alerts-1304134918401.json',
+                '2017/07/30/14/rule_name_alerts-1304134918401.json'
             ])
         })
 
