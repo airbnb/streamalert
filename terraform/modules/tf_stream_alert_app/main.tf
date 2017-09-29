@@ -5,11 +5,11 @@ resource "aws_lambda_function" "stream_alert_app" {
   description   = "StreamAlert App for ${var.type}"
   runtime       = "python2.7"
   role          = "${aws_iam_role.stream_alert_app_role.arn}"
-  handler       = "${var.stream_alert_apps_config["handler"]}"
+  handler       = "${lookup(var.stream_alert_apps_config, "handler")}"
   memory_size   = "${var.app_memory}"
   timeout       = "${var.app_timeout}"
-  s3_bucket     = "${var.stream_alert_apps_config["source_bucket"]}"
-  s3_key        = "${var.stream_alert_apps_config["source_object_key"]}"
+  s3_bucket     = "${lookup(var.stream_alert_apps_config, "source_bucket")}"
+  s3_key        = "${lookup(var.stream_alert_apps_config, "source_object_key")}"
 
   environment {
     variables = {

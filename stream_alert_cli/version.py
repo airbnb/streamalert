@@ -107,6 +107,9 @@ class LambdaVersion(object):
         # Publish the function(s)
         # TODO: move the extra logic into the LambdaPackage subclasses instead of this
         if self.package.package_name == 'stream_alert_app':
+            if not 'stream_alert_apps' in self.config['clusters'][cluster]['modules']:
+                return True # nothing to publish for this cluster
+
             for app_name, app_info in self.config['clusters'][cluster]['modules'] \
                 ['stream_alert_apps'].iteritems():
                 # Name follows format: '<prefix>_<cluster>_<service>_<app_name>_app'

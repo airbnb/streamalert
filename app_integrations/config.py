@@ -154,7 +154,10 @@ class AppConfig(dict):
 
         # Add the auth config info to the 'auth' key since these key/values can vary
         # from service to service
-        base_config[cls.AUTH_CONFIG_SUFFIX] = params[param_names[cls.AUTH_CONFIG_SUFFIX]]
+        base_config[cls.AUTH_CONFIG_SUFFIX] = {
+            key: str(value) for key, value in
+            params[param_names[cls.AUTH_CONFIG_SUFFIX]].iteritems()
+        }
 
         return AppConfig(base_config)
 
