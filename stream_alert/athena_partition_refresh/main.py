@@ -347,8 +347,8 @@ class StreamAlertAthenaClient(object):
                 # This logic extracts out the name of the table from the
                 # first element in the S3 path, as that's how log types
                 # are configured to send to Firehose.
-                athena_table = path.split('/')[0] if athena_table != 'alerts' \
-                    else athena_table
+                if athena_table != 'alerts':
+                    athena_table = path.split('/')[0]
 
                 # Example:
                 # PARTITION (dt = '2017-01-01-01') LOCATION 's3://bucket/path/'
@@ -362,7 +362,7 @@ class StreamAlertAthenaClient(object):
                     path=path)
                 # By using the partition as the dict key, this ensures that
                 # Athena will not try to add the same partition twice.
-                # TODO(jacknagz): Write this dictionary to Dyanmodb
+                # TODO(jacknagz): Write this dictionary to SSM/DynamoDb
                 # to increase idempotence of this Lambda function
                 partitions[athena_table][partition] = location
 
@@ -390,7 +390,7 @@ class StreamAlertAthenaClient(object):
                 return False
 
             LOGGER.info('Successfully added the following partitions:\n%s',
-                        json.dumps(partitions[athena_table], indent=4))
+                        json.dumps({athena_table: partitions[athena_table]}, indent=4))
         return True
 
 

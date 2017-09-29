@@ -346,7 +346,7 @@ class TestStreamAlert(object):
         self.__sa_handler = StreamAlert(get_mock_context(), False)
         load_intelligence_mock.assert_called()
 
-    def test_firehosesanitize_keys(self):
+    def test_firehose_sanitize_keys(self):
         """StreamAlert Class - Firehose - Sanitize Keys"""
         # test_log_type_json_nested
         test_event = {
