@@ -39,7 +39,8 @@ def enabled_firehose_logs(config):
         list: All enabled logs sending to StreamAlert
     """
     config_logs = set(config['logs'])
-    disabled_logs = set(config['global']['infrastructure']['firehose'].get('disabled_logs', []))
+    disabled_logs = set(config['global']['infrastructure'].get(
+        'firehose', {}).get('disabled_logs', []))
     expanded_logs_with_subtypes = set()
     enabled_logs_from_sources = list()
 
