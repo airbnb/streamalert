@@ -53,6 +53,7 @@ CONFIG = CLIConfig()
 
 StatusMessageBase = namedtuple('StatusMessage', 'type, rule, message')
 
+
 class StatusMessage(StatusMessageBase):
     """Simple class to encapsulate a status message"""
     WARNING = -1
@@ -124,7 +125,12 @@ class RuleProcessorTester(object):
         # Report on the final test results
         self.report_output_summary()
 
-    def _validate_test_records(self, rule_name, test_record, formatted_record, print_header_line):
+    def _validate_test_records(
+            self,
+            rule_name,
+            test_record,
+            formatted_record,
+            print_header_line):
         """Function to validate test records and log any errors
 
         Args:
@@ -136,7 +142,8 @@ class RuleProcessorTester(object):
                 See test/integration/templates for example of how each service
                 formats records.
         """
-        service, entity = self.processor.classifier.extract_service_and_entity(formatted_record)
+        service, entity = self.processor.classifier.extract_service_and_entity(
+            formatted_record)
 
         if not self.processor.classifier.load_sources(service, entity):
             self.all_tests_passed = False
@@ -164,7 +171,12 @@ class RuleProcessorTester(object):
                 record.service(),
                 test_record['description']])
 
-    def _run_rule_tests(self, rule_name, test_record, formatted_record, print_header_line):
+    def _run_rule_tests(
+            self,
+            rule_name,
+            test_record,
+            formatted_record,
+            print_header_line):
         """Run tests on a test record for a given rule
 
         Args:
@@ -211,7 +223,11 @@ class RuleProcessorTester(object):
             self.analyze_record_delta(rule_name, test_record)
         elif not alerted_properly:
             message = 'Rule failure: {}'.format(test_record['description'])
-            self.status_messages.append(StatusMessage(StatusMessage.FAILURE, rule_name, message))
+            self.status_messages.append(
+                StatusMessage(
+                    StatusMessage.FAILURE,
+                    rule_name,
+                    message))
 
         # Return the alerts back to caller
         return alerts
@@ -303,7 +319,11 @@ class RuleProcessorTester(object):
             req_key_diff = required_keys.difference(record_keys)
             missing_keys = ','.join('\'{}\''.format(key) for key in req_key_diff)
             message = 'Missing required key(s) in log: {}'.format(missing_keys)
-            self.status_messages.append(StatusMessage(StatusMessage.FAILURE, rule_name, message))
+            self.status_messages.append(
+                StatusMessage(
+                    StatusMessage.FAILURE,
+                    rule_name,
+                    message))
             return False
 
         optional_keys = {'trigger_count', 'compress'}
@@ -568,7 +588,8 @@ class AlertProcessorTester(object):
             try:
                 service, descriptor = output.split(':')
             except ValueError:
-                LOGGER_CLI.error('Outputs should be declared in the format <SERVICE>:<DESCRIPTOR>')
+                LOGGER_CLI.error(
+                    'Outputs should be declared in the format <SERVICE>:<DESCRIPTOR>')
                 continue
 
             if service == 'aws-s3':
@@ -652,11 +673,11 @@ def check_untested_files():
     untested_rules = all_test_files.difference(set(StreamRules.get_rules()))
 
     for rule in untested_rules:
-        LOGGER_CLI.warn('%sNo rules configured for test file: \'%s.json\'. Please '
-                        'add a corresponding rule for this test file in \'rules/\' with '
-                        'the name \'%s.py\' to avoid seeing this warning and any associated '
-                        'errors above%s', COLOR_YELLOW,
-                        rule, rule, COLOR_RESET)
+        LOGGER_CLI.warn(
+            '%sNo rules configured for test file: \'%s.json\'. Please '
+            'add a corresponding rule for this test file in \'rules/\' with '
+            'the name \'%s.py\' to avoid seeing this warning and any associated '
+            'errors above%s', COLOR_YELLOW, rule, rule, COLOR_RESET)
 
 
 def stream_alert_test(options, config=None):

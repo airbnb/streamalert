@@ -173,10 +173,10 @@ def generate_main(**kwargs):
             'logs': enabled_firehose_logs(config),
             'buffer_size': config['global']['infrastructure']
                            ['firehose'].get('buffer_size', 5),
-            'buffer_interval': config['global']['infrastructure'] \
-                                     ['firehose'].get('buffer_interval', 300),
-            'compression_format': config['global']['infrastructure'] \
-                                        ['firehose'].get('compression_format', 'Snappy'),
+            'buffer_interval': config['global']['infrastructure']
+                               ['firehose'].get('buffer_interval', 300),
+            'compression_format': config['global']['infrastructure']
+                                  ['firehose'].get('compression_format', 'Snappy'),
             's3_logging_bucket': logging_bucket,
             's3_bucket_name': firehose_s3_bucket_name
         }
