@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from app_integrations.apps.app_base import get_app
+from stream_alert.rule_processor.handler import StreamAlert
 from stream_alert.alert_processor.outputs import get_output_dispatcher
 from stream_alert.athena_partition_refresh.main import StreamAlertAthenaClient
 from stream_alert_cli.apps import save_app_auth_info
@@ -21,9 +22,11 @@ from stream_alert_cli.config import CLIConfig
 from stream_alert_cli.helpers import user_input
 from stream_alert_cli.logger import LOGGER_CLI
 from stream_alert_cli.manage_lambda.handler import lambda_handler
+import stream_alert_cli.outputs as config_outputs
+from stream_alert_cli.terraform._common import enabled_firehose_logs
 from stream_alert_cli.terraform.handler import terraform_handler
 from stream_alert_cli.test import stream_alert_test
-import stream_alert_cli.outputs as config_outputs
+
 
 
 CONFIG = CLIConfig()
@@ -101,11 +104,64 @@ def athena_handler(options):
             LOGGER_CLI.info('results: %s', create_db_result['ResultSet']['Rows'])
 
     elif options.subcommand == 'create-table':
-        if options.type == 'alerts':
-            if not options.bucket:
-                LOGGER_CLI.error('Missing command line argument --bucket')
+        if not options.bucket:
+            LOGGER_CLI.error('Missing command line argument --bucket')
+            return
+
+        if not options.refresh_type:
+            LOGGER_CLI.error('Missing command line argument --refresh_type')
+            return
+
+        if options.type == 'data':
+            if not options.table_name:
+                LOGGER_CLI.error('Missing command line argument --table_name')
                 return
 
+            if options.table_name not in enabled_firehose_logs(CONFIG):
+                LOGGER_CLI.error('Table name %s missing from configuration or '
+                                 'is not enabled.',
+                                 options.table_name)
+                return
+
+            if athena_client.check_table_exists(options.table_name):
+                LOGGER_CLI.info('The \'%s\' table already exists.',
+                                options.table_name)
+                return
+
+            schema = CONFIG['logs'][options.table_name.replace('_', ':')]['schema']
+            sanitized_schema = StreamAlert.sanitize_keys(schema)
+
+            athena_schema = {}
+            schema_type_mapping = {
+                'string': 'string',
+                'integer': 'int',
+                'boolean': 'boolean',
+                'float': 'decimal',
+                dict: 'map<string, string>',
+                list: 'array<string>'
+            }
+
+            for key_name, key_type in sanitized_schema.iteritems():
+                # Transform the {} or [] into hashable types
+                if key_type == {}:
+                    key_type = dict
+                elif key_type == []:
+                    key_type = list
+
+                athena_schema[key_name] = schema_type_mapping[key_type]
+
+            schema_statement = ''.join(['{0} {1},'.format(key_name, key_type)
+                                        for key_name, key_type
+                                        in athena_schema.iteritems()])[:-1]
+            query = ('CREATE EXTERNAL TABLE {table_name} ({schema})'
+                     'PARTITIONED BY (dt string)'
+                     'ROW FORMAT SERDE \'org.openx.data.jsonserde.JsonSerDe\''
+                     'LOCATION \'s3://{bucket}/{table_name}/\''.format(
+                         table_name=options.table_name,
+                         schema=schema_statement,
+                         bucket=options.bucket))
+
+        elif options.type == 'alerts':
             if athena_client.check_table_exists(options.type):
                 LOGGER_CLI.info('The \'alerts\' table already exists.')
                 return
@@ -123,16 +179,16 @@ def athena_handler(options):
                      'ROW FORMAT SERDE \'org.openx.data.jsonserde.JsonSerDe\''
                      'LOCATION \'s3://{bucket}/alerts/\''.format(bucket=options.bucket))
 
+        if query:
             create_table_success, _ = athena_client.run_athena_query(
                 query=query,
-                database='streamalert'
-            )
+                database='streamalert')
 
             if create_table_success:
                 CONFIG['lambda']['athena_partition_refresh_config'] \
-                    ['refresh_type'][options.refresh_type][options.bucket] = 'alerts'
+                      ['refresh_type'][options.refresh_type][options.bucket] = options.type
                 CONFIG.write()
-                LOGGER_CLI.info('The alerts table was successfully created!')
+                LOGGER_CLI.info('The %s table was successfully created!', options.type)
 
 
 def configure_handler(options):
@@ -290,7 +346,7 @@ def _app_integration_handler(options):
         # Get the type for this app integration from the current
         # config so we can update it properly
         app_info['type'] = cluster_config['modules']['stream_alert_apps'] \
-                               [app_info['app_name']]['type']
+                                         [app_info['app_name']]['type']
 
         app_info['function_name'] = '_'.join([app_info.get(value)
                                               for value in func_parts] + ['app'])
@@ -318,6 +374,6 @@ def _app_integration_handler(options):
                 print '\n'.join(['\t\t{key}:{padding_char:<{padding_count}}{value}'.format(
                     key=key_name,
                     padding_char=' ',
-                    padding_count=30-(len(key_name)),
+                    padding_count=30 - (len(key_name)),
                     value=value
                 ) for key_name, value in details.iteritems()] + ['\n'])

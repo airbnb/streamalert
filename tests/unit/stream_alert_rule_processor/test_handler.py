@@ -346,7 +346,7 @@ class TestStreamAlert(object):
         self.__sa_handler = StreamAlert(get_mock_context(), False)
         load_intelligence_mock.assert_called()
 
-    def test_firehose_sanitize_keys(self):
+    def test_firehosesanitize_keys(self):
         """StreamAlert Class - Firehose - Sanitize Keys"""
         # test_log_type_json_nested
         test_event = {
@@ -375,7 +375,7 @@ class TestStreamAlert(object):
             }
         }
 
-        sanitized_event = self.__sa_handler._sanitize_keys(test_event)
+        sanitized_event = self.__sa_handler.sanitize_keys(test_event)
         assert_equal(sanitized_event, expected_sanitized_event)
 
     def test_firehose_segment_records_by_size(self):
