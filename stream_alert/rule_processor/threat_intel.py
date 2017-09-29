@@ -21,6 +21,7 @@ from stream_alert.rule_processor import LOGGER
 
 class StreamThreatIntel(object):
     """Load intelligence from csv.gz files into a dictionary."""
+    IOC_KEY = 'streamalert:ioc'
 
     __intelligence = {}
     __config = {}

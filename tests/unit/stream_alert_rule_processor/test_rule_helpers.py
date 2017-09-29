@@ -175,7 +175,7 @@ def test_detect_ioc_rule():
         'type': 'ip',
         'value': '90.163.54.11'
     }
-    assert_equal(rec['streamalert:ioc'], expected_ioc_info)
+    assert_equal(rec[StreamThreatIntel.IOC_KEY], expected_ioc_info)
 
 @with_setup(setup=setup, teardown=teardown)
 def test_is_ioc_with_no_matching():

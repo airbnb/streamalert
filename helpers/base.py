@@ -128,19 +128,19 @@ def is_ioc(rec):
         for result in results:
             if (intel.get(datatypes_ioc_mapping[datatype])
                     and result in intel[datatypes_ioc_mapping[datatype]]):
-                if 'streamalert:ioc' in rec:
-                    rec['streamalert:ioc'].append({
+                if StreamThreatIntel.IOC_KEY in rec:
+                    rec[StreamThreatIntel.IOC_KEY].append({
                         'type': datatypes_ioc_mapping[datatype],
                         'value': result
                     })
                 else:
                     rec.update({
-                        'streamalert:ioc': {
+                        StreamThreatIntel.IOC_KEY: {
                             'type': datatypes_ioc_mapping[datatype],
                             'value': result
                         }
                     })
-    if 'streamalert:ioc' in rec:
+    if StreamThreatIntel.IOC_KEY in rec:
         return True
 
     return False
