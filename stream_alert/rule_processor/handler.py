@@ -221,7 +221,8 @@ class StreamAlert(object):
                                         1)
                 batch.pop(index)
 
-    def _sanitize_keys(self, record):
+    @classmethod
+    def sanitize_keys(cls, record):
         """Remove special characters from parsed record keys
 
         This is required when searching in Athena.  Keys can only have
@@ -235,13 +236,13 @@ class StreamAlert(object):
         """
         new_record = {}
         for key, value in record.iteritems():
-            sanitized_key = re.sub(self.special_char_regex,
-                                   self.special_char_sub,
+            sanitized_key = re.sub(cls.special_char_regex,
+                                   cls.special_char_sub,
                                    key)
 
             # Handle nested objects
             if isinstance(value, dict):
-                new_record[sanitized_key] = self._sanitize_keys(record[key])
+                new_record[sanitized_key] = cls.sanitize_keys(record[key])
             else:
                 new_record[sanitized_key] = record[key]
 
@@ -266,7 +267,7 @@ class StreamAlert(object):
                 # The newline at the end is required by Firehose,
                 # otherwise all records will be on a single line and
                 # unsearchable in Athena.
-                Records=[{'Data': json.dumps(self._sanitize_keys(record),
+                Records=[{'Data': json.dumps(self.sanitize_keys(record),
                                              separators=(",", ":")) + '\n'}
                          for record
                          in record_batch])

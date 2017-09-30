@@ -1079,7 +1079,17 @@ Available Subcommands:
 Examples:
 
     manage.py athena create-db
-    manage.py athena create-table --type alerts --bucket s3.bucket.name
+
+    manage.py athena create-table \
+    --type alerts \
+    --bucket s3.bucket.name \
+    --refresh-type add_hive_partition
+
+    manage.py athena create-table \
+    --type data \
+    --bucket s3.bucket.name \
+    --refresh-type add_hive_partition \
+    --table_name my_athena_table
 
 """.format(version))
     athena_parser = subparsers.add_parser(
@@ -1101,12 +1111,17 @@ Examples:
     # TODO(jacknagz): Create a second choice for data tables, and accept a log name argument.
     athena_parser.add_argument(
         '--type',
-        choices=['alerts'],
+        choices=['alerts', 'data'],
         help=ARGPARSE_SUPPRESS
     )
 
     athena_parser.add_argument(
         '--bucket',
+        help=ARGPARSE_SUPPRESS
+    )
+
+    athena_parser.add_argument(
+        '--table_name',
         help=ARGPARSE_SUPPRESS
     )
 

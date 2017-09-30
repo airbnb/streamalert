@@ -375,7 +375,7 @@ class TestStreamAlert(object):
             }
         }
 
-        sanitized_event = self.__sa_handler._sanitize_keys(test_event)
+        sanitized_event = self.__sa_handler.sanitize_keys(test_event)
         assert_equal(sanitized_event, expected_sanitized_event)
 
     def test_firehose_segment_records_by_size(self):
