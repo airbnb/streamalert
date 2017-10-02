@@ -2,7 +2,8 @@
   "kinesis": {
     "prefix_cluster1_stream_alert_kinesis": {
       "logs": [
-        "cloudwatch"
+        "cloudwatch",
+        "ghe"
       ]
     }
   },
