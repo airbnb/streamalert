@@ -20,8 +20,6 @@ import hmac
 import re
 import urllib
 
-import requests
-
 from app_integrations import LOGGER
 from app_integrations.apps.app_base import app, AppIntegration
 
@@ -116,13 +114,13 @@ class DuoApp(AppIntegration):
         if not headers:
             return False
 
-        # Perform the request and get the list of logs
-        response = requests.get(full_url, headers=headers, params=params)
-
-        if not self._check_http_response(response):
+        # Make the request to the api, resulting in a bool or dict
+        response = self._make_request(full_url, headers=headers, params=params)
+        if not response:
             return False
 
-        logs = response.json()['response']
+        # Duo stores the list of logs in the 'response' key of the response
+        logs = response['response']
 
         # Get the timestamp from the latest event. Duo produces these sequentially
         # so we can just extract the timestamp from the last item in the list

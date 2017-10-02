@@ -184,7 +184,7 @@ class TestAppIntegration(object):
             subclass_gather_mock.return_value = []
             self._app._gather()
             log_mock.assert_called_with('Gather process for service \'%s\' was not able '
-                                        'to poll any logs', 'type')
+                                        'to poll any logs on poll #%d', 'type', 1)
 
     @patch('app_integrations.apps.app_base.AppIntegration._finalize')
     @patch('app_integrations.apps.app_base.AppIntegration._sleep_seconds', Mock(return_value=1))
@@ -212,3 +212,18 @@ class TestAppIntegration(object):
         self._app._config['current_state'] = 'running'
         self._app.gather()
         finalize_mock.assert_not_called()
+
+    @patch('requests.get')
+    def test_make_request_bad_response(self, requests_mock):
+        """App Integration - Make Request, Bad Response"""
+        requests_mock.return_value = Mock(
+            status_code=404,
+            json=Mock(side_effect=[{'message': 'something went wrong'}])
+        )
+
+        assert_false(self._app._make_request('hostname', None, None))
+
+        # The .json should be called on the response once, to get the error message
+        # If it was called twice, it means `logs = response.json()['response']`
+        # is being called and should not be
+        assert_equal(requests_mock.return_value.json.call_count, 1)
