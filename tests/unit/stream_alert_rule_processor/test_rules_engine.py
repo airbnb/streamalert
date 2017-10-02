@@ -615,14 +615,18 @@ class TestStreamRules(object):
                 'awsRegion': 'region_name',
                 'source': '1.1.1.2'
             },
+            'columns': {
+                'cmdline': 'hostname'
+            },
             'sourceIPAddress': '1.1.1.2'
         }
         normalized_types = {
             'account': ['account'],
             'region': ['region', 'awsRegion'],
-            'ipv4': ['destination', 'source', 'sourceIPAddress']
+            'ipv4': ['destination', 'source', 'sourceIPAddress'],
+            'command': ['cmdline']
         }
-        datatypes = ['account', 'ipv4', 'region']
+        datatypes = ['account', 'ipv4', 'region', 'command']
         results = StreamRules.match_types_helper(
             record,
             normalized_types,
@@ -631,7 +635,8 @@ class TestStreamRules(object):
         expected_results = {
             'account': [['account']],
             'ipv4': [['sourceIPAddress'], ['detail', 'source']],
-            'region': [['region'], ['detail', 'awsRegion']]
+            'region': [['region'], ['detail', 'awsRegion']],
+            'command': [['columns', 'cmdline']]
         }
         assert_equal(results, expected_results)
 
