@@ -274,6 +274,7 @@ class AppIntegration(object):
             return
 
         while self._gather() + self._sleep_seconds() < self._config.remaining_ms() / 1000.0:
+            LOGGER.debug('Lambda remaining seconds: %.2f', self._config.remaining_ms() / 1000.0)
             if not self._more_to_poll:
                 break
 

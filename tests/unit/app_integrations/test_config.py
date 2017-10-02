@@ -15,7 +15,7 @@ limitations under the License.
 """
 # pylint: disable=no-self-use,protected-access
 from mock import patch
-from nose.tools import assert_equal, assert_items_equal, raises
+from nose.tools import assert_equal, assert_false, assert_items_equal, raises
 
 from app_integrations.config import AppConfig
 from app_integrations.exceptions import AppIntegrationConfigError
@@ -121,3 +121,19 @@ class TestAppIntegrationConfig(object):
         """AppIntegrationConfig - Mark Failure"""
         self._config.mark_failure()
         assert_equal(self._config['current_state'], 'failed')
+
+    def test_is_failing(self):
+        """AppIntegrationConfig - Check If Failing"""
+        assert_false(self._config.is_failing)
+
+    def test_scrub_auth_info(self):
+        """AppIntegrationConfig - Scrub Auth Info"""
+        auth_key = '{}_auth'.format(FUNCTION_NAME)
+        param_dict = {auth_key: self._config['auth']}
+        scrubbed_config = self._config._scrub_auth_info(param_dict, auth_key)
+        assert_equal(scrubbed_config[auth_key]['api_hostname'],
+                     '*' * len(self._config['auth']['api_hostname']))
+        assert_equal(scrubbed_config[auth_key]['integration_key'],
+                     '*' * len(self._config['auth']['integration_key']))
+        assert_equal(scrubbed_config[auth_key]['secret_key'],
+                     '*' * len(self._config['auth']['secret_key']))
