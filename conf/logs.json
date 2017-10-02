@@ -1034,13 +1034,38 @@
       "action": "string",
       "decorations": {},
       "log_type": "string",
-      "epoch": "integer"
+      "epoch": "integer",
+      "counter": "integer"
     },
     "parser": "json",
     "configuration": {
       "optional_top_level_keys": [
         "decorations",
-        "epoch"
+        "epoch",
+        "counter"
+      ]
+    }
+  },
+  "osquery:batch": {
+    "schema": {
+      "diffResults" : {
+        "removed": [],
+        "added": []
+      },
+      "name": "string",
+      "hostIdentifier": "string",
+      "calendarTime": "string",
+      "unixTime": "string",
+      "decorations": {},
+      "epoch": "integer",
+      "counter": "integer"
+    },
+    "parser": "json",
+    "configuration": {
+      "optional_top_level_keys": [
+        "decorations",
+        "epoch",
+        "counter"
       ]
     }
   },
