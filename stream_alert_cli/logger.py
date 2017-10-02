@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from fnmatch import fnmatch
 import logging
 import logging.handlers
 
@@ -29,13 +30,17 @@ class SuppressNoise(logging.Filter):
     """
 
     def filter(self, record):
-        suppress_starts_with = (
-            'Starting download from S3',
-            'Completed download in'
+        suppressed_messages = (
+            'Starting download from S3*',
+            'Completed download in*',
+            '*triggered an alert on log type*',
+            'Successfully sent * messages to Firehose*'
         )
+
+        message = record.getMessage()
+
         return (
-            not record.getMessage().startswith(suppress_starts_with) and
-            'triggered an alert on log type' not in record.getMessage()
+            not any(fnmatch(message, suppression) for suppression in suppressed_messages)
         )
 
 
