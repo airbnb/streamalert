@@ -1,9 +1,9 @@
 {
-  "aws-s3": {
-    "sample-bucket": "sample.bucket.name"
-  },
   "aws-lambda": {
     "sample-lambda": "function-name:qualifier"
+  },
+  "aws-s3": {
+    "sample-bucket": "sample.bucket.name"
   },
   "pagerduty": [
     "sample-integration"

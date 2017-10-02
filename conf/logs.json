@@ -1048,7 +1048,7 @@
   },
   "osquery:batch": {
     "schema": {
-      "diffResults" : {
+      "diffResults": {
         "removed": [],
         "added": []
       },
