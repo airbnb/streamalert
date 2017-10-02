@@ -210,5 +210,13 @@
       "srcuser",
       "dstuser"
     ]
+  },
+  "duo": {
+    "sourceAddress": [
+      "ip"
+    ],
+    "userName": [
+      "username"
+    ]
   }
 }
