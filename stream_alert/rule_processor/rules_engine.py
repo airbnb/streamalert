@@ -167,8 +167,8 @@ class StreamRules(object):
             datatypes (list): defined in rule options, normalized_types users
                 interested in.
 
-        Returns:
-            (dict): A dict of normalized_types with original key names
+        Sets:
+            It sets the dict of normalized_types with original key names
 
         Example 1:
             datatypes=['defined_type1', 'defined_type2', 'not_defined_type']
@@ -183,11 +183,13 @@ class StreamRules(object):
                     "defined_type2": [[original_key2, sub_key2], [original_key3]]
                 }
         """
-        results = dict()
-        if not (datatypes and cls.validate_datatypes(normalized_types, datatypes)):
-            return results
+        if 'normalized_types' not in record:
+            record['normalized_types'] = dict()
 
-        return cls.match_types_helper(record, normalized_types, datatypes)
+        if not (datatypes and cls.validate_datatypes(normalized_types, datatypes)):
+            return
+
+        record['normalized_types'] = cls.match_types_helper(record, normalized_types, datatypes)
 
     @classmethod
     def match_types_helper(cls, record, normalized_types, datatypes):
@@ -381,10 +383,7 @@ class StreamRules(object):
                 if not matcher_result:
                     continue
                 if rule.datatypes:
-                    types_result = cls.match_types(record,
-                                                   payload.normalized_types,
-                                                   rule.datatypes)
-                    record['normalized_types'] = types_result
+                    cls.match_types(record, payload.normalized_types, rule.datatypes)
 
                 # rule analysis
                 rule_result = cls.process_rule(record, rule)
