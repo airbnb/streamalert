@@ -983,9 +983,11 @@
   },
   "osquery:differential": {
     "schema": {
-      "action": "string",
       "calendarTime": "string",
-      "columns": {},
+      "diffResults": {
+        "removed": [],
+        "added": []
+      },
       "counter": "integer",
       "decorations": {},
       "epoch": "integer",
