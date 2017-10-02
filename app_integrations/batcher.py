@@ -55,7 +55,9 @@ class Batcher(object):
 
         # Fall back on segmenting the list of logs into multiple requests
         # if they could not be sent at once
-        return self._segment_and_send(source_function, logs)
+        self._segment_and_send(source_function, logs)
+
+        LOGGER.info('Finished batch send of %d logs to the rule processor', len(logs))
 
     def _segment_and_send(self, source_function, logs):
         """Protected method for segmenting a list of logs into smaller lists
