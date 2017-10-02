@@ -133,6 +133,8 @@ class DuoApp(AppIntegration):
         # Setting _more_to_poll to true here will allow the caller to try to poll again
         self._more_to_poll = len(logs) >= self._MAX_RESPONSE_LOGS
 
+        LOGGER.debug('More logs to poll for \'%s\': %s', self.type(), self._more_to_poll)
+
         # Return the list of logs to the caller so they can be send to the batcher
         return logs
 

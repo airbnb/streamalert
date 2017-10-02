@@ -130,7 +130,8 @@ class AppConfig(dict):
 
         # Get the loaded parameters and a list of any invalid ones from parameter store
         params, invalid_params = AppConfig._get_parameters(param_names.values())
-        LOGGER.debug('Retrieved parameters from parameter store: %s', params)
+        LOGGER.debug('Retrieved parameters from parameter store: %s',
+                     cls._scrub_auth_info(params, param_names[cls.AUTH_CONFIG_SUFFIX]))
         LOGGER.debug('Invalid parameters could not be retrieved from parameter store: %s',
                      invalid_params)
 
@@ -162,9 +163,32 @@ class AppConfig(dict):
         return AppConfig(base_config)
 
     @staticmethod
+    def _scrub_auth_info(param_info, auth_param_name):
+        """Scrub sensitive authentication info from a copy of the retrieved parameters.
+
+        By scrubbing/masking the authentication info, it allows us to safely print the info
+        to stdout (logger) without revealing secrets needed for authentication.
+
+        Args:
+            param_info (dict): All of the parameter information pulled from Parameter Store
+            auth_param_name (str): The key for the auth config info within the param_info
+
+        Returns:
+            dict: A copy of the passed param_info dictionary with the authentication
+                information scrubbed with an asterisk for each character
+        """
+        if not auth_param_name in param_info:
+            return param_info
+
+        info = param_info.copy()
+        info[auth_param_name] = {key: '*' * len(str(value))
+                                 for key, value in info[auth_param_name].iteritems()}
+
+        return info
+
+    @staticmethod
     def _get_parameters(names):
-        """Simple helper function to house the boto3 ssm client get_parameters
-        operations
+        """Simple helper function to house the boto3 ssm client get_parameters operations
 
         Args:
             names (list): A list of parameter names to retrieve from the aws ssm
