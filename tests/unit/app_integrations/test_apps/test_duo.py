@@ -92,6 +92,21 @@ class TestDuoApp(object):
         requests_mock.assert_not_called()
 
     @patch('requests.get')
+    def test_get_duo_logs_bad_response(self, requests_mock):
+        """DuoApp - Get Duo Logs, Bad Response"""
+        requests_mock.return_value = Mock(
+            status_code=404,
+            json=Mock(side_effect=[{'message': 'something went wrong'}])
+        )
+
+        assert_false(self._app._get_duo_logs('hostname', 'full_url'))
+
+        # The .json should be called on the response once, to get the error message
+        # If it was called twice, it means `logs = response.json()['response']`
+        # is being called and should not be
+        assert_equal(requests_mock.return_value.json.call_count, 1)
+
+    @patch('requests.get')
     def test_gather_logs(self, requests_mock):
         """DuoApp - Gather Logs Entry Point"""
         log_count = 3
