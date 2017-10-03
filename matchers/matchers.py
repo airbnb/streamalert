@@ -18,6 +18,5 @@ from stream_alert.rule_processor.rules_engine import StreamRules
 matcher = StreamRules.matcher()
 
 @matcher
-def production_env(rec):
-    """Basic matcher for checking environments based on a key within a record."""
-    return rec['env'] == 'production'
+def github_audit(rec):
+    return rec['program'] == 'github_audit'

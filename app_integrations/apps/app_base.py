@@ -18,6 +18,8 @@ from decimal import Decimal
 import time
 from timeit import timeit
 
+import requests
+
 from app_integrations import LOGGER
 from app_integrations.batcher import Batcher
 from app_integrations.exceptions import AppIntegrationException, AppIntegrationConfigError
@@ -202,6 +204,24 @@ class AppIntegration(object):
 
         return success
 
+    def _make_request(self, full_url, headers, params):
+        """Method for returning the json loaded response for this request
+
+        Returns:
+            bool or dict: False if the was an error performing the request,
+                or a dictionary loaded from the json response
+        """
+        LOGGER.debug('Making request for service \'%s\' on poll #%d',
+                     self.type(), self._poll_count)
+
+        # Perform the request and return the response as a dict
+        response = requests.get(full_url, headers=headers, params=params)
+
+        if not self._check_http_response(response):
+            return False
+
+        return response.json()
+
     def _validate_auth(self):
         """Method for validating the authentication dictionary retrieved from
         AWS Parameter Store
@@ -233,13 +253,16 @@ class AppIntegration(object):
         self._sleep()
         def do_gather():
             """Perform the gather using this scoped method so we can time it"""
+            # Increment the poll count
+            self._poll_count += 1
+
             logs = self._gather_logs()
 
             # Make sure there are logs, this can be False if there was an issue polling
             # of if there are no new logs to be polled
             if not logs:
-                LOGGER.error('Gather process for service \'%s\' was not able to poll any logs',
-                             self.type())
+                LOGGER.error('Gather process for service \'%s\' was not able to poll any logs '
+                             'on poll #%d', self.type(), self._poll_count)
                 return
 
             # Increment the count of logs gathered
@@ -253,8 +276,6 @@ class AppIntegration(object):
 
             # Save the config's last timestamp after each function run
             self._config.last_timestamp = self._last_timestamp
-
-            self._poll_count += 1
 
         # Use timeit to track how long one poll takes, and cast to a decimal.
         # Use decimal since these floating point values can be very small and the
