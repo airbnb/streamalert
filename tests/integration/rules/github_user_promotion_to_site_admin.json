@@ -1,0 +1,43 @@
+{
+  "records": [
+    {
+      "data": {
+        "message": "<190>May 22 12:05:54 foobar github_audit: {\"actor_ip\":\"1.1.1.1\",\"from\":\"foobar/users#set_site_admin\",\"actor\":\"bob\",\"actor_id\":123,\"created_at\":1495479954312,\"org_id\":[1,2013],\"user\":\"sally\",\"user_id\":1234,\"action\":\"user.promote\",\"data\":{\"current_tenant_id\":1,\"tenant_fail_safe\":false,\"dbconn\":\"foo@bar/github_enterprise\",\"newsies_dbconn\":\"foo@bar/github_enterprise\",\"method\":\"POST\",\"request_id\":\"00000000-0000-0000-0000-000000000000\",\"server_id\":\"00000000-0000-0000-0000-000000000000\",\"url\":\"https://git.server.com/foobar/users/foobar/set_site_admin\",\"actor_session\":123,\"areas_of_responsibility\":[\"foo\",\"bar\",\"baz\"],\"actor_location\":{\"country_code\":\"US\",\"country_name\":\"United States\",\"location\":{\"lat\":123.0,\"lon\":-123.0}},\"reason\":\"testing\",\"_document_id\":\"0000000000000000000000\"}}",
+        "@version": "1",
+        "@timestamp": "...",
+        "host": "10.1.1.1",
+        "port": 123,
+        "tags": [
+        ],
+        "received_at": "...",
+        "timestamp": "...",
+        "logsource": "...",
+        "program": "github_audit"
+      },
+      "description": "A GHE user promoted to site admin should trigger an alert",
+      "trigger": true,
+      "source": "prefix_cluster1_stream_alert_kinesis",
+      "service": "kinesis"
+    },
+    {
+      "data": {
+        "message": "<22>May 22 14:10:28 random",
+        "@version": "1",
+        "@timestamp": "...",
+        "host": "10.1.1.1",
+        "port": 123,
+        "tags": [
+        ],
+        "received_at": "...",
+        "timestamp": "...",
+        "logsource": "...",
+        "program": "github_audit",
+        "pid": "1234"
+      },
+      "description": "An unrelated GHE log should not trigger an alert",
+      "trigger": false,
+      "source": "prefix_cluster1_stream_alert_kinesis",
+      "service": "kinesis"
+    }
+  ]
+}
