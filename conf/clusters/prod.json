@@ -34,6 +34,16 @@
         "memory": 128,
         "timeout": 10
       }
+    },
+    "stream_alert_apps": {
+      "duo_prod_collector": {
+        "current_version": "$LATEST",
+        "interval": "rate(2 hours)",
+        "log_level": "info",
+        "memory": 128,
+        "timeout": 80,
+        "type": "duo_auth"
+      }
     }
   },
   "outputs": {

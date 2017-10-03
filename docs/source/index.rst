@@ -114,3 +114,11 @@ Table of Contents
   athena-deploy
   athena-user-guide
   firehose
+
+.. toctree::
+  :maxdepth: 2
+  :caption: App Integrations
+
+  app-configuration
+  app-auth-update
+  app-implementing-new
