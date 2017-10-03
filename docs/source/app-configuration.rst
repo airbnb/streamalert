@@ -69,6 +69,20 @@ The StreamAlert CLI is used to add a new App configuration.
 .. note:: Duo Security's Admin API is limited to two (2) requests per-minute. Therefore, setting the ``--timeout`` flag to any value between 10 and 60 will be of no additional value. A recommended timeout of 80 seconds will guarantee four (4) requests happen per-execution.
 
 
+
+=========================  ===========
+Flag                       Description
+-------------------------  -----------
+``--type``                 Type of app integration function being configured. Current choices are: `duo_auth`, `duo_admin`
+``--cluster``              Applicable cluster this function should be configured against.
+``--name``                 Unique name to be assigned to this app integration function. This is useful when configuring multiple accounts per service.
+``--interval``             The interval, defined using a 'rate' expression, at which this app integration function should execute. See AWS Schedule `Rate Expressions <http://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html#RateExpressions>`_.
+``--timeout``              The AWS Lambda function timeout value, in seconds. This should be an integer between 10 and 300.
+``--memory``               The AWS Lambda function max memory value, in megabytes. This should be an integer between 128 and 1536.
+=========================  ===========
+
+
+
 2. Enter the required authentication information
 ````````````````````````````````````````````````
 
