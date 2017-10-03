@@ -74,7 +74,7 @@ class DuoApp(AppIntegration):
         }
 
     def _gather_logs(self):
-        """Gather the authentication log events."""
+        """Gather the Duo log events."""
         hostname = self._config['auth']['api_hostname']
         full_url = 'https://{hostname}{endpoint}'.format(
             hostname=hostname,
@@ -164,7 +164,7 @@ class DuoApp(AppIntegration):
         every 1 minute, so this should sleep every 2 polls.
 
         Returns:
-            int: Number of seconds that this function shoud sleep for between requests
+            int: Number of seconds that this function should sleep for between requests
         """
         return abs((self._poll_count % 2) - 1) * 60
 
