@@ -18,6 +18,7 @@ from logging import DEBUG as LOG_LEVEL_DEBUG
 import json
 import re
 
+import backoff
 import boto3
 from botocore.exceptions import ClientError
 
@@ -28,8 +29,15 @@ from stream_alert.rule_processor.payload import load_stream_payload
 from stream_alert.rule_processor.rules_engine import StreamRules
 from stream_alert.rule_processor.threat_intel import StreamThreatIntel
 from stream_alert.rule_processor.sink import StreamSink
+from stream_alert.shared.backoff_handlers import (
+    backoff_handler,
+    success_handler,
+    giveup_handler
+)
 from stream_alert.shared.metrics import MetricLogger
 
+# For Firehose PutRecordBatch backoff
+MAX_BACKOFF_ATTEMPTS = 5
 # Firehose Limits: http://bit.ly/2fw5UY2
 MAX_BATCH_COUNT = 500
 MAX_BATCH_SIZE = 4000 * 1000
@@ -255,14 +263,22 @@ class StreamAlert(object):
             stream_name (str): The name of the Delivery Stream to send to
             record_batch (list): The records to send
         """
-        record_batch_size = len(record_batch)
         resp = {}
+        record_batch_size = len(record_batch)
 
-        try:
+        @backoff.on_exception(backoff.fibo,
+                              ClientError,
+                              max_tries=MAX_BACKOFF_ATTEMPTS,
+                              jitter=backoff.full_jitter,
+                              on_backoff=backoff_handler,
+                              on_success=success_handler,
+                              on_giveup=giveup_handler)
+        def firehose_request_wrapper():
+            """Firehose request wrapper to use with backoff"""
             LOGGER.debug('Sending %d records to Firehose:%s',
                          record_batch_size,
                          stream_name)
-            resp = self.firehose_client.put_record_batch(
+            return self.firehose_client.put_record_batch(
                 DeliveryStreamName=stream_name,
                 # The newline at the end is required by Firehose,
                 # otherwise all records will be on a single line and
@@ -271,6 +287,11 @@ class StreamAlert(object):
                                              separators=(",", ":")) + '\n'}
                          for record
                          in record_batch])
+
+        # The try/except here is to catch the raised error at the
+        # end of the backoff.
+        try:
+            resp = firehose_request_wrapper()
         except ClientError as firehose_err:
             LOGGER.error(firehose_err)
             MetricLogger.log_metric(FUNCTION_NAME,

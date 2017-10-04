@@ -12,6 +12,7 @@
     "source_current_hash": "<auto_generated>",
     "source_object_key": "<auto_generated>",
     "third_party_libraries": [
+      "backoff",
       "jsonpath_rw",
       "netaddr"
     ]
