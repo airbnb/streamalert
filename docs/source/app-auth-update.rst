@@ -10,13 +10,13 @@ to aid in this process, the CLI also give you the ability to list currently conf
 Listing Apps
 ------------
 
-To list currently configured StreamAlert Apps (grouped by cluster), use the CLI command:
+To list currently configured Apps (grouped by cluster), use the CLI command:
 
 .. code-block:: bash
 
   $ python manage.py app list
 
-This list will be empty for each cluster if no apps are configured, or will appear similar to the following::
+Example output::
 
   Cluster: prod
 
@@ -27,6 +27,9 @@ This list will be empty for each cluster if no apps are configured, or will appe
       memory:                        128
       current_version:               $LATEST
       type:                          duo_auth
+
+
+.. note:: The output will show `No Apps configured` if you haven't configured any Apps.
 
 
 Updating App Credentials

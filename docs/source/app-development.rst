@@ -1,12 +1,12 @@
-Creating a New App
-==================
+Developing a New App
+====================
 
 Overview
 --------
 
-A StreamAlert App can be created to collect logs from virtually any RESTful API that supports HTTP GET requests.
+An App can be created to collect logs from virtually any RESTful API that supports HTTP GET requests.
 
-Implementing an App for a currently unsupported service is as easy as:
+Developing an App for a currently unsupported service is as easy as:
 
 1. Add a new file in ``app_integrations/apps/`` to correspond to the new service (ie: ``box.py``).
 2. Create a subclass of the ``AppIntegration`` class found in ``app_integrations/apps/app_base.py``.

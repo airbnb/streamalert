@@ -7,14 +7,14 @@ Overview
 For StreamAlert and other related platforms, log forwarding is usually left as an exercise to the reader. This work is non-trivial
 and often requires new infrastructure and code. We wanted to make this easier for everyone and have achieved this through StreamAlert Apps.
 
-StreamAlert Apps allow you to collect logs from popular services and applications in minutes. You simply provide the application's
+Apps allow you to collect logs from popular services and applications in minutes. You simply provide the application's
 credentials and StreamAlert will deploy an individual serverless application that will fetch and forward logs to StreamAlert for analysis and alerting.
 
 
 Concepts
 --------
 
-StreamAlert Apps are made possible through the use of AWS technologies:
+Apps are made possible through the use of AWS technologies:
 
 * `AWS EC2 Simple System Manager's Parameter Store <https://aws.amazon.com/ec2/systems-manager/parameter-store/>`_
 * `AWS Lambda Invocations via Scheduled Events <http://docs.aws.amazon.com/lambda/latest/dg/with-scheduled-events.html>`_
@@ -34,25 +34,25 @@ Supported Services
 Getting Started
 ---------------
 
-An initial deploy of StreamAlert must be performed before StreamAlert Apps can be configured. If you do not have a current deploy,
-please visit the `Project's Getting Started <getting-started.html>`_ page to get up and running.
+An initial deploy of StreamAlert must be performed before Apps can be configured. If you haven't deployed StreamAlert yet,
+please visit the `Getting Started <getting-started.html>`_ page to get up and running.
 
 
-Adding a new StreamAlert App requires the following steps:
+Deploying an App only takes 3 steps:
 
-1. Configure the StreamAlert App through the CLI (via ``python manage.py app new``).
-2. Enter the required authentication information for the app being configured.
-3. Deploy the new App and the Rule Processor to accept incoming data from your App.
+1. Configure the App through the CLI (via ``python manage.py app new``).
+2. Enter the required authentication information.
+3. Deploy the new App and the Rule Processor.
 
-To get help configuring a new StreamAlert App, use:
+To get help configuring a new App, use:
 
 .. code-block:: bash
 
   $ python manage.py app new --help
 
 
-1. Configure the StreamAlert App
-````````````````````````````````
+1. Configure the App
+````````````````````
 
 The StreamAlert CLI is used to add a new App configuration.
 
@@ -72,7 +72,7 @@ Flag                       Description
 -------------------------  -----------
 ``--type``                 Type of app integration function being configured. Current choices are: `duo_auth`, `duo_admin`
 ``--cluster``              Applicable cluster this function should be configured against.
-``--name``                 Unique name to be assigned to this app integration function. This is useful when configuring multiple accounts per service.
+``--name``                 Unique name to be assigned to the App. This is useful when configuring multiple accounts per service.
 ``--interval``             The interval, defined using a 'rate' expression, at which this app integration function should execute. See AWS Schedule `Rate Expressions <http://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html#RateExpressions>`_.
 ``--timeout``              The AWS Lambda function timeout value, in seconds. This should be an integer between 10 and 300.
 ``--memory``               The AWS Lambda function max memory value, in megabytes. This should be an integer between 128 and 1536.
@@ -83,7 +83,7 @@ Flag                       Description
 2. Enter the required authentication information
 ````````````````````````````````````````````````
 
-The above command will result in a few prompts asking for the required authentication information needed to configure this StreamAlert App.
+The above command will result in a few prompts asking for the required authentication information needed to configure this App.
 
 .. note:: After the last required authentication value is entered, the values are sent to AWS SSM's `Parameter Store <https://aws.amazon.com/ec2/systems-manager/parameter-store/>`_ as a ``SecureString`` to be used as part of this App's config. Due to this requirement, please ensure you have the correct and valid AWS credentials loaded before continuing.
 
@@ -105,51 +105,12 @@ Once the above is completed, a logger statement similar to the following will co
   StreamAlertCLI [INFO]: Successfully added 'duo_prod_collector' app integration to 'conf/clusters/prod.json' for service 'duo_auth'.
 
 
-And the ``conf/clusters/prod.json`` file will be updated to include the configuration for this App:
-
-.. code-block:: json
-
-  {
-    "...": "...",
-    "modules": {
-      "...": "...",
-      "stream_alert_apps": {
-        "duo_prod_collector": {
-          "current_version": "$LATEST",
-          "interval": "rate(2 hours)",
-          "log_level": "info",
-          "memory": 128,
-          "timeout": 80,
-          "type": "duo_auth"
-        }
-      }
-    }
-  }
-
-
-The ``conf/sources.json`` file will also automatically update with the information the Rule Processor needs to accept input from this App:
-
-.. code-block:: json
-
-  {
-    "...": "...",
-    "stream_alert_app": {
-      "<prefix>_<cluster>_duo_auth_duo_prod_collector_app": {
-        "logs": [
-          "duo"
-        ]
-      }
-    }
-  }
-
+Your configuration files (``conf/clusters/<cluster>.json`` and ``conf/sources.json``) have now been updated and are ready to be deployed.
 
 3. Deploy the new App and the Rule Processor
 ````````````````````````````````````````````
 
-StreamAlert's Rule Processor must be aware of all input sources in order to process the data coming from them. As mentioned above, the ``conf/sources.json`` is automatically updated
-locally when a new StreamAlert App is configured, but this local change must also be deployed in the Rule Processor to have any affect.
-
-The recommended process is to just deploy both the `apps` function and the `rule` processor function with:
+The recommended process is to deploy both the `apps` function and the `rule` processor function with:
 
 .. code-block:: bash
 

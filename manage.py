@@ -317,8 +317,8 @@ Required Arguments:
     --cluster           Applicable cluster this function should be configured against.
                           Choices are:
 {}
-    --name              Unique name to be assigned to this app integration function. This is
-                          useful when configuring multiple accounts per service.
+    --name              Unique name to be assigned to the App. This is useful when
+                          configuring multiple accounts per service.
     --timeout           The AWS Lambda function timeout value, in seconds. This should
                           be an integer between 10 and 300.
     --memory            The AWS Lambda function max memory value, in megabytes. This should
@@ -461,8 +461,8 @@ Required Arguments:
     --cluster           Applicable cluster this function should be configured against.
                           Choices are:
 {}
-    --name              Unique name to be assigned to this app integration function. This is
-                          useful when configuring multiple accounts per service.
+    --name              Unique name to be assigned to the App. This is useful when
+                          configuring multiple accounts per service.
 
 Optional Arguments:
 
