@@ -36,12 +36,5 @@
       }
     }
   },
-  "outputs": {
-    "kinesis": [
-      "username",
-      "access_key_id",
-      "secret_key"
-    ]
-  },
   "region": "us-east-1"
 }
