@@ -268,6 +268,114 @@ class TestStreamAlert(object):
             assert_true(mock_logging.info.called)
 
     @patch('stream_alert.rule_processor.handler.LOGGER')
+    @mock_kinesis
+    def test_firehose_record_delivery_failed_put_count(self, mock_logging):
+        """StreamAlert Class - Firehose Record Delivery - Failed Put Count"""
+        self.__sa_handler.firehose_client = boto3.client(
+            'firehose', region_name='us-east-1')
+
+        test_event = convert_events_to_kinesis([
+            # unit_test_simple_log
+            {
+                'unit_key_01': 1,
+                'unit_key_02': 'test'
+            },
+            {
+                'unit_key_01': 2,
+                'unit_key_02': 'test'
+            },
+            # test_log_type_json_nested
+            {
+                'date': 'January 01, 3005',
+                'unixtime': '32661446400',
+                'host': 'my-host.name.website.com',
+                'data': {
+                    'super': 'secret'
+                }
+            }
+        ])
+
+        delivery_stream_names = ['streamalert_data_test_log_type_json_nested',
+                                 'streamalert_data_unit_test_simple_log']
+
+        # Setup mock delivery streams
+        for delivery_stream in delivery_stream_names:
+            self.__sa_handler.firehose_client.create_delivery_stream(
+                DeliveryStreamName=delivery_stream,
+                S3DestinationConfiguration={
+                    'RoleARN': 'arn:aws:iam::123456789012:role/firehose_delivery_role',
+                    'BucketARN': 'arn:aws:s3:::kinesis-test',
+                    'Prefix': '{}/'.format(delivery_stream),
+                    'BufferingHints': {
+                        'SizeInMBs': 123,
+                        'IntervalInSeconds': 124
+                    },
+                    'CompressionFormat': 'Snappy',
+                }
+            )
+
+        with patch.object(self.__sa_handler.firehose_client, 'put_record_batch') as firehose_mock:
+            firehose_mock.side_effect = [
+                {
+                    'FailedPutCount': 3,
+                    'RequestResponses': [
+                        {
+                            "ErrorCode": "ServiceUnavailableException",
+                            "ErrorMessage": "Slow down."
+                        },
+                        {
+                            "ErrorCode": "ServiceUnavailableException",
+                            "ErrorMessage": "Slow down."
+                        },
+                        {
+                            "ErrorCode": "ServiceUnavailableException",
+                            "ErrorMessage": "Slow down."
+                        }
+                    ]
+                },
+                {
+                    'FailedPutCount': 3,
+                    'RequestResponses': [
+                        {
+                            "ErrorCode": "ServiceUnavailableException",
+                            "ErrorMessage": "Slow down."
+                        },
+                        {
+                            "ErrorCode": "ServiceUnavailableException",
+                            "ErrorMessage": "Slow down."
+                        },
+                        {
+                            "ErrorCode": "ServiceUnavailableException",
+                            "ErrorMessage": "Slow down."
+                        }
+                    ]
+                },
+                {
+                    'FailedPutCount': 0,
+                    'RequestResponses': [
+                        {
+                            "RecordId": "12345678910",
+                            "ErrorCode": "None",
+                            "ErrorMessage": "None"
+                        },
+                        {
+                            "RecordId": "12345678910",
+                            "ErrorCode": "None",
+                            "ErrorMessage": "None"
+                        },
+                        {
+                            "RecordId": "12345678910",
+                            "ErrorCode": "None",
+                            "ErrorMessage": "None"
+                        }
+                    ]
+                }]
+            self.__sa_handler.run(test_event)
+
+            firehose_mock.assert_called()
+            assert_true(mock_logging.info.called)
+
+    @patch('stream_alert.rule_processor.handler.LOGGER')
     def test_firehose_limit_record_size(self, mock_logging):
         """StreamAlert Class - Firehose - Record Size Check"""
         test_events = [
@@ -452,6 +560,6 @@ class TestStreamAlert(object):
                                                    test_events)
 
         missing_stream_message = 'Client Error ... An error occurred ' \
-        '(ResourceNotFoundException) when calling the PutRecordBatch ' \
-        'operation: Stream invalid_stream under account 123456789012 not found.'
+            '(ResourceNotFoundException) when calling the PutRecordBatch ' \
+            'operation: Stream invalid_stream under account 123456789012 not found.'
         assert_true(mock_logging.error.called_with(missing_stream_message))

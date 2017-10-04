@@ -25,10 +25,10 @@ def backoff_handler(details):
             target function currently executing, kwargs, args, value,
             and wait time.
     """
-    LOGGER.debug('[Backoff]: Trying again in %f seconds after %d tries calling %s',
-                 details['wait'],
-                 details['tries'],
-                 details['target'].__name__)
+    LOGGER.info('[Backoff]: Trying again in %f seconds after %d tries calling %s',
+                details['wait'],
+                details['tries'],
+                details['target'].__name__)
 
 
 def success_handler(details):
@@ -52,6 +52,6 @@ def giveup_handler(details):
             target function currently executing, kwargs, args, value,
             and wait time.
     """
-    LOGGER.debug('[Backoff]: Exiting after %d tries calling %s',
-                 details['tries'],
-                 details['target'].__name__)
+    LOGGER.info('[Backoff]: Exiting after %d tries calling %s',
+                details['tries'],
+                details['target'].__name__)

@@ -266,6 +266,13 @@ class StreamAlert(object):
         resp = {}
         record_batch_size = len(record_batch)
 
+        @backoff.on_predicate(backoff.fibo,
+                              lambda resp: resp['FailedPutCount'] > 0,
+                              jitter=backoff.full_jitter,
+                              max_tries=MAX_BACKOFF_ATTEMPTS,
+                              on_backoff=backoff_handler,
+                              on_success=success_handler,
+                              on_giveup=giveup_handler)
         @backoff.on_exception(backoff.fibo,
                               ClientError,
                               max_tries=MAX_BACKOFF_ATTEMPTS,
@@ -275,9 +282,9 @@ class StreamAlert(object):
                               on_giveup=giveup_handler)
         def firehose_request_wrapper():
             """Firehose request wrapper to use with backoff"""
-            LOGGER.debug('Sending %d records to Firehose:%s',
-                         record_batch_size,
-                         stream_name)
+            LOGGER.info('[Firehose] Sending %d records to %s',
+                        record_batch_size,
+                        stream_name)
             return self.firehose_client.put_record_batch(
                 DeliveryStreamName=stream_name,
                 # The newline at the end is required by Firehose,
@@ -299,8 +306,8 @@ class StreamAlert(object):
                                     record_batch_size)
             return
 
-        # Error handle if failures occured in PutRecordBatch
-        # TODO(jack) implement backoff here for additional message reliability
+        # Error handle if failures occured in PutRecordBatch after
+        # several backoff attempts
         if resp.get('FailedPutCount') > 0:
             failed_records = [failed
                               for failed
@@ -310,15 +317,15 @@ class StreamAlert(object):
                                     MetricLogger.FIREHOSE_FAILED_RECORDS,
                                     resp['FailedPutCount'])
             # Only print the first 100 failed records to Cloudwatch logs
-            LOGGER.error('The following records failed to Put to the'
-                         'Delivery stream %s: %s',
+            LOGGER.error('[Firehose] The following records failed to put to '
+                         'the Delivery Stream %s: %s',
                          stream_name,
                          json.dumps(failed_records[:100], indent=2))
         else:
             MetricLogger.log_metric(FUNCTION_NAME,
                                     MetricLogger.FIREHOSE_RECORDS_SENT,
                                     record_batch_size)
-            LOGGER.info('Successfully sent %d messages to Firehose:%s',
+            LOGGER.info('[Firehose] Successfully sent %d messages to %s',
                         record_batch_size,
                         stream_name)
 
