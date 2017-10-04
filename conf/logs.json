@@ -531,6 +531,7 @@
     "schema": {
       "alert_severity": "float",
       "alert_type": "string",
+      "assigned_to": "string",
       "cb_server": "string",
       "computer_name": "string",
       "created_time": "string",
@@ -558,7 +559,12 @@
       "watchlist_id": "string",
       "watchlist_name": "string"
     },
-    "parser": "json"
+    "parser": "json",
+    "configuration": {
+      "optional_top_level_keys": [
+        "assigned_to"
+      ]
+    }
   },
   "carbonblack:feed.storage.hit.binary": {
     "schema": {
@@ -737,7 +743,7 @@
   },
   "cloudwatch:events": {
     "schema": {
-      "account": "integer",
+      "account": "string",
       "region": "string",
       "detail": {},
       "detail-type": "string",
