@@ -140,19 +140,19 @@ class DuoApp(AppIntegration):
         return {
             'api_hostname':
                 {
-                    'description': ('the API hostname for this duosecurity instance. This should '
+                    'description': ('the API URL for your duosecurity instance. This should '
                                     'be in a format similar to \'api-abcdef12.duosecurity.com\''),
                     'format': re.compile(r'^api-[a-f0-9]{8}\.duosecurity\.com$')
                 },
             'integration_key':
                 {
-                    'description': ('the integration key for this duosecurity Admin API. This '
+                    'description': ('the integration key for your duosecurity Admin API. This '
                                     'should be in a format similar to \'DIABCDEFGHIJKLMN1234\''),
                     'format': re.compile(r'^DI[A-Z0-9]{18}$')
                 },
             'secret_key':
                 {
-                    'description': ('the secret key for this duosecurity Admin API. This '
+                    'description': ('the secret key for your duosecurity Admin API. This '
                                     'should a string of 40 alphanumeric characters'),
                     'format': re.compile(r'^[a-zA-Z0-9]{40}$')
                 }

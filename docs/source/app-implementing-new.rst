@@ -1,10 +1,10 @@
-App Integration For New Service
-===============================
+Creating a New App
+==================
 
 Overview
 --------
 
-A StreamAlert App Integration can be created to collect logs from virtually any RESTful API that supports HTTP GET requests.
+A StreamAlert App can be created to collect logs from virtually any RESTful API that supports HTTP GET requests.
 
 Implementing an App for a currently unsupported service is as easy as:
 
@@ -16,7 +16,7 @@ Implementing an App for a currently unsupported service is as easy as:
 New App Example
 ---------------
 
-This is a non-functional example of adding a new App Integration for the Box `Events <https://developer.box.com/reference#events>`_ API. This is
+This is a non-functional example of adding a new App for the Box `Events <https://developer.box.com/reference#events>`_ API. This is
 to outline what methods from the base ``AppIntegration`` class must be implemented and what those methods must do.
 
 .. code:: python
@@ -25,7 +25,7 @@ to outline what methods from the base ``AppIntegration`` class must be implement
   # app_integrations/apps/box.py
 
   class BoxApp(AppIntegration):
-    """Box app integration"""
+    """Box StreamAlert App"""
 
     _BOX_API_V2_EVENTS_ENDPOINT = 'https://api.box.com/2.0/events'
     _MAX_EVENTS_LIMIT = 500

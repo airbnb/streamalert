@@ -117,7 +117,7 @@ Table of Contents
 
 .. toctree::
   :maxdepth: 2
-  :caption: App Integrations
+  :caption: StreamAlert Apps
 
   app-configuration
   app-auth-update

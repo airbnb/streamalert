@@ -1,12 +1,11 @@
-App Integration Auth Updating
+Updating an App's credentials
 =============================
 
 Overview
 --------
 
-In the instance that the required authentication information for a configured App changes, it may be necessary to update a currently deployed App to reflect this.
-To avoid having to remove the deployed App and add a new configuration just to get this updated information into production, StreamAlert's CLI
-includes some commands to list apps and to update this information directly.
+You may need to change an App's credentials due to internal rotation policies or otherwise. The StreamAlert CLI allows you to easily update App credentials.
+to aid in this process, the CLI also give you the ability to list currently configured Apps.
 
 Listing Apps
 ------------
@@ -30,14 +29,14 @@ This list will be empty for each cluster if no apps are configured, or will appe
       type:                          duo_auth
 
 
-Updating Authentication Info
+Updating App Credentials
 ----------------------------
 
-To update a listed App configuration with new authentication information, use the following command:
+To update an App's credentials, run the the following command:
 
 .. code-block:: bash
 
   $ python manage.py app update-auth --cluster <cluster> --name <app_name>
 
 
-The above command will walk through updating the authentication information, similar to the process when `configuring a new App <app-configuration.html#example-prompts-for-duo-auth>`_.
+This will have you follow a process similar to `configuring a new App <app-configuration.html#example-prompts-for-duo-auth>`_.

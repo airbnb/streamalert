@@ -1,15 +1,14 @@
-App Integration Configuration
-=============================
+App Configuration
+=================
 
 Overview
 --------
 
-To further StreamAlert's abilities past ingesting logs from services that offer support for sending to AWS Lambda,
-the package includes a method to fetch logs from RESTful APIs to be forwarded to StreamAlert. This capability is added through the
-use of StreamAlert Apps.
+For StreamAlert and other related platforms, log forwarding is usually left as an exercise to the reader. This work is non-trivial
+and often requires new infrastructure and code. We wanted to make this easier for everyone and have achieved this through StreamAlert Apps.
 
-StreamAlert Apps are designed to run on scheduled intervals and collect logs from a third-party API to be relayed on to the Rule Processor
-for processing.
+StreamAlert Apps allow you to collect logs from popular services and applications in minutes. You simply provide the application's
+credentials and StreamAlert will deploy an individual serverless application that will fetch and forward logs to StreamAlert for analysis and alerting.
 
 
 Concepts
@@ -28,6 +27,8 @@ Supported Services
 
   - Authentication Logs
   - Administrator Logs
+
+* *Soon to come:* `OneLogin <https://github.com/airbnb/streamalert/issues/347>`_, `GSuite <https://github.com/airbnb/streamalert/issues/348>`_, and more
 
 
 Getting Started
@@ -66,10 +67,6 @@ The StreamAlert CLI is used to add a new App configuration.
   --memory 128
 
 
-.. note:: Duo Security's Admin API is limited to two (2) requests per-minute. Therefore, setting the ``--timeout`` flag to any value between 10 and 60 will be of no additional value. A recommended timeout of 80 seconds will guarantee four (4) requests happen per-execution.
-
-
-
 =========================  ===========
 Flag                       Description
 -------------------------  -----------
@@ -81,7 +78,7 @@ Flag                       Description
 ``--memory``               The AWS Lambda function max memory value, in megabytes. This should be an integer between 128 and 1536.
 =========================  ===========
 
-
+.. note:: Duo Security's Admin API is limited to two (2) requests per-minute. Therefore, setting the ``--timeout`` flag to any value between 10 and 60 will be of no additional value. A recommended timeout of 80 seconds will guarantee four (4) requests happen per-execution.
 
 2. Enter the required authentication information
 ````````````````````````````````````````````````
@@ -95,11 +92,11 @@ Example Prompts for Duo Auth
 
 .. code-block:: bash
 
-  Please supply the API url for this duosecurity instance. This should be in a format similar to 'api-abcdef12.duosecurity.com': api-abcdef12.duosecurity.com
+  Please supply the API URL for your duosecurity instance. This should be in a format similar to 'api-abcdef12.duosecurity.com': api-abcdef12.duosecurity.com
 
-  Please supply the secret key for this duosecurity Admin API. This should a string of 40 alphanumeric characters: 123424af2ae101d47d9704b783c940dffa825678
+  Please supply the secret key for your duosecurity Admin API. This should a string of 40 alphanumeric characters: 123424af2ae101d47d9704b783c940dffa825678
 
-  Please supply the integration key for this duosecurity Admin API. This should be in a format similar to 'DIABCDEFGHIJKLMN1234': DIABCDEFGHIJKLMN1234
+  Please supply the integration key for your duosecurity Admin API. This should be in a format similar to 'DIABCDEFGHIJKLMN1234': DIABCDEFGHIJKLMN1234
 
 
 Once the above is completed, a logger statement similar to the following will confirm the configuration::
