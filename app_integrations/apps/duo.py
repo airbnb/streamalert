@@ -74,7 +74,7 @@ class DuoApp(AppIntegration):
         }
 
     def _gather_logs(self):
-        """Gather the authentication log events."""
+        """Gather the Duo log events."""
         hostname = self._config['auth']['api_hostname']
         full_url = 'https://{hostname}{endpoint}'.format(
             hostname=hostname,
@@ -140,19 +140,19 @@ class DuoApp(AppIntegration):
         return {
             'api_hostname':
                 {
-                    'description': ('the API hostname for this duosecurity instance. This should '
+                    'description': ('the API URL for your duosecurity instance. This should '
                                     'be in a format similar to \'api-abcdef12.duosecurity.com\''),
                     'format': re.compile(r'^api-[a-f0-9]{8}\.duosecurity\.com$')
                 },
             'integration_key':
                 {
-                    'description': ('the integration key for this duosecurity Admin API. This '
+                    'description': ('the integration key for your duosecurity Admin API. This '
                                     'should be in a format similar to \'DIABCDEFGHIJKLMN1234\''),
                     'format': re.compile(r'^DI[A-Z0-9]{18}$')
                 },
             'secret_key':
                 {
-                    'description': ('the secret key for this duosecurity Admin API. This '
+                    'description': ('the secret key for your duosecurity Admin API. This '
                                     'should a string of 40 alphanumeric characters'),
                     'format': re.compile(r'^[a-zA-Z0-9]{40}$')
                 }
@@ -164,7 +164,7 @@ class DuoApp(AppIntegration):
         every 1 minute, so this should sleep every 2 polls.
 
         Returns:
-            int: Number of seconds that this function shoud sleep for between requests
+            int: Number of seconds that this function should sleep for between requests
         """
         return abs((self._poll_count % 2) - 1) * 60
 

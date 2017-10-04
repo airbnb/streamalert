@@ -312,18 +312,18 @@ Command:
 
 Required Arguments:
 
-    --type              Type of app integration function being configured Choices are:
+    --type              Type of app integration function being configured. Choices are:
 {}
-    --cluster           Applicable cluster this function should be configured against
+    --cluster           Applicable cluster this function should be configured against.
                           Choices are:
 {}
-    --name              Unique name to be assigned to this app integration function. This is
-                          useful when configuring multiple accounts per service.
+    --name              Unique name to be assigned to the App. This is useful when
+                          configuring multiple accounts per service.
     --timeout           The AWS Lambda function timeout value, in seconds. This should
                           be an integer between 10 and 300.
     --memory            The AWS Lambda function max memory value, in megabytes. This should
                           be an integer between 128 and 1536.
-    --interval          The interval, defined using a 'rate' or 'cron' expression, at
+    --interval          The interval, defined using a 'rate' expression, at
                           which this app integration function should execute. Examples of
                           acceptable input are:
                             'rate(1 hour)'          # Every hour (note the singular 'hour')
@@ -374,7 +374,7 @@ Resources:
     # Validate the rate at which this should run
     def _validate_scheduled_interval(val):
         """Validate acceptable inputs for the schedule expression
-        These follow the format 'rate(5 minutes)' or 'cron(*/10 * * * *)'
+        These follow the format 'rate(5 minutes)'
         """
         rate_match = AWS_RATE_RE.match(val)
         if rate_match:
@@ -458,11 +458,11 @@ Command:
 
 Required Arguments:
 
-    --cluster           Applicable cluster this function should be configured against
+    --cluster           Applicable cluster this function should be configured against.
                           Choices are:
 {}
-    --name              Unique name to be assigned to this app integration function. This is
-                          useful when configuring multiple accounts per service.
+    --name              Unique name to be assigned to the App. This is useful when
+                          configuring multiple accounts per service.
 
 Optional Arguments:
 

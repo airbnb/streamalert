@@ -366,7 +366,7 @@ def _app_integration_handler(options):
         for cluster, info in all_info.iteritems():
             print '\nCluster: {}\n'.format(cluster)
             if not info:
-                print '\tNo app integrations configured\n'
+                print '\tNo Apps configured\n'
                 continue
 
             for name, details in info.iteritems():
