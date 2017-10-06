@@ -35,38 +35,6 @@ class TestOneLoginApp(object):
 
     def __init__(self):
         self._app = None
-        self._sample_event = {
-            'id': 123,
-            'created_at': '2017-10-05T18:11:32Z',
-            'account_id': 1234,
-            'user_id': 321,
-            'event_type_id': 4321,
-            'notes': 'Notes',
-            'ipaddr': '0.0.0.0',
-            'actor_user_id': 987,
-            'assuming_acting_user_id': 654,
-            'role_id': 456,
-            'app_id': 123456,
-            'group_id': 98765,
-            'otp_device_id': 11111,
-            'policy_id': 22222,
-            'actor_system': 'System',
-            'custom_message': 'Message',
-            'role_name': 'Role',
-            'app_name': 'App Name',
-            'group_name': 'Group Name',
-            'actor_user_name': '',
-            'user_name': 'username',
-            'policy_name': 'Policy Name',
-            'otp_device_name': 'OTP Device Name',
-            'operation_name': 'Operation Name',
-            'directory_sync_run_id': 7777,
-            'directory_id': 6666,
-            'resolution': 'Resolved',
-            'client_id': 11223344,
-            'resource_type_id': 44332211,
-            'error_description': 'ERROR ERROR'
-        }
 
     # Remove all abstractmethods so we can instantiate DuoApp for testing
     # Also patch some abstractproperty attributes
