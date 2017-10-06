@@ -71,7 +71,7 @@ class OneLoginApp(AppIntegration):
         if not self._check_http_response(response):
             return False
 
-        bearer = 'bearer:' % (response.json()['access_token'])
+        bearer = 'bearer:%s' % (response.json()['access_token'])
         self._auth_headers = {'Authorization': bearer}
 
     def _gather_logs(self):

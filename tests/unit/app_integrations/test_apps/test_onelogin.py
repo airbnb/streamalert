@@ -44,8 +44,8 @@ class TestOneLoginApp(object):
         self._app = OneLoginApp(AppConfig(get_valid_config_dict('onelogin')))
 
     @patch('requests.post')
-    def test_generate_headers(self, requests_mock):
-        """OneLoginApp - Generate Headers, """
+    def test_generate_headers_bad(self, requests_mock):
+        """OneLoginApp - Generate Bad Headers, """
         requests_mock.return_value = Mock(
             status_code=404,
             json=Mock(side_effect=[{'message': 'something went wrong'}])
@@ -53,6 +53,17 @@ class TestOneLoginApp(object):
         assert_false(self._app._generate_headers(self._app._ONELOGIN_TOKEN_URL,
                                                  'bad_secret',
                                                  'bad_id'))
+    @patch('requests.post')
+    def test_generate_headers_good(self, requests_mock):
+        """OneLoginApp - Generate Good Headers, """
+        requests_mock.return_value = Mock(
+            status_code=200,
+            json=Mock(side_effect=[{'access_token': 'this_is_a_token'}])
+        )
+        self._app._generate_headers(self._app._ONELOGIN_TOKEN_URL,
+                                    'good_secret',
+                                    'good_id')
+        assert_equal(self._app._auth_headers['Authorization'], 'bearer:this_is_a_token')
 
     def test_sleep(self):
         """OneLoginApp - Sleep Seconds"""
@@ -177,3 +188,7 @@ def test_onelogin_token_endpoint():
 def test_onelogin_events_type():
     """OneLoginApp - Verify Events Type"""
     assert_equal(OneLoginApp._type(), 'events')
+
+def test_onelogin_event_service():
+    """OneLoginApp - Verify Service"""
+    assert_equal(OneLoginApp.service(), 'onelogin')
