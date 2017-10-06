@@ -36,7 +36,7 @@ class TestOneLoginApp(object):
     def __init__(self):
         self._app = None
 
-    # Remove all abstractmethods so we can instantiate DuoApp for testing
+    # Remove all abstractmethods so we can instantiate OneLoginApp for testing
     # Also patch some abstractproperty attributes
     @patch.object(OneLoginApp, '__abstractmethods__', frozenset())
     def setup(self):

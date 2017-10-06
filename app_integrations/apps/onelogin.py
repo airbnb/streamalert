@@ -13,13 +13,12 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-import re
-
 from datetime import datetime
+import re
 import requests
 
 from app_integrations import LOGGER
-from app_integrations.apps.app_base import app, AppIntegration
+from app_integrations.apps.app_base import AppIntegration
 
 
 class OneLoginApp(AppIntegration):
@@ -188,6 +187,6 @@ class OneLoginApp(AppIntegration):
         every hour, so returning 0 for now.
 
         Returns:
-            int: Number of seconds that this function shoud sleep for between requests
+            int: Number of seconds that this function should sleep for between requests
         """
         return 0
