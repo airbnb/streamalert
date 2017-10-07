@@ -56,7 +56,7 @@ class ParserBase:
         """Setup required parser properties
 
         Args:
-            options (dict): Parser options - delimiter, separator, or log_patterns
+            options (dict): Parser options - delimiter, separator, or required_key_values
         """
         self.options = options or {}
 
@@ -76,21 +76,21 @@ class ParserBase:
         """Returns the type of parser. Overriden in GzipJSONParser to just return json"""
         return self.__parserid__
 
-    def matched_log_pattern(self, record, log_patterns):
+    def matched_log_pattern(self, record, required_key_values):
         """Return True if all log patterns of this record match"""
         # Return True immediately if there are no log patterns
         # or if the data being tested is not a dict
-        if not log_patterns:
+        if not required_key_values:
             return True
 
         pattern_result = []
-        for field, pattern_list in log_patterns.iteritems():
-            # handle nested log_patterns
+        for field, pattern_list in required_key_values.iteritems():
+            # handle nested required_key_values
             if isinstance(pattern_list, dict):
                 return self.matched_log_pattern(record[field], pattern_list)
 
             if not isinstance(pattern_list, list):
-                LOGGER.debug('Configured `log_patterns` should be a \'list\'')
+                LOGGER.debug('Configured `required_key_values` should be a \'list\'')
                 continue
 
             # The pattern field value in the record
@@ -100,7 +100,7 @@ class ParserBase:
                 LOGGER.debug('Declared log pattern field [%s] is not a valid type '
                              'for this record: %s', field, record)
                 continue
-            # Append the result of any of the log_patterns being True
+            # Append the result of any of the required_key_values being True
             pattern_result.append(any(fnmatch(value, pattern)
                                       for pattern in pattern_list))
 
@@ -200,7 +200,7 @@ class JSONParser(ParserBase):
     def _parse_records(self, schema, json_payload):
         """Identify and extract nested payloads from parsed JSON records.
 
-        Nested payloads can be detected with log_patterns (`records` should be a
+        Nested payloads can be detected with required_key_values (`records` should be a
         JSONpath selector that yields the desired nested records). If desired,
         fields present on the root record can be merged into child events
         using the `envelope_keys` option.
