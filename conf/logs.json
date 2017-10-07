@@ -139,7 +139,7 @@
     },
     "parser": "json",
     "configuration": {
-      "log_patterns": {
+      "required_key_values": {
         "type": [
           "feed.ingress.hit.process"
         ]
@@ -203,7 +203,7 @@
     },
     "parser": "json",
     "configuration": {
-      "log_patterns": {
+      "required_key_values": {
         "type": [
           "alert.watchlist.hit.feedsearch.binary"
         ]
@@ -266,7 +266,7 @@
     },
     "parser": "json",
     "configuration": {
-      "log_patterns": {
+      "required_key_values": {
         "type": [
           "alert.watchlist.hit.ingress.process"
         ]
@@ -335,7 +335,7 @@
     },
     "parser": "json",
     "configuration": {
-      "log_patterns": {
+      "required_key_values": {
         "type": [
           "alert.watchlist.hit.query.process"
         ]
@@ -449,7 +449,7 @@
     },
     "parser": "json",
     "configuration": {
-      "log_patterns": {
+      "required_key_values": {
         "type": [
           "watchlist.storage.hit.binary"
         ]
@@ -472,7 +472,7 @@
     },
     "parser": "json",
     "configuration": {
-      "log_patterns": {
+      "required_key_values": {
         "type": [
           "watchlist.storage.hit.process"
         ]
@@ -1071,7 +1071,7 @@
     },
     "parser": "csv",
     "configuration": {
-      "log_patterns": {
+      "required_key_values": {
         "type": [
           "TRAFFIC"
         ]
