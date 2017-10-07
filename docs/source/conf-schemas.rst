@@ -66,7 +66,7 @@ Key                          Description
 ``optional_top_level_keys``  Keys that may or may not be present in a log being parsed
 ``json_path``                Path to nested records to be 'extracted' from within a JSON object
 ``envelope_keys``            Used with nested records to identify keys that are at a higher level than the nested records, but still hold some value and should be stored
-``log_patterns``             Various patterns to enforce within a log given provided fields
+``required_key_values``             Various patterns to enforce within a log given provided fields
 ``delimiter``                For use with key/value or csv logs to identify the delimiter character for the log
 ``separator``                For use with key/value logs to identify the separator character for the log
 ===========================  ======================
@@ -329,21 +329,21 @@ To extract these nested records, use the ``configuration`` option ``json_path``:
     }
   }
 
-Log Patterns
+Required key-values
 ~~~~~~~~~~~~
 
-Log patterns provide the ability to differentiate log schemas that are identical or very close in nature.
+Required key-values provide the ability to differentiate log schemas that are identical or very close in nature.
 
-They can be added by using the ``configuration`` option ``log_patterns``.
+They can be added by using the ``configuration`` option ``required_key_values``.
 
-Log patterns are a collection of key/value pairs where the key is the name of the field, and the value is a list of
-expressions the log parser will search for in said field of the log. If *any* of the log patterns listed exists in
+Required key-values are a collection of key/value pairs where the key is the name of the field, and the value is a list of
+expressions the log parser will search for in said field of the log. If *any* of the required key-values listed exists in
 a specific field, the parser will consider the data valid.
 
 This feature is especially helpful to reduce false positives, since it provides to ability to only match a schema if
 specific values are present in a log.
 
-Wild card log patterns are supported using the ``*`` or ``?`` symbols, as shown below.
+Wild card key-values are supported using the ``*`` or ``?`` symbols, as shown below.
 
 Example schema:
 
@@ -362,7 +362,7 @@ Example schema:
       },
       "parser": "json",
       "configuration": {
-        "log_patterns": {
+        "required_key_values": {
           "type": [
             "*bad.log.type*"
           ]
