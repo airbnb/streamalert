@@ -283,6 +283,7 @@ def put_mock_creds(output_name, creds, bucket, region, alias):
     put_mock_s3_object(bucket, output_name, enc_creds, region)
 
 
+@mock_kinesis
 def setup_mock_firehose_delivery_streams(config):
     """Mock Kinesis Firehose Streams for rule testing
 
