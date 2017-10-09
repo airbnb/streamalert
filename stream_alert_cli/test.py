@@ -524,6 +524,7 @@ class AlertProcessorTester(object):
         self.kms_alias = 'alias/stream_alert_secrets_test'
         self.secrets_bucket = 'test.streamalert.secrets'
         self.outputs_config = load_outputs_config()
+        helpers.setup_mock_firehose_delivery_streams(CONFIG)
 
     def test_processor(self, alerts):
         """Perform integration tests for the 'alert' Lambda function. Alerts
