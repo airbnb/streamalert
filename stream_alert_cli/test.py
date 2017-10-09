@@ -31,7 +31,6 @@ import stream_alert.rule_processor.main  # pylint: disable=unused-import
 from stream_alert.rule_processor.payload import load_stream_payload
 from stream_alert.rule_processor.rules_engine import StreamRules
 from stream_alert_cli import helpers
-from stream_alert_cli.config import CLIConfig
 from stream_alert_cli.logger import (
     get_log_memory_hanlder,
     LOGGER_CLI,
@@ -49,7 +48,6 @@ COLOR_YELLOW = '\033[0;33;1m'
 COLOR_GREEN = '\033[0;32;1m'
 COLOR_RESET = '\033[0m'
 
-CONFIG = CLIConfig()
 
 StatusMessageBase = namedtuple('StatusMessage', 'type, rule, message')
 
@@ -64,7 +62,7 @@ class StatusMessage(StatusMessageBase):
 class RuleProcessorTester(object):
     """Class to encapsulate testing the rule processor"""
 
-    def __init__(self, context, print_output):
+    def __init__(self, context, config, print_output):
         """RuleProcessorTester initializer
 
         Args:
@@ -83,7 +81,7 @@ class RuleProcessorTester(object):
         self.total_tests = 0
         self.all_tests_passed = True
         self.print_output = print_output
-        helpers.setup_mock_firehose_delivery_streams(CONFIG)
+        helpers.setup_mock_firehose_delivery_streams(config)
 
     def test_processor(self, filter_rules, validate_only=False):
         """Perform integration tests for the 'rule' Lambda function
@@ -680,8 +678,7 @@ def check_untested_files():
             'the name \'%s.py\' to avoid seeing this warning and any associated '
             'errors above%s', COLOR_YELLOW, rule, rule, COLOR_RESET)
 
-
-def stream_alert_test(options, config=None):
+def stream_alert_test(options, config):
     """High level function to wrap the integration testing entry point.
     This encapsulates the testing function and is used to specify if calls
     should be mocked.
@@ -735,7 +732,7 @@ def stream_alert_test(options, config=None):
                        if run_options.get('processor') else
                        run_options.get('command') == 'live-test')
 
-        rule_proc_tester = RuleProcessorTester(context, test_rules)
+        rule_proc_tester = RuleProcessorTester(context, config, test_rules)
         alert_proc_tester = AlertProcessorTester(context)
 
         validate_schemas = options.command == 'validate-schemas'

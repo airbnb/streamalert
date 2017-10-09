@@ -18,7 +18,6 @@ import sys
 from app_integrations import __version__ as apps_version
 from stream_alert import __version__ as current_version
 from stream_alert_cli import helpers
-from stream_alert_cli.config import CLIConfig
 from stream_alert_cli.package import (
     AlertProcessorPackage,
     AthenaPackage,
@@ -29,9 +28,7 @@ from stream_alert_cli.terraform.generate import terraform_generate
 from stream_alert_cli.version import LambdaVersion
 
 
-CONFIG = CLIConfig()
-
-def deploy(options):
+def deploy(options, config):
     """Deploy new versions of all Lambda functions
 
     Steps:
@@ -52,9 +49,9 @@ def deploy(options):
         for package in packages:
             if package.package_name == 'athena_partition_refresh':
                 published = LambdaVersion(
-                    config=CONFIG, package=package, clustered_deploy=False).publish_function()
+                    config=config, package=package, clustered_deploy=False).publish_function()
             else:
-                published = LambdaVersion(config=CONFIG, package=package).publish_function()
+                published = LambdaVersion(config=config, package=package).publish_function()
             if not published:
                 return False
 
@@ -63,7 +60,7 @@ def deploy(options):
     def _deploy_rule_processor():
         """Create Rule Processor package and publish versions"""
         rule_package = RuleProcessorPackage(
-            config=CONFIG,
+            config=config,
             version=current_version
         )
         rule_package.create_and_upload()
@@ -72,7 +69,7 @@ def deploy(options):
     def _deploy_alert_processor():
         """Create Alert Processor package and publish versions"""
         alert_package = AlertProcessorPackage(
-            config=CONFIG,
+            config=config,
             version=current_version
         )
         alert_package.create_and_upload()
@@ -81,7 +78,7 @@ def deploy(options):
     def _deploy_athena_partition_refresh():
         """Create Athena Partition Refresh package and publish"""
         athena_package = AthenaPackage(
-            config=CONFIG,
+            config=config,
             version=current_version
         )
         athena_package.create_and_upload()
@@ -90,7 +87,7 @@ def deploy(options):
     def _deploy_apps_function():
         """Create app integration package and publish versions"""
         app_integration_package = AppIntegrationPackage(
-            config=CONFIG,
+            config=config,
             version=apps_version
         )
         app_integration_package.create_and_upload()
@@ -98,10 +95,10 @@ def deploy(options):
 
     if 'all' in processor:
         targets.update({'module.stream_alert_{}'.format(x)
-                        for x in CONFIG.clusters()})
+                        for x in config.clusters()})
 
         targets.update({'module.app_{}_{}'.format(app_name, cluster)
-                        for cluster, info in CONFIG['clusters'].iteritems()
+                        for cluster, info in config['clusters'].iteritems()
                         for app_name in info['modules'].get('stream_alert_apps', {})})
 
         packages.append(_deploy_rule_processor())
@@ -109,7 +106,7 @@ def deploy(options):
         packages.append(_deploy_apps_function())
 
         # Only include the Athena function if it exists and is enabled
-        athena_config = CONFIG['lambda'].get('athena_partition_refresh_config')
+        athena_config = config['lambda'].get('athena_partition_refresh_config')
         if athena_config and athena_config.get('enabled', False):
             targets.add('module.stream_alert_athena')
             packages.append(_deploy_athena_partition_refresh())
@@ -118,20 +115,20 @@ def deploy(options):
 
         if 'rule' in processor:
             targets.update({'module.stream_alert_{}'.format(x)
-                            for x in CONFIG.clusters()})
+                            for x in config.clusters()})
 
             packages.append(_deploy_rule_processor())
 
         if 'alert' in processor:
             targets.update({'module.stream_alert_{}'.format(x)
-                            for x in CONFIG.clusters()})
+                            for x in config.clusters()})
 
             packages.append(_deploy_alert_processor())
 
         if 'apps' in processor:
 
             targets.update({'module.app_{}_{}'.format(app_name, cluster)
-                            for cluster, info in CONFIG['clusters'].iteritems()
+                            for cluster, info in config['clusters'].iteritems()
                             for app_name in info['modules'].get('stream_alert_apps', {})})
 
             packages.append(_deploy_apps_function())
@@ -142,7 +139,7 @@ def deploy(options):
             packages.append(_deploy_athena_partition_refresh())
 
     # Regenerate the Terraform configuration with the new S3 keys
-    if not terraform_generate(config=CONFIG):
+    if not terraform_generate(config=config):
         return
 
     # Run Terraform: Update the Lambda source code in $LATEST
@@ -156,7 +153,7 @@ def deploy(options):
         return
 
     # Regenerate the Terraform configuration with the new Lambda versions
-    if not terraform_generate(config=CONFIG):
+    if not terraform_generate(config=config):
         return
 
     # Apply the changes to the Lambda aliases
