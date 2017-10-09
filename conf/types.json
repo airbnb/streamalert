@@ -120,6 +120,14 @@
       "invokedBy"
     ]
   },
+  "duo": {
+    "sourceAddress": [
+      "ip"
+    ],
+    "userName": [
+      "username"
+    ]
+  },
   "ghe": {
     "destinationAddress": [
       "remote_address"
