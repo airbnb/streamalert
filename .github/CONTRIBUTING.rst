@@ -42,10 +42,8 @@ When writing commit messages, make sure to prefix with one of the following tags
 
   [docs]              # changes to StreamAlert documentation
   [cli]               # stream_alert_cli changes
-  [lambda][alert]     # stream_alert lambda changes
-  [lambda][output]    # stream_alert_output lambda changes
   [terraform]         # terraform changes
-  [core]              # changes with core stream_alert classes used across both functions
+  [core]              # changes with core stream_alert classes used across lambda functions
   [testing]           # changes with testing infrastructure or processes
   [setup]             # StreamAlert development setup changes
   [config]            # stream_alert config changes
@@ -130,10 +128,10 @@ The title of your pull request should be a short description of your changes.
 
 In your pull request body, use the following template::
 
-  to @airbnb/streamalert-maintainers
+  to: @airbnb/streamalert-maintainers
 
   size: small|medium|large
-  resolves: #1              # only add this if there's a relevant open issue related to this PR
+  resolves #1              # only add this if there's a relevant open issue related to this PR
 
   * summary of changes 1
   * summary of changes 2
