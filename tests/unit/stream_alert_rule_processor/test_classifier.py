@@ -126,6 +126,24 @@ class TestStreamClassifier(object):
         # Make sure the list was not modified
         assert_list_equal(payload['key_01'], ['hi', '100'])
 
+    def test_convert_type_type_error(self):
+        """StreamClassifier - Convert Incompatible Types
+
+        This is a bug where a list/dict tries to be casted
+        as an int/float
+        """
+        payload = {'key': ['hi', '100']}
+        schema = {'key': 'integer'}
+
+        payload_2 = {'key': {'hi': '100'}}
+        schema_2 = {'key': 'float'}
+
+        results = []
+        results.append(self.classifier._convert_type(payload, schema))
+        results.append(self.classifier._convert_type(payload_2, schema_2))
+
+        assert_false(all(results))
+
     def test_convert_recursion(self):
         """StreamClassifier - Convert Type, Recursive"""
         payload = {'key_01': {'nested_key_01': '20.1'}}
