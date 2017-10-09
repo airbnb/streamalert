@@ -108,12 +108,14 @@ def tf_runner(**kwargs):
     kwargs:
         targets: a list of Terraform targets
         action: 'apply' or 'destroy'
+        refresh_state: True or False
 
     Returns:
         bool: True if the terraform command was successful
     """
     targets = kwargs.get('targets', [])
     action = kwargs.get('action', None)
+    refresh_state = kwargs.get('refresh_state', False)
     tf_action_index = 1  # The index to the terraform 'action'
 
     var_files = {'conf/lambda.json'}
@@ -122,6 +124,9 @@ def tf_runner(**kwargs):
     tf_command = ['terraform', 'plan'] + tf_opts + tf_targets
     if action == 'destroy':
         tf_command.append('-destroy')
+
+    if not refresh_state:
+        tf_command.append('-refresh=false')
 
     LOGGER_CLI.debug('Resolving Terraform modules')
     if not run_command(['terraform', 'get'], quiet=True):
