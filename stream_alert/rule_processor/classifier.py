@@ -314,7 +314,7 @@ class StreamClassifier(object):
             elif value == 'integer':
                 try:
                     payload[key] = int(payload[key])
-                except ValueError:
+                except (ValueError, TypeError):
                     LOGGER.error('Invalid schema. Value for key [%s] is not an int: %s',
                                  key, payload[key])
                     return False
@@ -322,7 +322,7 @@ class StreamClassifier(object):
             elif value == 'float':
                 try:
                     payload[key] = float(payload[key])
-                except ValueError:
+                except (ValueError, TypeError):
                     LOGGER.error('Invalid schema. Value for key [%s] is not a float: %s',
                                  key, payload[key])
                     return False
