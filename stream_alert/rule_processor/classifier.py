@@ -21,7 +21,7 @@ from stream_alert.rule_processor.parsers import get_parser
 from stream_alert.shared.stats import time_me
 
 # Set the below to True when we want to support matching on multiple schemas
-# and then log_patterns will be used as a fall back for key/value matching
+# and then required_key_values will be used as a fall back for key/value matching
 SUPPORT_MULTIPLE_SCHEMA_MATCHING = False
 
 
@@ -114,7 +114,7 @@ class StreamClassifier(object):
                 'log_source_n': {
                     'parser': 'csv',
                     'keys': ['field1', 'field2', ..., 'fieldn'],
-                    'log_patterns': ['*pattern1*']
+                    'required_key_values': ['*pattern1*']
                 }
             }
         """
@@ -148,7 +148,7 @@ class StreamClassifier(object):
     @staticmethod
     def _check_schema_match(schema_matches):
         """Check to see if the log matches multiple schemas. If so, fall back
-        on using log_patterns to look for the proper log. If no log_patterns
+        on using required_key_values to look for the proper log. If no key-values pair
         exist, or they do not resolve the problem, fall back on using the
         first matched schema.
 
@@ -166,9 +166,9 @@ class StreamClassifier(object):
 
         matches = []
         for i, schema_match in enumerate(schema_matches):
-            log_patterns = schema_match.parser.options.get('log_patterns', {})
-            LOGGER.debug('Log patterns: %s', log_patterns)
-            if (all(schema_match.parser.matched_log_pattern(data, log_patterns)
+            required_key_values = schema_match.parser.options.get('required_key_values', {})
+            LOGGER.debug('Log patterns: %s', required_key_values)
+            if (all(schema_match.parser.matched_log_pattern(data, required_key_values)
                     for data in schema_match.parsed_data)):
                 matches.append(schema_matches[i])
             else:
@@ -233,8 +233,8 @@ class StreamClassifier(object):
                 schema_matches.append(schema_match(log_name, schema, parser, parsed_data))
                 continue
 
-            log_patterns = parser.options.get('log_patterns')
-            if all(parser.matched_log_pattern(rec, log_patterns) for rec in parsed_data):
+            required_key_values = parser.options.get('required_key_values')
+            if all(parser.matched_log_pattern(rec, required_key_values) for rec in parsed_data):
                 return [schema_match(log_name, schema, parser, parsed_data)]
 
         return schema_matches

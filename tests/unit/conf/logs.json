@@ -140,7 +140,7 @@
       "message": "string"
     },
     "configuration": {
-      "log_patterns": {
+      "required_key_values": {
         "message": [
           "*keyword1*"
         ]
@@ -163,7 +163,7 @@
       }
     },
     "configuration": {
-      "log_patterns": {
+      "required_key_values": {
         "env": [
           "Corp"
         ],
@@ -263,7 +263,7 @@
     },
     "parser": "json",
     "configuration": {
-      "log_patterns": {
+      "required_key_values": {
         "type": [
           "*file_added_event*"
         ]
@@ -280,7 +280,7 @@
     },
     "parser": "json",
     "configuration": {
-      "log_patterns": {
+      "required_key_values": {
         "type": [
           "*file_removed_event*"
         ]
