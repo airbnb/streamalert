@@ -135,14 +135,16 @@ class OneLoginApp(AppIntegration):
         # Are we just getting events or getting paginated events?
         if self._next_page_url:
             params = None
+            request_url = self._next_page_url
         else:
             # OneLogin API expects the ISO 8601 format: YYYY-MM-DDTHH:MM:SSZ
             formatted_date = datetime.fromtimestamp(
                 self._last_timestamp).strftime('%Y-%m-%dT%H:%M:%SZ')
             params = {'since': formatted_date}
+            request_url = self._events_endpoint()
 
         LOGGER.debug('Events to retrieve for \'%s\': %s', self.type(), self._more_to_poll)
-        response = self._make_get_request(self._next_page_url, self._auth_headers, params)
+        response = self._make_get_request(request_url, self._auth_headers, params)
 
         if not response:
             events = False
