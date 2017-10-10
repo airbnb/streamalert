@@ -147,22 +147,21 @@ class OneLoginApp(AppIntegration):
         response = self._make_get_request(request_url, self._auth_headers, params)
 
         if not response:
-            events = False
+            return False
 
-        # Extract events and pagination link, if there is any
-        events = response['data']
+        # Set pagination link, if there is any
         self._next_page_url = response['pagination']['next_link']
 
         # Return the list of logs to the caller so they can be send to the batcher
-        return events
+        return response['data']
 
     def required_auth_info(self):
         return {
             'region':
                 {
-                    'description': ('the region for the OneLogin API. This should be a '
-                                    'string of 2 letters, lowercase or uppercase'),
-                    'format': re.compile(r'^[a-zA-Z]{2}$')
+                    'description': ('the region for the OneLogin API. This should be'
+                                    'just "en" or "us".'),
+                    'format': re.compile(r'^(en|us)$')
                 },
             'client_secret':
                 {

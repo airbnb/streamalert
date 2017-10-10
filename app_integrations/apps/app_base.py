@@ -211,7 +211,7 @@ class AppIntegration(object):
             bool or dict: False if the was an error performing the request,
                 or a dictionary loaded from the json response
         """
-        LOGGER.debug('Making request for service \'%s\' on poll #%d',
+        LOGGER.debug('Making GET request for service \'%s\' on poll #%d',
                      self.type(), self._poll_count)
 
         # Perform the request and return the response as a dict
@@ -222,18 +222,18 @@ class AppIntegration(object):
 
         return response.json()
 
-    def _make_post_request(self, full_url, headers, json):
+    def _make_post_request(self, full_url, headers, data):
         """Method for returning the json loaded response for this POST request
 
         Returns:
             bool or dict: False if the was an error performing the request,
                 or a dictionary loaded from the json response
         """
-        LOGGER.debug('Making request for service \'%s\' on poll #%d',
+        LOGGER.debug('Making POST request for service \'%s\' on poll #%d',
                      self.type(), self._poll_count)
 
         # Perform the request and return the response as a dict
-        response = requests.post(full_url, headers=headers, json=json)
+        response = requests.post(full_url, headers=headers, json=data)
 
         if not self._check_http_response(response):
             return False

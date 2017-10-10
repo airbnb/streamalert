@@ -121,12 +121,6 @@ class TestOneLoginApp(object):
         return {'data': data, 'pagination': {'next_link': next_link}}
 
     @patch('requests.get')
-    def test_get_onelogin_events_no_headers(self, requests_mock):
-        """OneLoginApp - Get OneLogin Events, No Headers"""
-        assert_false(self._app._get_onelogin_events())
-        requests_mock.assert_not_called()
-
-    @patch('requests.get')
     def test_get_onelogin_events_bad_response(self, requests_mock):
         """OneLoginApp - Get OneLogin Events, Bad Response"""
         self.set_config_values('us', 'good_id', 'good_secret')
@@ -136,49 +130,63 @@ class TestOneLoginApp(object):
         )
         assert_false(self._app._get_onelogin_events())
 
+    @patch('requests.post')
+    def test_gather_logs_no_headers(self, requests_mock):
+        """OneLoginApp - Gather Events Entry Point, No Headers"""
+        self.set_config_values('us', 'bad_id', 'bad_secret')
+        requests_mock.return_value = Mock(
+            status_code=404,
+            json=Mock(side_effect=[{'message': 'something went wrong'}])
+        )
+        assert_false(self._app._gather_logs())
+
     @patch('requests.get')
-    def test_gather_logs(self, requests_mock):
-        """OneLoginApp - Gather Events Entry Point"""
-        log_count = 3
-        logs = self._get_sample_events(log_count, False)
+    def test_gather_logs_no_pagination(self, requests_mock):
+        """OneLoginApp - Gather Events Entry Point, No Pagination"""
         self.set_config_values('us', 'good_id', 'good_secret')
+        logs = self._get_sample_events(5, None)
         self._app._auth_headers = True
+        self._app._next_page_url = None
+        self._app._last_timestamp = 1507698237.0
         requests_mock.return_value = Mock(
             status_code=200,
-            json=Mock(side_effect=[{'response': logs}])
+            json=Mock(side_effect=[logs])
         )
-        assert_equal(len(logs['data']), log_count)
+        events = self._app._gather_logs()
+        assert_equal(len(logs['data']), len(events))
+        assert_equal(logs['pagination']['next_link'], self._app._next_page_url)
 
     @patch('requests.get')
     def test_get_onelogin_get_events_without_pagination(self, requests_mock):
         """OneLoginApp - Get Events Without Pagination"""
-        log_count = 2
-        pagination = None
-        logs = self._get_sample_events(log_count, pagination)
         self.set_config_values('us', 'good_id', 'good_secret')
+        pagination = None
+        logs = self._get_sample_events(2, pagination)
         self._app._auth_headers = True
         self._app._next_page_url = pagination
+        self._app._last_timestamp = 1507698237.0
         requests_mock.return_value = Mock(
             status_code=200,
-            json=Mock(side_effect=[{'response': logs}])
+            json=Mock(side_effect=[logs])
         )
-        assert_equal(len(logs['data']), log_count)
-        assert_equal(logs['pagination']['next_link'], pagination)
+        events = self._app._get_onelogin_events()
+        assert_equal(len(logs['data']), len(events))
+        assert_equal(logs['pagination']['next_link'], self._app._next_page_url)
 
     @patch('requests.get')
     def test_get_onelogin_get_events_with_pagination(self, requests_mock):
         """OneLoginApp - Get Events With Pagination"""
-        log_count = 2
         next_link = 'https://next_link'
-        logs = self._get_sample_events(log_count, next_link)
-        self.set_config_values('us', 'good_id', 'good_secret')
+        logs = self._get_sample_events(3, next_link)
         self._app._auth_headers = True
+        self._app._next_page_url = next_link
         requests_mock.return_value = Mock(
             status_code=200,
-            json=Mock(side_effect=[{'response': logs}])
+            json=Mock(side_effect=[logs])
         )
-        assert_equal(len(logs['data']), log_count)
-        assert_equal(logs['pagination']['next_link'], next_link)
+        events = self._app._get_onelogin_events()
+        assert_equal(len(logs['data']), len(events))
+        assert_equal(logs['pagination']['next_link'], self._app._next_page_url)
 
     def test_onelogin_events_endpoint(self):
         """OneLoginApp - Verify Events Endpoint"""
