@@ -525,3 +525,70 @@ def user_input(requested_info, mask, input_restrictions):
             response = getpass(prompt=prompt)
 
     return response
+
+
+def load_test_file(path):
+    """Helper to json load the contents of a file with some error handling
+
+    Args:
+        path (str): Relative path to file on disk
+
+    Returns:
+        dict: Loaded JSON from test event file
+    """
+    message_template = 'Improperly formatted file ({}): {}'
+    with open(path, 'r') as test_event_file:
+        try:
+            contents = json.load(test_event_file)
+        except (ValueError, TypeError) as err:
+            message = message_template.format(path, err.message)
+            return False, message
+
+        # Make sure the test event file is formatted in the way we expect
+        if not (isinstance(contents, dict) and 'records' in contents):
+            message = message_template.format(path, 'File must be a dict (JSON '
+                                              'object) with top level key \'records\'')
+
+            return False, message
+
+        return contents, None
+
+
+def get_rules_from_test_events(test_files_dir):
+    """Helper to return all of the rules being tested with test events
+
+    Args:
+        test_files_dir (str): Path indicating where test files reside
+
+    Returns:
+        set: A collection of all of the rules being tested
+    """
+    test_file_info = get_rule_test_files(test_files_dir)
+    all_rules = set()
+    for path in test_file_info.values():
+        events, _ = load_test_file(path)
+        if not events:
+            continue
+
+        for test_event in events['records']:
+            if 'trigger_rules' not in test_event:
+                continue
+
+            all_rules.update(test_event['trigger_rules'])
+
+    return all_rules
+
+
+def get_rule_test_files(test_files_dir):
+    """Helper to get rule files to be tested
+
+    Args:
+        test_files_dir (str): Path indicating where test files reside
+
+    Returns:
+        dict:  Information about test files on disk, where the key is the
+            base name of the file and the value is the relative path to the file
+    """
+    return {os.path.splitext(event_file)[0]: os.path.join(root, event_file)
+            for root, _, test_event_files in os.walk(test_files_dir)
+            for event_file in test_event_files}
