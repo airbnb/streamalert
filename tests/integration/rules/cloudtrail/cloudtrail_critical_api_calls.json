@@ -34,9 +34,10 @@
                 }
             },
             "description": "Deleting an AWS subnet (DeleteSubnet) will create an alert.",
+            "log": "cloudtrail:events",
             "service": "s3",
             "source": "prefix.cluster.sample.bucket",
-            "trigger": true
+            "trigger_rules": ["cloudtrail_critical_api_calls"]
         },
         {
             "data": {
@@ -72,9 +73,10 @@
                 }
             },
             "description": "Deleting an AWS VPC (DeleteVpc) will create an alert.",
+            "log": "cloudtrail:events",
             "service": "s3",
             "source": "prefix.cluster.sample.bucket",
-            "trigger": true
+            "trigger_rules": ["cloudtrail_critical_api_calls"]
         },
         {
             "data": {
@@ -122,9 +124,10 @@
                 }
             },
             "description": "Updating an AWS CloudTrail trail (UpdateTrail) will create an alert.",
+            "log": "cloudtrail:events",
             "service": "s3",
             "source": "prefix.cluster.sample.bucket",
-            "trigger": true
+            "trigger_rules": ["cloudtrail_critical_api_calls"]
         },
         {
             "data": {
@@ -158,9 +161,10 @@
                 }
             },
             "description": "Suspending the recording of AWS API calls and log file delivery for a trail will create an alert.",
+            "log": "cloudtrail:events",
             "service": "s3",
             "source": "prefix.cluster.sample.bucket",
-            "trigger": true
+            "trigger_rules": ["cloudtrail_critical_api_calls"]
         },
         {
             "data": {
@@ -249,9 +253,10 @@
                 }
             },
             "description": "Deleting a database cluster (DeleteDBCluster) will create an alert.",
+            "log": "cloudtrail:events",
             "service": "s3",
             "source": "prefix.cluster.sample.bucket",
-            "trigger": true
+            "trigger_rules": ["cloudtrail_critical_api_calls"]
         },
         {
             "data": {
@@ -285,9 +290,10 @@
                 }
             },
             "description": "Suspending recording of resource changes through AWS Config (StopConfigurationRecorder) will create an alert.",
+            "log": "cloudtrail:events",
             "service": "s3",
             "source": "prefix.cluster.sample.bucket",
-            "trigger": true
+            "trigger_rules": ["cloudtrail_critical_api_calls"]
         },
         {
             "data": {
@@ -327,9 +333,10 @@
                 }
             },
             "description": "Deleting AWS network flow logs (DeleteFlowLogs) will create an alert.",
+            "log": "cloudtrail:events",
             "service": "s3",
             "source": "prefix.cluster.sample.bucket",
-            "trigger": true
+            "trigger_rules": ["cloudtrail_critical_api_calls"]
         },
         {
             "data": {
@@ -369,9 +376,10 @@
                 }
             },
             "description": "Describing AWS network flog logs will not create an alert.",
+            "log": "cloudtrail:events",
             "service": "s3",
             "source": "prefix.cluster.sample.bucket",
-            "trigger": false
+            "trigger_rules": []
         }
     ]
 }

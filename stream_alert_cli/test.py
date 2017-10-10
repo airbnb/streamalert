@@ -468,7 +468,7 @@ class AlertProcessorTester(object):
     """Class to encapsulate testing the alert processor"""
     _alert_fail_pass = [0, 0]
 
-    def __init__(self, context):
+    def __init__(self, config, context):
         """AlertProcessorTester initializer
 
         Args:
@@ -483,7 +483,7 @@ class AlertProcessorTester(object):
         self.kms_alias = 'alias/stream_alert_secrets_test'
         self.secrets_bucket = 'test.streamalert.secrets'
         self.outputs_config = load_outputs_config()
-        helpers.setup_mock_firehose_delivery_streams(CONFIG)
+        helpers.setup_mock_firehose_delivery_streams(config)
 
     def test_processor(self, alerts):
         """Perform integration tests for the 'alert' Lambda function. Alerts
@@ -705,7 +705,7 @@ def stream_alert_test(options, config):
                        run_options.get('command') == 'live-test')
 
         rule_proc_tester = RuleProcessorTester(context, config, test_rules)
-        alert_proc_tester = AlertProcessorTester(context)
+        alert_proc_tester = AlertProcessorTester(config, context)
 
         validate_schemas = options.command == 'validate-schemas'
 
