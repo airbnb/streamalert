@@ -221,7 +221,7 @@ class TestAppIntegration(object):
             json=Mock(side_effect=[{'message': 'something went wrong'}])
         )
 
-        assert_false(self._app._make_request('hostname', None, None))
+        assert_false(self._app._make_get_request('hostname', None, None))
 
         # The .json should be called on the response once, to get the error message
         # If it was called twice, it means `logs = response.json()['response']`

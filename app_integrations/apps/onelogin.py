@@ -15,7 +15,6 @@ limitations under the License.
 """
 from datetime import datetime
 import re
-import requests
 
 from app_integrations import LOGGER
 from app_integrations.apps.app_base import AppIntegration
@@ -23,8 +22,8 @@ from app_integrations.apps.app_base import AppIntegration
 
 class OneLoginApp(AppIntegration):
     """OneLogin StreamAlert App"""
-    _ONELOGIN_EVENTS_URL = 'https://api.us.onelogin.com/api/1/events'
-    _ONELOGIN_TOKEN_URL = 'https://api.us.onelogin.com/auth/oauth2/v2/token'
+    _ONELOGIN_EVENTS_URL = 'https://api.{}.onelogin.com/api/1/events'
+    _ONELOGIN_TOKEN_URL = 'https://api.{}.onelogin.com/auth/oauth2/v2/token'
     # OneLogin API returns 50 events per page
     _MAX_EVENTS_LIMIT = 50
 
@@ -38,20 +37,27 @@ class OneLoginApp(AppIntegration):
     def _type(cls):
         return 'events'
 
-    @classmethod
-    def _endpoint(cls):
-        """Class method to return the OneLogin events endpoint
+    def _token_endpoint(self):
+        """Get the endpoint URL to retrieve tokens
 
         Returns:
-            str: Path of the events endpoint to query
+            str: Full URL to generate tokens for the OneLogin API
         """
-        return cls._ONELOGIN_EVENTS_URL
+        return self._ONELOGIN_TOKEN_URL.format(self._config['auth']['region'])
+
+    def _events_endpoint(self):
+        """Get the endpoint URL to retrieve events
+
+        Returns:
+            str: Full URL to retrieve events in the OneLogin API
+        """
+        return self._ONELOGIN_EVENTS_URL.format(self._config['auth']['region'])
 
     @classmethod
     def service(cls):
         return 'onelogin'
 
-    def _generate_headers(self, token_url, client_secret, client_id):
+    def _generate_headers(self):
         """Each request will request a new token to call the resources APIs.
 
         More details to be found here:
@@ -60,29 +66,27 @@ class OneLoginApp(AppIntegration):
         Returns:
             str: Bearer token to be used to call the OneLogin resource APIs
         """
-        authorization = 'client_id: %s, client_secret: %s' % (client_id, client_secret)
+        authorization = 'client_id: {}, client_secret: {}'.format(
+            self._config['auth']['client_id'], self._config['auth']['client_secret'])
+
         headers_token = {'Authorization': authorization,
                          'Content-Type': 'application/json'}
 
-        response = requests.post(token_url,
-                                 json={'grant_type':'client_credentials'},
-                                 headers=headers_token)
+        response = self._make_post_request(self._token_endpoint(),
+                                           {'grant_type':'client_credentials'},
+                                           headers_token)
 
-        if not self._check_http_response(response):
+        if not response:
             return False
 
-        bearer = 'bearer:%s' % (response.json()['access_token'])
+        bearer = 'bearer:{}'.format(response['access_token'])
         self._auth_headers = {'Authorization': bearer}
 
     def _gather_logs(self):
         """Gather the authentication log events."""
-
         if not self._auth_headers:
-            self._auth_headers = self._generate_headers(self._ONELOGIN_TOKEN_URL,
-                                                        self._config['auth']['client_secret'],
-                                                        self._config['auth']['client_id'])
+            self._auth_headers = self._generate_headers()
 
-        self._next_page_url = self._ONELOGIN_EVENTS_URL
         return self._get_onelogin_events()
 
     def _get_onelogin_events(self):
@@ -124,59 +128,50 @@ class OneLoginApp(AppIntegration):
                 }
             ]
         """
-        # OneLogin API expects the ISO 8601 format: YYYY-MM-DDTHH:MM:SSZ
-        formatted_date = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
-        params = {'since': formatted_date}
-
         # Make sure we have authentication headers
         if not self._auth_headers:
             return False
 
-        events = self._get_onelogin_paginated_events(params)
+        # Are we just getting events or getting paginated events?
+        if self._next_page_url:
+            params = None
+        else:
+            # OneLogin API expects the ISO 8601 format: YYYY-MM-DDTHH:MM:SSZ
+            formatted_date = datetime.fromtimestamp(
+                self._last_timestamp).strftime('%Y-%m-%dT%H:%M:%SZ')
+            params = {'since': formatted_date}
 
-        while self._more_to_poll and self._next_page_url:
-            LOGGER.debug('More events to retrieve for \'%s\': %s', self.type(), self._more_to_poll)
-            pagination = self._get_onelogin_paginated_events(None)
+        LOGGER.debug('Events to retrieve for \'%s\': %s', self.type(), self._more_to_poll)
+        response = self._make_get_request(self._next_page_url, self._auth_headers, params)
 
-            # Add the events to our results, this is equivalent to using events.extend()
-            events += pagination
+        if not response:
+            events = False
+
+        # Extract events and pagination link, if there is any
+        events = response['data']
+        self._next_page_url = response['pagination']['next_link']
 
         # Return the list of logs to the caller so they can be send to the batcher
         return events
 
-    def _get_onelogin_paginated_events(self, params):
-        """Get events from the API pagination url
-
-        Returns:
-            The same as the method _get_onelogin_events()
-        """
-        response = requests.get(self._next_page_url, headers=self._auth_headers, params=params)
-        if not self._check_http_response(response):
-            return False
-
-        # Extract events from response
-        events = response.json()['data']
-
-        # Do we have a pagination link to follow?
-        self._more_to_poll = len(events) >= self._MAX_EVENTS_LIMIT
-
-        # If we are already retrieved all the events, then set the value to prevent more requests
-        self._next_page_url = response.json()['pagination']['next_link']
-
-        return events
-
     def required_auth_info(self):
         return {
+            'region':
+                {
+                    'description': ('the region for the OneLogin API. This should be a '
+                                    'string of 2 letters, lowercase or uppercase'),
+                    'format': re.compile(r'^[a-zA-Z]{2}$')
+                },
             'client_secret':
                 {
                     'description': ('the client secret for the OneLogin API. This '
-                                    'should a string of 57 alphanumeric characters'),
+                                    'should be a string of 57 alphanumeric characters'),
                     'format': re.compile(r'^[a-zA-Z0-9]{57}$')
                 },
             'client_id':
                 {
                     'description': ('the client id for the OneLogin API. This '
-                                    'should a string of 57 alphanumeric characters'),
+                                    'should be a string of 57 alphanumeric characters'),
                     'format': re.compile(r'^[a-zA-Z0-9]{57}$')
                 }
             }

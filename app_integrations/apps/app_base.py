@@ -204,8 +204,8 @@ class AppIntegration(object):
 
         return success
 
-    def _make_request(self, full_url, headers, params):
-        """Method for returning the json loaded response for this request
+    def _make_get_request(self, full_url, headers, params):
+        """Method for returning the json loaded response for this GET request
 
         Returns:
             bool or dict: False if the was an error performing the request,
@@ -216,6 +216,24 @@ class AppIntegration(object):
 
         # Perform the request and return the response as a dict
         response = requests.get(full_url, headers=headers, params=params)
+
+        if not self._check_http_response(response):
+            return False
+
+        return response.json()
+
+    def _make_post_request(self, full_url, headers, json):
+        """Method for returning the json loaded response for this POST request
+
+        Returns:
+            bool or dict: False if the was an error performing the request,
+                or a dictionary loaded from the json response
+        """
+        LOGGER.debug('Making request for service \'%s\' on poll #%d',
+                     self.type(), self._poll_count)
+
+        # Perform the request and return the response as a dict
+        response = requests.post(full_url, headers=headers, json=json)
 
         if not self._check_http_response(response):
             return False

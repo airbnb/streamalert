@@ -115,7 +115,7 @@ class DuoApp(AppIntegration):
             return False
 
         # Make the request to the api, resulting in a bool or dict
-        response = self._make_request(full_url, headers=headers, params=params)
+        response = self._make_get_request(full_url, headers=headers, params=params)
         if not response:
             return False
 

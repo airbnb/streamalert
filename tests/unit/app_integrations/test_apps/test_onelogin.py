@@ -28,7 +28,6 @@ from tests.unit.app_integrations.test_helpers import (
 
 
 @patch.object(OneLoginApp, 'type', Mock(return_value='type'))
-@patch.object(OneLoginApp, '_endpoint', Mock(return_value='endpoint'))
 @patch.object(AppConfig, 'SSM_CLIENT', MockSSMClient())
 class TestOneLoginApp(object):
     """Test class for the OneLoginApp"""
@@ -43,26 +42,31 @@ class TestOneLoginApp(object):
         """Setup before each method"""
         self._app = OneLoginApp(AppConfig(get_valid_config_dict('onelogin')))
 
+    def set_config_values(self, region, client_id, client_secret):
+        """Helper function to setup the auth values"""
+        self._app._config['auth']['region'] = region
+        self._app._config['auth']['client_id'] = client_id
+        self._app._config['auth']['client_secret'] = client_secret
+
     @patch('requests.post')
     def test_generate_headers_bad(self, requests_mock):
         """OneLoginApp - Generate Bad Headers, """
+        self.set_config_values('us', 'bad_id', 'bad_secret')
         requests_mock.return_value = Mock(
             status_code=404,
             json=Mock(side_effect=[{'message': 'something went wrong'}])
         )
-        assert_false(self._app._generate_headers(self._app._ONELOGIN_TOKEN_URL,
-                                                 'bad_secret',
-                                                 'bad_id'))
+        assert_false(self._app._generate_headers())
+
     @patch('requests.post')
     def test_generate_headers_good(self, requests_mock):
         """OneLoginApp - Generate Good Headers, """
+        self.set_config_values('us', 'good_id', 'good_secret')
         requests_mock.return_value = Mock(
             status_code=200,
             json=Mock(side_effect=[{'access_token': 'this_is_a_token'}])
         )
-        self._app._generate_headers(self._app._ONELOGIN_TOKEN_URL,
-                                    'good_secret',
-                                    'good_id')
+        self._app._generate_headers()
         assert_equal(self._app._auth_headers['Authorization'], 'bearer:this_is_a_token')
 
     def test_sleep(self):
@@ -75,7 +79,7 @@ class TestOneLoginApp(object):
     def test_required_auth_info(self):
         """OneLoginApp - Required Auth Info"""
         assert_items_equal(self._app.required_auth_info().keys(),
-                           {'client_secret', 'client_id'})
+                           {'region', 'client_secret', 'client_id'})
 
     @staticmethod
     def _get_sample_events(count, next_link):
@@ -114,19 +118,7 @@ class TestOneLoginApp(object):
         }
         data = [event] * count
 
-        if not next_link:
-            return {'data': data}
-
         return {'data': data, 'pagination': {'next_link': next_link}}
-
-    @patch('requests.get')
-    def test_get_onelogin_paginated_events_bad_response(self, requests_mock):
-        """OneLoginApp - Get OneLogin Paginated Events, Bad Response"""
-        requests_mock.return_value = Mock(
-            status_code=404,
-            json=Mock(side_effect=[{'message': 'something went wrong'}])
-        )
-        assert_false(self._app._get_onelogin_paginated_events(None))
 
     @patch('requests.get')
     def test_get_onelogin_events_no_headers(self, requests_mock):
@@ -137,8 +129,7 @@ class TestOneLoginApp(object):
     @patch('requests.get')
     def test_get_onelogin_events_bad_response(self, requests_mock):
         """OneLoginApp - Get OneLogin Events, Bad Response"""
-        self._app._config['auth']['client_secret'] = 'good_secret'
-        self._app._config['auth']['client_id'] = 'client_id'
+        self.set_config_values('us', 'good_id', 'good_secret')
         requests_mock.return_value = Mock(
             status_code=404,
             json=Mock(side_effect=[{'message': 'something went wrong'}])
@@ -150,24 +141,37 @@ class TestOneLoginApp(object):
         """OneLoginApp - Gather Events Entry Point"""
         log_count = 3
         logs = self._get_sample_events(log_count, False)
-        self._app._config['auth']['client_secret'] = 'good_secret'
-        self._app._config['auth']['client_id'] = 'client_id'
+        self.set_config_values('us', 'good_id', 'good_secret')
         self._app._auth_headers = True
         requests_mock.return_value = Mock(
             status_code=200,
             json=Mock(side_effect=[{'response': logs}])
         )
-
         assert_equal(len(logs['data']), log_count)
 
     @patch('requests.get')
-    def test_get_onelogin_paginated_events(self, requests_mock):
-        """OneLoginApp - Get Paginated Events"""
+    def test_get_onelogin_get_events_without_pagination(self, requests_mock):
+        """OneLoginApp - Get Events Without Pagination"""
+        log_count = 2
+        pagination = None
+        logs = self._get_sample_events(log_count, pagination)
+        self.set_config_values('us', 'good_id', 'good_secret')
+        self._app._auth_headers = True
+        self._app._next_page_url = pagination
+        requests_mock.return_value = Mock(
+            status_code=200,
+            json=Mock(side_effect=[{'response': logs}])
+        )
+        assert_equal(len(logs['data']), log_count)
+        assert_equal(logs['pagination']['next_link'], pagination)
+
+    @patch('requests.get')
+    def test_get_onelogin_get_events_with_pagination(self, requests_mock):
+        """OneLoginApp - Get Events With Pagination"""
         log_count = 2
         next_link = 'https://next_link'
         logs = self._get_sample_events(log_count, next_link)
-        self._app._config['auth']['client_secret'] = 'good_secret'
-        self._app._config['auth']['client_id'] = 'client_id'
+        self.set_config_values('us', 'good_id', 'good_secret')
         self._app._auth_headers = True
         requests_mock.return_value = Mock(
             status_code=200,
@@ -176,14 +180,16 @@ class TestOneLoginApp(object):
         assert_equal(len(logs['data']), log_count)
         assert_equal(logs['pagination']['next_link'], next_link)
 
-def test_onelogin_events_endpoint():
-    """OneLoginApp - Verify Events Endpoint"""
-    assert_equal(OneLoginApp._endpoint(), 'https://api.us.onelogin.com/api/1/events')
+    def test_onelogin_events_endpoint(self):
+        """OneLoginApp - Verify Events Endpoint"""
+        self._app._config['auth']['region'] = 'us'
+        assert_equal(self._app._events_endpoint(), 'https://api.us.onelogin.com/api/1/events')
 
-def test_onelogin_token_endpoint():
-    """OneLoginApp - Verify Token Endpoint"""
-    assert_equal(OneLoginApp._ONELOGIN_TOKEN_URL,
-                 'https://api.us.onelogin.com/auth/oauth2/v2/token')
+    def test_onelogin_token_endpoint(self):
+        """OneLoginApp - Verify Token Endpoint"""
+        self._app._config['auth']['region'] = 'us'
+        assert_equal(self._app._token_endpoint(),
+                     'https://api.us.onelogin.com/auth/oauth2/v2/token')
 
 def test_onelogin_events_type():
     """OneLoginApp - Verify Events Type"""
