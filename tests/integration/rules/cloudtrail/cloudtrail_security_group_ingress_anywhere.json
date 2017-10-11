@@ -72,7 +72,10 @@
               }
             },
             "description": "A Security Group that allows ingress from anywhere on the internet should create an alert.",
-            "trigger": true,
+            "log": "cloudwatch:events",
+            "trigger_rules": [
+              "cloudtrail_security_group_ingress_anywhere"
+            ],
             "source": "prefix_cluster1_stream_alert_kinesis",
             "service": "kinesis"
         },
@@ -140,7 +143,9 @@
               }
             },
             "description": "A Security Group that allows ingress from an RFC1918 IP should not create an alert.",
-            "trigger": false,
+            "log": "cloudwatch:events",
+            "trigger_rules": [
+            ],
             "source": "prefix_cluster1_stream_alert_kinesis",
             "service": "kinesis"
         }
