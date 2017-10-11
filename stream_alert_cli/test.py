@@ -89,8 +89,9 @@ class RuleProcessorTester(object):
 
         Args:
             rules_filter (set): A collection of rules to filter on, passed in by the user
-            filter_rules (set): Specific rule names to restrict testing to. This is
-                passed in from the CLI using the --test-rules option.
+                via the CLI using the --test-rules option.
+            files_filter (set): A collection of files to filter on, passed in by the user
+                via the CLI using the --test-files option.
             validate_only (bool): If true, validation of test records will occur
                 without the rules engine being applied to events.
 
@@ -188,6 +189,8 @@ class RuleProcessorTester(object):
                 an incoming record from a service would format it.
                 See test/integration/templates for example of how each service
                 formats records.
+            print_header_line (bool): Indicates if this is the first record from
+                a test file, and therefore we should print some header information
         """
         service, entity = self.processor.classifier.extract_service_and_entity(formatted_record)
 
