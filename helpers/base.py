@@ -172,13 +172,17 @@ def ghe_json_message(rec):
     return message_rec
 
 def select_key(data, search_key, results):
-    """
+    """ Recursively search for a given key and return all values
     Args:
         data (dict, list)
         search_key (string)
+        results (array)
+
+    Returns:
+        (list) all values
     """
     if not hasattr(data, 'items'):
-        return
+        return []
     if search_key in data:
         results.append(data[search_key])
     for key, val in data.iteritems():
