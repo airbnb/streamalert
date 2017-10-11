@@ -38,12 +38,10 @@ resource "aws_lambda_alias" "app_production" {
 
 // SSM Parameter Store value for the base config. Allow this to overwrite existing values
 resource "aws_ssm_parameter" "config" {
-  name  = "${var.function_prefix}_app_config"
-  type  = "SecureString"
-  value = "${var.app_config_parameter}"
-
-  # Not sure if overwrite is required, but it is not supported as of 0.9.*
-  # overwrite = true
+  name      = "${var.function_prefix}_app_config"
+  type      = "SecureString"
+  value     = "${var.app_config_parameter}"
+  overwrite = true
 }
 
 // AWS CloudWatch Event Rule for invoking StreamAlert App lambda on interval
