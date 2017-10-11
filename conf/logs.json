@@ -751,7 +751,7 @@
       "version": "string",
       "time": "string",
       "id": "string",
-      "resources": {}
+      "resources": []
     },
     "parser": "json"
   },
