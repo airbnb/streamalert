@@ -37,7 +37,9 @@ from stream_alert.shared.backoff_handlers import (
 from stream_alert.shared.metrics import MetricLogger
 
 # For Firehose PutRecordBatch backoff
-MAX_BACKOFF_ATTEMPTS = 5
+MAX_BACKOFF_ATTEMPTS = 10
+# Adds a max of 20 seconds more to the Lambda function
+MAX_BACKOFF_FIBO_VALUE = 8
 # Firehose Limits: http://bit.ly/2fw5UY2
 MAX_BATCH_COUNT = 500
 MAX_BATCH_SIZE = 4000 * 1000
@@ -268,8 +270,9 @@ class StreamAlert(object):
 
         @backoff.on_predicate(backoff.fibo,
                               lambda resp: resp['FailedPutCount'] > 0,
-                              jitter=backoff.full_jitter,
                               max_tries=MAX_BACKOFF_ATTEMPTS,
+                              max_value=MAX_BACKOFF_FIBO_VALUE,
+                              jitter=backoff.full_jitter,
                               on_backoff=backoff_handler,
                               on_success=success_handler,
                               on_giveup=giveup_handler)
