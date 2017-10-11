@@ -121,6 +121,9 @@ class DuoApp(AppIntegration):
 
         # Duo stores the list of logs in the 'response' key of the response
         logs = response['response']
+        if not logs:
+            LOGGER.info('No logs in response from duo')
+            return False
 
         # Get the timestamp from the latest event. Duo produces these sequentially
         # so we can just extract the timestamp from the last item in the list
