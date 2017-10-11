@@ -180,14 +180,17 @@ does not actually run the rules engine on test events.
 
 Available Options:
 
-    --test-files         Name(s) of test files to validate, separated by spaces (not full path)
-                           These files should be located within 'tests/integration/rules/' and each
-                           should be named according to the rule they are meant to test. The
-                           contents should be json, in the form of `{{"records": [ <records as maps> ]}}`.
+    --test-files         Name(s) of test files to validate, separated by spaces (not full path).
+                           These files should be located within 'tests/integration/rules/'. The
+                           contents should be json, in the form of:
+                             `{{"records": [ <records as maps> ]}}`.
+
                            See the sample test files in 'tests/integration/rules/' for an example.
-                           The '--test-files' flag will accept the full file name, with extension,
-                           or the base file name, without extension (ie: test_file_name.json or
-                           test_file_name are both acceptable arguments)
+                           This flag supports the full file name, with extension, or the base file
+                           name, without extension (ie: test_file_name.json or test_file_name)
+
+Optional Arguments:
+
     --debug              Enable Debug logger output
 
 Examples:
@@ -210,7 +213,9 @@ Examples:
     schema_validation_parser.add_argument(
         '-f', '--test-files',
         nargs='+',
-        help=ARGPARSE_SUPPRESS
+        help=ARGPARSE_SUPPRESS,
+        action=UniqueSetAction,
+        default=set()
     )
 
     # allow verbose output for the CLI with the --debug option
@@ -824,7 +829,7 @@ Resources:
         help=ARGPARSE_SUPPRESS,
         nargs='+',
         action=UniqueSetAction,
-        default=[]
+        default=set()
     )
 
     ### Commenting out the below until we can support 'extended-statistic' metrics
@@ -865,7 +870,6 @@ Resources:
     )
 
 
-
 def _add_lambda_subparser(subparsers):
     """Add the Lambda subparser: manage.py lambda [subcommand] [options]"""
     lambda_usage = 'manage.py lambda [subcommand] [options]'
@@ -875,22 +879,9 @@ Deploy, Rollback, and Test StreamAlert Lambda functions
 
 Available Subcommands:
 
-    manage.py lambda deploy [options]         Deploy Lambda functions
-    manage.py lambda rollback [options]       Rollback Lambda functions
-    manage.py lambda test [options]           Run rule tests
-
-Available Options:
-
-    --processor                                         The name of the Lambda function to manage.
-                                                        Valid options include: rule, alert, or all.
-    --debug                                             Enable Debug logger output.
-    --rules                                             List of rules to test, separated by spaces.
-
-Examples:
-
-    manage.py lambda deploy --processor all
-    manage.py lambda rollback --processor all
-    manage.py lambda test --processor rule --rules lateral_movement root_logins
+    manage.py lambda deploy            Deploy Lambda functions
+    manage.py lambda rollback          Rollback Lambda functions
+    manage.py lambda test              Run rule tests
 
 """.format(version))
     lambda_parser = subparsers.add_parser(
@@ -904,33 +895,189 @@ Examples:
     # Set the name of this parser to 'lambda'
     lambda_parser.set_defaults(command='lambda')
 
-    # Add subcommand options for the lambda sub-parser
-    lambda_parser.add_argument(
-        'subcommand',
-        choices=['deploy', 'rollback', 'test'],
+    lambda_subparsers = lambda_parser.add_subparsers()
+
+    _add_lambda_deploy_subparser(lambda_subparsers)
+    _add_lambda_rollback_subparser(lambda_subparsers)
+    _add_lambda_test_subparser(lambda_subparsers)
+
+
+def _add_lambda_deploy_subparser(lambda_subparsers):
+    """Add the lambda deploy subparser: manage.py lambda deploy"""
+    lambda_deploy_usage = 'manage.py lambda deploy'
+
+    lambda_deploy_desc = ("""
+StreamAlertCLI v{}
+Deploy Lambda functions
+
+Command:
+
+    manage.py lambda deploy            Deploy Lambda functions
+
+Required Arguments:
+
+    -p/--processor                     The name of the Lambda function to deploy.
+                                         Valid options include: rule, alert, athena, apps, or all.
+
+Optional Arguments:
+
+    --debug                            Enable Debug logger output
+
+Examples:
+
+    manage.py lambda deploy --processor all
+
+""".format(version))
+    lambda_deploy_parser = lambda_subparsers.add_parser(
+        'deploy',
+        description=lambda_deploy_desc,
+        usage=lambda_deploy_usage,
+        formatter_class=RawTextHelpFormatter,
         help=ARGPARSE_SUPPRESS
     )
 
-    # require the name of the processor being deployed/rolled back/tested
-    lambda_parser.add_argument(
-        '--processor',
-        choices=['alert', 'all', 'athena', 'rule', 'apps'],
+    lambda_deploy_parser.set_defaults(subcommand='deploy')
+
+    _add_default_lambda_args(lambda_deploy_parser)
+
+
+def _add_lambda_rollback_subparser(lambda_subparsers):
+    """Add the lambda rollback subparser: manage.py lambda rollback"""
+    lambda_rollback_usage = 'manage.py lambda rollback'
+
+    lambda_rollback_desc = ("""
+StreamAlertCLI v{}
+Rollback Lambda functions
+
+Command:
+
+    manage.py lambda rollback          Rollback Lambda functions
+
+Required Arguments:
+
+    -p/--processor                     The name of the Lambda function to rollback.
+                                         Valid options include: rule, alert, athena, apps, or all.
+
+Optional Arguments:
+
+    --debug                            Enable Debug logger output
+
+Examples:
+
+    manage.py lambda rollback --processor all
+
+""".format(version))
+    lambda_rollback_parser = lambda_subparsers.add_parser(
+        'rollback',
+        description=lambda_rollback_desc,
+        usage=lambda_rollback_usage,
+        formatter_class=RawTextHelpFormatter,
+        help=ARGPARSE_SUPPRESS
+    )
+
+    lambda_rollback_parser.set_defaults(subcommand='rollback')
+
+    _add_default_lambda_args(lambda_rollback_parser)
+
+
+def _add_lambda_test_subparser(lambda_subparsers):
+    """Add the lambda test subparser: manage.py lambda test"""
+    lambda_test_usage = 'manage.py lambda test'
+
+    lambda_test_desc = ("""
+StreamAlertCLI v{}
+Run rule tests
+
+Command:
+
+    manage.py lambda test              Run rule tests
+
+Required Arguments:
+
+    -p/--processor                     The name of the Lambda function to test.
+                                         Valid options include: rule, alert, or all.
+    -r/--test-rules                    List of rules to test, separated by spaces.
+                                         Cannot be used in conjunction with `--test-files`
+    -f/--test-files                    List of files to test, separated by spaces.
+                                         Cannot be used in conjunction with `--test-files`
+                                         This flag supports the full file name, with extension,
+                                         or the base file name, without extension
+                                         (ie: test_file_name.json or test_file_name).
+
+Optional Arguments:
+
+    --debug                            Enable Debug logger output
+
+Example:
+
+    manage.py lambda test --processor rule --rules lateral_movement root_logins
+
+""".format(version))
+    lambda_test_parser = lambda_subparsers.add_parser(
+        'test',
+        description=lambda_test_desc,
+        usage=lambda_test_usage,
+        formatter_class=RawTextHelpFormatter,
+        help=ARGPARSE_SUPPRESS
+    )
+
+    lambda_test_parser.set_defaults(subcommand='test')
+
+    # require the name of the processor being tested
+    lambda_test_parser.add_argument(
+        '-p', '--processor',
+        choices=['alert', 'all', 'rule'],
         help=ARGPARSE_SUPPRESS,
-        action='append',
+        nargs=1,
+        action=UniqueSetAction,
         required=True
     )
 
-    # allow verbose output for the CLI with the --debug option
-    lambda_parser.add_argument(
+    # add the optional ability to test against a rule/set of rules
+    lambda_test_parser.add_argument(
+        '-r', '--test-rules',
+        nargs='+',
+        help=ARGPARSE_SUPPRESS,
+        action=UniqueSetAction,
+        default=set()
+    )
+
+    test_filter_group = lambda_test_parser.add_mutually_exclusive_group(required=False)
+
+    # add the optional ability to test against a rule/set of rules
+    test_filter_group.add_argument(
+        '-f', '--test-files',
+        nargs='+',
+        help=ARGPARSE_SUPPRESS,
+        action=UniqueSetAction,
+        default=set()
+    )
+
+    # Allow verbose output for the CLI with the --debug option
+    test_filter_group.add_argument(
         '--debug',
         action='store_true',
         help=ARGPARSE_SUPPRESS
     )
 
-    # add the optional ability to test against a rule/set of rules
+
+def _add_default_lambda_args(lambda_parser):
+    """Add the default arguments to the lambda parsers"""
+
+    # require the name of the processor being deployed/rolled back
     lambda_parser.add_argument(
-        '-r', '--rules',
+        '-p', '--processor',
+        choices=['alert', 'all', 'athena', 'rule', 'apps'],
+        help=ARGPARSE_SUPPRESS,
         nargs='+',
+        action=UniqueSetAction,
+        required=True
+    )
+
+    # Allow verbose output for the CLI with the --debug option
+    lambda_parser.add_argument(
+        '--debug',
+        action='store_true',
         help=ARGPARSE_SUPPRESS
     )
 

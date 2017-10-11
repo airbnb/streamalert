@@ -18,14 +18,10 @@ import os
 import shutil
 import sys
 
-from stream_alert_cli.config import CLIConfig
 from stream_alert_cli.logger import LOGGER_CLI
 from stream_alert_cli.helpers import run_command, tf_runner, continue_prompt
 from stream_alert_cli.manage_lambda.deploy import deploy
 from stream_alert_cli.terraform.generate import terraform_generate
-
-
-CONFIG = CLIConfig()
 
 
 def terraform_check():
@@ -41,7 +37,7 @@ def terraform_check():
                        quiet=True)
 
 
-def terraform_handler(options):
+def terraform_handler(options, config):
     """Handle all Terraform CLI operations
 
     Args:
@@ -55,11 +51,11 @@ def terraform_handler(options):
 
     # Plan and Apply our streamalert infrastructure
     if options.subcommand == 'build':
-        terraform_build(options)
+        terraform_build(options, config)
 
     # generate terraform files
     elif options.subcommand == 'generate':
-        if not terraform_generate(config=CONFIG):
+        if not terraform_generate(config=config):
             return
 
     elif options.subcommand == 'init-backend':
@@ -70,7 +66,7 @@ def terraform_handler(options):
         LOGGER_CLI.info('Initializing StreamAlert')
 
         # generate init Terraform files
-        if not terraform_generate(config=CONFIG, init=True):
+        if not terraform_generate(config=config, init=True):
             return
 
         LOGGER_CLI.info('Initializing Terraform')
@@ -94,7 +90,7 @@ def terraform_handler(options):
 
         # generate the main.tf with remote state enabled
         LOGGER_CLI.info('Configuring Terraform Remote State')
-        if not terraform_generate(config=CONFIG):
+        if not terraform_generate(config=config):
             return
 
         if not run_command(['terraform', 'init']):
@@ -102,7 +98,7 @@ def terraform_handler(options):
 
         LOGGER_CLI.info('Deploying Lambda Functions')
         # deploy both lambda functions
-        deploy(deploy_opts(['rule', 'alert']))
+        deploy(deploy_opts(['rule', 'alert']), config)
         # create all remainder infrastructure
 
         LOGGER_CLI.info('Building Remainder Infrastructure')
@@ -111,7 +107,7 @@ def terraform_handler(options):
     elif options.subcommand == 'clean':
         if not continue_prompt(message='Are you sure you want to clean all Terraform files?'):
             sys.exit(1)
-        terraform_clean()
+        terraform_clean(config)
 
     elif options.subcommand == 'destroy':
         if options.target:
@@ -124,14 +120,14 @@ def terraform_handler(options):
                     targets.append('module.stream_alert_{}'.format(target))
                 else:
                     targets.extend(['module.{}_{}'.format(target, cluster)
-                                    for cluster in CONFIG.clusters()])
+                                    for cluster in config.clusters()])
 
             tf_runner(targets=targets, action='destroy')
             return
 
         # Migrate back to local state so Terraform can successfully
         # destroy the S3 bucket used by the backend.
-        if not terraform_generate(config=CONFIG, init=True):
+        if not terraform_generate(config=config, init=True):
             return
 
         if not run_command(['terraform', 'init']):
@@ -142,21 +138,21 @@ def terraform_handler(options):
             return
 
         # Remove old Terraform files
-        terraform_clean()
+        terraform_clean(config)
 
     # get a quick status on our declared infrastructure
     elif options.subcommand == 'status':
-        terraform_status()
+        terraform_status(config)
 
 
-def terraform_build(options):
+def terraform_build(options, config):
     """Run Terraform with an optional set of targets
 
     Args:
         options (namedtuple): Parsed arguments from manage.py
     """
     # Generate Terraform files
-    if not terraform_generate(config=CONFIG):
+    if not terraform_generate(config=config):
         return
     # Target is for terraforming a specific streamalert module.
     # This value is passed as a list
@@ -164,18 +160,18 @@ def terraform_build(options):
         tf_runner(targets=['module.stream_alert_athena'])
     elif options.target:
         targets = ['module.{}_{}'.format(target, cluster)
-                   for cluster in CONFIG.clusters()
+                   for cluster in config.clusters()
                    for target in options.target]
         tf_runner(targets=targets)
     else:
         tf_runner()
 
 
-def terraform_clean():
+def terraform_clean(config):
     """Remove leftover Terraform statefiles and main/cluster files"""
     LOGGER_CLI.info('Cleaning Terraform files')
 
-    cleanup_files = ['{}.tf.json'.format(cluster) for cluster in CONFIG.clusters()]
+    cleanup_files = ['{}.tf.json'.format(cluster) for cluster in config.clusters()]
     cleanup_files.extend([
         'main.tf.json',
         'terraform.tfstate',
@@ -192,22 +188,22 @@ def terraform_clean():
         shutil.rmtree('terraform/.terraform/')
 
 
-def terraform_status():
+def terraform_status(config):
     """Display current AWS infrastructure built by Terraform"""
-    for cluster, region in CONFIG['clusters'].items():
+    for cluster, region in config['clusters'].items():
         print '\n======== {} ========'.format(cluster)
         print 'Region: {}'.format(region)
         print ('Alert Processor Lambda Settings: \n\tTimeout: {}\n\tMemory: {}'
                '\n\tProd Version: {}').format(
-                   CONFIG['alert_processor_lambda_config'][cluster][0],
-                   CONFIG['alert_processor_lambda_config'][cluster][1],
-                   CONFIG['alert_processor_versions'][cluster])
+                   config['alert_processor_lambda_config'][cluster][0],
+                   config['alert_processor_lambda_config'][cluster][1],
+                   config['alert_processor_versions'][cluster])
         print ('Rule Processor Lambda Settings: \n\tTimeout: {}\n\tMemory: {}'
                '\n\tProd Version: {}').format(
-                   CONFIG['rule_processor_lambda_config'][cluster][0],
-                   CONFIG['rule_processor_lambda_config'][cluster][1],
-                   CONFIG['rule_processor_versions'][cluster])
+                   config['rule_processor_lambda_config'][cluster][0],
+                   config['rule_processor_lambda_config'][cluster][1],
+                   config['rule_processor_versions'][cluster])
         print 'Kinesis settings: \n\tShards: {}\n\tRetention: {}'.format(
-            CONFIG['kinesis_streams_config'][cluster][0],
-            CONFIG['kinesis_streams_config'][cluster][1]
+            config['kinesis_streams_config'][cluster][0],
+            config['kinesis_streams_config'][cluster][1]
         )

@@ -14,20 +14,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from stream_alert_cli import helpers
-from stream_alert_cli.config import CLIConfig
 from stream_alert_cli.terraform.generate import terraform_generate
 
 
-CONFIG = CLIConfig()
-
-def rollback(options):
+def rollback(options, config):
     """Rollback the current production AWS Lambda version by 1
 
     Notes:
         Ignores if the production version is $LATEST
         Only rollsback if published version is greater than 1
     """
-    clusters = CONFIG.clusters()
+    clusters = config.clusters()
 
     if 'all' in options.processor:
         lambda_functions = {'rule_processor', 'alert_processor', 'athena_partition_refresh'}
@@ -39,20 +36,20 @@ def rollback(options):
 
     for cluster in clusters:
         for lambda_function in lambda_functions:
-            stream_alert_key = CONFIG['clusters'][cluster]['modules']['stream_alert']
+            stream_alert_key = config['clusters'][cluster]['modules']['stream_alert']
             current_vers = stream_alert_key[lambda_function]['current_version']
             if current_vers != '$LATEST':
                 current_vers = int(current_vers)
                 if current_vers > 1:
                     new_vers = current_vers - 1
-                    CONFIG['clusters'][cluster]['modules']['stream_alert'][lambda_function][
+                    config['clusters'][cluster]['modules']['stream_alert'][lambda_function][
                         'current_version'] = new_vers
-                    CONFIG.write()
+                    config.write()
 
     targets = ['module.stream_alert_{}'.format(x)
-               for x in CONFIG.clusters()]
+               for x in config.clusters()]
 
-    if not terraform_generate(config=CONFIG):
+    if not terraform_generate(config=config):
         return
 
     helpers.tf_runner(targets=targets)

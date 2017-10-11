@@ -59,10 +59,10 @@
                 }
             },
             "description": "Storing an S3 object with an `AuthenticatedUsers` permission will create an alert.",
+            "log": "cloudtrail:events",
             "service": "s3",
             "source": "prefix.cluster.sample.bucket",
-            "trigger_count": 1,
-            "trigger": true
+            "trigger_rules": ["cloudtrail_put_object_acl"]
         },
         {
             "data": {
@@ -120,10 +120,10 @@
                 }
             },
             "description": "Storing an S3 object with an `AllUsers` permission will create an alert.",
+            "log": "cloudtrail:events",
             "service": "s3",
             "source": "prefix.cluster.sample.bucket",
-            "trigger_count": 1,
-            "trigger": true
+            "trigger_rules": ["cloudtrail_put_object_acl"]
         },
         {
             "data": {
@@ -181,10 +181,10 @@
                 }
             },
             "description": "Storing an S3 object with an `AllUsers` and `AuthenticatedUsers` permission will create an alert.",
+            "log": "cloudtrail:events",
             "service": "s3",
             "source": "prefix.cluster.sample.bucket",
-            "trigger_count": 1,
-            "trigger": true
+            "trigger_rules": ["cloudtrail_put_object_acl"]
         },
         {
             "data": {
@@ -239,9 +239,10 @@
                 }
             },
             "description": "Storing an S3 object without an `AllUsers` or `AuthenticatedUsers` permission will not create an alert.",
+            "log": "cloudtrail:events",
             "service": "s3",
             "source": "prefix.cluster.sample.bucket",
-            "trigger": false
+            "trigger_rules": []
         }
     ]
 }

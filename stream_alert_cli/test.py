@@ -14,7 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from collections import namedtuple
-import json
 import logging
 import os
 import re
@@ -22,6 +21,7 @@ import sys
 import time
 
 import boto3
+import jsonpath_rw
 from mock import Mock, patch
 
 from stream_alert.alert_processor import main as StreamOutput
@@ -31,7 +31,6 @@ import stream_alert.rule_processor.main  # pylint: disable=unused-import
 from stream_alert.rule_processor.payload import load_stream_payload
 from stream_alert.rule_processor.rules_engine import StreamRules
 from stream_alert_cli import helpers
-from stream_alert_cli.config import CLIConfig
 from stream_alert_cli.logger import (
     get_log_memory_hanlder,
     LOGGER_CLI,
@@ -43,28 +42,27 @@ from stream_alert_cli.logger import (
 
 from stream_alert_cli.outputs import load_outputs_config
 
-DIR_RULES = 'tests/integration/rules'
+TEST_EVENTS_DIR = 'tests/integration/rules'
 COLOR_RED = '\033[0;31;1m'
 COLOR_YELLOW = '\033[0;33;1m'
 COLOR_GREEN = '\033[0;32;1m'
 COLOR_RESET = '\033[0m'
 
-CONFIG = CLIConfig()
 
-StatusMessageBase = namedtuple('StatusMessage', 'type, rule, message')
+StatusMessageBase = namedtuple('StatusMessage', 'type, message')
 
 
 class StatusMessage(StatusMessageBase):
     """Simple class to encapsulate a status message"""
     WARNING = -1
-    FAILURE = 0
-    SUCCESS = 1
+    SUCCESS = 0
+    FAILURE = 1
 
 
 class RuleProcessorTester(object):
     """Class to encapsulate testing the rule processor"""
 
-    def __init__(self, context, print_output):
+    def __init__(self, context, config, print_output):
         """RuleProcessorTester initializer
 
         Args:
@@ -78,19 +76,22 @@ class RuleProcessorTester(object):
         # Create the RuleProcessor. Passing a mocked context object with fake
         # values and False for suppressing sending of alerts to alert processor
         self.processor = StreamAlert(context, False)
+        self.cli_config = config
         # Use a list of status_messages to store pass/fail/warning info
         self.status_messages = []
         self.total_tests = 0
         self.all_tests_passed = True
         self.print_output = print_output
-        helpers.setup_mock_firehose_delivery_streams(CONFIG)
+        helpers.setup_mock_firehose_delivery_streams(config)
 
-    def test_processor(self, filter_rules, validate_only=False):
+    def test_processor(self, rules_filter, files_filter, validate_only):
         """Perform integration tests for the 'rule' Lambda function
 
         Args:
-            filter_rules (list|None): Specific rule names (or None) to restrict
-                testing to. This is passed in from the CLI using the --rules option.
+            rules_filter (set): A collection of rules to filter on, passed in by the user
+                via the CLI using the --test-rules option.
+            files_filter (set): A collection of files to filter on, passed in by the user
+                via the CLI using the --test-files option.
             validate_only (bool): If true, validation of test records will occur
                 without the rules engine being applied to events.
 
@@ -99,89 +100,130 @@ class RuleProcessorTester(object):
                 boolean of test status and a list of alerts to run through the alert
                 processor. If validating test records only, this does not yield.
         """
-        for rule_name, contents in self._get_rule_test_files(filter_rules, validate_only):
-            # Go over the records and test the applicable rule
-            for index, test_record in enumerate(contents.get('records')):
-                self.total_tests += 1
+        test_file_info = self._filter_files(
+            helpers.get_rule_test_files(TEST_EVENTS_DIR),
+            files_filter
+        )
 
-                if not self.check_keys(rule_name, test_record):
+        for name, path in test_file_info.iteritems():
+            events, error = helpers.load_test_file(path)
+            if not events:
+                self.all_tests_passed = False
+                self.status_messages.append(StatusMessage(StatusMessage.WARNING, error))
+                continue
+
+            for index, test_event in enumerate(events['records']):
+                self.total_tests += 1
+                if self._detect_old_test_event(test_event):
+                    self.all_tests_passed = False
+                    message = ('Detected old format for test event in file \'{}.json\'. '
+                               'Please visit https://streamalert.io/rule-testing.html '
+                               'for information on the new format and update your '
+                               'test events accordingly.'.format(name))
+                    self.status_messages.append(StatusMessage(StatusMessage.FAILURE, message))
+                    continue
+
+                if not self.check_keys(test_event):
                     self.all_tests_passed = False
                     continue
 
-                self.apply_helpers(test_record)
+                # Check if there are any rule filters in place
+                if rules_filter and set(test_event['trigger_rules']).isdisjoint(rules_filter):
+                    self.total_tests -= 1
+                    continue
+
+                self.apply_helpers(test_event)
 
                 print_header_line = index == 0
 
-                formatted_record = helpers.format_lambda_test_record(test_record)
+                formatted_record = helpers.format_lambda_test_record(test_event)
 
-                if validate_only:
-                    self._validate_test_records(rule_name, test_record,
-                                                formatted_record, print_header_line)
+                # If this test is to validate the schema only, continue the loop and
+                # do not yield results on the rule tests below
+                if validate_only or (not validate_only and test_event.get('validate_schema_only')):
+                    if self._validate_test_record(name, test_event, formatted_record,
+                                                  print_header_line) is False:
+                        self.all_tests_passed = False
                     continue
 
-                yield self._run_rule_tests(rule_name, test_record,
-                                           formatted_record, print_header_line)
+                yield self._run_rule_tests(name, test_event, formatted_record, print_header_line)
 
         # Report on the final test results
         self.report_output_summary()
 
-    def _validate_test_records(
-            self,
-            rule_name,
-            test_record,
-            formatted_record,
-            print_header_line):
+    def _filter_files(self, file_info, files_filter):
+        """Filter the test files based in input from the user
+
+        Args:
+            file_info (dict): Information about test files on disk, where the key is the
+                base name of the file and the value is the relative path to the file
+            files_filter (set): A collection of files to filter tests on
+
+        Returns:
+            dict: A modified version of the `file_info` arg with pared down values
+        """
+        if not files_filter:
+            return file_info
+
+        files_filter = {os.path.splitext(name)[0] for name in files_filter}
+
+        file_info = {name: path for name, path in file_info.iteritems()
+                     if os.path.splitext(name)[0] in files_filter}
+
+        filter_diff = set(files_filter).difference(set(file_info))
+        message_template = 'No test events file found with base name \'{}\''
+        for missing_file in filter_diff:
+            self.status_messages.append(
+                StatusMessage(StatusMessage.WARNING, message_template.format(missing_file)))
+
+        return file_info
+
+    def _validate_test_record(self, file_name, test_event, formatted_record, print_header_line):
         """Function to validate test records and log any errors
 
         Args:
-            rule_name (str): The rule name being tested
-            test_record (dict): A single record to test
+            file_name (str): The base name of the test event file.
+            test_event (dict): A single test event containing the record and other detail
             formatted_record (dict): A dictionary that includes the 'data' from the
                 test record, formatted into a structure that is resemblant of how
                 an incoming record from a service would format it.
                 See test/integration/templates for example of how each service
                 formats records.
+            print_header_line (bool): Indicates if this is the first record from
+                a test file, and therefore we should print some header information
         """
-        service, entity = self.processor.classifier.extract_service_and_entity(
-            formatted_record)
+        service, entity = self.processor.classifier.extract_service_and_entity(formatted_record)
 
         if not self.processor.classifier.load_sources(service, entity):
-            self.all_tests_passed = False
-            return
+            return False
 
         # Create the StreamPayload to use for encapsulating parsed info
         payload = load_stream_payload(service, entity, formatted_record)
         if not payload:
-            self.all_tests_passed = False
-            return
+            return False
 
         if print_header_line:
-            print '\n{}'.format(rule_name)
+            print '\n{}'.format(file_name)
 
         for record in payload.pre_parse():
             self.processor.classifier.classify_record(record)
 
             if not record.valid:
                 self.all_tests_passed = False
-                self.analyze_record_delta(rule_name, test_record)
+                self.analyze_record_delta(file_name, test_event)
 
             report_output(record.valid, [
                 '[log=\'{}\']'.format(record.log_source or 'unknown'),
                 'validation',
                 record.service(),
-                test_record['description']])
+                test_event['description']])
 
-    def _run_rule_tests(
-            self,
-            rule_name,
-            test_record,
-            formatted_record,
-            print_header_line):
+    def _run_rule_tests(self, file_name, test_event, formatted_record, print_header_line):
         """Run tests on a test record for a given rule
 
         Args:
-            rule_name (str): The name of the rule being tested.
-            test_record (dict): The loaded test event from json
+            file_name (str): The base name of the test event file.
+            test_event (dict): The loaded test event from json
             formatted_record (dict): A dictionary that includes the 'data' from the
                 test record, formatted into a structure that is resemblant of how
                 an incoming record from a service would format it.
@@ -194,13 +236,16 @@ class RuleProcessorTester(object):
             list: alerts that were generated from this test event
         """
         event = {'Records': [formatted_record]}
-        # Run tests on the formatted record
-        alerts, expected_alerts, all_records_matched_schema = self.test_rule(
-            rule_name,
-            test_record,
-            event)
 
-        alerted_properly = (len(alerts) == expected_alerts)
+        expected_alert_count = len(test_event['trigger_rules'])
+
+        # Run tests on the formatted record
+        alerts, all_records_matched_schema = self.test_rule(event)
+
+        # we only want alerts for the specific rule being tested
+        alerts = [alert for alert in alerts if alert['rule_name'] in test_event['trigger_rules']]
+
+        alerted_properly = (len(alerts) == expected_alert_count)
         current_test_passed = alerted_properly and all_records_matched_schema
 
         self.all_tests_passed = current_test_passed and self.all_tests_passed
@@ -209,136 +254,75 @@ class RuleProcessorTester(object):
         # to a point where there is a record to actually be tested.
         # This avoids potentially blank sections
         if print_header_line and (alerts or self.print_output):
-            print '\n{}'.format(rule_name)
+            print '\n{}'.format(file_name)
 
         if self.print_output:
             report_output(current_test_passed, [
-                '[trigger={}]'.format(expected_alerts),
+                '[trigger={}]'.format(expected_alert_count),
                 'rule',
-                test_record['service'],
-                test_record['description']])
+                test_event['service'],
+                test_event['description']])
 
         # Add the status of the rule to messages list
         if not all_records_matched_schema:
-            self.analyze_record_delta(rule_name, test_record)
+            message = self.analyze_record_delta(file_name, test_event)
+            if message:
+                self.status_messages.append(StatusMessage(StatusMessage.FAILURE, message))
         elif not alerted_properly:
-            message = 'Rule failure: {}'.format(test_record['description'])
-            self.status_messages.append(
-                StatusMessage(
-                    StatusMessage.FAILURE,
-                    rule_name,
-                    message))
+            message = 'Rule failure: [{}] {}'.format(file_name, test_event['description'])
+            self.status_messages.append(StatusMessage(StatusMessage.FAILURE, message))
 
         # Return the alerts back to caller
         return alerts
 
-    def _get_rule_test_files(self, filter_rules, validate_only):
-        """Helper to get rule files to be tested
+    @staticmethod
+    def _detect_old_test_event(test_event):
+        """Check if the test event contains the old format used
 
         Args:
-            filter_rules (list|None): List of specific rule names or file names
-                (or None) that has been fed in from the CLI to restrict testing to
+            test_event (dict): The loaded test event from json
 
-        Yields:
-            str: rule name
-            dict: loaded json contents of the respective test event file
+        Returns:
+            bool: True if a legacy test file is detected, False otherwise
         """
-        # Since filter_rules can be either a list of rule names or rule files,
-        # we should check to see if there is a '.json' extension and just use the
-        # base filename. This approach avoids two functions that do largely the same thing
-        if filter_rules:
-            for index, rule in enumerate(filter_rules):
-                parts = os.path.splitext(rule)
-                if parts[1] == '.json':
-                    filter_rules[index] = parts[0]
+        record_keys = set(test_event)
+        if (not {'log', 'trigger_rules'}.issubset(record_keys) and
+                {'trigger'}.issubset(record_keys)):
+            return True
 
-            # Create a copy of the filtered rules that can be altered
-            filter_rules_copy = filter_rules[:]
+        return False
 
-        for _, _, test_rule_files in os.walk(DIR_RULES):
-            for rule_file in test_rule_files:
-                rule_name = os.path.splitext(rule_file)[0]
 
-                # If only specific rules are being tested,
-                # skip files that do not match those rules
-                if filter_rules:
-                    if rule_name not in filter_rules:
-                        continue
-
-                    filter_rules_copy.remove(rule_name)
-
-                with open(os.path.join(DIR_RULES, rule_file), 'r') as rule_file_handle:
-                    try:
-                        contents = json.load(rule_file_handle)
-                    except (ValueError, TypeError) as err:
-                        self.all_tests_passed = False
-                        message = 'Improperly formatted file ({}): {}'.format(
-                            rule_file, err.message)
-                        self.status_messages.append(
-                            StatusMessage(StatusMessage.WARNING, rule_name, message))
-                        continue
-
-                if not contents.get('records'):
-                    self.all_tests_passed = False
-                    self.status_messages.append(
-                        StatusMessage(
-                            StatusMessage.WARNING,
-                            rule_name,
-                            'No records to test in file'))
-                    continue
-
-                yield rule_name, contents
-
-        # Print any of the filtered rules that remain in the list
-        # This means that there are not tests configured for them
-        if filter_rules and filter_rules_copy:
-            self.all_tests_passed = False
-            message = 'No test events configured for designated rule'
-            for filter_rule in filter_rules:
-                if validate_only:
-                    message = 'Designated file ({}.json) does not exist within \'{}\''.format(
-                        filter_rule, DIR_RULES)
-                self.status_messages.append(
-                    StatusMessage(StatusMessage.WARNING, filter_rule, message))
-
-    def check_keys(self, rule_name, test_record):
-        """Check the test_record contains the required keys
+    def check_keys(self, test_event):
+        """Check if the test event contains the required keys
 
         Args:
-            rule_name (str): The name of the rule being tested. This is passed in
-                here strictly for reporting any errors with key checks.
-            test_record (dict): The raw test record being processed
+            test_event (dict): The loaded test event from json
 
         Returns:
             bool: True if the proper keys are present
         """
-        required_keys = {'data', 'description', 'service', 'source', 'trigger'}
+        required_keys = {'data', 'description', 'log', 'service', 'source', 'trigger_rules'}
 
-        record_keys = set(test_record.keys())
+        record_keys = set(test_event)
         if not required_keys.issubset(record_keys):
             req_key_diff = required_keys.difference(record_keys)
-            missing_keys = ','.join('\'{}\''.format(key) for key in req_key_diff)
+            missing_keys = ' ,'.join('\'{}\''.format(key) for key in req_key_diff)
             message = 'Missing required key(s) in log: {}'.format(missing_keys)
-            self.status_messages.append(
-                StatusMessage(
-                    StatusMessage.FAILURE,
-                    rule_name,
-                    message))
+            self.status_messages.append(StatusMessage(StatusMessage.FAILURE, message))
             return False
 
-        optional_keys = {'trigger_count', 'compress'}
+        optional_keys = {'compress', 'validate_schema_only'}
 
         key_diff = record_keys.difference(required_keys | optional_keys)
 
         # Log a warning if there are extra keys declared in the test log
         if key_diff:
-            extra_keys = ','.join('\'{}\''.format(key) for key in key_diff)
+            extra_keys = ' ,'.join('\'{}\''.format(key) for key in key_diff)
             message = 'Additional unnecessary keys in log: {}'.format(extra_keys)
             # Remove the key(s) and just warn the user that they are extra
             record_keys.difference_update(key_diff)
-            self.status_messages.append(
-                StatusMessage(StatusMessage.WARNING, rule_name, message)
-            )
+            self.status_messages.append(StatusMessage(StatusMessage.WARNING, message))
 
         return record_keys.issubset(required_keys | optional_keys)
 
@@ -404,9 +388,8 @@ class RuleProcessorTester(object):
 
             # Iterate over the rule_name values in the failed list and report on them
             for index, failure in enumerate(failure_messages, start=1):
-                LOGGER_CLI.error('%s(%d/%d) [%s] %s%s', COLOR_RED, index,
-                                 len(failure_messages), failure.rule, failure.message,
-                                 COLOR_RESET)
+                LOGGER_CLI.error('%s(%d/%d) %s%s', COLOR_RED, index,
+                                 len(failure_messages), failure.message, COLOR_RESET)
 
         # Check if there were any warnings and report on them
         if warning_messages:
@@ -415,21 +398,18 @@ class RuleProcessorTester(object):
                             ('s' if warning_count > 1 else ''), COLOR_RESET)
 
             for index, warning in enumerate(warning_messages, start=1):
-                LOGGER_CLI.warn('%s(%d/%d) [%s] %s%s', COLOR_YELLOW, index, warning_count,
-                                warning.rule, warning.message, COLOR_RESET)
+                LOGGER_CLI.warn('%s(%d/%d) %s%s', COLOR_YELLOW, index, warning_count,
+                                warning.message, COLOR_RESET)
 
-    def test_rule(self, rule_name, test_record, event):
+    def test_rule(self, record):
         """Feed formatted records into StreamAlert and check for alerts
 
         Args:
-            rule_name (str): The rule name being tested
-            test_record (dict): A single raw record to test
-            event (dict): A formatted event that reflects the structure expected
+            record (dict): A formatted event that reflects the structure expected
                 as input to the Lambda function.
 
         Returns:
             list: alerts that hit for this rule
-            int: count of expected alerts for this rule
             bool: False if errors occurred during processing
         """
         # Clear out any old alerts or errors from the previous test run
@@ -437,22 +417,14 @@ class RuleProcessorTester(object):
         del self.processor._alerts[:]
         self.processor._failed_record_count = 0
 
-        expected_alert_count = test_record.get('trigger_count')
-        if not expected_alert_count:
-            expected_alert_count = 1 if test_record['trigger'] else 0
-
         # Run the rule processor
-        all_records_matched_schema = self.processor.run(event)
+        all_records_matched_schema = self.processor.run(record)
 
         alerts = self.processor.get_alerts()
 
-        # we only want alerts for the specific rule being tested
-        alerts = [alert for alert in alerts
-                  if alert['rule_name'] == rule_name]
+        return alerts, all_records_matched_schema
 
-        return alerts, expected_alert_count, all_records_matched_schema
-
-    def analyze_record_delta(self, rule_name, test_record):
+    def analyze_record_delta(self, file_name, test_event):
         """Provide some additional context on why this test failed. This will
         perform some analysis of the test record to determine which keys are
         missing or which unnecessary keys are causing the test to fail. Any
@@ -461,55 +433,98 @@ class RuleProcessorTester(object):
 
         Args:
             rule_name (str): Name of rule being tested
-            test_record (dict): Actual record data being tested
+            test_event (dict): Actual record data being tested
         """
-        logs = self.processor.classifier.get_log_info_for_source()
-        rule_info = StreamRules.get_rules()[rule_name]
-        test_record_keys = set(test_record['data'])
-        for log in rule_info.logs:
-            if log not in logs:
-                message = 'Log declared in rule ({}) does not exist in logs.json'.format(
-                    log)
-                self.status_messages.append(
-                    StatusMessage(StatusMessage.FAILURE, rule_name, message))
-                continue
-            all_record_schema_keys = set(logs[log]['schema'])
-            optional_keys = set(logs[log].get('configuration',
-                                              {}).get('optional_top_level_keys', {}))
+        base_message = ('Invalid test event in file \'{}\' with description '
+                        '\'{}\'.'.format(file_name, test_event['description']))
 
-            min_req_record_schema_keys = all_record_schema_keys.difference(optional_keys)
+        log_type = test_event['log']
+        if log_type not in self.cli_config['logs']:
+            message = ('{} Log (\'{}\') declared in test event does not exist in '
+                       'logs.json'.format(base_message, log_type))
 
-            schema_diff = min_req_record_schema_keys.difference(test_record_keys)
-            if schema_diff:
-                message = ('Data is invalid due to missing key(s) in test record: {}. '
-                           'Rule: \'{}\'. Description: \'{}\''.format(
-                               ', '.join('\'{}\''.format(key) for key in schema_diff),
-                               rule_info.rule_name,
-                               test_record['description']))
+            self.status_messages.append(StatusMessage(StatusMessage.FAILURE, message))
 
-                self.status_messages.append(
-                    StatusMessage(StatusMessage.FAILURE, rule_name, message))
-                continue
+        config_log_info = self.cli_config['logs'][log_type]
+        schema_keys = config_log_info['schema']
 
-            unexpected_record_keys = test_record_keys.difference(all_record_schema_keys)
-            if unexpected_record_keys:
-                message = (
-                    'Data is invalid due to unexpected key(s) in test record: {}. '
-                    'Rule: \'{}\'. Description: \'{}\''.format(
-                        ', '.join(
-                            '\'{}\''.format(key) for key in unexpected_record_keys),
-                        rule_info.rule_name,
-                        test_record['description']))
+        envelope_keys = config_log_info.get('configuration', {}).get('envelope_keys')
+        if envelope_keys:
+            if self.report_envelope_key_error(base_message, envelope_keys, test_event['data']):
+                return
 
-                self.status_messages.append(
-                    StatusMessage(StatusMessage.FAILURE, rule_name, message))
+        # Check is a json path is used for nested records
+        json_path = config_log_info.get('configuration', {}).get('json_path')
+        if json_path:
+            records_jsonpath = jsonpath_rw.parse(json_path)
+            for match in records_jsonpath.find(test_event['data']):
+                self.report_record_delta(base_message, log_type, schema_keys, match.value)
+
+            return
+
+        self.report_record_delta(base_message, log_type, schema_keys, test_event['data'])
+
+    def report_envelope_key_error(self, base_message, envelope_keys, test_record):
+        """Provide context failures related to envelope key issues.
+
+        Args:
+            base_message (str): Base error message to be reported with extra context
+            envelope_keys (list): A collection of the envelope keys for this nested schema
+            test_record (dict): Actual record being tested - this could be one of
+                many records extracted using jsonpath_rw
+        """
+        missing_env_key_list = set(envelope_keys).difference(set(test_record))
+        if missing_env_key_list:
+            missing_key_list = ', '.join('\'{}\''.format(key) for key in missing_env_key_list)
+            message = ('{} Data is invalid due to missing envelope key(s) in test record: '
+                       '{}.'.format(base_message, missing_key_list))
+
+            self.status_messages.append(StatusMessage(StatusMessage.FAILURE, message))
+            return True
+
+        return False
+
+    def report_record_delta(self, base_message, log_type, schema_keys, test_record):
+        """Provide context on why this specific record failed.
+
+        Args:
+            base_message (str): Base error message to be reported with extra context
+            log_type (str): Type of log being tested
+            schema_keys (set): A collection of the keys from the schema
+            test_record (dict): Actual record being tested - this could be one of
+                many records extracted using jsonpath_rw
+        """
+        optional_keys = set(
+            self.cli_config['logs'] \
+                [log_type].get('configuration', {}).get('optional_top_level_keys', {})
+        )
+
+        min_req_record_schema_keys = set(schema_keys).difference(optional_keys)
+
+        test_record_keys = set(test_record)
+
+        schema_diff = min_req_record_schema_keys.difference(test_record_keys)
+        if schema_diff:
+            missing_key_list = ', '.join('\'{}\''.format(key) for key in schema_diff)
+            message = ('{} Data is invalid due to missing key(s) in test record: '
+                       '{}.'.format(base_message, missing_key_list))
+
+            self.status_messages.append(StatusMessage(StatusMessage.FAILURE, message))
+
+        unexpected_keys = test_record_keys.difference(schema_keys)
+        if unexpected_keys:
+            unexpected_key_list = ', '.join('\'{}\''.format(key) for key in unexpected_keys)
+            message = ('{} Data is invalid due to unexpected key(s) in test record: '
+                       '{}.'.format(base_message, unexpected_key_list))
+
+            self.status_messages.append(StatusMessage(StatusMessage.FAILURE, message))
 
 
 class AlertProcessorTester(object):
     """Class to encapsulate testing the alert processor"""
     _alert_fail_pass = [0, 0]
 
-    def __init__(self, context):
+    def __init__(self, config, context):
         """AlertProcessorTester initializer
 
         Args:
@@ -524,7 +539,7 @@ class AlertProcessorTester(object):
         self.kms_alias = 'alias/stream_alert_secrets_test'
         self.secrets_bucket = 'test.streamalert.secrets'
         self.outputs_config = load_outputs_config()
-        helpers.setup_mock_firehose_delivery_streams(CONFIG)
+        helpers.setup_mock_firehose_delivery_streams(config)
 
     def test_processor(self, alerts):
         """Perform integration tests for the 'alert' Lambda function. Alerts
@@ -648,40 +663,50 @@ def report_output(passed, cols):
     print '{:>26}  {:<28}  {:<8}  ({}): {}'.format(status, *cols)
 
 
-def check_untested_rules():
-    """Function that prints warning log messages for rules that exist but do
-    not have proper integration tests configured.
+def check_untested_rules(all_test_rules):
+    """Log warning message for rules that exist but do not have proper test events.
+
+    Args:
+        all_test_rules (set): A collection of all of the rules being tested
     """
-    all_test_files = {os.path.splitext(test_file)[0] for _, _, test_rule_files
-                      in os.walk(DIR_RULES) for test_file in test_rule_files}
-
-    untested_rules = set(StreamRules.get_rules()).difference(all_test_files)
-
-    for rule in untested_rules:
-        LOGGER_CLI.warn('%sNo tests configured for rule: \'%s\'. Please add a '
-                        'corresponding test file for this rule in \'%s\' with the '
-                        'name \'%s.json\' to avoid seeing this warning%s', COLOR_YELLOW,
-                        rule, DIR_RULES, rule, COLOR_RESET)
+    untested_rules = set(StreamRules.get_rules()).difference(all_test_rules)
+    if untested_rules:
+        LOGGER_CLI.warn('%sNo test events configured for the following rules. Please add '
+                        'corresponding tests for these rules in \'%s\' to avoid seeing '
+                        'this warning\n\t%s%s', COLOR_YELLOW, TEST_EVENTS_DIR,
+                        '\n\t'.join(untested_rules), COLOR_RESET)
 
 
-def check_untested_files():
-    """Function that prints warning log messages for integration test files
-    that exist but do not have a corresponding rule configured.
+def check_untested_files(all_test_rules):
+    """Log warning message for test events that exist with invalid rule names.
+
+    Args:
+        all_test_rules (set): A collection of all of the rules being tested
     """
-    all_test_files = {os.path.splitext(test_file)[0] for _, _, test_rule_files
-                      in os.walk(DIR_RULES) for test_file in test_rule_files}
-
-    untested_rules = all_test_files.difference(set(StreamRules.get_rules()))
-
-    for rule in untested_rules:
-        LOGGER_CLI.warn(
-            '%sNo rules configured for test file: \'%s.json\'. Please '
-            'add a corresponding rule for this test file in \'rules/\' with '
-            'the name \'%s.py\' to avoid seeing this warning and any associated '
-            'errors above%s', COLOR_YELLOW, rule, rule, COLOR_RESET)
+    invalid_rules = all_test_rules.difference(set(StreamRules.get_rules()))
+    if invalid_rules:
+        LOGGER_CLI.warn('%sNo rules found in \'rules/\' that match the rules declared within '
+                        '\'trigger_rules\' in a test event.  Please update the list of '
+                        '\'trigger_rules\' with valid rule names to avoid seeing this '
+                        'warning and any associated errors '
+                        'above\n\t%s%s', COLOR_YELLOW, '\n\t'.join(invalid_rules), COLOR_RESET)
 
 
-def stream_alert_test(options, config=None):
+def check_invalid_rules_filters(rules_filter, all_test_rules):
+    """Log warning message for filtered rules that do not exist.
+
+    Args:
+        rules_filter (set): A collection of rules to filter on, passed in by the user
+        all_test_rules (set): A collection of all of the rules being tested
+    """
+    invalid_rules = rules_filter.difference(all_test_rules)
+    if invalid_rules:
+        LOGGER_CLI.warn('%sNo test events configured for the following rules being filtered. '
+                        'This error could also be caused by a typo in the list of filtered '
+                        'rules\n\t%s%s', COLOR_YELLOW, '\n\t'.join(invalid_rules), COLOR_RESET)
+
+
+def stream_alert_test(options, config):
     """High level function to wrap the integration testing entry point.
     This encapsulates the testing function and is used to specify if calls
     should be mocked.
@@ -735,15 +760,17 @@ def stream_alert_test(options, config=None):
                        if run_options.get('processor') else
                        run_options.get('command') == 'live-test')
 
-        rule_proc_tester = RuleProcessorTester(context, test_rules)
-        alert_proc_tester = AlertProcessorTester(context)
+        rule_proc_tester = RuleProcessorTester(context, config, test_rules)
+        alert_proc_tester = AlertProcessorTester(config, context)
 
         validate_schemas = options.command == 'validate-schemas'
 
-        filters = options.test_files if validate_schemas else options.rules
+        rules_filter = options.test_rules if not validate_schemas else None
 
         # Run the rule processor for all rules or designated rule set
-        for alerts in rule_proc_tester.test_processor(filters, validate_schemas):
+        for alerts in rule_proc_tester.test_processor(rules_filter,
+                                                      options.test_files,
+                                                      validate_schemas):
             # If the alert processor should be tested, process any alerts
             if test_alerts:
                 alert_proc_tester.test_processor(alerts)
@@ -752,13 +779,18 @@ def stream_alert_test(options, config=None):
         if test_alerts:
             AlertProcessorTester.report_output_summary()
 
-        # Check all of the rule files to make sure they have tests configured
-        check_untested_rules()
+        all_test_rules = None
+        if rules_filter:
+            all_test_rules = helpers.get_rules_from_test_events(TEST_EVENTS_DIR)
+            check_invalid_rules_filters(rules_filter, all_test_rules)
 
-        # If this is not just a validation run, then warn the user
-        # if there are test files without corresponding rules
-        if not validate_schemas:
-            check_untested_files()
+        # If this is not just a validation run, and rule/file filters are not in place
+        # then warn the user if there are test files without corresponding rules
+        # Also check all of the rule files to make sure they have tests configured
+        if not (validate_schemas or rules_filter or options.test_files):
+            all_test_rules = all_test_rules or helpers.get_rules_from_test_events(TEST_EVENTS_DIR)
+            check_untested_files(all_test_rules)
+            check_untested_rules(all_test_rules)
 
         if not (rule_proc_tester.all_tests_passed and
                 alert_proc_tester.all_tests_passed):

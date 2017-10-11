@@ -84,9 +84,10 @@
         }
       },
       "description": "An AWS S3 bucket with 'AllUsers' permission(s) will create an alert.",
-      "trigger": true,
+      "log": "cloudwatch:events",
       "source": "prefix_cluster1_stream_alert_kinesis",
-      "service": "kinesis"
+      "service": "kinesis",
+      "trigger_rules": ["cloudtrail_put_bucket_acl"]
     },
     {
       "data": {
@@ -172,9 +173,10 @@
         }
       },
       "description": "An AWS S3 bucket with 'AuthenticatedUsers' permission(s) will create an alert.",
-      "trigger": true,
+      "log": "cloudwatch:events",
       "source": "prefix_cluster1_stream_alert_kinesis",
-      "service": "kinesis"
+      "service": "kinesis",
+      "trigger_rules": ["cloudtrail_put_bucket_acl"]
     },
     {
       "data": {
@@ -276,9 +278,10 @@
         }
       },
       "description": "An AWS PutBucketAcl call without 'AuthenticatedUsers' & 'AllUsers' will not create an alert.",
-      "trigger": false,
+      "log": "cloudwatch:events",
       "source": "prefix_cluster1_stream_alert_kinesis",
-      "service": "kinesis"
+      "service": "kinesis",
+      "trigger_rules": []
     }
   ]
 }

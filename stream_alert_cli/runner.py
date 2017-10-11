@@ -28,7 +28,6 @@ from stream_alert_cli.terraform.handler import terraform_handler
 from stream_alert_cli.test import stream_alert_test
 
 
-
 CONFIG = CLIConfig()
 
 
@@ -53,16 +52,16 @@ def cli_runner(options):
         configure_output(options)
 
     elif options.command == 'lambda':
-        lambda_handler(options)
+        lambda_handler(options, CONFIG)
 
     elif options.command == 'live-test':
         stream_alert_test(options, CONFIG)
 
     elif options.command == 'validate-schemas':
-        stream_alert_test(options)
+        stream_alert_test(options, CONFIG)
 
     elif options.command == 'terraform':
-        terraform_handler(options)
+        terraform_handler(options, CONFIG)
 
     elif options.command == 'configure':
         configure_handler(options)
