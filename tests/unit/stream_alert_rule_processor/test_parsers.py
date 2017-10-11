@@ -65,7 +65,7 @@ class TestKVParser(TestParser):
         return 'kv'
 
     def test_kv_parsing(self):
-        """KV Parser - 'key:value,key:value'"""
+        """KV Parser - Basic key value pairs"""
         # setup
         schema = {
             'name': 'string',
@@ -188,6 +188,23 @@ class TestJSONParser(TestParser):
             assert_items_equal(result.keys(), expected_keys)
             assert_items_equal(result['streamalert:envelope_keys'].keys(),
                                expected_envelope_keys)
+
+    def test_json_regex_key_with_envelope(self):
+        """JSON Parser - Regex key with envelope"""
+        schema = {
+            'time': 'string',
+            'date': 'string',
+            'host': 'string'
+            'message': 'string'
+        }
+        options = {
+            'envelope_keys': {
+                'time': 'string',
+                'date': 'string',
+                'host': 'string'
+            },
+            'json_regex_key': 'message'
+        }
 
     def test_basic_json(self):
         """JSON Parser - Non-nested JSON objects"""
