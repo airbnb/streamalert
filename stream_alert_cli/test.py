@@ -21,6 +21,7 @@ import sys
 import time
 
 import boto3
+import jsonpath_rw
 from mock import Mock, patch
 
 from stream_alert.alert_processor import main as StreamOutput
@@ -206,9 +207,7 @@ class RuleProcessorTester(object):
 
             if not record.valid:
                 self.all_tests_passed = False
-                message = self.analyze_record_delta(file_name, test_event)
-                if message:
-                    self.status_messages.append(StatusMessage(StatusMessage.FAILURE, message))
+                self.analyze_record_delta(file_name, test_event)
 
             report_output(record.valid, [
                 '[log=\'{}\']'.format(record.log_source or 'unknown'),
@@ -437,31 +436,61 @@ class RuleProcessorTester(object):
                         '\'{}\'.'.format(file_name, test_event['description']))
 
         log_type = test_event['log']
-        test_record_keys = set(test_event['data'])
-        # for log in rule_info.logs:
         if log_type not in self.cli_config['logs']:
-            return ('{} Log (\'{}\') declared in test event does not exist in '
-                    'logs.json'.format(base_message, log_type))
+            message = ('{} Log (\'{}\') declared in test event does not exist in '
+                       'logs.json'.format(base_message, log_type))
 
-        all_record_schema_keys = set(self.cli_config['logs'][log_type]['schema'])
+            self.status_messages.append(StatusMessage(StatusMessage.FAILURE, message))
+
+        config_log_info = self.cli_config['logs'][log_type]
+        schema_keys = set(config_log_info['schema'])
+
+        # Check is a json path is used for nested records
+        json_path = config_log_info.get('configuration', {}).get('json_path')
+        if json_path:
+            records_jsonpath = jsonpath_rw.parse(json_path)
+            for match in records_jsonpath.find(test_event['data']):
+                self.report_record_delta(base_message, log_type, schema_keys, match.value)
+
+            return
+
+        self.report_record_delta(base_message, log_type, schema_keys, test_event['data'])
+
+    def report_record_delta(self, base_message, log_type, schema_keys, test_record):
+        """Provide context on why this specific record failed.
+
+        Args:
+            base_message (str): Base error message to be reported with extra context
+            log_type (str): Type of log being tested
+            schema_keys (set): A collection of the keys from the schema
+            test_record (dict): Actual record being tested - this could be one of
+                many records extracted using jsonpath_rw
+        """
         optional_keys = set(
             self.cli_config['logs'] \
                 [log_type].get('configuration', {}).get('optional_top_level_keys', {})
         )
 
-        min_req_record_schema_keys = all_record_schema_keys.difference(optional_keys)
+        min_req_record_schema_keys = schema_keys.difference(optional_keys)
+
+        test_record_keys = set(test_record)
 
         schema_diff = min_req_record_schema_keys.difference(test_record_keys)
         if schema_diff:
             missing_key_list = ', '.join('\'{}\''.format(key) for key in schema_diff)
-            return ('{} Data is invalid due to missing key(s) in test record: '
-                    '{}.'.format(base_message, missing_key_list))
+            message = ('{} Data is invalid due to missing key(s) in test record: '
+                       '{}.'.format(base_message, missing_key_list))
 
-        unexpected_keys = test_record_keys.difference(all_record_schema_keys)
+            self.status_messages.append(StatusMessage(StatusMessage.FAILURE, message))
+            return
+
+        unexpected_keys = test_record_keys.difference(schema_keys)
         if unexpected_keys:
             unexpected_key_list = ', '.join('\'{}\''.format(key) for key in unexpected_keys)
-            return ('{} Data is invalid due to unexpected key(s) in test record: '
-                    '{}.'.format(base_message, unexpected_key_list))
+            message = ('{} Data is invalid due to unexpected key(s) in test record: '
+                       '{}.'.format(base_message, unexpected_key_list))
+
+            self.status_messages.append(StatusMessage(StatusMessage.FAILURE, message))
 
 
 class AlertProcessorTester(object):
