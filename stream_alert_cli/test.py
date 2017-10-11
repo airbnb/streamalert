@@ -443,7 +443,12 @@ class RuleProcessorTester(object):
             self.status_messages.append(StatusMessage(StatusMessage.FAILURE, message))
 
         config_log_info = self.cli_config['logs'][log_type]
-        schema_keys = set(config_log_info['schema'])
+        schema_keys = config_log_info['schema']
+
+        envelope_keys = config_log_info.get('configuration', {}).get('envelope_keys')
+        if envelope_keys:
+            if self.report_envelope_key_error(base_message, envelope_keys, test_event['data']):
+                return
 
         # Check is a json path is used for nested records
         json_path = config_log_info.get('configuration', {}).get('json_path')
@@ -455,6 +460,26 @@ class RuleProcessorTester(object):
             return
 
         self.report_record_delta(base_message, log_type, schema_keys, test_event['data'])
+
+    def report_envelope_key_error(self, base_message, envelope_keys, test_record):
+        """Provide context failures related to envelope key issues.
+
+        Args:
+            base_message (str): Base error message to be reported with extra context
+            envelope_keys (list): A collection of the envelope keys for this nested schema
+            test_record (dict): Actual record being tested - this could be one of
+                many records extracted using jsonpath_rw
+        """
+        missing_env_key_list = set(envelope_keys).difference(set(test_record))
+        if missing_env_key_list:
+            missing_key_list = ', '.join('\'{}\''.format(key) for key in missing_env_key_list)
+            message = ('{} Data is invalid due to missing envelope key(s) in test record: '
+                       '{}.'.format(base_message, missing_key_list))
+
+            self.status_messages.append(StatusMessage(StatusMessage.FAILURE, message))
+            return True
+
+        return False
 
     def report_record_delta(self, base_message, log_type, schema_keys, test_record):
         """Provide context on why this specific record failed.
@@ -471,7 +496,7 @@ class RuleProcessorTester(object):
                 [log_type].get('configuration', {}).get('optional_top_level_keys', {})
         )
 
-        min_req_record_schema_keys = schema_keys.difference(optional_keys)
+        min_req_record_schema_keys = set(schema_keys).difference(optional_keys)
 
         test_record_keys = set(test_record)
 
@@ -482,7 +507,6 @@ class RuleProcessorTester(object):
                        '{}.'.format(base_message, missing_key_list))
 
             self.status_messages.append(StatusMessage(StatusMessage.FAILURE, message))
-            return
 
         unexpected_keys = test_record_keys.difference(schema_keys)
         if unexpected_keys:
