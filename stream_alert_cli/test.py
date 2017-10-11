@@ -139,7 +139,7 @@ class RuleProcessorTester(object):
 
                 # If this test is to validate the schema only, continue the loop and
                 # do not yield results on the rule tests below
-                if validate_only:
+                if validate_only or (not validate_only and test_event.get('validate_schema_only')):
                     if self._validate_test_record(name, test_event, formatted_record,
                                                   print_header_line) is False:
                         self.all_tests_passed = False
@@ -309,7 +309,7 @@ class RuleProcessorTester(object):
             self.status_messages.append(StatusMessage(StatusMessage.FAILURE, message))
             return False
 
-        optional_keys = {'compress'}
+        optional_keys = {'compress', 'validate_schema_only'}
 
         key_diff = record_keys.difference(required_keys | optional_keys)
 
