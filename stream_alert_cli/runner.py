@@ -157,16 +157,22 @@ def athena_handler(options):
                         special_key = dict
                     elif key_type == []:
                         special_key = list
+                    # Cast nested dict as a string for now
+                    # TODO(jacknagz): support recursive schemas
+                    elif isinstance(key_type, dict):
+                        special_key = 'string'
 
                     # Account for envelope keys
                     if root_key:
-                        if special_key:
+                        if special_key is not None:
                             athena_schema[root_key][key_name] = schema_type_mapping[special_key]
-                        athena_schema[root_key][key_name] = schema_type_mapping[key_type]
+                        else:
+                            athena_schema[root_key][key_name] = schema_type_mapping[key_type]
                     else:
-                        if special_key:
+                        if special_key is not None:
                             athena_schema[key_name] = schema_type_mapping[special_key]
-                        athena_schema[key_name] = schema_type_mapping[key_type]
+                        else:
+                            athena_schema[key_name] = schema_type_mapping[key_type]
 
             add_to_athena_schema(sanitized_schema)
 
@@ -229,7 +235,8 @@ def athena_handler(options):
                 CONFIG['lambda']['athena_partition_refresh_config'] \
                       ['refresh_type'][options.refresh_type][options.bucket] = options.type
                 CONFIG.write()
-                LOGGER_CLI.info('The %s table was successfully created!', options.type)
+                table_name = options.type if options.type == 'alerts' else options.table_name
+                LOGGER_CLI.info('The %s table was successfully created!', table_name)
 
 
 def configure_handler(options):

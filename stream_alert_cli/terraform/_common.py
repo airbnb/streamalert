@@ -56,4 +56,4 @@ def enabled_firehose_logs(config):
 
     # Firehose Delivery Streams cannot have semicolons
     filtered_log_names = [log.replace(':', '_') for log in expanded_logs_with_subtypes]
-    return filtered_log_names
+    return sorted(filtered_log_names)
