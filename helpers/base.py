@@ -170,3 +170,21 @@ def ghe_json_message(rec):
         return
 
     return message_rec
+
+def select_key(data, search_key, results):
+    """
+    Args:
+        data (dict, list)
+        search_key (string)
+    """
+    if not hasattr(data, 'items'):
+        return
+    if search_key in data:
+        results.append(data[search_key])
+    for key, val in data.iteritems():
+        if isinstance(val, dict):
+            select_key(data[key], search_key, results)
+        elif isinstance(val, list):
+            for item in val:
+                select_key(item, search_key, results)
+    return results
