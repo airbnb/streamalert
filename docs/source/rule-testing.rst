@@ -6,7 +6,7 @@ To test the accuracy of new rules, local tests can be written to verify that ale
 Configuration
 ~~~~~~~~~~~~~
 
-To test a new rule, first create a new JSON file anywhere within ``tests/integration/rules`` named ``test_records.json``.  This file should contain this exact structure::
+To test a new rule, first create a new JSON file anywhere within ``tests/integration/rules`` named ``name_of_your_tests.json``.  This file should contain this exact structure::
 
   {
     "records": [
@@ -24,7 +24,7 @@ To test a new rule, first create a new JSON file anywhere within ``tests/integra
     ]
   }
 
-.. note:: Multiple tests can be included in one file simply by adding them to the "records" array within the `test_records.json` file.
+.. note:: Multiple tests can be included in one file simply by adding them to the "records" array within the `name_of_your_tests.json` file.
 
 Rule Test Reference
 -------------------
@@ -36,7 +36,7 @@ Key                        Type                  Required  Description
 ``data``                   ``{}`` or ``string``  Yes       All ``json`` log types should be in JSON object/dict format while others (``csv, kv, syslog``) should be ``string``
 ``description``            ``string``            Yes       A short sentence describing the intent of the test
 ``log``                    ``string``            Yes       The log type this test record should parse as. The value of this should be taken from the defined logs in ``conf/logs.json``
-``service``                ``string``            Yes       The name of the service which sent the log `kinesis, s3, sns, or stream_alert_app`
+``service``                ``string``            Yes       The name of the service which sent the log, e.g: `kinesis, s3, sns, or stream_alert_app`
 ``source``                 ``string``            Yes       The name of the Kinesis Stream or S3 bucket, SNS topic or StreamAlert App function where the data originated from. This value should match a source provided in ``conf/sources.json``
 ``trigger_rules``          ``list``              Yes       A list of zero or more rule names that this test record should trigger. An empty list implies this record should not trigger any alerts
 ``validate_schemas_only``  ``boolean``           No        Whether or not the test record should go through the rule processing engine. If set to ``true``, this record will only have validation performed
@@ -194,7 +194,7 @@ Integration tests can be restricted to **specific rules** to reduce time and out
 
   $ python manage.py lambda test --processor rule --test-rules <rule_01> <rule_02>
 
-Integration tests can be restricted to **specific file names** to reduce time and output (the extension is optional):
+Integration tests can be restricted to **specific file names** to reduce time and output (the .json suffix is optional):
 
 .. code-block:: bash
 
