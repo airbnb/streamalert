@@ -490,8 +490,11 @@ class TestStreamRules(object):
               outputs=['s3:sample_bucket'],
               datatypes=['sourceAddress', 'command'])
         def mismatch_types(rec): # pylint: disable=unused-variable
-            """Testing rule with non-existing normalized type in the record. It
-            should not trigger alert.
+            """Testing rule with non-existing normalized type in the record.
+
+            It will trigger alert since we change rule paramemter 'datatypes' to
+            OR operation among CEF types. See the discussion at
+            https://github.com/airbnb/streamalert/issues/365
             """
             results = fetch_values_by_datatype(rec, 'sourceAddress')
 
@@ -535,34 +538,10 @@ class TestStreamRules(object):
             alerts.extend(StreamRules.process(payload))
 
         # check alert output
-        assert_equal(len(alerts), 1)
+        assert_equal(len(alerts), 2)
 
         # alert tests
         assert_equal(alerts[0]['rule_name'], 'match_ipaddress')
-
-    def test_validate_datatypes(self):
-        """Rules Engine - validate datatypes"""
-        normalized_types, datatypes = None, ['type1']
-        assert_equal(
-            StreamRules.validate_datatypes(normalized_types, datatypes),
-            False
-            )
-
-        normalized_types = {
-            'type1': ['key1'],
-            'type2': ['key2']
-            }
-        datatypes = ['type1']
-        assert_equal(
-            StreamRules.validate_datatypes(normalized_types, datatypes),
-            True
-            )
-
-        datatypes = ['type1', 'type3']
-        assert_equal(
-            StreamRules.validate_datatypes(normalized_types, datatypes),
-            False
-            )
 
     def test_update(self):
         """Rules Engine - Update results passed to update method"""

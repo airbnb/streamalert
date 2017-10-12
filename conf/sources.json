@@ -3,13 +3,15 @@
     "prefix_cluster1_stream_alert_kinesis": {
       "logs": [
         "cloudwatch",
-        "ghe"
+        "ghe",
+        "osquery"
       ]
     }
   },
   "s3": {
     "prefix.cluster.sample.bucket": {
       "logs": [
+        "carbonblack",
         "cloudtrail"
       ]
     }
