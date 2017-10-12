@@ -181,7 +181,7 @@ def select_key(data, search_key, results):
     Returns:
         (list) all values
     """
-    if not hasattr(data, 'items'):
+    if not isinstance(data, (dict, list)):
         return []
     if search_key in data:
         results.append(data[search_key])
