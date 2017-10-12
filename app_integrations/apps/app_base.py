@@ -282,7 +282,7 @@ class AppIntegration(object):
         # builtin float uses scientific notation when handling very small values
         exec_time = Decimal(timeit(do_gather, number=1))
 
-        LOGGER.debug('Gather process for \'%s\' executed in %f seconds.', self.type(), exec_time)
+        LOGGER.info('Gather process for \'%s\' executed in %f seconds.', self.type(), exec_time)
 
         # Add a 20% buffer to the time it too to account for some unforeseen delay
         # Cast this back to float so general arithemtic works
@@ -295,7 +295,8 @@ class AppIntegration(object):
             return
 
         while self._gather() + self._sleep_seconds() < self._config.remaining_ms() / 1000.0:
-            LOGGER.debug('Lambda remaining seconds: %.2f', self._config.remaining_ms() / 1000.0)
+            LOGGER.debug('More logs to poll for \'%s\': %s', self.type(), self._more_to_poll)
+            LOGGER.info('Lambda remaining seconds: %.2f', self._config.remaining_ms() / 1000.0)
             if not self._more_to_poll:
                 break
 
