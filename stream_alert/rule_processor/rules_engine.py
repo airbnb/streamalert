@@ -183,7 +183,7 @@ class StreamRules(object):
                     "defined_type2": [[original_key2, sub_key2], [original_key3]]
                 }
         """
-        results = dict()
+        results = None
         if not (datatypes and cls.validate_datatypes(normalized_types, datatypes)):
             return results
 
@@ -387,9 +387,11 @@ class StreamRules(object):
                                                    payload.normalized_types,
                                                    rule.datatypes)
 
-                record_copy = record.copy()
                 if types_result:
+                    record_copy = record.copy()
                     record_copy['normalized_types'] = types_result
+                else:
+                    record_copy = record
                 # rule analysis
                 rule_result = cls.process_rule(record_copy, rule)
                 if rule_result:
