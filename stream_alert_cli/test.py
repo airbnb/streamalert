@@ -269,7 +269,7 @@ class RuleProcessorTester(object):
             if message:
                 self.status_messages.append(StatusMessage(StatusMessage.FAILURE, message))
         elif not alerted_properly:
-            message = 'Rule failure: [{}] {}'.format(file_name, test_event['description'])
+            message = 'Rule failure: [{}.json] {}'.format(file_name, test_event['description'])
             self.status_messages.append(StatusMessage(StatusMessage.FAILURE, message))
 
         # Return the alerts back to caller
@@ -435,7 +435,7 @@ class RuleProcessorTester(object):
             rule_name (str): Name of rule being tested
             test_event (dict): Actual record data being tested
         """
-        base_message = ('Invalid test event in file \'{}\' with description '
+        base_message = ('Invalid test event in file \'{}.json\' with description '
                         '\'{}\'.'.format(file_name, test_event['description']))
 
         log_type = test_event['log']
@@ -444,6 +444,7 @@ class RuleProcessorTester(object):
                        'logs.json'.format(base_message, log_type))
 
             self.status_messages.append(StatusMessage(StatusMessage.FAILURE, message))
+            return
 
         config_log_info = self.cli_config['logs'][log_type]
         schema_keys = config_log_info['schema']
