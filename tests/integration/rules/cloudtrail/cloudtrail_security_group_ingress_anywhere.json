@@ -1,0 +1,153 @@
+{
+    "records": [
+        {
+            "data": {
+              "account": 12345,
+              "region": "...",
+              "detail-type": "...",
+              "source": "...",
+              "version": "1.05",
+              "time": "...",
+              "id": "12345",
+              "resources": {
+                  "test": "..."
+              },
+              "detail": {
+                "eventVersion": "1.05",
+                "userIdentity": {
+                    "type": "IAMUser",
+                    "principalId": "...",
+                    "arn": "...",
+                    "accountId": "12345",
+                    "accessKeyId": "...",
+                    "userName": "...",
+                    "sessionContext": {
+                        "attributes": {
+                            "mfaAuthenticated": "false",
+                            "creationDate": "2017-10-11T16:57:31Z"
+                        }
+                    }
+                },
+                "eventTime": "2017-10-11T17:02:32Z",
+                "eventSource": "ec2.amazonaws.com",
+                "eventName": "AuthorizeSecurityGroupIngress",
+                "awsRegion": "...",
+                "sourceIPAddress": "...",
+                "userAgent": "console.ec2.amazonaws.com",
+                "requestParameters": {
+                    "groupId": "...",
+                    "ipPermissions": {
+                        "items": [
+                            {
+                                "ipProtocol": "-1",
+                                "groups": {},
+                                "ipRanges": {
+                                    "items": [
+                                        {
+                                            "cidrIp": "0.0.0.0/0",
+                                            "description": "..."
+                                        }
+                                    ]
+                                },
+                                "ipv6Ranges": {
+                                    "items": [
+                                        {
+                                            "cidrIpv6": "::/0",
+                                            "description": "..."
+                                        }
+                                    ]
+                                },
+                                "prefixListIds": {}
+                            }
+                        ]
+                    }
+                },
+                "responseElements": {
+                    "_return": true
+                },
+                "requestID": "...",
+                "eventID": "...",
+                "eventType": "AwsApiCall",
+                "recipientAccountId": "12345"
+              }
+            },
+            "description": "A Security Group that allows ingress from anywhere on the internet should create an alert.",
+            "log": "cloudwatch:events",
+            "trigger_rules": [
+              "cloudtrail_security_group_ingress_anywhere"
+            ],
+            "source": "prefix_cluster1_stream_alert_kinesis",
+            "service": "kinesis"
+        },
+        {
+            "data": {
+              "account": 12345,
+              "region": "...",
+              "detail-type": "...",
+              "source": "...",
+              "version": "1.05",
+              "time": "...",
+              "id": "12345",
+              "resources": {
+                  "test": "..."
+              },
+              "detail": {
+                "eventVersion": "1.05",
+                "userIdentity": {
+                    "type": "IAMUser",
+                    "principalId": "...",
+                    "arn": "...",
+                    "accountId": "12345",
+                    "accessKeyId": "...",
+                    "userName": "...",
+                    "sessionContext": {
+                        "attributes": {
+                            "mfaAuthenticated": "false",
+                            "creationDate": "2017-10-11T16:57:31Z"
+                        }
+                    }
+                },
+                "eventTime": "2017-10-11T17:02:32Z",
+                "eventSource": "ec2.amazonaws.com",
+                "eventName": "AuthorizeSecurityGroupIngress",
+                "awsRegion": "...",
+                "sourceIPAddress": "...",
+                "userAgent": "console.ec2.amazonaws.com",
+                "requestParameters": {
+                    "groupId": "...",
+                    "ipPermissions": {
+                        "items": [
+                            {
+                                "ipProtocol": "-1",
+                                "groups": {},
+                                "ipRanges": {
+                                    "items": [
+                                        {
+                                            "cidrIp": "10.0.0.0/8",
+                                            "description": "..."
+                                        }
+                                    ]
+                                },
+                                "prefixListIds": {}
+                            }
+                        ]
+                    }
+                },
+                "responseElements": {
+                    "_return": true
+                },
+                "requestID": "...",
+                "eventID": "...",
+                "eventType": "AwsApiCall",
+                "recipientAccountId": "12345"
+              }
+            },
+            "description": "A Security Group that allows ingress from an RFC1918 IP should not create an alert.",
+            "log": "cloudwatch:events",
+            "trigger_rules": [
+            ],
+            "source": "prefix_cluster1_stream_alert_kinesis",
+            "service": "kinesis"
+        }
+    ]
+}

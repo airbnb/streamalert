@@ -173,3 +173,36 @@ def ghe_json_message(rec):
         return
 
     return message_rec
+
+def select_key(data, search_key, results=None):
+    """Recursively search for a given key and return all values
+    Args:
+        data (dict, list)
+        search_key (string)
+        results (array)
+
+    Returns:
+        (list) all values
+    """
+    if results is None:
+        results = []
+    # Check for lists - this will handle lists of lists, etc
+    if isinstance(data, list):
+        for item in data:
+            select_key(item, search_key, results)
+    # Only dictionaries can have keys, so return here if this is not one
+    if not isinstance(data, dict):
+        return
+    # Iterate over all of the key/values
+    for key, val in data.iteritems():
+        # Handle nested dictionaries
+        if isinstance(val, dict):
+            select_key(val, search_key, results)
+        # Handle lists within a dictonary - the safety check at the top will handle nesting
+        elif isinstance(val, list):
+            select_key(val, search_key, results)
+        elif key == search_key:
+            # Finally, if this key is in the dictionary, extract the value for
+            # it and append to the results list that is passed by reference
+            results.append(val)
+    return results
