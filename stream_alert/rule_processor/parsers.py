@@ -27,7 +27,7 @@ from stream_alert.rule_processor import LOGGER, LOGGER_DEBUG_ENABLED
 from stream_alert.shared.stats import time_me
 
 PARSERS = {}
-
+ENVELOPE_KEY = 'streamalert:envelope_keys'
 
 def parser(cls):
     """Class decorator to register parsers"""
@@ -115,6 +115,7 @@ class ParserBase:
 class JSONParser(ParserBase):
     """JSON record parser."""
     __parserid__ = 'json'
+    __regex = re.compile(r'(?P<json_blob>{.+[:,].+}|\[.+[,:].+\])')
 
     def _key_check(self, schema, json_records):
         """Verify the declared schema matches the json payload
@@ -221,25 +222,38 @@ class JSONParser(ParserBase):
         if envelope_schema and not all(x in json_payload for x in envelope_schema):
             return [json_payload]
 
-        json_records = []
-        records_schema = self.options.get('json_path')
-        # Handle jsonpath extraction of records
-        if records_schema:
-            envelope = {}
-            if envelope_schema:
-                schema.update({'streamalert:envelope_keys': envelope_schema})
-                envelope_keys = envelope_schema.keys()
-                envelope_jsonpath = jsonpath_rw.parse("$." + ",".join(envelope_keys))
-                envelope_matches = [match.value for match in envelope_jsonpath.find(json_payload)]
-                envelope = dict(zip(envelope_keys, envelope_matches))
+        envelope = {}
+        if envelope_schema:
+            schema.update({ENVELOPE_KEY: envelope_schema})
+            envelope_keys = envelope_schema.keys()
+            envelope_jsonpath = jsonpath_rw.parse("$." + ",".join(envelope_keys))
+            envelope_matches = [match.value for match in envelope_jsonpath.find(json_payload)]
+            envelope = dict(zip(envelope_keys, envelope_matches))
 
-            records_jsonpath = jsonpath_rw.parse(records_schema)
+        json_records = []
+        json_path_expression = self.options.get('json_path')
+        # Handle jsonpath extraction of records
+        if json_path_expression:
+            records_jsonpath = jsonpath_rw.parse(json_path_expression)
             for match in records_jsonpath.find(json_payload):
                 record = match.value
                 if envelope:
-                    record.update({'streamalert:envelope_keys': envelope})
-
+                    record.update({ENVELOPE_KEY: envelope})
                 json_records.append(record)
+
+        # Handle nested json object regex matching
+        json_regex_key = self.options.get('json_regex_key')
+        if json_regex_key:
+            match = self.__regex.search(json_payload[json_regex_key])
+            if not match:
+                return False
+            match_str = match.groups('json_blob')[0]
+            new_record = json.loads(match_str)
+
+            if envelope:
+                new_record.update({ENVELOPE_KEY: envelope})
+
+            json_records.append(new_record)
 
         if not json_records:
             json_records.append(json_payload)
@@ -366,7 +380,7 @@ class KVParser(ParserBase):
         kv_payload = {}
         try:
             # remove any blank strings that may exist in our list
-            fields = filter(None, data.split(delimiter))
+            fields = [field for field in data.split(delimiter) if field]
             # first check the field length matches our # of keys
             if len(fields) != len(schema):
                 return False
@@ -395,6 +409,10 @@ class KVParser(ParserBase):
 class SyslogParser(ParserBase):
     """Parser for syslog records."""
     __parserid__ = 'syslog'
+    __regex = re.compile(r"(?P<timestamp>^\w{3}\s\d{2}\s(\d{2}:?)+)\s"
+                         r"(?P<host>(\w[-]*)+)\s"
+                         r"(?P<application>\w+)(\[\w+\])*:\s"
+                         r"(?P<message>.*$)")
 
     def parse(self, schema, data):
         """Parse a syslog string into a dictionary
@@ -412,12 +430,7 @@ class SyslogParser(ParserBase):
         Returns:
             list: A list of syslog records OR False if the data does not match the syslog regex.
         """
-        syslog_regex = re.compile(r"(?P<timestamp>^\w{3}\s\d{2}\s(\d{2}:?)+)\s"
-                                  r"(?P<host>(\w[-]*)+)\s"
-                                  r"(?P<application>\w+)(\[\w+\])*:\s"
-                                  r"(?P<message>.*$)")
-
-        match = syslog_regex.search(data)
+        match = self.__regex.search(data)
         if not match:
             return False
 
