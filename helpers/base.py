@@ -171,7 +171,7 @@ def ghe_json_message(rec):
 
     return message_rec
 
-def select_key(data, search_key, results):
+def select_key(data, search_key, results=None):
     """Recursively search for a given key and return all values
     Args:
         data (dict, list)
@@ -181,6 +181,8 @@ def select_key(data, search_key, results):
     Returns:
         (list) all values
     """
+    if results is None:
+        results = []
     # Check for lists - this will handle lists of lists, etc
     if isinstance(data, list):
         for item in data:
