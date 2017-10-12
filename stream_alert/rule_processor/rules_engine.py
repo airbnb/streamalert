@@ -183,7 +183,7 @@ class StreamRules(object):
                     "defined_type2": [[original_key2, sub_key2], [original_key3]]
                 }
         """
-        results = dict()
+        results = None
         if not (datatypes and cls.validate_datatypes(normalized_types, datatypes)):
             return results
 
@@ -380,20 +380,26 @@ class StreamRules(object):
                 matcher_result = cls.match_event(record, rule)
                 if not matcher_result:
                     continue
+
+                types_result = None
                 if rule.datatypes:
                     types_result = cls.match_types(record,
                                                    payload.normalized_types,
                                                    rule.datatypes)
-                    record['normalized_types'] = types_result
 
+                if types_result:
+                    record_copy = record.copy()
+                    record_copy['normalized_types'] = types_result
+                else:
+                    record_copy = record
                 # rule analysis
-                rule_result = cls.process_rule(record, rule)
+                rule_result = cls.process_rule(record_copy, rule)
                 if rule_result:
                     LOGGER.info('Rule [%s] triggered an alert on log type [%s] from entity \'%s\' '
                                 'in service \'%s\'', rule.rule_name, payload.log_source,
                                 payload.entity, payload.service())
                     alert = {
-                        'record': record,
+                        'record': record_copy,
                         'rule_name': rule.rule_name,
                         'rule_description': rule.rule_function.__doc__ or DEFAULT_RULE_DESCRIPTION,
                         'log_source': str(payload.log_source),

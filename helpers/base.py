@@ -103,6 +103,9 @@ def fetch_values_by_datatype(rec, datatype):
         (list) The values of normalized types
     """
     results = []
+    if not rec.get('normalized_types'):
+        return results
+
     if not datatype in rec['normalized_types']:
         return results
 
