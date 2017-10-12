@@ -637,6 +637,7 @@
       "file_version": "string",
       "group": [],
       "host_count": "integer",
+      "internal_name": "string",
       "is_64bit": "boolean",
       "is_executable_image": "boolean",
       "last_seen": "string",
@@ -676,6 +677,7 @@
         "facet_id",
         "file_desc",
         "file_version",
+        "internal_name",
         "last_seen",
         "legal_copyright"
       ],
