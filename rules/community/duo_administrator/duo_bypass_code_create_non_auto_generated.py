@@ -16,5 +16,5 @@ def duo_bypass_code_create_non_auto_generated(rec):
     """
     return (
         rec['action'] == 'bypass_create' and
-        json.loads(rec['description']).get('auto_generated') == False
+        json.loads(rec['description']).get('auto_generated') is False
     )

@@ -16,5 +16,5 @@ def duo_bypass_code_create_non_expiring(rec):
     """
     return (
         rec['action'] == 'bypass_create' and
-        json.loads(rec['description']).get('valid_secs') == None
+        json.loads(rec['description']).get('valid_secs') is None
     )

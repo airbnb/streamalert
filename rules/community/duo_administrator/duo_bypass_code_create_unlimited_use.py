@@ -16,5 +16,5 @@ def duo_bypass_code_create_unlimited_use(rec):
     """
     return (
         rec['action'] == 'bypass_create' and
-        json.loads(rec['description']).get('remaining_uses') == None
+        json.loads(rec['description']).get('remaining_uses') is None
     )
