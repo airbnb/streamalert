@@ -11,7 +11,7 @@
       "description": "A DUO bypass code that has no expiration should create an alert.",
       "log": "duo:administrator",
       "service": "stream_alert_app",
-      "source": "prefix_cluster_duo_auth_sm-app-name_app",
+      "source": "prefix_cluster_duo_admin_sm-app-name_app",
       "trigger_rules": [
         "duo_bypass_code_create_non_expiring"
       ]
@@ -27,7 +27,7 @@
       "description": "A DUO bypass code that has an expiration should not create an alert.",
       "log": "duo:administrator",
       "service": "stream_alert_app",
-      "source": "prefix_cluster_duo_auth_sm-app-name_app",
+      "source": "prefix_cluster_duo_admin_sm-app-name_app",
       "trigger_rules": [
       ]
     }
