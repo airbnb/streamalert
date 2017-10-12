@@ -12,7 +12,7 @@ rule = StreamRules.rule
       req_subkeys={'detail': ['eventName', 'requestParameters']})
 def cloudtrail_security_group_ingress_anywhere(rec):
     """
-    author:         @mimeframe
+    author:         @mimeframe, @ryandeivert
     description:    Alert on AWS Security Groups that allow ingress from anywhere.
                     This rule accounts for both IPv4 and IPv6.
     reference:      http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/

@@ -181,14 +181,23 @@ def select_key(data, search_key, results):
     Returns:
         (list) all values
     """
-    if not isinstance(data, (dict, list)):
-        return []
-    if search_key in data:
-        results.append(data[search_key])
+    # Check for lists - this will handle lists of lists, etc
+    if isinstance(data, list):
+        for item in data:
+            select_key(item, search_key, results)
+    # Only dictionaries can have keys, so return here if this is not one
+    if not isinstance(data, dict):
+        return
+    # Iterate over all of the key/values
     for key, val in data.iteritems():
+        # Handle nested dictionaries
         if isinstance(val, dict):
-            select_key(data[key], search_key, results)
+            select_key(val, search_key, results)
+        # Handle lists within a dictonary - the safety check at the top will handle nesting
         elif isinstance(val, list):
-            for item in val:
-                select_key(item, search_key, results)
+            select_key(val, search_key, results)
+        elif key == search_key:
+            # Finally, if this key is in the dictionary, extract the value for
+            # it and append to the results list that is passed by reference
+            results.append(val)
     return results
