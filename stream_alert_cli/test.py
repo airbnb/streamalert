@@ -112,7 +112,8 @@ class RuleProcessorTester(object):
                 self.status_messages.append(StatusMessage(StatusMessage.WARNING, error))
                 continue
 
-            for index, test_event in enumerate(events['records']):
+            print_header = True
+            for test_event in events['records']:
                 self.total_tests += 1
                 if self._detect_old_test_event(test_event):
                     self.all_tests_passed = False
@@ -134,19 +135,18 @@ class RuleProcessorTester(object):
 
                 self.apply_helpers(test_event)
 
-                print_header_line = index == 0
-
                 formatted_record = helpers.format_lambda_test_record(test_event)
 
                 # If this test is to validate the schema only, continue the loop and
                 # do not yield results on the rule tests below
                 if validate_only or (not validate_only and test_event.get('validate_schema_only')):
                     if self._validate_test_record(name, test_event, formatted_record,
-                                                  print_header_line) is False:
+                                                  print_header) is False:
                         self.all_tests_passed = False
-                    continue
+                else:
+                    yield self._run_rule_tests(name, test_event, formatted_record, print_header)
 
-                yield self._run_rule_tests(name, test_event, formatted_record, print_header_line)
+                print_header = False
 
         # Report on the final test results
         self.report_output_summary()
