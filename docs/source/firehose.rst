@@ -42,19 +42,19 @@ And the following schemas are defined in ``logs.json``:
   {
     "cloudwatch:events": {
       "parser": "json",
-      "...", "..."
+      "schema": {"key": "type"}
     },
     "cloudwatch:flow_logs": {
       "parser": "json",
-      "...", "..."
+      "schema": {"key": "type"}
     },
     "osquery": {
       "parser": "json",
-      "...", "..."
+      "schema": {"key": "type"}
     },
     "cloudtrail": {
       "parser": "json",
-      "...", "..."
+      "schema": {"key": "type"}
     }
   }
 
@@ -67,10 +67,10 @@ The Firehose module will create four Delivery Streams, one for each type:
 
 Each Delivery Stream delivers data to the same S3 bucket created by the module in a prefix based on the corresponding log type:
 
-- ``arn:aws:s3:::my-data-bucket/cloudwatch_events/YYYY/MM/DD/data``
-- ``arn:aws:s3:::my-data-bucket/cloudwatch_flow_logs/YYYY/MM/DD/data``
-- ``arn:aws:s3:::my-data-bucket/osquery/YYYY/MM/DD/data``
-- ``arn:aws:s3:::my-data-bucket/cloudtrail/YYYY/MM/DD/data``
+- ``arn:aws:s3:::my-data-bucket/cloudwatch_events/YYYY/MM/DD/data_here``
+- ``arn:aws:s3:::my-data-bucket/cloudwatch_flow_logs/YYYY/MM/DD/data_here``
+- ``arn:aws:s3:::my-data-bucket/osquery/YYYY/MM/DD/data_here``
+- ``arn:aws:s3:::my-data-bucket/cloudtrail/YYYY/MM/DD/data_here``
 
 Limits
 ------
@@ -86,8 +86,6 @@ Fields
 
 The following Firehose configuration settings are defined in ``global.json``:
 
-Example:
-
 .. code-block:: json
 
   {
@@ -95,9 +93,9 @@ Example:
       "firehose": {
         "enabled": true,
         "s3_bucket_suffix": "streamalert.data",
-        "buffer_size": 5,
+        "buffer_size": 64,
         "buffer_interval": 300,
-        "compression_format": "Snappy"
+        "compression_format": "GZIP"
       }
     }
   }
@@ -110,7 +108,7 @@ Key                      Required  Default               Description
 ----------------------   --------  --------------------  -----------
 ``enabled``              ``Yes``   ``None``              If set to ``false``, will not create a Kinesis Firehose
 ``s3_bucket_suffix``     ``No``    ``streamalert.data``  The suffix of the S3 bucket used for Kinesis Firehose data. The naming scheme is: ``prefix.suffix``
-``buffer_size``          ``No``    ``5 (MB)``            The amount of buffered incoming data before delivering it to Amazon S3
+``buffer_size``          ``No``    ``64 (MB)``           The amount of buffered incoming data before delivering it to Amazon S3
 ``buffer_interval``      ``No``    ``300 (seconds)``     The frequency of data delivery to Amazon S3
-``compression_format``   ``No``    ``Snappy``            The compression algorithm to use on data stored in S3
+``compression_format``   ``No``    ``GZIP``              The compression algorithm to use on data stored in S3
 ======================   ========  ====================  ===========

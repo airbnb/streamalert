@@ -172,11 +172,11 @@ def generate_main(**kwargs):
             'prefix': config['global']['account']['prefix'],
             'logs': enabled_firehose_logs(config),
             'buffer_size': config['global']['infrastructure']
-                           ['firehose'].get('buffer_size', 5),
+                           ['firehose'].get('buffer_size', 64),
             'buffer_interval': config['global']['infrastructure']
                                ['firehose'].get('buffer_interval', 300),
             'compression_format': config['global']['infrastructure']
-                                  ['firehose'].get('compression_format', 'Snappy'),
+                                  ['firehose'].get('compression_format', 'GZIP'),
             's3_logging_bucket': logging_bucket,
             's3_bucket_name': firehose_s3_bucket_name
         }
