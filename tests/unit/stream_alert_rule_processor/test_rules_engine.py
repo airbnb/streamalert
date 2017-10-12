@@ -766,3 +766,62 @@ class TestStreamRules(object):
             payload = load_and_classify_payload(self.config, service, entity, raw_record)
 
             assert_false(StreamRules.process(payload))
+
+    def test_reset_normalized_types(self):
+        """Rules Engine - Normalized types should be reset after each iteration"""
+        @rule(datatypes=['sourceAddress'],
+              outputs=['s3:sample_bucket'])
+        def test_01_matching_sourceaddress_datatypes(rec): # pylint: disable=unused-variable
+            """Testing rule to alert on matching sourceAddress"""
+            results = fetch_values_by_datatype(rec, 'sourceAddress')
+
+            for result in results:
+                if result == '1.1.1.2':
+                    return True
+            return False
+
+        @rule(logs=['cloudwatch:test_match_types', 'test_log_type_json_nested'],
+              outputs=['s3:sample_bucket'])
+        def test_02_rule_without_datatypes(_): # pylint: disable=unused-variable
+            """Testing rule without datatypes parameter"""
+            return True
+
+        kinesis_data_items = [
+            {
+                'account': 123456,
+                'region': '123456123456',
+                'source': '1.1.1.2',
+                'detail': {
+                    'eventName': 'ConsoleLogin',
+                    'sourceIPAddress': '1.1.1.2',
+                    'recipientAccountId': '654321'
+                }
+            },
+            {
+                'date': 'Dec 01 2016',
+                'unixtime': '1483139547',
+                'host': 'host1.web.prod.net',
+                'data': {
+                    'category': 'web-server',
+                    'type': '1',
+                    'source': 'eu'
+                }
+            }
+        ]
+
+        alerts = []
+        for data in kinesis_data_items:
+            kinesis_data = json.dumps(data)
+            service, entity = 'kinesis', 'test_kinesis_stream'
+            raw_record = make_kinesis_raw_record(entity, kinesis_data)
+            payload = load_and_classify_payload(self.config, service, entity, raw_record)
+
+            alerts.extend(StreamRules.process(payload))
+
+        assert_equal(len(alerts), 3)
+        for alert in alerts:
+            has_key_normalized_types = 'normalized_types' in alert['record']
+            if alert.get('rule_name') == 'test_02_rule_without_datatypes':
+                assert_equal(has_key_normalized_types, False)
+            else:
+                assert_equal(has_key_normalized_types, True)
