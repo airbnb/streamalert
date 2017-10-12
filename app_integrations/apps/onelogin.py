@@ -137,9 +137,15 @@ class OneLoginApp(AppIntegration):
             params = None
             request_url = self._next_page_url
         else:
-            # OneLogin API expects the ISO 8601 format: YYYY-MM-DDTHH:MM:SSZ
-            formatted_date = datetime.fromtimestamp(
-                self._last_timestamp).strftime('%Y-%m-%dT%H:%M:%SZ')
+            # Check the type to understand the format stored
+            if isinstance(self._last_timestamp, int):
+                # OneLogin API expects the ISO 8601 format: YYYY-MM-DDTHH:MM:SSZ
+                formatted_date = datetime.fromtimestamp(
+                    self._last_timestamp).strftime('%Y-%m-%dT%H:%M:%SZ')
+            else:
+                # We should have already this timestamp in format ISO 8601
+                formatted_date = self._last_timestamp
+
             params = {'since': formatted_date}
             request_url = self._events_endpoint()
 
@@ -151,6 +157,9 @@ class OneLoginApp(AppIntegration):
 
         # Set pagination link, if there is any
         self._next_page_url = response['pagination']['next_link']
+
+        # Adjust the last seen event
+        self._last_timestamp = response['data'][-1]['created_at']
 
         # Return the list of logs to the caller so they can be send to the batcher
         return response['data']
