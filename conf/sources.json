@@ -19,6 +19,11 @@
       "logs": [
         "duo"
       ]
+    },
+    "prefix_cluster_duo_admin_sm-app-name_app": {
+      "logs": [
+        "duo"
+      ]
     }
   }
 }

@@ -1,0 +1,35 @@
+{
+  "records": [
+    {
+      "data": {
+        "action": "bypass_create",
+        "description": "{\"bypass\": \"\", \"count\": 1, \"auto_generated\": true, \"valid_secs\": null, \"remaining_uses\": 1, \"user_id\": \"...\"}",
+        "object": "...",
+        "timestamp": "1234567890",
+        "username": "..."
+      },
+      "description": "A DUO bypass code that has no expiration should create an alert.",
+      "log": "duo:administrator",
+      "service": "stream_alert_app",
+      "source": "prefix_cluster_duo_admin_sm-app-name_app",
+      "trigger_rules": [
+        "duo_bypass_code_create_non_expiring"
+      ]
+    },
+    {
+      "data": {
+        "action": "bypass_create",
+        "description": "{\"bypass\": \"\", \"count\": 1, \"auto_generated\": true, \"valid_secs\": 60, \"remaining_uses\": 1, \"user_id\": \"...\"}",
+        "object": "...",
+        "timestamp": "1234567890",
+        "username": "..."
+      },
+      "description": "A DUO bypass code that has an expiration should not create an alert.",
+      "log": "duo:administrator",
+      "service": "stream_alert_app",
+      "source": "prefix_cluster_duo_admin_sm-app-name_app",
+      "trigger_rules": [
+      ]
+    }
+  ]
+}
