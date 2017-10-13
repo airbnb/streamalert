@@ -183,9 +183,8 @@ class StreamRules(object):
                     "defined_type2": [[original_key2, sub_key2], [original_key3]]
                 }
         """
-        results = None
-        if not (datatypes and cls.validate_datatypes(normalized_types, datatypes)):
-            return results
+        if not (datatypes and normalized_types):
+            return
 
         return cls.match_types_helper(record, normalized_types, datatypes)
 
@@ -210,7 +209,7 @@ class StreamRules(object):
                 cls.update(results, key, nested_results)
             else:
                 for datatype in datatypes:
-                    if key in normalized_types[datatype]:
+                    if datatype in normalized_types and key in normalized_types[datatype]:
                         if not datatype in results:
                             results[datatype] = [[key]]
                         else:
@@ -264,25 +263,6 @@ class StreamRules(object):
                     results[key] = val
                 else:
                     results[key] = [val]
-
-    @classmethod
-    def validate_datatypes(cls, normalized_types, datatypes):
-        """Check is datatype valid
-
-        Args:
-            normalized_types (dict): normalized_types for certain log
-            datatypes (list): defined in rule options, users interested types
-
-        Returns:
-            (boolean): return true if all datatypes are defined
-        """
-        if not normalized_types:
-            return False
-
-        for datatype in datatypes:
-            if not datatype in normalized_types:
-                return False
-        return True
 
     @classmethod
     def process_rule(cls, record, rule):
