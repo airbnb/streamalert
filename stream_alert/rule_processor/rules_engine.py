@@ -209,7 +209,7 @@ class StreamRules(object):
                 cls.update(results, key, nested_results)
             else:
                 for datatype in datatypes:
-                    if normalized_types.get(datatype) and (key in normalized_types[datatype]):
+                    if datatype in normalized_types and key in normalized_types[datatype]:
                         if not datatype in results:
                             results[datatype] = [[key]]
                         else:

@@ -478,7 +478,11 @@ class TestStreamRules(object):
               outputs=['s3:sample_bucket'],
               datatypes=['sourceAddress'])
         def match_ipaddress(rec): # pylint: disable=unused-variable
-            """Testing rule to detect matching IP address"""
+            """Testing rule to detect matching IP address
+
+            Datatype 'sourceAddress' is defined in tests/unit/conf/types.json
+            for cloudwatch logs. This rule should be trigger by testing event.
+            """
             results = fetch_values_by_datatype(rec, 'sourceAddress')
 
             for result in results:
@@ -492,8 +496,10 @@ class TestStreamRules(object):
         def mismatch_types(rec): # pylint: disable=unused-variable
             """Testing rule with non-existing normalized type in the record.
 
-            It will trigger alert since we change rule paramemter 'datatypes' to
-            OR operation among CEF types. See the discussion at
+            Datatype 'sourceAddress' is defined in tests/unit/conf/types.json
+            for cloudwatch logs, but 'command' is not. This rule should be
+            triggered by testing event since we change rule parameter 'datatypes'
+            to OR operation among CEF types. See the discussion at
             https://github.com/airbnb/streamalert/issues/365
             """
             results = fetch_values_by_datatype(rec, 'sourceAddress')
