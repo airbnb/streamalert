@@ -130,7 +130,7 @@ class JSONParser(ParserBase):
             bool: True if any log in the list matches the schema, False if not
         """
         schema_keys = set(schema.keys())
-        LOGGER.debug('Checking %d records', len(json_records))
+        LOGGER.debug('Key checking %d records', len(json_records))
 
         # Because elements are deleted off of json_records during
         # iteration, this block uses a reverse range.
@@ -153,18 +153,20 @@ class JSONParser(ParserBase):
                     LOGGER.debug(
                         'Key check failure: \n%s', json.dumps(json_records[index], indent=2))
                     LOGGER.debug(
-                        'Missing keys in record: %s', json.dumps(list(json_keys - schema_keys)))
+                        'Missing keys in record: %s', json.dumps(list(json_keys ^ schema_keys)))
                 del json_records[index]
 
         return bool(json_records)
 
-    def _add_optional_keys(self, json_records, schema):
+    @staticmethod
+    def _add_optional_keys(json_records, schema, optional_keys):
         """Add optional keys to a parsed JSON record.
 
         Args:
             json_records (list): JSONPath extracted JSON records
+            schema (dict): The log type schema
+            optional_keys (dict): The optional keys in the schema
         """
-        optional_keys = self.options.get('optional_top_level_keys')
         if not optional_keys:
             return
 
@@ -219,11 +221,17 @@ class JSONParser(ParserBase):
         envelope_schema = self.options.get('envelope_keys')
         # If envelope_keys are declared, and this payload does not have every key specified
         # in these envelope_keys, then it's safe to skip trying to extract records using json_path
-        if envelope_schema and not all(x in json_payload for x in envelope_schema):
-            return [json_payload]
+        if envelope_schema:
+            missing_keys_schema = {}
+            for key, key_type in envelope_schema.iteritems():
+                if key not in json_payload:
+                    missing_keys_schema[key] = key_type
+            if missing_keys_schema:
+                self._add_optional_keys([json_payload], envelope_schema, missing_keys_schema)
 
         envelope = {}
         if envelope_schema:
+            LOGGER.debug('Parsing envelope keys')
             schema.update({ENVELOPE_KEY: envelope_schema})
             envelope_keys = envelope_schema.keys()
             envelope_jsonpath = jsonpath_rw.parse("$." + ",".join(envelope_keys))
@@ -234,6 +242,7 @@ class JSONParser(ParserBase):
         json_path_expression = self.options.get('json_path')
         # Handle jsonpath extraction of records
         if json_path_expression:
+            LOGGER.debug('Parsing records with JSONPath')
             records_jsonpath = jsonpath_rw.parse(json_path_expression)
             for match in records_jsonpath.find(json_payload):
                 record = match.value
@@ -244,6 +253,7 @@ class JSONParser(ParserBase):
         # Handle nested json object regex matching
         json_regex_key = self.options.get('json_regex_key')
         if json_regex_key:
+            LOGGER.debug('Parsing records with JSON Regex Key')
             match = self.__regex.search(json_payload[json_regex_key])
             if not match:
                 return False
@@ -255,6 +265,7 @@ class JSONParser(ParserBase):
 
             json_records.append(new_record)
 
+        # If the final parsed record is singular
         if not json_records:
             json_records.append(json_payload)
 
@@ -274,13 +285,18 @@ class JSONParser(ParserBase):
         """
         if isinstance(data, (unicode, str)):
             try:
-                data = json.loads(data)
+                loaded_data = json.loads(data)
             except ValueError as err:
                 LOGGER.debug('JSON parse failed: %s', str(err))
                 return False
 
-        json_records = self._parse_records(schema, data)
-        self._add_optional_keys(json_records, schema)
+        json_records = self._parse_records(schema, loaded_data)
+        if not json_records:
+            return False
+
+        self._add_optional_keys(json_records,
+                                schema,
+                                self.options.get('optional_top_level_keys'))
         # Make sure all keys match the schema, including nests maps
         if not self._key_check(schema, json_records):
             return False
