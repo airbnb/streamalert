@@ -54,7 +54,7 @@ class TestOneLoginApp(object):
         self.set_config_values('us', 'bad_id', 'bad_secret')
         requests_mock.return_value = Mock(
             status_code=404,
-            json=Mock(side_effect=[{'message': 'something went wrong'}])
+            json=Mock(return_value={'message': 'something went wrong'})
         )
         assert_false(self._app._generate_headers())
 
@@ -64,7 +64,7 @@ class TestOneLoginApp(object):
         self.set_config_values('us', 'good_id', 'good_secret')
         requests_mock.return_value = Mock(
             status_code=200,
-            json=Mock(side_effect=[{'access_token': 'this_is_a_token'}])
+            json=Mock(return_value={'access_token': 'this_is_a_token'})
         )
         self._app._generate_headers()
         assert_equal(self._app._auth_headers['Authorization'], 'bearer:this_is_a_token')
@@ -136,7 +136,7 @@ class TestOneLoginApp(object):
         self.set_config_values('us', 'bad_id', 'bad_secret')
         requests_mock.return_value = Mock(
             status_code=404,
-            json=Mock(side_effect=[{'message': 'something went wrong'}])
+            json=Mock(return_value={'message': 'something went wrong'})
         )
         assert_false(self._app._gather_logs())
 
@@ -187,6 +187,40 @@ class TestOneLoginApp(object):
         events = self._app._get_onelogin_events()
         assert_equal(len(logs['data']), len(events))
         assert_equal(logs['pagination']['next_link'], self._app._next_page_url)
+
+    @patch('requests.get')
+    def test_set_onelogin_rate_limit_sleep(self, requests_mock):
+        """OneLoginApp - Set OneLogin Rate Limit Sleep"""
+        self._app._config['auth']['region'] = 'us'
+        self._app._auth_headers = True
+        self._app._rate_limit_sleep = 0
+        new_rate_limit_sleep = 123
+        requests_mock.return_value = Mock(
+            status_code=200,
+            json=Mock(return_value={'data': {'X-RateLimit-Reset': new_rate_limit_sleep}})
+        )
+        self._app._set_rate_limit_sleep()
+        assert_equal(self._app._rate_limit_sleep, new_rate_limit_sleep)
+
+    def test_set_onelogin_rate_limit_sleep_no_headers(self):
+        """OneLoginApp - Set OneLogin Rate Limit Sleep, No Headers"""
+        self._app._auth_headers = None
+        self._app._rate_limit_sleep = 1
+        self._app._set_rate_limit_sleep()
+        assert_equal(self._app._rate_limit_sleep, 0)
+
+    @patch('requests.get')
+    def test_set_onelogin_rate_limit_sleep_bad_response(self, requests_mock):
+        """OneLoginApp - Set OneLogin Rate Limit Sleep, Bad Response"""
+        self._app._config['auth']['region'] = 'us'
+        self._app._auth_headers = True
+        self._app._rate_limit_sleep = 1
+        requests_mock.return_value = Mock(
+            status_code=403,
+            json=Mock(return_value={'message': 'something went wrong'})
+        )
+        self._app._set_rate_limit_sleep()
+        assert_equal(self._app._rate_limit_sleep, 0)
 
     def test_onelogin_events_endpoint(self):
         """OneLoginApp - Verify Events Endpoint"""

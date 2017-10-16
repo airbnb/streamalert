@@ -24,6 +24,7 @@ class OneLoginApp(AppIntegration):
     """OneLogin StreamAlert App"""
     _ONELOGIN_EVENTS_URL = 'https://api.{}.onelogin.com/api/1/events'
     _ONELOGIN_TOKEN_URL = 'https://api.{}.onelogin.com/auth/oauth2/v2/token'
+    _ONELOGIN_RATE_LIMIT_URL = 'https://api.{}.onelogin.com/auth/rate_limit'
     # OneLogin API returns 50 events per page
     _MAX_EVENTS_LIMIT = 50
 
@@ -32,6 +33,7 @@ class OneLoginApp(AppIntegration):
         super(OneLoginApp, self).__init__(config)
         self._auth_headers = None
         self._next_page_url = None
+        self._rate_limit_sleep = 0
 
     @classmethod
     def _type(cls):
@@ -53,6 +55,14 @@ class OneLoginApp(AppIntegration):
         """
         return self._ONELOGIN_EVENTS_URL.format(self._config['auth']['region'])
 
+    def _rate_limit_endpoint(self):
+        """Get the endpoint URL to retrieve rate limit details
+
+        Returns:
+            str: Full URL to retrieve rate limit details in the OneLogin API
+        """
+        return self._ONELOGIN_RATE_LIMIT_URL.format(self._config['auth']['region'])
+
     @classmethod
     def service(cls):
         return 'onelogin'
@@ -72,11 +82,11 @@ class OneLoginApp(AppIntegration):
         headers_token = {'Authorization': authorization,
                          'Content-Type': 'application/json'}
 
-        response = self._make_post_request(self._token_endpoint(),
-                                           {'grant_type':'client_credentials'},
-                                           headers_token)
+        result, response = self._make_post_request(self._token_endpoint(),
+                                                   headers_token,
+                                                   {'grant_type':'client_credentials'})
 
-        if not response:
+        if not result:
             return False
 
         bearer = 'bearer:{}'.format(response['access_token'])
@@ -88,6 +98,23 @@ class OneLoginApp(AppIntegration):
             self._auth_headers = self._generate_headers()
 
         return self._get_onelogin_events()
+
+    def _set_rate_limit_sleep(self):
+        """Get the number of seconds we need to sleep until we are clear to continue"""
+        # Make sure we have authentication headers
+        if not self._auth_headers:
+            self._rate_limit_sleep = 0
+            return
+
+        result, response = self._make_get_request(self._rate_limit_endpoint(),
+                                                  self._auth_headers,
+                                                  None)
+
+        if not result:
+            self._rate_limit_sleep = 0
+            return
+
+        self._rate_limit_sleep = response['data']['X-RateLimit-Reset']
 
     def _get_onelogin_events(self):
         """Get all events from the endpoint for this timeframe
@@ -150,13 +177,19 @@ class OneLoginApp(AppIntegration):
             request_url = self._events_endpoint()
 
         LOGGER.debug('Events to retrieve for \'%s\': %s', self.type(), self._more_to_poll)
-        response = self._make_get_request(request_url, self._auth_headers, params)
+        result, response = self._make_get_request(request_url, self._auth_headers, params)
 
-        if not response:
+        if not result:
+            # If we hit the rate limit, update the sleep time
+            r_status = response['status']
+            if r_status['code'] == 400 and r_status['message'] == 'rate_limit_exceeded':
+                self._set_rate_limit_sleep()
+
             return False
 
         # Set pagination link, if there is any
         self._next_page_url = response['pagination']['next_link']
+        self._more_to_poll = (self._next_page_url is not None)
 
         # Adjust the last seen event
         self._last_timestamp = response['data'][-1]['created_at']
@@ -189,9 +222,12 @@ class OneLoginApp(AppIntegration):
     def _sleep_seconds(self):
         """Return the number of seconds this polling function should sleep for
         between requests to avoid failed requests. OneLogin tokens allows for 5000 requests
-        every hour, so returning 0 for now.
+        every hour, but if the rate limit is reached, we can retrieve how long until we are clear.
+
+        More information about this here:
+            https://developers.onelogin.com/api-docs/1/oauth20-tokens/get-rate-limit
 
         Returns:
             int: Number of seconds that this function should sleep for between requests
         """
-        return 0
+        return self._rate_limit_sleep

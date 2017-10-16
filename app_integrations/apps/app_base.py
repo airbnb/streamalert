@@ -208,8 +208,8 @@ class AppIntegration(object):
         """Method for returning the json loaded response for this GET request
 
         Returns:
-            bool or dict: False if the was an error performing the request,
-                or a dictionary loaded from the json response
+            tuple (bool, dict): False if the was an error performing the request,
+                and the dictionary loaded from the json response
         """
         LOGGER.debug('Making GET request for service \'%s\' on poll #%d',
                      self.type(), self._poll_count)
@@ -217,17 +217,14 @@ class AppIntegration(object):
         # Perform the request and return the response as a dict
         response = requests.get(full_url, headers=headers, params=params)
 
-        if not self._check_http_response(response):
-            return False
-
-        return response.json()
+        return self._check_http_response(response), response.json()
 
     def _make_post_request(self, full_url, headers, data):
         """Method for returning the json loaded response for this POST request
 
         Returns:
-            bool or dict: False if the was an error performing the request,
-                or a dictionary loaded from the json response
+            tuple (bool, dict): False if the was an error performing the request,
+                and the dictionary loaded from the json response
         """
         LOGGER.debug('Making POST request for service \'%s\' on poll #%d',
                      self.type(), self._poll_count)
@@ -235,10 +232,7 @@ class AppIntegration(object):
         # Perform the request and return the response as a dict
         response = requests.post(full_url, headers=headers, json=data)
 
-        if not self._check_http_response(response):
-            return False
-
-        return response.json()
+        return self._check_http_response(response), response.json()
 
     def _validate_auth(self):
         """Method for validating the authentication dictionary retrieved from
