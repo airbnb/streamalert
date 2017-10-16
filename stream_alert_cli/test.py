@@ -105,7 +105,8 @@ class RuleProcessorTester(object):
             files_filter
         )
 
-        for name, path in test_file_info.iteritems():
+        for name in sorted(test_file_info):
+            path = test_file_info[name]
             events, error = helpers.load_test_file(path)
             if not events:
                 self.all_tests_passed = False
