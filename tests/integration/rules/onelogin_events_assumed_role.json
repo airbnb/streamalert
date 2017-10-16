@@ -34,9 +34,12 @@
                 "error_description": "ERROR ERROR"
             },
             "description": "OneLogin generated event when a user assumed a different role, it should alert",
+            "log": "onelogin:events",
+            "trigger_rules": [
+                "onelogin_events_assumed_role"
+            ],
             "service": "stream_alert_app",
-            "source": "prefix_cluster_onelogin-events-app-name_app",
-            "trigger": true
+            "source": "prefix_cluster_onelogin-events-app-name_app"
         },
         {
             "data": {
@@ -72,9 +75,11 @@
                 "error_description": "ERROR ERROR"
             },
             "description": "OneLogin generated event when a user do any other action, it should not alert",
+            "log": "onelogin:events",
+            "trigger_rules": [
+            ],
             "service": "stream_alert_app",
-            "source": "prefix_cluster_onelogin-events-app-name_app",
-            "trigger": false
+            "source": "prefix_cluster_onelogin-events-app-name_app"
         }
     ]
 }
