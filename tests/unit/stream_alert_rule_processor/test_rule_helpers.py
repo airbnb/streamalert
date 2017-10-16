@@ -171,10 +171,10 @@ def test_detect_ioc_rule():
 
     ioc_result = base.is_ioc(rec)
     assert_equal(ioc_result, True)
-    expected_ioc_info = {
+    expected_ioc_info = [{
         'type': 'ip',
         'value': '90.163.54.11'
-    }
+    }]
     assert_equal(rec[StreamThreatIntel.IOC_KEY], expected_ioc_info)
 
 @with_setup(setup=setup, teardown=teardown)
@@ -204,4 +204,56 @@ def test_is_ioc_with_no_matching():
     }
 
     ioc_result = base.is_ioc(rec)
+    assert_equal(ioc_result, False)
+
+@with_setup(setup=setup, teardown=teardown)
+def test_is_ioc_with_lowercase_ioc_is_true():
+    """Helpers - IOC is lowercase while related data is mixcase."""
+    rec = {
+        'server': "test-server",
+        'computer_name': 'test-pc',
+        "domain": "test_Evil.net",
+        "event_type": "netconn",
+        "ipv4": "0.0.0.0",
+        "local_ip": "127.0.0.1",
+        "local_port": 54279,
+        "md5": "EF69CD89AD7ADDB9A16BB6F26F1EFAF7",
+        'normalized_types': {
+            'destinationDomain': [['domain']],
+            'fileHash': [['md5']]
+        }
+    }
+
+    ioc_result = base.is_ioc(rec)
+    assert_equal(ioc_result, True)
+    expected_ioc_info = [
+        {
+            'type': 'domain',
+            'value': 'test_evil.net'
+        },
+        {
+            'type': 'md5',
+            'value': 'ef69cd89ad7addb9a16bb6f26f1efaf7'
+        }
+    ]
+    assert_equal(rec[StreamThreatIntel.IOC_KEY], expected_ioc_info)
+
+@with_setup(setup=setup, teardown=teardown)
+def test_is_ioc_with_lowercase_ioc_is_false():
+    """Helpers - IOC is lowercase while lowercase_ioc flag is set to False."""
+    rec = {
+        'server': "test-server",
+        'computer_name': 'test-pc',
+        "domain": "test_Evil.net",
+        "event_type": "netconn",
+        "ipv4": "0.0.0.0",
+        "local_ip": "127.0.0.1",
+        "local_port": 54279,
+        "md5": "EF69CD89AD7ADDB9A16BB6F26F1EFAF7",
+        'normalized_types': {
+            'destinationDomain': [['domain']],
+            'fileHash': [['md5']]
+        }
+    }
+    ioc_result = base.is_ioc(rec, lowercase_ioc=False)
     assert_equal(ioc_result, False)
