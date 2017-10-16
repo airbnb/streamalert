@@ -204,7 +204,7 @@ class AppIntegration(object):
 
         return success
 
-    def _make_get_request(self, full_url, headers, params):
+    def _make_get_request(self, full_url, headers, params=None):
         """Method for returning the json loaded response for this GET request
 
         Returns:

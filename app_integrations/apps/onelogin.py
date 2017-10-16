@@ -17,9 +17,10 @@ from datetime import datetime
 import re
 
 from app_integrations import LOGGER
-from app_integrations.apps.app_base import AppIntegration
+from app_integrations.apps.app_base import app, AppIntegration
 
 
+@app
 class OneLoginApp(AppIntegration):
     """OneLogin StreamAlert App"""
     _ONELOGIN_EVENTS_URL = 'https://api.{}.onelogin.com/api/1/events'
@@ -89,7 +90,12 @@ class OneLoginApp(AppIntegration):
         if not result:
             return False
 
-        bearer = 'bearer:{}'.format(response['access_token'])
+        if not response:
+            LOGGER.error('Response invalid generating headers for service \'%s\'',
+                         self.type())
+            return False
+
+        bearer = 'bearer:{}'.format(response.get('access_token'))
         self._auth_headers = {'Authorization': bearer}
 
     def _gather_logs(self):
@@ -104,17 +110,26 @@ class OneLoginApp(AppIntegration):
         # Make sure we have authentication headers
         if not self._auth_headers:
             self._rate_limit_sleep = 0
+            LOGGER.error('No authentication headers for service \'%s\'',
+                         self.type())
             return
 
         result, response = self._make_get_request(self._rate_limit_endpoint(),
-                                                  self._auth_headers,
-                                                  None)
+                                                  self._auth_headers)
 
         if not result:
             self._rate_limit_sleep = 0
             return
 
-        self._rate_limit_sleep = response['data']['X-RateLimit-Reset']
+        # Making sure we have a valid response
+        if not response:
+            LOGGER.error('Response invalid getting rate limit data for service \'%s\'',
+                         self.type())
+            self._rate_limit_sleep = 0
+            return
+
+        self._rate_limit_sleep = response.get('data')['X-RateLimit-Reset']
+        LOGGER.info('Rate limit sleep set for \'%s\': %d', self.type(), self._rate_limit_sleep)
 
     def _get_onelogin_events(self):
         """Get all events from the endpoint for this timeframe
@@ -157,6 +172,8 @@ class OneLoginApp(AppIntegration):
         """
         # Make sure we have authentication headers
         if not self._auth_headers:
+            LOGGER.error('No authentication headers for service \'%s\'',
+                         self.type())
             return False
 
         # Are we just getting events or getting paginated events?
@@ -167,7 +184,7 @@ class OneLoginApp(AppIntegration):
             # Check the type to understand the format stored
             if isinstance(self._last_timestamp, int):
                 # OneLogin API expects the ISO 8601 format: YYYY-MM-DDTHH:MM:SSZ
-                formatted_date = datetime.fromtimestamp(
+                formatted_date = datetime.utcfromtimestamp(
                     self._last_timestamp).strftime('%Y-%m-%dT%H:%M:%SZ')
             else:
                 # We should have already this timestamp in format ISO 8601
@@ -176,26 +193,34 @@ class OneLoginApp(AppIntegration):
             params = {'since': formatted_date}
             request_url = self._events_endpoint()
 
-        LOGGER.debug('Events to retrieve for \'%s\': %s', self.type(), self._more_to_poll)
         result, response = self._make_get_request(request_url, self._auth_headers, params)
 
         if not result:
             # If we hit the rate limit, update the sleep time
-            r_status = response['status']
-            if r_status['code'] == 400 and r_status['message'] == 'rate_limit_exceeded':
-                self._set_rate_limit_sleep()
+            if response.get('status'):
+                r_status = response.get('status')
+                if r_status['code'] == 400 and r_status['message'] == 'rate_limit_exceeded':
+                    self._set_rate_limit_sleep()
 
             return False
 
+        # Fail if response is invalid
+        if not response:
+            LOGGER.error('Response is invalid for service \'%s\'',
+                         self.type())
+            return False
+
         # Set pagination link, if there is any
-        self._next_page_url = response['pagination']['next_link']
-        self._more_to_poll = (self._next_page_url is not None)
+        pagination = response.get('pagination')
+        self._next_page_url = pagination['next_link']
+        self._more_to_poll = bool(self._next_page_url)
 
         # Adjust the last seen event
-        self._last_timestamp = response['data'][-1]['created_at']
+        events = response.get('data')
+        self._last_timestamp = events[-1]['created_at']
 
-        # Return the list of logs to the caller so they can be send to the batcher
-        return response['data']
+        # Return the list of events to the caller so they can be send to the batcher
+        return events
 
     def required_auth_info(self):
         return {
