@@ -65,7 +65,7 @@ class TestKVParser(TestParser):
         return 'kv'
 
     def test_kv_parsing(self):
-        """KV Parser - 'key:value,key:value'"""
+        """KV Parser - Basic key value pairs"""
         # setup
         schema = {
             'name': 'string',
@@ -188,6 +188,55 @@ class TestJSONParser(TestParser):
             assert_items_equal(result.keys(), expected_keys)
             assert_items_equal(result['streamalert:envelope_keys'].keys(),
                                expected_envelope_keys)
+
+    def test_json_regex_key_with_envelope(self):
+        """JSON Parser - Regex key with envelope"""
+        schema = self.config['logs']['json:regex_key_with_envelope']['schema']
+        options = self.config['logs']['json:regex_key_with_envelope']['configuration']
+
+        data = json.dumps({
+            'time': '14:01',
+            'date': 'Jan 01, 2017',
+            'host': 'host1.test.domain.tld',
+            'message': '<10> auditd[1300] info: '
+                       '{"nested_key_1": "nested_info",'
+                       '"nested_key_2": "more_nested_info",'
+                       '"nested_key_3": "even_more"}'
+        })
+        parsed_result = self.parser_helper(data=data,
+                                           schema=schema,
+                                           options=options)
+
+        assert_items_equal(parsed_result[0]['streamalert:envelope_keys'].keys(),
+                           ['date', 'time', 'host'])
+        assert_items_equal(parsed_result[0].keys(),
+                           ['nested_key_1',
+                            'nested_key_2',
+                            'nested_key_3',
+                            'streamalert:envelope_keys'])
+
+    def test_json_regex_key(self):
+        """JSON Parser - Regex key"""
+        schema = self.config['logs']['json:regex_key']['schema']
+        options = self.config['logs']['json:regex_key']['configuration']
+
+        data = json.dumps({
+            'time': '14:01',
+            'date': 'Jan 01, 2017',
+            'host': 'host1.test.domain.tld',
+            'message': '<10> auditd[1300] info: '
+                       '{"nested_key_1": "nested_info",'
+                       '"nested_key_2": "more_nested_info",'
+                       '"nested_key_3": "even_more"}'
+        })
+        parsed_result = self.parser_helper(data=data,
+                                           schema=schema,
+                                           options=options)
+
+        assert_items_equal(parsed_result[0].keys(),
+                           ['nested_key_1',
+                            'nested_key_2',
+                            'nested_key_3'])
 
     def test_basic_json(self):
         """JSON Parser - Non-nested JSON objects"""

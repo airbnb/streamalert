@@ -183,9 +183,8 @@ class StreamRules(object):
                     "defined_type2": [[original_key2, sub_key2], [original_key3]]
                 }
         """
-        results = dict()
-        if not (datatypes and cls.validate_datatypes(normalized_types, datatypes)):
-            return results
+        if not (datatypes and normalized_types):
+            return
 
         return cls.match_types_helper(record, normalized_types, datatypes)
 
@@ -210,7 +209,7 @@ class StreamRules(object):
                 cls.update(results, key, nested_results)
             else:
                 for datatype in datatypes:
-                    if key in normalized_types[datatype]:
+                    if datatype in normalized_types and key in normalized_types[datatype]:
                         if not datatype in results:
                             results[datatype] = [[key]]
                         else:
@@ -264,25 +263,6 @@ class StreamRules(object):
                     results[key] = val
                 else:
                     results[key] = [val]
-
-    @classmethod
-    def validate_datatypes(cls, normalized_types, datatypes):
-        """Check is datatype valid
-
-        Args:
-            normalized_types (dict): normalized_types for certain log
-            datatypes (list): defined in rule options, users interested types
-
-        Returns:
-            (boolean): return true if all datatypes are defined
-        """
-        if not normalized_types:
-            return False
-
-        for datatype in datatypes:
-            if not datatype in normalized_types:
-                return False
-        return True
 
     @classmethod
     def process_rule(cls, record, rule):
@@ -380,20 +360,26 @@ class StreamRules(object):
                 matcher_result = cls.match_event(record, rule)
                 if not matcher_result:
                     continue
+
+                types_result = None
                 if rule.datatypes:
                     types_result = cls.match_types(record,
                                                    payload.normalized_types,
                                                    rule.datatypes)
-                    record['normalized_types'] = types_result
 
+                if types_result:
+                    record_copy = record.copy()
+                    record_copy['normalized_types'] = types_result
+                else:
+                    record_copy = record
                 # rule analysis
-                rule_result = cls.process_rule(record, rule)
+                rule_result = cls.process_rule(record_copy, rule)
                 if rule_result:
                     LOGGER.info('Rule [%s] triggered an alert on log type [%s] from entity \'%s\' '
                                 'in service \'%s\'', rule.rule_name, payload.log_source,
                                 payload.entity, payload.service())
                     alert = {
-                        'record': record,
+                        'record': record_copy,
                         'rule_name': rule.rule_name,
                         'rule_description': rule.rule_function.__doc__ or DEFAULT_RULE_DESCRIPTION,
                         'log_source': str(payload.log_source),

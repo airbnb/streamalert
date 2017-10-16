@@ -17,9 +17,10 @@
                 "timestamp": "Sep 5 20:49:31"
             },
             "description": "Disabling the 2FA requirement on Github should create an alert.",
-            "trigger": true,
+            "log": "ghe:general",
             "source": "prefix_cluster1_stream_alert_kinesis",
-            "service": "kinesis"
+            "service": "kinesis",
+            "trigger_rules": ["github_disable_org_two_factor_requirement"]
         },
         {
             "data": {
@@ -38,9 +39,10 @@
                 "timestamp": "Sep 5 20:49:31"
             },
             "description": "Enabling the 2FA requirement on Github should not create an alert.",
-            "trigger": false,
+            "log": "ghe:general",
             "source": "prefix_cluster1_stream_alert_kinesis",
-            "service": "kinesis"
+            "service": "kinesis",
+            "trigger_rules": []
         }
     ]
 }

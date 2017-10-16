@@ -65,6 +65,7 @@ Key                          Description
 ---------------------------  ----------------------
 ``optional_top_level_keys``  Keys that may or may not be present in a log being parsed
 ``json_path``                Path to nested records to be 'extracted' from within a JSON object
+``json_regex_key``           The key name containing a JSON string to parse.  This will become the final record
 ``envelope_keys``            Used with nested records to identify keys that are at a higher level than the nested records, but still hold some value and should be stored
 ``log_patterns``             Various patterns to enforce within a log given provided fields
 ``delimiter``                For use with key/value or csv logs to identify the delimiter character for the log
@@ -265,6 +266,7 @@ Options
       },
       "configuration": {
         "json_path": "jsonpath expression",
+        "json_regex_key": "key with nested JSON string to extract",
         "envelope_keys": {
           "field": "type",
           "field...": "type..."
@@ -332,16 +334,15 @@ To extract these nested records, use the ``configuration`` option ``json_path``:
 Log Patterns
 ~~~~~~~~~~~~
 
-Log patterns provide the ability to differentiate log schemas that are identical or very close in nature.
+Log patterns provide the ability to differentiate log schemas that are nearly identical.
 
 They can be added by using the ``configuration`` option ``log_patterns``.
 
-Log patterns are a collection of key/value pairs where the key is the name of the field, and the value is a list of
-expressions the log parser will search for in said field of the log. If *any* of the log patterns listed exists in
-a specific field, the parser will consider the data valid.
+Log patterns are a collection of key/value pairs where the key is the name of the field, and the value is a list of expressions the log parser will search for in said field of the log. 
 
-This feature is especially helpful to reduce false positives, since it provides to ability to only match a schema if
-specific values are present in a log.
+If *any* of the log patterns listed exists in a specific field, the parser will consider the data valid.
+
+This feature is helpful to reduce false positives, as it provides to ability to match a schema only if specific values are present in a log.
 
 Wild card log patterns are supported using the ``*`` or ``?`` symbols, as shown below.
 
@@ -402,7 +403,7 @@ Example logs:
 Envelope Keys
 ~~~~~~~~~~~~~
 
-Continuing with the above example, if the ``id`` and ``application`` keys in the root of the log are needed for analysis, they can be added by using the ``configuration`` option ``envelope_keys``:
+Continuing with the example above, if the ``id`` and ``application`` keys in the root of the log are needed for analysis, they can be added by using the ``configuration`` option ``envelope_keys``:
 
 .. code-block:: json
 
@@ -448,6 +449,43 @@ The resultant parsed records:
       }
     }
   ]
+
+Nested JSON Regex Parsing
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When using forwarders such as ``fluentd``, ``logstash``, or ``rsyslog``, log data may be wrapped with additional context keys:
+
+.. code-block:: json
+
+  {
+    "collector": "my-app-1",
+    "date-collected": "Oct 12, 2017",
+    "@timestamp": "1507845487",
+    "data": "<0> program[pid]: {'actual': 'data is here'}"
+  }
+
+To parse the nested JSON string as the record, use the following schema options:
+
+.. code-block:: json
+
+  {
+    "json:regex_key_with_envelope": {
+      "schema": {
+        "actual": "string"
+      },
+      "parser": "json",
+      "configuration": {
+        "envelope_keys": {
+          "collector": "string",
+          "date-collected": "string",
+          "@timestamp": "string"
+        },
+        "json_regex_key": "data"
+      }
+    }
+  }
+
+Optionally, you can omit envelope keys if they provide no value in rules.
 
 CSV Parsing
 -----------

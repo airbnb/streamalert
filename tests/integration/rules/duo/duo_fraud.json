@@ -27,9 +27,10 @@
         "result": "FRAUD"
       },
       "description": "Duo authentication log marked as fraud that will create an alert",
+      "log": "duo:authentication",
       "service": "stream_alert_app",
       "source": "prefix_cluster_duo_auth_sm-app-name_app",
-      "trigger": true
+      "trigger_rules": ["duo_fraud"]
     },
     {
       "data": {
@@ -58,9 +59,10 @@
         "result": "SUCCESS"
       },
       "description": "Duo authentication log marked as success that will not create an alert",
+      "log": "duo:authentication",
       "service": "stream_alert_app",
       "source": "prefix_cluster_duo_auth_sm-app-name_app",
-      "trigger": false
+      "trigger_rules": []
     }
   ]
 }

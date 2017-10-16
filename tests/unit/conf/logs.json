@@ -298,5 +298,32 @@
     "configuration": {
       "json_path": "logEvents[*].extractedFields"
     }
+  },
+  "json:regex_key_with_envelope": {
+    "schema": {
+      "nested_key_1": "string",
+      "nested_key_2": "string",
+      "nested_key_3": "string"
+    },
+    "parser": "json",
+    "configuration": {
+      "envelope_keys": {
+        "time": "string",
+        "date": "string",
+        "host": "string"
+      },
+      "json_regex_key": "message"
+    }
+  },
+  "json:regex_key": {
+    "schema": {
+      "nested_key_1": "string",
+      "nested_key_2": "string",
+      "nested_key_3": "string"
+    },
+    "parser": "json",
+    "configuration": {
+      "json_regex_key": "message"
+    }
   }
 }

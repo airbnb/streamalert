@@ -122,6 +122,16 @@ class TestDuoApp(object):
         assert_equal(len(gathered_logs), log_count)
         assert_equal(self._app._last_timestamp, base_time + log_count - 1)
 
+    @patch('requests.get')
+    def test_gather_logs_empty(self, requests_mock):
+        """DuoApp - Gather Logs Entry Point, Empty Response"""
+        requests_mock.return_value = Mock(
+            status_code=200,
+            json=Mock(side_effect=[{'response': []}])
+        )
+
+        assert_false(self._app._gather_logs())
+
 
 def test_duo_admin_endpoint():
     """DuoAdminApp - Verify Endpoint"""

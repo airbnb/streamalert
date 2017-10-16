@@ -121,6 +121,9 @@ class DuoApp(AppIntegration):
 
         # Duo stores the list of logs in the 'response' key of the response
         logs = response['response']
+        if not logs:
+            LOGGER.info('No logs in response from duo')
+            return False
 
         # Get the timestamp from the latest event. Duo produces these sequentially
         # so we can just extract the timestamp from the last item in the list
@@ -130,8 +133,6 @@ class DuoApp(AppIntegration):
         # is not the max, then we are done polling logs for this timeframe
         # Setting _more_to_poll to true here will allow the caller to try to poll again
         self._more_to_poll = len(logs) >= self._MAX_RESPONSE_LOGS
-
-        LOGGER.debug('More logs to poll for \'%s\': %s', self.type(), self._more_to_poll)
 
         # Return the list of logs to the caller so they can be send to the batcher
         return logs

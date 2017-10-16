@@ -478,7 +478,11 @@ class TestStreamRules(object):
               outputs=['s3:sample_bucket'],
               datatypes=['sourceAddress'])
         def match_ipaddress(rec): # pylint: disable=unused-variable
-            """Testing rule to detect matching IP address"""
+            """Testing rule to detect matching IP address
+
+            Datatype 'sourceAddress' is defined in tests/unit/conf/types.json
+            for cloudwatch logs. This rule should be trigger by testing event.
+            """
             results = fetch_values_by_datatype(rec, 'sourceAddress')
 
             for result in results:
@@ -490,8 +494,13 @@ class TestStreamRules(object):
               outputs=['s3:sample_bucket'],
               datatypes=['sourceAddress', 'command'])
         def mismatch_types(rec): # pylint: disable=unused-variable
-            """Testing rule with non-existing normalized type in the record. It
-            should not trigger alert.
+            """Testing rule with non-existing normalized type in the record.
+
+            Datatype 'sourceAddress' is defined in tests/unit/conf/types.json
+            for cloudwatch logs, but 'command' is not. This rule should be
+            triggered by testing event since we change rule parameter 'datatypes'
+            to OR operation among CEF types. See the discussion at
+            https://github.com/airbnb/streamalert/issues/365
             """
             results = fetch_values_by_datatype(rec, 'sourceAddress')
 
@@ -535,34 +544,10 @@ class TestStreamRules(object):
             alerts.extend(StreamRules.process(payload))
 
         # check alert output
-        assert_equal(len(alerts), 1)
+        assert_equal(len(alerts), 2)
 
         # alert tests
         assert_equal(alerts[0]['rule_name'], 'match_ipaddress')
-
-    def test_validate_datatypes(self):
-        """Rules Engine - validate datatypes"""
-        normalized_types, datatypes = None, ['type1']
-        assert_equal(
-            StreamRules.validate_datatypes(normalized_types, datatypes),
-            False
-            )
-
-        normalized_types = {
-            'type1': ['key1'],
-            'type2': ['key2']
-            }
-        datatypes = ['type1']
-        assert_equal(
-            StreamRules.validate_datatypes(normalized_types, datatypes),
-            True
-            )
-
-        datatypes = ['type1', 'type3']
-        assert_equal(
-            StreamRules.validate_datatypes(normalized_types, datatypes),
-            False
-            )
 
     def test_update(self):
         """Rules Engine - Update results passed to update method"""
@@ -766,3 +751,62 @@ class TestStreamRules(object):
             payload = load_and_classify_payload(self.config, service, entity, raw_record)
 
             assert_false(StreamRules.process(payload))
+
+    def test_reset_normalized_types(self):
+        """Rules Engine - Normalized types should be reset after each iteration"""
+        @rule(datatypes=['sourceAddress'],
+              outputs=['s3:sample_bucket'])
+        def test_01_matching_sourceaddress_datatypes(rec): # pylint: disable=unused-variable
+            """Testing rule to alert on matching sourceAddress"""
+            results = fetch_values_by_datatype(rec, 'sourceAddress')
+
+            for result in results:
+                if result == '1.1.1.2':
+                    return True
+            return False
+
+        @rule(logs=['cloudwatch:test_match_types', 'test_log_type_json_nested'],
+              outputs=['s3:sample_bucket'])
+        def test_02_rule_without_datatypes(_): # pylint: disable=unused-variable
+            """Testing rule without datatypes parameter"""
+            return True
+
+        kinesis_data_items = [
+            {
+                'account': 123456,
+                'region': '123456123456',
+                'source': '1.1.1.2',
+                'detail': {
+                    'eventName': 'ConsoleLogin',
+                    'sourceIPAddress': '1.1.1.2',
+                    'recipientAccountId': '654321'
+                }
+            },
+            {
+                'date': 'Dec 01 2016',
+                'unixtime': '1483139547',
+                'host': 'host1.web.prod.net',
+                'data': {
+                    'category': 'web-server',
+                    'type': '1',
+                    'source': 'eu'
+                }
+            }
+        ]
+
+        alerts = []
+        for data in kinesis_data_items:
+            kinesis_data = json.dumps(data)
+            service, entity = 'kinesis', 'test_kinesis_stream'
+            raw_record = make_kinesis_raw_record(entity, kinesis_data)
+            payload = load_and_classify_payload(self.config, service, entity, raw_record)
+
+            alerts.extend(StreamRules.process(payload))
+
+        assert_equal(len(alerts), 3)
+        for alert in alerts:
+            has_key_normalized_types = 'normalized_types' in alert['record']
+            if alert.get('rule_name') == 'test_02_rule_without_datatypes':
+                assert_equal(has_key_normalized_types, False)
+            else:
+                assert_equal(has_key_normalized_types, True)

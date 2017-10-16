@@ -28,7 +28,6 @@ from stream_alert_cli.terraform.handler import terraform_handler
 from stream_alert_cli.test import stream_alert_test
 
 
-
 CONFIG = CLIConfig()
 
 
@@ -53,16 +52,16 @@ def cli_runner(options):
         configure_output(options)
 
     elif options.command == 'lambda':
-        lambda_handler(options)
+        lambda_handler(options, CONFIG)
 
     elif options.command == 'live-test':
         stream_alert_test(options, CONFIG)
 
     elif options.command == 'validate-schemas':
-        stream_alert_test(options)
+        stream_alert_test(options, CONFIG)
 
     elif options.command == 'terraform':
-        terraform_handler(options)
+        terraform_handler(options, CONFIG)
 
     elif options.command == 'configure':
         configure_handler(options)
@@ -128,7 +127,10 @@ def athena_handler(options):
                                 options.table_name)
                 return
 
-            schema = CONFIG['logs'][options.table_name.replace('_', ':')]['schema']
+            log_info = CONFIG['logs'][options.table_name.replace('_', ':', 1)]
+            schema = dict(log_info['schema'])
+            schema_statement = ''
+
             sanitized_schema = StreamAlert.sanitize_keys(schema)
 
             athena_schema = {}
@@ -141,24 +143,68 @@ def athena_handler(options):
                 list: 'array<string>'
             }
 
-            for key_name, key_type in sanitized_schema.iteritems():
-                # Transform the {} or [] into hashable types
-                if key_type == {}:
-                    key_type = dict
-                elif key_type == []:
-                    key_type = list
+            def add_to_athena_schema(schema, root_key=''):
+                """Helper function to add sanitized schemas to the Athena table schema"""
+                # Setup the root_key dict
+                if root_key and not athena_schema.get(root_key):
+                    athena_schema[root_key] = {}
 
-                athena_schema[key_name] = schema_type_mapping[key_type]
+                for key_name, key_type in schema.iteritems():
+                    special_key = None
+                    # Transform the {} or [] into hashable types
+                    if key_type == {}:
+                        special_key = dict
+                    elif key_type == []:
+                        special_key = list
+                    # Cast nested dict as a string for now
+                    # TODO(jacknagz): support recursive schemas
+                    elif isinstance(key_type, dict):
+                        special_key = 'string'
 
-            schema_statement = ''.join(['{0} {1},'.format(key_name, key_type)
-                                        for key_name, key_type
-                                        in athena_schema.iteritems()])[:-1]
-            query = ('CREATE EXTERNAL TABLE {table_name} ({schema})'
-                     'PARTITIONED BY (dt string)'
-                     'ROW FORMAT SERDE \'org.openx.data.jsonserde.JsonSerDe\''
+                    # Account for envelope keys
+                    if root_key:
+                        if special_key is not None:
+                            athena_schema[root_key][key_name] = schema_type_mapping[special_key]
+                        else:
+                            athena_schema[root_key][key_name] = schema_type_mapping[key_type]
+                    else:
+                        if special_key is not None:
+                            athena_schema[key_name] = schema_type_mapping[special_key]
+                        else:
+                            athena_schema[key_name] = schema_type_mapping[key_type]
+
+            add_to_athena_schema(sanitized_schema)
+
+            # Support envelope keys
+            configuration_options = log_info.get('configuration')
+            if configuration_options:
+                envelope_keys = configuration_options.get('envelope_keys')
+                if envelope_keys:
+                    sanitized_envelope_keys = StreamAlert.sanitize_keys(envelope_keys)
+                    # Note: this key is wrapped in backticks to be Hive compliant
+                    add_to_athena_schema(sanitized_envelope_keys, '`streamalert:envelope_keys`')
+
+            for key_name, key_type in athena_schema.iteritems():
+                # Account for nested structs
+                if isinstance(key_type, dict):
+                    struct_schema = ''.join(['{0}:{1},'.format(sub_key, sub_type)
+                                             for sub_key, sub_type
+                                             in key_type.iteritems()])
+                    nested_schema_statement = '{0} struct<{1}> '.format(
+                        key_name,
+                        # Use the minus index to remove the last comma
+                        struct_schema[:-1])
+                    schema_statement += nested_schema_statement
+                else:
+                    schema_statement += '{0} {1},'.format(key_name, key_type)
+
+            query = ('CREATE EXTERNAL TABLE {table_name} ({schema}) '
+                     'PARTITIONED BY (dt string) '
+                     'ROW FORMAT SERDE \'org.openx.data.jsonserde.JsonSerDe\' '
                      'LOCATION \'s3://{bucket}/{table_name}/\''.format(
                          table_name=options.table_name,
-                         schema=schema_statement,
+                         # Use the minus index to remove the last comma
+                         schema=schema_statement[:-1],
                          bucket=options.bucket))
 
         elif options.type == 'alerts':
@@ -188,7 +234,8 @@ def athena_handler(options):
                 CONFIG['lambda']['athena_partition_refresh_config'] \
                       ['refresh_type'][options.refresh_type][options.bucket] = options.type
                 CONFIG.write()
-                LOGGER_CLI.info('The %s table was successfully created!', options.type)
+                table_name = options.type if options.type == 'alerts' else options.table_name
+                LOGGER_CLI.info('The %s table was successfully created!', table_name)
 
 
 def configure_handler(options):

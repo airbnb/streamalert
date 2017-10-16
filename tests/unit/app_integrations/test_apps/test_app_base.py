@@ -167,7 +167,7 @@ class TestAppIntegration(object):
         log_mock.assert_called_with('Ending last timestamp is the same as '
                                     'the beginning last timestamp')
 
-    @patch('logging.Logger.debug')
+    @patch('logging.Logger.info')
     def test_gather_success(self, log_mock):
         """App Integration - Gather, Success"""
         with patch.object(AppIntegration, '_gather_logs') as subclass_gather_mock:
@@ -179,7 +179,7 @@ class TestAppIntegration(object):
 
     @patch('logging.Logger.error')
     def test_gather_no_logs(self, log_mock):
-        """App Integration - Gather, Success"""
+        """App Integration - Gather, No Logs"""
         with patch.object(AppIntegration, '_gather_logs') as subclass_gather_mock:
             subclass_gather_mock.return_value = []
             self._app._gather()

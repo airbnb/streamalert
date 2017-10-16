@@ -32,8 +32,6 @@ from moto import mock_cloudwatch, mock_kms, mock_kinesis, mock_lambda, mock_s3
 from stream_alert_cli.logger import LOGGER_CLI
 from stream_alert_cli.terraform._common import enabled_firehose_logs
 
-DIR_TEMPLATES = 'tests/integration/templates'
-
 
 def run_command(runner_args, **kwargs):
     """Helper function to run commands with error handling.
@@ -154,6 +152,107 @@ def tf_runner(**kwargs):
 
     return True
 
+def _get_record_template(service):
+    """Provides a pre-configured template that reflects incoming payload from a service
+
+    Args:
+        service (str): The service for the payload template
+
+    Returns:
+        dict: Template of the payload for the given service
+    """
+    if service == 's3':
+        return {
+            'eventVersion': '2.0',
+            'eventTime': '1970-01-01T00:00:00.000Z',
+            'requestParameters': {
+                'sourceIPAddress': '127.0.0.1'
+            },
+            's3': {
+                'configurationId': 'testConfigRule',
+                'object': {
+                    'eTag': '0123456789abcdef0123456789abcdef',
+                    'sequencer': '0A1B2C3D4E5F678901',
+                    'key': '<TO_BE_REPLACED>',
+                    'size': '<TO_BE_REPLACED>'
+                },
+                'bucket': {
+                    'arn': '<TO_BE_REPLACED>',
+                    'name': '<TO_BE_REPLACED>',
+                    'ownerIdentity': {
+                        'principalId': 'EXAMPLE'
+                    }
+                },
+                's3SchemaVersion': '1.0'
+            },
+            'responseElements': {
+                'x-amz-id-2': 'EXAMPLE123/5678abcdefghijklambdaisawesome/mnopqrstuvwxyzABCDEFGH',
+                'x-amz-request-id': 'EXAMPLE123456789'
+            },
+            'awsRegion': 'us-east-1',
+            'eventName': 'ObjectCreated:Put',
+            'userIdentity': {
+                'principalId': 'EXAMPLE'
+            },
+            'eventSource': 'aws:s3'
+        }
+
+    elif service == 'kinesis':
+        return {
+            'eventID': 'shardId-000000000000:49545115243490985018280067714973144180062593244200961',
+            'eventVersion': '1.0',
+            'kinesis': {
+                'approximateArrivalTimestamp': 1428537600,
+                'partitionKey': 'partitionKey-3',
+                'data': '<TO_BE_REPLACED>',
+                'kinesisSchemaVersion': '1.0',
+                'sequenceNumber': '49545115243490985018280067714973144582180062593244200961'
+            },
+            'invokeIdentityArn': 'arn:aws:iam::EXAMPLE',
+            'eventName': 'aws:kinesis:record',
+            'eventSourceARN': '<TO_BE_REPLACED>',
+            'eventSource': 'aws:kinesis',
+            'awsRegion': 'us-east-1'
+        }
+
+    elif service == 'sns':
+        return {
+            'EventVersion': '1.0',
+            'EventSubscriptionArn': '<TO_BE_REPLACED>',
+            'EventSource': 'aws:sns',
+            'Sns': {
+                'SignatureVersion': '1',
+                'Timestamp': '1970-01-01T00:00:00.000Z',
+                'Signature': 'EXAMPLE',
+                'SigningCertUrl': 'EXAMPLE',
+                'MessageId': '95df01b4-ee98-5cb9-9903-4c221d41eb5e',
+                'Message': '<TO_BE_REPLACED>',
+                'MessageAttributes': {
+                    'Test': {
+                        'Type': 'String',
+                        'Value': 'TestString'
+                    },
+                    'TestBinary': {
+                        'Type': 'Binary',
+                        'Value': 'TestBinary'
+                    }
+                },
+                'Type': 'Notification',
+                'UnsubscribeUrl': 'EXAMPLE',
+                'TopicArn': 'arn:aws:sns:EXAMPLE',
+                'Subject': 'TestInvoke'
+            }
+        }
+
+    elif service == 'stream_alert_app':
+        return {
+            'stream_alert_app': '<TO_BE_REPLACED>',
+            'logs': ['<TO_BE_REPLACED>']
+        }
+
+    else:
+        LOGGER_CLI.error('Unsupported service: %s', service)
+
 
 def format_lambda_test_record(test_record):
     """Create a properly formatted Kinesis, S3, or SNS record.
@@ -187,21 +286,17 @@ def format_lambda_test_record(test_record):
         return
 
     # Get the template file for this particular service
-    template_path = os.path.join(DIR_TEMPLATES, '{}.json'.format(service))
-    with open(template_path, 'r') as service_template:
-        try:
-            template = json.load(service_template)
-        except ValueError as err:
-            LOGGER_CLI.error('Error loading %s.json: %s', service, err)
-            return
+    record_template = _get_record_template(service)
+    if not record_template:
+        return
 
     if service == 's3':
         # Set the S3 object key to a random value for testing
         test_record['key'] = ('{:032X}'.format(random.randrange(16**32)))
-        template['s3']['object']['key'] = test_record['key']
-        template['s3']['object']['size'] = len(data)
-        template['s3']['bucket']['arn'] = 'arn:aws:s3:::{}'.format(source)
-        template['s3']['bucket']['name'] = source
+        record_template['s3']['object']['key'] = test_record['key']
+        record_template['s3']['object']['size'] = len(data)
+        record_template['s3']['bucket']['arn'] = 'arn:aws:s3:::{}'.format(source)
+        record_template['s3']['bucket']['name'] = source
 
         # Create the mocked s3 object in the designated bucket with the random key
         put_mock_s3_object(source, test_record['key'], data, 'us-east-1')
@@ -212,22 +307,23 @@ def format_lambda_test_record(test_record):
         else:
             kinesis_data = base64.b64encode(data)
 
-        template['kinesis']['data'] = kinesis_data
-        template['eventSourceARN'] = 'arn:aws:kinesis:us-east-1:111222333:stream/{}'.format(
-            source)
+        record_template['kinesis']['data'] = kinesis_data
+        record_template['eventSourceARN'] = ('arn:aws:kinesis:us-east-1:111222333:'
+                                             'stream/{}'.format(source))
 
     elif service == 'sns':
-        template['Sns']['Message'] = data
-        template['EventSubscriptionArn'] = 'arn:aws:sns:us-east-1:111222333:{}'.format(
+        record_template['Sns']['Message'] = data
+        record_template['EventSubscriptionArn'] = 'arn:aws:sns:us-east-1:111222333:{}'.format(
             source)
 
     elif service == 'stream_alert_app':
-        template['stream_alert_app'] = source
-        template['logs'] = [data]
+        record_template['stream_alert_app'] = source
+        record_template['logs'] = [data]
+
     else:
         LOGGER_CLI.info('Invalid service %s', service)
 
-    return template
+    return record_template
 
 
 def create_lambda_function(function_name, region):
@@ -283,6 +379,7 @@ def put_mock_creds(output_name, creds, bucket, region, alias):
     put_mock_s3_object(bucket, output_name, enc_creds, region)
 
 
+@mock_kinesis
 def setup_mock_firehose_delivery_streams(config):
     """Mock Kinesis Firehose Streams for rule testing
 
@@ -428,3 +525,70 @@ def user_input(requested_info, mask, input_restrictions):
             response = getpass(prompt=prompt)
 
     return response
+
+
+def load_test_file(path):
+    """Helper to json load the contents of a file with some error handling
+
+    Args:
+        path (str): Relative path to file on disk
+
+    Returns:
+        dict: Loaded JSON from test event file
+    """
+    message_template = 'Improperly formatted file ({}): {}'
+    with open(path, 'r') as test_event_file:
+        try:
+            contents = json.load(test_event_file)
+        except (ValueError, TypeError) as err:
+            message = message_template.format(path, err.message)
+            return False, message
+
+        # Make sure the test event file is formatted in the way we expect
+        if not (isinstance(contents, dict) and 'records' in contents):
+            message = message_template.format(path, 'File must be a dict (JSON '
+                                              'object) with top level key \'records\'')
+
+            return False, message
+
+        return contents, None
+
+
+def get_rules_from_test_events(test_files_dir):
+    """Helper to return all of the rules being tested with test events
+
+    Args:
+        test_files_dir (str): Path indicating where test files reside
+
+    Returns:
+        set: A collection of all of the rules being tested
+    """
+    test_file_info = get_rule_test_files(test_files_dir)
+    all_rules = set()
+    for path in test_file_info.values():
+        events, _ = load_test_file(path)
+        if not events:
+            continue
+
+        for test_event in events['records']:
+            if 'trigger_rules' not in test_event:
+                continue
+
+            all_rules.update(test_event['trigger_rules'])
+
+    return all_rules
+
+
+def get_rule_test_files(test_files_dir):
+    """Helper to get rule files to be tested
+
+    Args:
+        test_files_dir (str): Path indicating where test files reside
+
+    Returns:
+        dict:  Information about test files on disk, where the key is the
+            base name of the file and the value is the relative path to the file
+    """
+    return {os.path.splitext(event_file)[0]: os.path.join(root, event_file)
+            for root, _, test_event_files in os.walk(test_files_dir)
+            for event_file in test_event_files}
