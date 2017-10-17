@@ -13,7 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from datetime import datetime
 import re
 
 from app_integrations import LOGGER
@@ -40,6 +39,14 @@ class OneLoginApp(AppIntegration):
     def _type(cls):
         return 'events'
 
+    @classmethod
+    def service(cls):
+        return 'onelogin'
+
+    @classmethod
+    def date_formatter(cls):
+        return '%Y-%m-%dT%H:%M:%SZ'
+
     def _token_endpoint(self):
         """Get the endpoint URL to retrieve tokens
 
@@ -63,10 +70,6 @@ class OneLoginApp(AppIntegration):
             str: Full URL to retrieve rate limit details in the OneLogin API
         """
         return self._ONELOGIN_RATE_LIMIT_URL.format(self._config['auth']['region'])
-
-    @classmethod
-    def service(cls):
-        return 'onelogin'
 
     def _generate_headers(self):
         """Each request will request a new token to call the resources APIs.
@@ -181,16 +184,7 @@ class OneLoginApp(AppIntegration):
             params = None
             request_url = self._next_page_url
         else:
-            # Check the type to understand the format stored
-            if isinstance(self._last_timestamp, int):
-                # OneLogin API expects the ISO 8601 format: YYYY-MM-DDTHH:MM:SSZ
-                formatted_date = datetime.utcfromtimestamp(
-                    self._last_timestamp).strftime('%Y-%m-%dT%H:%M:%SZ')
-            else:
-                # We should have already this timestamp in format ISO 8601
-                formatted_date = self._last_timestamp
-
-            params = {'since': formatted_date}
+            params = {'since': self._last_timestamp}
             request_url = self._events_endpoint()
 
         result, response = self._make_get_request(request_url, self._auth_headers, params)
