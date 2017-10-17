@@ -115,8 +115,8 @@ class DuoApp(AppIntegration):
             return False
 
         # Make the request to the api, resulting in a bool or dict
-        response = self._make_request(full_url, headers=headers, params=params)
-        if not response:
+        result, response = self._make_get_request(full_url, headers=headers, params=params)
+        if not result:
             return False
 
         # Duo stores the list of logs in the 'response' key of the response

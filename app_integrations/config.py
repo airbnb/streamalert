@@ -266,7 +266,7 @@ class AppConfig(dict):
             current_time = time.mktime(time.gmtime())
             LOGGER.debug('Current timestamp: %s seconds', current_time)
 
-            self.last_timestamp = current_time - interval_time
+            self.last_timestamp = int(current_time - interval_time)
 
         LOGGER.info('Starting last timestamp set to: %d seconds', self.last_timestamp)
 

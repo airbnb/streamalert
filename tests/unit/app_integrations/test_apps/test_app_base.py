@@ -216,14 +216,16 @@ class TestAppIntegration(object):
     @patch('requests.get')
     def test_make_request_bad_response(self, requests_mock):
         """App Integration - Make Request, Bad Response"""
+        failed_message = 'something went wrong'
         requests_mock.return_value = Mock(
             status_code=404,
-            json=Mock(side_effect=[{'message': 'something went wrong'}])
+            json=Mock(return_value={'message': failed_message})
         )
-
-        assert_false(self._app._make_request('hostname', None, None))
+        result, response = self._app._make_get_request('hostname', None, None)
+        assert_false(result)
+        assert_equal(response['message'], failed_message)
 
         # The .json should be called on the response once, to get the error message
-        # If it was called twice, it means `logs = response.json()['response']`
-        # is being called and should not be
-        assert_equal(requests_mock.return_value.json.call_count, 1)
+        # and to check the response, to log the message. If it was called three times,
+        # it means `logs = response.json()['response']` is being called and should not be
+        assert_equal(requests_mock.return_value.json.call_count, 2)

@@ -96,6 +96,12 @@ class MockSSMClient(object):
                 'integration_key': 'DI1234567890ABCDEF12',
                 'secret_key': 'abcdefghijklmnopqrstuvwxyz1234567890ABCD'
             }
+        elif app_type in {'onelogin'}:
+            return {
+                'region': 'us',
+                'client_secret': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+                'client_id': 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
+            }
 
         # Fill this out with future supported apps/services
         return {}

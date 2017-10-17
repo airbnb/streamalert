@@ -1038,6 +1038,41 @@
       ]
     }
   },
+  "onelogin:events": {
+    "schema": {
+      "id": "integer",
+      "created_at": "string",
+      "account_id": "integer",
+      "user_id": "integer",
+      "event_type_id": "integer",
+      "notes": "string",
+      "ipaddr": "string",
+      "actor_user_id": "integer",
+      "assuming_acting_user_id": "integer",
+      "role_id": "integer",
+      "app_id": "integer",
+      "group_id": "integer",
+      "otp_device_id": "integer",
+      "policy_id": "integer",
+      "actor_system": "string",
+      "custom_message": "string",
+      "role_name": "string",
+      "app_name": "string",
+      "group_name": "string",
+      "actor_user_name": "string",
+      "user_name": "string",
+      "policy_name": "string",
+      "otp_device_name": "string",
+      "operation_name": "string",
+      "directory_sync_run_id": "integer",
+      "directory_id": "integer",
+      "resolution": "string",
+      "client_id": "integer",
+      "resource_type_id": "integer",
+      "error_description": "string"
+    },
+    "parser": "json"
+  },
   "osquery:differential": {
     "schema": {
       "action": "string",

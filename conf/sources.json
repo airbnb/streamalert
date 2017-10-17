@@ -20,6 +20,11 @@
         "duo"
       ]
     },
+    "prefix_cluster_onelogin-events-app-name_app": {
+      "logs": [
+        "onelogin"
+      ]
+    },
     "prefix_cluster_duo_admin_sm-app-name_app": {
       "logs": [
         "duo"
