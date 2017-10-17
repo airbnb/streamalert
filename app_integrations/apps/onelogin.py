@@ -211,13 +211,14 @@ class OneLoginApp(AppIntegration):
             return False
 
         # Set pagination link, if there is any
-        pagination = response.get('pagination')
-        self._next_page_url = pagination['next_link']
+        self._next_page_url = response['pagination']['next_link']
         self._more_to_poll = bool(self._next_page_url)
 
-        # Adjust the last seen event
-        events = response.get('data')
-        self._last_timestamp = events[-1]['created_at']
+        # Adjust the last seen event, if the events list is not empty
+        events = response['data']
+        len_events = len(events)
+        if len_events > 0:
+            self._last_timestamp = events[-1]['created_at']
 
         # Return the list of events to the caller so they can be send to the batcher
         return events
