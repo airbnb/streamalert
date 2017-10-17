@@ -157,4 +157,4 @@ def deploy(options, config):
         return
 
     # Apply the changes to the Lambda aliases
-    helpers.tf_runner(targets=targets)
+    helpers.tf_runner(targets=targets, refresh_state=False)
