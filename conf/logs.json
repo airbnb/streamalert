@@ -671,15 +671,22 @@
         "alliance_updated_srsthreat",
         "alliance_updated_virustotal",
         "alliance_updated_nvd",
+        "company_name",
+        "digsig_issuer",
+        "digsig_prog_name",
         "digsig_publisher",
         "digsig_sign_time",
+        "digsig_subject",
         "event_partition_id",
         "facet_id",
         "file_desc",
         "file_version",
         "internal_name",
         "last_seen",
-        "legal_copyright"
+        "legal_copyright",
+        "original_filename",
+        "product_name",
+        "product_version"
       ],
       "envelope_keys": {
         "cb_server": "string",
