@@ -139,6 +139,15 @@
       "current_user"
     ]
   },
+  "onelogin": {
+    "sourceAddress": [
+      "ipaddr"
+    ],
+    "userName": [
+      "actor_user_name",
+      "user_name"
+    ]
+  },
   "osquery": {
     "command": [
       "cmdline",
