@@ -115,7 +115,7 @@ def tf_runner(**kwargs):
     """
     targets = kwargs.get('targets', [])
     action = kwargs.get('action', None)
-    refresh_state = kwargs.get('refresh_state', False)
+    refresh_state = kwargs.get('refresh_state', True)
     tf_action_index = 1  # The index to the terraform 'action'
 
     var_files = {'conf/lambda.json'}
