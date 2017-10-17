@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from datetime import datetime
 import json
 import re
 import time
@@ -21,6 +22,7 @@ import boto3
 from botocore.exceptions import ClientError
 
 from app_integrations import LOGGER
+from app_integrations.apps.app_base import get_app
 from app_integrations.exceptions import AppIntegrationConfigError, AppIntegrationStateError
 
 AWS_RATE_RE = re.compile(r'^rate\(((1) (minute|hour|day)|'
@@ -263,12 +265,20 @@ class AppConfig(dict):
         """
         if not self.last_timestamp:
             interval_time = self.evaluate_interval()
-            current_time = time.mktime(time.gmtime())
-            LOGGER.debug('Current timestamp: %s seconds', current_time)
+            current_time = int(time.mktime(time.gmtime()))
+            time_delta = current_time - interval_time
+            LOGGER.debug('Current timestamp: %s seconds. Calculated delta: %s seconds',
+                         current_time, time_delta)
 
-            self.last_timestamp = int(current_time - interval_time)
+            # Request the date format from the app since some services expect different types
+            # Using init=False will return the class without instantiating it
+            date_format = get_app(self, init=False).date_formatter()
+            if date_format:
+                self.last_timestamp = datetime.utcfromtimestamp(time_delta).strftime(date_format)
+            else:
+                self.last_timestamp = time_delta
 
-        LOGGER.info('Starting last timestamp set to: %d seconds', self.last_timestamp)
+        LOGGER.info('Starting last timestamp set to: %s', self.last_timestamp)
 
         return self.last_timestamp
 

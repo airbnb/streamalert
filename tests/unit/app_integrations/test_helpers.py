@@ -26,6 +26,7 @@ class MockSSMClient(object):
 
     def __init__(self, suppress_params=False, app_type=''):
         self._parameters = dict()
+        self.raise_exception = False
         if not suppress_params:
             self.put_mock_params(app_type or 'duo_auth')
 
@@ -33,6 +34,10 @@ class MockSSMClient(object):
         """Mocked put_parameter function that adds key/value pairs to a dict"""
         if kwargs.get('Name') in self._parameters and not kwargs.get('Overwrite'):
             return
+
+        if self.raise_exception:
+            err = {'Error': {'Code': 403, 'Message': 'error putting parameter'}}
+            raise ClientError(err, 'put_parameter')
 
         self._parameters[kwargs.get('Name')] = kwargs.get('Value')
 
@@ -61,6 +66,10 @@ class MockSSMClient(object):
         Returns:
             dict: Parameter dictionary containing the value for these parameter names
         """
+        if self.raise_exception:
+            err = {'Error': {'Code': 403, 'Message': 'error getting parameters'}}
+            raise ClientError(err, 'get_parameters')
+
         return {'Parameters': [{'Name': name, 'Value': self._parameters[name]}
                                for name in kwargs.get('Names') if name in self._parameters],
                 'InvalidParameters': [name for name in kwargs.get('Names')
@@ -96,7 +105,7 @@ class MockSSMClient(object):
                 'integration_key': 'DI1234567890ABCDEF12',
                 'secret_key': 'abcdefghijklmnopqrstuvwxyz1234567890ABCD'
             }
-        elif app_type in {'onelogin'}:
+        elif app_type in {'onelogin', 'onelogin_events'}:
             return {
                 'region': 'us',
                 'client_secret': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
@@ -157,6 +166,14 @@ def get_mock_context():
     return context
 
 
+def get_formatted_timestamp(app_type):
+    """Different services required different date formats - return the proper format here"""
+    if app_type in {'duo', 'duo_admin', 'duo_auth'}:
+        return 1505316432
+    elif app_type in {'onelogin', 'onelogin_events'}:
+        return '2017-10-10T22:03:57Z'
+
+
 def get_valid_config_dict(app_type):
     """Helper function to get a dict that is reflective of a valid AppConfig"""
     return {
@@ -169,7 +186,7 @@ def get_valid_config_dict(app_type):
         'account_id': '123456789012',
         'function_name': FUNCTION_NAME,
         'qualifier': 'production',
-        'last_timestamp': 1505316432,
+        'last_timestamp': get_formatted_timestamp(app_type),
         'current_state': 'succeeded',
         'auth': MockSSMClient.get_auth_info(app_type)
     }

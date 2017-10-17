@@ -40,7 +40,7 @@ def app(subclass):
     return subclass
 
 
-def get_app(config):
+def get_app(config, init=True):
     """Return the proper app integration for this service
 
     Args:
@@ -50,6 +50,9 @@ def get_app(config):
         AppIntegration: Subclass of AppIntegration
     """
     try:
+        if not init:
+            return STREAMALERT_APPS[config['type']]
+
         return STREAMALERT_APPS[config['type']](config)
     except KeyError:
         if 'type' not in config:
@@ -138,6 +141,14 @@ class AppIntegration(object):
 
         Returns:
             int: Number of seconds the polling function should sleep for
+        """
+
+    @classmethod
+    def date_formatter(cls):
+        """Returns a format string to assist in formatting dates for this service
+
+        Returns:
+            str: A format string for formatting date/time values (ie: '%Y-%m-%dT%H:%M:%SZ')
         """
 
     def _sleep(self):
