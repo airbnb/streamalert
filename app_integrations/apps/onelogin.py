@@ -45,6 +45,7 @@ class OneLoginApp(AppIntegration):
 
     @classmethod
     def date_formatter(cls):
+        """OneLogin API expects the ISO 8601 format: YYYY-MM-DDTHH:MM:SSZ"""
         return '%Y-%m-%dT%H:%M:%SZ'
 
     def _token_endpoint(self):

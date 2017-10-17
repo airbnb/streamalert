@@ -13,32 +13,31 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-# pylint: disable=no-self-use,protected-access
+# pylint: disable=no-self-use,protected-access,attribute-defined-outside-init
 from mock import patch
 from nose.tools import assert_equal, assert_false, assert_items_equal, raises
 
 from app_integrations.config import AppConfig
-from app_integrations.exceptions import AppIntegrationConfigError
+from app_integrations.exceptions import AppIntegrationConfigError, AppIntegrationStateError
 from tests.unit.app_integrations import FUNCTION_NAME
 from tests.unit.app_integrations.test_helpers import (
     get_mock_context,
     MockSSMClient
 )
 
-MOCK_SSM = MockSSMClient()
 
-
-@patch.object(AppConfig, 'SSM_CLIENT', MOCK_SSM)
 class TestAppIntegrationConfig(object):
     """Test class for AppIntegrationConfig"""
 
-    def __init__(self):
-        self._config = None
-
-    @patch.object(AppConfig, 'SSM_CLIENT', MOCK_SSM)
     def setup(self):
         """Setup before each method"""
+        self.ssm_patcher = patch.object(AppConfig, 'SSM_CLIENT', MockSSMClient())
+        self.mock_ssm = self.ssm_patcher.start()
         self._config = AppConfig.load_config(get_mock_context())
+
+    def teardown(self):
+        """Teardown after each method"""
+        self.ssm_patcher.stop()
 
     def test_parse_context(self):
         """AppIntegrationConfig - Parse Context"""
@@ -82,6 +81,12 @@ class TestAppIntegrationConfig(object):
             AppConfig._get_parameters([config_name])
 
     @raises(AppIntegrationConfigError)
+    def test_get_param_client_error(self):
+        """AppIntegrationConfig - Get parameter, Exception"""
+        self.mock_ssm.raise_exception = True
+        AppConfig._get_parameters([])
+
+    @raises(AppIntegrationConfigError)
     def test_evaluate_interval_no_interval(self):
         """AppIntegrationConfig - Evaluate Interval, No Interval"""
         del self._config['interval']
@@ -99,8 +104,8 @@ class TestAppIntegrationConfig(object):
         assert_equal(self._config.evaluate_interval(), 3600 * 5)
 
     @patch('time.mktime')
-    def test_determine_last_timestamp(self, time_mock):
-        """AppIntegrationConfig - Determine Last Timestamp"""
+    def test_determine_last_timestamp_duo(self, time_mock):
+        """AppIntegrationConfig - Determine Last Timestamp, Duo"""
         # Reset the last timestamp to None
         self._config.last_timestamp = None
 
@@ -110,12 +115,31 @@ class TestAppIntegrationConfig(object):
         self._config['interval'] = 'rate(5 hours)'
         assert_equal(self._config._determine_last_time(), 1234567890 - (3600 * 5))
 
+    @patch('time.mktime')
+    def test_determine_last_timestamp_onelogin(self, time_mock):
+        """AppIntegrationConfig - Determine Last Timestamp, OneLogin"""
+        with patch.object(AppConfig, 'SSM_CLIENT', MockSSMClient(app_type='onelogin_events')):
+            self._config = AppConfig.load_config(get_mock_context())
+
+            # Reset the last timestamp to None
+            self._config.last_timestamp = None
+
+            # Use a mocked current time
+            time_mock.return_value = 1234567890
+            assert_equal(self._config._determine_last_time(), '2009-02-13T22:31:30Z')
+
     @patch('logging.Logger.error')
     def test_set_item(self, log_mock):
         """AppIntegrationConfig - Set Item, Bad Value"""
         bad_state = 'bad value'
         self._config['current_state'] = bad_state
         log_mock.assert_called_with('Current state cannot be saved with value \'%s\'', bad_state)
+
+    @raises(AppIntegrationStateError)
+    def test_save_state_exception(self):
+        """AppIntegrationConfig - Save State, Exception"""
+        self.mock_ssm.raise_exception = True
+        self._config['current_state'] = 'RUNNING'
 
     def test_mark_failure(self):
         """AppIntegrationConfig - Mark Failure"""
