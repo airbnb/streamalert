@@ -63,12 +63,13 @@ Configuration Options
 ===========================  ======================
 Key                          Description
 ---------------------------  ----------------------
-``optional_top_level_keys``  Keys that may or may not be present in a log being parsed
+``delimiter``                For use with key/value or csv logs to identify the delimiter character for the log
+``envelope_keys``            Used with nested records to identify keys that are at a higher level than the nested records, but still hold some value and should be stored
 ``json_path``                Path to nested records to be 'extracted' from within a JSON object
 ``json_regex_key``           The key name containing a JSON string to parse.  This will become the final record
-``envelope_keys``            Used with nested records to identify keys that are at a higher level than the nested records, but still hold some value and should be stored
 ``log_patterns``             Various patterns to enforce within a log given provided fields
-``delimiter``                For use with key/value or csv logs to identify the delimiter character for the log
+``optional_top_level_keys``  Keys that may or may not be present in a log being parsed
+``optional_envelope_keys``   Keys that may or may not be present in the envelope of a log being parsed
 ``separator``                For use with key/value logs to identify the separator character for the log
 ===========================  ======================
 

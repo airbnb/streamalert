@@ -6,5 +6,6 @@ Core Members:
   * `Jamie Brim <https://www.github.com/strcrzy>`_
   * `Austin Byers <https://github.com/austinbyers>`_
   * `Chunyong Lin <https://github.com/chunyong-lin>`_
+  * `Ryan Deivert <https://github.com/ryandeivert>`_
 
 Contributors:
