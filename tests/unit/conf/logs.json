@@ -312,6 +312,9 @@
         "date": "string",
         "host": "string"
       },
+      "optional_envelope_keys": [
+        "host"
+      ],
       "json_regex_key": "message"
     }
   },
