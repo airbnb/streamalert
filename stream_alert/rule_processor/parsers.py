@@ -221,6 +221,8 @@ class JSONParser(ParserBase):
         envelope_schema = self.options.get('envelope_keys')
         optional_envelope_keys = self.options.get('optional_envelope_keys')
 
+        # If the schema has a defined envelope schema, with optional keys in
+        # the envelope.  This occurs in some cases when using json_regex_key.
         if envelope_schema and optional_envelope_keys:
             missing_keys_schema = {}
             for key in optional_envelope_keys:
@@ -229,6 +231,8 @@ class JSONParser(ParserBase):
             if missing_keys_schema:
                 self._add_optional_keys([json_payload], envelope_schema, missing_keys_schema)
 
+        # If the envelope schema is defined and all envelope keys are required
+        # to be present in the record.
         elif envelope_schema and not all(x in json_payload for x in envelope_schema):
             return [json_payload]
 
