@@ -114,5 +114,5 @@ The recommended process is to deploy both the `apps` function and the `rule` pro
 
 .. code-block:: bash
 
-  $ python manage.py lambda deploy --processor rule --processor apps
+  $ python manage.py lambda deploy --processor rule apps
 
