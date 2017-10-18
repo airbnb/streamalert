@@ -323,7 +323,7 @@ class TestStreamAlertSQSClient(object):
     @patch('stream_alert.athena_partition_refresh.main.LOGGER')
     def test_delete_messages(self, mock_logging):
         """Athena SQS - Delete Messages"""
-        self.client.get_messages()
+        self.client.get_messages(max_tries=1)
         self.client.unique_s3_buckets_and_keys()
         self.client.delete_messages()
 
@@ -347,7 +347,7 @@ class TestStreamAlertSQSClient(object):
 
     def test_unique_s3_buckets_and_keys(self):
         """Athena SQS - Get Unique Bucket Ids"""
-        self.client.get_messages()
+        self.client.get_messages(max_tries=1)
         unique_buckets = self.client.unique_s3_buckets_and_keys()
 
         assert_equal(unique_buckets, {

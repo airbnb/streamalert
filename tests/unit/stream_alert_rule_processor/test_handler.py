@@ -36,6 +36,7 @@ from tests.unit.stream_alert_rule_processor.test_helpers import (
 )
 
 
+@patch('stream_alert.rule_processor.handler.MAX_BACKOFF_ATTEMPTS', 1)
 class TestStreamAlert(object):
     """Test class for StreamAlert class"""
 
