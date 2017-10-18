@@ -118,8 +118,21 @@ def fetch_values_by_datatype(rec, datatype):
 
     return results
 
-def is_ioc(rec):
-    """Detect is any data in a record matching to known IOC"""
+def is_ioc(rec, lowercase_ioc=True):
+    """Detect is any data in a record matching to known IOC
+
+    Args:
+        rec (dict): The parsed payload of any log
+        lowercase_ioc (bool): Indicate if IOCs in IOC files are in lowercase or
+            uppercase. If true, it will convert data found in the record to
+            lowercase.
+            This flag is implemented to achieve case-insensitive comparison
+            between IOCs and related data in the record.
+
+    Returns:
+        (bool): Returns True if data matching to any IOCs, otherwise returns
+            False.
+    """
     intel = StreamThreatIntel.get_intelligence()
     datatypes_ioc_mapping = StreamThreatIntel.get_config()
 
@@ -131,6 +144,8 @@ def is_ioc(rec):
             continue
         results = fetch_values_by_datatype(rec, datatype)
         for result in results:
+            if isinstance(result, str):
+                result = result.lower() if lowercase_ioc else result.upper()
             if (intel.get(datatypes_ioc_mapping[datatype])
                     and result in intel[datatypes_ioc_mapping[datatype]]):
                 if StreamThreatIntel.IOC_KEY in rec:
@@ -140,10 +155,10 @@ def is_ioc(rec):
                     })
                 else:
                     rec.update({
-                        StreamThreatIntel.IOC_KEY: {
+                        StreamThreatIntel.IOC_KEY: [{
                             'type': datatypes_ioc_mapping[datatype],
                             'value': result
-                        }
+                        }]
                     })
     if StreamThreatIntel.IOC_KEY in rec:
         return True
