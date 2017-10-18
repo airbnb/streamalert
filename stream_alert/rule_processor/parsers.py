@@ -258,12 +258,16 @@ class JSONParser(ParserBase):
             if not match:
                 return False
             match_str = match.groups('json_blob')[0]
-            new_record = json.loads(match_str)
+            try:
+                new_record = json.loads(match_str)
+            except ValueError:
+                LOGGER.debug('Matched regex string is not valid JSON: %s', match_str)
+                return False
+            else:
+                if envelope:
+                    new_record.update({ENVELOPE_KEY: envelope})
 
-            if envelope:
-                new_record.update({ENVELOPE_KEY: envelope})
-
-            json_records.append(new_record)
+                json_records.append(new_record)
 
         # If the final parsed record is singular
         if not json_records:
@@ -288,9 +292,13 @@ class JSONParser(ParserBase):
                 loaded_data = json.loads(data)
             except ValueError as err:
                 LOGGER.debug('JSON parse failed: %s', str(err))
+                LOGGER.debug('JSON parse could not load data: %s', str(data))
                 return False
+            else:
+                json_records = self._parse_records(schema, loaded_data)
+        else:
+            json_records = self._parse_records(schema, data)
 
-        json_records = self._parse_records(schema, loaded_data)
         if not json_records:
             return False
 

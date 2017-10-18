@@ -15,12 +15,14 @@ limitations under the License.
 """
 import json
 
+from mock import patch
 from nose.tools import (
     assert_equal,
+    assert_false,
     assert_is_instance,
     assert_items_equal,
     assert_not_equal,
-    assert_false
+    assert_true
 )
 
 from stream_alert.rule_processor.config import load_config
@@ -51,7 +53,7 @@ class TestParser(object):
         """Helper to return the parser result"""
         data = kwargs['data']
         schema = kwargs['schema']
-        options = kwargs['options']
+        options = kwargs.get('options', {})
 
         parser = self.parser_class(options)
         parsed_result = parser.parse(schema, data)
@@ -89,6 +91,124 @@ class TestJSONParser(TestParser):
     @classmethod
     def _parser_type(cls):
         return 'json'
+
+    def test_schema_fail(self):
+        """JSON Parser - Schema Match Failure"""
+        # setup
+        schema = self.config['logs']['unit_test_simple_log']['schema']
+        data = json.dumps({'hey': 1})
+
+        # get parsed data
+        parsed_data = self.parser_helper(data=data, schema=schema)
+
+        assert_false(parsed_data)
+
+    def test_non_string_input(self):
+        """JSON Parser - Non String Input"""
+        # setup
+        schema = {'name': 'string', 'result': 'string'}
+        data = {'name': 'test', 'result': 'test'}
+
+        # get parsed data
+        parsed_data = self.parser_helper(data=data, schema=schema)
+
+        assert_equal(len(parsed_data), 1)
+
+    @patch('stream_alert.rule_processor.parsers.LOGGER')
+    def test_invalid_json(self, mock_logging):
+        """JSON Parser - Invalid Input"""
+        # setup
+        schema = {'name': 'string', 'result': 'string'}
+        data = 'not json data'
+
+        # get parsed data
+        parsed_data = self.parser_helper(data=data, schema=schema)
+
+        assert_true(mock_logging.debug.called)
+        assert_false(parsed_data)
+
+    def test_envelope_keys_optional_values(self):
+        """JSON Parser - Default Values for Missing Envelope Keys"""
+        options = self.config['logs']['json:regex_key_with_envelope']['configuration']
+        schema = self.config['logs']['json:regex_key_with_envelope']['schema']
+        # missing 'host' envelope key
+        data = json.dumps({
+            'message': '{"nested_key_1": "test"'
+                       ', "nested_key_2": "test"'
+                       ', "nested_key_3": "test"}',
+            'date': '2017/10/01',
+            'time': '14:00:00'
+        })
+
+        # get parsed data
+        parsed_data = self.parser_helper(data=data, schema=schema, options=options)
+
+        assert_equal(len(parsed_data), 1)
+        assert_true(parsed_data[0]['streamalert:envelope_keys']['host'] == '')
+
+    @patch('stream_alert.rule_processor.parsers.LOGGER')
+    def test_regex_key_invalid_json(self, mock_logging):
+        """JSON Parser - Regex Key with Invalid JSON Object"""
+        options = self.config['logs']['json:regex_key_with_envelope']['configuration']
+        schema = self.config['logs']['json:regex_key_with_envelope']['schema']
+        # Invalid JSON and missing 'host' envelope key
+        data = json.dumps({
+            'message': '{"nested_key_1": "test"'
+                       ' "nested_key_2": "test"'
+                       ' "nested_key_3": "test"}',
+            'date': '2017/10/01',
+            'time': '14:00:00'
+        })
+
+        # get parsed data
+        parsed_data = self.parser_helper(data=data, schema=schema, options=options)
+
+        assert_true(mock_logging.debug.called)
+        assert_false(parsed_data)
+
+    def test_regex_key_non_json(self):
+        """JSON Parser - Regex Key with Plaintext Input"""
+        options = self.config['logs']['json:regex_key_with_envelope']['configuration']
+        schema = self.config['logs']['json:regex_key_with_envelope']['schema']
+        data = json.dumps({
+            # invalid JSON below
+            'message': 'hey this is not JSON',
+            'date': '2017/10/01',
+            'time': '14:00:00',
+            'host': 'my-host-1'
+        })
+
+        # get parsed data
+        parsed_data = self.parser_helper(data=data, schema=schema, options=options)
+        assert_false(parsed_data)
+
+    @patch('stream_alert.rule_processor.parsers.LOGGER')
+    def test_optional_keys_missing_in_schema(self, mock_logging):
+        """JSON Parser - Optional Top Level Keys Not in Schema"""
+        options = {
+            'optional_top_level_keys': [
+                'key9',
+                'key10',
+                'key11',
+                'key12'
+            ]
+        }
+        schema = self.config['logs']['test_log_type_json']['schema']
+        data = json.dumps({
+            'key1': [
+                'test data',
+                'moar test data'
+            ],
+            'key2': 'string data',
+            'key3': 100,
+            'key9': True
+        })
+
+        # get parsed data
+        parsed_data = self.parser_helper(data=data, schema=schema, options=options)
+
+        assert_true(mock_logging.error.called)
+        assert_true(parsed_data)
 
     def test_multi_nested_json(self):
         """JSON Parser - Multi-nested JSON"""
