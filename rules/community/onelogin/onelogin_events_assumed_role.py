@@ -8,9 +8,9 @@ rule = StreamRules.rule
                'pagerduty:sample-integration'])
 def onelogin_events_assumed_role(rec):
     """
-    author:       airbnb_csirt
+    author:       @javutin
     description:  Alert on OneLogin users assuming a different role.
-    reference:    https://developers.onelogin.com/api-docs/1/events/event-types
-    playbook:     N/A
+    reference_1:  https://support.onelogin.com/hc/en-us/articles/202123164-Assuming-Users
+    reference_2:  https://developers.onelogin.com/api-docs/1/events/event-types
     """
     return rec['event_type_id'] == 3
