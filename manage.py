@@ -916,8 +916,9 @@ Command:
 
 Required Arguments:
 
-    -p/--processor                     The name of the Lambda function to deploy.
-                                         Valid options include: rule, alert, athena, apps, or all.
+    -p/--processor                     A list of the Lambda functions to deploy.
+                                         Valid options include: rule, alert, athena, apps,
+                                         all, or any combination of these.
 
 Optional Arguments:
 
@@ -925,7 +926,7 @@ Optional Arguments:
 
 Examples:
 
-    manage.py lambda deploy --processor all
+    manage.py lambda deploy --processor rule alert
 
 """.format(version))
     lambda_deploy_parser = lambda_subparsers.add_parser(
@@ -955,8 +956,9 @@ Command:
 
 Required Arguments:
 
-    -p/--processor                     The name of the Lambda function to rollback.
-                                         Valid options include: rule, alert, athena, apps, or all.
+    -p/--processor                     A list of the Lambda functions to rollback.
+                                         Valid options include: rule, alert, athena, apps,
+                                         all, or any combination of these.
 
 Optional Arguments:
 
@@ -964,7 +966,7 @@ Optional Arguments:
 
 Examples:
 
-    manage.py lambda rollback --processor all
+    manage.py lambda rollback --processor rule alert
 
 """.format(version))
     lambda_rollback_parser = lambda_subparsers.add_parser(
@@ -994,8 +996,9 @@ Command:
 
 Required Arguments:
 
-    -p/--processor                     The name of the Lambda function to test.
-                                         Valid options include: rule, alert, or all.
+    -p/--processor                     A list of the Lambda functions to test.
+                                         Valid options include: rule, alert, all, or
+                                         any combination of these.
     -r/--test-rules                    List of rules to test, separated by spaces.
                                          Cannot be used in conjunction with `--test-files`
     -f/--test-files                    List of files to test, separated by spaces.
@@ -1010,7 +1013,7 @@ Optional Arguments:
 
 Example:
 
-    manage.py lambda test --processor rule --rules lateral_movement root_logins
+    manage.py lambda test --processor rule --test-rules lateral_movement root_logins
 
 """.format(version))
     lambda_test_parser = lambda_subparsers.add_parser(
@@ -1028,7 +1031,7 @@ Example:
         '-p', '--processor',
         choices=['alert', 'all', 'rule'],
         help=ARGPARSE_SUPPRESS,
-        nargs=1,
+        nargs='+',
         action=UniqueSetAction,
         required=True
     )

@@ -752,13 +752,17 @@ def stream_alert_test(options, config):
         log_mem_hanlder = get_log_memory_hanlder()
 
         # Check if the rule processor should be run for these tests
-        test_rules = (set(run_options.get('processor')).issubset({'rule', 'all'})
+        # Using NOT set.isdisjoint will check to see if there are commonalities between
+        # the options in 'processor' and {'rule', 'all'}
+        test_rules = (not run_options.get('processor').isdisjoint({'rule', 'all'})
                       if run_options.get('processor') else
                       run_options.get('command') == 'live-test' or
                       run_options.get('command') == 'validate-schemas')
 
         # Check if the alert processor should be run for these tests
-        test_alerts = (set(run_options.get('processor')).issubset({'alert', 'all'})
+        # Using NOT set.isdisjoint will check to see if there are commonalities between
+        # the options in 'processor' and {'alert', 'all'}
+        test_alerts = (not run_options.get('processor').isdisjoint({'alert', 'all'})
                        if run_options.get('processor') else
                        run_options.get('command') == 'live-test')
 
