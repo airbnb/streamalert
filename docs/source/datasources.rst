@@ -33,7 +33,7 @@ Example non-AWS use-cases:
 * Host logs (syslog, auditd, osquery, ...)
 * Network logs (Palo Alto Networks, Cisco, ...)
 * Web Application logs (Apache, nginx, ...)
-* SaaS logs (Box, OneLogin, …)
+* SaaS logs (Box, GSuite, OneLogin, ...)
 
 AWS Kinesis Streams
 -------------------
