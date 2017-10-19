@@ -244,17 +244,17 @@ class RuleProcessorTester(object):
         alerts, all_records_matched_schema = self.test_rule(event)
 
         # Get a list of any rules that triggerer but are not defined in the 'trigger_rules'
-        bad_alerts = []
+        unexpected_alerts = []
 
         # we only want alerts for the specific rule being tested (if trigger_rules are defined)
         if test_event['trigger_rules']:
-            bad_alerts = [alert for alert in alerts
-                          if alert['rule_name'] not in test_event['trigger_rules']]
+            unexpected_alerts = [alert for alert in alerts
+                                 if alert['rule_name'] not in test_event['trigger_rules']]
 
             alerts = [alert for alert in alerts
                       if alert['rule_name'] in test_event['trigger_rules']]
 
-        alerted_properly = (len(alerts) == expected_alert_count) and not bad_alerts
+        alerted_properly = (len(alerts) == expected_alert_count) and not unexpected_alerts
         current_test_passed = alerted_properly and all_records_matched_schema
 
         self.all_tests_passed = current_test_passed and self.all_tests_passed
@@ -286,11 +286,12 @@ class RuleProcessorTester(object):
                 context = 'is triggering the following rules but should not trigger at all: {}'
                 trigger_rules = ' ,'.join('\'{}\''.format(alert['rule_name']) for alert in alerts)
                 message = '{} {}'.format(message, context.format(trigger_rules))
-            elif bad_alerts:
+            elif unexpected_alerts:
                 # If there was a failure due to alerts triggering for other rules outside
                 # of the rules defined in the trigger_rules list for the event
                 context = 'is triggering the following rules but should not be: {}'
-                bad_rules = ' ,'.join('\'{}\''.format(alert['rule_name']) for alert in bad_alerts)
+                bad_rules = ' ,'.join(
+                    '\'{}\''.format(alert['rule_name']) for alert in unexpected_alerts)
                 message = '{} {}'.format(message, context.format(bad_rules))
             elif expected_alert_count != len(alerts):
                 # If there was a failure due to alerts NOT triggering for 1+ rules
