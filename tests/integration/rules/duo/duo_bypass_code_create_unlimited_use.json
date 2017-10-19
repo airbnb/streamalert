@@ -3,7 +3,7 @@
     {
       "data": {
         "action": "bypass_create",
-        "description": "{\"bypass\": \"\", \"count\": 1, \"auto_generated\": true, \"valid_secs\": null, \"remaining_uses\": null, \"user_id\": \"...\"}",
+        "description": "{\"bypass\": \"\", \"count\": 1, \"auto_generated\": true, \"valid_secs\": 10, \"remaining_uses\": null, \"user_id\": \"...\"}",
         "object": "...",
         "timestamp": "1234567890",
         "username": "..."
