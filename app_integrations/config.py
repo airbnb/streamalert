@@ -366,7 +366,7 @@ class AppConfig(dict):
     @last_timestamp.setter
     def last_timestamp(self, timestamp):
         """Set the last time in the config"""
-        LOGGER.debug('Setting last_timestamp as: %d', timestamp)
+        LOGGER.debug('Setting last_timestamp as: %s', timestamp)
         self[self._TIME_KEY] = timestamp
 
     @property
