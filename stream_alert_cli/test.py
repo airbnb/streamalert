@@ -274,9 +274,7 @@ class RuleProcessorTester(object):
 
         # Add the status of the rule to messages list
         if not all_records_matched_schema:
-            message = self.analyze_record_delta(file_name, test_event)
-            if message:
-                self.status_messages.append(StatusMessage(StatusMessage.FAILURE, message))
+            self.analyze_record_delta(file_name, test_event)
         elif not alerted_properly:
             message = ('Test failure: [{}.json] Test event with description '
                        '\'{}\'').format(file_name, test_event['description'])
@@ -458,6 +456,29 @@ class RuleProcessorTester(object):
 
         return alerts, all_records_matched_schema
 
+    def check_log_declared_in_sources(self, base_message, test_event):
+        """A simple check to see if this log type is defined in the sources for the service
+
+        Args:
+            base_message (str): Base error message to be reported with extra context
+            test_event (dict): Actual record data being tested
+
+        Returns:
+            bool: False if the log type is not in the sources list, True if it is
+        """
+        source = test_event['source']
+        service = test_event['service']
+        log = test_event['log'].split(':')[0]
+        if not log in self.cli_config['sources'][service][source]:
+            message = ('The \'sources.json\' file does not include the log type \'{}\' '
+                       'in the list of logs for this service & entity (\'{}:{}\').')
+            message = '{} {}'.format(base_message, message.format(log, service, source))
+            self.status_messages.append(StatusMessage(StatusMessage.FAILURE, message))
+            return False
+
+        return True
+
+
     def analyze_record_delta(self, file_name, test_event):
         """Provide some additional context on why this test failed. This will
         perform some analysis of the test record to determine which keys are
@@ -471,6 +492,9 @@ class RuleProcessorTester(object):
         """
         base_message = ('Invalid test event in file \'{}.json\' with description '
                         '\'{}\'.'.format(file_name, test_event['description']))
+
+        if not self.check_log_declared_in_sources(base_message, test_event):
+            return
 
         log_type = test_event['log']
         if log_type not in self.cli_config['logs']:
