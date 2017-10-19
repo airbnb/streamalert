@@ -14,67 +14,73 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 # pylint: disable=protected-access
-from contextlib import nested
 import json
 
 from mock import Mock, patch
 from nose.tools import assert_equal, assert_true
+from pyfakefs import fake_filesystem_unittest
 
 from stream_alert_cli.config import CLIConfig
-from tests.unit.helpers.base import basic_streamalert_config, mock_open
+from tests.unit.helpers.base import basic_streamalert_config
 
 
 class TestCLIConfig(object):
     """Test class for CLIConfig"""
+    # pylint: disable=no-self-use
 
     def __init__(self):
-        self.mocked_opens = None
+        self.fs_patcher = None
 
     def setup(self):
         """Setup before each method"""
         config_data = basic_streamalert_config()
-        self.mocked_opens = [
-            mock_open('conf/global.json', json.dumps(config_data['global'])),
-            mock_open('conf/lambda.json', json.dumps(config_data['lambda'])),
-            mock_open('conf/clusters/prod.json', json.dumps(config_data['clusters']['prod']))
-        ]
+
+        self.fs_patcher = fake_filesystem_unittest.Patcher()
+        self.fs_patcher.setUp()
+
+        self.fs_patcher.fs.CreateFile('/conf/global.json',
+                                      contents=json.dumps(config_data['global']))
+        self.fs_patcher.fs.CreateFile('/conf/lambda.json',
+                                      contents=json.dumps(config_data['lambda']))
+        self.fs_patcher.fs.CreateFile('/conf/clusters/prod.json',
+                                      contents=json.dumps(config_data['clusters']['prod']))
+
+    def teardown(self):
+        """Teardown after each method"""
+        self.fs_patcher.tearDown()
 
     def test_load_config(self):
         """CLI - Load config"""
-        with nested(*self.mocked_opens):
-            config = CLIConfig()
-            assert_equal(config['global']['account']['prefix'], 'unit-testing')
+        config = CLIConfig()
+        assert_equal(config['global']['account']['prefix'], 'unit-testing')
 
     @patch('logging.Logger.error')
     @patch('stream_alert_cli.config.CLIConfig.write')
     def test_toggle_metric(self, write_mock, log_mock):
         """CLI - Metric toggling"""
-        with nested(*self.mocked_opens):
-            config = CLIConfig()
+        config = CLIConfig()
 
-            config.toggle_metrics(True, [], ['athena_partition_refresh'])
-            write_mock.assert_called()
+        config.toggle_metrics(True, [], ['athena_partition_refresh'])
+        write_mock.assert_called()
 
-            del config.config['lambda']['athena_partition_refresh_config']
-            config.toggle_metrics(True, [], ['athena_partition_refresh'])
-            log_mock.assert_called_with('No Athena configuration found; please initialize first.')
+        del config.config['lambda']['athena_partition_refresh_config']
+        config.toggle_metrics(True, [], ['athena_partition_refresh'])
+        log_mock.assert_called_with('No Athena configuration found; please initialize first.')
 
-            config.toggle_metrics(True, ['prod'], ['alert_processor'])
-            write_mock.assert_called()
+        config.toggle_metrics(True, ['prod'], ['alert_processor'])
+        write_mock.assert_called()
 
     def test_aggregate_alarm_exists(self):
         """CLI - Aggregate alarm check"""
-        with nested(*self.mocked_opens):
-            config = CLIConfig()
-            result = config._alarm_exists('Aggregate Unit Testing Failed Parses Alarm')
-            assert_true(result)
+        config = CLIConfig()
+        result = config._alarm_exists('Aggregate Unit Testing Failed Parses Alarm')
+        assert_true(result)
 
     def test_cluster_alarm_exists(self):
         """CLI - Aggregate alarm check"""
-        with nested(*self.mocked_opens):
-            config = CLIConfig()
-            result = config._alarm_exists('Prod Unit Testing Failed Parses Alarm')
-            assert_true(result)
+        config = CLIConfig()
+        result = config._alarm_exists('Prod Unit Testing Failed Parses Alarm')
+        assert_true(result)
 
     @patch('stream_alert_cli.config.CLIConfig.write', Mock())
     @patch('logging.Logger.info')
@@ -93,14 +99,13 @@ class TestCLIConfig(object):
             'comparison_operator': 'LessThanThreshold'
         }
 
-        with nested(*self.mocked_opens):
-            config = CLIConfig()
-            config.add_metric_alarm(alarm_info)
-            log_mock.assert_called_with('Successfully added \'%s\' metric alarm for the '
-                                        '\'%s\' function to \'conf/clusters/%s.json\'.',
-                                        'Prod Unit Testing Total Records Alarm',
-                                        'rule_processor',
-                                        'prod')
+        config = CLIConfig()
+        config.add_metric_alarm(alarm_info)
+        log_mock.assert_called_with('Successfully added \'%s\' metric alarm for the '
+                                    '\'%s\' function to \'conf/clusters/%s.json\'.',
+                                    'Prod Unit Testing Total Records Alarm',
+                                    'rule_processor',
+                                    'prod')
 
     @patch('stream_alert_cli.config.CLIConfig.write', Mock())
     @patch('logging.Logger.info')
@@ -119,9 +124,8 @@ class TestCLIConfig(object):
             'comparison_operator': 'LessThanThreshold'
         }
 
-        with nested(*self.mocked_opens):
-            config = CLIConfig()
-            config.add_metric_alarm(alarm_info)
-            log_mock.assert_called_with('Successfully added \'%s\' metric alarm to '
-                                        '\'conf/global.json\'.',
-                                        'Aggregate Unit Testing Total Records Alarm')
+        config = CLIConfig()
+        config.add_metric_alarm(alarm_info)
+        log_mock.assert_called_with('Successfully added \'%s\' metric alarm to '
+                                    '\'conf/global.json\'.',
+                                    'Aggregate Unit Testing Total Records Alarm')
