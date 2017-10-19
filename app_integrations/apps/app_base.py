@@ -294,7 +294,7 @@ class AppIntegration(object):
             # Utilize the batcher to send logs to the rule processor
             self._batcher.send_logs(self._config['function_name'], logs)
 
-            LOGGER.debug('Updating config last timestamp from %d to %d',
+            LOGGER.debug('Updating config last timestamp from %s to %s',
                          self._config.last_timestamp, self._last_timestamp)
 
             # Save the config's last timestamp after each function run

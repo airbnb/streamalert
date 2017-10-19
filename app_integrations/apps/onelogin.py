@@ -81,6 +81,9 @@ class OneLoginApp(AppIntegration):
         Returns:
             str: Bearer token to be used to call the OneLogin resource APIs
         """
+        if self._auth_headers:
+            return True
+
         authorization = 'client_id: {}, client_secret: {}'.format(
             self._config['auth']['client_id'], self._config['auth']['client_secret'])
 
@@ -102,10 +105,12 @@ class OneLoginApp(AppIntegration):
         bearer = 'bearer:{}'.format(response.get('access_token'))
         self._auth_headers = {'Authorization': bearer}
 
+        return True
+
     def _gather_logs(self):
         """Gather the authentication log events."""
-        if not self._auth_headers:
-            self._auth_headers = self._generate_headers()
+        if not self._generate_headers():
+            return False
 
         return self._get_onelogin_events()
 
@@ -231,14 +236,14 @@ class OneLoginApp(AppIntegration):
             'client_secret':
                 {
                     'description': ('the client secret for the OneLogin API. This '
-                                    'should be a string of 57 alphanumeric characters'),
-                    'format': re.compile(r'^[a-zA-Z0-9]{57}$')
+                                    'should be a string of 64 alphanumeric characters'),
+                    'format': re.compile(r'^[a-z0-9]{64}$')
                 },
             'client_id':
                 {
                     'description': ('the client id for the OneLogin API. This '
-                                    'should be a string of 57 alphanumeric characters'),
-                    'format': re.compile(r'^[a-zA-Z0-9]{57}$')
+                                    'should be a string of 64 alphanumeric characters'),
+                    'format': re.compile(r'^[a-z0-9]{64}$')
                 }
             }
 
