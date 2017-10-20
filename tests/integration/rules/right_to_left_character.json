@@ -1,0 +1,110 @@
+{
+  "records": [
+    {
+      "data": {
+        "cb_server": "...",
+        "command_line": "ls -lha",
+        "computer_name": "...",
+        "event_type": "...",
+        "expect_followon_w_md5": false,
+        "md5": "...",
+        "parent_create_time": 123456789,
+        "parent_md5": "...",
+        "parent_path": "/path/to/parent/command",
+        "parent_process_guid": "...",
+        "path": "/path/to/command",
+        "pid": 1234,
+        "process_guid": "...",
+        "sensor_id": 12345,
+        "timestamp": 123456789,
+        "type": "...",
+        "username": "username"
+      },
+      "description": "Running a binary that does not have the right-to-left-override character, should not create an alert.",
+      "log": "...",
+      "source": "prefix.cluster.sample.bucket",
+      "service": "s3",
+      "trigger_rules": []
+    },
+    {
+      "data": {
+        "cb_server": "...",
+        "command_line": "“evil ‮”cod.exe",
+        "computer_name": "...",
+        "event_type": "...",
+        "expect_followon_w_md5": false,
+        "md5": "...",
+        "parent_create_time": 123456789,
+        "parent_md5": "...",
+        "parent_path": "/bin/bash",
+        "parent_process_guid": "...",
+        "path": "/bin/bash",
+        "pid": 1234,
+        "process_guid": "...",
+        "sensor_id": 12345,
+        "timestamp": 123456789,
+        "type": "...",
+        "username": "nobody"
+      },
+      "description": "Running a binary that does have the right-to-left-override character, should create an alert.",
+      "log": "...",
+      "source": "prefix.cluster.sample.bucket",
+      "service": "s3",
+      "trigger_rules": [
+        "right_to_left_character"
+      ]
+    },
+    {
+      "data": {
+        "name": "...",
+        "hostIdentifier": "...",
+        "calendarTime": "...",
+        "unixTime": "123456789",
+        "decorations": {
+          "envIdentifier": "...",
+          "roleIdentifier": "..."
+        },
+        "columns": {
+          "command": "ls -lha",
+          "history_file": "/path/to/history",
+          "time": "123456789",
+          "uid": "1234",
+          "username": "username"
+        },
+        "action": "added"
+      },
+      "description": "Running a binary that does not have the right-to-left-override character, should not create an alert.",
+      "log": "...",
+      "source": "prefix_cluster1_stream_alert_kinesis",
+      "service": "kinesis",
+      "trigger_rules": []
+    },
+    {
+      "data": {
+        "name": "...",
+        "hostIdentifier": "...",
+        "calendarTime": "...",
+        "unixTime": "123456789",
+        "decorations": {
+          "envIdentifier": "...",
+          "roleIdentifier": "..."
+        },
+        "columns": {
+          "command": "“evil ‮”cod.exe",
+          "history_file": "/path/to/history",
+          "time": "123456789",
+          "uid": "1234",
+          "username": "username"
+        },
+        "action": "added"
+      },
+      "description": "Running a binary that does have the right-to-left-override character, should create an alert.",
+      "log": "...",
+      "source": "prefix_cluster1_stream_alert_kinesis",
+      "service": "kinesis",
+      "trigger_rules": [
+        "right_to_left_character"
+      ]
+    }
+  ]
+}
