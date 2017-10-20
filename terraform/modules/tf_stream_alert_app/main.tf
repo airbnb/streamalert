@@ -46,7 +46,7 @@ resource "aws_ssm_parameter" "config" {
 
 // AWS CloudWatch Event Rule for invoking StreamAlert App lambda on interval
 resource "aws_cloudwatch_event_rule" "interval_rule" {
-  name        = "${var.function_prefix}_app_interval_rule"
+  name        = "${var.cluster}_${var.type}_app_interval_rule"
   description = "Schedule for executing the ${var.function_prefix}_app function"
 
   # https://amzn.to/2u5t0hS

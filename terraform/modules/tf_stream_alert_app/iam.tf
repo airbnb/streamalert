@@ -1,6 +1,6 @@
 // IAM Role: StreamAlert App Execution Role
 resource "aws_iam_role" "stream_alert_app_role" {
-  name               = "${var.function_prefix}_app_role"
+  name               = "${var.cluster}_${var.type}_app_role"
   assume_role_policy = "${data.aws_iam_policy_document.lambda_assume_role_policy.json}"
 }
 
@@ -19,7 +19,7 @@ data "aws_iam_policy_document" "lambda_assume_role_policy" {
 
 // IAM Role Policy: Allow the StreamAlert App function to invoke the Rule Processor
 resource "aws_iam_role_policy" "stream_alert_app_invoke_lambda_role_policy" {
-  name   = "${var.function_prefix}_app_invoke_lambda_role_policy"
+  name   = "${var.cluster}_${var.type}_app_invoke_lambda_role_policy"
   role   = "${aws_iam_role.stream_alert_app_role.id}"
   policy = "${data.aws_iam_policy_document.app_invoke_rule_processor_policy.json}"
 }
@@ -41,7 +41,7 @@ data "aws_iam_policy_document" "app_invoke_rule_processor_policy" {
 
 // IAM Role Policy: Allow the StreamAlert App function to publish sns (used for DLQ)
 resource "aws_iam_role_policy" "stream_alert_app_publish_sns_role_policy" {
-  name   = "${var.function_prefix}_app_publish_sns_role_policy"
+  name   = "${var.cluster}_${var.type}_app_publish_sns_role_policy"
   role   = "${aws_iam_role.stream_alert_app_role.id}"
   policy = "${data.aws_iam_policy_document.app_publish_sns_policy.json}"
 }
@@ -63,7 +63,7 @@ data "aws_iam_policy_document" "app_publish_sns_policy" {
 
 // IAM Role Policy: Allow the StreamAlert App function to create/update CloudWatch logs
 resource "aws_iam_role_policy" "stream_alert_app_cloudwatch_logs_role_policy" {
-  name   = "${var.function_prefix}_app_cloudwatch_logs_role_policy"
+  name   = "${var.cluster}_${var.type}_app_cloudwatch_logs_role_policy"
   role   = "${aws_iam_role.stream_alert_app_role.id}"
   policy = "${data.aws_iam_policy_document.app_cloudwatch_logs_policy.json}"
 }
@@ -98,7 +98,7 @@ data "aws_iam_policy_document" "app_cloudwatch_logs_policy" {
 
 // IAM Role Policy: Allow the StreamAlert App function to create/update SSM Parameter Store Values
 resource "aws_iam_role_policy" "stream_alert_app_parameter_store_role_policy" {
-  name   = "${var.function_prefix}_app_parameter_store_role_policy"
+  name   = "${var.cluster}_${var.type}_app_parameter_store_role_policy"
   role   = "${aws_iam_role.stream_alert_app_role.id}"
   policy = "${data.aws_iam_policy_document.app_parameter_store_policy.json}"
 }
