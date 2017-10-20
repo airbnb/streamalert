@@ -150,6 +150,10 @@ def athena_handler(options):
                     athena_schema[root_key] = {}
 
                 for key_name, key_type in schema.iteritems():
+                    # When using special characters in the beginning or end
+                    # of a column name, they have to be wrapped in backticks
+                    key_name = '`{}`'.format(key_name)
+
                     special_key = None
                     # Transform the {} or [] into hashable types
                     if key_type == {}:
@@ -190,7 +194,7 @@ def athena_handler(options):
                     struct_schema = ''.join(['{0}:{1},'.format(sub_key, sub_type)
                                              for sub_key, sub_type
                                              in key_type.iteritems()])
-                    nested_schema_statement = '{0} struct<{1}> '.format(
+                    nested_schema_statement = '{0} struct<{1}>, '.format(
                         key_name,
                         # Use the minus index to remove the last comma
                         struct_schema[:-1])

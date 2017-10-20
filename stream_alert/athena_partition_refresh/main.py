@@ -257,11 +257,9 @@ class StreamAlertAthenaClient(object):
         if query_success and query_resp['ResultSet']['Rows']:
             return True
 
-        LOGGER.info('The streamalert table \'%s\' does not exist. '
-                    'For alert buckets, create it with the following command: \n'
-                    '$ python manage.py athena create-table '
-                    '--type alerts --bucket s3.bucket.id',
-                    table_name)
+        LOGGER.info('The streamalert table \'%s\' does not exist.', table_name)
+        LOGGER.info('For help with creating tables: '
+                    '$ python manage.py athena create-table --help')
         return False
 
     def repair_hive_table(self, unique_buckets):
