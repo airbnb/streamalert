@@ -166,6 +166,23 @@ class TestJSONParser(TestParser):
         assert_true(mock_logging.debug.called)
         assert_false(parsed_data)
 
+    def test_regex_key_json_list(self):
+        """JSON Parser - Regex Key with a List JSON Object"""
+        options = self.config['logs']['json:regex_key_with_envelope']['configuration']
+        schema = self.config['logs']['json:regex_key_with_envelope']['schema']
+        # Invalid JSON and missing 'host' envelope key
+        data = json.dumps({
+            'message': '["nested_key_1", "test"]',
+            'date': '2017/10/01',
+            'time': '14:00:00',
+            'host': 'host-1'
+        })
+
+        # get parsed data
+        parsed_data = self.parser_helper(data=data, schema=schema, options=options)
+
+        assert_false(parsed_data)
+
     def test_regex_key_non_json(self):
         """JSON Parser - Regex Key with Plaintext Input"""
         options = self.config['logs']['json:regex_key_with_envelope']['configuration']
