@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 # pylint: disable=protected-access
+# pylint: disable=no-self-use
 import json
 
 from mock import Mock, patch
@@ -26,9 +27,9 @@ from tests.unit.helpers.base import basic_streamalert_config
 
 class TestCLIConfig(object):
     """Test class for CLIConfig"""
-    # pylint: disable=no-self-use
 
     def __init__(self):
+        self.config = None
         self.fs_patcher = None
 
     def setup(self):
@@ -45,41 +46,40 @@ class TestCLIConfig(object):
         self.fs_patcher.fs.CreateFile('/conf/clusters/prod.json',
                                       contents=json.dumps(config_data['clusters']['prod']))
 
+        # Create the config instance after creating the fake filesystem so that
+        # CLIConfig uses our mocked config files instead of the real ones.
+        self.config = CLIConfig()
+
     def teardown(self):
         """Teardown after each method"""
         self.fs_patcher.tearDown()
 
     def test_load_config(self):
         """CLI - Load config"""
-        config = CLIConfig()
-        assert_equal(config['global']['account']['prefix'], 'unit-testing')
+        assert_equal(self.config['global']['account']['prefix'], 'unit-testing')
 
     @patch('logging.Logger.error')
     @patch('stream_alert_cli.config.CLIConfig.write')
     def test_toggle_metric(self, write_mock, log_mock):
         """CLI - Metric toggling"""
-        config = CLIConfig()
-
-        config.toggle_metrics(True, [], ['athena_partition_refresh'])
+        self.config.toggle_metrics(True, [], ['athena_partition_refresh'])
         write_mock.assert_called()
 
-        del config.config['lambda']['athena_partition_refresh_config']
-        config.toggle_metrics(True, [], ['athena_partition_refresh'])
+        del self.config.config['lambda']['athena_partition_refresh_config']
+        self.config.toggle_metrics(True, [], ['athena_partition_refresh'])
         log_mock.assert_called_with('No Athena configuration found; please initialize first.')
 
-        config.toggle_metrics(True, ['prod'], ['alert_processor'])
+        self.config.toggle_metrics(True, ['prod'], ['alert_processor'])
         write_mock.assert_called()
 
     def test_aggregate_alarm_exists(self):
         """CLI - Aggregate alarm check"""
-        config = CLIConfig()
-        result = config._alarm_exists('Aggregate Unit Testing Failed Parses Alarm')
+        result = self.config._alarm_exists('Aggregate Unit Testing Failed Parses Alarm')
         assert_true(result)
 
     def test_cluster_alarm_exists(self):
         """CLI - Aggregate alarm check"""
-        config = CLIConfig()
-        result = config._alarm_exists('Prod Unit Testing Failed Parses Alarm')
+        result = self.config._alarm_exists('Prod Unit Testing Failed Parses Alarm')
         assert_true(result)
 
     @patch('stream_alert_cli.config.CLIConfig.write', Mock())
@@ -99,8 +99,7 @@ class TestCLIConfig(object):
             'comparison_operator': 'LessThanThreshold'
         }
 
-        config = CLIConfig()
-        config.add_metric_alarm(alarm_info)
+        self.config.add_metric_alarm(alarm_info)
         log_mock.assert_called_with('Successfully added \'%s\' metric alarm for the '
                                     '\'%s\' function to \'conf/clusters/%s.json\'.',
                                     'Prod Unit Testing Total Records Alarm',
@@ -124,8 +123,7 @@ class TestCLIConfig(object):
             'comparison_operator': 'LessThanThreshold'
         }
 
-        config = CLIConfig()
-        config.add_metric_alarm(alarm_info)
+        self.config.add_metric_alarm(alarm_info)
         log_mock.assert_called_with('Successfully added \'%s\' metric alarm to '
                                     '\'conf/global.json\'.',
                                     'Aggregate Unit Testing Total Records Alarm')
