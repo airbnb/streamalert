@@ -141,7 +141,8 @@
   },
   "onelogin": {
     "sourceAddress": [
-      "ipaddr"
+      "ipaddr",
+      "proxy_ip"
     ],
     "userName": [
       "actor_user_name",

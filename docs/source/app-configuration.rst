@@ -28,7 +28,11 @@ Supported Services
   - Authentication Logs
   - Administrator Logs
 
-* *Soon to come:* `OneLogin <https://github.com/airbnb/streamalert/issues/347>`_, `GSuite <https://github.com/airbnb/streamalert/issues/348>`_, and more
+* OneLogin
+
+  - Events Logs
+
+* *Soon to come:* `Box <https://github.com/airbnb/streamalert/issues/398>`_, `GSuite <https://github.com/airbnb/streamalert/issues/348>`_, and more
 
 
 Getting Started
@@ -114,5 +118,5 @@ The recommended process is to deploy both the `apps` function and the `rule` pro
 
 .. code-block:: bash
 
-  $ python manage.py lambda deploy --processor rule --processor apps
+  $ python manage.py lambda deploy --processor rule apps
 
