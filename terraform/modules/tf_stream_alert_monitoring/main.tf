@@ -88,9 +88,9 @@ resource "aws_cloudwatch_metric_alarm" "streamalert_kinesis_write_exceeded" {
   metric_name         = "WriteProvisionedThroughputExceeded"
   statistic           = "Sum"
   comparison_operator = "GreaterThanThreshold"
-  threshold           = "3"
-  evaluation_periods  = "2"
-  period              = "60"
+  threshold           = "10"
+  evaluation_periods  = "6"
+  period              = "300"
   alarm_description   = "StreamAlert Kinesis Write Throughput Exceeded: ${var.kinesis_stream}"
   alarm_actions       = ["${var.sns_topic_arn}"]
 
