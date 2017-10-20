@@ -159,7 +159,9 @@ Examples:
     live_test_parser.add_argument(
         '-r', '--rules',
         nargs='+',
-        help=ARGPARSE_SUPPRESS
+        help=ARGPARSE_SUPPRESS,
+        action=UniqueSetAction,
+        default=set()
     )
 
     # allow verbose output for the CLI with the --debug option
@@ -1039,6 +1041,7 @@ Example:
     # add the optional ability to test against a rule/set of rules
     lambda_test_parser.add_argument(
         '-r', '--test-rules',
+        dest='rules',
         nargs='+',
         help=ARGPARSE_SUPPRESS,
         action=UniqueSetAction,
@@ -1050,6 +1053,7 @@ Example:
     # add the optional ability to test against a rule/set of rules
     test_filter_group.add_argument(
         '-f', '--test-files',
+        dest='files',
         nargs='+',
         help=ARGPARSE_SUPPRESS,
         action=UniqueSetAction,

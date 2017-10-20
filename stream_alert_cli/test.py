@@ -828,11 +828,12 @@ def stream_alert_test(options, config):
 
         validate_schemas = options.command == 'validate-schemas'
 
-        rules_filter = options.test_rules if not validate_schemas else None
+        rules_filter = run_options.get('rules', {})
+        files_filter = run_options.get('files', {})
 
         # Run the rule processor for all rules or designated rule set
         for alerts in rule_proc_tester.test_processor(rules_filter,
-                                                      options.test_files,
+                                                      files_filter,
                                                       validate_schemas):
             # If the alert processor should be tested, process any alerts
             if test_alerts:
@@ -850,7 +851,7 @@ def stream_alert_test(options, config):
         # If this is not just a validation run, and rule/file filters are not in place
         # then warn the user if there are test files without corresponding rules
         # Also check all of the rule files to make sure they have tests configured
-        if not (validate_schemas or rules_filter or options.test_files):
+        if not (validate_schemas or rules_filter or files_filter):
             all_test_rules = all_test_rules or helpers.get_rules_from_test_events(TEST_EVENTS_DIR)
             check_untested_files(all_test_rules)
             check_untested_rules(all_test_rules)
