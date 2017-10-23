@@ -47,9 +47,14 @@ class AppConfig(dict):
         SUCCEEDED = 'succeeded'
         FAILED = 'failed'
 
-    def __init__(self, config, **kwargs):
+    class Events(object):
+        """Events object to encapsulate various acceptable events"""
+        SUCCESSIVE_INVOKE = 'successive_invoke'
+
+    def __init__(self, config, event=None, **kwargs):
         dict.__init__(self, config, **kwargs)
         self._validate_config()
+        self._event = event or {}
         self.start_last_timestamp = self._determine_last_time()
 
     def __setitem__(self, key, value):
@@ -86,7 +91,7 @@ class AppConfig(dict):
         return {cls._STATE_KEY, cls._TIME_KEY}
 
     @classmethod
-    def load_config(cls, context):
+    def load_config(cls, context, event):
         """Load the configuration for this app invocation
 
         Args:
@@ -162,7 +167,7 @@ class AppConfig(dict):
             params[param_names[cls.AUTH_CONFIG_SUFFIX]].iteritems()
         }
 
-        return AppConfig(base_config)
+        return AppConfig(base_config, event)
 
     @staticmethod
     def _scrub_auth_info(param_info, auth_param_name):
@@ -351,6 +356,10 @@ class AppConfig(dict):
         # Get the total seconds that this rate evaluates to
         return interval
 
+    def report_remaining_seconds(self):
+        """Log the remaining seconds"""
+        LOGGER.info('Lambda remaining seconds: %.2f', self.remaining_ms() / 1000.0)
+
     @property
     def current_state(self):
         """Cache the current time to be written to the config"""
@@ -368,6 +377,14 @@ class AppConfig(dict):
         """Set the last time in the config"""
         LOGGER.debug('Setting last_timestamp as: %s', timestamp)
         self[self._TIME_KEY] = timestamp
+
+    @property
+    def is_successive_invocation(self):
+        """Check if this invocation is a successive invoke from a previous execution"""
+        is_successive = self._event.get('invocation_type') == self.Events.SUCCESSIVE_INVOKE
+
+        LOGGER.debug('Is successive invocation: %s', is_successive)
+        return is_successive
 
     @property
     def is_failing(self):

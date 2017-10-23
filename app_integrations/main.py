@@ -21,16 +21,16 @@ def handler(event, context):
     """Main lambda handler use as the entry point
 
     Args:
-        event (dict): Always empty (for now) event object
+        event (dict): Event object that can potentially contain details on what to
+            during this invocation. An example of this is the 'invocation_type' key
+            that is used as an override to allow for successive invocations (and in
+            the future, support for historical invocations)
         context (LambdaContxt): AWS LambdaContext object
     """
-    if event and 'full_run' in event:
-        # TODO: implement support for historical runs via input events
-        pass
-
     try:
         # Load the config from this context object, pulling info from parameter store
-        config = AppConfig.load_config(context)
+        # The event object can contain detail about what to do, ie: 'invocation_type'
+        config = AppConfig.load_config(context, event)
 
         # The config specifies what app this function is supposed to run
         app = get_app(config)

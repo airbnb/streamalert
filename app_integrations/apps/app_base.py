@@ -15,9 +15,12 @@ limitations under the License.
 """
 from abc import ABCMeta, abstractmethod, abstractproperty
 from decimal import Decimal
+import json
 import time
 from timeit import timeit
 
+import boto3
+from botocore.exceptions import ClientError
 import requests
 
 from app_integrations import LOGGER
@@ -65,7 +68,7 @@ def get_app(config, init=True):
 class AppIntegration(object):
     """Base class for all app integrations to be implemented for various services"""
     __metaclass__ = ABCMeta
-    _POLL_BUFFER_MULTIPLIER = 1.2
+    _POLL_BUFFER_MULTIPLIER = 1.5
 
     def __init__(self, config):
         self._config = config
@@ -167,11 +170,15 @@ class AppIntegration(object):
     def _initialize(self):
         """Method for performing any startup steps, like setting state to running"""
         # Perform another safety check to make sure this is not being invoked already
-        if self._config.is_running:
+        # If this is a successive invocation to a previous execution, allow it to continue
+        if not self._config.is_successive_invocation and self._config.is_running:
             LOGGER.error('App already running for service \'%s\'.', self.type())
             return False
 
         LOGGER.info('App starting for service \'%s\'.', self.type())
+
+        LOGGER.debug('App executing as a successive invocation: %s',
+                     self._config.is_successive_invocation)
 
         # Validate the auth in the config. This raises an exception upon failure
         self._validate_auth()
@@ -184,20 +191,63 @@ class AppIntegration(object):
         return True
 
     def _finalize(self):
-        """Method for performing any final steps, like saving applicable state"""
-        self._config.mark_success()
+        """Method for performing any final steps, like saving applicable state
 
+        This function is also used to invoke a new copy of this lambda in the case
+        that there are more logs available to collect.
+        """
         if not self._last_timestamp:
             LOGGER.error('Ending last timestamp is 0. This should not happen and is likely '
                          'due to the subclass not setting this value.')
 
         if self._last_timestamp == self._config.start_last_timestamp:
-            LOGGER.error('Ending last timestamp is the same as the beginning last timestamp')
+            LOGGER.error('Ending last timestamp is the same as the beginning last timestamp. '
+                         'This could occur if there were no logs collected for this execution.')
 
         LOGGER.info('App complete for service \'%s\'. Gathered %d logs in %d polls.',
                     self.type(), self._gathered_log_count, self._poll_count)
 
         self._config.last_timestamp = self._last_timestamp
+
+        # If there are more logs to poll, invoke this app function again and do not
+        # mark the config as 'success' (keeping the state as 'running' prevents
+        # scheduled function invocations from running alongside this invocation).
+        if self._more_to_poll:
+            self._invoke_successive_gather()
+            return
+
+        self._config.mark_success()
+
+    def _invoke_successive_gather(self):
+        """Method for invoking a successive app function to handle more logs
+
+        This is useful when there were more logs to collect than could be accomplished
+        in this execution. Instead of marking the config with 'success' and waiting
+        for the next scheduled execution, this will invoke the lambda again with an
+        'event' indicating there are more logs to collect. Other scheduled executions
+        will not have an 'event' to allow for this type of override, and will exit
+        when checking the 'self._config.is_running' property. This allows for chained
+        invocations without the worry of duplicated effort or collisions.
+        """
+        try:
+            lambda_client = boto3.client('lambda', region_name=self._config['region'])
+            response = lambda_client.invoke(
+                FunctionName=self._config['function_name'],
+                InvocationType='Event',
+                Payload=json.dumps({'invocation_type': self._config.Events.SUCCESSIVE_INVOKE}),
+                Qualifier=self._config['qualifier']
+            )
+        except ClientError as err:
+            LOGGER.error('An error occurred while invoking a subsequent app function '
+                         '(\'%s:%s\'). Error is: %s',
+                         self._config['function_name'],
+                         self._config['qualifier'],
+                         err.response)
+            raise
+
+        LOGGER.info('Invoking successive apps function \'%s\' with Lambda request ID \'%s\'',
+                    self._config['function_name'],
+                    response['ResponseMetadata']['RequestId'])
 
     def _check_http_response(self, response):
         """Method for checking for a valid HTTP response code
@@ -307,7 +357,7 @@ class AppIntegration(object):
 
         LOGGER.info('Gather process for \'%s\' executed in %f seconds.', self.type(), exec_time)
 
-        # Add a 20% buffer to the time it too to account for some unforeseen delay
+        # Add a 50% buffer to the time it too to account for some unforeseen delay
         # Cast this back to float so general arithemtic works
         return float(exec_time * Decimal(self._POLL_BUFFER_MULTIPLIER))
 
@@ -319,13 +369,18 @@ class AppIntegration(object):
 
         while self._gather() + self._sleep_seconds() < self._config.remaining_ms() / 1000.0:
             LOGGER.debug('More logs to poll for \'%s\': %s', self.type(), self._more_to_poll)
-            LOGGER.info('Lambda remaining seconds: %.2f', self._config.remaining_ms() / 1000.0)
+            self._config.report_remaining_seconds()
             if not self._more_to_poll:
                 break
 
             # Reset the boolean indicating that there is more data to poll. Subclasses should
             # set this to 'True' within their implementation of the '_gather_logs' function
             self._more_to_poll = not self._more_to_poll
+
+        LOGGER.debug('Gathered all logs possible for this execution. More logs to poll '
+                     'for \'%s\': %s', self.type(), self._more_to_poll)
+
+        self._config.report_remaining_seconds()
 
         # Finalize, saving state to 'succeeded'
         self._finalize()
