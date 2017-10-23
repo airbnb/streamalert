@@ -18,8 +18,8 @@ data "aws_iam_policy_document" "lambda_assume_role_policy" {
 }
 
 // IAM Role Policy: Allow the StreamAlert App function to invoke the Rule Processor
-resource "aws_iam_role_policy" "stream_alert_app_invoke_lambda_role_policy" {
-  name   = "${var.cluster}_${var.type}_app_invoke_lambda_role_policy"
+resource "aws_iam_role_policy" "stream_alert_app_invoke_rule_lambda_role_policy" {
+  name   = "${var.cluster}_${var.type}_app_invoke_rule_lambda_role_policy"
   role   = "${aws_iam_role.stream_alert_app_role.id}"
   policy = "${data.aws_iam_policy_document.app_invoke_rule_processor_policy.json}"
 }
@@ -130,6 +130,28 @@ data "aws_iam_policy_document" "app_parameter_store_policy" {
 
     resources = [
       "arn:aws:ssm:${var.region}:${var.account_id}:parameter/${var.function_prefix}_app_state",
+    ]
+  }
+}
+
+// IAM Role Policy: Allow the StreamAlert App function to invoke itself
+resource "aws_iam_role_policy" "stream_alert_app_invoke_self_lambda_role_policy" {
+  name   = "${var.cluster}_${var.type}_app_invoke_self_lambda_role_policy"
+  role   = "${aws_iam_role.stream_alert_app_role.id}"
+  policy = "${data.aws_iam_policy_document.app_invoke_self_policy.json}"
+}
+
+// IAM Policy Doc: Allow the StreamAlert App function to invoke itself
+data "aws_iam_policy_document" "app_invoke_self_policy" {
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "lambda:InvokeFunction",
+    ]
+
+    resources = [
+      "${aws_lambda_function.stream_alert_app.arn}",
     ]
   }
 }
