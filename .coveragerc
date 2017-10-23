@@ -1,5 +1,0 @@
-[report]
-omit =
-    stream_alert_cli/*
-
-show_missing = True
