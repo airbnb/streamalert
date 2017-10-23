@@ -78,7 +78,7 @@ class TestAppIntegration(object):
     @patch.object(AppIntegration, '__abstractmethods__', frozenset())
     def setup(self):
         """Setup before each method"""
-        self._app = AppIntegration(AppConfig(get_valid_config_dict('duo_admin')))
+        self._app = AppIntegration(AppConfig(get_valid_config_dict('duo_admin'), None))
 
     @patch('logging.Logger.debug')
     def test_no_sleep(self, log_mock):
@@ -165,7 +165,8 @@ class TestAppIntegration(object):
         self._app._last_timestamp = self._app._config.start_last_timestamp
         self._app._finalize()
         log_mock.assert_called_with('Ending last timestamp is the same as '
-                                    'the beginning last timestamp')
+                                    'the beginning last timestamp. This could occur if '
+                                    'there were no logs collected for this execution.')
 
     @patch('logging.Logger.info')
     def test_gather_success(self, log_mock):

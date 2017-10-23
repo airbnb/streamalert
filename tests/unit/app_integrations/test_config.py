@@ -33,7 +33,7 @@ class TestAppIntegrationConfig(object):
         """Setup before each method"""
         self.ssm_patcher = patch.object(AppConfig, 'SSM_CLIENT', MockSSMClient())
         self.mock_ssm = self.ssm_patcher.start()
-        self._config = AppConfig.load_config(get_mock_context())
+        self._config = AppConfig.load_config(get_mock_context(), None)
 
     def teardown(self):
         """Teardown after each method"""
@@ -119,7 +119,7 @@ class TestAppIntegrationConfig(object):
     def test_determine_last_timestamp_onelogin(self, time_mock):
         """AppIntegrationConfig - Determine Last Timestamp, OneLogin"""
         with patch.object(AppConfig, 'SSM_CLIENT', MockSSMClient(app_type='onelogin_events')):
-            self._config = AppConfig.load_config(get_mock_context())
+            self._config = AppConfig.load_config(get_mock_context(), None)
 
             # Reset the last timestamp to None
             self._config.last_timestamp = None
