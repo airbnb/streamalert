@@ -16,6 +16,7 @@ limitations under the License.
 # pylint: disable=abstract-class-instantiated,protected-access,no-self-use
 from mock import Mock, patch
 
+from botocore.exceptions import ClientError
 from nose.tools import (
     assert_equal,
     assert_false,
@@ -151,6 +152,23 @@ class TestAppIntegration(object):
         self._app._last_timestamp = test_new_time
         self._app._finalize()
         assert_equal(self._app._config.last_timestamp, test_new_time)
+
+    @patch('boto3.client', Mock(return_value=MockLambdaClient()))
+    @patch('app_integrations.config.AppConfig.mark_success')
+    def test_finalize_more_logs(self, config_mock):
+        """App Integration - Finalize, More Logs"""
+        self._app._more_to_poll = True
+        self._app._finalize()
+
+        config_mock.assert_not_called()
+
+    @raises(ClientError)
+    @patch('boto3.client', Mock(return_value=MockLambdaClient()))
+    def test_finalize_more_logs_error(self):
+        """App Integration - Finalize, More Logs"""
+        MockLambdaClient._raise_exception = True
+        self._app._more_to_poll = True
+        self._app._finalize()
 
     @patch('logging.Logger.error')
     def test_finalize_zero_time(self, log_mock):
