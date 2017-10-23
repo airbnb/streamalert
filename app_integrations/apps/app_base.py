@@ -68,6 +68,12 @@ def get_app(config, init=True):
 class AppIntegration(object):
     """Base class for all app integrations to be implemented for various services"""
     __metaclass__ = ABCMeta
+    # This _POLL_BUFFER_MULTIPLIER is a multiplier that will be used, along with the time it
+    # took to perform an API request and forward logs, to determine if there is enough
+    # time remaining in the execution of this function to perform another request.
+    # The buffer is also to account for any finalization that must occur, like config
+    # saving to parameter store and spawning a new Lambda invocation if there are more
+    # logs to poll for this interval
     _POLL_BUFFER_MULTIPLIER = 1.5
 
     def __init__(self, config):
@@ -170,7 +176,7 @@ class AppIntegration(object):
     def _initialize(self):
         """Method for performing any startup steps, like setting state to running"""
         # Perform another safety check to make sure this is not being invoked already
-        # If this is a successive invocation to a previous execution, allow it to continue
+        # If this is an invocation spawned from a previous execution, allow it to continue
         if not self._config.is_successive_invocation and self._config.is_running:
             LOGGER.error('App already running for service \'%s\'.', self.type())
             return False
@@ -219,7 +225,7 @@ class AppIntegration(object):
         self._config.mark_success()
 
     def _invoke_successive_gather(self):
-        """Method for invoking a successive app function to handle more logs
+        """Invoke a successive app function to handle more logs
 
         This is useful when there were more logs to collect than could be accomplished
         in this execution. Instead of marking the config with 'success' and waiting
@@ -357,7 +363,8 @@ class AppIntegration(object):
 
         LOGGER.info('Gather process for \'%s\' executed in %f seconds.', self.type(), exec_time)
 
-        # Add a 50% buffer to the time it too to account for some unforeseen delay
+        # Add a 50% buffer to the time it took to account for some unforeseen delay and to give
+        # this function enough time to spawn a new invocation if there are more logs to poll
         # Cast this back to float so general arithemtic works
         return float(exec_time * Decimal(self._POLL_BUFFER_MULTIPLIER))
 
