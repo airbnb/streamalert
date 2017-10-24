@@ -16,6 +16,7 @@ limitations under the License.
 # pylint: disable=abstract-class-instantiated,protected-access,no-self-use
 from mock import Mock, patch
 
+from botocore.exceptions import ClientError
 from nose.tools import (
     assert_equal,
     assert_false,
@@ -78,7 +79,7 @@ class TestAppIntegration(object):
     @patch.object(AppIntegration, '__abstractmethods__', frozenset())
     def setup(self):
         """Setup before each method"""
-        self._app = AppIntegration(AppConfig(get_valid_config_dict('duo_admin')))
+        self._app = AppIntegration(AppConfig(get_valid_config_dict('duo_admin'), None))
 
     @patch('logging.Logger.debug')
     def test_no_sleep(self, log_mock):
@@ -152,6 +153,23 @@ class TestAppIntegration(object):
         self._app._finalize()
         assert_equal(self._app._config.last_timestamp, test_new_time)
 
+    @patch('boto3.client', Mock(return_value=MockLambdaClient()))
+    @patch('app_integrations.config.AppConfig.mark_success')
+    def test_finalize_more_logs(self, config_mock):
+        """App Integration - Finalize, More Logs"""
+        self._app._more_to_poll = True
+        self._app._finalize()
+
+        config_mock.assert_not_called()
+
+    @raises(ClientError)
+    @patch('boto3.client', Mock(return_value=MockLambdaClient()))
+    def test_finalize_more_logs_error(self):
+        """App Integration - Finalize, More Logs"""
+        MockLambdaClient._raise_exception = True
+        self._app._more_to_poll = True
+        self._app._finalize()
+
     @patch('logging.Logger.error')
     def test_finalize_zero_time(self, log_mock):
         """App Integration - Finalize, Zero Time Error"""
@@ -165,7 +183,8 @@ class TestAppIntegration(object):
         self._app._last_timestamp = self._app._config.start_last_timestamp
         self._app._finalize()
         log_mock.assert_called_with('Ending last timestamp is the same as '
-                                    'the beginning last timestamp')
+                                    'the beginning last timestamp. This could occur if '
+                                    'there were no logs collected for this execution.')
 
     @patch('logging.Logger.info')
     def test_gather_success(self, log_mock):
