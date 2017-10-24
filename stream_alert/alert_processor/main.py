@@ -15,6 +15,8 @@ limitations under the License.
 """
 from collections import OrderedDict
 import json
+import importlib
+import os
 
 from stream_alert.alert_processor import LOGGER
 from stream_alert.alert_processor.helpers import validate_alert
@@ -78,6 +80,22 @@ def run(alert, region, function_name, config):
     if not validate_alert(alert):
         LOGGER.error('Invalid alert format:\n%s', json.dumps(alert, indent=2))
         return
+
+    # Load enrichments
+    modules_to_import = set()
+    # walk the enrichments directory to dymanically import
+    for folder in (['enrichments']):
+        for root, dirs, files in os.walk(folder):
+            filtered_files = [enrichment_file for enrichment_file in files if not (enrichment_file.startswith((
+                '.', '__init__')) or enrichment_file.endswith('.pyc'))]
+            package_path = root.replace('/', '.')
+            for import_file in filtered_files:
+                import_module = os.path.splitext(import_file)[0]
+                if package_path and import_module:
+                    modules_to_import.add('{}.{}'.format(package_path, import_module))
+
+    for module_name in modules_to_import:
+        importlib.import_module(module_name)
 
     LOGGER.debug('Sending alert to outputs:\n%s', json.dumps(alert, indent=2))
 

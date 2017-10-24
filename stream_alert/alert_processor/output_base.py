@@ -55,11 +55,27 @@ class StreamOutputBase(object):
     """
     __metaclass__ = ABCMeta
     __service__ = NotImplemented
+    __enrichments = {}
 
     def __init__(self, region, function_name, config):
         self.region = region
         self.secrets_bucket = self._get_secrets_bucket_name(function_name)
         self.config = config
+    
+    @classmethod
+    def enrichment(cls):
+        """Registers an enrichment.
+
+        Enrichments allow you to modify the content in an alert or add custom processing.
+        """
+        def decorator(enrichment):
+            """Enrichment decorator."""
+            name = enrichment.__name__
+            if name in cls.__enrichments:
+                raise ValueError('enrichment already defined: {}'.format(name))
+            cls.__enrichments[name] = enrichment
+            return enrichment
+        return decorator
 
     @staticmethod
     def _local_temp_dir():

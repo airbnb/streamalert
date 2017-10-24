@@ -232,6 +232,7 @@ class RuleProcessorPackage(LambdaPackage):
         'stream_alert/shared',
         'rules',
         'matchers',
+        'enrichments',
         'helpers',
         'conf'}
     if os.path.exists('threat_intel'):

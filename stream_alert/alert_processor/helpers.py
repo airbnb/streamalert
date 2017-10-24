@@ -36,6 +36,7 @@ def validate_alert(alert):
         'rule_description',
         'log_type',
         'log_source',
+        'enrichments',
         'outputs',
         'source_service',
         'source_entity'
@@ -64,6 +65,23 @@ def validate_alert(alert):
             for entry in alert[key]:
                 if not isinstance(entry, (str, unicode)):
                     LOGGER.error('The value of each entry in the \'outputs\' list '
+                                 'must be a string (str).')
+                    valid = False
+
+        elif key == 'enrichments':
+            if alert[key] is None:
+                # Ignore if empty
+                continue
+
+            if not isinstance(alert[key], list):
+                LOGGER.error(
+                    'The value of the \'enrichments\' key must be an array (list)')
+                valid = False
+                continue
+
+            for entry in alert[key]:
+                if not isinstance(entry, (str, unicode)):
+                    LOGGER.error('The value of each entry in the \'enrichments\' list '
                                  'must be a string (str).')
                     valid = False
 

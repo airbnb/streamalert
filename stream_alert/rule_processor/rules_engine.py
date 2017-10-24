@@ -24,6 +24,7 @@ DEFAULT_RULE_DESCRIPTION = 'No rule description provided'
 RuleAttributes = namedtuple('Rule', ['rule_name',
                                      'rule_function',
                                      'matchers',
+                                     'enrichments',
                                      'datatypes',
                                      'logs',
                                      'outputs',
@@ -35,7 +36,7 @@ class StreamRules(object):
 
     The __rules dictionary stores rules with the following metadata:
         key: Name of the rule
-        value: Named tuple (rule function, outputs, matchers, logs)
+        value: Named tuple (rule function, outputs, matchers, enrichments, logs)
 
     Example:
         __rules[root_logins]: (<root_logins function>, ['pagerduty'], ['prod'], ['osquery'])
@@ -67,6 +68,7 @@ class StreamRules(object):
             logs = opts.get('logs')
             outputs = opts.get('outputs')
             matchers = opts.get('matchers')
+            enrichments = opts.get('enrichments')
             datatypes = opts.get('datatypes')
             req_subkeys = opts.get('req_subkeys')
 
@@ -88,6 +90,7 @@ class StreamRules(object):
             cls.__rules[rule_name] = RuleAttributes(rule_name,
                                                     rule,
                                                     matchers,
+                                                    enrichments,
                                                     datatypes,
                                                     logs,
                                                     outputs,
@@ -384,6 +387,7 @@ class StreamRules(object):
                         'rule_description': rule.rule_function.__doc__ or DEFAULT_RULE_DESCRIPTION,
                         'log_source': str(payload.log_source),
                         'log_type': payload.type,
+                        'enrichments': rule.enrichments,
                         'outputs': rule.outputs,
                         'source_service': payload.service(),
                         'source_entity': payload.entity}

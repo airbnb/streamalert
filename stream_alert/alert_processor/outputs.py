@@ -26,6 +26,7 @@ import boto3
 
 from stream_alert.alert_processor import LOGGER
 from stream_alert.alert_processor.output_base import OutputProperty, StreamOutputBase
+from enrichments import DropAlertException
 
 # STREAM_OUTPUTS will contain each subclass of the StreamOutputBase
 # All included subclasses are designated using the '@output' class decorator
@@ -345,7 +346,11 @@ class SlackOutput(StreamOutputBase):
 
             index = cls.MAX_MESSAGE_SIZE
 
-        header_text = '*StreamAlert Rule Triggered: {}*'.format(rule_name)
+        if 'header_text' in alert:
+            header_text = alert['header_text']
+        else:
+            header_text = '*StreamAlert Rule Triggered: {}*'.format(rule_name)
+
         full_message = {
             'text': header_text,
             'mrkdwn': True,
@@ -359,8 +364,12 @@ class SlackOutput(StreamOutputBase):
             rule_desc = ''
             # Only print the rule description on the first attachment
             if index == 0:
-                rule_desc = alert['rule_description']
+                if 'pretext' in alert:
                 rule_desc = '*Rule Description:*\n{}\n'.format(rule_desc)
+                    rule_desc = alert['pretext']
+                else:
+                    rule_desc = alert['rule_description']
+                    rule_desc = '*Rule Description:*\n{}\n'.format(rule_desc)
 
             # Add this attachemnt to the full message array of attachments
             full_message['attachments'].append({
@@ -470,6 +479,21 @@ class SlackOutput(StreamOutputBase):
         creds = self._load_creds(kwargs['descriptor'])
         if not creds:
             return self._log_status(False)
+
+        # Call enrichments
+        for enrichment in kwargs['alert']['enrichments']:
+            enrichment_function = self._StreamOutputBase__enrichments.get(enrichment)
+            if enrichment_function:
+                try:
+                    enrichment_function(kwargs)
+                except DropAlertException:
+                    LOGGER.debug('Dropped alert due to enrichment %s', enrichment_function.__name__)
+                    return False
+                except Exception as err:  # pylint: disable=broad-except
+                    LOGGER.error('%s: %s', enrichment_function.__name__, err.message)
+                    return False
+            else:
+                LOGGER.error('The enrichment [%s] does not exist!', enrichment)
 
         slack_message = self._format_message(kwargs['rule_name'], kwargs['alert'])
 
