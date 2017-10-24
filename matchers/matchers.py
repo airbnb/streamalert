@@ -16,7 +16,3 @@ You can also supply multiple matchers for many common scenarios:
 from stream_alert.rule_processor.rules_engine import StreamRules
 
 matcher = StreamRules.matcher()
-
-@matcher
-def github_audit(rec):
-    return rec['program'] == 'github_audit'
