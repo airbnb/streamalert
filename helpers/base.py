@@ -14,9 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from fnmatch import fnmatch
-import json
 import logging
-import re
 import time
 
 from netaddr import IPAddress, IPNetwork
