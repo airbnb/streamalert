@@ -22,12 +22,13 @@ def cloudtrail_put_bucket_acl(rec):
                   (c) if not, remove the bucket ACL and investigate access logs
     """
     if rec['detail']['eventName'] != 'PutBucketAcl':
+        # check the event type early to avoid unnecessary performance impact
         return False
     elif rec['detail']['requestParameters'] is None:
-        # `requestParameters` can be defined with a value of null
+        # requestParameters can be defined with a value of null
         return False
 
-    insecure_acl_list = {
+    denied_acls = {
         'http://acs.amazonaws.com/groups/global/AuthenticatedUsers',
         'http://acs.amazonaws.com/groups/global/AllUsers'
     }
@@ -38,11 +39,11 @@ def cloudtrail_put_bucket_acl(rec):
         return False
 
     grants = access_control_policy['AccessControlList']['Grant']
-    insecure_buckets = []
+    bad_bucket_permissions = []
 
     for grant in grants:
         grantee = grant.get('Grantee', [])
         if 'URI' in grantee:
-            insecure_buckets.append(grantee['URI'] in insecure_acl_list)
+            bad_bucket_permissions.append(grantee['URI'] in denied_acls)
 
-    return any(insecure_buckets)
+    return any(bad_bucket_permissions)
