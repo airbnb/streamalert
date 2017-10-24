@@ -282,20 +282,20 @@ class RuleProcessorTester(object):
                 # If there was a failure due to alerts triggering for a test event
                 # that does not have any trigger_rules configured
                 context = 'is triggering the following rules but should not trigger at all: {}'
-                trigger_rules = ' ,'.join('\'{}\''.format(alert['rule_name']) for alert in alerts)
+                trigger_rules = ', '.join('\'{}\''.format(alert['rule_name']) for alert in alerts)
                 message = '{} {}'.format(message, context.format(trigger_rules))
             elif unexpected_alerts:
                 # If there was a failure due to alerts triggering for other rules outside
                 # of the rules defined in the trigger_rules list for the event
                 context = 'is triggering the following rules but should not be: {}'
-                bad_rules = ' ,'.join(
+                bad_rules = ', '.join(
                     '\'{}\''.format(alert['rule_name']) for alert in unexpected_alerts)
                 message = '{} {}'.format(message, context.format(bad_rules))
             elif expected_alert_count != len(alerts):
                 # If there was a failure due to alerts NOT triggering for 1+ rules
                 # defined in the trigger_rules list for the event
                 context = 'did not trigger the following rules: {}'
-                non_triggered_rules = ' ,'.join(
+                non_triggered_rules = ', '.join(
                     '\'{}\''.format(rule) for rule in test_event['trigger_rules']
                     if rule not in [alert['rule_name'] for alert in alerts])
                 message = '{} {}'.format(message, context.format(non_triggered_rules))
@@ -339,7 +339,7 @@ class RuleProcessorTester(object):
         record_keys = set(test_event)
         if not required_keys.issubset(record_keys):
             req_key_diff = required_keys.difference(record_keys)
-            missing_keys = ' ,'.join('\'{}\''.format(key) for key in req_key_diff)
+            missing_keys = ', '.join('\'{}\''.format(key) for key in req_key_diff)
             message = 'Missing required key(s) in log: {}'.format(missing_keys)
             self.status_messages.append(StatusMessage(StatusMessage.FAILURE, message))
             return False
@@ -350,7 +350,7 @@ class RuleProcessorTester(object):
 
         # Log a warning if there are extra keys declared in the test log
         if key_diff:
-            extra_keys = ' ,'.join('\'{}\''.format(key) for key in key_diff)
+            extra_keys = ', '.join('\'{}\''.format(key) for key in key_diff)
             message = 'Additional unnecessary keys in log: {}'.format(extra_keys)
             # Remove the key(s) and just warn the user that they are extra
             record_keys.difference_update(key_diff)
