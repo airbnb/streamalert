@@ -152,6 +152,38 @@ class TestOneLoginApp(object):
         )
         assert_false(self._app._get_onelogin_events())
 
+    @patch('requests.get')
+    def test_get_onelogin_events_rate_limited(self, requests_mock):
+        """OneLoginApp - Get OneLogin Events, Rate Limited"""
+        self._app._auth_headers = True
+        self._app._rate_limit_sleep = 1
+        err_limit_response = Mock(
+            status_code=400,
+            json=Mock(return_value={
+                'message': 'something went wrong',
+                'status': {'code': 400, 'message': 'rate_limit_exceeded'}
+            })
+        )
+        ok_limit_response = Mock(
+            status_code=200,
+            json=Mock(return_value={
+                'data': {'X-RateLimit-Reset': 123}
+            })
+        )
+        requests_mock.side_effect = [err_limit_response, ok_limit_response]
+        assert_false(self._app._get_onelogin_events())
+        assert_equal(self._app._rate_limit_sleep, 123)
+
+    @patch('requests.get')
+    def test_get_onelogin_events_empty_data(self, requests_mock):
+        """OneLoginApp - Get OneLogin Events, Empty Data"""
+        self._app._auth_headers = True
+        requests_mock.return_value = Mock(
+            status_code=200,
+            json=Mock(return_value={'data': [], 'pagination': {'next_link': 'not'}})
+        )
+        assert_false(self._app._get_onelogin_events())
+
     @patch('requests.post')
     def test_gather_logs_no_headers(self, requests_mock):
         """OneLoginApp - Gather Events Entry Point, No Headers"""
