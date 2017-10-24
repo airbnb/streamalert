@@ -259,9 +259,9 @@ class JSONParser(ParserBase):
 
         # Handle nested json object regex matching
         json_regex_key = self.options.get('json_regex_key')
-        if json_regex_key:
+        if json_regex_key and json_payload.get(json_regex_key):
             LOGGER.debug('Parsing records with JSON Regex Key')
-            match = self.__regex.search(json_payload[json_regex_key])
+            match = self.__regex.search(str(json_payload[json_regex_key]))
             if not match:
                 return False
             match_str = match.groups('json_blob')[0]
@@ -271,6 +271,10 @@ class JSONParser(ParserBase):
                 LOGGER.debug('Matched regex string is not valid JSON: %s', match_str)
                 return False
             else:
+                # Make sure the new_record is a dictionary and not a list.
+                # Valid JSON can be either
+                if not isinstance(new_record, dict):
+                    return False
                 if envelope:
                     new_record.update({ENVELOPE_KEY: envelope})
 

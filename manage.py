@@ -1237,12 +1237,12 @@ Examples:
     manage.py athena create-table \
     --type alerts \
     --bucket s3.bucket.name \
-    --refresh-type add_hive_partition
+    --refresh_type add_hive_partition
 
     manage.py athena create-table \
     --type data \
     --bucket s3.bucket.name \
-    --refresh-type add_hive_partition \
+    --refresh_type add_hive_partition \
     --table_name my_athena_table
 
 """.format(version))
