@@ -1,5 +1,4 @@
 """Github 'required status checks' was disabled for a repo."""
-from helpers.base import ghe_json_message
 from stream_alert.rule_processor.rules_engine import StreamRules
 
 rule = StreamRules.rule

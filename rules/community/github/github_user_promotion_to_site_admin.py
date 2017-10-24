@@ -1,5 +1,4 @@
 """A Github Enterprise user account was promoted to a site admin."""
-from helpers.base import ghe_json_message
 from stream_alert.rule_processor.rules_engine import StreamRules
 
 rule = StreamRules.rule
