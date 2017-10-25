@@ -146,6 +146,13 @@ class TestAppIntegration(object):
         assert_false(self._app._initialize())
         log_mock.assert_called_with('App already running for service \'%s\'.', 'type')
 
+    @patch('logging.Logger.error')
+    def test_initialize_partial(self, log_mock):
+        """App Integration - Initialize, Partial Execution"""
+        self._app._config['current_state'] = 'partial'
+        assert_false(self._app._initialize())
+        log_mock.assert_called_with('App in partial execution state for service \'%s\'.', 'type')
+
     def test_finalize(self):
         """App Integration - Finalize, Valid"""
         test_new_time = 50000000
