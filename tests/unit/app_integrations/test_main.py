@@ -54,6 +54,19 @@ def test_handler_bad_type(config_mock, failure_mock):
     failure_mock.assert_called()
 
 
+@patch('app_integrations.config.AppConfig.mark_failure')
+@patch('app_integrations.config.AppConfig.load_config')
+@patch('app_integrations.apps.app_base.AppIntegration.gather')
+def test_handler_success(gather_mock, config_mock, failure_mock):
+    """App Integration - Test Handler, Success"""
+    base_config = get_valid_config_dict('duo_auth')
+    config_mock.return_value = AppConfig(base_config)
+    gather_mock.return_value = None
+    handler(None, get_mock_context())
+
+    failure_mock.assert_not_called()
+
+
 @patch('logging.Logger.error')
 def test_init_logging_bad(log_mock):
     """App Integration - Logging, Bad Level"""
