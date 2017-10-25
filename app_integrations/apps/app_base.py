@@ -224,9 +224,9 @@ class AppIntegration(object):
         # the config as 'partial'. Marking the state as 'partial' prevents
         # scheduled function invocations from running alongside chained invocations.
         if self._more_to_poll:
-            self._invoke_successive_gather()
-
             self._config.mark_partial()
+
+            self._invoke_successive_gather()
             return
 
         self._config.mark_success()
