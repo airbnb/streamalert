@@ -482,7 +482,7 @@ class SlackOutput(StreamOutputBase):
         # Call enrichments
         if kwargs['alert']['enrichments'] is not None:
             for enrichment in kwargs['alert']['enrichments']:
-                enrichment_function = self._StreamOutputBase__enrichments.get(enrichment)
+                enrichment_function = self.get_enrichments().get(enrichment)
                 if enrichment_function:
                     try:
                         enrichment_function(kwargs)

@@ -63,6 +63,10 @@ class StreamOutputBase(object):
         self.config = config
     
     @classmethod
+    def get_enrichments(cls):
+        return cls.__enrichments
+
+    @classmethod
     def enrichment(cls):
         """Registers an enrichment.
 
