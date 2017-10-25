@@ -11,8 +11,7 @@ def sample(kwargs):
     kwargs['alert']['header_text'] = "*{}*".format(kwargs['alert']['rule_name'])
 
     # Set the text before the record to a link to the rule's source code
-    pretext = "<https://github.com/airbnb/streamalert/tree/master/rules/community/cloudtrail/{}.py|rule source code>".format(kwargs['alert']['rule_name'])
-
+    kwargs['alert']['pretext'] = "<https://github.com/airbnb/streamalert/tree/master/rules/community/cloudtrail/{}.py|rule source code>".format(kwargs['alert']['rule_name'])
 
     # If the Slack channel for this alert is set to "prod", but this is not related to the prod account, ignore it.
     # This allows you to use `outputs=["slack:security", "slack:prod"]`, so that all messages will go to the 
