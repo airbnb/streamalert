@@ -10,9 +10,9 @@ However, the StreamAlert application itself, and its supporting services, must b
 
 Configuration
 -------------
-As outlined above, choose or create the AWS account you'll use to house the StreamAlert infrastructure.
+As outlined above, choose or create the AWS account you will use to house the StreamAlert infrastructure.
 
-If you're interested in demo'ing StreamAlert, you can create a hassle free-tier AWS account `here <https://aws.amazon.com/free/>`_.
+If you are interested in simply demo'ing StreamAlert, you can create a hassle free-tier AWS account `here <https://aws.amazon.com/free/>`_.
 
 account_id
 ~~~~~~~~~~
