@@ -116,6 +116,21 @@ This is achieved by looking for a particular field in the log. The code:
     def pci(record):
         return record['decorations']['envIdentifier'] == 'pci'
 
+enrichments
+~~~~~~~~~~~
+``enrichments`` is an optional field; It defines additional logic for the outputs.
+
+Enrichments are defined in ``enrichments/``.  These function have the decorator `@enrichment`.  
+They have access to the same `kwargs` variable as output `dispatch` calls.
+
+Enrichments currently only works for the Slack output.
+
+Enrichments can set the following:
+- `kwargs['alert']['header_text']`: This is normally set to `'*StreamAlert Rule Triggered: {}*'.format(rule_name)`
+- `kwargs['alert']['pretext']`: This is normally set to `Rule Description` followed by the docstring of the rule.
+
+Enrichments can also stop an alert from firing by raising `DropAlertException()`
+  
 
 outputs
 ~~~~~~~
