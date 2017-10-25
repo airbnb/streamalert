@@ -86,6 +86,7 @@ def get_alert(index=0):
             'md5': '0F9AA55DA3BDE84B35656AD8911A22E1'
         },
         'log_source': 'carbonblack:binarystore.file.added',
+        'enrichments': [],
         'rule_name': 'cb_binarystore_file_added',
         'outputs': [
             'slack:unit_test_channel'

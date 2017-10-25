@@ -365,7 +365,6 @@ class SlackOutput(StreamOutputBase):
             # Only print the rule description on the first attachment
             if index == 0:
                 if 'pretext' in alert:
-                rule_desc = '*Rule Description:*\n{}\n'.format(rule_desc)
                     rule_desc = alert['pretext']
                 else:
                     rule_desc = alert['rule_description']
@@ -481,19 +480,20 @@ class SlackOutput(StreamOutputBase):
             return self._log_status(False)
 
         # Call enrichments
-        for enrichment in kwargs['alert']['enrichments']:
-            enrichment_function = self._StreamOutputBase__enrichments.get(enrichment)
-            if enrichment_function:
-                try:
-                    enrichment_function(kwargs)
-                except DropAlertException:
-                    LOGGER.debug('Dropped alert due to enrichment %s', enrichment_function.__name__)
-                    return False
-                except Exception as err:  # pylint: disable=broad-except
-                    LOGGER.error('%s: %s', enrichment_function.__name__, err.message)
-                    return False
-            else:
-                LOGGER.error('The enrichment [%s] does not exist!', enrichment)
+        if kwargs['alert']['enrichments'] is not None:
+            for enrichment in kwargs['alert']['enrichments']:
+                enrichment_function = self._StreamOutputBase__enrichments.get(enrichment)
+                if enrichment_function:
+                    try:
+                        enrichment_function(kwargs)
+                    except DropAlertException:
+                        LOGGER.debug('Dropped alert due to enrichment %s', enrichment_function.__name__)
+                        return False
+                    except Exception as err:  # pylint: disable=broad-except
+                        LOGGER.error('%s: %s', enrichment_function.__name__, err.message)
+                        return False
+                else:
+                    LOGGER.error('The enrichment [%s] does not exist!', enrichment)
 
         slack_message = self._format_message(kwargs['rule_name'], kwargs['alert'])
 
