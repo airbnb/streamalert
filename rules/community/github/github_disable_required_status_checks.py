@@ -16,5 +16,5 @@ def github_disable_required_status_checks(rec):
     """
     return (
         rec['action'] == 'protected_branch.update_required_status_checks_enforcement_level' and
-        rec['data'].get('required_status_checks_enforcement_level') == '0'
+        rec['data'].get('required_status_checks_enforcement_level') == 0
     )
