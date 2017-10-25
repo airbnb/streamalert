@@ -38,8 +38,8 @@ def handler(event, context):
         # Run the gather operation
         app.gather()
     finally:
-        # If the config was loaded, save a bad state if the current state is not
-        # marked as a success (aka running)
+        # If the config was loaded, save a bad state if the current state is still
+        # marked as 'running' (aka not 'success' or 'partial' runs)
         if 'config' in locals():
-            if not config.is_success:
+            if config.is_running:
                 config.mark_failure()

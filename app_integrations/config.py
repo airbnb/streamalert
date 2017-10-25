@@ -43,6 +43,7 @@ class AppConfig(dict):
 
     class States(object):
         """States object to encapsulate various acceptable states"""
+        PARTIAL = 'partial'
         RUNNING = 'running'
         SUCCEEDED = 'succeeded'
         FAILED = 'failed'
@@ -392,6 +393,11 @@ class AppConfig(dict):
         return self.current_state == self.States.FAILED
 
     @property
+    def is_partial(self):
+        """Check if the current state is 'partial'"""
+        return self.current_state == self.States.PARTIAL
+
+    @property
     def is_running(self):
         """Check if the current state is 'running'"""
         return self.current_state == self.States.RUNNING
@@ -400,6 +406,11 @@ class AppConfig(dict):
     def is_success(self):
         """Check if the current state is 'succeeded'"""
         return self.current_state == self.States.SUCCEEDED
+
+    def mark_partial(self):
+        """Helper method to mark the state as 'partial'"""
+        LOGGER.debug('Marking current_state as: %s', self.States.PARTIAL)
+        self[self._STATE_KEY] = self.States.PARTIAL
 
     def mark_running(self):
         """Helper method to mark the state as 'running'"""

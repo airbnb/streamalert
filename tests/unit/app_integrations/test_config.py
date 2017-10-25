@@ -15,7 +15,7 @@ limitations under the License.
 """
 # pylint: disable=no-self-use,protected-access,attribute-defined-outside-init
 from mock import patch
-from nose.tools import assert_equal, assert_false, assert_items_equal, raises
+from nose.tools import assert_equal, assert_false, assert_items_equal, assert_true, raises
 
 from app_integrations.config import AppConfig
 from app_integrations.exceptions import AppIntegrationConfigError, AppIntegrationStateError
@@ -33,7 +33,8 @@ class TestAppIntegrationConfig(object):
         """Setup before each method"""
         self.ssm_patcher = patch.object(AppConfig, 'SSM_CLIENT', MockSSMClient())
         self.mock_ssm = self.ssm_patcher.start()
-        self._config = AppConfig.load_config(get_mock_context(), None)
+        self._config = AppConfig.load_config(get_mock_context(),
+                                             {'invocation_type': 'successive_invoke'})
 
     def teardown(self):
         """Teardown after each method"""
@@ -51,6 +52,14 @@ class TestAppIntegrationConfig(object):
     def test_load_config(self):
         """AppIntegrationConfig - Load config from SSM"""
         assert_equal(len(self._config.keys()), 12)
+
+    @patch('boto3.client')
+    def test_load_config_new_client(self, boto_mock):
+        """AppIntegrationConfig - Load config, new SSM client"""
+        boto_mock.return_value = MockSSMClient(app_type='onelogin_events')
+        with patch.object(AppConfig, 'SSM_CLIENT', None):
+            self._config = AppConfig.load_config(get_mock_context(), None)
+            boto_mock.assert_called_with('ssm', region_name='us-east-1')
 
     @raises(AppIntegrationConfigError)
     def test_load_config_bad(self):
@@ -135,6 +144,12 @@ class TestAppIntegrationConfig(object):
         self._config['current_state'] = bad_state
         log_mock.assert_called_with('Current state cannot be saved with value \'%s\'', bad_state)
 
+    def test_is_successive_invocation(self):
+        """AppIntegrationConfig - Is Successive Invocation"""
+        assert_true(self._config.is_successive_invocation)
+        self._config = AppConfig.load_config(get_mock_context(), None)
+        assert_false(self._config.is_successive_invocation)
+
     @raises(AppIntegrationStateError)
     def test_save_state_exception(self):
         """AppIntegrationConfig - Save State, Exception"""
@@ -149,6 +164,10 @@ class TestAppIntegrationConfig(object):
     def test_is_failing(self):
         """AppIntegrationConfig - Check If Failing"""
         assert_false(self._config.is_failing)
+
+    def test_is_success(self):
+        """AppIntegrationConfig - Check If Success"""
+        assert_false(self._config.is_success)
 
     def test_scrub_auth_info(self):
         """AppIntegrationConfig - Scrub Auth Info"""

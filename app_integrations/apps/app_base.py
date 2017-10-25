@@ -176,15 +176,20 @@ class AppIntegration(object):
     def _initialize(self):
         """Method for performing any startup steps, like setting state to running"""
         # Perform another safety check to make sure this is not being invoked already
-        # If this is an invocation spawned from a previous execution, allow it to continue
-        if not self._config.is_successive_invocation and self._config.is_running:
+        if self._config.is_running:
             LOGGER.error('App already running for service \'%s\'.', self.type())
+            return False
+
+        # Check if this is an invocation spawned from a previous partial execution
+        # Return if the config is marked as 'partial' but the invocation type is wrong
+        if not self._config.is_successive_invocation and self._config.is_partial:
+            LOGGER.error('App in partial execution state for service \'%s\'.', self.type())
             return False
 
         LOGGER.info('App starting for service \'%s\'.', self.type())
 
-        LOGGER.debug('App executing as a successive invocation: %s',
-                     self._config.is_successive_invocation)
+        LOGGER.info('App executing as a successive invocation: %s',
+                    self._config.is_successive_invocation)
 
         # Validate the auth in the config. This raises an exception upon failure
         self._validate_auth()
@@ -215,11 +220,13 @@ class AppIntegration(object):
 
         self._config.last_timestamp = self._last_timestamp
 
-        # If there are more logs to poll, invoke this app function again and do not
-        # mark the config as 'success' (keeping the state as 'running' prevents
-        # scheduled function invocations from running alongside this invocation).
+        # If there are more logs to poll, invoke this app function again and mark
+        # the config as 'partial'. Marking the state as 'partial' prevents
+        # scheduled function invocations from running alongside chained invocations.
         if self._more_to_poll:
             self._invoke_successive_gather()
+
+            self._config.mark_partial()
             return
 
         self._config.mark_success()
