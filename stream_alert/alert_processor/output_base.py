@@ -61,7 +61,7 @@ class StreamOutputBase(object):
         self.region = region
         self.secrets_bucket = self._get_secrets_bucket_name(function_name)
         self.config = config
-    
+
     @classmethod
     def get_enrichments(cls):
         return cls.__enrichments

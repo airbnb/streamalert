@@ -487,7 +487,7 @@ class SlackOutput(StreamOutputBase):
                     try:
                         enrichment_function(kwargs)
                     except DropAlertException:
-                        LOGGER.debug('Dropped alert due to enrichment %s', enrichment_function.__name__)
+                        LOGGER.debug('Dropped alert due to %s', enrichment_function.__name__)
                         return False
                     except Exception as err:  # pylint: disable=broad-except
                         LOGGER.error('%s: %s', enrichment_function.__name__, err.message)
