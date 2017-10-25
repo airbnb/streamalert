@@ -14,9 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from fnmatch import fnmatch
-import json
 import logging
-import re
 import time
 
 from netaddr import IPAddress, IPNetwork
@@ -164,30 +162,6 @@ def is_ioc(rec, lowercase_ioc=True):
         return True
 
     return False
-
-def ghe_json_message(rec):
-    """Given a GHE log, extract the JSON payload from the message field
-
-    Args:
-        rec [string]: The StreamPayload parsed record
-
-    Returns:
-        [dict]: Parsed JSON GHE message field
-        [NoneType]: If no valid JSON object is found in the message field
-    """
-    json_pattern = re.compile(r'(?P<json_message>\{.*\})')
-    match = re.search(json_pattern, rec['message'])
-
-    if not match:
-        return
-
-    json_message = match.group('json_message')
-    try:
-        message_rec = json.loads(json_message)
-    except ValueError:
-        return
-
-    return message_rec
 
 def select_key(data, search_key, results=None):
     """Recursively search for a given key and return all values

@@ -1,0 +1,51 @@
+{
+    "records": [
+        {
+            "data": {
+                "@timestamp": "2017-09-06T03:49:31.600Z",
+                "@version": 1,
+                "host": "192.168.1.1",
+                "logsource": "...",
+                "message": "<190>Sep 5 20:49:31 ... github_audit: {\"actor_ip\":\"...\",\"from\":\"...\",\"actor\":\"...\",\"actor_id\":123,\"created_at\":123,\"org\":\"foobar\",\"org_id\":123,\"action\":\"protected_branch.update_required_status_checks_enforcement_level\",\"data\":{\"required_status_checks_enforcement_level\":0,\"tenant_fail_safe\":false,\"dbconn\":\"github@foo/github_enterprise\",\"newsies_dbconn\":\"github@foo/github_enterprise\",\"method\":\"PUT\",\"request_id\":\"...\",\"server_id\":\"...\",\"url\":\"...\",\"actor_session\":123,\"areas_of_responsibility\":[\"orgs\",\"identity\"],\"actor_location\":{\"country_code\":\"US\",\"country_name\":\"United States\",\"region\":\"CA\",\"region_name\":\"California\",\"city\":\"San Francisco\",\"postal_code\":\"12345\",\"location\":{\"lat\":11.1111,\"lon\":-111.1111}},\"_document_id\":\"123\"}}",
+                "pid": 0,
+                "port": 123,
+                "program": "github_audit",
+                "received_at": "...",
+                "tags": [
+                  "..."
+                ],
+                "timestamp": "Sep 5 20:49:31"
+            },
+            "description": "Disabling 'required status checks' on Github should create an alert.",
+            "log": "ghe:general",
+            "source": "prefix_cluster1_stream_alert_kinesis",
+            "service": "kinesis",
+            "trigger_rules": [
+              "github_disable_required_status_checks"
+            ]
+        },
+        {
+            "data": {
+                "@timestamp": "2017-09-06T03:49:31.600Z",
+                "@version": 1,
+                "host": "192.168.1.1",
+                "logsource": "...",
+                "message": "<190>Sep 5 20:49:31 ... github_audit: {\"actor_ip\":\"...\",\"from\":\"...\",\"actor\":\"...\",\"actor_id\":123,\"created_at\":123,\"org\":\"foobar\",\"org_id\":123,\"action\":\"protected_branch.update_required_status_checks_enforcement_level\",\"data\":{\"required_status_checks_enforcement_level\":1,\"tenant_fail_safe\":false,\"dbconn\":\"github@foo/github_enterprise\",\"newsies_dbconn\":\"github@foo/github_enterprise\",\"method\":\"PUT\",\"request_id\":\"...\",\"server_id\":\"...\",\"url\":\"...\",\"actor_session\":123,\"areas_of_responsibility\":[\"orgs\",\"identity\"],\"actor_location\":{\"country_code\":\"US\",\"country_name\":\"United States\",\"region\":\"CA\",\"region_name\":\"California\",\"city\":\"San Francisco\",\"postal_code\":\"12345\",\"location\":{\"lat\":11.1111,\"lon\":-111.1111}},\"_document_id\":\"123\"}}",
+                "pid": 0,
+                "port": 123,
+                "program": "github_audit",
+                "received_at": "...",
+                "tags": [
+                  "..."
+                ],
+                "timestamp": "Sep 5 20:49:31"
+            },
+            "description": "Enabling 'required status checks' on Github should not create an alert.",
+            "log": "ghe:general",
+            "source": "prefix_cluster1_stream_alert_kinesis",
+            "service": "kinesis",
+            "trigger_rules": [
+            ]
+        }
+    ]
+}

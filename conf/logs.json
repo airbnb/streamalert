@@ -988,53 +988,103 @@
   },
   "ghe:general": {
     "schema": {
-      "@timestamp": "string",
-      "@version": "integer",
-      "host": "string",
-      "logsource": "string",
-      "message": "string",
-      "pid": "integer",
-      "port": "integer",
-      "program": "string",
-      "received_at": "string",
-      "timestamp": "string",
-      "tags": []
+      "actor_ip": "string",
+      "from": "string",
+      "actor": "string",
+      "actor_id": "integer",
+      "repo": "string",
+      "repo_id": "integer",
+      "org": "string",
+      "org_id": {},
+      "action": "string",
+      "created_at": "string",
+      "user": "string",
+      "user_id": "string",
+      "data": {}
     },
     "parser": "json",
     "configuration": {
-      "optional_top_level_keys": [
+      "json_regex_key": "message",
+      "envelope_keys": {
+        "@timestamp": "string",
+        "@version": "string",
+        "host": "string",
+        "logsource": "string",
+        "pid": "string",
+        "port": "string",
+        "program": "string",
+        "received_at": "string",
+        "timestamp": "string",
+        "tags": []
+      },
+      "optional_envelope_keys": [
         "logsource",
         "pid",
         "program",
         "timestamp"
+      ],
+      "optional_top_level_keys": [
+        "repo",
+        "repo_id",
+        "user",
+        "user_id",
+        "org"
       ]
     }
   },
-  "ghe:github_unicorn": {
+  "ghe:syslog": {
+    "parser": "json",
     "schema": {
       "@timestamp": "string",
       "@version": "string",
       "current_user": "string",
       "elapsed": "float",
+      "half_day": "string",
       "host": "string",
       "logsource": "string",
       "message": "string",
+      "pid": "string",
       "port": "integer",
       "program": "string",
       "received_at": "string",
       "remote_address": "string",
       "request_method": "string",
       "route": "string",
+      "syslog_facility": "string",
+      "syslog_facility_code": "string",
+      "syslog_hostname": "string",
+      "syslog_pri": "string",
+      "syslog_pid": "string",
+      "syslog_program": "string",
+      "syslog_severity": "string",
+      "syslog_severity_code": "string",
+      "tags": [],
       "timestamp": "string",
-      "tags": []
+      "action": "string",
+      "user": "string"
     },
-    "parser": "json",
     "configuration": {
       "optional_top_level_keys": [
+        "action",
         "current_user",
+        "elapsed",
+        "half_day",
+        "logsource",
+        "pid",
+        "program",
         "request_method",
         "remote_address",
-        "route"
+        "route",
+        "syslog_pri",
+        "syslog_severity_code",
+        "syslog_facility_code",
+        "syslog_severity",
+        "syslog_hostname",
+        "syslog_program",
+        "syslog_pid",
+        "syslog_facility",
+        "timestamp",
+        "user"
       ]
     }
   },

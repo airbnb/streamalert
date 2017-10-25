@@ -132,11 +132,16 @@
     "destinationAddress": [
       "remote_address"
     ],
+    "sourceAddress": [
+      "actor_ip"
+    ],
     "sourcePort": [
       "port"
     ],
     "userName": [
-      "current_user"
+      "actor",
+      "current_user",
+      "user"
     ]
   },
   "onelogin": {
