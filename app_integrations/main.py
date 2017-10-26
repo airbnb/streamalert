@@ -40,6 +40,5 @@ def handler(event, context):
     finally:
         # If the config was loaded, save a bad state if the current state is still
         # marked as 'running' (aka not 'success' or 'partial' runs)
-        if 'config' in locals():
-            if config.is_running:
-                config.mark_failure()
+        if 'config' in locals() and config.is_running:
+            config.mark_failure()
