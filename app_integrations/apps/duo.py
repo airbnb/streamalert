@@ -39,7 +39,7 @@ class DuoApp(AppIntegration):
         Raises:
             NotImplementedError: If the subclasses do not properly implement this method
         """
-        raise NotImplementedError
+        raise NotImplementedError('Subclasses should implement the _endpoint method')
 
     @classmethod
     def service(cls):
@@ -137,7 +137,8 @@ class DuoApp(AppIntegration):
         # Return the list of logs to the caller so they can be send to the batcher
         return logs
 
-    def required_auth_info(self):
+    @classmethod
+    def required_auth_info(cls):
         return {
             'api_hostname':
                 {

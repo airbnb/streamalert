@@ -206,8 +206,7 @@ class OneLoginApp(AppIntegration):
 
         # Fail if response is invalid
         if not response:
-            LOGGER.error('Response is invalid for service \'%s\'',
-                         self.type())
+            LOGGER.error('Response is invalid for service \'%s\'', self.type())
             return False
 
         # Set pagination link, if there is any
@@ -216,8 +215,7 @@ class OneLoginApp(AppIntegration):
 
         # Adjust the last seen event, if the events list is not empty
         if not response['data']:
-            LOGGER.error('Empty list of events for service \'%s\'',
-                         self.type())
+            LOGGER.info('Empty list of events for service \'%s\'', self.type())
             return False
 
         self._last_timestamp = response['data'][-1]['created_at']
@@ -225,7 +223,8 @@ class OneLoginApp(AppIntegration):
         # Return the list of events to the caller so they can be send to the batcher
         return response['data']
 
-    def required_auth_info(self):
+    @classmethod
+    def required_auth_info(cls):
         return {
             'region':
                 {

@@ -376,7 +376,7 @@ class CLIConfig(object):
                 a new app integration
         """
         exists, prompt_for_auth, overwrite = False, True, False
-        app = get_app(app_info)
+        app = get_app(app_info, False)
 
         # Check to see if there is an existing configuration for this app integration
         cluster_config = self.config['clusters'][app_info['cluster']]

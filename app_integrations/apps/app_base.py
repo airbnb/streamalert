@@ -117,8 +117,9 @@ class AppIntegration(object):
         """
         return '_'.join([cls.service(), cls._type()])
 
+    @classmethod
     @abstractmethod
-    def required_auth_info(self):
+    def required_auth_info(cls):
         """Get the expected info that this service's auth dictionary should contain.
 
         This should be implemented by subclasses and provide context as to what authentication
@@ -347,6 +348,7 @@ class AppIntegration(object):
             # Make sure there are logs, this can be False if there was an issue polling
             # of if there are no new logs to be polled
             if not logs:
+                self._more_to_poll = False
                 LOGGER.error('Gather process for service \'%s\' was not able to poll any logs '
                              'on poll #%d', self.type(), self._poll_count)
                 return
