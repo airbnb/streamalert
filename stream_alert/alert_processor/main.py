@@ -85,10 +85,12 @@ def run(alert, region, function_name, config):
     modules_to_import = set()
     # walk the enrichments directory to dymanically import
     for root, _, files in os.walk('enrichments'):
-        filtered_files = [enrichment_file for enrichment_file in files if not (
-        enrichment_file.startswith(('.', '__init__')) or
-        enrichment_file.endswith('.pyc'))]
-        
+        filtered_files = [
+            enrichment_file for enrichment_file in files
+            if not (enrichment_file.startswith(('.',
+                                                '__init__')) or enrichment_file.endswith('.pyc'))
+        ]
+
         package_path = root.replace('/', '.')
         for import_file in filtered_files:
             import_module = os.path.splitext(import_file)[0]
@@ -128,14 +130,13 @@ def run(alert, region, function_name, config):
 
         sent = False
         try:
-            sent = output_dispatcher.dispatch(descriptor=descriptor,
-                                              rule_name=alert['rule_name'],
-                                              alert=alert)
+            sent = output_dispatcher.dispatch(
+                descriptor=descriptor, rule_name=alert['rule_name'], alert=alert)
 
         except Exception as err:  # pylint: disable=broad-except
             LOGGER.exception('An error occurred while sending alert '
-                             'to %s:%s: %s. alert:\n%s', service, descriptor,
-                             err, json.dumps(alert, indent=2))
+                             'to %s:%s: %s. alert:\n%s', service, descriptor, err,
+                             json.dumps(alert, indent=2))
 
         # Yield back the result to the handler
         yield sent, output

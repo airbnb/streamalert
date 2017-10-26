@@ -20,39 +20,27 @@ import json
 import boto3
 from mock import call, patch
 from moto import mock_s3, mock_kms, mock_lambda
-from nose.tools import (
-    assert_equal,
-    assert_is_none,
-    assert_is_not_none,
-    assert_set_equal
-)
+from nose.tools import (assert_equal, assert_is_none, assert_is_not_none, assert_set_equal)
 
 from stream_alert.alert_processor import outputs
 from stream_alert.alert_processor.output_base import OutputProperty
 from stream_alert_cli.helpers import create_lambda_function, put_mock_creds
 from tests.unit.stream_alert_alert_processor import CONFIG, FUNCTION_NAME, KMS_ALIAS, REGION
-from tests.unit.stream_alert_alert_processor.helpers import (
-    get_random_alert,
-    get_alert,
-    remove_temp_secrets
-)
+from tests.unit.stream_alert_alert_processor.helpers import (get_random_alert, get_alert,
+                                                             remove_temp_secrets)
 
 
 def test_existing_get_output_dispatcher():
     """Get output dispatcher - existing"""
     service = 'aws-s3'
-    dispatcher = outputs.get_output_dispatcher(
-        service, REGION, FUNCTION_NAME, CONFIG)
+    dispatcher = outputs.get_output_dispatcher(service, REGION, FUNCTION_NAME, CONFIG)
     assert_is_not_none(dispatcher)
 
 
 def test_nonexistent_get_output_dispatcher():
     """Get output dispatcher - nonexistent"""
     nonexistent_service = 'aws-s4'
-    dispatcher = outputs.get_output_dispatcher(nonexistent_service,
-                                               REGION,
-                                               FUNCTION_NAME,
-                                               CONFIG)
+    dispatcher = outputs.get_output_dispatcher(nonexistent_service, REGION, FUNCTION_NAME, CONFIG)
     assert_is_none(dispatcher)
 
 
@@ -61,9 +49,7 @@ def test_get_output_dispatcher_logging(log_mock):
     """Get output dispatcher - log error"""
     bad_service = 'bad-output'
     outputs.get_output_dispatcher(bad_service, REGION, FUNCTION_NAME, CONFIG)
-    log_mock.assert_called_with(
-        'designated output service [%s] does not exist',
-        bad_service)
+    log_mock.assert_called_with('designated output service [%s] does not exist', bad_service)
 
 
 def test_user_defined_properties():
@@ -76,15 +62,14 @@ def test_user_defined_properties():
 
 class TestPagerDutyOutput(object):
     """Test class for PagerDutyOutput"""
+
     @classmethod
     def setup_class(cls):
         """Setup the class before any methods"""
         cls.__service = 'pagerduty'
         cls.__descriptor = 'unit_test_pagerduty'
         cls.__backup_method = None
-        cls.__dispatcher = outputs.get_output_dispatcher(cls.__service,
-                                                         REGION,
-                                                         FUNCTION_NAME,
+        cls.__dispatcher = outputs.get_output_dispatcher(cls.__service, REGION, FUNCTION_NAME,
                                                          CONFIG)
 
     @classmethod
@@ -109,8 +94,10 @@ class TestPagerDutyOutput(object):
 
         output_name = self.__dispatcher.output_cred_name(self.__descriptor)
 
-        creds = {'url': 'http://pagerduty.foo.bar/create_event.json',
-                 'service_key': 'mocked_service_key'}
+        creds = {
+            'url': 'http://pagerduty.foo.bar/create_event.json',
+            'service_key': 'mocked_service_key'
+        }
 
         put_mock_creds(output_name, creds, self.__dispatcher.secrets_bucket, REGION, KMS_ALIAS)
 
@@ -129,9 +116,7 @@ class TestPagerDutyOutput(object):
         alert = self._setup_dispatch()
         url_mock.return_value.getcode.return_value = 200
 
-        self.__dispatcher.dispatch(descriptor=self.__descriptor,
-                                   rule_name='rule_name',
-                                   alert=alert)
+        self.__dispatcher.dispatch(descriptor=self.__descriptor, rule_name='rule_name', alert=alert)
 
         self._teardown_dispatch()
 
@@ -148,9 +133,7 @@ class TestPagerDutyOutput(object):
         url_mock.return_value.read.return_value = bad_message
         url_mock.return_value.getcode.return_value = 400
 
-        self.__dispatcher.dispatch(descriptor=self.__descriptor,
-                                   rule_name='rule_name',
-                                   alert=alert)
+        self.__dispatcher.dispatch(descriptor=self.__descriptor, rule_name='rule_name', alert=alert)
 
         self._teardown_dispatch()
 
@@ -162,9 +145,7 @@ class TestPagerDutyOutput(object):
     def test_dispatch_bad_descriptor(self, log_error_mock):
         """PagerDutyOutput dispatch bad descriptor"""
         alert = self._setup_dispatch()
-        self.__dispatcher.dispatch(descriptor='bad_descriptor',
-                                   rule_name='rule_name',
-                                   alert=alert)
+        self.__dispatcher.dispatch(descriptor='bad_descriptor', rule_name='rule_name', alert=alert)
 
         self._teardown_dispatch()
 
@@ -175,14 +156,13 @@ class TestPagerDutyOutput(object):
 @mock_kms
 class TestPhantomOutput(object):
     """Test class for PhantomOutput"""
+
     @classmethod
     def setup_class(cls):
         """Setup the class before any methods"""
         cls.__service = 'phantom'
         cls.__descriptor = 'unit_test_phantom'
-        cls.__dispatcher = outputs.get_output_dispatcher(cls.__service,
-                                                         REGION,
-                                                         FUNCTION_NAME,
+        cls.__dispatcher = outputs.get_output_dispatcher(cls.__service, REGION, FUNCTION_NAME,
                                                          CONFIG)
 
     @classmethod
@@ -196,8 +176,7 @@ class TestPhantomOutput(object):
 
         output_name = self.__dispatcher.output_cred_name(self.__descriptor)
 
-        creds = {'url': url,
-                 'ph_auth_token': 'mocked_auth_token'}
+        creds = {'url': url, 'ph_auth_token': 'mocked_auth_token'}
 
         put_mock_creds(output_name, creds, self.__dispatcher.secrets_bucket, REGION, KMS_ALIAS)
 
@@ -211,9 +190,7 @@ class TestPhantomOutput(object):
         url_mock.return_value.getcode.return_value = 200
         url_mock.return_value.read.side_effect = ['{"count": 1, "data": [{"id": 1948}]}']
 
-        self.__dispatcher.dispatch(descriptor=self.__descriptor,
-                                   rule_name='rule_name',
-                                   alert=alert)
+        self.__dispatcher.dispatch(descriptor=self.__descriptor, rule_name='rule_name', alert=alert)
 
         log_mock.assert_called_with('Successfully sent alert to %s', self.__service)
 
@@ -225,9 +202,7 @@ class TestPhantomOutput(object):
         url_mock.return_value.getcode.return_value = 200
         url_mock.return_value.read.side_effect = ['{"count": 0, "data": []}', '{"id": 1948}']
 
-        self.__dispatcher.dispatch(descriptor=self.__descriptor,
-                                   rule_name='rule_name',
-                                   alert=alert)
+        self.__dispatcher.dispatch(descriptor=self.__descriptor, rule_name='rule_name', alert=alert)
 
         log_mock.assert_called_with('Successfully sent alert to %s', self.__service)
 
@@ -237,9 +212,7 @@ class TestPhantomOutput(object):
         """PhantomOutput dispatch failure (setup container)"""
         alert = self._setup_dispatch('phantom.foo.bar')
         url_mock.return_value.getcode.return_value = 400
-        self.__dispatcher.dispatch(descriptor=self.__descriptor,
-                                   rule_name='rule_name',
-                                   alert=alert)
+        self.__dispatcher.dispatch(descriptor=self.__descriptor, rule_name='rule_name', alert=alert)
 
         log_mock.assert_called_with('Failed to send alert to %s', self.__service)
 
@@ -251,14 +224,12 @@ class TestPhantomOutput(object):
         url_mock.return_value.getcode.return_value = 200
         url_mock.return_value.read.return_value = 'this\nis\nnot\njson'
 
-        self.__dispatcher.dispatch(descriptor=self.__descriptor,
-                                   rule_name='rule_name',
-                                   alert=alert)
+        self.__dispatcher.dispatch(descriptor=self.__descriptor, rule_name='rule_name', alert=alert)
 
         response = str(
             call('An error occurred while decoding '
-                 'Phantom container query response to JSON: %s', ValueError(
-                     'No JSON object could be decoded',)))
+                 'Phantom container query response to JSON: %s',
+                 ValueError('No JSON object could be decoded', )))
 
         assert_equal(str(log_mock.call_args_list[0]), response)
 
@@ -271,9 +242,7 @@ class TestPhantomOutput(object):
         # Use side_effect to change the getcode return value the second time
         # it is called. This allows testing issues down the chain somewhere
         url_mock.return_value.getcode.side_effect = [200, 400]
-        self.__dispatcher.dispatch(descriptor=self.__descriptor,
-                                   rule_name='rule_name',
-                                   alert=alert)
+        self.__dispatcher.dispatch(descriptor=self.__descriptor, rule_name='rule_name', alert=alert)
 
         log_mock.assert_called_with('Failed to send alert to %s', self.__service)
 
@@ -281,9 +250,7 @@ class TestPhantomOutput(object):
     def test_dispatch_bad_descriptor(self, log_error_mock):
         """PhantomOutput dispatch bad descriptor"""
         alert = self._setup_dispatch('phantom.foo.bar')
-        self.__dispatcher.dispatch(descriptor='bad_descriptor',
-                                   rule_name='rule_name',
-                                   alert=alert)
+        self.__dispatcher.dispatch(descriptor='bad_descriptor', rule_name='rule_name', alert=alert)
 
         log_error_mock.assert_called_with('Failed to send alert to %s', self.__service)
 
@@ -291,9 +258,7 @@ class TestPhantomOutput(object):
     def test_dispatch_container_query(self, request_mock):
         """PhantomOutput - Container Query URL"""
         alert = self._setup_dispatch('phantom.foo.bar')
-        self.__dispatcher.dispatch(descriptor=self.__descriptor,
-                                   rule_name='rule_name',
-                                   alert=alert)
+        self.__dispatcher.dispatch(descriptor=self.__descriptor, rule_name='rule_name', alert=alert)
 
         full_url = 'phantom.foo.bar/rest/container?_filter_name="rule_name"&page_size=1'
         headers = {'ph-auth-token': 'mocked_auth_token'}
@@ -302,14 +267,13 @@ class TestPhantomOutput(object):
 
 class TestSlackOutput(object):
     """Test class for PagerDutyOutput"""
+
     @classmethod
     def setup_class(cls):
         """Setup the class before any methods"""
         cls.__service = 'slack'
         cls.__descriptor = 'unit_test_channel'
-        cls.__dispatcher = outputs.get_output_dispatcher(cls.__service,
-                                                         REGION,
-                                                         FUNCTION_NAME,
+        cls.__dispatcher = outputs.get_output_dispatcher(cls.__service, REGION, FUNCTION_NAME,
                                                          CONFIG)
 
     @classmethod
@@ -325,9 +289,7 @@ class TestSlackOutput(object):
 
         # tests
         assert_set_equal(set(loaded_message.keys()), {'text', 'mrkdwn', 'attachments'})
-        assert_equal(
-            loaded_message['text'],
-            '*StreamAlert Rule Triggered: test_rule_single*')
+        assert_equal(loaded_message['text'], '*StreamAlert Rule Triggered: test_rule_single*')
         assert_equal(len(loaded_message['attachments']), 1)
 
     def test_format_message_mutliple(self):
@@ -338,12 +300,9 @@ class TestSlackOutput(object):
 
         # tests
         assert_set_equal(set(loaded_message.keys()), {'text', 'mrkdwn', 'attachments'})
-        assert_equal(
-            loaded_message['text'],
-            '*StreamAlert Rule Triggered: test_rule_multi-part*')
+        assert_equal(loaded_message['text'], '*StreamAlert Rule Triggered: test_rule_multi-part*')
         assert_equal(len(loaded_message['attachments']), 2)
-        assert_equal(loaded_message['attachments'][1]
-                     ['text'].split('\n')[3][1:7], '000028')
+        assert_equal(loaded_message['attachments'][1]['text'].split('\n')[3][1:7], '000028')
 
     def test_format_message_default_rule_description(self):
         """Format Message Default Rule Description - Slack"""
@@ -353,9 +312,7 @@ class TestSlackOutput(object):
 
         # tests
         default_rule_description = '*Rule Description:*\nNo rule description provided\n'
-        assert_equal(
-            loaded_message['attachments'][0]['pretext'],
-            default_rule_description)
+        assert_equal(loaded_message['attachments'][0]['pretext'], default_rule_description)
 
     def test_json_to_slack_mrkdwn_str(self):
         """JSON to Slack mrkdwn - simple str"""
@@ -367,8 +324,8 @@ class TestSlackOutput(object):
 
     def test_json_to_slack_mrkdwn_dict(self):
         """JSON to Slack mrkdwn - simple dict"""
-        simple_dict = OrderedDict([('test_key_01', 'test_value_01'),
-                                   ('test_key_02', 'test_value_02')])
+        simple_dict = OrderedDict([('test_key_01', 'test_value_01'), ('test_key_02',
+                                                                      'test_value_02')])
         result = self.__dispatcher._json_to_slack_mrkdwn(simple_dict, 0)
 
         assert_equal(len(result), 2)
@@ -376,17 +333,11 @@ class TestSlackOutput(object):
 
     def test_json_to_slack_mrkdwn_nested_dict(self):
         """JSON to Slack mrkdwn - nested dict"""
-        nested_dict = OrderedDict([
-            ('root_key_01', 'root_value_01'),
-            ('root_02', 'root_value_02'),
-            ('root_nested_01', OrderedDict([
-                ('nested_key_01', 100),
-                ('nested_key_02', 200),
-                ('nested_nested_01', OrderedDict([
-                    ('nested_nested_key_01', 300)
-                ]))
-            ]))
-        ])
+        nested_dict = OrderedDict([('root_key_01', 'root_value_01'), ('root_02', 'root_value_02'),
+                                   ('root_nested_01',
+                                    OrderedDict([('nested_key_01', 100), ('nested_key_02', 200),
+                                                 ('nested_nested_01',
+                                                  OrderedDict([('nested_nested_key_01', 300)]))]))])
         result = self.__dispatcher._json_to_slack_mrkdwn(nested_dict, 0)
         assert_equal(len(result), 7)
         assert_equal(result[2], '*root_nested_01:*')
@@ -404,21 +355,12 @@ class TestSlackOutput(object):
 
     def test_json_to_slack_mrkdwn_multi_nested(self):
         """JSON to Slack mrkdwn - multi type nested"""
-        nested_dict = OrderedDict([
-            ('root_key_01', 'root_value_01'),
-            ('root_02', 'root_value_02'),
-            ('root_nested_01', OrderedDict([
-                ('nested_key_01', 100),
-                ('nested_key_02', 200),
-                ('nested_nested_01', OrderedDict([
-                    ('nested_nested_key_01', [
-                        6161,
-                        1051,
-                        51919
-                    ])
-                ]))
-            ]))
-        ])
+        nested_dict = OrderedDict([('root_key_01', 'root_value_01'), ('root_02', 'root_value_02'),
+                                   ('root_nested_01',
+                                    OrderedDict([('nested_key_01', 100), ('nested_key_02', 200),
+                                                 ('nested_nested_01',
+                                                  OrderedDict([('nested_nested_key_01',
+                                                                [6161, 1051, 51919])]))]))])
         result = self.__dispatcher._json_to_slack_mrkdwn(nested_dict, 0)
         assert_equal(len(result), 10)
         assert_equal(result[2], '*root_nested_01:*')
@@ -436,13 +378,13 @@ class TestSlackOutput(object):
 
     def test_json_map_to_text(self):
         """JSON map to text"""
-        simple_dict = OrderedDict([('test_key_01', 'test_value_01'),
-                                   ('test_key_02', 'test_value_02')])
+        simple_dict = OrderedDict([('test_key_01', 'test_value_01'), ('test_key_02',
+                                                                      'test_value_02')])
         result = self.__dispatcher._json_map_to_text(simple_dict, '\t', 0)
 
         assert_equal(len(result), 2)
         assert_equal(result[1], '*test_key_02:* test_value_02')
-    
+
     def _setup_dispatch(self):
         """Helper for setting up SlackOutput dispatch"""
         remove_temp_secrets()
@@ -451,8 +393,7 @@ class TestSlackOutput(object):
 
         creds = {'url': 'https://api.slack.com/web-hook-key'}
 
-        put_mock_creds(output_name, creds, self.__dispatcher.secrets_bucket,
-                       REGION, KMS_ALIAS)
+        put_mock_creds(output_name, creds, self.__dispatcher.secrets_bucket, REGION, KMS_ALIAS)
 
         return get_alert()
 
@@ -465,9 +406,7 @@ class TestSlackOutput(object):
         alert = self._setup_dispatch()
         url_mock.return_value.getcode.return_value = 200
 
-        self.__dispatcher.dispatch(descriptor=self.__descriptor,
-                                   rule_name='rule_name',
-                                   alert=alert)
+        self.__dispatcher.dispatch(descriptor=self.__descriptor, rule_name='rule_name', alert=alert)
 
         log_info_mock.assert_called_with('Successfully sent alert to %s', self.__service)
 
@@ -482,9 +421,7 @@ class TestSlackOutput(object):
         url_mock.return_value.read.return_value = error_message
         url_mock.return_value.getcode.return_value = 400
 
-        self.__dispatcher.dispatch(descriptor=self.__descriptor,
-                                   rule_name='rule_name',
-                                   alert=alert)
+        self.__dispatcher.dispatch(descriptor=self.__descriptor, rule_name='rule_name', alert=alert)
 
         log_error_mock.assert_any_call('Encountered an error while sending to Slack: %s',
                                        error_message)
@@ -496,12 +433,10 @@ class TestSlackOutput(object):
     def test_dispatch_bad_descriptor(self, log_error_mock):
         """SlackOutput dispatch bad descriptor"""
         alert = self._setup_dispatch()
-        self.__dispatcher.dispatch(descriptor='bad_descriptor',
-                                   rule_name='rule_name',
-                                   alert=alert)
+        self.__dispatcher.dispatch(descriptor='bad_descriptor', rule_name='rule_name', alert=alert)
 
         log_error_mock.assert_called_with('Failed to send alert to %s', self.__service)
-    
+
     @patch('logging.Logger.info')
     @patch('urllib2.urlopen')
     @mock_s3
@@ -512,12 +447,10 @@ class TestSlackOutput(object):
         alert['enrichments'] = ['sample']
         url_mock.return_value.getcode.return_value = 200
 
-        self.__dispatcher.dispatch(descriptor=self.__descriptor,
-                                   rule_name='rule_name',
-                                   alert=alert)
+        self.__dispatcher.dispatch(descriptor=self.__descriptor, rule_name='rule_name', alert=alert)
 
         log_info_mock.assert_called_with('Successfully sent alert to %s', self.__service)
-    
+
     @patch('logging.Logger.error')
     @mock_s3
     @mock_kms
@@ -526,14 +459,14 @@ class TestSlackOutput(object):
         alert = self._setup_dispatch()
         alert['enrichments'] = ['sample']
 
-        self.__dispatcher.dispatch(descriptor='prod',
-                                   rule_name='rule_name',
-                                   alert=alert)
+        self.__dispatcher.dispatch(descriptor='prod', rule_name='rule_name', alert=alert)
 
         log_error_mock.assert_called_with('Failed to send alert to %s', self.__service)
 
+
 class TestAWSOutput(object):
     """Test class for AWSOutput Base"""
+
     @classmethod
     def setup_class(cls):
         """Setup the class before any methods"""
@@ -552,12 +485,9 @@ class TestAWSOutput(object):
     def test_aws_format_output_config(self):
         """AWSOutput format output config"""
         props = {
-            'descriptor': OutputProperty(
-                'short_descriptor',
-                'descriptor_value'),
-            'aws_value': OutputProperty(
-                'unique arn value, bucket, etc',
-                'bucket.value')}
+            'descriptor': OutputProperty('short_descriptor', 'descriptor_value'),
+            'aws_value': OutputProperty('unique arn value, bucket, etc', 'bucket.value')
+        }
 
         formatted_config = self.__dispatcher.format_output_config(CONFIG, props)
 
@@ -573,14 +503,13 @@ class TestAWSOutput(object):
 
 class TestS3Ouput(object):
     """Test class for S3Output"""
+
     @classmethod
     def setup_class(cls):
         """Setup the class before any methods"""
         cls.__service = 'aws-s3'
         cls.__descriptor = 'unit_test_bucket'
-        cls.__dispatcher = outputs.get_output_dispatcher(cls.__service,
-                                                         REGION,
-                                                         FUNCTION_NAME,
+        cls.__dispatcher = outputs.get_output_dispatcher(cls.__service, REGION, FUNCTION_NAME,
                                                          CONFIG)
 
     @classmethod
@@ -605,23 +534,20 @@ class TestS3Ouput(object):
     def test_dispatch(self, log_mock):
         """S3Output dispatch"""
         alert = self._setup_dispatch()
-        self.__dispatcher.dispatch(descriptor=self.__descriptor,
-                                   rule_name='rule_name',
-                                   alert=alert)
+        self.__dispatcher.dispatch(descriptor=self.__descriptor, rule_name='rule_name', alert=alert)
 
         log_mock.assert_called_with('Successfully sent alert to %s', self.__service)
 
 
 class TestLambdaOuput(object):
     """Test class for LambdaOutput"""
+
     @classmethod
     def setup_class(cls):
         """Setup the class before any methods"""
         cls.__service = 'aws-lambda'
         cls.__descriptor = 'unit_test_lambda'
-        cls.__dispatcher = outputs.get_output_dispatcher(cls.__service,
-                                                         REGION,
-                                                         FUNCTION_NAME,
+        cls.__dispatcher = outputs.get_output_dispatcher(cls.__service, REGION, FUNCTION_NAME,
                                                          CONFIG)
 
     @classmethod
@@ -645,9 +571,7 @@ class TestLambdaOuput(object):
     def test_dispatch(self, log_mock):
         """LambdaOutput dispatch"""
         alert = self._setup_dispatch()
-        self.__dispatcher.dispatch(descriptor=self.__descriptor,
-                                   rule_name='rule_name',
-                                   alert=alert)
+        self.__dispatcher.dispatch(descriptor=self.__descriptor, rule_name='rule_name', alert=alert)
 
         log_mock.assert_called_with('Successfully sent alert to %s', self.__service)
 
@@ -657,8 +581,6 @@ class TestLambdaOuput(object):
         """LambdaOutput dispatch with qualifier"""
         alt_descriptor = '{}_qual'.format(self.__descriptor)
         alert = self._setup_dispatch(alt_descriptor)
-        self.__dispatcher.dispatch(descriptor=alt_descriptor,
-                                   rule_name='rule_name',
-                                   alert=alert)
+        self.__dispatcher.dispatch(descriptor=alt_descriptor, rule_name='rule_name', alert=alert)
 
         log_mock.assert_called_with('Successfully sent alert to %s', self.__service)
