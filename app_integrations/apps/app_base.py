@@ -319,12 +319,12 @@ class AppIntegration(object):
             raise AppIntegrationConfigError('Config for service \'{}\' is empty', self.type())
 
         # The config validates that the 'auth' dict was loaded, but do a safety check here
-        if not 'auth' in self._config:
+        if not self._config.auth:
             raise AppIntegrationConfigError('Auth config for service \'{}\' is empty', self.type())
 
         # Get the required authentication keys from the info returned by the subclass
         required_keys = set(self.required_auth_info())
-        auth_key_diff = required_keys.difference(set(self._config['auth']))
+        auth_key_diff = required_keys.difference(set(self._config.auth))
         if not auth_key_diff:
             return
 

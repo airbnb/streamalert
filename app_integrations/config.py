@@ -362,6 +362,11 @@ class AppConfig(dict):
         LOGGER.info('Lambda remaining seconds: %.2f', self.remaining_ms() / 1000.0)
 
     @property
+    def auth(self):
+        """Get the auth sub dictionary from the config"""
+        return self.get(self.AUTH_CONFIG_SUFFIX)
+
+    @property
     def current_state(self):
         """Cache the current time to be written to the config"""
         LOGGER.debug('Getting current_state: %s', self.get(self._STATE_KEY))
