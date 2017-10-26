@@ -214,6 +214,7 @@ Examples:
     # add the optional ability to test against specific files
     schema_validation_parser.add_argument(
         '-f', '--test-files',
+        dest='files',
         nargs='+',
         help=ARGPARSE_SUPPRESS,
         action=UniqueSetAction,

@@ -1,0 +1,43 @@
+{
+  "records": [
+    {
+      "data": {
+        "kind": "audit#activity",
+        "id": {
+          "time": "2011-06-17T15:39:18.460Z",
+          "uniqueQualifier": "report's unique ID",
+          "applicationName": "admin",
+          "customerId": "C03az79cb"
+        },
+        "actor": {
+          "callerType": "USER",
+          "email": "liz@example.com",
+          "profileId": "user's unique G Suite profile ID",
+          "key": "consumer key of requestor in OAuth 2LO requests"
+        },
+        "ownerDomain": "example.com",
+        "ipAddress": "user's IP address",
+        "events": [
+          {
+            "type": "GROUP_SETTINGS",
+            "name": "CHANGE_GROUP_SETTING",
+            "parameters": [
+              {
+                "name": "SETTING_NAME",
+                "value": "WHO_CAN_JOIN",
+                "intValue": "integer value of parameter",
+                "boolValue": "boolean value of parameter"
+              }
+            ]
+          }
+        ]
+      },
+      "description": "G Suite Admin Report Log exmaple (validation only)",
+      "log": "gsuite:report",
+      "service": "stream_alert_app",
+      "source": "prefix_cluster_gsuite_admin_sm-app-name_app",
+      "trigger_rules": [],
+      "validate_schema_only": true
+    }
+  ]
+}

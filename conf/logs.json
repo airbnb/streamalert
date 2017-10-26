@@ -1088,6 +1088,17 @@
       ]
     }
   },
+  "gsuite:reports": {
+    "schema": {
+      "kind": "string",
+      "id": {},
+      "actor": {},
+      "ownerDomain": "string",
+      "ipAddress": "string",
+      "events": []
+    },
+    "parser": "json"
+  },
   "onelogin:events": {
     "schema": {
       "account_id": "integer",
