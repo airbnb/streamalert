@@ -86,8 +86,9 @@ def run(alert, region, function_name, config):
     # walk the enrichments directory to dymanically import
     for root, _, files in os.walk('enrichments'):
         filtered_files = [enrichment_file for enrichment_file in files if not (
-            enrichment_file.startswith(('.', '__init__')) or
-            enrichment_file.endswith('.pyc'))]
+        enrichment_file.startswith(('.', '__init__')) or
+        enrichment_file.endswith('.pyc'))]
+        
         package_path = root.replace('/', '.')
         for import_file in filtered_files:
             import_module = os.path.splitext(import_file)[0]
