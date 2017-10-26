@@ -442,7 +442,7 @@ class TestSlackOutput(object):
 
         assert_equal(len(result), 2)
         assert_equal(result[1], '*test_key_02:* test_value_02')
-
+    
     def _setup_dispatch(self):
         """Helper for setting up SlackOutput dispatch"""
         remove_temp_secrets()
@@ -501,7 +501,36 @@ class TestSlackOutput(object):
                                    alert=alert)
 
         log_error_mock.assert_called_with('Failed to send alert to %s', self.__service)
+    
+    @patch('logging.Logger.info')
+    @patch('urllib2.urlopen')
+    @mock_s3
+    @mock_kms
+    def test_enrichment(self, url_mock, log_info_mock):
+        """Enrichment sample"""
+        alert = self._setup_dispatch()
+        alert['enrichments'] = ['sample']
+        url_mock.return_value.getcode.return_value = 200
 
+        self.__dispatcher.dispatch(descriptor=self.__descriptor,
+                                   rule_name='rule_name',
+                                   alert=alert)
+
+        log_info_mock.assert_called_with('Successfully sent alert to %s', self.__service)
+    
+    @patch('logging.Logger.error')
+    @mock_s3
+    @mock_kms
+    def test_enrichment_drop_alert(self, log_error_mock):
+        """Enrichment drop alert"""
+        alert = self._setup_dispatch()
+        alert['enrichments'] = ['sample']
+
+        self.__dispatcher.dispatch(descriptor='prod',
+                                   rule_name='rule_name',
+                                   alert=alert)
+
+        log_error_mock.assert_called_with('Failed to send alert to %s', self.__service)
 
 class TestAWSOutput(object):
     """Test class for AWSOutput Base"""
