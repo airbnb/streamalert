@@ -1,17 +1,25 @@
 Metrics
 =======
 
-StreamAlert enables `Enhanced Monitoring`_ to surface infrastructure metrics at a granular level.
+StreamAlert allows to enable `Enhanced Monitoring`_ to surface infrastructure metrics at a granular level.
 
 .. _Enhanced Monitoring: https://docs.aws.amazon.com/kinesis/latest/APIReference/API_EnableEnhancedMonitoring.html
 
-Go to AWS Console -> CloudWatch -> Metrics -> Kinesis to view them.
+When enabled, access them by going to AWS Console -> CloudWatch -> Metrics -> Kinesis.
 
-Example metrics:
+Enhanced metrics can be enabled in ``conf/global.json`` as ``shard_level_metrics``, for example:
 
-* IncomingBytes
-* IncomingRecords
-* Error/Exceptions
+.. code-block:: bash
+
+  "shard_level_metrics": [
+    "IncomingBytes",
+    "IncomingRecords",
+    "OutgoingBytes",
+    "OutgoingRecords",
+    "WriteProvisionedThroughputExceeded",
+    "ReadProvisionedThroughputExceeded",
+    "IteratorAgeMilliseconds",
+  ]
 
 These metrics can be viewed at the shard-level or the stream-level (cluster/environment).
 
