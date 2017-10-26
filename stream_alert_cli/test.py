@@ -469,7 +469,7 @@ class RuleProcessorTester(object):
         source = test_event['source']
         service = test_event['service']
         log = test_event['log'].split(':')[0]
-        if not log in self.cli_config['sources'][service][source]:
+        if not log in self.cli_config['sources'][service][source]['logs']:
             message = ('The \'sources.json\' file does not include the log type \'{}\' '
                        'in the list of logs for this service & entity (\'{}:{}\').')
             message = '{} {}'.format(base_message, message.format(log, service, source))
@@ -569,6 +569,7 @@ class RuleProcessorTester(object):
                        '{}.'.format(base_message, missing_key_list))
 
             self.status_messages.append(StatusMessage(StatusMessage.FAILURE, message))
+            return
 
         unexpected_keys = test_record_keys.difference(schema_keys)
         if unexpected_keys:
