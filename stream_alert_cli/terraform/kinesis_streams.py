@@ -31,9 +31,7 @@ def generate_kinesis_streams(cluster_name, cluster_dict, config):
     config_modules = config['clusters'][cluster_name]['modules']
 
     shard_level_metrics = config['global']['infrastructure']['monitoring'].get(
-        'shard_level_metrics',
-        list()
-    )
+        'shard_level_metrics', [])
 
     cluster_dict['module']['kinesis_{}'.format(cluster_name)] = {
         'source': 'modules/tf_stream_alert_kinesis_streams',
