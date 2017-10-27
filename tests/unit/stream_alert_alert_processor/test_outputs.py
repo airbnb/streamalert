@@ -97,7 +97,7 @@ class TestPagerDutyOutput(object):
         props = self.__dispatcher._get_default_properties()
         assert_equal(len(props), 1)
         assert_equal(props['url'],
-                     'https://events.pagerduty.com/generic/2010-04-15/create_event.json')
+                     'https://events.pagerduty.com/v2/enqueue')
 
     def _setup_dispatch(self):
         """Helper for setting up PagerDutyOutput dispatch"""
@@ -110,7 +110,7 @@ class TestPagerDutyOutput(object):
         output_name = self.__dispatcher.output_cred_name(self.__descriptor)
 
         creds = {'url': 'http://pagerduty.foo.bar/create_event.json',
-                 'service_key': 'mocked_service_key'}
+                 'routing_key': 'mocked_routing_key'}
 
         put_mock_creds(output_name, creds, self.__dispatcher.secrets_bucket, REGION, KMS_ALIAS)
 

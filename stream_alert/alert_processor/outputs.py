@@ -49,30 +49,30 @@ def get_output_dispatcher(service, region, function_name, config):
 
 @output
 class PagerDutyOutput(StreamOutputBase):
-    """PagerDutyOutput handles all alert dispatching for PagerDuty"""
+    """PagerDutyOutput handles all alert dispatching for PagerDuty Events API v2"""
     __service__ = 'pagerduty'
 
     @classmethod
     def _get_default_properties(cls):
-        """Get the standard url used for PagerDuty. This value the same for everyone, so
-        is hard-coded here and does not need to be configured by the user
+        """Get the standard url used for PagerDuty Events API v2. This value the same for
+        everyone, so is hard-coded here and does not need to be configured by the user
 
         Returns:
             dict: Contains various default items for this output (ie: url)
         """
         return {
-            'url': 'https://events.pagerduty.com/generic/2010-04-15/create_event.json'
+            'url': 'https://events.pagerduty.com/v2/enqueue'
         }
 
     def get_user_defined_properties(self):
         """Get properties that must be asssigned by the user when configuring a new PagerDuty
-        output.  This should be sensitive or unique information for this use-case that needs
-        to come from the user.
+        event output. This should be sensitive or unique information for this use-case that
+        needs to come from the user.
 
         Every output should return a dict that contains a 'descriptor' with a description of the
         integration being configured.
 
-        PagerDuty also requires a service_key that represnts this integration. This
+        PagerDuty also requires a routing_key that represents this integration. This
         value should be masked during input and is a credential requirement.
 
         Returns:
@@ -82,8 +82,8 @@ class PagerDutyOutput(StreamOutputBase):
             ('descriptor',
              OutputProperty(description='a short and unique descriptor for this '
                                         'PagerDuty integration')),
-            ('service_key',
-             OutputProperty(description='the service key for this PagerDuty integration',
+            ('routing_key',
+             OutputProperty(description='the routing key for this PagerDuty integration',
                             mask_input=True,
                             cred_requirement=True))
         ])
@@ -101,17 +101,17 @@ class PagerDutyOutput(StreamOutputBase):
         if not creds:
             return self._log_status(False)
 
-        message = 'StreamAlert Rule Triggered - {}'.format(kwargs['rule_name'])
-        rule_desc = kwargs['alert']['rule_description']
-        details = {
-            'rule_description': rule_desc,
-            'record': kwargs['alert']['record']
+        summary = 'StreamAlert Rule Triggered - {}'.format(kwargs['rule_name'])
+        payload = {
+            'summary': summary,
+            'source': kwargs['alert']['rule_description'],
+            'severity': 'critical',
+            'custom_details': kwargs['alert']['record']
         }
         values_json = json.dumps({
-            'service_key': creds['service_key'],
-            'event_type': 'trigger',
-            'description': message,
-            'details': details,
+            'routing_key': creds['routing_key'],
+            'payload': payload,
+            'event_action': 'trigger',
             'client': 'StreamAlert'
         })
 
