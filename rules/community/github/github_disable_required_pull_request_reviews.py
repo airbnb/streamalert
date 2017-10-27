@@ -24,6 +24,6 @@ def github_disable_required_pull_request_reviews(rec):
     }
     return (
         rec['action'] == 'protected_branch.dismissal_restricted_users_teams' and
-        rec['data'].get('authorized_actors_only') == True and
+        rec['data'].get('authorized_actors_only') is True and
         not in_set(rec['actor'], actor_ignorelist)
     )
