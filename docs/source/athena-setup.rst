@@ -49,13 +49,30 @@ Next, create the ``streamalert`` database:
 
   $ python manage.py athena create-db
 
-Finally, create the ``alerts`` table for searching generated StreamAlerts:
+Create the ``alerts`` table for searching generated StreamAlerts:
 
 .. code-block:: bash
 
   $ python manage.py athena create-table --type alerts --bucket <s3.bucket.id.goes.here>
 
-Next Steps
-~~~~~~~~~~
+Create tables for data sent to StreamAlert:
 
-`Configure and deploy the Athena Partition Refresher Lambda function <athena-deploy.html>`_
+.. code-block:: bash
+
+  $ python manage.py athena create-table \ 
+    --type data \
+    --bucket <prefix>.streamalert.data \
+    --refresh_type add_hive_partition \
+    --table_name <log_name>
+
+Note: The log name above is representative of an enabled log source to your StreamAlert deployment.
+
+For example, if you have 'cloudwatch' in your sources, you would want to create tables for all possible subtypes.  This includes ``cloudwatch_events`` and ``cloudwatch_flow_logs``.  Also notice that ``:`` is substituted with ``_``; this is due to Hive limitations on table names.
+
+Repeat this process for all relevant data tables in your deployment.
+
+Next Steps
+----------
+
+* `Configure and deploy the Athena Partition Refresher Lambda function <athena-deploy.html>`_
+* `Configure and deploy Kinesis Firehose for delivery of data to S3 <firehose.html>`_

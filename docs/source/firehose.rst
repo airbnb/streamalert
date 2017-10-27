@@ -6,10 +6,10 @@ Overview
 
 * To enable historical search of all data classified by StreamAlert, Kinesis Firehose can be used.
 * This feature can be used for long-term data persistence and historical search (coming soon).
-* This works by delivering data to Amazon S3, which can be loaded and queried by AWS Athena.
+* This works by delivering data to AWS S3, which can be loaded and queried by AWS Athena.
 
-Infrastructure
---------------
+Configuration
+-------------
 
 When enabling the Kinesis Firehose module, a dedicated Delivery Stream is created per each log type.
 
@@ -112,3 +112,13 @@ Key                      Required  Default               Description
 ``buffer_interval``      ``No``    ``300 (seconds)``     The frequency of data delivery to Amazon S3
 ``compression_format``   ``No``    ``GZIP``              The compression algorithm to use on data stored in S3
 ======================   ========  ====================  ===========
+
+Deploying
+---------
+
+Once the options above are set, deploy the infrastructure with the following commands:
+
+.. code-block:: bash
+
+  $ python manage.py terraform build
+  $ python manage.py lambda deploy --processor rule
