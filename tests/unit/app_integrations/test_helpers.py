@@ -111,6 +111,24 @@ class MockSSMClient(object):
                 'client_secret': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
                 'client_id': 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
             }
+        elif app_type in {'gsuite', 'gsuite_admin', 'gsuite_drive',
+                          'gsuite_login', 'gsuite_token'}:
+            return {
+                'keyfile': {
+                    'type': 'service_account',
+                    'project_id': 'myapp-123456',
+                    'private_key_id': 'a5427e441234a5f416ab0a2e5d759752ef69fbf1',
+                    'private_key': ('-----BEGIN PRIVATE KEY-----\nVGhpcyBpcyBub3QgcmVhbA==\n'
+                                    '-----END PRIVATE KEY-----\n'),
+                    'client_email': 'a-test-200%40myapp-123456.iam.gserviceaccount.com',
+                    'client_id': '316364948779587921167',
+                    'auth_uri': 'https://accounts.google.com/o/oauth2/auth',
+                    'token_uri': 'https://accounts.google.com/o/oauth2/token',
+                    'auth_provider_x509_cert_url': 'https://www.googleapis.com/oauth2/v1/certs',
+                    'client_x509_cert_url': ('https://www.googleapis.com/robot/v1/metadata/x509/'
+                                             'a-test-200%40myapp-123456.iam.gserviceaccount.com')
+                }
+            }
 
         # Fill this out with future supported apps/services
         return {}
@@ -172,6 +190,9 @@ def get_formatted_timestamp(app_type):
         return 1505316432
     elif app_type in {'onelogin', 'onelogin_events'}:
         return '2017-10-10T22:03:57Z'
+    elif app_type in {'gsuite', 'gsuite_admin', 'gsuite_drive',
+                      'gsuite_login', 'gsuite_token'}:
+        return '2017-06-17T15:39:18.460Z'
 
 
 def get_valid_config_dict(app_type):

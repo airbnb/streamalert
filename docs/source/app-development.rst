@@ -109,9 +109,9 @@ to outline what methods from the base ``AppIntegration`` class must be implement
 
     def _get_oauth(self):
       """This should return the oauth token for this request"""
-      secret_key = self._config['auth']['secret_key']
-      client_id = self._config['auth']['client_id']
-      token = self._config['auth']['token']
+      secret_key = self._config.auth['secret_key']
+      client_id = self._config.auth['client_id']
+      token = self._config.auth['token']
 
       # Do something to generate oauth
       return generated_oauth

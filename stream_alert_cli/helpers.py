@@ -508,18 +508,30 @@ def user_input(requested_info, mask, input_restrictions):
 
         # Restrict having spaces or colons in items (applies to things like
         # descriptors, etc)
+        valid_response = False
         if isinstance(input_restrictions, re._pattern_type):
-            if not input_restrictions.match(response):
+            valid_response = input_restrictions.match(response)
+            if not valid_response:
                 LOGGER_CLI.error('The supplied input should match the following '
                                  'regular expression: %s', input_restrictions.pattern)
-                return user_input(requested_info, mask, input_restrictions)
+        elif callable(input_restrictions):
+            # Functions can be passed here to perform complex validation of input
+            # Transform the response with the validating function
+            response = input_restrictions(response)
+            valid_response = response is not None and response is not False
+            if not valid_response:
+                LOGGER_CLI.error('The supplied input failed to pass the validation '
+                                 'function: %s', input_restrictions.__doc__)
         else:
-            if any(x in input_restrictions for x in response):
-                LOGGER_CLI.error(
-                    'The supplied input should not contain any of the following: %s',
-                    '"{}"'.format(
-                        '", "'.join(input_restrictions)))
-                return user_input(requested_info, mask, input_restrictions)
+            valid_response = not any(x in input_restrictions for x in response)
+            if not valid_response:
+                restrictions = ', '.join('\'{}\''.format(restriction)
+                                         for restriction in input_restrictions)
+                LOGGER_CLI.error('The supplied input should not contain any of the following: %s',
+                                 restrictions)
+
+        if not valid_response:
+            return user_input(requested_info, mask, input_restrictions)
     else:
         while not response:
             response = getpass(prompt=prompt)

@@ -54,7 +54,7 @@ class OneLoginApp(AppIntegration):
         Returns:
             str: Full URL to generate tokens for the OneLogin API
         """
-        return self._ONELOGIN_TOKEN_URL.format(self._config['auth']['region'])
+        return self._ONELOGIN_TOKEN_URL.format(self._config.auth['region'])
 
     def _events_endpoint(self):
         """Get the endpoint URL to retrieve events
@@ -62,7 +62,7 @@ class OneLoginApp(AppIntegration):
         Returns:
             str: Full URL to retrieve events in the OneLogin API
         """
-        return self._ONELOGIN_EVENTS_URL.format(self._config['auth']['region'])
+        return self._ONELOGIN_EVENTS_URL.format(self._config.auth['region'])
 
     def _rate_limit_endpoint(self):
         """Get the endpoint URL to retrieve rate limit details
@@ -70,7 +70,7 @@ class OneLoginApp(AppIntegration):
         Returns:
             str: Full URL to retrieve rate limit details in the OneLogin API
         """
-        return self._ONELOGIN_RATE_LIMIT_URL.format(self._config['auth']['region'])
+        return self._ONELOGIN_RATE_LIMIT_URL.format(self._config.auth['region'])
 
     def _generate_headers(self):
         """Each request will request a new token to call the resources APIs.
@@ -85,7 +85,7 @@ class OneLoginApp(AppIntegration):
             return True
 
         authorization = 'client_id: {}, client_secret: {}'.format(
-            self._config['auth']['client_id'], self._config['auth']['client_secret'])
+            self._config.auth['client_id'], self._config.auth['client_secret'])
 
         headers_token = {'Authorization': authorization,
                          'Content-Type': 'application/json'}
@@ -206,8 +206,7 @@ class OneLoginApp(AppIntegration):
 
         # Fail if response is invalid
         if not response:
-            LOGGER.error('Response is invalid for service \'%s\'',
-                         self.type())
+            LOGGER.error('Response is invalid for service \'%s\'', self.type())
             return False
 
         # Set pagination link, if there is any
@@ -216,8 +215,7 @@ class OneLoginApp(AppIntegration):
 
         # Adjust the last seen event, if the events list is not empty
         if not response['data']:
-            LOGGER.error('Empty list of events for service \'%s\'',
-                         self.type())
+            LOGGER.info('Empty list of events for service \'%s\'', self.type())
             return False
 
         self._last_timestamp = response['data'][-1]['created_at']
@@ -225,7 +223,8 @@ class OneLoginApp(AppIntegration):
         # Return the list of events to the caller so they can be send to the batcher
         return response['data']
 
-    def required_auth_info(self):
+    @classmethod
+    def required_auth_info(cls):
         return {
             'region':
                 {

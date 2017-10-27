@@ -402,7 +402,7 @@ def _app_integration_handler(options):
         app_info['function_name'] = '_'.join([app_info.get(value)
                                               for value in func_parts] + ['app'])
 
-        app = get_app(app_info)
+        app = get_app(app_info, False)
 
         if not save_app_auth_info(app, app_info, True):
             return
