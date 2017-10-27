@@ -172,11 +172,11 @@ class TestAppIntegrationConfig(object):
     def test_scrub_auth_info(self):
         """AppIntegrationConfig - Scrub Auth Info"""
         auth_key = '{}_auth'.format(FUNCTION_NAME)
-        param_dict = {auth_key: self._config['auth']}
+        param_dict = {auth_key: self._config.auth}
         scrubbed_config = self._config._scrub_auth_info(param_dict, auth_key)
         assert_equal(scrubbed_config[auth_key]['api_hostname'],
-                     '*' * len(self._config['auth']['api_hostname']))
+                     '*' * len(self._config.auth['api_hostname']))
         assert_equal(scrubbed_config[auth_key]['integration_key'],
-                     '*' * len(self._config['auth']['integration_key']))
+                     '*' * len(self._config.auth['integration_key']))
         assert_equal(scrubbed_config[auth_key]['secret_key'],
-                     '*' * len(self._config['auth']['secret_key']))
+                     '*' * len(self._config.auth['secret_key']))
