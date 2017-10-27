@@ -4,15 +4,7 @@ resource "aws_kinesis_stream" "stream_alert_stream" {
   shard_count      = "${var.shards}"
   retention_period = "${var.retention}"
 
-  shard_level_metrics = [
-    "IncomingBytes",
-    "IncomingRecords",
-    "OutgoingBytes",
-    "OutgoingRecords",
-    "WriteProvisionedThroughputExceeded",
-    "ReadProvisionedThroughputExceeded",
-    "IteratorAgeMilliseconds",
-  ]
+  shard_level_metrics = "${var.shard_level_metrics}"
 
   tags {
     Name    = "StreamAlert"

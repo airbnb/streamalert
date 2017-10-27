@@ -21,3 +21,9 @@ variable "shards" {
 variable "retention" {
   default = 24
 }
+
+// Default values for shard_level_metrics
+variable "shard_level_metrics" {
+  type    = "list"
+  default = []
+}
