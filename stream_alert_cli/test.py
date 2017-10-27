@@ -21,6 +21,7 @@ import sys
 import time
 
 import boto3
+from botocore.exceptions import ClientError
 import jsonpath_rw
 from mock import Mock, patch
 
@@ -670,7 +671,12 @@ class AlertProcessorTester(object):
 
             if service == 'aws-s3':
                 bucket = self.outputs_config[service][descriptor]
-                boto3.client('s3', region_name='us-east-1').create_bucket(Bucket=bucket)
+                client = boto3.client('s3', region_name='us-east-1')
+                try:
+                    # Check if the bucket exists before creating it
+                    client.head_bucket(Bucket=bucket)
+                except ClientError:
+                    client.create_bucket(Bucket=bucket)
             elif service == 'aws-lambda':
                 lambda_function = self.outputs_config[service][descriptor]
                 parts = lambda_function.split(':')
