@@ -180,6 +180,15 @@ class GSuiteAdminReports(GSuiteReportsApp):
 
 
 @app
+class GSuiteCalendarReports(GSuiteReportsApp):
+    """G Suite Calendar Activity Report app integration"""
+
+    @classmethod
+    def _type(cls):
+        return 'calendar'
+
+
+@app
 class GSuiteDriveReports(GSuiteReportsApp):
     """G Suite Drive Activity Report app integration"""
 
@@ -189,12 +198,57 @@ class GSuiteDriveReports(GSuiteReportsApp):
 
 
 @app
+class GSuiteGroupsReports(GSuiteReportsApp):
+    """G Suite Groups Activity Report app integration"""
+
+    @classmethod
+    def _type(cls):
+        return 'groups'
+
+
+@app
+class GSuiteGPlusReports(GSuiteReportsApp):
+    """G Suite Google Plus Activity Report app integration"""
+
+    @classmethod
+    def _type(cls):
+        return 'gplus'
+
+
+@app
 class GSuiteLoginReports(GSuiteReportsApp):
     """G Suite Login Activity Report app integration"""
 
     @classmethod
     def _type(cls):
         return 'login'
+
+
+@app
+class GSuiteMobileReports(GSuiteReportsApp):
+    """G Suite Mobile Activity Report app integration"""
+
+    @classmethod
+    def _type(cls):
+        return 'mobile'
+
+
+@app
+class GSuiteRulesReports(GSuiteReportsApp):
+    """G Suite Rules Activity Report app integration"""
+
+    @classmethod
+    def _type(cls):
+        return 'rules'
+
+
+@app
+class GSuiteSAMLReports(GSuiteReportsApp):
+    """G Suite SAML Activity Report app integration"""
+
+    @classmethod
+    def _type(cls):
+        return 'saml'
 
 
 @app
