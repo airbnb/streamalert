@@ -32,7 +32,20 @@ Supported Services
 
   - Events Logs
 
-* *Soon to come:* `Box <https://github.com/airbnb/streamalert/issues/398>`_, `GSuite <https://github.com/airbnb/streamalert/issues/348>`_, and more
+* G Suite Reports (`Activities <https://developers.google.com/admin-sdk/reports/v1/reference/activities>`_)
+
+  - Admin
+  - Calendar
+  - Google Drive
+  - Groups
+  - Google Plus
+  - Logins
+  - Mobile Audit
+  - Rules
+  - SAML
+  - Authorization Tokens
+
+* *Soon to come:* `Box <https://github.com/airbnb/streamalert/issues/398>`_, and more
 
 
 Getting Started
