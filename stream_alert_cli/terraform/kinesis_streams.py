@@ -29,7 +29,12 @@ def generate_kinesis_streams(cluster_name, cluster_dict, config):
     """
     prefix = config['global']['account']['prefix']
     config_modules = config['clusters'][cluster_name]['modules']
-    shard_level_metrics = config['global']['infrastructure']['monitoring']['shard_level_metrics']
+
+    infrastructure_config = config['global'].get('infrastructure')
+    shard_level_metrics = []
+    if infrastructure_config and 'monitoring' in infrastructure_config:
+        if 'shard_level_metrics' in infrastructure_config['monitoring']:
+            shard_level_metrics = infrastructure_config['monitoring']['shard_level_metrics']
 
     cluster_dict['module']['kinesis_{}'.format(cluster_name)] = {
         'source': 'modules/tf_stream_alert_kinesis_streams',

@@ -18,7 +18,7 @@ Enhanced metrics can be enabled in ``conf/global.json`` as ``shard_level_metrics
     "OutgoingRecords",
     "WriteProvisionedThroughputExceeded",
     "ReadProvisionedThroughputExceeded",
-    "IteratorAgeMilliseconds",
+    "IteratorAgeMilliseconds"
   ]
 
 These metrics can be viewed at the shard-level or the stream-level (cluster/environment).
