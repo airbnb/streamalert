@@ -1,0 +1,48 @@
+{
+  "records": [
+    {
+      "data": {
+        "message": "<190>May 22 12:05:54 foobar github_audit: {\"actor_ip\":\"1.1.1.1\",\"from\":\"...\",\"actor\":\"bob\",\"actor_id\":123,\"created_at\":1495479954312,\"org_id\":[1,2013],\"user\":\"sally\",\"user_id\":1234,\"action\":\"protected_branch.dismiss_stale_reviews\",\"data\":{\"tenant_fail_safe\":false,\"dbconn\":\"foo@bar/github_enterprise\",\"newsies_dbconn\":\"foo@bar/github_enterprise\",\"method\":\"POST\",\"request_id\":\"00000000-0000-0000-0000-000000000000\",\"server_id\":\"00000000-0000-0000-0000-000000000000\",\"url\":\"...\",\"actor_session\":123,\"areas_of_responsibility\":[\"foo\",\"bar\",\"baz\"],\"actor_location\":{\"country_code\":\"US\",\"country_name\":\"United States\",\"location\":{\"lat\":123.0,\"lon\":-123.0}},\"reason\":\"testing\",\"_document_id\":\"0000000000000000000000\"}}",
+        "@version": "1",
+        "@timestamp": "...",
+        "host": "10.1.1.1",
+        "port": 123,
+        "tags": [
+        ],
+        "received_at": "...",
+        "timestamp": "...",
+        "logsource": "...",
+        "program": "github_audit"
+      },
+      "description": "Disabling 'Dismiss stale pull request approvals' should trigger an alert.",
+      "log": "ghe:general",
+      "source": "prefix_cluster1_stream_alert_kinesis",
+      "service": "kinesis",
+      "trigger_rules": [
+        "github_disable_dismiss_stale_pull_request_approvals"
+      ]
+    },
+    {
+      "data": {
+        "message": "<190>May 22 12:05:54 foobar github_audit: {\"actor_ip\":\"1.1.1.1\",\"from\":\"...\",\"actor\":\"bob\",\"actor_id\":123,\"created_at\":1495479954312,\"org_id\":[1,2013],\"user\":\"sally\",\"user_id\":1234,\"action\":\"something.different\",\"data\":{\"authorized_actors_only\":true,\"tenant_fail_safe\":false,\"dbconn\":\"foo@bar/github_enterprise\",\"newsies_dbconn\":\"foo@bar/github_enterprise\",\"method\":\"POST\",\"request_id\":\"00000000-0000-0000-0000-000000000000\",\"server_id\":\"00000000-0000-0000-0000-000000000000\",\"url\":\"...\",\"actor_session\":123,\"areas_of_responsibility\":[\"foo\",\"bar\",\"baz\"],\"actor_location\":{\"country_code\":\"US\",\"country_name\":\"United States\",\"location\":{\"lat\":123.0,\"lon\":-123.0}},\"reason\":\"testing\",\"_document_id\":\"0000000000000000000000\"}}",
+        "@version": "1",
+        "@timestamp": "...",
+        "host": "10.1.1.1",
+        "port": 123,
+        "tags": [
+        ],
+        "received_at": "...",
+        "timestamp": "...",
+        "logsource": "...",
+        "program": "github_audit",
+        "pid": "1234"
+      },
+      "description": "An unrelated Github log should not trigger an alert.",
+      "log": "ghe:general",
+      "source": "prefix_cluster1_stream_alert_kinesis",
+      "service": "kinesis",
+      "trigger_rules": [
+      ]
+    }
+  ]
+}

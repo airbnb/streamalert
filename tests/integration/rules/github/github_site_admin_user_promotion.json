@@ -14,11 +14,13 @@
         "logsource": "...",
         "program": "github_audit"
       },
-      "description": "A GHE user promoted to site admin should trigger an alert",
+      "description": "A Github user promoted to site admin should trigger an alert.",
       "log": "ghe:general",
       "source": "prefix_cluster1_stream_alert_kinesis",
       "service": "kinesis",
-      "trigger_rules": ["github_user_promotion_to_site_admin"]
+      "trigger_rules": [
+        "github_site_admin_user_promotion"
+      ]
     },
     {
       "data": {
@@ -35,7 +37,7 @@
         "program": "github_audit",
         "pid": "1234"
       },
-      "description": "An unrelated GHE log should not trigger an alert",
+      "description": "An unrelated Github log should not trigger an alert.",
       "log": "ghe:general",
       "source": "prefix_cluster1_stream_alert_kinesis",
       "service": "kinesis",

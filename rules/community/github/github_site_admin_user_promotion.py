@@ -7,7 +7,7 @@ rule = StreamRules.rule
       outputs=['aws-s3:sample-bucket',
                'pagerduty:sample-integration',
                'slack:sample-channel'])
-def github_user_promotion_to_site_admin(rec):
+def github_site_admin_user_promotion(rec):
     """
     author:       @fusionrace, @mimeframe
     description:  Alert when a Github Enterprise user account is promoted to a
