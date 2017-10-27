@@ -20,6 +20,7 @@ import time
 from netaddr import IPAddress, IPNetwork
 from netaddr.core import AddrFormatError
 
+from stream_alert.rule_processor.rules_engine import NORMALIZATION_KEY
 from stream_alert.rule_processor.threat_intel import StreamThreatIntel
 
 logging.basicConfig()
@@ -101,13 +102,13 @@ def fetch_values_by_datatype(rec, datatype):
         (list) The values of normalized types
     """
     results = []
-    if not rec.get('normalized_types'):
+    if not rec.get(NORMALIZATION_KEY):
         return results
 
-    if not datatype in rec['normalized_types']:
+    if not datatype in rec[NORMALIZATION_KEY]:
         return results
 
-    for original_keys in rec['normalized_types'][datatype]:
+    for original_keys in rec[NORMALIZATION_KEY][datatype]:
         result = rec
         if isinstance(original_keys, list):
             for original_key in original_keys:
@@ -134,10 +135,10 @@ def is_ioc(rec, lowercase_ioc=True):
     intel = StreamThreatIntel.get_intelligence()
     datatypes_ioc_mapping = StreamThreatIntel.get_config()
 
-    if not (datatypes_ioc_mapping and rec.get('normalized_types')):
+    if not (datatypes_ioc_mapping and rec.get(NORMALIZATION_KEY)):
         return False
 
-    for datatype in rec['normalized_types']:
+    for datatype in rec[NORMALIZATION_KEY]:
         if datatype not in datatypes_ioc_mapping:
             continue
         results = fetch_values_by_datatype(rec, datatype)

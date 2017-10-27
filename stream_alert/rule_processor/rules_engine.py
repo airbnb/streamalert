@@ -29,6 +29,8 @@ RuleAttributes = namedtuple('Rule', ['rule_name',
                                      'outputs',
                                      'req_subkeys'])
 
+NORMALIZATION_KEY = 'streamalert:normalization'
+
 
 class StreamRules(object):
     """Container class for StreamAlert Rules
@@ -202,7 +204,7 @@ class StreamRules(object):
         """
         results = dict()
         for key, val in record.iteritems():
-            if key == 'normalized_types':
+            if key == NORMALIZATION_KEY:
                 continue
             if isinstance(val, dict):
                 nested_results = cls.match_types_helper(val, normalized_types, datatypes)
@@ -369,7 +371,7 @@ class StreamRules(object):
 
                 if types_result:
                     record_copy = record.copy()
-                    record_copy['normalized_types'] = types_result
+                    record_copy[NORMALIZATION_KEY] = types_result
                 else:
                     record_copy = record
                 # rule analysis

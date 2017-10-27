@@ -111,7 +111,7 @@ def test_fetch_values_by_datatype():
         'detail-type': '...',
         'source': '1.1.1.2',
         'version': '1.05',
-        'normalized_types': {
+        'streamalert:normalization': {
             'ipv4': [['detail', 'sourceIPAddress'], ['source']],
             'username': [['detail', 'userIdentity', 'userName']]
         },
@@ -158,7 +158,7 @@ def test_detect_ioc_rule():
         'detail-type': '...',
         'source': '1.1.1.2',
         'version': '1.05',
-        'normalized_types': {
+        'streamalert:normalization': {
             'sourceAddress': [['detail', 'sourceIPAddress'], ['source']],
             'username': [['detail', 'userIdentity', 'userName']]
         },
@@ -192,7 +192,7 @@ def test_is_ioc_with_no_matching():
         'detail-type': '...',
         'source': '1.1.1.2',
         'version': '1.05',
-        'normalized_types': {
+        'streamalert:normalization': {
             'sourceAddress': [['detail', 'sourceIPAddress'], ['source']],
             'username': [['detail', 'userIdentity', 'userName']]
         },
@@ -218,7 +218,7 @@ def test_is_ioc_with_lowercase_ioc_is_true():
         "local_ip": "127.0.0.1",
         "local_port": 54279,
         "md5": "EF69CD89AD7ADDB9A16BB6F26F1EFAF7",
-        'normalized_types': {
+        'streamalert:normalization': {
             'destinationDomain': [['domain']],
             'fileHash': [['md5']]
         }
@@ -250,7 +250,7 @@ def test_is_ioc_with_lowercase_ioc_is_false():
         "local_ip": "127.0.0.1",
         "local_port": 54279,
         "md5": "EF69CD89AD7ADDB9A16BB6F26F1EFAF7",
-        'normalized_types': {
+        'streamalert:normalization': {
             'destinationDomain': [['domain']],
             'fileHash': [['md5']]
         }
