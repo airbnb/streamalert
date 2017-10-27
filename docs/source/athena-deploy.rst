@@ -35,12 +35,12 @@ Internals
 
 Each time the Athena Partition Refresh Lambda function starts up, it does the following:
 
-* Polls the SQS Queue for the latest S3 event notifications (up to 50)
+* Polls the SQS Queue for the latest S3 event notifications (up to 100)
 * S3 event notifications contain context around any new object written to a data bucket (as configured below)
 * A set of unique S3 Bucket IDs is deduplicated from the notifications
 * Queries Athena to verify the ``streamalert`` database exists
-* Refreshes the Athena tables as configured below in the ``repair_type.repair_hive_table`` key
-* Deletes messages off the Queue once the Athena table(s) is successfully refreshed
+* Refreshes the Athena tables as configured below in the ``repair_type`` key
+* Deletes messages off the Queue once partitions are created
 
 Getting Started
 ---------------
@@ -48,7 +48,7 @@ Getting Started
 Configure Lambda Settings
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Open ``conf/lambda.json``, and fill in the following ``Required`` options:
+Open ``conf/lambda.json``, and fill in the following required options below:
 
 
 ===================================  ========  ====================   ===========
@@ -60,7 +60,7 @@ Key                                  Required  Default                Descriptio
 ``memory``                           ``No``    ``128``                The amount of memory (in MB) allocated to the Lambda function
 ``timeout``                          ``No``    ``60``                 The maximum duration of the Lambda function (in seconds)
 ``refresh_interval``                 ``No``    ``rate(10 minutes)``   The rate of which the Athena Lambda function is invoked in the form of a `CloudWatch schedule expression <http://amzn.to/2u5t0hS>`_.
-``refresh_type.add_hive_partition``  ``No``    ``{}``                 Not currently supported
+``refresh_type.add_hive_partition``  ``No``    ``{}``                 Add specific Hive partitions for new S3 objects.  This field is automatically populated when configuring your data tables.
 ``refresh_type.repair_hive_table``   ``Yes``   ``{}``                 Key value pairs of S3 buckets and associated Athena table names.  Currently only supports the default alerts bucket created with every cluster.
 ===================================  ========  ====================   ===========
 
@@ -99,3 +99,18 @@ After configuring the above settings, deploy the Lambda function:
 This will create all of the underlying infrastructure to automatically refresh Athena tables.
 
 Going forward, if the deploy flag ``--processor all`` is used, it will redeploy this function along with the ``rule_processor`` and ``alert_processor``.
+
+Monitoring
+~~~~~~~~~~
+
+Once deployed, it's recommended to monitor the following SQS metrics for ``streamalert_athena_data_bucket_notifications``:
+
+* ``NumberOfMessagesReceived``
+* ``NumberOfMessagesSent``
+* ``NumberOfMessagesDeleted``
+
+All three of these metrics should have very close values.
+
+If the ``NumberOfMessagesSent`` is much higher than the other two metrics, the ``refresh_interval`` should be increased in the configuration.
+
+For high throughput production environments, an internal of 1 to 2 minutes is recommended. 
