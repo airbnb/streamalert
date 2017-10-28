@@ -156,7 +156,7 @@ def test_detect_ioc_rule():
             'recipientAccountId': '12345'
         },
         'detail-type': '...',
-        'source': '1.1.1.2',
+        'source': '90.163.54.11',
         'version': '1.05',
         'streamalert:normalization': {
             'sourceAddress': [['detail', 'sourceIPAddress'], ['source']],
@@ -171,10 +171,9 @@ def test_detect_ioc_rule():
 
     ioc_result = base.is_ioc(rec)
     assert_equal(ioc_result, True)
-    expected_ioc_info = [{
-        'type': 'ip',
-        'value': '90.163.54.11'
-    }]
+    expected_ioc_info = {
+        'ip': ['90.163.54.11']
+    }
     assert_equal(rec[StreamThreatIntel.IOC_KEY], expected_ioc_info)
 
 @with_setup(setup=setup, teardown=teardown)
@@ -226,16 +225,10 @@ def test_is_ioc_with_lowercase_ioc_is_true():
 
     ioc_result = base.is_ioc(rec)
     assert_equal(ioc_result, True)
-    expected_ioc_info = [
-        {
-            'type': 'domain',
-            'value': 'test_evil.net'
-        },
-        {
-            'type': 'md5',
-            'value': 'ef69cd89ad7addb9a16bb6f26f1efaf7'
-        }
-    ]
+    expected_ioc_info = {
+        'domain': ['test_evil.net'],
+        'md5': ['ef69cd89ad7addb9a16bb6f26f1efaf7']
+    }
     assert_equal(rec[StreamThreatIntel.IOC_KEY], expected_ioc_info)
 
 @with_setup(setup=setup, teardown=teardown)
@@ -257,3 +250,48 @@ def test_is_ioc_with_lowercase_ioc_is_false():
     }
     ioc_result = base.is_ioc(rec, lowercase_ioc=False)
     assert_equal(ioc_result, False)
+
+@with_setup(setup=setup, teardown=teardown)
+def test_insert_ioc_info():
+    """Helpers - Insert IOC info to a record"""
+    # rec has no IOC info
+    rec = {
+        'key1': 'foo',
+        'key2': 'bar'
+    }
+
+    base.insert_ioc_info(rec, 'ip', '1.2.3.4')
+    expected_results = {
+        "ip": ['1.2.3.4']
+    }
+    assert_equal(rec['streamalert:ioc'], expected_results)
+
+    # rec has IOC info and new info is duplicated
+    rec_with_ioc_info = {
+        'key1': 'foo',
+        'key2': 'bar',
+        'streamalert:ioc': {
+            'ip': ['1.2.3.4']
+        }
+    }
+
+    base.insert_ioc_info(rec_with_ioc_info, 'ip', '1.2.3.4')
+    expected_results = {
+        "ip": ['1.2.3.4']
+    }
+    assert_equal(rec_with_ioc_info['streamalert:ioc'], expected_results)
+
+    # rec has IOC info
+    rec_with_ioc_info = {
+        'key1': 'foo',
+        'key2': 'bar',
+        'streamalert:ioc': {
+            'ip': ['4.3.2.1']
+        }
+    }
+
+    base.insert_ioc_info(rec_with_ioc_info, 'ip', '1.2.3.4')
+    expected_results = {
+        "ip": ['4.3.2.1', '1.2.3.4']
+    }
+    assert_equal(rec_with_ioc_info['streamalert:ioc'], expected_results)

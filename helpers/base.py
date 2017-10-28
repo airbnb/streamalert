@@ -147,22 +147,46 @@ def is_ioc(rec, lowercase_ioc=True):
                 result = result.lower() if lowercase_ioc else result.upper()
             if (intel.get(datatypes_ioc_mapping[datatype])
                     and result in intel[datatypes_ioc_mapping[datatype]]):
-                if StreamThreatIntel.IOC_KEY in rec:
-                    rec[StreamThreatIntel.IOC_KEY].append({
-                        'type': datatypes_ioc_mapping[datatype],
-                        'value': result
-                    })
-                else:
-                    rec.update({
-                        StreamThreatIntel.IOC_KEY: [{
-                            'type': datatypes_ioc_mapping[datatype],
-                            'value': result
-                        }]
-                    })
+                insert_ioc_info(rec, datatypes_ioc_mapping[datatype], result)
     if StreamThreatIntel.IOC_KEY in rec:
         return True
 
     return False
+
+def insert_ioc_info(rec, ioc_type, ioc_value):
+    """ Insert ioc info to a record and also remove duplicated IOC info.
+
+    Args:
+        rec (dict): The parsed payload of a log
+        ioc_type (str): IOC type, can be 'ip', 'domain' or 'md5'
+        ioc_value (str): Matched IOC value from the rec
+
+    Returns:
+        (None): rec will be modified with IOC info.
+        Example that a record will be inserted with new field "streamalert:ioc":
+            "streamalert:ioc": {
+                "ip": [
+                    "4.3.2.1",
+                    "1.2.3.4"
+                ],
+                "domain" : [
+                    "evil1.com",
+                    "evil2.com"
+                ]
+              }
+    """
+    if StreamThreatIntel.IOC_KEY in rec:
+        if (ioc_type in rec[StreamThreatIntel.IOC_KEY] and
+                not ioc_value in rec[StreamThreatIntel.IOC_KEY][ioc_type]):
+            rec[StreamThreatIntel.IOC_KEY][ioc_type].append(ioc_value)
+        else:
+            rec[StreamThreatIntel.IOC_KEY][ioc_type] = [ioc_value]
+    else:
+        rec.update({
+            StreamThreatIntel.IOC_KEY: {
+                ioc_type: [ioc_value]
+            }
+        })
 
 def select_key(data, search_key, results=None):
     """Recursively search for a given key and return all values
