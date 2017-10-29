@@ -136,7 +136,7 @@ def athena_handler(options):
             athena_schema = {}
             schema_type_mapping = {
                 'string': 'string',
-                'integer': 'int',
+                'integer': 'bigint',
                 'boolean': 'boolean',
                 'float': 'decimal',
                 dict: 'map<string, string>',

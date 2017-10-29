@@ -1038,7 +1038,7 @@
       "@timestamp": "string",
       "@version": "string",
       "current_user": "string",
-      "elapsed": "float",
+      "elapsed": "string",
       "half_day": "string",
       "host": "string",
       "logsource": "string",
