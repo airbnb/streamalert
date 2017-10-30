@@ -27,6 +27,7 @@ import zipfile
 import zlib
 
 import boto3
+from botocore.exceptions import ClientError
 from moto import mock_cloudwatch, mock_kms, mock_kinesis, mock_lambda, mock_s3
 
 from stream_alert_cli.logger import LOGGER_CLI
@@ -414,7 +415,12 @@ def put_mock_s3_object(bucket, key, data, region):
         region (str): the aws region to use for this boto3 client
     """
     s3_client = boto3.client('s3', region_name=region)
-    s3_client.create_bucket(Bucket=bucket)
+    try:
+        # Check if the bucket exists before creating it
+        s3_client.head_bucket(Bucket=bucket)
+    except ClientError:
+        s3_client.create_bucket(Bucket=bucket)
+
     s3_client.put_object(
         Body=data,
         Bucket=bucket,
