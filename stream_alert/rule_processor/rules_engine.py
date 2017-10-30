@@ -18,6 +18,7 @@ from copy import copy
 import json
 
 from stream_alert.rule_processor import LOGGER
+from stream_alert.shared import NORMALIZATION_KEY
 
 DEFAULT_RULE_DESCRIPTION = 'No rule description provided'
 
@@ -202,7 +203,7 @@ class StreamRules(object):
         """
         results = dict()
         for key, val in record.iteritems():
-            if key == 'normalized_types':
+            if key == NORMALIZATION_KEY:
                 continue
             if isinstance(val, dict):
                 nested_results = cls.match_types_helper(val, normalized_types, datatypes)
@@ -369,7 +370,7 @@ class StreamRules(object):
 
                 if types_result:
                     record_copy = record.copy()
-                    record_copy['normalized_types'] = types_result
+                    record_copy[NORMALIZATION_KEY] = types_result
                 else:
                     record_copy = record
                 # rule analysis

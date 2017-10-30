@@ -29,6 +29,8 @@ from nose.tools import (
 from stream_alert.rule_processor.config import load_config, load_env
 from stream_alert.rule_processor.parsers import get_parser
 from stream_alert.rule_processor.rules_engine import RuleAttributes, StreamRules
+from stream_alert.shared import NORMALIZATION_KEY
+
 from tests.unit.stream_alert_rule_processor.test_helpers import (
     get_mock_context,
     load_and_classify_payload,
@@ -186,8 +188,8 @@ class TestStreamRules(object):
         # doing this because after kinesis_data is read in, types are casted per
         # the schema
         for alert in alerts:
-            if 'normalized_types' in alert['record'].keys():
-                alert['record'].remove('normalized_types')
+            if NORMALIZATION_KEY in alert['record'].keys():
+                alert['record'].remove(NORMALIZATION_KEY)
             assert_items_equal(alert['record'].keys(), kinesis_data.keys())
             assert_items_equal(alert['outputs'], rule_outputs_map[alert['rule_name']])
 
@@ -805,7 +807,7 @@ class TestStreamRules(object):
 
         assert_equal(len(alerts), 3)
         for alert in alerts:
-            has_key_normalized_types = 'normalized_types' in alert['record']
+            has_key_normalized_types = NORMALIZATION_KEY in alert['record']
             if alert.get('rule_name') == 'test_02_rule_without_datatypes':
                 assert_equal(has_key_normalized_types, False)
             else:

@@ -19,6 +19,7 @@ import json
 from stream_alert.alert_processor import LOGGER
 from stream_alert.alert_processor.helpers import validate_alert
 from stream_alert.alert_processor.outputs import get_output_dispatcher
+from stream_alert.shared import NORMALIZATION_KEY
 
 
 def handler(event, context):
@@ -133,7 +134,7 @@ def _sort_dict(unordered_dict):
     """
     result = OrderedDict()
     for key, value in sorted(unordered_dict.items(), key=lambda t: t[0]):
-        if key == 'normalized_types':
+        if key == NORMALIZATION_KEY:
             continue
         if isinstance(value, dict):
             result[key] = _sort_dict(value)
