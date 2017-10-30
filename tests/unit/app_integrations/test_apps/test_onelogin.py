@@ -44,9 +44,9 @@ class TestOneLoginApp(object):
 
     def set_config_values(self, region, client_id, client_secret):
         """Helper function to setup the auth values"""
-        self._app._config['auth']['region'] = region
-        self._app._config['auth']['client_id'] = client_id
-        self._app._config['auth']['client_secret'] = client_secret
+        self._app._config.auth['region'] = region
+        self._app._config.auth['client_id'] = client_id
+        self._app._config.auth['client_secret'] = client_secret
 
     @patch('requests.post')
     def test_generate_headers_bad_response(self, requests_mock):

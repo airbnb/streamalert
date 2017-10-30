@@ -39,7 +39,7 @@ class DuoApp(AppIntegration):
         Raises:
             NotImplementedError: If the subclasses do not properly implement this method
         """
-        raise NotImplementedError
+        raise NotImplementedError('Subclasses should implement the _endpoint method')
 
     @classmethod
     def service(cls):
@@ -57,14 +57,14 @@ class DuoApp(AppIntegration):
                                  self._endpoint(), urllib.urlencode(params)])
 
         try:
-            signature = hmac.new(self._config['auth']['secret_key'],
+            signature = hmac.new(self._config.auth['secret_key'],
                                  auth_string, hashlib.sha1)
         except TypeError:
             LOGGER.exception('Could not generate hmac signature')
             return False
 
         # Format the basic auth with integration key and the hmac hex digest
-        basic_auth = ':'.join([self._config['auth']['integration_key'],
+        basic_auth = ':'.join([self._config.auth['integration_key'],
                                signature.hexdigest()])
 
         return {
@@ -75,7 +75,7 @@ class DuoApp(AppIntegration):
 
     def _gather_logs(self):
         """Gather the Duo log events."""
-        hostname = self._config['auth']['api_hostname']
+        hostname = self._config.auth['api_hostname']
         full_url = 'https://{hostname}{endpoint}'.format(
             hostname=hostname,
             endpoint=self._endpoint()
@@ -137,7 +137,8 @@ class DuoApp(AppIntegration):
         # Return the list of logs to the caller so they can be send to the batcher
         return logs
 
-    def required_auth_info(self):
+    @classmethod
+    def required_auth_info(cls):
         return {
             'api_hostname':
                 {

@@ -137,6 +137,19 @@ class TestAppIntegrationConfig(object):
             time_mock.return_value = 1234567890
             assert_equal(self._config._determine_last_time(), '2009-02-13T22:31:30Z')
 
+    @patch('time.mktime')
+    def test_determine_last_timestamp_gsuite(self, time_mock):
+        """AppIntegrationConfig - Determine Last Timestamp, GSuite"""
+        with patch.object(AppConfig, 'SSM_CLIENT', MockSSMClient(app_type='gsuite_admin')):
+            self._config = AppConfig.load_config(get_mock_context(), None)
+
+            # Reset the last timestamp to None
+            self._config.last_timestamp = None
+
+            # Use a mocked current time
+            time_mock.return_value = 1234567890
+            assert_equal(self._config._determine_last_time(), '2009-02-13T22:31:30Z')
+
     @patch('logging.Logger.error')
     def test_set_item(self, log_mock):
         """AppIntegrationConfig - Set Item, Bad Value"""
@@ -172,11 +185,11 @@ class TestAppIntegrationConfig(object):
     def test_scrub_auth_info(self):
         """AppIntegrationConfig - Scrub Auth Info"""
         auth_key = '{}_auth'.format(FUNCTION_NAME)
-        param_dict = {auth_key: self._config['auth']}
+        param_dict = {auth_key: self._config.auth}
         scrubbed_config = self._config._scrub_auth_info(param_dict, auth_key)
         assert_equal(scrubbed_config[auth_key]['api_hostname'],
-                     '*' * len(self._config['auth']['api_hostname']))
+                     '*' * len(self._config.auth['api_hostname']))
         assert_equal(scrubbed_config[auth_key]['integration_key'],
-                     '*' * len(self._config['auth']['integration_key']))
+                     '*' * len(self._config.auth['integration_key']))
         assert_equal(scrubbed_config[auth_key]['secret_key'],
-                     '*' * len(self._config['auth']['secret_key']))
+                     '*' * len(self._config.auth['secret_key']))

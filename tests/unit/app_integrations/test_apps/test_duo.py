@@ -46,7 +46,7 @@ class TestDuoApp(object):
     @patch('logging.Logger.exception')
     def test_generate_auth_hmac_failure(self, log_mock):
         """DuoApp - Generate Auth, hmac Failure"""
-        self._app._config['auth']['secret_key'] = {'bad_secret'}
+        self._app._config.auth['secret_key'] = {'bad_secret'}
         assert_false(self._app._generate_auth('hostname', {}))
         log_mock.assert_called_with('Could not generate hmac signature')
 
@@ -87,7 +87,7 @@ class TestDuoApp(object):
     @patch('requests.get')
     def test_get_duo_logs_bad_headers(self, requests_mock):
         """DuoApp - Get Duo Logs, Bad Headers"""
-        self._app._config['auth']['secret_key'] = {'bad_secret'}
+        self._app._config.auth['secret_key'] = {'bad_secret'}
         assert_false(self._app._get_duo_logs('hostname', 'full_url'))
         requests_mock.assert_not_called()
 

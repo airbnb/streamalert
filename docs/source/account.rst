@@ -86,12 +86,18 @@ Next, create the user:
 * Attach the previously created ``streamalert`` policy
 * Click: ``Next: Review``, and then ``Create user``
 
-Copy the Access Key ID and Secret Access Key and export them to your environment variables:
+Copy the Access Key ID and Secret Access Key and create an AWS profile:
 
 .. code-block:: bash
 
-  $ export AWS_ACCESS_KEY_ID="REPLACE_ME"
-  $ export AWS_SECRET_ACCESS_KEY="REPLACE_ME"
-  $ export AWS_DEFAULT_REGION="us-east-1"
+  $ aws configure --profile streamalert
+  AWS Access Key ID [None]: ACCESS KEY HERE
+  AWS Secret Access Key [None]: SECRET ACCESS KEY HERE
+  Default region name [None]: REGION GOES HERE
+  Default output format [None]: json
 
-.. note:: Remember to save your credentials in a safe place!
+Finally, export the following environment variables to activate the profile:
+
+.. code-block:: bash
+  
+  $ export AWS_PROFILE=streamalert
