@@ -177,7 +177,7 @@ def insert_ioc_info(rec, ioc_type, ioc_value):
     """
     if StreamThreatIntel.IOC_KEY in rec:
         if (ioc_type in rec[StreamThreatIntel.IOC_KEY] and
-                not ioc_value in rec[StreamThreatIntel.IOC_KEY][ioc_type]):
+                ioc_value not in rec[StreamThreatIntel.IOC_KEY][ioc_type]):
             rec[StreamThreatIntel.IOC_KEY][ioc_type].append(ioc_value)
         else:
             rec[StreamThreatIntel.IOC_KEY][ioc_type] = [ioc_value]
