@@ -28,7 +28,9 @@ from nose.tools import (
 
 from stream_alert.rule_processor.config import load_config, load_env
 from stream_alert.rule_processor.parsers import get_parser
-from stream_alert.rule_processor.rules_engine import RuleAttributes, StreamRules, NORMALIZATION_KEY
+from stream_alert.rule_processor.rules_engine import RuleAttributes, StreamRules
+from stream_alert.shared import NORMALIZATION_KEY
+
 from tests.unit.stream_alert_rule_processor.test_helpers import (
     get_mock_context,
     load_and_classify_payload,

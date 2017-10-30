@@ -18,6 +18,7 @@ from copy import copy
 import json
 
 from stream_alert.rule_processor import LOGGER
+from stream_alert.shared import NORMALIZATION_KEY
 
 DEFAULT_RULE_DESCRIPTION = 'No rule description provided'
 
@@ -28,8 +29,6 @@ RuleAttributes = namedtuple('Rule', ['rule_name',
                                      'logs',
                                      'outputs',
                                      'req_subkeys'])
-
-NORMALIZATION_KEY = 'streamalert:normalization'
 
 
 class StreamRules(object):

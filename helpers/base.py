@@ -20,7 +20,7 @@ import time
 from netaddr import IPAddress, IPNetwork
 from netaddr.core import AddrFormatError
 
-from stream_alert.rule_processor.rules_engine import NORMALIZATION_KEY
+from stream_alert.shared import NORMALIZATION_KEY
 from stream_alert.rule_processor.threat_intel import StreamThreatIntel
 
 logging.basicConfig()

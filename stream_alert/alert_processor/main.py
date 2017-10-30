@@ -19,7 +19,7 @@ import json
 from stream_alert.alert_processor import LOGGER
 from stream_alert.alert_processor.helpers import validate_alert
 from stream_alert.alert_processor.outputs import get_output_dispatcher
-from stream_alert.rule_processor.rules_engine import NORMALIZATION_KEY
+from stream_alert.shared import NORMALIZATION_KEY
 
 
 def handler(event, context):
