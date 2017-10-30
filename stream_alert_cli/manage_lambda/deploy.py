@@ -18,12 +18,8 @@ import sys
 from app_integrations import __version__ as apps_version
 from stream_alert import __version__ as current_version
 from stream_alert_cli import helpers
-from stream_alert_cli.package import (
-    AlertProcessorPackage,
-    AthenaPackage,
-    AppIntegrationPackage,
-    RuleProcessorPackage
-)
+from stream_alert_cli.manage_lambda.package import (AlertProcessorPackage, AthenaPackage,
+                                                    AppIntegrationPackage, RuleProcessorPackage)
 from stream_alert_cli.terraform.generate import terraform_generate
 from stream_alert_cli.version import LambdaVersion
 
@@ -59,47 +55,36 @@ def deploy(options, config):
 
     def _deploy_rule_processor():
         """Create Rule Processor package and publish versions"""
-        rule_package = RuleProcessorPackage(
-            config=config,
-            version=current_version
-        )
+        rule_package = RuleProcessorPackage(config=config, version=current_version)
         rule_package.create_and_upload()
         return rule_package
 
     def _deploy_alert_processor():
         """Create Alert Processor package and publish versions"""
-        alert_package = AlertProcessorPackage(
-            config=config,
-            version=current_version
-        )
+        alert_package = AlertProcessorPackage(config=config, version=current_version)
         alert_package.create_and_upload()
         return alert_package
 
     def _deploy_athena_partition_refresh():
         """Create Athena Partition Refresh package and publish"""
-        athena_package = AthenaPackage(
-            config=config,
-            version=current_version
-        )
+        athena_package = AthenaPackage(config=config, version=current_version)
         athena_package.create_and_upload()
         return athena_package
 
     def _deploy_apps_function():
         """Create app integration package and publish versions"""
-        app_integration_package = AppIntegrationPackage(
-            config=config,
-            version=apps_version
-        )
+        app_integration_package = AppIntegrationPackage(config=config, version=apps_version)
         app_integration_package.create_and_upload()
         return app_integration_package
 
     if 'all' in processor:
-        targets.update({'module.stream_alert_{}'.format(x)
-                        for x in config.clusters()})
+        targets.update({'module.stream_alert_{}'.format(x) for x in config.clusters()})
 
-        targets.update({'module.app_{}_{}'.format(app_name, cluster)
-                        for cluster, info in config['clusters'].iteritems()
-                        for app_name in info['modules'].get('stream_alert_apps', {})})
+        targets.update({
+            'module.app_{}_{}'.format(app_name, cluster)
+            for cluster, info in config['clusters'].iteritems()
+            for app_name in info['modules'].get('stream_alert_apps', {})
+        })
 
         packages.append(_deploy_rule_processor())
         packages.append(_deploy_alert_processor())
@@ -114,22 +99,22 @@ def deploy(options, config):
     else:
 
         if 'rule' in processor:
-            targets.update({'module.stream_alert_{}'.format(x)
-                            for x in config.clusters()})
+            targets.update({'module.stream_alert_{}'.format(x) for x in config.clusters()})
 
             packages.append(_deploy_rule_processor())
 
         if 'alert' in processor:
-            targets.update({'module.stream_alert_{}'.format(x)
-                            for x in config.clusters()})
+            targets.update({'module.stream_alert_{}'.format(x) for x in config.clusters()})
 
             packages.append(_deploy_alert_processor())
 
         if 'apps' in processor:
 
-            targets.update({'module.app_{}_{}'.format(app_name, cluster)
-                            for cluster, info in config['clusters'].iteritems()
-                            for app_name in info['modules'].get('stream_alert_apps', {})})
+            targets.update({
+                'module.app_{}_{}'.format(app_name, cluster)
+                for cluster, info in config['clusters'].iteritems()
+                for app_name in info['modules'].get('stream_alert_apps', {})
+            })
 
             packages.append(_deploy_apps_function())
 

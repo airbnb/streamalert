@@ -29,8 +29,10 @@ def rollback(options, config):
     if 'all' in options.processor:
         lambda_functions = {'rule_processor', 'alert_processor', 'athena_partition_refresh'}
     else:
-        lambda_functions = {'{}_processor'.format(proc) for proc in options.processor
-                            if proc != 'athena'}
+        lambda_functions = {
+            '{}_processor'.format(proc)
+            for proc in options.processor if proc != 'athena'
+        }
         if 'athena' in options.processor:
             lambda_functions.add('athena_partition_refresh')
 
@@ -46,8 +48,7 @@ def rollback(options, config):
                         'current_version'] = new_vers
                     config.write()
 
-    targets = ['module.stream_alert_{}'.format(x)
-               for x in config.clusters()]
+    targets = ['module.stream_alert_{}'.format(x) for x in config.clusters()]
 
     if not terraform_generate(config=config):
         return
