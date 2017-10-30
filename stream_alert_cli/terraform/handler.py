@@ -110,6 +110,9 @@ def terraform_handler(options, config):
         terraform_clean(config)
 
     elif options.subcommand == 'destroy':
+        if not continue_prompt(message='Are you sure you want to destroy?'):
+            sys.exit(1)
+
         if options.target:
             targets = []
             # Iterate over any targets to destroy. Global modules, like athena
