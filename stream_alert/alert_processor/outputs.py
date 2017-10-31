@@ -177,11 +177,16 @@ class PagerDutyOutputV2(StreamOutputBase):
             return self._log_status(False)
 
         summary = 'StreamAlert Rule Triggered - {}'.format(kwargs['rule_name'])
+
+        details = {
+            'rule_description': kwargs['alert']['rule_description'],
+            'record': kwargs['alert']['record']
+        }
         payload = {
             'summary': summary,
-            'source': kwargs['alert']['rule_description'],
+            'source': kwargs['alert']['log_source'],
             'severity': 'critical',
-            'custom_details': kwargs['alert']['record']
+            'custom_details': details
         }
         values_json = json.dumps({
             'routing_key': creds['routing_key'],
