@@ -73,7 +73,6 @@ def test_user_defined_properties():
         # The user defined properties should at a minimum contain a descriptor
         assert_is_not_none(props.get('descriptor'))
 
-
 class TestPagerDutyOutput(object):
     """Test class for PagerDutyOutput"""
     @classmethod
@@ -81,6 +80,102 @@ class TestPagerDutyOutput(object):
         """Setup the class before any methods"""
         cls.__service = 'pagerduty'
         cls.__descriptor = 'unit_test_pagerduty'
+        cls.__backup_method = None
+        cls.__dispatcher = outputs.get_output_dispatcher(cls.__service,
+                                                         REGION,
+                                                         FUNCTION_NAME,
+                                                         CONFIG)
+
+    @classmethod
+    def teardown_class(cls):
+        """Teardown the class after all methods"""
+        cls.__dispatcher = None
+
+    def test_get_default_properties(self):
+        """Get Default Properties - PagerDuty"""
+        props = self.__dispatcher._get_default_properties()
+        assert_equal(len(props), 1)
+        assert_equal(props['url'],
+                     'https://events.pagerduty.com/generic/2010-04-15/create_event.json')
+
+    def _setup_dispatch(self):
+        """Helper for setting up PagerDutyOutput dispatch"""
+        remove_temp_secrets()
+
+        # Cache the _get_default_properties and set it to return None
+        self.__backup_method = self.__dispatcher._get_default_properties
+        self.__dispatcher._get_default_properties = lambda: None
+
+        output_name = self.__dispatcher.output_cred_name(self.__descriptor)
+
+        creds = {'url': 'http://pagerduty.foo.bar/create_event.json',
+                 'service_key': 'mocked_service_key'}
+
+        put_mock_creds(output_name, creds, self.__dispatcher.secrets_bucket, REGION, KMS_ALIAS)
+
+        return get_alert()
+
+    def _teardown_dispatch(self):
+        """Replace method with cached method"""
+        self.__dispatcher._get_default_properties = self.__backup_method
+
+    @patch('logging.Logger.info')
+    @patch('urllib2.urlopen')
+    @mock_s3
+    @mock_kms
+    def test_dispatch_success(self, url_mock, log_info_mock):
+        """PagerDutyOutput dispatch success"""
+        alert = self._setup_dispatch()
+        url_mock.return_value.getcode.return_value = 200
+
+        self.__dispatcher.dispatch(descriptor=self.__descriptor,
+                                   rule_name='rule_name',
+                                   alert=alert)
+
+        self._teardown_dispatch()
+
+        log_info_mock.assert_called_with('Successfully sent alert to %s', self.__service)
+
+    @patch('logging.Logger.error')
+    @patch('urllib2.urlopen')
+    @mock_s3
+    @mock_kms
+    def test_dispatch_failure(self, url_mock, log_error_mock):
+        """PagerDutyOutput dispatch failure"""
+        alert = self._setup_dispatch()
+        bad_message = '{"error": {"message": "failed", "errors": ["err1", "err2"]}}'
+        url_mock.return_value.read.return_value = bad_message
+        url_mock.return_value.getcode.return_value = 400
+
+        self.__dispatcher.dispatch(descriptor=self.__descriptor,
+                                   rule_name='rule_name',
+                                   alert=alert)
+
+        self._teardown_dispatch()
+
+        log_error_mock.assert_called_with('Failed to send alert to %s', self.__service)
+
+    @patch('logging.Logger.error')
+    @mock_s3
+    @mock_kms
+    def test_dispatch_bad_descriptor(self, log_error_mock):
+        """PagerDutyOutput dispatch bad descriptor"""
+        alert = self._setup_dispatch()
+        self.__dispatcher.dispatch(descriptor='bad_descriptor',
+                                   rule_name='rule_name',
+                                   alert=alert)
+
+        self._teardown_dispatch()
+
+        log_error_mock.assert_called_with('Failed to send alert to %s', self.__service)
+
+class TestPagerDutyOutputV2(object):
+    """Test class for PagerDutyOutputV2"""
+    @classmethod
+    def setup_class(cls):
+        """Setup the class before any methods"""
+        cls.__service = 'pagerdutyv2'
+        cls.__descriptor = 'unit_test_pagerdutyv2'
         cls.__backup_method = None
         cls.__dispatcher = outputs.get_output_dispatcher(cls.__service,
                                                          REGION,
