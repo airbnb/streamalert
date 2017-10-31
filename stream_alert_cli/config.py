@@ -114,7 +114,7 @@ class CLIConfig(object):
             return
 
         if '_' in prefix:
-            LOGGER_CLI.error('Prefix cannot start with underscore')
+            LOGGER_CLI.error('Prefix cannot contain underscores')
             return
 
         self.config['global']['account']['prefix'] = prefix

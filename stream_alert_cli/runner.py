@@ -38,7 +38,7 @@ def cli_runner(options):
             Contains the following keys for lambda commands:
                 (command, subcommand, env, func, source)
     """
-    cli_load_message = ('Issues? Report here: https://github.com/airbnb/streamalert/issues')
+    cli_load_message = 'Issues? Report here: https://github.com/airbnb/streamalert/issues'
     LOGGER_CLI.info(cli_load_message)
 
     if options.debug:

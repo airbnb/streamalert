@@ -44,7 +44,7 @@ def partition_statement(partitions, bucket, table_name):
     Args:
         partitions (set): The unique set of partitions gathered from Athena
         bucket (str): The bucket name
-        table_name (str): Theh name of the Athena table
+        table_name (str): The name of the Athena table
 
     Returns:
         str: The ALTER TABLE statement to add the new partitions

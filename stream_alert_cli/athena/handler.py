@@ -60,6 +60,8 @@ def rebuild_partitions(athena_client, options, config):
 
     Args:
         athena_client (boto3.client): Instantiated CLI AthenaClient
+        options (namedtuple): The parsed args passed from the CLI
+        config (CLIConfig): Loaded StreamAlert CLI
     """
     if not options.table_name:
         LOGGER_CLI.error('Missing command line argument --table_name')
@@ -185,6 +187,7 @@ def create_table(athena_client, options, config):
     Args:
         athena_client (boto3.client): Instantiated CLI AthenaClient
         options (namedtuple): The parsed args passed from the CLI
+        config (CLIConfig): Loaded StreamAlert CLI
     """
     if not options.bucket:
         LOGGER_CLI.error('Missing command line argument --bucket')
