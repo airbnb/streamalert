@@ -1259,11 +1259,15 @@ Examples:
 
     athena_parser.add_argument(
         'subcommand',
-        choices=['init', 'enable', 'create-db', 'create-table'],
+        choices=['init',
+                 'enable',
+                 'create-db',
+                 'create-table',
+                 'drop-all-tables',
+                 'rebuild-partitions'],
         help=ARGPARSE_SUPPRESS
     )
 
-    # TODO(jacknagz): Create a second choice for data tables, and accept a log name argument.
     athena_parser.add_argument(
         '--type',
         choices=['alerts', 'data'],

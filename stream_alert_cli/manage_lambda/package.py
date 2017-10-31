@@ -107,12 +107,14 @@ class LambdaPackage(object):
     def _copy_files(self, temp_package_path):
         """Copy all files and folders into temporary package path."""
         for package_folder in self.package_folders:
-            shutil.copytree(os.path.join(self.package_root_dir, package_folder),
-                            os.path.join(temp_package_path, package_folder))
+            shutil.copytree(
+                os.path.join(self.package_root_dir, package_folder),
+                os.path.join(temp_package_path, package_folder))
 
         for package_file in self.package_files:
-            shutil.copy(os.path.join(self.package_root_dir, package_file),
-                        os.path.join(temp_package_path, package_file))
+            shutil.copy(
+                os.path.join(self.package_root_dir, package_file),
+                os.path.join(temp_package_path, package_file))
 
     @staticmethod
     def zip(temp_package_path):
@@ -181,9 +183,7 @@ class LambdaPackage(object):
             LOGGER_CLI.info('No third-party libraries to install.')
             return True
 
-        LOGGER_CLI.info(
-            'Installing third-party libraries: %s',
-            ', '.join(third_party_libs))
+        LOGGER_CLI.info('Installing third-party libraries: %s', ', '.join(third_party_libs))
         pip_command = ['pip', 'install']
         pip_command.extend(third_party_libs)
         pip_command.extend(['--upgrade', '--target', temp_package_path])
@@ -201,8 +201,7 @@ class LambdaPackage(object):
             bool: Indicating a successful S3 upload
         """
         LOGGER_CLI.info('Uploading StreamAlert package to S3')
-        client = boto3.client(
-            's3', region_name=self.config['global']['account']['region'])
+        client = boto3.client('s3', region_name=self.config['global']['account']['region'])
 
         for package_file in (package_path, '{}.sha256'.format(package_path)):
             package_name = package_file.split('/')[-1]
@@ -213,8 +212,7 @@ class LambdaPackage(object):
                     Bucket=self.config['lambda'][self.config_key]['source_bucket'],
                     Key=os.path.join(self.package_name, package_name),
                     Body=package_fh,
-                    ServerSideEncryption='AES256'
-                )
+                    ServerSideEncryption='AES256')
             except ClientError:
                 LOGGER_CLI.exception('An error occurred while uploading %s', package_name)
                 return False
@@ -228,12 +226,8 @@ class LambdaPackage(object):
 class RuleProcessorPackage(LambdaPackage):
     """Deployment package class for the StreamAlert Rule Processor function"""
     package_folders = {
-        'stream_alert/rule_processor',
-        'stream_alert/shared',
-        'rules',
-        'matchers',
-        'helpers',
-        'conf'}
+        'stream_alert/rule_processor', 'stream_alert/shared', 'rules', 'matchers', 'helpers', 'conf'
+    }
     if os.path.exists('threat_intel'):
         package_folders.add('threat_intel')
     package_files = {'stream_alert/__init__.py'}
@@ -244,10 +238,7 @@ class RuleProcessorPackage(LambdaPackage):
 
 class AlertProcessorPackage(LambdaPackage):
     """Deployment package class for the StreamAlert Alert Processor function"""
-    package_folders = {
-        'stream_alert/alert_processor',
-        'stream_alert/shared',
-        'conf'}
+    package_folders = {'stream_alert/alert_processor', 'stream_alert/shared', 'conf'}
     package_files = {'stream_alert/__init__.py'}
     package_root_dir = '.'
     package_name = 'alert_processor'
@@ -265,10 +256,7 @@ class AppIntegrationPackage(LambdaPackage):
 
 class AthenaPackage(LambdaPackage):
     """Create the Athena Partition Refresh Lambda function package"""
-    package_folders = {
-        'stream_alert/athena_partition_refresh',
-        'stream_alert/shared',
-        'conf'}
+    package_folders = {'stream_alert/athena_partition_refresh', 'stream_alert/shared', 'conf'}
     package_files = {'stream_alert/__init__.py'}
     package_root_dir = '.'
     package_name = 'athena_partition_refresh'

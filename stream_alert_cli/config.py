@@ -113,6 +113,10 @@ class CLIConfig(object):
             LOGGER_CLI.error('Invalid prefix type, must be string')
             return
 
+        if '_' in prefix:
+            LOGGER_CLI.error('Prefix cannot contain underscores')
+            return
+
         self.config['global']['account']['prefix'] = prefix
         self.config['global']['terraform']['tfstate_bucket'] = self.config['global']['terraform'][
             'tfstate_bucket'].replace('PREFIX_GOES_HERE', prefix)
