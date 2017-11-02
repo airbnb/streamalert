@@ -19,7 +19,6 @@ from collections import OrderedDict
 from datetime import datetime
 import json
 import os
-import urllib
 import uuid
 
 import boto3
@@ -101,24 +100,24 @@ class PagerDutyOutput(StreamOutputBase):
             'rule_description': rule_desc,
             'record': kwargs['alert']['record']
         }
-        values_json = json.dumps({
+        data = {
             'service_key': creds['service_key'],
             'event_type': 'trigger',
             'description': message,
             'details': details,
             'client': 'StreamAlert'
-        })
+        }
+        headers = None
+        verify = True
 
-        resp = self._request_helper(creds['url'], values_json)
+        resp = self._post_request(creds['url'], data, headers, verify)
         success = self._check_http_response(resp)
 
-        if not success:
-            response_value = json.load(resp)
-            error_message = response_value['error']['message']
-            detailed_errors = response_value['error']['errors']
+        if not success and resp:
+            response = resp.json()
             LOGGER.error('Encountered an error while sending to PagerDuty: %s\n%s',
-                         error_message,
-                         '\n'.join(detailed_errors))
+                         response['message'],
+                         response['errors'])
 
         return self._log_status(success)
 
@@ -188,26 +187,25 @@ class PagerDutyOutputV2(StreamOutputBase):
             'severity': 'critical',
             'custom_details': details
         }
-        values_json = json.dumps({
+        data = {
             'routing_key': creds['routing_key'],
             'payload': payload,
             'event_action': 'trigger',
             'client': 'StreamAlert'
-        })
+        }
+        headers = None
+        verify = True
 
-        resp = self._request_helper(creds['url'], values_json)
+        resp = self._post_request(creds['url'], data, headers, verify)
         success = self._check_http_response(resp)
 
-        if not success:
-            response_value = json.load(resp)
-            error_message = response_value['error']['message']
-            detailed_errors = response_value['error']['errors']
+        if not success and resp:
+            response = resp.json()
             LOGGER.error('Encountered an error while sending to PagerDuty: %s\n%s',
-                         error_message,
-                         '\n'.join(detailed_errors))
+                         response['message'],
+                         response['errors'])
 
         return self._log_status(success)
-
 
 @output
 class PhantomOutput(StreamOutputBase):
@@ -258,19 +256,17 @@ class PhantomOutput(StreamOutputBase):
                 will be sent or False if a matching container does not yet exists
         """
         # Limit the query to 1 page, since we only care if one container exists with
-        # this name. This should not be a problem, but utilize urllib.quote to
-        # replace any unsafe characters in the rule_name
-        query_url = '{}?_filter_name="{}"&page_size=1'.format(container_url,
-                                                              urllib.quote(rule_name))
-
-        # Passing None for the data param ensures a GET request happens
-        resp = self._request_helper(query_url, None, headers, False)
-
+        # this name.
+        params = {
+            '_filter_name': rule_name,
+            'page_size': 1
+        }
+        resp = self._get_request(container_url, params, headers, False)
         if not self._check_http_response(resp):
             return False
 
         try:
-            resp_dict = json.loads(resp.read())
+            response = json.loads(resp.text)
         except ValueError as err:
             LOGGER.error('An error occurred while decoding Phantom container query '
                          'response to JSON: %s', err)
@@ -279,7 +275,7 @@ class PhantomOutput(StreamOutputBase):
         # If the count == 0 then we know there are no containers with this name and this
         # will evaluate to False. Otherwise there is at least one item in the list
         # of 'data' with a container id we can use
-        return resp_dict and resp_dict['count'] and resp_dict['data'][0]['id']
+        return response and response['count'] and response['data'][0]['id']
 
     def _setup_container(self, rule_name, rule_description, base_url, headers):
         """Establish a Phantom container to write the alerts to. This checks to see
@@ -303,20 +299,19 @@ class PhantomOutput(StreamOutputBase):
 
         # Try to use the rule_description from the rule as the container description
         ph_container = {'name': rule_name, 'description': rule_description}
-        container_string = json.dumps(ph_container)
-        resp = self._request_helper(container_url, container_string, headers, False)
+        resp = self._post_request(container_url, ph_container, headers, False)
 
         if not self._check_http_response(resp):
             return False
 
         try:
-            resp_dict = json.loads(resp.read())
+            response = json.loads(resp.text)
         except ValueError as err:
             LOGGER.error('An error occurred while decoding Phantom container creation '
                          'response to JSON: %s', err)
             return False
 
-        return resp_dict and resp_dict['id']
+        return response and response['id']
 
     def dispatch(self, **kwargs):
         """Send alert to Phantom
@@ -345,9 +340,8 @@ class PhantomOutput(StreamOutputBase):
                         'data': kwargs['alert'],
                         'name': 'Phantom Artifact',
                         'label': 'Alert'}
-            artifact_string = json.dumps(artifact)
             artifact_url = os.path.join(creds['url'], self.ARTIFACT_ENDPOINT)
-            resp = self._request_helper(artifact_url, artifact_string, headers, False)
+            resp = self._post_request(artifact_url, artifact, headers, False)
 
             success = self._check_http_response(resp)
 
@@ -395,7 +389,7 @@ class SlackOutput(StreamOutputBase):
             alert: Alert relevant to the triggered rule
 
         Returns:
-            str: formatted message with attachments to send to Slack.
+            dict: message with attachments to send to Slack.
                 The message will look like:
                     StreamAlert Rule Triggered: rule_name
                     Rule Description:
@@ -452,8 +446,8 @@ class SlackOutput(StreamOutputBase):
                 'mrkdwn_in': ['text', 'pretext']
             })
 
-        # Return the dumped json payload to be sent to slack
-        return json.dumps(full_message)
+        # Return the json dict payload to be sent to slack
+        return full_message
 
     @classmethod
     def _json_to_slack_mrkdwn(cls, json_values, indent_count):
@@ -553,12 +547,14 @@ class SlackOutput(StreamOutputBase):
 
         slack_message = self._format_message(kwargs['rule_name'], kwargs['alert'])
 
-        resp = self._request_helper(creds['url'], slack_message)
+        resp = self._get_request(creds['url'], slack_message)
         success = self._check_http_response(resp)
 
-        if not success:
-            LOGGER.error('Encountered an error while sending to Slack: %s',
-                         resp.read())
+        if not success and resp:
+            response = resp.json()
+            LOGGER.error('Encountered an error while sending to Slack: %s\n%s',
+                         response['message'],
+                         response['errors'])
 
         return self._log_status(success)
 

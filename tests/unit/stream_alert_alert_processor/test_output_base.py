@@ -116,17 +116,17 @@ class TestStreamOutputBase(object):
         self.__dispatcher._log_status(False)
         log_mock.assert_called_with('Failed to send alert to %s', 'test_service')
 
-    @patch('urllib2.urlopen')
-    def test_check_http_response(self, mock_getcode):
+    @patch('requests.Response')
+    def test_check_http_response(self, mock_response):
         """StreamOutputBase Check HTTP Response"""
         # Test with a good response code
-        mock_getcode.getcode.return_value = 200
-        result = self.__dispatcher._check_http_response(mock_getcode)
+        mock_response.status_code = 200
+        result = self.__dispatcher._check_http_response(mock_response)
         assert_equal(result, True)
 
         # Test with a bad response code
-        mock_getcode.getcode.return_value = 440
-        result = self.__dispatcher._check_http_response(mock_getcode)
+        mock_response.status_code = 440
+        result = self.__dispatcher._check_http_response(mock_response)
         assert_equal(result, False)
 
     @mock_s3

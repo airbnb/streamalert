@@ -658,9 +658,11 @@ class AlertProcessorTester(object):
             alert (dict): The alert dictionary containing outputs the need mocking out
         """
         outputs = alert.get('outputs', [])
-        # Patch the urllib2.urlopen event to override HTTPStatusCode, etc
-        url_mock = Mock()
-        patch('urllib2.urlopen', url_mock).start()
+        # Patch requests.get and requests.post
+        get_mock = Mock()
+        patch('requests.get', get_mock).start()
+        post_mock = Mock()
+        patch('requests.post', post_mock).start()
         for output in outputs:
             try:
                 service, descriptor = output.split(':')
@@ -691,8 +693,8 @@ class AlertProcessorTester(object):
                 helpers.put_mock_creds(output_name, creds, self.secrets_bucket,
                                        'us-east-1', self.kms_alias)
 
-                # Set the patched urlopen.getcode return value to 200
-                url_mock.return_value.getcode.return_value = 200
+                # Set the patched requests.post return value to 200
+                post_mock.return_value.status_code = 200
             elif service == 'phantom':
                 output_name = '{}/{}'.format(service, descriptor)
                 creds = {'ph_auth_token': '6c586bc047b9749a92de29078a015cc6',
@@ -700,19 +702,22 @@ class AlertProcessorTester(object):
                 helpers.put_mock_creds(output_name, creds, self.secrets_bucket,
                                        'us-east-1', self.kms_alias)
 
-                # Set the patched urlopen.getcode return value to 200
-                url_mock.return_value.getcode.return_value = 200
+                # Set the patched request.get return value to 200
+                get_mock.return_value.status_code = 200
                 # Phantom needs a container 'id' value in the http response
-                url_mock.return_value.read.side_effect = ['{"count": 0, "data": []}',
+                get_mock.return_value.text.side_effect = ['{"count": 0, "data": []}',
                                                           '{"id": 1948}']
+                # Set the patched request.post return value to 200
+                post_mock.return_value.status_code = 200
+
             elif service == 'slack':
                 output_name = '{}/{}'.format(service, descriptor)
                 creds = {'url': 'https://api.slack.com/web-hook-key'}
                 helpers.put_mock_creds(output_name, creds, self.secrets_bucket,
                                        'us-east-1', self.kms_alias)
 
-                # Set the patched urlopen.getcode return value to 200
-                url_mock.return_value.getcode.return_value = 200
+                # Set the patched requests.get return value to 200
+                get_mock.return_value.status_code = 200
 
 
 def report_output(passed, cols):
