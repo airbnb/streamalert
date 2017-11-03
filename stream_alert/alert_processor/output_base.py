@@ -17,9 +17,8 @@ from abc import ABCMeta, abstractmethod
 from collections import namedtuple
 import json
 import os
-import ssl
 import tempfile
-import urllib2
+import requests
 
 import boto3
 from botocore.exceptions import ClientError
@@ -180,39 +179,50 @@ class StreamOutputBase(object):
         return bool(success)
 
     @staticmethod
-    def _request_helper(url, data, headers=None, verify=True):
-        """URL request helper to send a payload to an endpoint
+    def _get_request(url, params=None, headers=None, verify=True):
+        """Method to return the json loaded response for this GET request
 
         Args:
             url (str): Endpoint for this request
-            data (str): Payload to send with this request
+            params (dict): Payload to send with this request
             headers (dict): Dictionary containing request-specific header parameters
-            verify (bool): Whether or not SSL should be used for this request
+            verify (bool): Whether or not the server's SSL certificate should be verified
         Returns:
-            file handle: Contains the http response to be read
+            dict: Contains the http response object
         """
-        try:
-            context = None
-            if not verify:
-                context = ssl.create_default_context()
-                context.check_hostname = False
-                context.verify_mode = ssl.CERT_NONE
-
-            http_headers = headers or {}
-
-            # Omitting data means a GET request should occur, not POST
-            if not data:
-                request = urllib2.Request(url, headers=http_headers)
-            else:
-                request = urllib2.Request(url, data=data, headers=http_headers)
-            resp = urllib2.urlopen(request, context=context)
-            return resp
-        except urllib2.HTTPError as err:
-            raise OutputRequestFailure('Failed to send to {} - [{}]'.format(err.url, err.code))
+        return requests.get(url, headers=headers, params=params, verify=verify)
 
     @staticmethod
-    def _check_http_response(resp):
-        return resp and (200 <= resp.getcode() <= 299)
+    def _post_request(url, data=None, headers=None, verify=True):
+        """Method to return the json loaded response for this POST request
+
+        Args:
+            url (str): Endpoint for this request
+            data (dict): Payload to send with this request
+            headers (dict): Dictionary containing request-specific header parameters
+            verify (bool): Whether or not the server's SSL certificate should be verified
+        Returns:
+            dict: Contains the http response object
+        """
+        return requests.post(url, headers=headers, json=data, verify=verify)
+
+    def _check_http_response(self, response):
+        """Method for checking for a valid HTTP response code
+
+        Args:
+            response (requests.Response): Response object from requests
+
+        Returns:
+            bool: Indicator of whether or not this request was successful
+        """
+        success = response is not None and (200 <= response.status_code <= 299)
+        if not success:
+            resp_json = response.json()
+            LOGGER.error('Encountered an error while sending to %s: %s\n%s',
+                         self.__service__,
+                         resp_json.get('message'),
+                         resp_json.get('errors'))
+        return success
 
     @classmethod
     def _get_default_properties(cls):
