@@ -75,6 +75,11 @@ class AppIntegration(object):
     # saving to parameter store and spawning a new Lambda invocation if there are more
     # logs to poll for this interval
     _POLL_BUFFER_MULTIPLIER = 1.5
+    # _DEFAULT_REQUEST_TIMEOUT indicates long the requests library will wait before timing
+    # out for both get and post requests. This applies to both connection and read timeouts
+    _DEFAULT_REQUEST_TIMEOUT = 3.05
+    # _EOF_SECONDS_BUFFER is the end-of-function padding in seconds needed to handle cleanup, etc
+    _EOF_SECONDS_BUFFER = 2
 
     def __init__(self, config):
         self._config = config
@@ -290,7 +295,8 @@ class AppIntegration(object):
                      self.type(), self._poll_count)
 
         # Perform the request and return the response as a dict
-        response = requests.get(full_url, headers=headers, params=params)
+        response = requests.get(full_url, headers=headers,
+                                params=params, timeout=self._DEFAULT_REQUEST_TIMEOUT)
 
         return self._check_http_response(response), response.json()
 
@@ -305,7 +311,8 @@ class AppIntegration(object):
                      self.type(), self._poll_count)
 
         # Perform the request and return the response as a dict
-        response = requests.post(full_url, headers=headers, json=data)
+        response = requests.post(full_url, headers=headers,
+                                 json=data, timeout=self._DEFAULT_REQUEST_TIMEOUT)
 
         return self._check_http_response(response), response.json()
 
@@ -383,7 +390,8 @@ class AppIntegration(object):
         if not self._initialize():
             return
 
-        while self._gather() + self._sleep_seconds() < self._config.remaining_ms() / 1000.0:
+        while (self._gather() + self._sleep_seconds() <
+               (self._config.remaining_ms() / 1000.0) - self._EOF_SECONDS_BUFFER):
             LOGGER.debug('More logs to poll for \'%s\': %s', self.type(), self._more_to_poll)
             self._config.report_remaining_seconds()
             if not self._more_to_poll:

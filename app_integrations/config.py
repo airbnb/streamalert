@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+import calendar
 from datetime import datetime
 import json
 import re
@@ -272,7 +273,7 @@ class AppConfig(dict):
         """
         if not self.last_timestamp:
             interval_time = self.evaluate_interval()
-            current_time = int(time.mktime(time.gmtime()))
+            current_time = int(calendar.timegm(time.gmtime()))
             time_delta = current_time - interval_time
             LOGGER.debug('Current timestamp: %s seconds. Calculated delta: %s seconds',
                          current_time, time_delta)
