@@ -223,7 +223,7 @@ class TestAppIntegration(object):
     @patch('app_integrations.apps.app_base.AppIntegration._gather')
     @patch('app_integrations.apps.app_base.AppIntegration._sleep_seconds', Mock(return_value=1))
     @patch('app_integrations.config.AppConfig.remaining_ms',
-           Mock(side_effect=[5000, 5000, 2000, 2000]))
+           Mock(side_effect=[8000, 8000, 2000, 2000]))
     def test_gather_multiple(self, gather_mock):
         """App Integration - Gather, Entry Point, Multiple Calls"""
         # 3 == number of 'seconds' this ran for. This is compared against the remaining_ms mock

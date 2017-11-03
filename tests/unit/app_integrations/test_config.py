@@ -112,7 +112,7 @@ class TestAppIntegrationConfig(object):
         self._config['interval'] = 'rate(5 hours)'
         assert_equal(self._config.evaluate_interval(), 3600 * 5)
 
-    @patch('time.mktime')
+    @patch('calendar.timegm')
     def test_determine_last_timestamp_duo(self, time_mock):
         """AppIntegrationConfig - Determine Last Timestamp, Duo"""
         # Reset the last timestamp to None
@@ -124,7 +124,7 @@ class TestAppIntegrationConfig(object):
         self._config['interval'] = 'rate(5 hours)'
         assert_equal(self._config._determine_last_time(), 1234567890 - (3600 * 5))
 
-    @patch('time.mktime')
+    @patch('calendar.timegm')
     def test_determine_last_timestamp_onelogin(self, time_mock):
         """AppIntegrationConfig - Determine Last Timestamp, OneLogin"""
         with patch.object(AppConfig, 'SSM_CLIENT', MockSSMClient(app_type='onelogin_events')):
@@ -137,7 +137,7 @@ class TestAppIntegrationConfig(object):
             time_mock.return_value = 1234567890
             assert_equal(self._config._determine_last_time(), '2009-02-13T22:31:30Z')
 
-    @patch('time.mktime')
+    @patch('calendar.timegm')
     def test_determine_last_timestamp_gsuite(self, time_mock):
         """AppIntegrationConfig - Determine Last Timestamp, GSuite"""
         with patch.object(AppConfig, 'SSM_CLIENT', MockSSMClient(app_type='gsuite_admin')):
