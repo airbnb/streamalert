@@ -16,6 +16,7 @@ limitations under the License.
 # pylint: disable=protected-access
 from collections import Counter, OrderedDict
 
+import json
 import boto3
 from mock import call, patch
 from moto import mock_s3, mock_kms, mock_lambda
@@ -239,7 +240,8 @@ class TestPagerDutyOutputV2(object):
     def test_dispatch_failure(self, post_mock, log_error_mock):
         """PagerDutyOutputV2 dispatch failure"""
         alert = self._setup_dispatch()
-        post_mock.return_value.text = '{"message": "error message", "errors": ["error1"]}'
+        json_error = json.loads('{"message": "error message", "errors": ["error1"]}')
+        post_mock.return_value.json.return_value = json_error
         post_mock.return_value.status_code = 400
 
         self.__dispatcher.dispatch(descriptor=self.__descriptor,
@@ -305,7 +307,7 @@ class TestPhantomOutput(object):
         alert = self._setup_dispatch('http://phantom.foo.bar')
         # _check_container_exists
         get_mock.return_value.status_code = 200
-        get_mock.return_value.text = '{"count": 1, "data": [{"id": 1948}]}'
+        get_mock.return_value.json.return_value = json.loads('{"count": 1, "data": [{"id": 1948}]}')
         # dispatch
         post_mock.return_value.status_code = 200
 
@@ -323,10 +325,10 @@ class TestPhantomOutput(object):
         alert = self._setup_dispatch('http://phantom.foo.bar')
         # _check_container_exists
         get_mock.return_value.status_code = 200
-        get_mock.return_value.text = '{"count": 0, "data": []}'
+        get_mock.return_value.json.return_value = json.loads('{"count": 0, "data": []}')
         # _setup_container, dispatch
         post_mock.return_value.status_code = 200
-        post_mock.return_value.text = '{"id": 1948}'
+        post_mock.return_value.json.return_value = json.loads('{"id": 1948}')
 
         self.__dispatcher.dispatch(descriptor=self.__descriptor,
                                    rule_name='rule_name',
@@ -342,10 +344,11 @@ class TestPhantomOutput(object):
         alert = self._setup_dispatch('http://phantom.foo.bar')
         # _check_container_exists
         get_mock.return_value.status_code = 200
-        get_mock.return_value.text = '{"count": 0, "data": []}'
+        get_mock.return_value.json.return_value = json.loads('{"count": 0, "data": []}')
         # _setup_container
         post_mock.return_value.status_code = 400
-        post_mock.return_value.text = '{"message": "error message", "errors": ["error1"]}'
+        json_error = json.loads('{"message": "error message", "errors": ["error1"]}')
+        post_mock.return_value.json.return_value = json_error
 
         self.__dispatcher.dispatch(descriptor=self.__descriptor,
                                    rule_name='rule_name',
@@ -361,20 +364,18 @@ class TestPhantomOutput(object):
         alert = self._setup_dispatch('http://phantom.foo.bar')
         # _check_container_exists
         get_mock.return_value.status_code = 200
-        get_mock.return_value.text = 'this\nis\nnot\njson'
+        get_mock.return_value.text = '{}'
         # _setup_container
         post_mock.return_value.status_code = 400
-        post_mock.return_value.text = '{"message": "error message", "errors": ["error1"]}'
+        json_error = json.loads('{"message": "error message", "errors": ["error1"]}')
+        post_mock.return_value.json.return_value = json_error
 
-        self.__dispatcher.dispatch(descriptor=self.__descriptor,
-                                   rule_name='rule_name',
-                                   alert=alert)
+        result = self.__dispatcher.dispatch(descriptor=self.__descriptor,
+                                            rule_name='rule_name',
+                                            alert=alert)
 
-        response = str(
-            call('An error occurred while decoding Phantom container query '
-                 'response to JSON: %s', ValueError('No JSON object could be decoded',)))
-
-        assert_equal(str(log_mock.call_args_list[0]), response)
+        log_mock.assert_called_with('Failed to send alert to %s', self.__service)
+        assert_equal(result, False)
 
     @patch('logging.Logger.error')
     @patch('requests.get')
@@ -384,21 +385,18 @@ class TestPhantomOutput(object):
         alert = self._setup_dispatch('http://phantom.foo.bar')
         # _check_container_exists
         get_mock.return_value.status_code = 200
-        get_mock.return_value.text = '{"count": 0, "data": []}'
+        get_mock.return_value.json.return_value = json.loads('{"count": 0, "data": []}')
         # _setup_container
         post_mock.return_value.status_code = 200
-        post_mock.return_value.text = 'this\nis\nnot\njson'
+        post_mock.return_value.json.return_value = json.loads('{}')
 
-        self.__dispatcher.dispatch(descriptor=self.__descriptor,
-                                   rule_name='rule_name',
-                                   alert=alert)
 
-        response = str(
-            call('An error occurred while decoding Phantom container creation '
-                 'response to JSON: %s', ValueError('No JSON object could be decoded',)))
+        result = self.__dispatcher.dispatch(descriptor=self.__descriptor,
+                                            rule_name='rule_name',
+                                            alert=alert)
 
-        assert_equal(str(log_mock.call_args_list[0]), response)
-
+        log_mock.assert_called_with('Failed to send alert to %s', self.__service)
+        assert_equal(result, False)
 
     @patch('logging.Logger.error')
     @patch('requests.get')
@@ -408,10 +406,12 @@ class TestPhantomOutput(object):
         alert = self._setup_dispatch('http://phantom.foo.bar')
         # _check_container_exists
         get_mock.return_value.status_code = 200
-        get_mock.return_value.text = '{"count": 0, "data": []}'
+        get_mock.return_value.json.return_value = json.loads('{"count": 0, "data": []}')
         # _setup_container, dispatch
         post_mock.return_value.status_code.side_effect = [200, 400]
-        post_mock.return_value.text.side_effect = ['{"id": 1948}', '{"message": "error"}']
+        json_id = json.loads('{"id": 1948}')
+        json_error = json.loads('{"message": "error message", "errors": ["error1"]}')
+        post_mock.return_value.json.return_value.side_effect = [json_id, json_error]
 
         result = self.__dispatcher.dispatch(descriptor=self.__descriptor,
                                             rule_name='rule_name',
@@ -613,7 +613,7 @@ class TestSlackOutput(object):
         """SlackOutput dispatch success"""
         alert = self._setup_dispatch()
         url_mock.return_value.status_code = 200
-        url_mock.return_value.text = ''
+        url_mock.return_value.json.return_value = json.loads('{}')
 
         self.__dispatcher.dispatch(descriptor=self.__descriptor,
                                    rule_name='rule_name',
@@ -628,7 +628,8 @@ class TestSlackOutput(object):
     def test_dispatch_failure(self, url_mock, log_error_mock):
         """SlackOutput dispatch failure"""
         alert = self._setup_dispatch()
-        url_mock.return_value.text = '{"message": "error message", "errors": ["error1"]}'
+        json_error = json.loads('{"message": "error message", "errors": ["error1"]}')
+        url_mock.return_value.json.return_value = json_error
         url_mock.return_value.status_code = 400
 
         self.__dispatcher.dispatch(descriptor=self.__descriptor,

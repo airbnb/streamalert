@@ -184,9 +184,9 @@ class StreamOutputBase(object):
 
         Args:
             url (str): Endpoint for this request
-            headers (dict): Dictionary containing request-specific header parameters
             params (dict): Payload to send with this request
-            verify (bool): Whether or not SSL should be used for this request
+            headers (dict): Dictionary containing request-specific header parameters
+            verify (bool): Whether or not the server's SSL certificate should be verified
         Returns:
             dict: Contains the http response object
         """
@@ -198,16 +198,15 @@ class StreamOutputBase(object):
 
         Args:
             url (str): Endpoint for this request
+            data (dict): Payload to send with this request
             headers (dict): Dictionary containing request-specific header parameters
-            params (dict): Payload to send with this request
-            verify (bool): Whether or not SSL should be used for this request
+            verify (bool): Whether or not the server's SSL certificate should be verified
         Returns:
             dict: Contains the http response object
         """
         return requests.post(url, headers=headers, json=data, verify=verify)
 
-    @staticmethod
-    def _check_http_response(response):
+    def _check_http_response(self, response):
         """Method for checking for a valid HTTP response code
 
         Args:
@@ -216,7 +215,14 @@ class StreamOutputBase(object):
         Returns:
             bool: Indicator of whether or not this request was successful
         """
-        return response is not None and (200 <= response.status_code <= 299)
+        success = response is not None and (200 <= response.status_code <= 299)
+        if not success:
+            resp_json = response.json()
+            LOGGER.error('Encountered an error while sending to %s: %s\n%s',
+                         self.__service__,
+                         resp_json.get('message'),
+                         resp_json.get('errors'))
+        return success
 
     @classmethod
     def _get_default_properties(cls):

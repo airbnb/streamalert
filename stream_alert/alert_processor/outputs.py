@@ -107,17 +107,9 @@ class PagerDutyOutput(StreamOutputBase):
             'details': details,
             'client': 'StreamAlert'
         }
-        headers = None
-        verify = True
 
-        resp = self._post_request(creds['url'], data, headers, verify)
+        resp = self._post_request(creds['url'], data, None, True)
         success = self._check_http_response(resp)
-
-        if not success and resp:
-            response = resp.json()
-            LOGGER.error('Encountered an error while sending to PagerDuty: %s\n%s',
-                         response['message'],
-                         response['errors'])
 
         return self._log_status(success)
 
@@ -193,17 +185,9 @@ class PagerDutyOutputV2(StreamOutputBase):
             'event_action': 'trigger',
             'client': 'StreamAlert'
         }
-        headers = None
-        verify = True
 
-        resp = self._post_request(creds['url'], data, headers, verify)
+        resp = self._post_request(creds['url'], data, None, True)
         success = self._check_http_response(resp)
-
-        if not success and resp:
-            response = resp.json()
-            LOGGER.error('Encountered an error while sending to PagerDuty: %s\n%s',
-                         response['message'],
-                         response['errors'])
 
         return self._log_status(success)
 
@@ -265,17 +249,12 @@ class PhantomOutput(StreamOutputBase):
         if not self._check_http_response(resp):
             return False
 
-        try:
-            response = json.loads(resp.text)
-        except ValueError as err:
-            LOGGER.error('An error occurred while decoding Phantom container query '
-                         'response to JSON: %s', err)
-            return False
+        response = resp.json()
 
         # If the count == 0 then we know there are no containers with this name and this
         # will evaluate to False. Otherwise there is at least one item in the list
         # of 'data' with a container id we can use
-        return response and response['count'] and response['data'][0]['id']
+        return response and response.get('count') and response.get('data')[0]['id']
 
     def _setup_container(self, rule_name, rule_description, base_url, headers):
         """Establish a Phantom container to write the alerts to. This checks to see
@@ -304,14 +283,9 @@ class PhantomOutput(StreamOutputBase):
         if not self._check_http_response(resp):
             return False
 
-        try:
-            response = json.loads(resp.text)
-        except ValueError as err:
-            LOGGER.error('An error occurred while decoding Phantom container creation '
-                         'response to JSON: %s', err)
-            return False
+        response = resp.json()
 
-        return response and response['id']
+        return response and response.get('id')
 
     def dispatch(self, **kwargs):
         """Send alert to Phantom
@@ -549,12 +523,6 @@ class SlackOutput(StreamOutputBase):
 
         resp = self._get_request(creds['url'], slack_message)
         success = self._check_http_response(resp)
-
-        if not success and resp:
-            response = resp.json()
-            LOGGER.error('Encountered an error while sending to Slack: %s\n%s',
-                         response['message'],
-                         response['errors'])
 
         return self._log_status(success)
 
