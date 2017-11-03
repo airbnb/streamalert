@@ -78,6 +78,8 @@ class AppIntegration(object):
     # _DEFAULT_REQUEST_TIMEOUT indicates long the requests library will wait before timing
     # out for both get and post requests. This applies to both connection and read timeouts
     _DEFAULT_REQUEST_TIMEOUT = 3.05
+    # _EOF_SECONDS_BUFFER is the end-of-function padding in seconds needed to handle cleanup, etc
+    _EOF_SECONDS_BUFFER = 2
 
     def __init__(self, config):
         self._config = config
@@ -388,7 +390,8 @@ class AppIntegration(object):
         if not self._initialize():
             return
 
-        while self._gather() + self._sleep_seconds() < self._config.remaining_ms() / 1000.0:
+        while (self._gather() + self._sleep_seconds() <
+               (self._config.remaining_ms() / 1000.0) - self._EOF_SECONDS_BUFFER):
             LOGGER.debug('More logs to poll for \'%s\': %s', self.type(), self._more_to_poll)
             self._config.report_remaining_seconds()
             if not self._more_to_poll:
