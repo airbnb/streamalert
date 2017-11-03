@@ -55,6 +55,10 @@ class StreamOutputBase(object):
     __metaclass__ = ABCMeta
     __service__ = NotImplemented
 
+    # _DEFAULT_REQUEST_TIMEOUT indicates how long the requests library will wait before timing
+    # out for both get and post requests. This applies to both connection and read timeouts
+    _DEFAULT_REQUEST_TIMEOUT = 3.05
+
     def __init__(self, region, function_name, config):
         self.region = region
         self.secrets_bucket = self._get_secrets_bucket_name(function_name)
@@ -178,8 +182,8 @@ class StreamOutputBase(object):
 
         return bool(success)
 
-    @staticmethod
-    def _get_request(url, params=None, headers=None, verify=True):
+    @classmethod
+    def _get_request(cls, url, params=None, headers=None, verify=True):
         """Method to return the json loaded response for this GET request
 
         Args:
@@ -190,10 +194,11 @@ class StreamOutputBase(object):
         Returns:
             dict: Contains the http response object
         """
-        return requests.get(url, headers=headers, params=params, verify=verify)
+        return requests.get(url, headers=headers, params=params,
+                            verify=verify, timeout=cls._DEFAULT_REQUEST_TIMEOUT)
 
-    @staticmethod
-    def _post_request(url, data=None, headers=None, verify=True):
+    @classmethod
+    def _post_request(cls, url, data=None, headers=None, verify=True):
         """Method to return the json loaded response for this POST request
 
         Args:
@@ -204,9 +209,11 @@ class StreamOutputBase(object):
         Returns:
             dict: Contains the http response object
         """
-        return requests.post(url, headers=headers, json=data, verify=verify)
+        return requests.post(url, headers=headers, json=data,
+                             verify=verify, timeout=cls._DEFAULT_REQUEST_TIMEOUT)
 
-    def _check_http_response(self, response):
+    @classmethod
+    def _check_http_response(cls, response):
         """Method for checking for a valid HTTP response code
 
         Args:
@@ -219,7 +226,7 @@ class StreamOutputBase(object):
         if not success:
             resp_json = response.json()
             LOGGER.error('Encountered an error while sending to %s: %s\n%s',
-                         self.__service__,
+                         cls.__service__,
                          resp_json.get('message'),
                          resp_json.get('errors'))
         return success
