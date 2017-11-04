@@ -1,0 +1,200 @@
+"""
+Copyright 2017-present, Airbnb Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
+import json
+
+from boxsdk import Client, JWTAuth
+from boxsdk.exception import BoxException
+from boxsdk.object.events import EnterpriseEventsStreamType
+from requests.exceptions import ConnectionError
+
+from app_integrations import LOGGER
+from app_integrations.apps.app_base import app, AppIntegration
+
+
+@app
+class BoxApp(AppIntegration):
+    """Box base app integration"""
+    _MAX_CHUNK_SIZE = 100
+
+    def __init__(self, config):
+        super(BoxApp, self).__init__(config)
+        self._client = None
+        self._next_stream_position = None
+
+    @classmethod
+    def _type(cls):
+        return 'admin_events'
+
+    @classmethod
+    def service(cls):
+        return 'box'
+
+    @classmethod
+    def date_formatter(cls):
+        """Return a format string for a date, ie: 2017-11-01T00:29:51-00:00
+
+        This format is consistent with the format recommended by Box docs:
+            https://developer.box.com/reference#section-date-format
+        """
+        return '%Y-%m-%dT%H:%M:%S-00:00'
+
+    @classmethod
+    def _load_auth(cls, auth_data):
+        """Load JWTAuth from Box service account JSON keyfile
+
+        Args:
+            auth_data (dict): The loaded keyfile data from a Box service account
+                JSON file
+        Returns:
+            boxsdk.JWTAuth Instance of JWTAuth that allows the client to authenticate
+                or False if there was an issue loading the auth
+        """
+        try:
+            auth = JWTAuth.from_settings_dictionary(auth_data)
+        except (TypeError, ValueError, KeyError):
+            LOGGER.exception('Could not load JWT from settings dictionary')
+            return False
+
+        return auth
+
+    def _create_session(self):
+        """Box requests must be signed with a JWT keyfile
+
+        Returns:
+            bool: True if the Box client session was successfully created or False
+                if any errors occurred during the creation of the session
+        """
+        auth = self._load_auth(self._config.auth)
+        if not auth:
+            return False
+
+        self._client = Client(auth)
+
+        return bool(self._client)
+
+    def _make_request(self):
+        """Make the request using the Box client
+
+        The inner function of `_perform_request` is used to handle a single retry in
+        the event of a ConnectionError. If this fails twice, the function will return
+
+        Returns:
+            dict: Response from Box (boxsdk.session.box_session.BoxResponse) that is
+                json loaded into a dictionary.
+        """
+        # Create the parameters for this request, 100 is the max value for limit
+        params = {
+            'limit': self._MAX_CHUNK_SIZE,
+            'stream_type': EnterpriseEventsStreamType.ADMIN_LOGS,
+        }
+
+        # From Box's docs: Box responds to the created_before and created_after
+        # parameters only if the stream_position parameter is not included.
+        if self._next_stream_position:
+            params['stream_position'] = self._next_stream_position
+        else:
+            params['created_after'] = self._last_timestamp
+
+        def _perform_request(allow_retry=True):
+            try:
+                # Get the events using a make_request call with the box api. This is to
+                # support custom parameters such as 'created_after' and 'created_before'
+                box_response = self._client.make_request(
+                    'GET',
+                    self._client.get_url('events'),
+                    params=params
+                )
+            except BoxException:
+                LOGGER.exception('Failed to get events for %s', self.type())
+                return False
+            except ConnectionError:
+                # In testing, the requests connection seemed to get reset for no
+                # obvious reason, and a simple retry once works fine so catch it
+                # and retry once, but after that return False
+                LOGGER.execption('Bad response received from host, will retry once')
+                if allow_retry:
+                    return _perform_request(allow_retry=False)
+
+                return False
+
+            # Return the JSON from the box response
+            return box_response.json()
+
+        return _perform_request()
+
+    def _gather_logs(self):
+        """Gather the Box Admin Events
+
+        The ideal way to do this would be to use the boxsdk.events.Events class and the
+        `get_events` method to retrieve these events. However, this method does allow you
+        to pass keyword arguments (such as params) which are needed for specifying the
+        'created_after' parameter.
+        """
+        if not self._create_session():
+            return False
+
+        response = self._make_request()
+
+        events = response['entries']
+
+        self._more_to_poll = int(response['chunk_size']) >= self._MAX_CHUNK_SIZE
+
+        if not events:
+            LOGGER.error('No events received from the Box API request for %s', self.type())
+            return False
+
+        self._next_stream_position = response['next_stream_position']
+
+        self._last_timestamp = events[-1]['created_at']
+
+        return events
+
+    @classmethod
+    def _required_auth_info(cls):
+        # Use a validation function to ensure the file the user provides is valid
+        def keyfile_validator(keyfile):
+            """A JSON formatted Box service account private key file key"""
+            try:
+                with open(keyfile.strip(), 'r') as json_keyfile:
+                    auth_data = json.load(json_keyfile)
+            except (IOError, ValueError):
+                return False
+
+            if not cls._load_auth(auth_data):
+                return False
+
+            return auth_data
+
+        return {
+            'keyfile':
+                {
+                    'description': ('the path on disk to the JSON formatted Box '
+                                    'service account private key file'),
+                    'format': keyfile_validator
+                }
+            }
+
+    def _sleep_seconds(self):
+        """Return the number of seconds this polling function should sleep for
+        between requests to avoid failed requests.
+
+        The Box API has a limit of 10 API calls per second per user, which we will
+        not hit, so return 0 here.
+
+        Returns:
+            int: Number of seconds that this function should sleep for between requests
+        """
+        return 0
