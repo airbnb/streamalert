@@ -26,7 +26,7 @@ from app_integrations.apps.app_base import app, AppIntegration
 
 @app
 class BoxApp(AppIntegration):
-    """Box base app integration"""
+    """BoxApp integration"""
     _MAX_CHUNK_SIZE = 100
 
     def __init__(self, config):
@@ -70,13 +70,17 @@ class BoxApp(AppIntegration):
 
         return auth
 
-    def _create_session(self):
+    def _create_client(self):
         """Box requests must be signed with a JWT keyfile
 
         Returns:
-            bool: True if the Box client session was successfully created or False
-                if any errors occurred during the creation of the session
+            bool: True if the Box client was successfully created or False
+                if any errors occurred during the creation of the client
         """
+        if self._client:
+            LOGGER.debug('Client already instantiated for %s', self.type())
+            return True
+
         auth = self._load_auth(self._config.auth)
         if not auth:
             return False
@@ -124,7 +128,7 @@ class BoxApp(AppIntegration):
                 # In testing, the requests connection seemed to get reset for no
                 # obvious reason, and a simple retry once works fine so catch it
                 # and retry once, but after that return False
-                LOGGER.execption('Bad response received from host, will retry once')
+                LOGGER.exception('Bad response received from host, will retry once')
                 if allow_retry:
                     return _perform_request(allow_retry=False)
 
@@ -142,18 +146,25 @@ class BoxApp(AppIntegration):
         `get_events` method to retrieve these events. However, this method does allow you
         to pass keyword arguments (such as params) which are needed for specifying the
         'created_after' parameter.
+
+        Returns:
+            bool or list: If the execution fails for some reason, return False.
+                Otherwise, return a list of box admin event entries.
         """
-        if not self._create_session():
+        if not self._create_client():
             return False
 
         response = self._make_request()
 
-        events = response['entries']
+        if not response:
+            LOGGER.error('No results received from the Box API request for %s', self.type())
+            return False
 
         self._more_to_poll = int(response['chunk_size']) >= self._MAX_CHUNK_SIZE
 
+        events = response.get('entries', [])
         if not events:
-            LOGGER.error('No events received from the Box API request for %s', self.type())
+            LOGGER.info('No events in response from the Box API request for %s', self.type())
             return False
 
         self._next_stream_position = response['next_stream_position']

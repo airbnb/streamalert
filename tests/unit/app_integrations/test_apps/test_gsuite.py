@@ -20,7 +20,7 @@ from mock import Mock, mock_open, patch
 from apiclient import errors
 from nose.tools import assert_equal, assert_false, assert_items_equal, assert_true, raises
 
-from app_integrations.apps.gsuite import GSuiteReportsApp #, DuoAdminApp, DuoAuthApp
+from app_integrations.apps.gsuite import GSuiteReportsApp
 from app_integrations.config import AppConfig
 
 from tests.unit.app_integrations.test_helpers import (
