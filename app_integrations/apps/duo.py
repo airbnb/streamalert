@@ -138,7 +138,7 @@ class DuoApp(AppIntegration):
         return logs
 
     @classmethod
-    def required_auth_info(cls):
+    def _required_auth_info(cls):
         return {
             'api_hostname':
                 {

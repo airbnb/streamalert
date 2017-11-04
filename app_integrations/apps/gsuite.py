@@ -51,6 +51,10 @@ class GSuiteReportsApp(AppIntegration):
         Args:
             keydata (dict): The loaded keyfile data from a Google service account
                 JSON file
+
+        Returns:
+            oauth2client.service_account.ServiceAccountCredentials: Instance of
+                service account credentials for this discovery service
         """
         try:
             creds = ServiceAccountCredentials.from_json_keyfile_dict(
@@ -131,7 +135,7 @@ class GSuiteReportsApp(AppIntegration):
         return activities
 
     @classmethod
-    def required_auth_info(cls):
+    def _required_auth_info(cls):
         # Use a validation function to ensure the file the user provides is valid
         def keyfile_validator(keyfile):
             """A JSON formatted (not p12) Google service account private key file key"""
