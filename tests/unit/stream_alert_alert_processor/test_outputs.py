@@ -441,7 +441,7 @@ class TestPhantomOutput(object):
                                    alert=alert)
 
         full_url = 'http://phantom.foo.bar/rest/container'
-        params = {'_filter_name': 'rule_name', 'page_size': 1}
+        params = {'_filter_name': '"rule_name"', 'page_size': 1}
         headers = {'ph-auth-token': 'mocked_auth_token'}
         get_mock.assert_has_calls([call(full_url, params, headers, False)])
         rule_description = 'Info about this rule and what actions to take'
@@ -606,7 +606,7 @@ class TestSlackOutput(object):
         return get_alert()
 
     @patch('logging.Logger.info')
-    @patch('requests.get')
+    @patch('requests.post')
     @mock_s3
     @mock_kms
     def test_dispatch_success(self, url_mock, log_info_mock):
@@ -622,7 +622,7 @@ class TestSlackOutput(object):
         log_info_mock.assert_called_with('Successfully sent alert to %s', self.__service)
 
     @patch('logging.Logger.error')
-    @patch('requests.get')
+    @patch('requests.post')
     @mock_s3
     @mock_kms
     def test_dispatch_failure(self, url_mock, log_error_mock):

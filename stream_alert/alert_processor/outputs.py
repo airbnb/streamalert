@@ -242,7 +242,7 @@ class PhantomOutput(StreamOutputBase):
         # Limit the query to 1 page, since we only care if one container exists with
         # this name.
         params = {
-            '_filter_name': rule_name,
+            '_filter_name': '"{}"'.format(rule_name),
             'page_size': 1
         }
         resp = self._get_request(container_url, params, headers, False)
@@ -521,7 +521,7 @@ class SlackOutput(StreamOutputBase):
 
         slack_message = self._format_message(kwargs['rule_name'], kwargs['alert'])
 
-        resp = self._get_request(creds['url'], slack_message)
+        resp = self._post_request(creds['url'], slack_message)
         success = self._check_http_response(resp)
 
         return self._log_status(success)

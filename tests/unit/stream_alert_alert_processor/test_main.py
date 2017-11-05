@@ -98,7 +98,7 @@ def test_sort_dict_recursive():
         assert_equal(sub_keys[index], key)
 
 
-@patch('requests.get')
+@patch('requests.post')
 @patch('stream_alert.alert_processor.main._load_output_config')
 @patch('stream_alert.alert_processor.output_base.StreamOutputBase._load_creds')
 def test_running_success(creds_mock, config_mock, get_mock):
