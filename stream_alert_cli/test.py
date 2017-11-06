@@ -717,7 +717,7 @@ class AlertProcessorTester(object):
                                        'us-east-1', self.kms_alias)
 
                 # Set the patched requests.get return value to 200
-                get_mock.return_value.status_code = 200
+                post_mock.return_value.status_code = 200
 
 
 def report_output(passed, cols):
