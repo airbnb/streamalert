@@ -19,12 +19,14 @@ import json
 import os
 import tempfile
 import requests
+import urllib3
 
 import boto3
 from botocore.exceptions import ClientError
 
 from stream_alert.alert_processor import LOGGER
 
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 OutputProperty = namedtuple('OutputProperty',
                             'description, value, input_restrictions, mask_input, cred_requirement')
 OutputProperty.__new__.__defaults__ = ('', '', {' ', ':'}, False, False)
@@ -224,11 +226,9 @@ class StreamOutputBase(object):
         """
         success = response is not None and (200 <= response.status_code <= 299)
         if not success:
-            resp_json = response.json()
-            LOGGER.error('Encountered an error while sending to %s: %s\n%s',
+            LOGGER.error('Encountered an error while sending to %s:\n%s',
                          cls.__service__,
-                         resp_json.get('message'),
-                         resp_json.get('errors'))
+                         response.content)
         return success
 
     @classmethod

@@ -784,6 +784,16 @@ class AlertProcessorTester(object):
                 helpers.put_mock_creds(output_name, creds, self.secrets_bucket,
                                        self.region, self.kms_alias)
 
+            elif service == 'jira':
+                output_name = '{}/{}'.format(service, descriptor)
+                creds = {'username': 'jira@foo.bar',
+                         'password': 'jirafoobar',
+                         'url': 'jira.foo.bar',
+                         'project_key': 'foobar',
+                         'issue_type': 'Task',
+                         'aggregate': 'no'}
+                helpers.put_mock_creds(output_name, creds, self.secrets_bucket,
+                                       'us-east-1', self.kms_alias)
 
     @staticmethod
     def _cleanup_old_secrets():
