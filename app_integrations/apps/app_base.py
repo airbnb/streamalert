@@ -123,13 +123,30 @@ class AppIntegration(object):
         return '_'.join([cls.service(), cls._type()])
 
     @classmethod
-    @abstractmethod
     def required_auth_info(cls):
-        """Get the expected info that this service's auth dictionary should contain.
+        """Public method to get the expected info that this service's auth dict should contain.
 
-        This should be implemented by subclasses and provide context as to what authentication
+        This public method calls the protected `_required_auth_info` and then validates its
+        type to ensure the caller does not get a non-iterable result due to a poor implementation
+        by a subclass.
+
+        Returns:
+            dict: Required authentication keys, with optional description and
+                format they should follow
+        """
+        req_auth_info = cls._required_auth_info()
+        return req_auth_info if isinstance(req_auth_info, dict) else dict()
+
+    @classmethod
+    @abstractmethod
+    def _required_auth_info(cls):
+        """Protected method to get the expected info that this service's auth dict should contain.
+
+        This must be implemented by subclasses and provide context as to what authentication
         information is required as well as a description of the data and an optional regex
         that the data should conform to.
+
+        This is called from the public `required_auth_info` method and validated there.
 
         Returns:
             dict: Required authentication keys, with optional description and

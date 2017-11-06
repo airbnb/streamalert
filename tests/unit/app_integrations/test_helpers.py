@@ -129,6 +129,23 @@ class MockSSMClient(object):
                                              'a-test-200%40myapp-123456.iam.gserviceaccount.com')
                 }
             }
+        elif app_type in {'box', 'box_admin_events'}:
+            return {
+                'keyfile' : {
+                    'boxAppSettings': {
+                        'clientID': 'sc0ikmesi43elk4rxus11sbee1najitr',
+                        'clientSecret': '9ccOBWPh8ab5wHN2uGy0nFOrUtY82xcZ',
+                        'appAuth': {
+                            'publicKeyID': 'zqxhbd44',
+                            'privateKey': ('-----BEGIN ENCRYPTED PRIVATE KEY-----\n'
+                                           'VGhpcyBpcyBub3QgcmVhbA==\n-----END ENCRYPTED '
+                                           'PRIVATE KEY-----\n'),
+                            'passphrase': 'e8a88b08eff2797234d6313686f7bad7'
+                        }
+                    },
+                    'enterpriseID': '12345678'
+                }
+            }
 
         # Fill this out with future supported apps/services
         return {}
@@ -193,6 +210,8 @@ def get_formatted_timestamp(app_type):
     elif app_type in {'gsuite', 'gsuite_admin', 'gsuite_drive',
                       'gsuite_login', 'gsuite_token'}:
         return '2017-06-17T15:39:18.460Z'
+    elif app_type in {'box', 'box_admin_events'}:
+        return '2017-10-27T12:31:22-07:00'
 
 
 def get_valid_config_dict(app_type):

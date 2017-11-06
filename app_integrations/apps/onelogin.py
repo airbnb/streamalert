@@ -224,7 +224,7 @@ class OneLoginApp(AppIntegration):
         return response['data']
 
     @classmethod
-    def required_auth_info(cls):
+    def _required_auth_info(cls):
         return {
             'region':
                 {

@@ -150,6 +150,19 @@ class TestAppIntegrationConfig(object):
             time_mock.return_value = 1234567890
             assert_equal(self._config._determine_last_time(), '2009-02-13T22:31:30Z')
 
+    @patch('calendar.timegm')
+    def test_determine_last_timestamp_box(self, time_mock):
+        """AppIntegrationConfig - Determine Last Timestamp, Box"""
+        with patch.object(AppConfig, 'SSM_CLIENT', MockSSMClient(app_type='box_admin_events')):
+            self._config = AppConfig.load_config(get_mock_context(), None)
+
+            # Reset the last timestamp to None
+            self._config.last_timestamp = None
+
+            # Use a mocked current time
+            time_mock.return_value = 1234567890
+            assert_equal(self._config._determine_last_time(), '2009-02-13T22:31:30-00:00')
+
     @patch('logging.Logger.error')
     def test_set_item(self, log_mock):
         """AppIntegrationConfig - Set Item, Bad Value"""
