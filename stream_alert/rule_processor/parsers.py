@@ -79,7 +79,6 @@ class ParserBase:
     def matched_log_pattern(self, record, log_patterns):
         """Return True if all log patterns of this record match"""
         # Return True immediately if there are no log patterns
-        # or if the data being tested is not a dict
         if not log_patterns:
             return True
 
@@ -104,7 +103,7 @@ class ParserBase:
             pattern_result.append(any(fnmatch(value, pattern)
                                       for pattern in pattern_list))
 
-        all_patterns_result = all(pattern_result)
+        all_patterns_result = bool(pattern_result and all(pattern_result))
         LOGGER.debug('%s log pattern match result: %s', self.type(), all_patterns_result)
 
         # if all pattern group results are True
