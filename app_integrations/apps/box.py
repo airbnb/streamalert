@@ -152,6 +152,7 @@ class BoxApp(AppIntegration):
                 Otherwise, return a list of box admin event entries.
         """
         if not self._create_client():
+            LOGGER.error('Could not create box client for %s', self.type())
             return False
 
         response = self._make_request()
