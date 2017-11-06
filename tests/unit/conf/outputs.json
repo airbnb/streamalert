@@ -1,4 +1,7 @@
 {
+  "aws-firehose": {
+    "unit_test_delivery_stream": "unit_test_delivery_stream"
+  },
   "aws-lambda": {
     "unit_test_lambda": "unit_test_function",
     "unit_test_lambda_qual": "unit_test_function:production"
