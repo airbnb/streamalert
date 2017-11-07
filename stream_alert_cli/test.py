@@ -17,7 +17,9 @@ from collections import namedtuple
 import logging
 import os
 import re
+import shutil
 import sys
+import tempfile
 import time
 
 import boto3
@@ -600,6 +602,7 @@ class AlertProcessorTester(object):
         self.kms_alias = 'alias/stream_alert_secrets_test'
         self.secrets_bucket = 'test.streamalert.secrets'
         self.outputs_config = load_outputs_config()
+        self._cleanup_old_secrets()
         helpers.setup_mock_firehose_delivery_streams(config)
 
     def test_processor(self, alerts):
@@ -718,6 +721,15 @@ class AlertProcessorTester(object):
 
                 # Set the patched requests.get return value to 200
                 post_mock.return_value.status_code = 200
+
+    @staticmethod
+    def _cleanup_old_secrets():
+        """Remove the local secrets directory that may be left from previous runs"""
+        temp_dir = os.path.join(tempfile.gettempdir(), 'stream_alert_secrets')
+
+        # Check if the folder exists, and remove it if it does
+        if os.path.isdir(temp_dir):
+            shutil.rmtree(temp_dir)
 
 
 def report_output(passed, cols):
