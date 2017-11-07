@@ -323,15 +323,15 @@ class StreamAlertAthenaClient(object):
                              athena_table)
                 continue
 
-            # Gather all of the partitions to add per bucket
-            s3_key_regex = self.STREAMALERTS_REGEX if athena_table == 'alerts' \
-                else self.FIREHOSE_REGEX
             # Iterate over each key
             for key in keys:
-                match = s3_key_regex.search(key)
+                for pattern in (self.FIREHOSE_REGEX, self.STREAMALERTS_REGEX):
+                    match = pattern.search(key)
+                    if match:
+                        break
+
                 if not match:
-                    LOGGER.error('The key %s does not match the regex %s, skipping',
-                                 key, s3_key_regex.pattern)
+                    LOGGER.error('The key %s does not match any regex, skipping', key)
                     continue
 
                 # Convert the match groups to a dict for easy access
