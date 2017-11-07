@@ -65,6 +65,17 @@ def get_app(config, init=True):
                                           '{}'.format(config['type']))
 
 
+def safe_timeout(func):
+    """Try/Except decorator to catch any timeout error raised by requests"""
+    def _wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except requests.exceptions.Timeout:
+            LOGGER.exception('Request timed out for %s', args[0].type())
+            return False, None
+    return _wrapper
+
+
 class AppIntegration(object):
     """Base class for all app integrations to be implemented for various services"""
     __metaclass__ = ABCMeta
@@ -301,6 +312,7 @@ class AppIntegration(object):
 
         return success
 
+    @safe_timeout
     def _make_get_request(self, full_url, headers, params=None):
         """Method for returning the json loaded response for this GET request
 
@@ -317,6 +329,7 @@ class AppIntegration(object):
 
         return self._check_http_response(response), response.json()
 
+    @safe_timeout
     def _make_post_request(self, full_url, headers, data):
         """Method for returning the json loaded response for this POST request
 
