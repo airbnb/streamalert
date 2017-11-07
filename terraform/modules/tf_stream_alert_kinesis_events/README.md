@@ -11,6 +11,18 @@
     <th>Required</th>
   </tr>
   <tr>
+    <td>batch_size</td>
+    <td>The number of records fetched from Kinesis on a single Lambda invocation</td>
+    <td>100</td>
+    <td>False</td>
+  </tr>  
+  <tr>
+    <td>kinesis_stream_arn</td>
+    <td>The ARN of the Kinesis Stream</td>
+    <td>None</td>
+    <td>True</td>
+  </tr>
+  <tr>
     <td>lambda_role_id</td>
     <td>The AWS IAM Role ID attached to the Lambda function</td>
     <td>None</td>
@@ -25,12 +37,6 @@
   <tr>
     <td>lambda_function_arn</td>
     <td>The ARN of the Lambda function to read from Kinesis</td>
-    <td>None</td>
-    <td>True</td>
-  </tr>
-  <tr>
-    <td>kinesis_stream_arn</td>
-    <td>The ARN of the Kinesis Stream</td>
     <td>None</td>
     <td>True</td>
   </tr>
