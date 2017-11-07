@@ -1,248 +1,266 @@
 {
-    "records": [
-        {
-            "data": {
-                "additionalEventData": {
-                    "x-amz-id-2": "..."
-                },
-                "awsRegion": "...",
-                "eventID": "...",
-                "eventName": "PutObject",
-                "eventSource": "...",
-                "eventTime": "...",
-                "eventType": "AwsApiCall",
-                "eventVersion": "...",
-                "readOnly": false,
-                "recipientAccountId": "12345",
-                "requestID": "...",
-                "requestParameters": {
-                    "X-Amz-Algorithm": "...",
-                    "X-Amz-Date": "...",
-                    "X-Amz-Expires": "12345",
-                    "X-Amz-SignedHeaders": "...",
-                    "accessControlList": {
-                        "x-amz-grant-read": "uri=\"http://acs.amazonaws.com/groups/global/AuthenticatedUsers\", id=\"...\"",
-                        "x-amz-grant-read-acp": "uri=\"http://acs.amazonaws.com/groups/global/AuthenticatedUsers\", id=\"...\"",
-                        "x-amz-grant-write": "uri=\"http://acs.amazonaws.com/groups/global/AuthenticatedUsers\", id=\"...\"",
-                        "x-amz-grant-write-acp": "uri=\"http://acs.amazonaws.com/groups/global/AuthenticatedUsers\", id=\"...\""
-                    },
-                    "bucketName": "...",
-                    "key": "...",
-                    "x-amz-storage-class": "..."
-                },
-                "resources": [
-                    {
-                        "ARN": "...",
-                        "type": "..."
-                    },
-                    {
-                        "ARN": "...",
-                        "accountId": "12345",
-                        "type": "..."
-                    }
-                ],
-                "responseElements": {
-                },
-                "sourceIPAddress": "...",
-                "userAgent": "...",
-                "userIdentity": {
-                    "accountId": "12345",
-                    "arn": "...",
-                    "principalId": "12345",
-                    "sessionContext": {
-                        "attributes": {
-                            "creationDate": "...",
-                            "mfaAuthenticated": "false"
-                        }
-                    },
-                    "type": "..."
-                }
+  "records": [
+    {
+      "data": {
+        "Records": [
+          {
+            "additionalEventData": {
+              "x-amz-id-2": "..."
             },
-            "description": "Storing an S3 object with an `AuthenticatedUsers` permission will create an alert.",
-            "log": "cloudtrail:events",
-            "service": "s3",
-            "source": "prefix.cluster.sample.bucket",
-            "trigger_rules": ["cloudtrail_put_object_acl"]
-        },
-        {
-            "data": {
-                "additionalEventData": {
-                    "x-amz-id-2": "..."
-                },
-                "awsRegion": "...",
-                "eventID": "...",
-                "eventName": "PutObject",
-                "eventSource": "...",
-                "eventTime": "...",
-                "eventType": "AwsApiCall",
-                "eventVersion": "...",
-                "readOnly": false,
-                "recipientAccountId": "12345",
-                "requestID": "...",
-                "requestParameters": {
-                    "X-Amz-Algorithm": "...",
-                    "X-Amz-Date": "...",
-                    "X-Amz-Expires": "12345",
-                    "X-Amz-SignedHeaders": "...",
-                    "accessControlList": {
-                        "x-amz-grant-read": "uri=\"http://acs.amazonaws.com/groups/global/AllUsers\", id=\"...\""
-                    },
-                    "bucketName": "...",
-                    "key": "...",
-                    "x-amz-storage-class": "..."
-                },
-                "resources": [
-                    {
-                        "ARN": "...",
-                        "type": "..."
-                    },
-                    {
-                        "ARN": "...",
-                        "accountId": "12345",
-                        "type": "..."
-                    }
-                ],
-                "responseElements": {
-                },
-                "sourceIPAddress": "...",
-                "userAgent": "...",
-                "userIdentity": {
-                    "accountId": "12345",
-                    "arn": "...",
-                    "principalId": "12345",
-                    "sessionContext": {
-                        "attributes": {
-                            "creationDate": "...",
-                            "mfaAuthenticated": "false"
-                        }
-                    },
-                    "type": "..."
-                }
+            "awsRegion": "...",
+            "eventID": "...",
+            "eventName": "PutObject",
+            "eventSource": "...",
+            "eventTime": "...",
+            "eventType": "AwsApiCall",
+            "eventVersion": "...",
+            "readOnly": false,
+            "recipientAccountId": "12345",
+            "requestID": "...",
+            "requestParameters": {
+              "X-Amz-Algorithm": "...",
+              "X-Amz-Date": "...",
+              "X-Amz-Expires": "12345",
+              "X-Amz-SignedHeaders": "...",
+              "accessControlList": {
+                "x-amz-grant-read": "uri=\"http://acs.amazonaws.com/groups/global/AuthenticatedUsers\", id=\"...\"",
+                "x-amz-grant-read-acp": "uri=\"http://acs.amazonaws.com/groups/global/AuthenticatedUsers\", id=\"...\"",
+                "x-amz-grant-write": "uri=\"http://acs.amazonaws.com/groups/global/AuthenticatedUsers\", id=\"...\"",
+                "x-amz-grant-write-acp": "uri=\"http://acs.amazonaws.com/groups/global/AuthenticatedUsers\", id=\"...\""
+              },
+              "bucketName": "...",
+              "key": "...",
+              "x-amz-storage-class": "..."
             },
-            "description": "Storing an S3 object with an `AllUsers` permission will create an alert.",
-            "log": "cloudtrail:events",
-            "service": "s3",
-            "source": "prefix.cluster.sample.bucket",
-            "trigger_rules": ["cloudtrail_put_object_acl"]
-        },
-        {
-            "data": {
-                "additionalEventData": {
-                    "x-amz-id-2": "..."
-                },
-                "awsRegion": "...",
-                "eventID": "...",
-                "eventName": "PutObject",
-                "eventSource": "...",
-                "eventTime": "...",
-                "eventType": "AwsApiCall",
-                "eventVersion": "...",
-                "readOnly": false,
-                "recipientAccountId": "12345",
-                "requestID": "...",
-                "requestParameters": {
-                    "X-Amz-Algorithm": "...",
-                    "X-Amz-Date": "...",
-                    "X-Amz-Expires": "12345",
-                    "X-Amz-SignedHeaders": "...",
-                    "accessControlList": {
-                        "x-amz-grant-write-acp": "uri=\"http://acs.amazonaws.com/groups/global/AuthenticatedUsers\", uri=\"http://acs.amazonaws.com/groups/global/AllUsers\", id=\"...\""
-                    },
-                    "bucketName": "...",
-                    "key": "...",
-                    "x-amz-storage-class": "..."
-                },
-                "resources": [
-                    {
-                        "ARN": "...",
-                        "type": "..."
-                    },
-                    {
-                        "ARN": "...",
-                        "accountId": "12345",
-                        "type": "..."
-                    }
-                ],
-                "responseElements": {
-                },
-                "sourceIPAddress": "...",
-                "userAgent": "...",
-                "userIdentity": {
-                    "accountId": "12345",
-                    "arn": "...",
-                    "principalId": "12345",
-                    "sessionContext": {
-                        "attributes": {
-                            "creationDate": "...",
-                            "mfaAuthenticated": "false"
-                        }
-                    },
-                    "type": "..."
+            "resources": [
+              {
+                "ARN": "...",
+                "type": "..."
+              },
+              {
+                "ARN": "...",
+                "accountId": "12345",
+                "type": "..."
+              }
+            ],
+            "responseElements": {},
+            "sourceIPAddress": "...",
+            "userAgent": "...",
+            "userIdentity": {
+              "accountId": "12345",
+              "arn": "...",
+              "principalId": "12345",
+              "sessionContext": {
+                "attributes": {
+                  "creationDate": "...",
+                  "mfaAuthenticated": "false"
                 }
+              },
+              "type": "..."
+            }
+          }
+        ]
+      },
+      "description": "Storing an S3 object with an `AuthenticatedUsers` permission will create an alert.",
+      "log": "cloudtrail:events",
+      "service": "s3",
+      "source": "prefix.cluster.sample.bucket",
+      "trigger_rules": [
+        "cloudtrail_put_object_acl"
+      ]
+    },
+    {
+      "data": {
+        "Records": [
+          {
+            "additionalEventData": {
+              "x-amz-id-2": "..."
             },
-            "description": "Storing an S3 object with an `AllUsers` and `AuthenticatedUsers` permission will create an alert.",
-            "log": "cloudtrail:events",
-            "service": "s3",
-            "source": "prefix.cluster.sample.bucket",
-            "trigger_rules": ["cloudtrail_put_object_acl"]
-        },
-        {
-            "data": {
-                "additionalEventData": {
-                    "x-amz-id-2": "..."
-                },
-                "awsRegion": "...",
-                "eventID": "...",
-                "eventName": "PutObject",
-                "eventSource": "...",
-                "eventTime": "...",
-                "eventType": "AwsApiCall",
-                "eventVersion": "...",
-                "readOnly": false,
-                "recipientAccountId": "12345",
-                "requestID": "...",
-                "requestParameters": {
-                    "X-Amz-Algorithm": "...",
-                    "X-Amz-Date": "...",
-                    "X-Amz-Expires": "123",
-                    "X-Amz-SignedHeaders": "...",
-                    "bucketName": "...",
-                    "key": "...",
-                    "x-amz-storage-class": "..."
-                },
-                "resources": [
-                    {
-                        "ARN": "...",
-                        "type": "..."
-                    },
-                    {
-                        "ARN": "...",
-                        "accountId": "12345",
-                        "type": "..."
-                    }
-                ],
-                "responseElements": {
-                },
-                "sourceIPAddress": "...",
-                "userAgent": "...",
-                "userIdentity": {
-                    "accountId": "12345",
-                    "arn": "...",
-                    "principalId": "12345",
-                    "sessionContext": {
-                        "attributes": {
-                            "creationDate": "...",
-                            "mfaAuthenticated": "true"
-                        }
-                    },
-                    "type": "..."
+            "awsRegion": "...",
+            "eventID": "...",
+            "eventName": "PutObject",
+            "eventSource": "...",
+            "eventTime": "...",
+            "eventType": "AwsApiCall",
+            "eventVersion": "...",
+            "readOnly": false,
+            "recipientAccountId": "12345",
+            "requestID": "...",
+            "requestParameters": {
+              "X-Amz-Algorithm": "...",
+              "X-Amz-Date": "...",
+              "X-Amz-Expires": "12345",
+              "X-Amz-SignedHeaders": "...",
+              "accessControlList": {
+                "x-amz-grant-read": "uri=\"http://acs.amazonaws.com/groups/global/AllUsers\", id=\"...\""
+              },
+              "bucketName": "...",
+              "key": "...",
+              "x-amz-storage-class": "..."
+            },
+            "resources": [
+              {
+                "ARN": "...",
+                "type": "..."
+              },
+              {
+                "ARN": "...",
+                "accountId": "12345",
+                "type": "..."
+              }
+            ],
+            "responseElements": {},
+            "sourceIPAddress": "...",
+            "userAgent": "...",
+            "userIdentity": {
+              "accountId": "12345",
+              "arn": "...",
+              "principalId": "12345",
+              "sessionContext": {
+                "attributes": {
+                  "creationDate": "...",
+                  "mfaAuthenticated": "false"
                 }
+              },
+              "type": "..."
+            }
+          }
+        ]
+      },
+      "description": "Storing an S3 object with an `AllUsers` permission will create an alert.",
+      "log": "cloudtrail:events",
+      "service": "s3",
+      "source": "prefix.cluster.sample.bucket",
+      "trigger_rules": [
+        "cloudtrail_put_object_acl"
+      ]
+    },
+    {
+      "data": {
+        "Records": [
+          {
+            "additionalEventData": {
+              "x-amz-id-2": "..."
             },
-            "description": "Storing an S3 object without an `AllUsers` or `AuthenticatedUsers` permission will not create an alert.",
-            "log": "cloudtrail:events",
-            "service": "s3",
-            "source": "prefix.cluster.sample.bucket",
-            "trigger_rules": []
-        }
-    ]
+            "awsRegion": "...",
+            "eventID": "...",
+            "eventName": "PutObject",
+            "eventSource": "...",
+            "eventTime": "...",
+            "eventType": "AwsApiCall",
+            "eventVersion": "...",
+            "readOnly": false,
+            "recipientAccountId": "12345",
+            "requestID": "...",
+            "requestParameters": {
+              "X-Amz-Algorithm": "...",
+              "X-Amz-Date": "...",
+              "X-Amz-Expires": "12345",
+              "X-Amz-SignedHeaders": "...",
+              "accessControlList": {
+                "x-amz-grant-write-acp": "uri=\"http://acs.amazonaws.com/groups/global/AuthenticatedUsers\", uri=\"http://acs.amazonaws.com/groups/global/AllUsers\", id=\"...\""
+              },
+              "bucketName": "...",
+              "key": "...",
+              "x-amz-storage-class": "..."
+            },
+            "resources": [
+              {
+                "ARN": "...",
+                "type": "..."
+              },
+              {
+                "ARN": "...",
+                "accountId": "12345",
+                "type": "..."
+              }
+            ],
+            "responseElements": {},
+            "sourceIPAddress": "...",
+            "userAgent": "...",
+            "userIdentity": {
+              "accountId": "12345",
+              "arn": "...",
+              "principalId": "12345",
+              "sessionContext": {
+                "attributes": {
+                  "creationDate": "...",
+                  "mfaAuthenticated": "false"
+                }
+              },
+              "type": "..."
+            }
+          }
+        ]
+      },
+      "description": "Storing an S3 object with an `AllUsers` and `AuthenticatedUsers` permission will create an alert.",
+      "log": "cloudtrail:events",
+      "service": "s3",
+      "source": "prefix.cluster.sample.bucket",
+      "trigger_rules": [
+        "cloudtrail_put_object_acl"
+      ]
+    },
+    {
+      "data": {
+        "Records": [
+          {
+            "additionalEventData": {
+              "x-amz-id-2": "..."
+            },
+            "awsRegion": "...",
+            "eventID": "...",
+            "eventName": "PutObject",
+            "eventSource": "...",
+            "eventTime": "...",
+            "eventType": "AwsApiCall",
+            "eventVersion": "...",
+            "readOnly": false,
+            "recipientAccountId": "12345",
+            "requestID": "...",
+            "requestParameters": {
+              "X-Amz-Algorithm": "...",
+              "X-Amz-Date": "...",
+              "X-Amz-Expires": "123",
+              "X-Amz-SignedHeaders": "...",
+              "bucketName": "...",
+              "key": "...",
+              "x-amz-storage-class": "..."
+            },
+            "resources": [
+              {
+                "ARN": "...",
+                "type": "..."
+              },
+              {
+                "ARN": "...",
+                "accountId": "12345",
+                "type": "..."
+              }
+            ],
+            "responseElements": {},
+            "sourceIPAddress": "...",
+            "userAgent": "...",
+            "userIdentity": {
+              "accountId": "12345",
+              "arn": "...",
+              "principalId": "12345",
+              "sessionContext": {
+                "attributes": {
+                  "creationDate": "...",
+                  "mfaAuthenticated": "true"
+                }
+              },
+              "type": "..."
+            }
+          }
+        ]
+      },
+      "description": "Storing an S3 object without an `AllUsers` or `AuthenticatedUsers` permission will not create an alert.",
+      "log": "cloudtrail:events",
+      "service": "s3",
+      "source": "prefix.cluster.sample.bucket",
+      "trigger_rules": []
+    }
+  ]
 }
