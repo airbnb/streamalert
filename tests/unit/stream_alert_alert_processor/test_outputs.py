@@ -15,8 +15,8 @@ limitations under the License.
 """
 # pylint: disable=protected-access
 from collections import Counter, OrderedDict
-import json
 
+import json
 import boto3
 from mock import call, patch
 from moto import mock_s3, mock_kms, mock_lambda
@@ -120,13 +120,14 @@ class TestPagerDutyOutput(object):
         self.__dispatcher._get_default_properties = self.__backup_method
 
     @patch('logging.Logger.info')
-    @patch('urllib2.urlopen')
+    @patch('requests.post')
     @mock_s3
     @mock_kms
-    def test_dispatch_success(self, url_mock, log_info_mock):
+    def test_dispatch_success(self, post_mock, log_info_mock):
         """PagerDutyOutput dispatch success"""
         alert = self._setup_dispatch()
-        url_mock.return_value.getcode.return_value = 200
+        post_mock.return_value.status_code = 200
+        post_mock.return_value.text = ''
 
         self.__dispatcher.dispatch(descriptor=self.__descriptor,
                                    rule_name='rule_name',
@@ -137,15 +138,14 @@ class TestPagerDutyOutput(object):
         log_info_mock.assert_called_with('Successfully sent alert to %s', self.__service)
 
     @patch('logging.Logger.error')
-    @patch('urllib2.urlopen')
+    @patch('requests.post')
     @mock_s3
     @mock_kms
-    def test_dispatch_failure(self, url_mock, log_error_mock):
+    def test_dispatch_failure(self, post_mock, log_error_mock):
         """PagerDutyOutput dispatch failure"""
         alert = self._setup_dispatch()
-        bad_message = '{"error": {"message": "failed", "errors": ["err1", "err2"]}}'
-        url_mock.return_value.read.return_value = bad_message
-        url_mock.return_value.getcode.return_value = 400
+        post_mock.return_value.text = '{"message": "error message", "errors": ["error1"]}'
+        post_mock.return_value.status_code = 400
 
         self.__dispatcher.dispatch(descriptor=self.__descriptor,
                                    rule_name='rule_name',
@@ -195,7 +195,7 @@ class TestPagerDutyOutputV2(object):
                      'https://events.pagerduty.com/v2/enqueue')
 
     def _setup_dispatch(self):
-        """Helper for setting up PagerDutyOutput dispatch"""
+        """Helper for setting up PagerDutyOutputV2 dispatch"""
         remove_temp_secrets()
 
         # Cache the _get_default_properties and set it to return None
@@ -216,13 +216,14 @@ class TestPagerDutyOutputV2(object):
         self.__dispatcher._get_default_properties = self.__backup_method
 
     @patch('logging.Logger.info')
-    @patch('urllib2.urlopen')
+    @patch('requests.post')
     @mock_s3
     @mock_kms
-    def test_dispatch_success(self, url_mock, log_info_mock):
-        """PagerDutyOutput dispatch success"""
+    def test_dispatch_success(self, post_mock, log_info_mock):
+        """PagerDutyOutputV2 dispatch success"""
         alert = self._setup_dispatch()
-        url_mock.return_value.getcode.return_value = 200
+        post_mock.return_value.status_code = 200
+        post_mock.return_value.text = ''
 
         self.__dispatcher.dispatch(descriptor=self.__descriptor,
                                    rule_name='rule_name',
@@ -233,15 +234,15 @@ class TestPagerDutyOutputV2(object):
         log_info_mock.assert_called_with('Successfully sent alert to %s', self.__service)
 
     @patch('logging.Logger.error')
-    @patch('urllib2.urlopen')
+    @patch('requests.post')
     @mock_s3
     @mock_kms
-    def test_dispatch_failure(self, url_mock, log_error_mock):
-        """PagerDutyOutput dispatch failure"""
+    def test_dispatch_failure(self, post_mock, log_error_mock):
+        """PagerDutyOutputV2 dispatch failure"""
         alert = self._setup_dispatch()
-        bad_message = '{"error": {"message": "failed", "errors": ["err1", "err2"]}}'
-        url_mock.return_value.read.return_value = bad_message
-        url_mock.return_value.getcode.return_value = 400
+        json_error = json.loads('{"message": "error message", "errors": ["error1"]}')
+        post_mock.return_value.json.return_value = json_error
+        post_mock.return_value.status_code = 400
 
         self.__dispatcher.dispatch(descriptor=self.__descriptor,
                                    rule_name='rule_name',
@@ -255,7 +256,7 @@ class TestPagerDutyOutputV2(object):
     @mock_s3
     @mock_kms
     def test_dispatch_bad_descriptor(self, log_error_mock):
-        """PagerDutyOutput dispatch bad descriptor"""
+        """PagerDutyOutputV2 dispatch bad descriptor"""
         alert = self._setup_dispatch()
         self.__dispatcher.dispatch(descriptor='bad_descriptor',
                                    rule_name='rule_name',
@@ -299,12 +300,16 @@ class TestPhantomOutput(object):
         return get_alert()
 
     @patch('logging.Logger.info')
-    @patch('urllib2.urlopen')
-    def test_dispatch_existing_container(self, url_mock, log_mock):
+    @patch('requests.get')
+    @patch('requests.post')
+    def test_dispatch_existing_container(self, post_mock, get_mock, log_mock):
         """PhantomOutput dispatch success, existing container"""
-        alert = self._setup_dispatch('phantom.foo.bar')
-        url_mock.return_value.getcode.return_value = 200
-        url_mock.return_value.read.side_effect = ['{"count": 1, "data": [{"id": 1948}]}']
+        alert = self._setup_dispatch('http://phantom.foo.bar')
+        # _check_container_exists
+        get_mock.return_value.status_code = 200
+        get_mock.return_value.json.return_value = json.loads('{"count": 1, "data": [{"id": 1948}]}')
+        # dispatch
+        post_mock.return_value.status_code = 200
 
         self.__dispatcher.dispatch(descriptor=self.__descriptor,
                                    rule_name='rule_name',
@@ -313,12 +318,17 @@ class TestPhantomOutput(object):
         log_mock.assert_called_with('Successfully sent alert to %s', self.__service)
 
     @patch('logging.Logger.info')
-    @patch('urllib2.urlopen')
-    def test_dispatch_new_container(self, url_mock, log_mock):
+    @patch('requests.get')
+    @patch('requests.post')
+    def test_dispatch_new_container(self, post_mock, get_mock, log_mock):
         """PhantomOutput dispatch success, new container"""
-        alert = self._setup_dispatch('phantom.foo.bar')
-        url_mock.return_value.getcode.return_value = 200
-        url_mock.return_value.read.side_effect = ['{"count": 0, "data": []}', '{"id": 1948}']
+        alert = self._setup_dispatch('http://phantom.foo.bar')
+        # _check_container_exists
+        get_mock.return_value.status_code = 200
+        get_mock.return_value.json.return_value = json.loads('{"count": 0, "data": []}')
+        # _setup_container, dispatch
+        post_mock.return_value.status_code = 200
+        post_mock.return_value.json.return_value = json.loads('{"id": 1948}')
 
         self.__dispatcher.dispatch(descriptor=self.__descriptor,
                                    rule_name='rule_name',
@@ -327,11 +337,19 @@ class TestPhantomOutput(object):
         log_mock.assert_called_with('Successfully sent alert to %s', self.__service)
 
     @patch('logging.Logger.error')
-    @patch('urllib2.urlopen')
-    def test_dispatch_container_failure(self, url_mock, log_mock):
+    @patch('requests.get')
+    @patch('requests.post')
+    def test_dispatch_container_failure(self, post_mock, get_mock, log_mock):
         """PhantomOutput dispatch failure (setup container)"""
-        alert = self._setup_dispatch('phantom.foo.bar')
-        url_mock.return_value.getcode.return_value = 400
+        alert = self._setup_dispatch('http://phantom.foo.bar')
+        # _check_container_exists
+        get_mock.return_value.status_code = 200
+        get_mock.return_value.json.return_value = json.loads('{"count": 0, "data": []}')
+        # _setup_container
+        post_mock.return_value.status_code = 400
+        json_error = json.loads('{"message": "error message", "errors": ["error1"]}')
+        post_mock.return_value.json.return_value = json_error
+
         self.__dispatcher.dispatch(descriptor=self.__descriptor,
                                    rule_name='rule_name',
                                    alert=alert)
@@ -339,64 +357,100 @@ class TestPhantomOutput(object):
         log_mock.assert_called_with('Failed to send alert to %s', self.__service)
 
     @patch('logging.Logger.error')
-    @patch('urllib2.urlopen')
-    def test_dispatch_container_error(self, url_mock, log_mock):
+    @patch('requests.get')
+    @patch('requests.post')
+    def test_dispatch_check_container_error(self, post_mock, get_mock, log_mock):
+        """PhantomOutput dispatch decode error (check container)"""
+        alert = self._setup_dispatch('http://phantom.foo.bar')
+        # _check_container_exists
+        get_mock.return_value.status_code = 200
+        get_mock.return_value.text = '{}'
+        # _setup_container
+        post_mock.return_value.status_code = 400
+        json_error = json.loads('{"message": "error message", "errors": ["error1"]}')
+        post_mock.return_value.json.return_value = json_error
+
+        result = self.__dispatcher.dispatch(descriptor=self.__descriptor,
+                                            rule_name='rule_name',
+                                            alert=alert)
+
+        log_mock.assert_called_with('Failed to send alert to %s', self.__service)
+        assert_equal(result, False)
+
+    @patch('logging.Logger.error')
+    @patch('requests.get')
+    @patch('requests.post')
+    def test_dispatch_setup_container_error(self, post_mock, get_mock, log_mock):
         """PhantomOutput dispatch decode error (setup container)"""
-        alert = self._setup_dispatch('phantom.foo.bar')
-        url_mock.return_value.getcode.return_value = 200
-        url_mock.return_value.read.return_value = 'this\nis\nnot\njson'
+        alert = self._setup_dispatch('http://phantom.foo.bar')
+        # _check_container_exists
+        get_mock.return_value.status_code = 200
+        get_mock.return_value.json.return_value = json.loads('{"count": 0, "data": []}')
+        # _setup_container
+        post_mock.return_value.status_code = 200
+        post_mock.return_value.json.return_value = json.loads('{}')
 
-        self.__dispatcher.dispatch(descriptor=self.__descriptor,
-                                   rule_name='rule_name',
-                                   alert=alert)
 
-        response = str(
-            call('An error occurred while decoding '
-                 'Phantom container query response to JSON: %s', ValueError(
-                     'No JSON object could be decoded',)))
-
-        assert_equal(str(log_mock.call_args_list[0]), response)
-
-    @patch('logging.Logger.error')
-    @patch('urllib2.urlopen')
-    def test_dispatch_failure(self, url_mock, log_mock):
-        """PhantomOutput dispatch failure (artifact)"""
-        alert = self._setup_dispatch('phantom.foo.bar')
-        url_mock.return_value.read.side_effect = ['', '{"id": 1902}']
-        # Use side_effect to change the getcode return value the second time
-        # it is called. This allows testing issues down the chain somewhere
-        url_mock.return_value.getcode.side_effect = [200, 400]
-        self.__dispatcher.dispatch(descriptor=self.__descriptor,
-                                   rule_name='rule_name',
-                                   alert=alert)
+        result = self.__dispatcher.dispatch(descriptor=self.__descriptor,
+                                            rule_name='rule_name',
+                                            alert=alert)
 
         log_mock.assert_called_with('Failed to send alert to %s', self.__service)
+        assert_equal(result, False)
+
+    @patch('logging.Logger.error')
+    @patch('requests.get')
+    @patch('requests.post')
+    def test_dispatch_failure(self, post_mock, get_mock, log_mock):
+        """PhantomOutput dispatch failure (artifact)"""
+        alert = self._setup_dispatch('http://phantom.foo.bar')
+        # _check_container_exists
+        get_mock.return_value.status_code = 200
+        get_mock.return_value.json.return_value = json.loads('{"count": 0, "data": []}')
+        # _setup_container, dispatch
+        post_mock.return_value.status_code.side_effect = [200, 400]
+        json_id = json.loads('{"id": 1948}')
+        json_error = json.loads('{"message": "error message", "errors": ["error1"]}')
+        post_mock.return_value.json.return_value.side_effect = [json_id, json_error]
+
+        result = self.__dispatcher.dispatch(descriptor=self.__descriptor,
+                                            rule_name='rule_name',
+                                            alert=alert)
+
+        log_mock.assert_called_with('Failed to send alert to %s', self.__service)
+        assert_equal(result, False)
 
     @patch('logging.Logger.error')
     def test_dispatch_bad_descriptor(self, log_error_mock):
         """PhantomOutput dispatch bad descriptor"""
-        alert = self._setup_dispatch('phantom.foo.bar')
-        self.__dispatcher.dispatch(descriptor='bad_descriptor',
-                                   rule_name='rule_name',
-                                   alert=alert)
+        alert = self._setup_dispatch('http://phantom.foo.bar')
+        result = self.__dispatcher.dispatch(descriptor='bad_descriptor',
+                                            rule_name='rule_name',
+                                            alert=alert)
 
         log_error_mock.assert_called_with('Failed to send alert to %s', self.__service)
+        assert_equal(result, False)
 
-    @patch('stream_alert.alert_processor.output_base.StreamOutputBase._request_helper')
-    def test_dispatch_container_query(self, request_mock):
+    @patch('stream_alert.alert_processor.output_base.StreamOutputBase._get_request')
+    @patch('stream_alert.alert_processor.output_base.StreamOutputBase._post_request')
+    def test_dispatch_container_query(self, post_mock, get_mock):
         """PhantomOutput - Container Query URL"""
-        alert = self._setup_dispatch('phantom.foo.bar')
+        alert = self._setup_dispatch('http://phantom.foo.bar')
         self.__dispatcher.dispatch(descriptor=self.__descriptor,
                                    rule_name='rule_name',
                                    alert=alert)
 
-        full_url = 'phantom.foo.bar/rest/container?_filter_name="rule_name"&page_size=1'
+        full_url = 'http://phantom.foo.bar/rest/container'
+        params = {'_filter_name': '"rule_name"', 'page_size': 1}
         headers = {'ph-auth-token': 'mocked_auth_token'}
-        request_mock.assert_has_calls([call(full_url, None, headers, False)])
+        get_mock.assert_has_calls([call(full_url, params, headers, False)])
+        rule_description = 'Info about this rule and what actions to take'
+        ph_container = {'name': 'rule_name', 'description': rule_description}
+        post_mock.assert_has_calls([call(full_url, ph_container, headers, False)])
 
 
 class TestSlackOutput(object):
-    """Test class for PagerDutyOutput"""
+    """Test class for SlackOutput"""
     @classmethod
     def setup_class(cls):
         """Setup the class before any methods"""
@@ -416,7 +470,7 @@ class TestSlackOutput(object):
         """Format Single Message - Slack"""
         rule_name = 'test_rule_single'
         alert = get_random_alert(25, rule_name)
-        loaded_message = json.loads(self.__dispatcher._format_message(rule_name, alert))
+        loaded_message = self.__dispatcher._format_message(rule_name, alert)
 
         # tests
         assert_set_equal(set(loaded_message.keys()), {'text', 'mrkdwn', 'attachments'})
@@ -429,7 +483,7 @@ class TestSlackOutput(object):
         """Format Multi-Message - Slack"""
         rule_name = 'test_rule_multi-part'
         alert = get_random_alert(30, rule_name)
-        loaded_message = json.loads(self.__dispatcher._format_message(rule_name, alert))
+        loaded_message = self.__dispatcher._format_message(rule_name, alert)
 
         # tests
         assert_set_equal(set(loaded_message.keys()), {'text', 'mrkdwn', 'attachments'})
@@ -444,7 +498,7 @@ class TestSlackOutput(object):
         """Format Message Default Rule Description - Slack"""
         rule_name = 'test_empty_rule_description'
         alert = get_random_alert(10, rule_name, True)
-        loaded_message = json.loads(self.__dispatcher._format_message(rule_name, alert))
+        loaded_message = self.__dispatcher._format_message(rule_name, alert)
 
         # tests
         default_rule_description = '*Rule Description:*\nNo rule description provided\n'
@@ -552,13 +606,14 @@ class TestSlackOutput(object):
         return get_alert()
 
     @patch('logging.Logger.info')
-    @patch('urllib2.urlopen')
+    @patch('requests.post')
     @mock_s3
     @mock_kms
     def test_dispatch_success(self, url_mock, log_info_mock):
         """SlackOutput dispatch success"""
         alert = self._setup_dispatch()
-        url_mock.return_value.getcode.return_value = 200
+        url_mock.return_value.status_code = 200
+        url_mock.return_value.json.return_value = json.loads('{}')
 
         self.__dispatcher.dispatch(descriptor=self.__descriptor,
                                    rule_name='rule_name',
@@ -567,23 +622,21 @@ class TestSlackOutput(object):
         log_info_mock.assert_called_with('Successfully sent alert to %s', self.__service)
 
     @patch('logging.Logger.error')
-    @patch('urllib2.urlopen')
+    @patch('requests.post')
     @mock_s3
     @mock_kms
     def test_dispatch_failure(self, url_mock, log_error_mock):
         """SlackOutput dispatch failure"""
         alert = self._setup_dispatch()
-        error_message = 'a helpful error message'
-        url_mock.return_value.read.return_value = error_message
-        url_mock.return_value.getcode.return_value = 400
+        json_error = json.loads('{"message": "error message", "errors": ["error1"]}')
+        url_mock.return_value.json.return_value = json_error
+        url_mock.return_value.status_code = 400
 
         self.__dispatcher.dispatch(descriptor=self.__descriptor,
                                    rule_name='rule_name',
                                    alert=alert)
 
-        log_error_mock.assert_any_call('Encountered an error while sending to Slack: %s',
-                                       error_message)
-        log_error_mock.assert_any_call('Failed to send alert to %s', self.__service)
+        log_error_mock.assert_called_with('Failed to send alert to %s', self.__service)
 
     @patch('logging.Logger.error')
     @mock_s3

@@ -14,10 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from collections import namedtuple
+import json
 import logging
 import os
 import re
+import shutil
 import sys
+import tempfile
 import time
 
 import boto3
@@ -600,6 +603,7 @@ class AlertProcessorTester(object):
         self.kms_alias = 'alias/stream_alert_secrets_test'
         self.secrets_bucket = 'test.streamalert.secrets'
         self.outputs_config = load_outputs_config()
+        self._cleanup_old_secrets()
         helpers.setup_mock_firehose_delivery_streams(config)
 
     def test_processor(self, alerts):
@@ -658,9 +662,11 @@ class AlertProcessorTester(object):
             alert (dict): The alert dictionary containing outputs the need mocking out
         """
         outputs = alert.get('outputs', [])
-        # Patch the urllib2.urlopen event to override HTTPStatusCode, etc
-        url_mock = Mock()
-        patch('urllib2.urlopen', url_mock).start()
+        # Patch requests.get and requests.post
+        get_mock = Mock()
+        patch('requests.get', get_mock).start()
+        post_mock = Mock()
+        patch('requests.post', post_mock).start()
         for output in outputs:
             try:
                 service, descriptor = output.split(':')
@@ -691,8 +697,16 @@ class AlertProcessorTester(object):
                 helpers.put_mock_creds(output_name, creds, self.secrets_bucket,
                                        'us-east-1', self.kms_alias)
 
-                # Set the patched urlopen.getcode return value to 200
-                url_mock.return_value.getcode.return_value = 200
+                # Set the patched requests.post return value to 200
+                post_mock.return_value.status_code = 200
+            elif service == 'pagerdutyv2':
+                output_name = '{}/{}'.format(service, descriptor)
+                creds = {'routing_key': '247b97499078a015cc6c586bc0a92de6'}
+                helpers.put_mock_creds(output_name, creds, self.secrets_bucket,
+                                       'us-east-1', self.kms_alias)
+
+                # Set the patched requests.post return value to 200
+                post_mock.return_value.status_code = 200
             elif service == 'phantom':
                 output_name = '{}/{}'.format(service, descriptor)
                 creds = {'ph_auth_token': '6c586bc047b9749a92de29078a015cc6',
@@ -700,19 +714,30 @@ class AlertProcessorTester(object):
                 helpers.put_mock_creds(output_name, creds, self.secrets_bucket,
                                        'us-east-1', self.kms_alias)
 
-                # Set the patched urlopen.getcode return value to 200
-                url_mock.return_value.getcode.return_value = 200
+                # Set the patched request.get return value to 200
+                get_mock.return_value.status_code = 200
+                get_mock.return_value.json.return_value = json.loads('{"count": 0, "data": []}')
+                # Set the patched request.post return value to 200
+                post_mock.return_value.status_code = 200
                 # Phantom needs a container 'id' value in the http response
-                url_mock.return_value.read.side_effect = ['{"count": 0, "data": []}',
-                                                          '{"id": 1948}']
+                post_mock.return_value.json.return_value = json.loads('{"id": 1948}')
             elif service == 'slack':
                 output_name = '{}/{}'.format(service, descriptor)
                 creds = {'url': 'https://api.slack.com/web-hook-key'}
                 helpers.put_mock_creds(output_name, creds, self.secrets_bucket,
                                        'us-east-1', self.kms_alias)
 
-                # Set the patched urlopen.getcode return value to 200
-                url_mock.return_value.getcode.return_value = 200
+                # Set the patched requests.get return value to 200
+                post_mock.return_value.status_code = 200
+
+    @staticmethod
+    def _cleanup_old_secrets():
+        """Remove the local secrets directory that may be left from previous runs"""
+        temp_dir = os.path.join(tempfile.gettempdir(), 'stream_alert_secrets')
+
+        # Check if the folder exists, and remove it if it does
+        if os.path.isdir(temp_dir):
+            shutil.rmtree(temp_dir)
 
 
 def report_output(passed, cols):

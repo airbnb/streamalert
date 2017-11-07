@@ -98,14 +98,14 @@ def test_sort_dict_recursive():
         assert_equal(sub_keys[index], key)
 
 
-@patch('urllib2.urlopen')
+@patch('requests.post')
 @patch('stream_alert.alert_processor.main._load_output_config')
 @patch('stream_alert.alert_processor.output_base.StreamOutputBase._load_creds')
-def test_running_success(creds_mock, config_mock, url_mock):
+def test_running_success(creds_mock, config_mock, get_mock):
     """Alert Processor run handler - success"""
     config_mock.return_value = _load_output_config('tests/unit/conf/outputs.json')
-    creds_mock.return_value = {'url': 'mock.url'}
-    url_mock.return_value.getcode.return_value = 200
+    creds_mock.return_value = {'url': 'http://mock.url'}
+    get_mock.return_value.status_code = 200
 
     alert = get_alert()
     context = get_mock_context()
@@ -158,18 +158,18 @@ def test_running_no_dispatcher(dispatch_mock, config_mock):
 
 
 @patch('logging.Logger.exception')
-@patch('urllib2.urlopen')
+@patch('requests.get')
 @patch('stream_alert.alert_processor.main._load_output_config')
 @patch('stream_alert.alert_processor.main.get_output_dispatcher')
 @patch('stream_alert.alert_processor.output_base.StreamOutputBase._load_creds')
-def test_running_exception_occurred(creds_mock, dispatch_mock, config_mock, url_mock, log_mock):
+def test_running_exception_occurred(creds_mock, dispatch_mock, config_mock, get_mock, log_mock):
     """Alert Processor run handler - exception occurred"""
     # Use TypeError as the mock's side_effect
     err = TypeError('bad error')
     creds_mock.return_value = {'url': 'mock.url'}
     dispatch_mock.return_value.dispatch.side_effect = err
     config_mock.return_value = _load_output_config('tests/unit/conf/outputs.json')
-    url_mock.return_value.getcode.return_value = 200
+    get_mock.return_value.status_code = 200
 
     alert = _sort_dict(get_alert())
     context = get_mock_context()

@@ -65,6 +65,17 @@ def get_app(config, init=True):
                                           '{}'.format(config['type']))
 
 
+def safe_timeout(func):
+    """Try/Except decorator to catch any timeout error raised by requests"""
+    def _wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except requests.exceptions.Timeout:
+            LOGGER.exception('Request timed out for %s', args[0].type())
+            return False, None
+    return _wrapper
+
+
 class AppIntegration(object):
     """Base class for all app integrations to be implemented for various services"""
     __metaclass__ = ABCMeta
@@ -75,6 +86,11 @@ class AppIntegration(object):
     # saving to parameter store and spawning a new Lambda invocation if there are more
     # logs to poll for this interval
     _POLL_BUFFER_MULTIPLIER = 1.5
+    # _DEFAULT_REQUEST_TIMEOUT indicates how long the requests library will wait before timing
+    # out for both get and post requests. This applies to both connection and read timeouts
+    _DEFAULT_REQUEST_TIMEOUT = 3.05
+    # _EOF_SECONDS_BUFFER is the end-of-function padding in seconds needed to handle cleanup, etc
+    _EOF_SECONDS_BUFFER = 2
 
     def __init__(self, config):
         self._config = config
@@ -118,13 +134,30 @@ class AppIntegration(object):
         return '_'.join([cls.service(), cls._type()])
 
     @classmethod
-    @abstractmethod
     def required_auth_info(cls):
-        """Get the expected info that this service's auth dictionary should contain.
+        """Public method to get the expected info that this service's auth dict should contain.
 
-        This should be implemented by subclasses and provide context as to what authentication
+        This public method calls the protected `_required_auth_info` and then validates its
+        type to ensure the caller does not get a non-iterable result due to a poor implementation
+        by a subclass.
+
+        Returns:
+            dict: Required authentication keys, with optional description and
+                format they should follow
+        """
+        req_auth_info = cls._required_auth_info()
+        return req_auth_info if isinstance(req_auth_info, dict) else dict()
+
+    @classmethod
+    @abstractmethod
+    def _required_auth_info(cls):
+        """Protected method to get the expected info that this service's auth dict should contain.
+
+        This must be implemented by subclasses and provide context as to what authentication
         information is required as well as a description of the data and an optional regex
         that the data should conform to.
+
+        This is called from the public `required_auth_info` method and validated there.
 
         Returns:
             dict: Required authentication keys, with optional description and
@@ -279,6 +312,7 @@ class AppIntegration(object):
 
         return success
 
+    @safe_timeout
     def _make_get_request(self, full_url, headers, params=None):
         """Method for returning the json loaded response for this GET request
 
@@ -290,10 +324,12 @@ class AppIntegration(object):
                      self.type(), self._poll_count)
 
         # Perform the request and return the response as a dict
-        response = requests.get(full_url, headers=headers, params=params)
+        response = requests.get(full_url, headers=headers,
+                                params=params, timeout=self._DEFAULT_REQUEST_TIMEOUT)
 
         return self._check_http_response(response), response.json()
 
+    @safe_timeout
     def _make_post_request(self, full_url, headers, data):
         """Method for returning the json loaded response for this POST request
 
@@ -305,7 +341,8 @@ class AppIntegration(object):
                      self.type(), self._poll_count)
 
         # Perform the request and return the response as a dict
-        response = requests.post(full_url, headers=headers, json=data)
+        response = requests.post(full_url, headers=headers,
+                                 json=data, timeout=self._DEFAULT_REQUEST_TIMEOUT)
 
         return self._check_http_response(response), response.json()
 
@@ -383,7 +420,8 @@ class AppIntegration(object):
         if not self._initialize():
             return
 
-        while self._gather() + self._sleep_seconds() < self._config.remaining_ms() / 1000.0:
+        while (self._gather() + self._sleep_seconds() <
+               (self._config.remaining_ms() / 1000.0) - self._EOF_SECONDS_BUFFER):
             LOGGER.debug('More logs to poll for \'%s\': %s', self.type(), self._more_to_poll)
             self._config.report_remaining_seconds()
             if not self._more_to_poll:
