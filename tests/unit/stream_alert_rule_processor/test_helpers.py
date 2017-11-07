@@ -111,7 +111,7 @@ def load_and_classify_payload(config, service, entity, raw_record):
     # prepare the payloads
     payload = load_stream_payload(service, entity, raw_record)
 
-    payload = payload.pre_parse().next()
+    payload = list(payload.pre_parse())[0]
     classifier = StreamClassifier(config=config)
     classifier.load_sources(service, entity)
     classifier.classify_record(payload)

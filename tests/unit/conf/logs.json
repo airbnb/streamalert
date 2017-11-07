@@ -294,10 +294,7 @@
       "detail": {},
       "source": "string"
     },
-    "parser": "json",
-    "configuration": {
-      "json_path": "logEvents[*].extractedFields"
-    }
+    "parser": "json"
   },
   "json:regex_key_with_envelope": {
     "schema": {
