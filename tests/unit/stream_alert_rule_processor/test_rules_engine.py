@@ -662,8 +662,7 @@ class TestStreamRules(object):
         assert_equal(results, expected_results)
 
     def test_process_optional_logs(self):
-        """Rules Engine - Logs is optional when datatypes presented
-        """
+        """Rules Engine - Logs is optional when datatypes are present"""
         @rule(datatypes=['sourceAddress'],
               outputs=['s3:sample_bucket'])
         def no_logs_has_datatypes(rec): # pylint: disable=unused-variable
@@ -722,12 +721,11 @@ class TestStreamRules(object):
         assert_equal(len(alerts), 3)
         rule_names = ['no_logs_has_datatypes',
                       'has_logs_no_datatypes',
-                      'has_logs_datatypes'
-                     ]
+                      'has_logs_datatypes']
         assert_items_equal([alerts[i]['rule_name'] for i in range(3)], rule_names)
 
     def test_process_required_logs(self):
-        """Rules Engine - Logs is required when no datatypes defined."""
+        """Rules Engine - Logs is required when no datatypes defined"""
         @rule(outputs=['s3:sample_bucket'])
         def match_ipaddress(): # pylint: disable=unused-variable
             """Testing rule to detect matching IP address"""

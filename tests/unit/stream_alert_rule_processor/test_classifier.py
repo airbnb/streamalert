@@ -46,7 +46,7 @@ class TestStreamClassifier(object):
         """Helper method to return a preparsed and classified payload"""
         payload = load_stream_payload(service, entity, raw_record)
 
-        payload = payload.pre_parse().next()
+        payload = list(payload.pre_parse())[0]
         self.classifier.load_sources(service, entity)
         self.classifier.classify_record(payload)
 
@@ -272,7 +272,7 @@ class TestStreamClassifier(object):
 
         raw_record = make_kinesis_raw_record(entity, kinesis_data)
         payload = load_stream_payload(service, entity, raw_record)
-        payload = payload.pre_parse().next()
+        payload = list(payload.pre_parse())[0]
 
         result = self.classifier._parse(payload)
 
@@ -301,7 +301,7 @@ class TestStreamClassifier(object):
 
         self.classifier.load_sources(service, entity)
 
-        payload = payload.pre_parse().next()
+        payload = list(payload.pre_parse())[0]
 
         schema_matches = self.classifier._process_log_schemas(payload)
 
@@ -330,7 +330,7 @@ class TestStreamClassifier(object):
 
         self.classifier.load_sources(service, entity)
 
-        payload = payload.pre_parse().next()
+        payload = list(payload.pre_parse())[0]
 
         schema_matches = self.classifier._process_log_schemas(payload)
 
@@ -359,7 +359,7 @@ class TestStreamClassifier(object):
 
         self.classifier.load_sources(service, entity)
 
-        payload = payload.pre_parse().next()
+        payload = list(payload.pre_parse())[0]
 
         schema_matches = self.classifier._process_log_schemas(payload)
 

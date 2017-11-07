@@ -49,12 +49,8 @@ class TestParser(object):
     def _parser_type(cls):
         pass
 
-    def parser_helper(self, **kwargs):
+    def parser_helper(self, data, schema, options=None):
         """Helper to return the parser result"""
-        data = kwargs['data']
-        schema = kwargs['schema']
-        options = kwargs.get('options', {})
-
         parser = self.parser_class(options)
         parsed_result = parser.parse(schema, data)
         return parsed_result
@@ -113,6 +109,18 @@ class TestJSONParser(TestParser):
         parsed_data = self.parser_helper(data=data, schema=schema)
 
         assert_equal(len(parsed_data), 1)
+
+    def test_invalid_json_path(self):
+        """JSON Parser - Invalid JSON Path"""
+        # setup
+        schema = {'name': 'string', 'result': 'string'}
+        data = {'name': 'test', 'result': 'test'}
+        options = {'json_path': 'Records[*]'}
+
+        # get parsed data
+        parsed_data = self.parser_helper(data=data, schema=schema, options=options)
+
+        assert_false(parsed_data)
 
     @patch('stream_alert.rule_processor.parsers.LOGGER')
     def test_invalid_json(self, mock_logging):
