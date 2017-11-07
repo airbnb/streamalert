@@ -25,6 +25,7 @@ from nose.tools import (
     assert_true,
     raises
 )
+from requests.exceptions import ConnectTimeout
 
 from app_integrations.apps.app_base import AppIntegration, get_app
 from app_integrations.batcher import Batcher
@@ -255,3 +256,11 @@ class TestAppIntegration(object):
         # and to check the response, to log the message. If it was called three times,
         # it means `logs = response.json()['response']` is being called and should not be
         assert_equal(requests_mock.return_value.json.call_count, 2)
+
+    @patch('requests.get')
+    def test_make_request_timeout(self, requests_mock):
+        """App Integration - Make Request, Timeout"""
+        requests_mock.side_effect = ConnectTimeout(None, response='too slow')
+        result, response = self._app._make_get_request('hostname', None, None)
+        assert_false(result)
+        assert_is_none(response)
