@@ -18,9 +18,17 @@ data "aws_iam_policy_document" "lambda_assume_role_policy" {
   }
 }
 
+// IAM Role Policy: Allow the Rule Processor to write CloudWatch logs
+resource "aws_iam_role_policy" "streamalert_rule_processor_cloudwatch" {
+  name = "CloudwatchWriteLogs"
+  role = "${aws_iam_role.streamalert_rule_processor_role.id}"
+
+  policy = "${data.aws_iam_policy_document.alert_processor_cloudwatch.json}"
+}
+
 // IAM Role Policy: Allow the Rule Processor to invoke the Alert Processor
 resource "aws_iam_role_policy" "streamalert_rule_processor_lambda" {
-  name = "${var.prefix}_${var.cluster}_streamalert_rule_processor_invoke_alert_proc"
+  name = "LambdaInvokeAlertProcessor"
   role = "${aws_iam_role.streamalert_rule_processor_role.id}"
 
   policy = "${data.aws_iam_policy_document.rule_processor_invoke_alert_proc.json}"
@@ -44,7 +52,7 @@ data "aws_iam_policy_document" "rule_processor_invoke_alert_proc" {
 
 // IAM Role Policy: Allow the Rule Processor to put records on Firehose
 resource "aws_iam_role_policy" "streamalert_rule_processor_firehose" {
-  name = "${var.prefix}_${var.cluster}_streamalert_rule_processor_firehose"
+  name = "FirehoseWriteData"
   role = "${aws_iam_role.streamalert_rule_processor_role.id}"
 
   policy = "${data.aws_iam_policy_document.streamalert_rule_processor_firehose.json}"
@@ -76,7 +84,7 @@ resource "aws_iam_role" "streamalert_alert_processor_role" {
 
 // IAM Role Policy: Allow the Alert Processor to decrypt secrets
 resource "aws_iam_role_policy" "streamalert_alert_processor_kms" {
-  name = "${var.prefix}_${var.cluster}_streamalert_alert_processor_kms"
+  name = "KmsDecryptSecrets"
   role = "${aws_iam_role.streamalert_alert_processor_role.id}"
 
   policy = "${data.aws_iam_policy_document.rule_processor_kms_decrypt.json}"
@@ -101,7 +109,7 @@ data "aws_iam_policy_document" "rule_processor_kms_decrypt" {
 // IAM Role Policy: Allow the Alert Processor to write objects to S3.
 //                  The default S3 bucket is also created by this module.
 resource "aws_iam_role_policy" "streamalert_alert_processor_s3" {
-  name = "${var.prefix}_${var.cluster}_streamalert_alert_processor_s3_default"
+  name = "S3WriteAlertsDefault"
   role = "${aws_iam_role.streamalert_alert_processor_role.id}"
 
   policy = "${data.aws_iam_policy_document.alert_processor_s3.json}"
@@ -138,7 +146,7 @@ data "aws_iam_policy_document" "alert_processor_s3" {
 
 // IAM Role Policy: Allow the Alert Processor to write CloudWatch logs
 resource "aws_iam_role_policy" "streamalert_alert_processor_cloudwatch" {
-  name = "${var.prefix}_${var.cluster}_streamalert_alert_processor_cloudwatch"
+  name = "CloudwatchWriteLogs"
   role = "${aws_iam_role.streamalert_alert_processor_role.id}"
 
   policy = "${data.aws_iam_policy_document.alert_processor_cloudwatch.json}"
@@ -164,7 +172,7 @@ data "aws_iam_policy_document" "alert_processor_cloudwatch" {
 // IAM Role Policy: Allow the Alert Processor to invoke configured Lambda functions
 resource "aws_iam_role_policy" "streamalert_alert_processor_lambda" {
   count = "${length(var.output_lambda_functions)}"
-  name  = "${var.prefix}_${var.cluster}_streamalert_alert_processor_lambda_${count.index}"
+  name  = "LambdaInvoke${count.index}"
   role  = "${aws_iam_role.streamalert_alert_processor_role.id}"
 
   policy = <<EOF
@@ -187,7 +195,7 @@ EOF
 // IAM Role Policy: Allow the Alert Processor to send to arbitrary S3 buckets as outputs
 resource "aws_iam_role_policy" "streamalert_alert_processor_s3_outputs" {
   count = "${length(var.output_s3_buckets)}"
-  name  = "${var.prefix}_${var.cluster}_streamalert_alert_processor_s3_output_${count.index}"
+  name  = "S3PutObject${count.index}"
   role  = "${aws_iam_role.streamalert_alert_processor_role.id}"
 
   policy = <<EOF
@@ -208,10 +216,33 @@ resource "aws_iam_role_policy" "streamalert_alert_processor_s3_outputs" {
 EOF
 }
 
+// IAM Role Policy: Allow the Alert Processor to to Firehose
+resource "aws_iam_role_policy" "streamalert_alert_processor_firehose" {
+  name = "FirehoseWriteAlerts"
+  role = "${aws_iam_role.streamalert_alert_processor_role.id}"
+
+  policy = "${data.aws_iam_policy_document.alert_processor_firehose.json}"
+}
+
+// IAM Policy Doc: Allow the Alert Processor to Put data to the default Firehose
+data "aws_iam_policy_document" "alert_processor_firehose" {
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "firehose:Put*",
+    ]
+
+    resources = [
+      "${aws_kinesis_firehose_delivery_stream.stream_alerts.arn}",
+    ]
+  }
+}
+
 // IAM Role Policy: Allow the Alert Processor to run in a VPC
 resource "aws_iam_role_policy" "streamalert_alert_processor_vpc" {
   count = "${var.alert_processor_vpc_enabled ? 1 : 0}"
-  name  = "${var.prefix}_${var.cluster}_streamalert_alert_processor_vpc"
+  name  = "RunInVPC"
   role  = "${aws_iam_role.streamalert_alert_processor_role.id}"
 
   policy = "${data.aws_iam_policy_document.alert_processor_vpc.json}"

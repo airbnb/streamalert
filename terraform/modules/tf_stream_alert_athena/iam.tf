@@ -109,6 +109,18 @@ data "aws_iam_policy_document" "athena_permissions" {
     effect = "Allow"
 
     actions = [
+      "glue:*",
+    ]
+
+    resources = [
+      "*",
+    ]
+  }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
       "s3:GetBucketLocation",
       "s3:GetObject",
       "s3:ListBucket",
