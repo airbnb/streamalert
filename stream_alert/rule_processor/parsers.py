@@ -251,7 +251,10 @@ class JSONParser(ParserBase):
         if json_path_expression:
             LOGGER.debug('Parsing records with JSONPath')
             records_jsonpath = jsonpath_rw.parse(json_path_expression)
-            for match in records_jsonpath.find(json_payload):
+            matches = records_jsonpath.find(json_payload)
+            if not matches:
+                return False
+            for match in matches:
                 record = match.value
                 if envelope:
                     record.update({ENVELOPE_KEY: envelope})
