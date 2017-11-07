@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from collections import namedtuple
+import json
 import logging
 import os
 import re
@@ -698,6 +699,14 @@ class AlertProcessorTester(object):
 
                 # Set the patched requests.post return value to 200
                 post_mock.return_value.status_code = 200
+            elif service == 'pagerdutyv2':
+                output_name = '{}/{}'.format(service, descriptor)
+                creds = {'routing_key': '247b97499078a015cc6c586bc0a92de6'}
+                helpers.put_mock_creds(output_name, creds, self.secrets_bucket,
+                                       'us-east-1', self.kms_alias)
+
+                # Set the patched requests.post return value to 200
+                post_mock.return_value.status_code = 200
             elif service == 'phantom':
                 output_name = '{}/{}'.format(service, descriptor)
                 creds = {'ph_auth_token': '6c586bc047b9749a92de29078a015cc6',
@@ -707,12 +716,11 @@ class AlertProcessorTester(object):
 
                 # Set the patched request.get return value to 200
                 get_mock.return_value.status_code = 200
-                # Phantom needs a container 'id' value in the http response
-                get_mock.return_value.text.side_effect = ['{"count": 0, "data": []}',
-                                                          '{"id": 1948}']
+                get_mock.return_value.json.return_value = json.loads('{"count": 0, "data": []}')
                 # Set the patched request.post return value to 200
                 post_mock.return_value.status_code = 200
-
+                # Phantom needs a container 'id' value in the http response
+                post_mock.return_value.json.return_value = json.loads('{"id": 1948}')
             elif service == 'slack':
                 output_name = '{}/{}'.format(service, descriptor)
                 creds = {'url': 'https://api.slack.com/web-hook-key'}
