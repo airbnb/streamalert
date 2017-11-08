@@ -20,7 +20,7 @@ data "aws_iam_policy_document" "lambda_assume_role_policy" {
 
 // IAM Role Policy: Allow the Lambda function to use Cloudwatch logging
 resource "aws_iam_role_policy" "cloudwatch" {
-  name = "cloudwatch_logs"
+  name = "CloudWatchPutLogs"
   role = "${aws_iam_role.athena_partition_role.id}"
 
   policy = "${data.aws_iam_policy_document.cloudwatch.json}"
@@ -45,7 +45,7 @@ data "aws_iam_policy_document" "cloudwatch" {
 
 // IAM Role Policy: Allow the Lambda function to use Cloudwatch logging
 resource "aws_iam_role_policy" "sqs" {
-  name = "sqs"
+  name = "SQSReadDeleteMessages"
   role = "${aws_iam_role.athena_partition_role.id}"
 
   policy = "${data.aws_iam_policy_document.sqs.json}"
@@ -85,7 +85,7 @@ data "aws_iam_policy_document" "sqs" {
 // IAM Role Policy: Allow the Lambda function to execute Athena queries
 // Ref: http://amzn.to/2tSyxUV
 resource "aws_iam_role_policy" "athena_query_permissions" {
-  name = "athena"
+  name = "AthenaQuery"
   role = "${aws_iam_role.athena_partition_role.id}"
 
   policy = "${data.aws_iam_policy_document.athena_permissions.json}"
@@ -98,6 +98,26 @@ data "aws_iam_policy_document" "athena_permissions" {
 
     actions = [
       "athena:*",
+    ]
+
+    resources = [
+      "*",
+    ]
+  }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "glue:BatchCreatePartition",
+      "glue:GetDatabase",
+      "glue:GetDatabases",
+      "glue:GetTable",
+      "glue:GetTableVersions",
+      "glue:GetTables",
+      "glue:UpdateDatabase",
+      "glue:UpdatePartition",
+      "glue:UpdateTable",
     ]
 
     resources = [
@@ -127,7 +147,7 @@ data "aws_iam_policy_document" "athena_permissions" {
 
 // IAM Role Policy: Allow the Lambda function to read data buckets
 resource "aws_iam_role_policy" "athena_query_data_bucket_permissions" {
-  name = "athena_data_buckets"
+  name = "AthenaGetData"
   role = "${aws_iam_role.athena_partition_role.id}"
 
   policy = "${data.aws_iam_policy_document.athena_data_bucket_read.json}"

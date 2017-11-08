@@ -30,18 +30,24 @@ from stream_alert_cli.outputs import (
 
 
 def test_load_output_config():
-    """Load outputs configuration"""
+    """CLI - Outputs - Load outputs configuration"""
     config = load_outputs_config('tests/unit/conf')
     loaded_config_keys = sorted(config.keys())
 
-    expected_config_keys = [u'aws-lambda', u'aws-s3', u'pagerduty', u'phantom', u'slack']
+    expected_config_keys = [
+        u'aws-firehose',
+        u'aws-lambda',
+        u'aws-s3',
+        u'pagerduty',
+        u'phantom',
+        u'slack']
 
     assert_list_equal(loaded_config_keys, expected_config_keys)
 
 
 @raises(ValueError)
 def test_load_output_config_error():
-    """Load outputs configuration - exception"""
+    """CLI - Outputs - Load outputs configuration - exception"""
     mock = mock_open(read_data='non-json string that will raise an exception')
     with patch('__builtin__.open', mock):
         load_outputs_config()
@@ -49,7 +55,7 @@ def test_load_output_config_error():
 
 @patch('json.dump')
 def test_write_outputs_config(json_mock):
-    """Write outputs configuration"""
+    """CLI - Outputs - Write outputs configuration"""
     with patch('__builtin__.open', new_callable=mock_open()) as mocker:
         data = {'test': 'values', 'to': 'write'}
         write_outputs_config(data)
@@ -59,7 +65,7 @@ def test_write_outputs_config(json_mock):
 
 @patch('stream_alert_cli.outputs.load_outputs_config')
 def test_load_config(method_mock):
-    """Load config - check for existing output"""
+    """CLI - Outputs - Load config - check for existing output"""
     # Patch the return value of the load_outputs_config method to return
     # the unit testing outputs configuration
     method_mock.return_value = load_outputs_config(conf_dir="tests/unit/conf")
@@ -76,7 +82,7 @@ def test_load_config(method_mock):
 @mock_kms
 @mock_s3
 def test_encrypt_and_push_creds_to_s3(cli_mock):
-    """Encrypt and push creds to s3"""
+    """CLI - Outputs - Encrypt and push creds to s3"""
     props = {
         'non-secret': OutputProperty(
             description='short description of info needed',
@@ -104,7 +110,7 @@ def test_encrypt_and_push_creds_to_s3(cli_mock):
 @patch('boto3.client')
 @patch('logging.Logger.error')
 def test_encrypt_and_push_creds_to_s3_kms_failure(log_mock, boto_mock):
-    """Encrypt and push creds to s3 - kms failure"""
+    """CLI - Outputs - Encrypt and push creds to s3 - kms failure"""
     props = {
         'secret': OutputProperty(
             description='short description of secret needed',
@@ -129,7 +135,7 @@ def test_encrypt_and_push_creds_to_s3_kms_failure(log_mock, boto_mock):
 
 @patch('json.dump')
 def test_update_outputs_config(json_mock):
-    """Update outputs config"""
+    """CLI - Outputs - Update outputs config"""
     with patch('__builtin__.open', new_callable=mock_open()) as mocker:
         service = 'mock_service'
         original_config = {service: ['value01', 'value02']}

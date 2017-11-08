@@ -21,10 +21,17 @@ import json
 import os
 import uuid
 
+import backoff
+from botocore.exceptions import ClientError
 import boto3
 
 from stream_alert.alert_processor import LOGGER
 from stream_alert.alert_processor.output_base import OutputProperty, StreamOutputBase
+from stream_alert.shared.backoff_handlers import (
+    backoff_handler,
+    success_handler,
+    giveup_handler
+)
 
 # STREAM_OUTPUTS will contain each subclass of the StreamOutputBase
 # All included subclasses are designated using the '@output' class decorator
@@ -531,6 +538,7 @@ class AWSOutput(StreamOutputBase):
     """Subclass to be inherited from for all AWS service outputs"""
     def format_output_config(self, service_config, values):
         """Format the output configuration for this AWS service to be written to disk
+
         AWS services are stored as a dictionary within the config instead of a list so
         we have access to the AWS value (arn/bucket name/etc) for Terraform
 
@@ -553,6 +561,88 @@ class AWSOutput(StreamOutputBase):
     def dispatch(self, **kwargs):
         """Placeholder for implementation in the subclasses"""
         pass
+
+
+@output
+class KinesisFirehoseOutput(AWSOutput):
+    """High throughput Alert delivery to AWS S3"""
+    MAX_RECORD_SIZE = 1000 * 1000
+    MAX_BACKOFF_ATTEMPTS = 3
+
+    __service__ = 'aws-firehose'
+    __aws_client__ = None
+
+    def get_user_defined_properties(self):
+        """Properties asssigned by the user when configuring a new Firehose output
+
+        Every output should return a dict that contains a 'descriptor' with a description of the
+        integration being configured.
+
+        Returns:
+            OrderedDict: Contains various OutputProperty items
+        """
+        return OrderedDict([
+            ('descriptor',
+             OutputProperty(
+                 description='a short and unique descriptor for this Firehose Delivery Stream')),
+            ('aws_value',
+             OutputProperty(description='the Firehose Delivery Stream name'))
+        ])
+
+    def dispatch(self, **kwargs):
+        """Send alert to a Kinesis Firehose Delivery Stream
+
+        Keyword Args:
+            descriptor (str): Service descriptor (ie: slack channel, pd integration)
+            rule_name (str): Name of the triggered rule
+            alert (dict): Alert relevant to the triggered rule
+
+        Returns:
+            bool: Indicates a successful or failed dispatch of the alert
+        """
+        @backoff.on_exception(backoff.fibo,
+                              ClientError,
+                              max_tries=self.MAX_BACKOFF_ATTEMPTS,
+                              jitter=backoff.full_jitter,
+                              on_backoff=backoff_handler,
+                              on_success=success_handler,
+                              on_giveup=giveup_handler)
+        def _firehose_request_wrapper(json_alert, delivery_stream):
+            """Make the PutRecord request to Kinesis Firehose with backoff
+
+            Args:
+                json_alert (str): The JSON dumped alert body
+                delivery_stream (str): The Firehose Delivery Stream to send to
+
+            Returns:
+                dict: Firehose response in the format below
+                    {'RecordId': 'string'}
+            """
+            return self.__aws_client__.put_record(DeliveryStreamName=delivery_stream,
+                                                  Record={'Data': json_alert})
+
+        if self.__aws_client__ is None:
+            self.__aws_client__ = boto3.client('firehose', region_name=self.region)
+
+        json_alert = json.dumps(kwargs['alert'], separators=(',', ':')) + '\n'
+        if len(json_alert) > self.MAX_RECORD_SIZE:
+            LOGGER.error('Alert too large to send to Firehose: \n%s...', json_alert[0:1000])
+            return False
+
+        delivery_stream = self.config[self.__service__][kwargs['descriptor']]
+        LOGGER.info('Sending alert [%s] to aws-firehose:%s',
+                    kwargs['rule_name'],
+                    delivery_stream)
+
+        resp = _firehose_request_wrapper(json_alert, delivery_stream)
+
+        if resp.get('RecordId'):
+            LOGGER.info('Alert [%s] successfully sent to aws-firehose:%s with RecordId:%s',
+                        kwargs['rule_name'],
+                        delivery_stream,
+                        resp['RecordId'])
+
+        return self._log_status(resp)
 
 
 @output
