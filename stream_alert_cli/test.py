@@ -14,7 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from collections import namedtuple
-import json
 import logging
 import os
 import re
@@ -26,7 +25,7 @@ import time
 import boto3
 from botocore.exceptions import ClientError
 import jsonpath_rw
-from mock import Mock, patch
+from mock import patch
 
 from stream_alert.alert_processor import main as StreamOutput
 from stream_alert.rule_processor.handler import StreamAlert
@@ -660,19 +659,67 @@ class AlertProcessorTester(object):
             LOGGER_CLI.error('%s(%d/%d) Alert Tests Failed%s', COLOR_RED,
                              failed_tests, total_tests, COLOR_RESET)
 
+    @staticmethod
+    def _setup_requests_mocks():
+        """Use some MagicMocks to patch get and post methods for requests
+
+        This uses a dynamic function for the 'side_effect' to for custom responses
+        """
+        def _mock_side_effect(mocker):
+
+            def _mock_by_service():
+                url = mocker.call_args[0][0]
+                if mocker.method == 'post':
+                    if 'jira' in url:
+                        if 'auth' in url:
+                            return {'session': {'name': 'cookie_name', 'value': 'cookie_value'}}
+
+                        return {'id': 3005}
+
+                    elif 'phantom' in url:
+                        return {'id': 1948}
+
+                elif mocker.method == 'get':
+                    if 'phantom' in 'url':
+                        return {'count': 0, 'data': []}
+
+                # Default to returning an empty dict in case this was not implemented for a service
+                return dict()
+
+            return _mock_by_service
+
+        get_patcher = patch('requests.get')
+        get_mock = get_patcher.start()
+        get_mock.method = 'get'
+
+        # Set the patched request.get return value to 200
+        get_mock.return_value.status_code = 200
+
+        # Set the side_effect of the json method to our dynamic function
+        # Passing in the get_mock object lets us access the calls to it
+        get_mock.return_value.json.side_effect = _mock_side_effect(get_mock)
+
+        post_patcher = patch('requests.post')
+        post_mock = post_patcher.start()
+        post_mock.method = 'post'
+
+        # Set the patched requests.post return value to 200
+        post_mock.return_value.status_code = 200
+
+        # Set the side_effect of the json method to our dynamic function
+        # Passing in the post_mock object lets us access the calls to it
+        post_mock.return_value.json.side_effect = _mock_side_effect(post_mock)
+
     def setup_outputs(self, alert):
         """Helper function to handler any output setup
 
         Args:
             alert (dict): The alert dictionary containing outputs the need mocking out
         """
-        outputs = alert.get('outputs', [])
         # Patch requests.get and requests.post
-        get_mock = Mock()
-        patch('requests.get', get_mock).start()
-        post_mock = Mock()
-        patch('requests.post', post_mock).start()
-        for output in outputs:
+        self._setup_requests_mocks()
+
+        for output in alert.get('outputs', []):
             try:
                 service, descriptor = output.split(':')
             except ValueError:
@@ -702,16 +749,12 @@ class AlertProcessorTester(object):
                 helpers.put_mock_creds(output_name, creds, self.secrets_bucket,
                                        'us-east-1', self.kms_alias)
 
-                # Set the patched requests.post return value to 200
-                post_mock.return_value.status_code = 200
             elif service == 'pagerduty-v2':
                 output_name = '{}/{}'.format(service, descriptor)
                 creds = {'routing_key': '247b97499078a015cc6c586bc0a92de6'}
                 helpers.put_mock_creds(output_name, creds, self.secrets_bucket,
                                        'us-east-1', self.kms_alias)
 
-                # Set the patched requests.post return value to 200
-                post_mock.return_value.status_code = 200
             elif service == 'phantom':
                 output_name = '{}/{}'.format(service, descriptor)
                 creds = {'ph_auth_token': '6c586bc047b9749a92de29078a015cc6',
@@ -719,21 +762,12 @@ class AlertProcessorTester(object):
                 helpers.put_mock_creds(output_name, creds, self.secrets_bucket,
                                        'us-east-1', self.kms_alias)
 
-                # Set the patched request.get return value to 200
-                get_mock.return_value.status_code = 200
-                get_mock.return_value.json.return_value = json.loads('{"count": 0, "data": []}')
-                # Set the patched request.post return value to 200
-                post_mock.return_value.status_code = 200
-                # Phantom needs a container 'id' value in the http response
-                post_mock.return_value.json.return_value = json.loads('{"id": 1948}')
             elif service == 'slack':
                 output_name = '{}/{}'.format(service, descriptor)
                 creds = {'url': 'https://api.slack.com/web-hook-key'}
                 helpers.put_mock_creds(output_name, creds, self.secrets_bucket,
                                        'us-east-1', self.kms_alias)
 
-                # Set the patched requests.get return value to 200
-                post_mock.return_value.status_code = 200
 
     @staticmethod
     def _cleanup_old_secrets():
