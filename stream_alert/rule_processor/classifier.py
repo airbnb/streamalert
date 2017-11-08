@@ -339,7 +339,7 @@ class StreamClassifier(object):
                 if key == 'streamalert:envelope_keys' and not isinstance(payload[key], dict):
                     continue
 
-                cls._convert_type(payload[key], schema[key])
+                return cls._convert_type(payload[key], schema[key])
 
             elif isinstance(value, list):
                 pass
