@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-# pylint: disable=protected-access
+# pylint: disable=protected-access,too-many-public-methods
 import json
 
 from mock import call, patch
@@ -82,6 +82,19 @@ class TestStreamClassifier(object):
         log_mock.assert_called_with(
             'Invalid schema. Value for key [%s] is not an int: %s',
             'key_01',
+            'NotInt')
+
+    @patch('logging.Logger.error')
+    def test_convert_type_invalid_nested(self, log_mock):
+        """StreamClassifier - Convert Type, Invalid Nested Type"""
+        payload = {'key_01': '100', 'streamalert:envelope_keys': {'host': 'NotInt'}}
+        schema = {'key_01': 'integer', 'streamalert:envelope_keys': {'host': 'integer'}}
+
+        assert_false(self.classifier._convert_type(payload, schema))
+
+        log_mock.assert_called_with(
+            'Invalid schema. Value for key [%s] is not an int: %s',
+            'host',
             'NotInt')
 
     def test_convert_type_valid_float(self):
