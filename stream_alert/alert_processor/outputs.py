@@ -123,7 +123,7 @@ class PagerDutyOutput(StreamOutputBase):
 @output
 class PagerDutyOutputV2(StreamOutputBase):
     """PagerDutyOutput handles all alert dispatching for PagerDuty Events API v2"""
-    __service__ = 'pagerdutyv2'
+    __service__ = 'pagerduty-v2'
 
     @classmethod
     def _get_default_properties(cls):
