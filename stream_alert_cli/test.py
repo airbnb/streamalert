@@ -582,6 +582,11 @@ class RuleProcessorTester(object):
                        '{}.'.format(base_message, unexpected_key_list))
 
             self.status_messages.append(StatusMessage(StatusMessage.FAILURE, message))
+            return
+
+        # Add a generic error message if we can not determine what the issue is
+        message = '{} Please look for any errors above.'.format(base_message)
+        self.status_messages.append(StatusMessage(StatusMessage.FAILURE, message))
 
 
 class AlertProcessorTester(object):
