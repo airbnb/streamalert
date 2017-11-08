@@ -71,7 +71,7 @@ def cloudtrail_mfa_policy_abuse_attempt(rec):
     # - 'EntityAlreadyExists': Can't create another MFA device with the same name.
     # - 'LimitExceeded': Can't enable a second MFA device for the same user.
     if ('errorCode' in rec and
-            in_set(rec['event_name'], {'CreateVirtualMFADevice', 'EnableMFADevice'})):
+            in_set(rec['eventName'], {'CreateVirtualMFADevice', 'EnableMFADevice'})):
         return True
 
     return False
