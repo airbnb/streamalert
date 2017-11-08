@@ -1,0 +1,135 @@
+{
+    "records": [
+        {
+            "data": {
+                "Records": [
+                    {
+                        "awsRegion": "us-west-2",
+                        "eventID": "123aaac1-123d-456a-1k29a4dd2kea",
+                        "eventName": "DeactivateMFADevice",
+                        "eventSource": "iam.amazonaws.com",
+                        "eventTime": "2017-01-01T00:20:50Z",
+                        "eventType": "AwsApiCall",
+                        "eventVersion": "1.05",
+                        "recipientAccountId": "123456789123",
+                        "requestID": "...",
+                        "requestParameters": {
+                            "subnetId": "..."
+                        },
+                        "responseElements": {
+                            "_return": true
+                        },
+                        "sourceIPAddress": "...",
+                        "userAgent": "...",
+                        "userIdentity": {
+                            "accessKeyId": "...",
+                            "accountId": "12345",
+                            "arn": "...",
+                            "principalId": "12345",
+                            "sessionContext": {
+                                "attributes": {
+                                    "creationDate": "...",
+                                    "mfaAuthenticated": "false"
+                                }
+                            },
+                            "type": "..."
+                        }
+                    }
+                ]
+            },
+            "description": "Attempting to deactivate an MFA device without being MFA'd in",
+            "log": "cloudtrail:events",
+            "service": "s3",
+            "source": "prefix.cluster.sample.bucket",
+            "trigger_rules": ["cloudtrail_mfa_policy_abuse_attempt"]
+        },
+        {
+            "data": {
+                "Records": [
+                    {
+                        "awsRegion": "us-west-2",
+                        "eventID": "123aaac1-123d-456a-1k29a4dd2kea",
+                        "eventName": "DeactivateMFADevice",
+                        "eventSource": "iam.amazonaws.com",
+                        "eventTime": "2017-01-01T00:20:50Z",
+                        "eventType": "AwsApiCall",
+                        "eventVersion": "1.05",
+                        "recipientAccountId": "123456789123",
+                        "requestID": "...",
+                        "requestParameters": {
+                            "subnetId": "..."
+                        },
+                        "responseElements": {
+                            "_return": true
+                        },
+                        "sourceIPAddress": "...",
+                        "userAgent": "...",
+                        "userIdentity": {
+                            "accessKeyId": "...",
+                            "accountId": "12345",
+                            "arn": "...",
+                            "principalId": "12345",
+                            "sessionContext": {
+                                "attributes": {
+                                    "creationDate": "...",
+                                    "mfaAuthenticated": "true"
+                                }
+                            },
+                            "type": "..."
+                        }
+                    }
+                ]
+            },
+            "description": "Benign, user is MFAd",
+            "log": "cloudtrail:events",
+            "service": "s3",
+            "source": "prefix.cluster.sample.bucket",
+            "trigger_rules": []
+        },
+        {
+            "data": {
+                "Records": [
+                    {
+                        "awsRegion": "us-west-2",
+                        "eventID": "123aaac1-123d-456a-1k29a4dd2kea",
+                        "eventName": "CreateVirtualMFADevice",
+                        "eventSource": "iam.amazonaws.com",
+                        "eventTime": "2017-01-01T00:20:50Z",
+                        "eventType": "AwsApiCall",
+                        "eventVersion": "1.05",
+                        "errorCode": "EntityAlreadyExists",
+                        "errorMessage": "An error occurred (EntityAlreadyExists) when calling the CreateVirtualMFADevice operation: MFADevice entity at the same path and name already exists.",
+                        "recipientAccountId": "123456789123",
+                        "requestID": "...",
+                        "requestParameters": {
+                            "subnetId": "..."
+                        },
+                        "responseElements": {
+                            "_return": true
+                        },
+                        "sourceIPAddress": "...",
+                        "userAgent": "...",
+                        "userIdentity": {
+                            "accessKeyId": "...",
+                            "accountId": "12345",
+                            "arn": "...",
+                            "principalId": "12345",
+                            "sessionContext": {
+                                "attributes": {
+                                    "creationDate": "...",
+                                    "mfaAuthenticated": "false"
+                                }
+                            },
+                            "type": "..."
+                        }
+                    }
+                ]
+            },
+            "description": "Attempt to create an MFA device when one already exists, and user is not MFA'd",
+            "log": "cloudtrail:events",
+            "service": "s3",
+            "source": "prefix.cluster.sample.bucket",
+            "trigger_rules": ["cloudtrail_mfa_policy_abuse_attempt"]
+        }
+    ]
+}
