@@ -109,7 +109,15 @@ data "aws_iam_policy_document" "athena_permissions" {
     effect = "Allow"
 
     actions = [
-      "glue:*",
+      "glue:BatchCreatePartition",
+      "glue:GetDatabase",
+      "glue:GetDatabases",
+      "glue:GetTable",
+      "glue:GetTableVersions",
+      "glue:GetTables",
+      "glue:UpdateDatabase",
+      "glue:UpdatePartition",
+      "glue:UpdateTable",
     ]
 
     resources = [
