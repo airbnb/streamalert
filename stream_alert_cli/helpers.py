@@ -475,9 +475,10 @@ def get_context_from_config(cluster, config):
     # Return a mocked context if the cluster is not provided
     # Otherwise construct the context from the config using the cluster
     if not cluster:
+        region = config['global']['account']['region']
         context.invoked_function_arn = (
-            'arn:aws:lambda:us-east-1:123456789012:'
-            'function:test_streamalert_processor:development')
+            'arn:aws:lambda:{}:123456789012:'
+            'function:test_streamalert_processor:development').format(region)
         context.function_name = 'test_streamalert_alert_processor'
         context.mocked = True
     else:
