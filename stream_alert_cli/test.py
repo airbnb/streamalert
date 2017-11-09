@@ -704,7 +704,7 @@ class AlertProcessorTester(object):
 
                 # Set the patched requests.post return value to 200
                 post_mock.return_value.status_code = 200
-            elif service == 'pagerdutyv2':
+            elif service == 'pagerduty-v2':
                 output_name = '{}/{}'.format(service, descriptor)
                 creds = {'routing_key': '247b97499078a015cc6c586bc0a92de6'}
                 helpers.put_mock_creds(output_name, creds, self.secrets_bucket,

@@ -176,8 +176,8 @@ class TestPagerDutyOutputV2(object):
     @classmethod
     def setup_class(cls):
         """Setup the class before any methods"""
-        cls.__service = 'pagerdutyv2'
-        cls.__descriptor = 'unit_test_pagerdutyv2'
+        cls.__service = 'pagerduty-v2'
+        cls.__descriptor = 'unit_test_pagerduty-v2'
         cls.__backup_method = None
         cls.__dispatcher = outputs.get_output_dispatcher(cls.__service,
                                                          REGION,
