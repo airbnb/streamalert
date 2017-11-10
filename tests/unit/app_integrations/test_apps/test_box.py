@@ -90,13 +90,13 @@ class TestBoxApp(object):
         cred_mock.side_effect = ValueError('Bad things happened')
         assert_false(self._app._load_auth('fakedata'))
 
-    @patch('app_integrations.apps.box.BoxApp._load_auth',
-           Mock(return_value=True))
     @patch('app_integrations.apps.box.Client',
            Mock(return_value=True))
-    def test_create_client(self):
+    @patch('app_integrations.apps.box.BoxApp._load_auth')
+    def test_create_client(self, auth_mock):
         """BoxApp - Create Client, Success"""
         assert_true(self._app._create_client())
+        auth_mock.assert_called_with(self._app._config.auth['keyfile'])
 
     @patch('logging.Logger.debug')
     def test_create_client_exists(self, log_mock):

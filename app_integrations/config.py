@@ -165,9 +165,8 @@ class AppConfig(dict):
         # Add the auth config info to the 'auth' key since these key/values can vary
         # from service to service
         base_config[cls.AUTH_CONFIG_SUFFIX] = {
-            key: value.encode('utf-8')
+            key: value.encode('utf-8') if isinstance(value, unicode) else value
             for key, value in params[param_names[cls.AUTH_CONFIG_SUFFIX]].iteritems()
-            if isinstance(value, unicode)
         }
 
         return AppConfig(base_config, event)
