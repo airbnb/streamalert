@@ -220,3 +220,72 @@ def select_key(data, search_key, results=None):
             # it and append to the results list that is passed by reference
             results.append(val)
     return results
+
+def data_has_value(data, search_value):
+    """Recursively search for a given value
+    Args:
+        data (dict, list, primitive)
+        search_value (string)
+    Returns:
+        (bool) True or False if found
+    """
+    if isinstance(data, list):
+        return any(data_has_value(item, search_value) for item in data)
+
+    if isinstance(data, dict):
+        return any(data_has_value(v, search_value) for v in data.values())
+
+    return data == search_value
+
+def data_has_value_with_substring(data, search_value):
+    """Recursively search for a value with the given substring
+    Args:
+        data (dict, list, primitive)
+        search_value (string)
+    Returns:
+        (bool) True or False if found
+    """
+    if isinstance(data, list):
+        return any(data_has_value_with_substring(item, search_value) for item in data)
+
+    if isinstance(data, dict):
+        return any(data_has_value_with_substring(v, search_value) for v in data.values())
+
+    return isinstance(data, basestring) and search_value in data
+
+def data_has_value_from_list(data, needle_list):
+    """Recursively search for any values that are in the specified list
+    Args:
+        data (dict, list, primitive)
+        needle_list (list)
+    Returns:
+        (bool) True or False if found
+    """
+    if isinstance(data, list):
+        return any(data_has_value_from_list(item, needle_list) for item in data)
+
+    if isinstance(data, dict):
+        return any(data_has_value_from_list(v, needle_list) for v in data.values())
+
+    if not data:
+        return False
+    return in_set(data, needle_list)
+
+def data_has_value_from_substring_list(data, needle_list):
+    """Recursively search for any values that contain a substring from the specified list
+    Args:
+        data (dict, list, primitive)
+        needle_list (list)
+    Returns:
+        (bool) True or False if found
+    """
+    if isinstance(data, list):
+        return any(data_has_value_from_substring_list(item, needle_list) for item in data)
+
+    if isinstance(data, dict):
+        return any(data_has_value_from_substring_list(v, needle_list) for v in data.values())
+
+    if not data:
+        return False
+
+    return any(needle in data for needle in needle_list)
