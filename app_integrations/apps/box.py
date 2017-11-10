@@ -81,7 +81,7 @@ class BoxApp(AppIntegration):
             LOGGER.debug('Client already instantiated for %s', self.type())
             return True
 
-        auth = self._load_auth(self._config.auth)
+        auth = self._load_auth(self._config.auth['keyfile'])
         if not auth:
             return False
 

@@ -354,11 +354,15 @@ class AppIntegration(object):
             bool: Indicator of successful validation
         """
         if not self._config:
-            raise AppIntegrationConfigError('Config for service \'{}\' is empty', self.type())
+            raise AppIntegrationConfigError(
+                'Config for service \'{}\' is empty'.format(self.type())
+            )
 
         # The config validates that the 'auth' dict was loaded, but do a safety check here
         if not self._config.auth:
-            raise AppIntegrationConfigError('Auth config for service \'{}\' is empty', self.type())
+            raise AppIntegrationConfigError(
+                'Auth config for service \'{}\' is empty'.format(self.type())
+            )
 
         # Get the required authentication keys from the info returned by the subclass
         required_keys = set(self.required_auth_info())
