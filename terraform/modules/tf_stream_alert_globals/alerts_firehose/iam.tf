@@ -1,6 +1,6 @@
 // IAM Role: Alert Firehose S3 Role
 resource "aws_iam_role" "firehose" {
-  name = "${var.prefix}_${var.cluster}_streamalert_delivery_firehose"
+  name = "${var.prefix}_streamalert_delivery_firehose"
 
   assume_role_policy = "${data.aws_iam_policy_document.firehose_assume_role_policy.json}"
 }
@@ -50,7 +50,7 @@ data "aws_iam_policy_document" "firehose_s3" {
 
 // CloudWatch Log Group: Firehose
 resource "aws_cloudwatch_log_group" "firehose" {
-  name              = "/aws/kinesisfirehose/${var.prefix}_${var.cluster}_streamalert_alert_delivery"
+  name              = "/aws/kinesisfirehose/${var.prefix}_streamalert_alert_delivery"
   retention_in_days = "${var.cloudwatch_log_retention}"
 }
 
@@ -91,28 +91,7 @@ data "aws_iam_policy_document" "firehose_cloudwatch" {
     ]
 
     resources = [
-      "arn:aws:logs:${var.region}:${var.account_id}:log-group:/aws/kinesisfirehose/${var.prefix}_${var.cluster}_streamalert_alert_delivery:*",
+      "arn:aws:logs:${var.region}:${var.account_id}:log-group:/aws/kinesisfirehose/${var.prefix}_streamalert_alert_delivery:*",
     ]
-  }
-}
-
-// AWS Firehose Stream for Alerts
-resource "aws_kinesis_firehose_delivery_stream" "stream_alerts" {
-  name        = "${var.prefix}_${var.cluster}_streamalert_alert_delivery"
-  destination = "s3"
-
-  s3_configuration {
-    role_arn           = "${aws_iam_role.firehose.arn}"
-    bucket_arn         = "arn:aws:s3:::${var.prefix}.streamalerts"
-    prefix             = "alerts/"
-    buffer_size        = "${var.firehose_buffer_size}"
-    buffer_interval    = "${var.firehose_buffer_interval}"
-    compression_format = "${var.firehose_compression_format}"
-
-    cloudwatch_logging_options {
-      enabled         = true
-      log_group_name  = "/aws/kinesisfirehose/${var.prefix}_${var.cluster}_streamalert_alert_delivery"
-      log_stream_name = "S3Delivery"
-    }
   }
 }

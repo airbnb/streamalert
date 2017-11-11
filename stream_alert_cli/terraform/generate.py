@@ -181,6 +181,13 @@ def generate_main(**kwargs):
             's3_bucket_name': firehose_s3_bucket_name
         }
 
+    main_dict['module']['globals'] = {
+        'source': 'modules/tf_stream_alert_globals',
+        'account_id': config['global']['account']['aws_account_id'],
+        'region': config['global']['account']['region'],
+        'prefix': config['global']['account']['prefix']
+    }
+
     # KMS Key and Alias creation
     main_dict['resource']['aws_kms_key']['stream_alert_secrets'] = {
         'enable_key_rotation': True,

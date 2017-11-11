@@ -54,18 +54,6 @@ variable "input_sns_topics" {
   default = []
 }
 
-variable "firehose_buffer_size" {
-  default = 128
-}
-
-variable "firehose_buffer_interval" {
-  default = 300
-}
-
-variable "firehose_compression_format" {
-  default = "GZIP"
-}
-
 variable "kms_key_arn" {
   type = "string"
 }
