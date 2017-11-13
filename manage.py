@@ -38,6 +38,7 @@ from app_integrations.apps.app_base import STREAMALERT_APPS
 
 class UniqueSetAction(Action):
     """Subclass of argparse.Action to avoid multiple of the same choice from a list"""
+
     def __call__(self, parser, namespace, values, option_string=None):
         unique_items = set(values)
         setattr(namespace, self.dest, unique_items)
@@ -47,12 +48,15 @@ class NormalizeFunctionAction(UniqueSetAction):
     """Subclass of argparse.Action -> UniqueSetAction that will return a unique set of
     normalized lambda function names.
     """
+
     def __call__(self, parser, namespace, values, option_string=None):
         super(NormalizeFunctionAction, self).__call__(parser, namespace, values, option_string)
         values = getattr(namespace, self.dest)
-        normalized_map = {'rule': metrics.RULE_PROCESSOR_NAME,
-                          'alert': metrics.ALERT_PROCESSOR_NAME,
-                          'athena': metrics.ATHENA_PARTITION_REFRESH_NAME}
+        normalized_map = {
+            'rule': metrics.RULE_PROCESSOR_NAME,
+            'alert': metrics.ALERT_PROCESSOR_NAME,
+            'athena': metrics.ATHENA_PARTITION_REFRESH_NAME
+        }
 
         for func, normalize_func in normalized_map.iteritems():
             if func in values:
@@ -86,31 +90,23 @@ Examples:
         description=output_description,
         usage=output_usage,
         formatter_class=RawTextHelpFormatter,
-        help='Define a new output to send alerts to'
-    )
+        help='Define a new output to send alerts to')
 
     # Set the name of this parser to 'output'
     output_parser.set_defaults(command='output')
 
     # Output parser arguments
     # The CLI library handles all configuration logic
-    output_parser.add_argument(
-        'subcommand',
-        choices=['new'],
-        help=ARGPARSE_SUPPRESS
-    )
+    output_parser.add_argument('subcommand', choices=['new'], help=ARGPARSE_SUPPRESS)
     # Output service options
     output_parser.add_argument(
         '--service',
-        choices=['aws-lambda', 'aws-s3', 'pagerduty', 'pagerduty-v2', 'phantom', 'slack'],
+        choices=[
+            'aws-firehose', 'aws-lambda', 'aws-s3', 'pagerduty', 'pagerduty-v2', 'phantom', 'slack'
+        ],
         required=True,
-        help=ARGPARSE_SUPPRESS
-    )
-    output_parser.add_argument(
-        '--debug',
-        action='store_true',
-        help=ARGPARSE_SUPPRESS
-    )
+        help=ARGPARSE_SUPPRESS)
+    output_parser.add_argument('--debug', action='store_true', help=ARGPARSE_SUPPRESS)
 
 
 def _add_live_test_subparser(subparsers):
@@ -137,39 +133,27 @@ Examples:
         description=live_test_description,
         usage=live_test_usage,
         formatter_class=RawTextHelpFormatter,
-        help=ARGPARSE_SUPPRESS
-    )
+        help=ARGPARSE_SUPPRESS)
 
     # set the name of this parser to 'live-test'
     live_test_parser.set_defaults(command='live-test')
 
     # get cluster choices from available files
-    clusters = [os.path.splitext(cluster)[0] for _, _, files
-                in os.walk('conf/clusters') for cluster in files]
+    clusters = [
+        os.path.splitext(cluster)[0] for _, _, files in os.walk('conf/clusters')
+        for cluster in files
+    ]
 
     # add clusters for user to pick from
     live_test_parser.add_argument(
-        '-c', '--cluster',
-        choices=clusters,
-        help=ARGPARSE_SUPPRESS,
-        required=True
-    )
+        '-c', '--cluster', choices=clusters, help=ARGPARSE_SUPPRESS, required=True)
 
     # add the optional ability to test against a rule/set of rules
     live_test_parser.add_argument(
-        '-r', '--rules',
-        nargs='+',
-        help=ARGPARSE_SUPPRESS,
-        action=UniqueSetAction,
-        default=set()
-    )
+        '-r', '--rules', nargs='+', help=ARGPARSE_SUPPRESS, action=UniqueSetAction, default=set())
 
     # allow verbose output for the CLI with the --debug option
-    live_test_parser.add_argument(
-        '--debug',
-        action='store_true',
-        help=ARGPARSE_SUPPRESS
-    )
+    live_test_parser.add_argument('--debug', action='store_true', help=ARGPARSE_SUPPRESS)
 
 
 def _add_validate_schema_subparser(subparsers):
@@ -205,28 +189,23 @@ Examples:
         description=schema_validation_description,
         usage=schema_validation_usage,
         formatter_class=RawTextHelpFormatter,
-        help=ARGPARSE_SUPPRESS
-    )
+        help=ARGPARSE_SUPPRESS)
 
     # Set the name of this parser to 'validate-schemas'
     schema_validation_parser.set_defaults(command='validate-schemas')
 
     # add the optional ability to test against specific files
     schema_validation_parser.add_argument(
-        '-f', '--test-files',
+        '-f',
+        '--test-files',
         dest='files',
         nargs='+',
         help=ARGPARSE_SUPPRESS,
         action=UniqueSetAction,
-        default=set()
-    )
+        default=set())
 
     # allow verbose output for the CLI with the --debug option
-    schema_validation_parser.add_argument(
-        '--debug',
-        action='store_true',
-        help=ARGPARSE_SUPPRESS
-    )
+    schema_validation_parser.add_argument('--debug', action='store_true', help=ARGPARSE_SUPPRESS)
 
 
 def _add_app_integration_subparser(subparsers):
@@ -248,12 +227,13 @@ Available Subcommands:
         description=app_integration_description,
         usage=app_integration_usage,
         formatter_class=RawTextHelpFormatter,
-        help=ARGPARSE_SUPPRESS
-    )
+        help=ARGPARSE_SUPPRESS)
 
     # get cluster choices from available files
-    clusters = [os.path.splitext(cluster)[0] for _, _, files
-                in os.walk('conf/clusters') for cluster in files]
+    clusters = [
+        os.path.splitext(cluster)[0] for _, _, files in os.walk('conf/clusters')
+        for cluster in files
+    ]
 
     # Set the name of this parser to 'app'
     app_integration_parser.set_defaults(command='app')
@@ -287,17 +267,12 @@ Optional Arguments:
         description=app_integration_list_desc,
         usage=app_integration_list_usage,
         formatter_class=RawTextHelpFormatter,
-        help=ARGPARSE_SUPPRESS
-    )
+        help=ARGPARSE_SUPPRESS)
 
     app_integration_list_parser.set_defaults(subcommand='list')
 
     # allow verbose output for the CLI with the --debug option
-    app_integration_list_parser.add_argument(
-        '--debug',
-        action='store_true',
-        help=ARGPARSE_SUPPRESS
-    )
+    app_integration_list_parser.add_argument('--debug', action='store_true', help=ARGPARSE_SUPPRESS)
 
 
 def _add_app_integration_new_subparser(subparsers, types, clusters):
@@ -364,8 +339,7 @@ Resources:
         description=app_integration_new_description,
         usage=app_integration_new_usage,
         formatter_class=RawTextHelpFormatter,
-        help=ARGPARSE_SUPPRESS
-    )
+        help=ARGPARSE_SUPPRESS)
 
     app_integration_new_parser.set_defaults(subcommand='new')
 
@@ -373,11 +347,7 @@ Resources:
 
     # App type options
     app_integration_new_parser.add_argument(
-        '--type',
-        choices=types,
-        required=True,
-        help=ARGPARSE_SUPPRESS
-    )
+        '--type', choices=types, required=True, help=ARGPARSE_SUPPRESS)
 
     # Validate the rate at which this should run
     def _validate_scheduled_interval(val):
@@ -398,11 +368,7 @@ Resources:
 
     # App integration schedule expression (rate)
     app_integration_new_parser.add_argument(
-        '--interval',
-        required=True,
-        help=ARGPARSE_SUPPRESS,
-        type=_validate_scheduled_interval
-    )
+        '--interval', required=True, help=ARGPARSE_SUPPRESS, type=_validate_scheduled_interval)
 
     # Validate the timeout value to make sure it is between 10 and 300
     def _validate_timeout(val):
@@ -420,11 +386,7 @@ Resources:
 
     # App integration function timeout
     app_integration_new_parser.add_argument(
-        '--timeout',
-        required=True,
-        help=ARGPARSE_SUPPRESS,
-        type=_validate_timeout
-    )
+        '--timeout', required=True, help=ARGPARSE_SUPPRESS, type=_validate_timeout)
 
     # Validate the memory value to make sure it is between 128 and 1536
     def _validate_memory(val):
@@ -442,11 +404,7 @@ Resources:
 
     # App integration function max memory
     app_integration_new_parser.add_argument(
-        '--memory',
-        required=True,
-        help=ARGPARSE_SUPPRESS,
-        type=_validate_memory
-    )
+        '--memory', required=True, help=ARGPARSE_SUPPRESS, type=_validate_memory)
 
 
 def _add_app_integration_update_auth_subparser(subparsers, clusters):
@@ -488,8 +446,7 @@ Examples:
         description=app_integration_update_desc,
         usage=app_integration_update_usage,
         formatter_class=RawTextHelpFormatter,
-        help=ARGPARSE_SUPPRESS
-    )
+        help=ARGPARSE_SUPPRESS)
 
     app_integration_update_parser.set_defaults(subcommand='update-auth')
 
@@ -501,11 +458,7 @@ def _add_default_app_integration_args(app_integration_parser, clusters):
 
     # App integration cluster options
     app_integration_parser.add_argument(
-        '--cluster',
-        choices=clusters,
-        required=True,
-        help=ARGPARSE_SUPPRESS
-    )
+        '--cluster', choices=clusters, required=True, help=ARGPARSE_SUPPRESS)
 
     # Validate the name being used to make sure it does not contain specific characters
     def _validate_name(val):
@@ -519,19 +472,10 @@ def _add_default_app_integration_args(app_integration_parser, clusters):
 
     # App integration name to be used for this instance that must be unique per cluster
     app_integration_parser.add_argument(
-        '--name',
-        dest='app_name',
-        required=True,
-        help=ARGPARSE_SUPPRESS,
-        type=_validate_name
-    )
+        '--name', dest='app_name', required=True, help=ARGPARSE_SUPPRESS, type=_validate_name)
 
     # Allow verbose output for the CLI with the --debug option
-    app_integration_parser.add_argument(
-        '--debug',
-        action='store_true',
-        help=ARGPARSE_SUPPRESS
-    )
+    app_integration_parser.add_argument('--debug', action='store_true', help=ARGPARSE_SUPPRESS)
 
 
 def _add_metrics_subparser(subparsers):
@@ -539,8 +483,10 @@ def _add_metrics_subparser(subparsers):
     metrics_usage = 'manage.py metrics [options]'
 
     # get cluster choices from available files
-    clusters = [os.path.splitext(cluster)[0] for _, _, files
-                in os.walk('conf/clusters') for cluster in files]
+    clusters = [
+        os.path.splitext(cluster)[0] for _, _, files in os.walk('conf/clusters')
+        for cluster in files
+    ]
 
     cluster_choices_block = ('\n').join('{:>28}{}'.format('', cluster) for cluster in clusters)
 
@@ -575,53 +521,40 @@ Examples:
         description=metrics_description,
         usage=metrics_usage,
         formatter_class=RawTextHelpFormatter,
-        help=ARGPARSE_SUPPRESS
-    )
+        help=ARGPARSE_SUPPRESS)
 
     # Set the name of this parser to 'metrics'
     metrics_parser.set_defaults(command='metrics')
 
     # allow the user to select 1 or more functions to enable metrics for
     metrics_parser.add_argument(
-        '-f', '--functions',
+        '-f',
+        '--functions',
         choices=['rule', 'alert', 'athena'],
         help=ARGPARSE_SUPPRESS,
         nargs='+',
         action=NormalizeFunctionAction,
-        required=True
-    )
+        required=True)
 
     # get the metric toggle value
     toggle_group = metrics_parser.add_mutually_exclusive_group(required=True)
 
-    toggle_group.add_argument(
-        '-e', '--enable',
-        dest='enable_metrics',
-        action='store_true'
-    )
+    toggle_group.add_argument('-e', '--enable', dest='enable_metrics', action='store_true')
 
-    toggle_group.add_argument(
-        '-d', '--disable',
-        dest='enable_metrics',
-        action='store_false'
-    )
+    toggle_group.add_argument('-d', '--disable', dest='enable_metrics', action='store_false')
 
     # allow the user to select 0 or more clusters to enable metrics for
     metrics_parser.add_argument(
-        '-c', '--clusters',
+        '-c',
+        '--clusters',
         choices=clusters,
         help=ARGPARSE_SUPPRESS,
         nargs='+',
         action=UniqueSetAction,
-        default=clusters
-    )
+        default=clusters)
 
     # allow verbose output for the CLI with the --debug option
-    metrics_parser.add_argument(
-        '--debug',
-        action='store_true',
-        help=ARGPARSE_SUPPRESS
-    )
+    metrics_parser.add_argument('--debug', action='store_true', help=ARGPARSE_SUPPRESS)
 
 
 def _add_metric_alarm_subparser(subparsers):
@@ -635,8 +568,10 @@ def _add_metric_alarm_subparser(subparsers):
     metric_choices_block = ('\n').join('{:>35}{}'.format('', metric) for metric in all_metrics)
 
     # get cluster choices from available files
-    clusters = [os.path.splitext(cluster)[0] for _, _, files
-                in os.walk('conf/clusters') for cluster in files]
+    clusters = [
+        os.path.splitext(cluster)[0] for _, _, files in os.walk('conf/clusters')
+        for cluster in files
+    ]
 
     cluster_choices_block = ('\n').join('{:>37}{}'.format('', cluster) for cluster in clusters)
 
@@ -718,8 +653,7 @@ Resources:
         description=metric_alarm_description,
         usage=metric_alarm_usage,
         formatter_class=RawTextHelpFormatter,
-        help=ARGPARSE_SUPPRESS
-    )
+        help=ARGPARSE_SUPPRESS)
 
     # Set the name of this parser to 'create-alarm'
     metric_alarm_parser.set_defaults(command='create-alarm')
@@ -727,29 +661,31 @@ Resources:
     # add all the required parameters
     # add metrics for user to pick from. Will be mapped to 'metric_name' in terraform
     metric_alarm_parser.add_argument(
-        '-m', '--metric',
+        '-m',
+        '--metric',
         choices=all_metrics,
         dest='metric_name',
         help=ARGPARSE_SUPPRESS,
-        required=True
-    )
+        required=True)
 
     # check to see what the user wants to apply this metric to (cluster, aggregate, or both)
     metric_alarm_parser.add_argument(
-        '-mt', '--metric-target',
+        '-mt',
+        '--metric-target',
         choices=['cluster', 'aggregate', 'all'],
         help=ARGPARSE_SUPPRESS,
-        required=True
-    )
+        required=True)
 
     # get the comparison type for this metric
     metric_alarm_parser.add_argument(
-        '-co', '--comparison-operator',
-        choices=['GreaterThanOrEqualToThreshold', 'GreaterThanThreshold',
-                 'LessThanThreshold', 'LessThanOrEqualToThreshold'],
+        '-co',
+        '--comparison-operator',
+        choices=[
+            'GreaterThanOrEqualToThreshold', 'GreaterThanThreshold', 'LessThanThreshold',
+            'LessThanOrEqualToThreshold'
+        ],
         help=ARGPARSE_SUPPRESS,
-        required=True
-    )
+        required=True)
 
     # get the name of the alarm
     def _alarm_name_validator(val):
@@ -758,11 +694,7 @@ Resources:
         return val
 
     metric_alarm_parser.add_argument(
-        '-an', '--alarm-name',
-        help=ARGPARSE_SUPPRESS,
-        required=True,
-        type=_alarm_name_validator
-    )
+        '-an', '--alarm-name', help=ARGPARSE_SUPPRESS, required=True, type=_alarm_name_validator)
 
     # get the evaluation period for this alarm
     def _alarm_eval_periods_validator(val):
@@ -777,11 +709,11 @@ Resources:
         return period
 
     metric_alarm_parser.add_argument(
-        '-ep', '--evaluation-periods',
+        '-ep',
+        '--evaluation-periods',
         help=ARGPARSE_SUPPRESS,
         required=True,
-        type=_alarm_eval_periods_validator
-    )
+        type=_alarm_eval_periods_validator)
 
     # get the period for this alarm
     def _alarm_period_validator(val):
@@ -797,19 +729,11 @@ Resources:
         return period
 
     metric_alarm_parser.add_argument(
-        '-p', '--period',
-        help=ARGPARSE_SUPPRESS,
-        required=True,
-        type=_alarm_period_validator
-    )
+        '-p', '--period', help=ARGPARSE_SUPPRESS, required=True, type=_alarm_period_validator)
 
     # get the threshold for this alarm
     metric_alarm_parser.add_argument(
-        '-t', '--threshold',
-        help=ARGPARSE_SUPPRESS,
-        required=True,
-        type=float
-    )
+        '-t', '--threshold', help=ARGPARSE_SUPPRESS, required=True, type=float)
 
     # all other optional flags
     # get the optional alarm description
@@ -819,21 +743,21 @@ Resources:
         return val
 
     metric_alarm_parser.add_argument(
-        '-ad', '--alarm-description',
+        '-ad',
+        '--alarm-description',
         help=ARGPARSE_SUPPRESS,
         type=_alarm_description_validator,
-        default=''
-    )
+        default='')
 
     # allow the user to select 0 or more clusters to apply this alarm to
     metric_alarm_parser.add_argument(
-        '-c', '--clusters',
+        '-c',
+        '--clusters',
         choices=clusters,
         help=ARGPARSE_SUPPRESS,
         nargs='+',
         action=UniqueSetAction,
-        default=set()
-    )
+        default=set())
 
     ### Commenting out the below until we can support 'extended-statistic' metrics
     ### alongside 'statistic' metrics. Currently only 'statistic' are supported
@@ -859,18 +783,14 @@ Resources:
     # )
 
     metric_alarm_parser.add_argument(
-        '-s', '--statistic',
+        '-s',
+        '--statistic',
         choices=['SampleCount', 'Average', 'Sum', 'Minimum', 'Maximum'],
         help=ARGPARSE_SUPPRESS,
-        default=''
-    )
+        default='')
 
     # allow verbose output for the CLI with the --debug option
-    metric_alarm_parser.add_argument(
-        '--debug',
-        action='store_true',
-        help=ARGPARSE_SUPPRESS
-    )
+    metric_alarm_parser.add_argument('--debug', action='store_true', help=ARGPARSE_SUPPRESS)
 
 
 def _add_lambda_subparser(subparsers):
@@ -892,8 +812,7 @@ Available Subcommands:
         usage=lambda_usage,
         description=lambda_description,
         help=ARGPARSE_SUPPRESS,
-        formatter_class=RawTextHelpFormatter
-    )
+        formatter_class=RawTextHelpFormatter)
 
     # Set the name of this parser to 'lambda'
     lambda_parser.set_defaults(command='lambda')
@@ -937,8 +856,7 @@ Examples:
         description=lambda_deploy_desc,
         usage=lambda_deploy_usage,
         formatter_class=RawTextHelpFormatter,
-        help=ARGPARSE_SUPPRESS
-    )
+        help=ARGPARSE_SUPPRESS)
 
     lambda_deploy_parser.set_defaults(subcommand='deploy')
 
@@ -977,8 +895,7 @@ Examples:
         description=lambda_rollback_desc,
         usage=lambda_rollback_usage,
         formatter_class=RawTextHelpFormatter,
-        help=ARGPARSE_SUPPRESS
-    )
+        help=ARGPARSE_SUPPRESS)
 
     lambda_rollback_parser.set_defaults(subcommand='rollback')
 
@@ -1024,49 +941,44 @@ Example:
         description=lambda_test_desc,
         usage=lambda_test_usage,
         formatter_class=RawTextHelpFormatter,
-        help=ARGPARSE_SUPPRESS
-    )
+        help=ARGPARSE_SUPPRESS)
 
     lambda_test_parser.set_defaults(subcommand='test')
 
     # require the name of the processor being tested
     lambda_test_parser.add_argument(
-        '-p', '--processor',
+        '-p',
+        '--processor',
         choices=['alert', 'all', 'rule'],
         help=ARGPARSE_SUPPRESS,
         nargs='+',
         action=UniqueSetAction,
-        required=True
-    )
+        required=True)
 
     # add the optional ability to test against a rule/set of rules
     lambda_test_parser.add_argument(
-        '-r', '--test-rules',
+        '-r',
+        '--test-rules',
         dest='rules',
         nargs='+',
         help=ARGPARSE_SUPPRESS,
         action=UniqueSetAction,
-        default=set()
-    )
+        default=set())
 
     test_filter_group = lambda_test_parser.add_mutually_exclusive_group(required=False)
 
     # add the optional ability to test against a rule/set of rules
     test_filter_group.add_argument(
-        '-f', '--test-files',
+        '-f',
+        '--test-files',
         dest='files',
         nargs='+',
         help=ARGPARSE_SUPPRESS,
         action=UniqueSetAction,
-        default=set()
-    )
+        default=set())
 
     # Allow verbose output for the CLI with the --debug option
-    test_filter_group.add_argument(
-        '--debug',
-        action='store_true',
-        help=ARGPARSE_SUPPRESS
-    )
+    test_filter_group.add_argument('--debug', action='store_true', help=ARGPARSE_SUPPRESS)
 
 
 def _add_default_lambda_args(lambda_parser):
@@ -1074,20 +986,16 @@ def _add_default_lambda_args(lambda_parser):
 
     # require the name of the processor being deployed/rolled back
     lambda_parser.add_argument(
-        '-p', '--processor',
+        '-p',
+        '--processor',
         choices=['alert', 'all', 'athena', 'rule', 'apps'],
         help=ARGPARSE_SUPPRESS,
         nargs='+',
         action=UniqueSetAction,
-        required=True
-    )
+        required=True)
 
     # Allow verbose output for the CLI with the --debug option
-    lambda_parser.add_argument(
-        '--debug',
-        action='store_true',
-        help=ARGPARSE_SUPPRESS
-    )
+    lambda_parser.add_argument('--debug', action='store_true', help=ARGPARSE_SUPPRESS)
 
 
 def _add_terraform_subparser(subparsers):
@@ -1131,8 +1039,7 @@ Examples:
         usage=terraform_usage,
         description=terraform_description,
         help=ARGPARSE_SUPPRESS,
-        formatter_class=RawTextHelpFormatter
-    )
+        formatter_class=RawTextHelpFormatter)
 
     # set the name of this parser to 'terraform'
     tf_parser.set_defaults(command='terraform')
@@ -1140,35 +1047,19 @@ Examples:
     # add subcommand options for the terraform sub-parser
     tf_parser.add_argument(
         'subcommand',
-        choices=['build',
-                 'clean',
-                 'destroy',
-                 'init',
-                 'init-backend',
-                 'generate',
-                 'status'],
-        help=ARGPARSE_SUPPRESS
-    )
+        choices=['build', 'clean', 'destroy', 'init', 'init-backend', 'generate', 'status'],
+        help=ARGPARSE_SUPPRESS)
 
     tf_parser.add_argument(
         '--target',
-        choices=['athena',
-                 'cloudwatch_monitoring',
-                 'cloudtrail',
-                 'flow_logs',
-                 'kinesis',
-                 'kinesis_events',
-                 'stream_alert',
-                 's3_events'],
+        choices=[
+            'athena', 'cloudwatch_monitoring', 'cloudtrail', 'flow_logs', 'kinesis',
+            'kinesis_events', 'stream_alert', 's3_events'
+        ],
         help=ARGPARSE_SUPPRESS,
-        nargs='+'
-    )
+        nargs='+')
 
-    tf_parser.add_argument(
-        '--debug',
-        action='store_true',
-        help=ARGPARSE_SUPPRESS
-    )
+    tf_parser.add_argument('--debug', action='store_true', help=ARGPARSE_SUPPRESS)
 
 
 def _add_configure_subparser(subparsers):
@@ -1193,28 +1084,16 @@ Examples:
         usage=configure_usage,
         description=configure_description,
         help=ARGPARSE_SUPPRESS,
-        formatter_class=RawTextHelpFormatter
-    )
+        formatter_class=RawTextHelpFormatter)
 
     configure_parser.set_defaults(command='configure')
 
     configure_parser.add_argument(
-        'config_key',
-        choices=['prefix',
-                 'aws_account_id'],
-        help=ARGPARSE_SUPPRESS
-    )
+        'config_key', choices=['prefix', 'aws_account_id'], help=ARGPARSE_SUPPRESS)
 
-    configure_parser.add_argument(
-        'config_value',
-        help=ARGPARSE_SUPPRESS
-    )
+    configure_parser.add_argument('config_value', help=ARGPARSE_SUPPRESS)
 
-    configure_parser.add_argument(
-        '--debug',
-        action='store_true',
-        help=ARGPARSE_SUPPRESS
-    )
+    configure_parser.add_argument('--debug', action='store_true', help=ARGPARSE_SUPPRESS)
 
 
 def _add_athena_subparser(subparsers):
@@ -1252,49 +1131,29 @@ Examples:
         usage=athena_usage,
         description=athena_description,
         help=ARGPARSE_SUPPRESS,
-        formatter_class=RawTextHelpFormatter
-    )
+        formatter_class=RawTextHelpFormatter)
 
     athena_parser.set_defaults(command='athena')
 
     athena_parser.add_argument(
         'subcommand',
-        choices=['init',
-                 'enable',
-                 'create-db',
-                 'create-table',
-                 'drop-all-tables',
-                 'rebuild-partitions'],
-        help=ARGPARSE_SUPPRESS
-    )
+        choices=[
+            'init', 'enable', 'create-db', 'create-table', 'drop-all-tables', 'rebuild-partitions'
+        ],
+        help=ARGPARSE_SUPPRESS)
 
-    athena_parser.add_argument(
-        '--type',
-        choices=['alerts', 'data'],
-        help=ARGPARSE_SUPPRESS
-    )
+    athena_parser.add_argument('--type', choices=['alerts', 'data'], help=ARGPARSE_SUPPRESS)
 
-    athena_parser.add_argument(
-        '--bucket',
-        help=ARGPARSE_SUPPRESS
-    )
+    athena_parser.add_argument('--bucket', help=ARGPARSE_SUPPRESS)
 
-    athena_parser.add_argument(
-        '--table_name',
-        help=ARGPARSE_SUPPRESS
-    )
+    athena_parser.add_argument('--table_name', help=ARGPARSE_SUPPRESS)
 
     athena_parser.add_argument(
         '--refresh_type',
         choices=['add_hive_partition', 'repair_hive_table'],
-        help=ARGPARSE_SUPPRESS
-    )
+        help=ARGPARSE_SUPPRESS)
 
-    athena_parser.add_argument(
-        '--debug',
-        action='store_true',
-        help=ARGPARSE_SUPPRESS
-    )
+    athena_parser.add_argument('--debug', action='store_true', help=ARGPARSE_SUPPRESS)
 
 
 def build_parser():
@@ -1322,8 +1181,7 @@ For additional details on the available commands, try:
         description=description,
         prog='manage.py',
         usage=usage,
-        formatter_class=RawTextHelpFormatter
-    )
+        formatter_class=RawTextHelpFormatter)
     subparsers = parser.add_subparsers()
     _add_output_subparser(subparsers)
     _add_live_test_subparser(subparsers)

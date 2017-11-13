@@ -50,7 +50,7 @@ data "aws_iam_policy_document" "rule_processor_invoke_alert_proc" {
   }
 }
 
-// IAM Role Policy: Allow the Rule Processor to put records on Firehose
+// IAM Role Policy: Allow the Rule Processor to put data on Firehose
 resource "aws_iam_role_policy" "streamalert_rule_processor_firehose" {
   name = "FirehoseWriteData"
   role = "${aws_iam_role.streamalert_rule_processor_role.id}"
@@ -216,7 +216,7 @@ resource "aws_iam_role_policy" "streamalert_alert_processor_s3_outputs" {
 EOF
 }
 
-// IAM Role Policy: Allow the Alert Processor to to Firehose
+// IAM Role Policy: Allow the Alert Processor to write alerts to Firehose
 resource "aws_iam_role_policy" "streamalert_alert_processor_firehose" {
   name = "FirehoseWriteAlerts"
   role = "${aws_iam_role.streamalert_alert_processor_role.id}"
@@ -234,7 +234,7 @@ data "aws_iam_policy_document" "alert_processor_firehose" {
     ]
 
     resources = [
-      "${aws_kinesis_firehose_delivery_stream.stream_alerts.arn}",
+      "arn:aws:firehose:${var.region}:${var.account_id}:deliverystream/${var.prefix}_streamalert_alert_delivery",
     ]
   }
 }
