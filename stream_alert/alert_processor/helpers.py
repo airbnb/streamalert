@@ -38,7 +38,8 @@ def validate_alert(alert):
         'log_source',
         'outputs',
         'source_service',
-        'source_entity'
+        'source_entity',
+        'context'
     }
     if not set(alert.keys()) == alert_keys:
         LOGGER.error('The alert object must contain the following keys: %s',
@@ -51,6 +52,11 @@ def validate_alert(alert):
         if key == 'record':
             if not isinstance(alert['record'], dict):
                 LOGGER.error('The alert record must be a map (dict)')
+                return False
+
+        elif key == 'context':
+            if not isinstance(alert['context'], dict):
+                LOGGER.error('The alert context must be a map (dict)')
                 return False
 
         elif key == 'outputs':

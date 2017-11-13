@@ -313,28 +313,24 @@ class PagerDutyIncidentOutput(StreamOutputBase):
         # Incident assignment goes in this order:
         #  Provided user -> provided policy -> default policy
         if user_to_assign:
-            users_url = os.path.join(creds['api'], self.USERS_ENDPOINT)
-            user_id = self._check_exists_get_id(user_to_assign,
-                                                users_url, headers, self.USERS_ENDPOINT)
+            users_url = self._get_endpoint(creds['api'], self.USERS_ENDPOINT)
+            user_id = self._check_exists_get_id(user_to_assign, users_url, headers,
+                                                self.USERS_ENDPOINT)
             if user_id:
                 assigned_key = 'assignments'
                 assigned_value = [{
                     'assignee' : {
-                        'id': '',
+                        'id': user_id,
                         'type': 'user_reference'}
                 }]
-            # If the user retrieval did not succeed, default to policies
-            else:
-                user_to_assign = False
 
+        policy_to_assign = creds['escalation_policy']
         if not user_to_assign and rule_context.get('assigned_policy'):
             policy_to_assign = rule_context.get('assigned_policy')
-        else:
-            policy_to_assign = creds['escalation_policy']
 
-        policies_url = os.path.join(creds['api'], self.POLICIES_ENDPOINT)
-        policy_id = self._check_exists_get_id(policy_to_assign,
-                                              policies_url, headers, self.POLICIES_ENDPOINT)
+        policies_url = self._get_endpoint(creds['api'], self.POLICIES_ENDPOINT)
+        policy_id = self._check_exists_get_id(policy_to_assign, policies_url, headers,
+                                              self.POLICIES_ENDPOINT)
         assigned_key = 'escalation_policy'
         assigned_value = {
             'id': policy_id,
@@ -344,32 +340,27 @@ class PagerDutyIncidentOutput(StreamOutputBase):
         # Start preparing the incident JSON blob to be sent to the API
         incident_title = 'StreamAlert Incident - Rule triggered: {}'.format(kwargs['rule_name'])
         incident_body = {
-            'type': '',
-            'details': ''
+            'type': 'incident_body',
+            'details': kwargs['alert']['rule_description']
         }
         # We need to get the service id from the API
-        services_url = os.path.join(creds['api'], self.SERVICES_ENDPOINT)
-        service_id = self._check_exists_get_id(creds['service_key'],
-                                               services_url, headers, self.SERVICES_ENDPOINT)
+        services_url = self._get_endpoint(creds['api'], self.SERVICES_ENDPOINT)
+        service_id = self._check_exists_get_id(creds['service_key'], services_url, headers,
+                                               self.SERVICES_ENDPOINT)
         incident_service = {
             'id': service_id,
             'type': 'service_reference'
-        }
-        incident_priority = {
-            'id': '',
-            'type': 'priority_reference'
         }
         incident = {
             'incident': {
                 'type': 'incident',
                 'title': incident_title,
                 'service': incident_service,
-                'priority': incident_priority,
                 'body': incident_body
             },
             assigned_key: assigned_value
         }
-        incidents_url = os.path.join(creds['api'], self.INCIDENTS_ENDPOINT)
+        incidents_url = self._get_endpoint(creds['api'], self.INCIDENTS_ENDPOINT)
         resp = self._post_request(incidents_url, incident, None, True)
         success = self._check_http_response(resp)
 
