@@ -607,7 +607,7 @@ class AlertProcessorTester(object):
         self.kms_alias = 'alias/stream_alert_secrets_test'
         self.secrets_bucket = 'test.streamalert.secrets'
         self.outputs_config = load_outputs_config()
-        self.config = config
+        self.region = config['global']['account']['region']
         self._cleanup_old_secrets()
         helpers.setup_mock_firehose_delivery_streams(config)
 
@@ -730,7 +730,7 @@ class AlertProcessorTester(object):
 
             if service == 'aws-s3':
                 bucket = self.outputs_config[service][descriptor]
-                client = boto3.client('s3', region_name=self.config['global']['account']['region'])
+                client = boto3.client('s3', region_name=self.region)
                 try:
                     # Check if the bucket exists before creating it
                     client.head_bucket(Bucket=bucket)
@@ -744,35 +744,31 @@ class AlertProcessorTester(object):
                 else:
                     lambda_function = parts[-1]
                 helpers.create_lambda_function(lambda_function,
-                                               self.config['global']['account']['region'])
+                                               self.region)
             elif service == 'pagerduty':
                 output_name = '{}/{}'.format(service, descriptor)
                 creds = {'service_key': '247b97499078a015cc6c586bc0a92de6'}
                 helpers.put_mock_creds(output_name, creds, self.secrets_bucket,
-                                       self.config['global']['account']['region'],
-                                       self.kms_alias)
+                                       self.region, self.kms_alias)
 
             elif service == 'pagerduty-v2':
                 output_name = '{}/{}'.format(service, descriptor)
                 creds = {'routing_key': '247b97499078a015cc6c586bc0a92de6'}
                 helpers.put_mock_creds(output_name, creds, self.secrets_bucket,
-                                       self.config['global']['account']['region'],
-                                       self.kms_alias)
+                                       self.region, self.kms_alias)
 
             elif service == 'phantom':
                 output_name = '{}/{}'.format(service, descriptor)
                 creds = {'ph_auth_token': '6c586bc047b9749a92de29078a015cc6',
                          'url': 'phantom.foo.bar'}
                 helpers.put_mock_creds(output_name, creds, self.secrets_bucket,
-                                       self.config['global']['account']['region'],
-                                       self.kms_alias)
+                                       self.region, self.kms_alias)
 
             elif service == 'slack':
                 output_name = '{}/{}'.format(service, descriptor)
                 creds = {'url': 'https://api.slack.com/web-hook-key'}
                 helpers.put_mock_creds(output_name, creds, self.secrets_bucket,
-                                       self.config['global']['account']['region'],
-                                       self.kms_alias)
+                                       self.region, self.kms_alias)
 
 
     @staticmethod
