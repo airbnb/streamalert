@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 # pylint: disable=protected-access
+# pylint: disable=too-many-lines
 from collections import Counter, OrderedDict
 
 import json
@@ -259,6 +260,273 @@ class TestPagerDutyOutputV2(object):
     @mock_kms
     def test_dispatch_bad_descriptor(self, log_error_mock):
         """PagerDutyOutputV2 dispatch bad descriptor"""
+        alert = self._setup_dispatch()
+        self.__dispatcher.dispatch(descriptor='bad_descriptor',
+                                   rule_name='rule_name',
+                                   alert=alert)
+
+        self._teardown_dispatch()
+
+        log_error_mock.assert_called_with('Failed to send alert to %s', self.__service)
+
+class TestPagerDutyIncidentOutput(object):
+    """Test class for PagerDutyIncidentOutput"""
+    @classmethod
+    def setup_class(cls):
+        """Setup the class before any methods"""
+        cls.__service = 'pagerduty-incident'
+        cls.__descriptor = 'unit_test_pagerduty-incident'
+        cls.__backup_method = None
+        cls.__dispatcher = outputs.get_output_dispatcher(cls.__service,
+                                                         REGION,
+                                                         FUNCTION_NAME,
+                                                         CONFIG)
+
+    @classmethod
+    def teardown_class(cls):
+        """Teardown the class after all methods"""
+        cls.__dispatcher = None
+
+    def test_get_default_properties(self):
+        """Get Default Properties - PagerDutyIncidentOutput"""
+        props = self.__dispatcher._get_default_properties()
+        assert_equal(len(props), 1)
+        assert_equal(props['api'],
+                     'https://api.pagerduty.com')
+
+    def test_get_endpoint(self):
+        """Get Endpoint - PagerDutyIncidentOutput"""
+        props = self.__dispatcher._get_default_properties()
+        endpoint = self.__dispatcher._get_endpoint(props['api'], 'testtest')
+        assert_equal(endpoint,
+                     'https://api.pagerduty.com/testtest')
+
+    def _setup_dispatch(self, context=None):
+        """Helper for setting up PagerDutyIncidentOutput dispatch"""
+        remove_temp_secrets()
+
+        # Cache the _get_default_properties and set it to return None
+        self.__backup_method = self.__dispatcher._get_default_properties
+        self.__dispatcher._get_default_properties = lambda: None
+
+        output_name = self.__dispatcher.output_cred_name(self.__descriptor)
+
+        creds = {'api': 'https://api.pagerduty.com',
+                 'token': 'mocked_token',
+                 'service_key': 'mocked_service_key',
+                 'escalation_policy': 'mocked_escalation_policy'}
+
+        put_mock_creds(output_name, creds, self.__dispatcher.secrets_bucket, REGION, KMS_ALIAS)
+
+        return get_alert(context)
+
+    def _teardown_dispatch(self):
+        """Replace method with cached method"""
+        self.__dispatcher._get_default_properties = self.__backup_method
+
+    @patch('logging.Logger.info')
+    @patch('requests.post')
+    @patch('requests.get')
+    @mock_s3
+    @mock_kms
+    def test_dispatch_success_good_user(self, get_mock, post_mock, log_info_mock):
+        """PagerDutyIncidentOutput dispatch success - Good User"""
+        ctx = {
+            'pagerduty-incident': {
+                'assigned_user': 'valid_user'
+            }
+        }
+        alert = self._setup_dispatch(context=ctx)
+
+        # _check_exists_get_id(user), _check_exists_get_id(service)
+        get_mock.return_value.status_code.side_effect = [200, 200]
+        json_user = json.loads('{"users": [{"id": "user_id"}]}')
+        json_service = json.loads('{"services": [{"id": "service_id"}]}')
+        get_mock.return_value.json.side_effect = [json_user, json_service]
+
+        # /incidents
+        post_mock.return_value.status_code = 200
+
+        self.__dispatcher.dispatch(descriptor=self.__descriptor,
+                                   rule_name='rule_name',
+                                   alert=alert)
+
+        self._teardown_dispatch()
+
+        log_info_mock.assert_called_with('Successfully sent alert to %s', self.__service)
+
+    @patch('logging.Logger.info')
+    @patch('requests.post')
+    @patch('requests.get')
+    @mock_s3
+    @mock_kms
+    def test_dispatch_success_good_policy(self, get_mock, post_mock, log_info_mock):
+        """PagerDutyIncidentOutput dispatch success - Good Policy"""
+        ctx = {
+            'pagerduty-incident': {
+                'assigned_policy': 'valid_policy'
+            }
+        }
+        alert = self._setup_dispatch(context=ctx)
+
+        # _check_exists_get_id(policy), _check_exists_get_id(service)
+        get_mock.return_value.status_code.side_effect = [200, 200]
+        json_policy = json.loads('{"policies": [{"id": "policy_id"}]}')
+        json_service = json.loads('{"services": [{"id": "service_id"}]}')
+        get_mock.return_value.json.side_effect = [json_policy, json_service]
+
+        # /incidents
+        post_mock.return_value.status_code = 200
+
+        self.__dispatcher.dispatch(descriptor=self.__descriptor,
+                                   rule_name='rule_name',
+                                   alert=alert)
+
+        self._teardown_dispatch()
+
+        log_info_mock.assert_called_with('Successfully sent alert to %s', self.__service)
+
+    @patch('logging.Logger.info')
+    @patch('requests.post')
+    @patch('requests.get')
+    @mock_s3
+    @mock_kms
+    def test_dispatch_success_bad_user(self, get_mock, post_mock, log_info_mock):
+        """PagerDutyIncidentOutput dispatch success - Bad User"""
+        ctx = {
+            'pagerduty-incident': {
+                'assigned_user': 'invalid_user'
+            }
+        }
+        alert = self._setup_dispatch(context=ctx)
+
+        # _check_exists_get_id(user), _check_exists_get_id(service)
+        get_mock.return_value.status_code.side_effect = [200, 200]
+        json_user = json.loads('{"not_users": [{"id": "user_id"}]}')
+        json_service = json.loads('{"services": [{"id": "service_id"}]}')
+        get_mock.return_value.json.side_effect = [json_user, json_service]
+
+        # /incidents
+        post_mock.return_value.status_code = 200
+
+        self.__dispatcher.dispatch(descriptor=self.__descriptor,
+                                   rule_name='rule_name',
+                                   alert=alert)
+
+        self._teardown_dispatch()
+
+        log_info_mock.assert_called_with('Successfully sent alert to %s', self.__service)
+
+    @patch('logging.Logger.info')
+    @patch('requests.post')
+    @patch('requests.get')
+    @mock_s3
+    @mock_kms
+    def test_dispatch_success_no_context(self, get_mock, post_mock, log_info_mock):
+        """PagerDutyIncidentOutput dispatch success - No Context"""
+        alert = self._setup_dispatch()
+
+        # _check_exists_get_id(policy), _check_exists_get_id(service)
+        get_mock.return_value.status_code.side_effect = [200, 200]
+        json_policy = json.loads('{"policies": [{"id": "policy_id"}]}')
+        json_service = json.loads('{"services": [{"id": "service_id"}]}')
+        get_mock.return_value.json.side_effect = [json_policy, json_service]
+
+        # /incidents
+        post_mock.return_value.status_code = 200
+
+        self.__dispatcher.dispatch(descriptor=self.__descriptor,
+                                   rule_name='rule_name',
+                                   alert=alert)
+
+        self._teardown_dispatch()
+
+        log_info_mock.assert_called_with('Successfully sent alert to %s', self.__service)
+
+    @patch('logging.Logger.error')
+    @patch('requests.post')
+    @patch('requests.get')
+    @mock_s3
+    @mock_kms
+    def test_dispatch_failure_bad_everything(self, get_mock, post_mock, log_error_mock):
+        """PagerDutyIncidentOutput dispatch failure - No User, Bad Policy, Bad Service"""
+        alert = self._setup_dispatch()
+        # _check_exists_get_id(policy), _check_exists_get_id(service)
+        get_mock.return_value.status_code.side_effect = [400, 400]
+        json_empty = json.loads('{}')
+        get_mock.return_value.json.return_value.side_effect = [json_empty, json_empty]
+
+        # /incidents
+        post_mock.return_value.status_code = 400
+
+        self.__dispatcher.dispatch(descriptor=self.__descriptor,
+                                   rule_name='rule_name',
+                                   alert=alert)
+
+        self._teardown_dispatch()
+
+        log_error_mock.assert_called_with('Failed to send alert to %s', self.__service)
+
+    @patch('logging.Logger.info')
+    @patch('requests.post')
+    @patch('requests.get')
+    @mock_s3
+    @mock_kms
+    def test_dispatch_success_bad_policy(self, get_mock, post_mock, log_info_mock):
+        """PagerDutyIncidentOutput dispatch success - Bad Policy"""
+        ctx = {
+            'pagerduty-incident': {
+                'assigned_policy': 'valid_policy'
+            }
+        }
+        alert = self._setup_dispatch(context=ctx)
+        # _check_exists_get_id(policy), _check_exists_get_id(service)
+        get_mock.return_value.status_code.side_effect = [400, 200]
+        json_policy = json.loads('{}')
+        json_service = json.loads('{"services": [{"id": "service_id"}]}')
+        get_mock.return_value.json.side_effect = [json_policy, json_service]
+
+        # /incidents
+        post_mock.return_value.status_code = 200
+
+        self.__dispatcher.dispatch(descriptor=self.__descriptor,
+                                   rule_name='rule_name',
+                                   alert=alert)
+
+        self._teardown_dispatch()
+
+        log_info_mock.assert_called_with('Successfully sent alert to %s', self.__service)
+
+    @patch('logging.Logger.error')
+    @patch('requests.post')
+    @patch('requests.get')
+    @mock_s3
+    @mock_kms
+    def test_dispatch_bad_dispatch(self, get_mock, post_mock, log_error_mock):
+        """PagerDutyIncidentOutput dispatch - Bad Dispatch"""
+        alert = self._setup_dispatch()
+        # _check_exists_get_id(policy), _check_exists_get_id(service)
+        get_mock.return_value.status_code.side_effect = [200, 200]
+        json_policy = json.loads('{"policies": [{"id": "policy_id"}]}')
+        json_service = json.loads('{"services": [{"id": "service_id"}]}')
+        get_mock.return_value.json.side_effect = [json_policy, json_service]
+
+        # /incidents
+        post_mock.return_value.status_code = 400
+
+        self.__dispatcher.dispatch(descriptor=self.__descriptor,
+                                   rule_name='rule_name',
+                                   alert=alert)
+
+        self._teardown_dispatch()
+
+        log_error_mock.assert_called_with('Failed to send alert to %s', self.__service)
+
+    @patch('logging.Logger.error')
+    @mock_s3
+    @mock_kms
+    def test_dispatch_bad_descriptor(self, log_error_mock):
+        """PagerDutyIncidentOutput dispatch - Bad Descriptor"""
         alert = self._setup_dispatch()
         self.__dispatcher.dispatch(descriptor='bad_descriptor',
                                    rule_name='rule_name',
