@@ -197,7 +197,7 @@ class OneLoginApp(AppIntegration):
 
         if not result:
             # If we hit the rate limit, update the sleep time
-            if response.get('status'):
+            if response and response.get('status'):
                 r_status = response.get('status')
                 if r_status['code'] == 400 and r_status['message'] == 'rate_limit_exceeded':
                     self._set_rate_limit_sleep()
