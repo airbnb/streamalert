@@ -6,14 +6,11 @@
 
 ## Example
 ```
-module "stream_alert" {
-  source                       = "../modules/tf_stream_alert"
+module "globals" {
+  source                       = "../modules/tf_stream_alert_globals"
   account_id                   = "112233445566"
   region                       = "us-east-1"
-  lambda_source_bucket_name    = "mycompany.streamalert.source"
-  lambda_source_key            = "/source/stream_alert_v1.0"
-  lambda_function_prod_version = "$LATEST"
-  lambda_handler               = "main.lambda_handler"
+  prefix                       = "mycompany"
 }
 ```
 
@@ -34,6 +31,12 @@ module "stream_alert" {
   <tr>
     <td>region</td>
     <td>The AWS region for your stream</td>
+    <td>None</td>
+    <td>True</td>
+  </tr>
+  <tr>
+    <td>prefix</td>
+    <td>The resource prefix, normally an organizational name or descriptor</td>
     <td>None</td>
     <td>True</td>
   </tr>
