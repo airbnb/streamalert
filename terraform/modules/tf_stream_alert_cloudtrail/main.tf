@@ -77,17 +77,3 @@ data "aws_iam_policy_document" "cloudtrail_bucket" {
     }
   }
 }
-
-// Cloudwatch event to capture Cloudtrail API calls
-resource "aws_cloudwatch_event_rule" "all_events" {
-  name          = "${var.prefix}_${var.cluster}_streamalert_all_events"
-  description   = "Capture all CloudWatch events"
-  role_arn      = "${aws_iam_role.streamalert_cloudwatch_role.arn}"
-  event_pattern = "${var.event_pattern}"
-}
-
-// The Kinesis destination for Cloudwatch events
-resource "aws_cloudwatch_event_target" "kinesis" {
-  rule = "${aws_cloudwatch_event_rule.all_events.name}"
-  arn  = "${var.kinesis_arn}"
-}

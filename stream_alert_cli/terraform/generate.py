@@ -156,7 +156,7 @@ def generate_main(**kwargs):
         )
     }
 
-    # Conditionally configure Firehose
+    # Conditionally configure Firehose data delivery streams
     if config['global']['infrastructure'].get('firehose', {}).get('enabled'):
         firehose_config = config['global']['infrastructure']['firehose']
         firehose_s3_bucket_suffix = firehose_config.get('s3_bucket_suffix',
@@ -181,6 +181,7 @@ def generate_main(**kwargs):
             's3_bucket_name': firehose_s3_bucket_name
         }
 
+    # Configure global resources like Firehose alert delivery
     main_dict['module']['globals'] = {
         'source': 'modules/tf_stream_alert_globals',
         'account_id': config['global']['account']['aws_account_id'],
@@ -296,16 +297,18 @@ def generate_cluster(**kwargs):
         if not generate_monitoring(cluster_name, cluster_dict, config):
             return
 
-    if not generate_kinesis_streams(cluster_name, cluster_dict, config):
-        return
+    if modules.get('kinesis'):
+        if not generate_kinesis_streams(cluster_name, cluster_dict, config):
+            return
 
     outputs = config['clusters'][cluster_name].get('outputs')
     if outputs:
         if not generate_outputs(cluster_name, cluster_dict, config):
             return
 
-    if not generate_kinesis_events(cluster_name, cluster_dict, config):
-        return
+    if modules.get('kinesis_events'):
+        if not generate_kinesis_events(cluster_name, cluster_dict, config):
+            return
 
     cloudtrail_info = modules.get('cloudtrail')
     if cloudtrail_info:
