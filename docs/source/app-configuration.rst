@@ -23,12 +23,12 @@ Apps are made possible through the use of AWS technologies:
 Supported Services
 ------------------
 
-* Duo
+* `Duo <https://duo.com/docs/administration-reporting>`_
 
   - Authentication Logs
   - Administrator Logs
 
-* OneLogin
+* `OneLogin <https://support.onelogin.com/hc/en-us/articles/202123754-Events>`_
 
   - Events Logs
 
@@ -45,7 +45,11 @@ Supported Services
   - SAML
   - Authorization Tokens
 
-* *Soon to come:* `Box <https://github.com/airbnb/streamalert/issues/398>`_, and more
+* `Box <https://developer.box.com/v2.0/reference#events>`_
+
+  - Admin Events
+
+* *More to come*
 
 
 Getting Started
