@@ -147,6 +147,7 @@ def tf_runner(**kwargs):
     else:
         LOGGER_CLI.info('Creating infrastructure')
         tf_command[tf_action_index] = 'apply'
+        tf_command.append('-refresh=false')
 
     if not run_command(tf_command):
         return False
