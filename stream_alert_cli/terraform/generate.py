@@ -38,6 +38,7 @@ from stream_alert_cli.terraform.metrics import (
 from stream_alert_cli.terraform.monitoring import generate_monitoring
 from stream_alert_cli.terraform.streamalert import generate_stream_alert
 from stream_alert_cli.terraform.s3_events import generate_s3_events
+from stream_alert_cli.terraform.threat_intel_downloader import generate_threat_intel_downloader
 
 DEFAULT_SNS_MONITORING_TOPIC = 'stream_alert_monitoring'
 RESTRICTED_CLUSTER_NAMES = ('main', 'athena')
@@ -408,5 +409,25 @@ def terraform_generate(config, init=False):
             if os.path.isfile(athena_file):
                 LOGGER_CLI.info('Removing old Athena Terraform file')
                 os.remove(athena_file)
+
+    # Setup Threat Intel Downloader Lambda function if it is enabled
+    ti_downloader_config = config['lambda'].get('threat_intel_downloader_config')
+    if ti_downloader_config:
+        ti_downloader_file = 'terraform/ti_downloader.tf.json'
+        if ti_downloader_config['enabled']:
+            ti_downloader_generated_config = generate_threat_intel_downloader(config=config)
+            if ti_downloader_generated_config:
+                with open(ti_downloader_file, 'w') as tf_file:
+                    json.dump(
+                        ti_downloader_generated_config,
+                        tf_file,
+                        indent=2,
+                        sort_keys=True
+                    )
+        # Remove ti_downloader tf file if it's disabled
+        else:
+            if os.path.isfile(ti_downloader_file):
+                LOGGER_CLI.info('Removing old Threat Intel Downloader Terraform file')
+                os.remove(ti_downloader_file)
 
     return True

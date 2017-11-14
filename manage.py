@@ -973,9 +973,8 @@ def _add_default_lambda_args(lambda_parser):
 
     # require the name of the processor being deployed/rolled back
     lambda_parser.add_argument(
-        '-p',
-        '--processor',
-        choices=['alert', 'all', 'athena', 'rule', 'apps'],
+        '-p', '--processor',
+        choices=['alert', 'all', 'athena', 'rule', 'apps', 'threat_intel_downloader'],
         help=ARGPARSE_SUPPRESS,
         nargs='+',
         action=UniqueSetAction,
@@ -1041,7 +1040,7 @@ Examples:
         '--target',
         choices=[
             'athena', 'cloudwatch_monitoring', 'cloudtrail', 'flow_logs', 'kinesis',
-            'kinesis_events', 'stream_alert', 's3_events'
+            'kinesis_events', 'stream_alert', 's3_events', 'threat_intel_downloader'
         ],
         help=ARGPARSE_SUPPRESS,
         nargs='+')
@@ -1067,7 +1066,7 @@ Arguments:
 
     --clusters                Space delimited set of clusters to modify, defaults to all
     --debug                   Debug mode
-    --skip-terraform          Only set the config, do not run Terraform after                
+    --skip-terraform          Only set the config, do not run Terraform after
 
 Examples:
 
@@ -1185,6 +1184,101 @@ Examples:
     athena_parser.add_argument('--debug', action='store_true', help=ARGPARSE_SUPPRESS)
 
 
+def _add_threat_intel_downloader_subparser(subparsers):
+    """Add threat intel downloader subparser: manage.py threat_intel_downloader [subcommand]"""
+    ti_downloader_usage = 'manage.py threat_intel_downloader [subcommand]'
+    ti_downloader_description = ("""
+StreamAlertCLI v{}
+Threat Intel Downloader options
+
+Available Subcommands:
+
+    manage.py threat_intel_downloader enable        Enable the Threat Intel Downloader Lambda function
+
+    Required Arguments:
+
+        --timeout           The AWS Lambda function timeout value, in seconds. This should
+                              be an integer between 10 and 300. (required)
+        --memory            The AWS Lambda function max memory value, in megabytes. This should
+                              be an integer between 128 and 1536. (required)
+        --interval          The interval (required), defined using a 'rate' expression, at
+                              which this app integration function should execute. Examples of
+                              acceptable input are:
+                                'rate(1 hour)'          # Every hour (note the singular 'hour')
+                                'rate(1 day)'           # Every day
+                                'rate(2 days)'          # Every 2 days
+
+                              See the link in the Resources section below for more information.
+        --table_name       The DynamoDB table name where stores IOCs. (required)
+        --table_rcu        The DynamoDB table Read Capacity Unit. (optional)
+        --table_wcu        The DynamoDB table Write Capacity Unit. (optional)
+
+    manage.py threat_intel_downloader update-auth   Update API credentials to parameter store.
+
+Examples:
+
+    manage.py threat_intel_downloader enable \\
+    --interval 'rate(1 day)' \\
+    --timeout 120 \\
+    --memory 128 \\
+    --table_name my_dynamodb_table \\
+    --table_rcu 10 \\
+    --table_wcu 10
+""".format(version))
+    ti_downloader_parser = subparsers.add_parser(
+        'threat_intel_downloader',
+        usage=ti_downloader_usage,
+        description=ti_downloader_description,
+        help=ARGPARSE_SUPPRESS,
+        formatter_class=RawTextHelpFormatter
+    )
+
+    ti_downloader_parser.set_defaults(command='threat_intel_downloader')
+
+    ti_downloader_parser.add_argument(
+        'subcommand',
+        choices=['enable',
+                 'update-auth'],
+        help=ARGPARSE_SUPPRESS
+    )
+
+    ti_downloader_parser.add_argument(
+        '--interval',
+        help=ARGPARSE_SUPPRESS
+    )
+
+    ti_downloader_parser.add_argument(
+        '--timeout',
+        help=ARGPARSE_SUPPRESS
+    )
+
+    ti_downloader_parser.add_argument(
+        '--memory',
+        help=ARGPARSE_SUPPRESS
+    )
+
+    ti_downloader_parser.add_argument(
+        '--table_name',
+        help=ARGPARSE_SUPPRESS
+    )
+
+    ti_downloader_parser.add_argument(
+        '--table_rcu',
+        help=ARGPARSE_SUPPRESS
+    )
+
+    ti_downloader_parser.add_argument(
+        '--table_wcu',
+        help=ARGPARSE_SUPPRESS
+    )
+
+    ti_downloader_parser.add_argument(
+        '--debug',
+        action='store_true',
+        help=ARGPARSE_SUPPRESS
+    )
+
+
 def build_parser():
     """Build the argument parser."""
     description = ("""
@@ -1223,6 +1317,7 @@ For additional details on the available commands, try:
     _add_athena_subparser(subparsers)
     _add_app_integration_subparser(subparsers)
     _add_kinesis_subparser(subparsers)
+    _add_threat_intel_downloader_subparser(subparsers)
 
     return parser
 

@@ -315,3 +315,12 @@ class AthenaPackage(LambdaPackage):
     package_name = 'athena_partition_refresh'
     config_key = 'athena_partition_refresh_config'
     third_party_libs = {'backoff'}
+
+class ThreatIntelDownloaderPackage(LambdaPackage):
+    """Create the Threat Intel Downloader Lambda function package"""
+    package_folders = {'stream_alert/threat_intel_downloader', 'conf'}
+    package_files = {'stream_alert/__init__.py'}
+    package_root_dir = '.'
+    package_name = 'threat_intel_downloader'
+    config_key = 'threat_intel_downloader_config'
+    third_party_libs = {'requests'}

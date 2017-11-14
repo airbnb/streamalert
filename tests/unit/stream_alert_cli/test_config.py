@@ -17,7 +17,7 @@ limitations under the License.
 import json
 
 from mock import Mock, patch
-from nose.tools import assert_equal, assert_true
+from nose.tools import assert_equal, assert_true, assert_false
 from pyfakefs import fake_filesystem_unittest
 
 from stream_alert_cli.config import CLIConfig
@@ -126,3 +126,49 @@ class TestCLIConfig(object):
         log_mock.assert_called_with('Successfully added \'%s\' metric alarm to '
                                     '\'conf/global.json\'.',
                                     'Aggregate Unit Testing Total Records Alarm')
+
+    @patch('logging.Logger.info')
+    @patch('stream_alert_cli.config.CLIConfig.write')
+    def test_add_threat_intel_downloader(self, write_mock, log_mock):
+        """CLI - Add Threat Intel Downloader config"""
+        ti_downloader_info = {
+            'command': 'threat_intel_downloader',
+            'debug': False,
+            'interval': 'rate(1 day)',
+            'memory': '128',
+            'subcommand': 'enable',
+            'table_name': 'threat_intel_ioc',
+            'timeout': '240',
+            'table_wcu': 25
+        }
+        result = self.config.add_threat_intel_downloader(ti_downloader_info)
+        assert_true(result)
+        expected_config = {
+            'enabled': True,
+            'current_version': '$LATEST',
+            'handler': 'threat_intel_downloader.main.handler',
+            'interval': 'rate(1 day)',
+            'log_level': 'info',
+            'memory': '128',
+            'source_bucket': 'PREFIX_GOES_HERE.streamalert.source',
+            'source_current_hash': '<auto_generated>',
+            'source_object_key': '<auto_generated>',
+            'third_party_libraries': [
+                'requests'
+            ],
+            'table_name': 'threat_intel_ioc',
+            'table_rcu': 10,
+            'table_wcu': 25,
+            'timeout': '240'
+        }
+        assert_equal(self.config['lambda']['threat_intel_downloader_config'], expected_config)
+        write_mock.assert_called()
+        log_mock.assert_not_called()
+
+        # no config changed if threat intel downloader already been enabled via CLI
+        result = self.config.add_threat_intel_downloader(ti_downloader_info)
+        assert_false(result)
+        write_mock.assert_called_once()
+        log_mock.assert_called_with('Threat Intel Downloader has been enabled. '
+                                    'Please edit config/lambda.json if you want to '
+                                    'change lambda function settings.')

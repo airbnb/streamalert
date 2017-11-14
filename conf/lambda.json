@@ -21,5 +21,18 @@
     "source_current_hash": "<auto_generated>",
     "source_object_key": "<auto_generated>",
     "third_party_libraries": []
+  },
+  "threat_intel_downloader_config": {
+    "current_version": "$LATEST",
+    "enabled": true,
+    "handler": "threat_intel_downloader.main.handler",
+    "interval": "rate(1 day)",
+    "log_level": "info",
+    "memory": "128",
+    "source_bucket": "PREFIX_GOES_HERE.streamalert.source",
+    "source_current_hash": "<auto_generated>",
+    "source_object_key": "<auto_generated>",
+    "third_party_libraries": [],
+    "timeout": "240"
   }
 }
