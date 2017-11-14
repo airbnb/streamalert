@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+# pylint: disable=too-many-lines
 from abc import abstractmethod
 import cgi
 from collections import OrderedDict
@@ -256,12 +257,12 @@ class PagerDutyIncidentOutput(StreamOutputBase):
         """
         return os.path.join(base_url, endpoint)
 
-    def _check_exists_get_id(self, filter_str, target_url, headers, target_key):
+    def _check_exists_get_id(self, filter_str, url, headers, target_key):
         """Generic method to run a search in the PagerDuty REST API and return the id
         of the first occurence from the results.
 
         Args:
-            filter (str): The query filter to search for in the API
+            filter_str (str): The query filter to search for in the API
             url (str): The url to send the requests to in the API
             headers (dict): A dictionary containing header parameters
             target_key (str): The key to extract in the returned results
@@ -273,14 +274,90 @@ class PagerDutyIncidentOutput(StreamOutputBase):
         params = {
             'query': '"{}"'.format(filter_str)
         }
-        resp = self._get_request(target_url, params, headers, False)
+        resp = self._get_request(url, params, headers, False)
         if not self._check_http_response(resp):
             return False
 
         response = resp.json()
 
         # If there are results, get the first occurence from the list
-        return response and response.get(target_key)[0]['id']
+        target = response.get(target_key, False)
+        if response and target:
+            return target[0]['id']
+
+        return False
+
+    def _user_verify(self, api_url, user, headers):
+        """Method to verify the existance of an user with the API
+
+        Args:
+            api_url (str): Base URL of the API
+            user (str): User to query about in the API.
+            headers (dict): Headers used for API authentication
+
+        Returns:
+            dict or False: JSON object be used in the API call, containing the user_id
+                           and user_reference. False if user is not found
+        """
+        users_url = self._get_endpoint(api_url, self.USERS_ENDPOINT)
+        user_id = self._check_exists_get_id(user, users_url, headers,
+                                            self.USERS_ENDPOINT)
+        if not user_id:
+            LOGGER.info('User[%s] not found in %s', user, self.__service__)
+            return False
+
+        return {
+            'id': user_id,
+            'type': 'user_reference'
+        }
+
+    def _policy_verify(self, api_url, policy, headers):
+        """Method to verify the existance of a escalation policy with the API
+
+        Args:
+            api_url (str): Base URL of the API
+            policy (str): Escalation policy to query about in the API
+            headers (dict): Headers used for API authentication
+
+        Returns:
+            dict: JSON object be used in the API call, containing the policy_id
+                  and escalation_policy_reference
+        """
+        policies_url = self._get_endpoint(api_url, self.POLICIES_ENDPOINT)
+        policy_id = self._check_exists_get_id(policy, policies_url, headers,
+                                              self.POLICIES_ENDPOINT)
+        if not policy_id:
+            LOGGER.info('Escalation Policy[%s] not found in %s', policy, self.__service__)
+            return False
+
+        return {
+            'id': policy_id,
+            'type': 'escalation_policy_reference'
+        }
+
+    def _service_verify(self, api_url, service, headers):
+        """Method to verify the existance of a service with the API
+
+        Args:
+            api_url (str): Base URL of the API
+            service (str): Service to query about in the API
+            headers (dict): Headers used for API authentication
+
+        Returns:
+            dict: JSON object be used in the API call, containing the service_id
+                  and the service_reference
+        """
+        services_url = self._get_endpoint(api_url, self.SERVICES_ENDPOINT)
+        service_id = self._check_exists_get_id(service, services_url, headers,
+                                               self.SERVICES_ENDPOINT)
+        if not service_id:
+            LOGGER.info('Service[%s] not found in %s', service, self.__service__)
+            return False
+
+        return {
+            'id': service_id,
+            'type': 'service_reference'
+        }
 
     def dispatch(self, **kwargs):
         """Send incident to Pagerduty Incidents API v2
@@ -313,29 +390,20 @@ class PagerDutyIncidentOutput(StreamOutputBase):
         # Incident assignment goes in this order:
         #  Provided user -> provided policy -> default policy
         if user_to_assign:
-            users_url = self._get_endpoint(creds['api'], self.USERS_ENDPOINT)
-            user_id = self._check_exists_get_id(user_to_assign, users_url, headers,
-                                                self.USERS_ENDPOINT)
-            if user_id:
+            user_assignee = self._user_verify(creds['api'], user_to_assign, headers)
+            if user_assignee:
                 assigned_key = 'assignments'
                 assigned_value = [{
-                    'assignee' : {
-                        'id': user_id,
-                        'type': 'user_reference'}
-                }]
+                    'assignee' : user_assignee}]
+            else:
+                user_to_assign = user_assignee
 
         policy_to_assign = creds['escalation_policy']
         if not user_to_assign and rule_context.get('assigned_policy'):
             policy_to_assign = rule_context.get('assigned_policy')
 
-        policies_url = self._get_endpoint(creds['api'], self.POLICIES_ENDPOINT)
-        policy_id = self._check_exists_get_id(policy_to_assign, policies_url, headers,
-                                              self.POLICIES_ENDPOINT)
         assigned_key = 'escalation_policy'
-        assigned_value = {
-            'id': policy_id,
-            'type': 'escalation_policy_reference'
-        }
+        assigned_value = self._policy_verify(creds['api'], policy_to_assign, headers)
 
         # Start preparing the incident JSON blob to be sent to the API
         incident_title = 'StreamAlert Incident - Rule triggered: {}'.format(kwargs['rule_name'])
@@ -344,13 +412,7 @@ class PagerDutyIncidentOutput(StreamOutputBase):
             'details': kwargs['alert']['rule_description']
         }
         # We need to get the service id from the API
-        services_url = self._get_endpoint(creds['api'], self.SERVICES_ENDPOINT)
-        service_id = self._check_exists_get_id(creds['service_key'], services_url, headers,
-                                               self.SERVICES_ENDPOINT)
-        incident_service = {
-            'id': service_id,
-            'type': 'service_reference'
-        }
+        incident_service = self._service_verify(creds['api'], creds['service_key'], headers)
         incident = {
             'incident': {
                 'type': 'incident',

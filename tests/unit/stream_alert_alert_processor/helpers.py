@@ -79,10 +79,7 @@ def get_alert(index=0, context=None):
         index (int): test_index value (0 by default)
         context(dict): context dictionary (empty by default)
     """
-    if not context:
-        ctx = {}
-    else:
-        ctx = context
+    context = context or {}
 
     return {
         'record': {
@@ -101,7 +98,7 @@ def get_alert(index=0, context=None):
         'outputs': [
             'slack:unit_test_channel'
         ],
-        'context': ctx,
+        'context': context,
         'source_service': 's3',
         'source_entity': 'corp-prefix.prod.cb.region',
         'log_type': 'json',

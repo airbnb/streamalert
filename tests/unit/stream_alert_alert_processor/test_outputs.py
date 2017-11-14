@@ -324,6 +324,79 @@ class TestPagerDutyIncidentOutput(object):
         """Replace method with cached method"""
         self.__dispatcher._get_default_properties = self.__backup_method
 
+    @patch('requests.get')
+    def test_check_exists_get_id(self, get_mock):
+        """Check Exists Get Id - PagerDutyIncidentOutput"""
+        get_mock.return_value.status_code = 200
+        json_check = json.loads('{"check": [{"id": "checked_id"}]}')
+        get_mock.return_value.json.return_value = json_check
+
+        checked = self.__dispatcher._check_exists_get_id('filter', 'http://mock_url', {}, 'check')
+        assert_equal(checked, 'checked_id')
+
+    @patch('requests.get')
+    def test_user_verify_success(self, get_mock):
+        """User Verify Success - PagerDutyIncidentOutput"""
+        get_mock.return_value.status_code = 200
+        json_check = json.loads('{"users": [{"id": "verified_user_id"}]}')
+        get_mock.return_value.json.return_value = json_check
+
+        user_verified = self.__dispatcher._user_verify('http://mock_url', 'valid_user', {})
+        assert_equal(user_verified['id'], 'verified_user_id')
+        assert_equal(user_verified['type'], 'user_reference')
+
+    @patch('requests.get')
+    def test_user_verify_fail(self, get_mock):
+        """User Verify Fail - PagerDutyIncidentOutput"""
+        get_mock.return_value.status_code = 200
+        json_check = json.loads('{"not_users": [{"not_id": "verified_user_id"}]}')
+        get_mock.return_value.json.return_value = json_check
+
+        user_verified = self.__dispatcher._user_verify('http://mock_url', 'valid_user', {})
+        assert_false(user_verified)
+
+    @patch('requests.get')
+    def test_policy_verify_success(self, get_mock):
+        """Policy Verify Success - PagerDutyIncidentOutput"""
+        get_mock.return_value.status_code = 200
+        json_check = json.loads('{"escalation_policies": [{"id": "verified_policy_id"}]}')
+        get_mock.return_value.json.return_value = json_check
+
+        policy_verified = self.__dispatcher._policy_verify('http://mock_url', 'valid_policy', {})
+        assert_equal(policy_verified['id'], 'verified_policy_id')
+        assert_equal(policy_verified['type'], 'escalation_policy_reference')
+
+    @patch('requests.get')
+    def test_policy_verify_fail(self, get_mock):
+        """Policy Verify Fail - PagerDutyIncidentOutput"""
+        get_mock.return_value.status_code = 200
+        json_check = json.loads('{"not_escalation_policies": [{"not_id": "verified_policy_id"}]}')
+        get_mock.return_value.json.return_value = json_check
+
+        policy_verified = self.__dispatcher._policy_verify('http://mock_url', 'valid_policy', {})
+        assert_false(policy_verified)
+
+    @patch('requests.get')
+    def test_service_verify_success(self, get_mock):
+        """Service Verify Success - PagerDutyIncidentOutput"""
+        get_mock.return_value.status_code = 200
+        json_check = json.loads('{"services": [{"id": "verified_service_id"}]}')
+        get_mock.return_value.json.return_value = json_check
+
+        service_verified = self.__dispatcher._service_verify('http://mock_url', 'valid_user', {})
+        assert_equal(service_verified['id'], 'verified_service_id')
+        assert_equal(service_verified['type'], 'service_reference')
+
+    @patch('requests.get')
+    def test_service_verify_fail(self, get_mock):
+        """Service Verify Fail - PagerDutyIncidentOutput"""
+        get_mock.return_value.status_code = 200
+        json_check = json.loads('{"not_services": [{"not_id": "verified_service_id"}]}')
+        get_mock.return_value.json.return_value = json_check
+
+        service_verified = self.__dispatcher._service_verify('http://mock_url', 'valid_user', {})
+        assert_false(service_verified)
+
     @patch('logging.Logger.info')
     @patch('requests.post')
     @patch('requests.get')
