@@ -20,6 +20,8 @@ import hmac
 import re
 import urllib
 
+import requests
+
 from app_integrations import LOGGER
 from app_integrations.apps.app_base import app, AppIntegration
 
@@ -114,8 +116,13 @@ class DuoApp(AppIntegration):
         if not headers:
             return False
 
-        # Make the request to the api, resulting in a bool or dict
-        result, response = self._make_get_request(full_url, headers=headers, params=params)
+        try:
+            # Make the request to the api, resulting in a bool or dict
+            result, response = self._make_get_request(full_url, headers=headers, params=params)
+        except requests.exceptions.ConnectionError:
+            LOGGER.exception('Received bad response from duo')
+            return False
+
         if not result:
             return False
 
