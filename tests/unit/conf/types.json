@@ -1,15 +1,41 @@
 {
-  "cloudwatch":{
-    "userName": ["userName", "owner", "invokedBy"],
-    "sourceAccount": ["account", "recipientAccountId"],
-    "transportProtocol": ["protocol"],
-    "eventType": ["eventType"],
-    "eventName": ["eventName"],
-    "region": ["region"],
-    "userAgent": ["userAgent"],
-    "sourceAddress": ["source", "sourceIPAddress"],
-    "destinationAddress": ["destination"],
-    "sourcePort": ["srcport"],
-    "destinationPort": ["destport"]
+  "cloudwatch": {
+    "destinationAddress": [
+      "destination"
+    ],
+    "destinationPort": [
+      "destport"
+    ],
+    "eventName": [
+      "eventName"
+    ],
+    "eventType": [
+      "eventType"
+    ],
+    "region": [
+      "region"
+    ],
+    "sourceAccount": [
+      "account",
+      "recipientAccountId"
+    ],
+    "sourceAddress": [
+      "source",
+      "sourceIPAddress"
+    ],
+    "sourcePort": [
+      "srcport"
+    ],
+    "transportProtocol": [
+      "protocol"
+    ],
+    "userAgent": [
+      "userAgent"
+    ],
+    "userName": [
+      "userName",
+      "owner",
+      "invokedBy"
+    ]
   }
 }

@@ -1,14 +1,18 @@
 resource "aws_lambda_permission" "allow_bucket" {
-  statement_id  = "AllowExecutionFromS3Bucket${title(replace(var.s3_bucket_id, ".", ""))}"
+  statement_id  = "InvokeFromS3Bucket${title(replace(var.bucket_id, ".", ""))}"
   action        = "lambda:InvokeFunction"
   function_name = "${var.lambda_function_arn}"
   principal     = "s3.amazonaws.com"
-  source_arn    = "${var.s3_bucket_arn}"
+  source_arn    = "arn:aws:s3:::${var.bucket_id}"
   qualifier     = "production"
 }
 
 resource "aws_s3_bucket_notification" "bucket_notification" {
-  bucket = "${var.s3_bucket_id}"
+  # Note: With cross-account notifications, this would not succeed since the bucket
+  #       would not be owned in the same account as the Lambda function.
+  count = "${var.enable_events ? 1 : 0}"
+
+  bucket = "${var.bucket_id}"
 
   lambda_function {
     lambda_function_arn = "${var.lambda_function_arn}:production"
@@ -17,25 +21,35 @@ resource "aws_s3_bucket_notification" "bucket_notification" {
 }
 
 resource "aws_iam_role_policy" "lambda_s3_permission" {
-  name = "${var.lambda_function_name}_to_${var.s3_bucket_id}"
+  name = "InvokeFromS3Bucket${title(replace(var.bucket_id, ".", ""))}"
   role = "${var.lambda_role_id}"
 
-  policy = <<EOF
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Action": [
-        "s3:List*",
-        "s3:Get*"
-      ],
-      "Effect": "Allow",
-      "Resource": [
-        "${var.s3_bucket_arn}",
-        "${var.s3_bucket_arn}/*"
-      ]
-    }
-  ]
+  policy = "${data.aws_iam_policy_document.s3_read_only.json}"
 }
-EOF
+
+// IAM Policy Doc: S3 Get Object
+data "aws_iam_policy_document" "s3_read_only" {
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "s3:List*",
+    ]
+
+    resources = [
+      "arn:aws:s3:::${var.bucket_id}",
+    ]
+  }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "s3:Get*",
+    ]
+
+    resources = [
+      "arn:aws:s3:::${var.bucket_id}/*",
+    ]
+  }
 }

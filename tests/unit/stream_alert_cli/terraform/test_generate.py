@@ -22,7 +22,8 @@ from stream_alert_cli.terraform import (
     streamalert
 )
 
-from nose.tools import assert_equal
+from mock import patch
+from nose.tools import assert_equal, assert_false, assert_true
 
 
 class TestTerraformGenerate(object):
@@ -312,21 +313,25 @@ class TestTerraformGenerate(object):
         assert_equal(flow_log_config['vpcs'], ['vpc-id-1', 'vpc-id-2'])
 
     def test_generate_cloudtrail_basic(self):
-        """CLI - Terraform Generate cloudtrail Module"""
+        """CLI - Terraform Generate Cloudtrail Module - Legacy"""
         cluster_name = 'advanced'
-        cloudtrail.generate_cloudtrail(
-            cluster_name,
-            self.cluster_dict,
-            self.config
-        )
+        self.config['clusters']['advanced']['modules']['cloudtrail'] = {
+            'enabled': True
+        }
+        result = cloudtrail.generate_cloudtrail(cluster_name, self.cluster_dict, self.config)
+        # Reload the config
+        self.config.load()
 
-        assert_equal('cloudtrail_advanced' in self.cluster_dict['module'], True)
+        assert_true(result)
+        assert_equal(set(self.config['clusters']['advanced']['modules']['cloudtrail'].keys()),
+                     {'enable_logging', 'enable_kinesis'})
         assert_equal(self.cluster_dict['module']['cloudtrail_advanced'], {
             'account_id': '12345678910',
             'cluster': 'advanced',
             'kinesis_arn': '${module.kinesis_advanced.arn}',
             'prefix': 'unit-testing',
             'enable_logging': True,
+            'enable_kinesis': True,
             'source': 'modules/tf_stream_alert_cloudtrail',
             's3_logging_bucket': 'unit-testing.streamalert.s3-logging',
             'existing_trail': False,
@@ -338,7 +343,8 @@ class TestTerraformGenerate(object):
         """CLI - Terraform Generate Cloudtrail Module - All Options"""
         cluster_name = 'advanced'
         self.config['clusters']['advanced']['modules']['cloudtrail'] = {
-            'enabled': True,
+            'enable_logging': True,
+            'enable_kinesis': True,
             'existing_trail': False,
             'is_global_trail': False,
             'event_pattern': {
@@ -364,11 +370,29 @@ class TestTerraformGenerate(object):
             'kinesis_arn': '${module.kinesis_advanced.arn}',
             'prefix': 'unit-testing',
             'enable_logging': True,
+            'enable_kinesis': True,
             'source': 'modules/tf_stream_alert_cloudtrail',
             's3_logging_bucket': 'unit-testing.streamalert.s3-logging',
             'event_pattern': '{"source": ["aws.ec2"], "account": "12345678910",'
                              ' "detail": {"state": ["running"]}}'
         })
+
+    @patch('stream_alert_cli.terraform.cloudtrail.LOGGER_CLI')
+    def test_generate_cloudtrail_invalid_event_pattern(self, mock_logging):
+        """CLI - Terraform Generate Cloudtrail Module - Invalid Event Pattern"""
+        cluster_name = 'advanced'
+        self.config['clusters']['advanced']['modules']['cloudtrail'] = {
+            'enable_logging': True,
+            'enable_kinesis': True,
+            'existing_trail': False,
+            'is_global_trail': False,
+            'event_pattern': {
+                'invalid': ['aws.ec2']
+            }
+        }
+        result = cloudtrail.generate_cloudtrail(cluster_name, self.cluster_dict, self.config)
+        assert_false(result)
+        assert_true(mock_logging.error.called)
 
     def test_generate_cluster_test(self):
         """CLI - Terraform Generate Test Cluster"""
@@ -384,7 +408,8 @@ class TestTerraformGenerate(object):
             'stream_alert_test',
             'cloudwatch_monitoring_test',
             'kinesis_test',
-            'kinesis_events_test'
+            'kinesis_events_test',
+            's3_events_unit-test-bucket_legacy_data'
         }
 
         assert_equal(set(tf_cluster['module'].keys()), test_modules)
@@ -409,7 +434,9 @@ class TestTerraformGenerate(object):
             'kinesis_advanced',
             'kinesis_events_advanced',
             'flow_logs_advanced',
-            'cloudtrail_advanced'
+            'cloudtrail_advanced',
+            's3_events_unit-test-bucket_data',
+            's3_events_unit-test_cloudtrail_data'
         }
 
         assert_equal(set(tf_cluster['module'].keys()), advanced_modules)

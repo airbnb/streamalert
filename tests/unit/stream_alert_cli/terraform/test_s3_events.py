@@ -21,26 +21,44 @@ from stream_alert_cli.terraform import _common, s3_events
 
 CONFIG = CLIConfig(config_path='tests/unit/conf')
 
-def test_generate_s3_events():
-    """CLI - Terraform S3 Events with Valid Bucket"""
+
+def test_generate_s3_events_legacy():
+    """CLI - Terraform S3 Events - Legacy"""
     cluster_dict = _common.infinitedict()
-    CONFIG['clusters']['advanced']['modules']['s3_events'] = {
-        's3_bucket_id': 'unit-test-bucket.data'
+    CONFIG['clusters']['test']['modules']['s3_events'] = {
+        's3_bucket_id': 'unit-test-bucket.legacy.data'
     }
-    result = s3_events.generate_s3_events('advanced',
-                                          cluster_dict,
-                                          CONFIG)
+    result = s3_events.generate_s3_events('test', cluster_dict, CONFIG)
+    # Reload the config
+    CONFIG.load()
+
+    assert_true(result)
+    assert_equal(CONFIG['clusters']['test']['modules']['s3_events'],
+                 [{
+                     'bucket_id': 'unit-test-bucket.legacy.data'
+                 }])
+
+
+def test_generate_s3_events():
+    """CLI - Terraform S3 Events with Valid Buckets"""
+    cluster_dict = _common.infinitedict()
+    result = s3_events.generate_s3_events('advanced', cluster_dict, CONFIG)
 
     expected_config = {
         'module': {
-            's3_events_advanced': {
+            's3_events_unit-test-bucket_data': {
                 'source': 'modules/tf_stream_alert_s3_events',
                 'lambda_function_arn': '${module.stream_alert_advanced.lambda_arn}',
-                'lambda_function_name': 'unit-testing_advanced_stream_alert_processor',
-                's3_bucket_id': 'unit-test-bucket.data',
-                's3_bucket_arn': 'arn:aws:s3:::unit-test-bucket.data',
+                'bucket_id': 'unit-test-bucket.data',
+                'enable_events': True,
                 'lambda_role_id': '${module.stream_alert_advanced.lambda_role_id}',
-                'lambda_role_arn': '${module.stream_alert_advanced.lambda_role_arn}'
+            },
+            's3_events_unit-test_cloudtrail_data': {
+                'source': 'modules/tf_stream_alert_s3_events',
+                'lambda_function_arn': '${module.stream_alert_advanced.lambda_arn}',
+                'bucket_id': 'unit-test.cloudtrail.data',
+                'enable_events': False,
+                'lambda_role_id': '${module.stream_alert_advanced.lambda_role_id}',
             }
         }
     }
@@ -53,12 +71,8 @@ def test_generate_s3_events():
 def test_generate_s3_events_invalid_bucket(mock_logging):
     """CLI - Terraform S3 Events with Missing Bucket Key"""
     cluster_dict = _common.infinitedict()
-    CONFIG['clusters']['advanced']['modules']['s3_events'] = {
-        'wrong_key': 'my-bucket!!!'
-    }
-    result = s3_events.generate_s3_events('advanced',
-                                          cluster_dict,
-                                          CONFIG)
+    CONFIG['clusters']['advanced']['modules']['s3_events'] = [{'wrong_key': 'my-bucket!!!'}]
+    result = s3_events.generate_s3_events('advanced', cluster_dict, CONFIG)
 
     assert_true(mock_logging.error.called)
     assert_false(result)
