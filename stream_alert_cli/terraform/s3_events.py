@@ -42,12 +42,14 @@ def generate_s3_events(cluster_name, cluster_dict, config):
             LOGGER_CLI.error('Config Error: Missing bucket_id key from s3_event configuration')
             return False
 
-        cluster_dict['module']['s3_events_{}'.format(bucket_info['bucket_id'].replace('.', '_'))] = {
-            'source': 'modules/tf_stream_alert_s3_events',
-            'lambda_function_arn': '${{module.stream_alert_{}.lambda_arn}}'.format(cluster_name),
-            'bucket_id': bucket_info['bucket_id'],
-            'enable_events': bucket_info.get('enable_events', True),
-            'lambda_role_id': '${{module.stream_alert_{}.lambda_role_id}}'.format(cluster_name)
-        }
+        cluster_dict['module']['s3_events_{}'.format(bucket_info['bucket_id'].replace(
+            '.', '_'))] = {
+                'source': 'modules/tf_stream_alert_s3_events',
+                'lambda_function_arn':
+                '${{module.stream_alert_{}.lambda_arn}}'.format(cluster_name),
+                'bucket_id': bucket_info['bucket_id'],
+                'enable_events': bucket_info.get('enable_events', True),
+                'lambda_role_id': '${{module.stream_alert_{}.lambda_role_id}}'.format(cluster_name)
+            }
 
     return True

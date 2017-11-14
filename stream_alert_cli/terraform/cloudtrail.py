@@ -72,7 +72,8 @@ def generate_cloudtrail(cluster_name, cluster_dict, config):
     }
 
     if kinesis_enabled:
-        cluster_dict['module'][cloudtrail_module]['kinesis_arn'] = '${{module.kinesis_{}.arn}}'.format(cluster_name)
+        cluster_dict['module'][cloudtrail_module][
+            'kinesis_arn'] = '${{module.kinesis_{}.arn}}'.format(cluster_name)
         cluster_dict['module'][cloudtrail_module]['event_pattern'] = json.dumps(event_pattern)
 
     return True
