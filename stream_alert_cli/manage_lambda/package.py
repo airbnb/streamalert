@@ -19,6 +19,7 @@ import hashlib
 import os
 import shutil
 import tempfile
+import zipfile
 
 import boto3
 from botocore.exceptions import ClientError
@@ -42,6 +43,8 @@ class LambdaPackage(object):
     package_name = None
     package_root_dir = None
     config_key = None
+    third_party_libs = set()
+    precompiled_libs = set()
 
     def __init__(self, **kwargs):
         self.version = kwargs['version']
@@ -64,6 +67,11 @@ class LambdaPackage(object):
         # download third-party libs
         if not self._resolve_third_party(temp_package_path):
             LOGGER_CLI.exception('Failed to install necessary third-party libraries')
+            exit(1)
+
+        # Extract any precompiled third-party libs for this package
+        if not self._extract_precompiled_libs(temp_package_path):
+            LOGGER_CLI.exception('Failed to extract precompiled third-party libraries')
             exit(1)
 
         # zip up files
@@ -107,9 +115,11 @@ class LambdaPackage(object):
     def _copy_files(self, temp_package_path):
         """Copy all files and folders into temporary package path."""
         for package_folder in self.package_folders:
+            # Skip copying any files with a 'dependencies.zip' suffix
             shutil.copytree(
                 os.path.join(self.package_root_dir, package_folder),
-                os.path.join(temp_package_path, package_folder))
+                os.path.join(temp_package_path, package_folder),
+                ignore=shutil.ignore_patterns(*{'*dependencies.zip'}))
 
         for package_file in self.package_files:
             shutil.copy(
@@ -168,6 +178,39 @@ class LambdaPackage(object):
 
         return package_sha256, package_sha256_path
 
+    def _extract_precompiled_libs(self, temp_package_path):
+        """Extract any precompiled third-party packages into the deployment package folder
+
+        Args:
+            temp_package_path (str): Full path to temp package path
+
+        Returns:
+            bool: False if the required libs were not found, True if otherwise
+        """
+        # Return true immediately if there are no precompiled requirements for this package
+        if not self.precompiled_libs:
+            return True
+
+        # Get any dependency files throughout the package folders that have
+        # the _dependencies.zip suffix
+        dependency_files = {
+            package_file: os.path.join(root, package_file)
+            for folder in self.package_folders for root, _, package_files in os.walk(folder)
+            for package_file in package_files if package_file.endswith('_dependencies.zip')
+        }
+
+        for lib in self.precompiled_libs:
+            libs_name = '_'.join([lib, 'dependencies.zip'])
+            if libs_name not in dependency_files:
+                LOGGER_CLI.error('Missing precompiled libs for package: %s', libs_name)
+                return False
+
+            # Copy the contents of the dependency zip to the package directory
+            with zipfile.ZipFile(dependency_files[libs_name], 'r') as libs_file:
+                libs_file.extractall(temp_package_path)
+
+        return True
+
     def _resolve_third_party(self, temp_package_path):
         """Install all third-party packages into the deployment package folder
 
@@ -177,7 +220,13 @@ class LambdaPackage(object):
         Returns:
             bool: False if the pip command failed to install requirements, True otherwise
         """
-        third_party_libs = self.config['lambda'][self.config_key]['third_party_libraries']
+        # Install all required core libs that were not precompiled for this package
+        third_party_libs = self.third_party_libs.difference(self.precompiled_libs)
+
+        # Add any custom libs needed by rules, etc
+        third_party_libs.update(
+            set(self.config['lambda'][self.config_key]['third_party_libraries']))
+
         # Return a default of True here if no libraries to install
         if not third_party_libs:
             LOGGER_CLI.info('No third-party libraries to install.')
@@ -234,6 +283,7 @@ class RuleProcessorPackage(LambdaPackage):
     package_root_dir = '.'
     package_name = 'rule_processor'
     config_key = 'rule_processor_config'
+    third_party_libs = {'backoff', 'jsonpath_rw'}
 
 
 class AlertProcessorPackage(LambdaPackage):
@@ -243,6 +293,7 @@ class AlertProcessorPackage(LambdaPackage):
     package_root_dir = '.'
     package_name = 'alert_processor'
     config_key = 'alert_processor_config'
+    third_party_libs = {'backoff', 'requests'}
 
 
 class AppIntegrationPackage(LambdaPackage):
@@ -252,6 +303,8 @@ class AppIntegrationPackage(LambdaPackage):
     package_root_dir = '.'
     package_name = 'stream_alert_app'
     config_key = 'stream_alert_apps_config'
+    third_party_libs = {'boxsdk[jwt]==2.0.0a11', 'google-api-python-client', 'requests'}
+    precompiled_libs = {'boxsdk[jwt]==2.0.0a11'}
 
 
 class AthenaPackage(LambdaPackage):
@@ -261,3 +314,4 @@ class AthenaPackage(LambdaPackage):
     package_root_dir = '.'
     package_name = 'athena_partition_refresh'
     config_key = 'athena_partition_refresh_config'
+    third_party_libs = {'backoff'}
