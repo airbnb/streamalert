@@ -41,6 +41,7 @@ def generate_cloudtrail(cluster_name, cluster_dict, config):
         del config['clusters'][cluster_name]['modules']['cloudtrail']['enabled']
         config['clusters'][cluster_name]['modules']['cloudtrail']['enable_logging'] = True
         config['clusters'][cluster_name]['modules']['cloudtrail']['enable_kinesis'] = True
+        LOGGER_CLI.info('Converting legacy CloudTrail config')
         config.write()
         kinesis_enabled = True
         cloudtrail_enabled = True

@@ -35,6 +35,7 @@ def generate_s3_events(cluster_name, cluster_dict, config):
         del config['clusters'][cluster_name]['modules']['s3_events']
         s3_event_buckets = [{'bucket_id': s3_event_buckets['s3_bucket_id']}]
         config['clusters'][cluster_name]['modules']['s3_events'] = s3_event_buckets
+        LOGGER_CLI.info('Converting legacy S3 Events config')
         config.write()
 
     for bucket_info in s3_event_buckets:
