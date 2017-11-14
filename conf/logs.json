@@ -929,6 +929,7 @@
         "apiVersion",
         "errorCode",
         "errorMessage",
+        "requestID",
         "readOnly",
         "resources",
         "sharedEventID"
