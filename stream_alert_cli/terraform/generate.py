@@ -293,7 +293,7 @@ def generate_cluster(**kwargs):
 
     generate_cloudwatch_metric_alarms(cluster_name, cluster_dict, config)
 
-    if modules['cloudwatch_monitoring']['enabled']:
+    if modules.get('cloudwatch_monitoring'):
         if not generate_monitoring(cluster_name, cluster_dict, config):
             return
 
