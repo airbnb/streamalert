@@ -32,14 +32,37 @@ Each cluster lives in its own ``json`` file in the ``conf/clusters`` directory.
 
 A cluster file contains name, region, modules, and outputs.
 
-An example ``production`` cluster:
+Examples
+~~~~~~~~
+
+Production Cluster
+------------------
+
+Contains the following:
+
+- Kinesis Stream with 1 Shard
+- Kinesis Events to the Rule Processor
+- Rule and Alert Processor Lambda Functions
+- CloudWatch Monitoring for Kinesis and Lambda
+- Outputs to display the Kinesis username, access key, and secret key
 
 .. code-block:: json
 
   {
     "id": "production",
-    "region": "us-west-2",
     "modules": {
+      "cloudwatch_monitoring": {
+        "enabled": true
+      },
+      "kinesis": {
+        "streams": {
+          "shards": 1,
+          "retention": 24
+        }
+      },
+      "kinesis_events": {
+        "enabled": true
+      },
       "stream_alert": {
         "alert_processor": {
           "timeout": 25,
@@ -51,22 +74,6 @@ An example ``production`` cluster:
           "memory": 256,
           "current_version": "$LATEST"
         }
-      },
-      "cloudwatch_monitoring": {
-        "enabled": true
-      },
-      "kinesis": {
-        "streams": {
-          "shards": 1,
-          "retention": 24
-        },
-        "firehose": {
-          "enabled": true,
-          "s3_bucket_suffix": "streamalert.results"
-        }
-      },
-      "kinesis_events": {
-        "enabled": true
       }
     },
     "outputs": {
@@ -75,8 +82,59 @@ An example ``production`` cluster:
         "access_key_id",
         "secret_key"
       ]
-    }
+    },
+    "region": "us-west-2",
   }
+
+CloudTrail Processing Cluster
+-----------------------------
+
+Contains the following:
+
+- Rule and Alert Processor Lambda Functions
+- CloudWatch Monitoring for Lambda
+- CloudTrail with Kinesis disabled
+- S3 Event Notifications setup on multiple S3 buckets
+
+.. code-block:: json
+
+  {
+    "id": "s3",
+    "modules": {
+      "cloudtrail": {
+        "enable_kinesis": false,
+        "enable_logging": true
+      },
+      "cloudwatch_monitoring": {
+        "enabled": true,
+        "kinesis_alarms_enabled": false
+      },
+      "s3_events": [
+        {
+          "bucket_id": "example.s3.streamalert.cloudtrail",
+          "enable_events": true
+        }
+      ],
+      "stream_alert": {
+        "alert_processor": {
+          "current_version": "$LATEST",
+          "enable_metrics": false,
+          "log_level": "info",
+          "memory": 128,
+          "timeout": 10
+        },
+        "rule_processor": {
+          "current_version": "$LATEST",
+          "enable_metrics": false,
+          "log_level": "info",
+          "memory": 128,
+          "timeout": 10
+        }
+      }
+    },
+    "region": "us-east-1"
+  }
+
 
 Customizing Clusters
 ~~~~~~~~~~~~~~~~~~~~
@@ -204,7 +262,7 @@ By default, all API calls will be logged and accessible from rules.
 
   {
     "cloudtrail": {
-      "enabled": true
+      "enable_logging": true
     }
   }
 
@@ -213,7 +271,8 @@ By default, all API calls will be logged and accessible from rules.
 ===================  ========  ==================================  ===========
 Key                  Required  Default                             Description
 -------------------  --------  ----------------------------------  -----------
-``enabled``          ``Yes``   -                                   To enable/disable the CloudTrail.
+``enable_logging``   ``Yes``                                       Enable/disable the CloudTrail logging.
+``enable_kinesis``   ``No``    ``true``                            Enable/disable the sending CloudTrail data to Kinesis.
 ``existing_trail``   ``No``    ``false``                           Set to ``true`` if the account has an existing CloudTrail.  This is to avoid duplication of data collected by multiple CloudTrails.
 ``is_global_trail``  ``No``    ``true``                            If the CloudTrail should collect events from any region.
 ``event_pattern``    ``No``    ``{"account": ["<accound_id>"]}``   The CloudWatch Events pattern to send to Kinesis.  `More information <http://docs.aws.amazon.com/AmazonCloudWatch/latest/events/EventTypes.html>`_.
@@ -256,7 +315,7 @@ When writing rules for this data, use the ``cloudwatch:flow_logs`` log source.
 ==================  ========  ====================================  ===========
 Key                 Required  Default                               Description
 ------------------  --------  ------------------------------------  -----------
-``enabled``         Yes       -                                     To enable/disable the Flow log creation.
+``enabled``         Yes                                             To enable/disable the Flow log creation.
 ``log_group_name``  No        prefix_cluster_streamalert_flow_logs  The name of the CloudWatch Log group.
 ``subnets``         No        None                                  The list of AWS VPC subnet IDs to collect flow logs from.
 ``vpcs``            No        None                                  The list of AWS VPC IDs to collect flow logs from.
@@ -268,7 +327,7 @@ Module: S3 Events
 
 Amazon S3 is one of the default datasources for StreamAlert.
 
-S3 Object event notifications can be configured to send to Lambda each time an object is written.
+S3 Event Notifications can be configured to notify Lambda each time an object is written.
 
 When StreamAlert receives this notification, it fetches the object from S3 and analyzes it according to configured rules.
 
@@ -277,7 +336,23 @@ When StreamAlert receives this notification, it fetches the object from S3 and a
 .. code-block:: json
 
   {
-    "s3_events": {
-      "s3_bucket_id": "<input-bucket-id>"
-    }
+    "s3_events": [
+      {
+        "bucket_id": "<bucket-id>"
+      },
+      {
+        "bucket_id": "<bucket-id-2>",
+        "enable_events": false
+      }
+    ]
   }
+
+**Options:**
+
+==================  ========  =========  ===========
+Key                 Required  Default    Description
+------------------  --------  ---------  -----------
+``bucket_id``       Yes                  The S3 bucket to notify upon
+``enable_events``   No        Yes        Enable/disable the notification to Lambda
+==================  ========  =========  ===========
+  
