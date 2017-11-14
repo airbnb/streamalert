@@ -28,23 +28,26 @@ def generate_s3_events(cluster_name, cluster_dict, config):
         bool: Result of applying the s3_events module
     """
     modules = config['clusters'][cluster_name]['modules']
-    s3_bucket_id = modules['s3_events'].get('s3_bucket_id')
+    s3_event_buckets = modules['s3_events']
 
-    if not s3_bucket_id:
-        LOGGER_CLI.error(
-            'Config Error: Missing S3 bucket in %s s3_events module',
-            cluster_name)
-        return False
+    # Detect legacy and convert
+    if isinstance(s3_event_buckets, dict) and 's3_bucket_id' in s3_event_buckets:
+        del config['clusters'][cluster_name]['modules']['s3_events']
+        s3_event_buckets = [{'bucket_id': s3_event_buckets['s3_bucket_id']}]
+        config['clusters'][cluster_name]['modules']['s3_events'] = s3_event_buckets
+        config.write()
 
-    cluster_dict['module']['s3_events_{}'.format(cluster_name)] = {
-        'source': 'modules/tf_stream_alert_s3_events',
-        'lambda_function_arn': '${{module.stream_alert_{}.lambda_arn}}'.format(cluster_name),
-        'lambda_function_name': '{}_{}_stream_alert_processor'.format(
-            config['global']['account']['prefix'],
-            cluster_name),
-        's3_bucket_id': s3_bucket_id,
-        's3_bucket_arn': 'arn:aws:s3:::{}'.format(s3_bucket_id),
-        'lambda_role_id': '${{module.stream_alert_{}.lambda_role_id}}'.format(cluster_name),
-        'lambda_role_arn': '${{module.stream_alert_{}.lambda_role_arn}}'.format(cluster_name)}
+    for bucket_info in s3_event_buckets:
+        if 'bucket_id' not in bucket_info:
+            LOGGER_CLI.error('Config Error: Missing bucket_id key from s3_event configuration')
+            return False
+
+        cluster_dict['module']['s3_events_{}'.format(bucket_info['bucket_id'].replace('.', '_'))] = {
+            'source': 'modules/tf_stream_alert_s3_events',
+            'lambda_function_arn': '${{module.stream_alert_{}.lambda_arn}}'.format(cluster_name),
+            'bucket_id': bucket_info['bucket_id'],
+            'enable_events': bucket_info.get('enable_events', True),
+            'lambda_role_id': '${{module.stream_alert_{}.lambda_role_id}}'.format(cluster_name)
+        }
 
     return True
