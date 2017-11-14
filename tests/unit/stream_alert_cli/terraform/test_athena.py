@@ -40,9 +40,7 @@ def test_generate_athena():
         'source_bucket': 'unit-testing.streamalert.source',
         'source_current_hash': '12345',
         'source_object_key': 'lambda/athena/source.zip',
-        'third_party_libraries': [
-            'backoff'
-        ]
+        'third_party_libraries': []
     }
     expected_athena_config = {
         'module': {
