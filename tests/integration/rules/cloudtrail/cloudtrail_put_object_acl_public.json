@@ -1,0 +1,337 @@
+{
+  "records": [
+    {
+      "data": {
+        "account": 12345,
+        "region": "...",
+        "detail-type": "...",
+        "source": "...",
+        "version": "0",
+        "time": "...",
+        "id": "123",
+        "resources": [],
+        "detail": {
+          "eventVersion": "...",
+          "eventID": "...",
+          "eventTime": "...",
+          "additionalEventData": {
+            "x_amz_id_2": "..."
+          },
+          "requestParameters": {
+            "AccessControlPolicy": {
+              "Owner": {
+                "ID": "..."
+              },
+              "xmlns": "http://s3.amazonaws.com/doc/2006-03-01/",
+              "AccessControlList": {
+                "Grant": {
+                  "Grantee": {
+                    "xmlns_xsi": "http://www.w3.org/2001/XMLSchema-instance",
+                    "ID": "...",
+                    "xsi_type": "CanonicalUser"
+                  },
+                  "Permission": "FULL_CONTROL"
+                }
+              }
+            },
+            "bucketName": "an-example-bucket-name",
+            "key": "...",
+            "acl": ""
+          },
+          "eventType": "AwsApiCall",
+          "responseElements": {},
+          "awsRegion": "...",
+          "eventName": "PutObjectAcl",
+          "readOnly": false,
+          "userIdentity": {
+            "principalId": "...",
+            "accessKeyId": "...",
+            "sessionContext": {
+              "sessionIssuer": {
+                "userName": "roleName",
+                "type": "Role",
+                "principalId": "...",
+                "arn": "...",
+                "accountId": "12345"
+              },
+              "attributes": {
+                "creationDate": "...",
+                "mfaAuthenticated": "..."
+              }
+            },
+            "type": "...",
+            "arn": "...",
+            "accountId": "12345"
+          },
+          "eventSource": "...",
+          "requestID": "...",
+          "userAgent": "...",
+          "sourceIPAddress": "...",
+          "resources": [
+            {
+              "type": "...",
+              "ARN": "..."
+            },
+            {
+              "type": "...",
+              "ARN": "...",
+              "accountId": "12345"
+            }
+          ],
+          "recipientAccountId": "12345"
+        }
+      },
+      "description": "A PutObjectAcl call without use of AllUsers or AuthenticatedUsers should not create an alert.",
+      "source": "prefix_cluster1_stream_alert_kinesis",
+      "service": "kinesis",
+      "log": "cloudwatch:events",
+      "trigger_rules": []
+    },
+    {
+      "data": {
+        "account": 12345,
+        "region": "...",
+        "detail-type": "...",
+        "source": "...",
+        "version": "0",
+        "time": "...",
+        "id": "123",
+        "resources": [],
+        "detail": {
+          "eventVersion": "...",
+          "eventID": "...",
+          "eventTime": "...",
+          "additionalEventData": {
+            "x_amz_id_2": "..."
+          },
+          "requestParameters": {
+            "AccessControlPolicy": {
+              "Owner": {
+                "ID": "..."
+              },
+              "xmlns": "http://s3.amazonaws.com/doc/2006-03-01/",
+              "AccessControlList": {
+                "Grant": [
+                  {
+                    "Grantee": {
+                      "xsi:type": "Group",
+                      "xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
+                      "URI": "http://acs.amazonaws.com/groups/global/AllUsers"
+                    },
+                    "permission": "READ"
+                  }
+                ]
+              }
+            },
+            "bucketName": "...",
+            "key": "...",
+            "acl": ""
+          },
+          "eventType": "...",
+          "responseElements": {},
+          "awsRegion": "...",
+          "eventName": "PutObjectAcl",
+          "readOnly": false,
+          "userIdentity": {
+            "principalId": "...:...",
+            "accessKeyId": "...",
+            "sessionContext": {
+              "sessionIssuer": {
+                "userName": "...",
+                "type": "...",
+                "principalId": "...",
+                "arn": "...",
+                "accountId": "12345"
+              },
+              "attributes": {
+                "creationDate": "...",
+                "mfaAuthenticated": "..."
+              }
+            },
+            "type": "...",
+            "arn": "...",
+            "accountId": "12345"
+          },
+          "eventSource": "...",
+          "requestID": "...",
+          "userAgent": "...",
+          "sourceIPAddress": "...",
+          "resources": [
+            {
+              "type": "...",
+              "ARN": "..."
+            },
+            {
+              "type": "...",
+              "ARN": "...",
+              "accountId": "12345"
+            }
+          ],
+          "recipientAccountId": "12345"
+        }
+      },
+      "description": "A PutObjectAcl call from the AWS Console with AllUsers or AuthenticatedUsers should create an alert.",
+      "source": "prefix_cluster1_stream_alert_kinesis",
+      "service": "kinesis",
+      "log": "cloudwatch:events",
+      "trigger_rules": [
+        "cloudtrail_put_object_acl_public"
+      ]
+    },
+    {
+      "data": {
+        "account": 12345,
+        "region": "...",
+        "detail-type": "...",
+        "source": "...",
+        "version": "0",
+        "time": "...",
+        "id": "123",
+        "resources": [],
+        "detail": {
+          "eventVersion": "...",
+          "eventId": "...",
+          "userIdentity": {
+            "accountId": "12345",
+            "sessionContext": {
+              "sessionIssuer": {
+                "accountId": "12345",
+                "principalId": "...",
+                "type": "...",
+                "arn": "...",
+                "username": "..."
+              },
+              "attributes": {
+                "creationDate": "...",
+                "mfaAuthenticated": "..."
+              }
+            },
+            "principalId": "...",
+            "type": "...",
+            "arn": "...",
+            "accessKeyId": "..."
+          },
+          "sourceIPAddress": "...",
+          "userAgent": [
+            "..."
+          ],
+          "resources": [
+            {
+              "type": "...",
+              "ARN": "..."
+            },
+            {
+              "accountId": "12345",
+              "type": "...",
+              "ARN": "..."
+            }
+          ],
+          "eventTime": "...",
+          "recipientAccountId": "12345",
+          "eventSource": "...",
+          "eventName": "PutObjectAcl",
+          "additionalEventData": {
+            "x_amz_id_2": "..."
+          },
+          "readOnly": false,
+          "requestID": "...",
+          "requestParameters": {
+            "AccessControlList": {
+              "x_amz_grant_read": "uri=http://acs.amazonaws.com/groups/global/AllUsers"
+            },
+            "bucketName": "...",
+            "acl": "",
+            "key": "..."
+          },
+          "eventType": "...",
+          "responseElements": {},
+          "awsRegion": "..."
+        }
+      },
+      "description": "A PutObjectAcl call via the S3 API with AllUsers or AuthenticatedUsers should create an alert.",
+      "source": "prefix_cluster1_stream_alert_kinesis",
+      "service": "kinesis",
+      "log": "cloudwatch:events",
+      "trigger_rules": [
+        "cloudtrail_put_object_acl_public"
+      ]
+    },
+    {
+      "data": {
+        "account": 12345,
+        "region": "...",
+        "detail-type": "...",
+        "source": "...",
+        "version": "0",
+        "time": "...",
+        "id": "123",
+        "resources": [],
+        "detail": {
+          "eventVersion": "...",
+          "eventId": "...",
+          "userIdentity": {
+            "accountId": "12345",
+            "sessionContext": {
+              "sessionIssuer": {
+                "accountId": "12345",
+                "principalId": "...",
+                "type": "...",
+                "arn": "...",
+                "username": "..."
+              },
+              "attributes": {
+                "creationDate": "...",
+                "mfaAuthenticated": "..."
+              }
+            },
+            "principalId": "...",
+            "type": "...",
+            "arn": "...",
+            "accessKeyId": "..."
+          },
+          "sourceIPAddress": "...",
+          "userAgent": [
+            "..."
+          ],
+          "resources": [
+            {
+              "type": "...",
+              "ARN": "..."
+            },
+            {
+              "accountId": "12345",
+              "type": "...",
+              "ARN": "..."
+            }
+          ],
+          "eventTime": "...",
+          "recipientAccountId": "12345",
+          "eventSource": "...",
+          "eventName": "PutObjectAcl",
+          "additionalEventData": {
+            "x_amz_id_2": "..."
+          },
+          "readOnly": false,
+          "requestID": "...",
+          "requestParameters": {
+            "AccessControlList": {
+              "x_amz_grant_read": "uri=http://acs.amazonaws.com/groups/global/AllUsers"
+            },
+            "bucketName": "example-bucket-to-ignore",
+            "acl": "",
+            "key": "..."
+          },
+          "eventType": "...",
+          "responseElements": {},
+          "awsRegion": "..."
+        }
+      },
+      "description": "A PutObjectAcl call via the S3 API with AllUsers or AuthenticatedUsers for a whitelisted bucket should not create an alert.",
+      "source": "prefix_cluster1_stream_alert_kinesis",
+      "service": "kinesis",
+      "log": "cloudwatch:events",
+      "trigger_rules": [
+      ]
+    }
+  ]
+}
