@@ -4,10 +4,7 @@
     "source_bucket": "PREFIX_GOES_HERE.streamalert.source",
     "source_current_hash": "<auto_generated>",
     "source_object_key": "<auto_generated>",
-    "third_party_libraries": [
-      "backoff",
-      "requests"
-    ]
+    "third_party_libraries": []
   },
   "rule_processor_config": {
     "handler": "stream_alert.rule_processor.main.handler",
@@ -15,8 +12,6 @@
     "source_current_hash": "<auto_generated>",
     "source_object_key": "<auto_generated>",
     "third_party_libraries": [
-      "backoff",
-      "jsonpath_rw",
       "netaddr"
     ]
   },
@@ -25,10 +20,6 @@
     "source_bucket": "PREFIX_GOES_HERE.streamalert.source",
     "source_current_hash": "<auto_generated>",
     "source_object_key": "<auto_generated>",
-    "third_party_libraries": [
-      "boxsdk[jwt]==2.0.0a11",
-      "google-api-python-client",
-      "requests"
-    ]
+    "third_party_libraries": []
   }
 }
