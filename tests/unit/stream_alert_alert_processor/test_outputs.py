@@ -336,6 +336,17 @@ class TestPagerDutyIncidentOutput(object):
         assert_equal(checked, 'checked_id')
 
     @patch('requests.get')
+    def test_check_exists_get_id_fail(self, get_mock):
+        """Check Exists Get Id Fail - PagerDutyIncidentOutput"""
+        # /check
+        get_mock.return_value.status_code = 200
+        json_check = json.loads('{}')
+        get_mock.return_value.json.return_value = json_check
+
+        checked = self.__dispatcher._check_exists_get_id('filter', 'http://mock_url', 'check')
+        assert_false(checked)
+
+    @patch('requests.get')
     def test_user_verify_success(self, get_mock):
         """User Verify Success - PagerDutyIncidentOutput"""
         get_mock.return_value.status_code = 200

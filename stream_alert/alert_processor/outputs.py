@@ -206,8 +206,8 @@ class PagerDutyIncidentOutput(StreamOutputBase):
 
     def __init__(self, *args, **kwargs):
         StreamOutputBase.__init__(self, *args, **kwargs)
-        self.base_url = None
-        self.headers = None
+        self._base_url = None
+        self._headers = None
 
     @classmethod
     def _get_default_properties(cls):
@@ -278,19 +278,17 @@ class PagerDutyIncidentOutput(StreamOutputBase):
         params = {
             'query': '{}'.format(filter_str)
         }
-        resp = self._get_request(url, params, self.headers, False)
-        print params
+        resp = self._get_request(url, params, self._headers, False)
+
         if not self._check_http_response(resp):
             return False
 
         response = resp.json()
+        if not response:
+            return False
 
         # If there are results, get the first occurence from the list
-        target = response.get(target_key, False)
-        if response and target:
-            return target[0]['id']
-
-        return False
+        return response[target_key][0]['id'] if target_key in response else False
 
     def _user_verify(self, user):
         """Method to verify the existance of an user with the API
@@ -302,7 +300,7 @@ class PagerDutyIncidentOutput(StreamOutputBase):
             dict or False: JSON object be used in the API call, containing the user_id
                            and user_reference. False if user is not found
         """
-        users_url = self._get_endpoint(self.base_url, self.USERS_ENDPOINT)
+        users_url = self._get_endpoint(self._base_url, self.USERS_ENDPOINT)
 
         return self._item_verify(users_url, user, self.USERS_ENDPOINT, 'user_reference')
 
@@ -318,7 +316,7 @@ class PagerDutyIncidentOutput(StreamOutputBase):
             dict: JSON object be used in the API call, containing the policy_id
                   and escalation_policy_reference
         """
-        policies_url = self._get_endpoint(self.base_url, self.POLICIES_ENDPOINT)
+        policies_url = self._get_endpoint(self._base_url, self.POLICIES_ENDPOINT)
 
         verified = self._item_verify(policies_url, policy, self.POLICIES_ENDPOINT,
                                      'escalation_policy_reference')
@@ -336,13 +334,12 @@ class PagerDutyIncidentOutput(StreamOutputBase):
         Args:
             api_url (str): Base URL of the API
             service (str): Service to query about in the API
-            headers (dict): Headers used for API authentication
 
         Returns:
             dict: JSON object be used in the API call, containing the service_id
                   and the service_reference
         """
-        services_url = self._get_endpoint(self.base_url, self.SERVICES_ENDPOINT)
+        services_url = self._get_endpoint(self._base_url, self.SERVICES_ENDPOINT)
 
         return self._item_verify(services_url, service, self.SERVICES_ENDPOINT, 'service_reference')
 
@@ -384,18 +381,16 @@ class PagerDutyIncidentOutput(StreamOutputBase):
             return self._log_status(False)
 
         # Preparing headers for API calls
-        headers = {
+        self._headers = {
             'Authorization': 'Token token={}'.format(creds['token']),
             'Accept': 'application/vnd.pagerduty+json;version=2'
         }
 
-        # Cache base_url and headers
-        self.base_url = creds['api']
-        self.headers = headers
+        # Cache base_url
+        self._base_url = creds['api']
 
         # Extracting context data to assign the incident
         rule_context = kwargs['alert'].get('context', {})
-        print rule_context
         if rule_context:
             rule_context = rule_context[self.__service__]
 
@@ -409,7 +404,6 @@ class PagerDutyIncidentOutput(StreamOutputBase):
 
         if user_to_assign:
             user_assignee = self._user_verify(user_to_assign)
-            print user_assignee
             if user_assignee:
                 assigned_key = 'assignments'
                 assigned_value = [{
@@ -442,8 +436,8 @@ class PagerDutyIncidentOutput(StreamOutputBase):
             },
             assigned_key: assigned_value
         }
-        incidents_url = self._get_endpoint(creds['api'], self.INCIDENTS_ENDPOINT)
-        resp = self._post_request(incidents_url, incident, headers, True)
+        incidents_url = self._get_endpoint(self._base_url, self.INCIDENTS_ENDPOINT)
+        resp = self._post_request(incidents_url, incident, self._headers, True)
         success = self._check_http_response(resp)
 
         return self._log_status(success)
