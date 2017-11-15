@@ -308,7 +308,6 @@ class PagerDutyIncidentOutput(StreamOutputBase):
         """Method to verify the existance of a escalation policy with the API
 
         Args:
-            api_url (str): Base URL of the API
             policy (str): Escalation policy to query about in the API
             default_policy (str): Escalation policy to use if the first one is not verified
 
@@ -332,7 +331,6 @@ class PagerDutyIncidentOutput(StreamOutputBase):
         """Method to verify the existance of a service with the API
 
         Args:
-            api_url (str): Base URL of the API
             service (str): Service to query about in the API
 
         Returns:
@@ -392,7 +390,7 @@ class PagerDutyIncidentOutput(StreamOutputBase):
         # Extracting context data to assign the incident
         rule_context = kwargs['alert'].get('context', {})
         if rule_context:
-            rule_context = rule_context[self.__service__]
+            rule_context = rule_context.get(self.__service__, {})
 
         # Check if a user to assign the incident is provided
         user_to_assign = rule_context.get('assigned_user', False)
