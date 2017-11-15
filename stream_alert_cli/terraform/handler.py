@@ -176,6 +176,7 @@ def terraform_clean(config):
 
     cleanup_files = ['{}.tf.json'.format(cluster) for cluster in config.clusters()]
     cleanup_files.extend([
+        'athena.tf.json',
         'main.tf.json',
         'terraform.tfstate',
         'terraform.tfstate.backup'
