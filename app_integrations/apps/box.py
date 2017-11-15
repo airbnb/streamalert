@@ -27,7 +27,7 @@ from app_integrations.apps.app_base import app, AppIntegration
 @app
 class BoxApp(AppIntegration):
     """BoxApp integration"""
-    _MAX_CHUNK_SIZE = 100
+    _MAX_CHUNK_SIZE = 500
 
     def __init__(self, config):
         super(BoxApp, self).__init__(config)
