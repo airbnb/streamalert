@@ -77,7 +77,7 @@ def get_alert(index=0, context=None):
 
     Args:
         index (int): test_index value (0 by default)
-        context(dict): context dictionary (empty by default)
+        context(dict): context dictionary (None by default)
     """
     context = context or {}
 

@@ -276,9 +276,10 @@ class PagerDutyIncidentOutput(StreamOutputBase):
                  False if a matching element does not exists.
         """
         params = {
-            'query': '"{}"'.format(filter_str)
+            'query': '{}'.format(filter_str)
         }
         resp = self._get_request(url, params, self.headers, False)
+        print params
         if not self._check_http_response(resp):
             return False
 
@@ -305,13 +306,13 @@ class PagerDutyIncidentOutput(StreamOutputBase):
 
         return self._item_verify(users_url, user, self.USERS_ENDPOINT, 'user_reference')
 
-    def _policy_verify(self, policy):
+    def _policy_verify(self, policy, default_policy):
         """Method to verify the existance of a escalation policy with the API
 
         Args:
             api_url (str): Base URL of the API
             policy (str): Escalation policy to query about in the API
-            headers (dict): Headers used for API authentication
+            default_policy (str): Escalation policy to use if the first one is not verified
 
         Returns:
             dict: JSON object be used in the API call, containing the policy_id
@@ -319,7 +320,14 @@ class PagerDutyIncidentOutput(StreamOutputBase):
         """
         policies_url = self._get_endpoint(self.base_url, self.POLICIES_ENDPOINT)
 
-        return self._item_verify(policies_url, policy, self.POLICIES_ENDPOINT,
+        verified = self._item_verify(policies_url, policy, self.POLICIES_ENDPOINT,
+                                     'escalation_policy_reference')
+
+        # If the escalation policy provided is not verified in the API, use the default
+        if verified:
+            return verified
+
+        return self._item_verify(policies_url, default_policy, self.POLICIES_ENDPOINT,
                                  'escalation_policy_reference')
 
     def _service_verify(self, service):
@@ -387,6 +395,7 @@ class PagerDutyIncidentOutput(StreamOutputBase):
 
         # Extracting context data to assign the incident
         rule_context = kwargs['alert'].get('context', {})
+        print rule_context
         if rule_context:
             rule_context = rule_context[self.__service__]
 
@@ -395,8 +404,12 @@ class PagerDutyIncidentOutput(StreamOutputBase):
 
         # Incident assignment goes in this order:
         #  Provided user -> provided policy -> default policy
+        assigned_key = ''
+        assigned_value = {}
+
         if user_to_assign:
             user_assignee = self._user_verify(user_to_assign)
+            print user_assignee
             if user_assignee:
                 assigned_key = 'assignments'
                 assigned_value = [{
@@ -405,11 +418,12 @@ class PagerDutyIncidentOutput(StreamOutputBase):
                 user_to_assign = user_assignee
 
         policy_to_assign = creds['escalation_policy']
+        # If the user was not verified, get provided escalation policy
         if not user_to_assign and rule_context.get('assigned_policy'):
             policy_to_assign = rule_context.get('assigned_policy')
-
-        assigned_key = 'escalation_policy'
-        assigned_value = self._policy_verify(policy_to_assign)
+            assigned_key = 'escalation_policy'
+            # Verify provided escalation policy, and use default as backup
+            assigned_value = self._policy_verify(policy_to_assign, creds['escalation_policy'])
 
         # Start preparing the incident JSON blob to be sent to the API
         incident_title = 'StreamAlert Incident - Rule triggered: {}'.format(kwargs['rule_name'])
