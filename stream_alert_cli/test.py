@@ -608,6 +608,7 @@ class AlertProcessorTester(object):
         self.secrets_bucket = 'test.streamalert.secrets'
         self.outputs_config = load_outputs_config()
         self._cleanup_old_secrets()
+        self.region = config['global']['account']['region']
         helpers.setup_mock_firehose_delivery_streams(config)
 
     def test_processor(self, alerts):
@@ -735,6 +736,11 @@ class AlertProcessorTester(object):
                     client.head_bucket(Bucket=bucket)
                 except ClientError:
                     client.create_bucket(Bucket=bucket)
+
+            elif service == 'aws-firehose':
+                stream_name = self.outputs_config[service][descriptor]
+                helpers.create_delivery_stream(self.region, stream_name)
+
             elif service == 'aws-lambda':
                 lambda_function = self.outputs_config[service][descriptor]
                 parts = lambda_function.split(':')
@@ -743,6 +749,7 @@ class AlertProcessorTester(object):
                 else:
                     lambda_function = parts[-1]
                 helpers.create_lambda_function(lambda_function, 'us-east-1')
+
             elif service == 'pagerduty':
                 output_name = '{}/{}'.format(service, descriptor)
                 creds = {'service_key': '247b97499078a015cc6c586bc0a92de6'}
