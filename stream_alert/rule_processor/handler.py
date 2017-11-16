@@ -21,6 +21,7 @@ import re
 import backoff
 import boto3
 from botocore.exceptions import ClientError
+from botocore.vendored.requests.exceptions import ConnectionError
 
 from stream_alert.rule_processor import FUNCTION_NAME, LOGGER
 from stream_alert.rule_processor.classifier import StreamClassifier
@@ -267,6 +268,7 @@ class StreamAlert(object):
         """
         resp = {}
         record_batch_size = len(record_batch)
+        exceptions_to_backoff = (ClientError, ConnectionError)
 
         @backoff.on_predicate(backoff.fibo,
                               lambda resp: resp['FailedPutCount'] > 0,
@@ -277,7 +279,7 @@ class StreamAlert(object):
                               on_success=success_handler,
                               on_giveup=giveup_handler)
         @backoff.on_exception(backoff.fibo,
-                              ClientError,
+                              exceptions_to_backoff,
                               max_tries=MAX_BACKOFF_ATTEMPTS,
                               jitter=backoff.full_jitter,
                               on_backoff=backoff_handler,
@@ -302,7 +304,7 @@ class StreamAlert(object):
         # end of the backoff.
         try:
             resp = firehose_request_wrapper()
-        except ClientError as firehose_err:
+        except exceptions_to_backoff as firehose_err:
             LOGGER.error(firehose_err)
             MetricLogger.log_metric(FUNCTION_NAME,
                                     MetricLogger.FIREHOSE_FAILED_RECORDS,

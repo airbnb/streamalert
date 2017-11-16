@@ -30,46 +30,51 @@ def generate_cloudtrail(cluster_name, cluster_dict, config):
         bool: Result of applying the cloudtrail module
     """
     modules = config['clusters'][cluster_name]['modules']
-    cloudtrail_enabled = bool(modules['cloudtrail']['enabled'])
-    existing_trail_default = False
-    existing_trail = modules['cloudtrail'].get('existing_trail', existing_trail_default)
-    is_global_trail_default = True
-    is_global_trail = modules['cloudtrail'].get(
-        'is_global_trail', is_global_trail_default)
-    event_pattern_default = {
-        'account': [config['global']['account']['aws_account_id']]
-    }
+    cloudtrail_module = 'cloudtrail_{}'.format(cluster_name)
+
+    enabled_legacy = modules['cloudtrail'].get('enabled')
+    cloudtrail_enabled = modules['cloudtrail'].get('enable_logging')
+    kinesis_enabled = modules['cloudtrail'].get('enable_kinesis')
+
+    # Allow for backwards compatilibity
+    if enabled_legacy:
+        del config['clusters'][cluster_name]['modules']['cloudtrail']['enabled']
+        config['clusters'][cluster_name]['modules']['cloudtrail']['enable_logging'] = True
+        config['clusters'][cluster_name]['modules']['cloudtrail']['enable_kinesis'] = True
+        LOGGER_CLI.info('Converting legacy CloudTrail config')
+        config.write()
+        kinesis_enabled = True
+        cloudtrail_enabled = True
+
+    existing_trail = modules['cloudtrail'].get('existing_trail', False)
+    is_global_trail = modules['cloudtrail'].get('is_global_trail', True)
+    event_pattern_default = {'account': [config['global']['account']['aws_account_id']]}
     event_pattern = modules['cloudtrail'].get('event_pattern', event_pattern_default)
 
-    # From here:
-    # http://docs.aws.amazon.com/AmazonCloudWatch/latest/events/CloudWatchEventsandEventPatterns.html
+    # From here: http://amzn.to/2zF7CS0
     valid_event_pattern_keys = {
-        'version',
-        'id',
-        'detail-type',
-        'source',
-        'account',
-        'time',
-        'region',
-        'resources',
-        'detail'
+        'version', 'id', 'detail-type', 'source', 'account', 'time', 'region', 'resources', 'detail'
     }
     if not set(event_pattern.keys()).issubset(valid_event_pattern_keys):
-        LOGGER_CLI.error('Invalid CloudWatch Event Pattern!')
+        LOGGER_CLI.error('Config Error: Invalid CloudWatch Event Pattern!')
         return False
 
-    cluster_dict['module']['cloudtrail_{}'.format(cluster_name)] = {
+    cluster_dict['module'][cloudtrail_module] = {
+        'source': 'modules/tf_stream_alert_cloudtrail',
         'account_id': config['global']['account']['aws_account_id'],
         'cluster': cluster_name,
-        'kinesis_arn': '${{module.kinesis_{}.arn}}'.format(cluster_name),
         'prefix': config['global']['account']['prefix'],
         'enable_logging': cloudtrail_enabled,
-        'source': 'modules/tf_stream_alert_cloudtrail',
-        's3_logging_bucket': '{}.streamalert.s3-logging'.format(
-            config['global']['account']['prefix']),
+        'enable_kinesis': kinesis_enabled,
+        's3_logging_bucket':
+        '{}.streamalert.s3-logging'.format(config['global']['account']['prefix']),
         'existing_trail': existing_trail,
-        'is_global_trail': is_global_trail,
-        'event_pattern': json.dumps(event_pattern)
+        'is_global_trail': is_global_trail
     }
+
+    if kinesis_enabled:
+        cluster_dict['module'][cloudtrail_module][
+            'kinesis_arn'] = '${{module.kinesis_{}.arn}}'.format(cluster_name)
+        cluster_dict['module'][cloudtrail_module]['event_pattern'] = json.dumps(event_pattern)
 
     return True

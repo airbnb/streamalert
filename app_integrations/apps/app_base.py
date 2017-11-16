@@ -66,7 +66,14 @@ def get_app(config, init=True):
 
 
 def safe_timeout(func):
-    """Try/Except decorator to catch any timeout error raised by requests"""
+    """Try/Except decorator to catch any timeout error raised by requests
+
+    NOTE: Use this wrapper on instance methods only, ie: methods with 'self' as the first param
+
+    Args:
+        func (im_func): Instance method wrapper function for safety netting requests
+            that could result in a connection or read timeout.
+    """
     def _wrapper(*args, **kwargs):
         try:
             return func(*args, **kwargs)
@@ -354,11 +361,15 @@ class AppIntegration(object):
             bool: Indicator of successful validation
         """
         if not self._config:
-            raise AppIntegrationConfigError('Config for service \'{}\' is empty', self.type())
+            raise AppIntegrationConfigError(
+                'Config for service \'{}\' is empty'.format(self.type())
+            )
 
         # The config validates that the 'auth' dict was loaded, but do a safety check here
         if not self._config.auth:
-            raise AppIntegrationConfigError('Auth config for service \'{}\' is empty', self.type())
+            raise AppIntegrationConfigError(
+                'Auth config for service \'{}\' is empty'.format(self.type())
+            )
 
         # Get the required authentication keys from the info returned by the subclass
         required_keys = set(self.required_auth_info())

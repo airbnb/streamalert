@@ -17,6 +17,7 @@ limitations under the License.
 from mock import Mock, patch
 
 from nose.tools import assert_equal, assert_false, assert_items_equal, raises
+import requests
 
 from app_integrations.apps.duo import DuoApp, DuoAdminApp, DuoAuthApp
 from app_integrations.config import AppConfig
@@ -131,6 +132,15 @@ class TestDuoApp(object):
         )
 
         assert_false(self._app._gather_logs())
+
+    @patch('requests.get')
+    @patch('logging.Logger.exception')
+    def test_gather_logs_bad_response(self, log_mock, requests_mock):
+        """DuoApp - Gather Logs, Bad Response"""
+        requests_mock.side_effect = requests.exceptions.SSLError(None, request='Bad')
+
+        assert_false(self._app._gather_logs())
+        log_mock.assert_called_with('Received bad response from duo')
 
 
 @raises(NotImplementedError)

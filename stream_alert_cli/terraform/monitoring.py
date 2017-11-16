@@ -29,35 +29,38 @@ def generate_monitoring(cluster_name, cluster_dict, config):
     """
     prefix = config['global']['account']['prefix']
     infrastructure_config = config['global'].get('infrastructure')
+    monitoring_config = config['clusters'][cluster_name]['modules']['cloudwatch_monitoring']
     sns_topic_arn = None
 
-    if infrastructure_config and 'monitoring' in infrastructure_config:
-        if infrastructure_config['monitoring'].get('create_sns_topic'):
-            topic_name = 'stream_alert_monitoring'
-
-        elif infrastructure_config['monitoring'].get('sns_topic_name'):
-            topic_name = infrastructure_config['monitoring']['sns_topic_name']
-
-        sns_topic_arn = 'arn:aws:sns:{region}:{account_id}:{topic}'.format(
-            region=config['global']['account']['region'],
-            account_id=config['global']['account']['aws_account_id'],
-            topic=topic_name
-        )
-    else:
-        LOGGER_CLI.error(
-            'Invalid config: Make sure you declare global infrastructure options!')
+    if not (infrastructure_config and 'monitoring' in infrastructure_config):
+        LOGGER_CLI.error('Invalid config: Make sure you declare global infrastructure options!')
         return False
 
-    lambda_functions = [
-        '{}_{}_streamalert_rule_processor'.format(prefix, cluster_name),
-        '{}_{}_streamalert_alert_processor'.format(prefix, cluster_name)
-    ]
+    if infrastructure_config['monitoring'].get('create_sns_topic'):
+        topic_name = 'stream_alert_monitoring'
+
+    elif infrastructure_config['monitoring'].get('sns_topic_name'):
+        topic_name = infrastructure_config['monitoring']['sns_topic_name']
+
+    sns_topic_arn = 'arn:aws:sns:{region}:{account_id}:{topic}'.format(
+        region=config['global']['account']['region'],
+        account_id=config['global']['account']['aws_account_id'],
+        topic=topic_name)
 
     cluster_dict['module']['cloudwatch_monitoring_{}'.format(cluster_name)] = {
         'source': 'modules/tf_stream_alert_monitoring',
-        'sns_topic_arn': sns_topic_arn,
-        'lambda_functions': lambda_functions,
-        'kinesis_stream': '{}_{}_stream_alert_kinesis'.format(prefix, cluster_name)
+        'sns_topic_arn': sns_topic_arn
     }
+
+    if monitoring_config.get('lambda_alarms_enabled', True):
+        cluster_dict['module']['cloudwatch_monitoring_{}'.format(cluster_name)][
+            'lambda_functions'] = [
+                '{}_{}_streamalert_rule_processor'.format(prefix, cluster_name),
+                '{}_{}_streamalert_alert_processor'.format(prefix, cluster_name)
+            ]
+
+    if monitoring_config.get('kinesis_alarms_enabled', True):
+        cluster_dict['module']['cloudwatch_monitoring_{}'.format(cluster_name)][
+            'kinesis_stream'] = '{}_{}_stream_alert_kinesis'.format(prefix, cluster_name)
 
     return True

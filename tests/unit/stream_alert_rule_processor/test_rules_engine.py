@@ -101,11 +101,13 @@ class TestStreamRules(object):
             'log_source',
             'outputs',
             'source_service',
-            'source_entity'
+            'source_entity',
+            'context'
         }
         assert_items_equal(alerts[0].keys(), alert_keys)
         assert_is_instance(alerts[0]['record'], dict)
         assert_is_instance(alerts[0]['outputs'], list)
+        assert_is_instance(alerts[0]['context'], dict)
 
         # test alert fields
         assert_is_instance(alerts[0]['rule_name'], str)
@@ -207,7 +209,8 @@ class TestStreamRules(object):
             datatypes=[],
             logs=['test_log_type_json_nested'],
             outputs=['s3:sample_bucket'],
-            req_subkeys={'requestParameters': ['program']}
+            req_subkeys={'requestParameters': ['program']},
+            context={}
         )
 
         data = json.dumps({

@@ -609,6 +609,7 @@ class AlertProcessorTester(object):
         self.outputs_config = load_outputs_config()
         self.region = config['global']['account']['region']
         self._cleanup_old_secrets()
+        self.region = config['global']['account']['region']
         helpers.setup_mock_firehose_delivery_streams(config)
 
     def test_processor(self, alerts):
@@ -736,6 +737,11 @@ class AlertProcessorTester(object):
                     client.head_bucket(Bucket=bucket)
                 except ClientError:
                     client.create_bucket(Bucket=bucket)
+
+            elif service == 'aws-firehose':
+                stream_name = self.outputs_config[service][descriptor]
+                helpers.create_delivery_stream(self.region, stream_name)
+
             elif service == 'aws-lambda':
                 lambda_function = self.outputs_config[service][descriptor]
                 parts = lambda_function.split(':')
@@ -756,6 +762,14 @@ class AlertProcessorTester(object):
                 creds = {'routing_key': '247b97499078a015cc6c586bc0a92de6'}
                 helpers.put_mock_creds(output_name, creds, self.secrets_bucket,
                                        self.region, self.kms_alias)
+
+            elif service == 'pagerduty-incident':
+                output_name = '{}/{}'.format(service, descriptor)
+                creds = {'token': '247b97499078a015cc6c586bc0a92de6',
+                         'service_key': '247b97499078a015cc6c586bc0a92de6',
+                         'escalation_policy': '247b97499078a015cc6c586bc0a92de6'}
+                helpers.put_mock_creds(output_name, creds, self.secrets_bucket,
+                                       'us-east-1', self.kms_alias)
 
             elif service == 'phantom':
                 output_name = '{}/{}'.format(service, descriptor)

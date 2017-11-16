@@ -153,6 +153,23 @@ Examples:
         req_subkeys={'columns':['port', 'protocol']})
         ...
 
+context
+~~~~~~~~~~~
+
+``context`` is an optional field to pass extra instructions to the alert processor on how to route the alert. It can be particulary helpful to pass data to an output.
+
+Example:
+
+.. code-block:: python
+
+  # Context provided to the pagerduty-incident output
+  # with instructions to assign the incident to a user.
+
+  @rule(logs=['osquery:differential'],
+        outputs=['pagerduty', 'aws-s3'],
+        context={'pagerduty-incident':{'assigned_user': 'valid_user'}})
+        ...
+
 
 Helpers
 -------

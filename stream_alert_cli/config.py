@@ -80,9 +80,7 @@ class CLIConfig(object):
             'source_bucket': 'PREFIX_GOES_HERE.streamalert.source',
             'source_current_hash': '<auto_generated>',
             'source_object_key': '<auto_generated>',
-            'third_party_libraries': [
-                'backoff'
-            ]
+            'third_party_libraries': []
         }
 
         # Check if the prefix has ever been set

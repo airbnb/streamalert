@@ -2,7 +2,8 @@
   "id": "advanced",
   "modules": {
     "cloudtrail": {
-      "enabled": true
+      "enable_kinesis": true,
+      "enable_logging": true
     },
     "cloudwatch_monitoring": {
       "enabled": true
@@ -24,6 +25,15 @@
     "kinesis_events": {
       "enabled": true
     },
+    "s3_events": [
+      {
+        "bucket_id": "unit-test-bucket.data"
+      },
+      {
+        "bucket_id": "unit-test.cloudtrail.data",
+        "enable_events": false
+      }
+    ],
     "stream_alert": {
       "alert_processor": {
         "current_version": "$LATEST",

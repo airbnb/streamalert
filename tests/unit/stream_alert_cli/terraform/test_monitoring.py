@@ -24,9 +24,7 @@ CONFIG = CLIConfig(config_path='tests/unit/conf')
 def test_generate_cloudwatch_monitoring():
     """CLI - Terraform Generate Cloudwatch Monitoring"""
     cluster_dict = _common.infinitedict()
-    result = monitoring.generate_monitoring('test',
-                                            cluster_dict,
-                                            CONFIG)
+    result = monitoring.generate_monitoring('test', cluster_dict, CONFIG)
 
     # Test a the default SNS topic option
     expected_cloudwatch_tf = {
@@ -44,18 +42,58 @@ def test_generate_cloudwatch_monitoring():
         cluster_dict['module']['cloudwatch_monitoring_test'],
         expected_cloudwatch_tf)
 
+def test_generate_cloudwatch_monitoring_no_kinesis():
+    """CLI - Terraform Generate Cloudwatch Monitoring - Kinesis Disabled"""
+    cluster_dict = _common.infinitedict()
+    CONFIG['clusters']['test']['modules']['cloudwatch_monitoring']['kinesis_alarms_enabled'] = False
+    CONFIG['clusters']['test']['modules']['cloudwatch_monitoring']['lambda_alarms_enabled'] = True
+    result = monitoring.generate_monitoring('test', cluster_dict, CONFIG)
+
+    # Test a the default SNS topic option
+    expected_cloudwatch_tf = {
+        'source': 'modules/tf_stream_alert_monitoring',
+        'sns_topic_arn': 'arn:aws:sns:us-west-1:12345678910:stream_alert_monitoring',
+        'lambda_functions': [
+            'unit-testing_test_streamalert_rule_processor',
+            'unit-testing_test_streamalert_alert_processor'
+        ]
+    }
+
+    assert_true(result)
+    assert_equal(
+        cluster_dict['module']['cloudwatch_monitoring_test'],
+        expected_cloudwatch_tf)
+
+def test_generate_cloudwatch_monitoring_no_lambda():
+    """CLI - Terraform Generate Cloudwatch Monitoring - Lambda Disabled"""
+    cluster_dict = _common.infinitedict()
+    CONFIG['clusters']['test']['modules']['cloudwatch_monitoring']['lambda_alarms_enabled'] = False
+    CONFIG['clusters']['test']['modules']['cloudwatch_monitoring']['kinesis_alarms_enabled'] = True
+    result = monitoring.generate_monitoring('test', cluster_dict, CONFIG)
+
+    # Test a the default SNS topic option
+    expected_cloudwatch_tf = {
+        'source': 'modules/tf_stream_alert_monitoring',
+        'sns_topic_arn': 'arn:aws:sns:us-west-1:12345678910:stream_alert_monitoring',
+        'kinesis_stream': 'unit-testing_test_stream_alert_kinesis'
+    }
+
+    assert_true(result)
+    assert_equal(
+        cluster_dict['module']['cloudwatch_monitoring_test'],
+        expected_cloudwatch_tf)
+
 def test_generate_cloudwatch_monitoring_custom_sns():
     """CLI - Terraform Generate Cloudwatch Monitoring with Existing SNS Topic"""
 
     # Test a custom SNS topic name
+    CONFIG['clusters']['test']['modules']['cloudwatch_monitoring'] = {'enabled': True}
     CONFIG['global']['infrastructure']['monitoring']['create_sns_topic'] = False
     CONFIG['global']['infrastructure']['monitoring']\
           ['sns_topic_name'] = 'unit_test_monitoring'
 
     cluster_dict = _common.infinitedict()
-    result = monitoring.generate_monitoring('test',
-                                            cluster_dict,
-                                            CONFIG)
+    result = monitoring.generate_monitoring('test', cluster_dict, CONFIG)
 
     expected_cloudwatch_tf_custom = {
         'source': 'modules/tf_stream_alert_monitoring',
@@ -78,9 +116,7 @@ def test_generate_cloudwatch_monitoring_invalid_config(mock_logging):
     CONFIG['global']['infrastructure'] = {}
 
     cluster_dict = _common.infinitedict()
-    result = monitoring.generate_monitoring('test',
-                                            cluster_dict,
-                                            CONFIG)
+    result = monitoring.generate_monitoring('test', cluster_dict, CONFIG)
 
     assert_true(mock_logging.error.called)
     assert_false(result)

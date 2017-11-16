@@ -1,6 +1,7 @@
 {
   "box:admin_events": {
     "schema": {
+      "accessible_by": {},
       "additional_details": "string",
       "created_at": "string",
       "created_by": {},
@@ -11,7 +12,12 @@
       "source": {},
       "type": "string"
     },
-    "parser": "json"
+    "parser": "json",
+    "configuration": {
+      "optional_top_level_keys": [
+        "accessible_by"
+      ]
+    }
   },
   "carbonblack:binarystore.file.added": {
     "schema": {
@@ -752,7 +758,6 @@
         "feed_name": "string",
         "group": "string",
         "hostname": "string",
-        "feed_name": "string",
         "ioc_attrs": {},
         "ioc_query_index": "string",
         "ioc_query_string": "string",
@@ -930,6 +935,7 @@
         "apiVersion",
         "errorCode",
         "errorMessage",
+        "requestID",
         "readOnly",
         "resources",
         "sharedEventID"
