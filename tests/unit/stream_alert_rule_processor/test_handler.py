@@ -546,7 +546,7 @@ class TestStreamAlert(object):
 
     @patch('stream_alert.rule_processor.handler.LOGGER')
     @mock_kinesis
-    def test_firehose_record_delivery_client_errorr(self, mock_logging):
+    def test_firehose_record_delivery_client_error(self, mock_logging):
         """StreamAlert Class - Firehose Record Delivery - Client Error"""
         self.__sa_handler.firehose_client = boto3.client(
             'firehose', region_name='us-east-1')
