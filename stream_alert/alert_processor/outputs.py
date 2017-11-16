@@ -208,6 +208,7 @@ class PagerDutyIncidentOutput(StreamOutputBase):
         StreamOutputBase.__init__(self, *args, **kwargs)
         self._base_url = None
         self._headers = None
+        self._escalation_policy = None
 
     @classmethod
     def _get_default_properties(cls):
@@ -364,6 +365,32 @@ class PagerDutyIncidentOutput(StreamOutputBase):
             'type': item_type
         }
 
+    def _incident_assignment(self, context):
+        """Method to determine if the incident gets assigned to a user or an escalation policy
+
+        Args:
+            context (dict): Context provided in the alert record
+
+        Returns:
+            tuple: assigned_key (str), assigned_value (dict to assign incident to an escalation
+            policy or array of dicts to assign incident to users)
+        """
+        # Check if a user to assign the incident is provided
+        user_to_assign = context.get('assigned_user', False)
+
+        # If provided, verify the user and get the id from API
+        if user_to_assign:
+            user_assignee = self._user_verify(user_to_assign)
+            # User is verified, return tuple
+            if user_assignee:
+                return 'assignments', [{'assignee': user_assignee}]
+
+        # If escalation policy was not provided, use default one
+        policy_to_assign = context.get('assigned_policy') or self._escalation_policy
+
+        # Verify escalation policy, return tuple
+        return 'escalation_policy', self._policy_verify(policy_to_assign, self._escalation_policy)
+
     def dispatch(self, **kwargs):
         """Send incident to Pagerduty Incidents API v2
 
@@ -387,35 +414,17 @@ class PagerDutyIncidentOutput(StreamOutputBase):
         # Cache base_url
         self._base_url = creds['api']
 
+        # Cache default escalation policy
+        self._escalation_policy = creds['escalation_policy']
+
         # Extracting context data to assign the incident
         rule_context = kwargs['alert'].get('context', {})
         if rule_context:
             rule_context = rule_context.get(self.__service__, {})
 
-        # Check if a user to assign the incident is provided
-        user_to_assign = rule_context.get('assigned_user', False)
-
         # Incident assignment goes in this order:
         #  Provided user -> provided policy -> default policy
-        assigned_key = ''
-        assigned_value = {}
-
-        if user_to_assign:
-            user_assignee = self._user_verify(user_to_assign)
-            if user_assignee:
-                assigned_key = 'assignments'
-                assigned_value = [{
-                    'assignee' : user_assignee}]
-            else:
-                user_to_assign = user_assignee
-
-        policy_to_assign = creds['escalation_policy']
-        # If the user was not verified, get provided escalation policy
-        if not user_to_assign and rule_context.get('assigned_policy'):
-            policy_to_assign = rule_context.get('assigned_policy')
-            assigned_key = 'escalation_policy'
-            # Verify provided escalation policy, and use default as backup
-            assigned_value = self._policy_verify(policy_to_assign, creds['escalation_policy'])
+        assigned_key, assigned_value = self._incident_assignment(rule_context)
 
         # Start preparing the incident JSON blob to be sent to the API
         incident_title = 'StreamAlert Incident - Rule triggered: {}'.format(kwargs['rule_name'])

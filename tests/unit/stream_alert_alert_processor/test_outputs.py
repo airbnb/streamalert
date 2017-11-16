@@ -450,6 +450,49 @@ class TestPagerDutyIncidentOutput(object):
         assert_equal(item_verified['type'], 'item_reference')
 
     @patch('requests.get')
+    def test_incident_assignment_user(self, get_mock):
+        """Incident Assignment User - PagerDutyIncidentOutput"""
+        context = {'assigned_user': 'user_to_assign'}
+        get_mock.return_value.status_code = 200
+        json_user = json.loads('{"users": [{"id": "verified_user_id"}]}')
+        get_mock.return_value.json.return_value = json_user
+
+        assigned_key, assigned_value = self.__dispatcher._incident_assignment(context)
+
+        assert_equal(assigned_key, 'assignments')
+        assert_equal(assigned_value[0]['assignee']['id'], 'verified_user_id')
+        assert_equal(assigned_value[0]['assignee']['type'], 'user_reference')
+
+    @patch('requests.get')
+    def test_incident_assignment_policy_no_default(self, get_mock):
+        """Incident Assignment Policy (No Default) - PagerDutyIncidentOutput"""
+        context = {'assigned_policy': 'policy_to_assign'}
+        get_mock.return_value.status_code = 200
+        json_policy = json.loads('{"escalation_policies": [{"id": "verified_policy_id"}]}')
+        get_mock.return_value.json.return_value = json_policy
+
+        assigned_key, assigned_value = self.__dispatcher._incident_assignment(context)
+
+        assert_equal(assigned_key, 'escalation_policy')
+        assert_equal(assigned_value['id'], 'verified_policy_id')
+        assert_equal(assigned_value['type'], 'escalation_policy_reference')
+
+    @patch('requests.get')
+    def test_incident_assignment_policy_default(self, get_mock):
+        """Incident Assignment Policy (Default) - PagerDutyIncidentOutput"""
+        context = {'assigned_policy': 'bad_invalid_policy_to_assign'}
+        type(get_mock.return_value).status_code = PropertyMock(side_effect=[200, 200])
+        json_bad_policy = json.loads('{"not_escalation_policies": [{"id": "bad_policy_id"}]}')
+        json_good_policy = json.loads('{"escalation_policies": [{"id": "verified_policy_id"}]}')
+        get_mock.return_value.json.side_effect = [json_bad_policy, json_good_policy]
+
+        assigned_key, assigned_value = self.__dispatcher._incident_assignment(context)
+
+        assert_equal(assigned_key, 'escalation_policy')
+        assert_equal(assigned_value['id'], 'verified_policy_id')
+        assert_equal(assigned_value['type'], 'escalation_policy_reference')
+
+    @patch('requests.get')
     def test_item_verify_fail(self, get_mock):
         """Item Verify Fail - PagerDutyIncidentOutput"""
         # /not_items
