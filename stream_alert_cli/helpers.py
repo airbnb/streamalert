@@ -381,6 +381,29 @@ def put_mock_creds(output_name, creds, bucket, region, alias):
     put_mock_s3_object(bucket, output_name, enc_creds, region)
 
 
+def create_delivery_stream(region, stream_name, prefix=''):
+    """Create a mock AWS Kinesis Firehose stream
+
+    Args:
+        region (str): The AWS region for the boto3 client
+    """
+    firehose_client = boto3.client('firehose', region_name=region)
+
+    firehose_client.create_delivery_stream(
+        DeliveryStreamName=stream_name,
+        S3DestinationConfiguration={
+            'RoleARN': 'arn:aws:iam::123456789012:role/firehose_delivery_role',
+            'BucketARN': 'arn:aws:s3:::kinesis-test',
+            'Prefix': prefix,
+            'BufferingHints': {
+                'SizeInMBs': 123,
+                'IntervalInSeconds': 124
+            },
+            'CompressionFormat': 'Snappy',
+        }
+    )
+
+
 @mock_kinesis
 def setup_mock_firehose_delivery_streams(config):
     """Mock Kinesis Firehose Streams for rule testing
@@ -389,21 +412,10 @@ def setup_mock_firehose_delivery_streams(config):
         config (CLIConfig): The StreamAlert config
     """
     region = config['global']['account']['region']
-    firehose_client = boto3.client('firehose', region_name=region)
     for log_type in enabled_firehose_logs(config):
-        firehose_client.create_delivery_stream(
-            DeliveryStreamName='streamalert_data_{}'.format(log_type),
-            S3DestinationConfiguration={
-                'RoleARN': 'arn:aws:iam::123456789012:role/firehose_delivery_role',
-                'BucketARN': 'arn:aws:s3:::kinesis-test',
-                'Prefix': '{}/'.format(log_type),
-                'BufferingHints': {
-                    'SizeInMBs': 123,
-                    'IntervalInSeconds': 124
-                },
-                'CompressionFormat': 'Snappy',
-            }
-        )
+        stream_name = 'streamalert_data_{}'.format(log_type)
+        prefix = '{}/'.format(log_type)
+        create_delivery_stream(region, stream_name, prefix)
 
 
 def put_mock_s3_object(bucket, key, data, region):
