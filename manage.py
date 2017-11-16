@@ -923,7 +923,7 @@ Required Arguments:
     -r/--test-rules                    List of rules to test, separated by spaces.
                                          Cannot be used in conjunction with `--test-files`
     -f/--test-files                    List of files to test, separated by spaces.
-                                         Cannot be used in conjunction with `--test-files`
+                                         Cannot be used in conjunction with `--test-rules`
                                          This flag supports the full file name, with extension,
                                          or the base file name, without extension
                                          (ie: test_file_name.json or test_file_name).
