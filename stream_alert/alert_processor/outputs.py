@@ -386,7 +386,7 @@ class PagerDutyIncidentOutput(StreamOutputBase):
                 return 'assignments', [{'assignee': user_assignee}]
 
         # If escalation policy was not provided, use default one
-        policy_to_assign = context.get('assigned_policy') or self._escalation_policy
+        policy_to_assign = context.get('assigned_policy', self._escalation_policy)
 
         # Verify escalation policy, return tuple
         return 'escalation_policy', self._policy_verify(policy_to_assign, self._escalation_policy)
