@@ -1209,7 +1209,6 @@ Available Subcommands:
                                 'rate(2 days)'          # Every 2 days
 
                               See the link in the Resources section below for more information.
-        --table_name       The DynamoDB table name where stores IOCs. (required)
         --table_rcu        The DynamoDB table Read Capacity Unit. (optional)
         --table_wcu        The DynamoDB table Write Capacity Unit. (optional)
 
@@ -1221,7 +1220,6 @@ Examples:
     --interval 'rate(1 day)' \\
     --timeout 120 \\
     --memory 128 \\
-    --table_name my_dynamodb_table \\
     --table_rcu 10 \\
     --table_wcu 10
 """.format(version))
@@ -1258,18 +1256,15 @@ Examples:
     )
 
     ti_downloader_parser.add_argument(
-        '--table_name',
-        help=ARGPARSE_SUPPRESS
-    )
-
-    ti_downloader_parser.add_argument(
         '--table_rcu',
-        help=ARGPARSE_SUPPRESS
+        help=ARGPARSE_SUPPRESS,
+        default=10
     )
 
     ti_downloader_parser.add_argument(
         '--table_wcu',
-        help=ARGPARSE_SUPPRESS
+        help=ARGPARSE_SUPPRESS,
+        default=10
     )
 
     ti_downloader_parser.add_argument(

@@ -31,8 +31,6 @@ def generate_threat_intel_downloader(config):
                  else infrastructure_config.get('monitoring', {}).get('sns_topic_name',
                                                                       DEFAULT_SNS_MONITORING_TOPIC))
 
-    prefix = config['global']['account']['prefix']
-
     # Threat Intel Downloader module
     ti_downloader_config = config['lambda']['threat_intel_downloader_config']
     ti_downloader_dict = infinitedict()
@@ -50,7 +48,6 @@ def generate_threat_intel_downloader(config):
         'current_version': ti_downloader_config['current_version'],
         'prefix': config['global']['account']['prefix'],
         'monitoring_sns_topic': dlq_topic,
-        'table_name': ti_downloader_config.get('table_name', 'test_table_name'),
         'table_rcu': ti_downloader_config.get('table_rcu', '10'),
         'table_wcu': ti_downloader_config.get('table_wcu', '10')
     }

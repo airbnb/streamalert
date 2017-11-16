@@ -47,10 +47,6 @@ variable "interval" {
   default = "rate(1 day)"
 }
 
-variable "table_name" {
-  type = "string"
-}
-
 variable "table_rcu" {
   default = 10
 }
@@ -59,13 +55,8 @@ variable "table_wcu" {
   default = 10
 }
 
-variable "api_user" {
-  default = "threat_stream_api_user"
-  type    = "string"
-}
-
-variable "api_key" {
-  default = "threat_stream_api_key"
+variable "parameter_name" {
+  default = "threat_intel_downloader_api_creds"
   type    = "string"
 }
 

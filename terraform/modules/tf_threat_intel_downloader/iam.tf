@@ -34,7 +34,7 @@ data "aws_iam_policy_document" "invoke_lambda_function" {
     ]
 
     resources = [
-      "arn:aws:lambda:${var.region}:${var.account_id}:function:${var.prefix}_threat_intel_downloader",
+      "arn:aws:lambda:${var.region}:${var.account_id}:function:${var.prefix}_streamalert_threat_intel_downloader",
     ]
   }
 }
@@ -94,7 +94,7 @@ data "aws_iam_policy_document" "read_write_dynamodb" {
     ]
 
     resources = [
-      "arn:aws:dynamodb:${var.region}:${var.account_id}:table/${var.table_name}",
+      "arn:aws:dynamodb:${var.region}:${var.account_id}:table/${var.prefix}_streamalert_threat_intel_downloader",
     ]
   }
 }
@@ -116,8 +116,7 @@ data "aws_iam_policy_document" "read_api_creds_from_ssm" {
     ]
 
     resources = [
-      "arn:aws:ssm:${var.region}:${var.account_id}:parameter/${var.api_user}",
-      "arn:aws:ssm:${var.region}:${var.account_id}:parameter/${var.api_key}",
+      "arn:aws:ssm:${var.region}:${var.account_id}:parameter/${var.parameter_name}",
     ]
   }
 }

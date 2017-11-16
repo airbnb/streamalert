@@ -46,7 +46,6 @@ def deploy(options, config):
 
     def _publish_version(packages):
         """Publish Lambda versions"""
-        print('\npackages: {}'.format(packages))
         for package in packages:
             if package.package_name in set(['athena_partition_refresh', 'threat_intel_downloader']):
                 published = LambdaVersion(
@@ -91,8 +90,6 @@ def deploy(options, config):
         threat_intel_package.create_and_upload()
         return threat_intel_package
 
-    # TODO: double check if threat_intel_downloader package will be deploy in `all` option
-    print('\nprocessor: {}'.format(processor))
     if 'all' in processor:
         targets.update({'module.stream_alert_{}'.format(x) for x in config.clusters()})
 
@@ -143,24 +140,20 @@ def deploy(options, config):
             targets.add('module.threat_intel_downloader')
             packages.append(_deploy_threat_intel_downloader())
 
-    print('\nprocessor: {}'.format(processor))
     # Regenerate the Terraform configuration with the new S3 keys
     if not terraform_generate(config=config):
         return
 
-    print('\nafter terraform_generate')
     # Run Terraform: Update the Lambda source code in $LATEST
     if not helpers.tf_runner(targets=targets):
         sys.exit(1)
 
-    print('\nafter tf_runner')
     # TODO(jack) write integration test to verify newly updated function
 
     # Publish a new production Lambda version
     if not _publish_version(packages):
         return
 
-    print('\nafter public_version')
     # Regenerate the Terraform configuration with the new Lambda versions
     if not terraform_generate(config=config):
         return

@@ -111,13 +111,19 @@ def mock_requests_get(*args, **kwargs): # pylint: disable=unused-argument
                 'value': 'malicious_domain.com',
                 'itype': 'c2_domain',
                 'source': 'ioc_source',
-                'type': 'domain'
+                'type': 'domain',
+                'expiration_ts': '2017-12-31T00:01:02.123Z',
+                'key1': 'value1',
+                'key2': 'value2'
             },
             {
                 'value': 'malicious_domain2.com',
                 'itype': 'c2_domain',
                 'source': 'test_source',
-                'type': 'domain'
+                'type': 'domain',
+                'expiration_ts': '2017-11-30T00:01:02.123Z',
+                'key1': 'value1',
+                'key2': 'value2'
             }
         ],
         "meta": {
@@ -130,19 +136,19 @@ def mock_ssm_response(valid_creds=0):
     """Mock SSM get_parameters response
 
     Args:
-        valid_creds (integer): 0, 1 or 2
+        valid_creds (integer): 2, 1 or 0
 
     response case 1: both api_user and api_key are returned
         return
             {
                 'Parameters': [
                     {
-                        'Name': 'api_user',
-                        'Value': 'test_api_user',
+                        'Name': 'threat_intel_downloader_api_creds',
+                        'Value': '{"api_user": "test_user", "api_key": "test_key"}',
                     },
                     {
-                        'Name': 'api_key',
-                        'Value': 'test_api_key',
+                        'Name': 'ti_test_state',
+                        'Value': '{"next_url": "test_next_url", "continue_invoke": "False"}',
                     },
                 ],
                 'InvalidParameters': [
@@ -154,8 +160,8 @@ def mock_ssm_response(valid_creds=0):
             {
                 'Parameters': [
                     {
-                        'Name': 'api_user',
-                        'Value': 'test_api_user',
+                        'Name': 'threat_intel_downloader_api_creds',
+                        'Value': '{"api_user": "test_user", "api_key": "test_key"}',
                     }
                 ],
                 'InvalidParameters': [
@@ -172,7 +178,10 @@ def mock_ssm_response(valid_creds=0):
             }
     """
     valid_creds = valid_creds % 3
-    params = {'api_user': 'test_api_user', 'api_key': 'test_api_key'}
+    params = {
+        'threat_intel_downloader_api_creds': '{"api_user": "test_user", "api_key": "test_key"}',
+        'ti_test_state': '{"next_url": "test_next_url", "continue_invoke": "False"}'
+    }
     response = [{'Name': pair[0], 'Value': pair[1]} for pair in params.items()[:valid_creds]]
 
     return {

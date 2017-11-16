@@ -37,14 +37,14 @@ from tests.unit.threat_intel_downloader.test_helpers import (
 
 from tests.unit.app_integrations.test_helpers import MockLambdaClient
 
-@patch('boto3.client', Mock(return_value=MockSSMClient(valid_creds=2)))
+@patch('boto3.client', Mock(return_value=MockSSMClient(valid_creds=1)))
 @patch.object(ThreatStream, '_connect')
 def test_handler_without_next_token(mock_threatstream_connect):
     """Threat Intel Downloader - Test handler"""
     handler(None, get_mock_context())
     mock_threatstream_connect.assert_not_called()
 
-@patch('boto3.client', Mock(return_value=MockSSMClient(valid_creds=2)))
+@patch('boto3.client', Mock(return_value=MockSSMClient(valid_creds=1)))
 @patch('stream_alert.threat_intel_downloader.threat_stream.requests.get',
        side_effect=mock_requests_get)
 def test_handler_next_token(mock_get):
@@ -58,7 +58,8 @@ def test_invoke_lambda_function():
     config = {
         'region': 'us-east-1',
         'account_id': '123456789012',
-        'function_name': 'prefix_threat_intel_downloader'
+        'function_name': 'prefix_threat_intel_downloader',
+        'qualifier': 'development'
     }
     invoke_lambda_function('next_token', config)
 
@@ -70,7 +71,8 @@ def test_invoke_lambda_function_error():
     config = {
         'region': 'us-east-1',
         'account_id': '123456789012',
-        'function_name': 'prefix_threat_intel_downloader'
+        'function_name': 'prefix_threat_intel_downloader',
+        'qualifier': 'development'
     }
     invoke_lambda_function('next_token', config)
 
@@ -79,6 +81,7 @@ def test_parse_config():
     expect_config = {
         'region': 'us-east-1',
         'account_id': '123456789012',
-        'function_name': 'prefix_threat_intel_downloader'
+        'function_name': 'prefix_threat_intel_downloader',
+        'qualifier': 'development'
     }
     assert_equal(parse_config(get_mock_context()), expect_config)

@@ -21,5 +21,4 @@ except (TypeError, ValueError) as err:
     LOGGER.error('Defaulting to INFO logging: %s', err)
 
 # Remaining time in seconds before lambda termination
-# 5 seconds
 END_TIME_BUFFER = 5

@@ -13,14 +13,10 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-import json
 import re
 
-import boto3
-from botocore.exceptions import ClientError
-
 from stream_alert_cli.apps import save_parameter
-from stream_alert_cli.helpers import continue_prompt, user_input
+from stream_alert_cli.helpers import user_input
 from stream_alert_cli.logger import LOGGER_CLI
 
 def threat_intel_downloader_handler(options, config):
@@ -43,16 +39,8 @@ def threat_intel_downloader_handler(options, config):
             LOGGER_CLI.error('Missing command line argument --memory')
             return False
 
-        if not options.table_name:
-            LOGGER_CLI.error('Missing command line argument --table_name')
-            return False
-
         return True
-    # print('\noptions: {}'.format(options))
-    # print('\nconfig keys: {}'.format(config.keys()))
-    # import pprint
-    # pp = pprint.PrettyPrinter(indent=4)
-    # pp.pprint(config['lambda'])
+
     if not options:
         return
 
@@ -86,7 +74,7 @@ def save_api_creds_info(region, overwrite=False):
     }
 
     creds_dict = {auth_key: user_input(info['description'], False, info['format'])
-                 for auth_key, info in required_creds.iteritems()}
+                  for auth_key, info in required_creds.iteritems()}
 
     description = ('Required credentials for the Threat Intel Downloader')
 
@@ -94,8 +82,10 @@ def save_api_creds_info(region, overwrite=False):
     param_name = 'threat_intel_downloader_api_creds'
     saved = save_parameter(region, param_name, creds_dict, description, overwrite)
     if saved:
-        LOGGER_CLI.info('Threat Intel Downloader credentials were successfully saved to parameter store.')
+        LOGGER_CLI.info('Threat Intel Downloader credentials were successfully '
+                        'saved to parameter store.')
     else:
-        LOGGER_CLI.error('Threat Intel Downloader credentials were not saved to parameter store.')
+        LOGGER_CLI.error('Threat Intel Downloader credentials were not saved to '
+                         'parameter store.')
 
     return saved

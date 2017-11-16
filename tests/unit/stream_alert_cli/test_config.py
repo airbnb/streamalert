@@ -137,7 +137,6 @@ class TestCLIConfig(object):
             'interval': 'rate(1 day)',
             'memory': '128',
             'subcommand': 'enable',
-            'table_name': 'threat_intel_ioc',
             'timeout': '240',
             'table_wcu': 25
         }
@@ -146,7 +145,7 @@ class TestCLIConfig(object):
         expected_config = {
             'enabled': True,
             'current_version': '$LATEST',
-            'handler': 'threat_intel_downloader.main.handler',
+            'handler': 'stream_alert.threat_intel_downloader.main.handler',
             'interval': 'rate(1 day)',
             'log_level': 'info',
             'memory': '128',
@@ -156,7 +155,6 @@ class TestCLIConfig(object):
             'third_party_libraries': [
                 'requests'
             ],
-            'table_name': 'threat_intel_ioc',
             'table_rcu': 10,
             'table_wcu': 25,
             'timeout': '240'

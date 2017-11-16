@@ -18,7 +18,6 @@ limitations under the License.
 class ThreatStreamException(Exception):
     """Base exception class ThreatStream Error"""
 
-
 class ThreatStreamCredsError(ThreatStreamException):
     """Class for API Credential errors"""
 

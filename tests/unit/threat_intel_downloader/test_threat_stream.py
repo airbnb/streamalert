@@ -41,7 +41,7 @@ class TestThreatStream(object):
         self.region = 'us-east-1'
         self.table_name = 'test_table_name'
 
-    @patch('boto3.client', Mock(return_value=MockSSMClient(valid_creds=2)))
+    @patch('boto3.client', Mock(return_value=MockSSMClient(valid_creds=1)))
     @patch('stream_alert.threat_intel_downloader.threat_stream.requests.get',
            side_effect=mock_requests_get)
     def test_runner(self, mock_get): # pylint: disable=unused-argument
@@ -65,7 +65,7 @@ class TestThreatStream(object):
         assert_equal(next_url, 'next_url')
         assert_equal(continue_invoke, False)
 
-    @patch('boto3.client', Mock(return_value=MockSSMClient(valid_creds=2)))
+    @patch('boto3.client', Mock(return_value=MockSSMClient(valid_creds=1)))
     def test_process_data(self):
         """ThreatStream - Test raw ioc data is processed correctly"""
         raw_data = [
@@ -73,43 +73,58 @@ class TestThreatStream(object):
                 'value': 'malicious_domain.com',
                 'itype': 'c2_domain',
                 'source': 'ioc_source',
-                'type': 'domain'
+                'type': 'domain',
+                'expiration_ts': '2017-12-31T00:01:02.123Z',
+                'key1': 'value1',
+                'key2': 'value2'
             },
             {
                 'value': 'malicious_domain2.com',
                 'itype': 'c2_domain',
                 'source': 'ioc_source2',
-                'type': 'domain'
+                'type': 'domain',
+                'expiration_ts': '2017-11-30T00:01:02.123Z',
+                'key3': 'value3',
+                'key4': 'value4'
             }
         ]
         threat_stream = ThreatStream(self.ioc_types, self.region)
         threat_stream.ioc_sources = set(['ioc_source'])
         processed_data = threat_stream._process_data(raw_data)
         assert_equal(len(processed_data), 2)
-        assert_equal(processed_data[0],
-                     ['malicious_domain.com', 'domain', 'c2_domain', 'ioc_source'])
-        assert_equal(processed_data[1],
-                     ['malicious_domain2.com', 'domain', 'c2_domain', 'ioc_source2'])
+        expected_result = {
+            'value': 'malicious_domain.com',
+            'itype': 'c2_domain',
+            'source': 'ioc_source',
+            'type': 'domain',
+            'expiration_ts': 1514678462
+        }
+        assert_equal(processed_data[0], expected_result)
+        expected_result = {
+            'value': 'malicious_domain2.com',
+            'itype': 'c2_domain',
+            'source': 'ioc_source2',
+            'type': 'domain',
+            'expiration_ts': 1512000062
+        }
+        assert_equal(processed_data[1], expected_result)
 
-    @patch('boto3.client', Mock(return_value=MockSSMClient(valid_creds=2)))
+    @patch('boto3.client', Mock(return_value=MockSSMClient(valid_creds=1)))
     def test_get_api_creds(self):
         """ThreatStream - Test get api creds from SSM"""
         threat_stream = ThreatStream(self.ioc_types, self.region)
-        assert_equal(threat_stream.api_user, 'test_api_user')
-        assert_equal(threat_stream.api_key, 'test_api_key')
+        assert_equal(threat_stream.api_user, 'test_user')
+        assert_equal(threat_stream.api_key, 'test_key')
 
     @patch('boto3.client')
     @raises(ThreatStreamCredsError)
     def test_get_api_creds_errors(self, mock_boto3_client):
         """ThreatStream - Test get api creds from SSM"""
-        mock_boto3_client.return_value = MockSSMClient(valid_creds=1)
-        ThreatStream(self.ioc_types, self.region)
-
         mock_boto3_client.return_value = MockSSMClient(valid_creds=0)
         ThreatStream(self.ioc_types, self.region)
 
     # TODO: add more test cases with different status_code
-    @patch('boto3.client', Mock(return_value=MockSSMClient(valid_creds=2)))
+    @patch('boto3.client', Mock(return_value=MockSSMClient(valid_creds=1)))
     @patch('stream_alert.threat_intel_downloader.threat_stream.requests.get',
            side_effect=mock_requests_get)
     def test_connect(self, mock_get): # pylint: disable=unused-argument
@@ -117,12 +132,20 @@ class TestThreatStream(object):
         threat_stream = ThreatStream(self.ioc_types, self.region)
         threat_stream.ioc_sources = set(['test_source'])
         intelligence, next_url, continue_invoke = threat_stream._connect('next_token')
-        expected_intel = [['malicious_domain2.com', 'domain', 'c2_domain', 'test_source']]
+        expected_intel = [
+            {
+                'value': 'malicious_domain2.com',
+                'itype': 'c2_domain',
+                'source': 'test_source',
+                'type': 'domain',
+                'expiration_ts': 1512000062
+            }
+        ]
         assert_equal(intelligence, expected_intel)
         assert_equal(next_url, 'next_token')
         assert_false(continue_invoke)
 
-    @patch('boto3.client', Mock(return_value=MockSSMClient(valid_creds=2)))
+    @patch('boto3.client', Mock(return_value=MockSSMClient(valid_creds=1)))
     @patch.object(boto3, 'resource')
     @patch('stream_alert.threat_intel_downloader.threat_stream.requests.get',
            side_effect=mock_requests_get)
@@ -134,11 +157,12 @@ class TestThreatStream(object):
         threat_stream.write_to_dynamodb_table(intelligence)
         calls = [
             call('dynamodb', region_name='us-east-1'),
-            call().Table('test_table_name'),
+            call().Table('threat_intel_ioc'),
             call().Table().batch_writer(),
             call().Table().batch_writer().__enter__(),
             call().Table().batch_writer().__enter__().put_item(
                 Item={
+                    'expiration_ts': 1512000062,
                     'source': 'test_source',
                     'type': 'domain',
                     'sub_type': 'c2_domain',

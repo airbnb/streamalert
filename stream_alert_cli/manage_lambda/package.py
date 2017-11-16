@@ -251,7 +251,6 @@ class LambdaPackage(object):
         """
         LOGGER_CLI.info('Uploading StreamAlert package to S3')
         client = boto3.client('s3', region_name=self.config['global']['account']['region'])
-
         for package_file in (package_path, '{}.sha256'.format(package_path)):
             package_name = package_file.split('/')[-1]
             package_fh = open(package_file, 'r')
@@ -268,7 +267,6 @@ class LambdaPackage(object):
 
             package_fh.close()
             LOGGER_CLI.debug('Uploaded %s to S3', package_name)
-
         return True
 
 
