@@ -72,7 +72,15 @@ def get_random_alert(key_count, rule_name, omit_rule_desc=False):
     return alert
 
 
-def get_alert(index=0):
+def get_alert(index=0, context=None):
+    """This function generates a sample alert for testing purposes
+
+    Args:
+        index (int): test_index value (0 by default)
+        context(dict): context dictionary (None by default)
+    """
+    context = context or {}
+
     return {
         'record': {
             'test_index': index,
@@ -90,6 +98,7 @@ def get_alert(index=0):
         'outputs': [
             'slack:unit_test_channel'
         ],
+        'context': context,
         'source_service': 's3',
         'source_entity': 'corp-prefix.prod.cb.region',
         'log_type': 'json',

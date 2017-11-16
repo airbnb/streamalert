@@ -28,7 +28,8 @@ RuleAttributes = namedtuple('Rule', ['rule_name',
                                      'datatypes',
                                      'logs',
                                      'outputs',
-                                     'req_subkeys'])
+                                     'req_subkeys',
+                                     'context'])
 
 
 class StreamRules(object):
@@ -70,6 +71,7 @@ class StreamRules(object):
             matchers = opts.get('matchers')
             datatypes = opts.get('datatypes')
             req_subkeys = opts.get('req_subkeys')
+            context = opts.get('context', {})
 
             if not (logs or datatypes):
                 LOGGER.error(
@@ -92,7 +94,8 @@ class StreamRules(object):
                                                     datatypes,
                                                     logs,
                                                     outputs,
-                                                    req_subkeys)
+                                                    req_subkeys,
+                                                    context)
             return rule
         return decorator
 
@@ -387,7 +390,8 @@ class StreamRules(object):
                         'log_type': payload.type,
                         'outputs': rule.outputs,
                         'source_service': payload.service(),
-                        'source_entity': payload.entity}
+                        'source_entity': payload.entity,
+                        'context': rule.context}
                     alerts.append(alert)
 
         return alerts
