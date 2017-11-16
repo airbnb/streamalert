@@ -762,6 +762,14 @@ class AlertProcessorTester(object):
                 helpers.put_mock_creds(output_name, creds, self.secrets_bucket,
                                        'us-east-1', self.kms_alias)
 
+            elif service == 'pagerduty-incident':
+                output_name = '{}/{}'.format(service, descriptor)
+                creds = {'token': '247b97499078a015cc6c586bc0a92de6',
+                         'service_key': '247b97499078a015cc6c586bc0a92de6',
+                         'escalation_policy': '247b97499078a015cc6c586bc0a92de6'}
+                helpers.put_mock_creds(output_name, creds, self.secrets_bucket,
+                                       'us-east-1', self.kms_alias)
+
             elif service == 'phantom':
                 output_name = '{}/{}'.format(service, descriptor)
                 creds = {'ph_auth_token': '6c586bc047b9749a92de29078a015cc6',
