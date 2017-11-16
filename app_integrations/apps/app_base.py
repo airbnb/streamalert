@@ -66,7 +66,14 @@ def get_app(config, init=True):
 
 
 def safe_timeout(func):
-    """Try/Except decorator to catch any timeout error raised by requests"""
+    """Try/Except decorator to catch any timeout error raised by requests
+
+    NOTE: Use this wrapper on instance methods only, ie: methods with 'self' as the first param
+
+    Args:
+        func (im_func): Instance method wrapper function for safety netting requests
+            that could result in a connection or read timeout.
+    """
     def _wrapper(*args, **kwargs):
         try:
             return func(*args, **kwargs)

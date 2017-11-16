@@ -21,7 +21,7 @@ from boxsdk.object.events import EnterpriseEventsStreamType
 from requests.exceptions import ConnectionError
 
 from app_integrations import LOGGER
-from app_integrations.apps.app_base import app, AppIntegration
+from app_integrations.apps.app_base import app, AppIntegration, safe_timeout
 
 
 @app
@@ -89,6 +89,7 @@ class BoxApp(AppIntegration):
 
         return bool(self._client)
 
+    @safe_timeout
     def _make_request(self):
         """Make the request using the Box client
 
@@ -119,11 +120,12 @@ class BoxApp(AppIntegration):
                 box_response = self._client.make_request(
                     'GET',
                     self._client.get_url('events'),
-                    params=params
+                    params=params,
+                    timeout=self._DEFAULT_REQUEST_TIMEOUT
                 )
             except BoxException:
                 LOGGER.exception('Failed to get events for %s', self.type())
-                return False
+                return False, None   # Return a tuple to conform to return value of safe_timeout
             except ConnectionError:
                 # In testing, the requests connection seemed to get reset for no
                 # obvious reason, and a simple retry once works fine so catch it
@@ -132,10 +134,11 @@ class BoxApp(AppIntegration):
                 if allow_retry:
                     return _perform_request(allow_retry=False)
 
-                return False
+                return False, None   # Return a tuple to conform to return value of safe_timeout
 
-            # Return the JSON from the box response
-            return box_response.json()
+            # Return a successful status and the JSON from the box response
+            # Return a tuple to conform to return value of safe_timeout
+            return True, box_response.json()
 
         return _perform_request()
 
@@ -155,7 +158,12 @@ class BoxApp(AppIntegration):
             LOGGER.error('Could not create box client for %s', self.type())
             return False
 
-        response = self._make_request()
+        result, response = self._make_request()
+
+        # If the result is False, errors would be previously logged up
+        # the stack before this, so just return False
+        if not result:
+            return False
 
         if not response:
             LOGGER.error('No results received from the Box API request for %s', self.type())

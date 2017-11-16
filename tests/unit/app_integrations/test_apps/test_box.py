@@ -19,7 +19,7 @@ from mock import Mock, mock_open, patch
 
 from boxsdk.exception import BoxException
 from nose.tools import assert_equal, assert_false, assert_items_equal, assert_true
-from requests.exceptions import ConnectionError
+from requests.exceptions import ConnectionError, Timeout
 
 from app_integrations.apps.box import BoxApp
 from app_integrations.config import AppConfig
@@ -144,6 +144,16 @@ class TestBoxApp(object):
             client_mock.make_request.side_effect = ConnectionError(response='bad error')
             assert_false(self._app._gather_logs())
             log_mock.assert_called_with('Bad response received from host, will retry once')
+
+    @patch('app_integrations.apps.box.BoxApp._create_client',
+           Mock(return_value=True))
+    @patch('logging.Logger.exception')
+    def test_gather_logs_requests_timeout(self, log_mock):
+        """BoxApp - Gather Logs, Timeout"""
+        with patch.object(self._app, '_client') as client_mock:
+            client_mock.make_request.side_effect = Timeout(response='request timed out')
+            assert_false(self._app._gather_logs())
+            log_mock.assert_called_with('Request timed out for %s', 'type')
 
     @patch('app_integrations.apps.box.BoxApp._load_auth',
            Mock(return_value=False))
