@@ -33,17 +33,17 @@ class ThreatStream(object):
     _API_MAX_INDEX = 1000000
     _PARAMETER_NAME = 'threat_intel_downloader_api_creds'
     _MAX_RETRY = 3
-    _IOC_KEYS = set(['expiration_ts', 'itype', 'source', 'type', 'value'])
 
-    def __init__(self, ioc_types, region='us-east-1', table_name='threat_intel_ioc'):
-        self.ioc_types = ioc_types
-        self.ioc_sources = set(['crowdstrike', '@airbnb.com'])
+    def __init__(self, config):
+        self.ioc_types = config['ioc_types']
+        self.ioc_sources = config['ioc_filters']
         self.threshold = self._API_MAX_INDEX - self._API_MAX_LIMIT
-        self.region = region
+        self.region = config['region']
+        self.ioc_keys = config['ioc_keys']
         self.api_user = None
         self.api_key = None
         self._get_api_creds()
-        self.table_name = table_name
+        self.table_name = config['function_name']
 
     def _get_api_creds(self):
         """Retrieve ThreatStream API credentials from Parameter Store"""
@@ -102,7 +102,7 @@ class ThreatStream(object):
                     data = https_req.json()
                     if data.get('objects'):
                         intelligence.extend(self._process_data(data['objects']))
-                    LOGGER.debug('IOC Offset: %d', data['meta']['offset'])
+                    LOGGER.info('IOC Offset: %d', data['meta']['offset'])
                     if not (data['meta']['next']
                             and data['meta']['offset'] < self.threshold):
                         LOGGER.debug('Either next token is empty or IOC offset '
@@ -234,7 +234,7 @@ class ThreatStream(object):
             for source in self.ioc_sources:
                 if source in obj['source'].lower() and obj['type'] in self.ioc_types:
                     filtered_obj = {key: value for key, value in obj.iteritems()
-                                    if key in self._IOC_KEYS}
+                                    if key in self.ioc_keys}
                     filtered_obj['expiration_ts'] = _epoch_time(filtered_obj['expiration_ts'])
                     results.append(filtered_obj)
         return results

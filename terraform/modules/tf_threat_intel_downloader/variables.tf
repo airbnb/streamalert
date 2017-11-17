@@ -61,3 +61,9 @@ variable "parameter_name" {
 }
 
 variable "monitoring_sns_topic" {}
+
+variable "ioc_filters" {}
+
+variable "ioc_keys" {}
+
+variable "ioc_types" {}

@@ -121,7 +121,6 @@ data "aws_iam_policy_document" "read_api_creds_from_ssm" {
   }
 }
 
-// TODO: double check is needed
 // IAM Role Policy: Allow the Threat Intel Downloader function to publish sns (used for DLQ)
 resource "aws_iam_role_policy" "theat_intel_downloader_publish_sns" {
   name   = "threat_intel_downloader_publish_sns_role_policy"

@@ -71,6 +71,3 @@ resource "aws_cloudwatch_log_group" "threat_intel_downloader" {
   name              = "/aws/lambda/${var.prefix}_streamalert_threat_intel_downloader"
   retention_in_days = 60
 }
-
-# TODO: check if `aws_cloudwatch_log_metric_filter` needed.
-

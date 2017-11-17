@@ -125,11 +125,13 @@ class CLIConfig(object):
             'rule_processor_config']['source_bucket'].replace('PREFIX_GOES_HERE', prefix)
         self.config['lambda']['stream_alert_apps_config']['source_bucket'] = self.config['lambda'][
             'stream_alert_apps_config']['source_bucket'].replace('PREFIX_GOES_HERE', prefix)
-        self.config['lambda']['threat_intel_downloader_config']['source_bucket'] = \
-            self.config['lambda'][
-                'threat_intel_downloader_config']['source_bucket'].replace(
-                    'PREFIX_GOES_HERE', prefix
-                )
+
+        if self.config['lambda'].get('threat_intel_downloader_config'):
+            self.config['lambda']['threat_intel_downloader_config']['source_bucket'] = \
+                self.config['lambda'][
+                    'threat_intel_downloader_config']['source_bucket'].replace(
+                        'PREFIX_GOES_HERE', prefix
+                    )
         self.write()
 
         LOGGER_CLI.info('Prefix successfully configured')
@@ -454,7 +456,10 @@ class CLIConfig(object):
                 ],
                 'timeout': '120',
                 'table_rcu': 10,
-                'table_wcu': 10
+                'table_wcu': 10,
+                'ioc_keys': [],
+                'ioc_filters': [],
+                'ioc_types': []
             }
 
         if 'threat_intel_downloader_config' in self.config['lambda']:

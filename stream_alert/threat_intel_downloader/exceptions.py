@@ -21,5 +21,8 @@ class ThreatStreamException(Exception):
 class ThreatStreamCredsError(ThreatStreamException):
     """Class for API Credential errors"""
 
+class ThreatStreamConfigError(ThreatStreamException):
+    """Class for Configuration errors"""
+
 class ThreatStreamLambdaInvokeError(ThreatStreamException):
     """Class for Lambda Invoke Error"""

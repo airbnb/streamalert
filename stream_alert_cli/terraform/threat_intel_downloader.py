@@ -49,6 +49,9 @@ def generate_threat_intel_downloader(config):
         'prefix': config['global']['account']['prefix'],
         'monitoring_sns_topic': dlq_topic,
         'table_rcu': ti_downloader_config.get('table_rcu', '10'),
-        'table_wcu': ti_downloader_config.get('table_wcu', '10')
+        'table_wcu': ti_downloader_config.get('table_wcu', '10'),
+        'ioc_keys': ti_downloader_config.get('ioc_keys'),
+        'ioc_filters': ti_downloader_config.get('ioc_filters'),
+        'ioc_types': ti_downloader_config.get('ioc_types')
     }
     return ti_downloader_dict

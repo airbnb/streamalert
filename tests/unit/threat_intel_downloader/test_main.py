@@ -24,30 +24,35 @@ from stream_alert.threat_intel_downloader.threat_stream import ThreatStream
 from stream_alert.threat_intel_downloader.main import (
     handler,
     invoke_lambda_function,
-    parse_config
+    parse_lambda_func_arn
 )
 
 from stream_alert.threat_intel_downloader.exceptions import ThreatStreamLambdaInvokeError
 
 from tests.unit.threat_intel_downloader.test_helpers import (
     get_mock_context,
+    mock_config,
     mock_requests_get,
     MockSSMClient
 )
 
 from tests.unit.app_integrations.test_helpers import MockLambdaClient
 
+@patch('stream_alert.threat_intel_downloader.main.load_config',
+       side_effect=mock_config)
 @patch('boto3.client', Mock(return_value=MockSSMClient(valid_creds=1)))
 @patch.object(ThreatStream, '_connect')
-def test_handler_without_next_token(mock_threatstream_connect):
+def test_handler_without_next_token(mock_threatstream_connect, mock_ti_config): # pylint: disable=unused-argument
     """Threat Intel Downloader - Test handler"""
     handler(None, get_mock_context())
     mock_threatstream_connect.assert_not_called()
 
+@patch('stream_alert.threat_intel_downloader.main.load_config',
+       side_effect=mock_config)
 @patch('boto3.client', Mock(return_value=MockSSMClient(valid_creds=1)))
 @patch('stream_alert.threat_intel_downloader.threat_stream.requests.get',
        side_effect=mock_requests_get)
-def test_handler_next_token(mock_get):
+def test_handler_next_token(mock_get, mock_ti_config): # pylint: disable=unused-argument
     """Threat Intel Downloader - Test handler with next token passed in"""
     handler({'next_url': 'next_token'}, get_mock_context())
     mock_get.assert_called()
@@ -77,11 +82,11 @@ def test_invoke_lambda_function_error():
     invoke_lambda_function('next_token', config)
 
 def test_parse_config():
-    """Threat Intel Downloader - Test parse_config"""
+    """Threat Intel Downloader - Test parse_lambda_func_arn"""
     expect_config = {
         'region': 'us-east-1',
         'account_id': '123456789012',
         'function_name': 'prefix_threat_intel_downloader',
         'qualifier': 'development'
     }
-    assert_equal(parse_config(get_mock_context()), expect_config)
+    assert_equal(parse_lambda_func_arn(get_mock_context()), expect_config)

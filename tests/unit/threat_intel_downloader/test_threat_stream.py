@@ -30,7 +30,8 @@ from stream_alert.threat_intel_downloader.threat_stream import ThreatStream
 
 from tests.unit.threat_intel_downloader.test_helpers import (
     mock_requests_get,
-    MockSSMClient
+    MockSSMClient,
+    mock_config
 )
 
 class TestThreatStream(object):
@@ -46,7 +47,7 @@ class TestThreatStream(object):
            side_effect=mock_requests_get)
     def test_runner(self, mock_get): # pylint: disable=unused-argument
         """ThreatStream - Test connection to threatstream"""
-        threat_stream = ThreatStream(self.ioc_types, self.region)
+        threat_stream = ThreatStream(mock_config())
         threat_stream.ioc_sources = set(['ioc_source'])
         intelligence, next_url, continue_invoke = threat_stream.runner(None)
         assert_equal(intelligence, None)
@@ -88,7 +89,7 @@ class TestThreatStream(object):
                 'key4': 'value4'
             }
         ]
-        threat_stream = ThreatStream(self.ioc_types, self.region)
+        threat_stream = ThreatStream(mock_config())
         threat_stream.ioc_sources = set(['ioc_source'])
         processed_data = threat_stream._process_data(raw_data)
         assert_equal(len(processed_data), 2)
@@ -112,7 +113,7 @@ class TestThreatStream(object):
     @patch('boto3.client', Mock(return_value=MockSSMClient(valid_creds=1)))
     def test_get_api_creds(self):
         """ThreatStream - Test get api creds from SSM"""
-        threat_stream = ThreatStream(self.ioc_types, self.region)
+        threat_stream = ThreatStream(mock_config())
         assert_equal(threat_stream.api_user, 'test_user')
         assert_equal(threat_stream.api_key, 'test_key')
 
@@ -121,15 +122,14 @@ class TestThreatStream(object):
     def test_get_api_creds_errors(self, mock_boto3_client):
         """ThreatStream - Test get api creds from SSM"""
         mock_boto3_client.return_value = MockSSMClient(valid_creds=0)
-        ThreatStream(self.ioc_types, self.region)
+        ThreatStream(mock_config())
 
-    # TODO: add more test cases with different status_code
     @patch('boto3.client', Mock(return_value=MockSSMClient(valid_creds=1)))
     @patch('stream_alert.threat_intel_downloader.threat_stream.requests.get',
            side_effect=mock_requests_get)
     def test_connect(self, mock_get): # pylint: disable=unused-argument
         """ThreatStream - Test connection to ThreatStream.com"""
-        threat_stream = ThreatStream(self.ioc_types, self.region)
+        threat_stream = ThreatStream(mock_config())
         threat_stream.ioc_sources = set(['test_source'])
         intelligence, next_url, continue_invoke = threat_stream._connect('next_token')
         expected_intel = [
@@ -151,13 +151,13 @@ class TestThreatStream(object):
            side_effect=mock_requests_get)
     def test_write_to_dynamodb_table(self, mock_get, mock_boto3_resource): # pylint: disable=unused-argument
         """ThreatStream - Test write action to dynamodb table"""
-        threat_stream = ThreatStream(self.ioc_types, self.region)
+        threat_stream = ThreatStream(mock_config())
         threat_stream.ioc_sources = set(['test_source'])
         intelligence, _, _ = threat_stream.runner({'next_url': 'next_url'})
         threat_stream.write_to_dynamodb_table(intelligence)
         calls = [
             call('dynamodb', region_name='us-east-1'),
-            call().Table('threat_intel_ioc'),
+            call().Table('prefix_threat_intel_downloader'),
             call().Table().batch_writer(),
             call().Table().batch_writer().__enter__(),
             call().Table().batch_writer().__enter__().put_item(

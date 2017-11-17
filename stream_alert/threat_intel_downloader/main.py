@@ -14,25 +14,28 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import json
+import os
 
 import boto3
 from botocore.exceptions import ClientError
 
 from stream_alert.threat_intel_downloader.threat_stream import ThreatStream
 from stream_alert.threat_intel_downloader import LOGGER, END_TIME_BUFFER
-from stream_alert.threat_intel_downloader.exceptions import ThreatStreamLambdaInvokeError
+from stream_alert.threat_intel_downloader.exceptions import (
+    ThreatStreamLambdaInvokeError,
+    ThreatStreamConfigError
+)
 
 
 def handler(event, context):
     """Lambda handler"""
-    config = parse_config(context)
-    threat_stream = ThreatStream(set(['domain', 'ip', 'md5']),
-                                 config['region'],
-                                 config['function_name'])
+    config = load_config()
+    config.update(parse_lambda_func_arn(context))
+    threat_stream = ThreatStream(config)
     intelligence, next_url, continue_invoke = threat_stream.runner(event)
 
     if intelligence:
-        LOGGER.debug('Write %d IOCs to DynamoDB table', len(intelligence))
+        LOGGER.info('Write %d IOCs to DynamoDB table', len(intelligence))
         threat_stream.write_to_dynamodb_table(intelligence)
 
     if context.get_remaining_time_in_millis() > END_TIME_BUFFER * 1000 and continue_invoke:
@@ -55,7 +58,7 @@ def invoke_lambda_function(next_url, config):
         LOGGER.debug('Lambda client error: %s when lambda function invoke self', err)
         raise ThreatStreamLambdaInvokeError
 
-def parse_config(context):
+def parse_lambda_func_arn(context):
     """Parse Lambda function arn to get function name, account id, region"""
     func_arn = context.invoked_function_arn.split(':')
 
@@ -65,3 +68,27 @@ def parse_config(context):
         'function_name': func_arn[6],
         'qualifier': func_arn[7]
     }
+
+def load_config():
+    """Load the Threat Intel Downloader configuration from conf/lambda.json file
+
+    Returns:
+        (dict): Configuration for Threat Intel Downloader
+
+    Raises:
+        ConfigError: For invalid or missing configuration files.
+    """
+    config = {}
+    config_file_path = 'conf/lambda.json'
+    if not os.path.exists(config_file_path):
+        raise ThreatStreamConfigError('The \'{}\' config file was not found'.format(
+            config_file_path))
+
+    with open(config_file_path) as config_fh:
+        try:
+            config = json.load(config_fh)
+        except ValueError:
+            raise ThreatStreamConfigError('The \'{}\' config file is not valid JSON'.format(
+                config_file_path))
+
+    return config.get('threat_intel_downloader_config', None)

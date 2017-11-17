@@ -1268,6 +1268,24 @@ Examples:
     )
 
     ti_downloader_parser.add_argument(
+        '--ioc_keys',
+        help=ARGPARSE_SUPPRESS,
+        default=['expiration_ts', 'itype', 'source', 'type', 'value']
+    )
+
+    ti_downloader_parser.add_argument(
+        '--ioc_filters',
+        help=ARGPARSE_SUPPRESS,
+        default=['crowdstrike', '@airbnb.com']
+    )
+
+    ti_downloader_parser.add_argument(
+        '--ioc_types',
+        help=ARGPARSE_SUPPRESS,
+        default=['domain', 'ip', 'md5']
+    )
+
+    ti_downloader_parser.add_argument(
         '--debug',
         action='store_true',
         help=ARGPARSE_SUPPRESS

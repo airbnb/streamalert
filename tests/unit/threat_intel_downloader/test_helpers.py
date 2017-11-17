@@ -190,3 +190,22 @@ def mock_ssm_response(valid_creds=0):
             'invalid_foo',
         ]
     }
+
+def mock_config():
+    '''Helper function to create a fake config for Threat Intel Downloader'''
+    return {
+        'account_id': '123456789012',
+        'function_name': 'prefix_threat_intel_downloader',
+        'handler': 'stream_alert.threat_intel_downloader.main.handler',
+        'interval': 'rate(1 day)',
+        'ioc_filters': ['crowdstrike', '@airbnb.com'],
+        'ioc_keys': ['expiration_ts', 'itype', 'source', 'type', 'value'],
+        'ioc_types': ['domain', 'ip', 'md5'],
+        'log_level': 'info',
+        'memory': '128',
+        'qualifier': 'development',
+        'region': 'us-east-1',
+        'table_rcu': 10,
+        'table_wcu': 10,
+        'timeout': '180'
+    }
