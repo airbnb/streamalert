@@ -19,7 +19,7 @@ from mock import mock_open, patch
 from moto import mock_kms, mock_s3
 from nose.tools import assert_false, assert_list_equal, assert_true, raises
 
-from stream_alert.alert_processor.output_base import OutputProperty
+from stream_alert.alert_processor.outputs.output_base import OutputProperty
 from stream_alert_cli.outputs import (
     encrypt_and_push_creds_to_s3,
     load_config,

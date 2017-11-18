@@ -108,12 +108,7 @@ def configure_output(options):
         kms_key_alias = kms_key_alias.split('/')[1]
 
     # Retrieve the proper service class to handle dispatching the alerts of this services
-    output = StreamAlertOutput.get_output_dispatcher(
-        options.service,
-        region,
-        prefix,
-        config_outputs.load_outputs_config()
-    )
+    output = StreamAlertOutput.get_dispatcher(options.service)
 
     # If an output for this service has not been defined, the error is logged
     # prior to this

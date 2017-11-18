@@ -38,7 +38,9 @@ from stream_alert.shared.backoff_handlers import (
 
 class AWSOutput(OutputDispatcher):
     """Subclass to be inherited from for all AWS service outputs"""
-    def format_output_config(self, service_config, values):
+
+    @classmethod
+    def format_output_config(cls, service_config, values):
         """Format the output configuration for this AWS service to be written to disk
 
         AWS services are stored as a dictionary within the config instead of a list so
@@ -56,13 +58,12 @@ class AWSOutput(OutputDispatcher):
                 subclasses should use a generic 'aws_value' to store the value for the
                 descriptor used in configuration
         """
-        return dict(service_config.get(self.__service__, {}),
+        return dict(service_config.get(cls.__service__, {}),
                     **{values['descriptor'].value: values['aws_value'].value})
 
     @abstractmethod
     def dispatch(self, **kwargs):
         """Placeholder for implementation in the subclasses"""
-        pass
 
 
 @StreamAlertOutput
@@ -74,7 +75,8 @@ class KinesisFirehoseOutput(AWSOutput):
     __service__ = 'aws-firehose'
     __aws_client__ = None
 
-    def get_user_defined_properties(self):
+    @classmethod
+    def get_user_defined_properties(cls):
         """Properties asssigned by the user when configuring a new Firehose output
 
         Every output should return a dict that contains a 'descriptor' with a description of the
@@ -152,7 +154,8 @@ class S3Output(AWSOutput):
     """S3Output handles all alert dispatching for AWS S3"""
     __service__ = 'aws-s3'
 
-    def get_user_defined_properties(self):
+    @classmethod
+    def get_user_defined_properties(cls):
         """Get properties that must be asssigned by the user when configuring a new S3
         output.  This should be sensitive or unique information for this use-case that needs
         to come from the user.
@@ -230,7 +233,8 @@ class LambdaOutput(AWSOutput):
     """LambdaOutput handles all alert dispatching to AWS Lambda"""
     __service__ = 'aws-lambda'
 
-    def get_user_defined_properties(self):
+    @classmethod
+    def get_user_defined_properties(cls):
         """Get properties that must be asssigned by the user when configuring a new Lambda
         output.  This should be sensitive or unique information for this use-case that needs
         to come from the user.

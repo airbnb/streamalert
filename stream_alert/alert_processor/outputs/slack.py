@@ -30,7 +30,8 @@ class SlackOutput(OutputDispatcher):
     # Slack recommends no messages larger than 4000 bytes. This does not account for unicode
     MAX_MESSAGE_SIZE = 4000
 
-    def get_user_defined_properties(self):
+    @classmethod
+    def get_user_defined_properties(cls):
         """Get properties that must be asssigned by the user when configuring a new Slack
         output.  This should be sensitive or unique information for this use-case that needs
         to come from the user.

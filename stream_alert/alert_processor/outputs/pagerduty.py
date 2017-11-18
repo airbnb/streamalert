@@ -38,7 +38,8 @@ class PagerDutyOutput(OutputDispatcher):
         """
         return {'url': 'https://events.pagerduty.com/generic/2010-04-15/create_event.json'}
 
-    def get_user_defined_properties(self):
+    @classmethod
+    def get_user_defined_properties(cls):
         """Get properties that must be asssigned by the user when configuring a new PagerDuty
         output.  This should be sensitive or unique information for this use-case that needs
         to come from the user.
@@ -105,7 +106,8 @@ class PagerDutyOutputV2(OutputDispatcher):
         """
         return {'url': 'https://events.pagerduty.com/v2/enqueue'}
 
-    def get_user_defined_properties(self):
+    @classmethod
+    def get_user_defined_properties(cls):
         """Get properties that must be asssigned by the user when configuring a new PagerDuty
         event output. This should be sensitive or unique information for this use-case that
         needs to come from the user.
@@ -191,7 +193,8 @@ class PagerDutyIncidentOutput(OutputDispatcher):
         """
         return {'api': 'https://api.pagerduty.com'}
 
-    def get_user_defined_properties(self):
+    @classmethod
+    def get_user_defined_properties(cls):
         """Get properties that must be asssigned by the user when configuring a new PagerDuty
         event output. This should be sensitive or unique information for this use-case that
         needs to come from the user.

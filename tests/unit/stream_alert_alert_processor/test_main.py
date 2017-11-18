@@ -16,15 +16,13 @@ limitations under the License.
 # pylint: disable=protected-access
 from collections import OrderedDict
 import json
-import os
 
 from mock import call, mock_open, patch
 from nose.tools import (
     assert_equal,
     assert_is_instance,
     assert_list_equal,
-    assert_true,
-    with_setup
+    assert_true
 )
 
 import stream_alert.alert_processor as ap
@@ -100,7 +98,7 @@ def test_sort_dict_recursive():
 
 @patch('requests.post')
 @patch('stream_alert.alert_processor.main._load_output_config')
-@patch('stream_alert.alert_processor.output_base.StreamOutputBase._load_creds')
+@patch('stream_alert.alert_processor.outputs.output_base.OutputDispatcher._load_creds')
 def test_running_success(creds_mock, config_mock, get_mock):
     """Alert Processor run handler - success"""
     config_mock.return_value = _load_output_config('tests/unit/conf/outputs.json')
@@ -137,14 +135,13 @@ def test_running_bad_output(config_mock, log_mock):
 
     handler(alert, context)
 
-    log_mock.assert_called_with(
-        'The output \'%s\' does not exist!', 'slakc:test')
+    log_mock.assert_called_with('The output \'%s\' does not exist!', 'slakc:test')
 
 
 @patch('stream_alert.alert_processor.main._load_output_config')
-@patch('stream_alert.alert_processor.main.get_output_dispatcher')
+@patch('stream_alert.alert_processor.outputs.output_base.StreamAlertOutput.get_dispatcher')
 def test_running_no_dispatcher(dispatch_mock, config_mock):
-    """Alert Processor run handler - no dispatcher"""
+    """Alert Processor - Run Handler With No Dispatcher"""
     config_mock.return_value = _load_output_config('tests/unit/conf/outputs.json')
     dispatch_mock.return_value = None
 
@@ -160,10 +157,10 @@ def test_running_no_dispatcher(dispatch_mock, config_mock):
 @patch('logging.Logger.exception')
 @patch('requests.get')
 @patch('stream_alert.alert_processor.main._load_output_config')
-@patch('stream_alert.alert_processor.main.get_output_dispatcher')
-@patch('stream_alert.alert_processor.output_base.StreamOutputBase._load_creds')
+@patch('stream_alert.alert_processor.outputs.output_base.StreamAlertOutput.create_dispatcher')
+@patch('stream_alert.alert_processor.outputs.output_base.OutputDispatcher._load_creds')
 def test_running_exception_occurred(creds_mock, dispatch_mock, config_mock, get_mock, log_mock):
-    """Alert Processor run handler - exception occurred"""
+    """Alert Processor - Run Handler, Exception Occurred"""
     # Use TypeError as the mock's side_effect
     err = TypeError('bad error')
     creds_mock.return_value = {'url': 'mock.url'}
@@ -181,38 +178,27 @@ def test_running_exception_occurred(creds_mock, dispatch_mock, config_mock, get_
         'to %s:%s: %s. alert:\n%s', 'slack', 'unit_test_channel',
         err, json.dumps(alert, indent=2))
 
-def _teardown_env():
-    """Helper method to reset environment variables"""
-    if 'LOGGER_LEVEL' in os.environ:
-        del os.environ['LOGGER_LEVEL']
 
-
-@with_setup(setup=None, teardown=_teardown_env)
 @patch('stream_alert.alert_processor.LOGGER.error')
 def test_init_logging_bad(log_mock):
     """Alert Processor Init - Logging, Bad Level"""
-    level = 'IFNO'
+    with patch.dict('os.environ', {'LOGGER_LEVEL': 'IFNO'}):
 
-    os.environ['LOGGER_LEVEL'] = level
+        # Force reload the alert_processor package to trigger the init
+        reload(ap)
 
-    # Force reload the alert_processor package to trigger the init
-    reload(ap)
+        message = str(call('Defaulting to INFO logging: %s',
+                           ValueError('Unknown level: \'IFNO\'',)))
 
-    message = str(call('Defaulting to INFO logging: %s',
-                       ValueError('Unknown level: \'IFNO\'',)))
-
-    assert_equal(str(log_mock.call_args_list[0]), message)
+        assert_equal(str(log_mock.call_args_list[0]), message)
 
 
-@with_setup(setup=None, teardown=_teardown_env)
 @patch('stream_alert.alert_processor.LOGGER.setLevel')
 def test_init_logging_int_level(log_mock):
     """Alert Processor Init - Logging, Integer Level"""
-    level = '10'
+    with patch.dict('os.environ', {'LOGGER_LEVEL': '10'}):
 
-    os.environ['LOGGER_LEVEL'] = level
+        # Force reload the alert_processor package to trigger the init
+        reload(ap)
 
-    # Force reload the alert_processor package to trigger the init
-    reload(ap)
-
-    log_mock.assert_called_with(10)
+        log_mock.assert_called_with(10)

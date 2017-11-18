@@ -101,23 +101,18 @@ def run(alert, region, function_name, config):
             continue
 
         # Retrieve the proper class to handle dispatching the alerts of this services
-        output_dispatcher = StreamAlertOutput.get_output_dispatcher(
-            service,
-            region,
-            function_name,
-            config
-        )
+        dispatcher = StreamAlertOutput.create_dispatcher(service, region, function_name, config)
 
-        if not output_dispatcher:
+        if not dispatcher:
             continue
 
         LOGGER.debug('Sending alert to %s:%s', service, descriptor)
 
         sent = False
         try:
-            sent = output_dispatcher.dispatch(descriptor=descriptor,
-                                              rule_name=alert['rule_name'],
-                                              alert=alert)
+            sent = dispatcher.dispatch(descriptor=descriptor,
+                                       rule_name=alert['rule_name'],
+                                       alert=alert)
 
         except Exception as err:  # pylint: disable=broad-except
             LOGGER.exception('An error occurred while sending alert '
