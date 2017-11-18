@@ -36,7 +36,44 @@ class OutputRequestFailure(Exception):
     """OutputRequestFailure handles any HTTP failures"""
 
 
-class StreamOutputBase(object):
+class StreamAlertOutput(object):
+    """Class to be used as a decorator to register all OutputDispatcher subclasses"""
+    _outputs = {}
+
+    def __new__(cls, output):
+        StreamAlertOutput._outputs[output.__service__] = output
+        return output
+
+    @classmethod
+    def get_output_dispatcher(cls, service, region, function_name, config):
+        """Returns the subclass that should handle this particular service
+
+        Args:
+            service (str): The service identifier for this output
+            region (str): The AWS region to use for some output types
+            function_name (str): The invoking AWS Lambda function name
+            config (dict): The loaded output configuration dict
+
+        Returns:
+            OutputDispatcher: Subclass of OutputDispatcher to use for sending alerts
+        """
+        try:
+            return cls._outputs[service](region, function_name, config)
+        except KeyError:
+            LOGGER.error('Designated output service [%s] does not exist', service)
+
+    @classmethod
+    def get_all_outputs(cls):
+        """Return a copy of the cache containing all of the output subclasses
+
+        Returns:
+            dict: Cached dictionary of all registered StreamAlertOutputs where
+                the key is the service and the value is the class object
+        """
+        return cls._outputs.copy()
+
+
+class OutputDispatcher(object):
     """StreamOutputBase is the base class to handle routing alerts to outputs
 
     Public methods:
