@@ -23,7 +23,7 @@ import boto3
 from botocore.exceptions import ClientError
 
 from app_integrations import LOGGER
-from app_integrations.apps.app_base import get_app
+from app_integrations.apps.app_base import StreamAlertApp
 from app_integrations.exceptions import AppIntegrationConfigError, AppIntegrationStateError
 
 AWS_RATE_RE = re.compile(r'^rate\(((1) (minute|hour|day)|'
@@ -279,7 +279,7 @@ class AppConfig(dict):
 
             # Request the date format from the app since some services expect different types
             # Using init=False will return the class without instantiating it
-            date_format = get_app(self, init=False).date_formatter()
+            date_format = StreamAlertApp.get_app(self, init=False).date_formatter()
             if date_format:
                 self.last_timestamp = datetime.utcfromtimestamp(time_delta).strftime(date_format)
             else:
