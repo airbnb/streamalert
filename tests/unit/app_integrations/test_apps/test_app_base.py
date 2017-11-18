@@ -22,12 +22,13 @@ from nose.tools import (
     assert_false,
     assert_is_none,
     assert_is_not_none,
+    assert_items_equal,
     assert_true,
     raises
 )
 from requests.exceptions import ConnectTimeout
 
-from app_integrations.apps.app_base import AppIntegration, get_app
+from app_integrations.apps.app_base import AppIntegration, StreamAlertApp
 from app_integrations.batcher import Batcher
 from app_integrations.config import AppConfig
 from app_integrations.exceptions import AppIntegrationConfigError, AppIntegrationException
@@ -37,11 +38,33 @@ from tests.unit.app_integrations.test_helpers import (
     MockSSMClient
 )
 
+def test_get_all_apps():
+    """App Integration - App Base, Get All Apps"""
+    expected_apps = {
+        'box_admin_events',
+        'duo_admin',
+        'duo_auth',
+        'gsuite_admin',
+        'gsuite_calendar',
+        'gsuite_drive',
+        'gsuite_gplus',
+        'gsuite_groups',
+        'gsuite_login',
+        'gsuite_mobile',
+        'gsuite_rules',
+        'gsuite_saml',
+        'gsuite_token',
+        'onelogin_events'
+    }
+
+    apps = StreamAlertApp.get_all_apps()
+    assert_items_equal(expected_apps, apps)
+
 
 def test_get_app():
     """App Integration - App Base, Get App"""
     config = AppConfig(get_valid_config_dict('duo_auth'))
-    app = get_app(config)
+    app = StreamAlertApp.get_app(config)
     assert_is_not_none(app)
 
 
@@ -50,7 +73,7 @@ def test_get_app_exception_type():
     """App Integration - App Base, Get App Exception for No 'type'"""
     config = AppConfig(get_valid_config_dict('duo_auth'))
     del config['type']
-    get_app(config)
+    StreamAlertApp.get_app(config)
 
 
 @raises(AppIntegrationException)
@@ -58,7 +81,7 @@ def test_get_app_exception_invalid():
     """App Integration - App Base, Get App Exception for Invalid Service"""
     config = AppConfig(get_valid_config_dict('duo_auth'))
     config['type'] = 'bad_service_type'
-    get_app(config)
+    StreamAlertApp.get_app(config)
 
 
 # Patch the required_auth_info method with values that a subclass _would_ return
