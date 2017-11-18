@@ -262,21 +262,23 @@ By default, all API calls will be logged and accessible from rules.
 
   {
     "cloudtrail": {
-      "enable_logging": true
+      "enable_logging": true,
+      "enable_kinesis": true
     }
   }
 
 **Options:**
 
-===================  ========  ==================================  ===========
-Key                  Required  Default                             Description
--------------------  --------  ----------------------------------  -----------
-``enable_logging``   ``Yes``                                       Enable/disable the CloudTrail logging.
-``enable_kinesis``   ``No``    ``true``                            Enable/disable the sending CloudTrail data to Kinesis.
-``existing_trail``   ``No``    ``false``                           Set to ``true`` if the account has an existing CloudTrail.  This is to avoid duplication of data collected by multiple CloudTrails.
-``is_global_trail``  ``No``    ``true``                            If the CloudTrail should collect events from any region.
-``event_pattern``    ``No``    ``{"account": ["<accound_id>"]}``   The CloudWatch Events pattern to send to Kinesis.  `More information <http://docs.aws.amazon.com/AmazonCloudWatch/latest/events/EventTypes.html>`_.
-===================  ========  ==================================  ===========
+=====================    ========  ==================================  ===========
+Key                      Required  Default                             Description
+---------------------    --------  ----------------------------------  -----------
+``enable_logging``       ``Yes``                                       Enable/disable the CloudTrail logging.
+``enable_kinesis``       ``No``    ``true``                            Enable/disable the sending CloudTrail data to Kinesis.
+``existing_trail``       ``No``    ``false``                           Set to ``true`` if the account has an existing CloudTrail.  This is to avoid duplication of data collected by multiple CloudTrails.
+``is_global_trail``      ``No``    ``true``                            If the CloudTrail should collect events from any region.
+``event_pattern``        ``No``    ``{"account": ["<accound_id>"]}``   The CloudWatch Events pattern to send to Kinesis.  `More information <http://docs.aws.amazon.com/AmazonCloudWatch/latest/events/EventTypes.html>`_.
+``cross_account_ids``    ``No``                                        Account IDs to grant write access to the created CloudTrail S3 bucket
+=====================    ========  ==================================  ===========
 
 Module: Flow Logs
 -----------------

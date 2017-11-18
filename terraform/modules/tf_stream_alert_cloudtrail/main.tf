@@ -2,7 +2,6 @@
 resource "aws_cloudtrail" "streamalert" {
   name                          = "${var.prefix}.${var.cluster}.streamalert.cloudtrail"
   s3_bucket_name                = "${aws_s3_bucket.cloudtrail_bucket.id}"
-  s3_key_prefix                 = "cloudtrail"
   enable_log_file_validation    = true
   enable_logging                = "${var.enable_logging}"
   include_global_service_events = true
@@ -59,7 +58,7 @@ data "aws_iam_policy_document" "cloudtrail_bucket" {
     ]
 
     resources = [
-      "arn:aws:s3:::${var.prefix}.${var.cluster}.streamalert.cloudtrail/*",
+      "${formatlist("arn:aws:s3:::${var.prefix}.${var.cluster}.streamalert.cloudtrail/AWSLogs/%s/*", var.account_ids)}",
     ]
 
     principals {

@@ -35,6 +35,9 @@ def generate_cloudtrail(cluster_name, cluster_dict, config):
     enabled_legacy = modules['cloudtrail'].get('enabled')
     cloudtrail_enabled = modules['cloudtrail'].get('enable_logging')
     kinesis_enabled = modules['cloudtrail'].get('enable_kinesis')
+    account_ids = list(set(
+        [config['global']['account']['aws_account_id']] +
+        modules['cloudtrail'].get('cross_account_ids', [])))
 
     # Allow for backwards compatilibity
     if enabled_legacy:
@@ -61,7 +64,7 @@ def generate_cloudtrail(cluster_name, cluster_dict, config):
 
     cluster_dict['module'][cloudtrail_module] = {
         'source': 'modules/tf_stream_alert_cloudtrail',
-        'account_id': config['global']['account']['aws_account_id'],
+        'account_ids': account_ids,
         'cluster': cluster_name,
         'prefix': config['global']['account']['prefix'],
         'enable_logging': cloudtrail_enabled,
