@@ -23,7 +23,9 @@ to outline what methods from the base ``AppIntegration`` class must be implement
   :name: app_integrations/apps/box.py
 
   # app_integrations/apps/box.py
+  from app_integrations.apps.app_base import StreamAlertApp, AppIntegration
 
+  # @StreamAlertApp
   class BoxApp(AppIntegration):
     """Box StreamAlert App"""
 
