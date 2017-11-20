@@ -12,13 +12,13 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-# pylint: disable=protected-access
 """
+# pylint: disable=protected-access,attribute-defined-outside-init
 from mock import call, patch, PropertyMock
 from moto import mock_s3, mock_kms
-from nose.tools import assert_equal
+from nose.tools import assert_false, assert_true
 
-from stream_alert.alert_processor.outputs.output_base import StreamAlertOutput
+from stream_alert.alert_processor.outputs.phantom import PhantomOutput
 from stream_alert_cli.helpers import put_mock_creds
 from tests.unit.stream_alert_alert_processor import CONFIG, FUNCTION_NAME, KMS_ALIAS, REGION
 from tests.unit.stream_alert_alert_processor.helpers import get_alert, remove_temp_secrets
@@ -28,58 +28,40 @@ from tests.unit.stream_alert_alert_processor.helpers import get_alert, remove_te
 @mock_kms
 class TestPhantomOutput(object):
     """Test class for PhantomOutput"""
-    @classmethod
-    def setup_class(cls):
-        """Setup the class before any methods"""
-        cls.__service = 'phantom'
-        cls.__descriptor = 'unit_test_phantom'
-        cls.__dispatcher = StreamAlertOutput.create_dispatcher(cls.__service,
-                                                               REGION,
-                                                               FUNCTION_NAME,
-                                                               CONFIG)
+    DESCRIPTOR = 'unit_test_phantom'
+    SERVICE = 'phantom'
+    CREDS = {'url': 'http://phantom.foo.bar',
+             'ph_auth_token': 'mocked_auth_token'}
 
-    @classmethod
-    def teardown_class(cls):
-        """Teardown the class after all methods"""
-        cls.__dispatcher = None
-
-    def _setup_dispatch(self, url):
-        """Helper for setting up PhantomOutput dispatch"""
+    def setup(self):
+        """Setup before each method"""
+        self._dispatcher = PhantomOutput(REGION, FUNCTION_NAME, CONFIG)
         remove_temp_secrets()
-
-        output_name = self.__dispatcher.output_cred_name(self.__descriptor)
-
-        creds = {'url': url,
-                 'ph_auth_token': 'mocked_auth_token'}
-
-        put_mock_creds(output_name, creds, self.__dispatcher.secrets_bucket, REGION, KMS_ALIAS)
-
-        return get_alert()
+        output_name = self._dispatcher.output_cred_name(self.DESCRIPTOR)
+        put_mock_creds(output_name, self.CREDS, self._dispatcher.secrets_bucket, REGION, KMS_ALIAS)
 
     @patch('logging.Logger.info')
     @patch('requests.get')
     @patch('requests.post')
     def test_dispatch_existing_container(self, post_mock, get_mock, log_mock):
-        """PhantomOutput dispatch success, existing container"""
-        alert = self._setup_dispatch('http://phantom.foo.bar')
+        """PhantomOutput - Dispatch Success, Existing Container"""
         # _check_container_exists
         get_mock.return_value.status_code = 200
         get_mock.return_value.json.return_value = {'count': 1, 'data': [{'id': 1948}]}
         # dispatch
         post_mock.return_value.status_code = 200
 
-        self.__dispatcher.dispatch(descriptor=self.__descriptor,
-                                   rule_name='rule_name',
-                                   alert=alert)
+        assert_true(self._dispatcher.dispatch(descriptor=self.DESCRIPTOR,
+                                              rule_name='rule_name',
+                                              alert=get_alert()))
 
-        log_mock.assert_called_with('Successfully sent alert to %s', self.__service)
+        log_mock.assert_called_with('Successfully sent alert to %s', self.SERVICE)
 
     @patch('logging.Logger.info')
     @patch('requests.get')
     @patch('requests.post')
     def test_dispatch_new_container(self, post_mock, get_mock, log_mock):
-        """PhantomOutput dispatch success, new container"""
-        alert = self._setup_dispatch('http://phantom.foo.bar')
+        """PhantomOutput - Dispatch Success, New Container"""
         # _check_container_exists
         get_mock.return_value.status_code = 200
         get_mock.return_value.json.return_value = {'count': 0, 'data': []}
@@ -87,18 +69,17 @@ class TestPhantomOutput(object):
         post_mock.return_value.status_code = 200
         post_mock.return_value.json.return_value = {'id': 1948}
 
-        self.__dispatcher.dispatch(descriptor=self.__descriptor,
-                                   rule_name='rule_name',
-                                   alert=alert)
+        assert_true(self._dispatcher.dispatch(descriptor=self.DESCRIPTOR,
+                                              rule_name='rule_name',
+                                              alert=get_alert()))
 
-        log_mock.assert_called_with('Successfully sent alert to %s', self.__service)
+        log_mock.assert_called_with('Successfully sent alert to %s', self.SERVICE)
 
     @patch('logging.Logger.error')
     @patch('requests.get')
     @patch('requests.post')
     def test_dispatch_container_failure(self, post_mock, get_mock, log_mock):
-        """PhantomOutput dispatch failure (setup container)"""
-        alert = self._setup_dispatch('http://phantom.foo.bar')
+        """PhantomOutput - Dispatch Failure, Setup Container"""
         # _check_container_exists
         get_mock.return_value.status_code = 200
         get_mock.return_value.json.return_value = {'count': 0, 'data': []}
@@ -107,18 +88,17 @@ class TestPhantomOutput(object):
         json_error = {'message': 'error message', 'errors': ['error1']}
         post_mock.return_value.json.return_value = json_error
 
-        self.__dispatcher.dispatch(descriptor=self.__descriptor,
-                                   rule_name='rule_name',
-                                   alert=alert)
+        assert_false(self._dispatcher.dispatch(descriptor=self.DESCRIPTOR,
+                                               rule_name='rule_name',
+                                               alert=get_alert()))
 
-        log_mock.assert_called_with('Failed to send alert to %s', self.__service)
+        log_mock.assert_called_with('Failed to send alert to %s', self.SERVICE)
 
     @patch('logging.Logger.error')
     @patch('requests.get')
     @patch('requests.post')
     def test_dispatch_check_container_error(self, post_mock, get_mock, log_mock):
-        """PhantomOutput dispatch decode error (check container)"""
-        alert = self._setup_dispatch('http://phantom.foo.bar')
+        """PhantomOutput - Dispatch Failure, Decode Error w/ Container Check"""
         # _check_container_exists
         get_mock.return_value.status_code = 200
         get_mock.return_value.text = '{}'
@@ -127,19 +107,17 @@ class TestPhantomOutput(object):
         json_error = {'message': 'error message', 'errors': ['error1']}
         post_mock.return_value.json.return_value = json_error
 
-        result = self.__dispatcher.dispatch(descriptor=self.__descriptor,
-                                            rule_name='rule_name',
-                                            alert=alert)
+        assert_false(self._dispatcher.dispatch(descriptor=self.DESCRIPTOR,
+                                               rule_name='rule_name',
+                                               alert=get_alert()))
 
-        log_mock.assert_called_with('Failed to send alert to %s', self.__service)
-        assert_equal(result, False)
+        log_mock.assert_called_with('Failed to send alert to %s', self.SERVICE)
 
     @patch('logging.Logger.error')
     @patch('requests.get')
     @patch('requests.post')
     def test_dispatch_setup_container_error(self, post_mock, get_mock, log_mock):
-        """PhantomOutput dispatch decode error (setup container)"""
-        alert = self._setup_dispatch('http://phantom.foo.bar')
+        """PhantomOutput - Dispatch Failure, Decode Error w/ Container Creation)"""
         # _check_container_exists
         get_mock.return_value.status_code = 200
         get_mock.return_value.json.return_value = {'count': 0, 'data': []}
@@ -148,19 +126,17 @@ class TestPhantomOutput(object):
         post_mock.return_value.json.return_value = dict()
 
 
-        result = self.__dispatcher.dispatch(descriptor=self.__descriptor,
-                                            rule_name='rule_name',
-                                            alert=alert)
+        assert_false(self._dispatcher.dispatch(descriptor=self.DESCRIPTOR,
+                                               rule_name='rule_name',
+                                               alert=get_alert()))
 
-        log_mock.assert_called_with('Failed to send alert to %s', self.__service)
-        assert_equal(result, False)
+        log_mock.assert_called_with('Failed to send alert to %s', self.SERVICE)
 
     @patch('logging.Logger.error')
     @patch('requests.get')
     @patch('requests.post')
     def test_dispatch_failure(self, post_mock, get_mock, log_mock):
-        """PhantomOutput dispatch failure (artifact)"""
-        alert = self._setup_dispatch('http://phantom.foo.bar')
+        """PhantomOutput - Dispatch Failure, Artifact"""
         # _check_container_exists
         get_mock.return_value.status_code = 200
         get_mock.return_value.json.return_value = {'count': 0, 'data': []}
@@ -169,37 +145,34 @@ class TestPhantomOutput(object):
         json_error = {'message': 'error message', 'errors': ['error1']}
         post_mock.return_value.json.return_value.side_effect = [{'id': 1948}, json_error]
 
-        result = self.__dispatcher.dispatch(descriptor=self.__descriptor,
-                                            rule_name='rule_name',
-                                            alert=alert)
+        assert_false(self._dispatcher.dispatch(descriptor=self.DESCRIPTOR,
+                                               rule_name='rule_name',
+                                               alert=get_alert()))
 
-        log_mock.assert_called_with('Failed to send alert to %s', self.__service)
-        assert_equal(result, False)
+        log_mock.assert_called_with('Failed to send alert to %s', self.SERVICE)
 
     @patch('logging.Logger.error')
     def test_dispatch_bad_descriptor(self, log_error_mock):
-        """PhantomOutput dispatch bad descriptor"""
-        alert = self._setup_dispatch('http://phantom.foo.bar')
-        result = self.__dispatcher.dispatch(descriptor='bad_descriptor',
-                                            rule_name='rule_name',
-                                            alert=alert)
+        """PhantomOutput - Dispatch Failure, Bad Descriptor"""
+        assert_false(self._dispatcher.dispatch(descriptor='bad_descriptor',
+                                               rule_name='rule_name',
+                                               alert=get_alert()))
 
-        log_error_mock.assert_called_with('Failed to send alert to %s', self.__service)
-        assert_equal(result, False)
+        log_error_mock.assert_called_with('Failed to send alert to %s', self.SERVICE)
 
     @patch('stream_alert.alert_processor.outputs.output_base.OutputDispatcher._get_request')
     @patch('stream_alert.alert_processor.outputs.output_base.OutputDispatcher._post_request')
     def test_dispatch_container_query(self, post_mock, get_mock):
         """PhantomOutput - Container Query URL"""
-        alert = self._setup_dispatch('http://phantom.foo.bar')
-        self.__dispatcher.dispatch(descriptor=self.__descriptor,
-                                   rule_name='rule_name',
-                                   alert=alert)
-
-        full_url = 'http://phantom.foo.bar/rest/container'
-        params = {'_filter_name': '"rule_name"', 'page_size': 1}
-        headers = {'ph-auth-token': 'mocked_auth_token'}
-        get_mock.assert_has_calls([call(full_url, params, headers, False)])
         rule_description = 'Info about this rule and what actions to take'
+        headers = {'ph-auth-token': 'mocked_auth_token'}
+        assert_false(PhantomOutput._setup_container('rule_name',
+                                                    rule_description,
+                                                    self.CREDS['url'],
+                                                    headers))
+
+        full_url = '{}/rest/container'.format(self.CREDS['url'])
+        params = {'_filter_name': '"rule_name"', 'page_size': 1}
+        get_mock.assert_has_calls([call(full_url, params, headers, False)])
         ph_container = {'name': 'rule_name', 'description': rule_description}
         post_mock.assert_has_calls([call(full_url, ph_container, headers, False)])

@@ -61,7 +61,8 @@ class PhantomOutput(OutputDispatcher):
                             cred_requirement=True))
         ])
 
-    def _check_container_exists(self, rule_name, container_url, headers):
+    @classmethod
+    def _check_container_exists(cls, rule_name, container_url, headers):
         """Check to see if a Phantom container already exists for this rule
 
         Args:
@@ -79,8 +80,8 @@ class PhantomOutput(OutputDispatcher):
             '_filter_name': '"{}"'.format(rule_name),
             'page_size': 1
         }
-        resp = self._get_request(container_url, params, headers, False)
-        if not self._check_http_response(resp):
+        resp = cls._get_request(container_url, params, headers, False)
+        if not cls._check_http_response(resp):
             return False
 
         response = resp.json()
@@ -90,7 +91,8 @@ class PhantomOutput(OutputDispatcher):
         # of 'data' with a container id we can use
         return response and response.get('count') and response.get('data')[0]['id']
 
-    def _setup_container(self, rule_name, rule_description, base_url, headers):
+    @classmethod
+    def _setup_container(cls, rule_name, rule_description, base_url, headers):
         """Establish a Phantom container to write the alerts to. This checks to see
         if an appropriate containers exists first and returns the ID if so.
 
@@ -103,18 +105,18 @@ class PhantomOutput(OutputDispatcher):
             int: ID of the Phantom container where the alerts will be sent
                 or False if there is an issue getting the container id
         """
-        container_url = os.path.join(base_url, self.CONTAINER_ENDPOINT)
+        container_url = os.path.join(base_url, cls.CONTAINER_ENDPOINT)
 
         # Check to see if there is a container already created for this rule name
-        existing_id = self._check_container_exists(rule_name, container_url, headers)
+        existing_id = cls._check_container_exists(rule_name, container_url, headers)
         if existing_id:
             return existing_id
 
         # Try to use the rule_description from the rule as the container description
         ph_container = {'name': rule_name, 'description': rule_description}
-        resp = self._post_request(container_url, ph_container, headers, False)
+        resp = cls._post_request(container_url, ph_container, headers, False)
 
-        if not self._check_http_response(resp):
+        if not cls._check_http_response(resp):
             return False
 
         response = resp.json()
