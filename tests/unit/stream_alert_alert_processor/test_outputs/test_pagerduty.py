@@ -25,10 +25,7 @@ from stream_alert.alert_processor.outputs.pagerduty import (
 )
 from stream_alert_cli.helpers import put_mock_creds
 from tests.unit.stream_alert_alert_processor import CONFIG, FUNCTION_NAME, KMS_ALIAS, REGION
-from tests.unit.stream_alert_alert_processor.helpers import (
-    get_alert,
-    remove_temp_secrets
-)
+from tests.unit.stream_alert_alert_processor.helpers import get_alert, remove_temp_secrets
 
 
 @mock_s3
