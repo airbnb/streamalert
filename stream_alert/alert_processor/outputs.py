@@ -422,6 +422,7 @@ class PagerDutyIncidentOutput(StreamOutputBase):
         # Get user email to be added as From header and verify
         user_email = creds['email_from']
         if not self._user_verify(user_email, False):
+            LOGGER.error('Could not verify header From: %s, %s', user_email, self.__service__)
             return self._log_status(False)
 
         # Add From to the headers after verifying
