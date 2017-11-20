@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from app_integrations.apps.app_base import get_app
+from app_integrations.apps.app_base import StreamAlertApp
 from app_integrations.config import AppConfig
 
 
@@ -33,7 +33,7 @@ def handler(event, context):
         config = AppConfig.load_config(context, event)
 
         # The config specifies what app this function is supposed to run
-        app = get_app(config)
+        app = StreamAlertApp.get_app(config)
 
         # Run the gather operation
         app.gather()

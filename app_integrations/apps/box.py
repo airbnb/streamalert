@@ -21,10 +21,10 @@ from boxsdk.object.events import EnterpriseEventsStreamType
 from requests.exceptions import ConnectionError
 
 from app_integrations import LOGGER
-from app_integrations.apps.app_base import app, AppIntegration, safe_timeout
+from app_integrations.apps.app_base import StreamAlertApp, AppIntegration, safe_timeout
 
 
-@app
+@StreamAlertApp
 class BoxApp(AppIntegration):
     """BoxApp integration"""
     _MAX_CHUNK_SIZE = 500

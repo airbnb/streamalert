@@ -19,7 +19,7 @@ from apiclient import discovery, errors
 from oauth2client.service_account import ServiceAccountCredentials
 
 from app_integrations import LOGGER
-from app_integrations.apps.app_base import app, AppIntegration
+from app_integrations.apps.app_base import StreamAlertApp, AppIntegration
 
 
 class GSuiteReportsApp(AppIntegration):
@@ -174,7 +174,7 @@ class GSuiteReportsApp(AppIntegration):
         return 0
 
 
-@app
+@StreamAlertApp
 class GSuiteAdminReports(GSuiteReportsApp):
     """G Suite Admin Activity Report app integration"""
 
@@ -183,7 +183,7 @@ class GSuiteAdminReports(GSuiteReportsApp):
         return 'admin'
 
 
-@app
+@StreamAlertApp
 class GSuiteCalendarReports(GSuiteReportsApp):
     """G Suite Calendar Activity Report app integration"""
 
@@ -192,7 +192,7 @@ class GSuiteCalendarReports(GSuiteReportsApp):
         return 'calendar'
 
 
-@app
+@StreamAlertApp
 class GSuiteDriveReports(GSuiteReportsApp):
     """G Suite Drive Activity Report app integration"""
 
@@ -201,7 +201,7 @@ class GSuiteDriveReports(GSuiteReportsApp):
         return 'drive'
 
 
-@app
+@StreamAlertApp
 class GSuiteGroupsReports(GSuiteReportsApp):
     """G Suite Groups Activity Report app integration"""
 
@@ -210,7 +210,7 @@ class GSuiteGroupsReports(GSuiteReportsApp):
         return 'groups'
 
 
-@app
+@StreamAlertApp
 class GSuiteGPlusReports(GSuiteReportsApp):
     """G Suite Google Plus Activity Report app integration"""
 
@@ -219,7 +219,7 @@ class GSuiteGPlusReports(GSuiteReportsApp):
         return 'gplus'
 
 
-@app
+@StreamAlertApp
 class GSuiteLoginReports(GSuiteReportsApp):
     """G Suite Login Activity Report app integration"""
 
@@ -228,7 +228,7 @@ class GSuiteLoginReports(GSuiteReportsApp):
         return 'login'
 
 
-@app
+@StreamAlertApp
 class GSuiteMobileReports(GSuiteReportsApp):
     """G Suite Mobile Activity Report app integration"""
 
@@ -237,7 +237,7 @@ class GSuiteMobileReports(GSuiteReportsApp):
         return 'mobile'
 
 
-@app
+@StreamAlertApp
 class GSuiteRulesReports(GSuiteReportsApp):
     """G Suite Rules Activity Report app integration"""
 
@@ -246,7 +246,7 @@ class GSuiteRulesReports(GSuiteReportsApp):
         return 'rules'
 
 
-@app
+@StreamAlertApp
 class GSuiteSAMLReports(GSuiteReportsApp):
     """G Suite SAML Activity Report app integration"""
 
@@ -255,7 +255,7 @@ class GSuiteSAMLReports(GSuiteReportsApp):
         return 'saml'
 
 
-@app
+@StreamAlertApp
 class GSuiteTokenReports(GSuiteReportsApp):
     """G Suite Token Activity Report app integration"""
 

@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from app_integrations.apps.app_base import get_app
+from app_integrations.apps.app_base import StreamAlertApp
 from stream_alert.alert_processor.outputs import get_output_dispatcher
 from stream_alert_cli.apps import save_app_auth_info
 from stream_alert_cli.athena.handler import athena_handler
@@ -226,7 +226,7 @@ def _app_integration_handler(options):
         app_info['function_name'] = '_'.join([app_info.get(value)
                                               for value in func_parts] + ['app'])
 
-        app = get_app(app_info, False)
+        app = StreamAlertApp.get_app(app_info, False)
 
         if not save_app_auth_info(app, app_info, True):
             return

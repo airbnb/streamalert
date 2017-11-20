@@ -16,10 +16,10 @@ limitations under the License.
 import re
 
 from app_integrations import LOGGER
-from app_integrations.apps.app_base import app, AppIntegration
+from app_integrations.apps.app_base import StreamAlertApp, AppIntegration
 
 
-@app
+@StreamAlertApp
 class OneLoginApp(AppIntegration):
     """OneLogin StreamAlert App"""
     _ONELOGIN_EVENTS_URL = 'https://api.{}.onelogin.com/api/1/events'

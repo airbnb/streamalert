@@ -33,7 +33,7 @@ from stream_alert_cli import __version__ as version
 from stream_alert_cli.logger import LOGGER_CLI
 from stream_alert_cli.runner import cli_runner
 from app_integrations.config import AWS_RATE_RE
-from app_integrations.apps.app_base import STREAMALERT_APPS
+from app_integrations.apps.app_base import StreamAlertApp
 
 
 class UniqueSetAction(Action):
@@ -242,7 +242,11 @@ Available Subcommands:
     app_integration_subparsers = app_integration_parser.add_subparsers()
 
     _add_app_integration_list_subparser(app_integration_subparsers)
-    _add_app_integration_new_subparser(app_integration_subparsers, set(STREAMALERT_APPS), clusters)
+    _add_app_integration_new_subparser(
+        app_integration_subparsers,
+        sorted(StreamAlertApp.get_all_apps()),
+        clusters
+    )
     _add_app_integration_update_auth_subparser(app_integration_subparsers, clusters)
 
 

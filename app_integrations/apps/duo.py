@@ -23,7 +23,7 @@ import urllib
 import requests
 
 from app_integrations import LOGGER
-from app_integrations.apps.app_base import app, AppIntegration
+from app_integrations.apps.app_base import StreamAlertApp, AppIntegration
 
 
 class DuoApp(AppIntegration):
@@ -178,7 +178,7 @@ class DuoApp(AppIntegration):
         return abs((self._poll_count % 2) - 1) * 60
 
 
-@app
+@StreamAlertApp
 class DuoAuthApp(DuoApp):
     """Duo authentication log app integration"""
 
@@ -198,7 +198,7 @@ class DuoAuthApp(DuoApp):
         return cls._DUO_AUTH_LOGS_ENDPOINT
 
 
-@app
+@StreamAlertApp
 class DuoAdminApp(DuoApp):
     """Duo administrator log app integration"""
 
