@@ -36,6 +36,12 @@ from app_integrations.config import AWS_RATE_RE
 from app_integrations.apps.app_base import StreamAlertApp
 
 
+CLUSTERS = [
+    os.path.splitext(cluster)[0] for _, _, files in os.walk('conf/clusters')
+    for cluster in files
+]
+
+
 class UniqueSetAction(Action):
     """Subclass of argparse.Action to avoid multiple of the same choice from a list"""
 
@@ -139,15 +145,9 @@ Examples:
     # set the name of this parser to 'live-test'
     live_test_parser.set_defaults(command='live-test')
 
-    # get cluster choices from available files
-    clusters = [
-        os.path.splitext(cluster)[0] for _, _, files in os.walk('conf/clusters')
-        for cluster in files
-    ]
-
     # add clusters for user to pick from
     live_test_parser.add_argument(
-        '-c', '--cluster', choices=clusters, help=ARGPARSE_SUPPRESS, required=True)
+        '-c', '--cluster', choices=CLUSTERS, help=ARGPARSE_SUPPRESS, required=True)
 
     # add the optional ability to test against a rule/set of rules
     live_test_parser.add_argument(
@@ -230,12 +230,6 @@ Available Subcommands:
         formatter_class=RawTextHelpFormatter,
         help=ARGPARSE_SUPPRESS)
 
-    # get cluster choices from available files
-    clusters = [
-        os.path.splitext(cluster)[0] for _, _, files in os.walk('conf/clusters')
-        for cluster in files
-    ]
-
     # Set the name of this parser to 'app'
     app_integration_parser.set_defaults(command='app')
 
@@ -245,9 +239,9 @@ Available Subcommands:
     _add_app_integration_new_subparser(
         app_integration_subparsers,
         sorted(StreamAlertApp.get_all_apps()),
-        clusters
+        CLUSTERS
     )
-    _add_app_integration_update_auth_subparser(app_integration_subparsers, clusters)
+    _add_app_integration_update_auth_subparser(app_integration_subparsers, CLUSTERS)
 
 
 def _add_app_integration_list_subparser(subparsers):
@@ -487,13 +481,7 @@ def _add_metrics_subparser(subparsers):
     """Add the metrics subparser: manage.py metrics [options]"""
     metrics_usage = 'manage.py metrics [options]'
 
-    # get cluster choices from available files
-    clusters = [
-        os.path.splitext(cluster)[0] for _, _, files in os.walk('conf/clusters')
-        for cluster in files
-    ]
-
-    cluster_choices_block = ('\n').join('{:>28}{}'.format('', cluster) for cluster in clusters)
+    cluster_choices_block = ('\n').join('{:>28}{}'.format('', cluster) for cluster in CLUSTERS)
 
     metrics_description = ("""
 StreamAlertCLI v{}
@@ -552,11 +540,11 @@ Examples:
     metrics_parser.add_argument(
         '-c',
         '--clusters',
-        choices=clusters,
+        choices=CLUSTERS,
         help=ARGPARSE_SUPPRESS,
         nargs='+',
         action=UniqueSetAction,
-        default=clusters)
+        default=CLUSTERS)
 
     # allow verbose output for the CLI with the --debug option
     metrics_parser.add_argument('--debug', action='store_true', help=ARGPARSE_SUPPRESS)
@@ -572,13 +560,7 @@ def _add_metric_alarm_subparser(subparsers):
 
     metric_choices_block = ('\n').join('{:>35}{}'.format('', metric) for metric in all_metrics)
 
-    # get cluster choices from available files
-    clusters = [
-        os.path.splitext(cluster)[0] for _, _, files in os.walk('conf/clusters')
-        for cluster in files
-    ]
-
-    cluster_choices_block = ('\n').join('{:>37}{}'.format('', cluster) for cluster in clusters)
+    cluster_choices_block = ('\n').join('{:>37}{}'.format('', cluster) for cluster in CLUSTERS)
 
     metric_alarm_description = ("""
 StreamAlertCLI v{}
@@ -758,7 +740,7 @@ Resources:
     metric_alarm_parser.add_argument(
         '-c',
         '--clusters',
-        choices=clusters,
+        choices=CLUSTERS,
         help=ARGPARSE_SUPPRESS,
         nargs='+',
         action=UniqueSetAction,
@@ -1067,6 +1049,55 @@ Examples:
     tf_parser.add_argument('--debug', action='store_true', help=ARGPARSE_SUPPRESS)
 
 
+def _add_kinesis_subparser(subparsers):
+    """Add kinesis subparser"""
+    kinesis_usage = 'manage.py kinesis [disable-events]'
+    kinesis_description = ("""
+StreamAlertCLI v{}
+Kinesis StreamAlert options
+
+Update Kinesis settings and then runs Terraform
+
+Available Commands:
+
+    disable-events             Disable Kinesis Events
+    enable-events              Enable Kinesis Events
+
+Arguments:
+
+    --clusters                Space delimited set of clusters to modify, defaults to all
+    --debug                   Debug mode
+    --skip-terraform          Only set the config, do not run Terraform after                
+
+Examples:
+
+    manage.py kinesis disable-events --clusters corp prod
+
+""".format(version))
+    kinesis_parser = subparsers.add_parser(
+        'kinesis',
+        usage=kinesis_usage,
+        description=kinesis_description,
+        help=ARGPARSE_SUPPRESS,
+        formatter_class=RawTextHelpFormatter)
+
+    kinesis_parser.set_defaults(command='kinesis')
+    kinesis_parser.add_argument(
+        'subcommand',
+        choices=['disable-events', 'enable-events'],
+        help=ARGPARSE_SUPPRESS)
+    kinesis_parser.add_argument(
+        '-c',
+        '--clusters',
+        choices=CLUSTERS,
+        help=ARGPARSE_SUPPRESS,
+        nargs='+',
+        action=UniqueSetAction,
+        default=set())
+    kinesis_parser.add_argument('--skip-terraform', action='store_true', help=ARGPARSE_SUPPRESS)
+    kinesis_parser.add_argument('--debug', action='store_true', help=ARGPARSE_SUPPRESS)
+
+
 def _add_configure_subparser(subparsers):
     """Add configure subparser: manage.py configure [config_key] [config_value]"""
     configure_usage = 'manage.py configure [config_key] [config_value]'
@@ -1119,16 +1150,9 @@ Examples:
 
     manage.py athena create-db
 
-    manage.py athena create-table \
-    --type alerts \
-    --bucket s3.bucket.name \
-    --refresh_type add_hive_partition
+    manage.py athena create-table --type alerts --bucket s3.bucket.name --refresh_type add_hive_partition
 
-    manage.py athena create-table \
-    --type data \
-    --bucket s3.bucket.name \
-    --refresh_type add_hive_partition \
-    --table_name my_athena_table
+    manage.py athena create-table --type data --bucket s3.bucket.name --refresh_type add_hive_partition --table_name my_athena_table
 
 """.format(version))
     athena_parser = subparsers.add_parser(
@@ -1198,6 +1222,7 @@ For additional details on the available commands, try:
     _add_configure_subparser(subparsers)
     _add_athena_subparser(subparsers)
     _add_app_integration_subparser(subparsers)
+    _add_kinesis_subparser(subparsers)
 
     return parser
 

@@ -34,7 +34,9 @@ def test_generate_cloudwatch_monitoring():
             'unit-testing_test_streamalert_rule_processor',
             'unit-testing_test_streamalert_alert_processor'
         ],
-        'kinesis_stream': 'unit-testing_test_stream_alert_kinesis'
+        'kinesis_stream': 'unit-testing_test_stream_alert_kinesis',
+        'lambda_alarms_enabled': True,
+        'kinesis_alarms_enabled': True
     }
 
     assert_true(result)
@@ -56,7 +58,9 @@ def test_generate_cloudwatch_monitoring_no_kinesis():
         'lambda_functions': [
             'unit-testing_test_streamalert_rule_processor',
             'unit-testing_test_streamalert_alert_processor'
-        ]
+        ],
+        'lambda_alarms_enabled': True,
+        'kinesis_alarms_enabled': False
     }
 
     assert_true(result)
@@ -75,7 +79,9 @@ def test_generate_cloudwatch_monitoring_no_lambda():
     expected_cloudwatch_tf = {
         'source': 'modules/tf_stream_alert_monitoring',
         'sns_topic_arn': 'arn:aws:sns:us-west-1:12345678910:stream_alert_monitoring',
-        'kinesis_stream': 'unit-testing_test_stream_alert_kinesis'
+        'kinesis_stream': 'unit-testing_test_stream_alert_kinesis',
+        'lambda_alarms_enabled': False,
+        'kinesis_alarms_enabled': True
     }
 
     assert_true(result)
@@ -102,7 +108,9 @@ def test_generate_cloudwatch_monitoring_custom_sns():
             'unit-testing_test_streamalert_rule_processor',
             'unit-testing_test_streamalert_alert_processor'
         ],
-        'kinesis_stream': 'unit-testing_test_stream_alert_kinesis'
+        'kinesis_stream': 'unit-testing_test_stream_alert_kinesis',
+        'lambda_alarms_enabled': True,
+        'kinesis_alarms_enabled': True
     }
 
     assert_true(result)

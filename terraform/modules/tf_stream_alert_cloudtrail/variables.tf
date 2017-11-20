@@ -1,5 +1,5 @@
-variable "account_id" {
-  type = "string"
+variable "account_ids" {
+  type = "list"
 }
 
 variable "cluster" {

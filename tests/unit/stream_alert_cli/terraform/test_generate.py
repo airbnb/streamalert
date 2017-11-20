@@ -326,7 +326,7 @@ class TestTerraformGenerate(object):
         assert_equal(set(self.config['clusters']['advanced']['modules']['cloudtrail'].keys()),
                      {'enable_logging', 'enable_kinesis'})
         assert_equal(self.cluster_dict['module']['cloudtrail_advanced'], {
-            'account_id': '12345678910',
+            'account_ids': ['12345678910'],
             'cluster': 'advanced',
             'kinesis_arn': '${module.kinesis_advanced.arn}',
             'prefix': 'unit-testing',
@@ -363,7 +363,7 @@ class TestTerraformGenerate(object):
 
         assert_equal('cloudtrail_advanced' in self.cluster_dict['module'], True)
         assert_equal(self.cluster_dict['module']['cloudtrail_advanced'], {
-            'account_id': '12345678910',
+            'account_ids': ['12345678910'],
             'cluster': 'advanced',
             'existing_trail': False,
             'is_global_trail': False,

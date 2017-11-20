@@ -21,7 +21,7 @@ resource "aws_s3_bucket_notification" "bucket_notification" {
 }
 
 resource "aws_iam_role_policy" "lambda_s3_permission" {
-  name = "InvokeFromS3Bucket${title(replace(var.bucket_id, ".", ""))}"
+  name = "S3GetObjectsFrom${title(replace(var.bucket_id, ".", ""))}"
   role = "${var.lambda_role_id}"
 
   policy = "${data.aws_iam_policy_document.s3_read_only.json}"

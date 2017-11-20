@@ -19,6 +19,7 @@ from stream_alert_cli.apps import save_app_auth_info
 from stream_alert_cli.athena.handler import athena_handler
 from stream_alert_cli.config import CLIConfig
 from stream_alert_cli.helpers import user_input
+from stream_alert_cli.kinesis.handler import kinesis_handler
 from stream_alert_cli.logger import LOGGER_CLI
 from stream_alert_cli.manage_lambda.handler import lambda_handler
 from stream_alert_cli.terraform.handler import terraform_handler
@@ -73,6 +74,9 @@ def cli_runner(options):
 
     elif options.command == 'app':
         _app_integration_handler(options)
+
+    elif options.command == 'kinesis':
+        kinesis_handler(options, CONFIG)
 
 
 def configure_handler(options):

@@ -49,18 +49,24 @@ def generate_monitoring(cluster_name, cluster_dict, config):
 
     cluster_dict['module']['cloudwatch_monitoring_{}'.format(cluster_name)] = {
         'source': 'modules/tf_stream_alert_monitoring',
-        'sns_topic_arn': sns_topic_arn
+        'sns_topic_arn': sns_topic_arn,
+        'kinesis_alarms_enabled': False,
+        'lambda_alarms_enabled': False
     }
 
     if monitoring_config.get('lambda_alarms_enabled', True):
-        cluster_dict['module']['cloudwatch_monitoring_{}'.format(cluster_name)][
-            'lambda_functions'] = [
+        cluster_dict['module']['cloudwatch_monitoring_{}'.format(cluster_name)].update({
+            'lambda_functions': [
                 '{}_{}_streamalert_rule_processor'.format(prefix, cluster_name),
                 '{}_{}_streamalert_alert_processor'.format(prefix, cluster_name)
-            ]
+            ],
+            'lambda_alarms_enabled': True
+        })
 
     if monitoring_config.get('kinesis_alarms_enabled', True):
-        cluster_dict['module']['cloudwatch_monitoring_{}'.format(cluster_name)][
-            'kinesis_stream'] = '{}_{}_stream_alert_kinesis'.format(prefix, cluster_name)
+        cluster_dict['module']['cloudwatch_monitoring_{}'.format(cluster_name)].update({
+            'kinesis_stream': '{}_{}_stream_alert_kinesis'.format(prefix, cluster_name),
+            'kinesis_alarms_enabled': True
+        })
 
     return True
