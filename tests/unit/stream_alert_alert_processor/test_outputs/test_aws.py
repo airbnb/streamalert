@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-# pylint: disable=abstract-class-instantiated,attribute-defined-outside-init
+# pylint: disable=abstract-class-instantiated,attribute-defined-outside-init,no-self-use
 import boto3
 from mock import patch
 from moto import mock_s3, mock_lambda, mock_kinesis
@@ -37,9 +37,8 @@ from tests.unit.stream_alert_alert_processor.helpers import get_alert
 class TestAWSOutput(object):
     """Test class for AWSOutput Base"""
 
-    @staticmethod
     @patch.object(aws.AWSOutput, '__service__', 'aws-s3')
-    def test_aws_format_output_config():
+    def test_aws_format_output_config(self):
         """AWSOutput - Format Output Config"""
         props = {
             'descriptor': OutputProperty(
