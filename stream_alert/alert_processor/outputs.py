@@ -295,11 +295,11 @@ class PagerDutyIncidentOutput(StreamOutputBase):
         if not response:
             return False
 
-        # If there are results, get the first occurence from the list
-        if get_id:
-            return response[target_key][0]['id'] if target_key in response else False
+        if not get_id:
+            return True
 
-        return True
+        # If there are results, get the first occurence from the list
+        return response[target_key][0]['id'] if target_key in response else False
 
     def _user_verify(self, user, get_id=True):
         """Method to verify the existance of an user with the API
@@ -366,10 +366,7 @@ class PagerDutyIncidentOutput(StreamOutputBase):
             return False
 
         if get_id:
-            return {
-                'id': item_id,
-                'type': item_type
-            }
+            return {'id': item_id, 'type': item_type}
 
         return item_id
 
