@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-# pylint: disable=abstract-class-instantiated,attribute-defined-outside-init,no-self-use
+# pylint: disable=abstract-class-instantiated,protected-access,attribute-defined-outside-init,no-self-use
 import boto3
 from mock import patch
 from moto import mock_s3, mock_lambda, mock_kinesis
@@ -24,11 +24,13 @@ from nose.tools import (
     assert_true
 )
 
-from stream_alert.alert_processor.outputs.output_base import (
-    OutputProperty,
-    StreamAlertOutput
+from stream_alert.alert_processor.outputs.output_base import OutputProperty
+from stream_alert.alert_processor.outputs.aws import (
+    AWSOutput,
+    KinesisFirehoseOutput,
+    LambdaOutput,
+    S3Output
 )
-from stream_alert.alert_processor.outputs import aws
 from stream_alert_cli.helpers import create_lambda_function
 from tests.unit.stream_alert_alert_processor import CONFIG, FUNCTION_NAME, REGION
 from tests.unit.stream_alert_alert_processor.helpers import get_alert
@@ -37,7 +39,7 @@ from tests.unit.stream_alert_alert_processor.helpers import get_alert
 class TestAWSOutput(object):
     """Test class for AWSOutput Base"""
 
-    @patch.object(aws.AWSOutput, '__service__', 'aws-s3')
+    @patch.object(AWSOutput, '__service__', 'aws-s3')
     def test_aws_format_output_config(self):
         """AWSOutput - Format Output Config"""
         props = {
@@ -48,79 +50,50 @@ class TestAWSOutput(object):
                 'unique arn value, bucket, etc',
                 'bucket.value')}
 
-        formatted_config = aws.AWSOutput.format_output_config(CONFIG, props)
+        formatted_config = AWSOutput.format_output_config(CONFIG, props)
 
         assert_equal(len(formatted_config), 2)
         assert_is_not_none(formatted_config.get('descriptor_value'))
         assert_is_not_none(formatted_config.get('unit_test_bucket'))
 
 
+@mock_s3
 class TestS3Ouput(object):
     """Test class for S3Output"""
-    @classmethod
-    def setup_class(cls):
-        """Setup the class before any methods"""
-        cls.__service = 'aws-s3'
-        cls.__descriptor = 'unit_test_bucket'
-        cls.__dispatcher = StreamAlertOutput.create_dispatcher(cls.__service,
-                                                               REGION,
-                                                               FUNCTION_NAME,
-                                                               CONFIG)
+    DESCRIPTOR = 'unit_test_bucket'
+    SERVICE = 'aws-s3'
 
-    @classmethod
-    def teardown_class(cls):
-        """Teardown the class after all methods"""
-        cls.dispatcher = None
+    def setup(self):
+        """Setup before each method"""
+        self._dispatcher = S3Output(REGION, FUNCTION_NAME, CONFIG)
+        bucket = CONFIG[self.SERVICE][self.DESCRIPTOR]
+        boto3.client('s3', region_name=REGION).create_bucket(Bucket=bucket)
 
     def test_locals(self):
         """S3Output local variables"""
-        assert_equal(self.__dispatcher.__class__.__name__, 'S3Output')
-        assert_equal(self.__dispatcher.__service__, self.__service)
-
-    def _setup_dispatch(self):
-        """Helper for setting up S3Output dispatch"""
-        bucket = CONFIG[self.__service][self.__descriptor]
-        boto3.client('s3', region_name=REGION).create_bucket(Bucket=bucket)
-
-        return get_alert()
+        assert_equal(self._dispatcher.__class__.__name__, 'S3Output')
+        assert_equal(self._dispatcher.__service__, self.SERVICE)
 
     @patch('logging.Logger.info')
-    @mock_s3
     def test_dispatch(self, log_mock):
-        """S3Output dispatch"""
-        alert = self._setup_dispatch()
-        self.__dispatcher.dispatch(descriptor=self.__descriptor,
-                                   rule_name='rule_name',
-                                   alert=alert)
+        """S3Output - Dispatch Success"""
+        assert_true(self._dispatcher.dispatch(descriptor=self.DESCRIPTOR,
+                                              rule_name='rule_name',
+                                              alert=get_alert()))
 
-        log_mock.assert_called_with('Successfully sent alert to %s', self.__service)
+        log_mock.assert_called_with('Successfully sent alert to %s', self.SERVICE)
 
 
+@mock_kinesis
 class TestFirehoseOutput(object):
     """Test class for AWS Kinesis Firehose"""
-    @classmethod
-    def setup_class(cls):
-        """Setup the class before any methods"""
-        cls.__service = 'aws-firehose'
-        cls.__descriptor = 'unit_test_delivery_stream'
-        cls.__dispatcher = StreamAlertOutput.create_dispatcher(cls.__service,
-                                                               REGION,
-                                                               FUNCTION_NAME,
-                                                               CONFIG)
+    DESCRIPTOR = 'unit_test_delivery_stream'
+    SERVICE = 'aws-firehose'
 
-    @classmethod
-    def teardown_class(cls):
-        """Teardown the class after all methods"""
-        cls.dispatcher = None
-
-    def test_locals(self):
-        """Output local variables - Kinesis Firehose"""
-        assert_equal(self.__dispatcher.__class__.__name__, 'KinesisFirehoseOutput')
-        assert_equal(self.__dispatcher.__service__, self.__service)
-
-    def _setup_dispatch(self):
-        """Helper for setting up S3Output dispatch"""
-        delivery_stream = CONFIG[self.__service][self.__descriptor]
+    def setup(self):
+        """Setup before each method"""
+        self._dispatcher = KinesisFirehoseOutput(REGION, FUNCTION_NAME, CONFIG)
+        delivery_stream = CONFIG[self.SERVICE][self.DESCRIPTOR]
         boto3.client('firehose', region_name=REGION).create_delivery_stream(
             DeliveryStreamName=delivery_stream,
             S3DestinationConfiguration={
@@ -135,80 +108,61 @@ class TestFirehoseOutput(object):
             }
         )
 
-        return get_alert()
+    def test_locals(self):
+        """Output local variables - Kinesis Firehose"""
+        assert_equal(self._dispatcher.__class__.__name__, 'KinesisFirehoseOutput')
+        assert_equal(self._dispatcher.__service__, self.SERVICE)
 
     @patch('logging.Logger.info')
-    @mock_kinesis
     def test_dispatch(self, log_mock):
-        """Output Dispatch - Kinesis Firehose"""
-        alert = self._setup_dispatch()
-        resp = self.__dispatcher.dispatch(descriptor=self.__descriptor,
-                                          rule_name='rule_name',
-                                          alert=alert)
+        """Kinesis Firehose - Output Dispatch Success"""
+        assert_true(self._dispatcher.dispatch(descriptor=self.DESCRIPTOR,
+                                              rule_name='rule_name',
+                                              alert=get_alert()))
 
-        assert_true(resp)
-        log_mock.assert_called_with('Successfully sent alert to %s', self.__service)
+        log_mock.assert_called_with('Successfully sent alert to %s', self.SERVICE)
 
-    @mock_kinesis
     def test_dispatch_ignore_large_payload(self):
         """Output Dispatch - Kinesis Firehose with Large Payload"""
-        alert = self._setup_dispatch()
+        alert = get_alert()
         alert['record'] = 'test' * 1000 * 1000
-        resp = self.__dispatcher.dispatch(descriptor=self.__descriptor,
-                                          rule_name='rule_name',
-                                          alert=alert)
-
-        assert_false(resp)
+        assert_false(self._dispatcher.dispatch(descriptor=self.DESCRIPTOR,
+                                               rule_name='rule_name',
+                                               alert=alert))
 
 
-
+@mock_lambda
 class TestLambdaOuput(object):
     """Test class for LambdaOutput"""
-    @classmethod
-    def setup_class(cls):
-        """Setup the class before any methods"""
-        cls.__service = 'aws-lambda'
-        cls.__descriptor = 'unit_test_lambda'
-        cls.__dispatcher = StreamAlertOutput.create_dispatcher(cls.__service,
-                                                               REGION,
-                                                               FUNCTION_NAME,
-                                                               CONFIG)
+    DESCRIPTOR = 'unit_test_lambda'
+    SERVICE = 'aws-lambda'
 
-    @classmethod
-    def teardown_class(cls):
-        """Teardown the class after all methods"""
-        cls.dispatcher = None
+    def setup(self):
+        """Setup before each method"""
+        self._dispatcher = LambdaOutput(REGION, FUNCTION_NAME, CONFIG)
+        create_lambda_function(CONFIG[self.SERVICE][self.DESCRIPTOR], REGION)
 
     def test_locals(self):
         """LambdaOutput local variables"""
-        assert_equal(self.__dispatcher.__class__.__name__, 'LambdaOutput')
-        assert_equal(self.__dispatcher.__service__, self.__service)
+        assert_equal(self._dispatcher.__class__.__name__, 'LambdaOutput')
+        assert_equal(self._dispatcher.__service__, self.SERVICE)
 
-    def _setup_dispatch(self, alt_descriptor=''):
-        """Helper for setting up LambdaOutput dispatch"""
-        function_name = CONFIG[self.__service][alt_descriptor or self.__descriptor]
-        create_lambda_function(function_name, REGION)
-        return get_alert()
-
-    @mock_lambda
     @patch('logging.Logger.info')
     def test_dispatch(self, log_mock):
         """LambdaOutput dispatch"""
-        alert = self._setup_dispatch()
-        self.__dispatcher.dispatch(descriptor=self.__descriptor,
-                                   rule_name='rule_name',
-                                   alert=alert)
+        assert_true(self._dispatcher.dispatch(descriptor=self.DESCRIPTOR,
+                                              rule_name='rule_name',
+                                              alert=get_alert()))
 
-        log_mock.assert_called_with('Successfully sent alert to %s', self.__service)
+        log_mock.assert_called_with('Successfully sent alert to %s', self.SERVICE)
 
-    @mock_lambda
     @patch('logging.Logger.info')
     def test_dispatch_with_qualifier(self, log_mock):
-        """LambdaOutput dispatch with qualifier"""
-        alt_descriptor = '{}_qual'.format(self.__descriptor)
-        alert = self._setup_dispatch(alt_descriptor)
-        self.__dispatcher.dispatch(descriptor=alt_descriptor,
-                                   rule_name='rule_name',
-                                   alert=alert)
+        """LambdaOutput - Dispatch Success, With Qualifier"""
+        alt_descriptor = '{}_qual'.format(self.DESCRIPTOR)
+        create_lambda_function(alt_descriptor, REGION)
+        assert_true(self._dispatcher.dispatch(descriptor=alt_descriptor,
+                                              rule_name='rule_name',
+                                              alert=get_alert()))
 
-        log_mock.assert_called_with('Successfully sent alert to %s', self.__service)
+        log_mock.assert_called_with('Successfully sent alert to %s', self.SERVICE)
