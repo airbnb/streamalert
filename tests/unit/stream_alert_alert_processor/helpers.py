@@ -93,6 +93,9 @@ def get_alert(context=None):
 
 
 def remove_temp_secrets():
-    """"Blow away the stream_alert_secrets directory in temp"""
-    secrets_dir = os.path.join(tempfile.gettempdir(), "stream_alert_secrets")
-    shutil.rmtree(secrets_dir)
+    """Remove the local secrets directory that may be left from previous runs"""
+    secrets_dirtemp_dir = os.path.join(tempfile.gettempdir(), 'stream_alert_secrets')
+
+    # Check if the folder exists, and remove it if it does
+    if os.path.isdir(secrets_dirtemp_dir):
+        shutil.rmtree(secrets_dirtemp_dir)
