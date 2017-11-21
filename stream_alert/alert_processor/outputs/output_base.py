@@ -303,7 +303,8 @@ class OutputDispatcher(object):
         """
         pass
 
-    def output_cred_name(self, descriptor):
+    @classmethod
+    def output_cred_name(cls, descriptor):
         """Formats the output name for this credential by combining the service
         and the descriptor.
 
@@ -313,7 +314,7 @@ class OutputDispatcher(object):
         Returns:
             str: Formatted credential name (ie: slack_ryandchannel)
         """
-        cred_name = str(self.__service__)
+        cred_name = str(cls.__service__)
 
         # should descriptor be enforced in all rules?
         if descriptor:
