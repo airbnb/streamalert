@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from argparse import ArgumentError
 import base64
 from collections import namedtuple
 from getpass import getpass
@@ -30,9 +31,55 @@ import boto3
 from botocore.exceptions import ClientError
 from moto import mock_cloudwatch, mock_kms, mock_kinesis, mock_lambda, mock_s3
 
+from app_integrations.config import AWS_RATE_RE
 from stream_alert_cli.logger import LOGGER_CLI
 from stream_alert_cli.terraform._common import enabled_firehose_logs
 
+
+class ParseError(Exception):
+    """Custom expection rasied when argument parser has error"""
+
+def validate_scheduled_interval(val):
+    """Validate acceptable inputs for the schedule expression
+    These follow the format 'rate(5 minutes)'
+    """
+    help_link = 'http://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html'
+    rate_match = AWS_RATE_RE.match(val)
+    if rate_match:
+        return val
+
+    if val.startswith('rate('):
+        err = ('Invalid rate expression. For help '
+               'see {}'.format('{}#RateExpressions'.format(help_link)))
+        raise ParseError(err)
+
+    raise ParseError('Invalid expression. For help see {}'.format(help_link))
+
+def validate_timeout(val):
+    """Validate acceptable inputs for the timeout of the Lambda function"""
+    error = 'The \'timeout\' value must be an integer between 10 and 300'
+    try:
+        timeout = int(val)
+    except ValueError:
+        raise ParseError(error)
+
+    if not 10 <= timeout <= 300:
+        raise ParseError(error)
+
+    return timeout
+
+def validate_memory(val):
+    """Validate acceptable inputs for the memory of the Lambda function"""
+    error = 'The \'memory\' value must be an integer between 128 and 1536'
+    try:
+        memory = int(val)
+    except ValueError:
+        raise ParseError(error)
+
+    if not 128 <= memory <= 1536:
+        raise ParseError(error)
+
+    return memory
 
 def run_command(runner_args, **kwargs):
     """Helper function to run commands with error handling.

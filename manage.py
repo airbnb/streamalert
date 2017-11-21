@@ -30,11 +30,15 @@ import string
 
 from stream_alert.shared import metrics
 from stream_alert_cli import __version__ as version
+from stream_alert_cli.helpers import (
+    validate_scheduled_interval,
+    validate_timeout,
+    validate_memory
+)
 from stream_alert_cli.logger import LOGGER_CLI
 from stream_alert_cli.runner import cli_runner
 from app_integrations.config import AWS_RATE_RE
 from app_integrations.apps.app_base import StreamAlertApp
-
 
 CLUSTERS = [
     os.path.splitext(cluster)[0] for _, _, files in os.walk('conf/clusters')
@@ -348,62 +352,17 @@ Resources:
     app_integration_new_parser.add_argument(
         '--type', choices=types, required=True, help=ARGPARSE_SUPPRESS)
 
-    # Validate the rate at which this should run
-    def _validate_scheduled_interval(val):
-        """Validate acceptable inputs for the schedule expression
-        These follow the format 'rate(5 minutes)'
-        """
-        rate_match = AWS_RATE_RE.match(val)
-        if rate_match:
-            return val
-
-        if val.startswith('rate('):
-            err = ('Invalid rate expression. For help '
-                   'see {}'.format('{}#RateExpressions'.format(help_link)))
-            raise app_integration_new_parser.error(err)
-
-        raise app_integration_new_parser.error('Invalid expression. For help '
-                                               'see {}'.format(help_link))
-
     # App integration schedule expression (rate)
     app_integration_new_parser.add_argument(
-        '--interval', required=True, help=ARGPARSE_SUPPRESS, type=_validate_scheduled_interval)
-
-    # Validate the timeout value to make sure it is between 10 and 300
-    def _validate_timeout(val):
-        """Validate acceptable inputs for the timeout of the function"""
-        error = 'The \'timeout\' value must be an integer between 10 and 300'
-        try:
-            timeout = int(val)
-        except ValueError:
-            raise app_integration_new_parser.error(error)
-
-        if not 10 <= timeout <= 300:
-            raise app_integration_new_parser.error(error)
-
-        return timeout
+        '--interval', required=True, help=ARGPARSE_SUPPRESS, type=validate_scheduled_interval)
 
     # App integration function timeout
     app_integration_new_parser.add_argument(
-        '--timeout', required=True, help=ARGPARSE_SUPPRESS, type=_validate_timeout)
-
-    # Validate the memory value to make sure it is between 128 and 1536
-    def _validate_memory(val):
-        """Validate acceptable inputs for the memory of the function"""
-        error = 'The \'memory\' value must be an integer between 128 and 1536'
-        try:
-            memory = int(val)
-        except ValueError:
-            raise app_integration_new_parser.error(error)
-
-        if not 128 <= memory <= 1536:
-            raise app_integration_new_parser.error(error)
-
-        return memory
+        '--timeout', required=True, help=ARGPARSE_SUPPRESS, type=validate_timeout)
 
     # App integration function max memory
     app_integration_new_parser.add_argument(
-        '--memory', required=True, help=ARGPARSE_SUPPRESS, type=_validate_memory)
+        '--memory', required=True, help=ARGPARSE_SUPPRESS, type=validate_memory)
 
 def _add_app_integration_update_auth_subparser(subparsers, clusters):
     """Add the app update-auth subparser: manage.py app update-auth [options]"""
@@ -1236,34 +1195,16 @@ Examples:
         'subcommand', choices=['enable', 'update-auth'], help=ARGPARSE_SUPPRESS
     )
 
-    # Validate the rate at which this should run
-    def _validate_scheduled_interval(val):
-        """Validate acceptable inputs for the schedule expression
-        These follow the format 'rate(5 minutes)'
-        """
-        rate_match = AWS_RATE_RE.match(val)
-        help_link = 'http://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html'
-        if rate_match:
-            return val
-
-        if val.startswith('rate('):
-            err = ('Invalid rate expression. For help '
-                   'see {}'.format('{}#RateExpressions'.format(help_link)))
-            raise ti_downloader_parser.error(err)
-
-        raise ti_downloader_parser.error('Invalid expression. For help '
-                                         'see {}'.format(help_link))
-
     ti_downloader_parser.add_argument(
-        '--interval', help=ARGPARSE_SUPPRESS, type=_validate_scheduled_interval
+        '--interval', help=ARGPARSE_SUPPRESS, type=validate_scheduled_interval
     )
 
     ti_downloader_parser.add_argument(
-        '--timeout', help=ARGPARSE_SUPPRESS, type=int, choices=xrange(10, 301)
+        '--timeout', help=ARGPARSE_SUPPRESS, type=validate_timeout
     )
 
     ti_downloader_parser.add_argument(
-        '--memory', help=ARGPARSE_SUPPRESS, ype=int, choices=xrange(128, 1536)
+        '--memory', help=ARGPARSE_SUPPRESS, type=validate_memory
     )
 
     ti_downloader_parser.add_argument(
