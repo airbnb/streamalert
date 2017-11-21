@@ -28,7 +28,7 @@ resource "aws_lambda_function" "threat_intel_downloader" {
 }
 
 // Lambda Alias: Threat Intel Downloader Production
-resource "aws_lambda_alias" "threat_intel_downloader_production" {
+resource "aws_lambda_alias" "production" {
   name             = "production"
   description      = "Production Threat Intel Dowwnloader Alias"
   function_name    = "${aws_lambda_function.threat_intel_downloader.arn}"
@@ -37,7 +37,7 @@ resource "aws_lambda_alias" "threat_intel_downloader_production" {
 
 // Lambda Permission: Allow Cloudwatch Scheduled Events to invoke Lambda
 resource "aws_lambda_permission" "allow_cloudwatch_events_invocation" {
-  statement_id  = "CloudwatchEventsInvokeAthenaRefresh"
+  statement_id  = "CloudwatchEventsInvokeThreatIntelDownloader"
   action        = "lambda:InvokeFunction"
   function_name = "${aws_lambda_function.threat_intel_downloader.function_name}"
   principal     = "events.amazonaws.com"
@@ -45,13 +45,13 @@ resource "aws_lambda_permission" "allow_cloudwatch_events_invocation" {
   qualifier     = "production"
 
   # explicit dependency
-  depends_on = ["aws_lambda_alias.threat_intel_downloader_production"]
+  depends_on = ["aws_lambda_alias.production"]
 }
 
 // Cloudwatch Event Rule: Invoke the threat_intel_downloader once a day
 resource "aws_cloudwatch_event_rule" "invoke_threat_intel_downloader" {
   name        = "invoke_threat_intel_downloader"
-  description = "Invoke the Threat Intel Downloader Lambda function once a day"
+  description = "Invoke the Threat Intel Downloader Lambda function periodically"
 
   # https://amzn.to/2u5t0hS
   schedule_expression = "${var.interval}"
@@ -63,11 +63,11 @@ resource "aws_cloudwatch_event_target" "threat_intel_downloader_lambda_function"
   arn  = "${aws_lambda_function.threat_intel_downloader.arn}:production"
 
   # explicit dependency
-  depends_on = ["aws_lambda_alias.threat_intel_downloader_production"]
+  depends_on = ["aws_lambda_alias.production"]
 }
 
 // Log Retention Policy: lambda function
 resource "aws_cloudwatch_log_group" "threat_intel_downloader" {
   name              = "/aws/lambda/${var.prefix}_streamalert_threat_intel_downloader"
-  retention_in_days = 60
+  retention_in_days = "${var.log_retention}"
 }

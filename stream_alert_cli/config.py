@@ -439,7 +439,16 @@ class CLIConfig(object):
         self.write()
 
     def add_threat_intel_downloader(self, ti_downloader_info):
-        """Add Threat Intel Downloader configure to config"""
+        """Add Threat Intel Downloader configure to config
+
+        Args:
+            ti_downloader_info (dict): Settings for Threat Intel Downloader Lambda
+                function, generated from commandline
+                "manage.py threat_intel_downloader enable"
+
+        Returns:
+            (bool): Return True if writing settings of Lambda function successfully.
+        """
         def _generate_default_ti_downloader_configure():
             return {
                 'enabled': True,

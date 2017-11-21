@@ -2,10 +2,7 @@ variable "region" {}
 
 variable "account_id" {}
 
-variable "lambda_handler" {
-  type    = "string"
-  default = "main.handler"
-}
+variable "lambda_handler" {}
 
 variable "lambda_memory" {
   type    = "string"
@@ -67,3 +64,7 @@ variable "ioc_filters" {}
 variable "ioc_keys" {}
 
 variable "ioc_types" {}
+
+variable "log_retention" {
+  default = 14
+}

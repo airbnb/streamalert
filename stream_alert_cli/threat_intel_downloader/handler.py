@@ -19,7 +19,7 @@ from stream_alert_cli.apps import save_parameter
 from stream_alert_cli.helpers import user_input
 from stream_alert_cli.logger import LOGGER_CLI
 
-def threat_intel_downloader_handler(options, config):
+def handler(options, config):
     """Configure Threat Intel Downloader from command line
 
     Args:
@@ -48,7 +48,7 @@ def threat_intel_downloader_handler(options, config):
         if not _validate_options(options):
             return
         if config.add_threat_intel_downloader(vars(options)):
-            save_api_creds_info(str(config['global']['account']['region']))
+            save_api_creds_info(config['global']['account']['region'])
     elif options.subcommand == 'update-auth':
         save_api_creds_info(config['global']['account']['region'], overwrite=True)
 
