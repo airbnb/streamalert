@@ -37,7 +37,6 @@ from stream_alert_cli.helpers import (
 )
 from stream_alert_cli.logger import LOGGER_CLI
 from stream_alert_cli.runner import cli_runner
-from app_integrations.config import AWS_RATE_RE
 from app_integrations.apps.app_base import StreamAlertApp
 
 CLUSTERS = [

@@ -80,7 +80,7 @@ def cli_runner(options):
 
     elif options.command == 'kinesis':
         kinesis_handler(options, CONFIG)
-        
+
     elif options.command == 'threat_intel_downloader':
         threat_intel_downloader_handler(options, CONFIG)
 

@@ -26,3 +26,6 @@ class ThreatStreamConfigError(ThreatStreamException):
 
 class ThreatStreamLambdaInvokeError(ThreatStreamException):
     """Class for Lambda Invoke Error"""
+
+class ThreatStreamRequestsError(ThreatStreamException):
+    """Classe for requests return code errors"""

@@ -16,12 +16,22 @@ limitations under the License.
 from datetime import datetime, timedelta
 import json
 
+import backoff
 import boto3
 from botocore.exceptions import ClientError
 import requests
 
+from stream_alert.shared.backoff_handlers import (
+    backoff_handler,
+    success_handler,
+    giveup_handler
+)
+
 from stream_alert.threat_intel_downloader import LOGGER
-from stream_alert.threat_intel_downloader.exceptions import ThreatStreamCredsError
+from stream_alert.threat_intel_downloader.exceptions import (
+    ThreatStreamCredsError,
+    ThreatStreamRequestsError
+)
 
 class ThreatStream(object):
     """Class to retrieve IOCs from ThreatStream.com and store them in DynamoDB"""
@@ -72,7 +82,16 @@ class ThreatStream(object):
             LOGGER.debug('API Creds Error')
             raise ThreatStreamCredsError('API Creds Error')
 
-
+    exceptions_to_backoff = (requests.exceptions.Timeout,
+                             requests.exceptions.ConnectionError,
+                             requests.exceptions.ChunkedEncodingError,
+                             ThreatStreamRequestsError)
+    @backoff.on_exception(backoff.constant,
+                          exceptions_to_backoff,
+                          max_tries=3,
+                          on_backoff=backoff_handler,
+                          on_success=success_handler,
+                          on_giveup=giveup_handler)
     def _connect(self, next_url):
         """Send API call to ThreatStream with next token and return parsed IOCs
 
@@ -90,47 +109,37 @@ class ThreatStream(object):
                     Return False if next token is empty or threshold of number
                     of IOCs is reached.
         """
-        retry, retry_num, continue_invoke = True, self._MAX_RETRY, False
+        continue_invoke = False
         intelligence = list()
-        while retry:
-            if retry_num == 0:
-                LOGGER.debug('Tried %d already, no more retry.', self._MAX_RETRY)
-                return intelligence, next_url, False
-            try:
-                https_req = requests.get('{}{}'.format(self._API_URL, next_url),
-                                         timeout=10)
-                if https_req.status_code == 200:
-                    data = https_req.json()
-                    if data.get('objects'):
-                        intelligence.extend(self._process_data(data['objects']))
-                    LOGGER.info('IOC Offset: %d', data['meta']['offset'])
-                    if not (data['meta']['next']
-                            and data['meta']['offset'] < self.threshold):
-                        LOGGER.debug('Either next token is empty or IOC offset '
-                                     'reaches threshold %d. Stop retrieve more '
-                                     'IOCs.', self.threshold)
-                        retry, continue_invoke = False, False
-                    else:
-                        next_url = data['meta']['next']
-                        continue_invoke = True
-                    retry = False
-                elif https_req.status_code == 401:
-                    LOGGER.debug('Response status code 401, unauthorized.')
-                    return intelligence, next_url, continue_invoke
-                elif https_req.status_code == 500:
-                    retry_num -= 1
-                    LOGGER.debug('Response status code 500, retry now.')
-                    continue
+        try:
+            https_req = requests.get('{}{}'.format(self._API_URL, next_url),
+                                     timeout=10)
+            if https_req.status_code == 200:
+                data = https_req.json()
+                if data.get('objects'):
+                    intelligence.extend(self._process_data(data['objects']))
+                LOGGER.info('IOC Offset: %d', data['meta']['offset'])
+                if not (data['meta']['next']
+                        and data['meta']['offset'] < self.threshold):
+                    LOGGER.debug('Either next token is empty or IOC offset '
+                                 'reaches threshold %d. Stop retrieve more '
+                                 'IOCs.', self.threshold)
+                    continue_invoke = False
                 else:
-                    LOGGER.debug('Unknown status code %d, do not retry.',
-                                 https_req.status_code)
-                    return intelligence, next_url, continue_invoke
-            except (requests.exceptions.Timeout,
-                    requests.exceptions.ConnectionError,
-                    requests.exceptions.ChunkedEncodingError):
-                LOGGER.exception('Caught other requests exceptions, retry now.')
-                retry_num -= 1
-                continue
+                    next_url = data['meta']['next']
+                    continue_invoke = True
+            elif https_req.status_code == 401:
+                raise ThreatStreamRequestsError('Response status code 401, unauthorized.')
+            elif https_req.status_code == 500:
+                raise ThreatStreamRequestsError('Response status code 500, retry now.')
+            else:
+                raise ThreatStreamRequestsError('Unknown status code {}, '
+                                                'do not retry.'.format(https_req.status_code)
+                                               )
+        except (requests.exceptions.Timeout,
+                requests.exceptions.ConnectionError,
+                requests.exceptions.ChunkedEncodingError):
+            LOGGER.exception('Caught other requests exceptions, retry now.')
         return (intelligence, next_url, continue_invoke)
 
     def runner(self, event):

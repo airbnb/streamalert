@@ -321,4 +321,4 @@ class ThreatIntelDownloaderPackage(LambdaPackage):
     package_root_dir = '.'
     package_name = 'threat_intel_downloader'
     config_key = 'threat_intel_downloader_config'
-    third_party_libs = {'requests'}
+    third_party_libs = {'backoff', 'requests'}
