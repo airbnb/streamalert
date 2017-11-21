@@ -405,7 +405,6 @@ Resources:
     app_integration_new_parser.add_argument(
         '--memory', required=True, help=ARGPARSE_SUPPRESS, type=_validate_memory)
 
-
 def _add_app_integration_update_auth_subparser(subparsers, clusters):
     """Add the app update-auth subparser: manage.py app update-auth [options]"""
     app_integration_update_usage = 'manage.py app update-auth [options]'
@@ -1234,37 +1233,45 @@ Examples:
     ti_downloader_parser.set_defaults(command='threat_intel_downloader')
 
     ti_downloader_parser.add_argument(
-        'subcommand',
-        choices=['enable',
-                 'update-auth'],
-        help=ARGPARSE_SUPPRESS
+        'subcommand', choices=['enable', 'update-auth'], help=ARGPARSE_SUPPRESS
+    )
+
+    # Validate the rate at which this should run
+    def _validate_scheduled_interval(val):
+        """Validate acceptable inputs for the schedule expression
+        These follow the format 'rate(5 minutes)'
+        """
+        rate_match = AWS_RATE_RE.match(val)
+        help_link = 'http://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html'
+        if rate_match:
+            return val
+
+        if val.startswith('rate('):
+            err = ('Invalid rate expression. For help '
+                   'see {}'.format('{}#RateExpressions'.format(help_link)))
+            raise ti_downloader_parser.error(err)
+
+        raise ti_downloader_parser.error('Invalid expression. For help '
+                                         'see {}'.format(help_link))
+
+    ti_downloader_parser.add_argument(
+        '--interval', help=ARGPARSE_SUPPRESS, type=_validate_scheduled_interval
     )
 
     ti_downloader_parser.add_argument(
-        '--interval',
-        help=ARGPARSE_SUPPRESS
+        '--timeout', help=ARGPARSE_SUPPRESS, type=int, choices=xrange(10, 301)
     )
 
     ti_downloader_parser.add_argument(
-        '--timeout',
-        help=ARGPARSE_SUPPRESS
+        '--memory', help=ARGPARSE_SUPPRESS, ype=int, choices=xrange(128, 1536)
     )
 
     ti_downloader_parser.add_argument(
-        '--memory',
-        help=ARGPARSE_SUPPRESS
+        '--table_rcu', help=ARGPARSE_SUPPRESS, default=10
     )
 
     ti_downloader_parser.add_argument(
-        '--table_rcu',
-        help=ARGPARSE_SUPPRESS,
-        default=10
-    )
-
-    ti_downloader_parser.add_argument(
-        '--table_wcu',
-        help=ARGPARSE_SUPPRESS,
-        default=10
+        '--table_wcu', help=ARGPARSE_SUPPRESS, default=10
     )
 
     ti_downloader_parser.add_argument(
@@ -1286,9 +1293,7 @@ Examples:
     )
 
     ti_downloader_parser.add_argument(
-        '--debug',
-        action='store_true',
-        help=ARGPARSE_SUPPRESS
+        '--debug', action='store_true', help=ARGPARSE_SUPPRESS
     )
 
 

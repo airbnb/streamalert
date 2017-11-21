@@ -45,8 +45,8 @@ def handler(event, context):
 
 def invoke_lambda_function(next_url, config):
     """Invoke lambda function itself with next token to continually retrieve IOCs"""
+    LOGGER.debug('This invoacation is invoked by lambda function self.')
     try:
-        LOGGER.debug('This invoacation is invoked by lambda function self.')
         lambda_client = boto3.client('lambda', region_name=config['region'])
         lambda_client.invoke(
             FunctionName=config['function_name'],
@@ -55,7 +55,7 @@ def invoke_lambda_function(next_url, config):
             Qualifier=config['qualifier']
         )
     except ClientError as err:
-        LOGGER.debug('Lambda client error: %s when lambda function invoke self', err)
+        LOGGER.error('Lambda client error: %s when lambda function invoke self', err)
         raise ThreatStreamLambdaInvokeError
 
 def parse_lambda_func_arn(context):

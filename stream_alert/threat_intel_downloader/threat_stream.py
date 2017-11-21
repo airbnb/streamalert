@@ -52,24 +52,25 @@ class ThreatStream(object):
             response = ssm.get_parameters(
                 Names=[self._PARAMETER_NAME], WithDecryption=True
             )
-            for cred in response['Parameters']:
-                if cred['Name'] == self._PARAMETER_NAME:
-                    try:
-                        decoded_creds = json.loads(cred['Value'])
-                        self.api_user = decoded_creds['api_user']
-                        self.api_key = decoded_creds['api_key']
-                    except ValueError:
-                        LOGGER.debug('Can not load value for parameter with '
-                                     'name \'%s\'. The value is not valid json: '
-                                     '\'%s\'', cred['Name'], cred['Value'])
-                        raise ThreatStreamCredsError
         except ClientError as err:
             LOGGER.debug('SSM client error: %s', err)
             raise
 
+        for cred in response['Parameters']:
+            if cred['Name'] == self._PARAMETER_NAME:
+                try:
+                    decoded_creds = json.loads(cred['Value'])
+                    self.api_user = decoded_creds['api_user']
+                    self.api_key = decoded_creds['api_key']
+                except ValueError:
+                    LOGGER.debug('Can not load value for parameter with '
+                                 'name \'%s\'. The value is not valid json: '
+                                 '\'%s\'', cred['Name'], cred['Value'])
+                    raise ThreatStreamCredsError('ValueError')
+
         if not (self.api_user and self.api_key):
             LOGGER.debug('API Creds Error')
-            raise ThreatStreamCredsError
+            raise ThreatStreamCredsError('API Creds Error')
 
 
     def _connect(self, next_url):
@@ -127,7 +128,7 @@ class ThreatStream(object):
             except (requests.exceptions.Timeout,
                     requests.exceptions.ConnectionError,
                     requests.exceptions.ChunkedEncodingError):
-                LOGGER.debug('Caught other requests exceptions, retry now.')
+                LOGGER.exception('Caught other requests exceptions, retry now.')
                 retry_num -= 1
                 continue
         return (intelligence, next_url, continue_invoke)

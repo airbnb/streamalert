@@ -33,27 +33,34 @@ from tests.unit.threat_intel_downloader.test_helpers import (
     get_mock_context,
     mock_config,
     mock_requests_get,
+    mock_ssm_response
+)
+
+from tests.unit.app_integrations.test_helpers import (
+    MockLambdaClient,
     MockSSMClient
 )
 
-from tests.unit.app_integrations.test_helpers import MockLambdaClient
-
 @patch('stream_alert.threat_intel_downloader.main.load_config',
        side_effect=mock_config)
-@patch('boto3.client', Mock(return_value=MockSSMClient(valid_creds=1)))
+@patch('boto3.client')
 @patch.object(ThreatStream, '_connect')
-def test_handler_without_next_token(mock_threatstream_connect, mock_ti_config): # pylint: disable=unused-argument
+def test_handler_without_next_token(mock_threatstream_connect, mock_ssm, mock_ti_config): # pylint: disable=unused-argument
     """Threat Intel Downloader - Test handler"""
+    mock_ssm.return_value = MockSSMClient(suppress_params=True,
+                                          parameters=mock_ssm_response())
     handler(None, get_mock_context())
     mock_threatstream_connect.assert_not_called()
 
 @patch('stream_alert.threat_intel_downloader.main.load_config',
        side_effect=mock_config)
-@patch('boto3.client', Mock(return_value=MockSSMClient(valid_creds=1)))
+@patch('boto3.client')
 @patch('stream_alert.threat_intel_downloader.threat_stream.requests.get',
        side_effect=mock_requests_get)
-def test_handler_next_token(mock_get, mock_ti_config): # pylint: disable=unused-argument
+def test_handler_next_token(mock_get, mock_ssm, mock_ti_config): # pylint: disable=unused-argument
     """Threat Intel Downloader - Test handler with next token passed in"""
+    mock_ssm.return_value = MockSSMClient(suppress_params=True,
+                                          parameters=mock_ssm_response())
     handler({'next_url': 'next_token'}, get_mock_context())
     mock_get.assert_called()
 

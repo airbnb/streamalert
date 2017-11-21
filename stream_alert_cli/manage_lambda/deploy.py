@@ -47,7 +47,7 @@ def deploy(options, config):
     def _publish_version(packages):
         """Publish Lambda versions"""
         for package in packages:
-            if package.package_name in set(['athena_partition_refresh', 'threat_intel_downloader']):
+            if package.package_name in {'athena_partition_refresh', 'threat_intel_downloader'}:
                 published = LambdaVersion(
                     config=config, package=package, clustered_deploy=False).publish_function()
             else:
