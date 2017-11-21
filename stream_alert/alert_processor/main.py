@@ -18,7 +18,7 @@ import json
 
 from stream_alert.alert_processor import LOGGER
 from stream_alert.alert_processor.helpers import validate_alert
-from stream_alert.alert_processor.outputs import get_output_dispatcher
+from stream_alert.alert_processor.outputs.output_base import StreamAlertOutput
 from stream_alert.shared import NORMALIZATION_KEY
 
 
@@ -101,18 +101,18 @@ def run(alert, region, function_name, config):
             continue
 
         # Retrieve the proper class to handle dispatching the alerts of this services
-        output_dispatcher = get_output_dispatcher(service, region, function_name, config)
+        dispatcher = StreamAlertOutput.create_dispatcher(service, region, function_name, config)
 
-        if not output_dispatcher:
+        if not dispatcher:
             continue
 
         LOGGER.debug('Sending alert to %s:%s', service, descriptor)
 
         sent = False
         try:
-            sent = output_dispatcher.dispatch(descriptor=descriptor,
-                                              rule_name=alert['rule_name'],
-                                              alert=alert)
+            sent = dispatcher.dispatch(descriptor=descriptor,
+                                       rule_name=alert['rule_name'],
+                                       alert=alert)
 
         except Exception as err:  # pylint: disable=broad-except
             LOGGER.exception('An error occurred while sending alert '

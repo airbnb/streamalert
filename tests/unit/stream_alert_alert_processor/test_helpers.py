@@ -21,11 +21,8 @@ from tests.unit.stream_alert_alert_processor.helpers import get_alert
 
 def test_valid_alert():
     """Alert Processor Input Validation - Valid Alert Structure"""
-    # Default valid alert to test
-    valid_alert = get_alert()
-
     # Test with a valid alert structure
-    assert_true(validate_alert(valid_alert))
+    assert_true(validate_alert(get_alert()))
 
 
 def test_valid_alert_type():
@@ -38,7 +35,7 @@ def test_alert_keys():
     # Default valid alert to be modified
     missing_alert_key = get_alert()
 
-    # Alter 'metadata' keys to break validation (not all required keys)
+    # Alter keys to break validation (not all required keys)
     missing_alert_key.pop('rule_name')
 
     # Test with invalid metadata keys

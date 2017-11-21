@@ -36,8 +36,61 @@ class OutputRequestFailure(Exception):
     """OutputRequestFailure handles any HTTP failures"""
 
 
-class StreamOutputBase(object):
-    """StreamOutputBase is the base class to handle routing alerts to outputs
+class StreamAlertOutput(object):
+    """Class to be used as a decorator to register all OutputDispatcher subclasses"""
+    _outputs = {}
+
+    def __new__(cls, output):
+        StreamAlertOutput._outputs[output.__service__] = output
+        return output
+
+    @classmethod
+    def create_dispatcher(cls, service, region, function_name, config):
+        """Returns the subclass that should handle this particular service
+
+        Args:
+            service (str): The service identifier for this output
+            region (str): The AWS region to use for some output types
+            function_name (str): The invoking AWS Lambda function name
+            config (dict): The loaded output configuration dict
+
+        Returns:
+            OutputDispatcher: Subclass of OutputDispatcher to use for sending alerts
+        """
+        dispatcher = cls.get_dispatcher(service)
+        if not dispatcher:
+            return False
+
+        return dispatcher(region, function_name, config)
+
+    @classmethod
+    def get_dispatcher(cls, service):
+        """Returns the subclass that should handle this particular service
+
+        Args:
+            service (str): The service identifier for this output
+
+        Returns:
+            OutputDispatcher: Subclass of OutputDispatcher to use for sending alerts
+        """
+        try:
+            return cls._outputs[service]
+        except KeyError:
+            LOGGER.error('Designated output service [%s] does not exist', service)
+
+    @classmethod
+    def get_all_outputs(cls):
+        """Return a copy of the cache containing all of the output subclasses
+
+        Returns:
+            dict: Cached dictionary of all registered StreamAlertOutputs where
+                the key is the service and the value is the class object
+        """
+        return cls._outputs.copy()
+
+
+class OutputDispatcher(object):
+    """OutputDispatcher is the base class to handle routing alerts to outputs
 
     Public methods:
         get_secrets_bucket_name: returns the name of the s3 bucket for secrets that
@@ -268,7 +321,8 @@ class StreamOutputBase(object):
 
         return cred_name
 
-    def format_output_config(self, service_config, values):
+    @classmethod
+    def format_output_config(cls, service_config, values):
         """Add this descriptor to the list of descriptor this service
            If the service doesn't exist, a new entry is added to an empty list
 
@@ -278,10 +332,11 @@ class StreamOutputBase(object):
         Returns:
             [list<string>] List of descriptors for this service
         """
-        return service_config.get(self.__service__, []) + [values['descriptor'].value]
+        return service_config.get(cls.__service__, []) + [values['descriptor'].value]
 
+    @classmethod
     @abstractmethod
-    def get_user_defined_properties(self):
+    def get_user_defined_properties(cls):
         """Base method for retrieving properties that must be asssigned by the user when
         configuring a new output for this service. This should include any information that
         is sensitive or use-case specific. For intance, if the url needed for this integration

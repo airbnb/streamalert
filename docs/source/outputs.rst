@@ -110,7 +110,7 @@ Adding support for a new service involves five steps:
 
    - This should be a string value that corresponds to an identifier that best represents this service. (ie: ``__service__ = 'aws-s3'``)
 
-4. Add the ``@output`` class decorator to the new subclass so it registered when the `outputs` module is loaded.
+4. Add the ``@StreamAlertOutput`` class decorator to the new subclass so it registered when the `outputs` module is loaded.
 
 5. To allow the cli to configure a new integration for this service, add the value used above for the ``__service__`` property to the ``manage.py`` file.
 

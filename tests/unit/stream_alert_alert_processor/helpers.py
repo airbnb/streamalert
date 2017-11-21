@@ -14,7 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from collections import OrderedDict
-import json
 import os
 import random
 import shutil
@@ -23,16 +22,6 @@ import tempfile
 from mock import Mock
 
 from tests.unit.stream_alert_alert_processor import FUNCTION_NAME, REGION
-
-
-def construct_event(count):
-    """Helper to construct a valid test 'event' with an arbitrary number of records"""
-    event = {'Records': []}
-    for index in range(count):
-        event['Records'] = event['Records'] + \
-            [{'Sns': {'Message': json.dumps(get_alert(index))}}]
-
-    return event
 
 
 def get_mock_context():
@@ -72,18 +61,15 @@ def get_random_alert(key_count, rule_name, omit_rule_desc=False):
     return alert
 
 
-def get_alert(index=0, context=None):
+def get_alert(context=None):
     """This function generates a sample alert for testing purposes
 
     Args:
         index (int): test_index value (0 by default)
         context(dict): context dictionary (None by default)
     """
-    context = context or {}
-
     return {
         'record': {
-            'test_index': index,
             'compressed_size': '9982',
             'timestamp': '1496947381.18',
             'node_id': '1',
@@ -98,7 +84,7 @@ def get_alert(index=0, context=None):
         'outputs': [
             'slack:unit_test_channel'
         ],
-        'context': context,
+        'context': context or dict(),
         'source_service': 's3',
         'source_entity': 'corp-prefix.prod.cb.region',
         'log_type': 'json',
@@ -107,6 +93,9 @@ def get_alert(index=0, context=None):
 
 
 def remove_temp_secrets():
-    """"Blow away the stream_alert_secrets directory in temp"""
-    secrets_dir = os.path.join(tempfile.gettempdir(), "stream_alert_secrets")
-    shutil.rmtree(secrets_dir)
+    """Remove the local secrets directory that may be left from previous runs"""
+    secrets_dirtemp_dir = os.path.join(tempfile.gettempdir(), 'stream_alert_secrets')
+
+    # Check if the folder exists, and remove it if it does
+    if os.path.isdir(secrets_dirtemp_dir):
+        shutil.rmtree(secrets_dirtemp_dir)

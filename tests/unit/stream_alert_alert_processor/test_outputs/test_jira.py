@@ -1,0 +1,185 @@
+"""
+Copyright 2017-present, Airbnb Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
+# pylint: disable=protected-access,attribute-defined-outside-init
+from mock import call, patch, PropertyMock
+from moto import mock_s3, mock_kms
+from nose.tools import assert_equal, assert_false, assert_true
+
+from stream_alert.alert_processor.outputs.jira import JiraOutput
+from stream_alert_cli.helpers import put_mock_creds
+from tests.unit.stream_alert_alert_processor import CONFIG, FUNCTION_NAME, KMS_ALIAS, REGION
+from tests.unit.stream_alert_alert_processor.helpers import get_alert, remove_temp_secrets
+
+
+@mock_s3
+@mock_kms
+class TestJiraOutput(object):
+    """Test class for JiraOutput"""
+    DESCRIPTOR = 'unit_test_jira'
+    SERVICE = 'jira'
+    CREDS = {'username': 'jira@foo.bar',
+             'password': 'jirafoobar',
+             'url': 'jira.foo.bar',
+             'project_key': 'foobar',
+             'issue_type': 'Task',
+             'aggregate': 'yes'}
+
+    def setup(self):
+        """Setup before each method"""
+        self._dispatcher = JiraOutput(REGION, FUNCTION_NAME, CONFIG)
+        self._dispatcher._base_url = self.CREDS['url']
+        remove_temp_secrets()
+        output_name = self._dispatcher.output_cred_name(self.DESCRIPTOR)
+        put_mock_creds(output_name, self.CREDS, self._dispatcher.secrets_bucket, REGION, KMS_ALIAS)
+
+    @patch('logging.Logger.info')
+    @patch('requests.get')
+    @patch('requests.post')
+    def test_dispatch_issue_new(self, post_mock, get_mock, log_mock):
+        """JiraOutput - Dispatch Success, New Issue"""
+        # setup the request to not find an existing issue
+        get_mock.return_value.status_code = 200
+        get_mock.return_value.json.return_value = {'issues': []}
+        # setup the auth and successful creation responses
+        auth_resp = {'session': {'name': 'cookie_name', 'value': 'cookie_value'}}
+        post_mock.return_value.status_code = 200
+        post_mock.return_value.json.side_effect = [auth_resp, {'id': 5000}]
+
+        assert_true(self._dispatcher.dispatch(descriptor=self.DESCRIPTOR,
+                                              rule_name='rule_name',
+                                              alert=get_alert()))
+
+        log_mock.assert_called_with('Successfully sent alert to %s', self.SERVICE)
+
+    @patch('logging.Logger.info')
+    @patch('requests.get')
+    @patch('requests.post')
+    def test_dispatch_issue_existing(self, post_mock, get_mock, log_mock):
+        """JiraOutput - Dispatch Success, Existing Issue"""
+        # setup the request to find an existing issue
+        get_mock.return_value.status_code = 200
+        existing_issues = {'issues': [{'fields': {'summary': 'Bogus'}, 'id': '5000'}]}
+        get_mock.return_value.json.return_value = existing_issues
+        auth_resp = {'session': {'name': 'cookie_name', 'value': 'cookie_value'}}
+        # setup the auth and successful creation responses
+        post_mock.return_value.status_code = 200
+        post_mock.return_value.json.side_effect = [auth_resp, {'id': 5000}]
+
+        assert_true(self._dispatcher.dispatch(descriptor=self.DESCRIPTOR,
+                                              rule_name='rule_name',
+                                              alert=get_alert()))
+
+        log_mock.assert_called_with('Successfully sent alert to %s', self.SERVICE)
+
+    @patch('requests.get')
+    def test_get_comments_success(self, get_mock):
+        """JiraOutput - Get Comments, Success"""
+        # setup successful get comments response
+        get_mock.return_value.status_code = 200
+        expected_result = [{}, {}]
+        get_mock.return_value.json.return_value = {'comments': expected_result}
+
+        self._dispatcher._load_creds('jira')
+        assert_equal(self._dispatcher._get_comments('5000'), expected_result)
+
+    @patch('requests.get')
+    def test_get_comments_failure(self, get_mock):
+        """JiraOutput - Get Comments, Failure"""
+        # setup successful get comments response
+        get_mock.return_value.status_code = 400
+
+        self._dispatcher._load_creds('jira')
+        assert_equal(self._dispatcher._get_comments('5000'), [])
+
+    @patch('requests.get')
+    def test_search_failure(self, get_mock):
+        """JiraOutput - Search, Failure"""
+        # setup successful get comments response
+        get_mock.return_value.status_code = 400
+
+        self._dispatcher._load_creds('jira')
+        assert_equal(self._dispatcher._search_jira('foobar'), [])
+
+    @patch('logging.Logger.error')
+    @patch('requests.post')
+    def test_auth_failure(self, post_mock, log_mock):
+        """JiraOutput - Auth, Failure"""
+        # setup unsuccesful auth response
+        post_mock.return_value.status_code = 400
+        post_mock.return_value.content = 'content'
+        post_mock.return_value.json.return_value = dict()
+
+        assert_false(self._dispatcher.dispatch(descriptor=self.DESCRIPTOR,
+                                               rule_name='rule_name',
+                                               alert=get_alert()))
+
+        log_mock.assert_has_calls([call('Encountered an error while sending to %s:\n%s',
+                                        'jira', 'content'),
+                                   call('Failed to authenticate to Jira'),
+                                   call('Failed to send alert to %s', self.SERVICE)])
+
+    @patch('logging.Logger.error')
+    @patch('requests.get')
+    @patch('requests.post')
+    def test_issue_creation_failure(self, post_mock, get_mock, log_mock):
+        """JiraOutput - Issue Creation, Failure"""
+        # setup the successful search response - no results
+        get_mock.return_value.status_code = 200
+        get_mock.return_value.json.return_value = {'issues': []}
+        # setup successful auth response and failed issue creation
+        type(post_mock.return_value).status_code = PropertyMock(side_effect=[200, 400])
+        auth_resp = {'session': {'name': 'cookie_name', 'value': 'cookie_value'}}
+        post_mock.return_value.content = 'some bad content'
+        post_mock.return_value.json.side_effect = [auth_resp, dict()]
+
+        assert_false(self._dispatcher.dispatch(descriptor=self.DESCRIPTOR,
+                                               rule_name='rule_name',
+                                               alert=get_alert()))
+
+        log_mock.assert_has_calls([call('Encountered an error while sending to %s:\n%s',
+                                        self.SERVICE, 'some bad content'),
+                                   call('Failed to send alert to %s', self.SERVICE)])
+
+    @patch('logging.Logger.error')
+    @patch('requests.get')
+    @patch('requests.post')
+    def test_comment_creation_failure(self, post_mock, get_mock, log_mock):
+        """JiraOutput - Comment Creation, Failure"""
+        # setup successful search response
+        get_mock.return_value.status_code = 200
+        existing_issues = {'issues': [{'fields': {'summary': 'Bogus'}, 'id': '5000'}]}
+        get_mock.return_value.json.return_value = existing_issues
+        # setup successful auth, failed comment creation, and successful issue creation
+        type(post_mock.return_value).status_code = PropertyMock(side_effect=[200, 400, 200])
+        auth_resp = {'session': {'name': 'cookie_name', 'value': 'cookie_value'}}
+        post_mock.return_value.json.side_effect = [auth_resp, {'id': 6000}]
+
+        assert_true(self._dispatcher.dispatch(descriptor=self.DESCRIPTOR,
+                                              rule_name='rule_name',
+                                              alert=get_alert()))
+
+        log_mock.assert_called_with('Encountered an error when adding alert to existing Jira '
+                                    'issue %s. Attempting to create new Jira issue.', 5000)
+
+
+    @patch('logging.Logger.error')
+    def test_dispatch_bad_descriptor(self, log_error_mock):
+        """JiraOutput - Dispatch Failure, Bad Descriptor"""
+        assert_false(self._dispatcher.dispatch(descriptor='bad_descriptor',
+                                               rule_name='rule_name',
+                                               alert=get_alert()))
+
+        log_error_mock.assert_called_with('Failed to send alert to %s', self.SERVICE)

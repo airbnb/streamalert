@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from app_integrations.apps.app_base import StreamAlertApp
-from stream_alert.alert_processor.outputs import get_output_dispatcher
+from stream_alert.alert_processor.outputs.output_base import StreamAlertOutput
 from stream_alert_cli.apps import save_app_auth_info
 from stream_alert_cli.athena.handler import athena_handler
 from stream_alert_cli.config import CLIConfig
@@ -108,8 +108,7 @@ def configure_output(options):
         kms_key_alias = kms_key_alias.split('/')[1]
 
     # Retrieve the proper service class to handle dispatching the alerts of this services
-    output = get_output_dispatcher(options.service, region, prefix,
-                                   config_outputs.load_outputs_config())
+    output = StreamAlertOutput.get_dispatcher(options.service)
 
     # If an output for this service has not been defined, the error is logged
     # prior to this
