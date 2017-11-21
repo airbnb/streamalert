@@ -26,6 +26,8 @@ from stream_alert.threat_intel_downloader.exceptions import (
     ThreatStreamConfigError
 )
 
+CONFIG_FILE_PATH = 'conf/lambda.json'
+
 
 def handler(event, context):
     """Lambda handler"""
@@ -76,19 +78,18 @@ def load_config():
         (dict): Configuration for Threat Intel Downloader
 
     Raises:
-        ConfigError: For invalid or missing configuration files.
+        ThreatStreamConfigError: For invalid or missing configuration files.
     """
     config = {}
-    config_file_path = 'conf/lambda.json'
-    if not os.path.exists(config_file_path):
+    if not os.path.exists(CONFIG_FILE_PATH):
         raise ThreatStreamConfigError('The \'{}\' config file was not found'.format(
-            config_file_path))
+            CONFIG_FILE_PATH))
 
-    with open(config_file_path) as config_fh:
+    with open(CONFIG_FILE_PATH) as config_fh:
         try:
             config = json.load(config_fh)
         except ValueError:
             raise ThreatStreamConfigError('The \'{}\' config file is not valid JSON'.format(
-                config_file_path))
+                CONFIG_FILE_PATH))
 
     return config.get('threat_intel_downloader_config', None)

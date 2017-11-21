@@ -160,21 +160,47 @@ class ThreatStream(object):
         if not event:
             return None, None, False
 
-        next_url = None
-        if 'next_url' not in event:
-            next_url = '/api/v2/{}/?username={}&api_key={}&status={}&limit={}'\
-                .format(self._API_RESOURCE,
-                        self.api_user,
-                        self.api_key,
-                        self._IOC_STATUS,
-                        self._API_MAX_LIMIT)
-        else:
-            next_url = event.get('next_url', None)
+        next_url = event.get(
+            'next_url',
+            '/api/v2/{}/?username={}&api_key={}&status={}&limit={}'.format(
+                self._API_RESOURCE,
+                self.api_user,
+                self.api_key,
+                self._IOC_STATUS,
+                self._API_MAX_LIMIT
+            )
+        )
 
         if not next_url:
             return None, None, False
 
         return self._connect(next_url)
+
+    @staticmethod
+    def _epoch_time(time_str, days=90):
+        """Convert expiration time (in UTC) to epoch time
+        Args:
+            time_str (str): expiration time in string format
+                Example: '2017-12-19T04:45:18.412Z'
+            days (int): default expiration days which 90 days from now
+
+        Returns:
+            (int): Epoch time. If no expiration time presented, return to
+                default value which is current time + 90 days.
+        """
+
+        if not time_str:
+            return int((datetime.now()
+                        + timedelta(days)
+                        - datetime.utcfromtimestamp(0)).total_seconds())
+
+        try:
+            utc_time = datetime.strptime(time_str, "%Y-%m-%dT%H:%M:%S.%fZ")
+            return int((utc_time - datetime.utcfromtimestamp(0)).total_seconds())
+        except ValueError:
+            LOGGER.error('Cannot convert expiration date \'%s\' to epoch time',
+                         time_str)
+            raise
 
     def _process_data(self, data):
         """Process and filter data by sources and keys
@@ -217,35 +243,13 @@ class ThreatStream(object):
                         }
                     ]
         """
-        def _epoch_time(time_str):
-            """Convert expiration time (in UTC) to epoch time
-            Args:
-                time_str (str): expiration time in string format
-                    Example: '2017-12-19T04:45:18.412Z'
-
-            Returns:
-                (int): Epoch time. If no expiration time presented, return to
-                    default value which is current time + 90 days.
-            """
-
-            if not time_str:
-                return int((datetime.now() + timedelta(90) - datetime(1970, 1, 1)).total_seconds())
-
-            try:
-                utc_time = datetime.strptime(time_str, "%Y-%m-%dT%H:%M:%S.%fZ")
-                return int((utc_time - datetime(1970, 1, 1)).total_seconds())
-            except ValueError:
-                LOGGER.error('Can not convert expiration date \'%s\' to epoch time',
-                             time_str)
-                raise
-
         results = list()
         for obj in data:
             for source in self.ioc_sources:
                 if source in obj['source'].lower() and obj['type'] in self.ioc_types:
                     filtered_obj = {key: value for key, value in obj.iteritems()
                                     if key in self.ioc_keys}
-                    filtered_obj['expiration_ts'] = _epoch_time(filtered_obj['expiration_ts'])
+                    filtered_obj['expiration_ts'] = self._epoch_time(filtered_obj['expiration_ts'])
                     results.append(filtered_obj)
         return results
 

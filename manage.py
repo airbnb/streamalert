@@ -1155,10 +1155,10 @@ Available Subcommands:
     Required Arguments:
 
         --timeout           The AWS Lambda function timeout value, in seconds. This should
-                              be an integer between 10 and 300. (required)
+                              be an integer between 10 and 300.
         --memory            The AWS Lambda function max memory value, in megabytes. This should
-                              be an integer between 128 and 1536. (required)
-        --interval          The interval (required), defined using a 'rate' expression, at
+                              be an integer between 128 and 1536.
+        --interval          The interval, defined using a 'rate' expression, at
                               which this app integration function should execute. Examples of
                               acceptable input are:
                                 'rate(1 hour)'          # Every hour (note the singular 'hour')
@@ -1166,8 +1166,13 @@ Available Subcommands:
                                 'rate(2 days)'          # Every 2 days
 
                               See the link in the Resources section below for more information.
-        --table_rcu        The DynamoDB table Read Capacity Unit. (optional)
-        --table_wcu        The DynamoDB table Write Capacity Unit. (optional)
+    Optional Arguments:
+        --table_rcu        The DynamoDB table Read Capacity Unit.
+        --table_wcu        The DynamoDB table Write Capacity Unit.
+        --ioc_keys         The keys (list) of IOC stored in DynamoDB table.
+        --ioc_filters      Filters (list) applied while retrieving IOCs from Threat Feed.
+        --ioc_types        IOC types (list) are defined by the Threat Feed. IOC types can be
+                             different from different Threat Feeds.
 
     manage.py threat_intel_downloader update-auth   Update API credentials to parameter store.
 
@@ -1176,9 +1181,7 @@ Examples:
     manage.py threat_intel_downloader enable \\
     --interval 'rate(1 day)' \\
     --timeout 120 \\
-    --memory 128 \\
-    --table_rcu 10 \\
-    --table_wcu 10
+    --memory 128
 """.format(version))
     ti_downloader_parser = subparsers.add_parser(
         'threat_intel_downloader',
