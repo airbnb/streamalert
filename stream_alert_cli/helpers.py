@@ -48,11 +48,11 @@ def validate_scheduled_interval(val):
         return val
 
     if val.startswith('rate('):
-        err = ('Invalid rate expression. For help '
-               'see {}'.format('{}#RateExpressions'.format(help_link)))
+        err = ('Invalid rate expression: {}. For help '
+               'see {}'.format(val, '{}#RateExpressions'.format(help_link)))
         raise ParseError(err)
 
-    raise ParseError('Invalid expression. For help see {}'.format(help_link))
+    raise ParseError('Invalid expression: {}. For help see {}'.format(val, help_link))
 
 def validate_timeout(val):
     """Validate acceptable inputs for the timeout of the Lambda function"""

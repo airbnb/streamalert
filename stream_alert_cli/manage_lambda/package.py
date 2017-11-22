@@ -316,7 +316,7 @@ class AthenaPackage(LambdaPackage):
 
 class ThreatIntelDownloaderPackage(LambdaPackage):
     """Create the Threat Intel Downloader Lambda function package"""
-    package_folders = {'stream_alert/threat_intel_downloader', 'conf'}
+    package_folders = {'stream_alert/threat_intel_downloader', 'stream_alert/shared', 'conf'}
     package_files = {'stream_alert/__init__.py'}
     package_root_dir = '.'
     package_name = 'threat_intel_downloader'

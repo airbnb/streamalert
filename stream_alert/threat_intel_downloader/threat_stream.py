@@ -42,7 +42,6 @@ class ThreatStream(object):
     _API_MAX_LIMIT = 1000
     _API_MAX_INDEX = 1000000
     _PARAMETER_NAME = 'threat_intel_downloader_api_creds'
-    _MAX_RETRY = 3
 
     def __init__(self, config):
         self.ioc_types = config['ioc_types']
