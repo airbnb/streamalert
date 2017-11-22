@@ -24,6 +24,7 @@ from nose.tools import (
 )
 
 import boto3
+from botocore.exceptions import ClientError
 
 from stream_alert.threat_intel_downloader.exceptions import ThreatStreamCredsError
 from stream_alert.threat_intel_downloader.threat_stream import ThreatStream
@@ -33,6 +34,7 @@ from tests.unit.app_integrations.test_helpers import MockSSMClient
 from tests.unit.threat_intel_downloader.test_helpers import (
     mock_requests_get,
     mock_config,
+    mock_invalid_ssm_response,
     mock_ssm_response
 )
 
@@ -129,9 +131,24 @@ class TestThreatStream(object):
 
     @patch('boto3.client')
     @raises(ThreatStreamCredsError)
-    def test_get_api_creds_errors(self, mock_ssm):
-        """ThreatStream - Test get api creds from SSM"""
+    def test_get_api_creds_params_errors(self, mock_ssm):
+        """ThreatStream - Test get api creds from SSM with wrong parameters"""
         mock_ssm.return_value = MockSSMClient(suppress_params=True)
+        ThreatStream(mock_config())
+
+    @patch('boto3.client')
+    @raises(ClientError)
+    def test_get_api_creds_client_errors(self, mock_ssm):
+        """ThreatStream - Test get api creds from SSM with client exception"""
+        mock_ssm.return_value = MockSSMClient(suppress_params=False, raise_exception=True)
+        ThreatStream(mock_config())
+
+    @patch('boto3.client')
+    @raises(ThreatStreamCredsError)
+    def test_get_api_creds_invalid_params(self, mock_ssm):
+        """ThreatStream - Test get api creds from SSM with wrong parameters"""
+        mock_ssm.return_value = MockSSMClient(suppress_params=True,
+                                              parameters=mock_invalid_ssm_response())
         ThreatStream(mock_config())
 
     @patch('boto3.client')

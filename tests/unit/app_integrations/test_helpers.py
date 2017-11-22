@@ -24,10 +24,9 @@ from tests.unit.app_integrations import FUNCTION_NAME, REGION
 class MockSSMClient(object):
     """Helper mock class to act as the ssm boto3 client"""
 
-    def __init__(self, suppress_params=False, app_type='', parameters=None):
-        #self._parameters = dict()
-        self._parameters = parameters if parameters else dict()
-        self.raise_exception = False
+    def __init__(self, suppress_params=False, app_type='', **kwargs):
+        self._parameters = kwargs.get('parameters', dict())
+        self.raise_exception = kwargs.get('raise_exception', False)
         if not suppress_params:
             self.put_mock_params(app_type or 'duo_auth')
 

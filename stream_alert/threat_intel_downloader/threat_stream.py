@@ -63,7 +63,7 @@ class ThreatStream(object):
                 Names=[self._PARAMETER_NAME], WithDecryption=True
             )
         except ClientError as err:
-            LOGGER.debug('SSM client error: %s', err)
+            LOGGER.error('SSM client error: %s', err)
             raise
 
         for cred in response['Parameters']:
@@ -73,13 +73,13 @@ class ThreatStream(object):
                     self.api_user = decoded_creds['api_user']
                     self.api_key = decoded_creds['api_key']
                 except ValueError:
-                    LOGGER.debug('Can not load value for parameter with '
+                    LOGGER.error('Can not load value for parameter with '
                                  'name \'%s\'. The value is not valid json: '
                                  '\'%s\'', cred['Name'], cred['Value'])
                     raise ThreatStreamCredsError('ValueError')
 
         if not (self.api_user and self.api_key):
-            LOGGER.debug('API Creds Error')
+            LOGGER.error('API Creds Error')
             raise ThreatStreamCredsError('API Creds Error')
 
     exceptions_to_backoff = (requests.exceptions.Timeout,

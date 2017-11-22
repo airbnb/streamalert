@@ -14,6 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 # pylint: disable=abstract-class-instantiated,protected-access,no-self-use
+import json
+
 from mock import patch, Mock
 from nose.tools import (
     assert_equal,
@@ -24,22 +26,31 @@ from stream_alert.threat_intel_downloader.threat_stream import ThreatStream
 from stream_alert.threat_intel_downloader.main import (
     handler,
     invoke_lambda_function,
+    load_config,
     parse_lambda_func_arn
 )
 
-from stream_alert.threat_intel_downloader.exceptions import ThreatStreamLambdaInvokeError
-
-from tests.unit.threat_intel_downloader.test_helpers import (
-    get_mock_context,
-    mock_config,
-    mock_requests_get,
-    mock_ssm_response
+from stream_alert.threat_intel_downloader.exceptions import (
+    ThreatStreamLambdaInvokeError,
+    ThreatStreamConfigError
 )
 
 from tests.unit.app_integrations.test_helpers import (
     MockLambdaClient,
     MockSSMClient
 )
+
+from tests.unit.helpers.base import mock_open
+
+from tests.unit.threat_intel_downloader.test_helpers import (
+    get_mock_context,
+    mock_config,
+    mock_requests_get,
+    mock_ssm_response,
+    LAMBDA_FILE,
+    LAMBDA_SETTINGS
+)
+
 
 @patch('stream_alert.threat_intel_downloader.main.load_config',
        side_effect=mock_config)
@@ -97,3 +108,29 @@ def test_parse_config():
         'qualifier': 'development'
     }
     assert_equal(parse_lambda_func_arn(get_mock_context()), expect_config)
+
+@patch('os.path.exists', Mock(return_value=False))
+@raises(ThreatStreamConfigError)
+def test_load_config_error():
+    """Threat Intel Downloader - Test load_config and config file doesnot exist"""
+    load_config()
+
+@patch('os.path.exists', Mock(return_value=True))
+def test_load_valid_config():
+    """Threat Intel Downloader - Test load valid config"""
+    lambda_settings = json.dumps(LAMBDA_SETTINGS)
+    expected_settings = {
+        'enabled': True,
+        'handler': 'main.handler',
+        'timeout': '60',
+        'memory': '128',
+        'source_bucket': 'unit-testing.streamalert.source',
+        'source_current_hash': '<auto_generated>',
+        'source_object_key': '<auto_generated>',
+        'third_party_libraries': []
+    }
+    with mock_open(LAMBDA_FILE, lambda_settings):
+        assert_equal(load_config(), expected_settings)
+
+    with mock_open(LAMBDA_FILE, json.dumps({'foo': 'bar'})):
+        assert_equal(load_config(), None)

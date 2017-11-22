@@ -73,6 +73,11 @@ def mock_ssm_response():
         'ti_test_state': '{"next_url": "test_next_url", "continue_invoke": "False"}'
     }
 
+def mock_invalid_ssm_response():
+    return {
+        'threat_intel_downloader_api_creds': 'invalid_value'
+    }
+
 def mock_config():
     '''Helper function to create a fake config for Threat Intel Downloader'''
     return {
@@ -91,3 +96,35 @@ def mock_config():
         'table_wcu': 10,
         'timeout': '180'
     }
+
+LAMBDA_FILE = 'conf/lambda.json'
+
+LAMBDA_SETTINGS = {
+    'alert_processor_config': {
+        'handler': 'stream_alert.alert_processor.main.handler',
+        'source_bucket': 'unit-testing.streamalert.source',
+        'source_current_hash': '<auto_generated>',
+        'source_object_key': '<auto_generated>',
+        'third_party_libraries': []
+    },
+    'rule_processor_config': {
+        'handler': 'stream_alert.rule_processor.main.handler',
+        'source_bucket': 'unit-testing.streamalert.source',
+        'source_current_hash': '<auto_generated>',
+        'source_object_key': '<auto_generated>',
+        'third_party_libraries': [
+            'jsonpath_rw',
+            'netaddr'
+        ]
+    },
+    'threat_intel_downloader_config': {
+        'enabled': True,
+        'handler': 'main.handler',
+        'timeout': '60',
+        'memory': '128',
+        'source_bucket': 'unit-testing.streamalert.source',
+        'source_current_hash': '<auto_generated>',
+        'source_object_key': '<auto_generated>',
+        'third_party_libraries': []
+    }
+}
