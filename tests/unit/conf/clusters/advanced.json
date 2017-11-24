@@ -27,7 +27,9 @@
     },
     "s3_events": [
       {
-        "bucket_id": "unit-test-bucket.data"
+        "bucket_id": "unit-test-bucket.data",
+        "filter_prefix": "AWSLogs/123456789/CloudTrail/us-east-1/",
+        "filter_suffix": ".log"
       },
       {
         "bucket_id": "unit-test.cloudtrail.data",
