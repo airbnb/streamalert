@@ -49,17 +49,17 @@ def partition_statement(partitions, bucket, table_name):
     Returns:
         str: The ALTER TABLE statement to add the new partitions
     """
-    statement = 'ALTER TABLE {} ADD '.format(table_name)
+    statement = 'ALTER TABLE {} ADD IF NOT EXISTS '.format(table_name)
 
     for partition in sorted(partitions):
         parts = PARTITION_PARTS.match(partition)
         if not parts:
             continue
 
+        # The returned partition from the SHOW PARTITIONS command is dt=YYYY-MM-DD-HH,
+        # But when re-creating new partitions this value must be quoted
         statement += ('PARTITION ({partition}) '
                       'LOCATION \'s3://{bucket}/{table_name}/{year}/{month}/{day}/{hour}\' '.format(
-                          # The passed in partition is just dt=YYYY-MM-DD-HH, but we need to
-                          # quote the value of the partition when re-creating.
                           partition='dt = \'{}-{}-{}-{}\''.format(
                               parts.group('year'),
                               parts.group('month'),

@@ -29,7 +29,7 @@ SCHEMA_TYPE_MAPPING = {
     dict: 'map<string, string>',
     list: 'array<string>'
 }
-
+MAX_QUERY_LENGTH = 262144
 
 def create_database(athena_client):
     """Create the 'streamalert' Athena database
@@ -93,6 +93,13 @@ def rebuild_partitions(athena_client, options, config):
 
         new_partitions_statement = athena_helpers.partition_statement(
             unique_partitions, options.bucket, options.table_name)
+
+        # Make sure our new alter table statement is within the query API limits
+        if len(new_partitions_statement) > MAX_QUERY_LENGTH:
+            LOGGER_CLI.error('Partition statement too large, writing to local file')
+            with open('partitions_{}.txt'.format(options.table_name), 'w') as partition_file:
+                partition_file.write(new_partitions_statement)
+            return
 
         # Re-create the table with previous partitions
         options.refresh_type = 'add_hive_partition'
@@ -249,6 +256,7 @@ def create_table(athena_client, options, config):
             'CREATE EXTERNAL TABLE {table_name} ({schema}) '
             'PARTITIONED BY (dt string) '
             'ROW FORMAT SERDE \'org.openx.data.jsonserde.JsonSerDe\' '
+            'WITH SERDEPROPERTIES ( \'ignore.malformed.json\' = \'true\') '
             'LOCATION \'s3://{bucket}/{table_name}/\''.format(
                 table_name=options.table_name,
                 # Use the minus index to remove the last comma
