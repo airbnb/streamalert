@@ -325,7 +325,9 @@ class TestPagerDutyIncidentOutput(object):
         json_check = {'priorities': [{'id': 'verified_priority_id', 'name': priority_name}]}
         get_mock.return_value.json.return_value = json_check
 
-        priority_verified = self._dispatcher._priority_verify(priority_name)
+        context = {'incident_priority': priority_name}
+
+        priority_verified = self._dispatcher._priority_verify(context)
         assert_equal(priority_verified['id'], 'verified_priority_id')
         assert_equal(priority_verified['type'], 'priority_reference')
 
@@ -335,8 +337,10 @@ class TestPagerDutyIncidentOutput(object):
         # /priorities
         get_mock.return_value.status_code = 404
 
-        priority_not_verified = self._dispatcher._priority_verify('some_priority')
-        assert_false(priority_not_verified)
+        context = {'incident_priority': 'priority_name'}
+
+        priority_not_verified = self._dispatcher._priority_verify(context)
+        assert_equal(priority_not_verified, dict())
 
     @patch('requests.get')
     def test_priority_verify_empty(self, get_mock):
@@ -346,8 +350,10 @@ class TestPagerDutyIncidentOutput(object):
         json_check = {}
         get_mock.return_value.json.return_value = json_check
 
-        priority_not_verified = self._dispatcher._priority_verify('some_priority')
-        assert_false(priority_not_verified)
+        context = {'incident_priority': 'priority_name'}
+
+        priority_not_verified = self._dispatcher._priority_verify(context)
+        assert_equal(priority_not_verified, dict())
 
     @patch('requests.get')
     def test_priority_verify_not_found(self, get_mock):
@@ -357,8 +363,10 @@ class TestPagerDutyIncidentOutput(object):
         json_check = {'priorities': [{'id': 'verified_priority_id', 'name': 'not_priority_name'}]}
         get_mock.return_value.json.return_value = json_check
 
-        priority_not_verified = self._dispatcher._priority_verify('some_priority')
-        assert_false(priority_not_verified)
+        context = {'incident_priority': 'priority_name'}
+
+        priority_not_verified = self._dispatcher._priority_verify(context)
+        assert_equal(priority_not_verified, dict())
 
     @patch('requests.get')
     def test_priority_verify_invalid(self, get_mock):
@@ -368,8 +376,10 @@ class TestPagerDutyIncidentOutput(object):
         json_check = {'not_priorities': [{'id': 'verified_priority_id', 'name': 'priority_name'}]}
         get_mock.return_value.json.return_value = json_check
 
-        priority_not_verified = self._dispatcher._priority_verify('some_priority')
-        assert_false(priority_not_verified)
+        context = {'incident_priority': 'priority_name'}
+
+        priority_not_verified = self._dispatcher._priority_verify(context)
+        assert_equal(priority_not_verified, dict())
 
     @patch('requests.get')
     def test_incident_assignment_user(self, get_mock):

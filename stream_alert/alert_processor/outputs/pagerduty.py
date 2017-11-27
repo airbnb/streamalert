@@ -337,30 +337,34 @@ class PagerDutyIncidentOutput(OutputDispatcher):
 
         return item_id
 
-    def _priority_verify(self, priority_name):
+    def _priority_verify(self, context):
         """Method to verify the existance of a incident priority with the API
 
         Args:
-            priority_name (str): Priority to query about in the API
+            context (dict): Context provided in the alert record
 
         Returns:
             dict: JSON object be used in the API call, containing the priority id
-                  and the priority reference, False if it fails or it does not exist
+                  and the priority reference, empty if it fails or it does not exist
         """
+        priority_name = context.get('incident_priority', False)
+        if not priority_name:
+            return dict()
+
         priorities_url = self._get_endpoint(self._base_url, self.PRIORITIES_ENDPOINT)
         resp = self._get_request(priorities_url, {}, self._headers, False)
 
         if not self._check_http_response(resp):
-            return False
+            return dict()
 
         response = resp.json()
         if not response:
-            return False
+            return dict()
 
         priorities = response.get('priorities', [])
 
         if not priorities:
-            return False
+            return dict()
 
         # If the requested priority is in the list, get the id
         priority_id = next(
@@ -370,7 +374,7 @@ class PagerDutyIncidentOutput(OutputDispatcher):
         if priority_id:
             return {'id': priority_id, 'type': 'priority_reference'}
 
-        return False
+        return dict()
 
     def _incident_assignment(self, context):
         """Method to determine if the incident gets assigned to a user or an escalation policy
@@ -439,11 +443,8 @@ class PagerDutyIncidentOutput(OutputDispatcher):
 
         # Use the priority provided in the context, use it or the incident will be low priority
         incident_priority = {}
-        _priority = rule_context.get('incident_priority', False)
-        if _priority:
-            verified_priority = self._priority_verify(_priority)
-            if verified_priority:
-                incident_priority = verified_priority
+        if rule_context:
+            incident_priority = self._priority_verify(rule_context)
 
         # Incident assignment goes in this order:
         #  Provided user -> provided policy -> default policy
