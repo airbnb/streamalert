@@ -28,6 +28,7 @@ def generate_s3_events(cluster_name, cluster_dict, config):
         bool: Result of applying the s3_events module
     """
     modules = config['clusters'][cluster_name]['modules']
+    prefix = config['global']['account']['prefix']
     s3_event_buckets = modules['s3_events']
 
     # Detect legacy and convert
@@ -38,19 +39,21 @@ def generate_s3_events(cluster_name, cluster_dict, config):
         LOGGER_CLI.info('Converting legacy S3 Events config')
         config.write()
 
-    for bucket_info in s3_event_buckets:
+    # Add each configured S3 bucket module
+    for index, bucket_info in enumerate(s3_event_buckets):
         if 'bucket_id' not in bucket_info:
             LOGGER_CLI.error('Config Error: Missing bucket_id key from s3_event configuration')
             return False
 
-        cluster_dict['module']['s3_events_{}'.format(bucket_info['bucket_id'].replace(
-            '.', '_'))] = {
-                'source': 'modules/tf_stream_alert_s3_events',
-                'lambda_function_arn':
-                '${{module.stream_alert_{}.lambda_arn}}'.format(cluster_name),
-                'bucket_id': bucket_info['bucket_id'],
-                'enable_events': bucket_info.get('enable_events', True),
-                'lambda_role_id': '${{module.stream_alert_{}.lambda_role_id}}'.format(cluster_name)
-            }
+        cluster_dict['module']['s3_events_{}_{}_{}'.format(prefix, cluster_name, index)] = {
+            'source': 'modules/tf_stream_alert_s3_events',
+            'lambda_function_arn': '${{module.stream_alert_{}.lambda_arn}}'.format(cluster_name),
+            'bucket_id': bucket_info['bucket_id'],
+            'notification_id': '{}_{}'.format(cluster_name, index),
+            'enable_events': bucket_info.get('enable_events', True),
+            'lambda_role_id': '${{module.stream_alert_{}.lambda_role_id}}'.format(cluster_name),
+            'filter_prefix': bucket_info.get('filter_prefix', ''),
+            'filter_suffix': bucket_info.get('filter_suffix', '')
+        }
 
     return True

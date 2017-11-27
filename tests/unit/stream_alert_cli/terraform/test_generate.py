@@ -409,7 +409,7 @@ class TestTerraformGenerate(object):
             'cloudwatch_monitoring_test',
             'kinesis_test',
             'kinesis_events_test',
-            's3_events_unit-test-bucket_legacy_data'
+            's3_events_unit-testing_test_0'
         }
 
         assert_equal(set(tf_cluster['module'].keys()), test_modules)
@@ -435,8 +435,8 @@ class TestTerraformGenerate(object):
             'kinesis_events_advanced',
             'flow_logs_advanced',
             'cloudtrail_advanced',
-            's3_events_unit-test-bucket_data',
-            's3_events_unit-test_cloudtrail_data'
+            's3_events_unit-testing_advanced_1',
+            's3_events_unit-testing_advanced_0'
         }
 
         assert_equal(set(tf_cluster['module'].keys()), advanced_modules)
