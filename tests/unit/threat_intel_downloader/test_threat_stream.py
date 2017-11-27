@@ -46,7 +46,6 @@ class TestThreatStream(object):
         self.region = 'us-east-1'
         self.table_name = 'test_table_name'
 
-    #@patch('boto3.client', Mock(return_value=MockSSMClient(valid_creds=1)))
     @patch('boto3.client')
     @patch('stream_alert.threat_intel_downloader.threat_stream.requests.get',
            side_effect=mock_requests_get)
@@ -73,7 +72,6 @@ class TestThreatStream(object):
         assert_equal(next_url, 'next_url')
         assert_equal(continue_invoke, False)
 
-    #@patch('boto3.client', Mock(return_value=MockSSMClient(valid_creds=1)))
     @patch('boto3.client')
     def test_process_data(self, mock_ssm):
         """ThreatStream - Test raw ioc data is processed correctly"""

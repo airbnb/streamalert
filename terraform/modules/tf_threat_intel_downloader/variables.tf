@@ -4,6 +4,8 @@ variable "account_id" {}
 
 variable "lambda_handler" {}
 
+variable "lambda_function_arn" {}
+
 variable "lambda_memory" {
   type    = "string"
   default = "128"

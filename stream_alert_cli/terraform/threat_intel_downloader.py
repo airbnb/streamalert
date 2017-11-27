@@ -38,6 +38,7 @@ def generate_threat_intel_downloader(config):
         'account_id': config['global']['account']['aws_account_id'],
         'region': config['global']['account']['region'],
         'source': 'modules/tf_threat_intel_downloader',
+        'lambda_function_arn': '${module.threat_intel_downloader.lambda_arn}',
         'lambda_handler': ti_downloader_config['handler'],
         'lambda_memory': ti_downloader_config.get('memory', '128'),
         'lambda_timeout': ti_downloader_config.get('timeout', '60'),

@@ -1,6 +1,6 @@
 // IAM Role: Execution Role
 resource "aws_iam_role" "threat_intel_downloader" {
-  name               = "${var.prefix}_threat_intel_downloader"
+  name               = "${var.prefix}_streamalert_threat_intel_downloader"
   assume_role_policy = "${data.aws_iam_policy_document.lambda_assume_role_policy.json}"
 }
 
@@ -19,7 +19,7 @@ data "aws_iam_policy_document" "lambda_assume_role_policy" {
 
 // IAM Role Policy: Allow lambda function to invoke the Lambda Function
 resource "aws_iam_role_policy" "threat_intel_downloader" {
-  name   = "invoke_lambda_function_role_policy"
+  name   = "InvokeLambdaFunctionRolePolicy"
   role   = "${aws_iam_role.threat_intel_downloader.id}"
   policy = "${data.aws_iam_policy_document.invoke_lambda_function.json}"
 }
@@ -34,14 +34,14 @@ data "aws_iam_policy_document" "invoke_lambda_function" {
     ]
 
     resources = [
-      "arn:aws:lambda:${var.region}:${var.account_id}:function:${var.prefix}_streamalert_threat_intel_downloader",
+      "${var.lambda_function_arn}",
     ]
   }
 }
 
 // IAM Role Policy: Allow the lambda function to create/update CloudWatch logs
 resource "aws_iam_role_policy" "cloudwatch_logs" {
-  name   = "cloudwatch_logs_role_policy"
+  name   = "CloudwatchLogsRolePolicy"
   role   = "${aws_iam_role.threat_intel_downloader.id}"
   policy = "${data.aws_iam_policy_document.cloudwatch_logs_policy.json}"
 }
@@ -76,7 +76,7 @@ data "aws_iam_policy_document" "cloudwatch_logs_policy" {
 
 // IAM role policy: Allow lambda function to read/write data from DynamoDB
 resource "aws_iam_role_policy" "read_write_dynamodb" {
-  name   = "read_dynamodb"
+  name   = "ReadDynamodb"
   role   = "${aws_iam_role.threat_intel_downloader.id}"
   policy = "${data.aws_iam_policy_document.read_write_dynamodb.json}"
 }
@@ -94,20 +94,20 @@ data "aws_iam_policy_document" "read_write_dynamodb" {
     ]
 
     resources = [
-      "arn:aws:dynamodb:${var.region}:${var.account_id}:table/${var.prefix}_streamalert_threat_intel_downloader",
+      "${aws_dynamodb_table.threat_intel_ioc.arn}",
     ]
   }
 }
 
 // IAM role policy: Allow lambda function to read from parameter store
-resource "aws_iam_role_policy" "read_api_creds_from_ssm" {
-  name   = "read_ssm"
+resource "aws_iam_role_policy" "get_api_creds_from_ssm" {
+  name   = "SSMGetThreatIntelParms"
   role   = "${aws_iam_role.threat_intel_downloader.id}"
-  policy = "${data.aws_iam_policy_document.read_api_creds_from_ssm.json}"
+  policy = "${data.aws_iam_policy_document.get_api_creds_from_ssm.json}"
 }
 
 // IAM Policy Doc: Allow lambda function to read from parameter store
-data "aws_iam_policy_document" "read_api_creds_from_ssm" {
+data "aws_iam_policy_document" "get_api_creds_from_ssm" {
   statement {
     effect = "Allow"
 
@@ -123,7 +123,7 @@ data "aws_iam_policy_document" "read_api_creds_from_ssm" {
 
 // IAM Role Policy: Allow the Threat Intel Downloader function to publish sns (used for DLQ)
 resource "aws_iam_role_policy" "theat_intel_downloader_publish_sns" {
-  name   = "threat_intel_downloader_publish_sns_role_policy"
+  name   = "ThreatIntelDownloaderPublishSnsRolePolicy"
   role   = "${aws_iam_role.threat_intel_downloader.id}"
   policy = "${data.aws_iam_policy_document.theat_intel_downloader_publish_sns.json}"
 }

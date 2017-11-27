@@ -32,8 +32,8 @@ from stream_alert.shared import metrics
 from stream_alert_cli import __version__ as version
 from stream_alert_cli.logger import LOGGER_CLI
 from stream_alert_cli.runner import cli_runner
-from app_integrations.config import AWS_RATE_RE, AWS_RATE_HELPER
 from app_integrations.apps.app_base import StreamAlertApp
+from app_integrations.config import AWS_RATE_RE, AWS_RATE_HELPER
 
 CLUSTERS = [
     os.path.splitext(cluster)[0] for _, _, files in os.walk('conf/clusters')

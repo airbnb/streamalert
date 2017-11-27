@@ -2,7 +2,7 @@
 import logging
 import os
 
-__version__ = '0.0.1'
+__version__ = '0.1.0'
 
 # Create a package level logger to import
 LEVEL = os.environ.get('LOGGER_LEVEL', 'INFO').upper()
