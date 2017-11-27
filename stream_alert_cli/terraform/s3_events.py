@@ -49,6 +49,7 @@ def generate_s3_events(cluster_name, cluster_dict, config):
             'source': 'modules/tf_stream_alert_s3_events',
             'lambda_function_arn': '${{module.stream_alert_{}.lambda_arn}}'.format(cluster_name),
             'bucket_id': bucket_info['bucket_id'],
+            'notification_id': '{}_{}'.format(cluster_name, index),
             'enable_events': bucket_info.get('enable_events', True),
             'lambda_role_id': '${{module.stream_alert_{}.lambda_role_id}}'.format(cluster_name),
             'filter_prefix': bucket_info.get('filter_prefix', ''),

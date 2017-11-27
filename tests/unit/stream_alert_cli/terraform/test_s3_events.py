@@ -50,6 +50,7 @@ def test_generate_s3_events():
                 'source': 'modules/tf_stream_alert_s3_events',
                 'lambda_function_arn': '${module.stream_alert_advanced.lambda_arn}',
                 'bucket_id': 'unit-test-bucket.data',
+                'notification_id': 'advanced_0',
                 'enable_events': True,
                 'lambda_role_id': '${module.stream_alert_advanced.lambda_role_id}',
                 'filter_suffix': '.log',
@@ -60,6 +61,7 @@ def test_generate_s3_events():
                 'lambda_function_arn': '${module.stream_alert_advanced.lambda_arn}',
                 'bucket_id': 'unit-test.cloudtrail.data',
                 'enable_events': False,
+                'notification_id': 'advanced_1',
                 'lambda_role_id': '${module.stream_alert_advanced.lambda_role_id}',
                 'filter_suffix': '',
                 'filter_prefix': ''
