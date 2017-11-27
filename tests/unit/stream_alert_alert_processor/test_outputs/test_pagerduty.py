@@ -143,6 +143,7 @@ class TestPagerDutyOutputV2(object):
         log_mock.assert_called_with('Failed to send alert to %s', self.SERVICE)
 
 
+#pylint: disable=too-many-public-methods
 @mock_s3
 @mock_kms
 class TestPagerDutyIncidentOutput(object):
@@ -316,6 +317,61 @@ class TestPagerDutyIncidentOutput(object):
         assert_true(self._dispatcher._item_verify('valid_item', 'items', 'item_reference', False))
 
     @patch('requests.get')
+    def test_priority_verify_success(self, get_mock):
+        """PagerDutyIncidentOutput - Priority Verify Success"""
+        priority_name = 'priority_name'
+        # /priorities
+        get_mock.return_value.status_code = 200
+        json_check = {'priorities': [{'id': 'verified_priority_id', 'name': priority_name}]}
+        get_mock.return_value.json.return_value = json_check
+
+        priority_verified = self._dispatcher._priority_verify(priority_name)
+        assert_equal(priority_verified['id'], 'verified_priority_id')
+        assert_equal(priority_verified['type'], 'priority_reference')
+
+    @patch('requests.get')
+    def test_priority_verify_fail(self, get_mock):
+        """PagerDutyIncidentOutput - Priority Verify Fail"""
+        # /priorities
+        get_mock.return_value.status_code = 404
+
+        priority_not_verified = self._dispatcher._priority_verify('some_priority')
+        assert_false(priority_not_verified)
+
+    @patch('requests.get')
+    def test_priority_verify_empty(self, get_mock):
+        """PagerDutyIncidentOutput - Priority Verify Empty"""
+        # /priorities
+        get_mock.return_value.status_code = 200
+        json_check = {}
+        get_mock.return_value.json.return_value = json_check
+
+        priority_not_verified = self._dispatcher._priority_verify('some_priority')
+        assert_false(priority_not_verified)
+
+    @patch('requests.get')
+    def test_priority_verify_not_found(self, get_mock):
+        """PagerDutyIncidentOutput - Priority Verify Not Found"""
+        # /priorities
+        get_mock.return_value.status_code = 200
+        json_check = {'priorities': [{'id': 'verified_priority_id', 'name': 'not_priority_name'}]}
+        get_mock.return_value.json.return_value = json_check
+
+        priority_not_verified = self._dispatcher._priority_verify('some_priority')
+        assert_false(priority_not_verified)
+
+    @patch('requests.get')
+    def test_priority_verify_invalid(self, get_mock):
+        """PagerDutyIncidentOutput - Priority Verify Invalid"""
+        # /priorities
+        get_mock.return_value.status_code = 200
+        json_check = {'not_priorities': [{'id': 'verified_priority_id', 'name': 'priority_name'}]}
+        get_mock.return_value.json.return_value = json_check
+
+        priority_not_verified = self._dispatcher._priority_verify('some_priority')
+        assert_false(priority_not_verified)
+
+    @patch('requests.get')
     def test_incident_assignment_user(self, get_mock):
         """PagerDutyIncidentOutput - Incident Assignment User"""
         context = {'assigned_user': 'user_to_assign'}
@@ -408,6 +464,36 @@ class TestPagerDutyIncidentOutput(object):
         post_mock.return_value.status_code = 200
 
         ctx = {'pagerduty-incident': {'assigned_policy': 'valid_policy'}}
+
+        assert_true(self._dispatcher.dispatch(descriptor=self.DESCRIPTOR,
+                                              rule_name='rule_name',
+                                              alert=get_alert(context=ctx)))
+
+        log_mock.assert_called_with('Successfully sent alert to %s', self.SERVICE)
+
+    @patch('logging.Logger.info')
+    @patch('requests.post')
+    @patch('requests.get')
+    def test_dispatch_success_with_priority(self, get_mock, post_mock, log_mock):
+        """PagerDutyIncidentOutput - Dispatch Success With Priority"""
+         # /priorities, /users, /escalation_policies, /services
+        type(get_mock.return_value).status_code = PropertyMock(side_effect=[200, 200, 200, 200])
+        json_user = {'users': [{'id': 'user_id'}]}
+        json_priority = {'priorities': [{'id': 'priority_id', 'name': 'priority_name'}]}
+        json_policy = {'escalation_policies': [{'id': 'policy_id'}]}
+        json_service = {'services': [{'id': 'service_id'}]}
+        get_mock.return_value.json.side_effect = [json_user, json_priority,
+                                                  json_policy, json_service]
+
+        # /incidents
+        post_mock.return_value.status_code = 200
+
+        ctx = {
+            'pagerduty-incident': {
+                'assigned_policy': 'valid_policy',
+                'incident_priority': 'priority_name'
+            }
+        }
 
         assert_true(self._dispatcher.dispatch(descriptor=self.DESCRIPTOR,
                                               rule_name='rule_name',
