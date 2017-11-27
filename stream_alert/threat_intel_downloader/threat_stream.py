@@ -110,35 +110,32 @@ class ThreatStream(object):
         """
         continue_invoke = False
         intelligence = list()
-        try:
-            https_req = requests.get('{}{}'.format(self._API_URL, next_url),
-                                     timeout=10)
-            if https_req.status_code == 200:
-                data = https_req.json()
-                if data.get('objects'):
-                    intelligence.extend(self._process_data(data['objects']))
-                LOGGER.info('IOC Offset: %d', data['meta']['offset'])
-                if not (data['meta']['next']
-                        and data['meta']['offset'] < self.threshold):
-                    LOGGER.debug('Either next token is empty or IOC offset '
-                                 'reaches threshold %d. Stop retrieve more '
-                                 'IOCs.', self.threshold)
-                    continue_invoke = False
-                else:
-                    next_url = data['meta']['next']
-                    continue_invoke = True
-            elif https_req.status_code == 401:
-                raise ThreatStreamRequestsError('Response status code 401, unauthorized.')
-            elif https_req.status_code == 500:
-                raise ThreatStreamRequestsError('Response status code 500, retry now.')
+
+        https_req = requests.get('{}{}'.format(self._API_URL, next_url),
+                                 timeout=10)
+        if https_req.status_code == 200:
+            data = https_req.json()
+            if data.get('objects'):
+                intelligence.extend(self._process_data(data['objects']))
+            LOGGER.info('IOC Offset: %d', data['meta']['offset'])
+            if not (data['meta']['next']
+                    and data['meta']['offset'] < self.threshold):
+                LOGGER.debug('Either next token is empty or IOC offset '
+                             'reaches threshold %d. Stop retrieve more '
+                             'IOCs.', self.threshold)
+                continue_invoke = False
             else:
-                raise ThreatStreamRequestsError('Unknown status code {}, '
-                                                'do not retry.'.format(https_req.status_code)
-                                               )
-        except (requests.exceptions.Timeout,
-                requests.exceptions.ConnectionError,
-                requests.exceptions.ChunkedEncodingError):
-            LOGGER.exception('Caught other requests exceptions, retry now.')
+                next_url = data['meta']['next']
+                continue_invoke = True
+        elif https_req.status_code == 401:
+            raise ThreatStreamRequestsError('Response status code 401, unauthorized.')
+        elif https_req.status_code == 500:
+            raise ThreatStreamRequestsError('Response status code 500, retry now.')
+        else:
+            raise ThreatStreamRequestsError('Unknown status code {}, '
+                                            'do not retry.'.format(https_req.status_code)
+                                           )
+
         return (intelligence, next_url, continue_invoke)
 
     def runner(self, event):
