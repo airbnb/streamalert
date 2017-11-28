@@ -176,6 +176,7 @@ class PagerDutyIncidentOutput(OutputDispatcher):
     USERS_ENDPOINT = 'users'
     POLICIES_ENDPOINT = 'escalation_policies'
     SERVICES_ENDPOINT = 'services'
+    PRIORITIES_ENDPOINT = 'priorities'
 
     def __init__(self, *args, **kwargs):
         OutputDispatcher.__init__(self, *args, **kwargs)
@@ -336,6 +337,48 @@ class PagerDutyIncidentOutput(OutputDispatcher):
 
         return item_id
 
+    def _priority_verify(self, context):
+        """Method to verify the existance of a incident priority with the API
+
+        Args:
+            context (dict): Context provided in the alert record
+
+        Returns:
+            dict: JSON object be used in the API call, containing the priority id
+                  and the priority reference, empty if it fails or it does not exist
+        """
+        if not context:
+            return dict()
+
+        priority_name = context.get('incident_priority', False)
+        if not priority_name:
+            return dict()
+
+        priorities_url = self._get_endpoint(self._base_url, self.PRIORITIES_ENDPOINT)
+        resp = self._get_request(priorities_url, {}, self._headers, False)
+
+        if not self._check_http_response(resp):
+            return dict()
+
+        response = resp.json()
+        if not response:
+            return dict()
+
+        priorities = response.get('priorities', [])
+
+        if not priorities:
+            return dict()
+
+        # If the requested priority is in the list, get the id
+        priority_id = next(
+            (item for item in priorities if item["name"] == priority_name), {}).get('id', False)
+
+        # If the priority id is found, compose the JSON
+        if priority_id:
+            return {'id': priority_id, 'type': 'priority_reference'}
+
+        return dict()
+
     def _incident_assignment(self, context):
         """Method to determine if the incident gets assigned to a user or an escalation policy
 
@@ -401,6 +444,9 @@ class PagerDutyIncidentOutput(OutputDispatcher):
         if rule_context:
             rule_context = rule_context.get(self.__service__, {})
 
+        # Use the priority provided in the context, use it or the incident will be low priority
+        incident_priority = self._priority_verify(rule_context)
+
         # Incident assignment goes in this order:
         #  Provided user -> provided policy -> default policy
         assigned_key, assigned_value = self._incident_assignment(rule_context)
@@ -418,6 +464,7 @@ class PagerDutyIncidentOutput(OutputDispatcher):
                 'type': 'incident',
                 'title': incident_title,
                 'service': incident_service,
+                'priority': incident_priority,
                 'body': incident_body,
                 assigned_key: assigned_value
             }
