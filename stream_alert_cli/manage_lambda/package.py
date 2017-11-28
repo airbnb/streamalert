@@ -251,7 +251,6 @@ class LambdaPackage(object):
         """
         LOGGER_CLI.info('Uploading StreamAlert package to S3')
         client = boto3.client('s3', region_name=self.config['global']['account']['region'])
-
         for package_file in (package_path, '{}.sha256'.format(package_path)):
             package_name = package_file.split('/')[-1]
             package_fh = open(package_file, 'r')
@@ -268,7 +267,6 @@ class LambdaPackage(object):
 
             package_fh.close()
             LOGGER_CLI.debug('Uploaded %s to S3', package_name)
-
         return True
 
 
@@ -315,3 +313,12 @@ class AthenaPackage(LambdaPackage):
     package_name = 'athena_partition_refresh'
     config_key = 'athena_partition_refresh_config'
     third_party_libs = {'backoff'}
+
+class ThreatIntelDownloaderPackage(LambdaPackage):
+    """Create the Threat Intel Downloader Lambda function package"""
+    package_folders = {'stream_alert/threat_intel_downloader', 'stream_alert/shared', 'conf'}
+    package_files = {'stream_alert/__init__.py'}
+    package_root_dir = '.'
+    package_name = 'threat_intel_downloader'
+    config_key = 'threat_intel_downloader_config'
+    third_party_libs = {'backoff', 'requests'}

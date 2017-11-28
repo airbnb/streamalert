@@ -28,7 +28,7 @@ from app_integrations.exceptions import AppIntegrationConfigError, AppIntegratio
 
 AWS_RATE_RE = re.compile(r'^rate\(((1) (minute|hour|day)|'
                          r'([2-9]+|[1-9]\d+) (minutes|hours|days))\)$')
-
+AWS_RATE_HELPER = 'http://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html'
 
 class AppConfig(dict):
     """Centralized config for handling configuration loading/parsing"""

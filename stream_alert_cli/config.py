@@ -125,6 +125,13 @@ class CLIConfig(object):
             'rule_processor_config']['source_bucket'].replace('PREFIX_GOES_HERE', prefix)
         self.config['lambda']['stream_alert_apps_config']['source_bucket'] = self.config['lambda'][
             'stream_alert_apps_config']['source_bucket'].replace('PREFIX_GOES_HERE', prefix)
+
+        if self.config['lambda'].get('threat_intel_downloader_config'):
+            self.config['lambda']['threat_intel_downloader_config']['source_bucket'] = \
+                self.config['lambda'][
+                    'threat_intel_downloader_config']['source_bucket'].replace(
+                        'PREFIX_GOES_HERE', prefix
+                    )
         self.write()
 
         LOGGER_CLI.info('Prefix successfully configured')
@@ -430,6 +437,53 @@ class CLIConfig(object):
                         app_info['cluster'], app_info['type'])
 
         self.write()
+
+    def add_threat_intel_downloader(self, ti_downloader_info):
+        """Add Threat Intel Downloader configure to config
+
+        Args:
+            ti_downloader_info (dict): Settings for Threat Intel Downloader Lambda
+                function, generated from commandline
+                "manage.py threat_intel_downloader enable"
+
+        Returns:
+            (bool): Return True if writing settings of Lambda function successfully.
+        """
+        default_config = {
+            'enabled': True,
+            'current_version': '$LATEST',
+            'handler': 'stream_alert.threat_intel_downloader.main.handler',
+            'interval': 'rate(1 day)',
+            'log_level': 'info',
+            'memory': '128',
+            'source_bucket': 'PREFIX_GOES_HERE.streamalert.source',
+            'source_current_hash': '<auto_generated>',
+            'source_object_key': '<auto_generated>',
+            'third_party_libraries': [
+                'requests'
+            ],
+            'timeout': '120',
+            'table_rcu': 10,
+            'table_wcu': 10,
+            'ioc_keys': [],
+            'ioc_filters': [],
+            'ioc_types': []
+        }
+
+        if 'threat_intel_downloader_config' in self.config['lambda']:
+            LOGGER_CLI.info('Threat Intel Downloader has been enabled. '
+                            'Please edit config/lambda.json if you want to '
+                            'change lambda function settings.')
+            return False
+
+        self.config['lambda']['threat_intel_downloader_config'] = default_config
+        # overwrite settings in conf/lambda.json for Threat Intel Downloader
+        for key, value in ti_downloader_info.iteritems():
+            if key in self.config['lambda']['threat_intel_downloader_config']:
+                self.config['lambda']['threat_intel_downloader_config'][key] = value
+
+        self.write()
+        return True
 
     def _config_reader(self, key, file_path, **kwargs):
         """Read a given file into a config key

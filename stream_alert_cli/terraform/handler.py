@@ -121,6 +121,8 @@ def terraform_handler(options, config):
             for target in options.target:
                 if target == 'athena':
                     targets.append('module.stream_alert_{}'.format(target))
+                elif target == 'threat_intel_downloader':
+                    targets.append('module.threat_intel_downloader')
                 else:
                     targets.extend(['module.{}_{}'.format(target, cluster)
                                     for cluster in config.clusters()])
@@ -161,6 +163,8 @@ def terraform_build(options, config):
     # This value is passed as a list
     if options.target == ['athena']:
         tf_runner(targets=['module.stream_alert_athena'])
+    elif options.target == ['threat_intel_downloader']:
+        tf_runner(targets=['module.threat_intel_downloader'])
     elif options.target:
         targets = ['module.{}_{}'.format(target, cluster)
                    for cluster in config.clusters()

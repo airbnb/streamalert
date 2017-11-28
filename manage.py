@@ -32,9 +32,8 @@ from stream_alert.shared import metrics
 from stream_alert_cli import __version__ as version
 from stream_alert_cli.logger import LOGGER_CLI
 from stream_alert_cli.runner import cli_runner
-from app_integrations.config import AWS_RATE_RE
 from app_integrations.apps.app_base import StreamAlertApp
-
+from app_integrations.config import AWS_RATE_RE, AWS_RATE_HELPER
 
 CLUSTERS = [
     os.path.splitext(cluster)[0] for _, _, files in os.walk('conf/clusters')
@@ -282,8 +281,6 @@ def _add_app_integration_new_subparser(subparsers, types, clusters):
 
     cluster_choices_block = ('\n').join('{:>28}{}'.format('', cluster) for cluster in clusters)
 
-    help_link = 'http://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html'
-
     app_integration_new_description = ("""
 StreamAlertCLI v{}
 Create a new StreamAlert app integration function to poll logs from various services
@@ -332,7 +329,7 @@ Resources:
 
     AWS: {}
 
-""".format(version, types_block, cluster_choices_block, help_link))
+""".format(version, types_block, cluster_choices_block, AWS_RATE_HELPER))
     app_integration_new_parser = subparsers.add_parser(
         'new',
         description=app_integration_new_description,
@@ -358,12 +355,12 @@ Resources:
             return val
 
         if val.startswith('rate('):
-            err = ('Invalid rate expression. For help '
-                   'see {}'.format('{}#RateExpressions'.format(help_link)))
+            err = ('Invalid rate expression \'{}\'. For help see {}'
+                   .format(val, '{}#RateExpressions'.format(AWS_RATE_HELPER)))
             raise app_integration_new_parser.error(err)
 
-        raise app_integration_new_parser.error('Invalid expression. For help '
-                                               'see {}'.format(help_link))
+        raise app_integration_new_parser.error('Invalid expression \'{}\'. For help '
+                                               'see {}'.format(val, AWS_RATE_HELPER))
 
     # App integration schedule expression (rate)
     app_integration_new_parser.add_argument(
@@ -404,7 +401,6 @@ Resources:
     # App integration function max memory
     app_integration_new_parser.add_argument(
         '--memory', required=True, help=ARGPARSE_SUPPRESS, type=_validate_memory)
-
 
 def _add_app_integration_update_auth_subparser(subparsers, clusters):
     """Add the app update-auth subparser: manage.py app update-auth [options]"""
@@ -973,9 +969,8 @@ def _add_default_lambda_args(lambda_parser):
 
     # require the name of the processor being deployed/rolled back
     lambda_parser.add_argument(
-        '-p',
-        '--processor',
-        choices=['alert', 'all', 'athena', 'rule', 'apps'],
+        '-p', '--processor',
+        choices=['alert', 'all', 'athena', 'rule', 'apps', 'threat_intel_downloader'],
         help=ARGPARSE_SUPPRESS,
         nargs='+',
         action=UniqueSetAction,
@@ -1041,7 +1036,7 @@ Examples:
         '--target',
         choices=[
             'athena', 'cloudwatch_monitoring', 'cloudtrail', 'flow_logs', 'kinesis',
-            'kinesis_events', 'stream_alert', 's3_events'
+            'kinesis_events', 'stream_alert', 's3_events', 'threat_intel_downloader'
         ],
         help=ARGPARSE_SUPPRESS,
         nargs='+')
@@ -1067,7 +1062,7 @@ Arguments:
 
     --clusters                Space delimited set of clusters to modify, defaults to all
     --debug                   Debug mode
-    --skip-terraform          Only set the config, do not run Terraform after                
+    --skip-terraform          Only set the config, do not run Terraform after
 
 Examples:
 
@@ -1185,6 +1180,150 @@ Examples:
     athena_parser.add_argument('--debug', action='store_true', help=ARGPARSE_SUPPRESS)
 
 
+def _add_threat_intel_downloader_subparser(subparsers):
+    """Add threat intel downloader subparser: manage.py threat_intel_downloader [subcommand]"""
+    ti_downloader_usage = 'manage.py threat_intel_downloader [subcommand]'
+    ti_downloader_description = ("""
+StreamAlertCLI v{}
+Threat Intel Downloader options
+
+Available Subcommands:
+
+    manage.py threat_intel_downloader enable        Enable the Threat Intel Downloader Lambda function
+
+    Required Arguments:
+
+        --timeout           The AWS Lambda function timeout value, in seconds. This should
+                              be an integer between 10 and 300.
+        --memory            The AWS Lambda function max memory value, in megabytes. This should
+                              be an integer between 128 and 1536.
+        --interval          The interval, defined using a 'rate' expression, at
+                              which this app integration function should execute. Examples of
+                              acceptable input are:
+                                'rate(1 hour)'          # Every hour (note the singular 'hour')
+                                'rate(1 day)'           # Every day
+                                'rate(2 days)'          # Every 2 days
+
+                              See the link in the Resources section below for more information.
+    Optional Arguments:
+        --table_rcu        The DynamoDB table Read Capacity Unit.
+        --table_wcu        The DynamoDB table Write Capacity Unit.
+        --ioc_keys         The keys (list) of IOC stored in DynamoDB table.
+        --ioc_filters      Filters (list) applied while retrieving IOCs from Threat Feed.
+        --ioc_types        IOC types (list) are defined by the Threat Feed. IOC types can be
+                             different from different Threat Feeds.
+
+    manage.py threat_intel_downloader update-auth   Update API credentials to parameter store.
+
+Examples:
+
+    manage.py threat_intel_downloader enable \\
+    --interval 'rate(1 day)' \\
+    --timeout 120 \\
+    --memory 128
+""".format(version))
+    ti_downloader_parser = subparsers.add_parser(
+        'threat_intel_downloader',
+        usage=ti_downloader_usage,
+        description=ti_downloader_description,
+        help=ARGPARSE_SUPPRESS,
+        formatter_class=RawTextHelpFormatter
+    )
+
+    ti_downloader_parser.set_defaults(command='threat_intel_downloader')
+
+    ti_downloader_parser.add_argument(
+        'subcommand', choices=['enable', 'update-auth'], help=ARGPARSE_SUPPRESS
+    )
+
+    # Validate the rate at which this should run
+    def _validate_scheduled_interval(val):
+        """Validate acceptable inputs for the schedule expression
+        These follow the format 'rate(5 minutes)'
+        """
+        rate_match = AWS_RATE_RE.match(val)
+        if rate_match:
+            return val
+
+        if val.startswith('rate('):
+            err = ('Invalid rate expression \'{}\'. For help see {}'
+                   .format(val, '{}#RateExpressions'.format(AWS_RATE_HELPER)))
+            raise ti_downloader_parser.error(err)
+
+        raise ti_downloader_parser.error('Invalid expression \'{}\'. For help '
+                                         'see {}'.format(val, AWS_RATE_HELPER))
+
+    ti_downloader_parser.add_argument(
+        '--interval', help=ARGPARSE_SUPPRESS, type=_validate_scheduled_interval
+    )
+
+    # Validate the timeout value to make sure it is between 10 and 300
+    def _validate_timeout(val):
+        """Validate acceptable inputs for the timeout of the function"""
+        error = 'The \'timeout\' value must be an integer between 10 and 300'
+        try:
+            timeout = int(val)
+        except ValueError:
+            raise ti_downloader_parser.error(error)
+
+        if not 10 <= timeout <= 300:
+            raise ti_downloader_parser.error(error)
+
+        return timeout
+
+    ti_downloader_parser.add_argument(
+        '--timeout', help=ARGPARSE_SUPPRESS, type=_validate_timeout
+    )
+
+    # Validate the memory value to make sure it is between 128 and 1536
+    def _validate_memory(val):
+        """Validate acceptable inputs for the memory of the function"""
+        error = 'The \'memory\' value must be an integer between 128 and 1536'
+        try:
+            memory = int(val)
+        except ValueError:
+            raise ti_downloader_parser.error(error)
+
+        if not 128 <= memory <= 1536:
+            raise ti_downloader_parser.error(error)
+
+        return memory
+
+    ti_downloader_parser.add_argument(
+        '--memory', help=ARGPARSE_SUPPRESS, type=_validate_memory
+    )
+
+    ti_downloader_parser.add_argument(
+        '--table_rcu', help=ARGPARSE_SUPPRESS, default=10
+    )
+
+    ti_downloader_parser.add_argument(
+        '--table_wcu', help=ARGPARSE_SUPPRESS, default=10
+    )
+
+    ti_downloader_parser.add_argument(
+        '--ioc_keys',
+        help=ARGPARSE_SUPPRESS,
+        default=['expiration_ts', 'itype', 'source', 'type', 'value']
+    )
+
+    ti_downloader_parser.add_argument(
+        '--ioc_filters',
+        help=ARGPARSE_SUPPRESS,
+        default=['crowdstrike', '@airbnb.com']
+    )
+
+    ti_downloader_parser.add_argument(
+        '--ioc_types',
+        help=ARGPARSE_SUPPRESS,
+        default=['domain', 'ip', 'md5']
+    )
+
+    ti_downloader_parser.add_argument(
+        '--debug', action='store_true', help=ARGPARSE_SUPPRESS
+    )
+
+
 def build_parser():
     """Build the argument parser."""
     description = ("""
@@ -1223,6 +1362,7 @@ For additional details on the available commands, try:
     _add_athena_subparser(subparsers)
     _add_app_integration_subparser(subparsers)
     _add_kinesis_subparser(subparsers)
+    _add_threat_intel_downloader_subparser(subparsers)
 
     return parser
 

@@ -17,9 +17,13 @@ import sys
 
 from app_integrations import __version__ as apps_version
 from stream_alert import __version__ as current_version
+from stream_alert.threat_intel_downloader import __version__ as ti_downloader_version
 from stream_alert_cli import helpers
-from stream_alert_cli.manage_lambda.package import (AlertProcessorPackage, AthenaPackage,
-                                                    AppIntegrationPackage, RuleProcessorPackage)
+from stream_alert_cli.manage_lambda.package import (AlertProcessorPackage,
+                                                    AthenaPackage,
+                                                    AppIntegrationPackage,
+                                                    RuleProcessorPackage,
+                                                    ThreatIntelDownloaderPackage)
 from stream_alert_cli.terraform.generate import terraform_generate
 from stream_alert_cli.version import LambdaVersion
 
@@ -43,7 +47,7 @@ def deploy(options, config):
     def _publish_version(packages):
         """Publish Lambda versions"""
         for package in packages:
-            if package.package_name == 'athena_partition_refresh':
+            if package.package_name in {'athena_partition_refresh', 'threat_intel_downloader'}:
                 published = LambdaVersion(
                     config=config, package=package, clustered_deploy=False).publish_function()
             else:
@@ -76,6 +80,15 @@ def deploy(options, config):
         app_integration_package = AppIntegrationPackage(config=config, version=apps_version)
         app_integration_package.create_and_upload()
         return app_integration_package
+
+    def _deploy_threat_intel_downloader():
+        """Create Threat Intel downloader package and publish version"""
+        threat_intel_package = ThreatIntelDownloaderPackage(
+            config=config,
+            version=ti_downloader_version
+        )
+        threat_intel_package.create_and_upload()
+        return threat_intel_package
 
     if 'all' in processor:
         targets.update({'module.stream_alert_{}'.format(x) for x in config.clusters()})
@@ -122,6 +135,10 @@ def deploy(options, config):
             targets.add('module.stream_alert_athena')
 
             packages.append(_deploy_athena_partition_refresh())
+
+        if 'threat_intel_downloader' in processor:
+            targets.add('module.threat_intel_downloader')
+            packages.append(_deploy_threat_intel_downloader())
 
     # Regenerate the Terraform configuration with the new S3 keys
     if not terraform_generate(config=config):

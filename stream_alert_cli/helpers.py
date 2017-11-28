@@ -49,7 +49,6 @@ def run_command(runner_args, **kwargs):
         ' '.join(runner_args)
     )
     error_message = kwargs.get('error_message', default_error_message)
-
     default_cwd = 'terraform'
     cwd = kwargs.get('cwd', default_cwd)
 
