@@ -16,8 +16,11 @@ limitations under the License.
 # pylint: disable=protected-access,attribute-defined-outside-init
 from mock import patch, PropertyMock
 from moto import mock_s3, mock_kms
-from nose.tools import assert_equal, assert_false, assert_true
+from nose.tools import assert_equal, assert_false, assert_true, assert_raises
 
+from stream_alert.alert_processor.outputs.output_base import (
+    OutputRequestFailure
+)
 from stream_alert.alert_processor.outputs.pagerduty import (
     PagerDutyOutput,
     PagerDutyOutputV2,
@@ -63,17 +66,15 @@ class TestPagerDutyOutput(object):
 
         log_mock.assert_called_with('Successfully sent alert to %s', self.SERVICE)
 
-    @patch('logging.Logger.error')
     @patch('requests.post')
-    def test_dispatch_failure(self, post_mock, log_mock):
+    def test_dispatch_failure(self, post_mock):
         """PagerDutyOutput - Dispatch Failure, Bad Request"""
         post_mock.return_value.status_code = 400
 
-        assert_false(self._dispatcher.dispatch(descriptor=self.DESCRIPTOR,
-                                               rule_name='rule_name',
-                                               alert=get_alert()))
-
-        log_mock.assert_called_with('Failed to send alert to %s', self.SERVICE)
+        assert_raises(OutputRequestFailure, self._dispatcher.dispatch,
+                      descriptor=self.DESCRIPTOR,
+                      rule_name='rule_name',
+                      alert=get_alert())
 
     @patch('logging.Logger.error')
     def test_dispatch_bad_descriptor(self, log_mock):
@@ -83,7 +84,6 @@ class TestPagerDutyOutput(object):
                                                alert=get_alert()))
 
         log_mock.assert_called_with('Failed to send alert to %s', self.SERVICE)
-
 
 @mock_s3
 @mock_kms
@@ -119,19 +119,17 @@ class TestPagerDutyOutputV2(object):
 
         log_mock.assert_called_with('Successfully sent alert to %s', self.SERVICE)
 
-    @patch('logging.Logger.error')
     @patch('requests.post')
-    def test_dispatch_failure(self, post_mock, log_mock):
+    def test_dispatch_failure(self, post_mock):
         """PagerDutyOutputV2 - Dispatch Failure, Bad Request"""
         json_error = {'message': 'error message', 'errors': ['error1']}
         post_mock.return_value.json.return_value = json_error
         post_mock.return_value.status_code = 400
 
-        assert_false(self._dispatcher.dispatch(descriptor=self.DESCRIPTOR,
-                                               rule_name='rule_name',
-                                               alert=get_alert()))
-
-        log_mock.assert_called_with('Failed to send alert to %s', self.SERVICE)
+        assert_raises(OutputRequestFailure, self._dispatcher.dispatch,
+                      descriptor=self.DESCRIPTOR,
+                      rule_name='rule_name',
+                      alert=get_alert())
 
     @patch('logging.Logger.error')
     def test_dispatch_bad_descriptor(self, log_mock):
@@ -557,10 +555,9 @@ class TestPagerDutyIncidentOutput(object):
 
         log_mock.assert_called_with('Successfully sent alert to %s', self.SERVICE)
 
-    @patch('logging.Logger.error')
     @patch('requests.post')
     @patch('requests.get')
-    def test_dispatch_failure_bad_everything(self, get_mock, post_mock, log_mock):
+    def test_dispatch_failure_bad_everything(self, get_mock, post_mock):
         """PagerDutyIncidentOutput - Dispatch Failure: No User, Bad Policy, Bad Service"""
         # /users, /users, /escalation_policies, /services
         type(get_mock.return_value).status_code = PropertyMock(side_effect=[200, 400, 400, 400])
@@ -570,11 +567,10 @@ class TestPagerDutyIncidentOutput(object):
         # /incidents
         post_mock.return_value.status_code = 400
 
-        assert_false(self._dispatcher.dispatch(descriptor=self.DESCRIPTOR,
-                                               rule_name='rule_name',
-                                               alert=get_alert()))
-
-        log_mock.assert_called_with('Failed to send alert to %s', self.SERVICE)
+        assert_raises(OutputRequestFailure, self._dispatcher.dispatch,
+                      descriptor=self.DESCRIPTOR,
+                      rule_name='rule_name',
+                      alert=get_alert())
 
     @patch('logging.Logger.info')
     @patch('requests.post')
@@ -601,10 +597,9 @@ class TestPagerDutyIncidentOutput(object):
 
         log_mock.assert_called_with('Successfully sent alert to %s', self.SERVICE)
 
-    @patch('logging.Logger.error')
     @patch('requests.post')
     @patch('requests.get')
-    def test_dispatch_bad_dispatch(self, get_mock, post_mock, log_mock):
+    def test_dispatch_bad_dispatch(self, get_mock, post_mock):
         """PagerDutyIncidentOutput - Dispatch Failure, Bad Request"""
         # /users, /escalation_policies, /services
         type(get_mock.return_value).status_code = PropertyMock(side_effect=[200, 200, 200])
@@ -616,11 +611,11 @@ class TestPagerDutyIncidentOutput(object):
         # /incidents
         post_mock.return_value.status_code = 400
 
-        assert_false(self._dispatcher.dispatch(descriptor=self.DESCRIPTOR,
-                                               rule_name='rule_name',
-                                               alert=get_alert()))
+        assert_raises(OutputRequestFailure, self._dispatcher.dispatch,
+                      descriptor=self.DESCRIPTOR,
+                      rule_name='rule_name',
+                      alert=get_alert())
 
-        log_mock.assert_called_with('Failed to send alert to %s', self.SERVICE)
 
     @patch('logging.Logger.error')
     @patch('requests.get')

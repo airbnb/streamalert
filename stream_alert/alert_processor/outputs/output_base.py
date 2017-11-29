@@ -44,7 +44,6 @@ class OutputRequestFailure(Exception):
 
 def retry_on_exception(exceptions):
     """Decorator function to attempt retry based on passed exceptions"""
-    print exceptions
     def real_decorator(func):
         """Actual decorator to retry on exceptions"""
         @backoff.on_exception(backoff.fibo,
@@ -55,7 +54,7 @@ def retry_on_exception(exceptions):
                               on_success=success_handler,
                               on_giveup=giveup_handler)
         def wrapper(*args, **kwargs):
-            func(*args, **kwargs)
+            return func(*args, **kwargs)
         return wrapper
     return real_decorator
 
@@ -264,14 +263,21 @@ class OutputDispatcher(object):
         return bool(success)
 
     @classmethod
-    def _get_exceptions_to_catch(cls):
+    def _catch_exceptions(cls):
         """Classmethod that returns a tuple of the exceptions to catch"""
-        return cls.get_exceptions_to_catch() + (OutputRequestFailure,)
+        default_exceptions = (OutputRequestFailure,)
+        exceptions = cls._get_exceptions_to_catch()
+        if not exceptions:
+            return default_exceptions
+
+        if isinstance(exceptions, tuple):
+            return default_exceptions + exceptions
+
+        return default_exceptions + (exceptions,)
 
     @classmethod
-    def get_exceptions_to_catch(cls):
+    def _get_exceptions_to_catch(cls):
         """Classmethod that returns a tuple of the exceptions to catch"""
-        return ()
 
     @classmethod
     def _get_request(cls, url, params=None, headers=None, verify=True):
@@ -285,11 +291,11 @@ class OutputDispatcher(object):
         Returns:
             dict: Contains the http response object
         """
-        @retry_on_exception(cls._get_exceptions_to_catch())
+        @retry_on_exception(cls._catch_exceptions())
         def do_get_request():
             return requests.get(url, headers=headers, params=params,
                                 verify=verify, timeout=cls._DEFAULT_REQUEST_TIMEOUT)
-        do_get_request()
+        return do_get_request()
 
     @classmethod
     def _post_request(cls, url, data=None, headers=None, verify=True):
@@ -303,11 +309,11 @@ class OutputDispatcher(object):
         Returns:
             dict: Contains the http response object
         """
-        @retry_on_exception(cls._get_exceptions_to_catch())
+        @retry_on_exception(cls._catch_exceptions())
         def do_post_request():
             return requests.post(url, headers=headers, json=data,
                                  verify=verify, timeout=cls._DEFAULT_REQUEST_TIMEOUT)
-        do_post_request()
+        return do_post_request()
 
     @classmethod
     def _check_http_response(cls, response):

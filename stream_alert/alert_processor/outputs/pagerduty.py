@@ -90,7 +90,11 @@ class PagerDutyOutput(OutputDispatcher):
         resp = self._post_request(creds['url'], data, None, True)
         success = self._check_http_response(resp)
 
-        return self._log_status(success)
+        log_result = self._log_status(success)
+        if not log_result:
+            raise OutputRequestFailure
+
+        return log_result
 
 @StreamAlertOutput
 class PagerDutyOutputV2(OutputDispatcher):
@@ -167,7 +171,11 @@ class PagerDutyOutputV2(OutputDispatcher):
         resp = self._post_request(creds['url'], data, None, True)
         success = self._check_http_response(resp)
 
-        return self._log_status(success)
+        log_result = self._log_status(success)
+        if not log_result:
+            raise OutputRequestFailure
+
+        return log_result
 
 @StreamAlertOutput
 class PagerDutyIncidentOutput(OutputDispatcher):
@@ -474,5 +482,8 @@ class PagerDutyIncidentOutput(OutputDispatcher):
         resp = self._post_request(incidents_url, incident, self._headers, True)
         success = self._check_http_response(resp)
 
-        if not self._log_status(success):
-            raise OutputRequestFailure
+        log_result = self._log_status(success)
+        if not log_result:
+            raise OutputRequestFailure()
+
+        return log_result
