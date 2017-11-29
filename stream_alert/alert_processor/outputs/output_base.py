@@ -21,10 +21,16 @@ import tempfile
 import requests
 import urllib3
 
+import backoff
 import boto3
 from botocore.exceptions import ClientError
 
 from stream_alert.alert_processor import LOGGER
+from stream_alert.shared.backoff_handlers import (
+    backoff_handler,
+    success_handler,
+    giveup_handler
+)
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 OutputProperty = namedtuple('OutputProperty',
@@ -35,6 +41,23 @@ OutputProperty.__new__.__defaults__ = ('', '', {' ', ':'}, False, False)
 class OutputRequestFailure(Exception):
     """OutputRequestFailure handles any HTTP failures"""
 
+
+def retry_on_exception(exceptions):
+    """Decorator function to attempt retry based on passed exceptions"""
+    print exceptions
+    def real_decorator(func):
+        """Actual decorator to retry on exceptions"""
+        @backoff.on_exception(backoff.fibo,
+                              exceptions, # This is a tuple with exceptions
+                              max_tries=OutputDispatcher.MAX_RETRY_ATTEMPTS,
+                              jitter=backoff.full_jitter,
+                              on_backoff=backoff_handler,
+                              on_success=success_handler,
+                              on_giveup=giveup_handler)
+        def wrapper(*args, **kwargs):
+            func(*args, **kwargs)
+        return wrapper
+    return real_decorator
 
 class StreamAlertOutput(object):
     """Class to be used as a decorator to register all OutputDispatcher subclasses"""
@@ -109,6 +132,9 @@ class OutputDispatcher(object):
     """
     __metaclass__ = ABCMeta
     __service__ = NotImplemented
+
+    # How many times it will attempt to retry something failing using backoff
+    MAX_RETRY_ATTEMPTS = 3
 
     # _DEFAULT_REQUEST_TIMEOUT indicates how long the requests library will wait before timing
     # out for both get and post requests. This applies to both connection and read timeouts
@@ -238,6 +264,16 @@ class OutputDispatcher(object):
         return bool(success)
 
     @classmethod
+    def _get_exceptions_to_catch(cls):
+        """Classmethod that returns a tuple of the exceptions to catch"""
+        return cls.get_exceptions_to_catch() + (OutputRequestFailure,)
+
+    @classmethod
+    def get_exceptions_to_catch(cls):
+        """Classmethod that returns a tuple of the exceptions to catch"""
+        return ()
+
+    @classmethod
     def _get_request(cls, url, params=None, headers=None, verify=True):
         """Method to return the json loaded response for this GET request
 
@@ -249,8 +285,11 @@ class OutputDispatcher(object):
         Returns:
             dict: Contains the http response object
         """
-        return requests.get(url, headers=headers, params=params,
-                            verify=verify, timeout=cls._DEFAULT_REQUEST_TIMEOUT)
+        @retry_on_exception(cls._get_exceptions_to_catch())
+        def do_get_request():
+            return requests.get(url, headers=headers, params=params,
+                                verify=verify, timeout=cls._DEFAULT_REQUEST_TIMEOUT)
+        do_get_request()
 
     @classmethod
     def _post_request(cls, url, data=None, headers=None, verify=True):
@@ -264,8 +303,11 @@ class OutputDispatcher(object):
         Returns:
             dict: Contains the http response object
         """
-        return requests.post(url, headers=headers, json=data,
-                             verify=verify, timeout=cls._DEFAULT_REQUEST_TIMEOUT)
+        @retry_on_exception(cls._get_exceptions_to_catch())
+        def do_post_request():
+            return requests.post(url, headers=headers, json=data,
+                                 verify=verify, timeout=cls._DEFAULT_REQUEST_TIMEOUT)
+        do_post_request()
 
     @classmethod
     def _check_http_response(cls, response):

@@ -20,6 +20,7 @@ from stream_alert.alert_processor import LOGGER
 from stream_alert.alert_processor.outputs.output_base import (
     OutputDispatcher,
     OutputProperty,
+    OutputRequestFailure,
     StreamAlertOutput
 )
 
@@ -473,4 +474,5 @@ class PagerDutyIncidentOutput(OutputDispatcher):
         resp = self._post_request(incidents_url, incident, self._headers, True)
         success = self._check_http_response(resp)
 
-        return self._log_status(success)
+        if not self._log_status(success):
+            raise OutputRequestFailure
