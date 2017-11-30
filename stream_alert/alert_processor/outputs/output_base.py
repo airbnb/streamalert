@@ -249,16 +249,17 @@ class OutputDispatcher(object):
         except ClientError as err:
             LOGGER.error('an error occurred during credentials decryption: %s', err.response)
 
-    def _log_status(self, success):
+    @classmethod
+    def _log_status(cls, success):
         """Log the status of sending the alerts
 
         Args:
             success (bool): Indicates if the dispatching of alerts was successful
         """
         if success:
-            LOGGER.info('Successfully sent alert to %s', self.__service__)
+            LOGGER.info('Successfully sent alert to %s', cls.__service__)
         else:
-            LOGGER.error('Failed to send alert to %s', self.__service__)
+            LOGGER.error('Failed to send alert to %s', cls.__service__)
 
         return bool(success)
 
@@ -291,10 +292,33 @@ class OutputDispatcher(object):
         Returns:
             dict: Contains the http response object
         """
+        return requests.get(url, headers=headers, params=params,
+                            verify=verify, timeout=cls._DEFAULT_REQUEST_TIMEOUT)
+
+    @classmethod
+    def _get_request_retry(cls, url, params=None, headers=None, verify=True):
+        """Method to return the json loaded response for this GET request
+        This method implements support for backoff to retry failed requests
+
+        Args:
+            url (str): Endpoint for this request
+            params (dict): Payload to send with this request
+            headers (dict): Dictionary containing request-specific header parameters
+            verify (bool): Whether or not the server's SSL certificate should be verified
+        Returns:
+            dict: Contains the http response object
+        Raises:
+            OutputRequestFailure
+        """
         @retry_on_exception(cls._catch_exceptions())
         def do_get_request():
-            return requests.get(url, headers=headers, params=params,
-                                verify=verify, timeout=cls._DEFAULT_REQUEST_TIMEOUT)
+            """Decorator to perform the request with retry/backoff"""
+            resp = cls._get_request(url, params, headers, verify)
+            success = cls._check_http_response(resp)
+            if not success:
+                raise OutputRequestFailure()
+
+            return resp
         return do_get_request()
 
     @classmethod
@@ -309,10 +333,33 @@ class OutputDispatcher(object):
         Returns:
             dict: Contains the http response object
         """
+        return requests.post(url, headers=headers, json=data,
+                             verify=verify, timeout=cls._DEFAULT_REQUEST_TIMEOUT)
+
+    @classmethod
+    def _post_request_retry(cls, url, data=None, headers=None, verify=True):
+        """Method to return the json loaded response for this POST request
+        This method implements support for backoff to retry failed requests
+
+        Args:
+            url (str): Endpoint for this request
+            data (dict): Payload to send with this request
+            headers (dict): Dictionary containing request-specific header parameters
+            verify (bool): Whether or not the server's SSL certificate should be verified
+        Returns:
+            bool: Indicates whether the request was successful
+        Raises:
+            OutputRequestFailure
+        """
         @retry_on_exception(cls._catch_exceptions())
         def do_post_request():
-            return requests.post(url, headers=headers, json=data,
-                                 verify=verify, timeout=cls._DEFAULT_REQUEST_TIMEOUT)
+            """Decorator to perform the request with retry/backoff"""
+            resp = cls._post_request(url, data, headers, verify)
+            success = cls._check_http_response(resp)
+            if not success:
+                raise OutputRequestFailure()
+
+            return success
         return do_post_request()
 
     @classmethod
