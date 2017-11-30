@@ -145,6 +145,7 @@ class TestPagerDutyOutputV2(object):
 #pylint: disable=too-many-public-methods
 @mock_s3
 @mock_kms
+@patch('stream_alert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS', 1)
 class TestPagerDutyIncidentOutput(object):
     """Test class for PagerDutyIncidentOutput"""
     DESCRIPTOR = 'unit_test_pagerduty-incident'
@@ -250,8 +251,6 @@ class TestPagerDutyIncidentOutput(object):
         assert_equal(policy_verified['id'], 'good_policy_id')
         assert_equal(policy_verified['type'], 'escalation_policy_reference')
 
-    @patch('stream_alert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS',
-           1)
     @patch('requests.get')
     def test_policy_verify_fail_default(self, get_mock):
         """PagerDutyIncidentOutput - Policy Verify Fail (Default)"""
@@ -309,7 +308,7 @@ class TestPagerDutyIncidentOutput(object):
 
     @patch('requests.get')
     def test_item_verify_no_get_id_success(self, get_mock):
-        """Item Verify No Get Id Success - PagerDutyIncidentOutput"""
+        """PagerDutyIncidentOutput - Item Verify No Get Id Success"""
         # /items
         get_mock.return_value.status_code = 200
         json_check = {'items': [{'id': 'verified_item_id'}]}
@@ -558,11 +557,10 @@ class TestPagerDutyIncidentOutput(object):
 
         log_mock.assert_called_with('Successfully sent alert to %s', self.SERVICE)
 
-    @patch('stream_alert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS',
-           1)
+    @patch('logging.Logger.error')
     @patch('requests.post')
     @patch('requests.get')
-    def test_dispatch_failure_bad_everything(self, get_mock, post_mock):
+    def test_dispatch_failure_bad_everything(self, get_mock, post_mock, log_mock):
         """PagerDutyIncidentOutput - Dispatch Failure: No User, Bad Policy, Bad Service"""
         # /users, /users, /escalation_policies, /services
         type(get_mock.return_value).status_code = PropertyMock(side_effect=[200, 400, 400, 400])
@@ -576,11 +574,12 @@ class TestPagerDutyIncidentOutput(object):
                                                rule_name='rule_name',
                                                alert=get_alert()))
 
-    @patch('stream_alert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS',
-           1)
+        log_mock.assert_called_with('Failed to send alert to %s', self.SERVICE)
+
+    @patch('logging.Logger.info')
     @patch('requests.post')
     @patch('requests.get')
-    def test_dispatch_success_bad_policy(self, get_mock, post_mock):
+    def test_dispatch_success_bad_policy(self, get_mock, post_mock, log_mock):
         """PagerDutyIncidentOutput - Dispatch Success, Bad Policy"""
         # /users, /escalation_policies, /escalation_policies, /services
         type(get_mock.return_value).status_code = PropertyMock(side_effect=[200, 400, 200, 200])
@@ -599,6 +598,8 @@ class TestPagerDutyIncidentOutput(object):
         assert_true(self._dispatcher.dispatch(descriptor=self.DESCRIPTOR,
                                               rule_name='rule_name',
                                               alert=get_alert(context=ctx)))
+
+        log_mock.assert_called_with('Successfully sent alert to %s', self.SERVICE)
 
     @patch('logging.Logger.error')
     @patch('requests.post')
