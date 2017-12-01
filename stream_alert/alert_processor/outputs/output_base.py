@@ -21,10 +21,16 @@ import tempfile
 import requests
 import urllib3
 
+import backoff
 import boto3
 from botocore.exceptions import ClientError
 
 from stream_alert.alert_processor import LOGGER
+from stream_alert.shared.backoff_handlers import (
+    backoff_handler,
+    success_handler,
+    giveup_handler
+)
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 OutputProperty = namedtuple('OutputProperty',
@@ -35,6 +41,22 @@ OutputProperty.__new__.__defaults__ = ('', '', {' ', ':'}, False, False)
 class OutputRequestFailure(Exception):
     """OutputRequestFailure handles any HTTP failures"""
 
+
+def retry_on_exception(exceptions):
+    """Decorator function to attempt retry based on passed exceptions"""
+    def real_decorator(func):
+        """Actual decorator to retry on exceptions"""
+        @backoff.on_exception(backoff.fibo,
+                              exceptions, # This is a tuple with exceptions
+                              max_tries=OutputDispatcher.MAX_RETRY_ATTEMPTS,
+                              jitter=backoff.full_jitter,
+                              on_backoff=backoff_handler,
+                              on_success=success_handler,
+                              on_giveup=giveup_handler)
+        def wrapper(*args, **kwargs):
+            return func(*args, **kwargs)
+        return wrapper
+    return real_decorator
 
 class StreamAlertOutput(object):
     """Class to be used as a decorator to register all OutputDispatcher subclasses"""
@@ -109,6 +131,9 @@ class OutputDispatcher(object):
     """
     __metaclass__ = ABCMeta
     __service__ = NotImplemented
+
+    # How many times it will attempt to retry something failing using backoff
+    MAX_RETRY_ATTEMPTS = 3
 
     # _DEFAULT_REQUEST_TIMEOUT indicates how long the requests library will wait before timing
     # out for both get and post requests. This applies to both connection and read timeouts
@@ -224,18 +249,36 @@ class OutputDispatcher(object):
         except ClientError as err:
             LOGGER.error('an error occurred during credentials decryption: %s', err.response)
 
-    def _log_status(self, success):
+    @classmethod
+    def _log_status(cls, success):
         """Log the status of sending the alerts
 
         Args:
             success (bool): Indicates if the dispatching of alerts was successful
         """
         if success:
-            LOGGER.info('Successfully sent alert to %s', self.__service__)
+            LOGGER.info('Successfully sent alert to %s', cls.__service__)
         else:
-            LOGGER.error('Failed to send alert to %s', self.__service__)
+            LOGGER.error('Failed to send alert to %s', cls.__service__)
 
         return bool(success)
+
+    @classmethod
+    def _catch_exceptions(cls):
+        """Classmethod that returns a tuple of the exceptions to catch"""
+        default_exceptions = (OutputRequestFailure,)
+        exceptions = cls._get_exceptions_to_catch()
+        if not exceptions:
+            return default_exceptions
+
+        if isinstance(exceptions, tuple):
+            return default_exceptions + exceptions
+
+        return default_exceptions + (exceptions,)
+
+    @classmethod
+    def _get_exceptions_to_catch(cls):
+        """Classmethod that returns a tuple of the exceptions to catch"""
 
     @classmethod
     def _get_request(cls, url, params=None, headers=None, verify=True):
@@ -253,6 +296,32 @@ class OutputDispatcher(object):
                             verify=verify, timeout=cls._DEFAULT_REQUEST_TIMEOUT)
 
     @classmethod
+    def _get_request_retry(cls, url, params=None, headers=None, verify=True):
+        """Method to return the json loaded response for this GET request
+        This method implements support for backoff to retry failed requests
+
+        Args:
+            url (str): Endpoint for this request
+            params (dict): Payload to send with this request
+            headers (dict): Dictionary containing request-specific header parameters
+            verify (bool): Whether or not the server's SSL certificate should be verified
+        Returns:
+            dict: Contains the http response object
+        Raises:
+            OutputRequestFailure
+        """
+        @retry_on_exception(cls._catch_exceptions())
+        def do_get_request():
+            """Decorated nested function to perform the request with retry/backoff"""
+            resp = cls._get_request(url, params, headers, verify)
+            success = cls._check_http_response(resp)
+            if not success:
+                raise OutputRequestFailure()
+
+            return resp
+        return do_get_request()
+
+    @classmethod
     def _post_request(cls, url, data=None, headers=None, verify=True):
         """Method to return the json loaded response for this POST request
 
@@ -266,6 +335,32 @@ class OutputDispatcher(object):
         """
         return requests.post(url, headers=headers, json=data,
                              verify=verify, timeout=cls._DEFAULT_REQUEST_TIMEOUT)
+
+    @classmethod
+    def _post_request_retry(cls, url, data=None, headers=None, verify=True):
+        """Method to return the json loaded response for this POST request
+        This method implements support for backoff to retry failed requests
+
+        Args:
+            url (str): Endpoint for this request
+            data (dict): Payload to send with this request
+            headers (dict): Dictionary containing request-specific header parameters
+            verify (bool): Whether or not the server's SSL certificate should be verified
+        Returns:
+            bool: Indicates whether the request was successful
+        Raises:
+            OutputRequestFailure
+        """
+        @retry_on_exception(cls._catch_exceptions())
+        def do_post_request():
+            """Decorated nested function to perform the request with retry/backoff"""
+            resp = cls._post_request(url, data, headers, verify)
+            success = cls._check_http_response(resp)
+            if not success:
+                raise OutputRequestFailure()
+
+            return success
+        return do_post_request()
 
     @classmethod
     def _check_http_response(cls, response):

@@ -20,6 +20,7 @@ from stream_alert.alert_processor import LOGGER
 from stream_alert.alert_processor.outputs.output_base import (
     OutputDispatcher,
     OutputProperty,
+    OutputRequestFailure,
     StreamAlertOutput
 )
 
@@ -86,8 +87,10 @@ class PagerDutyOutput(OutputDispatcher):
             'client': 'StreamAlert'
         }
 
-        resp = self._post_request(creds['url'], data, None, True)
-        success = self._check_http_response(resp)
+        try:
+            success = self._post_request_retry(creds['url'], data, None, True)
+        except OutputRequestFailure:
+            success = False
 
         return self._log_status(success)
 
@@ -163,8 +166,10 @@ class PagerDutyOutputV2(OutputDispatcher):
             'client': 'StreamAlert'
         }
 
-        resp = self._post_request(creds['url'], data, None, True)
-        success = self._check_http_response(resp)
+        try:
+            success = self._post_request_retry(creds['url'], data, None, True)
+        except OutputRequestFailure:
+            success = False
 
         return self._log_status(success)
 
@@ -259,9 +264,9 @@ class PagerDutyIncidentOutput(OutputDispatcher):
         params = {
             'query': '{}'.format(filter_str)
         }
-        resp = self._get_request(url, params, self._headers, False)
-
-        if not self._check_http_response(resp):
+        try:
+            resp = self._get_request_retry(url, params, self._headers, False)
+        except OutputRequestFailure:
             return False
 
         response = resp.json()
@@ -355,9 +360,10 @@ class PagerDutyIncidentOutput(OutputDispatcher):
             return dict()
 
         priorities_url = self._get_endpoint(self._base_url, self.PRIORITIES_ENDPOINT)
-        resp = self._get_request(priorities_url, {}, self._headers, False)
 
-        if not self._check_http_response(resp):
+        try:
+            resp = self._get_request_retry(priorities_url, {}, self._headers, False)
+        except OutputRequestFailure:
             return dict()
 
         response = resp.json()
@@ -470,7 +476,10 @@ class PagerDutyIncidentOutput(OutputDispatcher):
             }
         }
         incidents_url = self._get_endpoint(self._base_url, self.INCIDENTS_ENDPOINT)
-        resp = self._post_request(incidents_url, incident, self._headers, True)
-        success = self._check_http_response(resp)
+
+        try:
+            success = self._post_request_retry(incidents_url, incident, self._headers, True)
+        except OutputRequestFailure:
+            success = False
 
         return self._log_status(success)

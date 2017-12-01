@@ -84,7 +84,6 @@ class TestPagerDutyOutput(object):
 
         log_mock.assert_called_with('Failed to send alert to %s', self.SERVICE)
 
-
 @mock_s3
 @mock_kms
 class TestPagerDutyOutputV2(object):
@@ -146,6 +145,7 @@ class TestPagerDutyOutputV2(object):
 #pylint: disable=too-many-public-methods
 @mock_s3
 @mock_kms
+@patch('stream_alert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS', 1)
 class TestPagerDutyIncidentOutput(object):
     """Test class for PagerDutyIncidentOutput"""
     DESCRIPTOR = 'unit_test_pagerduty-incident'
@@ -308,7 +308,7 @@ class TestPagerDutyIncidentOutput(object):
 
     @patch('requests.get')
     def test_item_verify_no_get_id_success(self, get_mock):
-        """Item Verify No Get Id Success - PagerDutyIncidentOutput"""
+        """PagerDutyIncidentOutput - Item Verify No Get Id Success"""
         # /items
         get_mock.return_value.status_code = 200
         json_check = {'items': [{'id': 'verified_item_id'}]}
@@ -621,6 +621,7 @@ class TestPagerDutyIncidentOutput(object):
                                                alert=get_alert()))
 
         log_mock.assert_called_with('Failed to send alert to %s', self.SERVICE)
+
 
     @patch('logging.Logger.error')
     @patch('requests.get')

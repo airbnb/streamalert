@@ -16,7 +16,7 @@ limitations under the License.
 # pylint: disable=abstract-class-instantiated,protected-access,attribute-defined-outside-init
 import os
 
-from mock import patch
+from mock import Mock, patch
 from moto import mock_kms, mock_s3
 from nose.tools import (
     assert_equal,
@@ -29,6 +29,7 @@ from nose.tools import (
 from stream_alert.alert_processor.outputs.output_base import (
     OutputDispatcher,
     OutputProperty,
+    OutputRequestFailure,
     StreamAlertOutput
 )
 from stream_alert.alert_processor.outputs.aws import S3Output
@@ -205,3 +206,25 @@ class TestOutputDispatcher(object):
             assert_equal(len(formatted), 2)
             assert_equal(formatted[0], 'unit_test_channel')
             assert_equal(formatted[1], 'test_channel')
+
+    @patch.object(OutputDispatcher, '_get_exceptions_to_catch', Mock(return_value=(ValueError)))
+    def test_catch_exceptions_non_default(self):
+        """OutputDispatcher - Catch Non Default Exceptions"""
+        exceptions = self._dispatcher._catch_exceptions()
+
+        assert_equal(exceptions, (OutputRequestFailure, ValueError))
+
+    @patch.object(OutputDispatcher,
+                  '_get_exceptions_to_catch', Mock(return_value=(ValueError, TypeError)))
+    def test_catch_exceptions_non_default_tuple(self):
+        """OutputDispatcher - Catch Non Default Exceptions Tuple"""
+        exceptions = self._dispatcher._catch_exceptions()
+
+        assert_equal(exceptions, (OutputRequestFailure, ValueError, TypeError))
+
+    @patch.object(OutputDispatcher, '_get_exceptions_to_catch', Mock(return_value=()))
+    def test_catch_exceptions_default(self):
+        """OutputDispatcher - Catch Default Exceptions"""
+        exceptions = self._dispatcher._catch_exceptions()
+
+        assert_equal(exceptions, (OutputRequestFailure,))
