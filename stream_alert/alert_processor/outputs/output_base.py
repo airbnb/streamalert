@@ -312,7 +312,7 @@ class OutputDispatcher(object):
         """
         @retry_on_exception(cls._catch_exceptions())
         def do_get_request():
-            """Decorator to perform the request with retry/backoff"""
+            """Decorated nested function to perform the request with retry/backoff"""
             resp = cls._get_request(url, params, headers, verify)
             success = cls._check_http_response(resp)
             if not success:
@@ -353,7 +353,7 @@ class OutputDispatcher(object):
         """
         @retry_on_exception(cls._catch_exceptions())
         def do_post_request():
-            """Decorator to perform the request with retry/backoff"""
+            """Decorated nested function to perform the request with retry/backoff"""
             resp = cls._post_request(url, data, headers, verify)
             success = cls._check_http_response(resp)
             if not success:

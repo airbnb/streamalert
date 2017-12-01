@@ -266,10 +266,11 @@ class PagerDutyIncidentOutput(OutputDispatcher):
         }
         try:
             resp = self._get_request_retry(url, params, self._headers, False)
-            response = resp.json()
-            if not response:
-                return False
         except OutputRequestFailure:
+            return False
+
+        response = resp.json()
+        if not response:
             return False
 
         if not get_id:
@@ -362,10 +363,11 @@ class PagerDutyIncidentOutput(OutputDispatcher):
 
         try:
             resp = self._get_request_retry(priorities_url, {}, self._headers, False)
-            response = resp.json()
-            if not response:
-                return dict()
         except OutputRequestFailure:
+            return dict()
+
+        response = resp.json()
+        if not response:
             return dict()
 
         priorities = response.get('priorities', [])
