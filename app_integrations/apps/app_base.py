@@ -316,13 +316,11 @@ class AppIntegration(object):
             bool: Indicator of whether or not this request was successful
         """
         success = response is not None and (200 <= response.status_code <= 299)
-
-        if response is not None and not success:
+        if not success:
             LOGGER.error('HTTP request failed for service \'%s\': [%d] %s',
                          self.type(),
                          response.status_code,
-                         response.json()['message'])
-
+                         response.content)
         return success
 
     @safe_timeout

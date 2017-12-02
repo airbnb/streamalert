@@ -150,7 +150,7 @@ class TestAppIntegration(object):
     @patch('logging.Logger.error')
     def test_check_http_response_bad(self, log_mock):
         """App Integration - Check HTTP Response, Failure"""
-        response = Mock(status_code=404, json=Mock(side_effect=[{'message': 'hey'}]))
+        response = Mock(status_code=404, content='hey')
 
         # Check to make sure this resulted in a return of False
         assert_false(self._app._check_http_response(response))
@@ -269,16 +269,16 @@ class TestAppIntegration(object):
         failed_message = 'something went wrong'
         requests_mock.return_value = Mock(
             status_code=404,
+            content=failed_message,
             json=Mock(return_value={'message': failed_message})
         )
+
         result, response = self._app._make_get_request('hostname', None, None)
         assert_false(result)
         assert_equal(response['message'], failed_message)
 
-        # The .json should be called on the response once, to get the error message
-        # and to check the response, to log the message. If it was called three times,
-        # it means `logs = response.json()['response']` is being called and should not be
-        assert_equal(requests_mock.return_value.json.call_count, 2)
+        # The .json should be called on the response once, to return the response.
+        assert_equal(requests_mock.return_value.json.call_count, 1)
 
     @patch('requests.get')
     def test_make_request_timeout(self, requests_mock):
