@@ -14,8 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import json
+import re
 
-from apiclient import discovery, errors
+import apiclient
 from oauth2client.service_account import ServiceAccountCredentials
 
 from app_integrations import LOGGER
@@ -28,6 +29,7 @@ class GSuiteReportsApp(AppIntegration):
 
     def __init__(self, config):
         super(GSuiteReportsApp, self).__init__(config)
+        self._last_event_timestamp = self._last_timestamp
         self._activities_service = None
         self._next_page_token = None
 
@@ -82,9 +84,10 @@ class GSuiteReportsApp(AppIntegration):
         if not creds:
             return False
 
+        delegation = creds.create_delegated(self._config.auth['delegation_email'])
         try:
-            resource = discovery.build('admin', 'reports_v1', credentials=creds)
-        except errors.Error:
+            resource = apiclient.discovery.build('admin', 'reports_v1', credentials=delegation)
+        except apiclient.errors.Error:
             LOGGER.exception('Failed to build discovery service for %s', self.type())
             return False
 
@@ -105,32 +108,42 @@ class GSuiteReportsApp(AppIntegration):
         if not self._create_service():
             return False
 
+        LOGGER.debug('Querying activities since %s for %s',
+                     self._last_event_timestamp,
+                     self.type())
+        LOGGER.debug('Using next page token: %s', self._next_page_token)
+
         activities_list = self._activities_service.list(
             userKey='all',
             applicationName=self._type(),
-            startTime=self._last_timestamp,
-            pageToken=self._next_page_token if self._next_page_token else None
+            startTime=self._last_event_timestamp,
+            pageToken=self._next_page_token
         )
 
         try:
             results = activities_list.execute()
-        except errors.HttpError:
-            LOGGER.exception('Failed to execute activities listing')
+        except apiclient.errors.HttpError:
+            LOGGER.exception('Failed to execute activities listing for %s', self.type())
             return False
 
         if not results:
             LOGGER.error('No results received from the G Suite API request for %s', self.type())
             return False
 
-        self._next_page_token = results.get('nextPageToken')
-        self._more_to_poll = bool(self._next_page_token)
-
         activities = results.get('items', [])
         if not activities:
             LOGGER.info('No logs in response from G Suite API request for %s', self.type())
             return False
 
-        self._last_timestamp = activities[-1]['id']['time']
+        # The activity api returns logs in reverse chronological order, for some reason, and
+        # therefore the newest log will be first in the list. This should only be updated
+        # once during the first poll
+        if not self._next_page_token:
+            self._last_timestamp = activities[0]['id']['time']
+            LOGGER.debug('Caching last timestamp: %s', self._last_timestamp)
+
+        self._next_page_token = results.get('nextPageToken')
+        self._more_to_poll = bool(self._next_page_token)
 
         return activities
 
@@ -156,6 +169,11 @@ class GSuiteReportsApp(AppIntegration):
                     'description': ('the path on disk to the JSON formatted Google '
                                     'service account private key file'),
                     'format': keyfile_validator
+                },
+            'delegation_email':
+                {
+                    'description': 'the service account user email to delegate access to',
+                    'format': re.compile(r'^[A-Za-z0-9-_.+]+@[A-Za-z0-9-.]+\.[A-Za-z]{2,}$')
                 }
             }
 

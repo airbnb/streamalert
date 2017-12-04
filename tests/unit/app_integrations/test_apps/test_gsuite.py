@@ -17,7 +17,7 @@ limitations under the License.
 import json
 from mock import Mock, mock_open, patch
 
-from apiclient import errors
+import apiclient
 from nose.tools import assert_equal, assert_false, assert_items_equal, assert_true, raises
 
 from app_integrations.apps.gsuite import GSuiteReportsApp
@@ -46,7 +46,8 @@ class TestGSuiteReportsApp(object):
 
     def test_required_auth_info(self):
         """GSuiteReportsApp - Required Auth Info"""
-        assert_items_equal(self._app.required_auth_info().keys(), {'keyfile'})
+        assert_items_equal(self._app.required_auth_info().keys(),
+                           {'delegation_email', 'keyfile'})
 
     @patch('app_integrations.apps.gsuite.ServiceAccountCredentials.from_json_keyfile_dict',
            Mock(return_value=True))
@@ -90,9 +91,8 @@ class TestGSuiteReportsApp(object):
         cred_mock.side_effect = ValueError('Bad things happened')
         assert_false(self._app._load_credentials('fakedata'))
 
-    @patch('app_integrations.apps.gsuite.GSuiteReportsApp._load_credentials',
-           Mock(return_value=True))
-    @patch('app_integrations.apps.gsuite.discovery.build')
+    @patch('app_integrations.apps.gsuite.GSuiteReportsApp._load_credentials', Mock())
+    @patch('app_integrations.apps.gsuite.apiclient.discovery.build')
     def test_create_service(self, build_mock):
         """GSuiteReportsApp - Create Service, Success"""
         build_mock.return_value.activities.return_value = True
@@ -111,12 +111,11 @@ class TestGSuiteReportsApp(object):
         """GSuiteReportsApp - Create Service, Credential Failure"""
         assert_false(self._app._create_service())
 
-    @patch('app_integrations.apps.gsuite.GSuiteReportsApp._load_credentials',
-           Mock(return_value=True))
-    @patch('app_integrations.apps.gsuite.discovery.build')
+    @patch('app_integrations.apps.gsuite.GSuiteReportsApp._load_credentials', Mock())
+    @patch('app_integrations.apps.gsuite.apiclient.discovery.build')
     def test_create_service_fail_resource(self, build_mock):
         """GSuiteReportsApp - Create Service, Resource Failure"""
-        build_mock.side_effect = errors.Error('This is bad')
+        build_mock.side_effect = apiclient.errors.Error('This is bad')
         assert_false(self._app._create_service())
 
     def test_gather_logs(self):
@@ -138,10 +137,10 @@ class TestGSuiteReportsApp(object):
     def test_gather_logs_http_error(self, log_mock):
         """GSuiteReportsApp - Gather Logs, HTTP Error"""
         with patch.object(self._app, '_activities_service') as service_mock:
-            error = errors.HttpError('response', bytes('bad'))
+            error = apiclient.errors.HttpError('response', bytes('bad'))
             service_mock.list.return_value.execute.side_effect = error
             assert_false(self._app._gather_logs())
-            log_mock.assert_called_with('Failed to execute activities listing')
+            log_mock.assert_called_with('Failed to execute activities listing for %s', 'type')
 
 
     @patch('app_integrations.apps.gsuite.GSuiteReportsApp._load_credentials',

@@ -113,6 +113,8 @@ class BoxApp(AppIntegration):
         else:
             params['created_after'] = self._last_timestamp
 
+        LOGGER.debug('Requesting events for %s', self.type())
+
         def _perform_request(allow_retry=True):
             try:
                 # Get the events using a make_request call with the box api. This is to

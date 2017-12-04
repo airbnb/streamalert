@@ -114,6 +114,7 @@ class MockSSMClient(object):
         elif app_type in {'gsuite', 'gsuite_admin', 'gsuite_drive',
                           'gsuite_login', 'gsuite_token'}:
             return {
+                'delegation_email': 'test@email.com',
                 'keyfile': {
                     'type': 'service_account',
                     'project_id': 'myapp-123456',
