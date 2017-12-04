@@ -26,6 +26,7 @@ from tests.unit.stream_alert_alert_processor.helpers import get_alert, remove_te
 
 @mock_s3
 @mock_kms
+@patch('stream_alert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS', 1)
 class TestPhantomOutput(object):
     """Test class for PhantomOutput"""
     DESCRIPTOR = 'unit_test_phantom'
@@ -106,6 +107,24 @@ class TestPhantomOutput(object):
         post_mock.return_value.status_code = 400
         json_error = {'message': 'error message', 'errors': ['error1']}
         post_mock.return_value.json.return_value = json_error
+
+        assert_false(self._dispatcher.dispatch(descriptor=self.DESCRIPTOR,
+                                               rule_name='rule_name',
+                                               alert=get_alert()))
+
+        log_mock.assert_called_with('Failed to send alert to %s', self.SERVICE)
+
+    @patch('logging.Logger.error')
+    @patch('requests.get')
+    @patch('requests.post')
+    def test_dispatch_check_container_no_response(self, post_mock, get_mock, log_mock):
+        """PhantomOutput - Dispatch Failure, No Response Container Check"""
+        # _check_container_exists
+        get_mock.return_value.status_code = 200
+        get_mock.return_value.json.return_value = {}
+        # _setup_container
+        post_mock.return_value.status_code = 200
+        post_mock.return_value.json.return_value = {}
 
         assert_false(self._dispatcher.dispatch(descriptor=self.DESCRIPTOR,
                                                rule_name='rule_name',

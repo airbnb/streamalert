@@ -20,6 +20,7 @@ from stream_alert.alert_processor import LOGGER
 from stream_alert.alert_processor.outputs.output_base import (
     OutputDispatcher,
     OutputProperty,
+    OutputRequestFailure,
     StreamAlertOutput
 )
 
@@ -80,11 +81,14 @@ class PhantomOutput(OutputDispatcher):
             '_filter_name': '"{}"'.format(rule_name),
             'page_size': 1
         }
-        resp = cls._get_request(container_url, params, headers, False)
-        if not cls._check_http_response(resp):
+        try:
+            resp = cls._get_request_retry(container_url, params, headers, False)
+        except OutputRequestFailure:
             return False
 
         response = resp.json()
+        if not response:
+            return False
 
         # If the count == 0 then we know there are no containers with this name and this
         # will evaluate to False. Otherwise there is at least one item in the list
@@ -114,12 +118,14 @@ class PhantomOutput(OutputDispatcher):
 
         # Try to use the rule_description from the rule as the container description
         ph_container = {'name': rule_name, 'description': rule_description}
-        resp = cls._post_request(container_url, ph_container, headers, False)
-
-        if not cls._check_http_response(resp):
+        try:
+            resp = cls._post_request_retry(container_url, ph_container, headers, False)
+        except OutputRequestFailure:
             return False
 
         response = resp.json()
+        if not response:
+            return False
 
         return response and response.get('id')
 
@@ -151,8 +157,9 @@ class PhantomOutput(OutputDispatcher):
                         'name': 'Phantom Artifact',
                         'label': 'Alert'}
             artifact_url = os.path.join(creds['url'], self.ARTIFACT_ENDPOINT)
-            resp = self._post_request(artifact_url, artifact, headers, False)
-
-            success = self._check_http_response(resp)
+            try:
+                success = self._post_request_retry(artifact_url, artifact, headers, False)
+            except OutputRequestFailure:
+                success = False
 
         return self._log_status(success)
