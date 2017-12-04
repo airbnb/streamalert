@@ -1,6 +1,20 @@
 {
+  "carbonblack": {
+    "destinationAddress:ioc_ip": [
+      "remote_ip"
+    ],
+    "destinationDomain:ioc_domain": [
+      "domain"
+    ],
+    "fileHash:ioc_md5": [
+      "process_md5",
+      "parent_md5",
+      "expect_followon_w_md5",
+      "md5"
+    ]
+  },
   "cloudwatch": {
-    "destinationAddress": [
+    "destinationAddress:ioc_ip": [
       "destination"
     ],
     "destinationPort": [
@@ -19,7 +33,7 @@
       "account",
       "recipientAccountId"
     ],
-    "sourceAddress": [
+    "sourceAddress:ioc_ip": [
       "source",
       "sourceIPAddress"
     ],

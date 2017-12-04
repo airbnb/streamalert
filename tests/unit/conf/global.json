@@ -13,5 +13,9 @@
   },
   "terraform": {
     "tfstate_bucket": "unit-testing.terraform.tfstate"
+  },
+  "threat_intel": {
+    "dynamodb_table": "test_table_name",
+    "enabled": false
   }
 }

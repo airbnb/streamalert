@@ -449,11 +449,11 @@ class TestStreamAlert(object):
         self.__sa_handler.run(test_event)
         assert_true(mock_logging.error.called)
 
-    @patch('stream_alert.rule_processor.handler.StreamThreatIntel.load_intelligence')
-    def test_do_not_invoke_threat_intel(self, load_intelligence_mock):
-        """StreamAlert Class - Invoke load_intelligence"""
+    @patch('stream_alert.rule_processor.handler.StreamThreatIntel.load_config')
+    def test_invoke_to_load_threat_intel_config(self, load_config_mock):
+        """StreamAlert Class - Invoke load_config"""
         self.__sa_handler = StreamAlert(get_mock_context(), False)
-        load_intelligence_mock.assert_called()
+        load_config_mock.assert_called()
 
     def test_firehose_sanitize_keys(self):
         """StreamAlert Class - Firehose - Sanitize Keys"""

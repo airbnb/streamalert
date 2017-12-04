@@ -16,6 +16,8 @@ limitations under the License.
 import base64
 import json
 
+from botocore.exceptions import ClientError
+
 from mock import Mock
 
 from stream_alert.rule_processor.classifier import StreamClassifier
@@ -82,7 +84,6 @@ def get_valid_config():
             }
         }
     }
-
 
 def convert_events_to_kinesis(raw_records):
     """Given a list of pre-defined raw records, make a valid kinesis test event"""
@@ -164,3 +165,93 @@ def make_s3_raw_record(bucket, key):
         'awsRegion': 'us-east-1'
     }
     return raw_record
+
+def mock_normalized_records():
+    """Morck records which have been normalized"""
+    records = [
+        {
+            'account': 12345,
+            'region': '123456123456',
+            'detail': {
+                'eventName': 'ConsoleLogin',
+                'userIdentity': {
+                    'userName': 'alice',
+                    'accountId': '12345'
+                },
+                'sourceIPAddress': '1.1.1.2',
+                'recipientAccountId': '12345'
+            },
+            'source': '1.1.1.2',
+            'streamalert:normalization': {
+                'sourceAddress': [['detail', 'sourceIPAddress'], ['source']],
+                'usernNme': [['detail', 'userIdentity', 'userName']]
+            }
+        },
+        {
+            'domain': 'evil.com',
+            'pc_name': 'test-pc',
+            'date': 'Dec 1st, 2016',
+            'data': 'ABCDEF',
+            'streamalert:normalization': {
+                'destinationDomain': [['domain']]
+            }
+        },
+        {
+            'domain': 'evil2.com',
+            'pc_name': 'test-pc',
+            'date': 'Dec 1st, 2016',
+            'data': 'ABCDEF',
+            'streamalert:normalization': {
+                'destinationDomain': [['domain']]
+            }
+        },
+        {
+            'process_md5': 'abcdef0123456789',
+            'server': 'test-server',
+            'date': 'Dec 2nd, 2016',
+            'data': 'Foo',
+            'streamalert:normalization': {
+                'fileHash': [['process_md5']]
+            }
+        }
+    ]
+    return records
+
+class MockDynamoDBClient(object):
+    """Helper mock class to act as dynamodb client"""
+    _raise_exception = False
+
+    @classmethod
+    def response(cls, **kwargs):
+        """Mock batch_get_item method and return mimicking dynamodb response
+        Keyword Argments:
+            exception (bool): True raise exception.
+
+        Returns:
+            (dict): Response dictionary containing fake results.
+        """
+        if kwargs.get('exception', False):
+            err = {'Error': {'Code': 400, 'Message': 'raising test exception'}}
+            raise ClientError(err, 'batch_get_item')
+
+        return {
+            'UnprocessedKeys': {},
+            'Responses': {
+                'test_table_name': [
+                    {
+                        'ioc_value': {'S': '1.1.1.2'},
+                        'sub_type': {'S': 'mal_ip'}
+                    },
+                    {
+                        'ioc_value': {'S': 'evil.com'},
+                        'sub_type': {'S': 'c2_domain'}
+                    }
+                ]
+            },
+            'ResponseMetadata': {
+                'RetryAttempts': 0,
+                'HTTPStatusCode': 200,
+                'RequestId': 'ABCD1234',
+                'HTTPHeaders': {}
+            }
+        }

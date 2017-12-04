@@ -29,12 +29,14 @@ from nose.tools import (
 from stream_alert.rule_processor.config import load_config, load_env
 from stream_alert.rule_processor.parsers import get_parser
 from stream_alert.rule_processor.rules_engine import RuleAttributes, StreamRules
+from stream_alert.rule_processor.threat_intel import StreamThreatIntel
 from stream_alert.shared import NORMALIZATION_KEY
 
 from tests.unit.stream_alert_rule_processor.test_helpers import (
     get_mock_context,
     load_and_classify_payload,
     make_kinesis_raw_record,
+    MockDynamoDBClient,
 )
 from helpers.base import fetch_values_by_datatype
 
@@ -63,6 +65,7 @@ class TestStreamRules(object):
         # Clear out the cached matchers and rules to avoid conflicts with production code
         StreamRules._StreamRules__matchers.clear()  # pylint: disable=no-member
         StreamRules._StreamRules__rules.clear()  # pylint: disable=no-member
+        StreamThreatIntel._StreamThreatIntel__enabled = False
 
     def test_alert_format(self):
         """Rules Engine - Alert Format"""
@@ -813,3 +816,37 @@ class TestStreamRules(object):
                 assert_equal(has_key_normalized_types, False)
             else:
                 assert_equal(has_key_normalized_types, True)
+
+    @patch('botocore.client.BaseClient._make_api_call')
+    def test_process_with_threat_intel_enabled(self, mock_dynamodb):
+        """Rules Engine - Threat Intel is enabled when process method is called"""
+        @rule(datatypes=['sourceAddress'], outputs=['s3:sample_bucket'])
+        def match_ipaddress(_): # pylint: disable=unused-variable
+            """Testing dummy rule"""
+            return True
+
+        mock_dynamodb.return_value = MockDynamoDBClient.response()
+        toggled_config = self.config
+        toggled_config['global']['threat_intel']['enabled'] = True
+        toggled_config['global']['threat_intel']['dynamodb_table'] = 'test_table_name'
+        StreamThreatIntel.load_config(toggled_config)
+        kinesis_data_items = [
+            {
+                'account': 123456,
+                'region': '123456123456',
+                'source': '1.1.1.2',
+                'detail': {
+                    'eventName': 'ConsoleLogin',
+                    'sourceIPAddress': '1.1.1.2',
+                    'recipientAccountId': '654321'
+                }
+            }
+        ]
+
+        for data in kinesis_data_items:
+            kinesis_data = json.dumps(data)
+            service, entity = 'kinesis', 'test_kinesis_stream'
+            raw_record = make_kinesis_raw_record(entity, kinesis_data)
+            payload = load_and_classify_payload(toggled_config, service, entity, raw_record)
+
+            assert_equal(len(StreamRules.process(payload)), 2)
