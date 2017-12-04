@@ -21,7 +21,6 @@ from netaddr import IPAddress, IPNetwork
 from netaddr.core import AddrFormatError
 
 from stream_alert.shared import NORMALIZATION_KEY
-from stream_alert.rule_processor.threat_intel import StreamThreatIntel
 
 logging.basicConfig()
 LOGGER = logging.getLogger('StreamAlert')
@@ -116,77 +115,6 @@ def fetch_values_by_datatype(rec, datatype):
         results.append(result)
 
     return results
-
-def is_ioc(rec, lowercase_ioc=True):
-    """Detect is any data in a record matching to known IOC
-
-    Args:
-        rec (dict): The parsed payload of any log
-        lowercase_ioc (bool): Indicate if IOCs in IOC files are in lowercase or
-            uppercase. If true, it will convert data found in the record to
-            lowercase.
-            This flag is implemented to achieve case-insensitive comparison
-            between IOCs and related data in the record.
-
-    Returns:
-        (bool): Returns True if data matching to any IOCs, otherwise returns
-            False.
-    """
-    intel = StreamThreatIntel.get_intelligence()
-    datatypes_ioc_mapping = StreamThreatIntel.get_config()
-
-    if not (datatypes_ioc_mapping and rec.get(NORMALIZATION_KEY)):
-        return False
-
-    for datatype in rec[NORMALIZATION_KEY]:
-        if datatype not in datatypes_ioc_mapping:
-            continue
-        results = fetch_values_by_datatype(rec, datatype)
-        for result in results:
-            if isinstance(result, str):
-                result = result.lower() if lowercase_ioc else result.upper()
-            if (intel.get(datatypes_ioc_mapping[datatype])
-                    and result in intel[datatypes_ioc_mapping[datatype]]):
-                insert_ioc_info(rec, datatypes_ioc_mapping[datatype], result)
-    if StreamThreatIntel.IOC_KEY in rec:
-        return True
-
-    return False
-
-def insert_ioc_info(rec, ioc_type, ioc_value):
-    """ Insert ioc info to a record and also remove duplicated IOC info.
-
-    Args:
-        rec (dict): The parsed payload of a log
-        ioc_type (str): IOC type, can be 'ip', 'domain' or 'md5'
-        ioc_value (str): Matched IOC value from the rec
-
-    Returns:
-        (None): rec will be modified with IOC info.
-        Example that a record will be inserted with new field "streamalert:ioc":
-            "streamalert:ioc": {
-                "ip": [
-                    "4.3.2.1",
-                    "1.2.3.4"
-                ],
-                "domain" : [
-                    "evil1.com",
-                    "evil2.com"
-                ]
-              }
-    """
-    if StreamThreatIntel.IOC_KEY in rec:
-        if (ioc_type in rec[StreamThreatIntel.IOC_KEY] and
-                ioc_value not in rec[StreamThreatIntel.IOC_KEY][ioc_type]):
-            rec[StreamThreatIntel.IOC_KEY][ioc_type].append(ioc_value)
-        else:
-            rec[StreamThreatIntel.IOC_KEY][ioc_type] = [ioc_value]
-    else:
-        rec.update({
-            StreamThreatIntel.IOC_KEY: {
-                ioc_type: [ioc_value]
-            }
-        })
 
 def select_key(data, search_key, results=None):
     """Recursively search for a given key and return all values
