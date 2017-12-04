@@ -159,6 +159,9 @@ class TestStreamStreamThreatIntel(object):
         """Threat Intel - Test load_config method"""
         test_config = {
             'global': {
+                'account': {
+                    'region': 'us-east-1'
+                },
                 'threat_intel': {
                     'dynamodb_table': 'test_table_name',
                     'enabled': True
@@ -169,6 +172,7 @@ class TestStreamStreamThreatIntel(object):
         self.threat_intel.load_config(test_config)
         assert_equal(StreamThreatIntel.enabled(), True)
         assert_equal(StreamThreatIntel._StreamThreatIntel__table, 'test_table_name') # pylint: disable=no-member
+        assert_equal(StreamThreatIntel._StreamThreatIntel__region, 'us-east-1') # pylint: disable=no-member
 
         test_config = {
             'types': {

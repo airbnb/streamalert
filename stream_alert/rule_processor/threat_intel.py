@@ -34,9 +34,6 @@ PRIMARY_KEY = 'ioc_value'
 SUB_TYPE_KEY = 'sub_type'
 PROJECTION_EXPRESSION = '{},{}'.format(PRIMARY_KEY, SUB_TYPE_KEY)
 
-# Build boto3 DynamoDB resource at import time so it can be cached between invocations.
-DYNAMODB = boto3.client('dynamodb')
-
 class StreamIoc(object):
     """Class to store IOC info"""
     def __init__(self, **kwargs):
@@ -112,6 +109,10 @@ class StreamThreatIntel(object):
     __normalized_types2ioc_types = {}
     __enabled = False
     __table = None
+    __region = 'us-east-1'
+
+    def __init__(self):
+        self.dynamodb = boto3.client('dynamodb', self.__region)
 
     def threat_detection(self, records):
         """Public instance method to run threat intelligence against normalized records
@@ -211,6 +212,7 @@ class StreamThreatIntel(object):
                 and config['global']['threat_intel'].get('dynamodb_table')):
             cls.__enabled = True
             cls.__table = config['global']['threat_intel']['dynamodb_table']
+            cls.__region = config['global']['account'].get('region', 'us-east-1')
 
         if config.get('types'):
             cls._process_types_config(config['types'])
@@ -333,7 +335,7 @@ class StreamThreatIntel(object):
         """
         result = []
         query_keys = [{PRIMARY_KEY: {'S': ioc}} for ioc in values]
-        response = DYNAMODB.batch_get_item(
+        response = self.dynamodb.batch_get_item(
             RequestItems={
                 self.__table: {
                     'Keys': query_keys,
@@ -345,7 +347,7 @@ class StreamThreatIntel(object):
             result.extend(StreamThreatIntel._deserialize(response['Responses'].get(self.__table)))
 
         if response.get('UnprocessedKeys'):
-            response = DYNAMODB.batch_get_item(
+            response = self.dynamodb.batch_get_item(
                 RequestItems=response['UnprocessedKeys']
             )
             result.extend(StreamThreatIntel._deserialize(response['Responses'].get(self.__table)))
