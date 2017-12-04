@@ -254,7 +254,7 @@ class OutputDispatcher(object):
         """Log the status of sending the alerts
 
         Args:
-            success (bool): Indicates if the dispatching of alerts was successful
+            success (bool or dict): Indicates if the dispatching of alerts was successful
         """
         if success:
             LOGGER.info('Successfully sent alert to %s', cls.__service__)
@@ -347,7 +347,7 @@ class OutputDispatcher(object):
             headers (dict): Dictionary containing request-specific header parameters
             verify (bool): Whether or not the server's SSL certificate should be verified
         Returns:
-            bool: Indicates whether the request was successful
+            dict: Contains the http response object
         Raises:
             OutputRequestFailure
         """
@@ -359,7 +359,7 @@ class OutputDispatcher(object):
             if not success:
                 raise OutputRequestFailure()
 
-            return success
+            return resp
         return do_post_request()
 
     @classmethod

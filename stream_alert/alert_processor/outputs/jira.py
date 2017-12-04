@@ -21,6 +21,7 @@ from stream_alert.alert_processor import LOGGER
 from stream_alert.alert_processor.outputs.output_base import (
     OutputDispatcher,
     OutputProperty,
+    OutputRequestFailure,
     StreamAlertOutput
 )
 
@@ -117,17 +118,19 @@ class JiraOutput(OutputDispatcher):
             'validateQuery': validate_query,
             'fields': fields
         }
-
-        resp = self._get_request(search_url,
-                                 params=params,
-                                 headers=self._get_headers(),
-                                 verify=False)
-
-        success = self._check_http_response(resp)
-        if not success:
+        try:
+            resp = self._get_request_retry(search_url,
+                                           params=params,
+                                           headers=self._get_headers(),
+                                           verify=False)
+        except OutputRequestFailure:
             return []
 
-        return resp.json()['issues']
+        response = resp.json()
+        if not response:
+            return []
+
+        return response.get('issues', [])
 
     def _create_comment(self, issue_id, comment):
         """Add a comment to an existing issue
@@ -140,16 +143,19 @@ class JiraOutput(OutputDispatcher):
             int: ID of the created comment or False if unsuccessful
         """
         comment_url = os.path.join(self._base_url, self.COMMENT_ENDPOINT.format(issue_id))
-        resp = self._post_request(comment_url,
-                                  data={'body': comment},
-                                  headers=self._get_headers(),
-                                  verify=False)
-
-        success = self._check_http_response(resp)
-        if not success:
+        try:
+            resp = self._post_request_retry(comment_url,
+                                            data={'body': comment},
+                                            headers=self._get_headers(),
+                                            verify=False)
+        except OutputRequestFailure:
             return False
 
-        return resp.json()['id']
+        response = resp.json()
+        if not response:
+            return False
+
+        return response.get('id', False)
 
     def _get_comments(self, issue_id):
         """Get all comments for an existing Jira issue
@@ -161,15 +167,18 @@ class JiraOutput(OutputDispatcher):
             list: List of comments associated with a Jira issue
         """
         comment_url = os.path.join(self._base_url, self.COMMENT_ENDPOINT.format(issue_id))
-        resp = self._get_request(comment_url,
-                                 headers=self._get_headers(),
-                                 verify=False)
-
-        success = self._check_http_response(resp)
-        if not success:
+        try:
+            resp = self._get_request_retry(comment_url,
+                                           headers=self._get_headers(),
+                                           verify=False)
+        except OutputRequestFailure:
             return []
 
-        return resp.json()['comments']
+        response = resp.json()
+        if not response:
+            return []
+
+        return response.get('comments', [])
 
     def _get_existing_issue(self, issue_summary, project_key):
         """Find an existing Jira issue based on the issue summary
@@ -218,17 +227,19 @@ class JiraOutput(OutputDispatcher):
                 }
             }
         }
-
-        resp = self._post_request(issue_url,
-                                  data=issue_body,
-                                  headers=self._get_headers(),
-                                  verify=False)
-
-        success = self._check_http_response(resp)
-        if not success:
+        try:
+            resp = self._post_request_retry(issue_url,
+                                            data=issue_body,
+                                            headers=self._get_headers(),
+                                            verify=False)
+        except OutputRequestFailure:
             return False
 
-        return resp.json()['id']
+        response = resp.json()
+        if not response:
+            return False
+
+        return response.get('id', False)
 
     def _establish_session(self, username, password):
         """Establish a cookie based Jira session via basic user auth.
@@ -244,16 +255,18 @@ class JiraOutput(OutputDispatcher):
         login_url = os.path.join(self._base_url, self.LOGIN_ENDPOINT)
         auth_info = {'username': username, 'password': password}
 
-        resp = self._post_request(login_url,
-                                  data=auth_info,
-                                  headers=self._get_default_headers(),
-                                  verify=False)
-
-        success = self._check_http_response(resp)
-        if not success:
+        try:
+            resp = self._post_request_retry(login_url,
+                                            data=auth_info,
+                                            headers=self._get_default_headers(),
+                                            verify=False)
+        except OutputRequestFailure:
             LOGGER.error("Failed to authenticate to Jira")
             return False
+
         resp_dict = resp.json()
+        if not resp_dict:
+            return False
 
         return '{}={}'.format(resp_dict['session']['name'],
                               resp_dict['session']['value'])
