@@ -19,6 +19,7 @@ from collections import OrderedDict
 from stream_alert.alert_processor.outputs.output_base import (
     OutputDispatcher,
     OutputProperty,
+    OutputRequestFailure,
     StreamAlertOutput
 )
 
@@ -223,7 +224,9 @@ class SlackOutput(OutputDispatcher):
 
         slack_message = self._format_message(kwargs['rule_name'], kwargs['alert'])
 
-        resp = self._post_request(creds['url'], slack_message)
-        success = self._check_http_response(resp)
+        try:
+            success = self._post_request_retry(creds['url'], slack_message)
+        except OutputRequestFailure:
+            success = False
 
         return self._log_status(success)
