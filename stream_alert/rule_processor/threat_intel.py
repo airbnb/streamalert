@@ -94,6 +94,13 @@ class StreamIoc(object):
         """Associate the original record to an IOC instance"""
         self._associated_record = rec
 
+
+def exceptions_to_giveup(err):
+    """Function to decide if giveup backoff or not.
+    Give up backoff retries if DynamoDB IOC table doesn't exist.
+    """
+    return err.response['Error']['Code'] == 'ResourceNotFoundException'
+
 class StreamThreatIntel(object):
     """Load intelligence from csv.gz files into a dictionary."""
     IOC_KEY = 'streamalert:ioc'
@@ -302,6 +309,7 @@ class StreamThreatIntel(object):
     @backoff.on_exception(backoff.expo,
                           exceptions_to_backoff,
                           max_tries=3,
+                          giveup=exceptions_to_giveup,
                           on_backoff=backoff_handler,
                           on_success=success_handler,
                           on_giveup=giveup_handler)
