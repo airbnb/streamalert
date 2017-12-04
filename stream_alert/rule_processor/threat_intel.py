@@ -276,7 +276,7 @@ class StreamThreatIntel(object):
             query_result = self._query(query_values)
             for value in ioc_collections:
                 for ioc in query_result:
-                    if value.value == ioc[PRIMARY_KEY]:
+                    if value.value.lower() == ioc[PRIMARY_KEY]:
                         value.itype = ioc[SUB_TYPE_KEY]
                         value.is_ioc = True
                         continue

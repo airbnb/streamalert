@@ -281,7 +281,7 @@ class TestStreamStreamThreatIntel(object):
     @raises(ClientError)
     @patch('botocore.client.BaseClient._make_api_call')
     def test_query_with_exception(self, mock_dynamodb):
-        """Threat Intel - Test DynamoDB query method with batch_get_item"""
+        """Threat Intel - Test DynamoDB query method with exception"""
         mock_dynamodb.return_value = MockDynamoDBClient.response(exception=True)
 
         self.threat_intel._query(['1.1.1.2'])
