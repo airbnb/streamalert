@@ -173,7 +173,7 @@ class GSuiteReportsApp(AppIntegration):
             'delegation_email':
                 {
                     'description': 'the service account user email to delegate access to',
-                    'format': re.compile(r'^[A-Za-z0-9-_.]+@[A-Za-z0-9-.]+\.[A-Za-z]{2,}$')
+                    'format': re.compile(r'^[A-Za-z0-9-_.+]+@[A-Za-z0-9-.]+\.[A-Za-z]{2,}$')
                 }
             }
 

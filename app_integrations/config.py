@@ -307,9 +307,8 @@ class AppConfig(dict):
             )
         except ClientError as err:
             raise AppIntegrationStateError('Could not save current state to parameter '
-                                           'store with name \'{}\'. Error: '
-                                           '{}'.format(state_name,
-                                                       err.response['Error']['Message']))
+                                           'store with name \'{}\'. Response: '
+                                           '{}'.format(state_name, err.response))
 
     def _validate_config(self):
         """Validate the top level of the config to make sure it has all the right keys
