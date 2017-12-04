@@ -99,7 +99,7 @@ def exceptions_to_giveup(err):
     """Function to decide if giveup backoff or not.
     Give up backoff retries if DynamoDB IOC table doesn't exist.
     """
-    return err.response['Error']['Code'] == 'ResourceNotFoundException'
+    return err.response['Error']['Code'] == 'AccessDeniedException'
 
 class StreamThreatIntel(object):
     """Load intelligence from csv.gz files into a dictionary."""
@@ -138,7 +138,8 @@ class StreamThreatIntel(object):
 
         # IOC info will be inserted to the records if they contains malicious IOC(s)
         for ioc in ioc_collections:
-            self._insert_ioc_info(ioc.associated_record, ioc.ioc_type, ioc.value)
+            if ioc.is_ioc:
+                self._insert_ioc_info(ioc.associated_record, ioc.ioc_type, ioc.value)
 
         records_with_ioc = [ioc.associated_record for ioc in ioc_collections if ioc.is_ioc]
         return records_with_ioc
@@ -279,7 +280,10 @@ class StreamThreatIntel(object):
         """
         # Segment data before calling DynamoDB table with batch_get_item.
         for subset in StreamThreatIntel._segment(ioc_collections):
-            query_values = [ioc.value for ioc in subset]
+            query_values = []
+            for ioc in subset:
+                if ioc.value not in query_values:
+                    query_values.append(ioc.value)
             query_result = self._query(query_values)
             for value in ioc_collections:
                 for ioc in query_result:

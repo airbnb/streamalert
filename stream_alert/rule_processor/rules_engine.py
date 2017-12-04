@@ -396,12 +396,16 @@ class StreamRules(object):
 
     @classmethod
     def rule_analysis(cls, record, rule, payload, alerts):
-        """Static method to analyze rule
+        """Class method to analyze rule against a record
+
         Args:
-            record:
-            rule:
-            payload:
-            alerts:
+            record (dict): A parsed log with data.
+            rule: Rule attributes.
+            payload: The StreamPayload object.
+            alerts (list): A list of alerts which will be sent to alert processor.
+
+        Returns:
+            (dict): A list of alerts.
         """
         rule_result = cls.process_rule(record, rule)
         if rule_result:
@@ -418,4 +422,6 @@ class StreamRules(object):
                 'source_service': payload.service(),
                 'source_entity': payload.entity,
                 'context': rule.context}
-            alerts.append(alert)
+
+            if alert not in alerts:
+                alerts.append(alert)
