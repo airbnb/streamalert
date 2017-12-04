@@ -254,7 +254,7 @@ class OutputDispatcher(object):
         """Log the status of sending the alerts
 
         Args:
-            success (bool): Indicates if the dispatching of alerts was successful
+            success (bool or dict): Indicates if the dispatching of alerts was successful
         """
         if success:
             LOGGER.info('Successfully sent alert to %s', cls.__service__)
