@@ -18,6 +18,7 @@ import json
 
 from stream_alert.rule_processor import LOGGER, LOGGER_DEBUG_ENABLED
 from stream_alert.rule_processor.parsers import get_parser
+from stream_alert.rule_processor.threat_intel import StreamThreatIntel
 from stream_alert.shared.stats import time_me
 
 # Set the below to True when we want to support matching on multiple schemas
@@ -277,7 +278,7 @@ class StreamClassifier(object):
                     schema_match.root_schema):
                 return False
 
-        normalized_types = self._config['types']
+        normalized_types = StreamThreatIntel.normalized_type_mapping()
 
         payload.log_source = schema_match.log_name
         payload.type = schema_match.parser.type()

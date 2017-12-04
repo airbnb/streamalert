@@ -92,7 +92,9 @@ class StreamAlert(object):
 
         # Firehose client initialization
         self.firehose_client = None
-        StreamThreatIntel.load_intelligence(self.config)
+
+        # Load Threat Intel config
+        StreamThreatIntel.load_config(self.config)
 
     def run(self, event):
         """StreamAlert Lambda function handler.

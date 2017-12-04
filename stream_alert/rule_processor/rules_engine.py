@@ -18,6 +18,7 @@ from copy import copy
 import json
 
 from stream_alert.rule_processor import LOGGER
+from stream_alert.rule_processor.threat_intel import StreamThreatIntel
 from stream_alert.shared import NORMALIZATION_KEY
 
 DEFAULT_RULE_DESCRIPTION = 'No rule description provided'
@@ -48,6 +49,7 @@ class StreamRules(object):
     """
     __rules = {}
     __matchers = {}
+    __normalized_records = []
 
     @classmethod
     def get_rules(cls):
@@ -374,24 +376,46 @@ class StreamRules(object):
                 if types_result:
                     record_copy = record.copy()
                     record_copy[NORMALIZATION_KEY] = types_result
+                    if StreamThreatIntel.enabled():
+                        cls.__normalized_records.append(record_copy)
                 else:
                     record_copy = record
                 # rule analysis
-                rule_result = cls.process_rule(record_copy, rule)
-                if rule_result:
-                    LOGGER.info('Rule [%s] triggered an alert on log type [%s] from entity \'%s\' '
-                                'in service \'%s\'', rule.rule_name, payload.log_source,
-                                payload.entity, payload.service())
-                    alert = {
-                        'record': record_copy,
-                        'rule_name': rule.rule_name,
-                        'rule_description': rule.rule_function.__doc__ or DEFAULT_RULE_DESCRIPTION,
-                        'log_source': str(payload.log_source),
-                        'log_type': payload.type,
-                        'outputs': rule.outputs,
-                        'source_service': payload.service(),
-                        'source_entity': payload.entity,
-                        'context': rule.context}
-                    alerts.append(alert)
+                cls.rule_analysis(record_copy, rule, payload, alerts)
+
+        # Apply the Threat Intelligence against normalized records
+        if StreamThreatIntel.enabled():
+            threat_intel = StreamThreatIntel()
+            ioc_records = threat_intel.threat_detection(cls.__normalized_records)
+            if ioc_records:
+                for ioc_record in ioc_records:
+                    for rule in rules:
+                        cls.rule_analysis(ioc_record, rule, payload, alerts)
 
         return alerts
+
+    @classmethod
+    def rule_analysis(cls, record, rule, payload, alerts):
+        """Static method to analyze rule
+        Args:
+            record:
+            rule:
+            payload:
+            alerts:
+        """
+        rule_result = cls.process_rule(record, rule)
+        if rule_result:
+            LOGGER.info('Rule [%s] triggered an alert on log type [%s] from entity \'%s\' '
+                        'in service \'%s\'', rule.rule_name, payload.log_source,
+                        payload.entity, payload.service())
+            alert = {
+                'record': record,
+                'rule_name': rule.rule_name,
+                'rule_description': rule.rule_function.__doc__ or DEFAULT_RULE_DESCRIPTION,
+                'log_source': str(payload.log_source),
+                'log_type': payload.type,
+                'outputs': rule.outputs,
+                'source_service': payload.service(),
+                'source_entity': payload.entity,
+                'context': rule.context}
+            alerts.append(alert)
