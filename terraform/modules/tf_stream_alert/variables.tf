@@ -112,3 +112,7 @@ variable "rule_processor_metric_filters" {
 }
 
 variable "sns_topic_arn" {}
+
+variable "dynamodb_ioc_table" {
+  default = "streamalert_threat_intel_ioc_table"
+}

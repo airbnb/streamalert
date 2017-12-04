@@ -849,4 +849,4 @@ class TestStreamRules(object):
             raw_record = make_kinesis_raw_record(entity, kinesis_data)
             payload = load_and_classify_payload(toggled_config, service, entity, raw_record)
 
-            assert_equal(len(StreamRules.process(payload)), 2)
+            assert_equal(len(StreamRules.process(payload)), 1)
