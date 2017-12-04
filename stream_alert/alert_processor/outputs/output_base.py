@@ -347,7 +347,7 @@ class OutputDispatcher(object):
             headers (dict): Dictionary containing request-specific header parameters
             verify (bool): Whether or not the server's SSL certificate should be verified
         Returns:
-            bool: Indicates whether the request was successful
+            dict: Contains the http response object
         Raises:
             OutputRequestFailure
         """
@@ -359,7 +359,7 @@ class OutputDispatcher(object):
             if not success:
                 raise OutputRequestFailure()
 
-            return success
+            return resp
         return do_post_request()
 
     @classmethod

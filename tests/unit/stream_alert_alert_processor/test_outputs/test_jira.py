@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 # pylint: disable=protected-access,attribute-defined-outside-init
-from mock import call, patch, PropertyMock
+from mock import patch, PropertyMock
 from moto import mock_s3, mock_kms
 from nose.tools import assert_equal, assert_false, assert_true
 
@@ -26,6 +26,7 @@ from tests.unit.stream_alert_alert_processor.helpers import get_alert, remove_te
 
 @mock_s3
 @mock_kms
+@patch('stream_alert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS', 1)
 class TestJiraOutput(object):
     """Test class for JiraOutput"""
     DESCRIPTOR = 'unit_test_jira'
@@ -96,6 +97,16 @@ class TestJiraOutput(object):
         assert_equal(self._dispatcher._get_comments('5000'), expected_result)
 
     @patch('requests.get')
+    def test_get_comments_empty_success(self, get_mock):
+        """JiraOutput - Get Comments, Success Empty"""
+        # setup successful get comments empty response
+        get_mock.return_value.status_code = 200
+        get_mock.return_value.json.return_value = {}
+
+        self._dispatcher._load_creds('jira')
+        assert_equal(self._dispatcher._get_comments('5000'), [])
+
+    @patch('requests.get')
     def test_get_comments_failure(self, get_mock):
         """JiraOutput - Get Comments, Failure"""
         # setup successful get comments response
@@ -107,7 +118,7 @@ class TestJiraOutput(object):
     @patch('requests.get')
     def test_search_failure(self, get_mock):
         """JiraOutput - Search, Failure"""
-        # setup successful get comments response
+        # setup successful search
         get_mock.return_value.status_code = 400
 
         self._dispatcher._load_creds('jira')
@@ -126,10 +137,7 @@ class TestJiraOutput(object):
                                                rule_name='rule_name',
                                                alert=get_alert()))
 
-        log_mock.assert_has_calls([call('Encountered an error while sending to %s:\n%s',
-                                        'jira', 'content'),
-                                   call('Failed to authenticate to Jira'),
-                                   call('Failed to send alert to %s', self.SERVICE)])
+        log_mock.assert_called_with('Failed to send alert to %s', self.SERVICE)
 
     @patch('logging.Logger.error')
     @patch('requests.get')
@@ -149,9 +157,7 @@ class TestJiraOutput(object):
                                                rule_name='rule_name',
                                                alert=get_alert()))
 
-        log_mock.assert_has_calls([call('Encountered an error while sending to %s:\n%s',
-                                        self.SERVICE, 'some bad content'),
-                                   call('Failed to send alert to %s', self.SERVICE)])
+        log_mock.assert_called_with('Failed to send alert to %s', self.SERVICE)
 
     @patch('logging.Logger.error')
     @patch('requests.get')
