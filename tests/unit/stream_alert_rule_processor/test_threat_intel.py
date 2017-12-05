@@ -128,7 +128,7 @@ class TestStreamStreamThreatIntel(object):
         }
         assert_equal(rec_with_ioc_info['streamalert:ioc'], expected_results)
 
-    def test_extract_values(self):
+    def test_extract_ioc_from_record(self):
         """Threat Intel - Test extrac values from a record based on normalized keys"""
         rec = {
             'account': 12345,
@@ -151,7 +151,7 @@ class TestStreamStreamThreatIntel(object):
             },
             'id': '12345'
         }
-        result = self.threat_intel._extract_values(rec)
+        result = self.threat_intel._extract_ioc_from_record(rec)
         assert_equal(len(result), 1)
         assert_equal(result[0].value, '1.1.1.2')
 

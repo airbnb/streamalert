@@ -129,6 +129,49 @@ class TestCLIConfig(object):
 
     @patch('logging.Logger.info')
     @patch('stream_alert_cli.config.CLIConfig.write')
+    def test_add_threat_intel_downloader_with_table_name(self, write_mock, log_mock):
+        """CLI - Add Threat Intel config with default dynamodb table name"""
+        threat_intel_info = {
+            'command': 'threat_intel',
+            'debug': 'False',
+            'dynamodb_table': 'my_ioc_table',
+            'subcommand': 'enable'
+        }
+
+        self.config.add_threat_intel(threat_intel_info)
+
+        expected_config = {
+            'enabled': True,
+            'dynamodb_table': 'my_ioc_table'
+        }
+
+        assert_equal(self.config['global']['threat_intel'], expected_config)
+        write_mock.assert_called()
+        log_mock.assert_called()
+
+    @patch('logging.Logger.info')
+    @patch('stream_alert_cli.config.CLIConfig.write')
+    def test_add_threat_intel_downloader_without_table_name(self, write_mock, log_mock):
+        """CLI - Add Threat Intel config without dynamodb table name from cli"""
+        threat_intel_info = {
+            'command': 'threat_intel',
+            'debug': 'False',
+            'subcommand': 'enable'
+        }
+
+        self.config.add_threat_intel(threat_intel_info)
+
+        expected_config = {
+            'enabled': True,
+            'dynamodb_table': 'unit-testing_streamalert_threat_intel_downloader'
+        }
+
+        assert_equal(self.config['global']['threat_intel'], expected_config)
+        write_mock.assert_called()
+        log_mock.assert_called()
+
+    @patch('logging.Logger.info')
+    @patch('stream_alert_cli.config.CLIConfig.write')
     def test_add_threat_intel_downloader(self, write_mock, log_mock):
         """CLI - Add Threat Intel Downloader config"""
         ti_downloader_info = {

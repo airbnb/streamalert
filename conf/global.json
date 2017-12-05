@@ -15,9 +15,5 @@
     "tfstate_bucket": "PREFIX_GOES_HERE.streamalert.terraform.state",
     "tfstate_s3_key": "stream_alert_state/terraform.tfstate",
     "tfvars": "terraform.tfvars"
-  },
-  "threat_intel": {
-    "enabled": false,
-    "dynamodb_table": "PREFIX_GOES_HERE_streamalert_threat_intel_downloader"
   }
 }

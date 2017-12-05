@@ -1179,13 +1179,55 @@ Examples:
 
     athena_parser.add_argument('--debug', action='store_true', help=ARGPARSE_SUPPRESS)
 
+def _add_threat_intel_subparser(subparsers):
+    """Add Threat Intel subparser: manage.py threat_intel [subcommand]"""
+    threat_intel_usage = 'manage.py threat_intel [subcommand]'
+    threat_intel_description = ("""
+StreamAlertCLI v{}
+Enable, configure StreamAlert Threat Intelligence feature.
+
+Available Subcommands:
+
+    manage.py threat_intel enable        Enable the Threat Intelligence feature in Rule Processor
+
+    Optional Arguments:
+        --dynamodb_table   The DynamoDB table name which stores IOC(s).
+
+Examples:
+
+    manage.py threat_intel enable
+    manage.py threat_intel enable --dynamodb_table my_ioc_table
+""".format(version))
+    threat_intel_parser = subparsers.add_parser(
+        'threat_intel',
+        usage=threat_intel_usage,
+        description=threat_intel_description,
+        help=ARGPARSE_SUPPRESS,
+        formatter_class=RawTextHelpFormatter
+    )
+
+    threat_intel_parser.set_defaults(command='threat_intel')
+
+    threat_intel_parser.add_argument(
+        'subcommand', choices=['enable'], help=ARGPARSE_SUPPRESS
+    )
+
+    threat_intel_parser.add_argument(
+        '--dynamodb_table',
+        help=ARGPARSE_SUPPRESS
+    )
+
+    threat_intel_parser.add_argument(
+        '--debug', action='store_true', help=ARGPARSE_SUPPRESS
+    )
+
 
 def _add_threat_intel_downloader_subparser(subparsers):
     """Add threat intel downloader subparser: manage.py threat_intel_downloader [subcommand]"""
     ti_downloader_usage = 'manage.py threat_intel_downloader [subcommand]'
     ti_downloader_description = ("""
 StreamAlertCLI v{}
-Threat Intel Downloader options
+Lambda function to retrieve IOC(s) from 3rd party threat feed vendor.
 
 Available Subcommands:
 
@@ -1332,11 +1374,19 @@ Build, Deploy, Configure, and Test StreamAlert Infrastructure
 
 Available Commands:
 
-    manage.py terraform        Manage StreamAlert infrastructure
-    manage.py output           Configure new StreamAlert outputs
-    manage.py lambda           Deploy, test, and rollback StreamAlert AWS Lambda functions
-    manage.py live-test        Send alerts to configured outputs
-    manage.py configure        Configure StreamAlert settings
+    manage.py app                        Create, list, or update a StreamAlert app integration function
+    manage.py athena                     Configure Athena for StreamAlert
+    manage.py configure                  Configure StreamAlert settings
+    manage.py create-alarm               Add a CloudWatch alarm for predefined metrics
+    manage.py kinesis                    Configure Kinesis for StreamAlert
+    manage.py lambda                     Deploy, test, and rollback StreamAlert AWS Lambda functions
+    manage.py live-test                  Send alerts to configured outputs
+    manage.py metrics                    Enable or disable metrics for all lambda functions
+    manage.py output                     Configure new StreamAlert outputs
+    manage.py terraform                  Manage StreamAlert infrastructure
+    manage.py threat_intel               Enable, configure StreamAlert Threat Intelligence feature.
+    manage.py threat_intel_downloader    Lambda function to retrieve IOC(s).
+    manage.py validate-schemas           Run validation of schemas
 
 For additional details on the available commands, try:
 
@@ -1362,6 +1412,7 @@ For additional details on the available commands, try:
     _add_athena_subparser(subparsers)
     _add_app_integration_subparser(subparsers)
     _add_kinesis_subparser(subparsers)
+    _add_threat_intel_subparser(subparsers)
     _add_threat_intel_downloader_subparser(subparsers)
 
     return parser

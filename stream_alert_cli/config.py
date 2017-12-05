@@ -438,6 +438,36 @@ class CLIConfig(object):
 
         self.write()
 
+    def add_threat_intel(self, threat_intel_info):
+        """Add Threat Intel configure to config
+
+        Args:
+            threat_intel_info (dict): Settings to enable Threat Intel from commandline.
+        """
+        if not threat_intel_info:
+            return
+
+        default_config = {
+            'enabled': True,
+            'dynamodb_table': 'PREFIX_GOES_HERE_streamalert_threat_intel_downloader'
+        }
+
+        if 'threat_intel' not in self.config['global']:
+            self.config['global']['threat_intel'] = default_config
+
+        # set default dynamodb table name
+        if not threat_intel_info.get('dynamodb_table'):
+            self.config['global']['threat_intel']['dynamodb_table'] = \
+                '{}_streamalert_threat_intel_downloader'\
+                    .format(self.config['global']['account']['prefix'])
+        else:
+            self.config['global']['threat_intel']['dynamodb_table'] = \
+                threat_intel_info['dynamodb_table']
+
+        self.write()
+
+        LOGGER_CLI.info('Threat Intel configuration successfully created')
+
     def add_threat_intel_downloader(self, ti_downloader_info):
         """Add Threat Intel Downloader configure to config
 
