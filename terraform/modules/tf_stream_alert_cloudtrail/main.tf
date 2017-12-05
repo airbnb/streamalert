@@ -1,19 +1,19 @@
 // StreamAlert CloudTrail
 resource "aws_cloudtrail" "streamalert" {
+  count                         = "${var.existing_trail ? 0 : 1}"
   name                          = "${var.prefix}.${var.cluster}.streamalert.cloudtrail"
   s3_bucket_name                = "${aws_s3_bucket.cloudtrail_bucket.id}"
   enable_log_file_validation    = true
   enable_logging                = "${var.enable_logging}"
   include_global_service_events = true
   is_multi_region_trail         = "${var.is_global_trail}"
-  count                         = "${var.existing_trail ? 0 : 1}"
 }
 
 // S3 bucket for CloudTrail output
 resource "aws_s3_bucket" "cloudtrail_bucket" {
+  count         = "${var.existing_trail ? 0 : 1}"
   bucket        = "${var.prefix}.${var.cluster}.streamalert.cloudtrail"
   force_destroy = false
-  count         = "${var.existing_trail ? 0 : 1}"
 
   versioning {
     enabled = true
@@ -33,6 +33,8 @@ resource "aws_s3_bucket" "cloudtrail_bucket" {
 }
 
 data "aws_iam_policy_document" "cloudtrail_bucket" {
+  count = "${var.existing_trail ? 0 : 1}"
+
   statement {
     sid = "AWSCloudTrailAclCheck"
 

@@ -35,9 +35,9 @@ def generate_cloudtrail(cluster_name, cluster_dict, config):
     enabled_legacy = modules['cloudtrail'].get('enabled')
     cloudtrail_enabled = modules['cloudtrail'].get('enable_logging')
     kinesis_enabled = modules['cloudtrail'].get('enable_kinesis')
-    account_ids = list(set(
-        [config['global']['account']['aws_account_id']] +
-        modules['cloudtrail'].get('cross_account_ids', [])))
+    account_ids = list(
+        set([config['global']['account']['aws_account_id']] + modules['cloudtrail'].get(
+            'cross_account_ids', [])))
 
     # Allow for backwards compatilibity
     if enabled_legacy:
@@ -51,8 +51,14 @@ def generate_cloudtrail(cluster_name, cluster_dict, config):
 
     existing_trail = modules['cloudtrail'].get('existing_trail', False)
     is_global_trail = modules['cloudtrail'].get('is_global_trail', True)
-    event_pattern_default = {'account': [config['global']['account']['aws_account_id']]}
-    event_pattern = modules['cloudtrail'].get('event_pattern', event_pattern_default)
+
+    event_pattern_default = json.dumps({'account': [config['global']['account']['aws_account_id']]})
+    try:
+        event_pattern = json.loads(modules['cloudtrail'].get('event_pattern',
+                                                             event_pattern_default))
+    except ValueError:
+        LOGGER_CLI.error('Event Pattern is not valid JSON')
+        return False
 
     # From here: http://amzn.to/2zF7CS0
     valid_event_pattern_keys = {
