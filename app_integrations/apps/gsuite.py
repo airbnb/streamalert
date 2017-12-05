@@ -29,8 +29,8 @@ class GSuiteReportsApp(AppIntegration):
 
     def __init__(self, config):
         super(GSuiteReportsApp, self).__init__(config)
-        self._last_event_timestamp = self._last_timestamp
         self._activities_service = None
+        self._last_event_timestamp = None
         self._next_page_token = None
 
     @classmethod
@@ -107,6 +107,10 @@ class GSuiteReportsApp(AppIntegration):
         """
         if not self._create_service():
             return False
+
+        # Cache the last event timestamp so it can be used for future requests
+        if not self._next_page_token:
+            self._last_event_timestamp = self._last_timestamp
 
         LOGGER.debug('Querying activities since %s for %s',
                      self._last_event_timestamp,

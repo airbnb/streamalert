@@ -1092,14 +1092,27 @@
   },
   "gsuite:reports": {
     "schema": {
-      "kind": "string",
-      "id": {},
       "actor": {},
-      "ownerDomain": "string",
+      "etag": "string",
+      "events": [],
+      "id": {
+        "applicationName": "string",
+        "customerId": "string",
+        "time": "string",
+        "uniqueQualifier": "integer"
+      },
       "ipAddress": "string",
-      "events": []
+      "kind": "string",
+      "ownerDomain": "string"
     },
-    "parser": "json"
+    "parser": "json",
+    "configuration": {
+      "optional_top_level_keys": [
+        "etag",
+        "ipAddress",
+        "ownerDomain"
+      ]
+    }
   },
   "onelogin:events": {
     "schema": {
