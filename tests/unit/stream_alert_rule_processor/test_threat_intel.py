@@ -38,11 +38,12 @@ class TestStreamIoc(object):
         ioc = StreamIoc()
         assert_equal(ioc.value, None)
         assert_equal(ioc.ioc_type, None)
+        assert_equal(ioc.sub_type, None)
         assert_equal(ioc.associated_record, None)
         assert_false(ioc.is_ioc)
 
         new_ioc = StreamIoc(value='1.1.1.2', ioc_type='ip',
-                            rec={'foo': 'bar'}, is_ioc=True)
+                            associated_record={'foo': 'bar'}, is_ioc=True)
         assert_equal(new_ioc.value, '1.1.1.2')
         assert_equal(new_ioc.ioc_type, 'ip')
         assert_equal(new_ioc.associated_record, {'foo': 'bar'})
@@ -51,7 +52,7 @@ class TestStreamIoc(object):
     def test_set_properties(self):
         """StreamIoc - Test setter of class properties"""
         ioc = StreamIoc(value='evil.com', ioc_type='domain',
-                        rec={'foo': 'bar'}, is_ioc=True)
+                        associated_record={'foo': 'bar'}, is_ioc=True)
         ioc.value = 'evil.com'
         assert_equal(ioc.value, 'evil.com')
         ioc.ioc_type = 'test_ioc_type'
@@ -61,28 +62,32 @@ class TestStreamIoc(object):
         ioc.is_ioc = False
         assert_false(ioc.is_ioc)
 
-class TestStreamStreamThreatIntel(object):
+class TestStreamThreatIntel(object):
     """Test class for StreamThreatIntel"""
-    def __init__(self):
-        self.threat_intel = StreamThreatIntel()
-        self.config = load_config('tests/unit/conf')
+    @classmethod
+    def teardown_class(cls):
+        """Teardown the class after all methods"""
+        cls.config = None
+        cls.threat_intel = None
 
     def setup(self):
         """Setup before each method"""
         # Clear out the cached matchers and rules to avoid conflicts with production code
-        StreamThreatIntel.load_config(self.config)
-        StreamThreatIntel._StreamThreatIntel__enabled = True # pylint: disable=no-member
+        self.config = load_config('tests/unit/conf')
+        self.config['global']['threat_intel']['enabled'] = True
+        self.threat_intel = StreamThreatIntel.load_from_config(self.config)
 
     def teardown(self):
         StreamThreatIntel._StreamThreatIntel__normalized_types.clear() # pylint: disable=no-member
 
-    @patch('botocore.client.BaseClient._make_api_call')
-    def test_threat_detection(self, mock_dynamodb):
+    @patch('boto3.client')
+    def test_threat_detection(self, mock_client):
         """Threat Intel - Test threat_detection method"""
         records = mock_normalized_records()
-        mock_dynamodb.return_value = MockDynamoDBClient.response()
+        threat_intel = StreamThreatIntel.load_from_config(self.config)
+        mock_client('dynamodb').batch_get_item.return_value = MockDynamoDBClient.response()
 
-        assert_equal(len(self.threat_intel.threat_detection(records)), 2)
+        assert_equal(len(threat_intel.threat_detection(records)), 2)
 
     def test_insert_ioc_info(self):
         """Threat Intel - Insert IOC info to a record"""
@@ -155,7 +160,7 @@ class TestStreamStreamThreatIntel(object):
         assert_equal(len(result), 1)
         assert_equal(result[0].value, '1.1.1.2')
 
-    def test_load_config(self):
+    def test_from_config(self):
         """Threat Intel - Test load_config method"""
         test_config = {
             'global': {
@@ -169,10 +174,22 @@ class TestStreamStreamThreatIntel(object):
             }
         }
 
-        self.threat_intel.load_config(test_config)
-        assert_equal(StreamThreatIntel.enabled(), True)
-        assert_equal(StreamThreatIntel._StreamThreatIntel__table, 'test_table_name') # pylint: disable=no-member
-        assert_equal(StreamThreatIntel._StreamThreatIntel__region, 'us-east-1') # pylint: disable=no-member
+        threat_intel = StreamThreatIntel.load_from_config(test_config)
+        assert_true(isinstance(threat_intel, StreamThreatIntel))
+
+        test_config = {
+            'global': {
+                'account': {
+                    'region': 'us-east-1'
+                },
+                'threat_intel': {
+                    'dynamodb_table': 'test_table_name',
+                    'enabled': False
+                }
+            }
+        }
+        threat_intel = StreamThreatIntel.load_from_config(test_config)
+        assert_false(threat_intel)
 
         test_config = {
             'types': {
@@ -186,7 +203,7 @@ class TestStreamStreamThreatIntel(object):
                 }
             }
         }
-        self.threat_intel.load_config(test_config)
+        StreamThreatIntel.load_from_config(test_config)
         expected_result = {
             'log_src1': {
                 'normalizedTypeBar': ['bar1', 'bar2'],
@@ -239,17 +256,18 @@ class TestStreamStreamThreatIntel(object):
         assert_equal(ioc_type, None)
         mock_logger.assert_called_with('Key %s in conf/types.json is incorrect', invalid_str)
 
-    @patch('botocore.client.BaseClient._make_api_call')
-    def test_process_ioc(self, mock_dynamodb):
+    @patch('boto3.client')
+    def test_process_ioc(self, mock_client):
         """Threat Intel - Test private method process_ioc"""
-        mock_dynamodb.return_value = MockDynamoDBClient.response()
+        threat_intel = StreamThreatIntel.load_from_config(self.config)
+        mock_client('dynamodb').batch_get_item.return_value = MockDynamoDBClient.response()
 
         ioc_collections = [
             StreamIoc(value='1.1.1.2', ioc_type='ip'),
             StreamIoc(value='2.2.2.2', ioc_type='ip'),
             StreamIoc(value='evil.com', ioc_type='domain')
         ]
-        self.threat_intel._process_ioc(ioc_collections)
+        threat_intel._process_ioc(ioc_collections)
         assert_true(ioc_collections[0].is_ioc)
         assert_false(ioc_collections[1].is_ioc)
         assert_true(ioc_collections[2].is_ioc)
@@ -271,25 +289,27 @@ class TestStreamStreamThreatIntel(object):
         assert_equal(len(result[2]), 100)
         assert_equal(len(result[3]), 45)
 
-    @patch('botocore.client.BaseClient._make_api_call')
-    def test_query(self, mock_dynamodb):
+    @patch('boto3.client')
+    def test_query(self, mock_client):
         """Threat Intel - Test DynamoDB query method with batch_get_item"""
-        mock_dynamodb.return_value = MockDynamoDBClient.response()
+        threat_intel = StreamThreatIntel.load_from_config(self.config)
+        mock_client('dynamodb').batch_get_item.return_value = MockDynamoDBClient.response()
 
         test_values = ['1.1.1.2', '2.2.2.2', 'evil.com', 'abcdef0123456789']
-        result = self.threat_intel._query(test_values)
+        result = threat_intel._query(test_values)
         assert_equal(len(result), 2)
         assert_equal(result[0], {'ioc_value': '1.1.1.2', 'sub_type': 'mal_ip'})
         assert_equal(result[1], {'ioc_value': 'evil.com', 'sub_type': 'c2_domain'})
 
     @raises(ClientError)
-    @patch('botocore.client.BaseClient._make_api_call')
-    def test_query_with_exception(self, mock_dynamodb):
+    @patch('boto3.client')
+    def test_query_with_exception(self, mock_client):
         """Threat Intel - Test DynamoDB query method with exception"""
-        mock_dynamodb.return_value = MockDynamoDBClient.response(exception=True)
+        mock_client('dynamodb').batch_get_item.return_value = \
+            MockDynamoDBClient.response(exception=True)
 
         self.threat_intel._query(['1.1.1.2'])
-        assert_equal(mock_dynamodb.call_count, 3)
+        assert_equal(mock_client.call_count, 3)
 
     def test_deserialize(self):
         """Threat Intel - Test method to convert dynamodb types to python types"""

@@ -34,63 +34,27 @@ PRIMARY_KEY = 'ioc_value'
 SUB_TYPE_KEY = 'sub_type'
 PROJECTION_EXPRESSION = '{},{}'.format(PRIMARY_KEY, SUB_TYPE_KEY)
 
+EXCEPTIONS_TO_BACKOFF = (ClientError,)
+
 class StreamIoc(object):
     """Class to store IOC info"""
     def __init__(self, **kwargs):
         """Initialize StreamIoc instance and store useful information
 
         Keyword arguments:
-            - value (str): IOC value
-            - ioc_type (str): Type of IOC, 'domain', 'ip' or 'md5'
-            - associated_record (dict): Original record carry IOC value.
-            - is_ioc (bool): Indicate is the value in DynamoDB IOC table or not. If
+            value (str): IOC value
+            ioc_type (str): Type of IOC, 'domain', 'ip' or 'md5'
+            sub_type (str): sub type of IOC.
+                Example, 'mal_ip' is the sub_type of 'ip'.
+            associated_record (dict): Original record carry IOC value.
+            is_ioc (bool): Indicate is the value in DynamoDB IOC table or not. If
                 True, it means it is malicious IOC, otherwise it is False (default)
         """
-        self._value = kwargs.get('value', None)
-        self._ioc_type = kwargs.get('ioc_type', None)
-        self._associated_record = kwargs.get('rec', None)
-        self._is_ioc = kwargs.get('is_ioc', False)
-
-    @property
-    def value(self):
-        """Get the value of an IOC instance"""
-        return self._value
-
-    @value.setter
-    def value(self, value):
-        """Set the value of an IOC instance"""
-        self._value = value
-
-    @property
-    def ioc_type(self):
-        """Get the type of an IOC instance"""
-        return self._ioc_type
-
-    @ioc_type.setter
-    def ioc_type(self, ioc_type):
-        """Set the type of an IOC instance"""
-        self._ioc_type = ioc_type
-
-    @property
-    def is_ioc(self):
-        """Get the indicator is an IOC instance is malicious"""
-        return self._is_ioc
-
-    @is_ioc.setter
-    def is_ioc(self, is_ioc):
-        """Set the indicator of an IOC instance if it is malicious or not"""
-        self._is_ioc = is_ioc
-
-    @property
-    def associated_record(self):
-        """Get the original record associated to an IOC instance"""
-        return self._associated_record
-
-    @associated_record.setter
-    def associated_record(self, rec):
-        """Associate the original record to an IOC instance"""
-        self._associated_record = rec
-
+        self.value = kwargs.get('value', None)
+        self.ioc_type = kwargs.get('ioc_type', None)
+        self.sub_type = kwargs.get('sub_type', None)
+        self.associated_record = kwargs.get('associated_record', None)
+        self.is_ioc = kwargs.get('is_ioc', False)
 
 def exceptions_to_giveup(err):
     """Function to decide if giveup backoff or not.
@@ -106,13 +70,11 @@ class StreamThreatIntel(object):
     __normalized_types = {}
 
     # Class variable stores mapping between CEF normalized types and IOC types
-    __normalized_types2ioc_types = {}
-    __enabled = False
-    __table = None
-    __region = 'us-east-1'
+    __normalized_ioc_types_mapping = {}
 
-    def __init__(self):
-        self.dynamodb = boto3.client('dynamodb', self.__region)
+    def __init__(self, table, region='us-east-1'):
+        self.dynamodb = boto3.client('dynamodb', region)
+        self._table = table
 
     def threat_detection(self, records):
         """Public instance method to run threat intelligence against normalized records
@@ -132,7 +94,7 @@ class StreamThreatIntel(object):
 
         # Extract information from the records for IOC detection
         for record in records:
-            ioc_collections.extend(self._extract_values(record))
+            ioc_collections.extend(self._extract_ioc_from_record(record))
 
         # Query DynamoDB IOC type to verify if the extracted info are malicious IOC(s)
         self._process_ioc(ioc_collections)
@@ -171,7 +133,7 @@ class StreamThreatIntel(object):
         else:
             rec.update({self.IOC_KEY: {ioc_type: [ioc_value]}})
 
-    def _extract_values(self, record):
+    def _extract_ioc_from_record(self, record):
         """Instance method to extract IOC info from the record based on normalized keys
 
         Args:
@@ -183,7 +145,7 @@ class StreamThreatIntel(object):
         ioc_values = set()
         for datatype in record[NORMALIZATION_KEY]:
             # Lookup mapped IOC type based on normalized CEF type from Class variable.
-            ioc_type = self.__normalized_types2ioc_types.get(datatype, None)
+            ioc_type = self.__normalized_ioc_types_mapping.get(datatype, None)
 
             # A new StreamIoc instance will be created when normalized CEF type
             # has mapped IOC type.
@@ -194,10 +156,11 @@ class StreamThreatIntel(object):
                         for original_key in original_keys:
                             value = value[original_key]
                     ioc_values.add(value)
-        return [StreamIoc(value=value, ioc_type=ioc_type, rec=record) for value in ioc_values]
+        return [StreamIoc(value=value, ioc_type=ioc_type, associated_record=record)
+                for value in ioc_values]
 
     @classmethod
-    def load_config(cls, config):
+    def load_from_config(cls, config):
         """Public class method to map datatype to IOC type
 
         Args:
@@ -206,16 +169,17 @@ class StreamThreatIntel(object):
         Returns:
             No return. Class variables will be set after config been processed.
         """
+        if config.get('types'):
+            cls._process_types_config(config['types'])
+
         if (config.get('global')
                 and config['global'].get('threat_intel')
                 and config['global']['threat_intel'].get('enabled')
                 and config['global']['threat_intel'].get('dynamodb_table')):
-            cls.__enabled = True
-            cls.__table = config['global']['threat_intel']['dynamodb_table']
-            cls.__region = config['global']['account'].get('region', 'us-east-1')
+            return cls(config['global']['threat_intel']['dynamodb_table'],
+                       config['global']['account'].get('region', 'us-east-1'))
 
-        if config.get('types'):
-            cls._process_types_config(config['types'])
+        return False
 
     @classmethod
     def _process_types_config(cls, config):
@@ -224,24 +188,24 @@ class StreamThreatIntel(object):
         Args:
             config (dict): StreamAlert config contains global and types settings.
         """
-        norm_types2ioc_types_mapping = {}
-        norm_types_mapping = {}
+        normalized_ioc_types_mapping = {}
+        normalized_types_mapping = {}
         for log_src, mapping in config.iteritems():
-            sub_norm_types = {}
+            sub_normalized_types = {}
             for norm_type, orig_types in mapping.iteritems():
                 qualified, norm_type, ioc_type = StreamThreatIntel._validate_type_mapping(norm_type)
                 # if the normalized type string contains ioc type, add
                 # normalized type and its ioc type to the dict
                 if qualified:
-                    norm_types2ioc_types_mapping[norm_type] = ioc_type
+                    normalized_ioc_types_mapping[norm_type] = ioc_type
 
-                sub_norm_types[norm_type] = orig_types
-            norm_types_mapping[log_src] = sub_norm_types
+                sub_normalized_types[norm_type] = orig_types
+            normalized_types_mapping[log_src] = sub_normalized_types
 
         # Class variable stores mapping between CEF normalized types and IOC types
-        cls.__normalized_types2ioc_types = norm_types2ioc_types_mapping
+        cls.__normalized_ioc_types_mapping = normalized_ioc_types_mapping
         # Class variable stores Data Normalization types mapping.
-        cls.__normalized_types = norm_types_mapping
+        cls.__normalized_types = normalized_types_mapping
 
     @staticmethod
     def _validate_type_mapping(mapping_str):
@@ -290,7 +254,7 @@ class StreamThreatIntel(object):
             for value in ioc_collections:
                 for ioc in query_result:
                     if value.value.lower() == ioc[PRIMARY_KEY]:
-                        value.itype = ioc[SUB_TYPE_KEY]
+                        value.sub_type = ioc[SUB_TYPE_KEY]
                         value.is_ioc = True
                         continue
 
@@ -311,9 +275,8 @@ class StreamThreatIntel(object):
             result.append(ioc_collections[index:min(index+MAX_QUERY_CNT, end)])
         return result
 
-    exceptions_to_backoff = (ClientError)
     @backoff.on_exception(backoff.expo,
-                          exceptions_to_backoff,
+                          EXCEPTIONS_TO_BACKOFF,
                           max_tries=3,
                           giveup=exceptions_to_giveup,
                           on_backoff=backoff_handler,
@@ -337,20 +300,21 @@ class StreamThreatIntel(object):
         query_keys = [{PRIMARY_KEY: {'S': ioc}} for ioc in values]
         response = self.dynamodb.batch_get_item(
             RequestItems={
-                self.__table: {
+                self._table: {
                     'Keys': query_keys,
                     'ProjectionExpression': PROJECTION_EXPRESSION
                 }
             },
         )
+
         if response.get('Responses'):
-            result.extend(StreamThreatIntel._deserialize(response['Responses'].get(self.__table)))
+            result.extend(StreamThreatIntel._deserialize(response['Responses'].get(self._table)))
 
         if response.get('UnprocessedKeys'):
             response = self.dynamodb.batch_get_item(
                 RequestItems=response['UnprocessedKeys']
             )
-            result.extend(StreamThreatIntel._deserialize(response['Responses'].get(self.__table)))
+            result.extend(StreamThreatIntel._deserialize(response['Responses'].get(self._table)))
 
         return result
 
@@ -389,11 +353,6 @@ class StreamThreatIntel(object):
                 python_data[key] = deserializer.deserialize(val)
             result.append(python_data)
         return result
-
-    @classmethod
-    def enabled(cls):
-        """Get indicator if Threat Intel enabled or not"""
-        return cls.__enabled
 
     @classmethod
     def normalized_type_mapping(cls):

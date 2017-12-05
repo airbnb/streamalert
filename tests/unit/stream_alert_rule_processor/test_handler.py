@@ -449,12 +449,6 @@ class TestStreamAlert(object):
         self.__sa_handler.run(test_event)
         assert_true(mock_logging.error.called)
 
-    @patch('stream_alert.rule_processor.handler.StreamThreatIntel.load_config')
-    def test_invoke_to_load_threat_intel_config(self, load_config_mock):
-        """StreamAlert Class - Invoke load_config"""
-        self.__sa_handler = StreamAlert(get_mock_context(), False)
-        load_config_mock.assert_called()
-
     def test_firehose_sanitize_keys(self):
         """StreamAlert Class - Firehose - Sanitize Keys"""
         # test_log_type_json_nested
