@@ -85,6 +85,26 @@ class TestJiraOutput(object):
 
         log_mock.assert_called_with('Successfully sent alert to %s', self.SERVICE)
 
+    @patch('logging.Logger.info')
+    @patch('requests.get')
+    @patch('requests.post')
+    def test_dispatch_issue_empty_comment(self, post_mock, get_mock, log_mock):
+        """JiraOutput - Dispatch Success, Empty Comment"""
+        # setup the request to find an existing issue
+        get_mock.return_value.status_code = 200
+        existing_issues = {'issues': [{'fields': {'summary': 'Bogus'}, 'id': '5000'}]}
+        get_mock.return_value.json.return_value = existing_issues
+        # setup the auth and successful creation responses
+        auth_resp = {'session': {'name': 'cookie_name', 'value': 'cookie_value'}}
+        type(post_mock.return_value).status_code = PropertyMock(side_effect=[200, 200, 200])
+        post_mock.return_value.json.side_effect = [auth_resp, {}, {'id': 5000}]
+
+        assert_true(self._dispatcher.dispatch(descriptor=self.DESCRIPTOR,
+                                              rule_name='rule_name',
+                                              alert=get_alert()))
+
+        log_mock.assert_called_with('Successfully sent alert to %s', self.SERVICE)
+
     @patch('requests.get')
     def test_get_comments_success(self, get_mock):
         """JiraOutput - Get Comments, Success"""
@@ -140,6 +160,20 @@ class TestJiraOutput(object):
         log_mock.assert_called_with('Failed to send alert to %s', self.SERVICE)
 
     @patch('logging.Logger.error')
+    @patch('requests.post')
+    def test_auth_empty_response(self, post_mock, log_mock):
+        """JiraOutput - Auth, Failure Empty Response"""
+        # setup unsuccesful auth response
+        post_mock.return_value.status_code = 200
+        post_mock.return_value.json.return_value = {}
+
+        assert_false(self._dispatcher.dispatch(descriptor=self.DESCRIPTOR,
+                                               rule_name='rule_name',
+                                               alert=get_alert()))
+
+        log_mock.assert_called_with('Failed to send alert to %s', self.SERVICE)
+
+    @patch('logging.Logger.error')
     @patch('requests.get')
     @patch('requests.post')
     def test_issue_creation_failure(self, post_mock, get_mock, log_mock):
@@ -152,6 +186,45 @@ class TestJiraOutput(object):
         auth_resp = {'session': {'name': 'cookie_name', 'value': 'cookie_value'}}
         post_mock.return_value.content = 'some bad content'
         post_mock.return_value.json.side_effect = [auth_resp, dict()]
+
+        assert_false(self._dispatcher.dispatch(descriptor=self.DESCRIPTOR,
+                                               rule_name='rule_name',
+                                               alert=get_alert()))
+
+        log_mock.assert_called_with('Failed to send alert to %s', self.SERVICE)
+
+    @patch('logging.Logger.error')
+    @patch('requests.get')
+    @patch('requests.post')
+    def test_issue_creation_empty_search(self, post_mock, get_mock, log_mock):
+        """JiraOutput - Issue Creation, Failure Empty Search"""
+        # setup the successful search response - empty response
+        get_mock.return_value.status_code = 200
+        get_mock.return_value.json.return_value = {}
+        # setup successful auth response and failed issue creation
+        type(post_mock.return_value).status_code = PropertyMock(side_effect=[200, 400])
+        auth_resp = {'session': {'name': 'cookie_name', 'value': 'cookie_value'}}
+        post_mock.return_value.content = 'some bad content'
+        post_mock.return_value.json.side_effect = [auth_resp, dict()]
+
+        assert_false(self._dispatcher.dispatch(descriptor=self.DESCRIPTOR,
+                                               rule_name='rule_name',
+                                               alert=get_alert()))
+
+        log_mock.assert_called_with('Failed to send alert to %s', self.SERVICE)
+
+    @patch('logging.Logger.error')
+    @patch('requests.get')
+    @patch('requests.post')
+    def test_issue_creation_empty_response(self, post_mock, get_mock, log_mock):
+        """JiraOutput - Issue Creation, Failure Empty Response"""
+        # setup the successful search response - no results
+        get_mock.return_value.status_code = 200
+        get_mock.return_value.json.return_value = {'issues': []}
+        # setup successful auth response and failed issue creation - empty response
+        type(post_mock.return_value).status_code = PropertyMock(side_effect=[200, 200])
+        auth_resp = {'session': {'name': 'cookie_name', 'value': 'cookie_value'}}
+        post_mock.return_value.json.side_effect = [auth_resp, {}]
 
         assert_false(self._dispatcher.dispatch(descriptor=self.DESCRIPTOR,
                                                rule_name='rule_name',
