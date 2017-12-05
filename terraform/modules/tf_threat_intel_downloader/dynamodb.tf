@@ -3,15 +3,9 @@ resource "aws_dynamodb_table" "threat_intel_ioc" {
   read_capacity  = "${var.table_rcu}"
   write_capacity = "${var.table_wcu}"
   hash_key       = "value"
-  range_key      = "type"
 
   attribute {
     name = "value"
-    type = "S"
-  }
-
-  attribute {
-    name = "type"
     type = "S"
   }
 
