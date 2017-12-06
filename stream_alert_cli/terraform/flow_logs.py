@@ -28,6 +28,8 @@ def generate_flow_logs(cluster_name, cluster_dict, config):
         bool: Result of applying the flow_logs module
     """
     modules = config['clusters'][cluster_name]['modules']
+    account_id = config['global']['account']['aws_account_id']
+    cross_account_ids = modules['flow_logs'].get('cross_account_ids', []) + [account_id]
     flow_log_group_name_default = '{}_{}_streamalert_flow_logs'.format(
         config['global']['account']['prefix'],
         cluster_name
@@ -38,6 +40,8 @@ def generate_flow_logs(cluster_name, cluster_dict, config):
     if modules['flow_logs']['enabled']:
         cluster_dict['module']['flow_logs_{}'.format(cluster_name)] = {
             'source': 'modules/tf_stream_alert_flow_logs',
+            'cluster': cluster_name,
+            'cross_account_ids': cross_account_ids,
             'destination_stream_arn': '${{module.kinesis_{}.arn}}'.format(cluster_name),
             'flow_log_group_name': flow_log_group_name}
         for flow_log_input in ('vpcs', 'subnets', 'enis'):
