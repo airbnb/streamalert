@@ -25,31 +25,30 @@ on ec2 instance
 .. code-block:: bash
 
   # Remove any previous caches
-  $ rm -rf ~/.cache/pip/
+  $ rm -rf $HOME/.cache/pip/
 
   # Create and source venv
-  $ virtualenv ~/venv
-  $ source ~/venv/bin/activate
+  $ virtualenv $HOME/venv
+  $ source $HOME/venv/bin/activate
 
   # Upgrade pip and setuptools (they are super old)
   $ pip install --upgrade pip setuptools
 
   # Make a temp build directory and temp pip install directory
-  $ mkdir ~/build_temp
-  $ mkdir ~/pip_temp
+  $ mkdir $HOME/build_temp $HOME/pip_temp
 
   # Install all of the dependencies to this directory
   # Replace the `boxsdk[jwt]==2.0.0a11` below with the desired package & version
-  $ python -c "import pip; pip.main(['install', 'boxsdk[jwt]==2.0.0a11', '--build', '~/build_temp/',  '--target', '~/pip_temp'])"
+  $ python -c "import pip; pip.main(['install', 'boxsdk[jwt]==2.0.0a11', '--build', '$HOME/build_temp/',  '--target', '$HOME/pip_temp'])"
 
   # Change into the install directory
-  $ cd ~/pip_temp
+  $ cd $HOME/pip_temp
 
   # Cleanup any pyc files
   $ find . -name '*.pyc' | xargs rm -rf
 
   # Zip it all up
-  $ zip -r pip.zip * .*
+  $ zip -r pip.zip .
 
   # Exit the ssh session
   $ exit
