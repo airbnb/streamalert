@@ -73,6 +73,16 @@ class TestAppBatcher(object):
 
         assert_false(result)
 
+    @patch('logging.Logger.error')
+    def test_segment_and_send_one_over_max(self, log_mock):
+        """App Integration Batcher - Drop One Log Over Max Size"""
+        logs = [{'random_data': 'a' * 128000}]
+        assert_true(self.batcher._send_logs_to_stream_alert('duo_auth', logs))
+
+        log_mock.assert_called_with('Log payload size for single log exceeds input '
+                                    'limit and will be dropped (%d > %d max).',
+                                    128073, 128000)
+
     @patch('app_integrations.batcher.Batcher._send_logs_to_stream_alert')
     def test_segment_and_send(self, batcher_mock):
         """App Integration Batcher - Segment and Send Logs to StreamAlert"""
