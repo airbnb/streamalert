@@ -45,7 +45,7 @@ resource "aws_cloudwatch_log_destination" "kinesis" {
 resource "aws_cloudwatch_log_destination_policy" "kinesis" {
   count            = "${length(var.cross_account_ids) > 0 ? 1 : 0}"
   destination_name = "${aws_cloudwatch_log_destination.kinesis.name}"
-  access_policy    = "${data.aws_iam_policy_document.cross_account_subscription_filter.json}"
+  access_policy    = "${data.aws_iam_policy_document.cross_account_destination_policy.json}"
 }
 
 resource "aws_cloudwatch_log_subscription_filter" "flow_logs" {

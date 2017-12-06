@@ -31,12 +31,14 @@ resource "aws_iam_role_policy" "flow_log_write" {
 // IAM Policy Doc: CloudWatch Put Events
 data "aws_iam_policy_document" "flow_log_put_cloudwatch_logs" {
   statement {
+    effect = "Allow"
+
     actions = [
       "logs:CreateLogGroup",
       "logs:CreateLogStream",
-      "logs:PutLogEvents",
       "logs:DescribeLogGroups",
       "logs:DescribeLogStreams",
+      "logs:PutLogEvents",
     ]
 
     resources = [
@@ -78,10 +80,12 @@ resource "aws_iam_role_policy" "flow_logs_kinesis_wo" {
 // IAM Policy Doc: Write to Kinesis
 data "aws_iam_policy_document" "flow_logs_put_kinesis_events" {
   statement {
+    effect = "Allow"
+
     actions = [
-      "kinesis:PutRecord*",
       "kinesis:DescribeStream",
       "kinesis:ListStreams",
+      "kinesis:PutRecord*",
     ]
 
     resources = [
@@ -90,6 +94,8 @@ data "aws_iam_policy_document" "flow_logs_put_kinesis_events" {
   }
 
   statement {
+    effect = "Allow"
+
     actions = [
       "iam:PassRole",
     ]
@@ -101,10 +107,11 @@ data "aws_iam_policy_document" "flow_logs_put_kinesis_events" {
 }
 
 // IAM Policy Doc: Allow Cross Account Flow Logs
-data "aws_iam_policy_document" "cross_account_subscription_filter" {
+data "aws_iam_policy_document" "cross_account_destination_policy" {
   count = "${length(var.cross_account_ids) > 0 ? 1 : 0}"
 
   statement {
+    sid    = "CrossAccountDestinationPolicy"
     effect = "Allow"
 
     principals = {
