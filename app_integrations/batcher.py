@@ -93,6 +93,11 @@ class Batcher(object):
         payload = {'Records': [{'stream_alert_app': source_function, 'logs': logs}]}
         payload_json = json.dumps(payload, separators=(',', ':'))
         if len(payload_json) > MAX_LAMBDA_PAYLOAD_SIZE:
+            if len(logs) == 1:
+                LOGGER.error('Log payload size for single log exceeds input limit and will be '
+                             'dropped (%d > %d max).', len(payload_json), MAX_LAMBDA_PAYLOAD_SIZE)
+                return True
+
             LOGGER.debug('Log payload size for %d logs exceeds limit and will be '
                          'segmented (%d > %d max).', len(logs), len(payload_json),
                          MAX_LAMBDA_PAYLOAD_SIZE)
