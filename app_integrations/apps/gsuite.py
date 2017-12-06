@@ -13,14 +13,19 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+import logging
 import json
 import re
+import socket
 
 import apiclient
 from oauth2client.service_account import ServiceAccountCredentials
 
 from app_integrations import LOGGER
 from app_integrations.apps.app_base import StreamAlertApp, AppIntegration
+
+# Disable noisy google api client logger
+logging.getLogger('googleapiclient.discovery_cache').setLevel(logging.ERROR)
 
 
 class GSuiteReportsApp(AppIntegration):
@@ -76,6 +81,8 @@ class GSuiteReportsApp(AppIntegration):
             bool: True if the Google API discovery service was successfully established or False
                 if any errors occurred during the creation of the Google discovery service,
         """
+        LOGGER.debug('Creating activities service for %s', self.type())
+
         if self._activities_service:
             LOGGER.debug('Service already instantiated for %s', self.type())
             return True
@@ -87,7 +94,7 @@ class GSuiteReportsApp(AppIntegration):
         delegation = creds.create_delegated(self._config.auth['delegation_email'])
         try:
             resource = apiclient.discovery.build('admin', 'reports_v1', credentials=delegation)
-        except apiclient.errors.Error:
+        except (apiclient.errors.Error, socket.timeout):
             LOGGER.exception('Failed to build discovery service for %s', self.type())
             return False
 
