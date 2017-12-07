@@ -31,6 +31,7 @@ from tests.unit.stream_alert_alert_processor.helpers import (
 
 @mock_s3
 @mock_kms
+@patch('stream_alert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS', 1)
 class TestSlackOutput(object):
     """Test class for SlackOutput"""
     DESCRIPTOR = 'unit_test_channel'
