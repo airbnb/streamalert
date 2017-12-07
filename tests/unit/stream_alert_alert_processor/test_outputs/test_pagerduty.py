@@ -30,6 +30,7 @@ from tests.unit.stream_alert_alert_processor.helpers import get_alert, remove_te
 
 @mock_s3
 @mock_kms
+@patch('stream_alert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS', 1)
 class TestPagerDutyOutput(object):
     """Test class for PagerDutyOutput"""
     DESCRIPTOR = 'unit_test_pagerduty'
@@ -86,6 +87,7 @@ class TestPagerDutyOutput(object):
 
 @mock_s3
 @mock_kms
+@patch('stream_alert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS', 1)
 class TestPagerDutyOutputV2(object):
     """Test class for PagerDutyOutputV2"""
     DESCRIPTOR = 'unit_test_pagerduty-v2'

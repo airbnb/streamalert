@@ -46,7 +46,7 @@ def retry_on_exception(exceptions):
     """Decorator function to attempt retry based on passed exceptions"""
     def real_decorator(func):
         """Actual decorator to retry on exceptions"""
-        @backoff.on_exception(backoff.fibo,
+        @backoff.on_exception(backoff.expo,
                               exceptions, # This is a tuple with exceptions
                               max_tries=OutputDispatcher.MAX_RETRY_ATTEMPTS,
                               jitter=backoff.full_jitter,
@@ -133,7 +133,7 @@ class OutputDispatcher(object):
     __service__ = NotImplemented
 
     # How many times it will attempt to retry something failing using backoff
-    MAX_RETRY_ATTEMPTS = 3
+    MAX_RETRY_ATTEMPTS = 5
 
     # _DEFAULT_REQUEST_TIMEOUT indicates how long the requests library will wait before timing
     # out for both get and post requests. This applies to both connection and read timeouts
