@@ -222,8 +222,8 @@ class PagerDutyIncidentOutput(OutputDispatcher):
              OutputProperty(description='the token for this PagerDuty integration',
                             mask_input=True,
                             cred_requirement=True)),
-            ('service_key',
-             OutputProperty(description='the service key for this PagerDuty integration',
+            ('service_name',
+             OutputProperty(description='the service name for this PagerDuty integration',
                             mask_input=True,
                             cred_requirement=True)),
             ('escalation_policy',
@@ -464,7 +464,7 @@ class PagerDutyIncidentOutput(OutputDispatcher):
             'details': kwargs['alert']['rule_description']
         }
         # We need to get the service id from the API
-        incident_service = self._service_verify(creds['service_key'])
+        incident_service = self._service_verify(creds['service_name'])
         incident = {
             'incident': {
                 'type': 'incident',
