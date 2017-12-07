@@ -537,6 +537,18 @@
   },
   "carbonblack:watchlist.hit.binary": {
     "schema": {
+      "alliance_data_srsthreat": [],
+      "alliance_data_srstrust": [],
+      "alliance_data_virustotal": [],
+      "alliance_link_srstrust": "string",
+      "alliance_link_srsthreat": "string",
+      "alliance_link_virustotal": "string",
+      "alliance_score_srstrust": "integer",
+      "alliance_score_srsthreat": "integer",
+      "alliance_score_virustotal": "integer",
+      "alliance_updated_srstrust": "string",
+      "alliance_updated_srsthreat": "string",
+      "alliance_updated_virustotal": "string",
       "cb_version": "integer",
       "comments": "string",
       "company_name": "string",
@@ -580,7 +592,24 @@
         "type": "string",
         "watchlist_id": "integer",
         "watchlist_name": "string"
-      }
+      },
+      "optional_top_level_keys": [
+        "alliance_data_srstrust",
+        "alliance_data_srsthreat",
+        "alliance_data_virustotal",
+        "alliance_link_srstrust",
+        "alliance_link_srsthreat",
+        "alliance_link_virustotal",
+        "alliance_score_srstrust",
+        "alliance_score_srsthreat",
+        "alliance_score_virustotal",
+        "alliance_updated_srstrust",
+        "alliance_updated_srsthreat",
+        "alliance_updated_virustotal",
+        "digsig_subject",
+        "digsig_issuer",
+        "comments"
+      ]
     }
   },
   "carbonblack:watchlist.hit.ingress.binary": {
