@@ -76,6 +76,7 @@ class RuleProcessorTester(object):
                 Warnings and errors captrued during rule processor testing
                 will still be written to stdout regardless of this setting.
         """
+        helpers.setup_mock_dynamodb_ioc_table(config)
         # Create the RuleProcessor. Passing a mocked context object with fake
         # values and False for suppressing sending of alerts to alert processor
         self.processor = StreamAlert(context, False)

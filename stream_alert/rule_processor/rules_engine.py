@@ -412,6 +412,9 @@ class StreamRules(object):
         """
         rule_result = StreamRules.process_rule(record, rule)
         if rule_result:
+            if StreamRules.check_alerts_duplication(record, rule, alerts):
+                return
+
             LOGGER.info('Rule [%s] triggered an alert on log type [%s] from entity \'%s\' '
                         'in service \'%s\'', rule.rule_name, payload.log_source,
                         payload.entity, payload.service())
@@ -426,5 +429,33 @@ class StreamRules(object):
                 'source_entity': payload.entity,
                 'context': rule.context}
 
-            if alert not in alerts:
-                alerts.append(alert)
+            alerts.append(alert)
+
+    @staticmethod
+    def check_alerts_duplication(record, rule, alerts):
+        """Class method to check if the record has been added to alerts list already.
+
+        The reason we need to do check alerts duplication is because original records
+        would be modified by inserting normalization or/and IOC information if there
+        exist. Threat Intel feature will process normalized records again and it
+        will result alert duplication.
+
+        Args:
+            record (dict): A parsed log with data.
+            rule: Rule attributes.
+            alerts (list): A list of alerts which will be sent to alert processor.
+
+        Returns:
+            (bool): Return True if both record and rule name exist in alerts list.
+        """
+        for exist_alert in alerts:
+            if rule.rule_name == exist_alert['rule_name']:
+                record_copy = record.copy()
+                if StreamThreatIntel.IOC_KEY not in exist_alert['record']:
+                    record_copy.pop(StreamThreatIntel.IOC_KEY, None)
+                if NORMALIZATION_KEY not in exist_alert['record']:
+                    record_copy.pop(NORMALIZATION_KEY, None)
+                if record_copy == exist_alert['record']:
+                    return True
+
+        return False

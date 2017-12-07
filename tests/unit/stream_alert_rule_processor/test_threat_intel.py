@@ -309,7 +309,6 @@ class TestStreamThreatIntel(object):
             MockDynamoDBClient.response(exception=True)
 
         self.threat_intel._query(['1.1.1.2'])
-        assert_equal(mock_client.call_count, 3)
 
     def test_deserialize(self):
         """Threat Intel - Test method to convert dynamodb types to python types"""
