@@ -35,6 +35,7 @@ SUB_TYPE_KEY = 'sub_type'
 PROJECTION_EXPRESSION = '{},{}'.format(PRIMARY_KEY, SUB_TYPE_KEY)
 
 EXCEPTIONS_TO_BACKOFF = (ClientError,)
+BACKOFF_MAX_RETRIES = 3
 
 class StreamIoc(object):
     """Class to store IOC info"""
@@ -277,7 +278,7 @@ class StreamThreatIntel(object):
 
     @backoff.on_exception(backoff.expo,
                           EXCEPTIONS_TO_BACKOFF,
-                          max_tries=3,
+                          max_tries=BACKOFF_MAX_RETRIES,
                           giveup=exceptions_to_giveup,
                           on_backoff=backoff_handler,
                           on_success=success_handler,
