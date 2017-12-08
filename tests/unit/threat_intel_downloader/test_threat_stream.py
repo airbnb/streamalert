@@ -193,9 +193,9 @@ class TestThreatStream(object):
                 Item={
                     'expiration_ts': 1512000062,
                     'source': 'test_source',
-                    'type': 'domain',
+                    'ioc_type': 'domain',
                     'sub_type': 'c2_domain',
-                    'value': 'malicious_domain2.com'
+                    'ioc_value': 'malicious_domain2.com'
                 }
             ),
             call().Table().batch_writer().__exit__(None, None, None)

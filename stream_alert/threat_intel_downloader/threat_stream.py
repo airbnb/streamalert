@@ -40,7 +40,7 @@ class ThreatStream(object):
     _IOC_STATUS = 'active'
     # max IOC objects received from one API call, default is 0 (equal to 1000)
     _API_MAX_LIMIT = 1000
-    _API_MAX_INDEX = 1000000
+    _API_MAX_INDEX = 500000
     _PARAMETER_NAME = 'threat_intel_downloader_api_creds'
 
     def __init__(self, config):
@@ -258,8 +258,8 @@ class ThreatStream(object):
                 for ioc in intelligence:
                     batch.put_item(
                         Item={
-                            'value': ioc['value'],
-                            'type': ioc['type'],
+                            'ioc_value': ioc['value'],
+                            'ioc_type': ioc['type'],
                             'sub_type': ioc['itype'],
                             'source': ioc['source'],
                             'expiration_ts': ioc['expiration_ts']
