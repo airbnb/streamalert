@@ -1002,6 +1002,8 @@ Available Options:
     --target                                   The Terraform module name to apply.
                                                Valid options: stream_alert, kinesis, kinesis_events,
                                                cloudtrail, monitoring, and s3_events.
+    --cluster                                  The StreamAlert cluster(s) to apply to.
+
 Examples:
 
     manage.py terraform init
@@ -1038,6 +1040,11 @@ Examples:
             'athena', 'cloudwatch_monitoring', 'cloudtrail', 'flow_logs', 'kinesis',
             'kinesis_events', 'stream_alert', 's3_events', 'threat_intel_downloader'
         ],
+        help=ARGPARSE_SUPPRESS,
+        nargs='+')
+
+    tf_parser.add_argument(
+        '--cluster',
         help=ARGPARSE_SUPPRESS,
         nargs='+')
 
