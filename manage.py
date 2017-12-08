@@ -1376,7 +1376,7 @@ Available Commands:
 
     manage.py app                        Create, list, or update a StreamAlert app integration function
     manage.py athena                     Configure Athena for StreamAlert
-    manage.py configure                  Configure StreamAlert settings
+    manage.py configure                  Configure Global StreamAlert settings
     manage.py create-alarm               Add a CloudWatch alarm for predefined metrics
     manage.py kinesis                    Configure Kinesis for StreamAlert
     manage.py lambda                     Deploy, test, and rollback StreamAlert AWS Lambda functions

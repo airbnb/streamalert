@@ -194,7 +194,7 @@ class StreamThreatIntel(object):
         for log_src, mapping in config.iteritems():
             sub_normalized_types = {}
             for norm_type, orig_types in mapping.iteritems():
-                qualified, norm_type, ioc_type = StreamThreatIntel._validate_type_mapping(norm_type)
+                qualified, norm_type, ioc_type = cls._validate_type_mapping(norm_type)
                 # if the normalized type string contains ioc type, add
                 # normalized type and its ioc type to the dict
                 if qualified:
@@ -246,12 +246,25 @@ class StreamThreatIntel(object):
             ioc_collections (list): A list of StreamIoc instances.
         """
         # Segment data before calling DynamoDB table with batch_get_item.
-        for subset in StreamThreatIntel._segment(ioc_collections):
+        for subset in self._segment(ioc_collections):
             query_values = []
             for ioc in subset:
                 if ioc.value not in query_values:
                     query_values.append(ioc.value)
-            query_result = self._query(query_values)
+
+            query_result = []
+
+            result, unprocesed_keys = self._query(query_values)
+            query_result.extend(result)
+
+            # If there are unprocessed keys, we will re-query once with unprocessed
+            # keys only
+            if unprocesed_keys:
+                deserializer = self._deserialize(unprocesed_keys[self._table]['Keys'])
+                query_values = [elem[PRIMARY_KEY] for elem in deserializer]
+                result, _ = self._query(query_values)
+                query_result.extend(result)
+
             for value in ioc_collections:
                 for ioc in query_result:
                     if value.value.lower() == ioc[PRIMARY_KEY]:
@@ -290,12 +303,13 @@ class StreamThreatIntel(object):
             values (list): A list of string which contains IOC values
 
         Returns:
-            (list): A list of dict returned from dynamodb table query, in the
-                format of
+            First return (list): A list of dict returned from dynamodb
+                table query, in the format of
                     [
                         {'sub_type': 'c2_domain', 'ioc_value': 'evil.com'},
                         {'sub_type': 'mal_ip', 'ioc_value': '1.1.1.2'},
                     ]
+            Second return (dict/None): A dict containing unprocesed keys.
         """
         result = []
         query_keys = [{PRIMARY_KEY: {'S': ioc}} for ioc in values]
@@ -309,15 +323,9 @@ class StreamThreatIntel(object):
         )
 
         if response.get('Responses'):
-            result.extend(StreamThreatIntel._deserialize(response['Responses'].get(self._table)))
+            result.extend(self._deserialize(response['Responses'].get(self._table)))
 
-        if response.get('UnprocessedKeys'):
-            response = self.dynamodb.batch_get_item(
-                RequestItems=response['UnprocessedKeys']
-            )
-            result.extend(StreamThreatIntel._deserialize(response['Responses'].get(self._table)))
-
-        return result
+        return result, response.get('UnprocessedKeys')
 
     @staticmethod
     def _deserialize(dynamodb_data):

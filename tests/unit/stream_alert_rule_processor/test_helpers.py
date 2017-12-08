@@ -234,7 +234,7 @@ class MockDynamoDBClient(object):
             err = {'Error': {'Code': 400, 'Message': 'raising test exception'}}
             raise ClientError(err, 'batch_get_item')
 
-        return {
+        response = {
             'UnprocessedKeys': {},
             'Responses': {
                 'test_table_name': [
@@ -255,3 +255,14 @@ class MockDynamoDBClient(object):
                 'HTTPHeaders': {}
             }
         }
+        if kwargs.get('unprocesed_keys', False):
+            response['UnprocessedKeys'] = {
+                'test_table_name': {
+                    'Keys': [
+                        {'ioc_value': {'S': 'foo'}},
+                        {'ioc_value': {'S': 'bar'}}
+                    ]
+                }
+            }
+
+        return response

@@ -272,6 +272,23 @@ class TestStreamThreatIntel(object):
         assert_false(ioc_collections[1].is_ioc)
         assert_true(ioc_collections[2].is_ioc)
 
+    @patch('boto3.client')
+    def test_process_ioc_with_unprocessed_keys(self, mock_client):
+        """Threat Intel - Test private method process_ioc when response has UnprocessedKeys"""
+        threat_intel = StreamThreatIntel.load_from_config(self.config)
+        mock_client('dynamodb').batch_get_item.return_value = \
+            MockDynamoDBClient.response(unprocesed_keys=True)
+
+        ioc_collections = [
+            StreamIoc(value='1.1.1.2', ioc_type='ip'),
+            StreamIoc(value='foo', ioc_type='domain'),
+            StreamIoc(value='bar', ioc_type='domain')
+        ]
+        threat_intel._process_ioc(ioc_collections)
+        assert_true(ioc_collections[0].is_ioc)
+        assert_false(ioc_collections[1].is_ioc)
+        assert_false(ioc_collections[2].is_ioc)
+
     def test_segment(self):
         """Threat Intel - Test _segment method to segment a list to sub-list"""
         # it should only return 1 sub-list when length of list less than MAX_QUERY_CNT (100)
@@ -296,8 +313,9 @@ class TestStreamThreatIntel(object):
         mock_client('dynamodb').batch_get_item.return_value = MockDynamoDBClient.response()
 
         test_values = ['1.1.1.2', '2.2.2.2', 'evil.com', 'abcdef0123456789']
-        result = threat_intel._query(test_values)
+        result, unprocessed_keys = threat_intel._query(test_values)
         assert_equal(len(result), 2)
+        assert_false(unprocessed_keys)
         assert_equal(result[0], {'ioc_value': '1.1.1.2', 'sub_type': 'mal_ip'})
         assert_equal(result[1], {'ioc_value': 'evil.com', 'sub_type': 'c2_domain'})
 

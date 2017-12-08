@@ -362,7 +362,7 @@ class StreamRules(object):
         for record in payload.records:
             for rule in rules:
                 # subkey check
-                has_sub_keys = StreamRules.process_subkeys(record, payload.type, rule)
+                has_sub_keys = self.process_subkeys(record, payload.type, rule)
                 if not has_sub_keys:
                     continue
 
@@ -373,9 +373,9 @@ class StreamRules(object):
 
                 types_result = None
                 if rule.datatypes:
-                    types_result = StreamRules.match_types(record,
-                                                           payload.normalized_types,
-                                                           rule.datatypes)
+                    types_result = self.match_types(record,
+                                                    payload.normalized_types,
+                                                    rule.datatypes)
 
                 if types_result:
                     record_copy = record.copy()
@@ -385,7 +385,7 @@ class StreamRules(object):
                 else:
                     record_copy = record
                 # rule analysis
-                StreamRules.rule_analysis(record_copy, rule, payload, alerts)
+                self.rule_analysis(record_copy, rule, payload, alerts)
 
         # Apply the Threat Intelligence against normalized records
         if self._threat_intel:
@@ -393,7 +393,7 @@ class StreamRules(object):
             if ioc_records:
                 for ioc_record in ioc_records:
                     for rule in rules:
-                        StreamRules.rule_analysis(ioc_record, rule, payload, alerts)
+                        self.rule_analysis(ioc_record, rule, payload, alerts)
 
         return alerts
 
@@ -433,7 +433,7 @@ class StreamRules(object):
 
     @staticmethod
     def check_alerts_duplication(record, rule, alerts):
-        """Class method to check if the record has been added to alerts list already.
+        """The method to check if the record has been added to alerts list already.
 
         The reason we need to do check alerts duplication is because original records
         would be modified by inserting normalization or/and IOC information if there
