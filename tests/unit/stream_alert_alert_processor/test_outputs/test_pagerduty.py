@@ -154,7 +154,7 @@ class TestPagerDutyIncidentOutput(object):
     SERVICE = 'pagerduty-incident'
     CREDS = {'api': 'https://api.pagerduty.com',
              'token': 'mocked_token',
-             'service_key': 'mocked_service_key',
+             'service_name': 'mocked_service_name',
              'escalation_policy': 'mocked_escalation_policy',
              'email_from': 'email@domain.com'}
 
