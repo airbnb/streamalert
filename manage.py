@@ -976,6 +976,11 @@ def _add_default_lambda_args(lambda_parser):
         action=UniqueSetAction,
         required=True)
 
+    lambda_parser.add_argument(
+        '--cluster',
+        help=ARGPARSE_SUPPRESS,
+        nargs='+')
+
     # Allow verbose output for the CLI with the --debug option
     lambda_parser.add_argument('--debug', action='store_true', help=ARGPARSE_SUPPRESS)
 

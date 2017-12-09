@@ -24,6 +24,9 @@ import zipfile
 import boto3
 from botocore.exceptions import ClientError
 
+from app_integrations import __version__ as apps_version
+from stream_alert import __version__ as stream_alert_version
+from stream_alert.threat_intel_downloader import __version__ as ti_downloader_version
 from stream_alert_cli.helpers import run_command
 from stream_alert_cli.logger import LOGGER_CLI
 
@@ -38,17 +41,17 @@ class LambdaPackage(object):
         package_root_dir (str): Working directory to begin the zip
         config_key (str): The configuration key to update after creation
     """
+    config_key = None
     package_folders = set()
     package_files = set()
     package_name = None
-    package_root_dir = None
-    config_key = None
-    third_party_libs = set()
+    package_root_dir = '.'
     precompiled_libs = set()
+    third_party_libs = set()
+    version = None
 
-    def __init__(self, **kwargs):
-        self.version = kwargs['version']
-        self.config = kwargs['config']
+    def __init__(self, config):
+        self.config = config
 
     def create_and_upload(self):
         """Create a Lambda deployment package, hash it, and upload it to S3.
@@ -272,51 +275,52 @@ class LambdaPackage(object):
 
 class RuleProcessorPackage(LambdaPackage):
     """Deployment package class for the StreamAlert Rule Processor function"""
+    config_key = 'rule_processor_config'
     package_folders = {
         'stream_alert/rule_processor', 'stream_alert/shared', 'rules', 'matchers', 'helpers', 'conf'
     }
     package_files = {'stream_alert/__init__.py'}
-    package_root_dir = '.'
     package_name = 'rule_processor'
-    config_key = 'rule_processor_config'
     third_party_libs = {'backoff', 'jsonpath_rw'}
+    version = stream_alert_version
 
 
 class AlertProcessorPackage(LambdaPackage):
     """Deployment package class for the StreamAlert Alert Processor function"""
     package_folders = {'stream_alert/alert_processor', 'stream_alert/shared', 'conf'}
     package_files = {'stream_alert/__init__.py'}
-    package_root_dir = '.'
     package_name = 'alert_processor'
     config_key = 'alert_processor_config'
     third_party_libs = {'backoff', 'requests'}
+    version = stream_alert_version
 
 
 class AppIntegrationPackage(LambdaPackage):
     """Deployment package class for App integration functions"""
     package_folders = {'app_integrations'}
     package_files = {'app_integrations/__init__.py'}
-    package_root_dir = '.'
     package_name = 'stream_alert_app'
     config_key = 'stream_alert_apps_config'
     third_party_libs = {'boxsdk[jwt]==2.0.0a11', 'google-api-python-client', 'requests'}
     precompiled_libs = {'boxsdk[jwt]==2.0.0a11'}
+    version = apps_version
 
 
 class AthenaPackage(LambdaPackage):
     """Create the Athena Partition Refresh Lambda function package"""
     package_folders = {'stream_alert/athena_partition_refresh', 'stream_alert/shared', 'conf'}
     package_files = {'stream_alert/__init__.py'}
-    package_root_dir = '.'
     package_name = 'athena_partition_refresh'
     config_key = 'athena_partition_refresh_config'
     third_party_libs = {'backoff'}
+    version = stream_alert_version
+
 
 class ThreatIntelDownloaderPackage(LambdaPackage):
     """Create the Threat Intel Downloader Lambda function package"""
     package_folders = {'stream_alert/threat_intel_downloader', 'stream_alert/shared', 'conf'}
     package_files = {'stream_alert/__init__.py'}
-    package_root_dir = '.'
     package_name = 'threat_intel_downloader'
     config_key = 'threat_intel_downloader_config'
     third_party_libs = {'backoff', 'requests'}
+    version = ti_downloader_version
