@@ -34,10 +34,7 @@ def test_publish_clustered():
 def test_publish_helper_clustered():
     """CLI - Publish Clustered Function"""
     config = MockCLIConfig(config=basic_streamalert_config())
-    package = RuleProcessorPackage(
-        version='1.0',
-        config=config
-    )
+    package = RuleProcessorPackage(config=config)
     publish = LambdaVersion(
         config=config,
         clustered_deploy=True,
@@ -56,10 +53,7 @@ def test_publish_helper_clustered():
 def test_publish_helper():
     """CLI - Publish Athena Function"""
     config = MockCLIConfig(config=basic_streamalert_config())
-    package = AthenaPackage(
-        version='1.0',
-        config=config
-    )
+    package = AthenaPackage(config=config)
     publish = LambdaVersion(
         config=config,
         clustered_deploy=False,
@@ -73,10 +67,7 @@ def test_publish_helper():
 
 def test_version_helper():
     """CLI - Publish Helper"""
-    package = AthenaPackage(
-        version='1.0',
-        config=basic_streamalert_config()
-    )
+    package = AthenaPackage(basic_streamalert_config())
     publish = LambdaVersion(
         config=basic_streamalert_config(),
         clustered_deploy=False,
@@ -97,10 +88,7 @@ def test_version_helper():
 @patch('stream_alert_cli.version.LOGGER_CLI')
 def test_version_helper_error(mock_logging):
     """CLI - Publish Helper Raises Error"""
-    package = AthenaPackage(
-        version='1.0',
-        config=basic_streamalert_config()
-    )
+    package = AthenaPackage(basic_streamalert_config())
     publish = LambdaVersion(
         config=basic_streamalert_config(),
         clustered_deploy=False,
