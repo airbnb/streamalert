@@ -23,14 +23,13 @@ CONFIG = CLIConfig(config_path='tests/unit/conf')
 def test_kinesis_events():
     """CLI - Terraform Generate Kinesis Events"""
     cluster_dict = _common.infinitedict()
-    result = kinesis_events.generate_kinesis_events('advanced',
-                                                    cluster_dict,
-                                                    CONFIG)
+    result = kinesis_events.generate_kinesis_events('advanced', cluster_dict, CONFIG)
 
     expected_result = {
         'module': {
             'kinesis_events_advanced': {
                 'source': 'modules/tf_stream_alert_kinesis_events',
+                'batch_size': 100,
                 'lambda_production_enabled': True,
                 'lambda_role_id': '${module.stream_alert_advanced.lambda_role_id}',
                 'lambda_function_arn': '${module.stream_alert_advanced.lambda_arn}',

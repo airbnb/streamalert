@@ -27,11 +27,14 @@ def generate_kinesis_events(cluster_name, cluster_dict, config):
     Returns:
         bool: Result of applying the kinesis_events module
     """
-    kinesis_events_enabled = bool(
-        config['clusters'][cluster_name]['modules']['kinesis_events']['enabled'])
+    cluster_config = config['clusters'][cluster_name]['modules']
+    kinesis_events_enabled = bool(cluster_config['kinesis_events']['enabled'])
+    batch_size = cluster_config['kinesis_events'].get('batch_size', 100)
+
     # Kinesis events module
     cluster_dict['module']['kinesis_events_{}'.format(cluster_name)] = {
         'source': 'modules/tf_stream_alert_kinesis_events',
+        'batch_size': batch_size,
         'lambda_production_enabled': kinesis_events_enabled,
         'lambda_role_id': '${{module.stream_alert_{}.lambda_role_id}}'.format(cluster_name),
         'lambda_function_arn': '${{module.stream_alert_{}.lambda_arn}}'.format(cluster_name),
