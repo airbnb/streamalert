@@ -296,6 +296,17 @@
     },
     "parser": "json"
   },
+  "cloudwatch:test_match_types_2": {
+    "schema": {
+      "account": "integer",
+      "region": "string",
+      "detail": {},
+      "source": "string",
+      "description": {},
+      "resources": []
+    },
+    "parser": "json"
+  },
   "json:regex_key_with_envelope": {
     "schema": {
       "nested_key_1": "string",

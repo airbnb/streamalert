@@ -41,7 +41,8 @@ def test_enabled_firehose_logs():
         'test_log_type_json_nested_osquery',
         'test_log_type_syslog',
         'test_cloudtrail',
-        'unit_test_simple_log'
+        'unit_test_simple_log',
+        'cloudwatch_test_match_types_2'
     }
 
     assert_equal(firehose_logs, expected_logs)
@@ -72,7 +73,8 @@ def test_enabled_firehose_logs_disabled():
         'test_log_type_json_nested_osquery',
         # 'test_log_type_syslog',
         'test_cloudtrail',
-        'unit_test_simple_log'
+        'unit_test_simple_log',
+        'cloudwatch_test_match_types_2'
     }
 
     assert_equal(firehose_logs, expected_logs)
