@@ -118,7 +118,7 @@ def deploy(options, config):
         processors = options.processor
 
     for processor in processors:
-        package, targets = _create_and_upload(processor, config, options.cluster)
+        package, targets = _create_and_upload(processor, config, options.clusters)
         # Continue if the package isn't enabled
         if not all([package, targets]):
             continue

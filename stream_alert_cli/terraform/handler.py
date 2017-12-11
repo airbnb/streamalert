@@ -162,14 +162,14 @@ def terraform_build(options, config):
         'athena': 'module.stream_alert_athena',
         'threat_intel_downloader': 'module.threat_intel_downloader'
     }
-    clusters = set(options.cluster or config.clusters())
+    clusters = set(options.clusters or config.clusters())
 
     if options.target:
         tf_runner_targets.update({
             'module.{}_{}'.format(target, cluster)
             for cluster in clusters for target in options.target
         })
-        for name, _ in custom_module_mapping.iteritems():
+        for name in custom_module_mapping:
             if name in options.target:
                 tf_runner_targets.add(custom_module_mapping[name])
 
