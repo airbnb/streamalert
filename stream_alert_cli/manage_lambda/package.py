@@ -64,10 +64,10 @@ class LambdaPackage(object):
             package_sha256_path: Full path to package_path checksum file
         """
         LOGGER_CLI.info('Creating package for %s', self.package_name)
-        # get tmp dir and copy files
+
         temp_package_path = self._get_tmpdir()
         self._copy_files(temp_package_path)
-        # download third-party libs
+
         if not self._resolve_third_party(temp_package_path):
             LOGGER_CLI.exception('Failed to install necessary third-party libraries')
             exit(1)
@@ -77,21 +77,24 @@ class LambdaPackage(object):
             LOGGER_CLI.exception('Failed to extract precompiled third-party libraries')
             exit(1)
 
-        # zip up files
+        # Zip up files
         package_path = self.zip(temp_package_path)
         generated_package_name = package_path.split('/')[-1]
-        # checksum files
+        # SHA256 checksum files
         package_sha256, package_sha256_path = self._sha256sum(package_path)
-        # upload to s3
-        if self._upload(package_path):
-            # remove generated deployment files
-            self._cleanup(package_path, package_sha256_path)
-            # set new config values and update
-            full_package_name = os.path.join(self.package_name, generated_package_name)
-            # make all config changes here
-            self.config['lambda'][self.config_key]['source_object_key'] = full_package_name
-            self.config['lambda'][self.config_key]['source_current_hash'] = package_sha256
-            self.config.write()
+        # Upload to s3
+        if not self._upload(package_path):
+            return False
+
+        self._cleanup(package_path, package_sha256_path)
+
+        # Set new config values and update
+        full_package_name = os.path.join(self.package_name, generated_package_name)
+        self.config['lambda'][self.config_key]['source_object_key'] = full_package_name
+        self.config['lambda'][self.config_key]['source_current_hash'] = package_sha256
+        self.config.write()
+
+        return True
 
     def _get_tmpdir(self):
         """Generate a temporary directory and package name
@@ -254,6 +257,7 @@ class LambdaPackage(object):
         """
         LOGGER_CLI.info('Uploading StreamAlert package to S3')
         client = boto3.client('s3', region_name=self.config['global']['account']['region'])
+
         for package_file in (package_path, '{}.sha256'.format(package_path)):
             package_name = package_file.split('/')[-1]
             package_fh = open(package_file, 'r')
@@ -270,6 +274,7 @@ class LambdaPackage(object):
 
             package_fh.close()
             LOGGER_CLI.debug('Uploaded %s to S3', package_name)
+
         return True
 
 

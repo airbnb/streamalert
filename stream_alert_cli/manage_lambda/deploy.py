@@ -86,10 +86,13 @@ def _create_and_upload(function_name, config, cluster=None):
             config['lambda'].get('threat_intel_downloader_config', False))}
 
     if not package_mapping[function_name].enabled:
-        return None, None
+        return False, False
 
     package = package_mapping[function_name].package_class(config=config)
-    package.create_and_upload()
+    success = package.create_and_upload()
+
+    if not success:
+        sys.exit(1)
 
     return package, package_mapping[function_name].targets
 
