@@ -1,4 +1,9 @@
 {
+  "box": {
+    "sourceAddress:ioc_ip": [
+      "ip_address"
+    ]
+  },
   "carbonblack": {
     "command": [
       "cmdline",
