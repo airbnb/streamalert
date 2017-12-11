@@ -891,6 +891,24 @@
     },
     "parser": "json"
   },
+  "cloudwatch:control_message": {
+    "schema": {
+      "id": "string",
+      "message": "string",
+      "timestamp": "integer"
+    },
+    "parser": "json",
+    "configuration": {
+      "json_path": "logEvents[*]",
+      "envelope_keys": {
+        "logGroup": "string",
+        "logStream": "string",
+        "messageType": "string",
+        "owner": "string",
+        "subscriptionFilters": []
+      }
+    }
+  },
   "cloudwatch:events": {
     "schema": {
       "account": "string",
