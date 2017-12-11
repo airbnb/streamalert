@@ -133,7 +133,7 @@ class GSuiteReportsApp(AppIntegration):
 
         try:
             results = activities_list.execute()
-        except apiclient.errors.HttpError:
+        except (apiclient.errors.Error, socket.timeout):
             LOGGER.exception('Failed to execute activities listing for %s', self.type())
             return False
 
