@@ -144,6 +144,11 @@
       "user"
     ]
   },
+  "gsuite": {
+    "sourceAddress:ioc_ip": [
+      "ipAddress"
+    ]
+  },
   "onelogin": {
     "sourceAddress:ioc_ip": [
       "ipaddr",
