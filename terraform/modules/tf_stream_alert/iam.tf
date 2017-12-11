@@ -75,6 +75,29 @@ data "aws_iam_policy_document" "streamalert_rule_processor_firehose" {
   }
 }
 
+// IAM Role Policy: Allow Rule Processor to read DynamoDB table (Threat Intel)
+resource "aws_iam_role_policy" "streamalert_rule_processor_dynamodb" {
+  name   = "ReadDynamodb"
+  role   = "${aws_iam_role.streamalert_rule_processor_role.id}"
+  policy = "${data.aws_iam_policy_document.streamalert_rule_processor_read_dynamodb.json}"
+}
+
+// IAM Policy Doc: Allow lambda function to read/write data from DynamoDB
+data "aws_iam_policy_document" "streamalert_rule_processor_read_dynamodb" {
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "dynamodb:BatchGetItem",
+      "dynamodb:GetItem",
+    ]
+
+    resources = [
+      "arn:aws:dynamodb:${var.region}:${var.account_id}:table/${var.dynamodb_ioc_table}",
+    ]
+  }
+}
+
 // IAM Role: Alert Processor Execution Role
 resource "aws_iam_role" "streamalert_alert_processor_role" {
   name = "${var.prefix}_${var.cluster}_streamalert_alert_processor_role"

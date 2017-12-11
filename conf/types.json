@@ -4,20 +4,20 @@
       "cmdline",
       "command_line"
     ],
-    "destinationAddress": [
+    "destinationAddress:ioc_ip": [
       "remote_ip"
     ],
-    "destinationDomain": [
+    "destinationDomain:ioc_domain": [
       "domain"
     ],
     "destinationPort": [
       "remote_port"
     ],
-    "deviceAddress": [
+    "deviceAddress:ioc_ip": [
       "interface_ip",
       "comms_ip"
     ],
-    "fileHash": [
+    "fileHash:ioc_md5": [
       "process_md5",
       "parent_md5",
       "expect_followon_w_md5",
@@ -39,7 +39,7 @@
       "process_path",
       "path"
     ],
-    "sourceAddress": [
+    "sourceAddress:ioc_ip": [
       "ipv4",
       "local_ip"
     ],
@@ -72,7 +72,7 @@
       "account",
       "accountId"
     ],
-    "sourceAddress": [
+    "sourceAddress:ioc_ip": [
       "sourceIPAddress"
     ],
     "userAgent": [
@@ -83,7 +83,7 @@
     "destinationAccount": [
       "recipientAccountId"
     ],
-    "destinationAddress": [
+    "destinationAddress:ioc_ip": [
       "destination"
     ],
     "destinationPort": [
@@ -101,7 +101,7 @@
     "sourceAccount": [
       "account"
     ],
-    "sourceAddress": [
+    "sourceAddress:ioc_ip": [
       "source",
       "sourceIPAddress"
     ],
@@ -121,7 +121,7 @@
     ]
   },
   "duo": {
-    "sourceAddress": [
+    "sourceAddress:ioc_ip": [
       "ip"
     ],
     "userName": [
@@ -129,10 +129,10 @@
     ]
   },
   "ghe": {
-    "destinationAddress": [
+    "destinationAddress:ioc_ip": [
       "remote_address"
     ],
-    "sourceAddress": [
+    "sourceAddress:ioc_ip": [
       "actor_ip"
     ],
     "sourcePort": [
@@ -145,7 +145,7 @@
     ]
   },
   "onelogin": {
-    "sourceAddress": [
+    "sourceAddress:ioc_ip": [
       "ipaddr",
       "proxy_ip"
     ],
@@ -159,7 +159,7 @@
       "cmdline",
       "command"
     ],
-    "destinationAddress": [
+    "destinationAddress:ioc_ip": [
       "destination",
       "remote_address",
       "gateway"
@@ -167,7 +167,7 @@
     "destinationPort": [
       "remote_port"
     ],
-    "fileHash": [
+    "fileHash:ioc_md5": [
       "md5",
       "sha1",
       "sha256"
@@ -188,7 +188,7 @@
     "severity": [
       "severity"
     ],
-    "sourceAddress": [
+    "sourceAddress:ioc_ip": [
       "host",
       "source",
       "local_address",
@@ -210,7 +210,7 @@
     ]
   },
   "pan": {
-    "destinationAddress": [
+    "destinationAddress:ioc_ip": [
       "dst",
       "natdst"
     ],
@@ -218,7 +218,7 @@
       "dport",
       "natdport"
     ],
-    "sourceAddress": [
+    "sourceAddress:ioc_ip": [
       "src",
       "natsrc"
     ],

@@ -18,6 +18,7 @@ from copy import copy
 import json
 
 from stream_alert.rule_processor import LOGGER
+from stream_alert.rule_processor.threat_intel import StreamThreatIntel
 from stream_alert.shared import NORMALIZATION_KEY
 
 DEFAULT_RULE_DESCRIPTION = 'No rule description provided'
@@ -48,6 +49,10 @@ class StreamRules(object):
     """
     __rules = {}
     __matchers = {}
+
+    def __init__(self, config):
+        """Initialize a StreamRules instance to cache a StreamThreatIntel instance."""
+        self._threat_intel = StreamThreatIntel.load_from_config(config)
 
     @classmethod
     def get_rules(cls):
@@ -126,8 +131,7 @@ class StreamRules(object):
             return rule
         return decorator
 
-    @classmethod
-    def match_event(cls, record, rule):
+    def match_event(self, record, rule):
         """Evaluate matchers on a record.
 
         Given a list of matchers, evaluate a record through each
@@ -147,7 +151,7 @@ class StreamRules(object):
             return True
 
         for matcher in rule.matchers:
-            matcher_function = cls.__matchers.get(matcher)
+            matcher_function = self.__matchers.get(matcher)
             if matcher_function:
                 try:
                     matcher_result = matcher_function(record)
@@ -161,8 +165,8 @@ class StreamRules(object):
 
         return True
 
-    @classmethod
-    def match_types(cls, record, normalized_types, datatypes):
+    @staticmethod
+    def match_types(record, normalized_types, datatypes):
         """Match normalized types against record
 
         Args:
@@ -190,10 +194,10 @@ class StreamRules(object):
         if not (datatypes and normalized_types):
             return
 
-        return cls.match_types_helper(record, normalized_types, datatypes)
+        return StreamRules.match_types_helper(record, normalized_types, datatypes)
 
-    @classmethod
-    def match_types_helper(cls, record, normalized_types, datatypes):
+    @staticmethod
+    def match_types_helper(record, normalized_types, datatypes):
         """Helper method to recursively visit all subkeys
 
         Args:
@@ -209,8 +213,8 @@ class StreamRules(object):
             if key == NORMALIZATION_KEY:
                 continue
             if isinstance(val, dict):
-                nested_results = cls.match_types_helper(val, normalized_types, datatypes)
-                cls.update(results, key, nested_results)
+                nested_results = StreamRules.match_types_helper(val, normalized_types, datatypes)
+                StreamRules.update(results, key, nested_results)
             else:
                 for datatype in datatypes:
                     if datatype in normalized_types and key in normalized_types[datatype]:
@@ -220,8 +224,8 @@ class StreamRules(object):
                             results[datatype].append([key])
         return results
 
-    @classmethod
-    def update(cls, results, parent_key, nested_results):
+    @staticmethod
+    def update(results, parent_key, nested_results):
         """Update nested_results by inserting parent key to beginning of list.
         Also combine results and nested_results into one dictionary
 
@@ -268,8 +272,8 @@ class StreamRules(object):
                 else:
                     results[key] = [val]
 
-    @classmethod
-    def process_rule(cls, record, rule):
+    @staticmethod
+    def process_rule(record, rule):
         """Process rule functions on a given record
 
         Args:
@@ -288,8 +292,8 @@ class StreamRules(object):
                 rule.rule_function.__name__)
         return rule_result
 
-    @classmethod
-    def process_subkeys(cls, record, payload_type, rule):
+    @staticmethod
+    def process_subkeys(record, payload_type, rule):
         """Check payload record contains all subkeys needed for rules
 
         Because each log is processed by every rule for a given log type,
@@ -327,8 +331,7 @@ class StreamRules(object):
 
         return True
 
-    @classmethod
-    def process(cls, input_payload):
+    def process(self, input_payload):
         """Process rules on a record.
 
         Gather a list of rules based on the record's datasource type.
@@ -346,52 +349,113 @@ class StreamRules(object):
         alerts = []
         payload = copy(input_payload)
 
-        rules = [rule_attrs for rule_attrs in cls.__rules.values()
+        rules = [rule_attrs for rule_attrs in self.__rules.values()
                  if rule_attrs.logs is None or payload.log_source in rule_attrs.logs]
 
         if not rules:
             LOGGER.debug('No rules to process for %s', payload)
             return alerts
 
+        # store normalized records for future process in Threat Intel
+        normalized_records = []
+
         for record in payload.records:
             for rule in rules:
                 # subkey check
-                has_sub_keys = cls.process_subkeys(record, payload.type, rule)
+                has_sub_keys = self.process_subkeys(record, payload.type, rule)
                 if not has_sub_keys:
                     continue
 
                 # matcher check
-                matcher_result = cls.match_event(record, rule)
+                matcher_result = self.match_event(record, rule)
                 if not matcher_result:
                     continue
 
                 types_result = None
                 if rule.datatypes:
-                    types_result = cls.match_types(record,
-                                                   payload.normalized_types,
-                                                   rule.datatypes)
+                    types_result = self.match_types(record,
+                                                    payload.normalized_types,
+                                                    rule.datatypes)
 
                 if types_result:
                     record_copy = record.copy()
                     record_copy[NORMALIZATION_KEY] = types_result
+                    if self._threat_intel:
+                        normalized_records.append(record_copy)
                 else:
                     record_copy = record
                 # rule analysis
-                rule_result = cls.process_rule(record_copy, rule)
-                if rule_result:
-                    LOGGER.info('Rule [%s] triggered an alert on log type [%s] from entity \'%s\' '
-                                'in service \'%s\'', rule.rule_name, payload.log_source,
-                                payload.entity, payload.service())
-                    alert = {
-                        'record': record_copy,
-                        'rule_name': rule.rule_name,
-                        'rule_description': rule.rule_function.__doc__ or DEFAULT_RULE_DESCRIPTION,
-                        'log_source': str(payload.log_source),
-                        'log_type': payload.type,
-                        'outputs': rule.outputs,
-                        'source_service': payload.service(),
-                        'source_entity': payload.entity,
-                        'context': rule.context}
-                    alerts.append(alert)
+                self.rule_analysis(record_copy, rule, payload, alerts)
+
+        # Apply the Threat Intelligence against normalized records
+        if self._threat_intel:
+            ioc_records = self._threat_intel.threat_detection(normalized_records)
+            if ioc_records:
+                for ioc_record in ioc_records:
+                    for rule in rules:
+                        self.rule_analysis(ioc_record, rule, payload, alerts)
 
         return alerts
+
+    @staticmethod
+    def rule_analysis(record, rule, payload, alerts):
+        """Class method to analyze rule against a record
+
+        Args:
+            record (dict): A parsed log with data.
+            rule: Rule attributes.
+            payload: The StreamPayload object.
+            alerts (list): A list of alerts which will be sent to alert processor.
+
+        Returns:
+            (dict): A list of alerts.
+        """
+        rule_result = StreamRules.process_rule(record, rule)
+        if rule_result:
+            if StreamRules.check_alerts_duplication(record, rule, alerts):
+                return
+
+            LOGGER.info('Rule [%s] triggered an alert on log type [%s] from entity \'%s\' '
+                        'in service \'%s\'', rule.rule_name, payload.log_source,
+                        payload.entity, payload.service())
+            alert = {
+                'record': record,
+                'rule_name': rule.rule_name,
+                'rule_description': rule.rule_function.__doc__ or DEFAULT_RULE_DESCRIPTION,
+                'log_source': str(payload.log_source),
+                'log_type': payload.type,
+                'outputs': rule.outputs,
+                'source_service': payload.service(),
+                'source_entity': payload.entity,
+                'context': rule.context}
+
+            alerts.append(alert)
+
+    @staticmethod
+    def check_alerts_duplication(record, rule, alerts):
+        """The method to check if the record has been added to alerts list already.
+
+        The reason we need to do check alerts duplication is because original records
+        would be modified by inserting normalization or/and IOC information if there
+        exist. Threat Intel feature will process normalized records again and it
+        will result alert duplication.
+
+        Args:
+            record (dict): A parsed log with data.
+            rule: Rule attributes.
+            alerts (list): A list of alerts which will be sent to alert processor.
+
+        Returns:
+            (bool): Return True if both record and rule name exist in alerts list.
+        """
+        for exist_alert in alerts:
+            if rule.rule_name == exist_alert['rule_name']:
+                record_copy = record.copy()
+                if StreamThreatIntel.IOC_KEY not in exist_alert['record']:
+                    record_copy.pop(StreamThreatIntel.IOC_KEY, None)
+                if NORMALIZATION_KEY not in exist_alert['record']:
+                    record_copy.pop(NORMALIZATION_KEY, None)
+                if record_copy == exist_alert['record']:
+                    return True
+
+        return False

@@ -28,7 +28,14 @@ import zlib
 
 import boto3
 from botocore.exceptions import ClientError
-from moto import mock_cloudwatch, mock_kms, mock_kinesis, mock_lambda, mock_s3
+from moto import (
+    mock_cloudwatch,
+    mock_kms,
+    mock_kinesis,
+    mock_lambda,
+    mock_s3,
+    mock_dynamodb2,
+)
 
 from stream_alert_cli.logger import LOGGER_CLI
 from stream_alert_cli.terraform._common import enabled_firehose_logs
@@ -416,6 +423,40 @@ def setup_mock_firehose_delivery_streams(config):
         prefix = '{}/'.format(log_type)
         create_delivery_stream(region, stream_name, prefix)
 
+@mock_dynamodb2
+def setup_mock_dynamodb_ioc_table(config):
+    """Mock DynamoDB IOC table for rule testing
+
+    Args:
+        config (CLIConfig): The StreamAlert config
+    """
+    region = config['global']['account']['region']
+    dynamodb_client = boto3.client('dynamodb', region_name=region)
+
+    dynamodb_client.create_table(
+        AttributeDefinitions=[{
+            'AttributeName': 'ioc_value',
+            'AttributeType': 'S',
+        }],
+        KeySchema=[{
+            'AttributeName': 'ioc_value',
+            'KeyType': 'HASH',
+        }],
+        ProvisionedThroughput={
+            'ReadCapacityUnits': 10,
+            'WriteCapacityUnits': 10,
+        },
+        TableName='test_table_name',
+    )
+
+    dynamodb_client.put_item(
+        Item={
+            'ioc_value': {'S': '1.1.1.2'},
+            'ioc_type': {'S': 'ip'},
+            'sub_type': {'S': 'mal_ip'}
+        },
+        TableName='test_table_name'
+    )
 
 def put_mock_s3_object(bucket, key, data, region):
     """Create a mock AWS S3 object for testing

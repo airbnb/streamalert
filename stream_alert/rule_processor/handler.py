@@ -28,7 +28,6 @@ from stream_alert.rule_processor.classifier import StreamClassifier
 from stream_alert.rule_processor.config import load_config, load_env
 from stream_alert.rule_processor.payload import load_stream_payload
 from stream_alert.rule_processor.rules_engine import StreamRules
-from stream_alert.rule_processor.threat_intel import StreamThreatIntel
 from stream_alert.rule_processor.sink import StreamSink
 from stream_alert.shared.backoff_handlers import (
     backoff_handler,
@@ -92,7 +91,10 @@ class StreamAlert(object):
 
         # Firehose client initialization
         self.firehose_client = None
-        StreamThreatIntel.load_intelligence(self.config)
+
+        # create an instance of the StreamRules class that gets cached in the
+        # StreamAlert class as an instance property
+        self._rule_engine = StreamRules(self.config)
 
     def run(self, event):
         """StreamAlert Lambda function handler.
@@ -373,7 +375,7 @@ class StreamAlert(object):
                 record.log_source,
                 record.entity)
 
-            record_alerts = StreamRules.process(record)
+            record_alerts = self._rule_engine.process(record)
 
             LOGGER.debug('Processed %d valid record(s) that resulted in %d alert(s).',
                          len(payload.records),

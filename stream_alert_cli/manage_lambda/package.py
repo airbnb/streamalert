@@ -275,8 +275,6 @@ class RuleProcessorPackage(LambdaPackage):
     package_folders = {
         'stream_alert/rule_processor', 'stream_alert/shared', 'rules', 'matchers', 'helpers', 'conf'
     }
-    if os.path.exists('threat_intel'):
-        package_folders.add('threat_intel')
     package_files = {'stream_alert/__init__.py'}
     package_root_dir = '.'
     package_name = 'rule_processor'

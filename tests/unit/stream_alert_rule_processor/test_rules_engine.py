@@ -35,6 +35,7 @@ from tests.unit.stream_alert_rule_processor.test_helpers import (
     get_mock_context,
     load_and_classify_payload,
     make_kinesis_raw_record,
+    MockDynamoDBClient,
 )
 from helpers.base import fetch_values_by_datatype
 
@@ -50,19 +51,22 @@ class TestStreamRules(object):
         """Setup the class before any methods"""
         context = get_mock_context()
         cls.env = load_env(context)
-        cls.config = load_config('tests/unit/conf')
 
     @classmethod
     def teardown_class(cls):
         """Teardown the class after all methods"""
         cls.env = None
         cls.config = None
+        cls.rules_engine = None
 
     def setup(self):
         """Setup before each method"""
         # Clear out the cached matchers and rules to avoid conflicts with production code
         StreamRules._StreamRules__matchers.clear()  # pylint: disable=no-member
         StreamRules._StreamRules__rules.clear()  # pylint: disable=no-member
+        self.config = load_config('tests/unit/conf')
+        self.config['global']['threat_intel']['enabled'] = False
+        self.rules_engine = StreamRules(self.config)
 
     def test_alert_format(self):
         """Rules Engine - Alert Format"""
@@ -91,7 +95,7 @@ class TestStreamRules(object):
         payload = load_and_classify_payload(self.config, service, entity, raw_record)
 
         # process payloads
-        alerts = StreamRules.process(payload)
+        alerts = self.rules_engine.process(payload)
 
         alert_keys = {
             'record',
@@ -127,7 +131,7 @@ class TestStreamRules(object):
 
         test_rule = bad_rule(bad_rule_function)
 
-        StreamRules.process_rule({}, test_rule)
+        self.rules_engine.process_rule({}, test_rule)
 
         log_mock.assert_called_with('Encountered error with rule: %s',
                                     'bad_rule_function')
@@ -178,7 +182,7 @@ class TestStreamRules(object):
         payload = load_and_classify_payload(self.config, service, entity, raw_record)
 
         # process payloads
-        alerts = StreamRules.process(payload)
+        alerts = self.rules_engine.process(payload)
 
         # check alert output
         assert_equal(len(alerts), 3)
@@ -341,7 +345,7 @@ class TestStreamRules(object):
             raw_record = make_kinesis_raw_record(entity, kinesis_data)
             payload = load_and_classify_payload(self.config, service, entity, raw_record)
 
-            alerts.extend(StreamRules.process(payload))
+            alerts.extend(self.rules_engine.process(payload))
 
         # check alert output
         assert_equal(len(alerts), 2)
@@ -371,7 +375,7 @@ class TestStreamRules(object):
         payload = load_and_classify_payload(self.config, service, entity, raw_record)
 
         # process payloads
-        alerts = StreamRules.process(payload)
+        alerts = self.rules_engine.process(payload)
 
         # alert tests
         assert_equal(len(alerts), 1)
@@ -399,7 +403,7 @@ class TestStreamRules(object):
         payload = load_and_classify_payload(self.config, service, entity, raw_record)
 
         # process payloads
-        alerts = StreamRules.process(payload)
+        alerts = self.rules_engine.process(payload)
 
         # alert tests
         assert_equal(len(alerts), 1)
@@ -426,7 +430,7 @@ class TestStreamRules(object):
         payload = load_and_classify_payload(self.config, service, entity, raw_record)
 
         # process payloads
-        alerts = StreamRules.process(payload)
+        alerts = self.rules_engine.process(payload)
 
         # alert tests
         assert_equal(len(alerts), 0)
@@ -469,7 +473,7 @@ class TestStreamRules(object):
         payload = load_and_classify_payload(self.config, service, entity, raw_record)
 
         # process payloads
-        alerts = StreamRules.process(payload)
+        alerts = self.rules_engine.process(payload)
 
         # alert tests
         assert_equal(len(alerts), 2)
@@ -546,7 +550,7 @@ class TestStreamRules(object):
             raw_record = make_kinesis_raw_record(entity, kinesis_data)
             payload = load_and_classify_payload(self.config, service, entity, raw_record)
 
-            alerts.extend(StreamRules.process(payload))
+            alerts.extend(self.rules_engine.process(payload))
 
         # check alert output
         assert_equal(len(alerts), 2)
@@ -719,7 +723,7 @@ class TestStreamRules(object):
             raw_record = make_kinesis_raw_record(entity, kinesis_data)
             payload = load_and_classify_payload(self.config, service, entity, raw_record)
 
-            alerts.extend(StreamRules.process(payload))
+            alerts.extend(self.rules_engine.process(payload))
 
         assert_equal(len(alerts), 3)
         rule_names = ['no_logs_has_datatypes',
@@ -753,7 +757,7 @@ class TestStreamRules(object):
             raw_record = make_kinesis_raw_record(entity, kinesis_data)
             payload = load_and_classify_payload(self.config, service, entity, raw_record)
 
-            assert_false(StreamRules.process(payload))
+            assert_false(self.rules_engine.process(payload))
 
     def test_reset_normalized_types(self):
         """Rules Engine - Normalized types should be reset after each iteration"""
@@ -804,7 +808,7 @@ class TestStreamRules(object):
             raw_record = make_kinesis_raw_record(entity, kinesis_data)
             payload = load_and_classify_payload(self.config, service, entity, raw_record)
 
-            alerts.extend(StreamRules.process(payload))
+            alerts.extend(self.rules_engine.process(payload))
 
         assert_equal(len(alerts), 3)
         for alert in alerts:
@@ -813,3 +817,38 @@ class TestStreamRules(object):
                 assert_equal(has_key_normalized_types, False)
             else:
                 assert_equal(has_key_normalized_types, True)
+
+    @patch('boto3.client')
+    def test_process_with_threat_intel_enabled(self, mock_client):
+        """Rules Engine - Threat Intel is enabled when process method is called"""
+        @rule(datatypes=['sourceAddress'], outputs=['s3:sample_bucket'])
+        def match_ipaddress(_): # pylint: disable=unused-variable
+            """Testing dummy rule"""
+            return True
+
+        mock_client('dynamodb').batch_get_item.return_value = MockDynamoDBClient.response()
+        toggled_config = self.config
+        toggled_config['global']['threat_intel']['enabled'] = True
+        toggled_config['global']['threat_intel']['dynamodb_table'] = 'test_table_name'
+
+        new_rules_engine = StreamRules(toggled_config)
+        kinesis_data_items = [
+            {
+                'account': 123456,
+                'region': '123456123456',
+                'source': '1.1.1.2',
+                'detail': {
+                    'eventName': 'ConsoleLogin',
+                    'sourceIPAddress': '1.1.1.2',
+                    'recipientAccountId': '654321'
+                }
+            }
+        ]
+
+        for data in kinesis_data_items:
+            kinesis_data = json.dumps(data)
+            service, entity = 'kinesis', 'test_kinesis_stream'
+            raw_record = make_kinesis_raw_record(entity, kinesis_data)
+            payload = load_and_classify_payload(toggled_config, service, entity, raw_record)
+
+            assert_equal(len(new_rules_engine.process(payload)), 1)
