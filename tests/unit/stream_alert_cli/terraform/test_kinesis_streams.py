@@ -26,6 +26,7 @@ def test_kinesis_streams():
     result = kinesis_streams.generate_kinesis_streams('advanced',
                                                       cluster_dict,
                                                       CONFIG)
+
     expected_result = {
         'module': {
             'kinesis_advanced': {
@@ -37,7 +38,8 @@ def test_kinesis_streams():
                 'cluster_name': 'advanced',
                 'stream_name': 'unit-testing_advanced_stream_alert_kinesis',
                 'shards': 1,
-                'retention': 24
+                'retention': 24,
+                'create_user': True
             }
         }
     }

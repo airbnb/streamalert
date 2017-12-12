@@ -49,12 +49,13 @@ Kinesis Streams settings for each cluster:
 Options
 ~~~~~~~
 
-=============  =========  ===========
-Key            Required   Description
--------------  ---------  -----------
-``retention``  ``Yes``    The data record retention period of your stream.
-``shards``     ``Yes``    A shard provides a fixed unit of capacity to your stream.
-=============  =========  ===========
+===============    =========  ===========
+Key                Required   Description
+---------------    ---------  -----------
+``retention``      ``Yes``    The data record retention period of your stream.
+``shards``         ``Yes``    A shard provides a fixed unit of capacity to your stream.
+``create_user``    ``No``     A boolean to enable/disable user creation for the Kinesis stream.  This is true by default.
+===============    =========  ===========
 
 Scaling
 ~~~~~~~

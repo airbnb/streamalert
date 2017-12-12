@@ -28,7 +28,7 @@ def generate_kinesis_streams(cluster_name, cluster_dict, config):
         bool: Result of applying the kinesis module
     """
     prefix = config['global']['account']['prefix']
-    config_modules = config['clusters'][cluster_name]['modules']
+    kinesis_module = config['clusters'][cluster_name]['modules']['kinesis']['streams']
 
     shard_level_metrics = config['global']['infrastructure']['monitoring'].get(
         'shard_level_metrics', [])
@@ -40,9 +40,10 @@ def generate_kinesis_streams(cluster_name, cluster_dict, config):
         'cluster_name': cluster_name,
         'prefix': config['global']['account']['prefix'],
         'stream_name': '{}_{}_stream_alert_kinesis'.format(prefix, cluster_name),
-        'shards': config_modules['kinesis']['streams']['shards'],
         'shard_level_metrics': shard_level_metrics,
-        'retention': config_modules['kinesis']['streams']['retention']
+        'shards': kinesis_module['shards'],
+        'retention': kinesis_module['retention'],
+        'create_user': kinesis_module.get('create_user', True)
     }
 
     return True
