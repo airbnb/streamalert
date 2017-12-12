@@ -885,8 +885,6 @@ class TestStreamRules(object):
         # process payloads
         alerts = self.rules_engine.process(payload)
 
-        print alerts
-
         # alert tests
         assert_equal(alerts[0]['context']['assigned_user'], 'valid_user')
         assert_equal(alerts[0]['context']['assigned_policy'], 'valid_policy')
