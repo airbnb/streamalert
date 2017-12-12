@@ -6,6 +6,10 @@ variable "account_id" {}
 
 variable "cluster_name" {}
 
+variable "create_user" {
+  default = true
+}
+
 variable "prefix" {}
 
 variable "region" {}
