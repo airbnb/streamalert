@@ -26,10 +26,9 @@ resource "aws_iam_group_membership" "stream_alert" {
 
 // IAM Group Policy: Allow users in the group to PutRecords to Kinesis
 resource "aws_iam_group_policy" "stream_alert_kinesis_put_records" {
-  count = "${var.create_user ? 1 : 0}"
-  name  = "KinesisPutRecords"
-  group = "${aws_iam_group.stream_alert.id}"
-
+  count  = "${var.create_user ? 1 : 0}"
+  name   = "KinesisPutRecords"
+  group  = "${aws_iam_group.stream_alert.id}"
   policy = "${data.aws_iam_policy_document.stream_alert_writeonly.json}"
 }
 
@@ -45,9 +44,9 @@ data "aws_iam_policy_document" "stream_alert_writeonly" {
 
   statement {
     actions = [
-      "kinesis:PutRecord*",
       "kinesis:DescribeStream",
       "kinesis:ListStreams",
+      "kinesis:PutRecord*",
     ]
 
     resources = [
