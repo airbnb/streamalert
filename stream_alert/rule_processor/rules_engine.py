@@ -284,7 +284,10 @@ class StreamRules(object):
             (bool): The return function of the rule
         """
         try:
-            rule_result = rule.rule_function(record)
+            if rule.context:
+                rule_result = rule.rule_function(record, rule.context)
+            else:
+                rule_result = rule.rule_function(record)
         except Exception:  # pylint: disable=broad-except
             rule_result = False
             LOGGER.exception(
