@@ -18,7 +18,7 @@ from mock import patch
 from nose.tools import assert_equal, assert_true, assert_false, nottest
 
 from stream_alert_cli.manage_lambda.package import AthenaPackage, RuleProcessorPackage
-from stream_alert_cli.version import LambdaVersion
+from stream_alert_cli.manage_lambda.version import LambdaVersion
 from tests.unit.helpers.aws_mocks import MockLambdaClient
 from tests.unit.helpers.base import basic_streamalert_config, MockCLIConfig
 
@@ -34,13 +34,9 @@ def test_publish_clustered():
 def test_publish_helper_clustered():
     """CLI - Publish Clustered Function"""
     config = MockCLIConfig(config=basic_streamalert_config())
-    package = RuleProcessorPackage(
-        version='1.0',
-        config=config
-    )
+    package = RuleProcessorPackage(config=config)
     publish = LambdaVersion(
         config=config,
-        clustered_deploy=True,
         package=package
     )
     result = publish._publish_helper(cluster='prod')
@@ -56,13 +52,9 @@ def test_publish_helper_clustered():
 def test_publish_helper():
     """CLI - Publish Athena Function"""
     config = MockCLIConfig(config=basic_streamalert_config())
-    package = AthenaPackage(
-        version='1.0',
-        config=config
-    )
+    package = AthenaPackage(config=config)
     publish = LambdaVersion(
         config=config,
-        clustered_deploy=False,
         package=package
     )
     result = publish._publish_helper()
@@ -73,13 +65,9 @@ def test_publish_helper():
 
 def test_version_helper():
     """CLI - Publish Helper"""
-    package = AthenaPackage(
-        version='1.0',
-        config=basic_streamalert_config()
-    )
+    package = AthenaPackage(basic_streamalert_config())
     publish = LambdaVersion(
         config=basic_streamalert_config(),
-        clustered_deploy=False,
         package=package
     )
     current_version = 10
@@ -94,16 +82,12 @@ def test_version_helper():
     assert_equal(result, current_version + 1)
 
 
-@patch('stream_alert_cli.version.LOGGER_CLI')
+@patch('stream_alert_cli.manage_lambda.version.LOGGER_CLI')
 def test_version_helper_error(mock_logging):
     """CLI - Publish Helper Raises Error"""
-    package = AthenaPackage(
-        version='1.0',
-        config=basic_streamalert_config()
-    )
+    package = AthenaPackage(basic_streamalert_config())
     publish = LambdaVersion(
         config=basic_streamalert_config(),
-        clustered_deploy=False,
         package=package
     )
     current_version = 10

@@ -38,11 +38,9 @@ class LambdaVersion(object):
         Keyword Args:
             config (CLIConfig): Loaded StreamAlert CLI Config
             package (LambdaPackage): The created Lambda Package
-            clustered_deploy (bool): Identifies cluster based Lambdas
         """
         self.config = kwargs['config']
         self.package = kwargs['package']
-        self.clustered_deploy = kwargs.get('clustered_deploy', True)
 
     @staticmethod
     def _version_helper(**kwargs):
@@ -140,6 +138,7 @@ class LambdaVersion(object):
                 LOGGER_CLI.info('Published version %s for %s',
                                 new_version, function_name)
                 self.config['lambda'][self.package.config_key]['current_version'] = new_version
+
         self.config.write()
 
         return True
@@ -156,10 +155,18 @@ class LambdaVersion(object):
 
         return new_version
 
-    def publish_function(self):
-        """Main Publish Function method"""
-        if self.clustered_deploy:
-            for cluster in self.config.clusters():
+    def publish_function(self, **kwargs):
+        """Main Publish Function method
+
+        Keyword Args:
+            clustered_deploy (bool): Identifies cluster based Lambdas
+            clusters (list): The list of clusters to deploy to
+        """
+        clustered_deploy = kwargs.get('clustered_deploy', True)
+        clusters = kwargs.get('clusters', []) or self.config.clusters()
+
+        if clustered_deploy:
+            for cluster in clusters:
                 if not self._publish_helper(cluster=cluster):
                     return False
         else:

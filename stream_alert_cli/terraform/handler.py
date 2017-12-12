@@ -32,9 +32,7 @@ def terraform_check():
     prereqs_message = ('Terraform not found! Please install and add to '
                        'your $PATH:\n'
                        '\t$ export PATH=$PATH:/usr/local/terraform/bin')
-    return run_command(['terraform', 'version'],
-                       error_message=prereqs_message,
-                       quiet=True)
+    return run_command(['terraform', 'version'], error_message=prereqs_message, quiet=True)
 
 
 def terraform_handler(options, config):
@@ -76,12 +74,9 @@ def terraform_handler(options, config):
         # build init infrastructure
         LOGGER_CLI.info('Building Initial Infrastructure')
         init_targets = [
-            'aws_s3_bucket.lambda_source',
-            'aws_s3_bucket.logging_bucket',
-            'aws_s3_bucket.stream_alert_secrets',
-            'aws_s3_bucket.terraform_remote_state',
-            'aws_s3_bucket.streamalerts',
-            'aws_kms_key.stream_alert_secrets',
+            'aws_s3_bucket.lambda_source', 'aws_s3_bucket.logging_bucket',
+            'aws_s3_bucket.stream_alert_secrets', 'aws_s3_bucket.terraform_remote_state',
+            'aws_s3_bucket.streamalerts', 'aws_kms_key.stream_alert_secrets',
             'aws_kms_alias.stream_alert_secrets'
         ]
         if not tf_runner(targets=init_targets):
@@ -124,8 +119,8 @@ def terraform_handler(options, config):
                 elif target == 'threat_intel_downloader':
                     targets.append('module.threat_intel_downloader')
                 else:
-                    targets.extend(['module.{}_{}'.format(target, cluster)
-                                    for cluster in config.clusters()])
+                    targets.extend(
+                        ['module.{}_{}'.format(target, cluster) for cluster in config.clusters()])
 
             tf_runner(targets=targets, action='destroy')
             return
@@ -151,27 +146,34 @@ def terraform_handler(options, config):
 
 
 def terraform_build(options, config):
-    """Run Terraform with an optional set of targets
+    """Run Terraform with an optional set of targets and clusters
 
     Args:
         options (namedtuple): Parsed arguments from manage.py
     """
-    # Generate Terraform files
     if not terraform_generate(config=config):
         return
-    # Target is for terraforming a specific streamalert module.
-    # This value is passed as a list
-    if options.target == ['athena']:
-        tf_runner(targets=['module.stream_alert_athena'])
-    elif options.target == ['threat_intel_downloader']:
-        tf_runner(targets=['module.threat_intel_downloader'])
-    elif options.target:
-        targets = ['module.{}_{}'.format(target, cluster)
-                   for cluster in config.clusters()
-                   for target in options.target]
-        tf_runner(targets=targets)
-    else:
-        tf_runner()
+
+    # Define the set of custom targets to apply
+    tf_runner_targets = set()
+    # If resource are not clustered, it is most likely required to
+    # fall in the custom mapping below:
+    custom_module_mapping = {
+        'athena': 'module.stream_alert_athena',
+        'threat_intel_downloader': 'module.threat_intel_downloader'
+    }
+    clusters = set(options.clusters or config.clusters())
+
+    if options.target:
+        tf_runner_targets.update({
+            'module.{}_{}'.format(target, cluster)
+            for cluster in clusters for target in options.target
+        })
+        for name in custom_module_mapping:
+            if name in options.target:
+                tf_runner_targets.add(custom_module_mapping[name])
+
+    tf_runner(targets=tf_runner_targets)
 
 
 def terraform_clean(config):
@@ -179,12 +181,8 @@ def terraform_clean(config):
     LOGGER_CLI.info('Cleaning Terraform files')
 
     cleanup_files = ['{}.tf.json'.format(cluster) for cluster in config.clusters()]
-    cleanup_files.extend([
-        'athena.tf.json',
-        'main.tf.json',
-        'terraform.tfstate',
-        'terraform.tfstate.backup'
-    ])
+    cleanup_files.extend(
+        ['athena.tf.json', 'main.tf.json', 'terraform.tfstate', 'terraform.tfstate.backup'])
     for tf_file in cleanup_files:
         file_to_remove = 'terraform/{}'.format(tf_file)
         if not os.path.isfile(file_to_remove):
@@ -201,17 +199,14 @@ def terraform_status(config):
     for cluster, region in config['clusters'].items():
         print '\n======== {} ========'.format(cluster)
         print 'Region: {}'.format(region)
-        print ('Alert Processor Lambda Settings: \n\tTimeout: {}\n\tMemory: {}'
-               '\n\tProd Version: {}').format(
-                   config['alert_processor_lambda_config'][cluster][0],
-                   config['alert_processor_lambda_config'][cluster][1],
-                   config['alert_processor_versions'][cluster])
-        print ('Rule Processor Lambda Settings: \n\tTimeout: {}\n\tMemory: {}'
-               '\n\tProd Version: {}').format(
-                   config['rule_processor_lambda_config'][cluster][0],
-                   config['rule_processor_lambda_config'][cluster][1],
-                   config['rule_processor_versions'][cluster])
+        print('Alert Processor Lambda Settings: \n\tTimeout: {}\n\tMemory: {}'
+              '\n\tProd Version: {}').format(config['alert_processor_lambda_config'][cluster][0],
+                                             config['alert_processor_lambda_config'][cluster][1],
+                                             config['alert_processor_versions'][cluster])
+        print('Rule Processor Lambda Settings: \n\tTimeout: {}\n\tMemory: {}'
+              '\n\tProd Version: {}').format(config['rule_processor_lambda_config'][cluster][0],
+                                             config['rule_processor_lambda_config'][cluster][1],
+                                             config['rule_processor_versions'][cluster])
         print 'Kinesis settings: \n\tShards: {}\n\tRetention: {}'.format(
             config['kinesis_streams_config'][cluster][0],
-            config['kinesis_streams_config'][cluster][1]
-        )
+            config['kinesis_streams_config'][cluster][1])

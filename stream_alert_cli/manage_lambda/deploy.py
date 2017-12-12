@@ -13,19 +13,91 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from collections import namedtuple
 import sys
 
-from app_integrations import __version__ as apps_version
-from stream_alert import __version__ as current_version
-from stream_alert.threat_intel_downloader import __version__ as ti_downloader_version
 from stream_alert_cli import helpers
-from stream_alert_cli.manage_lambda.package import (AlertProcessorPackage,
-                                                    AthenaPackage,
-                                                    AppIntegrationPackage,
-                                                    RuleProcessorPackage,
-                                                    ThreatIntelDownloaderPackage)
+from stream_alert_cli.manage_lambda import package as stream_alert_packages
+from stream_alert_cli.manage_lambda.version import LambdaVersion
 from stream_alert_cli.terraform.generate import terraform_generate
-from stream_alert_cli.version import LambdaVersion
+
+
+PackageMap = namedtuple('package_attrs', ['package_class', 'targets', 'enabled'])
+
+
+def _publish_version(packages, config, clusters):
+    """Publish production Lambda versions
+
+    Args:
+        packages (list[LambdaPackage])
+        config (CLIConfig)
+        clusters (set)
+
+    Returns:
+        bool: Result of Lambda version publishing
+    """
+    global_packages = {'athena_partition_refresh', 'threat_intel_downloader'}
+
+    for package in packages:
+        if package.package_name in global_packages:
+            published = LambdaVersion(
+                config=config, package=package).publish_function(clustered_deploy=False)
+        else:
+            published = LambdaVersion(
+                config=config, package=package).publish_function(clustered_deploy=True,
+                                                                 clusters=clusters)
+        if not published:
+            return False
+
+    return True
+
+
+def _create_and_upload(function_name, config, cluster=None):
+    """
+    Args:
+        function_name: The name of the function to create and upload
+        config (CLIConfig): The loaded StreamAlert config
+        cluster (string): The cluster to deploy to
+
+    Returns:
+        tuple (LambdaPackage, set): The created Lambda package and the set of Terraform targets
+    """
+    clusters = cluster or config.clusters()
+
+    package_mapping = {
+        'alert': PackageMap(
+            stream_alert_packages.AlertProcessorPackage,
+            {'module.stream_alert_{}'.format(cluster) for cluster in clusters},
+            True),
+        'apps': PackageMap(
+            stream_alert_packages.AppIntegrationPackage,
+            {'module.app_{}_{}'.format(app_name, cluster)
+             for cluster, info in config['clusters'].iteritems()
+             for app_name in info['modules'].get('stream_alert_apps', {})},
+            config['lambda'].get('stream_alert_apps_config', False)),
+        'athena': PackageMap(
+            stream_alert_packages.AthenaPackage,
+            {'module.stream_alert_athena'},
+            config['lambda'].get('athena_partition_refresh_config', False)),
+        'rule': PackageMap(
+            stream_alert_packages.RuleProcessorPackage,
+            {'module.stream_alert_{}'.format(cluster) for cluster in clusters},
+            True),
+        'threat_intel_downloader': PackageMap(
+            stream_alert_packages.ThreatIntelDownloaderPackage,
+            {'module.threat_intel_downloader'},
+            config['lambda'].get('threat_intel_downloader_config', False))}
+
+    if not package_mapping[function_name].enabled:
+        return False, False
+
+    package = package_mapping[function_name].package_class(config=config)
+    success = package.create_and_upload()
+
+    if not success:
+        sys.exit(1)
+
+    return package, package_mapping[function_name].targets
 
 
 def deploy(options, config):
@@ -39,119 +111,34 @@ def deploy(options, config):
     - Update each cluster's Lambda configuration with latest published version
     - Run Terraform Apply
     """
-    processor = options.processor
     # Terraform apply only to the module which contains our lambda functions
-    targets = set()
+    deploy_targets = set()
     packages = []
 
-    def _publish_version(packages):
-        """Publish Lambda versions"""
-        for package in packages:
-            if package.package_name in {'athena_partition_refresh', 'threat_intel_downloader'}:
-                published = LambdaVersion(
-                    config=config, package=package, clustered_deploy=False).publish_function()
-            else:
-                published = LambdaVersion(config=config, package=package).publish_function()
-            if not published:
-                return False
-
-        return True
-
-    def _deploy_rule_processor():
-        """Create Rule Processor package and publish versions"""
-        rule_package = RuleProcessorPackage(config=config, version=current_version)
-        rule_package.create_and_upload()
-        return rule_package
-
-    def _deploy_alert_processor():
-        """Create Alert Processor package and publish versions"""
-        alert_package = AlertProcessorPackage(config=config, version=current_version)
-        alert_package.create_and_upload()
-        return alert_package
-
-    def _deploy_athena_partition_refresh():
-        """Create Athena Partition Refresh package and publish"""
-        athena_package = AthenaPackage(config=config, version=current_version)
-        athena_package.create_and_upload()
-        return athena_package
-
-    def _deploy_apps_function():
-        """Create app integration package and publish versions"""
-        app_integration_package = AppIntegrationPackage(config=config, version=apps_version)
-        app_integration_package.create_and_upload()
-        return app_integration_package
-
-    def _deploy_threat_intel_downloader():
-        """Create Threat Intel downloader package and publish version"""
-        threat_intel_package = ThreatIntelDownloaderPackage(
-            config=config,
-            version=ti_downloader_version
-        )
-        threat_intel_package.create_and_upload()
-        return threat_intel_package
-
-    if 'all' in processor:
-        targets.update({'module.stream_alert_{}'.format(x) for x in config.clusters()})
-
-        targets.update({
-            'module.app_{}_{}'.format(app_name, cluster)
-            for cluster, info in config['clusters'].iteritems()
-            for app_name in info['modules'].get('stream_alert_apps', {})
-        })
-
-        packages.append(_deploy_rule_processor())
-        packages.append(_deploy_alert_processor())
-        packages.append(_deploy_apps_function())
-
-        # Only include the Athena function if it exists and is enabled
-        athena_config = config['lambda'].get('athena_partition_refresh_config')
-        if athena_config and athena_config.get('enabled', False):
-            targets.add('module.stream_alert_athena')
-            packages.append(_deploy_athena_partition_refresh())
-
+    if 'all' in options.processor:
+        processors = {'alert', 'athena', 'apps', 'rule', 'threat_intel_downloader'}
     else:
+        processors = options.processor
 
-        if 'rule' in processor:
-            targets.update({'module.stream_alert_{}'.format(x) for x in config.clusters()})
+    for processor in processors:
+        package, targets = _create_and_upload(processor, config, options.clusters)
+        # Continue if the package isn't enabled
+        if not all([package, targets]):
+            continue
 
-            packages.append(_deploy_rule_processor())
-
-        if 'alert' in processor:
-            targets.update({'module.stream_alert_{}'.format(x) for x in config.clusters()})
-
-            packages.append(_deploy_alert_processor())
-
-        if 'apps' in processor:
-
-            targets.update({
-                'module.app_{}_{}'.format(app_name, cluster)
-                for cluster, info in config['clusters'].iteritems()
-                for app_name in info['modules'].get('stream_alert_apps', {})
-            })
-
-            packages.append(_deploy_apps_function())
-
-        if 'athena' in processor:
-            targets.add('module.stream_alert_athena')
-
-            packages.append(_deploy_athena_partition_refresh())
-
-        if 'threat_intel_downloader' in processor:
-            targets.add('module.threat_intel_downloader')
-            packages.append(_deploy_threat_intel_downloader())
+        packages.append(package)
+        deploy_targets.update(targets)
 
     # Regenerate the Terraform configuration with the new S3 keys
     if not terraform_generate(config=config):
         return
 
     # Run Terraform: Update the Lambda source code in $LATEST
-    if not helpers.tf_runner(targets=targets):
+    if not helpers.tf_runner(targets=deploy_targets):
         sys.exit(1)
 
-    # TODO(jack) write integration test to verify newly updated function
-
     # Publish a new production Lambda version
-    if not _publish_version(packages):
+    if not _publish_version(packages, config, options.clusters):
         return
 
     # Regenerate the Terraform configuration with the new Lambda versions
@@ -159,4 +146,4 @@ def deploy(options, config):
         return
 
     # Apply the changes to the Lambda aliases
-    helpers.tf_runner(targets=targets)
+    helpers.tf_runner(targets=deploy_targets)

@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from stream_alert_cli.logger import LOGGER_CLI
 from stream_alert_cli.manage_lambda.deploy import deploy
 from stream_alert_cli.manage_lambda.rollback import rollback
 from stream_alert_cli.test import stream_alert_test
@@ -26,13 +27,16 @@ def lambda_handler(options, config):
         # Make sure the Terraform code is up to date
         if not terraform_generate(config=config):
             return
+        LOGGER_CLI.info('Deploying: %s', ' '.join(options.processor))
         deploy(options, config)
 
     elif options.subcommand == 'rollback':
         # Make sure the Terraform code is up to date
         if not terraform_generate(config=config):
             return
+        LOGGER_CLI.info('Rolling back: %s', ' '.join(options.processor))
         rollback(options, config)
 
     elif options.subcommand == 'test':
+        LOGGER_CLI.info('Testing: %s', ' '.join(options.processor))
         stream_alert_test(options, config)

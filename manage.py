@@ -976,6 +976,11 @@ def _add_default_lambda_args(lambda_parser):
         action=UniqueSetAction,
         required=True)
 
+    lambda_parser.add_argument(
+        '--clusters',
+        help=ARGPARSE_SUPPRESS,
+        nargs='+')
+
     # Allow verbose output for the CLI with the --debug option
     lambda_parser.add_argument('--debug', action='store_true', help=ARGPARSE_SUPPRESS)
 
@@ -1002,6 +1007,8 @@ Available Options:
     --target                                   The Terraform module name to apply.
                                                Valid options: stream_alert, kinesis, kinesis_events,
                                                cloudtrail, monitoring, and s3_events.
+    --clusters                                  The StreamAlert cluster(s) to apply to.
+
 Examples:
 
     manage.py terraform init
@@ -1038,6 +1045,13 @@ Examples:
             'athena', 'cloudwatch_monitoring', 'cloudtrail', 'flow_logs', 'kinesis',
             'kinesis_events', 'stream_alert', 's3_events', 'threat_intel_downloader'
         ],
+        help=ARGPARSE_SUPPRESS,
+        nargs='+')
+
+    tf_parser.add_argument(
+        '--clusters',
+        action=UniqueSetAction,
+        default=set(),
         help=ARGPARSE_SUPPRESS,
         nargs='+')
 

@@ -4,11 +4,15 @@ variable "access_key_count" {
 
 variable "account_id" {}
 
-variable "region" {}
-
 variable "cluster_name" {}
 
 variable "prefix" {}
+
+variable "region" {}
+
+variable "retention" {
+  default = 24
+}
 
 variable "stream_name" {
   default = "stream_alert_stream"
@@ -16,10 +20,6 @@ variable "stream_name" {
 
 variable "shards" {
   default = 1
-}
-
-variable "retention" {
-  default = 24
 }
 
 // Default values for shard_level_metrics
