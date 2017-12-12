@@ -852,3 +852,41 @@ class TestStreamRules(object):
             payload = load_and_classify_payload(toggled_config, service, entity, raw_record)
 
             assert_equal(len(new_rules_engine.process(payload)), 1)
+
+    def test_rule_modify_context(self):
+        """Rules Engine - Testing Context Modification"""
+        @rule(logs=['test_log_type_json_nested_with_data'],
+              outputs=['s3:sample_bucket'],
+              context={'assigned_user': 'not_set', 'assigned_policy': 'not_set2'})
+        def modify_context_test(rec, context): # pylint: disable=unused-variable
+            """Modify context rule"""
+            context['assigned_user'] = 'valid_user'
+            context['assigned_policy'] = 'valid_policy'
+            return rec['application'] == 'web-app'
+
+        kinesis_data = json.dumps({
+            'date': 'Dec 01 2016',
+            'unixtime': '1483139547',
+            'host': 'host1.web.prod.net',
+            'application': 'web-app',
+            'environment': 'prod',
+            'data': {
+                'category': 'web-server',
+                'type': '1',
+                'source': 'eu'
+            }
+        })
+
+        # prepare the payloads
+        service, entity = 'kinesis', 'test_kinesis_stream'
+        raw_record = make_kinesis_raw_record(entity, kinesis_data)
+        payload = load_and_classify_payload(self.config, service, entity, raw_record)
+
+        # process payloads
+        alerts = self.rules_engine.process(payload)
+
+        print alerts
+
+        # alert tests
+        assert_equal(alerts[0]['context']['assigned_user'], 'valid_user')
+        assert_equal(alerts[0]['context']['assigned_policy'], 'valid_policy')
