@@ -18,18 +18,20 @@ import sys
 
 from stream_alert_cli import helpers
 from stream_alert_cli.manage_lambda import package as stream_alert_packages
+from stream_alert_cli.manage_lambda.version import LambdaVersion
 from stream_alert_cli.terraform.generate import terraform_generate
-from stream_alert_cli.version import LambdaVersion
 
 
 PackageMap = namedtuple('package_attrs', ['package_class', 'targets', 'enabled'])
 
 
-def _publish_version(packages, config):
+def _publish_version(packages, config, clusters):
     """Publish production Lambda versions
 
     Args:
-        packages (list of LambdaPackage classes)
+        packages (list[LambdaPackage])
+        config (CLIConfig)
+        clusters (set)
 
     Returns:
         bool: Result of Lambda version publishing
@@ -39,10 +41,11 @@ def _publish_version(packages, config):
     for package in packages:
         if package.package_name in global_packages:
             published = LambdaVersion(
-                config=config, package=package, clustered_deploy=False).publish_function()
+                config=config, package=package).publish_function(clustered_deploy=False)
         else:
             published = LambdaVersion(
-                config=config, package=package).publish_function()
+                config=config, package=package).publish_function(clustered_deploy=True,
+                                                                 clusters=clusters)
         if not published:
             return False
 
@@ -135,7 +138,7 @@ def deploy(options, config):
         sys.exit(1)
 
     # Publish a new production Lambda version
-    if not _publish_version(packages, config):
+    if not _publish_version(packages, config, options.clusters):
         return
 
     # Regenerate the Terraform configuration with the new Lambda versions
