@@ -42,7 +42,7 @@ from stream_alert_cli.terraform.threat_intel_downloader import generate_threat_i
 
 DEFAULT_SNS_MONITORING_TOPIC = 'stream_alert_monitoring'
 RESTRICTED_CLUSTER_NAMES = ('main', 'athena')
-
+TERRAFORM_VERSIONS = {'application': '~> 0.10.6', 'provider': {'aws': '~> 1.5.0'}}
 
 def generate_s3_bucket(**kwargs):
     """Generate an S3 Bucket dict
@@ -100,10 +100,10 @@ def generate_main(**kwargs):
     main_dict = infinitedict()
 
     # Configure provider along with the minimum version
-    main_dict['provider']['aws'] = {'version': '~> 0.1.4'}
+    main_dict['provider']['aws'] = {'version': TERRAFORM_VERSIONS['provider']['aws']}
 
     # Configure Terraform version requirement
-    main_dict['terraform']['required_version'] = '~> 0.10.6'
+    main_dict['terraform']['required_version'] = TERRAFORM_VERSIONS['application']
 
     # Setup the Backend dependencing on the deployment phase.
     # When first setting up StreamAlert, the Terraform statefile
