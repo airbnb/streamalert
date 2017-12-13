@@ -453,6 +453,10 @@ def setup_mock_dynamodb_ioc_table(config):
     """
     region = config['global']['account']['region']
     dynamodb_client = boto3.client('dynamodb', region_name=region)
+    table_name = 'test_table_name'
+    if (config['global'].get('threat_intel')
+            and config['global']['threat_intel'].get('dynamodb_table')):
+        table_name = config['global']['threat_intel']['dynamodb_table']
 
     dynamodb_client.create_table(
         AttributeDefinitions=[{
@@ -467,7 +471,7 @@ def setup_mock_dynamodb_ioc_table(config):
             'ReadCapacityUnits': 10,
             'WriteCapacityUnits': 10,
         },
-        TableName='test_table_name',
+        TableName=table_name,
     )
 
     dynamodb_client.put_item(
@@ -476,7 +480,25 @@ def setup_mock_dynamodb_ioc_table(config):
             'ioc_type': {'S': 'ip'},
             'sub_type': {'S': 'mal_ip'}
         },
-        TableName='test_table_name'
+        TableName=table_name
+    )
+
+    dynamodb_client.put_item(
+        Item={
+            'ioc_value': {'S': '0123456789abcdef0123456789abcdef'},
+            'ioc_type': {'S': 'md5'},
+            'sub_type': {'S': 'mal_md5'}
+        },
+        TableName=table_name
+    )
+
+    dynamodb_client.put_item(
+        Item={
+            'ioc_value': {'S': 'evil.com'},
+            'ioc_type': {'S': 'domain'},
+            'sub_type': {'S': 'c2_domain'}
+        },
+        TableName=table_name
     )
 
 def put_mock_s3_object(bucket, key, data, region):

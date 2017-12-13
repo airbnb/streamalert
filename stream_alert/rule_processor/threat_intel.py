@@ -156,7 +156,8 @@ class StreamThreatIntel(object):
                     if isinstance(original_keys, list):
                         for original_key in original_keys:
                             value = value[original_key]
-                    ioc_values.add(value)
+                    if value:
+                        ioc_values.add(value)
         return [StreamIoc(value=value, ioc_type=ioc_type, associated_record=record)
                 for value in ioc_values]
 
@@ -250,7 +251,7 @@ class StreamThreatIntel(object):
             query_values = []
             for ioc in subset:
                 if ioc.value not in query_values:
-                    query_values.append(ioc.value)
+                    query_values.append(ioc.value.lower())
 
             query_result = []
 
@@ -312,7 +313,7 @@ class StreamThreatIntel(object):
             Second return (dict/None): A dict containing unprocesed keys.
         """
         result = []
-        query_keys = [{PRIMARY_KEY: {'S': ioc}} for ioc in values]
+        query_keys = [{PRIMARY_KEY: {'S': ioc}} for ioc in values if ioc]
         response = self.dynamodb.batch_get_item(
             RequestItems={
                 self._table: {
