@@ -686,6 +686,10 @@ class AlertProcessorTester(object):
                     if 'phantom' in 'url':
                         return {'count': 0, 'data': []}
 
+                    elif 'api.pagerduty' in url:
+                        u_path = os.path.split(url)[1]
+                        return {u_path: [{'id': 1234}]}
+
                 # Default to returning an empty dict in case this was not implemented for a service
                 return dict()
 
@@ -767,8 +771,9 @@ class AlertProcessorTester(object):
             elif service == 'pagerduty-incident':
                 output_name = '{}/{}'.format(service, descriptor)
                 creds = {'token': '247b97499078a015cc6c586bc0a92de6',
-                         'service_key': '247b97499078a015cc6c586bc0a92de6',
-                         'escalation_policy': '247b97499078a015cc6c586bc0a92de6'}
+                         'service_name': '247b97499078a015cc6c586bc0a92de6',
+                         'escalation_policy': '247b97499078a015cc6c586bc0a92de6',
+                         'email_from': 'blah@foo.bar'}
                 helpers.put_mock_creds(output_name, creds, self.secrets_bucket,
                                        'us-east-1', self.kms_alias)
 
