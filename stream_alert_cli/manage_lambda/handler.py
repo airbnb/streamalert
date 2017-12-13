@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from stream_alert_cli.helpers import check_credentials
 from stream_alert_cli.logger import LOGGER_CLI
 from stream_alert_cli.manage_lambda.deploy import deploy
 from stream_alert_cli.manage_lambda.rollback import rollback
@@ -24,6 +25,9 @@ def lambda_handler(options, config):
     """Handle all Lambda CLI operations"""
 
     if options.subcommand == 'deploy':
+        # Check for valid credentials
+        if not check_credentials():
+            return
         # Make sure the Terraform code is up to date
         if not terraform_generate(config=config):
             return
@@ -31,6 +35,9 @@ def lambda_handler(options, config):
         deploy(options, config)
 
     elif options.subcommand == 'rollback':
+        # Check for valid credentials
+        if not check_credentials():
+            return
         # Make sure the Terraform code is up to date
         if not terraform_generate(config=config):
             return

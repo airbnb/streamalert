@@ -103,13 +103,17 @@ def _create_and_upload(function_name, config, cluster=None):
 def deploy(options, config):
     """Deploy new versions of all Lambda functions
 
+    Args:
+        options (namedtuple): ArgParsed command from the CLI
+        config (CLIConfig): Loaded StreamAlert config
+
     Steps:
-    - Build AWS Lambda deployment package
-    - Upload to S3
-    - Update lambda.json with uploaded package checksum and S3 key
-    - Publish new version
-    - Update each cluster's Lambda configuration with latest published version
-    - Run Terraform Apply
+        Build AWS Lambda deployment package
+        Upload to S3
+        Update lambda.json with uploaded package checksum and S3 key
+        Publish new version
+        Update each cluster's Lambda configuration with latest published version
+        Run Terraform Apply
     """
     # Terraform apply only to the module which contains our lambda functions
     deploy_targets = set()

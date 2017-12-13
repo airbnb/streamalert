@@ -19,7 +19,7 @@ import shutil
 import sys
 
 from stream_alert_cli.logger import LOGGER_CLI
-from stream_alert_cli.helpers import run_command, tf_runner, continue_prompt
+from stream_alert_cli.helpers import check_credentials, continue_prompt, run_command, tf_runner
 from stream_alert_cli.manage_lambda.deploy import deploy
 from stream_alert_cli.terraform.generate import terraform_generate
 
@@ -41,11 +41,15 @@ def terraform_handler(options, config):
     Args:
         options (namedtuple): Parsed arguments from manage.py
     """
+    # Check for valid credentials
+    if not check_credentials():
+        return
+
     # Verify terraform is installed
     if not terraform_check():
         return
     # Use a named tuple to match the 'processor' attribute in the argparse options
-    deploy_opts = namedtuple('DeployOptions', ['processor'])
+    deploy_opts = namedtuple('DeployOptions', ['processor', 'clusters'])
 
     # Plan and Apply our streamalert infrastructure
     if options.subcommand == 'build':
@@ -93,7 +97,7 @@ def terraform_handler(options, config):
 
         LOGGER_CLI.info('Deploying Lambda Functions')
         # deploy both lambda functions
-        deploy(deploy_opts(['rule', 'alert']), config)
+        deploy(deploy_opts(['rule', 'alert'], []), config)
         # create all remainder infrastructure
 
         LOGGER_CLI.info('Building Remainder Infrastructure')

@@ -160,6 +160,27 @@ def tf_runner(**kwargs):
 
     return True
 
+
+def check_credentials():
+    """Check for valid AWS credentials in environment variables
+
+    Returns:
+        bool: True any of the AWS env variables exist
+    """
+    aws_env_variables = [
+        'AWS_PROFILE', 'AWS_SHARED_CREDENTIALS_FILE', 'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY'
+    ]
+    env_vars_exist = any([env_var in os.environ for env_var in aws_env_variables])
+
+    if not env_vars_exist:
+        LOGGER_CLI.error('No valid AWS Credentials found in your environment!')
+        LOGGER_CLI.error('Please follow the setup instructions here: '
+                         'https://www.streamalert.io/account.html')
+        return False
+
+    return True
+
+
 def _get_record_template(service):
     """Provides a pre-configured template that reflects incoming payload from a service
 
