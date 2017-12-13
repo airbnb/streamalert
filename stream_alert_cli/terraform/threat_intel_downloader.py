@@ -53,6 +53,7 @@ def generate_threat_intel_downloader(config):
         'table_wcu': ti_downloader_config.get('table_wcu', '10'),
         'ioc_keys': ti_downloader_config.get('ioc_keys'),
         'ioc_filters': ti_downloader_config.get('ioc_filters'),
-        'ioc_types': ti_downloader_config.get('ioc_types')
+        'ioc_types': ti_downloader_config.get('ioc_types'),
+        'autoscale': ti_downloader_config.get('autoscale')
     }
     return ti_downloader_dict

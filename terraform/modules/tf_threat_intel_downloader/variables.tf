@@ -70,3 +70,7 @@ variable "ioc_types" {}
 variable "log_retention" {
   default = 14
 }
+
+variable "autoscale" {
+  default = false
+}

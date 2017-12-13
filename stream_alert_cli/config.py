@@ -469,6 +469,8 @@ class CLIConfig(object):
             self.config['global']['threat_intel']['dynamodb_table'] = \
                 threat_intel_info['dynamodb_table']
 
+        self.config['global']['threat_intel']['autoscale'] = threat_intel_info['autoscale']
+
         self.write()
 
         LOGGER_CLI.info('Threat Intel configuration successfully created')
@@ -485,6 +487,7 @@ class CLIConfig(object):
             (bool): Return True if writing settings of Lambda function successfully.
         """
         default_config = {
+            'autoscale': False,
             'enabled': True,
             'current_version': '$LATEST',
             'handler': 'stream_alert.threat_intel_downloader.main.handler',
