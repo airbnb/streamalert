@@ -96,6 +96,8 @@ def generate_stream_alert(cluster_name, cluster_dict, config):
             and config['global']['threat_intel'].get('dynamodb_table')):
         cluster_dict['module']['stream_alert_{}'.format(cluster_name)] \
             ['dynamodb_ioc_table'] = config['global']['threat_intel']['dynamodb_table']
+        cluster_dict['module']['stream_alert_{}'.format(cluster_name)] \
+            ['threat_intel_enabled'] = config['global']['threat_intel']['enabled']
     # Add Alert Processor output config from the loaded cluster file
     output_config = modules['stream_alert']['alert_processor'].get('outputs')
     if output_config:
