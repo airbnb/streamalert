@@ -19,7 +19,7 @@ import shutil
 import sys
 
 from stream_alert_cli.logger import LOGGER_CLI
-from stream_alert_cli.helpers import run_command, tf_runner, continue_prompt
+from stream_alert_cli.helpers import check_credentials, continue_prompt, run_command, tf_runner
 from stream_alert_cli.manage_lambda.deploy import deploy
 from stream_alert_cli.terraform.generate import terraform_generate
 
@@ -41,6 +41,10 @@ def terraform_handler(options, config):
     Args:
         options (namedtuple): Parsed arguments from manage.py
     """
+    # Check for valid credentials
+    if not check_credentials():
+        return
+
     # Verify terraform is installed
     if not terraform_check():
         return
