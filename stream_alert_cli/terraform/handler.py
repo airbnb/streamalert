@@ -45,7 +45,7 @@ def terraform_handler(options, config):
     if not terraform_check():
         return
     # Use a named tuple to match the 'processor' attribute in the argparse options
-    deploy_opts = namedtuple('DeployOptions', ['processor'])
+    deploy_opts = namedtuple('DeployOptions', ['processor', 'clusters'])
 
     # Plan and Apply our streamalert infrastructure
     if options.subcommand == 'build':
@@ -93,7 +93,7 @@ def terraform_handler(options, config):
 
         LOGGER_CLI.info('Deploying Lambda Functions')
         # deploy both lambda functions
-        deploy(deploy_opts(['rule', 'alert']), config)
+        deploy(deploy_opts(['rule', 'alert'], []), config)
         # create all remainder infrastructure
 
         LOGGER_CLI.info('Building Remainder Infrastructure')
