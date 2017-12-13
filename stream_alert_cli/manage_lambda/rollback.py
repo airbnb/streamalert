@@ -24,7 +24,7 @@ def rollback(options, config):
         Ignores if the production version is $LATEST
         Only rollsback if published version is greater than 1
     """
-    clusters = config.clusters()
+    clusters = options.clusters or config.clusters()
 
     if 'all' in options.processor:
         lambda_functions = {'rule_processor', 'alert_processor', 'athena_partition_refresh'}
