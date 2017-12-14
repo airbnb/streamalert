@@ -1262,12 +1262,16 @@ Available Subcommands:
 
                               See the link in the Resources section below for more information.
     Optional Arguments:
-        --table_rcu        The DynamoDB table Read Capacity Unit.
-        --table_wcu        The DynamoDB table Write Capacity Unit.
-        --ioc_keys         The keys (list) of IOC stored in DynamoDB table.
-        --ioc_filters      Filters (list) applied while retrieving IOCs from Threat Feed.
-        --ioc_types        IOC types (list) are defined by the Threat Feed. IOC types can be
+        --table_rcu          The DynamoDB table Read Capacity Unit.
+        --table_wcu          The DynamoDB table Write Capacity Unit.
+        --ioc_keys           The keys (list) of IOC stored in DynamoDB table.
+        --ioc_filters        Filters (list) applied while retrieving IOCs from Threat Feed.
+        --ioc_types          IOC types (list) are defined by the Threat Feed. IOC types can be
                              different from different Threat Feeds.
+        --autoscale          Enable/disable DynamoDB table autoscale.
+        --min_read_capacity  Maximal read capacity when autoscale enabled.
+        --max_read_capacity  Mimimal read capacity when autoscale enabled.
+        --target_utilization Utilization remains at or near the setting level when autoscale enabled.
 
     manage.py threat_intel_downloader update-auth   Update API credentials to parameter store.
 

@@ -54,6 +54,9 @@ def generate_threat_intel_downloader(config):
         'ioc_keys': ti_downloader_config.get('ioc_keys'),
         'ioc_filters': ti_downloader_config.get('ioc_filters'),
         'ioc_types': ti_downloader_config.get('ioc_types'),
-        'autoscale': ti_downloader_config.get('autoscale')
+        'autoscale': ti_downloader_config.get('autoscale'),
+        'max_read_capacity': ti_downloader_config.get('max_read_capacity'),
+        'min_read_capacity': ti_downloader_config.get('min_read_capacity'),
+        'target_utilization': ti_downloader_config.get('target_utilization')
     }
     return ti_downloader_dict

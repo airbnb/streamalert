@@ -186,7 +186,10 @@ class TestCLIConfig(object):
             'memory': '128',
             'subcommand': 'enable',
             'timeout': '240',
-            'table_wcu': 25
+            'table_wcu': 25,
+            'max_read_capacity': 100,
+            'min_read_capacity': 5,
+            'target_utilization': 70
         }
         result = self.config.add_threat_intel_downloader(ti_downloader_info)
         assert_true(result)
@@ -209,7 +212,10 @@ class TestCLIConfig(object):
             ],
             'table_rcu': 10,
             'table_wcu': 25,
-            'timeout': '240'
+            'timeout': '240',
+            'max_read_capacity': 100,
+            'min_read_capacity': 5,
+            'target_utilization': 70
         }
         assert_equal(self.config['lambda']['threat_intel_downloader_config'], expected_config)
         write_mock.assert_called()

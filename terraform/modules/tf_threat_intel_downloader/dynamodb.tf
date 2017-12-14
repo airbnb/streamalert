@@ -98,8 +98,8 @@ data "aws_iam_policy_document" "appautoscaling_cloudwatch_alarms" {
 
 resource "aws_appautoscaling_target" "dynamodb_table_read_target" {
   count              = "${var.autoscale ? 1 : 0}"
-  max_capacity       = 100
-  min_capacity       = 5
+  max_capacity       = "${var.max_read_capacity}"
+  min_capacity       = "${var.min_read_capacity}"
   resource_id        = "table/${var.prefix}_streamalert_threat_intel_downloader"
   role_arn           = "${aws_iam_role.appautoscaling.arn}"
   scalable_dimension = "dynamodb:table:ReadCapacityUnits"
@@ -119,7 +119,7 @@ resource "aws_appautoscaling_policy" "dynamodb_table_read_policy" {
       predefined_metric_type = "DynamoDBReadCapacityUtilization"
     }
 
-    # Utilization remains at or near 70%
-    target_value = 70
+    # Utilization remains at or near 70% (default)
+    target_value = "${var.target_utilization}"
   }
 }

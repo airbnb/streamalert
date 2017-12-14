@@ -503,7 +503,10 @@ class CLIConfig(object):
             'table_wcu': 10,
             'ioc_keys': [],
             'ioc_filters': [],
-            'ioc_types': []
+            'ioc_types': [],
+            'max_read_capacity': 5,
+            'min_read_capacity': 5,
+            'target_utilization': 70
         }
 
         if 'threat_intel_downloader_config' in self.config['lambda']:

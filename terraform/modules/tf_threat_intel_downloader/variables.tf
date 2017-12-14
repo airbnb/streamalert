@@ -74,3 +74,15 @@ variable "log_retention" {
 variable "autoscale" {
   default = false
 }
+
+variable "max_read_capacity" {
+  default = 5
+}
+
+variable "min_read_capacity" {
+  default = 5
+}
+
+variable "target_utilization" {
+  default = 70
+}
