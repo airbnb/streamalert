@@ -437,10 +437,13 @@ def setup_mock_firehose_delivery_streams(config):
     Args:
         config (CLIConfig): The StreamAlert config
     """
+    firehose_config = config['global']['infrastructure'].get('firehose')
+    if not firehose_config:
+        return
+
     region = config['global']['account']['region']
-    sa_firehose = StreamAlertFirehose(region,
-                                      config['global']['infrastructure']['firehose'],
-                                      config['logs'])
+    sa_firehose = StreamAlertFirehose(region, firehose_config, config['logs'])
+
     for log_type in sa_firehose.enabled_logs:
         stream_name = 'streamalert_data_{}'.format(log_type)
         prefix = '{}/'.format(log_type)
