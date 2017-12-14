@@ -65,10 +65,13 @@ class AppConfig(dict):
             LOGGER.error('Current state cannot be saved with value \'%s\'', value)
             return
 
+        # Cache the old value to see if the new value differs
+        current_value = self.get(key)
+
         dict.__setitem__(self, key, value)
 
         # If this is a key related to the state config, save the state in parameter store
-        if key in self._state_keys():
+        if key in self._state_keys() and current_value != value:
             self._save_state()
 
     @staticmethod

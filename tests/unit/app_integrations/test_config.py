@@ -195,6 +195,24 @@ class TestAppIntegrationConfig(object):
         """AppIntegrationConfig - Check If Success"""
         assert_false(self._config.is_success)
 
+    @patch('app_integrations.config.AppConfig._save_state')
+    def test_suppress_state_save_no_change(self, save_mock):
+        """AppIntegrationConfig - Suppress Save State on No Change"""
+        # Try to mark with success more than once
+        self._config.mark_success()
+        self._config.mark_success()
+
+        save_mock.assert_called_once()
+
+    @patch('app_integrations.config.AppConfig._save_state')
+    def test_suppress_state_save(self, save_mock):
+        """AppIntegrationConfig - Save State on Change"""
+        # Try to mark with failure followed by success
+        self._config.mark_failure()
+        self._config.mark_success()
+
+        assert_equal(save_mock.call_count, 2)
+
     def test_scrub_auth_info(self):
         """AppIntegrationConfig - Scrub Auth Info"""
         auth_key = '{}_auth'.format(FUNCTION_NAME)
