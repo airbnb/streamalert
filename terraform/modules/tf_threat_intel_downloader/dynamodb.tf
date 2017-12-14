@@ -42,16 +42,17 @@ data "aws_iam_policy_document" "appautoscaling_assume_role_policy" {
 }
 
 // IAM Role Policy: Allow appautoscaling IAM role to autoscaling DynamoDB table
-resource "aws_iam_role_policy" "appautoscaling" {
+resource "aws_iam_role_policy" "appautoscaling_update_table" {
   count  = "${var.autoscale ? 1 : 0}"
-  name   = "DynamoDBAppAutoscalePolicy"
+  name   = "DynamoDBAppAutoscaleUpdateTablePolicy"
   role   = "${aws_iam_role.appautoscaling.id}"
-  policy = "${data.aws_iam_policy_document.appautoscaling.json}"
+  policy = "${data.aws_iam_policy_document.appautoscaling_update_table.json}"
 }
 
 // IAM Policy Doc: Allow autoscaling IAM role to send alarm to CloudWatch
 // and change table settings for autoscaling.
-data "aws_iam_policy_document" "appautoscaling" {
+// This policy is allow the role to change table settings
+data "aws_iam_policy_document" "appautoscaling_update_table" {
   count = "${var.autoscale ? 1 : 0}"
 
   statement {
@@ -60,6 +61,30 @@ data "aws_iam_policy_document" "appautoscaling" {
     actions = [
       "dynamodb:DescribeTable",
       "dynamodb:UpdateTable",
+    ]
+
+    resources = [
+      "${aws_dynamodb_table.threat_intel_ioc.arn}",
+    ]
+  }
+}
+
+// IAM Role Policy: Allow appautoscaling IAM role to autoscaling DynamoDB table
+resource "aws_iam_role_policy" "appautoscaling_cloudwatch_alarms" {
+  count  = "${var.autoscale ? 1 : 0}"
+  name   = "DynamoDBAppAutoscaleCloudWatchAlarmsPolicy"
+  role   = "${aws_iam_role.appautoscaling.id}"
+  policy = "${data.aws_iam_policy_document.appautoscaling_cloudwatch_alarms.json}"
+}
+
+// IAM Policy Doc: This policy is allow the role to send alarm to CloudWatch.
+data "aws_iam_policy_document" "appautoscaling_cloudwatch_alarms" {
+  count = "${var.autoscale ? 1 : 0}"
+
+  statement {
+    effect = "Allow"
+
+    actions = [
       "cloudwatch:PutMetricAlarm",
       "cloudwatch:DescribeAlarms",
       "cloudwatch:GetMetricStatistics",
@@ -67,10 +92,7 @@ data "aws_iam_policy_document" "appautoscaling" {
       "cloudwatch:DeleteAlarms",
     ]
 
-    resources = [
-      "${aws_dynamodb_table.threat_intel_ioc.arn}",
-      "${aws_cloudwatch_log_group.threat_intel_downloader.arn}",
-    ]
+    resources = ["*"]
   }
 }
 
@@ -78,7 +100,7 @@ resource "aws_appautoscaling_target" "dynamodb_table_read_target" {
   count              = "${var.autoscale ? 1 : 0}"
   max_capacity       = 100
   min_capacity       = 5
-  resource_id        = "${var.prefix}_streamalert_threat_intel_downloader"
+  resource_id        = "table/${var.prefix}_streamalert_threat_intel_downloader"
   role_arn           = "${aws_iam_role.appautoscaling.arn}"
   scalable_dimension = "dynamodb:table:ReadCapacityUnits"
   service_namespace  = "dynamodb"
