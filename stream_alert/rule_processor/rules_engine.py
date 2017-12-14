@@ -396,6 +396,8 @@ class StreamRules(object):
             if ioc_records:
                 for ioc_record in ioc_records:
                     for rule in rules:
+                        if not rule.datatypes:
+                            continue
                         self.rule_analysis(ioc_record, rule, payload, alerts)
 
         return alerts

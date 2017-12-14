@@ -241,6 +241,7 @@ class TestTerraformGenerate(object):
                     'cluster': 'test',
                     'kms_key_arn': '${aws_kms_key.stream_alert_secrets.arn}',
                     'dynamodb_ioc_table': 'test_table_name',
+                    'threat_intel_enabled': False,
                     'rule_processor_enable_metrics': True,
                     'rule_processor_log_level': 'info',
                     'rule_processor_memory': 128,
@@ -278,6 +279,7 @@ class TestTerraformGenerate(object):
                     'cluster': 'advanced',
                     'kms_key_arn': '${aws_kms_key.stream_alert_secrets.arn}',
                     'dynamodb_ioc_table': 'test_table_name',
+                    'threat_intel_enabled': False,
                     'rule_processor_enable_metrics': True,
                     'rule_processor_log_level': 'info',
                     'rule_processor_memory': 128,
@@ -299,6 +301,7 @@ class TestTerraformGenerate(object):
                 }
             }
         }
+
 
         assert_equal(self.cluster_dict['module']['stream_alert_advanced'],
                      expected_advanced_cluster['module']['stream_alert_advanced'])

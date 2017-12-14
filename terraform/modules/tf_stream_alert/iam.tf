@@ -77,6 +77,7 @@ data "aws_iam_policy_document" "streamalert_rule_processor_firehose" {
 
 // IAM Role Policy: Allow Rule Processor to read DynamoDB table (Threat Intel)
 resource "aws_iam_role_policy" "streamalert_rule_processor_dynamodb" {
+  count  = "${var.threat_intel_enabled ? 1 : 0}"
   name   = "ReadDynamodb"
   role   = "${aws_iam_role.streamalert_rule_processor_role.id}"
   policy = "${data.aws_iam_policy_document.streamalert_rule_processor_read_dynamodb.json}"
