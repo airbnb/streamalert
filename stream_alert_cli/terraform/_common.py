@@ -27,33 +27,3 @@ class InvalidClusterName(Exception):
 def infinitedict():
     """Create arbitrary levels of dictionary key/values"""
     return defaultdict(infinitedict)
-
-
-def enabled_firehose_logs(config):
-    """Return a list of enabled log types via sources.json
-
-    Args:
-        config (CLIConfig): The loaded configuration
-
-    Returns:
-        list: All enabled logs sending to StreamAlert
-    """
-    config_logs = set(config['logs'])
-    disabled_logs = set(config['global']['infrastructure'].get(
-        'firehose', {}).get('disabled_logs', []))
-    expanded_logs_with_subtypes = set()
-    enabled_logs_from_sources = list()
-
-    for entities in config['sources'].values():
-        for properties in entities.values():
-            enabled_logs_from_sources.extend(properties['logs'])
-
-    for log in config_logs:
-        for enabled_log in set(enabled_logs_from_sources) - disabled_logs:
-            log_type = log.split(':')[0]
-            if log_type == enabled_log:
-                expanded_logs_with_subtypes.add(log)
-
-    # Firehose Delivery Streams cannot have semicolons
-    filtered_log_names = [log.replace(':', '_') for log in expanded_logs_with_subtypes]
-    return sorted(filtered_log_names)

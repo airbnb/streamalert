@@ -21,13 +21,13 @@ import string
 from stream_alert.shared.metrics import FUNC_PREFIXES
 from stream_alert_cli.logger import LOGGER_CLI
 from stream_alert_cli.terraform._common import (
-    enabled_firehose_logs,
     InvalidClusterName,
     infinitedict
 )
 from stream_alert_cli.terraform.app_integrations import generate_app_integrations
 from stream_alert_cli.terraform.athena import generate_athena
 from stream_alert_cli.terraform.cloudtrail import generate_cloudtrail
+from stream_alert_cli.terraform.firehose import generate_firehose
 from stream_alert_cli.terraform.flow_logs import generate_flow_logs
 from stream_alert_cli.terraform.kinesis_events import generate_kinesis_events
 from stream_alert_cli.terraform.kinesis_streams import generate_kinesis_streams
@@ -157,30 +157,8 @@ def generate_main(**kwargs):
         )
     }
 
-    # Conditionally configure Firehose data delivery streams
-    if config['global']['infrastructure'].get('firehose', {}).get('enabled'):
-        firehose_config = config['global']['infrastructure']['firehose']
-        firehose_s3_bucket_suffix = firehose_config.get('s3_bucket_suffix',
-                                                        'streamalert.data')
-        firehose_s3_bucket_name = '{}.{}'.format(config['global']['account']['prefix'],
-                                                 firehose_s3_bucket_suffix)
-
-        # Add the main Firehose module
-        main_dict['module']['kinesis_firehose'] = {
-            'source': 'modules/tf_stream_alert_kinesis_firehose',
-            'account_id': config['global']['account']['aws_account_id'],
-            'region': config['global']['account']['region'],
-            'prefix': config['global']['account']['prefix'],
-            'logs': enabled_firehose_logs(config),
-            'buffer_size': config['global']['infrastructure']
-                           ['firehose'].get('buffer_size', 64),
-            'buffer_interval': config['global']['infrastructure']
-                               ['firehose'].get('buffer_interval', 300),
-            'compression_format': config['global']['infrastructure']
-                                  ['firehose'].get('compression_format', 'GZIP'),
-            's3_logging_bucket': logging_bucket,
-            's3_bucket_name': firehose_s3_bucket_name
-        }
+    # Setup Firehose Delivery Streams
+    generate_firehose(config, main_dict, logging_bucket)
 
     # Configure global resources like Firehose alert delivery
     main_dict['module']['globals'] = {
