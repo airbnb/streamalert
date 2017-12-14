@@ -35,19 +35,27 @@ def generate_firehose(config, main_dict, logging_bucket):
     firehose_s3_bucket_name = '{}.{}'.format(config['global']['account']['prefix'],
                                              firehose_s3_bucket_suffix)
 
-    # Main Firehose module
-    main_dict['module']['kinesis_firehose'] = {
-        'source': 'modules/tf_stream_alert_kinesis_firehose',
+    # Firehose Setup module
+    main_dict['module']['kinesis_firehose_setup'] = {
+        'source': 'modules/tf_stream_alert_kinesis_firehose_setup',
         'account_id': config['global']['account']['aws_account_id'],
-        'region': config['global']['account']['region'],
         'prefix': config['global']['account']['prefix'],
-        'logs': sa_firehose.enabled_logs,
-        'buffer_size': config['global']['infrastructure']
-                       ['firehose'].get('buffer_size', 64),
-        'buffer_interval': config['global']['infrastructure']
-                           ['firehose'].get('buffer_interval', 300),
-        'compression_format': config['global']['infrastructure']
-                              ['firehose'].get('compression_format', 'GZIP'),
+        'region': config['global']['account']['region'],
         's3_logging_bucket': logging_bucket,
         's3_bucket_name': firehose_s3_bucket_name
     }
+
+    # Add the Delivery Streams individually
+    for enabled_log in sa_firehose.enabled_logs:
+        main_dict['module']['kinesis_firehose_{}'.format(enabled_log)] = {
+            'source': 'modules/tf_stream_alert_kinesis_firehose_delivery_stream',
+            'buffer_size': config['global']['infrastructure']
+                           ['firehose'].get('buffer_size', 64),
+            'buffer_interval': config['global']['infrastructure']
+                               ['firehose'].get('buffer_interval', 300),\
+            'compression_format': config['global']['infrastructure']
+                                  ['firehose'].get('compression_format', 'GZIP'),
+            'log_name': enabled_log,
+            'role_arn': '${module.kinesis_firehose_setup.firehose_role_arn}',
+            's3_bucket_name': firehose_s3_bucket_name
+        }
