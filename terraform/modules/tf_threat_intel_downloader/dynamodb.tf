@@ -21,12 +21,15 @@ resource "aws_dynamodb_table" "threat_intel_ioc" {
 
 // IAM Role: Application autoscalling role
 resource "aws_iam_role" "appautoscaling" {
+  count              = "${var.autoscale ? 1 : 0}"
   name               = "${var.prefix}_streamalert_appautoscaling"
   assume_role_policy = "${data.aws_iam_policy_document.appautoscaling_assume_role_policy.json}"
 }
 
 // IAM Policy Doc: Generic Application Autoscaling AssumeRole
 data "aws_iam_policy_document" "appautoscaling_assume_role_policy" {
+  count = "${var.autoscale ? 1 : 0}"
+
   statement {
     effect  = "Allow"
     actions = ["sts:AssumeRole"]
@@ -40,6 +43,7 @@ data "aws_iam_policy_document" "appautoscaling_assume_role_policy" {
 
 // IAM Role Policy: Allow appautoscaling IAM role to autoscaling DynamoDB table
 resource "aws_iam_role_policy" "appautoscaling" {
+  count  = "${var.autoscale ? 1 : 0}"
   name   = "DynamoDBAppAutoscalePolicy"
   role   = "${aws_iam_role.appautoscaling.id}"
   policy = "${data.aws_iam_policy_document.appautoscaling.json}"
@@ -48,6 +52,8 @@ resource "aws_iam_role_policy" "appautoscaling" {
 // IAM Policy Doc: Allow autoscaling IAM role to send alarm to CloudWatch
 // and change table settings for autoscaling.
 data "aws_iam_policy_document" "appautoscaling" {
+  count = "${var.autoscale ? 1 : 0}"
+
   statement {
     effect = "Allow"
 
