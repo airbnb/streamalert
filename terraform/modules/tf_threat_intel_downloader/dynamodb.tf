@@ -10,7 +10,7 @@ resource "aws_dynamodb_table" "threat_intel_ioc" {
   }
 
   ttl {
-    attribute_name = "expiration_date"
+    attribute_name = "expiration_ts"
     enabled        = true
   }
 
