@@ -7,8 +7,7 @@
   },
   "infrastructure": {
     "monitoring": {
-      "create_sns_topic": true,
-      "shard_level_metrics": []
+      "create_sns_topic": true
     }
   },
   "terraform": {
