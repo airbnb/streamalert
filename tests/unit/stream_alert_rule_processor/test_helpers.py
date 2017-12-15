@@ -16,7 +16,8 @@ limitations under the License.
 import base64
 import json
 
-from botocore.exceptions import ClientError
+from boto3.dynamodb.types import TypeDeserializer
+from botocore.exceptions import ClientError, ParamValidationError
 
 from mock import Mock
 
@@ -219,10 +220,10 @@ def mock_normalized_records():
 
 class MockDynamoDBClient(object):
     """Helper mock class to act as dynamodb client"""
-    _raise_exception = False
+    def __init__(self, **kwargs):
+        self.exception = kwargs.get('exception', False)
 
-    @classmethod
-    def response(cls, **kwargs):
+    def batch_get_item(self, **kwargs):
         """Mock batch_get_item method and return mimicking dynamodb response
         Keyword Argments:
             exception (bool): True raise exception.
@@ -230,9 +231,25 @@ class MockDynamoDBClient(object):
         Returns:
             (dict): Response dictionary containing fake results.
         """
-        if kwargs.get('exception', False):
+        if self.exception:
             err = {'Error': {'Code': 400, 'Message': 'raising test exception'}}
             raise ClientError(err, 'batch_get_item')
+
+        if not kwargs.get('RequestItems'):
+            err = {
+                'Error': {
+                    'Code': 403,
+                    'Message': 'raising test exceptionParameter validation failed'
+                    }
+                }
+            raise ParamValidationError(report=err)
+
+        # Validate query keys
+        for _, item_value in kwargs['RequestItems'].iteritems():
+            if not item_value.get('Keys'):
+                err = {'Error': {'Code': 400, 'Message': '[Keys] parameter is required'}}
+                raise ParamValidationError(report=err)
+            self._validate_keys(item_value['Keys'])
 
         response = {
             'UnprocessedKeys': {},
@@ -266,3 +283,20 @@ class MockDynamoDBClient(object):
             }
 
         return response
+
+    @staticmethod
+    def _validate_keys(dynamodb_data):
+        """Helper method to check if query key empty or duplicated"""
+        result = []
+        if not dynamodb_data:
+            err_msg = {'Error': {'Code': 403, 'Message': 'Empty query keys'}}
+            raise ParamValidationError(report=err_msg)
+
+        deserializer = TypeDeserializer()
+        for raw_data in dynamodb_data:
+            for _, val in raw_data.iteritems():
+                python_data = deserializer.deserialize(val).lower()
+                if not python_data or python_data in result:
+                    err_msg = {'Error': {'Code': 403, 'Message': 'Parameter Validation Error'}}
+                    raise ParamValidationError(report=err_msg)
+                result.append(python_data)

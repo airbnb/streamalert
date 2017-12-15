@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 # pylint: disable=protected-access,no-self-use
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 from mock import patch
 from nose.tools import (
     assert_equal,
@@ -83,11 +83,56 @@ class TestStreamThreatIntel(object):
     @patch('boto3.client')
     def test_threat_detection(self, mock_client):
         """Threat Intel - Test threat_detection method"""
+        mock_client.return_value = MockDynamoDBClient()
         records = mock_normalized_records()
         threat_intel = StreamThreatIntel.load_from_config(self.config)
-        mock_client('dynamodb').batch_get_item.return_value = MockDynamoDBClient.response()
 
         assert_equal(len(threat_intel.threat_detection(records)), 2)
+
+    @patch('boto3.client')
+    def test_threat_detection_with_empty_ioc_value(self, mock_client):
+        """Threat Intel - Test threat_detection with record contains empty/duplicated value"""
+        records = [
+            {
+                'account': 12345,
+                'region': '123456123456',
+                'detail': {
+                    'eventName': 'ConsoleLogin',
+                    'userIdentity': {
+                        'userName': 'alice',
+                        'accountId': '12345'
+                    },
+                    'sourceIPAddress': None,
+                    'recipientAccountId': '12345'
+                },
+                'source': '1.1.1.2',
+                'streamalert:normalization': {
+                    'sourceAddress': [['detail', 'sourceIPAddress'], ['source']],
+                    'usernNme': [['detail', 'userIdentity', 'userName']]
+                }
+            },
+            {
+                'domain': 'evil.com',
+                'pc_name': 'test-pc',
+                'date': 'Dec 1st, 2016',
+                'data': 'ABCDEF',
+                'streamalert:normalization': {
+                    'destinationDomain': [['domain']]
+                }
+            },
+            {
+                'domain': 'EVIL.com',
+                'pc_name': 'test-pc',
+                'date': 'Dec 1st, 2016',
+                'data': 'ABCDEF',
+                'streamalert:normalization': {
+                    'destinationDomain': [['domain']]
+                }
+            },
+        ]
+        mock_client.return_value = MockDynamoDBClient()
+        threat_intel = StreamThreatIntel.load_from_config(self.config)
+        assert_equal(len(threat_intel.threat_detection(records)), 3)
 
     def test_insert_ioc_info(self):
         """Threat Intel - Insert IOC info to a record"""
@@ -259,8 +304,8 @@ class TestStreamThreatIntel(object):
     @patch('boto3.client')
     def test_process_ioc(self, mock_client):
         """Threat Intel - Test private method process_ioc"""
+        mock_client.return_value = MockDynamoDBClient()
         threat_intel = StreamThreatIntel.load_from_config(self.config)
-        mock_client('dynamodb').batch_get_item.return_value = MockDynamoDBClient.response()
 
         ioc_collections = [
             StreamIoc(value='1.1.1.2', ioc_type='ip'),
@@ -275,9 +320,8 @@ class TestStreamThreatIntel(object):
     @patch('boto3.client')
     def test_process_ioc_with_unprocessed_keys(self, mock_client):
         """Threat Intel - Test private method process_ioc when response has UnprocessedKeys"""
+        mock_client.return_value = MockDynamoDBClient(unprocesed_keys=True)
         threat_intel = StreamThreatIntel.load_from_config(self.config)
-        mock_client('dynamodb').batch_get_item.return_value = \
-            MockDynamoDBClient.response(unprocesed_keys=True)
 
         ioc_collections = [
             StreamIoc(value='1.1.1.2', ioc_type='ip'),
@@ -309,8 +353,8 @@ class TestStreamThreatIntel(object):
     @patch('boto3.client')
     def test_query(self, mock_client):
         """Threat Intel - Test DynamoDB query method with batch_get_item"""
+        mock_client.return_value = MockDynamoDBClient()
         threat_intel = StreamThreatIntel.load_from_config(self.config)
-        mock_client('dynamodb').batch_get_item.return_value = MockDynamoDBClient.response()
 
         test_values = ['1.1.1.2', '2.2.2.2', 'evil.com', 'abcdef0123456789']
         result, unprocessed_keys = threat_intel._query(test_values)
@@ -319,14 +363,34 @@ class TestStreamThreatIntel(object):
         assert_equal(result[0], {'ioc_value': '1.1.1.2', 'sub_type': 'mal_ip'})
         assert_equal(result[1], {'ioc_value': 'evil.com', 'sub_type': 'c2_domain'})
 
+    @patch('boto3.client')
+    def test_query_with_empty_value(self, mock_client):
+        """Threat Intel - Test query value includes empty value"""
+        mock_client.return_value = MockDynamoDBClient()
+        threat_intel = StreamThreatIntel.load_from_config(self.config)
+
+        test_values = ['1.1.1.2', '', 'evil.com', 'abcdef0123456789']
+        result, _ = threat_intel._query(test_values)
+        assert_equal(len(result), 2)
+
+    @raises(ParamValidationError)
+    @patch('boto3.client')
+    def test_query_with_duplicated_value(self, mock_client):
+        """Threat Intel - Test query value includes dumplicated value"""
+        mock_client.return_value = MockDynamoDBClient()
+        threat_intel = StreamThreatIntel.load_from_config(self.config)
+
+        test_values = ['1.1.1.2', 'EVIL.com', 'evil.com', 'abcdef0123456789']
+        threat_intel._query(test_values)
+
     @raises(ClientError)
     @patch('boto3.client')
     def test_query_with_exception(self, mock_client):
         """Threat Intel - Test DynamoDB query method with exception"""
-        mock_client('dynamodb').batch_get_item.return_value = \
-            MockDynamoDBClient.response(exception=True)
+        mock_client.return_value = MockDynamoDBClient(exception=True)
+        threat_intel = StreamThreatIntel.load_from_config(self.config)
 
-        self.threat_intel._query(['1.1.1.2'])
+        threat_intel._query(['1.1.1.2'])
 
     def test_deserialize(self):
         """Threat Intel - Test method to convert dynamodb types to python types"""
