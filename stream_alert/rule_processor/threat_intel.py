@@ -305,6 +305,7 @@ class StreamThreatIntel(object):
         """
         result = []
         end = len(ioc_collections)
+        LOGGER.info('[Threat Inel] Rule Processor queries %d IOCs', end)
         for index in range(0, end, MAX_QUERY_CNT):
             result.append(ioc_collections[index:min(index+MAX_QUERY_CNT, end)])
         return result

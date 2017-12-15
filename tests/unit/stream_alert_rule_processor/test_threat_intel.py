@@ -91,7 +91,7 @@ class TestStreamThreatIntel(object):
 
     @patch('boto3.client')
     def test_threat_detection_with_empty_ioc_value(self, mock_client):
-        """Threat Intel - Test threat_detection method with record contains empty/duplicated value"""
+        """Threat Intel - Test threat_detection with record contains empty/duplicated value"""
         records = [
             {
                 'account': 12345,
@@ -370,7 +370,7 @@ class TestStreamThreatIntel(object):
         threat_intel = StreamThreatIntel.load_from_config(self.config)
 
         test_values = ['1.1.1.2', '', 'evil.com', 'abcdef0123456789']
-        result, unprocessed_keys = threat_intel._query(test_values)
+        result, _ = threat_intel._query(test_values)
         assert_equal(len(result), 2)
 
     @raises(ParamValidationError)
@@ -381,7 +381,7 @@ class TestStreamThreatIntel(object):
         threat_intel = StreamThreatIntel.load_from_config(self.config)
 
         test_values = ['1.1.1.2', 'EVIL.com', 'evil.com', 'abcdef0123456789']
-        result, unprocessed_keys = threat_intel._query(test_values)
+        threat_intel._query(test_values)
 
     @raises(ClientError)
     @patch('boto3.client')

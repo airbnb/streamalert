@@ -469,8 +469,6 @@ class CLIConfig(object):
             self.config['global']['threat_intel']['dynamodb_table'] = \
                 threat_intel_info['dynamodb_table']
 
-        self.config['global']['threat_intel']['autoscale'] = threat_intel_info['autoscale']
-
         self.write()
 
         LOGGER_CLI.info('Threat Intel configuration successfully created')
