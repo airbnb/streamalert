@@ -70,3 +70,19 @@ variable "ioc_types" {}
 variable "log_retention" {
   default = 14
 }
+
+variable "autoscale" {
+  default = false
+}
+
+variable "max_read_capacity" {
+  default = 5
+}
+
+variable "min_read_capacity" {
+  default = 5
+}
+
+variable "target_utilization" {
+  default = 70
+}

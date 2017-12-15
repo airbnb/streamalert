@@ -1262,12 +1262,16 @@ Available Subcommands:
 
                               See the link in the Resources section below for more information.
     Optional Arguments:
-        --table_rcu        The DynamoDB table Read Capacity Unit.
-        --table_wcu        The DynamoDB table Write Capacity Unit.
-        --ioc_keys         The keys (list) of IOC stored in DynamoDB table.
-        --ioc_filters      Filters (list) applied while retrieving IOCs from Threat Feed.
-        --ioc_types        IOC types (list) are defined by the Threat Feed. IOC types can be
+        --table_rcu          The DynamoDB table Read Capacity Unit.
+        --table_wcu          The DynamoDB table Write Capacity Unit.
+        --ioc_keys           The keys (list) of IOC stored in DynamoDB table.
+        --ioc_filters        Filters (list) applied while retrieving IOCs from Threat Feed.
+        --ioc_types          IOC types (list) are defined by the Threat Feed. IOC types can be
                              different from different Threat Feeds.
+        --autoscale          Enable DynamoDB table read capacity autoscale.
+        --min_read_capacity  Maximal read capacity when autoscale enabled, default is 5.
+        --max_read_capacity  Mimimal read capacity when autoscale enabled, default is 5.
+        --target_utilization Utilization remains at or near the setting level when autoscale enabled.
 
     manage.py threat_intel_downloader update-auth   Update API credentials to parameter store.
 
@@ -1373,6 +1377,25 @@ Examples:
         '--ioc_types',
         help=ARGPARSE_SUPPRESS,
         default=['domain', 'ip', 'md5']
+    )
+
+    ti_downloader_parser.add_argument(
+        '--autoscale',
+        help=ARGPARSE_SUPPRESS,
+        default=False,
+        action='store_true'
+    )
+
+    ti_downloader_parser.add_argument(
+        '--max_read_capacity', help=ARGPARSE_SUPPRESS, default=5
+    )
+
+    ti_downloader_parser.add_argument(
+        '--min_read_capacity', help=ARGPARSE_SUPPRESS, default=5
+    )
+
+    ti_downloader_parser.add_argument(
+        '--target_utilization', help=ARGPARSE_SUPPRESS, default=70
     )
 
     ti_downloader_parser.add_argument(

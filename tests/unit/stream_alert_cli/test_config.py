@@ -132,6 +132,7 @@ class TestCLIConfig(object):
     def test_add_threat_intel_downloader_with_table_name(self, write_mock, log_mock):
         """CLI - Add Threat Intel config with default dynamodb table name"""
         threat_intel_info = {
+            'autoscale': True,
             'command': 'threat_intel',
             'debug': 'False',
             'dynamodb_table': 'my_ioc_table',
@@ -141,6 +142,7 @@ class TestCLIConfig(object):
         self.config.add_threat_intel(threat_intel_info)
 
         expected_config = {
+            'autoscale': True,
             'enabled': True,
             'dynamodb_table': 'my_ioc_table'
         }
@@ -154,6 +156,7 @@ class TestCLIConfig(object):
     def test_add_threat_intel_downloader_without_table_name(self, write_mock, log_mock):
         """CLI - Add Threat Intel config without dynamodb table name from cli"""
         threat_intel_info = {
+            'autoscale': True,
             'command': 'threat_intel',
             'debug': 'False',
             'subcommand': 'enable'
@@ -162,6 +165,7 @@ class TestCLIConfig(object):
         self.config.add_threat_intel(threat_intel_info)
 
         expected_config = {
+            'autoscale': True,
             'enabled': True,
             'dynamodb_table': 'unit-testing_streamalert_threat_intel_downloader'
         }
@@ -175,17 +179,22 @@ class TestCLIConfig(object):
     def test_add_threat_intel_downloader(self, write_mock, log_mock):
         """CLI - Add Threat Intel Downloader config"""
         ti_downloader_info = {
+            'autoscale': True,
             'command': 'threat_intel_downloader',
             'debug': False,
             'interval': 'rate(1 day)',
             'memory': '128',
             'subcommand': 'enable',
             'timeout': '240',
-            'table_wcu': 25
+            'table_wcu': 25,
+            'max_read_capacity': 100,
+            'min_read_capacity': 5,
+            'target_utilization': 70
         }
         result = self.config.add_threat_intel_downloader(ti_downloader_info)
         assert_true(result)
         expected_config = {
+            'autoscale': True,
             'enabled': True,
             'current_version': '$LATEST',
             'handler': 'stream_alert.threat_intel_downloader.main.handler',
@@ -203,7 +212,10 @@ class TestCLIConfig(object):
             ],
             'table_rcu': 10,
             'table_wcu': 25,
-            'timeout': '240'
+            'timeout': '240',
+            'max_read_capacity': 100,
+            'min_read_capacity': 5,
+            'target_utilization': 70
         }
         assert_equal(self.config['lambda']['threat_intel_downloader_config'], expected_config)
         write_mock.assert_called()
