@@ -210,18 +210,33 @@ class TestTerraformGenerate(object):
             'enabled': True,
             's3_bucket_suffix': 'my-data',
             'buffer_size': 10,
-            'buffer_interval': 650
+            'buffer_interval': 650,
+            'enabled_logs': [
+                'cloudwatch'
+            ]
         }
         tf_main = generate.generate_main(
             config=self.config,
             init=False
         )
 
-        generated_firehose = tf_main['module']['kinesis_firehose']
+        generated_modules = tf_main['module']
+        expected_kinesis_modules = {
+            'kinesis_firehose_setup',
+            'kinesis_firehose_cloudwatch_test_match_types',
+            'kinesis_firehose_cloudwatch_test_match_types_2'
+        }
 
-        assert_equal(generated_firehose['s3_bucket_name'], 'unit-testing.my-data')
-        assert_equal(generated_firehose['buffer_size'], 10)
-        assert_equal(generated_firehose['buffer_interval'], 650)
+        assert_true(all([expected_module in generated_modules
+                         for expected_module
+                         in expected_kinesis_modules]))
+
+        assert_equal(generated_modules['kinesis_firehose_cloudwatch_test_match_types']\
+                                      ['s3_bucket_name'], 'unit-testing.my-data')
+        assert_equal(generated_modules['kinesis_firehose_cloudwatch_test_match_types']\
+                                      ['buffer_size'], 10)
+        assert_equal(generated_modules['kinesis_firehose_cloudwatch_test_match_types']\
+                                      ['buffer_interval'], 650)
 
     def test_generate_stream_alert_test(self):
         """CLI - Terraform Generate StreamAlert - Test Cluster"""

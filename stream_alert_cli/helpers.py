@@ -38,8 +38,7 @@ from moto import (
 )
 
 from stream_alert_cli.logger import LOGGER_CLI
-from stream_alert_cli.terraform._common import enabled_firehose_logs
-
+from stream_alert.rule_processor.firehose import StreamAlertFirehose
 
 def run_command(runner_args, **kwargs):
     """Helper function to run commands with error handling.
@@ -438,8 +437,14 @@ def setup_mock_firehose_delivery_streams(config):
     Args:
         config (CLIConfig): The StreamAlert config
     """
+    firehose_config = config['global']['infrastructure'].get('firehose')
+    if not firehose_config:
+        return
+
     region = config['global']['account']['region']
-    for log_type in enabled_firehose_logs(config):
+    sa_firehose = StreamAlertFirehose(region, firehose_config, config['logs'])
+
+    for log_type in sa_firehose.enabled_logs:
         stream_name = 'streamalert_data_{}'.format(log_type)
         prefix = '{}/'.format(log_type)
         create_delivery_stream(region, stream_name, prefix)

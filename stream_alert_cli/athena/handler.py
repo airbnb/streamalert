@@ -15,10 +15,9 @@ limitations under the License.
 """
 from stream_alert.athena_partition_refresh.main import StreamAlertAthenaClient
 from stream_alert.athena_partition_refresh import helpers as athena_helpers
-from stream_alert.rule_processor.handler import StreamAlert
+from stream_alert.rule_processor.firehose import StreamAlertFirehose
 from stream_alert_cli.logger import LOGGER_CLI
 from stream_alert_cli.helpers import continue_prompt
-from stream_alert_cli.terraform import _common as terraform_cli_helpers
 
 # How to map log schema types to athena/hive schema types
 SCHEMA_TYPE_MAPPING = {
@@ -196,6 +195,10 @@ def create_table(athena_client, options, config):
         options (namedtuple): The parsed args passed from the CLI
         config (CLIConfig): Loaded StreamAlert CLI
     """
+    sa_firehose = StreamAlertFirehose(config['global']['account']['region'],
+                                      config['global']['infrastructure']['firehose'],
+                                      config['logs'])
+
     if not options.bucket:
         LOGGER_CLI.error('Missing command line argument --bucket')
         return
@@ -209,7 +212,7 @@ def create_table(athena_client, options, config):
             LOGGER_CLI.error('Missing command line argument --table_name')
             return
 
-        if options.table_name not in terraform_cli_helpers.enabled_firehose_logs(config):
+        if options.table_name not in sa_firehose.enabled_logs:
             LOGGER_CLI.error('Table name %s missing from configuration or '
                              'is not enabled.', options.table_name)
             return
@@ -222,7 +225,7 @@ def create_table(athena_client, options, config):
         schema = dict(log_info['schema'])
         schema_statement = ''
 
-        sanitized_schema = StreamAlert.sanitize_keys(schema)
+        sanitized_schema = StreamAlertFirehose.sanitize_keys(schema)
         athena_schema = {}
 
         _add_to_athena_schema(sanitized_schema, athena_schema)
@@ -232,7 +235,7 @@ def create_table(athena_client, options, config):
         if configuration_options:
             envelope_keys = configuration_options.get('envelope_keys')
             if envelope_keys:
-                sanitized_envelope_key_schema = StreamAlert.sanitize_keys(envelope_keys)
+                sanitized_envelope_key_schema = StreamAlertFirehose.sanitize_keys(envelope_keys)
                 # Note: this key is wrapped in backticks to be Hive compliant
                 _add_to_athena_schema(sanitized_envelope_key_schema, athena_schema,
                                       '`streamalert:envelope_keys`')
