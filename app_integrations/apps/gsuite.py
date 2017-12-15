@@ -17,6 +17,7 @@ import logging
 import json
 import re
 import socket
+import ssl
 
 import apiclient
 from oauth2client.service_account import ServiceAccountCredentials
@@ -31,6 +32,8 @@ logging.getLogger('googleapiclient.discovery_cache').setLevel(logging.ERROR)
 class GSuiteReportsApp(AppIntegration):
     """G Suite Reports base app integration. This is subclassed for various endpoints"""
     _SCOPES = ['https://www.googleapis.com/auth/admin.reports.audit.readonly']
+    # A tuple of uncaught exceptions that the googleapiclient can raise
+    _GOOGLE_API_EXCEPTIONS = (apiclient.errors.Error, socket.timeout, ssl.SSLError)
 
     def __init__(self, config):
         super(GSuiteReportsApp, self).__init__(config)
@@ -94,7 +97,7 @@ class GSuiteReportsApp(AppIntegration):
         delegation = creds.create_delegated(self._config.auth['delegation_email'])
         try:
             resource = apiclient.discovery.build('admin', 'reports_v1', credentials=delegation)
-        except (apiclient.errors.Error, socket.timeout):
+        except self._GOOGLE_API_EXCEPTIONS:
             LOGGER.exception('Failed to build discovery service for %s', self.type())
             return False
 
@@ -133,7 +136,7 @@ class GSuiteReportsApp(AppIntegration):
 
         try:
             results = activities_list.execute()
-        except (apiclient.errors.Error, socket.timeout):
+        except self._GOOGLE_API_EXCEPTIONS:
             LOGGER.exception('Failed to execute activities listing for %s', self.type())
             return False
 
