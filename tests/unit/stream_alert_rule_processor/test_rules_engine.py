@@ -826,7 +826,7 @@ class TestStreamRules(object):
             """Testing dummy rule"""
             return True
 
-        mock_client('dynamodb').batch_get_item.return_value = MockDynamoDBClient.response()
+        mock_client.return_value = MockDynamoDBClient()
         toggled_config = self.config
         toggled_config['global']['threat_intel']['enabled'] = True
         toggled_config['global']['threat_intel']['dynamodb_table'] = 'test_table_name'
