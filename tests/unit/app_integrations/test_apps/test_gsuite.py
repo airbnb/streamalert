@@ -15,6 +15,9 @@ limitations under the License.
 """
 # pylint: disable=abstract-class-instantiated,protected-access,no-self-use,abstract-method,attribute-defined-outside-init
 import json
+import socket
+import ssl
+
 from mock import Mock, mock_open, patch
 
 import apiclient
@@ -112,11 +115,31 @@ class TestGSuiteReportsApp(object):
         assert_false(self._app._create_service())
 
     @patch('app_integrations.apps.gsuite.GSuiteReportsApp._load_credentials', Mock())
+    @patch('logging.Logger.exception')
     @patch('app_integrations.apps.gsuite.apiclient.discovery.build')
-    def test_create_service_fail_resource(self, build_mock):
-        """GSuiteReportsApp - Create Service, Resource Failure"""
+    def test_create_service_api_error(self, build_mock, log_mock):
+        """GSuiteReportsApp - Create Service, Google API Error"""
         build_mock.side_effect = apiclient.errors.Error('This is bad')
         assert_false(self._app._create_service())
+        log_mock.assert_called_with('Failed to build discovery service for %s', 'type')
+
+    @patch('app_integrations.apps.gsuite.GSuiteReportsApp._load_credentials', Mock())
+    @patch('logging.Logger.exception')
+    @patch('app_integrations.apps.gsuite.apiclient.discovery.build')
+    def test_create_service_ssl_error(self, build_mock, log_mock):
+        """GSuiteReportsApp - Create Service, SSL Handshake Error"""
+        build_mock.side_effect = ssl.SSLError('_ssl.c:574: The handshake operation timed out')
+        assert_false(self._app._create_service())
+        log_mock.assert_called_with('Failed to build discovery service for %s', 'type')
+
+    @patch('app_integrations.apps.gsuite.GSuiteReportsApp._load_credentials', Mock())
+    @patch('logging.Logger.exception')
+    @patch('app_integrations.apps.gsuite.apiclient.discovery.build')
+    def test_create_service_socket_error(self, build_mock, log_mock):
+        """GSuiteReportsApp - Create Service, Socket Timeout"""
+        build_mock.side_effect = socket.timeout('timeout: timed out')
+        assert_false(self._app._create_service())
+        log_mock.assert_called_with('Failed to build discovery service for %s', 'type')
 
     def test_gather_logs(self):
         """GSuiteReportsApp - Gather Logs, Success"""
@@ -135,13 +158,34 @@ class TestGSuiteReportsApp(object):
            Mock(return_value=True))
     @patch('logging.Logger.exception')
     def test_gather_logs_http_error(self, log_mock):
-        """GSuiteReportsApp - Gather Logs, HTTP Error"""
+        """GSuiteReportsApp - Gather Logs, Google API HTTP Error"""
         with patch.object(self._app, '_activities_service') as service_mock:
             error = apiclient.errors.HttpError('response', bytes('bad'))
             service_mock.list.return_value.execute.side_effect = error
             assert_false(self._app._gather_logs())
             log_mock.assert_called_with('Failed to execute activities listing for %s', 'type')
 
+    @patch('app_integrations.apps.gsuite.GSuiteReportsApp._create_service',
+           Mock(return_value=True))
+    @patch('logging.Logger.exception')
+    def test_gather_logs_ssl_error(self, log_mock):
+        """GSuiteReportsApp - Gather Logs, SSL Handshake Error"""
+        with patch.object(self._app, '_activities_service') as service_mock:
+            error = ssl.SSLError('_ssl.c:574: The handshake operation timed out')
+            service_mock.list.return_value.execute.side_effect = error
+            assert_false(self._app._gather_logs())
+            log_mock.assert_called_with('Failed to execute activities listing for %s', 'type')
+
+    @patch('app_integrations.apps.gsuite.GSuiteReportsApp._create_service',
+           Mock(return_value=True))
+    @patch('logging.Logger.exception')
+    def test_gather_logs_socket_error(self, log_mock):
+        """GSuiteReportsApp - Gather Logs, Socket Timeout"""
+        with patch.object(self._app, '_activities_service') as service_mock:
+            error = socket.timeout('timeout: timed out')
+            service_mock.list.return_value.execute.side_effect = error
+            assert_false(self._app._gather_logs())
+            log_mock.assert_called_with('Failed to execute activities listing for %s', 'type')
 
     @patch('app_integrations.apps.gsuite.GSuiteReportsApp._load_credentials',
            Mock(return_value=False))
