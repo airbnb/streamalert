@@ -263,10 +263,10 @@ class StreamThreatIntel(object):
                 result, unprocesed_keys = self._query(query_values)
                 query_result.extend(result)
             except ClientError as err:
-                LOGGER.error(query_error_msg, err.response)
+                LOGGER.exception(query_error_msg, err.response)
                 return
             except ParamValidationError as err:
-                LOGGER.error(query_error_msg, err)
+                LOGGER.exception(query_error_msg, err)
                 return
 
             # If there are unprocessed keys, we will re-query once with unprocessed
@@ -279,10 +279,10 @@ class StreamThreatIntel(object):
                     result, _ = self._query(query_values)
                     query_result.extend(result)
                 except ClientError as err:
-                    LOGGER.error(query_error_msg, err.response)
+                    LOGGER.exception(query_error_msg, err.response)
                     return
                 except ParamValidationError as err:
-                    LOGGER.error(query_error_msg, err)
+                    LOGGER.exception(query_error_msg, err)
                     return
 
             for value in ioc_collections:
