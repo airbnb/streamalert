@@ -519,10 +519,7 @@ class CLIConfig(object):
         # overwrite settings in conf/lambda.json for Threat Intel Downloader
         for key, value in ti_downloader_info.iteritems():
             if key in self.config['lambda']['threat_intel_downloader_config']:
-                if key == 'autoscale':
-                    self.config['lambda']['threat_intel_downloader_config'][key] = value == 'enable'
-                else:
-                    self.config['lambda']['threat_intel_downloader_config'][key] = value
+                self.config['lambda']['threat_intel_downloader_config'][key] = value
 
         self.write()
         return True

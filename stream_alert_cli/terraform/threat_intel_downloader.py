@@ -51,12 +51,13 @@ def generate_threat_intel_downloader(config):
         'monitoring_sns_topic': dlq_topic,
         'table_rcu': ti_downloader_config.get('table_rcu', '10'),
         'table_wcu': ti_downloader_config.get('table_wcu', '10'),
-        'ioc_keys': ti_downloader_config.get('ioc_keys'),
-        'ioc_filters': ti_downloader_config.get('ioc_filters'),
-        'ioc_types': ti_downloader_config.get('ioc_types'),
-        'autoscale': ti_downloader_config.get('autoscale'),
-        'max_read_capacity': ti_downloader_config.get('max_read_capacity'),
-        'min_read_capacity': ti_downloader_config.get('min_read_capacity'),
-        'target_utilization': ti_downloader_config.get('target_utilization')
+        'ioc_keys': ti_downloader_config.get('ioc_keys',
+                                             ['expiration_ts', 'itype', 'source', 'type', 'value']),
+        'ioc_filters': ti_downloader_config.get('ioc_filters', ['crowdstrike', '@airbnb.com']),
+        'ioc_types': ti_downloader_config.get('ioc_types', ['domain', 'ip', 'md5']),
+        'autoscale': ti_downloader_config.get('autoscale', False),
+        'max_read_capacity': ti_downloader_config.get('max_read_capacity', '5'),
+        'min_read_capacity': ti_downloader_config.get('min_read_capacity', '5'),
+        'target_utilization': ti_downloader_config.get('target_utilization', '70')
     }
     return ti_downloader_dict

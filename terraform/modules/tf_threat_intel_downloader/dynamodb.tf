@@ -20,9 +20,9 @@ resource "aws_dynamodb_table" "threat_intel_ioc" {
 }
 
 // IAM Role: Application autoscalling role
-resource "aws_iam_role" "appautoscaling" {
+resource "aws_iam_role" "stream_alert_dynamodb_appautoscaling" {
   count              = "${var.autoscale ? 1 : 0}"
-  name               = "${var.prefix}_streamalert_appautoscaling"
+  name               = "${var.prefix}_streamalert_dynamodb_appautoscaling"
   assume_role_policy = "${data.aws_iam_policy_document.appautoscaling_assume_role_policy.json}"
 }
 
@@ -45,7 +45,7 @@ data "aws_iam_policy_document" "appautoscaling_assume_role_policy" {
 resource "aws_iam_role_policy" "appautoscaling_update_table" {
   count  = "${var.autoscale ? 1 : 0}"
   name   = "DynamoDBAppAutoscaleUpdateTablePolicy"
-  role   = "${aws_iam_role.appautoscaling.id}"
+  role   = "${aws_iam_role.stream_alert_dynamodb_appautoscaling.id}"
   policy = "${data.aws_iam_policy_document.appautoscaling_update_table.json}"
 }
 
@@ -73,7 +73,7 @@ data "aws_iam_policy_document" "appautoscaling_update_table" {
 resource "aws_iam_role_policy" "appautoscaling_cloudwatch_alarms" {
   count  = "${var.autoscale ? 1 : 0}"
   name   = "DynamoDBAppAutoscaleCloudWatchAlarmsPolicy"
-  role   = "${aws_iam_role.appautoscaling.id}"
+  role   = "${aws_iam_role.stream_alert_dynamodb_appautoscaling.id}"
   policy = "${data.aws_iam_policy_document.appautoscaling_cloudwatch_alarms.json}"
 }
 
@@ -101,7 +101,7 @@ resource "aws_appautoscaling_target" "dynamodb_table_read_target" {
   max_capacity       = "${var.max_read_capacity}"
   min_capacity       = "${var.min_read_capacity}"
   resource_id        = "table/${var.prefix}_streamalert_threat_intel_downloader"
-  role_arn           = "${aws_iam_role.appautoscaling.arn}"
+  role_arn           = "${aws_iam_role.stream_alert_dynamodb_appautoscaling.arn}"
   scalable_dimension = "dynamodb:table:ReadCapacityUnits"
   service_namespace  = "dynamodb"
 }

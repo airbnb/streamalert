@@ -179,7 +179,7 @@ class TestCLIConfig(object):
     def test_add_threat_intel_downloader(self, write_mock, log_mock):
         """CLI - Add Threat Intel Downloader config"""
         ti_downloader_info = {
-            'autoscale': "enable",
+            'autoscale': True,
             'command': 'threat_intel_downloader',
             'debug': False,
             'interval': 'rate(1 day)',
