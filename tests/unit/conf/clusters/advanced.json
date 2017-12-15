@@ -19,6 +19,9 @@
     "kinesis": {
       "streams": {
         "retention": 24,
+        "shard_level_metrics": [
+          "IncomingBytes"
+        ],
         "shards": 1
       }
     },
