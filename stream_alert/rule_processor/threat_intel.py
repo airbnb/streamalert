@@ -161,7 +161,7 @@ class StreamThreatIntel(object):
                             value = value[original_key]
                     if value:
                         ioc_values.add(value)
-        return [StreamIoc(value=value.lower(), ioc_type=ioc_type, associated_record=record)
+        return [StreamIoc(value=str(value).lower(), ioc_type=ioc_type, associated_record=record)
                 for value in ioc_values]
 
     @classmethod
@@ -263,10 +263,10 @@ class StreamThreatIntel(object):
                 result, unprocesed_keys = self._query(query_values)
                 query_result.extend(result)
             except ClientError as err:
-                LOGGER.exception(query_error_msg, err.response)
+                LOGGER.error(query_error_msg, err.response)
                 return
             except ParamValidationError as err:
-                LOGGER.exception(query_error_msg, err)
+                LOGGER.error(query_error_msg, err)
                 return
 
             # If there are unprocessed keys, we will re-query once with unprocessed
@@ -279,10 +279,10 @@ class StreamThreatIntel(object):
                     result, _ = self._query(query_values)
                     query_result.extend(result)
                 except ClientError as err:
-                    LOGGER.exception(query_error_msg, err.response)
+                    LOGGER.error(query_error_msg, err.response)
                     return
                 except ParamValidationError as err:
-                    LOGGER.exception(query_error_msg, err)
+                    LOGGER.error(query_error_msg, err)
                     return
 
             for value in ioc_collections:
@@ -305,7 +305,7 @@ class StreamThreatIntel(object):
         """
         result = []
         end = len(ioc_collections)
-        LOGGER.info('[Threat Inel] Rule Processor queries %d IOCs', end)
+        LOGGER.debug('[Threat Inel] Rule Processor queries %d IOCs', end)
         for index in range(0, end, MAX_QUERY_CNT):
             result.append(ioc_collections[index:min(index+MAX_QUERY_CNT, end)])
         return result
