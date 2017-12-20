@@ -148,7 +148,7 @@ class StreamThreatIntel(object):
         Returns:
             (list): Return a list of StreamIoc instances.
         """
-        ioc_values = set()
+        ioc_value_type_tuples = set()
         for datatype in record.pre_parsed_record[NORMALIZATION_KEY]:
             # Lookup mapped IOC type based on normalized CEF type from Class variable.
             ioc_type = self.__normalized_ioc_types_mapping.get(datatype, None)
@@ -162,9 +162,9 @@ class StreamThreatIntel(object):
                         for original_key in original_keys:
                             value = value[original_key]
                     if value:
-                        ioc_values.add(value)
+                        ioc_value_type_tuples.add((value, ioc_type))
         return [StreamIoc(value=str(value).lower(), ioc_type=ioc_type, associated_record=record)
-                for value in ioc_values]
+                for value, ioc_type in ioc_value_type_tuples]
 
     @classmethod
     def load_from_config(cls, config):

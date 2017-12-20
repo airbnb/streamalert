@@ -233,6 +233,7 @@ class MockDynamoDBClient(object):
     """Helper mock class to act as dynamodb client"""
     def __init__(self, **kwargs):
         self.exception = kwargs.get('exception', False)
+        self.has_unprocessed_keys = kwargs.get('unprocesed_keys', False)
 
     def batch_get_item(self, **kwargs):
         """Mock batch_get_item method and return mimicking dynamodb response
@@ -283,7 +284,7 @@ class MockDynamoDBClient(object):
                 'HTTPHeaders': {}
             }
         }
-        if kwargs.get('unprocesed_keys', False):
+        if self.has_unprocessed_keys:
             response['UnprocessedKeys'] = {
                 'test_table_name': {
                     'Keys': [
