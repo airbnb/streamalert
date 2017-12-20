@@ -15,6 +15,7 @@ limitations under the License.
 """
 # pylint: disable=protected-access
 import base64
+import json
 import logging
 
 from mock import call, patch
@@ -29,11 +30,16 @@ import boto3
 
 from stream_alert.rule_processor import LOGGER
 from stream_alert.rule_processor.handler import load_config, StreamAlert
+from stream_alert.rule_processor.rules_engine import StreamRules
+from stream_alert.rule_processor.threat_intel import StreamThreatIntel
 from tests.unit.stream_alert_rule_processor.test_helpers import (
     convert_events_to_kinesis,
     get_mock_context,
-    get_valid_event
+    get_valid_event,
+    make_kinesis_raw_record,
 )
+
+rule = StreamRules.rule
 
 
 class TestStreamAlert(object):
@@ -119,7 +125,7 @@ class TestStreamAlert(object):
     def test_run_with_alert(self, extract_mock, rules_mock):
         """StreamAlert Class - Run, With Alert"""
         extract_mock.return_value = ('kinesis', 'unit_test_default_stream')
-        rules_mock.return_value = ['success!!']
+        rules_mock.return_value = (['success!!'], ['normalized_records'])
 
         passed = self.__sa_handler.run(get_valid_event())
 
@@ -163,7 +169,7 @@ class TestStreamAlert(object):
     def test_run_send_alerts(self, extract_mock, rules_mock, sink_mock):
         """StreamAlert Class - Run, Send Alert"""
         extract_mock.return_value = ('kinesis', 'unit_test_default_stream')
-        rules_mock.return_value = ['success!!']
+        rules_mock.return_value = (['success!!'], ['normalized_records'])
 
         # Set send_alerts to true so the sink happens
         self.__sa_handler.enable_alert_processor = True
@@ -181,7 +187,7 @@ class TestStreamAlert(object):
     def test_run_debug_log_alert(self, extract_mock, rules_mock, log_mock):
         """StreamAlert Class - Run, Debug Log Alert"""
         extract_mock.return_value = ('kinesis', 'unit_test_default_stream')
-        rules_mock.return_value = ['success!!']
+        rules_mock.return_value = (['success!!'], ['normalized_records'])
 
         # Cache the logger level
         log_level = LOGGER.getEffectiveLevel()
@@ -251,3 +257,41 @@ class TestStreamAlert(object):
             self.__sa_handler.run(test_event)
 
             firehose_mock.assert_not_called()
+
+    @patch('stream_alert.rule_processor.threat_intel.StreamThreatIntel._query')
+    @patch('stream_alert.rule_processor.threat_intel.StreamThreatIntel.load_from_config')
+    def test_run_threat_intel_enabled(self, mock_threat_intel, mock_query): # pylint: disable=no-self-use
+        """StreamAlert Class - Run SA when threat intel enabled"""
+        @rule(datatypes=['sourceAddress'], outputs=['s3:sample_bucket'])
+        def match_ipaddress(_): # pylint: disable=unused-variable
+            """Testing dummy rule"""
+            return True
+
+        mock_threat_intel.return_value = StreamThreatIntel('test_table_name', 'us-east-1')
+        mock_query.return_value = ([], [])
+
+        sa_handler = StreamAlert(get_mock_context(), False)
+        event = {
+            'account': 123456,
+            'region': '123456123456',
+            'source': '1.1.1.2',
+            'detail': {
+                'eventName': 'ConsoleLogin',
+                'sourceIPAddress': '1.1.1.2',
+                'recipientAccountId': '654321'
+            }
+        }
+        events = []
+        for i in range(10):
+            event['source'] = '1.1.1.{}'.format(i)
+            events.append(event)
+
+        kinesis_events = {
+            'Records': [make_kinesis_raw_record('test_kinesis_stream', json.dumps(event))
+                        for event in events]
+        }
+
+        passed = sa_handler.run(kinesis_events)
+        assert_true(passed)
+
+        assert_equal(mock_query.call_count, 1)

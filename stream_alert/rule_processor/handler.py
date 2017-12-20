@@ -95,6 +95,7 @@ class StreamAlert(object):
                                                         firehose_config,
                                                         self.config['logs'])
 
+        payload_with_normalized_records = []
         for raw_record in records:
             # Get the service and entity from the payload. If the service/entity
             # is not in our config, log and error and go onto the next record
@@ -119,7 +120,13 @@ class StreamAlert(object):
             if not payload:
                 continue
 
-            self._process_alerts(payload)
+            payload_with_normalized_records.extend(self._process_alerts(payload))
+
+        # Apply Threat Intel to normalized records in the end of Rule Processor invocation
+        record_alerts = self._rule_engine.threat_intel_match(payload_with_normalized_records)
+        self._alerts.extend(record_alerts)
+        if record_alerts and self.enable_alert_processor:
+            self.sinker.sink(record_alerts)
 
         MetricLogger.log_metric(FUNCTION_NAME,
                                 MetricLogger.TOTAL_PROCESSED_SIZE,
@@ -161,6 +168,7 @@ class StreamAlert(object):
         Args:
             payload (StreamPayload): StreamAlert payload object being processed
         """
+        payload_with_normalized_records = []
         for record in payload.pre_parse():
             # Increment the processed size using the length of this record
             self._processed_size += len(record.pre_parsed_record)
@@ -179,7 +187,9 @@ class StreamAlert(object):
                 record.log_source,
                 record.entity)
 
-            record_alerts = self._rule_engine.process(record)
+            record_alerts, normalized_records = self._rule_engine.process(record)
+
+            payload_with_normalized_records.extend(normalized_records)
 
             LOGGER.debug('Processed %d valid record(s) that resulted in %d alert(s).',
                          len(payload.records),
@@ -200,3 +210,4 @@ class StreamAlert(object):
 
             if self.enable_alert_processor:
                 self.sinker.sink(record_alerts)
+        return payload_with_normalized_records

@@ -132,6 +132,7 @@ class TestStreamThreatIntel(object):
         ]
         mock_client.return_value = MockDynamoDBClient()
         threat_intel = StreamThreatIntel.load_from_config(self.config)
+        records = mock_normalized_records(records)
         assert_equal(len(threat_intel.threat_detection(records)), 3)
 
     def test_insert_ioc_info(self):
@@ -180,7 +181,7 @@ class TestStreamThreatIntel(object):
 
     def test_extract_ioc_from_record(self):
         """Threat Intel - Test extrac values from a record based on normalized keys"""
-        rec = {
+        records = [{
             'account': 12345,
             'region': '123456123456',
             'detail': {
@@ -200,10 +201,12 @@ class TestStreamThreatIntel(object):
                 'usernNme': [['detail', 'userIdentity', 'userName']]
             },
             'id': '12345'
-        }
-        result = self.threat_intel._extract_ioc_from_record(rec)
-        assert_equal(len(result), 1)
-        assert_equal(result[0].value, '1.1.1.2')
+        }]
+        records = mock_normalized_records(records)
+        for record in records:
+            result = self.threat_intel._extract_ioc_from_record(record)
+            assert_equal(len(result), 1)
+            assert_equal(result[0].value, '1.1.1.2')
 
     def test_from_config(self):
         """Threat Intel - Test load_config method"""
