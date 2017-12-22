@@ -90,7 +90,7 @@ class StreamThreatIntel(object):
             records (list): A list of payload instance with normalized records.
 
         Returns:
-            (list): A list of payload instances including IOC information.
+            list: A list of payload instances including IOC information.
         """
         ioc_collections = []
         if not records:
@@ -146,7 +146,7 @@ class StreamThreatIntel(object):
             record (dict): A list of payload instance with normalized records.
 
         Returns:
-            (list): Return a list of StreamIoc instances.
+            list: Return a list of StreamIoc instances.
         """
         ioc_value_type_tuples = set()
         for datatype in record.pre_parsed_record[NORMALIZATION_KEY]:
@@ -222,10 +222,11 @@ class StreamThreatIntel(object):
             mapping_str (str): A qualified string has pattern 'normalized_type:ioc_type'
 
         Returns:
-            (bool): First return indicate if the string a qualifited string contains
+            A tuple(bool, str, str)
+            bool: First return indicate if the string a qualifited string contains
                 both normalized CEF type and IOC type.
-            (str): Second return is normalized type.
-            (str): Last return is IOC type.
+            str: Second return is normalized type.
+            str: Last return is IOC type.
         """
         normalized_type = None
         ioc_type = None
@@ -304,7 +305,7 @@ class StreamThreatIntel(object):
             ioc_collections (list): A list of StreamIoc instances
 
         Returns:
-            (list): List of subset of StreamIoc instances
+            list: List of subset of StreamIoc instances
         """
         result = []
         end = len(ioc_collections)
@@ -326,13 +327,14 @@ class StreamThreatIntel(object):
             values (list): A list of string which contains IOC values
 
         Returns:
-            First return (list): A list of dict returned from dynamodb
+            A tuple(list, dict)
+            list: A list of dict returned from dynamodb
                 table query, in the format of
                     [
                         {'sub_type': 'c2_domain', 'ioc_value': 'evil.com'},
                         {'sub_type': 'mal_ip', 'ioc_value': '1.1.1.2'},
                     ]
-            Second return (dict/None): A dict containing unprocesed keys.
+            dict: A dict containing unprocesed keys.
         """
         result = []
         query_keys = [{PRIMARY_KEY: {'S': ioc}} for ioc in values if ioc]
@@ -372,7 +374,7 @@ class StreamThreatIntel(object):
             dynamodb_data (list): Contains IOC info with DynamoDB types
 
         Returns:
-            (list): A list of Python dictionary type containing ioc_value and ioc_type
+            list: A list of Python dictionary type containing ioc_value and ioc_type
         """
         result = []
         if not dynamodb_data:
