@@ -212,8 +212,29 @@ class StreamAlertFirehose(object):
                         record_batch_size,
                         stream_name)
 
-    @staticmethod
-    def _load_enabled_log_sources(firehose_config, log_sources):
+    def firehose_log_name(self, log_name):
+        """Convert conventional log names into Firehose delievery stream names
+
+        Args:
+            log_name: The name of the log from logs.json
+
+        Returns
+            str: Converted name which corresponds to a Firehose Delievery Stream
+        """
+        return re.sub(self.SPECIAL_CHAR_REGEX, '_', log_name)
+
+    def enabled_log_source(self, log_source_name):
+        """Check that the incoming record is an enabled log source for Firehose
+
+        Args:
+            log_source_name (str): The log source of the record
+
+        Returns:
+            bool: Whether or not the log source is enabled to send to Firehose
+        """
+        return self.firehose_log_name(log_source_name) in self.enabled_logs
+
+    def _load_enabled_log_sources(self, firehose_config, log_sources):
         """Load and expand all declared and enabled Firehose log sources
 
         Args:
@@ -229,7 +250,7 @@ class StreamAlertFirehose(object):
 
             # Expand to all subtypes
             if len(enabled_log_parts) == 1:
-                expanded_logs = [log_name.replace(':', '_') for log_name
+                expanded_logs = [self.firehose_log_name(log_name) for log_name
                                  in log_sources
                                  if log_name.split(':')[0] == enabled_log_parts[0]]
                 # If the list comprehension is Falsey, it means no matching logs
@@ -243,20 +264,9 @@ class StreamAlertFirehose(object):
                 if enabled_log not in log_sources:
                     LOGGER.error('Enabled Firehose log %s not declared in logs.json', enabled_log)
 
-                enabled_logs.add('_'.join(enabled_log_parts))
+                enabled_logs.add(self.firehose_log_name('_'.join(enabled_log_parts)))
 
         return enabled_logs
-
-    def enabled_log_source(self, log_source_name):
-        """Check that the incoming record is an enabled log source for Firehose
-
-        Args:
-            log_source_name (str): The log source of the record
-
-        Returns:
-            bool: Whether or not the log source is enabled to send to Firehose
-        """
-        return log_source_name.replace(':', '_') in self.enabled_logs
 
     def send(self):
         """Send all classified records to a respective Firehose Delivery Stream"""
@@ -267,7 +277,7 @@ class StreamAlertFirehose(object):
         # in a specific prefix in S3.
         for log_type, records in self.categorized_payloads.iteritems():
             # This same substitution method is used when naming the Delivery Streams
-            formatted_log_type = log_type.replace(':', '_')
+            formatted_log_type = self.firehose_log_name(log_type)
 
             # Process each record batch in the categorized payload set
             for record_batch in self._segment_records_by_count(records, self.MAX_BATCH_COUNT):
