@@ -36,6 +36,7 @@ from tests.unit.stream_alert_rule_processor.test_helpers import (
     load_and_classify_payload,
     make_kinesis_raw_record,
     MockDynamoDBClient,
+    mock_normalized_records,
 )
 from helpers.base import fetch_values_by_datatype
 
@@ -95,7 +96,7 @@ class TestStreamRules(object):
         payload = load_and_classify_payload(self.config, service, entity, raw_record)
 
         # process payloads
-        alerts = self.rules_engine.process(payload)
+        alerts, _ = self.rules_engine.process(payload)
 
         alert_keys = {
             'record',
@@ -182,7 +183,7 @@ class TestStreamRules(object):
         payload = load_and_classify_payload(self.config, service, entity, raw_record)
 
         # process payloads
-        alerts = self.rules_engine.process(payload)
+        alerts, _ = self.rules_engine.process(payload)
 
         # check alert output
         assert_equal(len(alerts), 3)
@@ -345,7 +346,7 @@ class TestStreamRules(object):
             raw_record = make_kinesis_raw_record(entity, kinesis_data)
             payload = load_and_classify_payload(self.config, service, entity, raw_record)
 
-            alerts.extend(self.rules_engine.process(payload))
+            alerts.extend(self.rules_engine.process(payload)[0])
 
         # check alert output
         assert_equal(len(alerts), 2)
@@ -375,7 +376,7 @@ class TestStreamRules(object):
         payload = load_and_classify_payload(self.config, service, entity, raw_record)
 
         # process payloads
-        alerts = self.rules_engine.process(payload)
+        alerts, _ = self.rules_engine.process(payload)
 
         # alert tests
         assert_equal(len(alerts), 1)
@@ -403,7 +404,7 @@ class TestStreamRules(object):
         payload = load_and_classify_payload(self.config, service, entity, raw_record)
 
         # process payloads
-        alerts = self.rules_engine.process(payload)
+        alerts, _ = self.rules_engine.process(payload)
 
         # alert tests
         assert_equal(len(alerts), 1)
@@ -430,7 +431,7 @@ class TestStreamRules(object):
         payload = load_and_classify_payload(self.config, service, entity, raw_record)
 
         # process payloads
-        alerts = self.rules_engine.process(payload)
+        alerts, _ = self.rules_engine.process(payload)
 
         # alert tests
         assert_equal(len(alerts), 0)
@@ -473,7 +474,7 @@ class TestStreamRules(object):
         payload = load_and_classify_payload(self.config, service, entity, raw_record)
 
         # process payloads
-        alerts = self.rules_engine.process(payload)
+        alerts, _ = self.rules_engine.process(payload)
 
         # alert tests
         assert_equal(len(alerts), 2)
@@ -550,7 +551,7 @@ class TestStreamRules(object):
             raw_record = make_kinesis_raw_record(entity, kinesis_data)
             payload = load_and_classify_payload(self.config, service, entity, raw_record)
 
-            alerts.extend(self.rules_engine.process(payload))
+            alerts.extend(self.rules_engine.process(payload)[0])
 
         # check alert output
         assert_equal(len(alerts), 2)
@@ -723,7 +724,7 @@ class TestStreamRules(object):
             raw_record = make_kinesis_raw_record(entity, kinesis_data)
             payload = load_and_classify_payload(self.config, service, entity, raw_record)
 
-            alerts.extend(self.rules_engine.process(payload))
+            alerts.extend(self.rules_engine.process(payload)[0])
 
         assert_equal(len(alerts), 3)
         rule_names = ['no_logs_has_datatypes',
@@ -757,7 +758,7 @@ class TestStreamRules(object):
             raw_record = make_kinesis_raw_record(entity, kinesis_data)
             payload = load_and_classify_payload(self.config, service, entity, raw_record)
 
-            assert_false(self.rules_engine.process(payload))
+            assert_false(self.rules_engine.process(payload)[0])
 
     def test_reset_normalized_types(self):
         """Rules Engine - Normalized types should be reset after each iteration"""
@@ -808,7 +809,7 @@ class TestStreamRules(object):
             raw_record = make_kinesis_raw_record(entity, kinesis_data)
             payload = load_and_classify_payload(self.config, service, entity, raw_record)
 
-            alerts.extend(self.rules_engine.process(payload))
+            alerts.extend(self.rules_engine.process(payload)[0])
 
         assert_equal(len(alerts), 3)
         for alert in alerts:
@@ -851,7 +852,26 @@ class TestStreamRules(object):
             raw_record = make_kinesis_raw_record(entity, kinesis_data)
             payload = load_and_classify_payload(toggled_config, service, entity, raw_record)
 
-            assert_equal(len(new_rules_engine.process(payload)), 1)
+            assert_equal(len(new_rules_engine.process(payload)[0]), 1)
+
+    @patch('boto3.client')
+    def test_threat_intel_match(self, mock_client):
+        """Rules Engine - Threat Intel is enabled when threat_intel_match is called"""
+        @rule(datatypes=['sourceAddress', 'destinationDomain', 'fileHash'],
+              outputs=['s3:sample_bucket'])
+        def match_rule(_): # pylint: disable=unused-variable
+            """Testing dummy rule"""
+            return True
+
+        mock_client.return_value = MockDynamoDBClient()
+        toggled_config = self.config
+        toggled_config['global']['threat_intel']['enabled'] = True
+        toggled_config['global']['threat_intel']['dynamodb_table'] = 'test_table_name'
+
+        new_rules_engine = StreamRules(toggled_config)
+        records = mock_normalized_records()
+        alerts = new_rules_engine.threat_intel_match(records)
+        assert_equal(len(alerts), 2)
 
     def test_rule_modify_context(self):
         """Rules Engine - Testing Context Modification"""
@@ -883,7 +903,7 @@ class TestStreamRules(object):
         payload = load_and_classify_payload(self.config, service, entity, raw_record)
 
         # process payloads
-        alerts = self.rules_engine.process(payload)
+        alerts, _ = self.rules_engine.process(payload)
 
         # alert tests
         assert_equal(alerts[0]['context']['assigned_user'], 'valid_user')

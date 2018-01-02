@@ -87,10 +87,10 @@ class StreamThreatIntel(object):
         records contain malicious IOC(s).
 
         Args:
-            records (list): A list of the normalized records which are dictionaries.
+            records (list): A list of payload instance with normalized records.
 
         Returns:
-            (list): A list of records including IOC information.
+            list: A list of payload instances including IOC information.
         """
         ioc_collections = []
         if not records:
@@ -106,7 +106,9 @@ class StreamThreatIntel(object):
         # IOC info will be inserted to the records if they contains malicious IOC(s)
         for ioc in ioc_collections:
             if ioc.is_ioc:
-                self._insert_ioc_info(ioc.associated_record, ioc.ioc_type, ioc.value)
+                self._insert_ioc_info(ioc.associated_record.pre_parsed_record,
+                                      ioc.ioc_type,
+                                      ioc.value)
 
         records_with_ioc = [ioc.associated_record for ioc in ioc_collections if ioc.is_ioc]
         return records_with_ioc
@@ -141,28 +143,28 @@ class StreamThreatIntel(object):
         """Instance method to extract IOC info from the record based on normalized keys
 
         Args:
-            record (dict): Normalized record.
+            record (dict): A list of payload instance with normalized records.
 
         Returns:
-            (list): Return a list of StreamIoc instances.
+            list: Return a list of StreamIoc instances.
         """
-        ioc_values = set()
-        for datatype in record[NORMALIZATION_KEY]:
+        ioc_value_type_tuples = set()
+        for datatype in record.pre_parsed_record[NORMALIZATION_KEY]:
             # Lookup mapped IOC type based on normalized CEF type from Class variable.
             ioc_type = self.__normalized_ioc_types_mapping.get(datatype, None)
 
             # A new StreamIoc instance will be created when normalized CEF type
             # has mapped IOC type.
             if ioc_type:
-                for original_keys in record[NORMALIZATION_KEY][datatype]:
-                    value = record
+                for original_keys in record.pre_parsed_record[NORMALIZATION_KEY][datatype]:
+                    value = record.pre_parsed_record
                     if isinstance(original_keys, list):
                         for original_key in original_keys:
                             value = value[original_key]
                     if value:
-                        ioc_values.add(value)
+                        ioc_value_type_tuples.add((value, ioc_type))
         return [StreamIoc(value=str(value).lower(), ioc_type=ioc_type, associated_record=record)
-                for value in ioc_values]
+                for value, ioc_type in ioc_value_type_tuples]
 
     @classmethod
     def load_from_config(cls, config):
@@ -220,10 +222,11 @@ class StreamThreatIntel(object):
             mapping_str (str): A qualified string has pattern 'normalized_type:ioc_type'
 
         Returns:
-            (bool): First return indicate if the string a qualifited string contains
+            A tuple(bool, str, str)
+            bool: First return indicate if the string a qualifited string contains
                 both normalized CEF type and IOC type.
-            (str): Second return is normalized type.
-            (str): Last return is IOC type.
+            str: Second return is normalized type.
+            str: Last return is IOC type.
         """
         normalized_type = None
         ioc_type = None
@@ -249,6 +252,7 @@ class StreamThreatIntel(object):
         Args:
             ioc_collections (list): A list of StreamIoc instances.
         """
+        LOGGER.debug('[Threat Inel] Rule Processor queries %d IOCs', len(ioc_collections))
         # Segment data before calling DynamoDB table with batch_get_item.
         for subset in self._segment(ioc_collections):
             query_values = []
@@ -301,11 +305,10 @@ class StreamThreatIntel(object):
             ioc_collections (list): A list of StreamIoc instances
 
         Returns:
-            (list): List of subset of StreamIoc instances
+            list: List of subset of StreamIoc instances
         """
         result = []
         end = len(ioc_collections)
-        LOGGER.debug('[Threat Inel] Rule Processor queries %d IOCs', end)
         for index in range(0, end, MAX_QUERY_CNT):
             result.append(ioc_collections[index:min(index+MAX_QUERY_CNT, end)])
         return result
@@ -324,13 +327,14 @@ class StreamThreatIntel(object):
             values (list): A list of string which contains IOC values
 
         Returns:
-            First return (list): A list of dict returned from dynamodb
+            A tuple(list, dict)
+            list: A list of dict returned from dynamodb
                 table query, in the format of
                     [
                         {'sub_type': 'c2_domain', 'ioc_value': 'evil.com'},
                         {'sub_type': 'mal_ip', 'ioc_value': '1.1.1.2'},
                     ]
-            Second return (dict/None): A dict containing unprocesed keys.
+            dict: A dict containing unprocesed keys.
         """
         result = []
         query_keys = [{PRIMARY_KEY: {'S': ioc}} for ioc in values if ioc]
@@ -370,7 +374,7 @@ class StreamThreatIntel(object):
             dynamodb_data (list): Contains IOC info with DynamoDB types
 
         Returns:
-            (list): A list of Python dictionary type containing ioc_value and ioc_type
+            list: A list of Python dictionary type containing ioc_value and ioc_type
         """
         result = []
         if not dynamodb_data:

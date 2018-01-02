@@ -132,6 +132,7 @@ class TestStreamThreatIntel(object):
         ]
         mock_client.return_value = MockDynamoDBClient()
         threat_intel = StreamThreatIntel.load_from_config(self.config)
+        records = mock_normalized_records(records)
         assert_equal(len(threat_intel.threat_detection(records)), 3)
 
     def test_insert_ioc_info(self):
@@ -180,7 +181,7 @@ class TestStreamThreatIntel(object):
 
     def test_extract_ioc_from_record(self):
         """Threat Intel - Test extrac values from a record based on normalized keys"""
-        rec = {
+        records = [{
             'account': 12345,
             'region': '123456123456',
             'detail': {
@@ -200,10 +201,50 @@ class TestStreamThreatIntel(object):
                 'usernNme': [['detail', 'userIdentity', 'userName']]
             },
             'id': '12345'
-        }
-        result = self.threat_intel._extract_ioc_from_record(rec)
-        assert_equal(len(result), 1)
-        assert_equal(result[0].value, '1.1.1.2')
+        }]
+        records = mock_normalized_records(records)
+        for record in records:
+            result = self.threat_intel._extract_ioc_from_record(record)
+            assert_equal(len(result), 1)
+            assert_equal(result[0].value, '1.1.1.2')
+
+        records = [{
+            'cb_server': 'cbserver',
+            'computer_name': 'DESKTOP-TESTING',
+            'direction': 'outbound',
+            'domain': 'evil.com',
+            'event_type': 'netconn',
+            'ipv4': '1.1.1.2',
+            'local_ip': '1.1.1.2',
+            'local_port': '57347',
+            'md5': 'ABCDEF0123456789ABCDEF0123456789',
+            'pid': '268',
+            'port': '50002',
+            'process_guid': '00003a07-0000-010c-01d3-766fd6eee995',
+            'process_path': 'bad_actor.exe',
+            'protocol': '6',
+            'remote_ip': '82.82.82.82',
+            'remote_port': '50002',
+            'sensor_id': '14855',
+            'timestamp': 1515151515,
+            'type': 'ingress.event.netconn',
+            'streamalert:normalization': {
+                'destinationAddress': [['remote_ip']],
+                'destinationDomain': [['domain']],
+                'fileHash': [['md5']],
+                'sourceAddress': [['ipv4'], ['local_ip']]
+            }
+        }]
+
+        records = mock_normalized_records(records)
+        for record in records:
+            results = self.threat_intel._extract_ioc_from_record(record)
+            assert_equal(len(results), 4)
+            assert_equal((results[0].value, results[0].ioc_type), ('1.1.1.2', 'ip'))
+            assert_equal((results[1].value, results[1].ioc_type), ('82.82.82.82', 'ip'))
+            assert_equal((results[2].value, results[2].ioc_type), ('evil.com', 'domain'))
+            assert_equal((results[3].value, results[3].ioc_type),
+                         ('abcdef0123456789abcdef0123456789', 'md5'))
 
     def test_from_config(self):
         """Threat Intel - Test load_config method"""
@@ -316,6 +357,17 @@ class TestStreamThreatIntel(object):
         assert_true(ioc_collections[0].is_ioc)
         assert_false(ioc_collections[1].is_ioc)
         assert_true(ioc_collections[2].is_ioc)
+
+    @patch('boto3.client')
+    def test_process_ioc_with_clienterror(self, mock_client):
+        """Threat Intel - Test private method process_ioc"""
+        mock_client.return_value = MockDynamoDBClient(exception=True)
+        threat_intel = StreamThreatIntel.load_from_config(self.config)
+
+        ioc_collections = [
+            StreamIoc(value='1.1.1.2', ioc_type='ip')
+        ]
+        threat_intel._process_ioc(ioc_collections)
 
     @patch('boto3.client')
     def test_process_ioc_with_unprocessed_keys(self, mock_client):

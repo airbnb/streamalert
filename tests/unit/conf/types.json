@@ -11,6 +11,10 @@
       "parent_md5",
       "expect_followon_w_md5",
       "md5"
+    ],
+    "sourceAddress:ioc_ip": [
+      "ipv4",
+      "local_ip"
     ]
   },
   "cloudwatch": {

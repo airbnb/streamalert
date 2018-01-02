@@ -167,61 +167,73 @@ def make_s3_raw_record(bucket, key):
     }
     return raw_record
 
-def mock_normalized_records():
+def mock_normalized_records(default_data=None):
     """Morck records which have been normalized"""
-    records = [
-        {
-            'account': 12345,
-            'region': '123456123456',
-            'detail': {
-                'eventName': 'ConsoleLogin',
-                'userIdentity': {
-                    'userName': 'alice',
-                    'accountId': '12345'
+    if not default_data:
+        default_data = [
+            {
+                'account': 12345,
+                'region': '123456123456',
+                'detail': {
+                    'eventName': 'ConsoleLogin',
+                    'userIdentity': {
+                        'userName': 'alice',
+                        'accountId': '12345'
+                    },
+                    'sourceIPAddress': '1.1.1.2',
+                    'recipientAccountId': '12345'
                 },
-                'sourceIPAddress': '1.1.1.2',
-                'recipientAccountId': '12345'
+                'source': '1.1.1.2',
+                'streamalert:normalization': {
+                    'sourceAddress': [['detail', 'sourceIPAddress'], ['source']],
+                    'usernNme': [['detail', 'userIdentity', 'userName']]
+                }
             },
-            'source': '1.1.1.2',
-            'streamalert:normalization': {
-                'sourceAddress': [['detail', 'sourceIPAddress'], ['source']],
-                'usernNme': [['detail', 'userIdentity', 'userName']]
+            {
+                'domain': 'evil.com',
+                'pc_name': 'test-pc',
+                'date': 'Dec 1st, 2016',
+                'data': 'ABCDEF',
+                'streamalert:normalization': {
+                    'destinationDomain': [['domain']]
+                }
+            },
+            {
+                'domain': 'evil2.com',
+                'pc_name': 'test-pc',
+                'date': 'Dec 1st, 2016',
+                'data': 'ABCDEF',
+                'streamalert:normalization': {
+                    'destinationDomain': [['domain']]
+                }
+            },
+            {
+                'process_md5': 'abcdef0123456789',
+                'server': 'test-server',
+                'date': 'Dec 2nd, 2016',
+                'data': 'Foo',
+                'streamalert:normalization': {
+                    'fileHash': [['process_md5']]
+                }
             }
-        },
-        {
-            'domain': 'evil.com',
-            'pc_name': 'test-pc',
-            'date': 'Dec 1st, 2016',
-            'data': 'ABCDEF',
-            'streamalert:normalization': {
-                'destinationDomain': [['domain']]
-            }
-        },
-        {
-            'domain': 'evil2.com',
-            'pc_name': 'test-pc',
-            'date': 'Dec 1st, 2016',
-            'data': 'ABCDEF',
-            'streamalert:normalization': {
-                'destinationDomain': [['domain']]
-            }
-        },
-        {
-            'process_md5': 'abcdef0123456789',
-            'server': 'test-server',
-            'date': 'Dec 2nd, 2016',
-            'data': 'Foo',
-            'streamalert:normalization': {
-                'fileHash': [['process_md5']]
-            }
-        }
-    ]
-    return records
+        ]
+
+    kinesis_payload = []
+    for record in default_data:
+        entity = 'unit_test_entity'
+        raw_record = make_kinesis_raw_record(entity, 'None')
+        payload = load_stream_payload('kinesis', entity, raw_record)
+        payload = payload.pre_parse().next()
+        payload.pre_parsed_record = record
+        kinesis_payload.append(payload)
+
+    return kinesis_payload
 
 class MockDynamoDBClient(object):
     """Helper mock class to act as dynamodb client"""
     def __init__(self, **kwargs):
         self.exception = kwargs.get('exception', False)
+        self.has_unprocessed_keys = kwargs.get('unprocesed_keys', False)
 
     def batch_get_item(self, **kwargs):
         """Mock batch_get_item method and return mimicking dynamodb response
@@ -272,7 +284,7 @@ class MockDynamoDBClient(object):
                 'HTTPHeaders': {}
             }
         }
-        if kwargs.get('unprocesed_keys', False):
+        if self.has_unprocessed_keys:
             response['UnprocessedKeys'] = {
                 'test_table_name': {
                     'Keys': [

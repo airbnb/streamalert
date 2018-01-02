@@ -176,7 +176,7 @@ class StreamRules(object):
                 interested in.
 
         Returns:
-            (dict): A dict of normalized_types with original key names
+            dict: A dict of normalized_types with original key names
 
         Example 1:
             datatypes=['defined_type1', 'defined_type2', 'not_defined_type']
@@ -206,7 +206,7 @@ class StreamRules(object):
             datatypes (list): Normalized types users interested in
 
         Returns:
-            (dict): A dict of normalized_types with original key names
+            dict: A dict of normalized_types with original key names
         """
         results = dict()
         for key, val in record.iteritems():
@@ -281,7 +281,7 @@ class StreamRules(object):
             rule (func): Rule function to process the record
 
         Returns:
-            (bool): The return function of the rule
+            bool: The return function of the rule
         """
         try:
             if rule.context:
@@ -342,14 +342,13 @@ class StreamRules(object):
         and the rule itself to determine if a match occurs.
 
         Returns:
-            list: alerts
-
-            An alert is represented as a dictionary with the following keys:
-                rule_name: the name of the triggered rule
-                payload: the StreamPayload object
-                outputs: list of outputs to send to
+            A tuple(list, list).
+                First return is a list of alerts.
+                Second return is a list of payload instance with normalized records.
         """
         alerts = []
+        # store normalized records for future process in Threat Intel
+        normalized_records = []
         payload = copy(input_payload)
 
         rules = [rule_attrs for rule_attrs in self.__rules.values()
@@ -357,10 +356,7 @@ class StreamRules(object):
 
         if not rules:
             LOGGER.debug('No rules to process for %s', payload)
-            return alerts
-
-        # store normalized records for future process in Threat Intel
-        normalized_records = []
+            return alerts, normalized_records
 
         for record in payload.records:
             for rule in rules:
@@ -384,22 +380,42 @@ class StreamRules(object):
                     record_copy = record.copy()
                     record_copy[NORMALIZATION_KEY] = types_result
                     if self._threat_intel:
-                        normalized_records.append(record_copy)
+                        # A copy of payload which includes payload metadata.
+                        # The payload metadata includes log_source, type, service,
+                        # and entity. The metadata will be returned to along with
+                        # normalized record for threat detection.
+                        payload_copy = copy(input_payload)
+                        payload_copy.pre_parsed_record = record_copy
+                        normalized_records.append(payload_copy)
                 else:
                     record_copy = record
                 # rule analysis
                 self.rule_analysis(record_copy, rule, payload, alerts)
 
-        # Apply the Threat Intelligence against normalized records
+        return alerts, normalized_records
+
+    def threat_intel_match(self, payload_with_normalized_records):
+        """Apply Threat Intelligence on normalized records
+
+        Args:
+            payload_with_normalized_records (list): A list of payload instances.
+                And it pre_parsed_record is replaced by normalized record. The
+                reason to pass a copy of payload into Threat Intelligence is because
+                alerts require to include payload metadata (payload.log_source,
+                payload.type, payload.service and payload.entity).
+
+        Returns:
+            list: A list of alerts triggered by Threat Intelligence.
+        """
+        alerts = []
         if self._threat_intel:
-            ioc_records = self._threat_intel.threat_detection(normalized_records)
+            ioc_records = self._threat_intel.threat_detection(payload_with_normalized_records)
+            rules = [rule_attrs for rule_attrs in self.__rules.values()
+                     if rule_attrs.datatypes]
             if ioc_records:
                 for ioc_record in ioc_records:
                     for rule in rules:
-                        if not rule.datatypes:
-                            continue
-                        self.rule_analysis(ioc_record, rule, payload, alerts)
-
+                        self.rule_analysis(ioc_record.pre_parsed_record, rule, ioc_record, alerts)
         return alerts
 
     @staticmethod
@@ -413,7 +429,7 @@ class StreamRules(object):
             alerts (list): A list of alerts which will be sent to alert processor.
 
         Returns:
-            (dict): A list of alerts.
+            dict: A list of alerts.
         """
         rule_result = StreamRules.process_rule(record, rule)
         if rule_result:
@@ -451,7 +467,7 @@ class StreamRules(object):
             alerts (list): A list of alerts which will be sent to alert processor.
 
         Returns:
-            (bool): Return True if both record and rule name exist in alerts list.
+            bool: Return True if both record and rule name exist in alerts list.
         """
         for exist_alert in alerts:
             if rule.rule_name == exist_alert['rule_name']:
