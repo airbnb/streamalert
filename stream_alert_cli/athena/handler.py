@@ -30,6 +30,7 @@ SCHEMA_TYPE_MAPPING = {
 }
 MAX_QUERY_LENGTH = 262144
 
+
 def create_database(athena_client):
     """Create the 'streamalert' Athena database
 
@@ -73,14 +74,15 @@ def rebuild_partitions(athena_client, options, config):
     sa_firehose = StreamAlertFirehose(config['global']['account']['region'],
                                       config['global']['infrastructure']['firehose'],
                                       config['logs'])
-    sanitized_table_name = sa_firehose._firehose_log_name(options.table_name)
+    sanitized_table_name = sa_firehose.firehose_log_name(options.table_name)
 
     if options.type == 'data':
         # Get the current set of partitions
         partition_success, partitions = athena_client.run_athena_query(
             query='SHOW PARTITIONS {}'.format(sanitized_table_name), database='streamalert')
         if not partition_success:
-            LOGGER_CLI.error('An error occured when loading partitions for %s', sanitized_table_name)
+            LOGGER_CLI.error('An error occured when loading partitions for %s',
+                             sanitized_table_name)
             return
 
         unique_partitions = athena_helpers.unique_values_from_query(partitions)
@@ -217,7 +219,7 @@ def create_table(athena_client, options, config):
             LOGGER_CLI.error('Missing command line argument --table_name')
             return
 
-        sanitized_table_name = sa_firehose._firehose_log_name(options.table_name)
+        sanitized_table_name = sa_firehose.firehose_log_name(options.table_name)
 
         if sanitized_table_name not in sa_firehose.enabled_logs:
             LOGGER_CLI.error('Table name %s missing from configuration or '
