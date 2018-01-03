@@ -122,6 +122,7 @@ class StreamAlert(object):
 
             payload_with_normalized_records.extend(self._process_alerts(payload))
 
+        LOGGER.info('Got %d normalized records', len(payload_with_normalized_records))
         # Apply Threat Intel to normalized records in the end of Rule Processor invocation
         record_alerts = self._rule_engine.threat_intel_match(payload_with_normalized_records)
         self._alerts.extend(record_alerts)

@@ -359,6 +359,9 @@ class StreamRules(object):
             return alerts, normalized_records
 
         for record in payload.records:
+            # One record may be added to normalized records list multiple time due
+            # to each record is processed by all rules.
+            normalized_record_appended = False
             for rule in rules:
                 # subkey check
                 has_sub_keys = self.process_subkeys(record, payload.type, rule)
@@ -379,14 +382,17 @@ class StreamRules(object):
                 if types_result:
                     record_copy = record.copy()
                     record_copy[NORMALIZATION_KEY] = types_result
-                    if self._threat_intel:
+                    if self._threat_intel and not normalized_record_appended:
                         # A copy of payload which includes payload metadata.
                         # The payload metadata includes log_source, type, service,
                         # and entity. The metadata will be returned to along with
                         # normalized record for threat detection.
                         payload_copy = copy(input_payload)
                         payload_copy.pre_parsed_record = record_copy
+                        payload_copy.records = None
+                        payload_copy.raw_record = None
                         normalized_records.append(payload_copy)
+                        normalized_record_appended = True
                 else:
                     record_copy = record
                 # rule analysis
