@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-# pylint: disable=protected-access
+# pylint: disable=protected-access,attribute-defined-outside-init
 import base64
 import json
 import logging
@@ -44,9 +44,6 @@ rule = StreamRules.rule
 
 class TestStreamAlert(object):
     """Test class for StreamAlert class"""
-
-    def __init__(self):
-        self.__sa_handler = None
 
     @patch('stream_alert.rule_processor.handler.load_config',
            lambda: load_config('tests/unit/conf/'))
@@ -130,6 +127,14 @@ class TestStreamAlert(object):
         passed = self.__sa_handler.run(get_valid_event())
 
         assert_true(passed)
+
+    @patch('stream_alert.rule_processor.handler.StreamClassifier.extract_service_and_entity')
+    def test_run_alert_count(self, extract_mock):
+        """StreamAlert Class - Run, Check Count With 4 Logs"""
+        count = 4
+        extract_mock.return_value = ('kinesis', 'unit_test_default_stream')
+        self.__sa_handler.run(get_valid_event(count))
+        assert_equal(self.__sa_handler._processed_record_count, count)
 
     @patch('logging.Logger.debug')
     @patch('stream_alert.rule_processor.handler.StreamClassifier.extract_service_and_entity')
