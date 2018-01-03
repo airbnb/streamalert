@@ -56,6 +56,7 @@ class StreamAlert(object):
 
         self.enable_alert_processor = enable_alert_processor
         self._failed_record_count = 0
+        self._processed_record_count = 0
         self._processed_size = 0
         self._alerts = []
 
@@ -82,14 +83,11 @@ class StreamAlert(object):
             bool: True if all logs being parsed match a schema
         """
         records = event.get('Records', [])
-        LOGGER.debug('Number of Records: %d', len(records))
+        LOGGER.debug('Number of incoming records: %d', len(records))
         if not records:
             return False
 
-        MetricLogger.log_metric(FUNCTION_NAME, MetricLogger.TOTAL_RECORDS, len(records))
-
-        firehose_config = self.config['global'].get(
-            'infrastructure', {}).get('firehose', {})
+        firehose_config = self.config['global'].get('infrastructure', {}).get('firehose', {})
         if firehose_config.get('enabled'):
             self._firehose_client = StreamAlertFirehose(self.env['lambda_region'],
                                                         firehose_config,
@@ -128,6 +126,10 @@ class StreamAlert(object):
         self._alerts.extend(record_alerts)
         if record_alerts and self.enable_alert_processor:
             self.sinker.sink(record_alerts)
+
+        MetricLogger.log_metric(FUNCTION_NAME,
+                                MetricLogger.TOTAL_RECORDS,
+                                self._processed_record_count)
 
         MetricLogger.log_metric(FUNCTION_NAME,
                                 MetricLogger.TOTAL_PROCESSED_SIZE,
@@ -182,6 +184,9 @@ class StreamAlert(object):
                 self._failed_record_count += 1
                 continue
 
+            # Increment the total processed records to get an accurate assessment of throughput
+            self._processed_record_count += len(record.records)
+
             LOGGER.debug(
                 'Classified and Parsed Payload: <Valid: %s, Log Source: %s, Entity: %s>',
                 record.valid,
@@ -211,4 +216,5 @@ class StreamAlert(object):
 
             if self.enable_alert_processor:
                 self.sinker.sink(record_alerts)
+
         return payload_with_normalized_records
