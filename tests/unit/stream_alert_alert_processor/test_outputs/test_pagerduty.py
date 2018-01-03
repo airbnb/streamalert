@@ -199,7 +199,7 @@ class TestPagerDutyIncidentOutput(object):
 
     @patch('requests.get')
     def test_check_exists_no_get_id(self, get_mock):
-        """Check Exists No Get Id - PagerDutyIncidentOutput"""
+        """PagerDutyIncidentOutput - Check Exists No Get Id"""
         # /check
         get_mock.return_value.status_code = 200
         json_check = {'check': [{'id': 'checked_id'}]}
