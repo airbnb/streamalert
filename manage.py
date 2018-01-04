@@ -1187,6 +1187,13 @@ Examples:
     athena_parser.add_argument('--table_name', help=ARGPARSE_SUPPRESS)
 
     athena_parser.add_argument(
+        '--schema_override',
+        nargs='+',
+        help=ARGPARSE_SUPPRESS,
+        action=UniqueSetAction,
+        default=set())
+
+    athena_parser.add_argument(
         '--refresh_type',
         choices=['add_hive_partition', 'repair_hive_table'],
         help=ARGPARSE_SUPPRESS)
