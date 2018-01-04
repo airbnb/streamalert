@@ -14,15 +14,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 # pylint: disable=protected-access,no-self-use
+import os
 from botocore.exceptions import ClientError, ParamValidationError
 from mock import patch
 from nose.tools import (
     assert_equal,
     assert_false,
+    assert_is_instance,
     assert_true,
     raises,
 )
 
+from stream_alert.rule_processor import threat_intel as threat_intel_module
+from stream_alert.rule_processor import config as config_module
 from stream_alert.rule_processor.config import load_config
 from stream_alert.rule_processor.threat_intel import StreamThreatIntel, StreamIoc
 from tests.unit.stream_alert_rule_processor.test_helpers import (
@@ -76,6 +80,10 @@ class TestStreamThreatIntel(object):
         self.config = load_config('tests/unit/conf')
         self.config['global']['threat_intel']['enabled'] = True
         self.threat_intel = StreamThreatIntel.load_from_config(self.config)
+        os.environ['CLUSTER'] = ''
+        # Force reload the threat_intel_module to trigger env var loading
+        reload(config_module)
+        reload(threat_intel_module)
 
     def teardown(self):
         StreamThreatIntel._StreamThreatIntel__normalized_types.clear() # pylint: disable=no-member
@@ -246,7 +254,7 @@ class TestStreamThreatIntel(object):
             assert_equal((results[3].value, results[3].ioc_type),
                          ('abcdef0123456789abcdef0123456789', 'md5'))
 
-    def test_from_config(self):
+    def test_load_from_config(self):
         """Threat Intel - Test load_config method"""
         test_config = {
             'global': {
@@ -301,6 +309,28 @@ class TestStreamThreatIntel(object):
             }
         }
         assert_equal(StreamThreatIntel.normalized_type_mapping(), expected_result)
+
+    def test_load_from_config_with_cluster_env(self):
+        """Threat Intel - Test load_from_config to read cluster env variable"""
+        with patch.dict('os.environ', {'CLUSTER': 'advanced'}):
+            reload(config_module)
+            reload(threat_intel_module)
+            config = load_config('tests/unit/conf')
+            config['global']['threat_intel']['enabled'] = True
+            threat_intel = StreamThreatIntel.load_from_config(config)
+            assert_is_instance(threat_intel, StreamThreatIntel)
+            assert_equal(threat_intel_module.CLUSTER, 'advanced')
+
+    def test_load_from_config_with_cluster_env_2(self):
+        """Threat Intel - Test load_from_config with threat intel disabled in cluster"""
+        with patch.dict('os.environ', {'CLUSTER': 'test'}):
+            reload(config_module)
+            reload(threat_intel_module)
+            config = load_config('tests/unit/conf')
+            config['global']['threat_intel']['enabled'] = True
+            threat_intel = StreamThreatIntel.load_from_config(config)
+            assert_false(isinstance(threat_intel, StreamThreatIntel))
+            assert_equal(threat_intel_module.CLUSTER, 'test')
 
     def test_process_types_config(self):
         """Threat Intel - Test process_types_config method"""

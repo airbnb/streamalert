@@ -17,6 +17,8 @@ from collections import OrderedDict
 import json
 import os
 
+CLUSTER = os.environ.get('CLUSTER', '')
+
 class ConfigError(Exception):
     """Exception class for config file errors"""
 
@@ -33,15 +35,29 @@ def load_config(conf_dir='conf/'):
     key denotes the name of the log type, and includes 'keys' used to match
     rules to log fields.
     """
-    conf_files = ('sources', 'logs', 'types', 'global')
+    conf_files = ('sources', 'logs', 'types', 'global', 'clusters')
     config = dict()
     for base_name in conf_files:
-        path = '{}.json'.format(os.path.join(conf_dir, base_name))
-        with open(path) as data:
-            try:
-                config[base_name] = json.load(data, object_pairs_hook=OrderedDict)
-            except ValueError:
-                raise ConfigError('Invalid JSON format for {}.json'.format(base_name))
+        if base_name == 'clusters':
+            # Load current cluster config into memory for threat intel
+            path = os.path.join(conf_dir, base_name)
+            config['clusters'] = {}
+            if CLUSTER:
+                cluster_conf_path = '{}.json'.format(os.path.join(path, CLUSTER))
+                with open(cluster_conf_path) as data:
+                    try:
+                        config['clusters'][CLUSTER] = json.load(data)
+                    except ValueError:
+                        raise ConfigError('Invalid JSON format for {}'.format(cluster_conf_path))
+        else:
+            path = '{}.json'.format(os.path.join(conf_dir, base_name))
+            with open(path) as data:
+                try:
+                    # we use object_pairs_hook=OrderdDict to preserve schema order
+                    # for CSV/KV log types
+                    config[base_name] = json.load(data, object_pairs_hook=OrderedDict)
+                except ValueError:
+                    raise ConfigError('Invalid JSON format for {}.json'.format(base_name))
 
     # Validate the config. This will raise an exception on any errors,
     # which bubbles up and will immediately break execution of the function
