@@ -183,7 +183,7 @@ class StreamThreatIntel(object):
         if config.get('types'):
             cls._process_types_config(config['types'])
 
-        # Threat Intel will be disabled for the cluster if it is explicityly
+        # Threat Intel will be disabled for the cluster if it is explicitly
         # disabled in cluster config located in conf/clusters/ directory
         if CLUSTER and not (config['clusters'][CLUSTER]['modules']['stream_alert']
                             ['rule_processor'].get('enable_threat_intel', True)):
