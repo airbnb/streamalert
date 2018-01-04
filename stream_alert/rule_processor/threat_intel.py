@@ -39,8 +39,6 @@ PROJECTION_EXPRESSION = '{},{}'.format(PRIMARY_KEY, SUB_TYPE_KEY)
 EXCEPTIONS_TO_BACKOFF = (ClientError,)
 BACKOFF_MAX_RETRIES = 3
 
-CLUSTER = os.environ.get('CLUSTER', '')
-
 class StreamIoc(object):
     """Class to store IOC info"""
     def __init__(self, **kwargs):
@@ -185,7 +183,8 @@ class StreamThreatIntel(object):
 
         # Threat Intel will be disabled for the cluster if it is explicitly
         # disabled in cluster config located in conf/clusters/ directory
-        if CLUSTER and not (config['clusters'][CLUSTER]['modules']['stream_alert']
+        cluster = os.environ.get('CLUSTER', '')
+        if cluster and not (config['clusters'][cluster]['modules']['stream_alert']
                             ['rule_processor'].get('enable_threat_intel', True)):
             return False
 

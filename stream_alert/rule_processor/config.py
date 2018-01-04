@@ -17,7 +17,6 @@ from collections import OrderedDict
 import json
 import os
 
-CLUSTER = os.environ.get('CLUSTER', '')
 
 class ConfigError(Exception):
     """Exception class for config file errors"""
@@ -42,11 +41,12 @@ def load_config(conf_dir='conf/'):
             # Load current cluster config into memory for threat intel
             path = os.path.join(conf_dir, base_name)
             config['clusters'] = {}
-            if CLUSTER:
-                cluster_conf_path = '{}.json'.format(os.path.join(path, CLUSTER))
+            cluster = os.environ.get('CLUSTER', '')
+            if cluster:
+                cluster_conf_path = '{}.json'.format(os.path.join(path, cluster))
                 with open(cluster_conf_path) as data:
                     try:
-                        config['clusters'][CLUSTER] = json.load(data)
+                        config['clusters'][cluster] = json.load(data)
                     except ValueError:
                         raise ConfigError('Invalid JSON format for {}'.format(cluster_conf_path))
         else:
