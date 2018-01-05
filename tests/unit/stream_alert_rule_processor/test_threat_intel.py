@@ -247,6 +247,57 @@ class TestStreamThreatIntel(object):
             assert_equal((results[3].value, results[3].ioc_type),
                          ('abcdef0123456789abcdef0123456789', 'md5'))
 
+    def test_extract_ioc_from_record_with_private_ip(self):
+        """Threat Intel - Test extrac values from a record based on normalized keys"""
+        records = [
+            {
+                'account': 12345,
+                'region': '123456123456',
+                'detail': {
+                    'eventType': 'AwsConsoleSignIn',
+                    'eventName': 'ConsoleLogin',
+                    'userIdentity': {
+                        'userName': 'alice',
+                        'type': 'Root',
+                        'principalId': '12345',
+                    },
+                    'sourceIPAddress': 'ec2.amazon.com',
+                    'recipientAccountId': '12345'
+                },
+                'source': 'ec2.amazon.com',
+                'streamalert:normalization': {
+                    'sourceAddress': [['detail', 'sourceIPAddress'], ['source']],
+                    'usernNme': [['detail', 'userIdentity', 'userName']]
+                },
+                'id': '12345'
+            },
+            {
+                'account': 12345,
+                'region': '123456123456',
+                'detail': {
+                    'eventType': 'AwsConsoleSignIn',
+                    'eventName': 'ConsoleLogin',
+                    'userIdentity': {
+                        'userName': 'alice',
+                        'type': 'Root',
+                        'principalId': '12345',
+                    },
+                    'sourceIPAddress': '192.168.1.2',
+                    'recipientAccountId': '12345'
+                },
+                'source': '192.168.1.2',
+                'streamalert:normalization': {
+                    'sourceAddress': [['detail', 'sourceIPAddress'], ['source']],
+                    'usernNme': [['detail', 'userIdentity', 'userName']]
+                },
+                'id': '12345'
+            }
+        ]
+        records = mock_normalized_records(records)
+        for record in records:
+            result = self.threat_intel._extract_ioc_from_record(record)
+            assert_equal(len(result), 0)
+
     def test_load_from_config(self):
         """Threat Intel - Test load_config method"""
         test_config = {
