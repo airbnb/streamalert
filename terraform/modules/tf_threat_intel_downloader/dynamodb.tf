@@ -9,6 +9,13 @@ resource "aws_dynamodb_table" "threat_intel_ioc" {
     type = "S"
   }
 
+  # It is recommended to use lifecycle ignore_changes for read_capacity and/or
+  # write_capacity if there's autoscaling policy attached to the table. We have
+  # autoscaling policy for read_capacity
+  lifecycle {
+    ignore_changes = ["read_capacity"]
+  }
+
   ttl {
     attribute_name = "expiration_ts"
     enabled        = true
