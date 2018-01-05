@@ -20,7 +20,7 @@ import socket
 import ssl
 
 import apiclient
-from oauth2client.service_account import ServiceAccountCredentials
+import oauth2client
 
 from app_integrations import LOGGER
 from app_integrations.apps.app_base import StreamAlertApp, AppIntegration
@@ -33,7 +33,8 @@ class GSuiteReportsApp(AppIntegration):
     """G Suite Reports base app integration. This is subclassed for various endpoints"""
     _SCOPES = ['https://www.googleapis.com/auth/admin.reports.audit.readonly']
     # A tuple of uncaught exceptions that the googleapiclient can raise
-    _GOOGLE_API_EXCEPTIONS = (apiclient.errors.Error, socket.timeout, ssl.SSLError)
+    _GOOGLE_API_EXCEPTIONS = (apiclient.errors.Error, oauth2client.client.Error, socket.timeout,
+                              ssl.SSLError)
 
     def __init__(self, config):
         super(GSuiteReportsApp, self).__init__(config)
@@ -67,12 +68,11 @@ class GSuiteReportsApp(AppIntegration):
                 service account credentials for this discovery service
         """
         try:
-            creds = ServiceAccountCredentials.from_json_keyfile_dict(
+            creds = oauth2client.service_account.ServiceAccountCredentials.from_json_keyfile_dict(
                 keydata, scopes=cls._SCOPES)
         except (ValueError, KeyError):
             # This has the potential to raise errors. See: https://tinyurl.com/y8q5e9rm
-            LOGGER.exception('Could not generate credentials from keyfile for %s',
-                             cls.type())
+            LOGGER.exception('Could not generate credentials from keyfile for %s', cls.type())
             return False
 
         return creds
@@ -104,7 +104,7 @@ class GSuiteReportsApp(AppIntegration):
         # The google discovery service 'Resource' class that is returned by
         # 'discovery.build' dynamically loads methods/attributes, so pylint will complain
         # about no 'activities' member existing without the below pylint comment
-        self._activities_service = resource.activities() # pylint: disable=no-member
+        self._activities_service = resource.activities()  # pylint: disable=no-member
 
         return True
 
@@ -122,9 +122,7 @@ class GSuiteReportsApp(AppIntegration):
         if not self._next_page_token:
             self._last_event_timestamp = self._last_timestamp
 
-        LOGGER.debug('Querying activities since %s for %s',
-                     self._last_event_timestamp,
-                     self.type())
+        LOGGER.debug('Querying activities since %s for %s', self._last_event_timestamp, self.type())
         LOGGER.debug('Using next page token: %s', self._next_page_token)
 
         activities_list = self._activities_service.list(
