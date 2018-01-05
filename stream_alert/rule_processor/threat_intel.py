@@ -13,6 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+import os
+
 import backoff
 import boto3
 from boto3.dynamodb.types import TypeDeserializer
@@ -178,6 +180,13 @@ class StreamThreatIntel(object):
         """
         if config.get('types'):
             cls._process_types_config(config['types'])
+
+        # Threat Intel will be disabled for the cluster if it is explicitly
+        # disabled in cluster config located in conf/clusters/ directory
+        cluster = os.environ.get('CLUSTER', '')
+        if cluster and not (config['clusters'][cluster]['modules']['stream_alert']
+                            ['rule_processor'].get('enable_threat_intel', True)):
+            return False
 
         if (config.get('global')
                 and config['global'].get('threat_intel')

@@ -688,7 +688,7 @@ class AlertProcessorTester(object):
 
                     elif 'api.pagerduty' in url:
                         u_path = os.path.split(url)[1]
-                        return {u_path: [{'id': 1234}]}
+                        return {u_path: [{'id': 1234, 'name': 'foobar'}]}
 
                 # Default to returning an empty dict in case this was not implemented for a service
                 return dict()
