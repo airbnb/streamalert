@@ -34,7 +34,8 @@ class SuppressNoise(logging.Filter):
             'Starting download from S3*',
             'Completed download in*',
             '*triggered an alert on log type*',
-            '*Firehose*'
+            '*Firehose*',
+            'Got * normalized records'
         )
 
         message = record.getMessage()

@@ -19,6 +19,7 @@ from mock import patch
 from nose.tools import (
     assert_equal,
     assert_false,
+    assert_is_instance,
     assert_true,
     raises,
 )
@@ -246,7 +247,7 @@ class TestStreamThreatIntel(object):
             assert_equal((results[3].value, results[3].ioc_type),
                          ('abcdef0123456789abcdef0123456789', 'md5'))
 
-    def test_from_config(self):
+    def test_load_from_config(self):
         """Threat Intel - Test load_config method"""
         test_config = {
             'global': {
@@ -301,6 +302,24 @@ class TestStreamThreatIntel(object):
             }
         }
         assert_equal(StreamThreatIntel.normalized_type_mapping(), expected_result)
+
+    def test_load_from_config_with_cluster_env(self):
+        """Threat Intel - Test load_from_config to read cluster env variable"""
+        with patch.dict('os.environ', {'CLUSTER': 'advanced'}):
+            config = load_config('tests/unit/conf')
+            config['global']['threat_intel']['enabled'] = True
+            threat_intel = StreamThreatIntel.load_from_config(config)
+            assert_is_instance(threat_intel, StreamThreatIntel)
+            assert_equal(config['clusters'].keys(), ['advanced'])
+
+    def test_load_from_config_with_cluster_env_2(self):
+        """Threat Intel - Test load_from_config with threat intel disabled in cluster"""
+        with patch.dict('os.environ', {'CLUSTER': 'test'}):
+            config = load_config('tests/unit/conf')
+            config['global']['threat_intel']['enabled'] = True
+            threat_intel = StreamThreatIntel.load_from_config(config)
+            assert_false(isinstance(threat_intel, StreamThreatIntel))
+            assert_equal(config['clusters'].keys(), ['test'])
 
     def test_process_types_config(self):
         """Threat Intel - Test process_types_config method"""
