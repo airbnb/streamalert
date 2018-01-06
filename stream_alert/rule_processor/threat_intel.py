@@ -19,6 +19,8 @@ import backoff
 import boto3
 from boto3.dynamodb.types import TypeDeserializer
 from botocore.exceptions import ClientError, ParamValidationError
+from netaddr import IPAddress
+from netaddr.core import AddrFormatError
 
 from stream_alert.shared import NORMALIZATION_KEY
 from stream_alert.shared.backoff_handlers import (
@@ -164,6 +166,10 @@ class StreamThreatIntel(object):
                         for original_key in original_keys:
                             value = value[original_key]
                     if value:
+                        # Threat Intel will only check against public IP addresses
+                        # while processing IP IOCs.
+                        if ioc_type == 'ip' and not self.is_public_ip(value):
+                            continue
                         ioc_value_type_tuples.add((value, ioc_type))
         return [StreamIoc(value=str(value).lower(), ioc_type=ioc_type, associated_record=record)
                 for value, ioc_type in ioc_value_type_tuples]
@@ -401,3 +407,13 @@ class StreamThreatIntel(object):
     def normalized_type_mapping(cls):
         """Get normalized CEF types mapping to original keys from the records."""
         return cls.__normalized_types
+
+    @staticmethod
+    def is_public_ip(ip_address):
+        try:
+            ip_addr = IPAddress(str(ip_address))
+            # We also need to filter multicast ip which is a private ip. For example,
+            # multicast ip '239.192.0.1', is a private ip.
+            return ip_addr.is_unicast() and not ip_addr.is_private()
+        except AddrFormatError:
+            return False
