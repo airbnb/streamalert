@@ -181,7 +181,7 @@ class TestStreamThreatIntel(object):
         assert_equal(rec_with_ioc_info['streamalert:ioc'], expected_results)
 
     def test_extract_ioc_from_record(self):
-        """Threat Intel - Test extrac values from a record based on normalized keys"""
+        """Threat Intel - Test extracting values from a record based on normalized keys"""
         records = [{
             'account': 12345,
             'region': '123456123456',
@@ -248,7 +248,7 @@ class TestStreamThreatIntel(object):
                          ('abcdef0123456789abcdef0123456789', 'md5'))
 
     def test_extract_ioc_from_record_with_private_ip(self):
-        """Threat Intel - Test extrac values from a record based on normalized keys"""
+        """Threat Intel - Test extracting values from a record based on normalized keys"""
         records = [
             {
                 'account': 12345,

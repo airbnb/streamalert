@@ -412,6 +412,8 @@ class StreamThreatIntel(object):
     def is_public_ip(ip_address):
         try:
             ip_addr = IPAddress(str(ip_address))
+            # We also need to filter multicast ip which is a private ip. For example,
+            # multicast ip '239.192.0.1', is a private ip.
             return ip_addr.is_unicast() and not ip_addr.is_private()
         except AddrFormatError:
             return False
