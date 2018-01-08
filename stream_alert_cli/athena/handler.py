@@ -19,12 +19,29 @@ from stream_alert.rule_processor.firehose import StreamAlertFirehose
 from stream_alert_cli.logger import LOGGER_CLI
 from stream_alert_cli.helpers import continue_prompt
 
-# How to map log schema types to athena/hive schema types
+ALERTS_TABLE_STATEMENT = ('CREATE EXTERNAL TABLE alerts ('
+                          'log_source string,'
+                          'log_type string,'
+                          'outputs array<string>,'
+                          'record string,'
+                          'rule_description string,'
+                          'rule_name string,'
+                          'source_entity string,'
+                          'source_service string)'
+                          'PARTITIONED BY (dt string)'
+                          'ROW FORMAT SERDE \'org.openx.data.jsonserde.JsonSerDe\''
+                          'LOCATION \'s3://{bucket}/alerts/\'')
+CREATE_TABLE_STATEMENT = ('CREATE EXTERNAL TABLE {table_name} ({schema}) '
+                          'PARTITIONED BY (dt string) '
+                          'ROW FORMAT SERDE \'org.openx.data.jsonserde.JsonSerDe\' '
+                          'WITH SERDEPROPERTIES ( \'ignore.malformed.json\' = \'true\') '
+                          'LOCATION \'s3://{bucket}/{table_name}/\'')
+# How to map log schema types to Athena/Hive types
 SCHEMA_TYPE_MAPPING = {
     'string': 'string',
     'integer': 'bigint',
     'boolean': 'boolean',
-    'float': 'decimal',
+    'float': 'decimal(10,3)',
     dict: 'map<string, string>',
     list: 'array<string>'
 }
@@ -194,6 +211,41 @@ def _add_to_athena_schema(log_schema, athena_schema, root_key=''):
                 athena_schema[key_name] = SCHEMA_TYPE_MAPPING[key_type]
 
 
+def _construct_create_table_statement(schema, table_name, bucket):
+    """Convert a dictionary based Athena schema to a Hive DDL statement
+
+    Args:
+        schema (dict): The sanitized Athena schema
+        table_name (str): The name of the Athena table to create
+        bucket (str): The S3 bucket containing the data
+
+    Returns:
+        str: The Hive DDL CREATE TABLE expression
+    """
+    # Construct the main Athena Schema
+    schema_statement = ''
+    for key_name, key_type in schema.iteritems():
+        if isinstance(key_type, str):
+            schema_statement += '{0} {1},'.format(key_name, key_type)
+        # Account for nested structs
+        elif isinstance(key_type, dict):
+            struct_schema = ''.join([
+                '{0}:{1},'.format(sub_key, sub_type) for sub_key, sub_type in key_type.iteritems()
+            ])
+            nested_schema_statement = '{0} struct<{1}>, '.format(
+                key_name,
+                # Use the minus index to remove the last comma
+                struct_schema[:-1])
+
+            schema_statement += nested_schema_statement
+
+    return CREATE_TABLE_STATEMENT.format(
+        table_name=table_name,
+        # Remove the last comma from the generated statement
+        schema=schema_statement[:-1],
+        bucket=bucket)
+
+
 def create_table(athena_client, options, config):
     """Create a 'streamalert' Athena table
 
@@ -219,27 +271,29 @@ def create_table(athena_client, options, config):
             LOGGER_CLI.error('Missing command line argument --table_name')
             return
 
+        # Convert special characters in schema name to underscores
         sanitized_table_name = sa_firehose.firehose_log_name(options.table_name)
 
+        # Check that the log type is enabled via Firehose
         if sanitized_table_name not in sa_firehose.enabled_logs:
             LOGGER_CLI.error('Table name %s missing from configuration or '
                              'is not enabled.', sanitized_table_name)
             return
 
+        # Check if the table exists
         if athena_client.check_table_exists(sanitized_table_name):
             LOGGER_CLI.info('The \'%s\' table already exists.', sanitized_table_name)
             return
 
         log_info = config['logs'][options.table_name.replace('_', ':', 1)]
+
         schema = dict(log_info['schema'])
-        schema_statement = ''
-
         sanitized_schema = StreamAlertFirehose.sanitize_keys(schema)
-        athena_schema = {}
 
+        athena_schema = {}
         _add_to_athena_schema(sanitized_schema, athena_schema)
 
-        # Support envelope keys
+        # Add envelope keys to Athena Schema
         configuration_options = log_info.get('configuration')
         if configuration_options:
             envelope_keys = configuration_options.get('envelope_keys')
@@ -249,49 +303,38 @@ def create_table(athena_client, options, config):
                 _add_to_athena_schema(sanitized_envelope_key_schema, athena_schema,
                                       '`streamalert:envelope_keys`')
 
-        for key_name, key_type in athena_schema.iteritems():
-            # Account for nested structs
-            if isinstance(key_type, dict):
-                struct_schema = ''.join([
-                    '{0}:{1},'.format(sub_key, sub_type)
-                    for sub_key, sub_type in key_type.iteritems()
-                ])
-                nested_schema_statement = '{0} struct<{1}>, '.format(
-                    key_name,
-                    # Use the minus index to remove the last comma
-                    struct_schema[:-1])
-                schema_statement += nested_schema_statement
-            else:
-                schema_statement += '{0} {1},'.format(key_name, key_type)
+        # Handle Schema overrides
+        #   This is useful when an Athena schema needs to differ from the normal log schema
+        if options.schema_override:
+            for override in options.schema_override:
+                if '=' not in override:
+                    LOGGER_CLI.error('Invalid schema override [%s], use column_name=type format',
+                                     override)
+                    return
 
-        query = (
-            'CREATE EXTERNAL TABLE {table_name} ({schema}) '
-            'PARTITIONED BY (dt string) '
-            'ROW FORMAT SERDE \'org.openx.data.jsonserde.JsonSerDe\' '
-            'WITH SERDEPROPERTIES ( \'ignore.malformed.json\' = \'true\') '
-            'LOCATION \'s3://{bucket}/{table_name}/\''.format(
-                table_name=sanitized_table_name,
-                # Use the minus index to remove the last comma
-                schema=schema_statement[:-1],
-                bucket=options.bucket))
+                column_name, column_type = override.split('=')
+                if not all([column_name, column_type]):
+                    LOGGER_CLI.error('Invalid schema override [%s], use column_name=type format',
+                                     override)
+
+                # Columns are escaped to avoid Hive issues with special characters
+                column_name = '`{}`'.format(column_name)
+                if column_name in athena_schema:
+                    athena_schema[column_name] = column_type
+                    LOGGER_CLI.info('Applied schema override: %s:%s', column_name, column_type)
+                else:
+                    LOGGER_CLI.error(
+                        'Schema override column %s not found in Athena Schema, skipping',
+                        column_name)
+
+        query = _construct_create_table_statement(
+            schema=athena_schema, table_name=sanitized_table_name, bucket=options.bucket)
 
     elif options.type == 'alerts':
         if athena_client.check_table_exists(options.type):
             LOGGER_CLI.info('The \'alerts\' table already exists.')
             return
-
-        query = ('CREATE EXTERNAL TABLE alerts ('
-                 'log_source string,'
-                 'log_type string,'
-                 'outputs array<string>,'
-                 'record string,'
-                 'rule_description string,'
-                 'rule_name string,'
-                 'source_entity string,'
-                 'source_service string)'
-                 'PARTITIONED BY (dt string)'
-                 'ROW FORMAT SERDE \'org.openx.data.jsonserde.JsonSerDe\''
-                 'LOCATION \'s3://{bucket}/alerts/\''.format(bucket=options.bucket))
+        query = ALERTS_TABLE_STATEMENT.format(bucket=options.bucket)
 
     if query:
         create_table_success, _ = athena_client.run_athena_query(

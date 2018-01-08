@@ -21,6 +21,7 @@ import ssl
 from mock import Mock, mock_open, patch
 
 import apiclient
+import oauth2client
 from nose.tools import assert_equal, assert_false, assert_items_equal, assert_true, raises
 
 from app_integrations.apps.gsuite import GSuiteReportsApp
@@ -52,7 +53,7 @@ class TestGSuiteReportsApp(object):
         assert_items_equal(self._app.required_auth_info().keys(),
                            {'delegation_email', 'keyfile'})
 
-    @patch('app_integrations.apps.gsuite.ServiceAccountCredentials.from_json_keyfile_dict',
+    @patch('oauth2client.service_account.ServiceAccountCredentials.from_json_keyfile_dict',
            Mock(return_value=True))
     def test_keyfile_validator(self):
         """GSuiteReportsApp - Keyfile Validation, Success"""
@@ -63,7 +64,7 @@ class TestGSuiteReportsApp(object):
             loaded_keydata = validation_function('fakepath')
             assert_equal(loaded_keydata, data)
 
-    @patch('app_integrations.apps.gsuite.ServiceAccountCredentials.from_json_keyfile_dict')
+    @patch('oauth2client.service_account.ServiceAccountCredentials.from_json_keyfile_dict')
     def test_keyfile_validator_failure(self, cred_mock):
         """GSuiteReportsApp - Keyfile Validation, Failure"""
         validation_function = self._app.required_auth_info()['keyfile']['format']
@@ -73,7 +74,7 @@ class TestGSuiteReportsApp(object):
             assert_false(validation_function('fakepath'))
             cred_mock.assert_called()
 
-    @patch('app_integrations.apps.gsuite.ServiceAccountCredentials.from_json_keyfile_dict')
+    @patch('oauth2client.service_account.ServiceAccountCredentials.from_json_keyfile_dict')
     def test_keyfile_validator_bad_json(self, cred_mock):
         """GSuiteReportsApp - Keyfile Validation, Bad JSON"""
         validation_function = self._app.required_auth_info()['keyfile']['format']
@@ -82,13 +83,13 @@ class TestGSuiteReportsApp(object):
             assert_false(validation_function('fakepath'))
             cred_mock.assert_not_called()
 
-    @patch('app_integrations.apps.gsuite.ServiceAccountCredentials.from_json_keyfile_dict',
+    @patch('oauth2client.service_account.ServiceAccountCredentials.from_json_keyfile_dict',
            Mock(return_value=True))
     def test_load_credentials(self):
         """GSuiteReportsApp - Load Credentials, Success"""
         assert_true(self._app._load_credentials('fakedata'))
 
-    @patch('app_integrations.apps.gsuite.ServiceAccountCredentials.from_json_keyfile_dict')
+    @patch('oauth2client.service_account.ServiceAccountCredentials.from_json_keyfile_dict')
     def test_load_credentials_bad(self, cred_mock):
         """GSuiteReportsApp - Load Credentials, ValueError"""
         cred_mock.side_effect = ValueError('Bad things happened')
@@ -161,6 +162,17 @@ class TestGSuiteReportsApp(object):
         """GSuiteReportsApp - Gather Logs, Google API HTTP Error"""
         with patch.object(self._app, '_activities_service') as service_mock:
             error = apiclient.errors.HttpError('response', bytes('bad'))
+            service_mock.list.return_value.execute.side_effect = error
+            assert_false(self._app._gather_logs())
+            log_mock.assert_called_with('Failed to execute activities listing for %s', 'type')
+
+    @patch('app_integrations.apps.gsuite.GSuiteReportsApp._create_service',
+           Mock(return_value=True))
+    @patch('logging.Logger.exception')
+    def test_gather_logs_token_error(self, log_mock):
+        """GSuiteReportsApp - Gather Logs, Google API Token Error"""
+        with patch.object(self._app, '_activities_service') as service_mock:
+            error = oauth2client.client.HttpAccessTokenRefreshError('bad', status=502)
             service_mock.list.return_value.execute.side_effect = error
             assert_false(self._app._gather_logs())
             log_mock.assert_called_with('Failed to execute activities listing for %s', 'type')
