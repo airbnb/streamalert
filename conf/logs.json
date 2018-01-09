@@ -1,4 +1,12 @@
 {
+  "binaryalert": {
+    "schema": {
+      "FileInfo": {},
+      "NumMatchedRules": "integer",
+      "MatchedRules": {}
+    },
+    "parser": "json"
+  },
   "box:admin_events": {
     "schema": {
       "accessible_by": {},
