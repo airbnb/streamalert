@@ -24,6 +24,35 @@ from stream_alert.alert_processor.outputs.output_base import (
     StreamAlertOutput
 )
 
+def events_v2_data(routing_key, **kwargs):
+    """Helper method to generate the payload to create an event using PagerDuty Events API v2
+    Args:
+        routing_key:
+        **kwargs: consists of any combination of the following items:
+            descriptor (str): Service descriptor (ie: slack channel, pd integration)
+            rule_name (str): Name of the triggered rule
+            alert (dict): Alert relevant to the triggered rule
+    Returns:
+            dict: Contains JSON blob to be used as event
+    """
+    summary = 'StreamAlert Rule Triggered - {}'.format(kwargs['rule_name'])
+
+    details = {
+        'rule_description': kwargs['alert']['rule_description'],
+        'record': kwargs['alert']['record']
+    }
+    payload = {
+        'summary': summary,
+        'source': kwargs['alert']['log_source'],
+        'severity': 'critical',
+        'custom_details': details
+    }
+    return {
+        'routing_key': routing_key,
+        'payload': payload,
+        'event_action': 'trigger',
+        'client': 'StreamAlert'
+    }
 
 @StreamAlertOutput
 class PagerDutyOutput(OutputDispatcher):
@@ -147,24 +176,7 @@ class PagerDutyOutputV2(OutputDispatcher):
         if not creds:
             return self._log_status(False)
 
-        summary = 'StreamAlert Rule Triggered - {}'.format(kwargs['rule_name'])
-
-        details = {
-            'rule_description': kwargs['alert']['rule_description'],
-            'record': kwargs['alert']['record']
-        }
-        payload = {
-            'summary': summary,
-            'source': kwargs['alert']['log_source'],
-            'severity': 'critical',
-            'custom_details': details
-        }
-        data = {
-            'routing_key': creds['routing_key'],
-            'payload': payload,
-            'event_action': 'trigger',
-            'client': 'StreamAlert'
-        }
+        data = events_v2_data(creds['routing_key'], **kwargs)
 
         try:
             success = self._post_request_retry(creds['url'], data, None, True)
@@ -232,6 +244,9 @@ class PagerDutyIncidentOutput(OutputDispatcher):
             ('email_from',
              OutputProperty(description='valid user email from the PagerDuty '
                                         'account linked to the token',
+                            cred_requirement=True)),
+            ('integration_key',
+             OutputProperty(description='the integration key for this PagerDuty integration',
                             cred_requirement=True))
         ])
 
@@ -247,6 +262,48 @@ class PagerDutyIncidentOutput(OutputDispatcher):
             str: Full URL of the provided endpoint
         """
         return os.path.join(base_url, endpoint)
+
+    @staticmethod
+    def _get_events_endpoint():
+        """Get the standard url used for PagerDuty Events API v2. This value the same for
+        everyone, so is hard-coded here and does not need to be configured by the user
+
+        Returns:
+            dict: Contains various default items for this output (ie: url)
+        """
+        return {'url': 'https://events.pagerduty.com/v2/enqueue'}
+
+    def _create_event(self, data):
+        """Helper to create an event in the PagerDuty Events API v2
+
+        Args:
+            data (dict): JSON blob with the format of the PagerDuty Events API v2
+        Returns:
+            dict: Contains the HTTP response of the request to the API
+        """
+        url = 'https://events.pagerduty.com/v2/enqueue'
+        try:
+            resp = self._post_request_retry(url, data, None, False)
+        except OutputRequestFailure:
+            return False
+
+        response = resp.json()
+        if not response:
+            return False
+
+        return response
+
+    def _get_event_incident_id(self, incident_key):
+        """Helper to lookup an incident using the incident_key and return the id
+
+        Args:
+            incident_key (str): Incident key that indentifies uniquely an incident
+
+        Returns:
+            str: ID of the incident after look up the incident_key
+
+        """
+        return incident_key
 
     def _check_exists(self, filter_str, url, target_key, get_id=True):
         """Generic method to run a search in the PagerDuty REST API and return the id
