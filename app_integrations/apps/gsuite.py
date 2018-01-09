@@ -20,7 +20,7 @@ import socket
 import ssl
 
 import apiclient
-import oauth2client
+from oauth2client import client, service_account
 
 from app_integrations import LOGGER
 from app_integrations.apps.app_base import StreamAlertApp, AppIntegration
@@ -33,7 +33,7 @@ class GSuiteReportsApp(AppIntegration):
     """G Suite Reports base app integration. This is subclassed for various endpoints"""
     _SCOPES = ['https://www.googleapis.com/auth/admin.reports.audit.readonly']
     # A tuple of uncaught exceptions that the googleapiclient can raise
-    _GOOGLE_API_EXCEPTIONS = (apiclient.errors.Error, oauth2client.client.Error, socket.timeout,
+    _GOOGLE_API_EXCEPTIONS = (apiclient.errors.Error, client.Error, socket.timeout,
                               ssl.SSLError)
 
     def __init__(self, config):
@@ -68,7 +68,7 @@ class GSuiteReportsApp(AppIntegration):
                 service account credentials for this discovery service
         """
         try:
-            creds = oauth2client.service_account.ServiceAccountCredentials.from_json_keyfile_dict(
+            creds = service_account.ServiceAccountCredentials.from_json_keyfile_dict(
                 keydata, scopes=cls._SCOPES)
         except (ValueError, KeyError):
             # This has the potential to raise errors. See: https://tinyurl.com/y8q5e9rm
