@@ -69,7 +69,7 @@ def run_command(runner_args, **kwargs):
         stdout_option = open(os.devnull, 'w')
 
     try:
-        subprocess.check_call(runner_args, stdout=stdout_option, cwd=cwd)
+        subprocess.check_call(runner_args, stdout=stdout_option, cwd=cwd)  # nosec
     except subprocess.CalledProcessError as err:
         LOGGER_CLI.error('%s\n%s', error_message, err.cmd)
         return False
@@ -320,7 +320,8 @@ def format_lambda_test_record(test_record):
 
     if service == 's3':
         # Set the S3 object key to a random value for testing
-        test_record['key'] = ('{:032X}'.format(random.randrange(16**32)))
+        # (Bandit warns about use of insecure random generator: ignore with #nosec)
+        test_record['key'] = ('{:032X}'.format(random.randrange(16**32)))  # nosec
         record_template['s3']['object']['key'] = test_record['key']
         record_template['s3']['object']['size'] = len(data)
         record_template['s3']['bucket']['arn'] = 'arn:aws:s3:::{}'.format(source)
