@@ -20,7 +20,6 @@ import boto3
 from boto3.dynamodb.types import TypeDeserializer
 from botocore.exceptions import ClientError, ParamValidationError
 from netaddr import IPAddress
-from netaddr.core import AddrFormatError
 
 from stream_alert.shared import NORMALIZATION_KEY
 from stream_alert.shared.backoff_handlers import (
@@ -415,5 +414,5 @@ class StreamThreatIntel(object):
             # We also need to filter multicast ip which is a private ip. For example,
             # multicast ip '239.192.0.1', is a private ip.
             return ip_addr.is_unicast() and not ip_addr.is_private()
-        except AddrFormatError:
+        except: # pylint: disable=bare-except
             return False
