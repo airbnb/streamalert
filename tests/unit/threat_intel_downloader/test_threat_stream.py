@@ -38,6 +38,7 @@ from tests.unit.threat_intel_downloader.test_helpers import (
     mock_ssm_response
 )
 
+@patch.object(ThreatStream, 'BACKOFF_MAX_RETRIES', 0)
 class TestThreatStream(object):
     """Test class to test ThreatStream functionalities"""
     def __init__(self):

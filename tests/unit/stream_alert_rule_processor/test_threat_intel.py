@@ -31,7 +31,6 @@ from tests.unit.stream_alert_rule_processor.test_helpers import (
     mock_normalized_records,
 )
 
-
 class TestStreamIoc(object):
     """Test class for StreamIoc which store IOC info"""
     def test_instance_initialization(self):
@@ -63,6 +62,7 @@ class TestStreamIoc(object):
         ioc.is_ioc = False
         assert_false(ioc.is_ioc)
 
+@patch.object(StreamThreatIntel, 'BACKOFF_MAX_RETRIES', 0)
 class TestStreamThreatIntel(object):
     """Test class for StreamThreatIntel"""
     @classmethod
@@ -429,8 +429,9 @@ class TestStreamThreatIntel(object):
         assert_true(ioc_collections[2].is_ioc)
 
     @patch('boto3.client')
-    def test_process_ioc_with_clienterror(self, mock_client):
-        """Threat Intel - Test private method process_ioc"""
+    @patch('logging.Logger.error')
+    def test_process_ioc_with_clienterror(self, log_mock, mock_client):
+        """Threat Intel - Test private method process_ioc with Error"""
         mock_client.return_value = MockDynamoDBClient(exception=True)
         threat_intel = StreamThreatIntel.load_from_config(self.config)
 
@@ -438,6 +439,8 @@ class TestStreamThreatIntel(object):
             StreamIoc(value='1.1.1.2', ioc_type='ip')
         ]
         threat_intel._process_ioc(ioc_collections)
+        log_mock.assert_called_with('An error occured while quering dynamodb table. Error is: %s',
+                                    {'Error': {'Code': 400, 'Message': 'raising test exception'}})
 
     @patch('boto3.client')
     def test_process_ioc_with_unprocessed_keys(self, mock_client):

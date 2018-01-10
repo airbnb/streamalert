@@ -38,9 +38,6 @@ PRIMARY_KEY = 'ioc_value'
 SUB_TYPE_KEY = 'sub_type'
 PROJECTION_EXPRESSION = '{},{}'.format(PRIMARY_KEY, SUB_TYPE_KEY)
 
-EXCEPTIONS_TO_BACKOFF = (ClientError,)
-BACKOFF_MAX_RETRIES = 3
-
 class StreamIoc(object):
     """Class to store IOC info"""
     def __init__(self, **kwargs):
@@ -73,6 +70,9 @@ def exceptions_to_giveup(err):
 class StreamThreatIntel(object):
     """Load intelligence from csv.gz files into a dictionary."""
     IOC_KEY = 'streamalert:ioc'
+
+    EXCEPTIONS_TO_BACKOFF = (ClientError,)
+    BACKOFF_MAX_RETRIES = 3
 
     # Class variable stores Data Normalization types mapping.
     __normalized_types = {}
