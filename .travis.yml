@@ -13,5 +13,6 @@ script:
   - ./manage.py lambda test --processor all
   - sphinx-build -W docs/source docs/build
   - ./tests/scripts/pylint.sh
+  - bandit --ini setup.cfg -r .
 after_success:
   coveralls
