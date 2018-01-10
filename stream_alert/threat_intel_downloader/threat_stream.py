@@ -43,6 +43,12 @@ class ThreatStream(object):
     _API_MAX_INDEX = 500000
     _PARAMETER_NAME = 'threat_intel_downloader_api_creds'
 
+    EXCEPTIONS_TO_BACKOFF = (requests.exceptions.Timeout,
+                             requests.exceptions.ConnectionError,
+                             requests.exceptions.ChunkedEncodingError,
+                             ThreatStreamRequestsError)
+    BACKOFF_MAX_RETRIES = 3
+
     def __init__(self, config):
         self.ioc_types = config['ioc_types']
         self.ioc_sources = config['ioc_filters']
@@ -81,13 +87,9 @@ class ThreatStream(object):
             LOGGER.error('API Creds Error')
             raise ThreatStreamCredsError('API Creds Error')
 
-    exceptions_to_backoff = (requests.exceptions.Timeout,
-                             requests.exceptions.ConnectionError,
-                             requests.exceptions.ChunkedEncodingError,
-                             ThreatStreamRequestsError)
     @backoff.on_exception(backoff.constant,
-                          exceptions_to_backoff,
-                          max_tries=3,
+                          EXCEPTIONS_TO_BACKOFF,
+                          max_tries=BACKOFF_MAX_RETRIES,
                           on_backoff=backoff_handler,
                           on_success=success_handler,
                           on_giveup=giveup_handler)
