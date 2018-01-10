@@ -2,8 +2,8 @@
   "binaryalert": {
     "schema": {
       "FileInfo": {},
-      "NumMatchedRules": "integer",
-      "MatchedRules": {}
+      "MatchedRules": {},
+      "NumMatchedRules": "integer"
     },
     "parser": "json"
   },
@@ -27,153 +27,6 @@
       ]
     }
   },
-  "carbonblack:binarystore.file.added": {
-    "schema": {
-      "cb_server": "string",
-      "compressed_size": "string",
-      "file_path": "string",
-      "md5": "string",
-      "node_id": "string",
-      "size": "string",
-      "timestamp": "string",
-      "type": "string"
-    },
-    "parser": "json"
-  },
-  "carbonblack:ingress.event.netconn": {
-    "schema": {
-      "cb_server": "string",
-      "computer_name": "string",
-      "direction": "string",
-      "domain": "string",
-      "event_type": "string",
-      "ipv4": "string",
-      "local_ip": "string",
-      "local_port": "string",
-      "md5": "string",
-      "pid": "string",
-      "port": "string",
-      "process_guid": "string",
-      "process_path": "string",
-      "protocol": "string",
-      "remote_ip": "string",
-      "remote_port": "string",
-      "sensor_id": "string",
-      "timestamp": "float",
-      "type": "string"
-    },
-    "parser": "json",
-    "configuration": {
-      "optional_top_level_keys": [
-        "local_ip",
-        "local_port",
-        "process_path",
-        "remote_ip",
-        "remote_port"
-      ]
-    }
-  },
-  "carbonblack:ingress.event.procstart": {
-    "schema": {
-      "cb_server": "string",
-      "command_line": "string",
-      "computer_name": "string",
-      "event_type": "string",
-      "expect_followon_w_md5": "boolean",
-      "md5": "string",
-      "parent_create_time": "integer",
-      "parent_md5": "string",
-      "parent_path": "string",
-      "parent_process_guid": "string",
-      "path": "string",
-      "pid": "integer",
-      "process_guid": "string",
-      "process_path": "string",
-      "sensor_id": "integer",
-      "timestamp": "integer",
-      "type": "string",
-      "uid": "string",
-      "username": "string"
-    },
-    "parser": "json",
-    "configuration": {
-      "optional_top_level_keys": [
-        "parent_md5",
-        "process_path",
-        "uid",
-        "username"
-      ]
-    }
-  },
-  "carbonblack:feed.storage.hit.process": {
-    "schema": {
-      "cb_server": "string",
-      "cb_version": "string",
-      "comms_ip": "string",
-      "computer_name": "string",
-      "docs": [],
-      "feed_id": "integer",
-      "feed_name": "string",
-      "from_feed_search": "boolean",
-      "group": "string",
-      "hostname": "string",
-      "interface_ip": "string",
-      "ioc_attr": {},
-      "ioc_query_index": "string",
-      "ioc_query_string": "string",
-      "ioc_type": "string",
-      "ioc_value": "string",
-      "process_guid": "string",
-      "process_id": "string",
-      "report_id": "string",
-      "report_score": "integer",
-      "segment_id": "integer",
-      "sensor_id": "integer",
-      "server_name": "string",
-      "timestamp": "float",
-      "type": "string"
-    },
-    "parser": "json",
-    "configuration": {
-      "optional_top_level_keys": [
-        "ioc_query_index",
-        "ioc_query_string"
-      ]
-    }
-  },
-  "carbonblack:feed.ingress.hit.process": {
-    "schema": {
-      "process_id": "string",
-      "sensor_id": "integer",
-      "group": "string",
-      "cb_server": "string",
-      "server_name": "string",
-      "segment_id": "string",
-      "timestamp": "float",
-      "hostname": "string",
-      "report_score": "integer",
-      "feed_name": "string",
-      "from_feed_search": "string",
-      "feed_id": "integer",
-      "ioc_value": "string",
-      "computer_name": "string",
-      "cb_version": "string",
-      "process_guid": "string",
-      "ioc_type": "string",
-      "report_id": "string",
-      "type": "string",
-      "os_type": "string",
-      "ioc_attr": {}
-    },
-    "parser": "json",
-    "configuration": {
-      "log_patterns": {
-        "type": [
-          "feed.ingress.hit.process"
-        ]
-      }
-    }
-  },
   "carbonblack:alert.status.updated": {
     "schema": {
       "alert_resolution": "string",
@@ -195,7 +48,7 @@
       ]
     }
   },
-  "carbonblack:alert.watchlist.hit.feedsearch.binary": {
+  "carbonblack:alert.watchlist.hit.feedsearch.bin": {
     "schema": {
       "alert_severity": "float",
       "alert_type": "string",
@@ -347,16 +200,32 @@
   },
   "carbonblack:alert.watchlist.hit.query.process": {
     "schema": {
-      "alliance_data_srstrust": [],
-      "alliance_data_virustotal": [],
-      "alliance_link_srstrust": "string",
-      "alliance_link_virustotal": "string",
-      "alliance_score_srstrust": "integer",
-      "alliance_score_virustotal": "integer",
-      "alliance_updated_srstrust": "string",
-      "alliance_updated_virustotal": "string",
       "alert_severity": "string",
       "alert_type": "string",
+      "alliance_data_bit9endpointvisibility": [],
+      "alliance_data_nvd": [],
+      "alliance_data_srsthreat": [],
+      "alliance_data_srstrust": [],
+      "alliance_data_virustotal": [],
+      "alliance_data_virustotalconnector": [],
+      "alliance_link_bit9endpointvisibility": "string",
+      "alliance_link_nvd": "string",
+      "alliance_link_srsthreat": "string",
+      "alliance_link_srstrust": "string",
+      "alliance_link_virustotal": "string",
+      "alliance_link_virustotalconnector": "string",
+      "alliance_score_bit9endpointvisibility": "integer",
+      "alliance_score_nvd": "integer",
+      "alliance_score_srsthreat": "integer",
+      "alliance_score_srstrust": "integer",
+      "alliance_score_virustotal": "integer",
+      "alliance_score_virustotalconnector": "integer",
+      "alliance_updated_bit9endpointvisibility": "string",
+      "alliance_updated_nvd": "string",
+      "alliance_updated_srsthreat": "string",
+      "alliance_updated_srstrust": "string",
+      "alliance_updated_virustotal": "string",
+      "alliance_updated_virustotalconnector": "string",
       "assigned_to": "string",
       "cb_server": "string",
       "childproc_count": "integer",
@@ -405,46 +274,233 @@
         ]
       },
       "optional_top_level_keys": [
+        "alliance_data_bit9endpointvisibility",
+        "alliance_data_nvd",
+        "alliance_data_srsthreat",
         "alliance_data_srstrust",
         "alliance_data_virustotal",
+        "alliance_data_virustotalconnector",
+        "alliance_link_bit9endpointvisibility",
+        "alliance_link_nvd",
+        "alliance_link_srsthreat",
         "alliance_link_srstrust",
         "alliance_link_virustotal",
+        "alliance_link_virustotalconnector",
+        "alliance_score_bit9endpointvisibility",
+        "alliance_score_nvd",
+        "alliance_score_srsthreat",
         "alliance_score_srstrust",
         "alliance_score_virustotal",
+        "alliance_score_virustotalconnector",
+        "alliance_updated_bit9endpointvisibility",
+        "alliance_updated_nvd",
+        "alliance_updated_srsthreat",
         "alliance_updated_srstrust",
         "alliance_updated_virustotal",
+        "alliance_updated_virustotalconnector",
         "assigned_to",
         "ioc_attr",
         "resolved_time"
       ]
     }
   },
-  "carbonblack:watchlist.hit.process": {
+  "carbonblack:binaryinfo.group.observed": {
     "schema": {
+      "cb_server": "string",
+      "group": "string",
+      "md5": "string",
+      "scores": {},
+      "timestamp": "float",
+      "type": "string",
+      "watchlists": {}
+    },
+    "parser": "json"
+  },
+  "carbonblack:binaryinfo.host.observed": {
+    "schema": {
+      "cb_server": "string",
+      "computer_name": "string",
+      "hostname": "string",
+      "md5": "string",
+      "scores": {},
+      "sensor_id": "integer",
+      "timestamp": "float",
+      "type": "string",
+      "watchlists": {}
+    },
+    "parser": "json"
+  },
+  "carbonblack:binaryinfo.observed": {
+    "schema": {
+      "cb_server": "string",
+      "md5": "string",
+      "scores": {},
+      "timestamp": "float",
+      "type": "string",
+      "watchlists": {}
+    },
+    "parser": "json"
+  },
+  "carbonblack:binarystore.file.added": {
+    "schema": {
+      "cb_server": "string",
+      "compressed_size": "string",
+      "file_path": "string",
+      "md5": "string",
+      "node_id": "string",
+      "size": "string",
+      "timestamp": "string",
+      "type": "string"
+    },
+    "parser": "json"
+  },
+  "carbonblack:feed.ingress.hit.binary": {
+    "schema": {
+      "cb_server": "string",
+      "cb_version": "string",
+      "computer_name": "string",
+      "feed_id": "integer",
+      "feed_name": "string",
+      "from_feed_search": "boolean",
+      "group": "string",
+      "hostname": "string",
+      "ioc_attr": {},
+      "ioc_type": "string",
+      "ioc_value": "string",
+      "md5": "string",
+      "os_type": "string",
+      "report_id": "string",
+      "report_score": "integer",
+      "sensor_id": "integer",
+      "server_name": "string",
+      "timestamp": "float",
+      "type": "string"
+    },
+    "parser": "json"
+  },
+  "carbonblack:feed.ingress.hit.process": {
+    "schema": {
+      "cb_server": "string",
+      "cb_version": "string",
+      "computer_name": "string",
+      "feed_id": "integer",
+      "feed_name": "string",
+      "from_feed_search": "string",
+      "group": "string",
+      "hostname": "string",
+      "ioc_attr": {},
+      "ioc_type": "string",
+      "ioc_value": "string",
+      "os_type": "string",
+      "process_guid": "string",
+      "process_id": "string",
+      "report_id": "string",
+      "report_score": "integer",
+      "segment_id": "string",
+      "sensor_id": "integer",
+      "server_name": "string",
+      "timestamp": "float",
+      "type": "string"
+    },
+    "parser": "json",
+    "configuration": {
+      "log_patterns": {
+        "type": [
+          "feed.ingress.hit.process"
+        ]
+      }
+    }
+  },
+  "carbonblack:feed.query.hit.binary": {
+    "schema": {
+      "cb_version": "integer",
+      "company_name": "string",
+      "copied_mod_len": "integer",
+      "digsig_issuer": "string",
+      "digsig_prog_name": "string",
+      "digsig_publisher": "string",
+      "digsig_result": "string",
+      "digsig_result_code": "string",
+      "digsig_sign_time": "string",
+      "digsig_subject": "string",
+      "endpoint": [],
+      "event_partition_id": [],
+      "facet_id": "integer",
+      "file_desc": "string",
+      "file_version": "string",
+      "group": [],
+      "host_count": "integer",
+      "internal_name": "string",
+      "is_64bit": "boolean",
+      "is_executable_image": "boolean",
+      "last_seen": "string",
+      "legal_copyright": "string",
+      "md5": "string",
+      "observed_filename": "string",
+      "orig_mod_len": "integer",
+      "original_filename": "string",
+      "os_type": "string",
+      "product_name": "string",
+      "product_version": "string",
+      "server_added_timestamp": "string",
+      "signed": "string",
+      "timestamp": "string"
+    },
+    "parser": "json",
+    "configuration": {
+      "envelope_keys": {
+        "feed_id": "integer",
+        "feed_name": "string",
+        "group": "string",
+        "hostname": "string",
+        "ioc_attrs": {},
+        "ioc_query_index": "string",
+        "ioc_query_string": "string",
+        "ioc_type": "string",
+        "ioc_value": "string",
+        "md5": "string",
+        "report_id": "string",
+        "report_score": "integer",
+        "sensor_id": "integer",
+        "timestamp": "float",
+        "type": "string"
+      },
+      "json_path": "docs[*]"
+    }
+  },
+  "carbonblack:feed.query.hit.process": {
+    "schema": {
+      "alliance_data_bit9endpointvisibility": [],
+      "alliance_data_nvd": [],
       "alliance_data_srsthreat": [],
       "alliance_data_srstrust": [],
       "alliance_data_virustotal": [],
-      "alliance_link_srstrust": "string",
+      "alliance_data_virustotalconnector": [],
+      "alliance_link_bit9endpointvisibility": "string",
+      "alliance_link_nvd": "string",
       "alliance_link_srsthreat": "string",
+      "alliance_link_srstrust": "string",
       "alliance_link_virustotal": "string",
-      "alliance_score_srstrust": "integer",
+      "alliance_link_virustotalconnector": "string",
+      "alliance_score_bit9endpointvisibility": "integer",
+      "alliance_score_nvd": "integer",
       "alliance_score_srsthreat": "integer",
+      "alliance_score_srstrust": "integer",
       "alliance_score_virustotal": "integer",
-      "alliance_updated_srstrust": "string",
+      "alliance_score_virustotalconnector": "integer",
+      "alliance_updated_bit9endpointvisibility": "string",
+      "alliance_updated_nvd": "string",
       "alliance_updated_srsthreat": "string",
+      "alliance_updated_srstrust": "string",
       "alliance_updated_virustotal": "string",
+      "alliance_updated_virustotalconnector": "string",
       "childproc_count": "integer",
       "cmdline": "string",
-      "comms_ip": "string",
-      "computer_name": "string",
       "crossproc_count": "integer",
       "emet_count": "integer",
       "filemod_count": "integer",
       "filtering_known_dlls": "boolean",
-      "group": "string",
       "host_type": "string",
-      "hostname": "string",
-      "id": "string",
       "interface_ip": "string",
       "last_server_update": "integer",
       "last_update": "string",
@@ -464,101 +520,233 @@
       "process_pid": "integer",
       "processblock_count": "integer",
       "regmod_count": "integer",
-      "segment_id": "integer",
-      "sensor_id": "integer",
       "start": "string",
       "unique_id": "string",
       "username": "string"
     },
     "parser": "json",
     "configuration": {
-      "json_path": "docs[*]",
-      "optional_top_level_keys": [
-        "alliance_data_srstrust",
-        "alliance_data_srsthreat",
-        "alliance_data_virustotal",
-        "alliance_link_srstrust",
-        "alliance_link_srsthreat",
-        "alliance_link_virustotal",
-        "alliance_score_srstrust",
-        "alliance_score_srsthreat",
-        "alliance_score_virustotal",
-        "alliance_updated_srstrust",
-        "alliance_updated_srsthreat",
-        "alliance_updated_virustotal"
-      ],
       "envelope_keys": {
         "cb_server": "string",
-        "cb_version": "string",
-        "highlights_by_doc": {},
-        "server_name": "string",
+        "comms_ip": "string",
+        "computer_name": "string",
+        "feed_id": "integer",
+        "feed_name": "string",
+        "group": "string",
+        "hostname": "string",
+        "interface_ip": "string",
+        "ioc_query_index": "string",
+        "ioc_query_string": "string",
+        "ioc_type": "string",
+        "ioc_value": "string",
+        "process_guid": "string",
+        "process_id": "string",
+        "report_id": "string",
+        "report_score": "integer",
+        "segment_id": "string",
+        "sensor_id": "integer",
         "timestamp": "float",
-        "type": "string",
-        "watchlist_id": "integer",
-        "watchlist_name": "string"
-      }
+        "type": "string"
+      },
+      "json_path": "docs[*]",
+      "optional_top_level_keys": [
+        "alliance_data_bit9endpointvisibility",
+        "alliance_data_nvd",
+        "alliance_data_srsthreat",
+        "alliance_data_srstrust",
+        "alliance_data_virustotal",
+        "alliance_data_virustotalconnector",
+        "alliance_link_bit9endpointvisibility",
+        "alliance_link_nvd",
+        "alliance_link_srsthreat",
+        "alliance_link_srstrust",
+        "alliance_link_virustotal",
+        "alliance_link_virustotalconnector",
+        "alliance_score_bit9endpointvisibility",
+        "alliance_score_nvd",
+        "alliance_score_srsthreat",
+        "alliance_score_srstrust",
+        "alliance_score_virustotal",
+        "alliance_score_virustotalconnector",
+        "alliance_updated_bit9endpointvisibility",
+        "alliance_updated_nvd",
+        "alliance_updated_srsthreat",
+        "alliance_updated_srstrust",
+        "alliance_updated_virustotal",
+        "alliance_updated_virustotalconnector",
+        "interface_ip"
+      ]
     }
   },
-  "carbonblack:watchlist.storage.hit.binary": {
+  "carbonblack:feed.storage.hit.binary": {
     "schema": {
       "cb_server": "string",
       "cb_version": "string",
+      "computer_name": "string",
       "docs": [],
+      "feed_id": "integer",
+      "feed_name": "string",
+      "from_feed_search": "boolean",
+      "group": "string",
+      "hostname": "string",
+      "ioc_attr": {},
+      "ioc_query_index": "string",
+      "ioc_query_string": "string",
+      "ioc_type": "string",
+      "ioc_value": "string",
       "md5": "string",
+      "report_id": "string",
+      "report_score": "integer",
+      "sensor_id": "integer",
       "server_name": "string",
       "timestamp": "float",
-      "type": "string",
-      "watchlist_id": "integer",
-      "watchlist_name": "string"
+      "type": "string"
     },
-    "parser": "json",
     "configuration": {
-      "log_patterns": {
-        "type": [
-          "watchlist.storage.hit.binary"
-        ]
-      }
-    }
+      "optional_top_level_keys": [
+        "ioc_query_index",
+        "ioc_query_string"
+      ]
+    },
+    "parser": "json"
   },
-  "carbonblack:watchlist.storage.hit.process": {
+  "carbonblack:feed.storage.hit.process": {
     "schema": {
       "cb_server": "string",
       "cb_version": "string",
+      "comms_ip": "string",
+      "computer_name": "string",
       "docs": [],
+      "feed_id": "integer",
+      "feed_name": "string",
+      "from_feed_search": "boolean",
+      "group": "string",
+      "hostname": "string",
+      "interface_ip": "string",
+      "ioc_attr": {},
+      "ioc_query_index": "string",
+      "ioc_query_string": "string",
+      "ioc_type": "string",
+      "ioc_value": "string",
       "process_guid": "string",
       "process_id": "string",
+      "report_id": "string",
+      "report_score": "integer",
       "segment_id": "string",
+      "sensor_id": "integer",
       "server_name": "string",
       "timestamp": "float",
-      "type": "string",
-      "watchlist_id": "integer",
-      "watchlist_name": "string"
+      "type": "string"
     },
     "parser": "json",
     "configuration": {
-      "log_patterns": {
-        "type": [
-          "watchlist.storage.hit.process"
-        ]
-      }
+      "optional_top_level_keys": [
+        "ioc_query_index",
+        "ioc_query_string"
+      ]
+    }
+  },
+  "carbonblack:feed.synchronized": {
+    "schema": {
+      "cb_server": "string",
+      "feed_id": "integer",
+      "feed_name": "string",
+      "feed_update_time": "string",
+      "scan_start_time": "string",
+      "timestamp": "float",
+      "type": "string"
+    },
+    "parser": "json"
+  },
+  "carbonblack:ingress.event.netconn": {
+    "schema": {
+      "cb_server": "string",
+      "computer_name": "string",
+      "direction": "string",
+      "domain": "string",
+      "event_type": "string",
+      "ipv4": "string",
+      "local_ip": "string",
+      "local_port": "string",
+      "md5": "string",
+      "pid": "string",
+      "port": "string",
+      "process_guid": "string",
+      "process_path": "string",
+      "protocol": "string",
+      "remote_ip": "string",
+      "remote_port": "string",
+      "sensor_id": "string",
+      "timestamp": "float",
+      "type": "string"
+    },
+    "parser": "json",
+    "configuration": {
+      "optional_top_level_keys": [
+        "local_ip",
+        "local_port",
+        "process_path",
+        "remote_ip",
+        "remote_port"
+      ]
+    }
+  },
+  "carbonblack:ingress.event.procstart": {
+    "schema": {
+      "cb_server": "string",
+      "command_line": "string",
+      "computer_name": "string",
+      "event_type": "string",
+      "expect_followon_w_md5": "boolean",
+      "md5": "string",
+      "parent_create_time": "integer",
+      "parent_md5": "string",
+      "parent_path": "string",
+      "parent_process_guid": "string",
+      "path": "string",
+      "pid": "integer",
+      "process_guid": "string",
+      "process_path": "string",
+      "sensor_id": "integer",
+      "timestamp": "integer",
+      "type": "string",
+      "uid": "string",
+      "username": "string"
+    },
+    "parser": "json",
+    "configuration": {
+      "optional_top_level_keys": [
+        "parent_md5",
+        "process_path",
+        "uid",
+        "username"
+      ]
     }
   },
   "carbonblack:watchlist.hit.binary": {
     "schema": {
+      "alliance_data_bit9endpointvisibility": [],
+      "alliance_data_nvd": [],
       "alliance_data_srsthreat": [],
       "alliance_data_srstrust": [],
       "alliance_data_virustotal": [],
       "alliance_data_virustotalconnector": [],
-      "alliance_link_srstrust": "string",
+      "alliance_link_bit9endpointvisibility": "string",
+      "alliance_link_nvd": "string",
       "alliance_link_srsthreat": "string",
+      "alliance_link_srstrust": "string",
       "alliance_link_virustotal": "string",
       "alliance_link_virustotalconnector": "string",
-      "alliance_score_srstrust": "integer",
+      "alliance_score_bit9endpointvisibility": "integer",
+      "alliance_score_nvd": "integer",
       "alliance_score_srsthreat": "integer",
+      "alliance_score_srstrust": "integer",
       "alliance_score_virustotal": "integer",
       "alliance_score_virustotalconnector": "integer",
-      "alliance_updated_srstrust": "string",
+      "alliance_updated_bit9endpointvisibility": "string",
+      "alliance_updated_nvd": "string",
       "alliance_updated_srsthreat": "string",
+      "alliance_updated_srstrust": "string",
       "alliance_updated_virustotal": "string",
       "alliance_updated_virustotalconnector": "string",
       "cb_version": "integer",
@@ -595,7 +783,6 @@
     },
     "parser": "json",
     "configuration": {
-      "json_path": "docs[*]",
       "envelope_keys": {
         "cb_server": "string",
         "cb_version": "string",
@@ -606,21 +793,30 @@
         "watchlist_id": "integer",
         "watchlist_name": "string"
       },
+      "json_path": "docs[*]",
       "optional_top_level_keys": [
-        "alliance_data_srstrust",
+        "alliance_data_bit9endpointvisibility",
+        "alliance_data_nvd",
         "alliance_data_srsthreat",
+        "alliance_data_srstrust",
         "alliance_data_virustotal",
         "alliance_data_virustotalconnector",
-        "alliance_link_srstrust",
+        "alliance_link_bit9endpointvisibility",
+        "alliance_link_nvd",
         "alliance_link_srsthreat",
+        "alliance_link_srstrust",
         "alliance_link_virustotal",
         "alliance_link_virustotalconnector",
-        "alliance_score_srstrust",
+        "alliance_score_bit9endpointvisibility",
+        "alliance_score_nvd",
         "alliance_score_srsthreat",
+        "alliance_score_srstrust",
         "alliance_score_virustotal",
         "alliance_score_virustotalconnector",
-        "alliance_updated_srstrust",
+        "alliance_updated_bit9endpointvisibility",
+        "alliance_updated_nvd",
         "alliance_updated_srsthreat",
+        "alliance_updated_srstrust",
         "alliance_updated_virustotal",
         "alliance_updated_virustotalconnector",
         "comments",
@@ -670,173 +866,44 @@
       ]
     }
   },
-  "carbonblack:feed.storage.hit.binary": {
+  "carbonblack:watchlist.hit.process": {
     "schema": {
-      "cb_server": "string",
-      "cb_version": "string",
-      "computer_name": "string",
-      "docs": [],
-      "feed_id": "integer",
-      "feed_name": "string",
-      "from_feed_search": "boolean",
-      "group": "string",
-      "hostname": "string",
-      "ioc_attr": {},
-      "ioc_query_index": "string",
-      "ioc_query_string": "string",
-      "ioc_type": "string",
-      "ioc_value": "string",
-      "md5": "string",
-      "report_id": "string",
-      "report_score": "integer",
-      "sensor_id": "integer",
-      "server_name": "string",
-      "timestamp": "float",
-      "type": "string"
-    },
-    "configuration": {
-      "optional_top_level_keys": [
-        "ioc_query_index",
-        "ioc_query_string"
-      ]
-    },
-    "parser": "json"
-  },
-  "carbonblack:feed.ingress.hit.binary": {
-    "schema": {
-      "cb_server": "string",
-      "cb_version": "string",
-      "computer_name": "string",
-      "feed_id": "integer",
-      "feed_name": "string",
-      "from_feed_search": "boolean",
-      "group": "string",
-      "hostname": "string",
-      "ioc_attr": {},
-      "ioc_type": "string",
-      "ioc_value": "string",
-      "md5": "string",
-      "os_type": "string",
-      "report_id": "string",
-      "report_score": "integer",
-      "sensor_id": "integer",
-      "server_name": "string",
-      "timestamp": "float",
-      "type": "string"
-    },
-    "parser": "json"
-  },
-  "carbonblack:binaryinfo.observed": {
-    "schema": {
-      "cb_server": "string",
-      "md5": "string",
-      "scores": {},
-      "timestamp": "float",
-      "type": "string",
-      "watchlists": {}
-    },
-    "parser": "json"
-  },
-  "carbonblack:binaryinfo.host.observed": {
-    "schema": {
-      "cb_server": "string",
-      "computer_name": "string",
-      "hostname": "string",
-      "md5": "string",
-      "scores": {},
-      "sensor_id": "integer",
-      "timestamp": "float",
-      "type": "string",
-      "watchlists": {}
-    },
-    "parser": "json"
-  },
-  "carbonblack:binaryinfo.group.observed": {
-    "schema": {
-      "cb_server": "string",
-      "group": "string",
-      "md5": "string",
-      "scores": {},
-      "timestamp": "float",
-      "type": "string",
-      "watchlists": {}
-    },
-    "parser": "json"
-  },
-  "carbonblack:feed.query.hit.binary": {
-    "schema": {
-      "cb_version": "integer",
-      "company_name": "string",
-      "copied_mod_len": "integer",
-      "digsig_issuer": "string",
-      "digsig_prog_name": "string",
-      "digsig_publisher": "string",
-      "digsig_result": "string",
-      "digsig_result_code": "string",
-      "digsig_sign_time": "string",
-      "digsig_subject": "string",
-      "endpoint": [],
-      "event_partition_id": [],
-      "facet_id": "integer",
-      "file_desc": "string",
-      "file_version": "string",
-      "group": [],
-      "host_count": "integer",
-      "internal_name": "string",
-      "is_64bit": "boolean",
-      "is_executable_image": "boolean",
-      "last_seen": "string",
-      "legal_copyright": "string",
-      "md5": "string",
-      "observed_filename": "string",
-      "orig_mod_len": "integer",
-      "original_filename": "string",
-      "os_type": "string",
-      "product_name": "string",
-      "product_version": "string",
-      "server_added_timestamp": "string",
-      "signed": "string",
-      "timestamp": "string"
-    },
-    "parser": "json",
-    "configuration": {
-      "json_path": "docs[*]",
-      "envelope_keys": {
-        "feed_id": "integer",
-        "feed_name": "string",
-        "group": "string",
-        "hostname": "string",
-        "ioc_attrs": {},
-        "ioc_query_index": "string",
-        "ioc_query_string": "string",
-        "ioc_type": "string",
-        "ioc_value": "string",
-        "md5": "string",
-        "report_id": "string",
-        "report_score": "integer",
-        "sensor_id": "integer",
-        "timestamp": "float",
-        "type": "string"
-      }
-    }
-  },
-  "carbonblack:feed.query.hit.process": {
-    "schema": {
+      "alliance_data_bit9endpointvisibility": [],
+      "alliance_data_nvd": [],
+      "alliance_data_srsthreat": [],
       "alliance_data_srstrust": [],
       "alliance_data_virustotal": [],
+      "alliance_data_virustotalconnector": [],
+      "alliance_link_bit9endpointvisibility": "string",
+      "alliance_link_nvd": "string",
+      "alliance_link_srsthreat": "string",
       "alliance_link_srstrust": "string",
       "alliance_link_virustotal": "string",
+      "alliance_link_virustotalconnector": "string",
+      "alliance_score_bit9endpointvisibility": "integer",
+      "alliance_score_nvd": "integer",
+      "alliance_score_srsthreat": "integer",
       "alliance_score_srstrust": "integer",
       "alliance_score_virustotal": "integer",
+      "alliance_score_virustotalconnector": "integer",
+      "alliance_updated_bit9endpointvisibility": "string",
+      "alliance_updated_nvd": "string",
+      "alliance_updated_srsthreat": "string",
       "alliance_updated_srstrust": "string",
       "alliance_updated_virustotal": "string",
+      "alliance_updated_virustotalconnector": "string",
       "childproc_count": "integer",
       "cmdline": "string",
+      "comms_ip": "string",
+      "computer_name": "string",
       "crossproc_count": "integer",
       "emet_count": "integer",
       "filemod_count": "integer",
       "filtering_known_dlls": "boolean",
+      "group": "string",
       "host_type": "string",
+      "hostname": "string",
+      "id": "string",
       "interface_ip": "string",
       "last_server_update": "integer",
       "last_update": "string",
@@ -856,118 +923,116 @@
       "process_pid": "integer",
       "processblock_count": "integer",
       "regmod_count": "integer",
+      "segment_id": "integer",
+      "sensor_id": "integer",
       "start": "string",
       "unique_id": "string",
       "username": "string"
     },
     "parser": "json",
     "configuration": {
-      "json_path": "docs[*]",
-      "optional_top_level_keys": [
-        "alliance_data_srstrust",
-        "alliance_data_virustotal",
-        "alliance_link_srstrust",
-        "alliance_link_virustotal",
-        "alliance_score_srstrust",
-        "alliance_score_virustotal",
-        "alliance_updated_srstrust",
-        "alliance_updated_virustotal",
-        "interface_ip"
-      ],
       "envelope_keys": {
         "cb_server": "string",
-        "comms_ip": "string",
-        "computer_name": "string",
-        "feed_id": "integer",
-        "feed_name": "string",
-        "group": "string",
-        "hostname": "string",
-        "interface_ip": "string",
-        "ioc_query_index": "string",
-        "ioc_query_string": "string",
-        "ioc_type": "string",
-        "ioc_value": "string",
-        "process_guid": "string",
-        "process_id": "string",
-        "report_id": "string",
-        "report_score": "integer",
-        "segment_id": "string",
-        "sensor_id": "integer",
+        "cb_version": "string",
+        "highlights_by_doc": {},
+        "server_name": "string",
         "timestamp": "float",
-        "type": "string"
-      }
+        "type": "string",
+        "watchlist_id": "integer",
+        "watchlist_name": "string"
+      },
+      "json_path": "docs[*]",
+      "optional_top_level_keys": [
+        "alliance_data_bit9endpointvisibility",
+        "alliance_data_nvd",
+        "alliance_data_srsthreat",
+        "alliance_data_srstrust",
+        "alliance_data_virustotal",
+        "alliance_data_virustotalconnector",
+        "alliance_link_bit9endpointvisibility",
+        "alliance_link_nvd",
+        "alliance_link_srsthreat",
+        "alliance_link_srstrust",
+        "alliance_link_virustotal",
+        "alliance_link_virustotalconnector",
+        "alliance_score_bit9endpointvisibility",
+        "alliance_score_nvd",
+        "alliance_score_srsthreat",
+        "alliance_score_srstrust",
+        "alliance_score_virustotal",
+        "alliance_score_virustotalconnector",
+        "alliance_updated_bit9endpointvisibility",
+        "alliance_updated_nvd",
+        "alliance_updated_srsthreat",
+        "alliance_updated_srstrust",
+        "alliance_updated_virustotal",
+        "alliance_updated_virustotalconnector"
+      ]
     }
   },
-  "carbonblack:feed.synchronized": {
+  "carbonblack:watchlist.storage.hit.binary": {
     "schema": {
       "cb_server": "string",
-      "feed_id": "integer",
-      "feed_name": "string",
-      "feed_update_time": "string",
-      "scan_start_time": "string",
+      "cb_version": "string",
+      "docs": [],
+      "md5": "string",
+      "server_name": "string",
       "timestamp": "float",
-      "type": "string"
-    },
-    "parser": "json"
-  },
-  "cloudwatch:control_message": {
-    "schema": {
-      "id": "string",
-      "message": "string",
-      "timestamp": "integer"
+      "type": "string",
+      "watchlist_id": "integer",
+      "watchlist_name": "string"
     },
     "parser": "json",
     "configuration": {
-      "json_path": "logEvents[*]",
-      "envelope_keys": {
-        "logGroup": "string",
-        "logStream": "string",
-        "messageType": "string",
-        "owner": "string",
-        "subscriptionFilters": []
+      "log_patterns": {
+        "type": [
+          "watchlist.storage.hit.binary"
+        ]
       }
     }
   },
-  "cloudwatch:events": {
+  "carbonblack:watchlist.storage.hit.process": {
     "schema": {
-      "account": "string",
-      "region": "string",
-      "detail": {},
-      "detail-type": "string",
-      "source": "string",
-      "version": "string",
-      "time": "string",
-      "id": "string",
-      "resources": []
-    },
-    "parser": "json"
-  },
-  "cloudwatch:flow_logs": {
-    "schema": {
-      "protocol": "string",
-      "source": "string",
-      "destination": "string",
-      "srcport": "string",
-      "destport": "string",
-      "action": "string",
-      "packets": "string",
-      "bytes": "string",
-      "windowstart": "integer",
-      "windowend": "integer",
-      "version": "integer",
-      "eni": "string",
-      "account": "string",
-      "flowlogstatus": "string"
+      "cb_server": "string",
+      "cb_version": "string",
+      "docs": [],
+      "process_guid": "string",
+      "process_id": "string",
+      "segment_id": "string",
+      "server_name": "string",
+      "timestamp": "float",
+      "type": "string",
+      "watchlist_id": "integer",
+      "watchlist_name": "string"
     },
     "parser": "json",
     "configuration": {
-      "json_path": "logEvents[*].extractedFields",
-      "envelope_keys": {
-        "logGroup": "string",
-        "logStream": "string",
-        "owner": "integer"
+      "log_patterns": {
+        "type": [
+          "watchlist.storage.hit.process"
+        ]
       }
     }
+  },
+  "cloudtrail:digest": {
+    "schema": {
+      "awsAccountId": "string",
+      "digestEndTime": "string",
+      "digestPublicKeyFingerprint": "string",
+      "digestS3Bucket": "string",
+      "digestS3Object": "string",
+      "digestSignatureAlgorithm": "string",
+      "digestStartTime": "string",
+      "logFiles": [],
+      "newestEventTime": "string",
+      "oldestEventTime": "string",
+      "previousDigestHashAlgorithm": "string",
+      "previousDigestHashValue": "string",
+      "previousDigestS3Bucket": "string",
+      "previousDigestS3Object": "string",
+      "previousDigestSignature": "string"
+    },
+    "parser": "json"
   },
   "cloudtrail:events": {
     "schema": {
@@ -1008,25 +1073,64 @@
       ]
     }
   },
-  "cloudtrail:digest": {
+  "cloudwatch:control_message": {
     "schema": {
-      "awsAccountId": "string",
-      "digestStartTime": "string",
-      "digestEndTime": "string",
-      "digestS3Bucket": "string",
-      "digestS3Object": "string",
-      "digestPublicKeyFingerprint": "string",
-      "digestSignatureAlgorithm": "string",
-      "newestEventTime": "string",
-      "oldestEventTime": "string",
-      "previousDigestS3Bucket": "string",
-      "previousDigestS3Object": "string",
-      "previousDigestHashValue": "string",
-      "previousDigestHashAlgorithm": "string",
-      "previousDigestSignature": "string",
-      "logFiles": []
+      "id": "string",
+      "message": "string",
+      "timestamp": "integer"
+    },
+    "parser": "json",
+    "configuration": {
+      "envelope_keys": {
+        "logGroup": "string",
+        "logStream": "string",
+        "messageType": "string",
+        "owner": "string",
+        "subscriptionFilters": []
+      },
+      "json_path": "logEvents[*]"
+    }
+  },
+  "cloudwatch:events": {
+    "schema": {
+      "account": "string",
+      "detail": {},
+      "detail-type": "string",
+      "id": "string",
+      "region": "string",
+      "resources": [],
+      "source": "string",
+      "time": "string",
+      "version": "string"
     },
     "parser": "json"
+  },
+  "cloudwatch:flow_logs": {
+    "schema": {
+      "account": "string",
+      "action": "string",
+      "bytes": "string",
+      "destination": "string",
+      "destport": "string",
+      "eni": "string",
+      "flowlogstatus": "string",
+      "packets": "string",
+      "protocol": "string",
+      "source": "string",
+      "srcport": "string",
+      "version": "integer",
+      "windowend": "integer",
+      "windowstart": "integer"
+    },
+    "parser": "json",
+    "configuration": {
+      "envelope_keys": {
+        "logGroup": "string",
+        "logStream": "string",
+        "owner": "integer"
+      },
+      "json_path": "logEvents[*].extractedFields"
+    }
   },
   "duo:administrator": {
     "schema": {
@@ -1056,23 +1160,22 @@
   },
   "ghe:general": {
     "schema": {
-      "actor_ip": "string",
-      "from": "string",
+      "action": "string",
       "actor": "string",
       "actor_id": "integer",
-      "repo": "string",
-      "repo_id": "integer",
+      "actor_ip": "string",
+      "created_at": "string",
+      "data": {},
+      "from": "string",
       "org": "string",
       "org_id": {},
-      "action": "string",
-      "created_at": "string",
+      "repo": "string",
+      "repo_id": "integer",
       "user": "string",
-      "user_id": "string",
-      "data": {}
+      "user_id": "string"
     },
     "parser": "json",
     "configuration": {
-      "json_regex_key": "message",
       "envelope_keys": {
         "@timestamp": "string",
         "@version": "string",
@@ -1082,9 +1185,10 @@
         "port": "string",
         "program": "string",
         "received_at": "string",
-        "timestamp": "string",
-        "tags": []
+        "tags": [],
+        "timestamp": "string"
       },
+      "json_regex_key": "message",
       "optional_envelope_keys": [
         "logsource",
         "pid",
@@ -1105,6 +1209,7 @@
     "schema": {
       "@timestamp": "string",
       "@version": "string",
+      "action": "string",
       "current_user": "string",
       "elapsed": "string",
       "half_day": "string",
@@ -1121,14 +1226,13 @@
       "syslog_facility": "string",
       "syslog_facility_code": "string",
       "syslog_hostname": "string",
-      "syslog_pri": "string",
       "syslog_pid": "string",
+      "syslog_pri": "string",
       "syslog_program": "string",
       "syslog_severity": "string",
       "syslog_severity_code": "string",
       "tags": [],
       "timestamp": "string",
-      "action": "string",
       "user": "string"
     },
     "configuration": {
@@ -1216,6 +1320,29 @@
     },
     "parser": "json"
   },
+  "osquery:batch": {
+    "schema": {
+      "calendarTime": "string",
+      "counter": "integer",
+      "decorations": {},
+      "diffResults": {
+        "added": [],
+        "removed": []
+      },
+      "epoch": "integer",
+      "hostIdentifier": "string",
+      "name": "string",
+      "unixTime": "string"
+    },
+    "parser": "json",
+    "configuration": {
+      "optional_top_level_keys": [
+        "decorations",
+        "epoch",
+        "counter"
+      ]
+    }
+  },
   "osquery:differential": {
     "schema": {
       "action": "string",
@@ -1239,68 +1366,45 @@
       ]
     }
   },
+  "osquery:snapshot": {
+    "schema": {
+      "action": "string",
+      "calendarTime": "string",
+      "counter": "integer",
+      "decorations": {},
+      "epoch": "integer",
+      "hostIdentifier": "string",
+      "log_type": "string",
+      "name": "string",
+      "snapshot": [],
+      "unixTime": "string"
+    },
+    "parser": "json",
+    "configuration": {
+      "optional_top_level_keys": [
+        "decorations",
+        "epoch",
+        "counter"
+      ]
+    }
+  },
   "osquery:status": {
     "schema": {
-      "hostIdentifier": "string",
       "calendarTime": "string",
-      "unixTime": "string",
-      "severity": "integer",
-      "filename": "string",
-      "line": "integer",
-      "message": "string",
-      "version": "string",
       "decorations": {},
-      "log_type": "string"
+      "filename": "string",
+      "hostIdentifier": "string",
+      "line": "integer",
+      "log_type": "string",
+      "message": "string",
+      "severity": "integer",
+      "unixTime": "string",
+      "version": "string"
     },
     "parser": "json",
     "configuration": {
       "optional_top_level_keys": [
         "decorations"
-      ]
-    }
-  },
-  "osquery:snapshot": {
-    "schema": {
-      "snapshot": [],
-      "name": "string",
-      "hostIdentifier": "string",
-      "calendarTime": "string",
-      "unixTime": "string",
-      "action": "string",
-      "decorations": {},
-      "log_type": "string",
-      "epoch": "integer",
-      "counter": "integer"
-    },
-    "parser": "json",
-    "configuration": {
-      "optional_top_level_keys": [
-        "decorations",
-        "epoch",
-        "counter"
-      ]
-    }
-  },
-  "osquery:batch": {
-    "schema": {
-      "diffResults": {
-        "removed": [],
-        "added": []
-      },
-      "name": "string",
-      "hostIdentifier": "string",
-      "calendarTime": "string",
-      "unixTime": "string",
-      "decorations": {},
-      "epoch": "integer",
-      "counter": "integer"
-    },
-    "parser": "json",
-    "configuration": {
-      "optional_top_level_keys": [
-        "decorations",
-        "epoch",
-        "counter"
       ]
     }
   },

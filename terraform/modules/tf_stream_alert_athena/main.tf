@@ -42,6 +42,10 @@ resource "aws_sqs_queue" "streamalert_athena_data_bucket_notifications" {
 
   # Retain messages for one day
   message_retention_seconds = 86400
+
+  tags {
+    Name = "StreamAlert"
+  }
 }
 
 // SQS Queue Policy: Allow data buckets to send SQS messages
