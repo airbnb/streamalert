@@ -17,6 +17,6 @@ nose
 pyfakefs
 pylint==1.7.4
 requests
-sphinx
+Sphinx
 sphinx-rtd-theme
 yapf
