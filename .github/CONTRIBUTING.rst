@@ -27,6 +27,9 @@ Change into the cloned StreamAlert repo, and install Python dependencies:
   $ cd streamalert
   $ pip install -r requirements.txt
 
+Modifying Dependencies
+----------------------
+
 If you modify the Python dependencies, you should do:
 
 .. code-block:: bash
