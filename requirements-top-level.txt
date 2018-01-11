@@ -14,9 +14,11 @@ mock
 moto==1.1.10
 netaddr
 nose
+nose-timer==0.7.1
 pyfakefs
 pylint==1.7.4
 requests
 Sphinx
 sphinx-rtd-theme
 yapf
+
