@@ -156,7 +156,8 @@ class TestPagerDutyIncidentOutput(object):
              'token': 'mocked_token',
              'service_name': 'mocked_service_name',
              'escalation_policy': 'mocked_escalation_policy',
-             'email_from': 'email@domain.com'}
+             'email_from': 'email@domain.com',
+             'integration_key': 'mocked_key'}
 
     def setup(self):
         """Setup before each method"""
