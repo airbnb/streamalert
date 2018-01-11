@@ -23,14 +23,7 @@ Dependencies
   $ virtualenv -p python2.7 venv
   $ source venv/bin/activate
 
-5. Install the top-level dependencies, upgrade them if necessary:
-
-.. code-block:: bash
-
-  $ pip install -r requirements-top-level.txt --upgrade
-  $ pip freeze –r requirements-top-level.txt > requirements.txt
-
-6. Install dependencies:
+5. Install dependencies:
 
 .. code-block:: bash
 
