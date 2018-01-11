@@ -32,12 +32,13 @@ from stream_alert.shared.backoff_handlers import (
 
 def events_v2_data(routing_key, **kwargs):
     """Helper method to generate the payload to create an event using PagerDuty Events API v2
-    Args:
-        routing_key:
-        **kwargs: consists of any combination of the following items:
-            descriptor (str): Service descriptor (ie: slack channel, pd integration)
-            rule_name (str): Name of the triggered rule
-            alert (dict): Alert relevant to the triggered rule
+
+    Keyword Args:
+        routing_key (str): Routing key for this PagerDuty integration
+        descriptor (str): Service descriptor (ie: slack channel, pd integration)
+        rule_name (str): Name of the triggered rule
+        alert (dict): Alert relevant to the triggered rule
+
     Returns:
             dict: Contains JSON blob to be used as event
     """
@@ -69,6 +70,7 @@ class PagerDutyOutput(OutputDispatcher):
     def _get_default_properties(cls):
         """Get the standard url used for PagerDuty. This value the same for everyone, so
         is hard-coded here and does not need to be configured by the user
+
         Returns:
             dict: Contains various default items for this output (ie: url)
         """
@@ -83,6 +85,7 @@ class PagerDutyOutput(OutputDispatcher):
         integration being configured.
         PagerDuty also requires a service_key that represnts this integration. This
         value should be masked during input and is a credential requirement.
+
         Returns:
             OrderedDict: Contains various OutputProperty items
         """
@@ -98,6 +101,7 @@ class PagerDutyOutput(OutputDispatcher):
 
     def dispatch(self, **kwargs):
         """Send alert to Pagerduty
+
         Args:
             **kwargs: consists of any combination of the following items:
                 descriptor (str): Service descriptor (ie: slack channel, pd integration)
@@ -204,8 +208,8 @@ class PagerDutyIncidentOutput(OutputDispatcher):
     SERVICES_ENDPOINT = 'services'
     PRIORITIES_ENDPOINT = 'priorities'
 
-    BACKOFF_MAX_RETRIES = 3
-    BACKOFF_INTERVAL_TIME = 5
+    BACKOFF_MAX = 3
+    BACKOFF_TIME = 5
 
     def __init__(self, *args, **kwargs):
         OutputDispatcher.__init__(self, *args, **kwargs)
@@ -297,8 +301,8 @@ class PagerDutyIncidentOutput(OutputDispatcher):
 
     @backoff.on_exception(backoff.constant,
                           PagerdutySearchDelay,
-                          max_tries=BACKOFF_MAX_RETRIES,
-                          interval=BACKOFF_INTERVAL_TIME,
+                          max_tries=BACKOFF_MAX,
+                          interval=BACKOFF_TIME,
                           on_backoff=backoff_handler,
                           on_success=success_handler,
                           on_giveup=giveup_handler)
@@ -313,19 +317,26 @@ class PagerDutyIncidentOutput(OutputDispatcher):
 
         """
         params = {
-            'incident_key': '{}'.format(incident_key)
+            'incident_key': incident_key
         }
         incidents_url = self._get_endpoint(self._base_url, self.INCIDENTS_ENDPOINT)
         response = self._generic_api_get(incidents_url, params)
 
         incident = response.get('incidents', [])
         if not incident:
-            raise PagerdutySearchDelay
+            raise PagerdutySearchDelay()
 
         return incident[0].get('id')
 
     def _merge_incidents(self, url, to_be_merged_id):
-        """Helper to merge incidents by id using the PagerDuty REST API v2 and
+        """Helper to merge incidents by id using the PagerDuty REST API v2
+
+        Args:
+            url (str): The url to send the requests to in the API
+            to_be_merged_id (str): ID of the incident to merge with
+
+        Returns:
+            dict: Contains the HTTP response of the request to the API
         """
         params = {
             "source_incidents": [
@@ -381,7 +392,7 @@ class PagerDutyIncidentOutput(OutputDispatcher):
                  True/False whether a matching element exists or not.
         """
         params = {
-            'query': '{}'.format(filter_str)
+            'query': filter_str
         }
         response = self._generic_api_get(url, params)
         if not response:
@@ -600,8 +611,13 @@ class PagerDutyIncidentOutput(OutputDispatcher):
             LOGGER.error('Could not create main incident, %s', self.__service__)
             return self._log_status(False)
 
+        # Extract the json blob from the response, returned by self._post_request_retry
+        incident_data = incident.json()
+        if not incident_data:
+            return self._log_status(False)
+
         # Extract the incident id from the incident that was just created
-        incident_id = incident.get('incident').get('id')
+        incident_id = incident_data.get('incident', {}).get('id')
 
         # Create alert to hold all the incident details
         event_data = events_v2_data(creds['integration_key'], **kwargs)
@@ -613,6 +629,10 @@ class PagerDutyIncidentOutput(OutputDispatcher):
         # Lookup the incident_key returned as dedup_key to get the incident id
         incident_key = event.get('dedup_key')
 
+        if not incident_key:
+            LOGGER.error('Could not get incident key, %s', self.__service__)
+            return self._log_status(False)
+
         # Keep that id to be merged later with the created incident
         event_incident_id = self._get_event_incident_id(incident_key)
 
@@ -621,9 +641,5 @@ class PagerDutyIncidentOutput(OutputDispatcher):
         merging_url = '{}/{}'.format(incidents_url, incident_id)
 
         merged = self._merge_incidents(merging_url, event_incident_id)
-
-        if not merged:
-            LOGGER.error('Could not merge incident with event, %s', self.__service__)
-            return self._log_status(False)
 
         return self._log_status(merged)
