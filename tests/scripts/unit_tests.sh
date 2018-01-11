@@ -13,4 +13,6 @@ nosetests tests/unit \
 --cover-package=stream_alert_cli \
 --cover-min-percentage=80 \
 --cover-html \
---cover-html-dir=htmlcov
+--cover-html-dir=htmlcov \
+--with-timer \
+--timer-top-n=10
