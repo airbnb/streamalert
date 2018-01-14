@@ -18,6 +18,7 @@ from stream_alert.athena_partition_refresh import helpers as athena_helpers
 from stream_alert.rule_processor.firehose import StreamAlertFirehose
 from stream_alert_cli.logger import LOGGER_CLI
 from stream_alert_cli.helpers import continue_prompt
+from stream_alert_cli.athena import helpers as handler_helpers
 
 ALERTS_TABLE_STATEMENT = ('CREATE EXTERNAL TABLE alerts ('
                           'log_source string,'
@@ -36,15 +37,7 @@ CREATE_TABLE_STATEMENT = ('CREATE EXTERNAL TABLE {table_name} ({schema}) '
                           'ROW FORMAT SERDE \'org.openx.data.jsonserde.JsonSerDe\' '
                           'WITH SERDEPROPERTIES ( \'ignore.malformed.json\' = \'true\') '
                           'LOCATION \'s3://{bucket}/{table_name}/\'')
-# How to map log schema types to Athena/Hive types
-SCHEMA_TYPE_MAPPING = {
-    'string': 'string',
-    'integer': 'bigint',
-    'boolean': 'boolean',
-    'float': 'decimal(10,3)',
-    dict: 'map<string, string>',
-    list: 'array<string>'
-}
+
 MAX_QUERY_LENGTH = 262144
 
 
@@ -170,22 +163,6 @@ def drop_all_tables(athena_client):
             LOGGER_CLI.info('Dropped %s', table)
 
 
-def _convert_to_athena_schema(log_schema):
-    athena_schema = {}
-
-    for key_name, key_type in log_schema.iteritems():
-        key_name = '`{}`'.format(key_name)
-        if key_type == {}:
-            athena_schema[key_name] = SCHEMA_TYPE_MAPPING[dict]
-        elif key_type == []:
-            athena_schema[key_name] = SCHEMA_TYPE_MAPPING[list]
-        elif isinstance(key_type, dict):
-            athena_schema[key_name] = _convert_to_athena_schema(key_type)
-        else:
-            athena_schema[key_name] = SCHEMA_TYPE_MAPPING[key_type]
-
-    return athena_schema
-
 
 def _construct_create_table_statement(schema, table_name, bucket):
     """Convert a dictionary based Athena schema to a Hive DDL statement
@@ -266,7 +243,7 @@ def create_table(athena_client, options, config):
         schema = dict(log_info['schema'])
         sanitized_schema = StreamAlertFirehose.sanitize_keys(schema)
 
-        athena_schema = _convert_to_athena_schema(sanitized_schema)
+        athena_schema = handler_helpers.to_athena_schema(sanitized_schema)
 
         # Add envelope keys to Athena Schema
         configuration_options = log_info.get('configuration')
@@ -275,7 +252,7 @@ def create_table(athena_client, options, config):
             if envelope_keys:
                 sanitized_envelope_key_schema = StreamAlertFirehose.sanitize_keys(envelope_keys)
                 # Note: this key is wrapped in backticks to be Hive compliant
-                athena_schema['`streamalert:envelope_keys`'] = _convert_to_athena_schema(
+                athena_schema['`streamalert:envelope_keys`'] = handler_helpers.to_athena_schema(
                     sanitized_envelope_key_schema)
 
         # Handle Schema overrides

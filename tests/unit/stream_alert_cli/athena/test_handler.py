@@ -17,7 +17,7 @@ from nose.tools import assert_equal
 
 from stream_alert_cli.config import CLIConfig
 
-from stream_alert_cli.athena import handler
+from stream_alert_cli.athena import helpers
 
 CONFIG = CLIConfig(config_path='tests/unit/conf')
 
@@ -26,7 +26,7 @@ def test_generate_athena_schema_simple():
     """CLI - Generate Athena schema: simple"""
 
     log_schema = CONFIG['logs']['unit_test_simple_log']['schema']
-    athena_schema = handler._convert_to_athena_schema(log_schema)
+    athena_schema = helpers.to_athena_schema(log_schema)
 
     expected_athena_schema = {
         '`unit_key_01`': 'bigint',
@@ -40,7 +40,7 @@ def test_generate_athena_schema_special_key():
     """CLI - Generate Athena schema: special key"""
 
     log_schema = CONFIG['logs']['test_log_type_json']['schema']
-    athena_schema = handler._convert_to_athena_schema(log_schema)
+    athena_schema = helpers.to_athena_schema(log_schema)
 
     expected_athena_schema = {
         '`key1`': 'array<string>',
@@ -58,7 +58,7 @@ def test_generate_athena_schema_nested():
     """CLI - Generate Athena schema: nested"""
 
     log_schema = CONFIG['logs']['test_log_type_json_nested_with_data']['schema']
-    athena_schema = handler._convert_to_athena_schema(log_schema)
+    athena_schema = helpers.to_athena_schema(log_schema)
 
     expected_athena_schema = {
         '`date`': 'string',
