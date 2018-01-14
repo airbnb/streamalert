@@ -175,9 +175,9 @@ def _convert_to_athena_schema(log_schema):
 
     for key_name, key_type in log_schema.iteritems():
         key_name = '`{}`'.format(key_name)
-        if key_type = {}:
+        if key_type == {}:
             athena_schema[key_name] = SCHEMA_TYPE_MAPPING[dict]
-        elif key_type = []:
+        elif key_type == []:
             athena_schema[key_name] = SCHEMA_TYPE_MAPPING[list]
         elif isinstance(key_type, dict):
             athena_schema[key_name] = _convert_to_athena_schema(key_type)
@@ -275,8 +275,8 @@ def create_table(athena_client, options, config):
             if envelope_keys:
                 sanitized_envelope_key_schema = StreamAlertFirehose.sanitize_keys(envelope_keys)
                 # Note: this key is wrapped in backticks to be Hive compliant
-                athena_schema['`streamalert:envelope_keys`'] =
-                    _convert_to_athena_schema(sanitized_envelope_key_schema)
+                athena_schema['`streamalert:envelope_keys`'] = _convert_to_athena_schema(
+                    sanitized_envelope_key_schema)
 
         # Handle Schema overrides
         #   This is useful when an Athena schema needs to differ from the normal log schema
