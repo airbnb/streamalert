@@ -24,8 +24,16 @@ SCHEMA_TYPE_MAPPING = {
     list: 'array<string>'
 }
 
+
 def to_athena_schema(log_schema):
-    """Convert streamalert log schema to athena schema"""
+    """Convert streamalert log schema to athena schema
+
+    Args:
+        log_schema (dict): StreamAlert log schema object.
+
+    Returns:
+        athena_schema (dict): Equivalent Athena schema used for generating create table statement
+    """
 
     athena_schema = {}
 
