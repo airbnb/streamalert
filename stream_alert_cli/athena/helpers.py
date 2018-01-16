@@ -40,10 +40,13 @@ def to_athena_schema(log_schema):
     for key_name, key_type in log_schema.iteritems():
         key_name = '`{}`'.format(key_name)
         if key_type == {}:
+            # For empty dicts
             athena_schema[key_name] = SCHEMA_TYPE_MAPPING[dict]
         elif key_type == []:
+            # For empty array
             athena_schema[key_name] = SCHEMA_TYPE_MAPPING[list]
         elif isinstance(key_type, dict):
+            # For recursion
             athena_schema[key_name] = to_athena_schema(key_type)
         else:
             athena_schema[key_name] = SCHEMA_TYPE_MAPPING[key_type]
