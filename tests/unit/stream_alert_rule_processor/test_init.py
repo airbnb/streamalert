@@ -16,51 +16,28 @@ limitations under the License.
 import os
 
 from mock import call, patch
-from nose.tools import assert_equal, with_setup, nottest
+from nose.tools import assert_equal
 
 import stream_alert.rule_processor as rp
-from tests.unit.stream_alert_rule_processor.test_helpers import get_mock_context
 
 
-def _teardown_env():
-    """Helper method to reset environment variables"""
-    if 'LOGGER_LEVEL' in os.environ:
-        del os.environ['LOGGER_LEVEL']
-
-# TODO(Jack) Investigate flakey test
-@nottest
-@patch('stream_alert.rule_processor.main.StreamAlert.run')
-def test_handler(mock_runner):
-    """Rule Processor Main - Test Handler"""
-    rp.main.handler('event', get_mock_context())
-    mock_runner.assert_called_with('event')
-
-
-@with_setup(setup=None, teardown=_teardown_env)
 @patch('stream_alert.rule_processor.LOGGER.error')
+@patch.dict(os.environ, {'LOGGER_LEVEL': 'INVALID'})
 def test_init_logging_bad(log_mock):
     """Rule Processor Init - Logging, Bad Level"""
-    level = 'IFNO'
-
-    os.environ['LOGGER_LEVEL'] = level
-
     # Force reload the rule_processor package to trigger the init
     reload(rp)
 
     message = str(call('Defaulting to INFO logging: %s',
-                       ValueError('Unknown level: \'IFNO\'',)))
+                       ValueError('Unknown level: \'INVALID\'',)))
 
     assert_equal(str(log_mock.call_args_list[0]), message)
 
 
-@with_setup(setup=None, teardown=_teardown_env)
 @patch('stream_alert.rule_processor.LOGGER.setLevel')
+@patch.dict(os.environ, {'LOGGER_LEVEL': '10'})
 def test_init_logging_int_level(log_mock):
     """Rule Processor Init - Logging, Integer Level"""
-    level = '10'
-
-    os.environ['LOGGER_LEVEL'] = level
-
     # Force reload the rule_processor package to trigger the init
     reload(rp)
 
