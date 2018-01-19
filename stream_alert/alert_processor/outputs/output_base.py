@@ -281,6 +281,47 @@ class OutputDispatcher(object):
         """Classmethod that returns a tuple of the exceptions to catch"""
 
     @classmethod
+    def _put_request(cls, url, params=None, headers=None, verify=True):
+        """Method to return the json loaded response for this PUT request
+
+        Args:
+            url (str): Endpoint for this request
+            params (dict): Payload to send with this request
+            headers (dict): Dictionary containing request-specific header parameters
+            verify (bool): Whether or not the server's SSL certificate should be verified
+        Returns:
+            dict: Contains the http response object
+        """
+        return requests.put(url, headers=headers, params=params,
+                            verify=verify, timeout=cls._DEFAULT_REQUEST_TIMEOUT)
+
+    @classmethod
+    def _put_request_retry(cls, url, params=None, headers=None, verify=True):
+        """Method to return the json loaded response for this PUT request
+        This method implements support for backoff to retry failed requests
+
+        Args:
+            url (str): Endpoint for this request
+            params (dict): Payload to send with this request
+            headers (dict): Dictionary containing request-specific header parameters
+            verify (bool): Whether or not the server's SSL certificate should be verified
+        Returns:
+            dict: Contains the http response object
+        Raises:
+            OutputRequestFailure
+        """
+        @retry_on_exception(cls._catch_exceptions())
+        def do_put_request():
+            """Decorated nested function to perform the request with retry/backoff"""
+            resp = cls._put_request(url, params, headers, verify)
+            success = cls._check_http_response(resp)
+            if not success:
+                raise OutputRequestFailure()
+
+            return resp
+        return do_put_request()
+
+    @classmethod
     def _get_request(cls, url, params=None, headers=None, verify=True):
         """Method to return the json loaded response for this GET request
 
