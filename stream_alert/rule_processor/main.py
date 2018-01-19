@@ -25,9 +25,9 @@ def _python_rule_paths():
     # and in the generated Lambda packages.
     for folder in ('matchers', 'rules'):
         for root, _, files in os.walk(folder):
-            for file in files:
-                if file.endswith('.py') and not file.startswith('__'):
-                    yield os.path.join(root, file)
+            for file_name in files:
+                if file_name.endswith('.py') and not file_name.startswith('__'):
+                    yield os.path.join(root, file_name)
 
 
 def _path_to_module(path):

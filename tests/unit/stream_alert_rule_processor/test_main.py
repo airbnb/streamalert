@@ -22,6 +22,7 @@ from stream_alert.rule_processor import main
 
 class RuleImportTest(fake_filesystem_unittest.TestCase):
     """Test rule import logic with a mocked filesystem."""
+    # pylint: disable=protected-access
 
     def setUp(self):
         self.setUpPyfakefs()
