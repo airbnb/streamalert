@@ -13,55 +13,74 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-import os
-
 from mock import call, patch
-from nose.tools import assert_equal, with_setup, nottest
+from nose.tools import assert_equal, assert_raises
+from pyfakefs import fake_filesystem_unittest
 
-import stream_alert.rule_processor as rp
-from tests.unit.stream_alert_rule_processor.test_helpers import get_mock_context
-
-
-def _teardown_env():
-    """Helper method to reset environment variables"""
-    if 'LOGGER_LEVEL' in os.environ:
-        del os.environ['LOGGER_LEVEL']
-
-# TODO(Jack) Investigate flakey test
-@nottest
-@patch('stream_alert.rule_processor.main.StreamAlert.run')
-def test_handler(mock_runner):
-    """Rule Processor Main - Test Handler"""
-    rp.main.handler('event', get_mock_context())
-    mock_runner.assert_called_with('event')
+from stream_alert.rule_processor import main
 
 
-@with_setup(setup=None, teardown=_teardown_env)
-@patch('stream_alert.rule_processor.LOGGER.error')
-def test_init_logging_bad(log_mock):
-    """Rule Processor Init - Logging, Bad Level"""
-    level = 'IFNO'
+class RuleImportTest(fake_filesystem_unittest.TestCase):
+    """Test rule import logic with a mocked filesystem."""
+    # pylint: disable=protected-access
 
-    os.environ['LOGGER_LEVEL'] = level
+    def setUp(self):
+        self.setUpPyfakefs()
 
-    # Force reload the rule_processor package to trigger the init
-    reload(rp)
+        # Add rules files which should be imported.
+        self.fs.CreateFile('matchers/matchers.py')
+        self.fs.CreateFile('rules/example.py')
+        self.fs.CreateFile('rules/community/cloudtrail/critical_api.py')
 
-    message = str(call('Defaulting to INFO logging: %s',
-                       ValueError('Unknown level: \'IFNO\'',)))
+        # Add other files which should NOT be imported.
+        self.fs.CreateFile('matchers/README')
+        self.fs.CreateFile('rules/__init__.py')
+        self.fs.CreateFile('rules/example.pyc')
+        self.fs.CreateFile('rules/community/REVIEWERS')
 
-    assert_equal(str(log_mock.call_args_list[0]), message)
+    def tearDown(self):
+        self.tearDownPyfakefs()
 
+    @staticmethod
+    def test_python_rule_paths():
+        """Rule Processor Main - Find rule paths"""
+        result = set(main._python_rule_paths())
+        expected = {
+            'matchers/matchers.py',
+            'rules/example.py',
+            'rules/community/cloudtrail/critical_api.py'
+        }
+        assert_equal(expected, result)
 
-@with_setup(setup=None, teardown=_teardown_env)
-@patch('stream_alert.rule_processor.LOGGER.setLevel')
-def test_init_logging_int_level(log_mock):
-    """Rule Processor Init - Logging, Integer Level"""
-    level = '10'
+    @staticmethod
+    def test_path_to_module():
+        """Rule Processor Main - Convert rule path to module name"""
+        assert_equal('name', main._path_to_module('name.py'))
+        assert_equal('a.b.c.name', main._path_to_module('a/b/c/name.py'))
 
-    os.environ['LOGGER_LEVEL'] = level
+    @staticmethod
+    def test_path_to_module_invalid():
+        """Rule Processor Main - Raise NameError for invalid Python filename."""
+        assert_raises(NameError, main._path_to_module, 'a.b.py')
+        assert_raises(NameError, main._path_to_module, 'a/b/old.name.py')
 
-    # Force reload the rule_processor package to trigger the init
-    reload(rp)
+    @staticmethod
+    @patch.object(main, 'importlib')
+    def test_import_rules(mock_importlib):
+        """Rule Processor Main - Import all rule modules."""
+        main._import_rules()
+        mock_importlib.assert_has_calls([
+            call.import_module('matchers.matchers'),
+            call.import_module('rules.example'),
+            call.import_module('rules.community.cloudtrail.critical_api')
+        ], any_order=True)
 
-    log_mock.assert_called_with(10)
+    @staticmethod
+    @patch.object(main, 'StreamAlert')
+    def test_handler(mock_stream_alert):
+        """Rule Processor Main - Handler is invoked"""
+        main.handler('event', 'context')
+        mock_stream_alert.assert_has_calls([
+            call('context'),
+            call().run('event')
+        ])
