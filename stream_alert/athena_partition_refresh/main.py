@@ -440,10 +440,12 @@ class StreamAlertSQSClient(object):
         # Backoff up to 5 times to limit the time spent in this operation
         # relative to the entire Lambda duration.
         max_tries = kwargs.get('max_tries', 5)
+
         # This value restricts the max time of backoff each try.
         # This means the total backoff time for one function call is:
         #   max_tries (attempts) * max_value (seconds)
         max_value = kwargs.get('max_value', 5)
+
         # Number of messages to poll from the stream.
         max_messages = kwargs.get('max_messages', self.MAX_SQS_GET_MESSAGE_COUNT)
         if max_messages > self.MAX_SQS_GET_MESSAGE_COUNT:
@@ -487,6 +489,7 @@ class StreamAlertSQSClient(object):
             # Determine the message batch for SQS message deletion
             len_processed_messages = len(self.processed_messages)
             batch = len_processed_messages if len_processed_messages < 10 else 10
+            # Pop processed records from the list to be deleted
             message_batch = [self.processed_messages.pop() for _ in range(batch)]
 
             # Try to delete the batch
@@ -497,16 +500,19 @@ class StreamAlertSQSClient(object):
                          for message in message_batch])
 
             # Handle successful deletions
-            self.deleted_messages += len(resp['Successful'])
-
+            if resp.get('Successful'):
+                self.deleted_messages += len(resp['Successful'])
             # Handle failure deletion
             if resp.get('Failed'):
                 LOGGER.error('Failed to delete the following (%d) messages:\n%s',
                              len(resp['Failed']), json.dumps(resp['Failed']))
                 # Add the failed messages back to the processed_messages attribute
-                failed_from_batch = [[message for message in message_batch if message['MessageId']
-                                      == failed_message['Id']] for failed_message in resp['Failed']]
-                self.processed_messages.extend(failed_from_batch)
+                # to be retried via backoff
+                self.processed_messages.extend([[message
+                                                 for message
+                                                 in message_batch
+                                                 if message['MessageId'] == failed_message['Id']]
+                                                for failed_message in resp['Failed']])
 
             return len(self.processed_messages)
 
@@ -563,7 +569,7 @@ class StreamAlertSQSClient(object):
                 object_key = urllib.unquote(record['s3']['object']['key']).decode('utf8')
                 s3_buckets_and_keys[bucket_name].add(object_key)
 
-                # Add to a new list to denote processed messages
+                # Add to a new list to track successfully processed messages from the queue
                 self.processed_messages.append(message)
 
         return s3_buckets_and_keys
