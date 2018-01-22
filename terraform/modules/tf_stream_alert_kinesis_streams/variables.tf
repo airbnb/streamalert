@@ -10,6 +10,10 @@ variable "create_user" {
   default = true
 }
 
+variable "trusted_account" {
+  default = ""
+}
+
 variable "prefix" {}
 
 variable "region" {}

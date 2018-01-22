@@ -40,7 +40,7 @@ resource "aws_iam_access_key" "stream_alert" {
 
 // IAM Policy Doc: allow the stream_alert user to write to the generated Kinesis Stream
 data "aws_iam_policy_document" "stream_alert_writeonly" {
-  count = "${var.create_user ? 1 : 0}"
+  count = "${var.create_user || var.trusted_account != "" ? 1 : 0}"
 
   statement {
     actions = [
@@ -53,4 +53,33 @@ data "aws_iam_policy_document" "stream_alert_writeonly" {
       "${aws_kinesis_stream.stream_alert_stream.arn}",
     ]
   }
+}
+
+// IAM Role: allow another account to assume the role
+resource "aws_iam_role" "stream_alert_write_role" {
+  count = "${var.trusted_account != "" ? 1 : 0}"
+  name = "${var.prefix}_${var.cluster_name}_stream_alert_role"
+
+  assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "arn:aws:iam::${var.trusted_account}:root"
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+EOF
+}
+
+resource "aws_iam_role_policy" "stream_alert_kinesis_put_records" {
+  count = "${var.trusted_account != "" ? 1 : 0}"
+  name = "KinesisPutRecords"
+  role = "${aws_iam_role.stream_alert_write_role.id}"
+
+  policy = "${data.aws_iam_policy_document.stream_alert_writeonly.json}"
 }

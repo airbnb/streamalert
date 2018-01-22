@@ -39,7 +39,8 @@ def test_kinesis_streams():
                 'stream_name': 'unit-testing_advanced_stream_alert_kinesis',
                 'shards': 1,
                 'retention': 24,
-                'create_user': True
+                'create_user': True,
+                'trusted_account': ''
             }
         }
     }

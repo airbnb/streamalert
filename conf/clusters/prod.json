@@ -13,7 +13,8 @@
       "streams": {
         "create_user": true,
         "retention": 24,
-        "shards": 1
+        "shards": 1,
+        "trusted_account": ""
       }
     },
     "kinesis_events": {
