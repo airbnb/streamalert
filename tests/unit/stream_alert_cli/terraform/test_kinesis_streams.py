@@ -47,3 +47,31 @@ def test_kinesis_streams():
 
     assert_true(result)
     assert_equal(cluster_dict, expected_result)
+
+def test_kinesis_streams_with_trusted_account():
+    """CLI - Terraform Generate Kinesis Streams with trusted account"""
+    cluster_dict = _common.infinitedict()
+    result = kinesis_streams.generate_kinesis_streams('trusted',
+                                                      cluster_dict,
+                                                      CONFIG)
+
+    expected_result = {
+        'module': {
+            'kinesis_trusted': {
+                'source': 'modules/tf_stream_alert_kinesis_streams',
+                'account_id': '12345678910',
+                'shard_level_metrics': [],
+                'region': 'us-west-1',
+                'prefix': 'unit-testing',
+                'cluster_name': 'trusted',
+                'stream_name': 'unit-testing_trusted_stream_alert_kinesis',
+                'shards': 1,
+                'retention': 24,
+                'create_user': True,
+                'trusted_account': '98765432100'
+            }
+        }
+    }
+
+    assert_true(result)
+    assert_equal(cluster_dict, expected_result)

@@ -1,0 +1,48 @@
+{
+  "id": "trusted",
+  "modules": {
+    "cloudwatch_monitoring": {
+      "enabled": true
+    },
+    "kinesis": {
+      "firehose": {
+        "enabled": true,
+        "s3_bucket_suffix": "streamalert.results"
+      },
+      "streams": {
+        "retention": 24,
+        "shards": 1,
+        "trusted_account": "98765432100"
+      }
+    },
+    "kinesis_events": {
+      "enabled": true
+    },
+    "s3_events": [
+      {
+        "bucket_id": "unit-test-bucket.legacy.data"
+      }
+    ],
+    "stream_alert": {
+      "alert_processor": {
+        "current_version": "$LATEST",
+        "memory": 128,
+        "timeout": 25
+      },
+      "rule_processor": {
+        "current_version": "$LATEST",
+        "enable_threat_intel": false,
+        "memory": 128,
+        "timeout": 25
+      }
+    }
+  },
+  "outputs": {
+    "kinesis": [
+      "username",
+      "access_key_id",
+      "secret_key"
+    ]
+  },
+  "region": "us-west-1"
+}
