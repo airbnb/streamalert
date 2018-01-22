@@ -672,6 +672,7 @@ class AlertProcessorTester(object):
 
             def _mock_by_service():
                 url = mocker.call_args[0][0]
+                url_path = os.path.split(url)[1]
                 if mocker.method == 'post':
                     if 'jira' in url:
                         if 'auth' in url:
@@ -682,13 +683,20 @@ class AlertProcessorTester(object):
                     elif 'phantom' in url:
                         return {'id': 1948}
 
+                    elif 'api.pagerduty' in url:
+                        if 'incidents' in url_path:
+                            return {'incident': {'id': 'incident_id'}}
+
+                    elif 'events.pagerduty' in url:
+                        if 'enqueue' in url_path:
+                            return {'dedup_key': 'returned_dedup_key'}
+
                 elif mocker.method == 'get':
                     if 'phantom' in 'url':
                         return {'count': 0, 'data': []}
 
                     elif 'api.pagerduty' in url:
-                        u_path = os.path.split(url)[1]
-                        return {u_path: [{'id': 1234, 'name': 'foobar'}]}
+                        return {url_path: [{'id': 1234, 'name': 'foobar'}]}
 
                 # Default to returning an empty dict in case this was not implemented for a service
                 return dict()
@@ -716,6 +724,13 @@ class AlertProcessorTester(object):
         # Set the side_effect of the json method to our dynamic function
         # Passing in the post_mock object lets us access the calls to it
         post_mock.return_value.json.side_effect = _mock_side_effect(post_mock)
+
+        put_patcher = patch('requests.put')
+        put_mock = put_patcher.start()
+        put_mock.method = 'put'
+
+        # Set the patched requests.put return value to 200
+        put_mock.return_value.status_code = 200
 
     def setup_outputs(self, alert):
         """Helper function to handler any output setup
@@ -773,7 +788,8 @@ class AlertProcessorTester(object):
                 creds = {'token': '247b97499078a015cc6c586bc0a92de6',
                          'service_name': '247b97499078a015cc6c586bc0a92de6',
                          'escalation_policy': '247b97499078a015cc6c586bc0a92de6',
-                         'email_from': 'blah@foo.bar'}
+                         'email_from': 'blah@foo.bar',
+                         'integration_key': '247b97499078a015cc6c586bc0a92de6'}
                 helpers.put_mock_creds(output_name, creds, self.secrets_bucket,
                                        'us-east-1', self.kms_alias)
 

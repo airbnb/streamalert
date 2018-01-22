@@ -612,12 +612,12 @@ class PagerDutyIncidentOutput(OutputDispatcher):
             return self._log_status(False)
 
         # Extract the json blob from the response, returned by self._post_request_retry
-        incident_data = incident.json()
-        if not incident_data:
+        incident_json = incident.json()
+        if not incident_json:
             return self._log_status(False)
 
         # Extract the incident id from the incident that was just created
-        incident_id = incident_data.get('incident', {}).get('id')
+        incident_id = incident_json.get('incident', {}).get('id')
 
         # Create alert to hold all the incident details
         event_data = events_v2_data(creds['integration_key'], **kwargs)
