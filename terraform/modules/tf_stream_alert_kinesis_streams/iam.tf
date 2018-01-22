@@ -55,27 +55,27 @@ data "aws_iam_policy_document" "stream_alert_writeonly" {
   }
 }
 
-// IAM Role: allow another account to assume the role
+// IAM Policy Document: policy document to allow specified account to assume the role
+data "aws_iam_policy_document" "stream_alert_assume_role_policy" {
+  statement {
+    actions = ["sts:AssumeRole"]
+
+    principals {
+      type = "AWS"
+      identifiers = ["arn:aws:iam::${var.trusted_account}:root"]
+    }
+  }
+}
+
+// IAM Role: stream_alert role for systems in another account to send data to the stream
 resource "aws_iam_role" "stream_alert_write_role" {
   count = "${var.trusted_account != "" ? 1 : 0}"
   name = "${var.prefix}_${var.cluster_name}_stream_alert_role"
 
-  assume_role_policy = <<EOF
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Principal": {
-        "AWS": "arn:aws:iam::${var.trusted_account}:root"
-      },
-      "Action": "sts:AssumeRole"
-    }
-  ]
-}
-EOF
+  assume_role_policy = "${data.aws_iam_policy_document.stream_alert_assume_role_policy.json}"
 }
 
+// IAM Role Policy: policy to allow a role to send data to the stream
 resource "aws_iam_role_policy" "stream_alert_kinesis_put_records" {
   count = "${var.trusted_account != "" ? 1 : 0}"
   name = "KinesisPutRecords"
