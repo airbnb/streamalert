@@ -300,8 +300,7 @@ class TestStreamAlertSQSClient(object):
     def test_delete_messages_failure(self, mock_logging, mock_sqs_client):
         """Athena SQS - Delete Messages - Failure Response"""
         instance = mock_sqs_client.return_value
-        instance.sqs_client.delete_message_batch.return_value = {
-            'Successful': [{'Id': '2'}], 'Failed': [{'Id': '1'}]}
+        instance.sqs_client.delete_message_batch.return_value = {'Failed': [{'Id': '1'}]}
 
         self.client.get_messages()
         self.client.unique_s3_buckets_and_keys()

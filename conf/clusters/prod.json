@@ -2,23 +2,23 @@
   "id": "prod",
   "modules": {
     "cloudtrail": {
-      "enabled": true
+      "enable_logging": true
     },
     "cloudwatch_monitoring": {
-      "enabled": true
+      "enabled": true,
+      "kinesis_alarms_enabled": true,
+      "lambda_alarms_enabled": true
     },
     "kinesis": {
-      "firehose": {
-        "enabled": true,
-        "s3_bucket_suffix": "streamalert.results"
-      },
       "streams": {
+        "create_user": true,
         "retention": 24,
         "shards": 1
       }
     },
     "kinesis_events": {
-      "enabled": true
+      "enabled": true,
+      "batch_size": 100
     },
     "stream_alert": {
       "alert_processor": {

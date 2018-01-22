@@ -779,7 +779,8 @@
       "product_version": "string",
       "server_added_timestamp": "string",
       "signed": "string",
-      "timestamp": "string"
+      "timestamp": "string",
+      "watchlists": []
     },
     "parser": "json",
     "configuration": {
@@ -823,7 +824,8 @@
         "digsig_issuer",
         "digsig_prog_name",
         "digsig_subject",
-        "legal_copyright"
+        "legal_copyright",
+        "watchlists"
       ]
     }
   },
