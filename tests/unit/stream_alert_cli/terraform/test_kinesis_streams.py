@@ -20,6 +20,7 @@ from stream_alert_cli.terraform import _common, kinesis_streams
 
 CONFIG = CLIConfig(config_path='tests/unit/conf')
 
+
 def test_kinesis_streams():
     """CLI - Terraform Generate Kinesis Streams"""
     cluster_dict = _common.infinitedict()
@@ -47,6 +48,7 @@ def test_kinesis_streams():
 
     assert_true(result)
     assert_equal(cluster_dict, expected_result)
+
 
 def test_kinesis_streams_with_trusted_account():
     """CLI - Terraform Generate Kinesis Streams with trusted account"""
