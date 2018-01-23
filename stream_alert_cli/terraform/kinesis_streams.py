@@ -42,7 +42,7 @@ def generate_kinesis_streams(cluster_name, cluster_dict, config):
         'shards': kinesis_module['shards'],
         'retention': kinesis_module['retention'],
         'create_user': kinesis_module.get('create_user', True),
-        'trusted_account': kinesis_module.get('trusted_account', '')
+        'trusted_accounts': kinesis_module.get('trusted_accounts', [])
     }
 
     return True

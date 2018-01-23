@@ -41,7 +41,7 @@ def test_kinesis_streams():
                 'shards': 1,
                 'retention': 24,
                 'create_user': True,
-                'trusted_account': ''
+                'trusted_accounts': []
             }
         }
     }
@@ -70,7 +70,9 @@ def test_kinesis_streams_with_trusted_account():
                 'shards': 1,
                 'retention': 24,
                 'create_user': True,
-                'trusted_account': '98765432100'
+                'trusted_accounts': [
+                    '98765432100'
+                ]
             }
         }
     }

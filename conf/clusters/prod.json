@@ -14,7 +14,7 @@
         "create_user": true,
         "retention": 24,
         "shards": 1,
-        "trusted_account": ""
+        "trusted_accounts": []
       }
     },
     "kinesis_events": {

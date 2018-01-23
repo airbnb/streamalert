@@ -10,8 +10,8 @@ variable "create_user" {
   default = true
 }
 
-variable "trusted_account" {
-  default = ""
+variable "trusted_accounts" {
+  default = []
 }
 
 variable "prefix" {}

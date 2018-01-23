@@ -12,7 +12,9 @@
       "streams": {
         "retention": 24,
         "shards": 1,
-        "trusted_account": "98765432100"
+        "trusted_accounts": [
+          "98765432100"
+        ]
       }
     },
     "kinesis_events": {
