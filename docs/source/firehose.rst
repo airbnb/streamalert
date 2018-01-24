@@ -4,9 +4,11 @@ Kinesis Firehose
 Overview
 --------
 
-* To enable historical search of all data classified by StreamAlert, Kinesis Firehose can be used.
-* This feature can be used for long-term data persistence and historical search (coming soon).
-* This works by delivering data to AWS S3, which can be loaded and queried by AWS Athena.
+To enable historical search of all data classified by StreamAlert, Kinesis Firehose can be used.
+
+This feature can be used for long-term data persistence and historical search.
+
+Firehose works by delivering data to AWS S3, which can be loaded and queried by AWS Athena.
 
 Configuration
 -------------
@@ -60,10 +62,10 @@ And the following schemas are defined in ``logs.json``:
 
 The Firehose module will create four Delivery Streams, one for each type:
 
-- ``cloudwatch_events``
-- ``cloudwatch_flow_logs``
-- ``osquery``
-- ``cloudtrail``
+- ``streamalert_data_cloudwatch_events``
+- ``streamalert_data_cloudwatch_flow_logs``
+- ``streamalert_data_osquery``
+- ``streamalert_data_cloudtrail``
 
 Each Delivery Stream delivers data to the same S3 bucket created by the module in a prefix based on the corresponding log type:
 

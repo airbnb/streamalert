@@ -4,9 +4,11 @@ Kinesis Streams
 Overview
 --------
 
-* StreamAlert utilizes AWS Kinesis Streams for real-time data ingestion from `datasources <datasources.html>`_
-* A Kinesis Stream is created for each `cluster <clusters.html>`_ you define.
-* `Key concepts <https://docs.aws.amazon.com/streams/latest/dev/key-concepts.html>`_
+StreamAlert utilizes AWS Kinesis Streams for real-time data ingestion from `datasources <datasources.html>`_.
+
+A Kinesis Stream is created for each `cluster <clusters.html>`_ you define.
+
+For more information, see `key concepts <https://docs.aws.amazon.com/streams/latest/dev/key-concepts.html>`_.
 
 At a high-level:
 
@@ -83,4 +85,4 @@ Finally, Run Terraform to ensure a consistent state.
 
 .. code-block:: bash
 
-  $ python stream_alert_cli.py terraform build --target kinesis
+  $ python manage.py terraform build --target kinesis

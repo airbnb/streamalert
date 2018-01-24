@@ -28,20 +28,20 @@ As new rules, sources, or outputs are added to StreamAlert, new versions of the 
 
 To accomplish this, ``manage.py`` contains a ``lambda deploy`` command.
 
-To publish new changes for all AWS Lambda functions:
+To deploy new changes for all AWS Lambda functions:
 
 .. code-block:: bash
 
   $ python manage.py lambda deploy --processor all
 
-Optionally, to publish changes for only a specific AWS Lambda function:
+Optionally, to deploy changes for only a specific AWS Lambda function:
 
 .. code-block:: bash
 
   $ python manage.py lambda deploy --processor rule
   $ python manage.py lambda deploy --processor alert
 
-To apply infrastructure level changes (additional Kinesis shards, Lambda memory, etc), run:
+To apply infrastructure level changes (additional Kinesis Shards, new CloudTrails, etc), run:
 
 .. code-block:: bash
 
