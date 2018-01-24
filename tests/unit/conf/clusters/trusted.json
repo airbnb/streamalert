@@ -1,39 +1,41 @@
 {
-  "id": "prod",
+  "id": "trusted",
   "modules": {
-    "cloudtrail": {
-      "enable_logging": true
-    },
     "cloudwatch_monitoring": {
-      "enabled": true,
-      "kinesis_alarms_enabled": true,
-      "lambda_alarms_enabled": true
+      "enabled": true
     },
     "kinesis": {
+      "firehose": {
+        "enabled": true,
+        "s3_bucket_suffix": "streamalert.results"
+      },
       "streams": {
-        "create_user": true,
         "retention": 24,
         "shards": 1,
-        "trusted_accounts": []
+        "trusted_accounts": [
+          "98765432100"
+        ]
       }
     },
     "kinesis_events": {
-      "enabled": true,
-      "batch_size": 100
+      "enabled": true
     },
+    "s3_events": [
+      {
+        "bucket_id": "unit-test-bucket.legacy.data"
+      }
+    ],
     "stream_alert": {
       "alert_processor": {
         "current_version": "$LATEST",
-        "log_level": "info",
         "memory": 128,
-        "timeout": 60
+        "timeout": 25
       },
       "rule_processor": {
         "current_version": "$LATEST",
-        "enable_metrics": true,
-        "log_level": "info",
+        "enable_threat_intel": false,
         "memory": 128,
-        "timeout": 10
+        "timeout": 25
       }
     }
   },
@@ -44,5 +46,5 @@
       "secret_key"
     ]
   },
-  "region": "us-east-1"
+  "region": "us-west-1"
 }
