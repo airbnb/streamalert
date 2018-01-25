@@ -2,7 +2,7 @@
   "id": "trusted",
   "modules": {
     "cloudwatch_monitoring": {
-      "enabled": true
+      "enabled": false
     },
     "kinesis": {
       "firehose": {
