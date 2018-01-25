@@ -26,7 +26,7 @@ def test_generate_cloudwatch_monitoring():
     cluster_dict = _common.infinitedict()
     result = monitoring.generate_monitoring('test', cluster_dict, CONFIG)
 
-    # Test a the default SNS topic option
+    # Test the default SNS topic option
     expected_cloudwatch_tf = {
         'source': 'modules/tf_stream_alert_monitoring',
         'sns_topic_arn': 'arn:aws:sns:us-west-1:12345678910:stream_alert_monitoring',
@@ -49,7 +49,7 @@ def test_generate_cloudwatch_monitoring_with_settings():
     cluster_dict = _common.infinitedict()
     result = monitoring.generate_monitoring('advanced', cluster_dict, CONFIG)
 
-    # Test a the default SNS topic option
+    # Test the default SNS topic option
     expected_cloudwatch_tf = {
         'source': 'modules/tf_stream_alert_monitoring',
         'sns_topic_arn': 'arn:aws:sns:us-west-1:12345678910:stream_alert_monitoring',
@@ -84,7 +84,7 @@ def test_generate_cloudwatch_monitoring_no_kinesis():
     CONFIG['clusters']['test']['modules']['cloudwatch_monitoring']['lambda_alarms_enabled'] = True
     result = monitoring.generate_monitoring('test', cluster_dict, CONFIG)
 
-    # Test a the default SNS topic option
+    # Test the default SNS topic option
     expected_cloudwatch_tf = {
         'source': 'modules/tf_stream_alert_monitoring',
         'sns_topic_arn': 'arn:aws:sns:us-west-1:12345678910:stream_alert_monitoring',
@@ -108,7 +108,7 @@ def test_generate_cloudwatch_monitoring_no_lambda():
     CONFIG['clusters']['test']['modules']['cloudwatch_monitoring']['kinesis_alarms_enabled'] = True
     result = monitoring.generate_monitoring('test', cluster_dict, CONFIG)
 
-    # Test a the default SNS topic option
+    # Test the default SNS topic option
     expected_cloudwatch_tf = {
         'source': 'modules/tf_stream_alert_monitoring',
         'sns_topic_arn': 'arn:aws:sns:us-west-1:12345678910:stream_alert_monitoring',
