@@ -33,8 +33,10 @@ def generate_cloudtrail(cluster_name, cluster_dict, config):
     cloudtrail_module = 'cloudtrail_{}'.format(cluster_name)
 
     enabled_legacy = modules['cloudtrail'].get('enabled')
-    cloudtrail_enabled = modules['cloudtrail'].get('enable_logging')
-    kinesis_enabled = modules['cloudtrail'].get('enable_kinesis')
+
+    cloudtrail_enabled = modules['cloudtrail'].get('enable_logging', True)
+    kinesis_enabled = modules['cloudtrail'].get('enable_kinesis', True)
+
     account_ids = list(
         set([config['global']['account']['aws_account_id']] + modules['cloudtrail'].get(
             'cross_account_ids', [])))

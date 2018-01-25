@@ -6,7 +6,10 @@
       "enable_logging": true
     },
     "cloudwatch_monitoring": {
-      "enabled": true
+      "enabled": true,
+      "settings": {
+        "kinesis_iterator_age_error_threshold": 3000000
+      }
     },
     "flow_logs": {
       "enabled": true,

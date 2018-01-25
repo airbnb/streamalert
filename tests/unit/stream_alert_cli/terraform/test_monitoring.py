@@ -26,7 +26,7 @@ def test_generate_cloudwatch_monitoring():
     cluster_dict = _common.infinitedict()
     result = monitoring.generate_monitoring('test', cluster_dict, CONFIG)
 
-    # Test a the default SNS topic option
+    # Test the default SNS topic option
     expected_cloudwatch_tf = {
         'source': 'modules/tf_stream_alert_monitoring',
         'sns_topic_arn': 'arn:aws:sns:us-west-1:12345678910:stream_alert_monitoring',
@@ -44,6 +44,39 @@ def test_generate_cloudwatch_monitoring():
         cluster_dict['module']['cloudwatch_monitoring_test'],
         expected_cloudwatch_tf)
 
+def test_generate_cloudwatch_monitoring_with_settings():
+    """CLI - Terraform Generate Cloudwatch Monitoring with Custom Settings"""
+    cluster_dict = _common.infinitedict()
+    result = monitoring.generate_monitoring('advanced', cluster_dict, CONFIG)
+
+    # Test the default SNS topic option
+    expected_cloudwatch_tf = {
+        'source': 'modules/tf_stream_alert_monitoring',
+        'sns_topic_arn': 'arn:aws:sns:us-west-1:12345678910:stream_alert_monitoring',
+        'lambda_functions': [
+            'unit-testing_advanced_streamalert_rule_processor',
+            'unit-testing_advanced_streamalert_alert_processor'
+        ],
+        'kinesis_stream': 'unit-testing_advanced_stream_alert_kinesis',
+        'lambda_alarms_enabled': True,
+        'kinesis_alarms_enabled': True,
+        'kinesis_iterator_age_error_threshold': '3000000'
+    }
+
+    assert_true(result)
+    assert_equal(
+        cluster_dict['module']['cloudwatch_monitoring_advanced'],
+        expected_cloudwatch_tf)
+
+def test_generate_cloudwatch_monitoring_disabled():
+    """CLI - Terraform Generate Cloudwatch Monitoring Disabled"""
+    cluster_dict = _common.infinitedict()
+    cluster = 'trusted'
+    result = monitoring.generate_monitoring(cluster, cluster_dict, CONFIG)
+
+    assert_true(result)
+    assert_true('cloudwatch_monitoring_{}'.format(cluster) not in cluster_dict['module'])
+
 def test_generate_cloudwatch_monitoring_no_kinesis():
     """CLI - Terraform Generate Cloudwatch Monitoring - Kinesis Disabled"""
     cluster_dict = _common.infinitedict()
@@ -51,7 +84,7 @@ def test_generate_cloudwatch_monitoring_no_kinesis():
     CONFIG['clusters']['test']['modules']['cloudwatch_monitoring']['lambda_alarms_enabled'] = True
     result = monitoring.generate_monitoring('test', cluster_dict, CONFIG)
 
-    # Test a the default SNS topic option
+    # Test the default SNS topic option
     expected_cloudwatch_tf = {
         'source': 'modules/tf_stream_alert_monitoring',
         'sns_topic_arn': 'arn:aws:sns:us-west-1:12345678910:stream_alert_monitoring',
@@ -75,7 +108,7 @@ def test_generate_cloudwatch_monitoring_no_lambda():
     CONFIG['clusters']['test']['modules']['cloudwatch_monitoring']['kinesis_alarms_enabled'] = True
     result = monitoring.generate_monitoring('test', cluster_dict, CONFIG)
 
-    # Test a the default SNS topic option
+    # Test the default SNS topic option
     expected_cloudwatch_tf = {
         'source': 'modules/tf_stream_alert_monitoring',
         'sns_topic_arn': 'arn:aws:sns:us-west-1:12345678910:stream_alert_monitoring',

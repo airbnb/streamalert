@@ -208,9 +208,10 @@ class StreamAlertFirehose(object):
             MetricLogger.log_metric(FUNCTION_NAME,
                                     MetricLogger.FIREHOSE_RECORDS_SENT,
                                     record_batch_size)
-            LOGGER.info('[Firehose] Successfully sent %d messages to %s',
+            LOGGER.info('[Firehose] Successfully sent %d messages to %s with RequestId [%s]',
                         record_batch_size,
-                        stream_name)
+                        stream_name,
+                        resp.get('ResponseMetadata', {}).get('RequestId', ''))
 
     def firehose_log_name(self, log_name):
         """Convert conventional log names into Firehose delievery stream names

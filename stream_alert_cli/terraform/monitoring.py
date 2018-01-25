@@ -19,6 +19,19 @@ from stream_alert_cli.logger import LOGGER_CLI
 def generate_monitoring(cluster_name, cluster_dict, config):
     """Add the CloudWatch Monitoring module to the Terraform cluster dict.
 
+    Example configuration:
+
+    "cloudwatch_monitoring": {
+      "enabled": true,
+      "kinesis_alarms_enabled": true,
+      "lambda_alarms_enabled": true,
+      "settings": {
+        "lambda_invocation_error_period": "600",
+        "kinesis_iterator_age_error_period": "600",
+        "kinesis_write_throughput_exceeded_threshold": "100"
+      }
+    }
+
     Args:
         cluster_name (str): The name of the currently generating cluster
         cluster_dict (defaultdict): The dict containing all Terraform config for a given cluster.
@@ -35,6 +48,10 @@ def generate_monitoring(cluster_name, cluster_dict, config):
     if not (infrastructure_config and 'monitoring' in infrastructure_config):
         LOGGER_CLI.error('Invalid config: Make sure you declare global infrastructure options!')
         return False
+
+    if not monitoring_config.get('enabled', False):
+        LOGGER_CLI.info('CloudWatch Monitoring not enabled, skipping...')
+        return True
 
     if infrastructure_config['monitoring'].get('create_sns_topic'):
         topic_name = 'stream_alert_monitoring'
@@ -68,5 +85,13 @@ def generate_monitoring(cluster_name, cluster_dict, config):
             'kinesis_stream': '{}_{}_stream_alert_kinesis'.format(prefix, cluster_name),
             'kinesis_alarms_enabled': True
         })
+
+    # Add support for custom settings for tweaking alarm thresholds, eval periods, and periods
+    # Note: This does not strictly check for proper variable names, since there are so many.
+    #       Instead, Terraform will error out if an imporper name is used.
+    #       Also, every value in these settings should be a string, so cast for safety.
+    for setting_name, setting_value in monitoring_config.get('settings', {}).iteritems():
+        cluster_dict['module']['cloudwatch_monitoring_{}'.format(
+            cluster_name)][setting_name] = str(setting_value)
 
     return True
