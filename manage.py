@@ -28,8 +28,9 @@ from argparse import Action, ArgumentParser, RawTextHelpFormatter, SUPPRESS as A
 import os
 import string
 
+
+from stream_alert import __version__ as version
 from stream_alert.shared import metrics
-from stream_alert_cli import __version__ as version
 from stream_alert_cli.logger import LOGGER_CLI
 from stream_alert_cli.runner import cli_runner
 from app_integrations.apps.app_base import StreamAlertApp
@@ -1444,6 +1445,12 @@ For additional details on the available commands, try:
         prog='manage.py',
         usage=usage,
         formatter_class=RawTextHelpFormatter)
+
+    parser.add_argument(
+        '-v', '--version',
+        action='version',
+        version='StreamAlert v{}'.format(version)
+    )
     subparsers = parser.add_subparsers()
     _add_output_subparser(subparsers)
     _add_live_test_subparser(subparsers)
