@@ -62,7 +62,7 @@ class TestStreamIoc(object):
         ioc.is_ioc = False
         assert_false(ioc.is_ioc)
 
-@patch.object(StreamThreatIntel, 'BACKOFF_MAX_RETRIES', 0)
+@patch.object(StreamThreatIntel, 'BACKOFF_MAX_RETRIES', 1)
 class TestStreamThreatIntel(object):
     """Test class for StreamThreatIntel"""
     @classmethod
