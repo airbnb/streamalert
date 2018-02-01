@@ -10,15 +10,15 @@ Schemas are defined in ``conf/logs.json`` and used by rules to determine which r
 
 They represent the structure of a given log in the form of key/value pairs.
 
-Each key in a schema corresponds to the name of a field referenced by rules.  Its value is the data type the field is cast to.
+Each key in a schema corresponds to the name of a field referenced by rules and its value represents the data type the field is cast into.
 
-Ordering is strict for the ``csv`` parser.
+.. note:: Ordering is strict for the ``csv`` parser.
 
 Example log schema::
 
   {
     "example_log_name": {
-      "parser": "parser-name-goes-here",
+      "parser": "json",
       "schema": {
         "field_1": "string",
         "field_2": "integer",
@@ -35,7 +35,6 @@ Example rule:
 .. code-block:: python
 
   @rule(logs=['example_log_name'],              # the log_name as defined above
-        matchers=[],
         outputs=['slack'])
   def example_rule(rec):
     """Description of the rule"""

@@ -30,7 +30,7 @@ Dependencies
   $ pip install -r requirements.txt
 
 
-.. note:: if you run into issues with psutil installation, make sure you have the python dev dependencies installed.  ```debian: sudo apt install python-dev```, ```CentOS/RHEL: sudo yum install python-devel```
+.. note:: If you run into issues with ``psutil`` installation, make sure you have the ``python-dev`` dependencies installed.  `debian: sudo apt install python-dev``, `CentOS/RHEL: sudo yum install python-devel``
 
 
 Quick Start
