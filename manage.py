@@ -1151,18 +1151,11 @@ Athena StreamAlert options
 
 Available Subcommands:
 
-    manage.py athena init                 Create the Athena base config
-    manage.py athena enable               Enable Athena Partition Refresh Lambda function
-    manage.py athena create-db            Initialize the Athena Database (streamalert)
     manage.py athena create-table         Create an Athena table
 
 Examples:
 
-    manage.py athena create-db
-
-    manage.py athena create-table --type alerts --bucket s3.bucket.name --refresh_type add_hive_partition
-
-    manage.py athena create-table --type data --bucket s3.bucket.name --refresh_type add_hive_partition --table_name my_athena_table
+    manage.py athena create-table --bucket s3.bucket.name --refresh_type add_hive_partition --table_name my_athena_table
 
 """.format(version))
     athena_parser = subparsers.add_parser(
@@ -1177,11 +1170,9 @@ Examples:
     athena_parser.add_argument(
         'subcommand',
         choices=[
-            'init', 'enable', 'create-db', 'create-table', 'drop-all-tables', 'rebuild-partitions'
+            'create-table', 'drop-all-tables', 'rebuild-partitions'
         ],
         help=ARGPARSE_SUPPRESS)
-
-    athena_parser.add_argument('--type', choices=['alerts', 'data'], help=ARGPARSE_SUPPRESS)
 
     athena_parser.add_argument('--bucket', help=ARGPARSE_SUPPRESS)
 
