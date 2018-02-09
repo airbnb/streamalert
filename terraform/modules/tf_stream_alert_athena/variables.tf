@@ -34,7 +34,24 @@ variable "athena_data_buckets" {
   type = "list"
 }
 
+variable "results_bucket" {
+  type = "string"
+}
+
+variable "s3_logging_bucket" {
+  type = "string"
+}
+
+variable "database_name" {
+  type    = "string"
+  default = "streamalert"
+}
+
 variable "prefix" {
+  type = "string"
+}
+
+variable "queue_name" {
   type = "string"
 }
 

@@ -33,8 +33,25 @@ def generate_athena(config):
     for refresh_type in athena_config['refresh_type']:
         data_buckets.update(set(athena_config['refresh_type'][refresh_type]))
 
+    prefix = config['global']['account']['prefix']
+    database = athena_config.get('database_name', '').strip()
+    if database == '':
+        database = 'streamalert'
+
+    results_bucket_name = athena_config.get('results_bucket', '').strip()
+    if results_bucket_name == '':
+        results_bucket_name = '{}.streamalert.athena-results'.format(prefix)
+
+    queue_name = athena_config.get('queue_name', '').strip()
+    if queue_name == '':
+        queue_name = '{}_streamalert_athena_data_bucket_notifications'.format(prefix)
+
     athena_dict['module']['stream_alert_athena'] = {
+        's3_logging_bucket': '{}.streamalert.s3-logging'.format(prefix),
         'source': 'modules/tf_stream_alert_athena',
+        'database_name': database,
+        'queue_name': queue_name,
+        'results_bucket': results_bucket_name,
         'lambda_handler': athena_config['handler'],
         'lambda_memory': athena_config.get('memory', '128'),
         'lambda_timeout': athena_config.get('timeout', '60'),
@@ -45,7 +62,7 @@ def generate_athena(config):
         'refresh_interval': athena_config.get('refresh_interval', 'rate(10 minutes)'),
         'current_version': athena_config['current_version'],
         'enable_metrics': athena_config.get('enable_metrics', False),
-        'prefix': config['global']['account']['prefix']
+        'prefix': prefix
     }
 
     # Cloudwatch monitoring setup
@@ -59,8 +76,7 @@ def generate_athena(config):
             account_id=config['global']['account']['aws_account_id'],
             topic=sns_topic_name
         ),
-        'lambda_functions': ['{}_streamalert_athena_partition_refresh'.format(
-            config['global']['account']['prefix'])],
+        'lambda_functions': ['{}_streamalert_athena_partition_refresh'.format(prefix)],
         'kinesis_alarms_enabled': False
     }
 
