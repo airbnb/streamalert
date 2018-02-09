@@ -41,25 +41,7 @@ CREATE_TABLE_STATEMENT = ('CREATE EXTERNAL TABLE {table_name} ({schema}) '
 MAX_QUERY_LENGTH = 262144
 
 
-def create_database(athena_client):
-    """Create the 'streamalert' Athena database
-
-    Args:
-        athena_client (boto3.client): Instantiated CLI AthenaClient
-    """
-    if athena_client.check_database_exists():
-        LOGGER_CLI.info('The \'streamalert\' database already exists, nothing to do')
-        return
-
-    create_db_success, create_db_result = athena_client.run_athena_query(
-        query='CREATE DATABASE streamalert')
-
-    if create_db_success and create_db_result['ResultSet'].get('Rows'):
-        LOGGER_CLI.info('streamalert database successfully created!')
-        LOGGER_CLI.info('results: %s', create_db_result['ResultSet']['Rows'])
-
-
-def rebuild_partitions(athena_client, options, config):
+def rebuild_partitions(options, config):
     """Rebuild an Athena table's partitions
 
     Steps:
@@ -73,6 +55,8 @@ def rebuild_partitions(athena_client, options, config):
         options (namedtuple): The parsed args passed from the CLI
         config (CLIConfig): Loaded StreamAlert CLI
     """
+    athena_client = StreamAlertAthenaClient(config, results_key_prefix='stream_alert_cli')
+
     if not options.table_name:
         LOGGER_CLI.error('Missing command line argument --table_name')
         return
@@ -86,56 +70,58 @@ def rebuild_partitions(athena_client, options, config):
                                       config['logs'])
     sanitized_table_name = sa_firehose.firehose_log_name(options.table_name)
 
-    if options.type == 'data':
-        # Get the current set of partitions
-        partition_success, partitions = athena_client.run_athena_query(
-            query='SHOW PARTITIONS {}'.format(sanitized_table_name), database='streamalert')
-        if not partition_success:
-            LOGGER_CLI.error('An error occured when loading partitions for %s',
-                             sanitized_table_name)
-            return
+    # Get the current set of partitions
+    partition_success, partitions = athena_client.run_athena_query(
+        query='SHOW PARTITIONS {}'.format(sanitized_table_name),
+        database=athena_client.sa_database
+    )
+    if not partition_success:
+        LOGGER_CLI.error('An error occured when loading partitions for %s',
+                         sanitized_table_name)
+        return
 
-        unique_partitions = athena_helpers.unique_values_from_query(partitions)
+    unique_partitions = athena_helpers.unique_values_from_query(partitions)
 
-        # Drop the table
-        LOGGER_CLI.info('Dropping table %s', sanitized_table_name)
-        drop_success, _ = athena_client.run_athena_query(
-            query='DROP TABLE {}'.format(sanitized_table_name), database='streamalert')
-        if not drop_success:
-            LOGGER_CLI.error('An error occured when dropping the %s table', sanitized_table_name)
-            return
+    # Drop the table
+    LOGGER_CLI.info('Dropping table %s', sanitized_table_name)
+    drop_success, _ = athena_client.run_athena_query(
+        query='DROP TABLE {}'.format(sanitized_table_name),
+        database=athena_client.sa_database
+    )
+    if not drop_success:
+        LOGGER_CLI.error('An error occured when dropping the %s table', sanitized_table_name)
+        return
 
-        LOGGER_CLI.info('Dropped table %s', sanitized_table_name)
+    LOGGER_CLI.info('Dropped table %s', sanitized_table_name)
 
-        new_partitions_statement = athena_helpers.partition_statement(
-            unique_partitions, options.bucket, sanitized_table_name)
+    new_partitions_statement = athena_helpers.partition_statement(
+        unique_partitions, options.bucket, sanitized_table_name)
 
-        # Make sure our new alter table statement is within the query API limits
-        if len(new_partitions_statement) > MAX_QUERY_LENGTH:
-            LOGGER_CLI.error('Partition statement too large, writing to local file')
-            with open('partitions_{}.txt'.format(sanitized_table_name), 'w') as partition_file:
-                partition_file.write(new_partitions_statement)
-            return
+    # Make sure our new alter table statement is within the query API limits
+    if len(new_partitions_statement) > MAX_QUERY_LENGTH:
+        LOGGER_CLI.error('Partition statement too large, writing to local file')
+        with open('partitions_{}.txt'.format(sanitized_table_name), 'w') as partition_file:
+            partition_file.write(new_partitions_statement)
+        return
 
-        # Re-create the table with previous partitions
-        options.refresh_type = 'add_hive_partition'
-        create_table(athena_client, options, config)
+    # Re-create the table with previous partitions
+    options.refresh_type = 'add_hive_partition'
+    create_table(options, 'data', config)
 
-        LOGGER_CLI.info('Creating %d new partitions for %s',
-                        len(unique_partitions), sanitized_table_name)
-        new_part_success, _ = athena_client.run_athena_query(
-            query=new_partitions_statement, database='streamalert')
-        if not new_part_success:
-            LOGGER_CLI.error('Error re-creating new partitions for %s', sanitized_table_name)
-            return
+    LOGGER_CLI.info('Creating %d new partitions for %s',
+                    len(unique_partitions), sanitized_table_name)
+    new_part_success, _ = athena_client.run_athena_query(
+        query=new_partitions_statement,
+        database=athena_client.sa_database
+    )
+    if not new_part_success:
+        LOGGER_CLI.error('Error re-creating new partitions for %s', sanitized_table_name)
+        return
 
-        LOGGER_CLI.info('Successfully rebuilt partitions for %s', sanitized_table_name)
-
-    else:
-        LOGGER_CLI.info('Refreshing alerts tables unsupported')
+    LOGGER_CLI.info('Successfully rebuilt partitions for %s', sanitized_table_name)
 
 
-def drop_all_tables(athena_client):
+def drop_all_tables(config):
     """Drop all 'streamalert' Athena tables
 
     Used when cleaning up an existing deployment
@@ -146,8 +132,12 @@ def drop_all_tables(athena_client):
     if not continue_prompt(message='Are you sure you want to drop all Athena tables?'):
         return
 
+    athena_client = StreamAlertAthenaClient(config, results_key_prefix='stream_alert_cli')
+
     success, all_tables = athena_client.run_athena_query(
-        query='SHOW TABLES', database='streamalert')
+        query='SHOW TABLES',
+        database=athena_client.sa_database
+    )
     if not success:
         LOGGER_CLI.error('There was an issue getting all tables')
         return
@@ -155,8 +145,10 @@ def drop_all_tables(athena_client):
     unique_tables = athena_helpers.unique_values_from_query(all_tables)
 
     for table in unique_tables:
-        success, all_tables = athena_client.run_command(
-            query='DROP TABLE {}'.format(table), database='streamalert')
+        success, all_tables = athena_client.run_athena_query(
+            query='DROP TABLE {}'.format(table),
+            database=athena_client.sa_database
+        )
         if not success:
             LOGGER_CLI.error('Unable to drop the %s table', table)
         else:
@@ -199,7 +191,7 @@ def _construct_create_table_statement(schema, table_name, bucket):
         bucket=bucket)
 
 
-def create_table(athena_client, options, config):
+def create_table(options, table_type, config):
     """Create a 'streamalert' Athena table
 
     Args:
@@ -207,9 +199,7 @@ def create_table(athena_client, options, config):
         options (namedtuple): The parsed args passed from the CLI
         config (CLIConfig): Loaded StreamAlert CLI
     """
-    sa_firehose = StreamAlertFirehose(config['global']['account']['region'],
-                                      config['global']['infrastructure']['firehose'],
-                                      config['logs'])
+    athena_client = StreamAlertAthenaClient(config, results_key_prefix='stream_alert_cli')
 
     if not options.bucket:
         LOGGER_CLI.error('Missing command line argument --bucket')
@@ -219,10 +209,14 @@ def create_table(athena_client, options, config):
         LOGGER_CLI.error('Missing command line argument --refresh_type')
         return
 
-    if options.type == 'data':
+    if table_type == 'data':
         if not options.table_name:
             LOGGER_CLI.error('Missing command line argument --table_name')
             return
+
+        sa_firehose = StreamAlertFirehose(config['global']['account']['region'],
+                                          config['global']['infrastructure']['firehose'],
+                                          config['logs'])
 
         # Convert special characters in schema name to underscores
         sanitized_table_name = sa_firehose.firehose_log_name(options.table_name)
@@ -282,23 +276,25 @@ def create_table(athena_client, options, config):
         query = _construct_create_table_statement(
             schema=athena_schema, table_name=sanitized_table_name, bucket=options.bucket)
 
-    elif options.type == 'alerts':
-        if athena_client.check_table_exists(options.type):
+    elif table_type == 'alerts':
+        if athena_client.check_table_exists(table_type):
             LOGGER_CLI.info('The \'alerts\' table already exists.')
             return
         query = ALERTS_TABLE_STATEMENT.format(bucket=options.bucket)
 
     if query:
         create_table_success, _ = athena_client.run_athena_query(
-            query=query, database='streamalert')
+            query=query,
+            database=athena_client.sa_database
+        )
 
         if create_table_success:
             # Update the CLI config
             config['lambda']['athena_partition_refresh_config'] \
-                  ['refresh_type'][options.refresh_type][options.bucket] = options.type
+                  ['refresh_type'][options.refresh_type][options.bucket] = table_type
             config.write()
 
-            table_name = options.type if options.type == 'alerts' else sanitized_table_name
+            table_name = table_type if table_type == 'alerts' else sanitized_table_name
             LOGGER_CLI.info('The %s table was successfully created!', table_name)
 
 
@@ -309,22 +305,11 @@ def athena_handler(options, config):
         options (namedtuple): The parsed args passed from the CLI
         config (CLIConfig): Loaded StreamAlert CLI
     """
-    athena_client = StreamAlertAthenaClient(config, results_key_prefix='stream_alert_cli')
-
-    if options.subcommand == 'init':
-        config.generate_athena()
-
-    elif options.subcommand == 'enable':
-        config.set_athena_lambda_enable()
-
-    elif options.subcommand == 'create-db':
-        create_database(athena_client)
-
-    elif options.subcommand == 'rebuild-partitions':
-        rebuild_partitions(athena_client, options, config)
+    if options.subcommand == 'rebuild-partitions':
+        rebuild_partitions(options, config)
 
     elif options.subcommand == 'drop-all-tables':
-        drop_all_tables(athena_client)
+        drop_all_tables(config)
 
     elif options.subcommand == 'create-table':
-        create_table(athena_client, options, config)
+        create_table(options, 'data', config)
