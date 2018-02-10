@@ -492,6 +492,10 @@ class StreamAlertSQSClient(object):
             # Pop processed records from the list to be deleted
             message_batch = [self.processed_messages.pop() for _ in range(batch)]
 
+            # This debug info should be removed when Issue #590 is fixed.
+            # https://github.com/airbnb/streamalert/issues/590
+            LOGGER.debug('The messages to be deleted: \n%s', message_batch)
+
             # Try to delete the batch
             resp = self.sqs_client.delete_message_batch(
                 QueueUrl=self.athena_sqs_url,
@@ -504,7 +508,8 @@ class StreamAlertSQSClient(object):
                 self.deleted_messages += len(resp['Successful'])
             # Handle failure deletion
             if resp.get('Failed'):
-                LOGGER.error('Failed to delete the following (%d) messages:\n%s',
+                LOGGER.error(('Failed to delete the messages with following (%d) '
+                              'error messages:\n%s'),
                              len(resp['Failed']), json.dumps(resp['Failed']))
                 # Add the failed messages back to the processed_messages attribute
                 # to be retried via backoff
