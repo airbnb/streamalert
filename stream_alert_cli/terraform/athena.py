@@ -36,7 +36,7 @@ def generate_athena(config):
     prefix = config['global']['account']['prefix']
     database = athena_config.get('database_name', '').strip()
     if database == '':
-        database = 'streamalert'
+        database = '{}_streamalert'.format(prefix)
 
     results_bucket_name = athena_config.get('results_bucket', '').strip()
     if results_bucket_name == '':

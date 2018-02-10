@@ -42,10 +42,18 @@ def test_generate_athena():
         'source_object_key': 'lambda/athena/source.zip',
         'third_party_libraries': []
     }
+
+    prefix = CONFIG['global']['account']['prefix']
+
     expected_athena_config = {
         'module': {
             'stream_alert_athena': {
+                's3_logging_bucket': '{}.streamalert.s3-logging'.format(prefix),
                 'source': 'modules/tf_stream_alert_athena',
+                'database_name': '{}_streamalert'.format(prefix),
+                'queue_name':
+                '{}_streamalert_athena_data_bucket_notifications'.format(prefix),
+                'results_bucket': '{}.streamalert.athena-results'.format(prefix),
                 'current_version': '$LATEST',
                 'enable_metrics': False,
                 'lambda_handler': 'main.handler',

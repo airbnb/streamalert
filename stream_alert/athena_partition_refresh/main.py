@@ -99,12 +99,10 @@ def _load_config():
 
 class ConfigError(Exception):
     """Custom StreamAlertAthena Config Exception Class"""
-    pass
 
 
 class AthenaPartitionRefreshError(Exception):
     """Generic Athena Partition Error for erroring the Lambda function"""
-    pass
 
 
 class StreamAlertAthenaClient(object):
@@ -117,7 +115,7 @@ class StreamAlertAthenaClient(object):
         athenea_results_key: The key in S3 to store Athena query results
     """
     DATABASE_DEFAULT = 'default'
-    DEFAULT_DATABASE_STREAMALERT = 'streamalert'
+    DEFAULT_DATABASE_STREAMALERT = '{}_streamalert'
     DEFAULT_S3_PREFIX = 'athena_partition_refresh'
 
     STREAMALERTS_REGEX = re.compile(r'alerts/dt=(?P<year>\d{4})'
@@ -140,9 +138,9 @@ class StreamAlertAthenaClient(object):
             results_key_prefix (str): The S3 key prefix to store Athena results
         """
         self.config = config
+        self.prefix = self.config['global']['account']['prefix']
 
         region = self.config['global']['account']['region']
-        prefix = self.config['global']['account']['prefix']
         self.athena_client = boto3.client('athena', region_name=region)
 
         athena_config = self.config['lambda']['athena_partition_refresh_config']
@@ -150,7 +148,7 @@ class StreamAlertAthenaClient(object):
         # GEt the S3 bucket to store Athena query results
         results_bucket = athena_config.get('results_bucket', '').strip()
         if results_bucket == '':
-            self.athena_results_bucket = 's3://{}.streamalert.athena-results'.format(prefix)
+            self.athena_results_bucket = 's3://{}.streamalert.athena-results'.format(self.prefix)
         elif results_bucket[:5] != 's3://':
             self.athena_results_bucket = 's3://{}'.format(results_bucket)
         else:
@@ -169,7 +167,7 @@ class StreamAlertAthenaClient(object):
         database = self.config['lambda']['athena_partition_refresh_config'].get('database_name', '')
         database = database.replace(' ', '') # strip any spaces which are invalid database names
         if database == '':
-            return self.DEFAULT_DATABASE_STREAMALERT
+            return self.DEFAULT_DATABASE_STREAMALERT.format(self.prefix)
 
         return database
 
@@ -403,7 +401,7 @@ class StreamAlertAthenaClient(object):
 
             if not query_success:
                 raise AthenaPartitionRefreshError(
-                    'The add hive partition query has failed:\n%s', query
+                    'The add hive partition query has failed:\n{}'.format(query)
                 )
 
             LOGGER.info('Successfully added the following partitions:\n%s',
@@ -637,7 +635,9 @@ def handler(*_):
 
     # Check that the 'streamalert' database exists before running queries
     if not stream_alert_athena.check_database_exists():
-        raise AthenaPartitionRefreshError('The \'streamalert\' database does not exist')
+        raise AthenaPartitionRefreshError(
+            'The \'{}\' database does not exist'.format(stream_alert_athena.sa_database)
+        )
 
     if not stream_alert_athena.add_hive_partition(s3_buckets_and_keys):
         LOGGER.error('Failed to add hive partition(s)')

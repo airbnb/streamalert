@@ -198,7 +198,11 @@ class TestStreamAlertSQSClient(object):
         self.mock_sqs.start()
 
         sqs = boto3.resource('sqs', region_name=TEST_REGION)
-        self.queue = sqs.create_queue(QueueName=StreamAlertSQSClient.QUEUENAME)
+
+        prefix = CONFIG_DATA['global']['account']['prefix']
+        name = StreamAlertSQSClient.DEFAULT_QUEUE_NAME.format(prefix)
+
+        self.queue = sqs.create_queue(QueueName=name)
         self.client = StreamAlertSQSClient(CONFIG_DATA)
 
         # Create a fake s3 notification message to send
