@@ -49,7 +49,10 @@ class StreamAlertFirehose(object):
     def __init__(self, region, firehose_config, log_sources):
         self._firehose_client = boto3.client('firehose', region_name=region)
         # Expand enabled logs into specific subtypes
-        self._enabled_logs = self._load_enabled_log_sources(firehose_config, log_sources)
+
+        self._enabled_logs = []
+        if firehose_config:
+            self._enabled_logs = self._load_enabled_log_sources(firehose_config, log_sources)
         # Create a dictionary to hold parsed payloads by log type.
         # Firehose needs this information to send to its corresponding
         # delivery stream.

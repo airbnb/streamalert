@@ -116,7 +116,7 @@ class StreamAlertAthenaClient(object):
         athenea_results_key: The key in S3 to store Athena query results
     """
     DATABASE_DEFAULT = 'default'
-    DATABASE_STREAMALERT = 'streamalert'
+    DEFAULT_DATABASE_STREAMALERT = 'streamalert'
     DEFAULT_S3_PREFIX = 'athena_partition_refresh'
 
     STREAMALERTS_REGEX = re.compile(r'alerts/dt=(?P<year>\d{4})'
@@ -141,12 +141,19 @@ class StreamAlertAthenaClient(object):
         self.config = config
 
         region = self.config['global']['account']['region']
+        prefix = self.config['global']['account']['prefix']
         self.athena_client = boto3.client('athena', region_name=region)
 
-        # Format the S3 bucket to store Athena query results
-        self.athena_results_bucket = 's3://aws-athena-query-results-{}-{}'.format(
-            self.config['global']['account']['aws_account_id'],
-            self.config['global']['account']['region'])
+        athena_config = self.config['lambda']['athena_partition_refresh_config']
+
+        # GEt the S3 bucket to store Athena query results
+        results_bucket = athena_config.get('results_bucket', '').strip()
+        if results_bucket == '':
+            self.athena_results_bucket = 's3://{}.streamalert.athena-results'.format(prefix)
+        elif results_bucket[:5] != 's3://':
+            self.athena_results_bucket = 's3://{}'.format(results_bucket)
+        else:
+            self.athena_results_bucket = results_bucket
 
         # Format the S3 key to store specific objects
         results_key_prefix = kwargs.get('results_key_prefix', self.DEFAULT_S3_PREFIX)
@@ -154,6 +161,16 @@ class StreamAlertAthenaClient(object):
         self.athena_results_key = os.path.join(
             results_key_prefix,
             datetime.now().strftime('%Y/%m/%d'))
+
+    @property
+    def sa_database(self):
+        """Return the name of the streamalert database. This can be overridden in the config"""
+        database = self.config['lambda']['athena_partition_refresh_config'].get('database_name', '')
+        database = database.replace(' ', '') # strip any spaces which are invalid database names
+        if database == '':
+            return self.DEFAULT_DATABASE_STREAMALERT
+
+        return database
 
     def check_query_status(self, query_execution_id):
         """Check in on the running query, back off if the job is running or queued
@@ -232,7 +249,7 @@ class StreamAlertAthenaClient(object):
         Keyword Args:
             database (str): The database name to execute the query under
         """
-        database = kwargs.get('database', self.DATABASE_STREAMALERT)
+        database = kwargs.get('database', self.sa_database)
         query_success, query_resp = self.run_athena_query(
             query='SHOW DATABASES LIKE \'{}\';'.format(database),
         )
@@ -251,7 +268,7 @@ class StreamAlertAthenaClient(object):
         """Verify a given StreamAlert Athena table exists."""
         query_success, query_resp = self.run_athena_query(
             query='SHOW TABLES LIKE \'{}\';'.format(table_name),
-            database=self.DATABASE_STREAMALERT
+            database=self.sa_database
         )
 
         if query_success and query_resp['ResultSet']['Rows']:
@@ -285,7 +302,7 @@ class StreamAlertAthenaClient(object):
 
             query_success, query_resp = self.run_athena_query(
                 query='MSCK REPAIR TABLE {};'.format(athena_table),
-                database=self.DATABASE_STREAMALERT
+                database=self.sa_database
             )
 
             if query_success:
@@ -380,12 +397,13 @@ class StreamAlertAthenaClient(object):
 
             query_success, _ = self.run_athena_query(
                 query=query,
-                database=self.DATABASE_STREAMALERT
+                database=self.sa_database
             )
 
             if not query_success:
-                LOGGER.error('The add hive partition query has failed:\n%s', query)
-                return False
+                raise AthenaPartitionRefreshError(
+                    'The add hive partition query has failed:\n%s', query
+                )
 
             LOGGER.info('Successfully added the following partitions:\n%s',
                         json.dumps({athena_table: partitions[athena_table]}, indent=4))
@@ -402,7 +420,7 @@ class StreamAlertSQSClient(object):
         received_messages: A list of receieved SQS messages
         processed_messages: A list of processed SQS messages
     """
-    QUEUENAME = 'streamalert_athena_data_bucket_notifications'
+    DEFAULT_QUEUE_NAME = '{}_streamalert_athena_data_bucket_notifications'
     MAX_SQS_GET_MESSAGE_COUNT = 10
 
     def __init__(self, config):
@@ -418,13 +436,24 @@ class StreamAlertSQSClient(object):
 
         self.setup()
 
+    @property
+    def queue_name(self):
+        """Return the name of the sqs queue to use. This can be overridden in the config"""
+        queue = self.config['lambda']['athena_partition_refresh_config'].get('queue_name', '')
+        queue = queue.replace(' ', '') # strip any spaces which are invalid queue names
+        if queue == '':
+            prefix = self.config['global']['account']['prefix']
+            return self.DEFAULT_QUEUE_NAME.format(prefix)
+
+        return queue
+
     def setup(self):
         """Get the SQS URL for Athena bucket s3 notifications"""
         region = self.config['global']['account']['region']
         self.sqs_client = boto3.client('sqs', region_name=region)
 
         self.athena_sqs_url = self.sqs_client.list_queues(
-            QueueNamePrefix=self.QUEUENAME
+            QueueNamePrefix=self.queue_name
         )['QueueUrls'][0]
 
     def get_messages(self, **kwargs):
@@ -613,7 +642,8 @@ def handler(*_):
         raise AthenaPartitionRefreshError('The \'streamalert\' database does not exist')
 
     if not stream_alert_athena.add_hive_partition(s3_buckets_and_keys):
-        raise AthenaPartitionRefreshError('Adding partition(s) has failed')
+        LOGGER.error('Failed to add hive partition(s)')
+        return
 
     stream_alert_sqs.delete_messages()
     LOGGER.info('Deleted %d messages from SQS',
