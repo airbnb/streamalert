@@ -60,52 +60,6 @@ class CLIConfig(object):
         """Return list of cluster configuration keys"""
         return self.config['clusters'].keys()
 
-    def generate_athena(self):
-        """Generate a base Athena config"""
-        if 'athena_partition_refresh_config' in self.config['lambda']:
-            LOGGER_CLI.warn('The Athena configuration already exists, skipping.')
-            return
-
-        athena_config_template = {
-            'enabled': True,
-            'enable_metrics': False,
-            'current_version': '$LATEST',
-            'refresh_type': {
-                'add_hive_partition': {},
-                'repair_hive_table': {}
-            },
-            'handler': 'stream_alert.athena_partition_refresh.main.handler',
-            'timeout': '60',
-            'memory': '128',
-            'log_level': 'info',
-            'source_bucket': 'PREFIX_GOES_HERE.streamalert.source',
-            'source_current_hash': '<auto_generated>',
-            'source_object_key': '<auto_generated>',
-            'third_party_libraries': []
-        }
-
-        # Check if the prefix has ever been set
-        if self.config['global']['account']['prefix'] != 'PREFIX_GOES_HERE':
-            athena_config_template['source_bucket'] = self.config['lambda'] \
-                ['rule_processor_config']['source_bucket']
-
-        self.config['lambda']['athena_partition_refresh_config'] = athena_config_template
-        self.write()
-
-        LOGGER_CLI.info('Athena configuration successfully created')
-
-    def set_athena_lambda_enable(self):
-        """Enable athena partition refreshes"""
-        if 'athena_partition_refresh_config' not in self.config['lambda']:
-            LOGGER_CLI.error('No configuration found for Athena Partition Refresh. '
-                             'Please run: $ python manage.py athena init')
-            return
-
-        self.config['lambda']['athena_partition_refresh_config']['enabled'] = True
-        self.write()
-
-        LOGGER_CLI.info('Athena configuration successfully enabled')
-
     def set_prefix(self, prefix):
         """Set the Org Prefix in Global settings"""
         if not isinstance(prefix, (unicode, str)):
@@ -116,26 +70,29 @@ class CLIConfig(object):
             LOGGER_CLI.error('Prefix cannot contain underscores')
             return
 
+        tf_state_bucket = '{}.streamalert.terraform.state'.format(prefix)
         self.config['global']['account']['prefix'] = prefix
-        self.config['global']['terraform']['tfstate_bucket'] = self.config['global']['terraform'][
-            'tfstate_bucket'].replace('PREFIX_GOES_HERE', prefix)
+        self.config['global']['terraform']['tfstate_bucket'] = tf_state_bucket
+        self.config['lambda']['athena_partition_refresh_config']['refresh_type'] \
+            ['add_hive_partition'].clear()
+        self.config['lambda']['athena_partition_refresh_config']['refresh_type'] \
+            ['add_hive_partition']['{}.streamalerts'.format(prefix)] = 'alerts'
 
-        self.config['lambda']['alert_processor_config']['source_bucket'] = self.config['lambda'][
-            'alert_processor_config']['source_bucket'].replace('PREFIX_GOES_HERE', prefix)
-        self.config['lambda']['rule_processor_config']['source_bucket'] = self.config['lambda'][
-            'rule_processor_config']['source_bucket'].replace('PREFIX_GOES_HERE', prefix)
+        lambda_funcs = [
+            'alert_processor',
+            'athena_partition_refresh',
+            'rule_processor',
+            'stream_alert_apps',
+            'threat_intel_downloader'
+        ]
 
-        if self.config['lambda'].get('stream_alert_apps_config'):
-            self.config['lambda']['stream_alert_apps_config']['source_bucket'] = self.config[
-                'lambda']['stream_alert_apps_config']['source_bucket'].replace(
-                    'PREFIX_GOES_HERE', prefix)
+        # Update all function configurations with the source streamalert source bucket info
+        source_bucket = '{}.streamalert.source'.format(prefix)
+        for func in lambda_funcs:
+            func_config = '{}_config'.format(func)
+            if func_config in self.config['lambda']:
+                self.config['lambda'][func_config]['source_bucket'] = source_bucket
 
-        if self.config['lambda'].get('threat_intel_downloader_config'):
-            self.config['lambda']['threat_intel_downloader_config']['source_bucket'] = \
-                self.config['lambda'][
-                    'threat_intel_downloader_config']['source_bucket'].replace(
-                        'PREFIX_GOES_HERE', prefix
-                    )
         self.write()
 
         LOGGER_CLI.info('Prefix successfully configured')
