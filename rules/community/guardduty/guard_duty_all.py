@@ -6,9 +6,9 @@ disable = StreamRules.disable()
 
 
 @rule(logs=['cloudwatch:events'],
-      matchers=['guardduty'],
+      matchers=['guard_duty'],
       outputs=['slack:sample-channel'])
-def guardduty(*_):
+def guard_duty_all(*_):
     """
     author:         spiper
     description:    Alert on GuardDuty events

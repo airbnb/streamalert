@@ -17,7 +17,7 @@
       "service": "kinesis",
       "source": "prefix_cluster1_stream_alert_kinesis",
       "trigger_rules": [
-        "guardduty"
+        "guard_duty_all"
       ]
     }
   ]

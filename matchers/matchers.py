@@ -18,5 +18,5 @@ from stream_alert.rule_processor.rules_engine import StreamRules
 matcher = StreamRules.matcher()
 
 @matcher
-def guardduty(record):
+def guard_duty(record):
     return record['detail-type'] == 'GuardDuty Finding'
