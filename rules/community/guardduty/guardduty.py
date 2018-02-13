@@ -1,5 +1,4 @@
 """Alert on GuardDuty"""
-from helpers.base import in_set
 from stream_alert.rule_processor.rules_engine import StreamRules
 
 rule = StreamRules.rule
@@ -7,7 +6,7 @@ disable = StreamRules.disable()
 
 
 @rule(logs=['cloudwatch:events'],
-      matchers=[],
+      matchers=['guardduty'],
       outputs=['slack:sample-channel'])
 def guardduty(rec):
     """
@@ -20,6 +19,4 @@ def guardduty(rec):
                     click the button to "Generate Sample Findings"
     """
 
-    if rec['detail-type'] == 'GuardDuty Finding':
-        return True
-    return False
+    return True

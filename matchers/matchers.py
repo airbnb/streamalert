@@ -16,3 +16,7 @@ You can also supply multiple matchers for many common scenarios:
 from stream_alert.rule_processor.rules_engine import StreamRules
 
 matcher = StreamRules.matcher()
+
+@matcher
+def guardduty(record):
+    return record['detail-type'] == 'GuardDuty Finding'
