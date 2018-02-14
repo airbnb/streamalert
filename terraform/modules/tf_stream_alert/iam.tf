@@ -233,7 +233,10 @@ resource "aws_iam_role_policy" "streamalert_alert_processor_s3_outputs" {
         "s3:ListBucket"
       ],
       "Effect": "Allow",
-      "Resource": "arn:aws:s3:::${element(var.output_s3_buckets, count.index)}"
+      "Resource": [
+        "arn:aws:s3:::${element(var.output_s3_buckets, count.index)}",
+        "arn:aws:s3:::${element(var.output_s3_buckets, count.index)}/*"
+      ]
     }
   ]
 }
