@@ -1,6 +1,4 @@
 data "aws_iam_policy_document" "lambda_execution_policy" {
-  count = "${var.enabled}"
-
   statement {
     effect  = "Allow"
     actions = ["sts:AssumeRole"]
@@ -40,4 +38,11 @@ resource "aws_iam_role_policy" "logs_metrics_policy" {
   name   = "LogsAndMetrics"
   role   = "${aws_iam_role.role.id}"
   policy = "${data.aws_iam_policy_document.logs_metrics_policy.json}"
+}
+
+// Attach VPC policy (if applicable)
+resource "aws_iam_role_policy_attachment" "vpc_access" {
+  count      = "${var.enabled && local.vpc_enabled ? 1 : 0}"
+  role       = "${aws_iam_role.role.id}"
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
 }

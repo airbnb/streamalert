@@ -63,6 +63,11 @@ variable "name_tag" {
   description = "The value for the Name cost tag associated with all applicable components"
 }
 
+variable "auto_publish_versions" {
+  default     = false
+  description = "Whether Terraform should automatically publish new versions of the function"
+}
+
 variable "aliased_version" {
   default     = ""
   description = "Alias points to this version (or the latest published version if not specified)"
@@ -73,7 +78,12 @@ variable "log_retention_days" {
   description = "CloudWatch logs for the Lambda function will be retained for this many days"
 }
 
-// CloudWatch metric alarms
+// ***** CloudWatch metric alarms *****
+
+variable "enable_metric_alarms" {
+  default     = true
+  description = "Enable metric alarms for errors, throttles, and optionally IteratorAge."
+}
 
 variable "alarm_actions" {
   type        = "list"
@@ -88,11 +98,11 @@ variable "errors_alarm_threshold" {
 
 variable "errors_alarm_evaluation_periods" {
   default     = 1
-  description = "Number of periods over which to evaluate the number invocation errors"
+  description = "Consecutive periods the errors threshold must be breached before triggering an alarm"
 }
 
 variable "errors_alarm_period_secs" {
-  default     = 60
+  default     = 120
   description = "Period over which to count the number of invocation errors"
 }
 
@@ -103,11 +113,11 @@ variable "throttles_alarm_threshold" {
 
 variable "throttles_alarm_evaluation_periods" {
   default     = 1
-  description = "Number of periods over which to evaluate the number of throttles"
+  description = "Consecutive periods the throttles threshold must be breached before triggering an alarm"
 }
 
 variable "throttles_alarm_period_secs" {
-  default     = 60
+  default     = 120
   description = "Period over which to count the number of throttles"
 }
 
@@ -116,17 +126,17 @@ variable "enable_iterator_age_alarm" {
   description = "Enable IteratorAge alarm (applicable only for stream-based invocations like Kinesis)"
 }
 
-variable "iterator_age_alarm_threshold" {
-  default     = 0
-  description = "Alarm if the Lambda IteratorAge exceeds this value in the specified period(s)"
+variable "iterator_age_alarm_threshold_ms" {
+  default     = 3600000
+  description = "Alarm if the Lambda IteratorAge (ms) exceeds this value in the specified period(s)"
 }
 
 variable "iterator_age_alarm_evaluation_periods" {
   default     = 1
-  description = "Number of periods over which to evaluate the IteratorAge"
+  description = "Consecutive periods the IteratorAge threshold must be breached before triggering an alarm"
 }
 
 variable "iterator_age_alarm_period_secs" {
-  default     = 60
+  default     = 120
   description = "Period over which to evaluate the maximum IteratorAge"
 }

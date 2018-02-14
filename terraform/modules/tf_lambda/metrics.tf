@@ -1,5 +1,5 @@
 resource "aws_cloudwatch_metric_alarm" "lambda_invocation_errors" {
-  count               = "${var.enabled}"
+  count               = "${var.enabled && var.enable_metric_alarms ? 1 : 0}"
   alarm_name          = "${var.function_name}_invocation_errors"
   namespace           = "AWS/Lambda"
   metric_name         = "Errors"
@@ -18,7 +18,7 @@ resource "aws_cloudwatch_metric_alarm" "lambda_invocation_errors" {
 }
 
 resource "aws_cloudwatch_metric_alarm" "lambda_throttles" {
-  count               = "${var.enabled}"
+  count               = "${var.enabled && var.enable_metric_alarms ? 1 : 0}"
   alarm_name          = "${var.function_name}_throttles"
   namespace           = "AWS/Lambda"
   metric_name         = "Throttles"
@@ -36,15 +36,14 @@ resource "aws_cloudwatch_metric_alarm" "lambda_throttles" {
   }
 }
 
-// Lambda: IteratorAge
 resource "aws_cloudwatch_metric_alarm" "streamalert_lambda_iterator_age" {
-  count               = "${min(var.enabled, var.enable_iterator_age_alarm)}"
+  count               = "${var.enabled && var.enable_metric_alarms && var.enable_iterator_age_alarm ? 1 : 0}"
   alarm_name          = "${var.function_name}_iterator_age"
   namespace           = "AWS/Lambda"
   metric_name         = "IteratorAge"
   statistic           = "Maximum"
   comparison_operator = "GreaterThanThreshold"
-  threshold           = "${var.iterator_age_alarm_threshold}"
+  threshold           = "${var.iterator_age_alarm_threshold_ms}"
   evaluation_periods  = "${var.iterator_age_alarm_evaluation_periods}"
   period              = "${var.iterator_age_alarm_period_secs}"
   alarm_description   = "StreamAlert Lambda High Iterator Age: ${var.function_name}"

@@ -55,3 +55,10 @@ data "aws_iam_policy_document" "policy" {
 ```
 
 For a complete list of available options and their descriptions, see [`variables.tf`](variables.tf).
+
+## Outputs
+If your Lambda function is in a VPC, `function_vpc_arn` is the ARN of the generated Lambda
+function. Otherwise, it will be `function_no_vpc_arn`. (This split is a workaround for a
+[Terraform bug](https://github.com/terraform-providers/terraform-provider-aws/issues/443)).
+
+This module also exports the `role_arn` and `role_id` for the Lambda execution role.
