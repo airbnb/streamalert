@@ -429,6 +429,50 @@ class TestPagerDutyIncidentOutput(object):
         assert_equal(assigned_value['id'], 'verified_policy_id')
         assert_equal(assigned_value['type'], 'escalation_policy_reference')
 
+    @patch('requests.post')
+    def test_add_note_incident_success(self, post_mock):
+        """PagerDutyIncidentOutput - Add Note to Incident Success"""
+        post_mock.return_value.status_code = 200
+        json_note = {'note': {'id': 'created_note_id'}}
+        post_mock.return_value.json.return_value = json_note
+
+        note_id = self._dispatcher._add_incident_note('incident_id', 'this is the note')
+
+        assert_equal(note_id, 'created_note_id')
+
+    @patch('requests.post')
+    def test_add_note_incident_fail(self, post_mock):
+        """PagerDutyIncidentOutput - Add Note to Incident Fail"""
+        post_mock.return_value.status_code = 200
+        json_note = {'note': {'not_id': 'created_note_id'}}
+        post_mock.return_value.json.return_value = json_note
+
+        note_id = self._dispatcher._add_incident_note('incident_id', 'this is the note')
+
+        assert_false(note_id)
+
+    @patch('requests.post')
+    def test_add_note_incident_bad_request(self, post_mock):
+        """PagerDutyIncidentOutput - Add Note to Incident Bad Request"""
+        post_mock.return_value.status_code = 400
+        json_note = {'note': {'id': 'created_note_id'}}
+        post_mock.return_value.json.return_value = json_note
+
+        note_id = self._dispatcher._add_incident_note('incident_id', 'this is the note')
+
+        assert_false(note_id)
+
+    @patch('requests.post')
+    def test_add_note_incident_no_response(self, post_mock):
+        """PagerDutyIncidentOutput - Add Note to Incident No Response"""
+        post_mock.return_value.status_code = 200
+        json_note = {}
+        post_mock.return_value.json.return_value = json_note
+
+        note_id = self._dispatcher._add_incident_note('incident_id', 'this is the note')
+
+        assert_false(note_id)
+
     @patch('requests.get')
     def test_item_verify_fail(self, get_mock):
         """PagerDutyIncidentOutput - Item Verify Fail"""
