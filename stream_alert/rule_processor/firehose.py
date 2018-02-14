@@ -286,3 +286,7 @@ class StreamAlertFirehose(object):
                 self._limit_record_size(record_batch)
                 for sized_batch in self._segment_records_by_size(record_batch):
                     self._firehose_request_helper(stream_name, sized_batch)
+
+        # explicitly close firehose client to resolve connection reset issue, suggested
+        # by AWS support team.
+        self._firehose_client._endpoint.http_session.close() #pylint: disable=protected-access
