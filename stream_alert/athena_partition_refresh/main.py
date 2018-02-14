@@ -404,6 +404,7 @@ class StreamAlertSQSClient(object):
     """
     QUEUENAME = 'streamalert_athena_data_bucket_notifications'
     MAX_SQS_GET_MESSAGE_COUNT = 10
+    SQS_BACKOFF_MAX_RETRIES = 10
 
     def __init__(self, config):
         """Initialize the StreamAlertSQS Client
@@ -478,10 +479,10 @@ class StreamAlertSQSClient(object):
         if not self.processed_messages:
             LOGGER.error('No processed messages to delete')
             return
-
         @backoff.on_predicate(backoff.fibo,
                               lambda len_messages: len_messages > 0,
                               max_value=10,
+                              max_tries=self.SQS_BACKOFF_MAX_RETRIES,
                               jitter=backoff.full_jitter,
                               on_backoff=_backoff_handler,
                               on_success=_success_handler)
@@ -491,10 +492,6 @@ class StreamAlertSQSClient(object):
             batch = len_processed_messages if len_processed_messages < 10 else 10
             # Pop processed records from the list to be deleted
             message_batch = [self.processed_messages.pop() for _ in range(batch)]
-
-            # This debug info should be removed when Issue #590 is fixed.
-            # https://github.com/airbnb/streamalert/issues/590
-            LOGGER.debug('The messages to be deleted: \n%s', message_batch)
 
             # Try to delete the batch
             resp = self.sqs_client.delete_message_batch(
@@ -513,11 +510,11 @@ class StreamAlertSQSClient(object):
                              len(resp['Failed']), json.dumps(resp['Failed']))
                 # Add the failed messages back to the processed_messages attribute
                 # to be retried via backoff
-                self.processed_messages.extend([[message
-                                                 for message
-                                                 in message_batch
-                                                 if message['MessageId'] == failed_message['Id']]
-                                                for failed_message in resp['Failed']])
+                failed_message_ids = [message['Id'] for message in resp['Failed']]
+                push_bach_messages = [message for message in message_batch
+                                      if message['MessageId'] in failed_message_ids]
+
+                self.processed_messages.extend(push_bach_messages)
 
             return len(self.processed_messages)
 
