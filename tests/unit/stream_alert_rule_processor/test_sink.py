@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from datetime import datetime
+import os
 
 from botocore.exceptions import ClientError
 from mock import patch
@@ -33,7 +34,8 @@ class TestStreamSink(object):
         cls.boto_mock = patcher.start()
         context = get_mock_context()
         env = load_env(context)
-        cls.sinker = StreamSink(env)
+        with patch.dict(os.environ, {'ALERT_PROCESSOR': 'corp-prefix_streamalert_alert_processor'}):
+            cls.sinker = StreamSink(env)
 
     @classmethod
     def teardown_class(cls):
@@ -47,7 +49,7 @@ class TestStreamSink(object):
 
     def test_streamsink_init(self):
         """StreamSink - Init"""
-        assert_equal(self.sinker.function, 'corp-prefix_prod_streamalert_alert_processor')
+        assert_equal(self.sinker.function, 'corp-prefix_streamalert_alert_processor')
 
     @patch('stream_alert.rule_processor.sink.LOGGER.exception')
     def test_streamsink_sink_boto_error(self, log_mock):
@@ -63,7 +65,7 @@ class TestStreamSink(object):
 
         log_mock.assert_called_with('An error occurred while sending alert to '
                                     '\'%s:production\'. Error is: %s. Alert: %s',
-                                    'corp-prefix_prod_streamalert_alert_processor',
+                                    'corp-prefix_streamalert_alert_processor',
                                     err_response,
                                     '"alert!!!"')
 
@@ -76,7 +78,7 @@ class TestStreamSink(object):
         self.sinker.sink(['alert!!!'])
 
         log_mock.assert_called_with('Failed to send alert to \'%s\': %s',
-                                    'corp-prefix_prod_streamalert_alert_processor',
+                                    'corp-prefix_streamalert_alert_processor',
                                     '"alert!!!"')
 
     @patch('stream_alert.rule_processor.sink.LOGGER.info')
@@ -95,7 +97,7 @@ class TestStreamSink(object):
         self.sinker.sink(['alert!!!'])
 
         log_mock.assert_called_with('Sent alert to \'%s\' with Lambda request ID \'%s\'',
-                                    'corp-prefix_prod_streamalert_alert_processor',
+                                    'corp-prefix_streamalert_alert_processor',
                                     'reqID')
 
     @patch('stream_alert.rule_processor.sink.LOGGER.error')

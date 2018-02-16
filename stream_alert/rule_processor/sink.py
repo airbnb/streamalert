@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import json
+import os
 
 import boto3
 from botocore.exceptions import ClientError
@@ -31,10 +32,8 @@ class StreamSink(object):
             env (dict): loaded dictionary containing environment information
         """
         self.env = env
-        self.client_lambda = boto3.client('lambda',
-                                          region_name=self.env['lambda_region'])
-        self.function = self.env['lambda_function_name'].replace(
-            '_streamalert_rule_processor', '_streamalert_alert_processor')
+        self.client_lambda = boto3.client('lambda', region_name=self.env['lambda_region'])
+        self.function = os.environ['ALERT_PROCESSOR']
 
     def sink(self, alerts):
         """Sink triggered alerts from the StreamRules engine.
