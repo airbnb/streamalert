@@ -157,7 +157,7 @@ class StreamRules(object):
                     matcher_result = matcher_function(record)
                 except Exception as err:  # pylint: disable=broad-except
                     matcher_result = False
-                    LOGGER.error('%s: %s', matcher_function.__name__, err.message)
+                    LOGGER.error('Matcher \'%s\' failed with error: %s', matcher_function.__name__, err.message)
                 if not matcher_result:
                     return False
             else:
