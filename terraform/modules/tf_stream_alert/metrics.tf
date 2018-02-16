@@ -13,21 +13,6 @@ resource "aws_cloudwatch_log_metric_filter" "rule_processor_cw_metric_filters" {
   }
 }
 
-// CloudWatch metric filters for the alert processor
-// The split list is made up of: <filter_name>, <filter_pattern>, <value>
-resource "aws_cloudwatch_log_metric_filter" "alert_processor_cw_metric_filters" {
-  count          = "${length(var.alert_processor_metric_filters)}"
-  name           = "${element(split(",", var.alert_processor_metric_filters[count.index]), 0)}"
-  pattern        = "${element(split(",", var.alert_processor_metric_filters[count.index]), 1)}"
-  log_group_name = "${aws_cloudwatch_log_group.alert_processor.name}"
-
-  metric_transformation {
-    name      = "${element(split(",", var.alert_processor_metric_filters[count.index]), 0)}"
-    namespace = "${var.namespace}"
-    value     = "${element(split(",", var.alert_processor_metric_filters[count.index]), 2)}"
-  }
-}
-
 // CloudWatch metric alarms that are created per-cluster
 // The split list is our way around poor tf support for lists of maps and is made up of:
 // <alarm_name>, <alarm_description>, <comparison_operator>, <evaluation_periods>,
