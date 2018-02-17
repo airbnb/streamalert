@@ -27,3 +27,20 @@ class InvalidClusterName(Exception):
 def infinitedict():
     """Create arbitrary levels of dictionary key/values"""
     return defaultdict(infinitedict)
+
+
+def monitoring_topic_arn(config):
+    """Return the ARN of the monitoring SNS topic"""
+    infrastructure_config = config['global']['infrastructure']
+
+    topic_name = (
+        DEFAULT_SNS_MONITORING_TOPIC
+        if infrastructure_config['monitoring'].get('create_sns_topic')
+        else infrastructure_config['monitoring']['sns_topic_name']
+    )
+
+    return 'arn:aws:sns:{region}:{account_id}:{topic}'.format(
+        region=config['global']['account']['region'],
+        account_id=config['global']['account']['aws_account_id'],
+        topic=topic_name
+    )

@@ -43,27 +43,6 @@
       }
     ],
     "stream_alert": {
-      "alert_processor": {
-        "current_version": "$LATEST",
-        "memory": 128,
-        "outputs": {
-          "aws-lambda": [
-            "my-lambda-function:production"
-          ],
-          "aws-s3": [
-            "my-s3-bucket.with.data"
-          ]
-        },
-        "timeout": 25,
-        "vpc_config": {
-          "security_group_ids": [
-            "sg-id-1"
-          ],
-          "subnet_ids": [
-            "subnet-id-1"
-          ]
-        }
-      },
       "rule_processor": {
         "current_version": "$LATEST",
         "inputs": {
