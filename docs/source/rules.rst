@@ -122,7 +122,7 @@ outputs
 
 ``outputs`` define where the alert should be sent to if the return value of a rule is ``True``. Your rule(s) must define at least one output.
 
-StreamAlert supports sending alerts to PagerDuty, Slack, Amazon S3 and Phantom.
+StreamAlert supports sending alerts to PagerDuty, Slack, Amazon S3, Komand and Phantom.
 
 An alert can be sent to multiple destinations.
 

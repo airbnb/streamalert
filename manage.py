@@ -108,7 +108,7 @@ Examples:
     output_parser.add_argument(
         '--service',
         choices=[
-            'aws-firehose', 'aws-lambda', 'aws-s3', 'jira', 'pagerduty', 'pagerduty-v2',
+            'aws-firehose', 'aws-lambda', 'aws-s3', 'jira', 'komand', 'pagerduty', 'pagerduty-v2',
             'pagerduty-incident', 'phantom', 'slack'
         ],
         required=True,

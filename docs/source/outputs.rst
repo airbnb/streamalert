@@ -10,6 +10,7 @@ Out of the box, StreamAlert supports:
 
 * **AWS Lambda**
 * **AWS S3**
+* **Komand**
 * **PagerDuty**
 * **Phantom**
 * **Slack**
@@ -29,7 +30,7 @@ Configuration
 Adding a new configuration for a currently supported service is handled using ``manage.py``:
 
  - ``python manage.py output new --service <SERVICE_NAME>``
-    - ``<SERVICE_NAME>`` above should be one of the following supported service identifiers: ``aws-lambda``, ``aws-s3``, ``pagerduty``, ``phantom``, or ``slack``
+    - ``<SERVICE_NAME>`` above should be one of the following supported service identifiers: ``aws-lambda``, ``aws-s3``, ``komand``, ``pagerduty``, ``phantom``, or ``slack``
 
 For example:
  - ``python manage.py output new --service slack``

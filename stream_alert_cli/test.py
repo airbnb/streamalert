@@ -771,6 +771,13 @@ class AlertProcessorTester(object):
                     lambda_function = parts[-1]
                 helpers.create_lambda_function(lambda_function,
                                                self.region)
+            elif service == 'komand':
+                output_name = '{}/{}'.format(service, descriptor)
+                creds = {'komand_auth_token': '00000000-0000-0000-0000-000000000000',
+                         'url': 'komand.foo.bar'}
+                helpers.put_mock_creds(output_name, creds, self.secrets_bucket,
+                                       self.region, self.kms_alias)
+
             elif service == 'pagerduty':
                 output_name = '{}/{}'.format(service, descriptor)
                 creds = {'service_key': '247b97499078a015cc6c586bc0a92de6'}
