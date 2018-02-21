@@ -15,7 +15,7 @@ limitations under the License.
 """
 from stream_alert.shared import metrics
 from stream_alert_cli.logger import LOGGER_CLI
-from stream_alert_cli.terraform._common import DEFAULT_SNS_MONITORING_TOPIC
+from stream_alert_cli.terraform._common import monitoring_topic_arn
 
 
 def generate_cloudwatch_metric_filters(cluster_name, cluster_dict, config):
@@ -108,15 +108,7 @@ def generate_cloudwatch_metric_alarms(cluster_name, cluster_dict, config):
             'Invalid config: Make sure you declare global infrastructure options!')
         return
 
-    topic_name = (DEFAULT_SNS_MONITORING_TOPIC if infrastructure_config
-                  ['monitoring'].get('create_sns_topic') else
-                  infrastructure_config['monitoring'].get('sns_topic_name'))
-
-    sns_topic_arn = 'arn:aws:sns:{region}:{account_id}:{topic}'.format(
-        region=config['global']['account']['region'],
-        account_id=config['global']['account']['aws_account_id'],
-        topic=topic_name
-    )
+    sns_topic_arn = monitoring_topic_arn(config)
 
     cluster_dict['module']['stream_alert_{}'.format(
         cluster_name)]['sns_topic_arn'] = sns_topic_arn

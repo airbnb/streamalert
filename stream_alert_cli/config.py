@@ -161,17 +161,21 @@ class CLIConfig(object):
                 metrics on (rule, alert, or athena)
         """
         for function in lambda_functions:
-            if function == metrics.ATHENA_PARTITION_REFRESH_NAME:
+            if function == metrics.ALERT_PROCESSOR_NAME:
+                self.config['lambda']['alert_processor_config']['enable_metrics'] = enabled
+
+            elif function == metrics.ATHENA_PARTITION_REFRESH_NAME:
                 if 'athena_partition_refresh_config' in self.config['lambda']:
                     self.config['lambda']['athena_partition_refresh_config'] \
                         ['enable_metrics'] = enabled
                 else:
                     LOGGER_CLI.error('No Athena configuration found; please initialize first.')
-                continue
 
-            for cluster in clusters:
-                self.config['clusters'][cluster]['modules']['stream_alert'] \
-                    [function]['enable_metrics'] = enabled
+            else:
+                # Rule processor - toggle for each cluster
+                for cluster in clusters:
+                    self.config['clusters'][cluster]['modules']['stream_alert'] \
+                        [function]['enable_metrics'] = enabled
 
         self.write()
 
@@ -240,7 +244,7 @@ class CLIConfig(object):
                                                               cluster.upper())
 
             new_alarms = self._add_metric_alarm_config(alarm_settings, metric_alarms)
-            if new_alarms != False:
+            if new_alarms is not False:
                 function_config['metric_alarms'] = new_alarms
                 LOGGER_CLI.info('Successfully added \'%s\' metric alarm for the \'%s\' '
                                 'function to \'conf/clusters/%s.json\'.',
@@ -259,7 +263,7 @@ class CLIConfig(object):
         message = ('CloudWatch metric alarm names must be unique '
                    'within each AWS account. Please remove this alarm '
                    'so it can be updated or choose another name.')
-        funcs = {metrics.ALERT_PROCESSOR_NAME, metrics.RULE_PROCESSOR_NAME}
+        funcs = {metrics.RULE_PROCESSOR_NAME}
         for func in funcs:
             for cluster in self.config['clusters']:
                 func_alarms = (
@@ -279,8 +283,8 @@ class CLIConfig(object):
         if not metric_alarms:
             return False
 
-        # Check for athena metric alarms also, which are save in the global config
-        funcs.add(metrics.ATHENA_PARTITION_REFRESH_NAME)
+        # Check for functions saved in the global config.
+        funcs.update({metrics.ALERT_PROCESSOR_NAME, metrics.ATHENA_PARTITION_REFRESH_NAME})
 
         for func in funcs:
             global_func_alarms = global_config['metric_alarms'].get(func, {})
@@ -313,15 +317,15 @@ class CLIConfig(object):
 
         # Do not continue if the user is trying to apply a metric alarm for an athena
         # metric to a specific cluster (since the athena function operates on all clusters)
-        if (alarm_info['metric_target'] != 'aggregate'
-                and metric_function == metrics.ATHENA_PARTITION_REFRESH_NAME):
-            LOGGER_CLI.error('Metrics for the athena function can only be applied '
+        if (alarm_info['metric_target'] != 'aggregate' and metric_function in {
+                metrics.ALERT_PROCESSOR_NAME, metrics.ATHENA_PARTITION_REFRESH_NAME}):
+            LOGGER_CLI.error('Metrics for the athena and alert functions can only be applied '
                              'to an aggregate metric target, not on a per-cluster basis.')
             return
 
-        # If the metric is related to either the rule processor or alert processor, we should
+        # If the metric is related to the rule processor, we should
         # check to see if any cluster has metrics enabled for that function before continuing
-        if (metric_function in {metrics.ALERT_PROCESSOR_NAME, metrics.RULE_PROCESSOR_NAME} and
+        if (metric_function == metrics.RULE_PROCESSOR_NAME and
                 not any(self.config['clusters'][cluster]['modules']['stream_alert'][metric_function]
                         .get('enable_metrics') for cluster in self.config['clusters'])):
             prompt = ('Metrics are not currently enabled for the \'{}\' function '
@@ -353,8 +357,8 @@ class CLIConfig(object):
                     return
 
         # Add metric alarms for the aggregate metrics - these are added to the global config
-        if (alarm_info['metric_target'] == 'aggregate'
-                or metric_function == metrics.ATHENA_PARTITION_REFRESH_NAME):
+        if (alarm_info['metric_target'] == 'aggregate' or metric_function in {
+                metrics.ALERT_PROCESSOR_NAME, metrics.ATHENA_PARTITION_REFRESH_NAME}):
             global_config = self.config['global']['infrastructure']['monitoring']
 
             metric_alarms = global_config.get('metric_alarms', {})
@@ -371,7 +375,7 @@ class CLIConfig(object):
                                                            alarm_info['metric_name'])
 
             new_alarms = self._add_metric_alarm_config(alarm_settings, metric_alarms)
-            if new_alarms != False:
+            if new_alarms is not False:
                 global_config['metric_alarms'][metric_function] = new_alarms
                 LOGGER_CLI.info('Successfully added \'%s\' metric alarm to '
                                 '\'conf/global.json\'.', alarm_settings['alarm_name'])
@@ -543,7 +547,7 @@ class CLIConfig(object):
                 else:
                     # For certain log types (csv), the order of the schema
                     # must be retained.  By loading as an OrderedDict,
-                    # the configuration is gauaranteed to keep its order.
+                    # the configuration is guaranteed to keep its order.
                     if key == 'logs':
                         self.config[key] = json.load(data, object_pairs_hook=OrderedDict)
                     else:

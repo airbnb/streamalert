@@ -254,7 +254,6 @@ class TestTerraformGenerate(object):
                     'region': 'us-west-1',
                     'prefix': 'unit-testing',
                     'cluster': 'test',
-                    'kms_key_arn': '${aws_kms_key.stream_alert_secrets.arn}',
                     'dynamodb_ioc_table': 'test_table_name',
                     'threat_intel_enabled': False,
                     'rule_processor_enable_metrics': True,
@@ -263,12 +262,6 @@ class TestTerraformGenerate(object):
                     'rule_processor_timeout': 25,
                     'rule_processor_version': '$LATEST',
                     'rule_processor_config': '${var.rule_processor_config}',
-                    'alert_processor_enable_metrics': True,
-                    'alert_processor_log_level': 'info',
-                    'alert_processor_memory': 128,
-                    'alert_processor_timeout': 25,
-                    'alert_processor_version': '$LATEST',
-                    'alert_processor_config': '${var.alert_processor_config}',
                 }
             }
         }
@@ -292,7 +285,6 @@ class TestTerraformGenerate(object):
                     'region': 'us-west-1',
                     'prefix': 'unit-testing',
                     'cluster': 'advanced',
-                    'kms_key_arn': '${aws_kms_key.stream_alert_secrets.arn}',
                     'dynamodb_ioc_table': 'test_table_name',
                     'threat_intel_enabled': False,
                     'rule_processor_enable_metrics': True,
@@ -301,18 +293,7 @@ class TestTerraformGenerate(object):
                     'rule_processor_timeout': 25,
                     'rule_processor_version': '$LATEST',
                     'rule_processor_config': '${var.rule_processor_config}',
-                    'alert_processor_enable_metrics': True,
-                    'alert_processor_log_level': 'info',
-                    'alert_processor_memory': 128,
-                    'alert_processor_timeout': 25,
-                    'alert_processor_version': '$LATEST',
-                    'alert_processor_config': '${var.alert_processor_config}',
-                    'output_lambda_functions': ['my-lambda-function:production'],
-                    'output_s3_buckets': ['my-s3-bucket.with.data'],
                     'input_sns_topics': ['my-sns-topic-name'],
-                    'alert_processor_vpc_enabled': True,
-                    'alert_processor_vpc_subnet_ids': ['subnet-id-1'],
-                    'alert_processor_vpc_security_group_ids': ['sg-id-1']
                 }
             }
         }
