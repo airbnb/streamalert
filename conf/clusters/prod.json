@@ -18,16 +18,10 @@
       }
     },
     "kinesis_events": {
-      "enabled": true,
-      "batch_size": 100
+      "batch_size": 100,
+      "enabled": true
     },
     "stream_alert": {
-      "alert_processor": {
-        "current_version": "$LATEST",
-        "log_level": "info",
-        "memory": 128,
-        "timeout": 60
-      },
       "rule_processor": {
         "current_version": "$LATEST",
         "enable_metrics": true,
