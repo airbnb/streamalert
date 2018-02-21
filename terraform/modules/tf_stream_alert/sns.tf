@@ -15,4 +15,5 @@ resource "aws_lambda_permission" "sns_inputs" {
   principal     = "sns.amazonaws.com"
   source_arn    = "${element(var.input_sns_topics, count.index)}"
   qualifier     = "production"
+  depends_on    = ["aws_lambda_alias.rule_processor_production"]
 }

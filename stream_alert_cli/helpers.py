@@ -587,7 +587,7 @@ def get_context_from_config(cluster, config):
         prefix = config['global']['account']['prefix']
         account = config['global']['account']['aws_account_id']
         region = config['global']['account']['region']
-        function_name = '{}_{}_streamalert_alert_processor'.format(prefix, cluster)
+        function_name = '{}_streamalert_alert_processor'.format(prefix)
         arn = 'arn:aws:lambda:{}:{}:function:{}:testing'.format(
             region, account, function_name)
 

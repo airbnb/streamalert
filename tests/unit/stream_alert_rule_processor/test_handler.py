@@ -17,6 +17,7 @@ limitations under the License.
 import base64
 import json
 import logging
+import os
 
 from mock import call, patch
 from moto import mock_kinesis
@@ -47,6 +48,7 @@ class TestStreamAlert(object):
 
     @patch('stream_alert.rule_processor.handler.load_config',
            lambda: load_config('tests/unit/conf/'))
+    @patch.dict(os.environ, {'ALERT_PROCESSOR': 'unit-testing_streamalert_alert_processor'})
     def setup(self):
         """Setup before each method"""
         self.__sa_handler = StreamAlert(get_mock_context(), False)
@@ -265,6 +267,7 @@ class TestStreamAlert(object):
 
     @patch('stream_alert.rule_processor.threat_intel.StreamThreatIntel._query')
     @patch('stream_alert.rule_processor.threat_intel.StreamThreatIntel.load_from_config')
+    @patch.dict(os.environ, {'ALERT_PROCESSOR': 'unit-testing_streamalert_alert_processor'})
     def test_run_threat_intel_enabled(self, mock_threat_intel, mock_query): # pylint: disable=no-self-use
         """StreamAlert Class - Run SA when threat intel enabled"""
         @rule(datatypes=['sourceAddress'], outputs=['s3:sample_bucket'])

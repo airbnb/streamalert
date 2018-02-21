@@ -174,6 +174,7 @@ class TestCLIConfig(object):
     @patch('stream_alert_cli.config.CLIConfig.write')
     def test_add_threat_intel_downloader(self, write_mock, log_mock):
         """CLI - Add Threat Intel Downloader config"""
+        del self.config['lambda']['threat_intel_downloader_config']
         ti_downloader_info = {
             'autoscale': True,
             'command': 'threat_intel_downloader',

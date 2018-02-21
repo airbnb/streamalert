@@ -26,28 +26,6 @@ def generate_stream_alert(cluster_name, cluster_dict, config):
     JSON Input from the config:
 
         "stream_alert": {
-          "alert_processor": {
-            "current_version": "$LATEST",
-            "log_level": "info",
-            "memory": 128,
-            "outputs": {
-              "aws-lambda": [
-                "lambda_function_name"
-              ],
-              "aws-s3": [
-                "s3.bucket.name"
-              ]
-            },
-            "timeout": 10,
-            "vpc_config": {
-              "security_group_ids": [
-                "sg-id"
-              ],
-              "subnet_ids": [
-                "subnet-id"
-              ]
-            }
-          },
           "rule_processor": {
             "current_version": "$LATEST",
             "inputs": {
@@ -73,7 +51,6 @@ def generate_stream_alert(cluster_name, cluster_dict, config):
         'region': config['clusters'][cluster_name]['region'],
         'prefix': account['prefix'],
         'cluster': cluster_name,
-        'kms_key_arn': '${aws_kms_key.stream_alert_secrets.arn}',
         'rule_processor_enable_metrics': modules['stream_alert'] \
             ['rule_processor'].get('enable_metrics', True),
         'rule_processor_log_level': modules['stream_alert'] \
@@ -81,15 +58,7 @@ def generate_stream_alert(cluster_name, cluster_dict, config):
         'rule_processor_memory': modules['stream_alert']['rule_processor']['memory'],
         'rule_processor_timeout': modules['stream_alert']['rule_processor']['timeout'],
         'rule_processor_version': modules['stream_alert']['rule_processor']['current_version'],
-        'rule_processor_config': '${var.rule_processor_config}',
-        'alert_processor_config': '${var.alert_processor_config}',
-        'alert_processor_enable_metrics': modules['stream_alert'] \
-            ['alert_processor'].get('enable_metrics', True),
-        'alert_processor_log_level': modules['stream_alert'] \
-            ['alert_processor'].get('log_level', 'info'),
-        'alert_processor_memory': modules['stream_alert']['alert_processor']['memory'],
-        'alert_processor_timeout': modules['stream_alert']['alert_processor']['timeout'],
-        'alert_processor_version': modules['stream_alert']['alert_processor']['current_version']
+        'rule_processor_config': '${var.rule_processor_config}'
     }
 
     if (config['global'].get('threat_intel')
@@ -98,19 +67,6 @@ def generate_stream_alert(cluster_name, cluster_dict, config):
             ['dynamodb_ioc_table'] = config['global']['threat_intel']['dynamodb_table']
         cluster_dict['module']['stream_alert_{}'.format(cluster_name)] \
             ['threat_intel_enabled'] = config['global']['threat_intel']['enabled']
-    # Add Alert Processor output config from the loaded cluster file
-    output_config = modules['stream_alert']['alert_processor'].get('outputs')
-    if output_config:
-        # Mapping of Terraform input variables to output config variables
-        output_mapping = {
-            'output_lambda_functions': 'aws-lambda',
-            'output_s3_buckets': 'aws-s3'
-        }
-        for tf_key, output in output_mapping.items():
-            if output in output_config:
-                cluster_dict['module']['stream_alert_{}'.format(cluster_name)].update({
-                    tf_key: modules['stream_alert']['alert_processor']['outputs'][output]
-                })
 
     # Add Rule Processor input config from the loaded cluster file
     input_config = modules['stream_alert']['rule_processor'].get('inputs')
@@ -123,14 +79,5 @@ def generate_stream_alert(cluster_name, cluster_dict, config):
                 cluster_dict['module']['stream_alert_{}'.format(cluster_name)].update({
                     tf_key: input_config[input_key]
                 })
-
-    # Add the Alert Processor VPC config from the loaded cluster file
-    vpc_config = modules['stream_alert']['alert_processor'].get('vpc_config')
-    if vpc_config:
-        cluster_dict['module']['stream_alert_{}'.format(cluster_name)].update({
-            'alert_processor_vpc_enabled': True,
-            'alert_processor_vpc_subnet_ids': vpc_config['subnet_ids'],
-            'alert_processor_vpc_security_group_ids': vpc_config['security_group_ids']
-        })
 
     return True
