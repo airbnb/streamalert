@@ -907,6 +907,7 @@ def stream_alert_test(options, config):
             options (namedtuple): CLI options (debug, processor, etc)
             context (namedtuple): A constructed aws context object
         """
+        # The Rule Processor sink is instantiated with the alert processor from the environment:
         os.environ['ALERT_PROCESSOR'] = '{}_{}'.format(
             config['global']['account']['prefix'], '_streamalert_alert_processor')
 

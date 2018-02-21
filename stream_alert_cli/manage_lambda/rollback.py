@@ -66,7 +66,6 @@ def _rollback_apps(config, clusters):
             if _try_decrement_version(lambda_config, clustered_name):
                 tf_targets.append('module.{}'.format(clustered_name))
 
-    print('Apps Targets: ', tf_targets)
     return tf_targets
 
 
