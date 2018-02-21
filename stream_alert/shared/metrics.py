@@ -27,8 +27,7 @@ CLUSTER = os.environ.get('CLUSTER', 'unknown_cluster')
 # The FUNC_PREFIXES dict acts as a simple map to a human-readable name
 # Add ATHENA_PARTITION_REFRESH_NAME: 'AthenaPartitionRefresh', to the
 # below when metrics are supported there
-FUNC_PREFIXES = {ALERT_PROCESSOR_NAME: 'AlertProcessor',
-                 RULE_PROCESSOR_NAME: 'RuleProcessor'}
+FUNC_PREFIXES = {RULE_PROCESSOR_NAME: 'RuleProcessor'}
 
 try:
     ENABLE_METRICS = bool(int(os.environ.get('ENABLE_METRICS', 0)))
