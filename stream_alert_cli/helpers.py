@@ -129,7 +129,7 @@ def tf_runner(action='apply', refresh=True, auto_approve=False, targets=None):
         LOGGER_CLI.info('Destroying infrastructure')
         tf_command.append('-force={}'.format(str(auto_approve).lower()))
     else:
-        LOGGER_CLI.info('{} changes'.format('Applying' if auto_approve else 'Planning'))
+        LOGGER_CLI.info('%s changes', 'Applying' if auto_approve else 'Planning')
         tf_command.append('-auto-approve={}'.format(str(auto_approve).lower()))
 
     if targets:
