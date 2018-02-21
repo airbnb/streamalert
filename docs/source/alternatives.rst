@@ -12,7 +12,7 @@ Infrastructure
 
 ElastAlert assumes you have an existing Elasticsearch cluster; it schedules queries against it
 
-StreamAlert directly ingests data from S3 buckets or other sources like fluentd, logstash, kinesis-agent, osquery, PHP, Java, Ruby, etc via Amazon Kinesis Streams
+StreamAlert directly ingests data from S3 buckets or other sources like Fluentd, Logstash, Kinesis Agent, osquery, PHP, Java, Ruby, etc via Amazon Kinesis Streams
 
 Rules/Queries
 ~~~~~~~~~~~~~

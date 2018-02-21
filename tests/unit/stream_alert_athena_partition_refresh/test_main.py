@@ -26,6 +26,7 @@ from moto import mock_sqs
 from nose.tools import (
     assert_equal,
     assert_false,
+    assert_is_instance,
     assert_is_none,
     assert_true,
     raises,
@@ -43,7 +44,7 @@ from stream_alert.athena_partition_refresh.main import (
     StreamAlertAthenaClient,
     StreamAlertSQSClient,
 )
-from tests.unit.helpers.aws_mocks import MockAthenaClient
+from tests.unit.helpers.aws_mocks import MockAthenaClient, MockSqsClient
 from tests.unit.helpers.base import mock_open
 
 GLOBAL_FILE = 'conf/global.json'
@@ -307,6 +308,22 @@ class TestStreamAlertSQSClient(object):
         self.client.delete_messages()
 
         assert_true(mock_logging.error.called)
+
+    @patch.object(StreamAlertSQSClient, 'SQS_BACKOFF_MAX_RETRIES', 1)
+    @patch('stream_alert.athena_partition_refresh.main.LOGGER')
+    @patch('boto3.client')
+    def test_delete_messages_failure_retries(self, mock_sqs_client, mock_logging): #pylint: disable=no-self-use
+        """Athena SQS - Delete Messages - Failure Response and push back messages to queue"""
+        mock_sqs_client.return_value = MockSqsClient(failed=True)
+
+        client = StreamAlertSQSClient(CONFIG_DATA)
+        client.processed_messages = [{'MessageId': '1', 'ReceiptHandle': 'handle1'},
+                                     {'MessageId': '2', 'ReceiptHandle': 'handle2'}]
+        client.delete_messages()
+        for message in client.processed_messages:
+            assert_is_instance(message, dict)
+
+        assert_true(mock_logging.error.called_with('Failed to delete the messages with following'))
 
     @patch('stream_alert.athena_partition_refresh.main.LOGGER')
     def test_delete_messages_none_processed(self, mock_logging):

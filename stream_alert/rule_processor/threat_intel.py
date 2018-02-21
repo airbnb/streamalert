@@ -327,13 +327,6 @@ class StreamThreatIntel(object):
             result.append(ioc_collections[index:min(index+MAX_QUERY_CNT, end)])
         return result
 
-    @backoff.on_exception(backoff.expo,
-                          EXCEPTIONS_TO_BACKOFF,
-                          max_tries=BACKOFF_MAX_RETRIES,
-                          giveup=exceptions_to_giveup,
-                          on_backoff=backoff_handler,
-                          on_success=success_handler,
-                          on_giveup=giveup_handler)
     def _query(self, values):
         """Instance method to query DynamoDB table
 
@@ -350,21 +343,31 @@ class StreamThreatIntel(object):
                     ]
             dict: A dict containing unprocesed keys.
         """
-        result = []
-        query_keys = [{PRIMARY_KEY: {'S': ioc}} for ioc in values if ioc]
-        response = self.dynamodb.batch_get_item(
-            RequestItems={
-                self._table: {
-                    'Keys': query_keys,
-                    'ProjectionExpression': PROJECTION_EXPRESSION
-                }
-            },
-        )
+        @backoff.on_exception(backoff.expo,
+                              self.EXCEPTIONS_TO_BACKOFF,
+                              max_tries=self.BACKOFF_MAX_RETRIES,
+                              giveup=exceptions_to_giveup,
+                              on_backoff=backoff_handler,
+                              on_success=success_handler,
+                              on_giveup=giveup_handler)
+        def _query(values):
+            result = []
+            query_keys = [{PRIMARY_KEY: {'S': ioc}} for ioc in values if ioc]
+            response = self.dynamodb.batch_get_item(
+                RequestItems={
+                    self._table: {
+                        'Keys': query_keys,
+                        'ProjectionExpression': PROJECTION_EXPRESSION
+                    }
+                },
+            )
 
-        if response.get('Responses'):
-            result.extend(self._deserialize(response['Responses'].get(self._table)))
+            if response.get('Responses'):
+                result.extend(self._deserialize(response['Responses'].get(self._table)))
 
-        return result, response.get('UnprocessedKeys')
+            return result, response.get('UnprocessedKeys')
+
+        return _query(values)
 
     @staticmethod
     def _deserialize(dynamodb_data):

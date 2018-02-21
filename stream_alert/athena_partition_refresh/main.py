@@ -404,6 +404,7 @@ class StreamAlertSQSClient(object):
     """
     QUEUENAME = 'streamalert_athena_data_bucket_notifications'
     MAX_SQS_GET_MESSAGE_COUNT = 10
+    SQS_BACKOFF_MAX_RETRIES = 10
 
     def __init__(self, config):
         """Initialize the StreamAlertSQS Client
@@ -478,10 +479,10 @@ class StreamAlertSQSClient(object):
         if not self.processed_messages:
             LOGGER.error('No processed messages to delete')
             return
-
         @backoff.on_predicate(backoff.fibo,
                               lambda len_messages: len_messages > 0,
                               max_value=10,
+                              max_tries=self.SQS_BACKOFF_MAX_RETRIES,
                               jitter=backoff.full_jitter,
                               on_backoff=_backoff_handler,
                               on_success=_success_handler)
@@ -504,15 +505,16 @@ class StreamAlertSQSClient(object):
                 self.deleted_messages += len(resp['Successful'])
             # Handle failure deletion
             if resp.get('Failed'):
-                LOGGER.error('Failed to delete the following (%d) messages:\n%s',
+                LOGGER.error(('Failed to delete the messages with following (%d) '
+                              'error messages:\n%s'),
                              len(resp['Failed']), json.dumps(resp['Failed']))
                 # Add the failed messages back to the processed_messages attribute
                 # to be retried via backoff
-                self.processed_messages.extend([[message
-                                                 for message
-                                                 in message_batch
-                                                 if message['MessageId'] == failed_message['Id']]
-                                                for failed_message in resp['Failed']])
+                failed_message_ids = [message['Id'] for message in resp['Failed']]
+                push_bach_messages = [message for message in message_batch
+                                      if message['MessageId'] in failed_message_ids]
+
+                self.processed_messages.extend(push_bach_messages)
 
             return len(self.processed_messages)
 

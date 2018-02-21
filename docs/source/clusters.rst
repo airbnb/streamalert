@@ -4,16 +4,14 @@ Clusters
 Background
 ~~~~~~~~~~
 
-StreamAlert will deploy separate infrastructure for each ``cluster`` (or environment) you define.
+StreamAlert can deploy separate infrastructure for each ``cluster`` (or environment) you define.
 
 What constitutes a ``cluster`` is up to you.
 
-Example: You could define ``IT``, ``PCI`` and ``Production`` clusters.
+Example: You could define ``IT``, ``PCI`` or ``Production`` clusters.
 
 Strategy
 --------
-
-Cluster definition is up to you.
 
 Common patterns:
 
@@ -21,41 +19,40 @@ Common patterns:
 2. Define a cluster for each of your environments
 3. Define a cluster for each organization, which may have one or more environments
 
-Which one you choose is largely dependent on your processes, requirements and how your team organizes itself
+Which one you choose is largely dependent on your processes, requirements and how your team organizes itself.
 
-Option \(2\) is encouraged because it provides segmentation for ingestion, analysis and storage, on a per-cluster basis, ensuring that folks only have access to the infrastructure and data they need to get their job done.
+Option \(2\) is encouraged because it provides segmentation for ingestion and analysis, which allows for the best possible performance during processing.
 
 Configuration
 -------------
 
-Each cluster lives in its own ``json`` file in the ``conf/clusters`` directory.
-
-A cluster file contains name, region, modules, and outputs.
+Each cluster file lives in its own ``JSON`` file in the ``conf/clusters`` directory, and contains a name, region, modules, and Terraform variable outputs.
 
 Examples
 ~~~~~~~~
 
-Production Cluster
-------------------
+Kinesis Cluster
+---------------
 
 Contains the following:
 
+- Rule and Alert Processor Lambda Functions
 - Kinesis Stream with 1 Shard
 - Kinesis Events to the Rule Processor
-- Rule and Alert Processor Lambda Functions
-- CloudWatch Monitoring for Kinesis and Lambda
+- CloudWatch Monitoring Alarms for Kinesis and Lambda
 - Outputs to display the Kinesis username, access key, and secret key
 
 .. code-block:: json
 
   {
-    "id": "production",
+    "id": "kinesis-example",
     "modules": {
       "cloudwatch_monitoring": {
         "enabled": true
       },
       "kinesis": {
         "streams": {
+          "create_user": true,
           "shards": 1,
           "retention": 24
         }
@@ -86,8 +83,8 @@ Contains the following:
     "region": "us-west-2",
   }
 
-CloudTrail Processing Cluster
------------------------------
+CloudTrail S3 Processing Cluster
+--------------------------------
 
 Contains the following:
 
@@ -99,7 +96,7 @@ Contains the following:
 .. code-block:: json
 
   {
-    "id": "s3",
+    "id": "s3-example",
     "modules": {
       "cloudtrail": {
         "enable_kinesis": false,

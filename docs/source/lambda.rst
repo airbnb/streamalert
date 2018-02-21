@@ -4,14 +4,14 @@ Lambda
 Overview
 --------
 
-* StreamAlert utilizes AWS Lambda for real-time data processing and alerting
-* AWS Lambda lets us run code without needing to provision or manage servers
-* A Lambda function is created for each `cluster <clusters.html>`_ you define
+StreamAlert utilizes AWS Lambda for real-time data processing and alerting.
 
-Each StreamAlert cluster creates two Lambda functions:
+AWS Lambda lets users to run code without needing to provision or manage servers.
 
-* ``rule_processor``: Analyze incoming logs against rules in real time
-* ``alert_processor``: Deliver alerts to designated outputs
+A set of Lambda functions are created for each `cluster <clusters.html>`_ defined:
+
+* Rule Processor: Analyze incoming logs against rules in real time
+* Alert Processor: Deliver alerts to designated outputs
 
 Concepts
 --------

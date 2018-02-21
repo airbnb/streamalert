@@ -1172,7 +1172,7 @@
       "org": "string",
       "org_id": {},
       "repo": "string",
-      "repo_id": "integer",
+      "repo_id": "string",
       "user": "string",
       "user_id": "string"
     },
