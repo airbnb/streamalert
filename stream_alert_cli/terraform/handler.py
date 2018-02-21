@@ -84,7 +84,7 @@ def terraform_handler(options, config):
             'aws_kms_alias.stream_alert_secrets'
         ]
         if not tf_runner(targets=init_targets):
-            LOGGER_CLI.error('An error occured while running StreamAlert init')
+            LOGGER_CLI.error('An error occurred while running StreamAlert init')
             sys.exit(1)
 
         # generate the main.tf with remote state enabled
@@ -101,7 +101,7 @@ def terraform_handler(options, config):
         # create all remainder infrastructure
 
         LOGGER_CLI.info('Building Remainder Infrastructure')
-        tf_runner()
+        tf_runner(refresh=False)
 
     elif options.subcommand == 'clean':
         if not continue_prompt(message='Are you sure you want to clean all Terraform files?'):
@@ -109,6 +109,7 @@ def terraform_handler(options, config):
         terraform_clean(config)
 
     elif options.subcommand == 'destroy':
+        # Ask for approval here since multiple Terraform commands may be necessary
         if not continue_prompt(message='Are you sure you want to destroy?'):
             sys.exit(1)
 
@@ -126,7 +127,7 @@ def terraform_handler(options, config):
                     targets.extend(
                         ['module.{}_{}'.format(target, cluster) for cluster in config.clusters()])
 
-            tf_runner(targets=targets, action='destroy')
+            tf_runner(action='destroy', auto_approve=True, targets=targets)
             return
 
         # Migrate back to local state so Terraform can successfully
@@ -138,7 +139,7 @@ def terraform_handler(options, config):
             return
 
         # Destroy all of the infrastructure
-        if not tf_runner(action='destroy'):
+        if not tf_runner(action='destroy', auto_approve=True):
             return
 
         # Remove old Terraform files
