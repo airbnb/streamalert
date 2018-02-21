@@ -14,7 +14,83 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from stream_alert_cli import helpers
+from stream_alert_cli.logger import LOGGER_CLI
 from stream_alert_cli.terraform.generate import terraform_generate
+
+
+def _decrement_version(lambda_config):
+    """Decrement the Lambda version, if possible.
+
+    Args:
+        lambda_config (dict): Lambda function config with 'current_version'
+
+    Returns:
+        True if the version was changed, False otherwise
+    """
+    current_version = lambda_config['current_version']
+    if current_version == '$LATEST':
+        return False
+
+    int_version = int(current_version)
+    if int_version <= 1:
+        return False
+
+    lambda_config['current_version'] = int_version - 1
+    return True
+
+
+def _try_decrement_version(lambda_config, function_name):
+    """Log a warning if the lambda version cannot be rolled back."""
+    changed = _decrement_version(lambda_config)
+    if not changed:
+        LOGGER_CLI.warn('%s cannot be rolled back from version %s',
+                        function_name, str(lambda_config['current_version']))
+    return changed
+
+
+def _rollback_alert(config):
+    """Decrement the current_version for the alert processor."""
+    lambda_config = config['lambda']['alert_processor_config']
+    if _try_decrement_version(lambda_config, 'alert_processor'):
+        return ['module.alert_processor_lambda']
+
+
+def _rollback_apps(config, clusters):
+    """Decrement the current_version for all of the apps functions in the given clusters."""
+    tf_targets = []
+
+    for cluster in clusters:
+        apps_config = config['clusters'][cluster]['modules'].get('stream_alert_apps', {})
+        for lambda_name, lambda_config in apps_config.iteritems():
+            clustered_name = '{}_{}'.format(lambda_name, cluster)
+            if _try_decrement_version(lambda_config, clustered_name):
+                tf_targets.append('module.{}'.format(clustered_name))
+
+    return tf_targets
+
+
+def _rollback_athena(config):
+    """Decrement the current_version for the Athena Partition Refresh function."""
+    lambda_config = config['lambda'].get('athena_partition_refresh_config')
+    if lambda_config and _try_decrement_version(lambda_config, 'athena_partition_refresh'):
+        return['module.stream_alert_athena']
+
+
+def _rollback_downloader(config):
+    """Decrement the current_version for the Threat Intel Downloader function."""
+    lambda_config = config['lambda'].get('threat_intel_downloader_config')
+    if lambda_config and _try_decrement_version(lambda_config, 'threat_intel_downloader_config'):
+        return['module.threat_intel_downloader']
+
+
+def _rollback_rule(config, clusters):
+    """Decrement the current_version for the Rule Processor in each of the given clusters"""
+    tf_targets = []
+    for cluster in clusters:
+        lambda_config = config['clusters'][cluster]['modules']['stream_alert']['rule_processor']
+        if _try_decrement_version(lambda_config, 'rule_processor_{}'.format(cluster)):
+            tf_targets.append('module.stream_alert_{}'.format(cluster))
+    return tf_targets
 
 
 def rollback(options, config):
@@ -25,32 +101,30 @@ def rollback(options, config):
         Only rollsback if published version is greater than 1
     """
     clusters = options.clusters or config.clusters()
+    rollback_all = 'all' in options.processor
+    tf_targets = []
 
-    if 'all' in options.processor:
-        lambda_functions = {'rule_processor', 'alert_processor', 'athena_partition_refresh'}
-    else:
-        lambda_functions = {
-            '{}_processor'.format(proc)
-            for proc in options.processor if proc != 'athena'
-        }
-        if 'athena' in options.processor:
-            lambda_functions.add('athena_partition_refresh')
+    if rollback_all or 'alert' in options.processor:
+        tf_targets.extend(_rollback_alert(config) or [])
 
-    for cluster in clusters:
-        for lambda_function in lambda_functions:
-            stream_alert_key = config['clusters'][cluster]['modules']['stream_alert']
-            current_vers = stream_alert_key[lambda_function]['current_version']
-            if current_vers != '$LATEST':
-                current_vers = int(current_vers)
-                if current_vers > 1:
-                    new_vers = current_vers - 1
-                    config['clusters'][cluster]['modules']['stream_alert'][lambda_function][
-                        'current_version'] = new_vers
-                    config.write()
+    if rollback_all or 'apps' in options.processor:
+        tf_targets.extend(_rollback_apps(config, clusters) or [])
 
-    targets = ['module.stream_alert_{}'.format(x) for x in config.clusters()]
+    if rollback_all or 'athena' in options.processor:
+        tf_targets.extend(_rollback_athena(config) or [])
+
+    if rollback_all or 'rule' in options.processor:
+        tf_targets.extend(_rollback_rule(config, clusters) or [])
+
+    if rollback_all or 'threat_intel_downloader' in options.processor:
+        tf_targets.extend(_rollback_downloader(config) or [])
+
+    if not tf_targets:  # No changes made
+        return
+
+    config.write()
 
     if not terraform_generate(config=config):
         return
 
-    helpers.tf_runner(targets=targets)
+    helpers.tf_runner(targets=sorted(tf_targets))

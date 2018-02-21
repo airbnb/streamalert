@@ -17,17 +17,17 @@
     }
   },
   "stream_alert_app": {
-    "prefix_cluster_duo_auth_sm-app-name_app": {
+    "prefix_cluster_box_admin_events_sm-app-name_app": {
+      "logs": [
+        "box"
+      ]
+    },
+    "prefix_cluster_duo_admin_sm-app-name_app": {
       "logs": [
         "duo"
       ]
     },
-    "prefix_cluster_onelogin-events-app-name_app": {
-      "logs": [
-        "onelogin"
-      ]
-    },
-    "prefix_cluster_duo_admin_sm-app-name_app": {
+    "prefix_cluster_duo_auth_sm-app-name_app": {
       "logs": [
         "duo"
       ]
@@ -37,9 +37,9 @@
         "gsuite"
       ]
     },
-    "prefix_cluster_box_admin_events_sm-app-name_app": {
+    "prefix_cluster_onelogin-events-app-name_app": {
       "logs": [
-        "box"
+        "onelogin"
       ]
     }
   }

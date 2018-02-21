@@ -1,6 +1,40 @@
 {
   "alert_processor_config": {
-    "source_bucket": "unit.testing.source.bucket"
+    "current_version": "$LATEST",
+    "handler": "main.handler",
+    "log_level": "info",
+    "log_retention_days": 7,
+    "memory": 128,
+    "metric_alarms": {
+      "enabled": true,
+      "errors_alarm_evaluation_periods": 1,
+      "errors_alarm_period_secs": 2,
+      "errors_alarm_threshold": 3,
+      "throttles_alarm_evaluation_periods": 4,
+      "throttles_alarm_period_secs": 5,
+      "throttles_alarm_threshold": 6
+    },
+    "outputs": {
+      "aws-lambda": [
+        "test-lambda-output"
+      ],
+      "aws-s3": [
+        "test-s3-output"
+      ]
+    },
+    "source_bucket": "unit.testing.streamalert.source",
+    "source_current_hash": "12345",
+    "source_object_key": "lambda/alert/source.zip",
+    "third_party_libraries": [],
+    "timeout": 60,
+    "vpc_config": {
+      "security_group_ids": [
+        "sg-abc"
+      ],
+      "subnet_ids": [
+        "subnet-123"
+      ]
+    }
   },
   "athena_partition_refresh_config": {
     "current_version": "$LATEST",
