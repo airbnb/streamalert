@@ -107,7 +107,7 @@ def tf_runner(action='apply', refresh=True, auto_approve=False, targets=None):
 
     Resolves modules with `terraform get` before continuing.
 
-    Kwargs:
+    Args:
         action (str): Terraform action ('apply' or 'destroy').
         refresh (bool): If True, Terraform will refresh its state before applying the change.
         auto_approve (bool): If True, Terraform will *not* prompt the user for approval.
