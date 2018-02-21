@@ -22,7 +22,6 @@ import random
 import re
 from StringIO import StringIO
 import subprocess
-import sys
 import zipfile
 import zlib
 
@@ -39,6 +38,7 @@ from moto import (
 
 from stream_alert_cli.logger import LOGGER_CLI
 from stream_alert.rule_processor.firehose import StreamAlertFirehose
+
 
 def run_command(runner_args, **kwargs):
     """Helper function to run commands with error handling.
@@ -102,62 +102,40 @@ def continue_prompt(message=''):
     return response == 'yes'
 
 
-def tf_runner(**kwargs):
+def tf_runner(action='apply', refresh=True, auto_approve=False, targets=None):
     """Terraform wrapper to build StreamAlert infrastructure.
 
-    Steps:
-        - resolve modules with `terraform get`
-        - run `terraform plan` for the given targets
-        - if plan is successful and user confirms prompt,
-          then the infrastructure is applied
+    Resolves modules with `terraform get` before continuing.
 
-    kwargs:
-        targets: a list of Terraform targets
-        action: 'apply' or 'destroy'
+    Args:
+        action (str): Terraform action ('apply' or 'destroy').
+        refresh (bool): If True, Terraform will refresh its state before applying the change.
+        auto_approve (bool): If True, Terraform will *not* prompt the user for approval.
+        targets (list): Optional list of affected targets.
+            If not specified, Terraform will run against all of its resources.
 
     Returns:
         bool: True if the terraform command was successful
     """
-    targets = kwargs.get('targets', [])
-    action = kwargs.get('action', None)
-    tf_action_index = 1  # The index to the terraform 'action'
-
-    var_files = {'conf/lambda.json'}
-    tf_opts = ['-var-file=../{}'.format(x) for x in var_files]
-    tf_targets = ['-target={}'.format(x) for x in targets]
-    tf_command = ['terraform', 'plan'] + tf_opts + tf_targets
-    if action == 'destroy':
-        tf_command.append('-destroy')
-
     LOGGER_CLI.debug('Resolving Terraform modules')
     if not run_command(['terraform', 'get'], quiet=True):
         return False
 
-    LOGGER_CLI.info('Planning infrastructure')
-    if not run_command(tf_command):
-        return False
-
-    if not continue_prompt():
-        sys.exit(1)
+    tf_command = ['terraform', action, '-var-file=../conf/lambda.json',
+                  '-refresh={}'.format(str(refresh).lower())]
 
     if action == 'destroy':
+        # Terraform destroy has a '-force' flag instead of '-auto-approve'
         LOGGER_CLI.info('Destroying infrastructure')
-        tf_command[tf_action_index] = action
-        tf_command.remove('-destroy')
-        tf_command.append('-force')
-
-    elif action:
-        tf_command[tf_action_index] = action
-
+        tf_command.append('-force={}'.format(str(auto_approve).lower()))
     else:
-        LOGGER_CLI.info('Creating infrastructure')
-        tf_command[tf_action_index] = 'apply'
-        tf_command.append('-refresh=false')
+        LOGGER_CLI.info('%s changes', 'Applying' if auto_approve else 'Planning')
+        tf_command.append('-auto-approve={}'.format(str(auto_approve).lower()))
 
-    if not run_command(tf_command):
-        return False
+    if targets:
+        tf_command.extend('-target={}'.format(x) for x in targets)
 
-    return True
+    return run_command(tf_command)
 
 
 def check_credentials():
@@ -450,6 +428,7 @@ def setup_mock_firehose_delivery_streams(config):
         prefix = '{}/'.format(log_type)
         create_delivery_stream(region, stream_name, prefix)
 
+
 @mock_dynamodb2
 def setup_mock_dynamodb_ioc_table(config):
     """Mock DynamoDB IOC table for rule testing
@@ -506,6 +485,7 @@ def setup_mock_dynamodb_ioc_table(config):
         },
         TableName=table_name
     )
+
 
 def put_mock_s3_object(bucket, key, data, region):
     """Create a mock AWS S3 object for testing
@@ -597,6 +577,7 @@ def get_context_from_config(cluster, config):
 
     return context
 
+
 def user_input(requested_info, mask, input_restrictions):
     """Prompt user for requested information
 
@@ -617,7 +598,6 @@ def user_input(requested_info, mask, input_restrictions):
 
         # Restrict having spaces or colons in items (applies to things like
         # descriptors, etc)
-        valid_response = False
         if isinstance(input_restrictions, re._pattern_type):
             valid_response = input_restrictions.match(response)
             if not valid_response:
