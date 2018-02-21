@@ -17,6 +17,7 @@ from collections import namedtuple
 import sys
 
 from stream_alert_cli import helpers
+from stream_alert_cli.athena.handler import create_table as athena_create_table
 from stream_alert_cli.manage_lambda import package as stream_alert_packages
 from stream_alert_cli.manage_lambda.version import LambdaVersion
 from stream_alert_cli.terraform.generate import terraform_generate
@@ -68,25 +69,31 @@ def _create_and_upload(function_name, config, cluster=None):
         'alert': PackageMap(
             stream_alert_packages.AlertProcessorPackage,
             {'module.stream_alert_{}'.format(cluster) for cluster in clusters},
-            True),
+            True
+        ),
         'apps': PackageMap(
             stream_alert_packages.AppIntegrationPackage,
             {'module.app_{}_{}'.format(app_name, cluster)
              for cluster, info in config['clusters'].iteritems()
              for app_name in info['modules'].get('stream_alert_apps', {})},
-            config['lambda'].get('stream_alert_apps_config', False)),
+            config['lambda'].get('stream_alert_apps_config', False)
+        ),
         'athena': PackageMap(
             stream_alert_packages.AthenaPackage,
             {'module.stream_alert_athena'},
-            config['lambda'].get('athena_partition_refresh_config', False)),
+            True
+        ),
         'rule': PackageMap(
             stream_alert_packages.RuleProcessorPackage,
             {'module.stream_alert_{}'.format(cluster) for cluster in clusters},
-            True),
+            True
+        ),
         'threat_intel_downloader': PackageMap(
             stream_alert_packages.ThreatIntelDownloaderPackage,
             {'module.threat_intel_downloader'},
-            config['lambda'].get('threat_intel_downloader_config', False))}
+            config['lambda'].get('threat_intel_downloader_config', False)
+        )
+    }
 
     if not package_mapping[function_name].enabled:
         return False, False
@@ -148,6 +155,15 @@ def deploy(options, config):
     # Regenerate the Terraform configuration with the new Lambda versions
     if not terraform_generate(config=config):
         return
+
+    if 'athena' in processors:
+        # create the streamalerts table since terraform does not support this
+        # See: https://github.com/terraform-providers/terraform-provider-aws/issues/1486
+        alerts_bucket = '{}.streamalerts'.format(config['global']['account']['prefix'])
+
+        athena_opts = namedtuple('AthenaOptions', ['bucket', 'refresh_type'])
+        opts = athena_opts(alerts_bucket, 'add_hive_partition')
+        athena_create_table(opts, 'alerts', config)
 
     # Apply the changes to the Lambda aliases
     helpers.tf_runner(targets=deploy_targets)

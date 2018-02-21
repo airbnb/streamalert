@@ -97,7 +97,7 @@ def terraform_handler(options, config):
 
         LOGGER_CLI.info('Deploying Lambda Functions')
         # deploy both lambda functions
-        deploy(deploy_opts(['rule', 'alert'], []), config)
+        deploy(deploy_opts(['rule', 'alert', 'athena'], []), config)
         # create all remainder infrastructure
 
         LOGGER_CLI.info('Building Remainder Infrastructure')
