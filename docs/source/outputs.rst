@@ -13,6 +13,8 @@ Out of the box, StreamAlert supports:
 * **PagerDuty**
 * **Phantom**
 * **Slack**
+* **Jira**
+* **Github**
 
 StreamAlert can be extended to support any API. Creating a new output to send alerts to is easily accomplished through inheritance from the ``StreamOutputBase`` class. More on that in the `Adding Support for New Services`_ section below.
 
