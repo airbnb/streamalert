@@ -109,7 +109,7 @@ Examples:
         '--service',
         choices=[
             'aws-firehose', 'aws-lambda', 'aws-s3', 'jira', 'komand', 'pagerduty', 'pagerduty-v2',
-            'pagerduty-incident', 'phantom', 'slack'
+            'pagerduty-incident', 'phantom', 'slack', 'github'
         ],
         required=True,
         help=ARGPARSE_SUPPRESS)

@@ -89,6 +89,7 @@ def test_output_loading():
         'aws-firehose',
         'aws-lambda',
         'aws-s3',
+        'github',
         'jira',
         'komand',
         'pagerduty',

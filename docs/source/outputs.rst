@@ -14,6 +14,8 @@ Out of the box, StreamAlert supports:
 * **PagerDuty**
 * **Phantom**
 * **Slack**
+* **Jira**
+* **Github**
 
 StreamAlert can be extended to support any API. Creating a new output to send alerts to is easily accomplished through inheritance from the ``StreamOutputBase`` class. More on that in the `Adding Support for New Services`_ section below.
 
@@ -117,6 +119,7 @@ Adding support for a new service involves five steps:
 
    - The ``output_parser`` contains a ``choices`` list for ``--service`` that must include this new service.
 
+6. Extend the ``AlertProcessorTester.setup_outputs`` method in ``stream_alert_cli/test.py`` module to provide mock credentials for your new output. 
 
 .. note:: New AWS Service outputs should subclass ``AWSOutput`` instead of ``StreamOutputBase``
 
