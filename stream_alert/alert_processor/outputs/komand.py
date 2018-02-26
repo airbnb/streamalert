@@ -47,39 +47,36 @@ class KomandOutput(OutputDispatcher):
              OutputProperty(description='a short and unique descriptor for this '
                                         'Komand integration')),
             ('komand_auth_token',
-             OutputProperty(description='the auth token for this Komand integration. Example: 00000000-0000-0000-0000-000000000000',
+             OutputProperty(description='the auth token for this Komand integration. '
+                            'Example: 00000000-0000-0000-0000-000000000000',
                             mask_input=True,
                             cred_requirement=True)),
             ('url',
-             OutputProperty(description='the endpoint url for this Komand integration. Example: https://YOUR-KOMAND-HOST.com/v2/triggers/00000000-0000-0000-0000-000000000000/events',
+             OutputProperty(description='the endpoint url for this Komand integration. '
+                            'Example: https://YOUR-KOMAND-HOST.com/v2/triggers/00000000-0000-0000-0000-000000000000/events',
                             mask_input=True,
                             cred_requirement=True))
         ])
 
-    @classmethod
-    def dispatch(cls, **kwargs):
+    def dispatch(self, **kwargs):
         """Send alert to Komand
 
         Args:
             **kwargs: consists of any combination of the following items:
                 descriptor (str): Service descriptor (ie: slack channel, pd integration)
-                rule_name (str): Name of the triggered rule
                 alert (dict): Alert relevant to the triggered rule
         """
         creds = self._load_creds(kwargs['descriptor'])
         if not creds:
             return self._log_status(False)
 
-        headers = {"Authorization": creds['komand_auth_token']}
+        headers = {'Authorization': creds['komand_auth_token']}
 
         LOGGER.debug('sending alert to Komand')
 
         success = False
-        if container_id:
-            artifact = {'data': kwargs['alert']}
-            artifact_url = creds['url']
-            resp = self._post_request(artifact_url, artifact, headers, False)
+        resp = self._post_request(creds['url'], {'data': kwargs['alert']}, headers, False)
 
-            success = self._check_http_response(resp)
+        success = self._check_http_response(resp)
 
         return self._log_status(success)
