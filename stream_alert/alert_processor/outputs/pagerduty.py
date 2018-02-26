@@ -536,6 +536,35 @@ class PagerDutyIncidentOutput(OutputDispatcher):
         # Verify escalation policy, return tuple
         return 'escalation_policy', self._policy_verify(policy_to_assign, self._escalation_policy)
 
+    def _add_incident_note(self, incident_id, note):
+        """Method to add a text note to the provided incident id
+
+        Args:
+            incident_id (str): ID of the incident to add the note to
+
+        Returns:
+            str: ID of the note after being added to the incident or False if it fails
+        """
+        notes_path = '{}/{}/notes'.format(self.INCIDENTS_ENDPOINT, incident_id)
+        incident_notes_url = self._get_endpoint(self._base_url, notes_path)
+        data = {
+            'note': {
+                'content': note
+            }
+        }
+        try:
+            resp = self._post_request_retry(incident_notes_url, data, self._headers, True)
+        except OutputRequestFailure:
+            return False
+
+        response = resp.json()
+        if not response:
+            return False
+
+        note_rec = response.get('note', {})
+
+        return note_rec.get('id', False)
+
     def dispatch(self, **kwargs):
         """Send incident to Pagerduty Incidents API v2
         Keyword Args:

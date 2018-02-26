@@ -1,0 +1,24 @@
+{
+  "records": [
+    {
+      "data": {
+          "version": "0",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "detail-type": "GuardDuty Finding",
+          "source": "aws.guardduty",
+          "account": "111111111111",
+          "time": "2018-02-13T18:25:01Z",
+          "region": "us-east-1",
+          "resources": [],
+          "detail": {}
+      },
+      "description": "GuardDuty",
+      "log": "cloudwatch:events",
+      "service": "kinesis",
+      "source": "prefix_cluster1_stream_alert_kinesis",
+      "trigger_rules": [
+        "guard_duty_all"
+      ]
+    }
+  ]
+}

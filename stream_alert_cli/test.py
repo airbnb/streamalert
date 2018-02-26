@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+# pylint: disable=too-many-lines,too-many-statements
 from collections import namedtuple
 import logging
 import os
@@ -814,6 +815,15 @@ class AlertProcessorTester(object):
                          'project_key': 'foobar',
                          'issue_type': 'Task',
                          'aggregate': 'no'}
+                helpers.put_mock_creds(output_name, creds, self.secrets_bucket,
+                                       'us-east-1', self.kms_alias)
+
+            elif service == 'github':
+                output_name = '{}/{}'.format(service, descriptor)
+                creds = {'username': 'github-user',
+                         'repository': 'github-user/github-repository',
+                         'access_token': 'foobar',
+                         'labels': 'test-label'}
                 helpers.put_mock_creds(output_name, creds, self.secrets_bucket,
                                        'us-east-1', self.kms_alias)
 
