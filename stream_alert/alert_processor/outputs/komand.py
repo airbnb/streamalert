@@ -74,9 +74,6 @@ class KomandOutput(OutputDispatcher):
 
         LOGGER.debug('sending alert to Komand')
 
-        success = False
         resp = self._post_request(creds['url'], {'data': kwargs['alert']}, headers, False)
-
         success = self._check_http_response(resp)
-
         return self._log_status(success)
