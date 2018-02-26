@@ -1049,16 +1049,19 @@
       "eventTime": "string",
       "eventType": "string",
       "eventVersion": "string",
+      "managementEvent": "boolean",
       "readOnly": "boolean",
       "recipientAccountId": "string",
       "requestID": "string",
       "requestParameters": {},
       "resources": [],
       "responseElements": {},
+      "serviceEventDetails": {},
       "sharedEventID": "string",
       "sourceIPAddress": "string",
       "userAgent": "string",
-      "userIdentity": {}
+      "userIdentity": {},
+      "vpcEndpointId": "string"
     },
     "parser": "json",
     "configuration": {
@@ -1068,10 +1071,13 @@
         "apiVersion",
         "errorCode",
         "errorMessage",
+        "managementEvent",
         "requestID",
         "readOnly",
         "resources",
-        "sharedEventID"
+        "serviceEventDetails",
+        "sharedEventID",
+        "vpcEndpointId"
       ]
     }
   },
