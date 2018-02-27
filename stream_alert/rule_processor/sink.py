@@ -13,9 +13,12 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from datetime import datetime
 import json
 import os
+import time
 
+import backoff
 import boto3
 from botocore.exceptions import ClientError
 
@@ -32,14 +35,13 @@ class StreamSink(object):
             env (dict): loaded dictionary containing environment information
         """
         self.env = env
+        self.client_dynamo = boto3.client('dynamodb', region_name=self.env['lambda_region'])
         self.client_lambda = boto3.client('lambda', region_name=self.env['lambda_region'])
         self.function = os.environ['ALERT_PROCESSOR']
+        self.table = os.environ['ALERT_TABLE']
 
-    def sink(self, alerts):
-        """Sink triggered alerts from the StreamRules engine.
-
-        Args:
-            alerts (list): a list of dictionaries representating json alerts
+    def _sink_lambda(self, alerts):
+        """Original sink: Invoke alert processor directly
 
         Sends a message to the alert processor with the following JSON format:
             {
@@ -92,3 +94,85 @@ class StreamSink(object):
                 LOGGER.info('Sent alert to \'%s\' with Lambda request ID \'%s\'',
                             self.function,
                             response['ResponseMetadata']['RequestId'])
+
+    def _alert_batches(self, alerts, batch_size=25):
+        """Group alerts into batches of 25, the maximum allowed by Dynamo batch_write_item.
+
+        Yields:
+            (dict) The constructed request for batch_write_item, containing <= 25 alerts.
+                Maps table name to a list of requests.
+        """
+        for i in xrange(0, len(alerts), batch_size):
+            batch = alerts[i:i+batch_size]
+            yield {
+                self.table: [
+                    {
+                        'PutRequest': {
+                            'Item': {
+                                'RuleName': {'S': alert['rule_name']},
+                                'Timestamp': {
+                                    # ISO 8601 datetime format, and is unique for each alert
+                                    'S': datetime.now().strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+                                },
+                                'Cluster': {'S': os.environ['CLUSTER']},
+                                'RuleDescription': {'S': alert['rule_description']},
+                                'Outputs': {'SS': alert['outputs']},
+                                # Compact JSON encoding (no extra spaces)
+                                'Record': {'S': json.dumps(alert['record'], separators=(',', ':'))}
+                            }
+                        }
+                    }
+                    for alert in batch
+                ]
+            }
+
+    @backoff.on_exception(backoff.expo, ClientError, max_tries=5, jitter=backoff.full_jitter)
+    def _batch_write(self, request_items, max_attempts=5):
+        """Write a batch of alerts to Dynamo, retrying with exponential backoff for failed items.
+
+        Args:
+            request_items (dict): The generated RequestItems dict from _alert_batches().
+            max_attempts (int): Maximum number of times to retry UnprocessedItems.
+
+        Returns:
+            (bool) True if the batch write was eventually successful, False otherwise.
+        """
+        for attempt in xrange(1, max_attempts + 1):
+            response = self.client_dynamo.batch_write_item(RequestItems=request_items)
+
+            # If Dynamo experiences an internal error, unprocessed items are listed in the response.
+            # AWS recommends retrying unprocessed items in a loop with exponential backoff.
+            request_items = response['UnprocessedItems']
+            if request_items:
+                LOGGER.warn(
+                    'Batch write failed: %d alerts were not written (attempt %d/%d)',
+                    len(request_items[self.table]), attempt, max_attempts)
+                # Simple exponential backoff: Sleep 0.5, 1, 2, 4 and 8 seconds.
+                time.sleep(0.25 * 2 ** attempt)
+                attempt += 1
+            else:
+                return True
+
+        return False
+
+    def _sink_dynamo(self, alerts):
+        """Write alerts in batches to Dynamo."""
+        for batch_num, batch in enumerate(self._alert_batches(alerts), start=1):
+            LOGGER.info('Sending batch #%d to Dynamo with %d alert(s)',
+                        batch_num, len(batch[self.table]))
+            if not self._batch_write(batch):
+                LOGGER.error('Unable to save alert batch %s', json.dumps(batch))
+
+    def sink(self, alerts):
+        """Sink triggered alerts from the StreamRules engine.
+
+        Args:
+            alerts (list): A list of dictionaries representing json alerts.
+        """
+        self._sink_lambda(alerts)
+
+        # While we are testing this, exceptions should be logged but not raise errors.
+        try:
+            self._sink_dynamo(alerts)
+        except Exception:  # pylint: disable=broad-except
+            LOGGER.exception('Error saving alerts to Dynamo')
