@@ -22,6 +22,7 @@ import backoff
 import boto3
 from botocore.exceptions import ClientError
 
+from stream_alert.shared import backoff_handlers
 from stream_alert.rule_processor import LOGGER
 
 
@@ -126,7 +127,10 @@ class StreamSink(object):
                 ]
             }
 
-    @backoff.on_exception(backoff.expo, ClientError, max_tries=5, jitter=backoff.full_jitter)
+    @backoff.on_exception(backoff.expo, ClientError, max_tries=5, jitter=backoff.full_jitter,
+                          on_backoff=backoff_handlers.backoff_handler,
+                          on_success=backoff_handlers.success_handler,
+                          on_giveup=backoff_handlers.giveup_handler)
     def _batch_write(self, request_items, max_attempts=5):
         """Write a batch of alerts to Dynamo, retrying with exponential backoff for failed items.
 
