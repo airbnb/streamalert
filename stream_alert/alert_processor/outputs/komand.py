@@ -14,13 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from collections import OrderedDict
-import os
 
 from stream_alert.alert_processor import LOGGER
 from stream_alert.alert_processor.outputs.output_base import (
     OutputDispatcher,
     OutputProperty,
-    OutputRequestFailure,
     StreamAlertOutput
 )
 
@@ -53,7 +51,7 @@ class KomandOutput(OutputDispatcher):
                             cred_requirement=True)),
             ('url',
              OutputProperty(description='the endpoint url for this Komand integration. '
-                            'Example: https://YOUR-KOMAND-HOST.com/v2/triggers/00000000-0000-0000-0000-000000000000/events',
+                            'Example: https://YOUR-KOMAND-HOST.com/v2/triggers/GUID/events',
                             mask_input=True,
                             cred_requirement=True))
         ])

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 # pylint: disable=protected-access,attribute-defined-outside-init
-from mock import call, patch, PropertyMock
+from mock import patch
 from moto import mock_s3, mock_kms
 from nose.tools import assert_false, assert_true
 
@@ -42,9 +42,8 @@ class TestKomandutput(object):
         put_mock_creds(output_name, self.CREDS, self._dispatcher.secrets_bucket, REGION, KMS_ALIAS)
 
     @patch('logging.Logger.info')
-    @patch('requests.get')
     @patch('requests.post')
-    def test_dispatch_existing_container(self, post_mock, get_mock, log_mock):
+    def test_dispatch_existing_container(self, post_mock, log_mock):
         """KomandOutput - Dispatch Success"""
         post_mock.return_value.status_code = 200
 
@@ -54,9 +53,8 @@ class TestKomandutput(object):
         log_mock.assert_called_with('Successfully sent alert to %s', self.SERVICE)
 
     @patch('logging.Logger.error')
-    @patch('requests.get')
     @patch('requests.post')
-    def test_dispatch_container_failure(self, post_mock, get_mock, log_mock):
+    def test_dispatch_container_failure(self, post_mock, log_mock):
         """KomandOutput - Dispatch Failure"""
         post_mock.return_value.status_code = 400
         json_error = {'message': 'error message', 'errors': ['error1']}
