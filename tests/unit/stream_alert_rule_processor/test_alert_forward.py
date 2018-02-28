@@ -16,7 +16,6 @@ limitations under the License.
 # pylint: disable=protected-access
 from datetime import datetime
 import os
-import unittest
 
 from botocore.exceptions import ClientError
 from mock import ANY, call, patch
@@ -27,8 +26,9 @@ from stream_alert.rule_processor.config import load_env
 from tests.unit.stream_alert_rule_processor.test_helpers import get_mock_context
 
 
+@patch.object(AlertForwarder, 'BACKOFF_MAX_RETRIES', 1)
 @patch.dict(os.environ, {'CLUSTER': 'corp'})
-class TestAlertForwarder(unittest.TestCase):
+class TestAlertForwarder(object):
     """Test class for AlertForwarder"""
     ALERT_PROCESSOR = 'corp-prefix_streamalert_alert_processor'
     ALERT_TABLE = 'corp-prefix_streamalert_alerts'
@@ -138,9 +138,6 @@ class TestAlertForwarder(unittest.TestCase):
         alerts = self._generate_alerts(1)
         result = list(self.forwarder._alert_batches(alerts))
 
-        # Replace timestamp to allow for equality checking.
-        result[0][self.ALERT_TABLE][0]['PutRequest']['Item']['Timestamp']['S'] = 'now'
-
         expected = [
             {
                 self.ALERT_TABLE: [
@@ -148,11 +145,12 @@ class TestAlertForwarder(unittest.TestCase):
                         'PutRequest': {
                             'Item': {
                                 'RuleName': {'S': 'Rule0'},
-                                'Timestamp': {'S': 'now'},
+                                'Timestamp': {'S': ANY},
                                 'Cluster': {'S': 'corp'},
                                 'RuleDescription': {'S': 'Desc0'},
                                 'Outputs': {'SS': ['aws-lambda:...', 'aws-s3:...']},
-                                'Record': {'S': '"{\\"abc\\": 123}"'}
+                                'Record': {'S': '"{\\"abc\\": 123}"'},
+                                'TTL': {'N': ANY}
                             }
                         }
                     }
@@ -178,9 +176,8 @@ class TestAlertForwarder(unittest.TestCase):
         assert_equal(10, len(result[0][self.ALERT_TABLE]))  # 10 alerts in the first batch.
         assert_equal(1, len(result[1][self.ALERT_TABLE]))  # 1 alert in the second batch.
 
-    @patch('stream_alert.rule_processor.alert_forward.time')
     @patch('stream_alert.rule_processor.alert_forward.LOGGER')
-    def test_dynamo_unprocessed_alerts(self, log_mock, time_mock):
+    def test_dynamo_unprocessed_alerts(self, log_mock):
         """AlertForwarder - Dynamo - Retry unprocessed alerts"""
 
         def mock_batch_write_item(**kwargs):
@@ -190,44 +187,23 @@ class TestAlertForwarder(unittest.TestCase):
                 'UnprocessedItems': {self.ALERT_TABLE: kwargs['RequestItems']}
             }
 
-        self.forwarder.client_dynamo.batch_write_item = mock_batch_write_item
+        self.boto_mock.return_value.batch_write_item.side_effect = mock_batch_write_item
 
         self.forwarder._send_to_dynamo(self._generate_alerts(1))
 
-        batch_write_failed = 'Batch write failed: %d alerts were not written (attempt %d/%d)'
         log_mock.assert_has_calls([
-            call.info('Sending batch #%d to Dynamo with %d alert(s)', 1, 1),
-            call.warn(batch_write_failed, 1, 1, 5),
-            call.warn(batch_write_failed, 1, 2, 5),
-            call.warn(batch_write_failed, 1, 3, 5),
-            call.warn(batch_write_failed, 1, 4, 5),
-            call.warn(batch_write_failed, 1, 5, 5),
-            call.error('Unable to save alert batch %s', ANY)
+            call.info('Sending batch %d to Dynamo with %d alert(s)', 1, 1),
+            call.error('Unable to save alert batch; unprocessed items remain: %s', ANY)
         ])
 
-        time_mock.assert_has_calls([
-            call.sleep(0.5),
-            call.sleep(1),
-            call.sleep(2),
-            call.sleep(4),
-            call.sleep(8)
-        ])
-
-    @patch('stream_alert.rule_processor.alert_forward.time')
     @patch('stream_alert.rule_processor.alert_forward.LOGGER')
-    def test_dynamo_successful(self, log_mock, time_mock):
+    def test_dynamo_successful(self, log_mock):
         """AlertForwarder - Dynamo - Successful"""
-
-        def mock_batch_write_item(**kwargs): # pylint: disable = unused-argument
-            """Mock client_dynamo.batch_write_item return successfully."""
-            return {
-                'ResponseMetadata': {'HTTPStatusCode': 200},
-                'UnprocessedItems': {}
-            }
-
-        self.forwarder.client_dynamo.batch_write_item = mock_batch_write_item
+        self.boto_mock.return_value.batch_write_item.return_value = {
+            'ResponseMetadata': {'HTTPStatusCode': 200},
+            'UnprocessedItems': {}
+        }
 
         self.forwarder._send_to_dynamo(self._generate_alerts(1))
 
-        log_mock.assert_has_calls([call.info('Sending batch #%d to Dynamo with %d alert(s)', 1, 1)])
-        time_mock.assert_not_called()
+        log_mock.assert_has_calls([call.info('Sending batch %d to Dynamo with %d alert(s)', 1, 1)])
