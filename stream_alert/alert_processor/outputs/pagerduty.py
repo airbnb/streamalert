@@ -208,7 +208,7 @@ class PagerDutyIncidentOutput(OutputDispatcher):
     SERVICES_ENDPOINT = 'services'
     PRIORITIES_ENDPOINT = 'priorities'
 
-    BACKOFF_MAX = 3
+    BACKOFF_MAX = 5
     BACKOFF_TIME = 5
 
     def __init__(self, *args, **kwargs):
@@ -339,10 +339,10 @@ class PagerDutyIncidentOutput(OutputDispatcher):
             dict: Contains the HTTP response of the request to the API
         """
         params = {
-            "source_incidents": [
+            'source_incidents': [
                 {
-                    "id": to_be_merged_id,
-                    "type": "incident_reference"
+                    'id': to_be_merged_id,
+                    'type': 'incident_reference'
                 }
             ]
         }
@@ -583,8 +583,9 @@ class PagerDutyIncidentOutput(OutputDispatcher):
 
         # Preparing headers for API calls
         self._headers = {
-            'Authorization': 'Token token={}'.format(creds['token']),
-            'Accept': 'application/vnd.pagerduty+json;version=2'
+            'Accept': 'application/vnd.pagerduty+json;version=2',
+            'Content-Type': 'application/json',
+            'Authorization': 'Token token={}'.format(creds['token'])
         }
 
         # Get user email to be added as From header and verify
@@ -667,8 +668,15 @@ class PagerDutyIncidentOutput(OutputDispatcher):
 
         # Merge the incident with the event, so we can have a rich context incident
         # assigned to a specific person, which the PagerDuty REST API v2 does not allow
-        merging_url = '{}/{}'.format(incidents_url, incident_id)
+        merging_url = '{}/{}/merge'.format(incidents_url, event_incident_id)
+        merged = self._merge_incidents(merging_url, incident_id)
 
-        merged = self._merge_incidents(merging_url, event_incident_id)
+        # Add a note to the combined incident to help with triage
+        if not merged:
+            LOGGER.error('Could not add note to incident, %s', self.__service__)
+        else:
+            merged_id = merged.get('incident', {}).get('id')
+            note = rule_context.get('note', 'Creating SOX Incident')
+            self._add_incident_note(merged_id, note)
 
-        return self._log_status(merged)
+        return self._log_status(incident_id)
