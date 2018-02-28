@@ -668,8 +668,8 @@ class PagerDutyIncidentOutput(OutputDispatcher):
 
         # Merge the incident with the event, so we can have a rich context incident
         # assigned to a specific person, which the PagerDuty REST API v2 does not allow
-        merging_url = '{}/{}/merge'.format(incidents_url, event_incident_id)
-        merged = self._merge_incidents(merging_url, incident_id)
+        merging_url = '{}/{}/merge'.format(incidents_url, incident_id)
+        merged = self._merge_incidents(merging_url, event_incident_id)
 
         # Add a note to the combined incident to help with triage
         if not merged:
