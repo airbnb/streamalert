@@ -22,41 +22,41 @@ from botocore.exceptions import ClientError
 from mock import ANY, call, patch
 from nose.tools import assert_equal
 
+from stream_alert.rule_processor.alert_forward import AlertForwarder
 from stream_alert.rule_processor.config import load_env
-from stream_alert.rule_processor.sink import StreamSink
 from tests.unit.stream_alert_rule_processor.test_helpers import get_mock_context
 
 
 @patch.dict(os.environ, {'CLUSTER': 'corp'})
-class TestStreamSink(unittest.TestCase):
-    """Test class for StreamSink"""
+class TestAlertForwarder(unittest.TestCase):
+    """Test class for AlertForwarder"""
     ALERT_PROCESSOR = 'corp-prefix_streamalert_alert_processor'
     ALERT_TABLE = 'corp-prefix_streamalert_alerts'
 
     @classmethod
     def setup_class(cls):
         """Setup the class before any methods"""
-        patcher = patch('stream_alert.rule_processor.sink.boto3.client')
+        patcher = patch('stream_alert.rule_processor.alert_forward.boto3.client')
         cls.boto_mock = patcher.start()
         context = get_mock_context()
         env = load_env(context)
         with patch.dict(os.environ, {'ALERT_PROCESSOR': cls.ALERT_PROCESSOR,
                                      'ALERT_TABLE': cls.ALERT_TABLE}):
-            cls.sinker = StreamSink(env)
+            cls.forwarder = AlertForwarder(env)
 
     @classmethod
     def teardown_class(cls):
         """Teardown the class after any methods"""
-        cls.sinker = None
+        cls.forwarder = None
         cls.boto_mock.stop()
 
     def teardown(self):
         """Teardown the class after each methods"""
-        self.sinker.env['lambda_alias'] = 'development'
+        self.forwarder.env['lambda_alias'] = 'development'
 
-    @patch('stream_alert.rule_processor.sink.LOGGER')
-    def test_streamsink_sink_boto_error(self, log_mock):
-        """StreamSink - Boto Error"""
+    @patch('stream_alert.rule_processor.alert_forward.LOGGER')
+    def test_lambda_boto_error(self, log_mock):
+        """AlertForwarder - Lambda - Boto Error"""
 
         err_response = {'Error': {'Code': 100}}
 
@@ -64,7 +64,7 @@ class TestStreamSink(unittest.TestCase):
         self.boto_mock.return_value.invoke.side_effect = ClientError(
             err_response, 'operation')
 
-        self.sinker.sink(['alert!!!'])
+        self.forwarder.send_alerts(['alert!!!'])
 
         log_mock.assert_has_calls([
             call.exception(
@@ -75,22 +75,22 @@ class TestStreamSink(unittest.TestCase):
             call.exception('Error saving alerts to Dynamo')
         ])
 
-    @patch('stream_alert.rule_processor.sink.LOGGER')
-    def test_streamsink_sink_resp_error(self, log_mock):
-        """StreamSink - Boto Response Error"""
+    @patch('stream_alert.rule_processor.alert_forward.LOGGER')
+    def test_lambda_resp_error(self, log_mock):
+        """AlertForwarder - Lambda - Boto Response Error"""
         self.boto_mock.return_value.invoke.side_effect = [{
             'ResponseMetadata': {'HTTPStatusCode': 201}}]
 
-        self.sinker.sink(['alert!!!'])
+        self.forwarder.send_alerts(['alert!!!'])
 
         log_mock.assert_has_calls([
             call.error('Failed to send alert to \'%s\': %s', self.ALERT_PROCESSOR, '"alert!!!"'),
             call.exception('Error saving alerts to Dynamo')
         ])
 
-    @patch('stream_alert.rule_processor.sink.LOGGER')
-    def test_streamsink_sink_success(self, log_mock):
-        """StreamSink - Successful Sink"""
+    @patch('stream_alert.rule_processor.alert_forward.LOGGER')
+    def test_lambda_success(self, log_mock):
+        """AlertForwarder - Lambda - Success"""
         self.boto_mock.return_value.invoke.side_effect = [{
             'ResponseMetadata': {
                 'HTTPStatusCode': 202,
@@ -99,20 +99,20 @@ class TestStreamSink(unittest.TestCase):
         }]
 
         # Swap out the alias so the logging occurs
-        self.sinker.env['lambda_alias'] = 'production'
+        self.forwarder.env['lambda_alias'] = 'production'
 
-        self.sinker.sink(['alert!!!'])
+        self.forwarder.send_alerts(['alert!!!'])
 
         log_mock.assert_has_calls([
             call.info('Sent alert to \'%s\' with Lambda request ID \'%s\'',
                       self.ALERT_PROCESSOR, 'reqID')
         ])
 
-    @patch('stream_alert.rule_processor.sink.LOGGER')
-    def test_streamsink_sink_bad_obj(self, log_mock):
-        """StreamSink - JSON Dump Bad Object"""
+    @patch('stream_alert.rule_processor.alert_forward.LOGGER')
+    def test_lambda_bad_obj(self, log_mock):
+        """AlertForwarder - Lambda - JSON Dump Bad Object"""
         bad_object = datetime.utcnow()
-        self.sinker.sink([bad_object])
+        self.forwarder.send_alerts([bad_object])
 
         log_mock.assert_has_calls([
             call.error('An error occurred while dumping alert to JSON: %s Alert: %s',
@@ -134,9 +134,9 @@ class TestStreamSink(unittest.TestCase):
         ]
 
     def test_alert_batches_single_alert(self):
-        """StreamSink - Alert Batching - Single Alert"""
+        """AlertForwarder - Alert Batching - Single Alert"""
         alerts = self._generate_alerts(1)
-        result = list(self.sinker._alert_batches(alerts))
+        result = list(self.forwarder._alert_batches(alerts))
 
         # Replace timestamp to allow for equality checking.
         result[0][self.ALERT_TABLE][0]['PutRequest']['Item']['Timestamp']['S'] = 'now'
@@ -162,26 +162,26 @@ class TestStreamSink(unittest.TestCase):
         assert_equal(expected, result)
 
     def test_alert_batches_max_batch(self):
-        """StreamSink - Alert Batching - Full Batch"""
+        """AlertForwarder - Alert Batching - Full Batch"""
         alerts = self._generate_alerts(10)
-        result = list(self.sinker._alert_batches(alerts, batch_size=10))
+        result = list(self.forwarder._alert_batches(alerts, batch_size=10))
 
         assert_equal(1, len(result))  # There should be one batch.
         assert_equal(10, len(result[0][self.ALERT_TABLE]))  # All 10 alerts should be in the batch.
 
     def test_alert_batches_max_batch_plus_one(self):
-        """StreamSink - Alert Batching - Full Batch + 1"""
+        """AlertForwarder - Alert Batching - Full Batch + 1"""
         alerts = self._generate_alerts(11)
-        result = list(self.sinker._alert_batches(alerts, batch_size=10))
+        result = list(self.forwarder._alert_batches(alerts, batch_size=10))
 
         assert_equal(2, len(result))  # There should be 2 alert batches.
         assert_equal(10, len(result[0][self.ALERT_TABLE]))  # 10 alerts in the first batch.
         assert_equal(1, len(result[1][self.ALERT_TABLE]))  # 1 alert in the second batch.
 
-    @patch('stream_alert.rule_processor.sink.time')
-    @patch('stream_alert.rule_processor.sink.LOGGER')
-    def test_dynamo_sink_unprocessed_alerts(self, log_mock, time_mock):
-        """StreamSink - Dynamo Sink - Retry unprocessed alerts"""
+    @patch('stream_alert.rule_processor.alert_forward.time')
+    @patch('stream_alert.rule_processor.alert_forward.LOGGER')
+    def test_dynamo_unprocessed_alerts(self, log_mock, time_mock):
+        """AlertForwarder - Dynamo - Retry unprocessed alerts"""
 
         def mock_batch_write_item(**kwargs):
             """Mock client_dynamo.batch_write_item to always return all items unprocessed."""
@@ -190,9 +190,9 @@ class TestStreamSink(unittest.TestCase):
                 'UnprocessedItems': {self.ALERT_TABLE: kwargs['RequestItems']}
             }
 
-        self.sinker.client_dynamo.batch_write_item = mock_batch_write_item
+        self.forwarder.client_dynamo.batch_write_item = mock_batch_write_item
 
-        self.sinker._sink_dynamo(self._generate_alerts(1))
+        self.forwarder._send_to_dynamo(self._generate_alerts(1))
 
         batch_write_failed = 'Batch write failed: %d alerts were not written (attempt %d/%d)'
         log_mock.assert_has_calls([
@@ -213,10 +213,10 @@ class TestStreamSink(unittest.TestCase):
             call.sleep(8)
         ])
 
-    @patch('stream_alert.rule_processor.sink.time')
-    @patch('stream_alert.rule_processor.sink.LOGGER')
-    def test_dynamo_sink_successful(self, log_mock, time_mock):
-        """StreamSink - Dynamo Sink - Successful"""
+    @patch('stream_alert.rule_processor.alert_forward.time')
+    @patch('stream_alert.rule_processor.alert_forward.LOGGER')
+    def test_dynamo_successful(self, log_mock, time_mock):
+        """AlertForwarder - Dynamo - Successful"""
 
         def mock_batch_write_item(**kwargs): # pylint: disable = unused-argument
             """Mock client_dynamo.batch_write_item return successfully."""
@@ -225,9 +225,9 @@ class TestStreamSink(unittest.TestCase):
                 'UnprocessedItems': {}
             }
 
-        self.sinker.client_dynamo.batch_write_item = mock_batch_write_item
+        self.forwarder.client_dynamo.batch_write_item = mock_batch_write_item
 
-        self.sinker._sink_dynamo(self._generate_alerts(1))
+        self.forwarder._send_to_dynamo(self._generate_alerts(1))
 
         log_mock.assert_has_calls([call.info('Sending batch #%d to Dynamo with %d alert(s)', 1, 1)])
         time_mock.assert_not_called()

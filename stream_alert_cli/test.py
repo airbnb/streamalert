@@ -917,7 +917,7 @@ def stream_alert_test(options, config):
             options (namedtuple): CLI options (debug, processor, etc)
             context (namedtuple): A constructed aws context object
         """
-        # The Rule Processor uses env variables to determine sink targets:
+        # The Rule Processor uses env variables to determine where alerts should be forwarded:
         prefix = config['global']['account']['prefix']
         os.environ['ALERT_PROCESSOR'] = '{}_streamalert_alert_processor'.format(prefix)
         os.environ['ALERT_TABLE'] = '{}_streamalert_alerts'.format(prefix)

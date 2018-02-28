@@ -26,11 +26,12 @@ from stream_alert.shared import backoff_handlers
 from stream_alert.rule_processor import LOGGER
 
 
-class StreamSink(object):
-    """StreamSink class is used for sending actual alerts to the alert processor"""
+class AlertForwarder(object):
+    """Sends alerts to the Alert Processor and the alerts Dynamo table."""
+    # TODO: Do not send to Alert Processor after Alert Merger is implemented
 
     def __init__(self, env):
-        """StreamSink initializer
+        """Initialize the Forwarder with the boto3 clients and resource names.
 
         Args:
             env (dict): loaded dictionary containing environment information
@@ -41,8 +42,8 @@ class StreamSink(object):
         self.function = os.environ['ALERT_PROCESSOR']
         self.table = os.environ['ALERT_TABLE']
 
-    def _sink_lambda(self, alerts):
-        """Original sink: Invoke alert processor directly
+    def _send_to_lambda(self, alerts):
+        """DEPRECATED: Invoke Alert Processor directly
 
         Sends a message to the alert processor with the following JSON format:
             {
@@ -159,7 +160,7 @@ class StreamSink(object):
 
         return False
 
-    def _sink_dynamo(self, alerts):
+    def _send_to_dynamo(self, alerts):
         """Write alerts in batches to Dynamo."""
         for batch_num, batch in enumerate(self._alert_batches(alerts), start=1):
             LOGGER.info('Sending batch #%d to Dynamo with %d alert(s)',
@@ -167,16 +168,16 @@ class StreamSink(object):
             if not self._batch_write(batch):
                 LOGGER.error('Unable to save alert batch %s', json.dumps(batch))
 
-    def sink(self, alerts):
-        """Sink triggered alerts from the StreamRules engine.
+    def send_alerts(self, alerts):
+        """Send alerts to the Alert Processor and to the alerts Dynamo table.
 
         Args:
             alerts (list): A list of dictionaries representing json alerts.
         """
-        self._sink_lambda(alerts)
+        self._send_to_lambda(alerts)
 
         # While we are testing this, exceptions should be logged but not raise errors.
         try:
-            self._sink_dynamo(alerts)
+            self._send_to_dynamo(alerts)
         except Exception:  # pylint: disable=broad-except
             LOGGER.exception('Error saving alerts to Dynamo')
