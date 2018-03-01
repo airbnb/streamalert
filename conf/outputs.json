@@ -5,6 +5,9 @@
   "aws-s3": {
     "sample-bucket": "sample.bucket.name"
   },
+  "komand": [
+    "sample-integration"
+  ],
   "pagerduty": [
     "sample-integration"
   ],

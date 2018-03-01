@@ -91,6 +91,7 @@ def test_output_loading():
         'aws-s3',
         'github',
         'jira',
+        'komand',
         'pagerduty',
         'pagerduty-v2',
         'pagerduty-incident',
