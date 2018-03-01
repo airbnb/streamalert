@@ -177,23 +177,30 @@ class TestAlertForwarder(object):
         assert_equal(1, len(result[1][self.ALERT_TABLE]))  # 1 alert in the second batch.
 
     @patch('stream_alert.rule_processor.alert_forward.LOGGER')
-    def test_dynamo_unprocessed_alerts(self, log_mock):
+    @patch('stream_alert.rule_processor.alert_forward.MetricLogger.log_metric')
+    def test_dynamo_unprocessed_alerts(self, metric_log_mock, log_mock):
         """AlertForwarder - Dynamo - Retry unprocessed alerts"""
 
         def mock_batch_write_item(**kwargs):
             """Mock client_dynamo.batch_write_item to always return all items unprocessed."""
             return {
                 'ResponseMetadata': {'HTTPStatusCode': 200},
-                'UnprocessedItems': {self.ALERT_TABLE: kwargs['RequestItems']}
+                'UnprocessedItems': kwargs['RequestItems']
             }
 
         self.boto_mock.return_value.batch_write_item.side_effect = mock_batch_write_item
 
-        self.forwarder._send_to_dynamo(self._generate_alerts(1))
+        self.forwarder._send_to_dynamo(self._generate_alerts(30))
 
         log_mock.assert_has_calls([
-            call.info('Sending batch %d to Dynamo with %d alert(s)', 1, 1),
+            call.info('Sending batch %d to Dynamo with %d alert(s)', 1, 25),
+            call.error('Unable to save alert batch; unprocessed items remain: %s', ANY),
+            call.info('Sending batch %d to Dynamo with %d alert(s)', 2, 5),
             call.error('Unable to save alert batch; unprocessed items remain: %s', ANY)
+        ])
+        metric_log_mock.assert_has_calls([
+            call('rule_processor', 'UnprocessedAlerts', 25),
+            call('rule_processor', 'UnprocessedAlerts', 5)
         ])
 
     @patch('stream_alert.rule_processor.alert_forward.LOGGER')

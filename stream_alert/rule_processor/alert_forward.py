@@ -23,7 +23,8 @@ import boto3
 from botocore.exceptions import ClientError
 
 from stream_alert.shared import backoff_handlers
-from stream_alert.rule_processor import LOGGER
+from stream_alert.shared.metrics import MetricLogger
+from stream_alert.rule_processor import FUNCTION_NAME, LOGGER
 
 
 class AlertForwarder(object):
@@ -51,18 +52,15 @@ class AlertForwarder(object):
 
         Sends a message to the alert processor with the following JSON format:
             {
-                "record": record,
-                "metadata": {
-                    "rule_name": rule.rule_name,
-                    "rule_description": rule.rule_function.__doc__,
-                    "log": str(payload.log_source),
-                    "outputs": rule.outputs,
-                    "type": payload.type,
-                    "source": {
-                        "service": payload.service,
-                        "entity": payload.entity
-                    }
-                }
+                'record': record,
+                'rule_name': rule.rule_name,
+                'rule_description': rule.rule_function.__doc__ or DEFAULT_RULE_DESCRIPTION,
+                'log_source': str(payload.log_source),
+                'log_type': payload.type,
+                'outputs': rule.outputs,
+                'source_service': payload.service(),
+                'source_entity': payload.entity,
+                'context': rule.context
             }
         """
         for alert in alerts:
@@ -182,6 +180,8 @@ class AlertForwarder(object):
             if not self._batch_write():
                 LOGGER.error('Unable to save alert batch; unprocessed items remain: %s',
                              json.dumps(self.unprocessed_items))
+                MetricLogger.log_metric(FUNCTION_NAME, MetricLogger.UNPROCESSED_ALERTS,
+                                        len(self.unprocessed_items[self.table]))
 
     def send_alerts(self, alerts):
         """Send alerts to the Alert Processor and to the alerts Dynamo table.
