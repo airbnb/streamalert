@@ -17,12 +17,12 @@ from logging import DEBUG as LOG_LEVEL_DEBUG
 import json
 
 from stream_alert.rule_processor import FUNCTION_NAME, LOGGER
+from stream_alert.rule_processor.alert_forward import AlertForwarder
 from stream_alert.rule_processor.classifier import StreamClassifier
 from stream_alert.rule_processor.config import load_config, load_env
 from stream_alert.rule_processor.firehose import StreamAlertFirehose
 from stream_alert.rule_processor.payload import load_stream_payload
 from stream_alert.rule_processor.rules_engine import StreamRules
-from stream_alert.rule_processor.sink import StreamSink
 from stream_alert.shared.metrics import MetricLogger
 
 
@@ -47,9 +47,9 @@ class StreamAlert(object):
         # Load the environment from the context arn
         self.env = load_env(context)
 
-        # Instantiate the sink here to handle sending the triggered alerts to the
+        # Instantiate the send_alerts here to handle sending the triggered alerts to the
         # alert processor
-        self.sinker = StreamSink(self.env)
+        self.alert_forwarder = AlertForwarder(self.env)
 
         # Instantiate a classifier that is used for this run
         self.classifier = StreamClassifier(config=self.config)
@@ -129,7 +129,7 @@ class StreamAlert(object):
         record_alerts = self._rule_engine.threat_intel_match(payload_with_normalized_records)
         self._alerts.extend(record_alerts)
         if record_alerts and self.enable_alert_processor:
-            self.sinker.sink(record_alerts)
+            self.alert_forwarder.send_alerts(record_alerts)
 
         MetricLogger.log_metric(FUNCTION_NAME,
                                 MetricLogger.TOTAL_RECORDS,
@@ -219,6 +219,6 @@ class StreamAlert(object):
             self._alerts.extend(record_alerts)
 
             if self.enable_alert_processor:
-                self.sinker.sink(record_alerts)
+                self.alert_forwarder.send_alerts(record_alerts)
 
         return payload_with_normalized_records

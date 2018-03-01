@@ -3,6 +3,13 @@
 locals {
   firehose_arn_prefix = "arn:aws:firehose:${var.region}:${var.account_id}"
   lambda_arn_prefix   = "arn:aws:lambda:${var.region}:${var.account_id}:function"
+
+  // Terraform is upset if you try to index into an empty list, even if the resource count = 0.
+  // https://github.com/hashicorp/terraform/issues/11210
+  // As a workaround, we append an unused dummy element to the output lists.
+
+  lambda_outputs = "${concat(var.output_lambda_functions, list("unused"))}"
+  s3_outputs     = "${concat(var.output_s3_buckets, list("unused"))}"
 }
 
 // Allow the Alert Processor to retrieve and decrypt output secrets
@@ -68,7 +75,7 @@ data "aws_iam_policy_document" "default_outputs" {
 // Allow the Alert Processor to invoke the configured output Lambda functions
 resource "aws_iam_role_policy" "invoke_lambda_outputs" {
   count  = "${length(var.output_lambda_functions)}"
-  name   = "LambdaInvoke_${element(var.output_lambda_functions, count.index)}"
+  name   = "LambdaInvoke_${element(local.lambda_outputs, count.index)}"
   role   = "${var.role_id}"
   policy = "${element(data.aws_iam_policy_document.invoke_lambda_outputs.*.json, count.index)}"
 }
@@ -79,20 +86,20 @@ data "aws_iam_policy_document" "invoke_lambda_outputs" {
   statement {
     effect    = "Allow"
     actions   = ["lambda:InvokeFunction"]
-    resources = ["${local.lambda_arn_prefix}:${element(var.output_lambda_functions, count.index)}"]
+    resources = ["${local.lambda_arn_prefix}:${element(local.lambda_outputs, count.index)}"]
   }
 }
 
 // Allow the Alert Processor to write alerts to the configured output S3 buckets
 resource "aws_iam_role_policy" "write_to_s3_outputs" {
   count  = "${length(var.output_s3_buckets)}"
-  name   = "S3PutObject_${element(var.output_s3_buckets, count.index)}"
+  name   = "S3PutObject_${element(local.s3_outputs, count.index)}"
   role   = "${var.role_id}"
   policy = "${element(data.aws_iam_policy_document.write_to_s3_outputs.*.json, count.index)}"
 }
 
 data "aws_iam_policy_document" "write_to_s3_outputs" {
-  count = "${length(var.output_lambda_functions)}"
+  count = "${length(var.output_s3_buckets)}"
 
   statement {
     effect = "Allow"
@@ -104,8 +111,8 @@ data "aws_iam_policy_document" "write_to_s3_outputs" {
     ]
 
     resources = [
-      "arn:aws:s3:::${element(var.output_s3_buckets, count.index)}",
-      "arn:aws:s3:::${element(var.output_s3_buckets, count.index)}/*",
+      "arn:aws:s3:::${element(local.s3_outputs, count.index)}",
+      "arn:aws:s3:::${element(local.s3_outputs, count.index)}/*",
     ]
   }
 }
