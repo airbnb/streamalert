@@ -1479,5 +1479,17 @@
         ]
       }
     }
+  },
+  "webhook": {
+    "schema": {
+      "webhookApiId": "string",
+      "url": "string",
+      "sourceIp": "string",
+      "userAgent": "string",
+      "requestTime": "string",
+      "querystring": "string",
+      "detail": {}
+    },
+    "parser": "json"
   }
 }
