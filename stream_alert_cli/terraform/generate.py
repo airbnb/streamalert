@@ -163,12 +163,16 @@ def generate_main(**kwargs):
     # Setup Firehose Delivery Streams
     generate_firehose(config, main_dict, logging_bucket)
 
-    # Configure global resources like Firehose alert delivery
+    # Configure global resources like Firehose alert delivery and alerts table
     main_dict['module']['globals'] = {
         'source': 'modules/tf_stream_alert_globals',
         'account_id': config['global']['account']['aws_account_id'],
         'region': config['global']['account']['region'],
-        'prefix': config['global']['account']['prefix']
+        'prefix': config['global']['account']['prefix'],
+        'alerts_table_read_capacity': (
+            config['global']['infrastructure']['alerts_table']['read_capacity']),
+        'alerts_table_write_capacity': (
+            config['global']['infrastructure']['alerts_table']['write_capacity'])
     }
 
     # KMS Key and Alias creation

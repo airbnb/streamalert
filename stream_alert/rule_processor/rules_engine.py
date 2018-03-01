@@ -64,7 +64,7 @@ class StreamRules(object):
 
         A rule maps events (by `logs`) to a function that accepts an event
         and returns a boolean. If the function returns `True`, then the event is
-        passed on to the sink(s). If the function returns `False`, the event is
+        passed on to the alert forwarder. If the function returns `False`, the event is
         dropped.
         """
         def decorator(rule):
