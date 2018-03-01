@@ -917,9 +917,10 @@ def stream_alert_test(options, config):
             options (namedtuple): CLI options (debug, processor, etc)
             context (namedtuple): A constructed aws context object
         """
-        # The Rule Processor sink is instantiated with the alert processor from the environment:
-        os.environ['ALERT_PROCESSOR'] = '{}_{}'.format(
-            config['global']['account']['prefix'], '_streamalert_alert_processor')
+        # The Rule Processor uses env variables to determine where alerts should be forwarded:
+        prefix = config['global']['account']['prefix']
+        os.environ['ALERT_PROCESSOR'] = '{}_streamalert_alert_processor'.format(prefix)
+        os.environ['ALERT_TABLE'] = '{}_streamalert_alerts'.format(prefix)
 
         if options.debug:
             # TODO(jack): Currently there is no (clean) way to set

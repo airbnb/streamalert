@@ -4,3 +4,35 @@ module "alerts_firehose" {
   prefix     = "${var.prefix}"
   region     = "${var.region}"
 }
+
+// TODO: Autoscaling
+resource "aws_dynamodb_table" "alerts_table" {
+  name           = "${var.prefix}_streamalert_alerts"
+  read_capacity  = "${var.alerts_table_read_capacity}"
+  write_capacity = "${var.alerts_table_write_capacity}"
+  hash_key       = "RuleName"
+  range_key      = "Timestamp"
+
+  // Only the hash key and range key attributes need to be defined here.
+
+  attribute {
+    name = "RuleName"
+    type = "S"
+  }
+
+  attribute {
+    name = "Timestamp"
+    type = "S"
+  }
+
+  // Enable expriation time while testing Dynamo table for alerts
+  // TODO: Remove TTL once Alert Merger is implemented
+  ttl {
+    attribute_name = "TTL"
+    enabled        = true
+  }
+
+  tags {
+    Name = "StreamAlert"
+  }
+}

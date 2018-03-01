@@ -47,6 +47,21 @@ data "aws_iam_policy_document" "rule_processor_invoke_alert_proc" {
   }
 }
 
+// IAM Role Policy: Allow the Rule Processor to save alerts to dynamo.
+resource "aws_iam_role_policy" "save_alerts_to_dynamo" {
+  name   = "SaveAlertsToDynamo"
+  role   = "${aws_iam_role.streamalert_rule_processor_role.id}"
+  policy = "${data.aws_iam_policy_document.save_alerts_to_dynamo.json}"
+}
+
+data "aws_iam_policy_document" "save_alerts_to_dynamo" {
+  statement {
+    effect    = "Allow"
+    actions   = ["dynamodb:BatchWriteItem"]
+    resources = ["arn:aws:dynamodb:${var.region}:${var.account_id}:table/${var.prefix}_streamalert_alerts"]
+  }
+}
+
 // IAM Role Policy: Allow the Rule Processor to put data on Firehose
 resource "aws_iam_role_policy" "streamalert_rule_processor_firehose" {
   name = "FirehoseWriteData"
