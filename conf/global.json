@@ -6,6 +6,10 @@
     "region": "us-east-1"
   },
   "infrastructure": {
+    "alerts_table": {
+      "read_capacity": 5,
+      "write_capacity": 5
+    },
     "monitoring": {
       "create_sns_topic": true
     }
