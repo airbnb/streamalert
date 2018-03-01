@@ -48,7 +48,7 @@ class AlertForwarder(object):
         self.unprocessed_items = None
 
     def _send_to_lambda(self, alerts):
-        """DEPRECATED: Invoke Alert Processor directly
+        """Invoke Alert Processor directly
 
         Sends a message to the alert processor with the following JSON format:
             {
@@ -148,7 +148,7 @@ class AlertForwarder(object):
                               on_backoff=backoff_handlers.backoff_handler,
                               on_success=backoff_handlers.success_handler,
                               on_giveup=backoff_handlers.giveup_handler)
-        def decorated_batch_write(cls):
+        def decorated_batch_write(forwarder):
             """batch_write_item with the unprocessed_items from the AlertForwarder instance.
 
             There are 2 different errors to handle here:
@@ -160,14 +160,15 @@ class AlertForwarder(object):
                     batch_write will run again, but only with the remaining unprocessed items.
 
             Args:
-                cls (AlertForwarder): Instance of the AlertForwarder
+                forwarder (AlertForwarder): Instance of the AlertForwarder
 
             Returns:
                 (bool) True if the batch write succeeded, False if there were UnprocessedItems.
             """
-            response = cls.client_dynamo.batch_write_item(RequestItems=cls.unprocessed_items)
-            cls.unprocessed_items = response['UnprocessedItems']
-            return len(cls.unprocessed_items) == 0
+            response = forwarder.client_dynamo.batch_write_item(
+                RequestItems=forwarder.unprocessed_items)
+            forwarder.unprocessed_items = response['UnprocessedItems']
+            return len(forwarder.unprocessed_items) == 0
 
         return decorated_batch_write(self)
 

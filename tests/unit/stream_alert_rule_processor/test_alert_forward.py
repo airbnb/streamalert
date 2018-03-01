@@ -36,7 +36,7 @@ class TestAlertForwarder(object):
     @classmethod
     def setup_class(cls):
         """Setup the class before any methods"""
-        patcher = patch('stream_alert.rule_processor.alert_forward.boto3.client')
+        patcher = patch('boto3.client')
         cls.boto_mock = patcher.start()
         context = get_mock_context()
         env = load_env(context)
