@@ -30,11 +30,12 @@ from stream_alert.shared.backoff_handlers import (
     giveup_handler
 )
 
-def events_v2_data(routing_key, **kwargs):
+def events_v2_data(routing_key, with_record=True, **kwargs):
     """Helper method to generate the payload to create an event using PagerDuty Events API v2
 
     Keyword Args:
         routing_key (str): Routing key for this PagerDuty integration
+        with_record (boolean): Option to add the record data or not
         descriptor (str): Service descriptor (ie: slack channel, pd integration)
         rule_name (str): Name of the triggered rule
         alert (dict): Alert relevant to the triggered rule
@@ -45,9 +46,10 @@ def events_v2_data(routing_key, **kwargs):
     summary = 'StreamAlert Rule Triggered - {}'.format(kwargs['rule_name'])
 
     details = {
-        'rule_description': kwargs['alert']['rule_description'],
-        'record': kwargs['alert']['record']
+        'description': kwargs['alert']['rule_description']
     }
+    if with_record:
+        details['record'] = kwargs['alert']['record']
     payload = {
         'summary': summary,
         'source': kwargs['alert']['log_source'],
@@ -115,7 +117,7 @@ class PagerDutyOutput(OutputDispatcher):
         message = 'StreamAlert Rule Triggered - {}'.format(kwargs['rule_name'])
         rule_desc = kwargs['alert']['rule_description']
         details = {
-            'rule_description': rule_desc,
+            'description': rule_desc,
             'record': kwargs['alert']['record']
         }
         data = {
@@ -650,7 +652,8 @@ class PagerDutyIncidentOutput(OutputDispatcher):
         incident_id = incident_json.get('incident', {}).get('id')
 
         # Create alert to hold all the incident details
-        event_data = events_v2_data(creds['integration_key'], **kwargs)
+        with_record = rule_context.get('with_record', True)
+        event_data = events_v2_data(creds['integration_key'], with_record, **kwargs)
         event = self._create_event(event_data)
         if not event:
             LOGGER.error('Could not create incident event, %s', self.__service__)
