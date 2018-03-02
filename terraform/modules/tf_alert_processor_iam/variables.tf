@@ -29,3 +29,15 @@ variable "output_s3_buckets" {
   default     = []
   description = "Optional list of configured S3 bucket outputs (bucket names)"
 }
+
+variable "output_sns_topics" {
+  type        = "list"
+  default     = []
+  description = "Optional list of configured SNS outputs (topic names)"
+}
+
+variable "output_sqs_queues" {
+  type        = "list"
+  default     = []
+  description = "Optional list of configured SQS outputs (queue names)"
+}

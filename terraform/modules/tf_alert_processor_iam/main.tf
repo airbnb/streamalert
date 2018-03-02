@@ -3,6 +3,8 @@
 locals {
   firehose_arn_prefix = "arn:aws:firehose:${var.region}:${var.account_id}"
   lambda_arn_prefix   = "arn:aws:lambda:${var.region}:${var.account_id}:function"
+  sns_arn_prefix      = "arn:aws:sns:${var.region}:${var.account_id}"
+  sqs_arn_prefix      = "arn:aws:sqs:${var.region}:${var.account_id}"
 
   // Terraform is upset if you try to index into an empty list, even if the resource count = 0.
   // https://github.com/hashicorp/terraform/issues/11210
@@ -10,6 +12,8 @@ locals {
 
   lambda_outputs = "${concat(var.output_lambda_functions, list("unused"))}"
   s3_outputs     = "${concat(var.output_s3_buckets, list("unused"))}"
+  sns_outputs    = "${concat(var.output_sns_topics, list("unused"))}"
+  sqs_outputs    = "${concat(var.output_sqs_queues, list("unused"))}"
 }
 
 // Allow the Alert Processor to retrieve and decrypt output secrets
@@ -114,5 +118,41 @@ data "aws_iam_policy_document" "write_to_s3_outputs" {
       "arn:aws:s3:::${element(local.s3_outputs, count.index)}",
       "arn:aws:s3:::${element(local.s3_outputs, count.index)}/*",
     ]
+  }
+}
+
+// Allow the Alert Processor to publish to the configured SNS topics
+resource "aws_iam_role_policy" "publish_to_sns_topics" {
+  count  = "${length(var.output_sns_topics)}"
+  name   = "SNSPublish_${element(local.sns_outputs, count.index)}"
+  role   = "${var.role_id}"
+  policy = "${element(data.aws_iam_policy_document.publish_to_sns_topics.*.json, count.index)}"
+}
+
+data "aws_iam_policy_document" "publish_to_sns_topics" {
+  count = "${length(var.output_sns_topics)}"
+
+  statement {
+    effect    = "Allow"
+    actions   = ["sns:Publish"]
+    resources = ["${local.sns_arn_prefix}:${element(local.sns_outputs, count.index)}"]
+  }
+}
+
+// Allow the Alert Processor to send to the configured SQS queues
+resource "aws_iam_role_policy" "send_to_sqs_queues" {
+  count  = "${length(var.output_sqs_queues)}"
+  name   = "SQSSend_${element(local.sqs_outputs, count.index)}"
+  role   = "${var.role_id}"
+  policy = "${element(data.aws_iam_policy_document.send_to_sqs_queues.*.json, count.index)}"
+}
+
+data "aws_iam_policy_document" "send_to_sqs_queues" {
+  count = "${length(var.output_sqs_queues)}"
+
+  statement {
+    effect    = "Allow"
+    actions   = ["sqs:SendMessage*"]
+    resources = ["${local.sqs_arn_prefix}:${element(local.sqs_outputs, count.index)}"]
   }
 }
