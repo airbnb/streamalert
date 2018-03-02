@@ -44,12 +44,11 @@ def events_v2_data(routing_key, with_record=True, **kwargs):
             dict: Contains JSON blob to be used as event
     """
     summary = 'StreamAlert Rule Triggered - {}'.format(kwargs['rule_name'])
-
-    details = {
-        'description': kwargs['alert']['rule_description']
-    }
+    details = OrderedDict()
+    details['description'] = kwargs['alert']['rule_description']
     if with_record:
         details['record'] = kwargs['alert']['record']
+
     payload = {
         'summary': summary,
         'source': kwargs['alert']['log_source'],
