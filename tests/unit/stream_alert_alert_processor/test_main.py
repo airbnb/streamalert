@@ -68,7 +68,9 @@ def test_load_output_config():
     config = _load_output_config('tests/unit/conf/outputs.json')
 
     assert_equal(set(config.keys()), {
-        'aws-firehose', 'aws-s3', 'aws-lambda', 'pagerduty', 'phantom', 'slack'})
+        'aws-firehose', 'aws-s3', 'aws-lambda', 'aws-sns', 'aws-sqs',
+        'pagerduty', 'phantom', 'slack'
+    })
 
 
 def test_sort_dict():

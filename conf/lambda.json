@@ -16,7 +16,9 @@
     },
     "outputs": {
       "aws-lambda": [],
-      "aws-s3": []
+      "aws-s3": [],
+      "aws-sns": [],
+      "aws-sqs": []
     },
     "source_bucket": "PREFIX_GOES_HERE.streamalert.source",
     "source_current_hash": "<auto_generated>",

@@ -38,6 +38,8 @@ def test_load_output_config():
         u'aws-firehose',
         u'aws-lambda',
         u'aws-s3',
+        u'aws-sns',
+        u'aws-sqs',
         u'pagerduty',
         u'phantom',
         u'slack']

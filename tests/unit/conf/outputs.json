@@ -9,6 +9,12 @@
   "aws-s3": {
     "unit_test_bucket": "unit.test.bucket.name"
   },
+  "aws-sns": {
+    "unit_test_topic": "unit_test_topic_name"
+  },
+  "aws-sqs": {
+    "unit_test_queue": "unit_test_queue_name"
+  },
   "pagerduty": [
     "unit_test_pagerduty"
   ],

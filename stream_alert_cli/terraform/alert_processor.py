@@ -76,7 +76,9 @@ def generate_alert_processor(config):
         'role_id': '${module.alert_processor_lambda.role_id}',
         'kms_key_arn': '${aws_kms_key.stream_alert_secrets.arn}',
         'output_lambda_functions': outputs_config.get('aws-lambda', []),
-        'output_s3_buckets': outputs_config.get('aws-s3', [])
+        'output_s3_buckets': outputs_config.get('aws-s3', []),
+        'output_sns_topics': outputs_config.get('aws-sns', []),
+        'output_sqs_queues': outputs_config.get('aws-sqs', [])
     }
 
     # Set variables for the Lambda module

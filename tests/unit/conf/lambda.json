@@ -16,10 +16,16 @@
     },
     "outputs": {
       "aws-lambda": [
-        "test-lambda-output"
+        "unit_test_lambda"
       ],
       "aws-s3": [
-        "test-s3-output"
+        "unit_test_bucket"
+      ],
+      "aws-sns": [
+        "unit_test_topic"
+      ],
+      "aws-sqs": [
+        "unit_test_queue"
       ]
     },
     "source_bucket": "unit.testing.streamalert.source",
