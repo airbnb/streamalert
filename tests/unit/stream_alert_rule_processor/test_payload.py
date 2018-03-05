@@ -26,6 +26,7 @@ from nose.tools import (
     assert_false,
     assert_is_instance,
     assert_is_none,
+    assert_true,
     raises,
     with_setup
 )
@@ -230,14 +231,26 @@ def test_get_object(log_mock, _):
 
 @patch('stream_alert.rule_processor.payload.boto3.client')
 @patch('stream_alert.rule_processor.payload.S3Payload._read_downloaded_s3_object')
-@patch('logging.Logger.info')
-def test_s3_download_object(log_mock, *_):
+def test_s3_download_object(*_):
     """S3Payload - Download Object"""
-    raw_record = make_s3_raw_record('unit_bucket_name', 'unit_key_name')
-    s3_payload = load_stream_payload('s3', 'unit_key_name', raw_record)
-    s3_payload._download_object('us-east-1', 'unit_bucket_name', 'unit_key_name')
+    key = 'test/unit/s3-object.gz'
+    raw_record = make_s3_raw_record('unit_bucket_name', key)
+    s3_payload = load_stream_payload('s3', key, raw_record)
+    S3Payload.s3_object_size = (1024 * 1024)
+    downloaded_path = s3_payload._download_object(
+        'us-east-1', 'unit_bucket_name', key)
 
-    assert_equal(log_mock.call_args_list[1][0][0], 'Completed download in %s seconds')
+    assert_true(downloaded_path.endswith('test-unit-s3-object.gz'))
+
+
+@patch('stream_alert.rule_processor.payload.boto3.client')
+@patch('stream_alert.rule_processor.payload.S3Payload._read_downloaded_s3_object')
+def test_s3_download_object_zero_size(*_):
+    """S3Payload - Download Object of Zero Size"""
+    raw_record = make_s3_raw_record('unit_bucket_name', 'unit_key_name', 0)
+    s3_payload = load_stream_payload('s3', 'unit_key_name', raw_record)
+
+    assert_is_none(s3_payload._download_object('us-east-1', 'unit_bucket_name', 'unit_key_name'))
 
 
 @with_setup(setup=None, teardown=teardown_s3)
