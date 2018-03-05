@@ -140,7 +140,7 @@ class PhantomOutput(OutputDispatcher):
         """
         creds = self._load_creds(kwargs['descriptor'])
         if not creds:
-            return self._log_status(False)
+            return self._log_status(False, kwargs['descriptor'])
 
         headers = {"ph-auth-token": creds['ph_auth_token']}
         rule_desc = kwargs['alert']['rule_description']
@@ -162,4 +162,4 @@ class PhantomOutput(OutputDispatcher):
             except OutputRequestFailure:
                 success = False
 
-        return self._log_status(success)
+        return self._log_status(success, kwargs['descriptor'])

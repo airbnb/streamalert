@@ -39,7 +39,7 @@ def test_handler_run(run_mock):
 
     # This test will load the actual config, so we should compare the
     # function call against the same config here.
-    run_mock.assert_called_with(None, REGION, FUNCTION_NAME, _load_output_config())
+    run_mock.assert_called_with(None, REGION, '5'*12, FUNCTION_NAME, _load_output_config())
 
 
 @patch('logging.Logger.error')

@@ -16,7 +16,7 @@ limitations under the License.
 # pylint: disable=abstract-class-instantiated,protected-access,attribute-defined-outside-init,no-self-use
 import boto3
 from mock import patch
-from moto import mock_s3, mock_lambda, mock_kinesis
+from moto import mock_kinesis, mock_lambda, mock_s3, mock_sns, mock_sqs
 from nose.tools import (
     assert_equal,
     assert_false,
@@ -29,10 +29,12 @@ from stream_alert.alert_processor.outputs.aws import (
     AWSOutput,
     KinesisFirehoseOutput,
     LambdaOutput,
-    S3Output
+    S3Output,
+    SNSOutput,
+    SQSOutput
 )
 from stream_alert_cli.helpers import create_lambda_function
-from tests.unit.stream_alert_alert_processor import CONFIG, FUNCTION_NAME, REGION
+from tests.unit.stream_alert_alert_processor import ACCOUNT_ID, CONFIG, FUNCTION_NAME, REGION
 from tests.unit.stream_alert_alert_processor.helpers import get_alert
 
 
@@ -57,33 +59,6 @@ class TestAWSOutput(object):
         assert_is_not_none(formatted_config.get('unit_test_bucket'))
 
 
-@mock_s3
-class TestS3Ouput(object):
-    """Test class for S3Output"""
-    DESCRIPTOR = 'unit_test_bucket'
-    SERVICE = 'aws-s3'
-
-    def setup(self):
-        """Setup before each method"""
-        self._dispatcher = S3Output(REGION, FUNCTION_NAME, CONFIG)
-        bucket = CONFIG[self.SERVICE][self.DESCRIPTOR]
-        boto3.client('s3', region_name=REGION).create_bucket(Bucket=bucket)
-
-    def test_locals(self):
-        """S3Output local variables"""
-        assert_equal(self._dispatcher.__class__.__name__, 'S3Output')
-        assert_equal(self._dispatcher.__service__, self.SERVICE)
-
-    @patch('logging.Logger.info')
-    def test_dispatch(self, log_mock):
-        """S3Output - Dispatch Success"""
-        assert_true(self._dispatcher.dispatch(descriptor=self.DESCRIPTOR,
-                                              rule_name='rule_name',
-                                              alert=get_alert()))
-
-        log_mock.assert_called_with('Successfully sent alert to %s', self.SERVICE)
-
-
 @mock_kinesis
 class TestFirehoseOutput(object):
     """Test class for AWS Kinesis Firehose"""
@@ -92,7 +67,7 @@ class TestFirehoseOutput(object):
 
     def setup(self):
         """Setup before each method"""
-        self._dispatcher = KinesisFirehoseOutput(REGION, FUNCTION_NAME, CONFIG)
+        self._dispatcher = KinesisFirehoseOutput(REGION, ACCOUNT_ID, FUNCTION_NAME, CONFIG)
         delivery_stream = CONFIG[self.SERVICE][self.DESCRIPTOR]
         boto3.client('firehose', region_name=REGION).create_delivery_stream(
             DeliveryStreamName=delivery_stream,
@@ -120,7 +95,8 @@ class TestFirehoseOutput(object):
                                               rule_name='rule_name',
                                               alert=get_alert()))
 
-        log_mock.assert_called_with('Successfully sent alert to %s', self.SERVICE)
+        log_mock.assert_called_with('Successfully sent alert to %s:%s',
+                                    self.SERVICE, self.DESCRIPTOR)
 
     def test_dispatch_ignore_large_payload(self):
         """Output Dispatch - Kinesis Firehose with Large Payload"""
@@ -132,14 +108,14 @@ class TestFirehoseOutput(object):
 
 
 @mock_lambda
-class TestLambdaOuput(object):
+class TestLambdaOutput(object):
     """Test class for LambdaOutput"""
     DESCRIPTOR = 'unit_test_lambda'
     SERVICE = 'aws-lambda'
 
     def setup(self):
         """Setup before each method"""
-        self._dispatcher = LambdaOutput(REGION, FUNCTION_NAME, CONFIG)
+        self._dispatcher = LambdaOutput(REGION, ACCOUNT_ID, FUNCTION_NAME, CONFIG)
         create_lambda_function(CONFIG[self.SERVICE][self.DESCRIPTOR], REGION)
 
     def test_locals(self):
@@ -154,7 +130,8 @@ class TestLambdaOuput(object):
                                               rule_name='rule_name',
                                               alert=get_alert()))
 
-        log_mock.assert_called_with('Successfully sent alert to %s', self.SERVICE)
+        log_mock.assert_called_with('Successfully sent alert to %s:%s',
+                                    self.SERVICE, self.DESCRIPTOR)
 
     @patch('logging.Logger.info')
     def test_dispatch_with_qualifier(self, log_mock):
@@ -165,4 +142,79 @@ class TestLambdaOuput(object):
                                               rule_name='rule_name',
                                               alert=get_alert()))
 
-        log_mock.assert_called_with('Successfully sent alert to %s', self.SERVICE)
+        log_mock.assert_called_with('Successfully sent alert to %s:%s',
+                                    self.SERVICE, alt_descriptor)
+
+
+@mock_s3
+class TestS3Output(object):
+    """Test class for S3Output"""
+    DESCRIPTOR = 'unit_test_bucket'
+    SERVICE = 'aws-s3'
+
+    def setup(self):
+        """Setup before each method"""
+        self._dispatcher = S3Output(REGION, ACCOUNT_ID, FUNCTION_NAME, CONFIG)
+        bucket = CONFIG[self.SERVICE][self.DESCRIPTOR]
+        boto3.client('s3', region_name=REGION).create_bucket(Bucket=bucket)
+
+    def test_locals(self):
+        """S3Output local variables"""
+        assert_equal(self._dispatcher.__class__.__name__, 'S3Output')
+        assert_equal(self._dispatcher.__service__, self.SERVICE)
+
+    @patch('logging.Logger.info')
+    def test_dispatch(self, log_mock):
+        """S3Output - Dispatch Success"""
+        assert_true(self._dispatcher.dispatch(descriptor=self.DESCRIPTOR,
+                                              rule_name='rule_name',
+                                              alert=get_alert()))
+
+        log_mock.assert_called_with('Successfully sent alert to %s:%s',
+                                    self.SERVICE, self.DESCRIPTOR)
+
+
+@mock_sns
+class TestSNSOutput(object):
+    """Test class for SNSOutput"""
+    DESCRIPTOR = 'unit_test_topic'
+    SERVICE = 'aws-sns'
+
+    def setup(self):
+        """Create the dispatcher and the mock SNS topic."""
+        self._dispatcher = SNSOutput(REGION, ACCOUNT_ID, FUNCTION_NAME, CONFIG)
+        topic_name = CONFIG[self.SERVICE][self.DESCRIPTOR]
+        boto3.client('sns', region_name=REGION).create_topic(Name=topic_name)
+
+    @patch('logging.Logger.info')
+    def test_dispatch(self, log_mock):
+        """SNSOutput - Dispatch Success"""
+        assert_true(self._dispatcher.dispatch(descriptor=self.DESCRIPTOR,
+                                              rule_name='rule_name',
+                                              alert=get_alert()))
+
+        log_mock.assert_called_with('Successfully sent alert to %s:%s',
+                                    self.SERVICE, self.DESCRIPTOR)
+
+
+@mock_sqs
+class TestSQSOutput(object):
+    """Test class for SQSOutput"""
+    DESCRIPTOR = 'unit_test_queue'
+    SERVICE = 'aws-sqs'
+
+    def setup(self):
+        """Create the dispatcher and the mock SQS queue."""
+        self._dispatcher = SQSOutput(REGION, ACCOUNT_ID, FUNCTION_NAME, CONFIG)
+        queue_name = CONFIG[self.SERVICE][self.DESCRIPTOR]
+        boto3.client('sqs', region_name=REGION).create_queue(QueueName=queue_name)
+
+    @patch('logging.Logger.info')
+    def test_dispatch(self, log_mock):
+        """SQSOutput - Dispatch Success"""
+        assert_true(self._dispatcher.dispatch(descriptor=self.DESCRIPTOR,
+                                              rule_name='rule_name',
+                                              alert=get_alert()))
+
+        log_mock.assert_called_with('Successfully sent alert to %s:%s',
+                                    self.SERVICE, self.DESCRIPTOR)

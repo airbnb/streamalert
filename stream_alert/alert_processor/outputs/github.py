@@ -80,7 +80,7 @@ class GithubOutput(OutputDispatcher):
         """
         credentials = self._load_creds(kwargs['descriptor'])
         if not credentials:
-            return self._log_status(False)
+            return self._log_status(False, kwargs['descriptor'])
 
         username_password = "{}:{}".format(credentials['username'],
                                            credentials['access_token'])
@@ -102,4 +102,4 @@ class GithubOutput(OutputDispatcher):
         except OutputRequestFailure:
             success = False
 
-        return self._log_status(success)
+        return self._log_status(success, kwargs['descriptor'])

@@ -34,7 +34,8 @@ from stream_alert.alert_processor.outputs.output_base import (
 )
 from stream_alert.alert_processor.outputs.aws import S3Output
 from stream_alert_cli.helpers import encrypt_with_kms, put_mock_creds, put_mock_s3_object
-from tests.unit.stream_alert_alert_processor import CONFIG, FUNCTION_NAME, KMS_ALIAS, REGION
+from tests.unit.stream_alert_alert_processor import \
+    ACCOUNT_ID, CONFIG, FUNCTION_NAME, KMS_ALIAS, REGION
 from tests.unit.stream_alert_alert_processor.helpers import remove_temp_secrets
 
 
@@ -68,6 +69,7 @@ def test_create_dispatcher():
     dispatcher = StreamAlertOutput.create_dispatcher(
         'aws-s3',
         REGION,
+        ACCOUNT_ID,
         FUNCTION_NAME,
         CONFIG
     )
@@ -89,6 +91,8 @@ def test_output_loading():
         'aws-firehose',
         'aws-lambda',
         'aws-s3',
+        'aws-sns',
+        'aws-sqs',
         'github',
         'jira',
         'komand',
@@ -108,7 +112,7 @@ class TestOutputDispatcher(object):
     @patch.object(OutputDispatcher, '__abstractmethods__', frozenset())
     def setup(self):
         """Setup before each method"""
-        self._dispatcher = OutputDispatcher(REGION, FUNCTION_NAME, CONFIG)
+        self._dispatcher = OutputDispatcher(REGION, ACCOUNT_ID, FUNCTION_NAME, CONFIG)
         self._descriptor = 'desc_test'
 
     def test_local_temp_dir(self):
@@ -157,14 +161,16 @@ class TestOutputDispatcher(object):
     @patch('logging.Logger.info')
     def test_log_status_success(self, log_mock):
         """OutputDispatcher - Log status success"""
-        self._dispatcher._log_status(True)
-        log_mock.assert_called_with('Successfully sent alert to %s', 'test_service')
+        self._dispatcher._log_status(True, self._descriptor)
+        log_mock.assert_called_with('Successfully sent alert to %s:%s',
+                                    'test_service', self._descriptor)
 
     @patch('logging.Logger.error')
     def test_log_status_failed(self, log_mock):
         """OutputDispatcher - Log status failed"""
-        self._dispatcher._log_status(False)
-        log_mock.assert_called_with('Failed to send alert to %s', 'test_service')
+        self._dispatcher._log_status(False, self._descriptor)
+        log_mock.assert_called_with('Failed to send alert to %s:%s',
+                                    'test_service', self._descriptor)
 
     @patch('requests.Response')
     def test_check_http_response(self, mock_response):
