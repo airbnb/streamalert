@@ -334,7 +334,7 @@ class SNSOutput(AWSOutput):
         # SNS topics can only be accessed via their ARN
         topic_name = self.config[self.__service__][kwargs['descriptor']]
         topic_arn = 'arn:aws:sns:{}:{}:{}'.format(self.region, self.account_id, topic_name)
-        topic = boto3.resource('sns').Topic(topic_arn)
+        topic = boto3.resource('sns', region_name=self.region).Topic(topic_arn)
 
         response = topic.publish(Message=json.dumps(kwargs['alert'], indent=2))
         return self._log_status(response, kwargs['descriptor'])
@@ -364,7 +364,7 @@ class SQSOutput(AWSOutput):
         queue_name = self.config[self.__service__][kwargs['descriptor']]
         queue_url = 'https://sqs.{}.amazonaws.com/{}/{}'.format(
             self.region, self.account_id, queue_name)
-        queue = boto3.resource('sqs').Queue(queue_url)
+        queue = boto3.resource('sqs', region_name=self.region).Queue(queue_url)
 
         response = queue.send_message(MessageBody=json.dumps(kwargs['alert']))
         return self._log_status(response, kwargs['descriptor'])
