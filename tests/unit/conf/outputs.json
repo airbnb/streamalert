@@ -4,7 +4,7 @@
   },
   "aws-lambda": {
     "unit_test_lambda": "unit_test_function",
-    "unit_test_lambda_qual": "unit_test_function:production"
+    "unit_test_lambda_qual": "unit_test_qualified_function:production"
   },
   "aws-s3": {
     "unit_test_bucket": "unit.test.bucket.name"

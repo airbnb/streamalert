@@ -37,10 +37,13 @@ class TestAlertProcessor(unittest.TestCase):
                 'alert_processor_iam': {
                     'account_id': '12345678910',
                     'kms_key_arn': '${aws_kms_key.stream_alert_secrets.arn}',
-                    'output_lambda_functions': ['unit_test_lambda'],
-                    'output_s3_buckets': ['unit_test_bucket'],
-                    'output_sns_topics': ['unit_test_topic'],
-                    'output_sqs_queues': ['unit_test_queue'],
+                    'output_lambda_functions': [
+                        'unit_test_function',
+                        'unit_test_qualified_function'
+                    ],
+                    'output_s3_buckets': ['unit.test.bucket.name'],
+                    'output_sns_topics': ['unit_test_topic_name'],
+                    'output_sqs_queues': ['unit_test_queue_name'],
                     'prefix': 'unit-testing',
                     'region': 'us-west-1',
                     'role_id': '${module.alert_processor_lambda.role_id}',
@@ -77,8 +80,12 @@ class TestAlertProcessor(unittest.TestCase):
 
     def test_generate_minimal_options(self):
         """CLI - Terraform Generate Alert Processor - Minimal Options"""
-        for key in ['log_level', 'log_retention_days', 'metric_alarms', 'outputs', 'vpc_config']:
+        # Remove extra Lambda options
+        for key in ['log_level', 'log_retention_days', 'metric_alarms', 'vpc_config']:
             del self.alert_proc_config[key]
+
+        # Remove all outputs from the config
+        self.config['outputs'] = {}
 
         result = alert_processor.generate_alert_processor(config=self.config)
 

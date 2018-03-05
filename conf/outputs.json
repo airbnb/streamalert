@@ -6,10 +6,10 @@
     "sample-bucket": "sample.bucket.name"
   },
   "aws-sns": {
-    "sample-topic": "topic-name"
+    "sample-topic": "sample-topic-name"
   },
   "aws-sqs": {
-    "sample-queue": "queue-name"
+    "sample-queue": "sample-queue-name"
   },
   "komand": [
     "sample-integration"

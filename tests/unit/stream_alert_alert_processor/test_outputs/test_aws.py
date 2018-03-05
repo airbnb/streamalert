@@ -137,7 +137,8 @@ class TestLambdaOutput(object):
     def test_dispatch_with_qualifier(self, log_mock):
         """LambdaOutput - Dispatch Success, With Qualifier"""
         alt_descriptor = '{}_qual'.format(self.DESCRIPTOR)
-        create_lambda_function(alt_descriptor, REGION)
+        create_lambda_function(CONFIG[self.SERVICE][alt_descriptor], REGION)
+
         assert_true(self._dispatcher.dispatch(descriptor=alt_descriptor,
                                               rule_name='rule_name',
                                               alert=get_alert()))
