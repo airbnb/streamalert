@@ -14,9 +14,11 @@ Stream monitored by StreamAlert.
 
 Setting up the IAM role
 -----------------------
+Create an IAM role for the webhook with the ability to call `PutRecord` against your Kinesis Stream.
+Replace `KINESIS_ARN` with your kinesis stream, such as `arn:aws:kinesis:us-east-1:111111111111:stream/prefix_cluster1_stream_alert_kinesis`
 
 .. code-block:: bash
-  :caption: `Commands to set up the IAM role`
+
   cat << EOF > assume_role.json
   {
       "Version": "2012-10-17",
@@ -46,7 +48,7 @@ Setting up the IAM role
               "Action": [
                   "kinesis:PutRecord"
               ],
-              "Resource": "*"
+              "Resource": "KINESIS_ARN"
           }
       ]
   }
@@ -58,15 +60,15 @@ Creating the webhook
 --------------------
 
 .. code-block:: bash
-  :caption: `Create the rest api`
+
   aws apigateway create-rest-api --name StreamWriter --description "Webhook that writes to the Kinesis Stream for StreamAlert" --endpoint-configuration types=REGIONAL
 
 
-This will return an API_ID, such as 4xmqlj1659, that you will need in future
-commands.
+This will return an `API_ID`, such as `4xmqlj1659`, that you will need in future
+commands.  Here's an example response showing the location of the `API_ID`.
 
 .. code-block:: json
-  :caption: `Sample output from create-rest-api`
+
   {
       "id": "API_ID",
       "name": "StreamWriter",
@@ -80,15 +82,17 @@ commands.
       }
   }
 
-Use that API_ID to find the id of resource created, which we'll call the
-PARENT_ID:
+Use that `API_ID` to find the id of resource created, which we'll call the
+`PARENT_ID`:
 
 .. code-block:: bash
-  :caption: `Get the id of the resource`
+
   aws apigateway get-resources --rest-api-id API_ID
 
+Sample response:
+
 .. code-block:: json
-  :caption: `Sample output from get-resources`
+
   {
       "items": [
           {
@@ -98,21 +102,21 @@ PARENT_ID:
       ]
   }
 
-Use the API_ID and the PARENT_ID to create a new resource that is used as the
-URL path on this domain for the webhook. In this case I'm using
-"mysecrethook".
+Use the `API_ID` and the `PARENT_ID` to create a new resource that is used as the
+URL path on this domain for the webhook. Replace `HOOK_PATH` with the path
+you want to use, such as `mysecrethook`.
 
 .. code-block:: bash
-  :caption: `Create the webhook`
-  aws apigateway create-resource --rest-api-id API_ID --parent-id PARENT_ID --path-part mysecrethook
 
-Use the RESOURCE_ID returned by this:
+  aws apigateway create-resource --rest-api-id API_ID --parent-id PARENT_ID --path-part HOOK_PATH
+
+In the following snippet, replace `API_ID`, `RESOURCE_ID`, `REGION`, and `ACCOUNT_ID`.
 
 .. code-block:: bash
-  :caption: `Configure the webhook`
+
+  aws apigateway put-method --rest-api-id API_ID --resource-id RESOURCE_ID --http-method POST --authorization-type NONE
+  
   aws apigateway put-method-response --rest-api-id API_ID --resource-id RESOURCE_ID --http-method POST --status-code 200 --response-models '{"application/json": "Empty"}'
-
-  aws apigateway put-integration-response --rest-api-id API_ID --resource-id RESOURCE_ID --http-method POST --status-code 200 --response-templates '{"application/json":""}' 
 
   cat << EOF > requestTemplate.json
   { 
@@ -126,15 +130,27 @@ Use the RESOURCE_ID returned by this:
       --http-method POST \
       --integration-http-method POST \
       --type AWS \
-      --uri "arn:aws:apigateway:us-east-1:kinesis:action/PutRecord" \
+      --uri "arn:aws:apigateway:REGION:kinesis:action/PutRecord" \
       --credentials "arn:aws:iam::ACCOUNT_ID:role/StreamWriter" \
       --request-templates file://requestTemplate.json \
       --passthrough-behavior NEVER
 
+  aws apigateway put-integration-response --rest-api-id API_ID --resource-id RESOURCE_ID --http-method POST --status-code 200 --response-templates '{"application/json":""}' 
 
   # Then, only after you've done the above, create the deployment
   aws apigateway create-deployment --rest-api-id API_ID --stage-name deployed
 
 You will now able to trigger your webhook by POST'ing to:
-https://API_ID.execute-api.us-east-1.amazonaws.com/deployed/mysecrethook
+https://API_ID.execute-api.REGION.amazonaws.com/deployed/HOOK_PATH
 
+For example:
+
+.. code-block:: bash
+  
+  curl -H "Content-Type: application/json" -X POST -d '{"test":"testdata"}' https://4xmqlj1659.execute-api.us-east-1.amazonaws.com/deployed/mysecrethook
+
+If it worked, it will return a response like:
+
+.. code-block:: bash
+
+  {"SequenceNumber":"495...8","ShardId":"shardId-000000000000"}
