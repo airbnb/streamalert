@@ -5,6 +5,12 @@
   "aws-s3": {
     "sample-bucket": "sample.bucket.name"
   },
+  "aws-sns": {
+    "sample-topic": "sample-topic-name"
+  },
+  "aws-sqs": {
+    "sample-queue": "sample-queue-name"
+  },
   "komand": [
     "sample-integration"
   ],

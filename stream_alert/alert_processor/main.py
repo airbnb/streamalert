@@ -44,14 +44,16 @@ def handler(event, context):
     if not config:
         return
 
-    region = context.invoked_function_arn.split(':')[3]
+    split_arn = context.invoked_function_arn.split(':')
+    region = split_arn[3]
+    account_id = split_arn[4]
     function_name = context.function_name
 
     # Return the current list of statuses back to the caller
-    return list(run(event, region, function_name, config))
+    return list(run(event, region, account_id, function_name, config))
 
 
-def run(alert, region, function_name, config):
+def run(alert, region, account_id, function_name, config):
     """Send an Alert to its described outputs.
 
     Args:
@@ -70,6 +72,7 @@ def run(alert, region, function_name, config):
             }
 
         region (str): The AWS region of the currently executing Lambda function
+        account_id (str): The 12-digit AWS account ID of the currently executing Lambda function
         function_name (str): The name of the lambda function
         config (dict): The loaded configuration for outputs from conf/outputs.json
 
@@ -101,7 +104,8 @@ def run(alert, region, function_name, config):
             continue
 
         # Retrieve the proper class to handle dispatching the alerts of this services
-        dispatcher = StreamAlertOutput.create_dispatcher(service, region, function_name, config)
+        dispatcher = StreamAlertOutput.create_dispatcher(
+            service, region, account_id, function_name, config)
 
         if not dispatcher:
             continue
