@@ -10,6 +10,8 @@ Out of the box, StreamAlert supports:
 
 * **AWS Lambda**
 * **AWS S3**
+* **AWS SNS**
+* **AWS SQS**
 * **Komand**
 * **PagerDuty**
 * **Phantom**

@@ -20,7 +20,8 @@ from nose.tools import assert_false, assert_true
 
 from stream_alert.alert_processor.outputs.komand import KomandOutput
 from stream_alert_cli.helpers import put_mock_creds
-from tests.unit.stream_alert_alert_processor import CONFIG, FUNCTION_NAME, KMS_ALIAS, REGION
+from tests.unit.stream_alert_alert_processor import \
+    ACCOUNT_ID, CONFIG, FUNCTION_NAME, KMS_ALIAS, REGION
 from tests.unit.stream_alert_alert_processor.helpers import get_alert, remove_temp_secrets
 
 
@@ -36,7 +37,7 @@ class TestKomandutput(object):
 
     def setup(self):
         """Setup before each method"""
-        self._dispatcher = KomandOutput(REGION, FUNCTION_NAME, CONFIG)
+        self._dispatcher = KomandOutput(REGION, ACCOUNT_ID, FUNCTION_NAME, CONFIG)
         remove_temp_secrets()
         output_name = self._dispatcher.output_cred_name(self.DESCRIPTOR)
         put_mock_creds(output_name, self.CREDS, self._dispatcher.secrets_bucket, REGION, KMS_ALIAS)
@@ -50,7 +51,8 @@ class TestKomandutput(object):
         assert_true(self._dispatcher.dispatch(descriptor=self.DESCRIPTOR,
                                               alert=get_alert()))
 
-        log_mock.assert_called_with('Successfully sent alert to %s', self.SERVICE)
+        log_mock.assert_called_with('Successfully sent alert to %s:%s',
+                                    self.SERVICE, self.DESCRIPTOR)
 
     @patch('logging.Logger.error')
     @patch('requests.post')
@@ -63,7 +65,7 @@ class TestKomandutput(object):
         assert_false(self._dispatcher.dispatch(descriptor=self.DESCRIPTOR,
                                                alert=get_alert()))
 
-        log_mock.assert_called_with('Failed to send alert to %s', self.SERVICE)
+        log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, self.DESCRIPTOR)
 
     @patch('logging.Logger.error')
     def test_dispatch_bad_descriptor(self, log_error_mock):
@@ -71,4 +73,5 @@ class TestKomandutput(object):
         assert_false(self._dispatcher.dispatch(descriptor='bad_descriptor',
                                                alert=get_alert()))
 
-        log_error_mock.assert_called_with('Failed to send alert to %s', self.SERVICE)
+        log_error_mock.assert_called_with('Failed to send alert to %s:%s',
+                                          self.SERVICE, 'bad_descriptor')

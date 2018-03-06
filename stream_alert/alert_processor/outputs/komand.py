@@ -66,7 +66,7 @@ class KomandOutput(OutputDispatcher):
         """
         creds = self._load_creds(kwargs['descriptor'])
         if not creds:
-            return self._log_status(False)
+            return self._log_status(False, kwargs['descriptor'])
 
         headers = {'Authorization': creds['komand_auth_token']}
 
@@ -74,4 +74,4 @@ class KomandOutput(OutputDispatcher):
 
         resp = self._post_request(creds['url'], {'data': kwargs['alert']}, headers, False)
         success = self._check_http_response(resp)
-        return self._log_status(success)
+        return self._log_status(success, kwargs['descriptor'])

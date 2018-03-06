@@ -85,11 +85,25 @@ Available Subcommands:
 
 Examples:
 
-    manage.py output new --service <service_name>
     manage.py output new --service aws-s3
     manage.py output new --service pagerduty
     manage.py output new --service slack
 
+The following outputs are supported:
+
+    aws-firehose
+    aws-lambda
+    aws-s3
+    aws-sns
+    aws-sqs
+    github
+    jira
+    komand
+    pagerduty
+    pagerduty-incident
+    pagerduty-v2
+    phantom
+    slack
 """.format(version))
     output_parser = subparsers.add_parser(
         'output',
@@ -108,8 +122,9 @@ Examples:
     output_parser.add_argument(
         '--service',
         choices=[
-            'aws-firehose', 'aws-lambda', 'aws-s3', 'jira', 'komand', 'pagerduty', 'pagerduty-v2',
-            'pagerduty-incident', 'phantom', 'slack', 'github'
+            'aws-firehose', 'aws-lambda', 'aws-s3', 'aws-sns', 'aws-sqs',
+            'github', 'jira', 'komand', 'pagerduty', 'pagerduty-incident', 'pagerduty-v2',
+            'phantom', 'slack',
         ],
         required=True,
         help=ARGPARSE_SUPPRESS)

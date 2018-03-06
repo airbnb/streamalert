@@ -35,12 +35,15 @@ def test_load_output_config():
     loaded_config_keys = sorted(config.keys())
 
     expected_config_keys = [
-        u'aws-firehose',
-        u'aws-lambda',
-        u'aws-s3',
-        u'pagerduty',
-        u'phantom',
-        u'slack']
+        'aws-firehose',
+        'aws-lambda',
+        'aws-s3',
+        'aws-sns',
+        'aws-sqs',
+        'pagerduty',
+        'phantom',
+        'slack'
+    ]
 
     assert_list_equal(loaded_config_keys, expected_config_keys)
 

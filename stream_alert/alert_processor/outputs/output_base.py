@@ -59,6 +59,7 @@ def retry_on_exception(exceptions):
         return wrapper
     return real_decorator
 
+
 class StreamAlertOutput(object):
     """Class to be used as a decorator to register all OutputDispatcher subclasses"""
     _outputs = {}
@@ -68,12 +69,13 @@ class StreamAlertOutput(object):
         return output
 
     @classmethod
-    def create_dispatcher(cls, service, region, function_name, config):
+    def create_dispatcher(cls, service, region, account_id, function_name, config):
         """Returns the subclass that should handle this particular service
 
         Args:
             service (str): The service identifier for this output
             region (str): The AWS region to use for some output types
+            account_id (str): The AWS account ID for computing AWS output ARNs
             function_name (str): The invoking AWS Lambda function name
             config (dict): The loaded output configuration dict
 
@@ -84,7 +86,7 @@ class StreamAlertOutput(object):
         if not dispatcher:
             return False
 
-        return dispatcher(region, function_name, config)
+        return dispatcher(region, account_id, function_name, config)
 
     @classmethod
     def get_dispatcher(cls, service):
@@ -140,8 +142,9 @@ class OutputDispatcher(object):
     # out for both get and post requests. This applies to both connection and read timeouts
     _DEFAULT_REQUEST_TIMEOUT = 3.05
 
-    def __init__(self, region, function_name, config):
+    def __init__(self, region, account_id, function_name, config):
         self.region = region
+        self.account_id = account_id
         self.secrets_bucket = self._get_secrets_bucket_name(function_name)
         self.config = config
 
@@ -251,16 +254,17 @@ class OutputDispatcher(object):
             LOGGER.error('an error occurred during credentials decryption: %s', err.response)
 
     @classmethod
-    def _log_status(cls, success):
+    def _log_status(cls, success, descriptor):
         """Log the status of sending the alerts
 
         Args:
             success (bool or dict): Indicates if the dispatching of alerts was successful
+            descriptor (str): Service descriptor
         """
         if success:
-            LOGGER.info('Successfully sent alert to %s', cls.__service__)
+            LOGGER.info('Successfully sent alert to %s:%s', cls.__service__, descriptor)
         else:
-            LOGGER.error('Failed to send alert to %s', cls.__service__)
+            LOGGER.error('Failed to send alert to %s:%s', cls.__service__, descriptor)
 
         return bool(success)
 

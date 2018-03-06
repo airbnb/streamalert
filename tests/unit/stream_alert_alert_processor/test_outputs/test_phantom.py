@@ -20,7 +20,8 @@ from nose.tools import assert_false, assert_true
 
 from stream_alert.alert_processor.outputs.phantom import PhantomOutput
 from stream_alert_cli.helpers import put_mock_creds
-from tests.unit.stream_alert_alert_processor import CONFIG, FUNCTION_NAME, KMS_ALIAS, REGION
+from tests.unit.stream_alert_alert_processor import \
+    ACCOUNT_ID, CONFIG, FUNCTION_NAME, KMS_ALIAS, REGION
 from tests.unit.stream_alert_alert_processor.helpers import get_alert, remove_temp_secrets
 
 
@@ -36,7 +37,7 @@ class TestPhantomOutput(object):
 
     def setup(self):
         """Setup before each method"""
-        self._dispatcher = PhantomOutput(REGION, FUNCTION_NAME, CONFIG)
+        self._dispatcher = PhantomOutput(REGION, ACCOUNT_ID, FUNCTION_NAME, CONFIG)
         remove_temp_secrets()
         output_name = self._dispatcher.output_cred_name(self.DESCRIPTOR)
         put_mock_creds(output_name, self.CREDS, self._dispatcher.secrets_bucket, REGION, KMS_ALIAS)
@@ -56,7 +57,8 @@ class TestPhantomOutput(object):
                                               rule_name='rule_name',
                                               alert=get_alert()))
 
-        log_mock.assert_called_with('Successfully sent alert to %s', self.SERVICE)
+        log_mock.assert_called_with('Successfully sent alert to %s:%s',
+                                    self.SERVICE, self.DESCRIPTOR)
 
     @patch('logging.Logger.info')
     @patch('requests.get')
@@ -74,7 +76,8 @@ class TestPhantomOutput(object):
                                               rule_name='rule_name',
                                               alert=get_alert()))
 
-        log_mock.assert_called_with('Successfully sent alert to %s', self.SERVICE)
+        log_mock.assert_called_with('Successfully sent alert to %s:%s',
+                                    self.SERVICE, self.DESCRIPTOR)
 
     @patch('logging.Logger.error')
     @patch('requests.get')
@@ -93,7 +96,7 @@ class TestPhantomOutput(object):
                                                rule_name='rule_name',
                                                alert=get_alert()))
 
-        log_mock.assert_called_with('Failed to send alert to %s', self.SERVICE)
+        log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, self.DESCRIPTOR)
 
     @patch('logging.Logger.error')
     @patch('requests.get')
@@ -112,7 +115,7 @@ class TestPhantomOutput(object):
                                                rule_name='rule_name',
                                                alert=get_alert()))
 
-        log_mock.assert_called_with('Failed to send alert to %s', self.SERVICE)
+        log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, self.DESCRIPTOR)
 
     @patch('logging.Logger.error')
     @patch('requests.get')
@@ -130,7 +133,7 @@ class TestPhantomOutput(object):
                                                rule_name='rule_name',
                                                alert=get_alert()))
 
-        log_mock.assert_called_with('Failed to send alert to %s', self.SERVICE)
+        log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, self.DESCRIPTOR)
 
     @patch('logging.Logger.error')
     @patch('requests.get')
@@ -149,7 +152,7 @@ class TestPhantomOutput(object):
                                                rule_name='rule_name',
                                                alert=get_alert()))
 
-        log_mock.assert_called_with('Failed to send alert to %s', self.SERVICE)
+        log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, self.DESCRIPTOR)
 
     @patch('logging.Logger.error')
     @patch('requests.get')
@@ -168,7 +171,7 @@ class TestPhantomOutput(object):
                                                rule_name='rule_name',
                                                alert=get_alert()))
 
-        log_mock.assert_called_with('Failed to send alert to %s', self.SERVICE)
+        log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, self.DESCRIPTOR)
 
     @patch('logging.Logger.error')
     def test_dispatch_bad_descriptor(self, log_error_mock):
@@ -177,7 +180,8 @@ class TestPhantomOutput(object):
                                                rule_name='rule_name',
                                                alert=get_alert()))
 
-        log_error_mock.assert_called_with('Failed to send alert to %s', self.SERVICE)
+        log_error_mock.assert_called_with('Failed to send alert to %s:%s',
+                                          self.SERVICE, 'bad_descriptor')
 
     @patch('stream_alert.alert_processor.outputs.output_base.OutputDispatcher._get_request')
     @patch('stream_alert.alert_processor.outputs.output_base.OutputDispatcher._post_request')
