@@ -62,7 +62,6 @@ def generate_alert_processor(config):
     prefix = config['global']['account']['prefix']
     alert_processor_config = config['lambda']['alert_processor_config']
     alarms_config = alert_processor_config.get('metric_alarms', {})
-    outputs_config = alert_processor_config.get('outputs', {})
     vpc_config = alert_processor_config.get('vpc_config', {})
 
     result = infinitedict()
@@ -75,8 +74,13 @@ def generate_alert_processor(config):
         'prefix': prefix,
         'role_id': '${module.alert_processor_lambda.role_id}',
         'kms_key_arn': '${aws_kms_key.stream_alert_secrets.arn}',
-        'output_lambda_functions': outputs_config.get('aws-lambda', []),
-        'output_s3_buckets': outputs_config.get('aws-s3', [])
+        'output_lambda_functions': [
+            # Strip qualifiers: only the function name is needed for the IAM permissions
+            func.split(':')[0] for func in config['outputs'].get('aws-lambda', {}).values()
+        ],
+        'output_s3_buckets': config['outputs'].get('aws-s3', {}).values(),
+        'output_sns_topics': config['outputs'].get('aws-sns', {}).values(),
+        'output_sqs_queues': config['outputs'].get('aws-sqs', {}).values()
     }
 
     # Set variables for the Lambda module

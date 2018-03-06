@@ -14,10 +14,6 @@
       "throttles_alarm_period_secs": 120,
       "throttles_alarm_threshold": 0
     },
-    "outputs": {
-      "aws-lambda": [],
-      "aws-s3": []
-    },
     "source_bucket": "PREFIX_GOES_HERE.streamalert.source",
     "source_current_hash": "<auto_generated>",
     "source_object_key": "<auto_generated>",

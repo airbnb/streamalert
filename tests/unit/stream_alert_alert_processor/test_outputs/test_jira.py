@@ -20,7 +20,8 @@ from nose.tools import assert_equal, assert_false, assert_true
 
 from stream_alert.alert_processor.outputs.jira import JiraOutput
 from stream_alert_cli.helpers import put_mock_creds
-from tests.unit.stream_alert_alert_processor import CONFIG, FUNCTION_NAME, KMS_ALIAS, REGION
+from tests.unit.stream_alert_alert_processor import \
+    ACCOUNT_ID, CONFIG, FUNCTION_NAME, KMS_ALIAS, REGION
 from tests.unit.stream_alert_alert_processor.helpers import get_alert, remove_temp_secrets
 
 
@@ -40,7 +41,7 @@ class TestJiraOutput(object):
 
     def setup(self):
         """Setup before each method"""
-        self._dispatcher = JiraOutput(REGION, FUNCTION_NAME, CONFIG)
+        self._dispatcher = JiraOutput(REGION, ACCOUNT_ID, FUNCTION_NAME, CONFIG)
         self._dispatcher._base_url = self.CREDS['url']
         remove_temp_secrets()
         output_name = self._dispatcher.output_cred_name(self.DESCRIPTOR)
@@ -63,7 +64,8 @@ class TestJiraOutput(object):
                                               rule_name='rule_name',
                                               alert=get_alert()))
 
-        log_mock.assert_called_with('Successfully sent alert to %s', self.SERVICE)
+        log_mock.assert_called_with('Successfully sent alert to %s:%s',
+                                    self.SERVICE, self.DESCRIPTOR)
 
     @patch('logging.Logger.info')
     @patch('requests.get')
@@ -83,7 +85,8 @@ class TestJiraOutput(object):
                                               rule_name='rule_name',
                                               alert=get_alert()))
 
-        log_mock.assert_called_with('Successfully sent alert to %s', self.SERVICE)
+        log_mock.assert_called_with('Successfully sent alert to %s:%s',
+                                    self.SERVICE, self.DESCRIPTOR)
 
     @patch('logging.Logger.info')
     @patch('requests.get')
@@ -103,7 +106,8 @@ class TestJiraOutput(object):
                                               rule_name='rule_name',
                                               alert=get_alert()))
 
-        log_mock.assert_called_with('Successfully sent alert to %s', self.SERVICE)
+        log_mock.assert_called_with('Successfully sent alert to %s:%s',
+                                    self.SERVICE, self.DESCRIPTOR)
 
     @patch('requests.get')
     def test_get_comments_success(self, get_mock):
@@ -157,7 +161,7 @@ class TestJiraOutput(object):
                                                rule_name='rule_name',
                                                alert=get_alert()))
 
-        log_mock.assert_called_with('Failed to send alert to %s', self.SERVICE)
+        log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, self.DESCRIPTOR)
 
     @patch('logging.Logger.error')
     @patch('requests.post')
@@ -171,7 +175,7 @@ class TestJiraOutput(object):
                                                rule_name='rule_name',
                                                alert=get_alert()))
 
-        log_mock.assert_called_with('Failed to send alert to %s', self.SERVICE)
+        log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, self.DESCRIPTOR)
 
     @patch('logging.Logger.error')
     @patch('requests.get')
@@ -191,7 +195,7 @@ class TestJiraOutput(object):
                                                rule_name='rule_name',
                                                alert=get_alert()))
 
-        log_mock.assert_called_with('Failed to send alert to %s', self.SERVICE)
+        log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, self.DESCRIPTOR)
 
     @patch('logging.Logger.error')
     @patch('requests.get')
@@ -211,7 +215,7 @@ class TestJiraOutput(object):
                                                rule_name='rule_name',
                                                alert=get_alert()))
 
-        log_mock.assert_called_with('Failed to send alert to %s', self.SERVICE)
+        log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, self.DESCRIPTOR)
 
     @patch('logging.Logger.error')
     @patch('requests.get')
@@ -230,7 +234,7 @@ class TestJiraOutput(object):
                                                rule_name='rule_name',
                                                alert=get_alert()))
 
-        log_mock.assert_called_with('Failed to send alert to %s', self.SERVICE)
+        log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, self.DESCRIPTOR)
 
     @patch('logging.Logger.error')
     @patch('requests.get')
@@ -261,4 +265,5 @@ class TestJiraOutput(object):
                                                rule_name='rule_name',
                                                alert=get_alert()))
 
-        log_error_mock.assert_called_with('Failed to send alert to %s', self.SERVICE)
+        log_error_mock.assert_called_with('Failed to send alert to %s:%s',
+                                          self.SERVICE, 'bad_descriptor')
