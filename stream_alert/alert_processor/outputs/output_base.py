@@ -296,7 +296,7 @@ class OutputDispatcher(object):
         Returns:
             dict: Contains the http response object
         """
-        return requests.put(url, headers=headers, params=params,
+        return requests.put(url, headers=headers, json=params,
                             verify=verify, timeout=cls._DEFAULT_REQUEST_TIMEOUT)
 
     @classmethod

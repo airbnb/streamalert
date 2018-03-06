@@ -152,9 +152,12 @@ class S3Payload(StreamPayload):
                 returning a generator, providing the ability to support
                 multi-record like this (s3).
         """
-        s3_file = self._get_object()
+        s3_file_path = self._get_object()
+        if not s3_file_path:
+            return
+
         line_num, processed_size = 0, 0
-        for line_num, data in self._read_downloaded_s3_object(s3_file):
+        for line_num, data in self._read_downloaded_s3_object(s3_file_path):
 
             self._refresh_record(data)
             yield self
@@ -200,7 +203,11 @@ class S3Payload(StreamPayload):
         """
         size_kb = self.s3_object_size / 1024.0
         size_mb = size_kb / 1024.0
-        if size_mb > 128:
+
+        # File size checks before downloading
+        if size_kb == 0:
+            return
+        elif size_mb > 128:
             raise S3ObjectSizeError('S3 object to download is above 128MB')
 
         # Bandit warns about using a shell process, ignore with #nosec
@@ -210,8 +217,10 @@ class S3Payload(StreamPayload):
 
         LOGGER.info('Starting download from S3: %s/%s [%s]', bucket, key, display_size)
 
+        # Convert the S3 object name to store as a file in the Lambda container
         suffix = key.replace('/', '-')
         _, downloaded_s3_object = tempfile.mkstemp(suffix=suffix)
+
         with open(downloaded_s3_object, 'wb') as data:
             client = boto3.client('s3', region_name=region)
             start_time = time.time()
@@ -233,9 +242,9 @@ class S3Payload(StreamPayload):
         """
         # Use the urllib unquote method to decode any url encoded characters
         # (ie - %26 --> &) from the bucket and key names
-        def unquoted(data):
-            return unquote(data).decode('utf-8')
+        unquoted = lambda(data): unquote(data).decode('utf-8')
         region = self.raw_record['awsRegion']
+
         bucket = unquoted(self.raw_record['s3']['bucket']['name'])
         key = unquoted(self.raw_record['s3']['object']['key'])
         self.s3_object_size = int(self.raw_record['s3']['object']['size'])

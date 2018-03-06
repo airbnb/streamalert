@@ -143,17 +143,16 @@ def make_sns_raw_record(topic_name, sns_data):
     return raw_record
 
 
-def make_s3_raw_record(bucket, key):
+def make_s3_raw_record(bucket, key, size=100):
     """Helper for creating the s3 raw record"""
-    # size = len(s3_data)
-    raw_record = {
+    return {
         's3': {
             'configurationId': 'testConfigRule',
             'object': {
                 'eTag': '0123456789abcdef0123456789abcdef',
                 'sequencer': '0A1B2C3D4E5F678901',
                 'key': key,
-                'size': 100
+                'size': size
             },
             'bucket': {
                 'arn': 'arn:aws:s3:::mybucket',
@@ -165,7 +164,7 @@ def make_s3_raw_record(bucket, key):
         },
         'awsRegion': 'us-east-1'
     }
-    return raw_record
+
 
 def mock_normalized_records(default_data=None):
     """Morck records which have been normalized"""

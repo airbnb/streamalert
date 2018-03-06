@@ -58,6 +58,7 @@ class MetricLogger(object):
     UNPROCESSED_ALERTS = 'UnprocessedAlerts'
     FIREHOSE_RECORDS_SENT = 'FirehoseRecordsSent'
     FIREHOSE_FAILED_RECORDS = 'FirehoseFailedRecords'
+    NORMALIZED_RECORDS = 'NormalizedRecords'
 
     _default_filter = '{{ $.metric_name = "{}" }}'
     _default_value_lookup = '$.metric_value'
@@ -72,6 +73,8 @@ class MetricLogger(object):
         ALERT_PROCESSOR_NAME: {},   # Placeholder for future alert processor metrics
         ATHENA_PARTITION_REFRESH_NAME: {},  # Placeholder for future athena processor metrics
         RULE_PROCESSOR_NAME: {
+            NORMALIZED_RECORDS: (_default_filter.format(NORMALIZED_RECORDS),
+                                 _default_value_lookup),
             FAILED_PARSES: (_default_filter.format(FAILED_PARSES),
                             _default_value_lookup),
             S3_DOWNLOAD_TIME: (_default_filter.format(S3_DOWNLOAD_TIME),
