@@ -175,14 +175,13 @@ class TestStreamAlertAthenaGlobals(object):
     @patch('stream_alert.athena_partition_refresh.main.LOGGER')
     @patch('stream_alert.athena_partition_refresh.main._load_config',
            return_value=CONFIG_DATA)
-    @patch('stream_alert.athena_partition_refresh.main.'
-           'StreamAlertSQSClient.unique_s3_buckets_and_keys',
-           return_value={})
+    @patch('stream_alert.athena_partition_refresh.main.StreamAlertSQSClient')
     @mock_sqs
-    def test_handler_no_unique_buckets(self, _, mock_config, mock_logging):
+    def test_handler_no_unique_buckets(self, mock_sqs_client, mock_config, mock_logging):
         """Athena - Handler - No Unique Buckets"""
         test_sqs_client = TestStreamAlertSQSClient()
         test_sqs_client.setup()
+        mock_sqs_client.return_value.unique_s3_buckets_and_keys = lambda: {}
 
         handler(None, None)
 
