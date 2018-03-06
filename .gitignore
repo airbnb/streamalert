@@ -8,6 +8,7 @@ docs/build
 *.terraform/
 terraform.tfvars
 terraform/terraform.tfstate*
+*.tf.json
 
 # MacOS artifacts
 Thumbs.db
