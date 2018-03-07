@@ -2,8 +2,11 @@
   "aws-lambda": {
     "sample-lambda": "function-name:qualifier"
   },
+  "aws-firehose": {
+    "alerts": "<prefix>_streamalert_alert_delivery"
+  },
   "aws-s3": {
-    "sample-bucket": "sample.bucket.name"
+    "bucket": "aws-s3-bucket"
   },
   "komand": [
     "sample-integration"
