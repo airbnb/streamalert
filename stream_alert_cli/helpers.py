@@ -29,11 +29,13 @@ import boto3
 from botocore.exceptions import ClientError
 from moto import (
     mock_cloudwatch,
-    mock_kms,
+    mock_dynamodb2,
     mock_kinesis,
+    mock_kms,
     mock_lambda,
     mock_s3,
-    mock_dynamodb2,
+    mock_sns,
+    mock_sqs
 )
 
 from stream_alert_cli.logger import LOGGER_CLI
@@ -522,10 +524,12 @@ def mock_me(context):
         """Wrap the returned function with or without mocks"""
         if context.mocked:
             @mock_cloudwatch
+            @mock_kinesis
+            @mock_kms
             @mock_lambda
             @mock_s3
-            @mock_kms
-            @mock_kinesis
+            @mock_sns
+            @mock_sqs
             def mocked(options, context):
                 """This function is now mocked using moto mock decorators to
                 override any boto3 calls. Wrapping this function here allows
