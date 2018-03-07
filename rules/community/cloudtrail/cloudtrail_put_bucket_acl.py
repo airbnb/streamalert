@@ -4,12 +4,12 @@ from stream_alert.rule_processor.rules_engine import StreamRules
 rule = StreamRules.rule
 
 
-@rule(logs=['cloudwatch:events'],
-      matchers=[],
-      outputs=['aws-s3:sample-bucket',
-               'pagerduty:sample-integration',
-               'slack:sample-channel'],
-      req_subkeys={'detail': ['requestParameters', 'eventName']})
+@rule(
+    logs=['cloudwatch:events'],
+    outputs=['aws-firehose:alerts'],
+    req_subkeys={
+        'detail': ['requestParameters', 'eventName']
+    })
 def cloudtrail_put_bucket_acl(rec):
     """
     author:       airbnb_csirt
