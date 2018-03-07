@@ -15,6 +15,7 @@ limitations under the License.
 """
 from fnmatch import fnmatch
 import logging
+import json
 import time
 
 from netaddr import IPAddress, IPNetwork
@@ -217,3 +218,17 @@ def data_has_value_from_substring_list(data, needle_list):
         return False
 
     return any(needle in data for needle in needle_list)
+
+def safe_json_loads(data):
+    """Safely load a JSON string into a dictionary
+
+    Args:
+        data (str): A JSON string
+
+    Returns:
+        dict: The loaded JSON string or empty dict
+    """
+    try:
+        return json.loads(data)
+    except ValueError:
+        return {}

@@ -15,7 +15,7 @@ limitations under the License.
 """
 import time
 
-from nose.tools import assert_equal
+from nose.tools import assert_equal, assert_false, assert_true
 
 from helpers import base
 
@@ -123,3 +123,21 @@ def test_fetch_values_by_datatype():
     assert_equal(len(base.fetch_values_by_datatype(rec, 'ipv4')), 2)
     assert_equal(len(base.fetch_values_by_datatype(rec, 'cmd')), 0)
     assert_equal(base.fetch_values_by_datatype(rec, 'username'), ['alice'])
+
+def test_safe_json_loads_valid():
+    """Helpers - Loading valid JSON"""
+    json_str = '{"test": 0, "values": [1, 2, 3]}'
+    loaded_json = base.safe_json_loads(json_str)
+
+    assert_equal(type(loaded_json), dict)
+    assert_true(loaded_json)
+    assert_equal(loaded_json, {'test': 0, 'values': [1, 2, 3]})
+
+def test_safe_json_loads_invalid():
+    """Helpers - Loading invalid JSON"""
+    json_str = 'invalid json string!!!!'
+    loaded_json = base.safe_json_loads(json_str)
+
+    assert_equal(type(loaded_json), dict)
+    assert_false(loaded_json)
+    assert_equal(loaded_json, {})
