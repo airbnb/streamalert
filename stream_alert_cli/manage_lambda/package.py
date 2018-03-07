@@ -231,7 +231,7 @@ class LambdaPackage(object):
 
         # Add any custom libs needed by rules, etc
         third_party_libs.update(
-            set(self.config['lambda'][self.config_key]['third_party_libraries']))
+            set(self.config['lambda'][self.config_key].get('third_party_libraries', [])))
 
         # Return a default of True here if no libraries to install
         if not third_party_libs:
