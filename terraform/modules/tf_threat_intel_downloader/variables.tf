@@ -71,10 +71,6 @@ variable "log_retention" {
   default = 14
 }
 
-variable "autoscale" {
-  default = false
-}
-
 variable "max_read_capacity" {
   default = 5
 }

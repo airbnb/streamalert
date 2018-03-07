@@ -27,17 +27,15 @@ resource "aws_dynamodb_table" "threat_intel_ioc" {
 }
 
 resource "aws_appautoscaling_target" "dynamodb_table_read_target" {
-  count              = "${var.autoscale ? 1 : 0}"
   max_capacity       = "${var.max_read_capacity}"
   min_capacity       = "${var.min_read_capacity}"
-  resource_id        = "table/${var.prefix}_streamalert_threat_intel_downloader"
+  resource_id        = "table/${aws_dynamodb_table.threat_intel_ioc.name}"
   role_arn           = "arn:aws:iam::${var.account_id}:role/aws-service-role/dynamodb.application-autoscaling.amazonaws.com/AWSServiceRoleForApplicationAutoScaling_DynamoDBTable"
   scalable_dimension = "dynamodb:table:ReadCapacityUnits"
   service_namespace  = "dynamodb"
 }
 
 resource "aws_appautoscaling_policy" "dynamodb_table_read_policy" {
-  count              = "${var.autoscale ? 1 : 0}"
   name               = "DynamoDBReadCapacityUtilization:${aws_appautoscaling_target.dynamodb_table_read_target.resource_id}"
   policy_type        = "TargetTrackingScaling"
   resource_id        = "${aws_appautoscaling_target.dynamodb_table_read_target.resource_id}"
