@@ -1,0 +1,39 @@
+{
+  "records": [
+    {
+      "data": {
+        "version": "0",
+        "id": "1234abcd-ab12-123a-123a-1234567890ab",
+        "detail-type": "Trusted Advisor Check Item Refresh Notification",
+        "source": "aws.trustedadvisor",
+        "account": "123456789012",
+        "time": "2018-01-12T19:38:24Z",
+        "region": "us-east-1",
+        "resources": [],
+        "detail": {
+          "check-name": "Exposed Access Keys",
+          "check-item-detail": {
+            "Case ID": "12345678-1234-1234-abcd-1234567890ab",
+            "Usage (USD per Day)": "0",
+            "User Name (IAM or Root)": "my-username",
+            "Deadline": "1440453299248",
+            "Access Key ID": "AKIAIOSFODNN7EXAMPLE",
+            "Time Updated": "1440021299248",
+            "Fraud Type": "Exposed",
+            "Location": "www.example.com"
+          },
+          "status": "ERROR",
+          "resource_id": "",
+          "uuid": "aa12345f-55c7-498e-b7ac-123456789012"
+        }
+      },
+      "description": "Trusted Advisor alert for key exposed",
+      "log": "cloudwatch:events",
+      "service": "kinesis",
+      "source": "prefix_cluster1_stream_alert_kinesis",
+      "trigger_rules": [
+        "trusted_advisor"
+      ]
+    }
+  ]
+}

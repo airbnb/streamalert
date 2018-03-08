@@ -20,3 +20,7 @@ matcher = StreamRules.matcher()
 @matcher
 def guard_duty(record):
     return record['detail-type'] == 'GuardDuty Finding'
+
+@matcher
+def trusted_advisor(record):
+    return record['source'] == 'aws.trustedadvisor'
