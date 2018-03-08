@@ -3,9 +3,8 @@ from stream_alert.rule_processor.rules_engine import StreamRules
 
 rule = StreamRules.rule
 
-@rule(logs=['onelogin:events'],
-      outputs=['aws-s3:sample-bucket',
-               'pagerduty:sample-integration'])
+
+@rule(logs=['onelogin:events'], outputs=['aws-firehose:alerts'])
 def onelogin_events_assumed_role(rec):
     """
     author:       @javutin

@@ -6,11 +6,9 @@ rule = StreamRules.rule
 disable = StreamRules.disable()
 
 
-@rule(logs=['cloudtrail:events'],
-      matchers=[],
-      outputs=['aws-s3:sample-bucket',
-               'pagerduty:sample-integration',
-               'slack:sample-channel'])
+@rule(
+    logs=['cloudtrail:events'],
+    outputs=['aws-firehose:alerts'])
 def cloudtrail_mfa_policy_abuse_attempt(rec):
     """
     author:           Scott Piper of Summit Route in collaboration with Duo Security
@@ -70,8 +68,8 @@ def cloudtrail_mfa_policy_abuse_attempt(rec):
     # - 'AccessDenied'
     # - 'EntityAlreadyExists': Can't create another MFA device with the same name.
     # - 'LimitExceeded': Can't enable a second MFA device for the same user.
-    if ('errorCode' in rec and
-            in_set(rec['eventName'], {'CreateVirtualMFADevice', 'EnableMFADevice'})):
+    if ('errorCode' in rec
+            and in_set(rec['eventName'], {'CreateVirtualMFADevice', 'EnableMFADevice'})):
         return True
 
     return False

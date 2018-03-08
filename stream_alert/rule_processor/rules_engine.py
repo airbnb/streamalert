@@ -15,7 +15,6 @@ limitations under the License.
 """
 from collections import namedtuple
 from copy import copy
-import json
 
 from stream_alert.rule_processor import LOGGER
 from stream_alert.rule_processor.threat_intel import StreamThreatIntel
@@ -324,13 +323,9 @@ class StreamRules(object):
             if not record.get(key):
                 LOGGER.debug(
                     'The required subkey %s is not found when trying to process %s: \n%s',
-                    key,
-                    rule.rule_name,
-                    json.dumps(
-                        record,
-                        indent=2))
+                    key, rule.rule_name, record)
                 return False
-            if not all(x in record[key] for x in nested_keys):
+            if not all(record[key].get(x) for x in nested_keys):
                 return False
 
         return True

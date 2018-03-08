@@ -4,12 +4,13 @@ from stream_alert.rule_processor.rules_engine import StreamRules
 
 rule = StreamRules.rule
 
-@rule(logs=['cloudwatch:events'],
-      matchers=[],
-      outputs=['aws-s3:sample-bucket',
-               'pagerduty:sample-integration',
-               'slack:sample-channel'],
-      req_subkeys={'detail': ['eventName', 'requestParameters']})
+
+@rule(
+    logs=['cloudwatch:events'],
+    outputs=['aws-firehose:alerts'],
+    req_subkeys={
+        'detail': ['eventName', 'requestParameters']
+    })
 def cloudtrail_security_group_ingress_anywhere(rec):
     """
     author:         @mimeframe, @ryandeivert

@@ -3,10 +3,8 @@ from stream_alert.rule_processor.rules_engine import StreamRules
 
 rule = StreamRules.rule
 
-@rule(logs=['ghe:general'],
-      outputs=['aws-s3:sample-bucket',
-               'pagerduty:sample-integration',
-               'slack:sample-channel'])
+
+@rule(logs=['ghe:general'], outputs=['aws-firehose:alerts'])
 def github_disable_dismiss_stale_pull_request_approvals(rec):
     """
     author:       @mimeframe

@@ -3,10 +3,8 @@ from stream_alert.rule_processor.rules_engine import StreamRules
 
 rule = StreamRules.rule
 
-@rule(logs=['duo:authentication'],
-      outputs=['aws-s3:sample-bucket',
-               'pagerduty:sample-integration',
-               'slack:sample-channel'])
+
+@rule(logs=['duo:authentication'], outputs=['aws-firehose:alerts'])
 def duo_fraud(rec):
     """
     author:       airbnb_csirt

@@ -129,9 +129,11 @@ An alert can be sent to multiple destinations.
 req_subkeys
 ~~~~~~~~~~~
 
-``req_subkeys`` is an optional argument which defines required sub-keys that must exist in the incoming record in order for it to be evaluated.
+``req_subkeys`` is an optional argument which defines sub-keys that must exist in the incoming record in order for it to be evaluated.
 
-This feature should be avoided, but it is useful if you defined a loose schema to trade flexibility for safety; see `Schemas <conf-schemas.html#json-example-osquery>`_.
+Each defined sub-key must have a non zero value as well in order for the rule to evaluate the log.
+
+This feature should be used if you have logs with a loose schema defined in order to avoid ``KeyError`` in rules.
 
 Examples:
 
@@ -143,15 +145,11 @@ Examples:
   @rule(logs=['osquery:differential'],
         outputs=['pagerduty', 'aws-s3'],
         req_subkeys={'columns':['address', 'hostnames']})
-        ...
+        def osquery_host_check(rec):
+          # If all logs did not have the 'address' sub-key, this rule would
+          # throw a KeyError.  Using req_subkeys avoids this.
+          return rec['columns']['address'] == '127.0.0.1'
 
-  # The 'columns' key must contain
-  # sub-keys of 'port' and 'protocol'
-
-  @rule(logs=['osquery:differential'],
-        outputs=['pagerduty', 'aws-s3'],
-        req_subkeys={'columns':['port', 'protocol']})
-        ...
 
 context
 ~~~~~~~~~~~
