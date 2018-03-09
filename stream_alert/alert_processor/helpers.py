@@ -31,6 +31,7 @@ def validate_alert(alert):
         return False
 
     alert_keys = {
+        'id',
         'record',
         'rule_name',
         'rule_description',
@@ -79,3 +80,20 @@ def validate_alert(alert):
             valid = False
 
     return valid
+
+
+def elide_string_middle(text, max_length):
+    """Replace the middle of the text with ellipses to shorten text to the desired length.
+
+    Args:
+        text (str): Text to shorten.
+        max_length (int): Maximum allowable length of the string.
+
+    Returns:
+        (str) The elided text, e.g. "Some really long tex ... the end."
+    """
+    if len(text) <= max_length:
+        return text
+
+    half_len = (max_length - 5) / 2  # Length of text on either side.
+    return '{} ... {}'.format(text[:half_len], text[-half_len:])
