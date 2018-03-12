@@ -14,6 +14,12 @@
   "aws-sqs": {
     "sample-queue": "sample-queue-name"
   },
+  "aws-sns": {
+    "sample-topic": "sample-topic-name"
+  },
+  "aws-sqs": {
+    "sample-queue": "sample-queue-name"
+  },
   "komand": [
     "sample-integration"
   ],
