@@ -24,6 +24,7 @@ from botocore.exceptions import ClientError
 import boto3
 
 from stream_alert.alert_processor import LOGGER
+from stream_alert.alert_processor.helpers import elide_string_middle
 from stream_alert.alert_processor.outputs.output_base import (
     OutputDispatcher,
     OutputProperty,
@@ -336,7 +337,13 @@ class SNSOutput(AWSOutput):
         topic_arn = 'arn:aws:sns:{}:{}:{}'.format(self.region, self.account_id, topic_name)
         topic = boto3.resource('sns', region_name=self.region).Topic(topic_arn)
 
-        response = topic.publish(Message=json.dumps(kwargs['alert'], indent=2))
+        alert = kwargs['alert']
+        response = topic.publish(
+            Message=json.dumps(alert, indent=2, sort_keys=True),
+            # Subject must be < 100 characters long
+            Subject=elide_string_middle(
+                '{} triggered alert {}'.format(kwargs['rule_name'], alert['id']), 99)
+        )
         return self._log_status(response, kwargs['descriptor'])
 
 

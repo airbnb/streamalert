@@ -99,6 +99,7 @@ class TestStreamRules(object):
         alerts, _ = self.rules_engine.process(payload)
 
         alert_keys = {
+            'id',
             'record',
             'rule_name',
             'rule_description',
@@ -110,6 +111,7 @@ class TestStreamRules(object):
             'context'
         }
         assert_items_equal(alerts[0].keys(), alert_keys)
+        assert_is_instance(alerts[0]['id'], str)
         assert_is_instance(alerts[0]['record'], dict)
         assert_is_instance(alerts[0]['outputs'], list)
         assert_is_instance(alerts[0]['context'], dict)
