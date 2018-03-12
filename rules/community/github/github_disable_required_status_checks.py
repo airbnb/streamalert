@@ -3,10 +3,8 @@ from stream_alert.rule_processor.rules_engine import StreamRules
 
 rule = StreamRules.rule
 
-@rule(logs=['ghe:general'],
-      outputs=['aws-s3:sample-bucket',
-               'pagerduty:sample-integration',
-               'slack:sample-channel'])
+
+@rule(logs=['ghe:general'], outputs=['aws-firehose:alerts'])
 def github_disable_required_status_checks(rec):
     """
     author:       @mimeframe
@@ -22,5 +20,4 @@ def github_disable_required_status_checks(rec):
         # 0 => unchecked
         # 1 => enabled for users
         # 2 => enabled for users and admins ('Include administrators')
-        rec['data'].get('required_status_checks_enforcement_level') == 0
-    )
+        rec['data'].get('required_status_checks_enforcement_level') == 0)

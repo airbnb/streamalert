@@ -5,9 +5,7 @@ rule = StreamRules.rule
 disable = StreamRules.disable()
 
 
-@rule(logs=['cloudwatch:events'],
-      matchers=['guard_duty'],
-      outputs=['slack:sample-channel'])
+@rule(logs=['cloudwatch:events'], matchers=['guard_duty'], outputs=['aws-firehose:alerts'])
 def guard_duty_all(*_):
     """
     author:         spiper
@@ -18,5 +16,4 @@ def guard_duty_all(*_):
     testing:        From the GuardDuty AWS page (https://console.aws.amazon.com/guardduty/home)
                     click the button to "Generate Sample Findings"
     """
-
     return True

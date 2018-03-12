@@ -1,9 +1,12 @@
 {
+  "aws-firehose": {
+    "alerts": "<prefix>_streamalert_alert_delivery"
+  },
   "aws-lambda": {
     "sample-lambda": "function-name:qualifier"
   },
   "aws-s3": {
-    "sample-bucket": "sample.bucket.name"
+    "bucket": "aws-s3-bucket"
   },
   "aws-sns": {
     "sample-topic": "sample-topic-name"

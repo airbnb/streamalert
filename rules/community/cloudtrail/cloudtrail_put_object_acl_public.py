@@ -4,11 +4,13 @@ from stream_alert.rule_processor.rules_engine import StreamRules
 
 rule = StreamRules.rule
 
-@rule(logs=['cloudwatch:events'],
-      outputs=['aws-s3:sample-bucket',
-               'pagerduty:sample-integration',
-               'slack:sample-channel'],
-      req_subkeys={'detail': ['requestParameters']})
+
+@rule(
+    logs=['cloudwatch:events'],
+    outputs=['aws-firehose:alerts'],
+    req_subkeys={
+        'detail': ['requestParameters']
+    })
 def cloudtrail_put_object_acl_public(rec):
     """
     author:         @mimeframe
@@ -25,9 +27,7 @@ def cloudtrail_put_object_acl_public(rec):
     }
 
     # s3 buckets that are expected to have public objects
-    public_buckets = {
-        'example-bucket-to-ignore'
-    }
+    public_buckets = {'example-bucket-to-ignore'}
 
     request_params = rec['detail']['requestParameters']
     return (
@@ -35,6 +35,5 @@ def cloudtrail_put_object_acl_public(rec):
         # note: substring is used because it can exist as:
         # "http://acs.amazonaws.com/groups/global/AllUsers" or
         # "uri=http://acs.amazonaws.com/groups/global/AllUsers"
-        data_has_value_from_substring_list(request_params, public_acls) and
-        not in_set(request_params.get('bucketName'), public_buckets)
-    )
+        data_has_value_from_substring_list(request_params, public_acls)
+        and not in_set(request_params.get('bucketName'), public_buckets))

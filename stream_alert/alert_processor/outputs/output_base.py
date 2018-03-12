@@ -19,6 +19,7 @@ import json
 import os
 import tempfile
 import requests
+from requests.exceptions import Timeout as ReqTimeout
 import urllib3
 
 import backoff
@@ -270,7 +271,7 @@ class OutputDispatcher(object):
     @classmethod
     def _catch_exceptions(cls):
         """Classmethod that returns a tuple of the exceptions to catch"""
-        default_exceptions = (OutputRequestFailure,)
+        default_exceptions = (OutputRequestFailure, ReqTimeout)
         exceptions = cls._get_exceptions_to_catch()
         if not exceptions:
             return default_exceptions
