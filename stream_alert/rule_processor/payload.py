@@ -203,19 +203,18 @@ class S3Payload(StreamPayload):
         """
         size_kb = self.s3_object_size / 1024.0
         size_mb = size_kb / 1024.0
+        display_size = '{}MB'.format(size_mb) if size_mb else '{}KB'.format(size_kb)
 
         # File size checks before downloading
         if size_kb == 0:
             return
         elif size_mb > 128:
-            raise S3ObjectSizeError('S3 object to download is above 128MB')
+            raise S3ObjectSizeError('[S3Payload] The S3 object {}/{} is too large [{}] to download '
+                                    'from S3'.format(bucket, key, display_size))
 
         # Bandit warns about using a shell process, ignore with #nosec
         LOGGER.debug(os.popen('df -h /tmp | tail -1').read().strip())  # nosec
-
-        display_size = '{}MB'.format(size_mb) if size_mb else '{}KB'.format(size_kb)
-
-        LOGGER.info('Starting download from S3: %s/%s [%s]', bucket, key, display_size)
+        LOGGER.info('[S3Payload] Starting download from S3: %s/%s [%s]', bucket, key, display_size)
 
         # Convert the S3 object name to store as a file in the Lambda container
         suffix = key.replace('/', '-')
@@ -252,7 +251,11 @@ class S3Payload(StreamPayload):
         LOGGER.debug('Pre-parsing record from S3. Bucket: %s, Key: %s, Size: %d',
                      bucket, key, self.s3_object_size)
 
-        return self._download_object(region, bucket, key)
+        try:
+            return self._download_object(region, bucket, key)
+        except IOError:
+            LOGGER.exception('[S3Payload] The following error occured while downloading')
+            return
 
     @staticmethod
     def _read_downloaded_s3_object(s3_object):
