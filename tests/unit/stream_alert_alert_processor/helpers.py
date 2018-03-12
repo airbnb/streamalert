@@ -69,6 +69,7 @@ def get_alert(context=None):
         context(dict): context dictionary (None by default)
     """
     return {
+        'id': '79192344-4a6d-4850-8d06-9c3fef1060a4',
         'record': {
             'compressed_size': '9982',
             'timestamp': '1496947381.18',

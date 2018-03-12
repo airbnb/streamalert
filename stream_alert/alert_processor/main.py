@@ -62,6 +62,7 @@ def run(alert, region, account_id, function_name, config):
             following structure:
 
             {
+                'id': uuid,
                 'record': record,
                 'rule_name': rule.rule_name,
                 'rule_description': rule.rule_function.__doc__,
@@ -84,7 +85,7 @@ def run(alert, region, account_id, function_name, config):
         LOGGER.error('Invalid alert format:\n%s', json.dumps(alert, indent=2))
         return
 
-    LOGGER.debug('Sending alert to outputs:\n%s', json.dumps(alert, indent=2))
+    LOGGER.info('Sending alert %s to outputs %s', alert['id'], alert['outputs'])
 
     # strip out unnecessary keys and sort
     alert = _sort_dict(alert)
