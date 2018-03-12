@@ -145,14 +145,15 @@ class StreamAlertAthenaClient(object):
 
         athena_config = self.config['lambda']['athena_partition_refresh_config']
 
-        # GEt the S3 bucket to store Athena query results
-        results_bucket = athena_config.get('results_bucket', '').strip()
-        if results_bucket == '':
-            self.athena_results_bucket = 's3://{}.streamalert.athena-results'.format(self.prefix)
-        elif results_bucket[:5] != 's3://':
-            self.athena_results_bucket = 's3://{}'.format(results_bucket)
-        else:
-            self.athena_results_bucket = results_bucket
+        # Get the S3 bucket to store Athena query results
+        self.athena_results_bucket = athena_config.get(
+            'results_bucket',
+            's3://{}.streamalert.athena-results'.format(self.prefix)
+        ).strip()
+
+        # Make sure the required 's3://' prefix is included
+        if not self.athena_results_bucket.startswith('s3://'):
+            self.athena_results_bucket = 's3://{}'.format(self.athena_results_bucket)
 
         # Format the S3 key to store specific objects
         results_key_prefix = kwargs.get('results_key_prefix', self.DEFAULT_S3_PREFIX)
@@ -164,12 +165,12 @@ class StreamAlertAthenaClient(object):
     @property
     def sa_database(self):
         """Return the name of the streamalert database. This can be overridden in the config"""
-        database = self.config['lambda']['athena_partition_refresh_config'].get('database_name', '')
-        database = database.replace(' ', '') # strip any spaces which are invalid database names
-        if database == '':
-            return self.DEFAULT_DATABASE_STREAMALERT.format(self.prefix)
+        database = self.config['lambda']['athena_partition_refresh_config'].get(
+            'database_name',
+            self.DEFAULT_DATABASE_STREAMALERT.format(self.prefix)
+        )
 
-        return database
+        return database.replace(' ', '') # strip any spaces which are invalid database names
 
     def check_query_status(self, query_execution_id):
         """Check in on the running query, back off if the job is running or queued
@@ -278,44 +279,7 @@ class StreamAlertAthenaClient(object):
                     '$ python manage.py athena create-table --help')
         return False
 
-    def repair_hive_table(self, unique_buckets):
-        """Execute a MSCK REPAIR TABLE on a given Athena table
-
-        Args:
-            unique_buckets (list): S3 buckets to repair
-
-        Returns:
-            (bool): If the repair was successful for not
-        """
-        athena_config = self.config['lambda']['athena_partition_refresh_config']
-        repair_hive_table_config = athena_config['refresh_type']['repair_hive_table']
-
-        LOGGER.info('Processing Hive repair table...')
-        for data_bucket in unique_buckets:
-            athena_table = repair_hive_table_config.get(data_bucket)
-            if not athena_table:
-                LOGGER.warning('%s not found in repair_hive_table config. '
-                               'Please update your configuration accordingly.',
-                               athena_table)
-                continue
-
-            query_success, query_resp = self.run_athena_query(
-                query='MSCK REPAIR TABLE {};'.format(athena_table),
-                database=self.sa_database
-            )
-
-            if query_success:
-                LOGGER.info('Query results:')
-                for row in query_resp['ResultSet']['Rows']:
-                    LOGGER.info(row['Data'])
-            else:
-                LOGGER.error('Partition refresh of the Athena table '
-                             '%s has failed.', athena_table)
-                return False
-
-        return True
-
-    def add_hive_partition(self, s3_buckets_and_keys):
+    def add_partition(self, s3_buckets_and_keys):
         """Execute a Hive Add Partition command on a given Athena table
 
         Args:
@@ -325,15 +289,15 @@ class StreamAlertAthenaClient(object):
             (bool): If the repair was successful for not
         """
         athena_config = self.config['lambda']['athena_partition_refresh_config']
-        add_hive_partition_config = athena_config['refresh_type']['add_hive_partition']
+        athena_buckets = athena_config['buckets']
         partitions = defaultdict(dict)
 
         LOGGER.info('Processing new Hive partitions...')
         for bucket, keys in s3_buckets_and_keys.iteritems():
-            athena_table = add_hive_partition_config.get(bucket)
+            athena_table = athena_buckets.get(bucket)
             if not athena_table:
                 # TODO(jacknagz): Add this as a metric
-                LOGGER.error('%s not found in \'add_hive_partition\' config. '
+                LOGGER.error('%s not found in \'buckets\' config. '
                              'Please add this bucket to enable additions '
                              'of Hive partitions.',
                              athena_table)
@@ -439,13 +403,13 @@ class StreamAlertSQSClient(object):
     @property
     def queue_name(self):
         """Return the name of the sqs queue to use. This can be overridden in the config"""
-        queue = self.config['lambda']['athena_partition_refresh_config'].get('queue_name', '')
-        queue = queue.replace(' ', '') # strip any spaces which are invalid queue names
-        if queue == '':
-            prefix = self.config['global']['account']['prefix']
-            return self.DEFAULT_QUEUE_NAME.format(prefix)
+        prefix = self.config['global']['account']['prefix']
+        queue = self.config['lambda']['athena_partition_refresh_config'].get(
+            'queue_name',
+            self.DEFAULT_QUEUE_NAME.format(prefix)
+        )
 
-        return queue
+        return queue.replace(' ', '') # strip any spaces which are invalid queue names
 
     def setup(self):
         """Get the SQS URL for Athena bucket s3 notifications"""
@@ -639,7 +603,7 @@ def handler(*_):
             'The \'{}\' database does not exist'.format(stream_alert_athena.sa_database)
         )
 
-    if not stream_alert_athena.add_hive_partition(s3_buckets_and_keys):
+    if not stream_alert_athena.add_partition(s3_buckets_and_keys):
         LOGGER.error('Failed to add hive partition(s)')
         return
 

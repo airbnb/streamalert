@@ -29,14 +29,10 @@ def generate_athena(config):
     athena_dict = infinitedict()
     athena_config = config['lambda']['athena_partition_refresh_config']
 
-    data_buckets = set()
-    for refresh_type in athena_config['refresh_type']:
-        data_buckets.update(set(athena_config['refresh_type'][refresh_type]))
+    data_buckets = list(set(athena_config['buckets']))
 
     prefix = config['global']['account']['prefix']
-    database = athena_config.get('database_name', '').strip()
-    if database == '':
-        database = '{}_streamalert'.format(prefix)
+    database = athena_config.get('database_name', '{}_streamalert'.format(prefix))
 
     results_bucket_name = athena_config.get('results_bucket', '').strip()
     if results_bucket_name == '':
@@ -58,7 +54,7 @@ def generate_athena(config):
         'lambda_s3_bucket': athena_config['source_bucket'],
         'lambda_s3_key': athena_config['source_object_key'],
         'lambda_log_level': athena_config.get('log_level', 'info'),
-        'athena_data_buckets': list(data_buckets),
+        'athena_data_buckets': data_buckets,
         'refresh_interval': athena_config.get('refresh_interval', 'rate(10 minutes)'),
         'current_version': athena_config['current_version'],
         'enable_metrics': athena_config.get('enable_metrics', False),

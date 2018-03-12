@@ -18,6 +18,7 @@ import os
 import shutil
 import sys
 
+from stream_alert_cli.athena.handler import create_table
 from stream_alert_cli.logger import LOGGER_CLI
 from stream_alert_cli.helpers import check_credentials, continue_prompt, run_command, tf_runner
 from stream_alert_cli.manage_lambda.deploy import deploy
@@ -94,6 +95,11 @@ def terraform_handler(options, config):
 
         if not run_command(['terraform', 'init']):
             return
+
+        # we need to manually create the streamalerts table since terraform does not support this
+        # See: https://github.com/terraform-providers/terraform-provider-aws/issues/1486
+        alerts_bucket = '{}.streamalerts'.format(config['global']['account']['prefix'])
+        create_table(None, alerts_bucket, 'alerts', config)
 
         LOGGER_CLI.info('Deploying Lambda Functions')
         # deploy both lambda functions

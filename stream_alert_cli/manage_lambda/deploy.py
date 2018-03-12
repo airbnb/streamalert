@@ -17,7 +17,6 @@ from collections import namedtuple
 import sys
 
 from stream_alert_cli import helpers
-from stream_alert_cli.athena.handler import create_table as athena_create_table
 from stream_alert_cli.manage_lambda import package as stream_alert_packages
 from stream_alert_cli.manage_lambda.version import LambdaVersion
 from stream_alert_cli.terraform.generate import terraform_generate
@@ -154,15 +153,6 @@ def deploy(options, config):
     # Regenerate the Terraform configuration with the new Lambda versions
     if not terraform_generate(config=config):
         return
-
-    if 'athena' in processors:
-        # create the streamalerts table since terraform does not support this
-        # See: https://github.com/terraform-providers/terraform-provider-aws/issues/1486
-        alerts_bucket = '{}.streamalerts'.format(config['global']['account']['prefix'])
-
-        athena_opts = namedtuple('AthenaOptions', ['bucket', 'refresh_type'])
-        opts = athena_opts(alerts_bucket, 'add_hive_partition')
-        athena_create_table(opts, 'alerts', config)
 
     # Apply the changes to the Lambda aliases
     helpers.tf_runner(targets=deploy_targets, refresh=False, auto_approve=True)

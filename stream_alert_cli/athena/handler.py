@@ -41,7 +41,7 @@ CREATE_TABLE_STATEMENT = ('CREATE EXTERNAL TABLE {table_name} ({schema}) '
 MAX_QUERY_LENGTH = 262144
 
 
-def rebuild_partitions(options, config):
+def rebuild_partitions(table, bucket, table_type, config):
     """Rebuild an Athena table's partitions
 
     Steps:
@@ -51,74 +51,72 @@ def rebuild_partitions(options, config):
       - Re-create partitions
 
     Args:
-        athena_client (boto3.client): Instantiated CLI AthenaClient
-        options (namedtuple): The parsed args passed from the CLI
+        table (str): The name of the table being rebuilt
+        bucket (str): The s3 bucket to be used as the location for Athena data
+        table_type (str): The type of table being refreshed
+            Types of 'data' and 'alert' are accepted, but only 'data' is implemented
         config (CLIConfig): Loaded StreamAlert CLI
     """
     athena_client = StreamAlertAthenaClient(config, results_key_prefix='stream_alert_cli')
 
-    if not options.table_name:
-        LOGGER_CLI.error('Missing command line argument --table_name')
-        return
-
-    if not options.bucket:
-        LOGGER_CLI.error('Missing command line argument --bucket')
-        return
-
     sa_firehose = StreamAlertFirehose(config['global']['account']['region'],
                                       config['global']['infrastructure']['firehose'],
                                       config['logs'])
-    sanitized_table_name = sa_firehose.firehose_log_name(options.table_name)
 
-    # Get the current set of partitions
-    partition_success, partitions = athena_client.run_athena_query(
-        query='SHOW PARTITIONS {}'.format(sanitized_table_name),
-        database=athena_client.sa_database
-    )
-    if not partition_success:
-        LOGGER_CLI.error('An error occured when loading partitions for %s',
-                         sanitized_table_name)
-        return
+    sanitized_table_name = sa_firehose.firehose_log_name(table)
 
-    unique_partitions = athena_helpers.unique_values_from_query(partitions)
+    if table_type == 'data':
+        # Get the current set of partitions
+        partition_success, partitions = athena_client.run_athena_query(
+            query='SHOW PARTITIONS {}'.format(sanitized_table_name),
+            database=athena_client.sa_database
+        )
+        if not partition_success:
+            LOGGER_CLI.error('An error occured when loading partitions for %s',
+                             sanitized_table_name)
+            return
 
-    # Drop the table
-    LOGGER_CLI.info('Dropping table %s', sanitized_table_name)
-    drop_success, _ = athena_client.run_athena_query(
-        query='DROP TABLE {}'.format(sanitized_table_name),
-        database=athena_client.sa_database
-    )
-    if not drop_success:
-        LOGGER_CLI.error('An error occured when dropping the %s table', sanitized_table_name)
-        return
+        unique_partitions = athena_helpers.unique_values_from_query(partitions)
 
-    LOGGER_CLI.info('Dropped table %s', sanitized_table_name)
+        # Drop the table
+        LOGGER_CLI.info('Dropping table %s', sanitized_table_name)
+        drop_success, _ = athena_client.run_athena_query(
+            query='DROP TABLE {}'.format(sanitized_table_name),
+            database=athena_client.sa_database
+        )
+        if not drop_success:
+            LOGGER_CLI.error('An error occured when dropping the %s table', sanitized_table_name)
+            return
 
-    new_partitions_statement = athena_helpers.partition_statement(
-        unique_partitions, options.bucket, sanitized_table_name)
+        LOGGER_CLI.info('Dropped table %s', sanitized_table_name)
 
-    # Make sure our new alter table statement is within the query API limits
-    if len(new_partitions_statement) > MAX_QUERY_LENGTH:
-        LOGGER_CLI.error('Partition statement too large, writing to local file')
-        with open('partitions_{}.txt'.format(sanitized_table_name), 'w') as partition_file:
-            partition_file.write(new_partitions_statement)
-        return
+        new_partitions_statement = athena_helpers.partition_statement(
+            unique_partitions, bucket, sanitized_table_name)
 
-    # Re-create the table with previous partitions
-    options.refresh_type = 'add_hive_partition'
-    create_table(options, 'data', config)
+        # Make sure our new alter table statement is within the query API limits
+        if len(new_partitions_statement) > MAX_QUERY_LENGTH:
+            LOGGER_CLI.error('Partition statement too large, writing to local file')
+            with open('partitions_{}.txt'.format(sanitized_table_name), 'w') as partition_file:
+                partition_file.write(new_partitions_statement)
+            return
 
-    LOGGER_CLI.info('Creating %d new partitions for %s',
-                    len(unique_partitions), sanitized_table_name)
-    new_part_success, _ = athena_client.run_athena_query(
-        query=new_partitions_statement,
-        database=athena_client.sa_database
-    )
-    if not new_part_success:
-        LOGGER_CLI.error('Error re-creating new partitions for %s', sanitized_table_name)
-        return
+        # Re-create the table with previous partitions
+        create_table(table, bucket, table_type, config)
 
-    LOGGER_CLI.info('Successfully rebuilt partitions for %s', sanitized_table_name)
+        LOGGER_CLI.info('Creating %d new partitions for %s',
+                        len(unique_partitions), sanitized_table_name)
+        new_part_success, _ = athena_client.run_athena_query(
+            query=new_partitions_statement,
+            database=athena_client.sa_database
+        )
+        if not new_part_success:
+            LOGGER_CLI.error('Error re-creating new partitions for %s', sanitized_table_name)
+            return
+
+        LOGGER_CLI.info('Successfully rebuilt partitions for %s', sanitized_table_name)
+
+    else:
+        LOGGER_CLI.error('Rebuilding tables of type "%s" is not supported', table_type)
 
 
 def drop_all_tables(config):
@@ -127,7 +125,7 @@ def drop_all_tables(config):
     Used when cleaning up an existing deployment
 
     Args:
-        athena_client (boto3.client): Instantiated CLI AthenaClient
+        config (CLIConfig): Loaded StreamAlert CLI
     """
     if not continue_prompt(message='Are you sure you want to drop all Athena tables?'):
         return
@@ -153,7 +151,6 @@ def drop_all_tables(config):
             LOGGER_CLI.error('Unable to drop the %s table', table)
         else:
             LOGGER_CLI.info('Dropped %s', table)
-
 
 
 def _construct_create_table_statement(schema, table_name, bucket):
@@ -191,35 +188,31 @@ def _construct_create_table_statement(schema, table_name, bucket):
         bucket=bucket)
 
 
-def create_table(options, table_type, config):
+def create_table(table, bucket, table_type, config, schema_override=None):
     """Create a 'streamalert' Athena table
 
     Args:
-        athena_client (boto3.client): Instantiated CLI AthenaClient
-        options (namedtuple): The parsed args passed from the CLI
+        table (str): The name of the table being rebuilt
+        bucket (str): The s3 bucket to be used as the location for Athena data
+        table_type (str): The type of table being refreshed
         config (CLIConfig): Loaded StreamAlert CLI
+        schema_override (set): An optional set of key=value pairs to be used for
+            overriding the configured column_name=value_type.
     """
+    if not table_type in {'data', 'alerts'}:
+        LOGGER_CLI.error(
+            'Invalid table type supplied: "%s". Must be "data" or "alerts"', table_type)
+        return
+
     athena_client = StreamAlertAthenaClient(config, results_key_prefix='stream_alert_cli')
 
-    if not options.bucket:
-        LOGGER_CLI.error('Missing command line argument --bucket')
-        return
-
-    if not options.refresh_type:
-        LOGGER_CLI.error('Missing command line argument --refresh_type')
-        return
-
     if table_type == 'data':
-        if not options.table_name:
-            LOGGER_CLI.error('Missing command line argument --table_name')
-            return
-
         sa_firehose = StreamAlertFirehose(config['global']['account']['region'],
                                           config['global']['infrastructure']['firehose'],
                                           config['logs'])
 
         # Convert special characters in schema name to underscores
-        sanitized_table_name = sa_firehose.firehose_log_name(options.table_name)
+        sanitized_table_name = sa_firehose.firehose_log_name(table)
 
         # Check that the log type is enabled via Firehose
         if sanitized_table_name not in sa_firehose.enabled_logs:
@@ -232,7 +225,7 @@ def create_table(options, table_type, config):
             LOGGER_CLI.info('The \'%s\' table already exists.', sanitized_table_name)
             return
 
-        log_info = config['logs'][options.table_name.replace('_', ':', 1)]
+        log_info = config['logs'][table.replace('_', ':', 1)]
 
         schema = dict(log_info['schema'])
         sanitized_schema = StreamAlertFirehose.sanitize_keys(schema)
@@ -251,13 +244,8 @@ def create_table(options, table_type, config):
 
         # Handle Schema overrides
         #   This is useful when an Athena schema needs to differ from the normal log schema
-        if options.schema_override:
-            for override in options.schema_override:
-                if '=' not in override:
-                    LOGGER_CLI.error('Invalid schema override [%s], use column_name=type format',
-                                     override)
-                    return
-
+        if schema_override:
+            for override in schema_override:
                 column_name, column_type = override.split('=')
                 if not all([column_name, column_type]):
                     LOGGER_CLI.error('Invalid schema override [%s], use column_name=type format',
@@ -274,28 +262,32 @@ def create_table(options, table_type, config):
                         column_name)
 
         query = _construct_create_table_statement(
-            schema=athena_schema, table_name=sanitized_table_name, bucket=options.bucket)
+            schema=athena_schema, table_name=sanitized_table_name, bucket=bucket)
 
     elif table_type == 'alerts':
         if athena_client.check_table_exists(table_type):
             LOGGER_CLI.info('The \'alerts\' table already exists.')
             return
-        query = ALERTS_TABLE_STATEMENT.format(bucket=options.bucket)
+        query = ALERTS_TABLE_STATEMENT.format(bucket=bucket)
 
-    if query:
-        create_table_success, _ = athena_client.run_athena_query(
-            query=query,
-            database=athena_client.sa_database
-        )
 
-        if create_table_success:
-            # Update the CLI config
-            config['lambda']['athena_partition_refresh_config'] \
-                  ['refresh_type'][options.refresh_type][options.bucket] = table_type
-            config.write()
+    create_table_success, _ = athena_client.run_athena_query(
+        query=query,
+        database=athena_client.sa_database
+    )
 
-            table_name = table_type if table_type == 'alerts' else sanitized_table_name
-            LOGGER_CLI.info('The %s table was successfully created!', table_name)
+    table_name = table_type if table_type == 'alerts' else sanitized_table_name
+
+    if not create_table_success:
+        LOGGER_CLI.error('The %s table could not be created', table_name)
+        return
+
+    # Update the CLI config
+    config['lambda']['athena_partition_refresh_config'] \
+          ['bucket'][bucket] = table_type
+    config.write()
+
+    LOGGER_CLI.info('The %s table was successfully created!', table_name)
 
 
 def athena_handler(options, config):
@@ -305,11 +297,23 @@ def athena_handler(options, config):
         options (namedtuple): The parsed args passed from the CLI
         config (CLIConfig): Loaded StreamAlert CLI
     """
-    if options.subcommand == 'rebuild-partitions':
-        rebuild_partitions(options, config)
+    if options.subcommand == 'init':
+        config.generate_athena()
+
+    elif options.subcommand == 'rebuild-partitions':
+        rebuild_partitions(
+            options.table_name,
+            options.bucket,
+            options.table_type,
+            config)
 
     elif options.subcommand == 'drop-all-tables':
         drop_all_tables(config)
 
     elif options.subcommand == 'create-table':
-        create_table(options, 'data', config)
+        create_table(
+            options.table_name,
+            options.bucket,
+            options.table_type,
+            config,
+            options.schema_override)

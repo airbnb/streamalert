@@ -89,15 +89,10 @@ CONFIG_DATA = {
             ]
         },
         'athena_partition_refresh_config': {
-            "enabled": True,
-            "refresh_type": {
-                "repair_hive_table": {
-                    "unit-testing.streamalerts": "alerts"
-                },
-                "add_hive_partition": {
-                    "unit-testing.streamalerts": "alerts",
-                    "unit-testing.streamalert.data": "data"
-                }
+            'enabled': True,
+            'buckets': {
+                'unit-testing.streamalerts': 'alerts',
+                'unit-testing.streamalert.data': 'data'
             },
             'handler': 'main.handler',
             'timeout': '60',
@@ -438,14 +433,14 @@ class TestStreamAlertAthenaClient(object):
                                               results_key_prefix='unit-testing')
 
     @patch('stream_alert.athena_partition_refresh.main.LOGGER')
-    def test_add_hive_partition(self, mock_logging):
+    def test_add_partition(self, mock_logging):
         """Athena - Add Hive Partition"""
         query_result = [
             {'Repair: added data to metastore:foobar'},
             {'Repair: added data to metastore:foobaz'}
         ]
         self.client.athena_client = MockAthenaClient(results=query_result)
-        result = self.client.add_hive_partition({
+        result = self.client.add_partition({
             'unit-testing.streamalerts': set([
                 'alerts/dt=2017-08-26-14/rule_name_alerts-1304134918401.json',
                 'alerts/dt=2017-08-27-14/rule_name_alerts-1304134918401.json'
@@ -469,10 +464,10 @@ class TestStreamAlertAthenaClient(object):
         assert_true(result)
 
     @patch('stream_alert.athena_partition_refresh.main.LOGGER')
-    def test_add_hive_partition_unknown_bucket(self, mock_logging):
+    def test_add_partition_unknown_bucket(self, mock_logging):
         """Athena - Add Hive Partition - Unknown Bucket"""
         self.client.athena_client = MockAthenaClient(results=[])
-        result = self.client.add_hive_partition({
+        result = self.client.add_partition({
             'bucket-not-in-config.streamalerts': set([
                 'alerts/dt=2017-08-26-14/rule_name_alerts-1304134918401.json',
                 'alerts/dt=2017-08-27-14/rule_name_alerts-1304134918401.json',
@@ -483,10 +478,10 @@ class TestStreamAlertAthenaClient(object):
         assert_false(result)
 
     @patch('stream_alert.athena_partition_refresh.main.LOGGER')
-    def test_add_hive_partition_unexpected_s3_key(self, mock_logging):
+    def test_add_partition_unexpected_s3_key(self, mock_logging):
         """Athena - Add Hive Partition - Unexpected S3 Key"""
         self.client.athena_client = MockAthenaClient(results=[])
-        result = self.client.add_hive_partition({
+        result = self.client.add_partition({
             'unit-testing.streamalerts': set([
                 'a/pattern/that/does/not-match'
             ]),
@@ -572,33 +567,6 @@ class TestStreamAlertAthenaClient(object):
         assert_true(mock_logging.error.called)
         assert_false(query_success)
         assert_equal(query_results, {})
-
-    @patch('stream_alert.athena_partition_refresh.main.LOGGER')
-    def test_repair_hive_table_unknown_bucket(self, mock_logging):
-        """Athena - Repair Hive Table - Unknown Bucket"""
-        self.client.athena_client = MockAthenaClient(result_state='SUCCEEDED')
-
-        # This bucket is not in our `repair_hive_table` config map
-        self.client.repair_hive_table({'my-test.result.bucket'})
-        assert_true(mock_logging.warning.called)
-
-    @patch('stream_alert.athena_partition_refresh.main.LOGGER')
-    def test_repair_hive_table_failed_refresh(self, mock_logging):
-        """Athena - Repair Hive Table - Failed Refresh"""
-        self.client.athena_client = MockAthenaClient(result_state='FAILED')
-
-        # This bucket is not in our `repair_hive_table` config map
-        self.client.repair_hive_table({'unit-testing.streamalerts'})
-        assert_true(mock_logging.error.called)
-
-    @patch('stream_alert.athena_partition_refresh.main.LOGGER')
-    def test_repair_hive_table(self, mock_logging):
-        """Athena - Repair Hive Table"""
-        query_result = [{'Status': 'SUCCEEDED'}]
-        self.client.athena_client = MockAthenaClient(results=query_result)
-
-        self.client.repair_hive_table({'unit-testing.streamalerts'})
-        assert_true(mock_logging.info.called)
 
     def test_run_athena_query(self):
         """Athena - Run Athena Query - Normal Result"""

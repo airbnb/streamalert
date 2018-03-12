@@ -60,6 +60,36 @@ class CLIConfig(object):
         """Return list of cluster configuration keys"""
         return self.config['clusters'].keys()
 
+    def generate_athena(self):
+        """Generate a base Athena config"""
+        if 'athena_partition_refresh_config' in self.config['lambda']:
+            LOGGER_CLI.warn('The Athena configuration already exists, skipping.')
+            return
+
+        prefix = self.config['global']['account']['prefix']
+
+        athena_config_template = {
+            'enabled': True,
+            'enable_metrics': False,
+            'current_version': '$LATEST',
+            'buckets': {
+                '{}.streamalerts'.format(prefix): 'alert'
+            },
+            'handler': 'stream_alert.athena_partition_refresh.main.handler',
+            'timeout': '60',
+            'memory': '128',
+            'log_level': 'info',
+            'source_bucket': '{}.streamalert.source'.format(prefix),
+            'source_current_hash': '<auto_generated>',
+            'source_object_key': '<auto_generated>',
+            'third_party_libraries': []
+        }
+
+        self.config['lambda']['athena_partition_refresh_config'] = athena_config_template
+        self.write()
+
+        LOGGER_CLI.info('Athena configuration successfully created')
+
     def set_prefix(self, prefix):
         """Set the Org Prefix in Global settings"""
         if not isinstance(prefix, (unicode, str)):
@@ -73,10 +103,9 @@ class CLIConfig(object):
         tf_state_bucket = '{}.streamalert.terraform.state'.format(prefix)
         self.config['global']['account']['prefix'] = prefix
         self.config['global']['terraform']['tfstate_bucket'] = tf_state_bucket
-        self.config['lambda']['athena_partition_refresh_config']['refresh_type'] \
-            ['add_hive_partition'].clear()
-        self.config['lambda']['athena_partition_refresh_config']['refresh_type'] \
-            ['add_hive_partition']['{}.streamalerts'.format(prefix)] = 'alerts'
+        self.config['lambda']['athena_partition_refresh_config']['buckets'].clear()
+        self.config['lambda']['athena_partition_refresh_config']['buckets'] \
+            ['{}.streamalerts'.format(prefix)] = 'alerts'
 
         lambda_funcs = [
             'alert_processor',

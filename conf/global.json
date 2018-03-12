@@ -10,6 +10,13 @@
       "read_capacity": 5,
       "write_capacity": 5
     },
+    "firehose": {
+      "buffer_interval": 900,
+      "buffer_size": 128,
+      "compression_format": "GZIP",
+      "enabled": false,
+      "enabled_logs": []
+    },
     "monitoring": {
       "create_sns_topic": true
     }

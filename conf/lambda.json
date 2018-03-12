@@ -29,11 +29,8 @@
     "enabled": true,
     "handler": "stream_alert.athena_partition_refresh.main.handler",
     "log_level": "info",
-    "refresh_type": {
-      "add_hive_partition": {
-        "PREFIX_GOES_HERE.streamalerts": "alerts"
-      },
-      "repair_hive_table": {}
+    "buckets": {
+      "PREFIX_GOES_HERE.streamalerts": "alerts"
     },
     "source_bucket": "PREFIX_GOES_HERE.streamalert.source",
     "source_current_hash": "<auto_generated>",

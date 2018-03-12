@@ -34,7 +34,7 @@ Concepts
 Getting Started
 ---------------
 
-By default, Athena will be enabled for searching alerts.
+Athena will be enabled for searching alerts, and can be further extended to search all incoming log data.
 
 To create tables for searching data sent to StreamAlert, run:
 
@@ -42,7 +42,6 @@ To create tables for searching data sent to StreamAlert, run:
 
   $ python manage.py athena create-table \
     --bucket <prefix>.streamalert.data \
-    --refresh_type add_hive_partition \
     --table_name <log_name>
 
 Note: The log name above is representative of an enabled log source to your StreamAlert deployment.

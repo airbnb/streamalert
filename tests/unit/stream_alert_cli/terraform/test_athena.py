@@ -26,13 +26,9 @@ def test_generate_athena():
     CONFIG['lambda']['athena_partition_refresh_config'] = {
         'enabled': True,
         'current_version': '$LATEST',
-        'refresh_type': {
-            'repair_hive_table': {
-                'unit-testing.streamalerts': 'alerts'
-            },
-            'add_hive_partition': {
-                'unit-testing-2.streamalerts': 'alerts'
-            }
+        'buckets': {
+            'unit-testing.streamalerts': 'alerts',
+            'unit-testing.streamalert.data': 'data'
         },
         'handler': 'main.handler',
         'timeout': '60',
@@ -64,7 +60,7 @@ def test_generate_athena():
                 'lambda_s3_key': 'lambda/athena/source.zip',
                 'athena_data_buckets': [
                     'unit-testing.streamalerts',
-                    'unit-testing-2.streamalerts'
+                    'unit-testing.streamalert.data'
                 ],
                 'prefix': 'unit-testing',
                 'refresh_interval': 'rate(10 minutes)'

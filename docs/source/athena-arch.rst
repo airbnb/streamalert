@@ -53,8 +53,7 @@ Key                                  Required  Default                Descriptio
 ``memory``                           ``No``    ``128``                The amount of memory (in MB) allocated to the Lambda function
 ``timeout``                          ``No``    ``60``                 The maximum duration of the Lambda function (in seconds)
 ``refresh_interval``                 ``No``    ``rate(10 minutes)``   The rate of which the Athena Lambda function is invoked in the form of a `CloudWatch schedule expression <http://amzn.to/2u5t0hS>`_.
-``refresh_type.add_hive_partition``  ``No``    ``{}``                 Add specific Hive partitions for new S3 objects.  This field is automatically populated when configuring your data tables.
-``refresh_type.repair_hive_table``   ``Yes``   ``{}``                 Key value pairs of S3 buckets and associated Athena table names.  Currently only supports the default alerts bucket created with every cluster.
+``buckets``                          ``Yes``   ``{}``                 Key value pairs of S3 buckets and associated Athena table names.  By default, the alerts bucket will exist in each deployment.
 ===================================  ========  ====================   ===========
 
 **Example:**
@@ -67,18 +66,14 @@ Key                                  Required  Default                Descriptio
       "enable_metrics": false,
       "log_level": "info",
       "memory": 128,
-      "refresh_type": {
-        "add_hive_partition": {
-          "...": "..."
-        },
-        "repair_hive_table": {
-          "<prefix>.streamalerts": "alerts"
-        }
+      "buckets": {
+        "<prefix>.streamalerts": "alerts"
       },
       "...": "...",
       "timeout": 60
     }
   }
+
 
 Deployment
 ----------
