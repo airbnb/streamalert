@@ -41,6 +41,7 @@ def terraform_handler(options, config):
 
     Args:
         options (namedtuple): Parsed arguments from manage.py
+        config (CLIConfig): Loaded StreamAlert CLI
     """
     # Check for valid credentials
     if not check_credentials():
@@ -49,12 +50,10 @@ def terraform_handler(options, config):
     # Verify terraform is installed
     if not terraform_check():
         return
-    # Use a named tuple to match the 'processor' attribute in the argparse options
-    deploy_opts = namedtuple('DeployOptions', ['processor', 'clusters'])
 
     # Plan and Apply our streamalert infrastructure
     if options.subcommand == 'build':
-        terraform_build(options, config)
+        _terraform_build(options, config)
 
     # generate terraform files
     elif options.subcommand == 'generate':
@@ -66,101 +65,79 @@ def terraform_handler(options, config):
 
     # initialize streamalert infrastructure from a blank state
     elif options.subcommand == 'init':
-        LOGGER_CLI.info('Initializing StreamAlert')
-
-        # generate init Terraform files
-        if not terraform_generate(config=config, init=True):
-            return
-
-        LOGGER_CLI.info('Initializing Terraform')
-        if not run_command(['terraform', 'init']):
-            sys.exit(1)
-
-        # build init infrastructure
-        LOGGER_CLI.info('Building Initial Infrastructure')
-        init_targets = [
-            'aws_s3_bucket.lambda_source', 'aws_s3_bucket.logging_bucket',
-            'aws_s3_bucket.stream_alert_secrets', 'aws_s3_bucket.terraform_remote_state',
-            'aws_s3_bucket.streamalerts', 'aws_kms_key.stream_alert_secrets',
-            'aws_kms_alias.stream_alert_secrets'
-        ]
-        if not tf_runner(targets=init_targets):
-            LOGGER_CLI.error('An error occurred while running StreamAlert init')
-            sys.exit(1)
-
-        # generate the main.tf with remote state enabled
-        LOGGER_CLI.info('Configuring Terraform Remote State')
-        if not terraform_generate(config=config):
-            return
-
-        if not run_command(['terraform', 'init']):
-            return
-
-        # we need to manually create the streamalerts table since terraform does not support this
-        # See: https://github.com/terraform-providers/terraform-provider-aws/issues/1486
-        alerts_bucket = '{}.streamalerts'.format(config['global']['account']['prefix'])
-        create_table(None, alerts_bucket, 'alerts', config)
-
-        LOGGER_CLI.info('Deploying Lambda Functions')
-        # deploy both lambda functions
-        deploy(deploy_opts(['rule', 'alert', 'athena'], []), config)
-        # create all remainder infrastructure
-
-        LOGGER_CLI.info('Building Remainder Infrastructure')
-        tf_runner(refresh=False)
+        _terraform_init(config)
 
     elif options.subcommand == 'clean':
         if not continue_prompt(message='Are you sure you want to clean all Terraform files?'):
             sys.exit(1)
-        terraform_clean(config)
+        _terraform_clean(config)
 
     elif options.subcommand == 'destroy':
-        # Ask for approval here since multiple Terraform commands may be necessary
-        if not continue_prompt(message='Are you sure you want to destroy?'):
-            sys.exit(1)
-
-        if options.target:
-            targets = []
-            # Iterate over any targets to destroy. Global modules, like athena
-            # are prefixed with `stream_alert_` while cluster based modules
-            # are a combination of the target and cluster name
-            for target in options.target:
-                if target == 'athena':
-                    targets.append('module.stream_alert_{}'.format(target))
-                elif target == 'threat_intel_downloader':
-                    targets.append('module.threat_intel_downloader')
-                else:
-                    targets.extend(
-                        ['module.{}_{}'.format(target, cluster) for cluster in config.clusters()])
-
-            tf_runner(action='destroy', auto_approve=True, targets=targets)
-            return
-
-        # Migrate back to local state so Terraform can successfully
-        # destroy the S3 bucket used by the backend.
-        if not terraform_generate(config=config, init=True):
-            return
-
-        if not run_command(['terraform', 'init']):
-            return
-
-        # Destroy all of the infrastructure
-        if not tf_runner(action='destroy', auto_approve=True):
-            return
-
-        # Remove old Terraform files
-        terraform_clean(config)
+        _terraform_destroy(options, config)
 
     # get a quick status on our declared infrastructure
     elif options.subcommand == 'status':
         terraform_status(config)
 
+def _terraform_init(config):
+    """Initialize infrastructure using Terraform
 
-def terraform_build(options, config):
+    Args:
+        config (CLIConfig): Loaded StreamAlert CLI
+    """
+    LOGGER_CLI.info('Initializing StreamAlert')
+
+    # generate init Terraform files
+    if not terraform_generate(config=config, init=True):
+        return
+
+    LOGGER_CLI.info('Initializing Terraform')
+    if not run_command(['terraform', 'init']):
+        sys.exit(1)
+
+    # build init infrastructure
+    LOGGER_CLI.info('Building Initial Infrastructure')
+    init_targets = [
+        'aws_s3_bucket.lambda_source', 'aws_s3_bucket.logging_bucket',
+        'aws_s3_bucket.stream_alert_secrets', 'aws_s3_bucket.terraform_remote_state',
+        'aws_s3_bucket.streamalerts', 'aws_kms_key.stream_alert_secrets',
+        'aws_kms_alias.stream_alert_secrets'
+    ]
+    if not tf_runner(targets=init_targets):
+        LOGGER_CLI.error('An error occurred while running StreamAlert init')
+        sys.exit(1)
+
+    # generate the main.tf with remote state enabled
+    LOGGER_CLI.info('Configuring Terraform Remote State')
+    if not terraform_generate(config=config):
+        return
+
+    if not run_command(['terraform', 'init']):
+        return
+
+    # we need to manually create the streamalerts table since terraform does not support this
+    # See: https://github.com/terraform-providers/terraform-provider-aws/issues/1486
+    alerts_bucket = '{}.streamalerts'.format(config['global']['account']['prefix'])
+    create_table(None, alerts_bucket, 'alerts', config)
+
+    # Use a named tuple to match the 'processor' attribute in the argparse options
+    deploy_opts = namedtuple('DeployOptions', ['processor', 'clusters'])
+
+    LOGGER_CLI.info('Deploying Lambda Functions')
+    # deploy both lambda functions
+    deploy(deploy_opts(['rule', 'alert', 'athena'], []), config)
+    # create all remainder infrastructure
+
+    LOGGER_CLI.info('Building Remainder Infrastructure')
+    tf_runner(refresh=False)
+
+
+def _terraform_build(options, config):
     """Run Terraform with an optional set of targets and clusters
 
     Args:
         options (namedtuple): Parsed arguments from manage.py
+        config (CLIConfig): Loaded StreamAlert CLI
     """
     if not terraform_generate(config=config):
         return
@@ -187,8 +164,56 @@ def terraform_build(options, config):
     tf_runner(targets=tf_runner_targets)
 
 
-def terraform_clean(config):
-    """Remove leftover Terraform statefiles and main/cluster files"""
+def _terraform_destroy(options, config):
+    """Use Terraform to destroy any existing infrastructure
+
+    Args:
+        options (namedtuple): Parsed arguments from manage.py
+        config (CLIConfig): Loaded StreamAlert CLI
+    """
+    # Ask for approval here since multiple Terraform commands may be necessary
+    if not continue_prompt(message='Are you sure you want to destroy?'):
+        sys.exit(1)
+
+    if options.target:
+        targets = []
+        # Iterate over any targets to destroy. Global modules, like athena
+        # are prefixed with `stream_alert_` while cluster based modules
+        # are a combination of the target and cluster name
+        for target in options.target:
+            if target == 'athena':
+                targets.append('module.stream_alert_{}'.format(target))
+            elif target == 'threat_intel_downloader':
+                targets.append('module.threat_intel_downloader')
+            else:
+                targets.extend(
+                    ['module.{}_{}'.format(target, cluster) for cluster in config.clusters()])
+
+        tf_runner(action='destroy', auto_approve=True, targets=targets)
+        return
+
+    # Migrate back to local state so Terraform can successfully
+    # destroy the S3 bucket used by the backend.
+    if not terraform_generate(config=config, init=True):
+        return
+
+    if not run_command(['terraform', 'init']):
+        return
+
+    # Destroy all of the infrastructure
+    if not tf_runner(action='destroy', auto_approve=True):
+        return
+
+    # Remove old Terraform files
+    _terraform_clean(config)
+
+
+def _terraform_clean(config):
+    """Remove leftover Terraform statefiles and main/cluster files
+
+    Args:
+        config (CLIConfig): Loaded StreamAlert CLI
+    """
     LOGGER_CLI.info('Cleaning Terraform files')
 
     cleanup_files = ['{}.tf.json'.format(cluster) for cluster in config.clusters()]
@@ -206,7 +231,11 @@ def terraform_clean(config):
 
 
 def terraform_status(config):
-    """Display current AWS infrastructure built by Terraform"""
+    """Display current AWS infrastructure built by Terraform
+
+    Args:
+        config (CLIConfig): Loaded StreamAlert CLI
+    """
     for cluster, region in config['clusters'].items():
         print '\n======== {} ========'.format(cluster)
         print 'Region: {}'.format(region)
