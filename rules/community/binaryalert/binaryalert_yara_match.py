@@ -4,8 +4,9 @@ from stream_alert.rule_processor.rules_engine import StreamRules
 rule = StreamRules.rule
 
 
-@rule(logs=['binaryalert'],
-      outputs=['aws-sns:sample-topic'])
+@rule(
+    logs=['binaryalert'],
+    outputs=['aws-firehose:alerts'])
 def binaryalert_yara_match(rec):
     """
     author:       Austin Byers (Airbnb CSIRT)
