@@ -16,6 +16,8 @@ limitations under the License.
 # pylint: disable=abstract-class-instantiated,protected-access,attribute-defined-outside-init
 import os
 
+from requests.exceptions import Timeout as ReqTimeout
+
 from mock import Mock, patch
 from moto import mock_kms, mock_s3
 from nose.tools import (
@@ -214,7 +216,7 @@ class TestOutputDispatcher(object):
         """OutputDispatcher - Catch Non Default Exceptions"""
         exceptions = self._dispatcher._catch_exceptions()
 
-        assert_equal(exceptions, (OutputRequestFailure, ValueError))
+        assert_equal(exceptions, (OutputRequestFailure, ReqTimeout, ValueError))
 
     @patch.object(OutputDispatcher,
                   '_get_exceptions_to_catch', Mock(return_value=(ValueError, TypeError)))
@@ -222,11 +224,11 @@ class TestOutputDispatcher(object):
         """OutputDispatcher - Catch Non Default Exceptions Tuple"""
         exceptions = self._dispatcher._catch_exceptions()
 
-        assert_equal(exceptions, (OutputRequestFailure, ValueError, TypeError))
+        assert_equal(exceptions, (OutputRequestFailure, ReqTimeout, ValueError, TypeError))
 
     @patch.object(OutputDispatcher, '_get_exceptions_to_catch', Mock(return_value=()))
     def test_catch_exceptions_default(self):
         """OutputDispatcher - Catch Default Exceptions"""
         exceptions = self._dispatcher._catch_exceptions()
 
-        assert_equal(exceptions, (OutputRequestFailure,))
+        assert_equal(exceptions, (OutputRequestFailure, ReqTimeout))
