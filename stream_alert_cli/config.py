@@ -102,6 +102,7 @@ class CLIConfig(object):
 
         tf_state_bucket = '{}.streamalert.terraform.state'.format(prefix)
         self.config['global']['account']['prefix'] = prefix
+        self.config['global']['account']['kms_key_alias'] = '{}_streamalert_secrets'.format(prefix)
         self.config['global']['terraform']['tfstate_bucket'] = tf_state_bucket
         self.config['lambda']['athena_partition_refresh_config']['buckets'].clear()
         self.config['lambda']['athena_partition_refresh_config']['buckets'] \
