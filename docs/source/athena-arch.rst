@@ -62,7 +62,6 @@ Key                                  Required  Default                Descriptio
 
   {
     "athena_partition_refresh_config": {
-      "enabled": true,
       "enable_metrics": false,
       "log_level": "info",
       "memory": 128,
@@ -89,7 +88,7 @@ Going forward, if the deploy flag ``--processor all`` is used, it will redeploy 
 Monitoring
 ~~~~~~~~~~
 
-To ensure the function is operating as expected, monitor the following SQS metrics for ``<prefix>_streamalert_athena_data_bucket_notifications``:
+To ensure the function is operating as expected, monitor the following SQS metrics for ``<prefix>_streamalert_athena_s3_notifications``:
 
 * ``NumberOfMessagesReceived``
 * ``NumberOfMessagesSent``

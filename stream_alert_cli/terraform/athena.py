@@ -34,13 +34,15 @@ def generate_athena(config):
     prefix = config['global']['account']['prefix']
     database = athena_config.get('database_name', '{}_streamalert'.format(prefix))
 
-    results_bucket_name = athena_config.get('results_bucket', '').strip()
-    if results_bucket_name == '':
-        results_bucket_name = '{}.streamalert.athena-results'.format(prefix)
+    results_bucket_name = athena_config.get(
+        'results_bucket',
+        '{}.streamalert.athena-results'.format(prefix)
+    ).strip()
 
-    queue_name = athena_config.get('queue_name', '').strip()
-    if queue_name == '':
-        queue_name = '{}_streamalert_athena_data_bucket_notifications'.format(prefix)
+    queue_name = athena_config.get(
+        'queue_name',
+        '{}_streamalert_athena_s3_notifications'.format(prefix)
+    ).strip()
 
     athena_dict['module']['stream_alert_athena'] = {
         's3_logging_bucket': '{}.streamalert.s3-logging'.format(prefix),

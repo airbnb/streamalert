@@ -264,7 +264,7 @@ class StreamAlertAthenaClient(object):
 
         return False
 
-    def check_table_exists(self, table_name):
+    def check_table_exists(self, table_name, creating_table=False):
         """Verify a given StreamAlert Athena table exists."""
         query_success, query_resp = self.run_athena_query(
             query='SHOW TABLES LIKE \'{}\';'.format(table_name),
@@ -274,9 +274,10 @@ class StreamAlertAthenaClient(object):
         if query_success and query_resp['ResultSet']['Rows']:
             return True
 
-        LOGGER.info('The streamalert table \'%s\' does not exist.', table_name)
-        LOGGER.info('For help with creating tables: '
-                    '$ python manage.py athena create-table --help')
+        if not creating_table:
+            LOGGER.info('The streamalert table \'%s\' does not exist.', table_name)
+            LOGGER.info('For help with creating tables: '
+                        '$ python manage.py athena create-table --help')
         return False
 
     def add_partition(self, s3_buckets_and_keys):
@@ -383,7 +384,7 @@ class StreamAlertSQSClient(object):
         received_messages: A list of receieved SQS messages
         processed_messages: A list of processed SQS messages
     """
-    DEFAULT_QUEUE_NAME = '{}_streamalert_athena_data_bucket_notifications'
+    DEFAULT_QUEUE_NAME = '{}_streamalert_athena_s3_notifications'
     MAX_SQS_GET_MESSAGE_COUNT = 10
     SQS_BACKOFF_MAX_RETRIES = 10
 

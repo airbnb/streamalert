@@ -221,7 +221,7 @@ def create_table(table, bucket, table_type, config, schema_override=None):
             return
 
         # Check if the table exists
-        if athena_client.check_table_exists(sanitized_table_name):
+        if athena_client.check_table_exists(sanitized_table_name, True):
             LOGGER_CLI.info('The \'%s\' table already exists.', sanitized_table_name)
             return
 
@@ -265,7 +265,7 @@ def create_table(table, bucket, table_type, config, schema_override=None):
             schema=athena_schema, table_name=sanitized_table_name, bucket=bucket)
 
     elif table_type == 'alerts':
-        if athena_client.check_table_exists(table_type):
+        if athena_client.check_table_exists(table_type, True):
             LOGGER_CLI.info('The \'alerts\' table already exists.')
             return
         query = ALERTS_TABLE_STATEMENT.format(bucket=bucket)

@@ -1268,10 +1268,13 @@ Examples:
     # Validate the provided schema-override options
     def _validate_override(val):
         """Make sure the input is in the format column_name=type"""
+        err = ('Invalid override expression [{}]. The proper format is '
+               '"column_name=value_type"').format(val)
         if not '=' in val:
-            raise athena_create_table_parser.error(
-                'Invalid override expression [{}]. The proper format is '
-                '"column_name=value_type"'.format(val))
+            raise athena_create_table_parser.error(err)
+
+        if len(val.split('=')) != 2:
+            raise athena_create_table_parser.error(err)
 
     athena_create_table_parser.add_argument(
         '--schema-override',

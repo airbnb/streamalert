@@ -128,7 +128,6 @@ def basic_streamalert_config():
             'athena_partition_refresh_config': {
                 'current_version': '$LATEST',
                 'enable_metrics': False,
-                'enabled': True,
                 'handler': 'main.handler',
                 'memory': 128,
                 'partitioning': {

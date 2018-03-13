@@ -89,7 +89,6 @@ CONFIG_DATA = {
             ]
         },
         'athena_partition_refresh_config': {
-            'enabled': True,
             'buckets': {
                 'unit-testing.streamalerts': 'alerts',
                 'unit-testing.streamalert.data': 'data'

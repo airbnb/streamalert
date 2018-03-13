@@ -124,9 +124,8 @@ def _terraform_init(config):
     deploy_opts = namedtuple('DeployOptions', ['processor', 'clusters'])
 
     LOGGER_CLI.info('Deploying Lambda Functions')
-    # deploy both lambda functions
+
     deploy(deploy_opts(['rule', 'alert', 'athena'], []), config)
-    # create all remainder infrastructure
 
     LOGGER_CLI.info('Building Remainder Infrastructure')
     tf_runner(refresh=False)

@@ -33,8 +33,7 @@
       "unit-testing-2.streamalerts": "alerts"
     },
     "current_version": "$LATEST",
-    "enable_metrics": true,
-    "enabled": true,
+    "enable_metrics": false,
     "handler": "main.handler",
     "memory": "128",
     "source_bucket": "unit-testing.streamalert.source",

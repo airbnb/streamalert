@@ -69,7 +69,6 @@ class CLIConfig(object):
         prefix = self.config['global']['account']['prefix']
 
         athena_config_template = {
-            'enabled': True,
             'enable_metrics': False,
             'current_version': '$LATEST',
             'buckets': {

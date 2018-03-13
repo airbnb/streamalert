@@ -24,7 +24,6 @@ def test_generate_athena():
     """CLI - Terraform Generate Athena"""
 
     CONFIG['lambda']['athena_partition_refresh_config'] = {
-        'enabled': True,
         'current_version': '$LATEST',
         'buckets': {
             'unit-testing.streamalerts': 'alerts',
@@ -47,8 +46,7 @@ def test_generate_athena():
                 's3_logging_bucket': '{}.streamalert.s3-logging'.format(prefix),
                 'source': 'modules/tf_stream_alert_athena',
                 'database_name': '{}_streamalert'.format(prefix),
-                'queue_name':
-                '{}_streamalert_athena_data_bucket_notifications'.format(prefix),
+                'queue_name': '{}_streamalert_athena_s3_notifications'.format(prefix),
                 'results_bucket': '{}.streamalert.athena-results'.format(prefix),
                 'current_version': '$LATEST',
                 'enable_metrics': False,
