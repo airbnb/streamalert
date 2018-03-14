@@ -190,7 +190,7 @@ class StreamAlertFirehose(object):
                                     record_batch_size)
             return
 
-        # Error handle if failures occured in PutRecordBatch after
+        # Error handle if failures occurred in PutRecordBatch after
         # several backoff attempts
         if resp.get('FailedPutCount') > 0:
             failed_records = [failed
