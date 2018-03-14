@@ -254,7 +254,7 @@ class S3Payload(StreamPayload):
         try:
             return self._download_object(region, bucket, key)
         except IOError:
-            LOGGER.exception('[S3Payload] The following error occured while downloading')
+            LOGGER.exception('[S3Payload] The following error occurred while downloading')
             return
 
     @staticmethod

@@ -84,7 +84,7 @@ def terraform_handler(options, config):
             'aws_kms_alias.stream_alert_secrets'
         ]
         if not tf_runner(targets=init_targets):
-            LOGGER_CLI.error('An error occured while running StreamAlert init')
+            LOGGER_CLI.error('An error occurred while running StreamAlert init')
             sys.exit(1)
 
         # generate the main.tf with remote state enabled

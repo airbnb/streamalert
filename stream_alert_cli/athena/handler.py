@@ -91,7 +91,7 @@ def rebuild_partitions(athena_client, options, config):
         partition_success, partitions = athena_client.run_athena_query(
             query='SHOW PARTITIONS {}'.format(sanitized_table_name), database='streamalert')
         if not partition_success:
-            LOGGER_CLI.error('An error occured when loading partitions for %s',
+            LOGGER_CLI.error('An error occurred when loading partitions for %s',
                              sanitized_table_name)
             return
 
@@ -102,7 +102,7 @@ def rebuild_partitions(athena_client, options, config):
         drop_success, _ = athena_client.run_athena_query(
             query='DROP TABLE {}'.format(sanitized_table_name), database='streamalert')
         if not drop_success:
-            LOGGER_CLI.error('An error occured when dropping the %s table', sanitized_table_name)
+            LOGGER_CLI.error('An error occurred when dropping the %s table', sanitized_table_name)
             return
 
         LOGGER_CLI.info('Dropped table %s', sanitized_table_name)

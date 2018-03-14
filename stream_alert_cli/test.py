@@ -996,7 +996,7 @@ def stream_alert_test(options, config):
                 alert_proc_tester.all_tests_passed):
             sys.exit(1)
 
-        # If there are any log records in the memory buffer, then errors occured somewhere
+        # If there are any log records in the memory buffer, then errors occurred somewhere
         if log_mem_hanlder.buffer:
             # Release the MemoryHandler so we can do some other logging now
             logging.getLogger().removeHandler(log_mem_hanlder)
