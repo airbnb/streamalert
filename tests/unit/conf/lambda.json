@@ -29,19 +29,13 @@
     }
   },
   "athena_partition_refresh_config": {
+    "buckets": {
+      "unit-testing-2.streamalerts": "alerts"
+    },
     "current_version": "$LATEST",
-    "enable_metrics": true,
-    "enabled": true,
+    "enable_metrics": false,
     "handler": "main.handler",
     "memory": "128",
-    "refresh_type": {
-      "add_hive_partition": {
-        "unit-testing-2.streamalerts": "alerts"
-      },
-      "repair_hive_table": {
-        "unit-testing.streamalerts": "alerts"
-      }
-    },
     "source_bucket": "unit-testing.streamalert.source",
     "source_current_hash": "12345",
     "source_object_key": "lambda/athena/source.zip",

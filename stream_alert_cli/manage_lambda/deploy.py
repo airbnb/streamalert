@@ -74,19 +74,24 @@ def _create_and_upload(function_name, config, cluster=None):
             {'module.app_{}_{}'.format(app_name, cluster)
              for cluster, info in config['clusters'].iteritems()
              for app_name in info['modules'].get('stream_alert_apps', {})},
-            config['lambda'].get('stream_alert_apps_config', False)),
+            config['lambda'].get('stream_alert_apps_config', False)
+        ),
         'athena': PackageMap(
             stream_alert_packages.AthenaPackage,
             {'module.stream_alert_athena'},
-            config['lambda'].get('athena_partition_refresh_config', False)),
+            True
+        ),
         'rule': PackageMap(
             stream_alert_packages.RuleProcessorPackage,
             {'module.stream_alert_{}'.format(cluster) for cluster in clusters},
-            True),
+            True
+        ),
         'threat_intel_downloader': PackageMap(
             stream_alert_packages.ThreatIntelDownloaderPackage,
             {'module.threat_intel_downloader'},
-            config['lambda'].get('threat_intel_downloader_config', False))}
+            config['lambda'].get('threat_intel_downloader_config', False)
+        )
+    }
 
     if not package_mapping[function_name].enabled:
         return False, False

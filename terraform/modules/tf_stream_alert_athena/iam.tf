@@ -1,6 +1,6 @@
 // IAM Role: Lambda Execution Role
 resource "aws_iam_role" "athena_partition_role" {
-  name = "streamalert_athena_partition_refresh"
+  name = "${var.prefix}_streamalert_athena_partition_refresh"
 
   assume_role_policy = "${data.aws_iam_policy_document.lambda_assume_role_policy.json}"
 }
@@ -140,7 +140,7 @@ data "aws_iam_policy_document" "athena_permissions" {
     ]
 
     resources = [
-      "arn:aws:s3:::aws-athena-query-results-*",
+      "arn:aws:s3:::${var.results_bucket}*",
     ]
   }
 }

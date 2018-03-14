@@ -22,6 +22,32 @@ resource "aws_lambda_function" "athena_partition_refresh" {
   }
 }
 
+// S3 Bucket: Athena Query Results and Metastore Bucket
+resource "aws_s3_bucket" "athena_results_bucket" {
+  bucket        = "${var.results_bucket}"
+  acl           = "private"
+  force_destroy = false
+
+  tags {
+    Name = "${var.results_bucket}"
+  }
+
+  versioning {
+    enabled = true
+  }
+
+  logging {
+    target_bucket = "${var.s3_logging_bucket}"
+    target_prefix = "${var.results_bucket}/"
+  }
+}
+
+// Athena Database: streamalert
+resource "aws_athena_database" "streamalert" {
+  name   = "${var.database_name}"
+  bucket = "${aws_s3_bucket.athena_results_bucket.bucket}"
+}
+
 // Lambda Alias: Rule Processor Production
 resource "aws_lambda_alias" "athena_partition_refresh_production" {
   name             = "production"
@@ -32,7 +58,7 @@ resource "aws_lambda_alias" "athena_partition_refresh_production" {
 
 // SQS Queue: Athena Data Bucket Notificaitons
 resource "aws_sqs_queue" "streamalert_athena_data_bucket_notifications" {
-  name = "streamalert_athena_data_bucket_notifications"
+  name = "${var.queue_name}"
 
   # Enables SQS Long Polling: https://amzn.to/2wn10CR
   receive_wait_time_seconds = 10
@@ -68,7 +94,7 @@ resource "aws_lambda_permission" "allow_cloudwatch_events_invocation" {
 
 // Cloudwatch Event Rule: Invoke the Athena function refresh every minute
 resource "aws_cloudwatch_event_rule" "invoke_athena_refresh" {
-  name        = "streamalert_invoke_athena_refresh"
+  name        = "${var.prefix}_streamalert_invoke_athena_refresh"
   description = "Invoke the Athena Refresh Lambda function every minute"
 
   # https://amzn.to/2u5t0hS

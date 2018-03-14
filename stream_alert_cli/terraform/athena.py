@@ -29,23 +29,38 @@ def generate_athena(config):
     athena_dict = infinitedict()
     athena_config = config['lambda']['athena_partition_refresh_config']
 
-    data_buckets = set()
-    for refresh_type in athena_config['refresh_type']:
-        data_buckets.update(set(athena_config['refresh_type'][refresh_type]))
+    data_buckets = list(set(athena_config['buckets']))
+
+    prefix = config['global']['account']['prefix']
+    database = athena_config.get('database_name', '{}_streamalert'.format(prefix))
+
+    results_bucket_name = athena_config.get(
+        'results_bucket',
+        '{}.streamalert.athena-results'.format(prefix)
+    ).strip()
+
+    queue_name = athena_config.get(
+        'queue_name',
+        '{}_streamalert_athena_s3_notifications'.format(prefix)
+    ).strip()
 
     athena_dict['module']['stream_alert_athena'] = {
+        's3_logging_bucket': '{}.streamalert.s3-logging'.format(prefix),
         'source': 'modules/tf_stream_alert_athena',
+        'database_name': database,
+        'queue_name': queue_name,
+        'results_bucket': results_bucket_name,
         'lambda_handler': athena_config['handler'],
         'lambda_memory': athena_config.get('memory', '128'),
         'lambda_timeout': athena_config.get('timeout', '60'),
         'lambda_s3_bucket': athena_config['source_bucket'],
         'lambda_s3_key': athena_config['source_object_key'],
         'lambda_log_level': athena_config.get('log_level', 'info'),
-        'athena_data_buckets': list(data_buckets),
+        'athena_data_buckets': data_buckets,
         'refresh_interval': athena_config.get('refresh_interval', 'rate(10 minutes)'),
         'current_version': athena_config['current_version'],
         'enable_metrics': athena_config.get('enable_metrics', False),
-        'prefix': config['global']['account']['prefix']
+        'prefix': prefix
     }
 
     # Cloudwatch monitoring setup
@@ -59,8 +74,7 @@ def generate_athena(config):
             account_id=config['global']['account']['aws_account_id'],
             topic=sns_topic_name
         ),
-        'lambda_functions': ['{}_streamalert_athena_partition_refresh'.format(
-            config['global']['account']['prefix'])],
+        'lambda_functions': ['{}_streamalert_athena_partition_refresh'.format(prefix)],
         'kinesis_alarms_enabled': False
     }
 

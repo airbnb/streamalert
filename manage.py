@@ -1166,18 +1166,10 @@ Athena StreamAlert options
 
 Available Subcommands:
 
-    manage.py athena init                 Create the Athena base config
-    manage.py athena enable               Enable Athena Partition Refresh Lambda function
-    manage.py athena create-db            Initialize the Athena Database (streamalert)
-    manage.py athena create-table         Create an Athena table
-
-Examples:
-
-    manage.py athena create-db
-
-    manage.py athena create-table --type alerts --bucket s3.bucket.name --refresh_type add_hive_partition
-
-    manage.py athena create-table --type data --bucket s3.bucket.name --refresh_type add_hive_partition --table_name my_athena_table
+    manage.py athena init                     Initialize the Athena base config (for legacy support)
+    manage.py athena create-table             Create an Athena table
+    manage.py athena rebuild-partitions       Rebuild the partitions for an Athena table
+    manage.py athena drop-all-tables          Drop all of the tables from the database
 
 """.format(version))
     athena_parser = subparsers.add_parser(
@@ -1189,32 +1181,207 @@ Examples:
 
     athena_parser.set_defaults(command='athena')
 
-    athena_parser.add_argument(
-        'subcommand',
-        choices=[
-            'init', 'enable', 'create-db', 'create-table', 'drop-all-tables', 'rebuild-partitions'
-        ],
+    athena_subparsers = athena_parser.add_subparsers()
+
+    _add_athena_init_subparser(athena_subparsers)
+    _add_athena_create_table_subparser(athena_subparsers)
+    _add_athena_rebuild_subparser(athena_subparsers)
+    _add_athena_drop_all_subparser(athena_subparsers)
+
+
+def _add_athena_init_subparser(athena_subparsers):
+    """Add the athena init subparser: manage.py athena init"""
+    athena_init_usage = 'manage.py athena init'
+
+    athena_init_desc = ("""
+StreamAlertCLI v{}
+Initialize the Athena base config
+
+Command:
+
+    manage.py athena init                Initialize the Athena base config that gets written
+                                           to 'conf/lambda.json'.
+
+Optional Arguments:
+
+    --debug                              Enable debug logger output
+
+""".format(version))
+    athena_drop_all_parser = athena_subparsers.add_parser(
+        'init',
+        description=athena_init_desc,
+        usage=athena_init_usage,
+        formatter_class=RawTextHelpFormatter,
         help=ARGPARSE_SUPPRESS)
 
-    athena_parser.add_argument('--type', choices=['alerts', 'data'], help=ARGPARSE_SUPPRESS)
+    athena_drop_all_parser.set_defaults(subcommand='init')
 
-    athena_parser.add_argument('--bucket', help=ARGPARSE_SUPPRESS)
+    athena_drop_all_parser.add_argument(
+        '--debug',
+        action='store_true',
+        help=ARGPARSE_SUPPRESS)
 
-    athena_parser.add_argument('--table_name', help=ARGPARSE_SUPPRESS)
 
-    athena_parser.add_argument(
-        '--schema_override',
+def _add_athena_create_table_subparser(athena_subparsers):
+    """Add the athena create-table subparser: manage.py athena create-table"""
+    athena_create_table_usage = 'manage.py athena create-table'
+
+    athena_create_table_desc = ("""
+StreamAlertCLI v{}
+Create an Athena table
+
+Command:
+
+    manage.py athena create-table      Create an Athena table
+
+Required Arguments:
+
+    -b/--bucket                        The name of the S3 bucket to be used for Athena
+                                         query results.
+    -t/--table-name                    The name of the Athena table to create
+
+Optional Arguments:
+
+    -s/--schema-override               List of value types to override in the schema
+                                         The provided input should be space separated
+                                         directives like "column_name=value_type"
+    --debug                            Enable debug logger output
+
+Examples:
+
+    manage.py athena create-table \\
+      --bucket s3.bucket.name \\
+      --table-name my_athena_table
+
+""".format(version))
+    athena_create_table_parser = athena_subparsers.add_parser(
+        'create-table',
+        description=athena_create_table_desc,
+        usage=athena_create_table_usage,
+        formatter_class=RawTextHelpFormatter,
+        help=ARGPARSE_SUPPRESS)
+
+    athena_create_table_parser.set_defaults(subcommand='create-table')
+
+    _add_default_athena_args(athena_create_table_parser)
+
+    # Validate the provided schema-override options
+    def _validate_override(val):
+        """Make sure the input is in the format column_name=type"""
+        err = ('Invalid override expression [{}]. The proper format is '
+               '"column_name=value_type"').format(val)
+        if not '=' in val:
+            raise athena_create_table_parser.error(err)
+
+        if len(val.split('=')) != 2:
+            raise athena_create_table_parser.error(err)
+
+    athena_create_table_parser.add_argument(
+        '--schema-override',
         nargs='+',
         help=ARGPARSE_SUPPRESS,
         action=UniqueSetAction,
-        default=set())
+        default=set(),
+        type=_validate_override)
 
-    athena_parser.add_argument(
-        '--refresh_type',
-        choices=['add_hive_partition', 'repair_hive_table'],
+
+def _add_athena_rebuild_subparser(athena_subparsers):
+    """Add the athena rebuild-partitions subparser: manage.py athena rebuild-partitions"""
+    athena_rebuild_usage = 'manage.py athena rebuild-partitions'
+
+    athena_rebuild_desc = ("""
+StreamAlertCLI v{}
+Rebuild the partitions for an Athena table
+
+Command:
+
+    manage.py athena rebuild-partitions      Rebuilds the partitions for an Athena table
+
+Required Arguments:
+
+    -b/--bucket                        The name of the S3 bucket to be used for Athena
+                                         query results.
+    -t/--table-name                    The name of the Athena table to create
+
+Optional Arguments:
+
+    --debug                            Enable debug logger output
+
+Examples:
+
+    manage.py athena rebuild-partitions \\
+      --bucket s3.bucket.name \\
+      --table_name my_athena_table
+
+""".format(version))
+    athena_rebuild_parser = athena_subparsers.add_parser(
+        'rebuild-partitions',
+        description=athena_rebuild_desc,
+        usage=athena_rebuild_usage,
+        formatter_class=RawTextHelpFormatter,
         help=ARGPARSE_SUPPRESS)
 
-    athena_parser.add_argument('--debug', action='store_true', help=ARGPARSE_SUPPRESS)
+    athena_rebuild_parser.set_defaults(subcommand='rebuild-partitions')
+
+    _add_default_athena_args(athena_rebuild_parser)
+
+
+def _add_athena_drop_all_subparser(athena_subparsers):
+    """Add the athena drop-all-tables subparser: manage.py athena drop-all-tables"""
+    athena_drop_all_usage = 'manage.py athena drop-all-tables'
+
+    athena_drop_all_desc = ("""
+StreamAlertCLI v{}
+Drop all tables from an Athena database
+
+Command:
+
+    manage.py athena drop-all-tables     Drop all of the tables from the database
+
+Optional Arguments:
+
+    --debug                              Enable debug logger output
+
+""".format(version))
+    athena_drop_all_parser = athena_subparsers.add_parser(
+        'drop-all-tables',
+        description=athena_drop_all_desc,
+        usage=athena_drop_all_usage,
+        formatter_class=RawTextHelpFormatter,
+        help=ARGPARSE_SUPPRESS)
+
+    athena_drop_all_parser.set_defaults(subcommand='drop-all-tables')
+
+    athena_drop_all_parser.add_argument(
+        '--debug',
+        action='store_true',
+        help=ARGPARSE_SUPPRESS)
+
+
+def _add_default_athena_args(athena_parser):
+    """Adds the default required arguments for athena subcommands (bucket and table)"""
+
+    athena_parser.add_argument(
+        '-b', '--bucket',
+        help=ARGPARSE_SUPPRESS,
+        required=True)
+
+    athena_parser.add_argument(
+        '-t', '--table-type',
+        choices=['data', 'alert'],
+        help=ARGPARSE_SUPPRESS,
+        required=True)
+
+    athena_parser.add_argument(
+        '-n', '--table-name',
+        help=ARGPARSE_SUPPRESS,
+        required=True)
+
+    athena_parser.add_argument(
+        '--debug',
+        action='store_true',
+        help=ARGPARSE_SUPPRESS)
+
 
 def _add_threat_intel_subparser(subparsers):
     """Add Threat Intel subparser: manage.py threat_intel [subcommand]"""
