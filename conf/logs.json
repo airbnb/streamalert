@@ -27,6 +27,14 @@
       ]
     }
   },
+  "carbonblack:audit": {
+    "schema": {
+      "cb_server": "string",
+      "message": "string",
+      "type": "string"
+    },
+    "parser": "json"
+  },
   "carbonblack:alert.status.updated": {
     "schema": {
       "alert_resolution": "string",
