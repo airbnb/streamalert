@@ -439,7 +439,7 @@ class TestStreamThreatIntel(object):
             StreamIoc(value='1.1.1.2', ioc_type='ip')
         ]
         threat_intel._process_ioc(ioc_collections)
-        log_mock.assert_called_with('An error occured while quering dynamodb table. Error is: %s',
+        log_mock.assert_called_with('An error occurred while quering dynamodb table. Error is: %s',
                                     {'Error': {'Code': 400, 'Message': 'raising test exception'}})
 
     @patch('boto3.client')

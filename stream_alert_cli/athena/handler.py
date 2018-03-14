@@ -72,7 +72,7 @@ def rebuild_partitions(table, bucket, table_type, config):
             database=athena_client.sa_database
         )
         if not partition_success:
-            LOGGER_CLI.error('An error occured when loading partitions for %s',
+            LOGGER_CLI.error('An error occurred when loading partitions for %s',
                              sanitized_table_name)
             return
 
@@ -85,7 +85,7 @@ def rebuild_partitions(table, bucket, table_type, config):
             database=athena_client.sa_database
         )
         if not drop_success:
-            LOGGER_CLI.error('An error occured when dropping the %s table', sanitized_table_name)
+            LOGGER_CLI.error('An error occurred when dropping the %s table', sanitized_table_name)
             return
 
         LOGGER_CLI.info('Dropped table %s', sanitized_table_name)

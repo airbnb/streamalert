@@ -276,7 +276,7 @@ class StreamThreatIntel(object):
 
             query_result = []
 
-            query_error_msg = 'An error occured while quering dynamodb table. Error is: %s'
+            query_error_msg = 'An error occurred while quering dynamodb table. Error is: %s'
             try:
                 result, unprocesed_keys = self._query(query_values)
                 query_result.extend(result)
@@ -292,7 +292,7 @@ class StreamThreatIntel(object):
             if unprocesed_keys:
                 deserializer = self._deserialize(unprocesed_keys[self._table]['Keys'])
                 query_values = [elem[PRIMARY_KEY] for elem in deserializer]
-                query_error_msg = 'An error occured while processing unprocesed_keys. Error is: %s'
+                query_error_msg = 'An error occurred while processing unprocesed_keys. Error is: %s'
                 try:
                     result, _ = self._query(query_values)
                     query_result.extend(result)

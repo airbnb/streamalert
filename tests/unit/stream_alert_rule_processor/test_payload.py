@@ -229,6 +229,17 @@ def test_get_object(log_mock, _):
     )
 
 
+@patch('stream_alert.rule_processor.payload.S3Payload._download_object')
+def test_get_object_ioerror(download_object_mock):
+    """S3Payload - IOError Test"""
+    download_object_mock.side_effect = IOError('No space left on device')
+    raw_record = make_s3_raw_record('unit_bucket_name', 'unit_key_name')
+    s3_payload = load_stream_payload('s3', 'unit_key_name', raw_record)
+
+    result = s3_payload._get_object()
+
+    assert_equal(result, None)
+
 @patch('stream_alert.rule_processor.payload.boto3.client')
 @patch('stream_alert.rule_processor.payload.S3Payload._read_downloaded_s3_object')
 def test_s3_download_object(*_):
@@ -265,7 +276,7 @@ def test_s3_download_object_mb(log_mock, *_):
     s3_payload._download_object('us-east-1', 'unit_bucket_name', 'unit_key_name')
 
     assert_equal(log_mock.call_args_list[0],
-                 call('Starting download from S3: %s/%s [%s]',
+                 call('[S3Payload] Starting download from S3: %s/%s [%s]',
                       'unit_bucket_name', 'unit_key_name', '127.8MB'))
 
     assert_equal(log_mock.call_args_list[1][0][0], 'Completed download in %s seconds')
