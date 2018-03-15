@@ -70,6 +70,9 @@ class MockCLIConfig(object):
         self.config.__setitem__(key, new_value)
         self.write()
 
+    def clusters(self):
+        return self.config['clusters'].keys()
+
     def get(self, key):
         return self.config.get(key)
 
@@ -113,26 +116,18 @@ def basic_streamalert_config():
         },
         'lambda': {
             'alert_processor_config': {
+                'current_version': '$LATEST',
                 'handler': 'stream_alert.alert_processor.main.handler',
+                'memory': 128,
                 'source_bucket': 'unit-testing.streamalert.source',
                 'source_current_hash': '<auto_generated>',
                 'source_object_key': '<auto_generated>',
-                'third_party_libraries': []
-            },
-            'rule_processor_config': {
-                'handler': 'stream_alert.rule_processor.main.handler',
-                'source_bucket': 'unit-testing.streamalert.source',
-                'source_current_hash': '<auto_generated>',
-                'source_object_key': '<auto_generated>',
-                'third_party_libraries': [
-                    'jsonpath_rw',
-                    'netaddr'
-                ]
+                'third_party_libraries': [],
+                'timeout': 10
             },
             'athena_partition_refresh_config': {
                 'current_version': '$LATEST',
                 'enable_metrics': False,
-                'enabled': True,
                 'handler': 'main.handler',
                 'memory': 128,
                 'partitioning': {
@@ -147,6 +142,40 @@ def basic_streamalert_config():
                 'third_party_libraries': [],
                 'timeout': 60
             },
+            'rule_processor_config': {
+                'handler': 'stream_alert.rule_processor.main.handler',
+                'source_bucket': 'unit-testing.streamalert.source',
+                'source_current_hash': '<auto_generated>',
+                'source_object_key': '<auto_generated>',
+                'third_party_libraries': [
+                    'jsonpath_rw',
+                    'netaddr'
+                ]
+            },
+            'threat_intel_downloader_config': {
+                'autoscale': True,
+                'current_version': '$LATEST',
+                'enabled': True,
+                'handler': 'stream_alert.threat_intel_downloader.main.handler',
+                'interval': 'rate(1 day)',
+                'ioc_filters': [],
+                'ioc_keys': [],
+                'ioc_types': [],
+                'log_level': 'info',
+                'max_read_capacity': 1000,
+                'memory': 128,
+                'min_read_capacity': 100,
+                'source_bucket': 'unit-testing.streamalert.source',
+                'source_current_hash': '<auto_generated>',
+                'source_object_key': '<auto_generated>',
+                'table_rcu': 1000,
+                'table_wcu': 200,
+                'target_utilization': 70,
+                'third_party_libraries': [
+                    'requests'
+                ],
+                'timeout': 120
+            }
         },
         'clusters': {
             'prod': {
@@ -169,11 +198,6 @@ def basic_streamalert_config():
                         'enabled': True
                     },
                     'stream_alert': {
-                        'alert_processor': {
-                            'current_version': '$LATEST',
-                            'memory': 128,
-                            'timeout': 10
-                        },
                         'rule_processor': {
                             'current_version': '$LATEST',
                             "enable_metrics": True,
@@ -199,6 +223,36 @@ def basic_streamalert_config():
                         'access_key_id',
                         'secret_key'
                     ]
+                },
+                'region': 'us-east-1'
+            },
+            'corp': {
+                'id': 'corp',
+                'modules': {
+                    'stream_alert': {
+                        'rule_processor': {
+                            'current_version': '$LATEST',
+                            'memory': 128,
+                            'timeout': 10
+                        }
+                    },
+                    'stream_alert_apps': {
+                        'box_collector': {
+                            'current_version': '$LATEST',
+                            'interval': 'rate(5 minutes)',
+                            'log_level': 'debug',
+                            'memory': 128,
+                            'timeout': 60,
+                            'type': 'box_admin_events'
+                        },
+                        'duo_admin_collector': {
+                            'current_version': '$LATEST',
+                            'interval': 'rate(30 minutes)',
+                            'memory': 128,
+                            'timeout': 40,
+                            'type': 'duo_admin'
+                        }
+                    }
                 },
                 'region': 'us-east-1'
             }

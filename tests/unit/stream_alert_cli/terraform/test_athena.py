@@ -24,15 +24,10 @@ def test_generate_athena():
     """CLI - Terraform Generate Athena"""
 
     CONFIG['lambda']['athena_partition_refresh_config'] = {
-        'enabled': True,
         'current_version': '$LATEST',
-        'refresh_type': {
-            'repair_hive_table': {
-                'unit-testing.streamalerts': 'alerts'
-            },
-            'add_hive_partition': {
-                'unit-testing-2.streamalerts': 'alerts'
-            }
+        'buckets': {
+            'unit-testing.streamalerts': 'alerts',
+            'unit-testing.streamalert.data': 'data'
         },
         'handler': 'main.handler',
         'timeout': '60',
@@ -42,10 +37,17 @@ def test_generate_athena():
         'source_object_key': 'lambda/athena/source.zip',
         'third_party_libraries': []
     }
+
+    prefix = CONFIG['global']['account']['prefix']
+
     expected_athena_config = {
         'module': {
             'stream_alert_athena': {
+                's3_logging_bucket': '{}.streamalert.s3-logging'.format(prefix),
                 'source': 'modules/tf_stream_alert_athena',
+                'database_name': '{}_streamalert'.format(prefix),
+                'queue_name': '{}_streamalert_athena_s3_notifications'.format(prefix),
+                'results_bucket': '{}.streamalert.athena-results'.format(prefix),
                 'current_version': '$LATEST',
                 'enable_metrics': False,
                 'lambda_handler': 'main.handler',
@@ -56,7 +58,7 @@ def test_generate_athena():
                 'lambda_s3_key': 'lambda/athena/source.zip',
                 'athena_data_buckets': [
                     'unit-testing.streamalerts',
-                    'unit-testing-2.streamalerts'
+                    'unit-testing.streamalert.data'
                 ],
                 'prefix': 'unit-testing',
                 'refresh_interval': 'rate(10 minutes)'

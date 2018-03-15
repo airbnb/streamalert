@@ -10,8 +10,8 @@ Data in Athena is searchable via ANSI SQL and powered by Presto.
 
 StreamAlert uses AWS Athena for historical searching of:
 
-* Generated alerts from StreamAlert (currently supported)
-* All incoming Data sent to StreamAlert (coming soon)
+* Generated alerts from StreamAlert
+* All incoming log data sent to StreamAlert
 
 This works by:
 
@@ -34,35 +34,14 @@ Concepts
 Getting Started
 ---------------
 
-To get started with Athena, run the following commands:
+Athena will be enabled for searching alerts, and can be further extended to search all incoming log data.
+
+To create tables for searching data sent to StreamAlert, run:
 
 .. code-block:: bash
 
-  $ python manage.py athena init
-  $ python manage.py athena enable
-
-This will initialize and enable the configuration for StreamAlert's usage of Athena.
-
-Next, create the ``streamalert`` database:
-
-.. code-block:: bash
-
-  $ python manage.py athena create-db
-
-Create the ``alerts`` table for searching generated StreamAlerts:
-
-.. code-block:: bash
-
-  $ python manage.py athena create-table --type alerts --bucket <s3.bucket.id.goes.here>
-
-Create tables for data sent to StreamAlert:
-
-.. code-block:: bash
-
-  $ python manage.py athena create-table \ 
-    --type data \
+  $ python manage.py athena create-table \
     --bucket <prefix>.streamalert.data \
-    --refresh_type add_hive_partition \
     --table_name <log_name>
 
 Note: The log name above is representative of an enabled log source to your StreamAlert deployment.
@@ -74,5 +53,5 @@ Repeat this process for all relevant data tables in your deployment.
 Next Steps
 ----------
 
-* `Configure and deploy the Athena Partition Refresher Lambda function <athena-deploy.html>`_
+* `Read more about the Athena Partition Refresh Lambda function <athena-arch.html>`_
 * `Configure and deploy Kinesis Firehose for delivery of data to S3 <firehose.html>`_

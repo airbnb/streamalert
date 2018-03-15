@@ -17,6 +17,7 @@ limitations under the License.
 import base64
 import json
 import logging
+import os
 
 from mock import call, patch
 from moto import mock_kinesis
@@ -47,6 +48,8 @@ class TestStreamAlert(object):
 
     @patch('stream_alert.rule_processor.handler.load_config',
            lambda: load_config('tests/unit/conf/'))
+    @patch.dict(os.environ, {'ALERT_PROCESSOR': 'unit-testing_streamalert_alert_processor',
+                             'ALERT_TABLE': 'unit-testing_streamalert_alerts'})
     def setup(self):
         """Setup before each method"""
         self.__sa_handler = StreamAlert(get_mock_context(), False)
@@ -168,15 +171,15 @@ class TestStreamAlert(object):
             'Record does not match any defined schemas: %s\n%s')
         assert_equal(log_mock.call_args[0][2], '{"bad": "data"}')
 
-    @patch('stream_alert.rule_processor.sink.StreamSink.sink')
+    @patch('stream_alert.rule_processor.alert_forward.AlertForwarder.send_alerts')
     @patch('stream_alert.rule_processor.handler.StreamRules.process')
     @patch('stream_alert.rule_processor.handler.StreamClassifier.extract_service_and_entity')
-    def test_run_send_alerts(self, extract_mock, rules_mock, sink_mock):
+    def test_run_send_alerts(self, extract_mock, rules_mock, forwarder_mock):
         """StreamAlert Class - Run, Send Alert"""
         extract_mock.return_value = ('kinesis', 'unit_test_default_stream')
         rules_mock.return_value = (['success!!'], ['normalized_records'])
 
-        # Set send_alerts to true so the sink happens
+        # Set send_alerts to true so the send_alerts happens
         self.__sa_handler.enable_alert_processor = True
 
         # Swap out the alias so the logging occurs
@@ -184,7 +187,7 @@ class TestStreamAlert(object):
 
         self.__sa_handler.run(get_valid_event())
 
-        sink_mock.assert_called_with(['success!!'])
+        forwarder_mock.assert_called_with(['success!!'])
 
     @patch('logging.Logger.debug')
     @patch('stream_alert.rule_processor.handler.StreamRules.process')
@@ -265,6 +268,8 @@ class TestStreamAlert(object):
 
     @patch('stream_alert.rule_processor.threat_intel.StreamThreatIntel._query')
     @patch('stream_alert.rule_processor.threat_intel.StreamThreatIntel.load_from_config')
+    @patch.dict(os.environ, {'ALERT_PROCESSOR': 'unit-testing_streamalert_alert_processor',
+                             'ALERT_TABLE': 'unit-testing_streamalert_alerts'})
     def test_run_threat_intel_enabled(self, mock_threat_intel, mock_query): # pylint: disable=no-self-use
         """StreamAlert Class - Run SA when threat intel enabled"""
         @rule(datatypes=['sourceAddress'], outputs=['s3:sample_bucket'])

@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from __future__ import absolute_import  # Suppresses RuntimeWarning import error in Lambda
 from collections import OrderedDict
 import json
 
@@ -44,14 +45,16 @@ def handler(event, context):
     if not config:
         return
 
-    region = context.invoked_function_arn.split(':')[3]
+    split_arn = context.invoked_function_arn.split(':')
+    region = split_arn[3]
+    account_id = split_arn[4]
     function_name = context.function_name
 
     # Return the current list of statuses back to the caller
-    return list(run(event, region, function_name, config))
+    return list(run(event, region, account_id, function_name, config))
 
 
-def run(alert, region, function_name, config):
+def run(alert, region, account_id, function_name, config):
     """Send an Alert to its described outputs.
 
     Args:
@@ -59,6 +62,7 @@ def run(alert, region, function_name, config):
             following structure:
 
             {
+                'id': uuid,
                 'record': record,
                 'rule_name': rule.rule_name,
                 'rule_description': rule.rule_function.__doc__,
@@ -70,6 +74,7 @@ def run(alert, region, function_name, config):
             }
 
         region (str): The AWS region of the currently executing Lambda function
+        account_id (str): The 12-digit AWS account ID of the currently executing Lambda function
         function_name (str): The name of the lambda function
         config (dict): The loaded configuration for outputs from conf/outputs.json
 
@@ -80,7 +85,7 @@ def run(alert, region, function_name, config):
         LOGGER.error('Invalid alert format:\n%s', json.dumps(alert, indent=2))
         return
 
-    LOGGER.debug('Sending alert to outputs:\n%s', json.dumps(alert, indent=2))
+    LOGGER.info('Sending alert %s to outputs %s', alert['id'], alert['outputs'])
 
     # strip out unnecessary keys and sort
     alert = _sort_dict(alert)
@@ -101,7 +106,8 @@ def run(alert, region, function_name, config):
             continue
 
         # Retrieve the proper class to handle dispatching the alerts of this services
-        dispatcher = StreamAlertOutput.create_dispatcher(service, region, function_name, config)
+        dispatcher = StreamAlertOutput.create_dispatcher(
+            service, region, account_id, function_name, config)
 
         if not dispatcher:
             continue

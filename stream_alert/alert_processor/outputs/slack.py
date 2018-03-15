@@ -220,7 +220,7 @@ class SlackOutput(OutputDispatcher):
         """
         creds = self._load_creds(kwargs['descriptor'])
         if not creds:
-            return self._log_status(False)
+            return self._log_status(False, kwargs['descriptor'])
 
         slack_message = self._format_message(kwargs['rule_name'], kwargs['alert'])
 
@@ -229,4 +229,4 @@ class SlackOutput(OutputDispatcher):
         except OutputRequestFailure:
             success = False
 
-        return self._log_status(success)
+        return self._log_status(success, kwargs['descriptor'])

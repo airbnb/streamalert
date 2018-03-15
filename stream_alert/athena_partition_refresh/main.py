@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from __future__ import absolute_import  # Suppresses RuntimeWarning import error in Lambda
 from collections import defaultdict
 from datetime import datetime
 import json
@@ -98,12 +99,10 @@ def _load_config():
 
 class ConfigError(Exception):
     """Custom StreamAlertAthena Config Exception Class"""
-    pass
 
 
 class AthenaPartitionRefreshError(Exception):
     """Generic Athena Partition Error for erroring the Lambda function"""
-    pass
 
 
 class StreamAlertAthenaClient(object):
@@ -116,7 +115,7 @@ class StreamAlertAthenaClient(object):
         athenea_results_key: The key in S3 to store Athena query results
     """
     DATABASE_DEFAULT = 'default'
-    DATABASE_STREAMALERT = 'streamalert'
+    DEFAULT_DATABASE_STREAMALERT = '{}_streamalert'
     DEFAULT_S3_PREFIX = 'athena_partition_refresh'
 
     STREAMALERTS_REGEX = re.compile(r'alerts/dt=(?P<year>\d{4})'
@@ -139,14 +138,22 @@ class StreamAlertAthenaClient(object):
             results_key_prefix (str): The S3 key prefix to store Athena results
         """
         self.config = config
+        self.prefix = self.config['global']['account']['prefix']
 
         region = self.config['global']['account']['region']
         self.athena_client = boto3.client('athena', region_name=region)
 
-        # Format the S3 bucket to store Athena query results
-        self.athena_results_bucket = 's3://aws-athena-query-results-{}-{}'.format(
-            self.config['global']['account']['aws_account_id'],
-            self.config['global']['account']['region'])
+        athena_config = self.config['lambda']['athena_partition_refresh_config']
+
+        # Get the S3 bucket to store Athena query results
+        self.athena_results_bucket = athena_config.get(
+            'results_bucket',
+            's3://{}.streamalert.athena-results'.format(self.prefix)
+        ).strip()
+
+        # Make sure the required 's3://' prefix is included
+        if not self.athena_results_bucket.startswith('s3://'):
+            self.athena_results_bucket = 's3://{}'.format(self.athena_results_bucket)
 
         # Format the S3 key to store specific objects
         results_key_prefix = kwargs.get('results_key_prefix', self.DEFAULT_S3_PREFIX)
@@ -154,6 +161,16 @@ class StreamAlertAthenaClient(object):
         self.athena_results_key = os.path.join(
             results_key_prefix,
             datetime.now().strftime('%Y/%m/%d'))
+
+    @property
+    def sa_database(self):
+        """Return the name of the streamalert database. This can be overridden in the config"""
+        database = self.config['lambda']['athena_partition_refresh_config'].get(
+            'database_name',
+            self.DEFAULT_DATABASE_STREAMALERT.format(self.prefix)
+        )
+
+        return database.replace(' ', '') # strip any spaces which are invalid database names
 
     def check_query_status(self, query_execution_id):
         """Check in on the running query, back off if the job is running or queued
@@ -232,7 +249,7 @@ class StreamAlertAthenaClient(object):
         Keyword Args:
             database (str): The database name to execute the query under
         """
-        database = kwargs.get('database', self.DATABASE_STREAMALERT)
+        database = kwargs.get('database', self.sa_database)
         query_success, query_resp = self.run_athena_query(
             query='SHOW DATABASES LIKE \'{}\';'.format(database),
         )
@@ -247,59 +264,23 @@ class StreamAlertAthenaClient(object):
 
         return False
 
-    def check_table_exists(self, table_name):
+    def check_table_exists(self, table_name, creating_table=False):
         """Verify a given StreamAlert Athena table exists."""
         query_success, query_resp = self.run_athena_query(
             query='SHOW TABLES LIKE \'{}\';'.format(table_name),
-            database=self.DATABASE_STREAMALERT
+            database=self.sa_database
         )
 
         if query_success and query_resp['ResultSet']['Rows']:
             return True
 
-        LOGGER.info('The streamalert table \'%s\' does not exist.', table_name)
-        LOGGER.info('For help with creating tables: '
-                    '$ python manage.py athena create-table --help')
+        if not creating_table:
+            LOGGER.info('The streamalert table \'%s\' does not exist.', table_name)
+            LOGGER.info('For help with creating tables: '
+                        '$ python manage.py athena create-table --help')
         return False
 
-    def repair_hive_table(self, unique_buckets):
-        """Execute a MSCK REPAIR TABLE on a given Athena table
-
-        Args:
-            unique_buckets (list): S3 buckets to repair
-
-        Returns:
-            (bool): If the repair was successful for not
-        """
-        athena_config = self.config['lambda']['athena_partition_refresh_config']
-        repair_hive_table_config = athena_config['refresh_type']['repair_hive_table']
-
-        LOGGER.info('Processing Hive repair table...')
-        for data_bucket in unique_buckets:
-            athena_table = repair_hive_table_config.get(data_bucket)
-            if not athena_table:
-                LOGGER.warning('%s not found in repair_hive_table config. '
-                               'Please update your configuration accordingly.',
-                               athena_table)
-                continue
-
-            query_success, query_resp = self.run_athena_query(
-                query='MSCK REPAIR TABLE {};'.format(athena_table),
-                database=self.DATABASE_STREAMALERT
-            )
-
-            if query_success:
-                LOGGER.info('Query results:')
-                for row in query_resp['ResultSet']['Rows']:
-                    LOGGER.info(row['Data'])
-            else:
-                LOGGER.error('Partition refresh of the Athena table '
-                             '%s has failed.', athena_table)
-                return False
-
-        return True
-
-    def add_hive_partition(self, s3_buckets_and_keys):
+    def add_partition(self, s3_buckets_and_keys):
         """Execute a Hive Add Partition command on a given Athena table
 
         Args:
@@ -309,15 +290,15 @@ class StreamAlertAthenaClient(object):
             (bool): If the repair was successful for not
         """
         athena_config = self.config['lambda']['athena_partition_refresh_config']
-        add_hive_partition_config = athena_config['refresh_type']['add_hive_partition']
+        athena_buckets = athena_config['buckets']
         partitions = defaultdict(dict)
 
         LOGGER.info('Processing new Hive partitions...')
         for bucket, keys in s3_buckets_and_keys.iteritems():
-            athena_table = add_hive_partition_config.get(bucket)
+            athena_table = athena_buckets.get(bucket)
             if not athena_table:
                 # TODO(jacknagz): Add this as a metric
-                LOGGER.error('%s not found in \'add_hive_partition\' config. '
+                LOGGER.error('%s not found in \'buckets\' config. '
                              'Please add this bucket to enable additions '
                              'of Hive partitions.',
                              athena_table)
@@ -380,12 +361,13 @@ class StreamAlertAthenaClient(object):
 
             query_success, _ = self.run_athena_query(
                 query=query,
-                database=self.DATABASE_STREAMALERT
+                database=self.sa_database
             )
 
             if not query_success:
-                LOGGER.error('The add hive partition query has failed:\n%s', query)
-                return False
+                raise AthenaPartitionRefreshError(
+                    'The add hive partition query has failed:\n{}'.format(query)
+                )
 
             LOGGER.info('Successfully added the following partitions:\n%s',
                         json.dumps({athena_table: partitions[athena_table]}, indent=4))
@@ -402,7 +384,7 @@ class StreamAlertSQSClient(object):
         received_messages: A list of receieved SQS messages
         processed_messages: A list of processed SQS messages
     """
-    QUEUENAME = 'streamalert_athena_data_bucket_notifications'
+    DEFAULT_QUEUE_NAME = '{}_streamalert_athena_s3_notifications'
     MAX_SQS_GET_MESSAGE_COUNT = 10
     SQS_BACKOFF_MAX_RETRIES = 10
 
@@ -419,13 +401,24 @@ class StreamAlertSQSClient(object):
 
         self.setup()
 
+    @property
+    def queue_name(self):
+        """Return the name of the sqs queue to use. This can be overridden in the config"""
+        prefix = self.config['global']['account']['prefix']
+        queue = self.config['lambda']['athena_partition_refresh_config'].get(
+            'queue_name',
+            self.DEFAULT_QUEUE_NAME.format(prefix)
+        )
+
+        return queue.replace(' ', '') # strip any spaces which are invalid queue names
+
     def setup(self):
         """Get the SQS URL for Athena bucket s3 notifications"""
         region = self.config['global']['account']['region']
         self.sqs_client = boto3.client('sqs', region_name=region)
 
         self.athena_sqs_url = self.sqs_client.list_queues(
-            QueueNamePrefix=self.QUEUENAME
+            QueueNamePrefix=self.queue_name
         )['QueueUrls'][0]
 
     def get_messages(self, **kwargs):
@@ -607,10 +600,13 @@ def handler(*_):
 
     # Check that the 'streamalert' database exists before running queries
     if not stream_alert_athena.check_database_exists():
-        raise AthenaPartitionRefreshError('The \'streamalert\' database does not exist')
+        raise AthenaPartitionRefreshError(
+            'The \'{}\' database does not exist'.format(stream_alert_athena.sa_database)
+        )
 
-    if not stream_alert_athena.add_hive_partition(s3_buckets_and_keys):
-        raise AthenaPartitionRefreshError('Adding partition(s) has failed')
+    if not stream_alert_athena.add_partition(s3_buckets_and_keys):
+        LOGGER.error('Failed to add hive partition(s)')
+        return
 
     stream_alert_sqs.delete_messages()
     LOGGER.info('Deleted %d messages from SQS',

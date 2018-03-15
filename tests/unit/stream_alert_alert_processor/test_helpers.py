@@ -13,9 +13,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from nose.tools import assert_false, assert_true
+from nose.tools import assert_equal, assert_false, assert_true
 
-from stream_alert.alert_processor.helpers import validate_alert
+from stream_alert.alert_processor.helpers import elide_string_middle, validate_alert
 from tests.unit.stream_alert_alert_processor.helpers import get_alert
 
 
@@ -100,3 +100,18 @@ def test_metadata_non_string_type():
 
     # Test with invalid metadata non-string value
     assert_false(validate_alert(invalid_metadata_non_string))
+
+
+def test_elide_string_middle():
+    """Alert Processor String Truncation"""
+    alphabet = 'abcdefghijklmnopqrstuvwxyz'
+
+    # String shortened
+    assert_equal('ab ... yz', elide_string_middle(alphabet, 10))
+    assert_equal('abcde ... vwxyz', elide_string_middle(alphabet, 15))
+    assert_equal('abcdefg ... tuvwxyz', elide_string_middle(alphabet, 20))
+    assert_equal('abcdefghij ... qrstuvwxyz', elide_string_middle(alphabet, 25))
+
+    # String unchanged
+    assert_equal(alphabet, elide_string_middle(alphabet, 26))
+    assert_equal(alphabet, elide_string_middle(alphabet, 50))

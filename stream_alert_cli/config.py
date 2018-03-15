@@ -66,45 +66,28 @@ class CLIConfig(object):
             LOGGER_CLI.warn('The Athena configuration already exists, skipping.')
             return
 
+        prefix = self.config['global']['account']['prefix']
+
         athena_config_template = {
-            'enabled': True,
             'enable_metrics': False,
             'current_version': '$LATEST',
-            'refresh_type': {
-                'add_hive_partition': {},
-                'repair_hive_table': {}
+            'buckets': {
+                '{}.streamalerts'.format(prefix): 'alert'
             },
             'handler': 'stream_alert.athena_partition_refresh.main.handler',
             'timeout': '60',
             'memory': '128',
             'log_level': 'info',
-            'source_bucket': 'PREFIX_GOES_HERE.streamalert.source',
+            'source_bucket': '{}.streamalert.source'.format(prefix),
             'source_current_hash': '<auto_generated>',
             'source_object_key': '<auto_generated>',
             'third_party_libraries': []
         }
 
-        # Check if the prefix has ever been set
-        if self.config['global']['account']['prefix'] != 'PREFIX_GOES_HERE':
-            athena_config_template['source_bucket'] = self.config['lambda'] \
-                ['rule_processor_config']['source_bucket']
-
         self.config['lambda']['athena_partition_refresh_config'] = athena_config_template
         self.write()
 
         LOGGER_CLI.info('Athena configuration successfully created')
-
-    def set_athena_lambda_enable(self):
-        """Enable athena partition refreshes"""
-        if 'athena_partition_refresh_config' not in self.config['lambda']:
-            LOGGER_CLI.error('No configuration found for Athena Partition Refresh. '
-                             'Please run: $ python manage.py athena init')
-            return
-
-        self.config['lambda']['athena_partition_refresh_config']['enabled'] = True
-        self.write()
-
-        LOGGER_CLI.info('Athena configuration successfully enabled')
 
     def set_prefix(self, prefix):
         """Set the Org Prefix in Global settings"""
@@ -116,26 +99,29 @@ class CLIConfig(object):
             LOGGER_CLI.error('Prefix cannot contain underscores')
             return
 
+        tf_state_bucket = '{}.streamalert.terraform.state'.format(prefix)
         self.config['global']['account']['prefix'] = prefix
-        self.config['global']['terraform']['tfstate_bucket'] = self.config['global']['terraform'][
-            'tfstate_bucket'].replace('PREFIX_GOES_HERE', prefix)
+        self.config['global']['account']['kms_key_alias'] = '{}_streamalert_secrets'.format(prefix)
+        self.config['global']['terraform']['tfstate_bucket'] = tf_state_bucket
+        self.config['lambda']['athena_partition_refresh_config']['buckets'].clear()
+        self.config['lambda']['athena_partition_refresh_config']['buckets'] \
+            ['{}.streamalerts'.format(prefix)] = 'alerts'
 
-        self.config['lambda']['alert_processor_config']['source_bucket'] = self.config['lambda'][
-            'alert_processor_config']['source_bucket'].replace('PREFIX_GOES_HERE', prefix)
-        self.config['lambda']['rule_processor_config']['source_bucket'] = self.config['lambda'][
-            'rule_processor_config']['source_bucket'].replace('PREFIX_GOES_HERE', prefix)
+        lambda_funcs = [
+            'alert_processor',
+            'athena_partition_refresh',
+            'rule_processor',
+            'stream_alert_apps',
+            'threat_intel_downloader'
+        ]
 
-        if self.config['lambda'].get('stream_alert_apps_config'):
-            self.config['lambda']['stream_alert_apps_config']['source_bucket'] = self.config[
-                'lambda']['stream_alert_apps_config']['source_bucket'].replace(
-                    'PREFIX_GOES_HERE', prefix)
+        # Update all function configurations with the source streamalert source bucket info
+        source_bucket = '{}.streamalert.source'.format(prefix)
+        for func in lambda_funcs:
+            func_config = '{}_config'.format(func)
+            if func_config in self.config['lambda']:
+                self.config['lambda'][func_config]['source_bucket'] = source_bucket
 
-        if self.config['lambda'].get('threat_intel_downloader_config'):
-            self.config['lambda']['threat_intel_downloader_config']['source_bucket'] = \
-                self.config['lambda'][
-                    'threat_intel_downloader_config']['source_bucket'].replace(
-                        'PREFIX_GOES_HERE', prefix
-                    )
         self.write()
 
         LOGGER_CLI.info('Prefix successfully configured')
@@ -161,17 +147,21 @@ class CLIConfig(object):
                 metrics on (rule, alert, or athena)
         """
         for function in lambda_functions:
-            if function == metrics.ATHENA_PARTITION_REFRESH_NAME:
+            if function == metrics.ALERT_PROCESSOR_NAME:
+                self.config['lambda']['alert_processor_config']['enable_metrics'] = enabled
+
+            elif function == metrics.ATHENA_PARTITION_REFRESH_NAME:
                 if 'athena_partition_refresh_config' in self.config['lambda']:
                     self.config['lambda']['athena_partition_refresh_config'] \
                         ['enable_metrics'] = enabled
                 else:
                     LOGGER_CLI.error('No Athena configuration found; please initialize first.')
-                continue
 
-            for cluster in clusters:
-                self.config['clusters'][cluster]['modules']['stream_alert'] \
-                    [function]['enable_metrics'] = enabled
+            else:
+                # Rule processor - toggle for each cluster
+                for cluster in clusters:
+                    self.config['clusters'][cluster]['modules']['stream_alert'] \
+                        [function]['enable_metrics'] = enabled
 
         self.write()
 
@@ -240,7 +230,7 @@ class CLIConfig(object):
                                                               cluster.upper())
 
             new_alarms = self._add_metric_alarm_config(alarm_settings, metric_alarms)
-            if new_alarms != False:
+            if new_alarms is not False:
                 function_config['metric_alarms'] = new_alarms
                 LOGGER_CLI.info('Successfully added \'%s\' metric alarm for the \'%s\' '
                                 'function to \'conf/clusters/%s.json\'.',
@@ -259,7 +249,7 @@ class CLIConfig(object):
         message = ('CloudWatch metric alarm names must be unique '
                    'within each AWS account. Please remove this alarm '
                    'so it can be updated or choose another name.')
-        funcs = {metrics.ALERT_PROCESSOR_NAME, metrics.RULE_PROCESSOR_NAME}
+        funcs = {metrics.RULE_PROCESSOR_NAME}
         for func in funcs:
             for cluster in self.config['clusters']:
                 func_alarms = (
@@ -279,8 +269,8 @@ class CLIConfig(object):
         if not metric_alarms:
             return False
 
-        # Check for athena metric alarms also, which are save in the global config
-        funcs.add(metrics.ATHENA_PARTITION_REFRESH_NAME)
+        # Check for functions saved in the global config.
+        funcs.update({metrics.ALERT_PROCESSOR_NAME, metrics.ATHENA_PARTITION_REFRESH_NAME})
 
         for func in funcs:
             global_func_alarms = global_config['metric_alarms'].get(func, {})
@@ -313,15 +303,15 @@ class CLIConfig(object):
 
         # Do not continue if the user is trying to apply a metric alarm for an athena
         # metric to a specific cluster (since the athena function operates on all clusters)
-        if (alarm_info['metric_target'] != 'aggregate'
-                and metric_function == metrics.ATHENA_PARTITION_REFRESH_NAME):
-            LOGGER_CLI.error('Metrics for the athena function can only be applied '
+        if (alarm_info['metric_target'] != 'aggregate' and metric_function in {
+                metrics.ALERT_PROCESSOR_NAME, metrics.ATHENA_PARTITION_REFRESH_NAME}):
+            LOGGER_CLI.error('Metrics for the athena and alert functions can only be applied '
                              'to an aggregate metric target, not on a per-cluster basis.')
             return
 
-        # If the metric is related to either the rule processor or alert processor, we should
+        # If the metric is related to the rule processor, we should
         # check to see if any cluster has metrics enabled for that function before continuing
-        if (metric_function in {metrics.ALERT_PROCESSOR_NAME, metrics.RULE_PROCESSOR_NAME} and
+        if (metric_function == metrics.RULE_PROCESSOR_NAME and
                 not any(self.config['clusters'][cluster]['modules']['stream_alert'][metric_function]
                         .get('enable_metrics') for cluster in self.config['clusters'])):
             prompt = ('Metrics are not currently enabled for the \'{}\' function '
@@ -353,8 +343,8 @@ class CLIConfig(object):
                     return
 
         # Add metric alarms for the aggregate metrics - these are added to the global config
-        if (alarm_info['metric_target'] == 'aggregate'
-                or metric_function == metrics.ATHENA_PARTITION_REFRESH_NAME):
+        if (alarm_info['metric_target'] == 'aggregate' or metric_function in {
+                metrics.ALERT_PROCESSOR_NAME, metrics.ATHENA_PARTITION_REFRESH_NAME}):
             global_config = self.config['global']['infrastructure']['monitoring']
 
             metric_alarms = global_config.get('metric_alarms', {})
@@ -371,7 +361,7 @@ class CLIConfig(object):
                                                            alarm_info['metric_name'])
 
             new_alarms = self._add_metric_alarm_config(alarm_settings, metric_alarms)
-            if new_alarms != False:
+            if new_alarms is not False:
                 global_config['metric_alarms'][metric_function] = new_alarms
                 LOGGER_CLI.info('Successfully added \'%s\' metric alarm to '
                                 '\'conf/global.json\'.', alarm_settings['alarm_name'])
@@ -543,7 +533,7 @@ class CLIConfig(object):
                 else:
                     # For certain log types (csv), the order of the schema
                     # must be retained.  By loading as an OrderedDict,
-                    # the configuration is gauaranteed to keep its order.
+                    # the configuration is guaranteed to keep its order.
                     if key == 'logs':
                         self.config[key] = json.load(data, object_pairs_hook=OrderedDict)
                     else:

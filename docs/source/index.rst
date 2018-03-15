@@ -111,7 +111,7 @@ Table of Contents
   :caption: Historical Search
 
   athena-setup
-  athena-deploy
+  athena-arch
   athena-user-guide
   firehose
 

@@ -21,9 +21,12 @@ import string
 from stream_alert.shared.metrics import FUNC_PREFIXES
 from stream_alert_cli.logger import LOGGER_CLI
 from stream_alert_cli.terraform._common import (
+    DEFAULT_SNS_MONITORING_TOPIC,
     InvalidClusterName,
-    infinitedict
+    infinitedict,
+    monitoring_topic_arn
 )
+from stream_alert_cli.terraform.alert_processor import generate_alert_processor
 from stream_alert_cli.terraform.app_integrations import generate_app_integrations
 from stream_alert_cli.terraform.athena import generate_athena
 from stream_alert_cli.terraform.cloudtrail import generate_cloudtrail
@@ -40,9 +43,9 @@ from stream_alert_cli.terraform.streamalert import generate_stream_alert
 from stream_alert_cli.terraform.s3_events import generate_s3_events
 from stream_alert_cli.terraform.threat_intel_downloader import generate_threat_intel_downloader
 
-DEFAULT_SNS_MONITORING_TOPIC = 'stream_alert_monitoring'
 RESTRICTED_CLUSTER_NAMES = ('main', 'athena')
 TERRAFORM_VERSIONS = {'application': '~> 0.10.6', 'provider': {'aws': '~> 1.5.0'}}
+
 
 def generate_s3_bucket(**kwargs):
     """Generate an S3 Bucket dict
@@ -105,7 +108,7 @@ def generate_main(**kwargs):
     # Configure Terraform version requirement
     main_dict['terraform']['required_version'] = TERRAFORM_VERSIONS['application']
 
-    # Setup the Backend dependencing on the deployment phase.
+    # Setup the Backend depending on the deployment phase.
     # When first setting up StreamAlert, the Terraform statefile
     # is stored locally.  After the first dependencies are created,
     # this moves to S3.
@@ -160,12 +163,16 @@ def generate_main(**kwargs):
     # Setup Firehose Delivery Streams
     generate_firehose(config, main_dict, logging_bucket)
 
-    # Configure global resources like Firehose alert delivery
+    # Configure global resources like Firehose alert delivery and alerts table
     main_dict['module']['globals'] = {
         'source': 'modules/tf_stream_alert_globals',
         'account_id': config['global']['account']['aws_account_id'],
         'region': config['global']['account']['region'],
-        'prefix': config['global']['account']['prefix']
+        'prefix': config['global']['account']['prefix'],
+        'alerts_table_read_capacity': (
+            config['global']['infrastructure']['alerts_table']['read_capacity']),
+        'alerts_table_write_capacity': (
+            config['global']['infrastructure']['alerts_table']['write_capacity'])
     }
 
     # KMS Key and Alias creation
@@ -195,15 +202,7 @@ def generate_main(**kwargs):
     if not global_metrics:
         return main_dict
 
-    topic_name = (DEFAULT_SNS_MONITORING_TOPIC if infrastructure_config
-                  ['monitoring'].get('create_sns_topic') else
-                  infrastructure_config['monitoring'].get('sns_topic_name'))
-
-    sns_topic_arn = 'arn:aws:sns:{region}:{account_id}:{topic}'.format(
-        region=config['global']['account']['region'],
-        account_id=config['global']['account']['aws_account_id'],
-        topic=topic_name
-    )
+    sns_topic_arn = monitoring_topic_arn(config)
 
     formatted_alarms = {}
     # Add global metric alarms for the rule and alert processors
@@ -386,10 +385,21 @@ def terraform_generate(config, init=False):
         message='Removing old Threat Intel Downloader Terraform file'
     )
 
+    # Setup Alert Processor
+    generate_global_lambda_settings(
+        config,
+        config_name='alert_processor_config',
+        config_generate_func=generate_alert_processor,
+        tf_tmp_file='terraform/alert_processor.tf.json',
+        message='Removing old Alert Processor Terraform file'
+    )
+
     return True
 
+
 def generate_global_lambda_settings(config, **kwargs):
-    """Generate settings of global Lambda funcitons, Athena and Threat Intel Downloader
+    """Generate settings for global Lambda functions
+
     Args:
         config (dict): lambda function settings read from 'conf/' directory
 
@@ -402,7 +412,7 @@ def generate_global_lambda_settings(config, **kwargs):
     config_name = kwargs.get('config_name')
     tf_tmp_file = kwargs.get('tf_tmp_file')
     if config_name and config['lambda'].get(config_name) and tf_tmp_file:
-        if config['lambda'].get(config_name)['enabled']:
+        if config['lambda'][config_name].get('enabled', True):
             generated_config = kwargs.get('config_generate_func')(config=config)
             if generated_config:
                 with open(tf_tmp_file, 'w') as tf_file:

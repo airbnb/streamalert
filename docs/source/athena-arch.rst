@@ -1,16 +1,12 @@
-Athena Deployment
-=================
+Athena Architecture
+===================
 
 Overview
 --------
 
-After the initial `Athena Setup <athena-setup.html>`_, a new Lambda function must be deployed.
+The Athena Partition Refresh function exists to periodically refresh Athena tables, enabling the searchability of data.
 
-The name of the Lambda function is Athena Partition Refresh.
-
-The purpose of this function is to periodically refresh Athena tables to enable the search-ability of data.
-
-The default refresh interval is 10 minutes.
+The default refresh interval is 10 minutes but can be configured by the user.
 
 Concepts
 --------
@@ -42,13 +38,10 @@ Each time the Athena Partition Refresh Lambda function starts up, it does the fo
 * Refreshes the Athena tables as configured below in the ``repair_type`` key
 * Deletes messages off the Queue once partitions are created
 
-Getting Started
----------------
-
 Configure Lambda Settings
-~~~~~~~~~~~~~~~~~~~~~~~~~
+-------------------------
 
-Open ``conf/lambda.json``, and fill in the following required options below:
+Open ``conf/lambda.json``, and fill in the following options:
 
 
 ===================================  ========  ====================   ===========
@@ -60,8 +53,7 @@ Key                                  Required  Default                Descriptio
 ``memory``                           ``No``    ``128``                The amount of memory (in MB) allocated to the Lambda function
 ``timeout``                          ``No``    ``60``                 The maximum duration of the Lambda function (in seconds)
 ``refresh_interval``                 ``No``    ``rate(10 minutes)``   The rate of which the Athena Lambda function is invoked in the form of a `CloudWatch schedule expression <http://amzn.to/2u5t0hS>`_.
-``refresh_type.add_hive_partition``  ``No``    ``{}``                 Add specific Hive partitions for new S3 objects.  This field is automatically populated when configuring your data tables.
-``refresh_type.repair_hive_table``   ``Yes``   ``{}``                 Key value pairs of S3 buckets and associated Athena table names.  Currently only supports the default alerts bucket created with every cluster.
+``buckets``                          ``Yes``   ``{}``                 Key value pairs of S3 buckets and associated Athena table names.  By default, the alerts bucket will exist in each deployment.
 ===================================  ========  ====================   ===========
 
 **Example:**
@@ -70,40 +62,33 @@ Key                                  Required  Default                Descriptio
 
   {
     "athena_partition_refresh_config": {
-      "enabled": true,
       "enable_metrics": false,
       "log_level": "info",
       "memory": 128,
-      "refresh_type": {
-        "add_hive_partition": {
-          "...": "..."
-        },
-        "repair_hive_table": {
-          "<prefix>.streamalerts": "alerts"
-        }
+      "buckets": {
+        "<prefix>.streamalerts": "alerts"
       },
       "...": "...",
       "timeout": 60
     }
   }
 
+
 Deployment
 ----------
 
-After configuring the above settings, deploy the Lambda function:
+If any of the settings above are changed from the initialized defaults, the Lambda function will need to be deployed in order for them to take effect:
 
 .. code-block:: bash
 
   $ python manage.py lambda deploy --processor athena
-
-This will create all of the underlying infrastructure to automatically refresh Athena tables.
 
 Going forward, if the deploy flag ``--processor all`` is used, it will redeploy this function along with the ``rule_processor`` and ``alert_processor``.
 
 Monitoring
 ~~~~~~~~~~
 
-Once deployed, it's recommended to monitor the following SQS metrics for ``streamalert_athena_data_bucket_notifications``:
+To ensure the function is operating as expected, monitor the following SQS metrics for ``<prefix>_streamalert_athena_s3_notifications``:
 
 * ``NumberOfMessagesReceived``
 * ``NumberOfMessagesSent``
@@ -113,4 +98,4 @@ All three of these metrics should have very close values.
 
 If the ``NumberOfMessagesSent`` is much higher than the other two metrics, the ``refresh_interval`` should be increased in the configuration.
 
-For high throughput production environments, an internal of 1 to 2 minutes is recommended. 
+For high throughput production environments, an interval of 1 to 2 minutes is recommended.

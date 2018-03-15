@@ -15,6 +15,7 @@ limitations under the License.
 """
 from collections import namedtuple
 from copy import copy
+import uuid
 
 from stream_alert.rule_processor import LOGGER
 from stream_alert.rule_processor.threat_intel import StreamThreatIntel
@@ -64,7 +65,7 @@ class StreamRules(object):
 
         A rule maps events (by `logs`) to a function that accepts an event
         and returns a boolean. If the function returns `True`, then the event is
-        passed on to the sink(s). If the function returns `False`, the event is
+        passed on to the alert forwarder. If the function returns `False`, the event is
         dropped.
         """
         def decorator(rule):
@@ -438,10 +439,12 @@ class StreamRules(object):
             if StreamRules.check_alerts_duplication(record, rule, alerts):
                 return
 
-            LOGGER.info('Rule [%s] triggered an alert on log type [%s] from entity \'%s\' '
-                        'in service \'%s\'', rule.rule_name, payload.log_source,
+            alert_id = str(uuid.uuid4())  # Random unique alert ID
+            LOGGER.info('Rule [%s] triggered alert [%s] on log type [%s] from entity \'%s\' '
+                        'in service \'%s\'', rule.rule_name, alert_id, payload.log_source,
                         payload.entity, payload.service())
             alert = {
+                'id': alert_id,
                 'record': record,
                 'rule_name': rule.rule_name,
                 'rule_description': rule.rule_function.__doc__ or DEFAULT_RULE_DESCRIPTION,

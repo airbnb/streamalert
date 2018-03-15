@@ -36,7 +36,7 @@ def _publish_version(packages, config, clusters):
     Returns:
         bool: Result of Lambda version publishing
     """
-    global_packages = {'athena_partition_refresh', 'threat_intel_downloader'}
+    global_packages = {'alert_processor', 'athena_partition_refresh', 'threat_intel_downloader'}
 
     for package in packages:
         if package.package_name in global_packages:
@@ -67,26 +67,31 @@ def _create_and_upload(function_name, config, cluster=None):
     package_mapping = {
         'alert': PackageMap(
             stream_alert_packages.AlertProcessorPackage,
-            {'module.stream_alert_{}'.format(cluster) for cluster in clusters},
+            {'module.alert_processor_lambda'},
             True),
         'apps': PackageMap(
             stream_alert_packages.AppIntegrationPackage,
             {'module.app_{}_{}'.format(app_name, cluster)
              for cluster, info in config['clusters'].iteritems()
              for app_name in info['modules'].get('stream_alert_apps', {})},
-            config['lambda'].get('stream_alert_apps_config', False)),
+            config['lambda'].get('stream_alert_apps_config', False)
+        ),
         'athena': PackageMap(
             stream_alert_packages.AthenaPackage,
             {'module.stream_alert_athena'},
-            config['lambda'].get('athena_partition_refresh_config', False)),
+            True
+        ),
         'rule': PackageMap(
             stream_alert_packages.RuleProcessorPackage,
             {'module.stream_alert_{}'.format(cluster) for cluster in clusters},
-            True),
+            True
+        ),
         'threat_intel_downloader': PackageMap(
             stream_alert_packages.ThreatIntelDownloaderPackage,
             {'module.threat_intel_downloader'},
-            config['lambda'].get('threat_intel_downloader_config', False))}
+            config['lambda'].get('threat_intel_downloader_config', False)
+        )
+    }
 
     if not package_mapping[function_name].enabled:
         return False, False
@@ -150,4 +155,4 @@ def deploy(options, config):
         return
 
     # Apply the changes to the Lambda aliases
-    helpers.tf_runner(targets=deploy_targets)
+    helpers.tf_runner(targets=deploy_targets, refresh=False, auto_approve=True)

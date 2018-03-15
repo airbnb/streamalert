@@ -27,8 +27,7 @@ CLUSTER = os.environ.get('CLUSTER', 'unknown_cluster')
 # The FUNC_PREFIXES dict acts as a simple map to a human-readable name
 # Add ATHENA_PARTITION_REFRESH_NAME: 'AthenaPartitionRefresh', to the
 # below when metrics are supported there
-FUNC_PREFIXES = {ALERT_PROCESSOR_NAME: 'AlertProcessor',
-                 RULE_PROCESSOR_NAME: 'RuleProcessor'}
+FUNC_PREFIXES = {RULE_PROCESSOR_NAME: 'RuleProcessor'}
 
 try:
     ENABLE_METRICS = bool(int(os.environ.get('ENABLE_METRICS', 0)))
@@ -56,6 +55,7 @@ class MetricLogger(object):
     TOTAL_S3_RECORDS = 'TotalS3Records'
     TOTAL_STREAM_ALERT_APP_RECORDS = 'TotalStreamAlertAppRecords'
     TRIGGERED_ALERTS = 'TriggeredAlerts'
+    UNPROCESSED_ALERTS = 'UnprocessedAlerts'
     FIREHOSE_RECORDS_SENT = 'FirehoseRecordsSent'
     FIREHOSE_FAILED_RECORDS = 'FirehoseFailedRecords'
     NORMALIZED_RECORDS = 'NormalizedRecords'
@@ -87,6 +87,7 @@ class MetricLogger(object):
                                _default_value_lookup),
             TRIGGERED_ALERTS: (_default_filter.format(TRIGGERED_ALERTS),
                                _default_value_lookup),
+            UNPROCESSED_ALERTS: (_default_filter.format(UNPROCESSED_ALERTS), _default_value_lookup),
             FIREHOSE_RECORDS_SENT: (_default_filter.format(FIREHOSE_RECORDS_SENT),
                                     _default_value_lookup),
             FIREHOSE_FAILED_RECORDS: (_default_filter.format(FIREHOSE_FAILED_RECORDS),

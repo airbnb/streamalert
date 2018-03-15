@@ -24,7 +24,8 @@ from stream_alert.alert_processor.outputs.pagerduty import (
     PagerDutyIncidentOutput
 )
 from stream_alert_cli.helpers import put_mock_creds
-from tests.unit.stream_alert_alert_processor import CONFIG, FUNCTION_NAME, KMS_ALIAS, REGION
+from tests.unit.stream_alert_alert_processor import \
+    ACCOUNT_ID, CONFIG, FUNCTION_NAME, KMS_ALIAS, REGION
 from tests.unit.stream_alert_alert_processor.helpers import get_alert, remove_temp_secrets
 
 
@@ -40,7 +41,7 @@ class TestPagerDutyOutput(object):
 
     def setup(self):
         """Setup before each method"""
-        self._dispatcher = PagerDutyOutput(REGION, FUNCTION_NAME, CONFIG)
+        self._dispatcher = PagerDutyOutput(REGION, ACCOUNT_ID, FUNCTION_NAME, CONFIG)
         remove_temp_secrets()
         output_name = self._dispatcher.output_cred_name(self.DESCRIPTOR)
         put_mock_creds(output_name, self.CREDS, self._dispatcher.secrets_bucket, REGION, KMS_ALIAS)
@@ -62,7 +63,8 @@ class TestPagerDutyOutput(object):
                                               rule_name='rule_name',
                                               alert=get_alert()))
 
-        log_mock.assert_called_with('Successfully sent alert to %s', self.SERVICE)
+        log_mock.assert_called_with('Successfully sent alert to %s:%s',
+                                    self.SERVICE, self.DESCRIPTOR)
 
     @patch('logging.Logger.error')
     @patch('requests.post')
@@ -74,7 +76,7 @@ class TestPagerDutyOutput(object):
                                                rule_name='rule_name',
                                                alert=get_alert()))
 
-        log_mock.assert_called_with('Failed to send alert to %s', self.SERVICE)
+        log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, self.DESCRIPTOR)
 
     @patch('logging.Logger.error')
     def test_dispatch_bad_descriptor(self, log_mock):
@@ -83,7 +85,7 @@ class TestPagerDutyOutput(object):
                                                rule_name='rule_name',
                                                alert=get_alert()))
 
-        log_mock.assert_called_with('Failed to send alert to %s', self.SERVICE)
+        log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, 'bad_descriptor')
 
 @mock_s3
 @mock_kms
@@ -97,7 +99,7 @@ class TestPagerDutyOutputV2(object):
 
     def setup(self):
         """Setup before each method"""
-        self._dispatcher = PagerDutyOutputV2(REGION, FUNCTION_NAME, CONFIG)
+        self._dispatcher = PagerDutyOutputV2(REGION, ACCOUNT_ID, FUNCTION_NAME, CONFIG)
         remove_temp_secrets()
         output_name = self._dispatcher.output_cred_name(self.DESCRIPTOR)
         put_mock_creds(output_name, self.CREDS, self._dispatcher.secrets_bucket, REGION, KMS_ALIAS)
@@ -118,7 +120,8 @@ class TestPagerDutyOutputV2(object):
                                               rule_name='rule_name',
                                               alert=get_alert()))
 
-        log_mock.assert_called_with('Successfully sent alert to %s', self.SERVICE)
+        log_mock.assert_called_with('Successfully sent alert to %s:%s',
+                                    self.SERVICE, self.DESCRIPTOR)
 
     @patch('logging.Logger.error')
     @patch('requests.post')
@@ -132,7 +135,7 @@ class TestPagerDutyOutputV2(object):
                                                rule_name='rule_name',
                                                alert=get_alert()))
 
-        log_mock.assert_called_with('Failed to send alert to %s', self.SERVICE)
+        log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, self.DESCRIPTOR)
 
     @patch('logging.Logger.error')
     def test_dispatch_bad_descriptor(self, log_mock):
@@ -141,7 +144,7 @@ class TestPagerDutyOutputV2(object):
                                                rule_name='rule_name',
                                                alert=get_alert()))
 
-        log_mock.assert_called_with('Failed to send alert to %s', self.SERVICE)
+        log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, 'bad_descriptor')
 
 
 #pylint: disable=too-many-public-methods
@@ -163,7 +166,7 @@ class TestPagerDutyIncidentOutput(object):
 
     def setup(self):
         """Setup before each method"""
-        self._dispatcher = PagerDutyIncidentOutput(REGION, FUNCTION_NAME, CONFIG)
+        self._dispatcher = PagerDutyIncidentOutput(REGION, ACCOUNT_ID, FUNCTION_NAME, CONFIG)
         self._dispatcher._base_url = self.CREDS['api']
         remove_temp_secrets()
         output_name = self._dispatcher.output_cred_name(self.DESCRIPTOR)
@@ -518,7 +521,8 @@ class TestPagerDutyIncidentOutput(object):
                                               rule_name='rule_name',
                                               alert=get_alert(context=ctx)))
 
-        log_mock.assert_called_with('Successfully sent alert to %s', self.SERVICE)
+        log_mock.assert_called_with('Successfully sent alert to %s:%s',
+                                    self.SERVICE, self.DESCRIPTOR)
 
     @patch('logging.Logger.info')
     @patch('requests.put')
@@ -554,7 +558,8 @@ class TestPagerDutyIncidentOutput(object):
                                               rule_name='rule_name',
                                               alert=get_alert(context=ctx)))
 
-        log_mock.assert_called_with('Successfully sent alert to %s', self.SERVICE)
+        log_mock.assert_called_with('Successfully sent alert to %s:%s',
+                                    self.SERVICE, self.DESCRIPTOR)
 
     @patch('logging.Logger.info')
     @patch('requests.put')
@@ -595,7 +600,8 @@ class TestPagerDutyIncidentOutput(object):
                                               rule_name='rule_name',
                                               alert=get_alert(context=ctx)))
 
-        log_mock.assert_called_with('Successfully sent alert to %s', self.SERVICE)
+        log_mock.assert_called_with('Successfully sent alert to %s:%s',
+                                    self.SERVICE, self.DESCRIPTOR)
 
     @patch('logging.Logger.info')
     @patch('requests.put')
@@ -632,7 +638,8 @@ class TestPagerDutyIncidentOutput(object):
                                               rule_name='rule_name',
                                               alert=get_alert(context=ctx)))
 
-        log_mock.assert_called_with('Successfully sent alert to %s', self.SERVICE)
+        log_mock.assert_called_with('Successfully sent alert to %s:%s',
+                                    self.SERVICE, self.DESCRIPTOR)
 
     @patch('logging.Logger.info')
     @patch('requests.put')
@@ -666,7 +673,8 @@ class TestPagerDutyIncidentOutput(object):
                                               rule_name='rule_name',
                                               alert=get_alert()))
 
-        log_mock.assert_called_with('Successfully sent alert to %s', self.SERVICE)
+        log_mock.assert_called_with('Successfully sent alert to %s:%s',
+                                    self.SERVICE, self.DESCRIPTOR)
 
     @patch('logging.Logger.error')
     @patch('requests.post')
@@ -687,7 +695,7 @@ class TestPagerDutyIncidentOutput(object):
                                                rule_name='rule_name',
                                                alert=get_alert()))
 
-        log_mock.assert_called_with('Failed to send alert to %s', self.SERVICE)
+        log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, self.DESCRIPTOR)
 
     @patch('logging.Logger.info')
     @patch('requests.put')
@@ -721,7 +729,8 @@ class TestPagerDutyIncidentOutput(object):
                                               rule_name='rule_name',
                                               alert=get_alert(context=ctx)))
 
-        log_mock.assert_called_with('Successfully sent alert to %s', self.SERVICE)
+        log_mock.assert_called_with('Successfully sent alert to %s:%s',
+                                    self.SERVICE, self.DESCRIPTOR)
 
     @patch('logging.Logger.info')
     @patch('requests.put')
@@ -755,7 +764,8 @@ class TestPagerDutyIncidentOutput(object):
                                               rule_name='rule_name',
                                               alert=get_alert(context=ctx)))
 
-        log_mock.assert_called_with('Successfully sent alert to %s', self.SERVICE)
+        log_mock.assert_called_with('Successfully sent alert to %s:%s',
+                                    self.SERVICE, self.DESCRIPTOR)
 
     @patch('logging.Logger.error')
     @patch('requests.post')
@@ -777,7 +787,7 @@ class TestPagerDutyIncidentOutput(object):
                                                rule_name='rule_name',
                                                alert=get_alert()))
 
-        log_mock.assert_called_with('Failed to send alert to %s', self.SERVICE)
+        log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, self.DESCRIPTOR)
 
     @patch('logging.Logger.error')
     @patch('requests.post')
@@ -801,7 +811,7 @@ class TestPagerDutyIncidentOutput(object):
                                                rule_name='rule_name',
                                                alert=get_alert()))
 
-        log_mock.assert_called_with('Failed to send alert to %s', self.SERVICE)
+        log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, self.DESCRIPTOR)
 
     @patch('logging.Logger.error')
     @patch('requests.post')
@@ -825,7 +835,7 @@ class TestPagerDutyIncidentOutput(object):
                                                rule_name='rule_name',
                                                alert=get_alert()))
 
-        log_mock.assert_called_with('Failed to send alert to %s', self.SERVICE)
+        log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, self.DESCRIPTOR)
 
     @patch('logging.Logger.error')
     @patch('requests.post')
@@ -846,7 +856,7 @@ class TestPagerDutyIncidentOutput(object):
                                                rule_name='rule_name',
                                                alert=get_alert()))
 
-        log_mock.assert_called_with('Failed to send alert to %s', self.SERVICE)
+        log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, self.DESCRIPTOR)
 
 
     @patch('logging.Logger.error')
@@ -862,7 +872,7 @@ class TestPagerDutyIncidentOutput(object):
                                                rule_name='rule_name',
                                                alert=get_alert()))
 
-        log_mock.assert_called_with('Failed to send alert to %s', self.SERVICE)
+        log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, self.DESCRIPTOR)
 
     @patch('logging.Logger.error')
     def test_dispatch_bad_descriptor(self, log_mock):
@@ -871,4 +881,4 @@ class TestPagerDutyIncidentOutput(object):
                                                rule_name='rule_name',
                                                alert=get_alert()))
 
-        log_mock.assert_called_with('Failed to send alert to %s', self.SERVICE)
+        log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, 'bad_descriptor')

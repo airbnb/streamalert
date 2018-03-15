@@ -772,6 +772,15 @@ class AlertProcessorTester(object):
                     lambda_function = parts[-1]
                 helpers.create_lambda_function(lambda_function,
                                                self.region)
+
+            elif service == 'aws-sns':
+                topic_name = self.outputs_config[service][descriptor]
+                boto3.client('sns', region_name=self.region).create_topic(Name=topic_name)
+
+            elif service == 'aws-sqs':
+                queue_name = self.outputs_config[service][descriptor]
+                boto3.client('sqs', region_name=self.region).create_queue(QueueName=queue_name)
+
             elif service == 'komand':
                 output_name = '{}/{}'.format(service, descriptor)
                 creds = {'komand_auth_token': '00000000-0000-0000-0000-000000000000',
@@ -924,6 +933,11 @@ def stream_alert_test(options, config):
             options (namedtuple): CLI options (debug, processor, etc)
             context (namedtuple): A constructed aws context object
         """
+        # The Rule Processor uses env variables to determine where alerts should be forwarded:
+        prefix = config['global']['account']['prefix']
+        os.environ['ALERT_PROCESSOR'] = '{}_streamalert_alert_processor'.format(prefix)
+        os.environ['ALERT_TABLE'] = '{}_streamalert_alerts'.format(prefix)
+
         if options.debug:
             # TODO(jack): Currently there is no (clean) way to set
             #             the logger formatter to provide more verbose

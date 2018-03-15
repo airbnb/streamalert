@@ -24,6 +24,7 @@ from botocore.exceptions import ClientError
 import boto3
 
 from stream_alert.alert_processor import LOGGER
+from stream_alert.alert_processor.helpers import elide_string_middle
 from stream_alert.alert_processor.outputs.output_base import (
     OutputDispatcher,
     OutputProperty,
@@ -77,7 +78,7 @@ class KinesisFirehoseOutput(AWSOutput):
 
     @classmethod
     def get_user_defined_properties(cls):
-        """Properties asssigned by the user when configuring a new Firehose output
+        """Properties assigned by the user when configuring a new Firehose output
 
         Every output should return a dict that contains a 'descriptor' with a description of the
         integration being configured.
@@ -146,7 +147,90 @@ class KinesisFirehoseOutput(AWSOutput):
                         delivery_stream,
                         resp['RecordId'])
 
-        return self._log_status(resp)
+        return self._log_status(resp, kwargs['descriptor'])
+
+
+@StreamAlertOutput
+class LambdaOutput(AWSOutput):
+    """LambdaOutput handles all alert dispatching to AWS Lambda"""
+    __service__ = 'aws-lambda'
+
+    @classmethod
+    def get_user_defined_properties(cls):
+        """Get properties that must be assigned by the user when configuring a new Lambda
+        output.  This should be sensitive or unique information for this use-case that needs
+        to come from the user.
+
+        Every output should return a dict that contains a 'descriptor' with a description of the
+        integration being configured.
+
+        Sending to Lambda also requires a user provided Lambda function name and optional qualifier
+        (if applicable for the user's use case). A fully-qualified AWS ARN is also acceptable for
+        this value. This value should not be masked during input and is not a credential requirement
+        that needs encrypted.
+
+        Returns:
+            OrderedDict: Contains various OutputProperty items
+        """
+        return OrderedDict([
+            ('descriptor',
+             OutputProperty(description='a short and unique descriptor for this Lambda function '
+                                        'configuration (ie: abbreviated name)')),
+            ('aws_value',
+             OutputProperty(description='the AWS Lambda function name, with the optional '
+                                        'qualifier (aka \'alias\'), to use for this '
+                                        'configuration (ie: output_function:qualifier)',
+                            input_restrictions={' '})),
+        ])
+
+    def dispatch(self, **kwargs):
+        """Send alert to a Lambda function
+
+        The alert gets dumped to a JSON string to be sent to the Lambda function
+
+        Args:
+            **kwargs: consists of any combination of the following items:
+                descriptor (str): Service descriptor (ie: slack channel, pd integration)
+                rule_name (str): Name of the triggered rule
+                alert (dict): Alert relevant to the triggered rule
+        """
+        alert = kwargs['alert']
+        alert_string = json.dumps(alert['record'])
+        function_name = self.config[self.__service__][kwargs['descriptor']]
+
+        # Check to see if there is an optional qualifier included here
+        # Acceptable values for the output configuration are the full ARN,
+        # a function name followed by a qualifier, or just a function name:
+        #   'arn:aws:lambda:aws-region:acct-id:function:function-name:prod'
+        #   'function-name:prod'
+        #   'function-name'
+        # Checking the length of the list for 2 or 8 should account for all
+        # times a qualifier is provided.
+        parts = function_name.split(':')
+        if len(parts) == 2 or len(parts) == 8:
+            function = parts[-2]
+            qualifier = parts[-1]
+        else:
+            function = parts[-1]
+            qualifier = None
+
+        LOGGER.debug('Sending alert to Lambda function %s', function_name)
+
+        client = boto3.client('lambda', region_name=self.region)
+        # Use the qualifier if it's available. Passing an empty qualifier in
+        # with `Qualifier=''` or `Qualifier=None` does not work and thus we
+        # have to perform different calls to client.invoke().
+        if qualifier:
+            resp = client.invoke(FunctionName=function,
+                                 InvocationType='Event',
+                                 Payload=alert_string,
+                                 Qualifier=qualifier)
+        else:
+            resp = client.invoke(FunctionName=function,
+                                 InvocationType='Event',
+                                 Payload=alert_string)
+
+        return self._log_status(resp, kwargs['descriptor'])
 
 
 @StreamAlertOutput
@@ -156,7 +240,7 @@ class S3Output(AWSOutput):
 
     @classmethod
     def get_user_defined_properties(cls):
-        """Get properties that must be asssigned by the user when configuring a new S3
+        """Get properties that must be assigned by the user when configuring a new S3
         output.  This should be sensitive or unique information for this use-case that needs
         to come from the user.
 
@@ -225,87 +309,69 @@ class S3Output(AWSOutput):
                                  Bucket=bucket,
                                  Key=key)
 
-        return self._log_status(resp)
+        return self._log_status(resp, kwargs['descriptor'])
 
 
 @StreamAlertOutput
-class LambdaOutput(AWSOutput):
-    """LambdaOutput handles all alert dispatching to AWS Lambda"""
-    __service__ = 'aws-lambda'
+class SNSOutput(AWSOutput):
+    """Handle all alert dispatching for AWS SNS"""
+    __service__ = 'aws-sns'
 
     @classmethod
     def get_user_defined_properties(cls):
-        """Get properties that must be asssigned by the user when configuring a new Lambda
-        output.  This should be sensitive or unique information for this use-case that needs
-        to come from the user.
-
-        Every output should return a dict that contains a 'descriptor' with a description of the
-        integration being configured.
-
-        Sending to Lambda also requires a user provided Lambda function name and optional qualifier
-        (if applicabale for the user's use case). A fully-qualified AWS ARN is also acceptable for
-        this value. This value should not be masked during input and is not a credential requirement
-        that needs encrypted.
+        """Properties assigned by the user when configuring a new SNS output.
 
         Returns:
-            OrderedDict: Contains various OutputProperty items
+            OrderedDict: With 'descriptor' and 'aws_value' OutputProperty tuples
         """
         return OrderedDict([
-            ('descriptor',
-             OutputProperty(description='a short and unique descriptor for this Lambda function '
-                                        'configuration (ie: abbreviated name)')),
-            ('aws_value',
-             OutputProperty(description='the AWS Lambda function name, with the optional '
-                                        'qualifier (aka \'alias\'), to use for this '
-                                        'configuration (ie: output_function:qualifier)',
-                            input_restrictions={' '})),
+            ('descriptor', OutputProperty(
+                description='a short and unique descriptor for this SNS topic')),
+            ('aws_value', OutputProperty(description='SNS topic name'))
         ])
 
     def dispatch(self, **kwargs):
-        """Send alert to a Lambda function
+        """Send alert to an SNS topic"""
+        # SNS topics can only be accessed via their ARN
+        topic_name = self.config[self.__service__][kwargs['descriptor']]
+        topic_arn = 'arn:aws:sns:{}:{}:{}'.format(self.region, self.account_id, topic_name)
+        topic = boto3.resource('sns', region_name=self.region).Topic(topic_arn)
 
-        The alert gets dumped to a JSON string to be sent to the Lambda function
-
-        Args:
-            **kwargs: consists of any combination of the following items:
-                descriptor (str): Service descriptor (ie: slack channel, pd integration)
-                rule_name (str): Name of the triggered rule
-                alert (dict): Alert relevant to the triggered rule
-        """
         alert = kwargs['alert']
-        alert_string = json.dumps(alert['record'])
-        function_name = self.config[self.__service__][kwargs['descriptor']]
+        response = topic.publish(
+            Message=json.dumps(alert, indent=2, sort_keys=True),
+            # Subject must be < 100 characters long
+            Subject=elide_string_middle(
+                '{} triggered alert {}'.format(kwargs['rule_name'], alert['id']), 99)
+        )
+        return self._log_status(response, kwargs['descriptor'])
 
-        # Check to see if there is an optional qualifier included here
-        # Acceptable values for the output configuration are the full ARN,
-        # a function name followed by a qualifier, or just a function name:
-        #   'arn:aws:lambda:aws-region:acct-id:function:function-name:prod'
-        #   'function-name:prod'
-        #   'function-name'
-        # Checking the length of the list for 2 or 8 should account for all
-        # times a qualifier is provided.
-        parts = function_name.split(':')
-        if len(parts) == 2 or len(parts) == 8:
-            function = parts[-2]
-            qualifier = parts[-1]
-        else:
-            function = parts[-1]
-            qualifier = None
 
-        LOGGER.debug('Sending alert to Lambda function %s', function_name)
+@StreamAlertOutput
+class SQSOutput(AWSOutput):
+    """Handle all alert dispatching for AWS SQS"""
+    __service__ = 'aws-sqs'
 
-        client = boto3.client('lambda', region_name=self.region)
-        # Use the qualifier if it's available. Passing an empty qualifier in
-        # with `Qualifier=''` or `Qualifier=None` does not work and thus we
-        # have to perform different calls to client.invoke().
-        if qualifier:
-            resp = client.invoke(FunctionName=function,
-                                 InvocationType='Event',
-                                 Payload=alert_string,
-                                 Qualifier=qualifier)
-        else:
-            resp = client.invoke(FunctionName=function,
-                                 InvocationType='Event',
-                                 Payload=alert_string)
+    @classmethod
+    def get_user_defined_properties(cls):
+        """Properties assigned by the user when configuring a new SQS output.
 
-        return self._log_status(resp)
+        Returns:
+            OrderedDict: With 'descriptor' and 'aws_value' OutputProperty tuples
+        """
+        return OrderedDict([
+            ('descriptor', OutputProperty(
+                description='a short and unique descriptor for this SQS queue')),
+            ('aws_value', OutputProperty(description='SQS queue name'))
+        ])
+
+    def dispatch(self, **kwargs):
+        """Send alert to an SQS queue"""
+        # SQS queues can only be accessed via their URL
+        queue_name = self.config[self.__service__][kwargs['descriptor']]
+        queue_url = 'https://sqs.{}.amazonaws.com/{}/{}'.format(
+            self.region, self.account_id, queue_name)
+        queue = boto3.resource('sqs', region_name=self.region).Queue(queue_url)
+
+        response = queue.send_message(MessageBody=json.dumps(kwargs['alert']))
+        return self._log_status(response, kwargs['descriptor'])
