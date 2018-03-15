@@ -284,7 +284,7 @@ def create_table(table, bucket, table_type, config, schema_override=None):
 
     # Update the CLI config
     config['lambda']['athena_partition_refresh_config'] \
-          ['bucket'][bucket] = table_type
+          ['buckets'][bucket] = table_type
     config.write()
 
     LOGGER_CLI.info('The %s table was successfully created!', table_name)
