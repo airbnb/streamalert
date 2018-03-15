@@ -12,14 +12,14 @@ Dependencies
 
 .. code-block:: bash
 
-  $ git clone https://github.com/airbnb/streamalert.git
-  $ cd streamalert
+  $ git clone --branch stable https://github.com/airbnb/streamalert.git
 
 4. Install and activate Virtualenv:
 
 .. code-block:: bash
 
-  $ pip install virtualenv
+  $ cd streamalert
+  $ pip install --user virtualenv
   $ virtualenv -p python2.7 venv
   $ source venv/bin/activate
 
