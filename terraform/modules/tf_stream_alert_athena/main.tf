@@ -29,7 +29,7 @@ resource "aws_s3_bucket" "athena_results_bucket" {
   force_destroy = false
 
   tags {
-    Name = "${var.results_bucket}"
+    Name = "StreamAlert"
   }
 
   versioning {
