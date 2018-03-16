@@ -15,7 +15,7 @@ limitations under the License.
 """
 from stream_alert.shared import metrics
 from stream_alert_cli.logger import LOGGER_CLI
-from stream_alert_cli.terraform._common import monitoring_topic_arn
+from stream_alert_cli.terraform.common import monitoring_topic_arn
 
 
 def generate_cloudwatch_metric_filters(cluster_name, cluster_dict, config):

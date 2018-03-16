@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from stream_alert.shared import metrics
-from stream_alert_cli.terraform._common import DEFAULT_SNS_MONITORING_TOPIC, infinitedict
+from stream_alert_cli.terraform.common import DEFAULT_SNS_MONITORING_TOPIC, infinitedict
 
 
 def generate_athena(config):

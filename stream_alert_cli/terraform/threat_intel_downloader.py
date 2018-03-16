@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from stream_alert_cli.terraform._common import DEFAULT_SNS_MONITORING_TOPIC, infinitedict
+from stream_alert_cli.terraform.common import DEFAULT_SNS_MONITORING_TOPIC, infinitedict
 
 def generate_threat_intel_downloader(config):
     """Generate Threat Intel Downloader Terrafrom

@@ -15,7 +15,7 @@ limitations under the License.
 """
 import json
 
-from stream_alert_cli.terraform._common import DEFAULT_SNS_MONITORING_TOPIC
+from stream_alert_cli.terraform.common import DEFAULT_SNS_MONITORING_TOPIC
 
 
 def generate_app_integrations(cluster_name, cluster_dict, config):

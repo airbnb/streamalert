@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from stream_alert_cli.logger import LOGGER_CLI
-from stream_alert_cli.terraform._common import monitoring_topic_arn
+from stream_alert_cli.terraform.common import monitoring_topic_arn
 
 
 def generate_monitoring(cluster_name, cluster_dict, config):
