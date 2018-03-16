@@ -36,7 +36,7 @@ from stream_alert.rule_processor.payload import load_stream_payload
 from stream_alert.rule_processor.rules_engine import StreamRules
 from stream_alert_cli import helpers
 from stream_alert_cli.logger import (
-    get_log_memory_hanlder,
+    get_log_memory_handler,
     LOGGER_CLI,
     LOGGER_SA,
     LOGGER_SH,
@@ -956,7 +956,7 @@ def stream_alert_test(options, config):
             LOGGER_SA.addFilter(SuppressNoise())
 
         # Create an in memory logging buffer to be used to caching all error messages
-        log_mem_hanlder = get_log_memory_hanlder()
+        log_mem_handler = get_log_memory_handler()
 
         # Check if the rule processor should be run for these tests
         # Using NOT set.isdisjoint will check to see if there are commonalities between
@@ -1011,15 +1011,15 @@ def stream_alert_test(options, config):
             sys.exit(1)
 
         # If there are any log records in the memory buffer, then errors occurred somewhere
-        if log_mem_hanlder.buffer:
+        if log_mem_handler.buffer:
             # Release the MemoryHandler so we can do some other logging now
-            logging.getLogger().removeHandler(log_mem_hanlder)
+            logging.getLogger().removeHandler(log_mem_handler)
             LOGGER_CLI.error('%sSee %d miscellaneous error(s) below '
                              'that were encountered and may need to be addressed%s',
-                             COLOR_RED, len(log_mem_hanlder.buffer), COLOR_RESET)
+                             COLOR_RED, len(log_mem_handler.buffer), COLOR_RESET)
 
-            log_mem_hanlder.setTarget(LOGGER_CLI)
-            log_mem_hanlder.flush()
+            log_mem_handler.setTarget(LOGGER_CLI)
+            log_mem_handler.flush()
 
             sys.exit(1)
 

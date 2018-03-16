@@ -17,14 +17,14 @@ from mock import patch
 from nose.tools import assert_equal, assert_false, assert_true
 
 from stream_alert_cli.config import CLIConfig
-from stream_alert_cli.terraform import _common, monitoring
+from stream_alert_cli.terraform import common, monitoring
 
 CONFIG = CLIConfig(config_path='tests/unit/conf')
 
 
 def test_generate_cloudwatch_monitoring():
     """CLI - Terraform Generate Cloudwatch Monitoring"""
-    cluster_dict = _common.infinitedict()
+    cluster_dict = common.infinitedict()
     result = monitoring.generate_monitoring('test', cluster_dict, CONFIG)
 
     # Test the default SNS topic option
@@ -45,7 +45,7 @@ def test_generate_cloudwatch_monitoring():
 
 def test_generate_cloudwatch_monitoring_with_settings():
     """CLI - Terraform Generate Cloudwatch Monitoring with Custom Settings"""
-    cluster_dict = _common.infinitedict()
+    cluster_dict = common.infinitedict()
     result = monitoring.generate_monitoring('advanced', cluster_dict, CONFIG)
 
     # Test the default SNS topic option
@@ -67,7 +67,7 @@ def test_generate_cloudwatch_monitoring_with_settings():
 
 def test_generate_cloudwatch_monitoring_disabled():
     """CLI - Terraform Generate Cloudwatch Monitoring Disabled"""
-    cluster_dict = _common.infinitedict()
+    cluster_dict = common.infinitedict()
     cluster = 'trusted'
     result = monitoring.generate_monitoring(cluster, cluster_dict, CONFIG)
 
@@ -77,7 +77,7 @@ def test_generate_cloudwatch_monitoring_disabled():
 
 def test_generate_cloudwatch_monitoring_no_kinesis():
     """CLI - Terraform Generate Cloudwatch Monitoring - Kinesis Disabled"""
-    cluster_dict = _common.infinitedict()
+    cluster_dict = common.infinitedict()
     CONFIG['clusters']['test']['modules']['cloudwatch_monitoring']['kinesis_alarms_enabled'] = False
     CONFIG['clusters']['test']['modules']['cloudwatch_monitoring']['lambda_alarms_enabled'] = True
     result = monitoring.generate_monitoring('test', cluster_dict, CONFIG)
@@ -99,7 +99,7 @@ def test_generate_cloudwatch_monitoring_no_kinesis():
 
 def test_generate_cloudwatch_monitoring_no_lambda():
     """CLI - Terraform Generate Cloudwatch Monitoring - Lambda Disabled"""
-    cluster_dict = _common.infinitedict()
+    cluster_dict = common.infinitedict()
     CONFIG['clusters']['test']['modules']['cloudwatch_monitoring']['lambda_alarms_enabled'] = False
     CONFIG['clusters']['test']['modules']['cloudwatch_monitoring']['kinesis_alarms_enabled'] = True
     result = monitoring.generate_monitoring('test', cluster_dict, CONFIG)
@@ -127,7 +127,7 @@ def test_generate_cloudwatch_monitoring_custom_sns():
     CONFIG['global']['infrastructure']['monitoring']['create_sns_topic'] = False
     CONFIG['global']['infrastructure']['monitoring']['sns_topic_name'] = 'unit_test_monitoring'
 
-    cluster_dict = _common.infinitedict()
+    cluster_dict = common.infinitedict()
     result = monitoring.generate_monitoring('test', cluster_dict, CONFIG)
 
     expected_cloudwatch_tf_custom = {
@@ -150,7 +150,7 @@ def test_generate_cloudwatch_monitoring_invalid_config(mock_logging):
     """CLI - Terraform Generate Cloudwatch Monitoring with Invalid Config"""
     CONFIG['global']['infrastructure'] = {}
 
-    cluster_dict = _common.infinitedict()
+    cluster_dict = common.infinitedict()
     result = monitoring.generate_monitoring('test', cluster_dict, CONFIG)
 
     assert_true(mock_logging.error.called)

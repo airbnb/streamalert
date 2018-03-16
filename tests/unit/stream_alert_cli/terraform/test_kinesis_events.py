@@ -16,13 +16,13 @@ limitations under the License.
 from nose.tools import assert_equal, assert_true
 
 from stream_alert_cli.config import CLIConfig
-from stream_alert_cli.terraform import _common, kinesis_events
+from stream_alert_cli.terraform import common, kinesis_events
 
 CONFIG = CLIConfig(config_path='tests/unit/conf')
 
 def test_kinesis_events():
     """CLI - Terraform Generate Kinesis Events"""
-    cluster_dict = _common.infinitedict()
+    cluster_dict = common.infinitedict()
     result = kinesis_events.generate_kinesis_events('advanced', cluster_dict, CONFIG)
 
     expected_result = {

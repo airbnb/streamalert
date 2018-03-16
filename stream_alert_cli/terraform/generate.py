@@ -20,7 +20,7 @@ import string
 
 from stream_alert.shared.metrics import FUNC_PREFIXES
 from stream_alert_cli.logger import LOGGER_CLI
-from stream_alert_cli.terraform._common import (
+from stream_alert_cli.terraform.common import (
     DEFAULT_SNS_MONITORING_TOPIC,
     InvalidClusterName,
     infinitedict,
@@ -44,7 +44,7 @@ from stream_alert_cli.terraform.s3_events import generate_s3_events
 from stream_alert_cli.terraform.threat_intel_downloader import generate_threat_intel_downloader
 
 RESTRICTED_CLUSTER_NAMES = ('main', 'athena')
-TERRAFORM_VERSIONS = {'application': '~> 0.10.6', 'provider': {'aws': '~> 1.5.0'}}
+TERRAFORM_VERSIONS = {'application': '~> 0.10.6', 'provider': {'aws': '~> 1.11.0'}}
 
 
 def generate_s3_bucket(**kwargs):

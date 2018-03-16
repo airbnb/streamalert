@@ -3,7 +3,8 @@ This Terraform module creates a single AWS Lambda function and its related compo
 
 * IAM execution role with basic permissions
 * Lambda function
-* Production alias
+* Versions and an alias
+* CloudWatch event schedule support (to invoke at regular intervals)
 * CloudWatch log group
 * CloudWatch metric alarms related to Lambda
 

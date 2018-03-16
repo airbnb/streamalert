@@ -17,14 +17,14 @@ from mock import patch
 from nose.tools import assert_equal, assert_false, assert_true
 
 from stream_alert_cli.config import CLIConfig
-from stream_alert_cli.terraform import _common, s3_events
+from stream_alert_cli.terraform import common, s3_events
 
 CONFIG = CLIConfig(config_path='tests/unit/conf')
 
 
 def test_generate_s3_events_legacy():
     """CLI - Terraform - S3 Events - Legacy"""
-    cluster_dict = _common.infinitedict()
+    cluster_dict = common.infinitedict()
     CONFIG['clusters']['test']['modules']['s3_events'] = {
         's3_bucket_id': 'unit-test-bucket.legacy.data'
     }
@@ -41,7 +41,7 @@ def test_generate_s3_events_legacy():
 
 def test_generate_s3_events():
     """CLI - Terraform - S3 Events with Valid Buckets"""
-    cluster_dict = _common.infinitedict()
+    cluster_dict = common.infinitedict()
     result = s3_events.generate_s3_events('advanced', cluster_dict, CONFIG)
 
     expected_config = {
@@ -76,7 +76,7 @@ def test_generate_s3_events():
 @patch('stream_alert_cli.terraform.s3_events.LOGGER_CLI')
 def test_generate_s3_events_invalid_bucket(mock_logging):
     """CLI - Terraform - S3 Events with Missing Bucket Key"""
-    cluster_dict = _common.infinitedict()
+    cluster_dict = common.infinitedict()
     CONFIG['clusters']['advanced']['modules']['s3_events'] = [{'wrong_key': 'my-bucket!!!'}]
     result = s3_events.generate_s3_events('advanced', cluster_dict, CONFIG)
 
