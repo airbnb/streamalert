@@ -115,17 +115,17 @@ def _terraform_init(config):
     if not run_command(['terraform', 'init']):
         return
 
-    # we need to manually create the streamalerts table since terraform does not support this
-    # See: https://github.com/terraform-providers/terraform-provider-aws/issues/1486
-    alerts_bucket = '{}.streamalerts'.format(config['global']['account']['prefix'])
-    create_table(None, alerts_bucket, 'alerts', config)
-
     # Use a named tuple to match the 'processor' attribute in the argparse options
     deploy_opts = namedtuple('DeployOptions', ['processor', 'clusters'])
 
     LOGGER_CLI.info('Deploying Lambda Functions')
 
     deploy(deploy_opts(['rule', 'alert', 'athena'], []), config)
+
+    # we need to manually create the streamalerts table since terraform does not support this
+    # See: https://github.com/terraform-providers/terraform-provider-aws/issues/1486
+    alerts_bucket = '{}.streamalerts'.format(config['global']['account']['prefix'])
+    create_table(None, alerts_bucket, 'alerts', config)
 
     LOGGER_CLI.info('Building Remainder Infrastructure')
     tf_runner(refresh=False)
