@@ -21,7 +21,8 @@ import time
 import boto3
 from botocore.exceptions import ClientError
 
-from stream_alert.rule_processor import LOGGER
+from stream_alert.shared.metrics import MetricLogger
+from stream_alert.rule_processor import FUNCTION_NAME, LOGGER
 
 
 class AlertForwarder(object):
@@ -122,7 +123,8 @@ class AlertForwarder(object):
         with self.table.batch_writer() as batch:
             for alert in alerts:
                 batch.put_item(Item=self.dynamo_record(alert))
-        LOGGER.info('Successfully sent %d alerts to dynamo:%s', len(alerts), self.table.table_name)
+        LOGGER.info(
+            'Successfully sent %d alert(s) to dynamo:%s', len(alerts), self.table.table_name)
 
     def send_alerts(self, alerts):
         """Send alerts to the Alert Processor and to the alerts Dynamo table.
@@ -132,9 +134,10 @@ class AlertForwarder(object):
         """
         self._send_to_lambda(alerts)
 
-        # For now, don't blow up the rule processor if there is a problem sending to Dynamo.
-        # TODO: Remove/refine broad exception handling once tested.
         try:
             self._send_to_dynamo(alerts)
-        except Exception:  # pylint: disable=broad-except
+        except ClientError:
+            # The batch_writer() automatically retries transient errors - any raised ClientError
+            # is likely unrecoverable. Log an exception and metric
             LOGGER.exception('Error saving alerts to Dynamo')
+            MetricLogger.log_metric(FUNCTION_NAME, MetricLogger.FAILED_DYNAMO_WRITES, 1)

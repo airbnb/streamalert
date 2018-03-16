@@ -79,15 +79,14 @@ class TestAlertForwarder(object):
         self.boto_mock.return_value.invoke.side_effect = ClientError(
             err_response, 'operation')
 
-        self.forwarder.send_alerts(['alert!!!'])
+        self.forwarder._send_to_lambda(['alert!!!'])
 
         log_mock.assert_has_calls([
             call.exception(
                 'An error occurred while sending alert to \'%s:production\'. '
                 'Error is: %s. Alert: %s', self.ALERT_PROCESSOR,
                 err_response, '"alert!!!"'
-            ),
-            call.exception('Error saving alerts to Dynamo')
+            )
         ])
 
     @patch('stream_alert.rule_processor.alert_forward.LOGGER')
@@ -96,11 +95,10 @@ class TestAlertForwarder(object):
         self.boto_mock.return_value.invoke.side_effect = [{
             'ResponseMetadata': {'HTTPStatusCode': 201}}]
 
-        self.forwarder.send_alerts(['alert!!!'])
+        self.forwarder._send_to_lambda(['alert!!!'])
 
         log_mock.assert_has_calls([
-            call.error('Failed to send alert to \'%s\': %s', self.ALERT_PROCESSOR, '"alert!!!"'),
-            call.exception('Error saving alerts to Dynamo')
+            call.error('Failed to send alert to \'%s\': %s', self.ALERT_PROCESSOR, '"alert!!!"')
         ])
 
     @patch('stream_alert.rule_processor.alert_forward.LOGGER')
@@ -116,7 +114,7 @@ class TestAlertForwarder(object):
         # Swap out the alias so the logging occurs
         self.forwarder.env['lambda_alias'] = 'production'
 
-        self.forwarder.send_alerts(['alert!!!'])
+        self.forwarder._send_to_lambda(['alert!!!'])
 
         log_mock.assert_has_calls([
             call.info('Sent alert to \'%s\' with Lambda request ID \'%s\'',
@@ -127,16 +125,15 @@ class TestAlertForwarder(object):
     def test_lambda_bad_obj(self, log_mock):
         """AlertForwarder - Lambda - JSON Dump Bad Object"""
         bad_object = datetime.utcnow()
-        self.forwarder.send_alerts([bad_object])
+        self.forwarder._send_to_lambda([bad_object])
 
         log_mock.assert_has_calls([
             call.error('An error occurred while dumping alert to JSON: %s Alert: %s',
                        '\'datetime.datetime\' object has no attribute \'__dict__\'', bad_object),
-            call.exception('Error saving alerts to Dynamo')
         ])
 
     def test_dynamo_record(self):
-        """AlertForwarder - Convert Alert to Dynamo Item"""
+        """AlertForwarder - Convert Alert to Dynamo Record"""
         record = AlertForwarder.dynamo_record(_MOCK_ALERT)
         expected = {
             'RuleName': 'test_name',
@@ -157,8 +154,30 @@ class TestAlertForwarder(object):
     @mock_dynamodb2()
     @patch('stream_alert.rule_processor.alert_forward.LOGGER')
     def test_send_to_dynamo(self, mock_logger):
-        """AlertForwarder - Send Alerts"""
+        """AlertForwarder - Send Alerts to Dynamo"""
         self.forwarder._send_to_dynamo([_MOCK_ALERT] * 2)
         mock_logger.assert_has_calls([
-            call.info('Successfully sent %d alerts to dynamo:%s', 2, self.ALERTS_TABLE)
+            call.info('Successfully sent %d alert(s) to dynamo:%s', 2, self.ALERTS_TABLE)
+        ])
+
+    @patch.object(AlertForwarder, '_send_to_dynamo')
+    @patch.object(AlertForwarder, '_send_to_lambda')
+    def test_send_alerts(self, mock_lambda, mock_dynamo):
+        """AlertForwarder - Send Alerts Entry Point"""
+        self.forwarder.send_alerts(None)
+        mock_lambda.assert_called_once_with(None)
+        mock_dynamo.assert_called_once_with(None)
+
+    @patch.object(AlertForwarder, '_send_to_dynamo')
+    @patch.object(AlertForwarder, '_send_to_lambda')
+    @patch('stream_alert.rule_processor.alert_forward.LOGGER')
+    def test_send_alerts_dynamo_exception(self, mock_logger, mock_lambda, mock_dynamo):
+        """AlertForwarder - Send Alerts with Dynamo Exception"""
+        mock_dynamo.side_effect = ClientError({}, 'batch_write')
+        self.forwarder.send_alerts(None)
+
+        mock_lambda.assert_called_once_with(None)
+        mock_dynamo.assert_called_once_with(None)
+        mock_logger.assert_has_calls([
+            call.exception('Error saving alerts to Dynamo')
         ])
