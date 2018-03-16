@@ -16,21 +16,16 @@ limitations under the License.
 from datetime import datetime
 import json
 import os
-import time
 
-import backoff
 import boto3
 from botocore.exceptions import ClientError
 
-from stream_alert.shared import backoff_handlers
-from stream_alert.shared.metrics import MetricLogger
-from stream_alert.rule_processor import FUNCTION_NAME, LOGGER
+from stream_alert.rule_processor import LOGGER
 
 
 class AlertForwarder(object):
     """Sends alerts to the Alert Processor and the alerts Dynamo table."""
     # TODO: Do not send to Alert Processor after Alert Merger is implemented
-    BACKOFF_MAX_RETRIES = 6
 
     def __init__(self, env):
         """Initialize the Forwarder with the boto3 clients and resource names.
@@ -39,10 +34,10 @@ class AlertForwarder(object):
             env (dict): loaded dictionary containing environment information
         """
         self.env = env
-        self.client_dynamo = boto3.client('dynamodb', region_name=self.env['lambda_region'])
+        self.table = boto3.resource(
+            'dynamodb', region_name=env['lambda_region']).Table(os.environ['ALERTS_TABLE'])
         self.client_lambda = boto3.client('lambda', region_name=self.env['lambda_region'])
         self.function = os.environ['ALERT_PROCESSOR']
-        self.table = os.environ['ALERT_TABLE']
 
         # Keep track of unprocessed items when retrying batch_write_item()
         self.unprocessed_items = None
@@ -99,90 +94,32 @@ class AlertForwarder(object):
                             self.function,
                             response['ResponseMetadata']['RequestId'])
 
-    def _alert_batches(self, alerts, batch_size=25):
-        """Group alerts into batches of 25, the maximum allowed by Dynamo batch_write_item.
-
-        Yields:
-            (dict) The constructed request for batch_write_item, containing <= 25 alerts.
-                Maps table name to a list of requests.
-        """
-        for i in range(0, len(alerts), batch_size):
-            batch = alerts[i:i+batch_size]
-            yield {
-                self.table: [
-                    {
-                        'PutRequest': {
-                            'Item': {
-                                'RuleName': {'S': alert['rule_name']},
-                                'Timestamp': {
-                                    # ISO 8601 datetime format, and is unique for each alert
-                                    'S': datetime.now().strftime('%Y-%m-%dT%H:%M:%S.%fZ')
-                                },
-                                'Cluster': {'S': os.environ['CLUSTER']},
-                                'RuleDescription': {'S': alert['rule_description']},
-                                'Outputs': {'SS': alert['outputs']},
-                                # Compact JSON encoding (no extra spaces)
-                                'Record': {'S': json.dumps(alert['record'], separators=(',', ':'))},
-                                # TODO: Remove TTL after alert merger is implemented
-                                'TTL': {'N': str(int(time.time()) + 7200)}  # 2 hour TTL
-                            }
-                        }
-                    }
-                    for alert in batch
-                ]
-            }
-
-    def _batch_write(self):
-        """Write a batch of alerts to Dynamo, retrying with exponential backoff for failed items.
-
-        Returns:
-            (bool) True if *all* items were written successfully, False otherwise.
-        """
-        @backoff.on_predicate(backoff.expo,
-                              max_tries=self.BACKOFF_MAX_RETRIES, jitter=backoff.full_jitter,
-                              on_backoff=backoff_handlers.backoff_handler,
-                              on_success=backoff_handlers.success_handler,
-                              on_giveup=backoff_handlers.giveup_handler)
-        @backoff.on_exception(backoff.expo, ClientError,
-                              max_tries=self.BACKOFF_MAX_RETRIES, jitter=backoff.full_jitter,
-                              on_backoff=backoff_handlers.backoff_handler,
-                              on_success=backoff_handlers.success_handler,
-                              on_giveup=backoff_handlers.giveup_handler)
-        def decorated_batch_write(forwarder):
-            """batch_write_item with the unprocessed_items from the AlertForwarder instance.
-
-            There are 2 different errors to handle here:
-                (1) If Dynamo is unresponsive, a boto ClientError will be raised.
-                (2) The batch_write_item operation can fail halfway through, in which case the
-                    unprocessed items are returned in the response. In this case, unprocessed items
-                    are stored in the class instance, and we return False.
-                    The backoff.on_predicate will automatically retry with any Falsey value, and
-                    batch_write will run again, but only with the remaining unprocessed items.
-
-            Args:
-                forwarder (AlertForwarder): Instance of the AlertForwarder
-
-            Returns:
-                (bool) True if the batch write succeeded, False if there were UnprocessedItems.
-            """
-            response = forwarder.client_dynamo.batch_write_item(
-                RequestItems=forwarder.unprocessed_items)
-            forwarder.unprocessed_items = response['UnprocessedItems']
-            return len(forwarder.unprocessed_items) == 0
-
-        return decorated_batch_write(self)
+    @staticmethod
+    def dynamo_record(alert):
+        """Convert an alert (dict) into a Dynamo item (dict)."""
+        return {
+            'RuleName': alert['rule_name'],
+            'AlertID': alert['id'],
+            # ISO 8601 datetime format
+            'Created': datetime.now().strftime('%Y-%m-%dT%H:%M:%S.%fZ'),
+            'Cluster': os.environ['CLUSTER'],
+            'LogSource': alert['log_source'],
+            'LogType': alert['log_type'],
+            'RuleDescription': alert['rule_description'],
+            'SourceEntity': alert['source_entity'],
+            'SourceService': alert['source_service'],
+            'Outputs': set(alert['outputs']),
+            # Compact JSON encoding (no extra spaces)
+            'Record': json.dumps(alert['record'], separators=(',', ':'))
+        }
 
     def _send_to_dynamo(self, alerts):
         """Write alerts in batches to Dynamo."""
-        for batch_num, batch in enumerate(self._alert_batches(alerts), start=1):
-            LOGGER.info('Sending batch %d to Dynamo with %d alert(s)',
-                        batch_num, len(batch[self.table]))
-            self.unprocessed_items = batch
-            if not self._batch_write():
-                LOGGER.error('Unable to save alert batch; unprocessed items remain: %s',
-                             json.dumps(self.unprocessed_items))
-                MetricLogger.log_metric(FUNCTION_NAME, MetricLogger.UNPROCESSED_ALERTS,
-                                        len(self.unprocessed_items[self.table]))
+        # The batch_writer() automatically handles buffering, batching, and retrying failed items
+        with self.table.batch_writer() as batch:
+            for alert in alerts:
+                batch.put_item(Item=self.dynamo_record(alert))
+        LOGGER.info('Successfully sent %d alerts to dynamo:%s', len(alerts), self.table.table_name)
 
     def send_alerts(self, alerts):
         """Send alerts to the Alert Processor and to the alerts Dynamo table.

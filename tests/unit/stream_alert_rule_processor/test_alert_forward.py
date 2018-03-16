@@ -13,12 +13,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-# pylint: disable=protected-access
+# pylint: disable=no-self-use,protected-access
 from datetime import datetime
 import os
 
 from botocore.exceptions import ClientError
 from mock import ANY, call, patch
+from moto import mock_dynamodb2
 from nose.tools import assert_equal
 
 from stream_alert.rule_processor.alert_forward import AlertForwarder
@@ -26,12 +27,26 @@ from stream_alert.rule_processor.config import load_env
 from tests.unit.stream_alert_rule_processor.test_helpers import get_mock_context
 
 
-@patch.object(AlertForwarder, 'BACKOFF_MAX_RETRIES', 1)
+_MOCK_ALERT = {
+    'id': 'test-uuid',
+    'log_source': 'test_source',
+    'log_type': 'test_type',
+    'record': {
+        'key': 'value'
+    },
+    'outputs': ['out1:here', 'out1:here', 'out2:there'],
+    'rule_description': 'Test Description',
+    'rule_name': 'test_name',
+    'source_entity': 'test_entity',
+    'source_service': 'test_service'
+}
+
+
 @patch.dict(os.environ, {'CLUSTER': 'corp'})
 class TestAlertForwarder(object):
     """Test class for AlertForwarder"""
     ALERT_PROCESSOR = 'corp-prefix_streamalert_alert_processor'
-    ALERT_TABLE = 'corp-prefix_streamalert_alerts'
+    ALERTS_TABLE = 'corp-prefix_streamalert_alerts'
 
     @classmethod
     def setup_class(cls):
@@ -41,7 +56,7 @@ class TestAlertForwarder(object):
         context = get_mock_context()
         env = load_env(context)
         with patch.dict(os.environ, {'ALERT_PROCESSOR': cls.ALERT_PROCESSOR,
-                                     'ALERT_TABLE': cls.ALERT_TABLE}):
+                                     'ALERTS_TABLE': cls.ALERTS_TABLE}):
             cls.forwarder = AlertForwarder(env)
 
     @classmethod
@@ -120,97 +135,29 @@ class TestAlertForwarder(object):
             call.exception('Error saving alerts to Dynamo')
         ])
 
-    @staticmethod
-    def _generate_alerts(count):
-        """Generate a list of alert dictionaries."""
-        return [
-            {
-                'record': '{"abc": 123}',
-                'rule_description': 'Desc{}'.format(i),
-                'rule_name': 'Rule{}'.format(i),
-                'outputs': ['aws-lambda:...', 'aws-s3:...']
-            }
-            for i in xrange(count)
-        ]
-
-    def test_alert_batches_single_alert(self):
-        """AlertForwarder - Alert Batching - Single Alert"""
-        alerts = self._generate_alerts(1)
-        result = list(self.forwarder._alert_batches(alerts))
-
-        expected = [
-            {
-                self.ALERT_TABLE: [
-                    {
-                        'PutRequest': {
-                            'Item': {
-                                'RuleName': {'S': 'Rule0'},
-                                'Timestamp': {'S': ANY},
-                                'Cluster': {'S': 'corp'},
-                                'RuleDescription': {'S': 'Desc0'},
-                                'Outputs': {'SS': ['aws-lambda:...', 'aws-s3:...']},
-                                'Record': {'S': '"{\\"abc\\": 123}"'},
-                                'TTL': {'N': ANY}
-                            }
-                        }
-                    }
-                ]
-            }
-        ]
-        assert_equal(expected, result)
-
-    def test_alert_batches_max_batch(self):
-        """AlertForwarder - Alert Batching - Full Batch"""
-        alerts = self._generate_alerts(10)
-        result = list(self.forwarder._alert_batches(alerts, batch_size=10))
-
-        assert_equal(1, len(result))  # There should be one batch.
-        assert_equal(10, len(result[0][self.ALERT_TABLE]))  # All 10 alerts should be in the batch.
-
-    def test_alert_batches_max_batch_plus_one(self):
-        """AlertForwarder - Alert Batching - Full Batch + 1"""
-        alerts = self._generate_alerts(11)
-        result = list(self.forwarder._alert_batches(alerts, batch_size=10))
-
-        assert_equal(2, len(result))  # There should be 2 alert batches.
-        assert_equal(10, len(result[0][self.ALERT_TABLE]))  # 10 alerts in the first batch.
-        assert_equal(1, len(result[1][self.ALERT_TABLE]))  # 1 alert in the second batch.
-
-    @patch('stream_alert.rule_processor.alert_forward.LOGGER')
-    @patch('stream_alert.rule_processor.alert_forward.MetricLogger.log_metric')
-    def test_dynamo_unprocessed_alerts(self, metric_log_mock, log_mock):
-        """AlertForwarder - Dynamo - Retry unprocessed alerts"""
-
-        def mock_batch_write_item(**kwargs):
-            """Mock client_dynamo.batch_write_item to always return all items unprocessed."""
-            return {
-                'ResponseMetadata': {'HTTPStatusCode': 200},
-                'UnprocessedItems': kwargs['RequestItems']
-            }
-
-        self.boto_mock.return_value.batch_write_item.side_effect = mock_batch_write_item
-
-        self.forwarder._send_to_dynamo(self._generate_alerts(30))
-
-        log_mock.assert_has_calls([
-            call.info('Sending batch %d to Dynamo with %d alert(s)', 1, 25),
-            call.error('Unable to save alert batch; unprocessed items remain: %s', ANY),
-            call.info('Sending batch %d to Dynamo with %d alert(s)', 2, 5),
-            call.error('Unable to save alert batch; unprocessed items remain: %s', ANY)
-        ])
-        metric_log_mock.assert_has_calls([
-            call('rule_processor', 'UnprocessedAlerts', 25),
-            call('rule_processor', 'UnprocessedAlerts', 5)
-        ])
-
-    @patch('stream_alert.rule_processor.alert_forward.LOGGER')
-    def test_dynamo_successful(self, log_mock):
-        """AlertForwarder - Dynamo - Successful"""
-        self.boto_mock.return_value.batch_write_item.return_value = {
-            'ResponseMetadata': {'HTTPStatusCode': 200},
-            'UnprocessedItems': {}
+    def test_dynamo_record(self):
+        """AlertForwarder - Convert Alert to Dynamo Item"""
+        record = AlertForwarder.dynamo_record(_MOCK_ALERT)
+        expected = {
+            'RuleName': 'test_name',
+            'AlertID': 'test-uuid',
+            'Created': ANY,
+            'Cluster': 'corp',
+            'LogSource': 'test_source',
+            'LogType': 'test_type',
+            'RuleDescription': 'Test Description',
+            'SourceEntity': 'test_entity',
+            'SourceService': 'test_service',
+            'Outputs': {'out1:here', 'out2:there'},  # Duplicates are ignored
+            'Record': '{"key":"value"}'
         }
+        assert_equal(expected, record)
 
-        self.forwarder._send_to_dynamo(self._generate_alerts(1))
-
-        log_mock.assert_has_calls([call.info('Sending batch %d to Dynamo with %d alert(s)', 1, 1)])
+    @mock_dynamodb2()
+    @patch('stream_alert.rule_processor.alert_forward.LOGGER')
+    def test_send_to_dynamo(self, mock_logger):
+        """AlertForwarder - Send Alerts"""
+        self.forwarder._send_to_dynamo([_MOCK_ALERT] * 2)
+        mock_logger.assert_has_calls([
+            call.info('Successfully sent %d alerts to dynamo:%s', 2, self.ALERTS_TABLE)
+        ])
