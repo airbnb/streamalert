@@ -16,6 +16,7 @@ limitations under the License.
 from datetime import datetime
 import json
 import os
+import time
 
 import boto3
 from botocore.exceptions import ClientError
@@ -110,7 +111,9 @@ class AlertForwarder(object):
             'SourceService': alert['source_service'],
             'Outputs': set(alert['outputs']),
             # Compact JSON encoding (no extra spaces)
-            'Record': json.dumps(alert['record'], separators=(',', ':'))
+            'Record': json.dumps(alert['record'], separators=(',', ':')),
+            # TODO: Remove TTL after alert merger is implemented
+            'TTL': int(time.time()) + 7200  # 2 hour TTL
         }
 
     def _send_to_dynamo(self, alerts):

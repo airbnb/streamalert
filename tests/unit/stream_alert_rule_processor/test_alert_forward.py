@@ -149,7 +149,8 @@ class TestAlertForwarder(object):
             'SourceEntity': 'test_entity',
             'SourceService': 'test_service',
             'Outputs': {'out1:here', 'out2:there'},  # Duplicates are ignored
-            'Record': '{"key":"value"}'
+            'Record': '{"key":"value"}',
+            'TTL': ANY
         }
         assert_equal(expected, record)
 
