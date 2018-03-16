@@ -110,6 +110,21 @@ class ParserBase:
         # if all pattern group results are True
         return all_patterns_result
 
+    @staticmethod
+    def default_optional_values(key):
+        """Return a default value for a given schema type"""
+        if key == 'string':
+            return str()
+        elif key == 'integer':
+            return int()
+        elif key == 'float':
+            return float()
+        elif key == 'boolean':
+            return bool()
+        elif key == []:
+            return list()
+        elif key == OrderedDict():
+            return dict()
 
 @parser
 class JSONParser(ParserBase):
@@ -158,8 +173,7 @@ class JSONParser(ParserBase):
 
         return bool(json_records)
 
-    @staticmethod
-    def _add_optional_keys(json_records, schema, optional_keys):
+    def _add_optional_keys(self, json_records, schema, optional_keys):
         """Add optional keys to a parsed JSON record.
 
         Args:
@@ -169,21 +183,6 @@ class JSONParser(ParserBase):
         """
         if not optional_keys:
             return
-
-        def _default_optional_values(key):
-            """Return a default value for a given schema type"""
-            if key == 'string':
-                return str()
-            elif key == 'integer':
-                return int()
-            elif key == 'float':
-                return float()
-            elif key == 'boolean':
-                return bool()
-            elif key == []:
-                return list()
-            elif key == OrderedDict():
-                return dict()
 
         for key_name in optional_keys:
             # Instead of doing a schema.update() here with a default value type,
@@ -197,7 +196,7 @@ class JSONParser(ParserBase):
             for record in json_records:
                 if key_name not in record:
                     # Set default value
-                    record[key_name] = _default_optional_values(schema[key_name])
+                    record[key_name] = self.default_optional_values(schema[key_name])
 
     @time_me
     def _parse_records(self, schema, json_payload):

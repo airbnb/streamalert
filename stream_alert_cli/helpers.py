@@ -631,11 +631,25 @@ def user_input(requested_info, mask, input_restrictions):
 def load_test_file(path):
     """Helper to json load the contents of a file with some error handling
 
+    Test files can be either formatted as:
+
+    {
+        "records": [
+            {"data": {}, "description": "", ...}
+        ]
+    }
+
+    or
+
+    [
+        {"data": {}, "description": "", ...}
+    ]
+
     Args:
         path (str): Relative path to file on disk
 
     Returns:
-        dict: Loaded JSON from test event file
+        list: Loaded JSON from test event file
     """
     message_template = 'Improperly formatted file ({}): {}'
     with open(path, 'r') as test_event_file:
@@ -643,16 +657,19 @@ def load_test_file(path):
             contents = json.load(test_event_file)
         except (ValueError, TypeError) as err:
             message = message_template.format(path, err.message)
-            return False, message
+            return [], message
+        else:
+            # Check for legacy format, return a list
+            if 'records' in contents and isinstance(contents['records'], list):
+                return contents['records'], None
+            # Expect that the test event is a JSON list
+            elif isinstance(contents, list):
+                return contents, None
 
-        # Make sure the test event file is formatted in the way we expect
-        if not (isinstance(contents, dict) and 'records' in contents):
-            message = message_template.format(path, 'File must be a dict (JSON '
-                                              'object) with top level key \'records\'')
-
-            return False, message
-
-        return contents, None
+        message = message_template.format(
+            path, 'Test file must contain either a list of maps, or a list of '
+            'maps preceeded with a `records` key')
+        return [], message
 
 
 def get_rules_from_test_events(test_files_dir):
@@ -671,7 +688,7 @@ def get_rules_from_test_events(test_files_dir):
         if not events:
             continue
 
-        for test_event in events['records']:
+        for test_event in events:
             if 'trigger_rules' not in test_event:
                 continue
 
@@ -692,6 +709,5 @@ def get_rule_test_files(test_files_dir):
     """
     return {
         os.path.splitext(event_file)[0]: os.path.join(root, event_file)
-        for root, _, test_event_files in os.walk(test_files_dir)
-        for event_file in test_event_files
+        for root, _, test_event_files in os.walk(test_files_dir) for event_file in test_event_files
     }
