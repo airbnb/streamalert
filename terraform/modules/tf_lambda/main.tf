@@ -2,8 +2,8 @@
 // TODO - migrate all Lambda functions and Lambda metric alarms to use this module
 
 locals {
-  cronjob_enabled = "${var.invocation_frequency_minutes > 0}"
-  vpc_enabled     = "${length(var.vpc_subnet_ids) > 0}"
+  schedule_enabled = "${var.schedule_expression != ""}"
+  vpc_enabled      = "${length(var.vpc_subnet_ids) > 0}"
 }
 
 // Either the function_vpc or the function_no_vpc resource will be used
@@ -87,11 +87,11 @@ resource "aws_lambda_alias" "alias_no_vpc" {
 
 // Allow Lambda function to be invoked via a CloudWatch event rule (if applicable)
 resource "aws_lambda_permission" "allow_cloudwatch_invocation" {
-  count         = "${var.enabled && local.cronjob_enabled ? 1 : 0}"
+  count         = "${var.enabled && local.schedule_enabled ? 1 : 0}"
   statement_id  = "AllowExecutionFromCloudWatch_${var.function_name}"
   action        = "lambda:InvokeFunction"
   function_name = "${var.function_name}"
   principal     = "events.amazonaws.com"
-  source_arn    = "${aws_cloudwatch_event_rule.cronjob.arn}"
+  source_arn    = "${aws_cloudwatch_event_rule.invocation_schedule.arn}"
   qualifier     = "${var.alias_name}"
 }

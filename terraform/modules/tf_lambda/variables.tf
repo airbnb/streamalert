@@ -41,9 +41,13 @@ variable "source_object_key" {
   description = "S3 object key pointing to the function source code"
 }
 
+// NOTE: Due to https://github.com/terraform-providers/terraform-provider-aws/issues/3803,
+// 0 is interpreted as "disable reserve concurrency," and is the default value in Terraform.
+// (You can set reserve concurrency to 0 in the AWS console to stop all invocations.)
+// This could change in a future release of the AWS provider.
 variable "concurrency_limit" {
-  default     = ""
-  description = "Optional reserved concurrency limit (number of concurrent executions allowed)"
+  default     = 0
+  description = "Optional reserved concurrency. By default, there is no function-specific concurrency limit."
 }
 
 variable "environment_variables" {
@@ -83,9 +87,9 @@ variable "aliased_version" {
   description = "Alias points to this version (or the latest published version if not specified)"
 }
 
-variable "invocation_frequency_minutes" {
-  default     = 0
-  description = "If > 0, the Lambda function will be automatically invoked on this interval"
+variable "schedule_expression" {
+  default     = ""
+  description = "Optional rate() or cron() expression to schedule the Lambda function at regular intervals"
 }
 
 variable "log_retention_days" {

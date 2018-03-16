@@ -64,7 +64,8 @@ for logger in logging.Logger.manager.loggerDict:
         continue
     logging.getLogger(logger).setLevel(logging.CRITICAL)
 
-def get_log_memory_hanlder():
+
+def get_log_memory_handler():
     """Get a logging MemoryHandler with a default buffer size of 1000
     We don't care about assigning a target to this handler since these logs
     will not actually be written out to disk, etc
@@ -73,12 +74,12 @@ def get_log_memory_hanlder():
         logging.handlers.MemoryHandler: In memory logging handler that caches
             all messages going through the root logger to a buffer
     """
-    log_mem_hanlder = logging.handlers.MemoryHandler(1000)
+    log_mem_handler = logging.handlers.MemoryHandler(1000)
 
     # Add a filter to suppress everything that is not an error
-    log_mem_hanlder.addFilter(SuppressNonErrors())
+    log_mem_handler.addFilter(SuppressNonErrors())
 
     # Add the MemoryHandler to the root logger to capture all logs in all loggers
-    logging.getLogger().addHandler(log_mem_hanlder)
+    logging.getLogger().addHandler(log_mem_handler)
 
-    return log_mem_hanlder
+    return log_mem_handler

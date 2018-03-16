@@ -27,20 +27,36 @@ def _lambda_config(function_name, config):
 
 def _tf_metric_alarms(lambda_config, sns_arn):
     """Compute metric alarm Terraform configuration from the Lambda config."""
+    result = {}
     alarms_config = lambda_config.get('metric_alarms', {})
-    result = {'alarm_actions': [sns_arn]}
+    if not alarms_config:
+        return result
+
+    result['alarm_actions'] = [sns_arn]
 
     for alarm_type in ['errors', 'throttles']:
         settings = alarms_config.get(alarm_type)
-        if not settings or not settings.get('enabled', True):
-            result['{}_alarm_enabled'.format(alarm_type)] = False
+        if not settings:
             continue
 
-        result['{}_alarm_enabled'.format(alarm_type)] = True
-        result['{}_alarm_evaluation_periods'.format(alarm_type)] = settings.get(
-            'evaluation_periods', 1)
-        result['{}_alarm_period_secs'.format(alarm_type)] = settings.get('period_secs', 120)
-        result['{}_alarm_threshold'.format(alarm_type)] = settings.get('threshold', 0)
+        for key in ['enabled', 'evaluation_periods', 'period_secs', 'threshold']:
+            if key in settings:
+                result['{}_alarm_{}'.format(alarm_type, key)] = settings[key]
+
+    return result
+
+
+def _tf_vpc_config(lambda_config):
+    """Compute VPC configuration from the Lambda config."""
+    result = {}
+    vpc_config = lambda_config.get('vpc_config', {})
+    if not vpc_config:
+        return result
+
+    if 'security_group_ids' in vpc_config:
+        result['vpc_security_group_ids'] = vpc_config['security_group_ids']
+    if 'subnet_ids' in vpc_config:
+        result['vpc_subnet_ids'] = vpc_config['subnet_ids']
 
     return result
 
@@ -59,7 +75,6 @@ def generate_lambda(function_name, config, environment=None):
             "concurrency_limit": 1,
             "current_version": "$LATEST",
             "handler": "main.handler",
-            "invocation_frequency_minutes": 5,
             "log_level": "info",
             "log_retention_days": 14,
             "memory": 128,
@@ -77,6 +92,7 @@ def generate_lambda(function_name, config, environment=None):
                 "threshold": 0
               }
             },
+            "schedule_expression": "rate(5 minutes)",
             "source_bucket": "BUCKET",
             "source_object_key": "OBJECT_KEY",
             "timeout": 10,
@@ -94,7 +110,6 @@ def generate_lambda(function_name, config, environment=None):
         dict: Terraform config for an instance of the tf_lambda module.
     """
     lambda_config = _lambda_config(function_name, config)
-    vpc_config = lambda_config.get('vpc_config', {})
 
     # Add logger level to any custom environment variables
     environment_variables = {
@@ -113,16 +128,19 @@ def generate_lambda(function_name, config, environment=None):
         'timeout_sec': lambda_config['timeout'],
         'source_bucket': lambda_config['source_bucket'],
         'source_object_key': lambda_config['source_object_key'],
-        'concurrency_limit': lambda_config.get('concurrency_limit', ''),
         'environment_variables': environment_variables,
-        'vpc_subnet_ids': vpc_config.get('subnet_ids', []),
-        'vpc_security_group_ids': vpc_config.get('security_group_ids', []),
         'aliased_version': lambda_config['current_version'],
-        'invocation_frequency_minutes': lambda_config.get('invocation_frequency_minutes', 0),
-        'log_retention_days': lambda_config.get('log_retention_days', 14)
     }
+
+    # Include optional keys only if they are defined (otherwise use the module defaults)
+    for key in ['concurrency_limit', 'log_retention_days', 'schedule_expression']:
+        if key in lambda_config:
+            lambda_module[key] = lambda_config[key]
 
     # Add metric alarms to the Lambda module definition
     lambda_module.update(_tf_metric_alarms(lambda_config, monitoring_topic_arn(config)))
+
+    # Add VPC config to the Lambda module definition
+    lambda_module.update(_tf_vpc_config(lambda_config))
 
     return lambda_module

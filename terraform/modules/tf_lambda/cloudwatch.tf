@@ -1,23 +1,23 @@
 /* CloudWatch event rules, log group, and metric alarms */
 
-// CloudWatch event to trigger Lambda in a cronjob (if applicable)
+// CloudWatch event to trigger Lambda on a regular schedule (if applicable)
 
-resource "aws_cloudwatch_event_rule" "cronjob" {
-  count               = "${var.enabled && local.cronjob_enabled ? 1 : 0}"
-  name                = "${var.function_name}_cronjob"
-  description         = "Invokes ${var.function_name} every ${var.invocation_frequency_minutes} minute(s)"
-  schedule_expression = "rate(${var.invocation_frequency_minutes} ${var.invocation_frequency_minutes == 1 ? "minute" : "minutes"})"
+resource "aws_cloudwatch_event_rule" "invocation_schedule" {
+  count               = "${var.enabled && local.schedule_enabled ? 1 : 0}"
+  name                = "${var.function_name}_schedule"
+  description         = "Invokes ${var.function_name} at ${var.schedule_expression}"
+  schedule_expression = "${var.schedule_expression}"
 }
 
 resource "aws_cloudwatch_event_target" "invoke_lambda_vpc" {
-  count = "${var.enabled && local.cronjob_enabled && local.vpc_enabled ? 1 : 0}"
-  rule  = "${aws_cloudwatch_event_rule.cronjob.name}"
+  count = "${var.enabled && local.schedule_enabled && local.vpc_enabled ? 1 : 0}"
+  rule  = "${aws_cloudwatch_event_rule.invocation_schedule.name}"
   arn   = "${aws_lambda_alias.alias_vpc.arn}"
 }
 
 resource "aws_cloudwatch_event_target" "invoke_lambda_no_vpc" {
-  count = "${var.enabled && local.cronjob_enabled && !(local.vpc_enabled) ? 1 : 0}"
-  rule  = "${aws_cloudwatch_event_rule.cronjob.name}"
+  count = "${var.enabled && local.schedule_enabled && !(local.vpc_enabled) ? 1 : 0}"
+  rule  = "${aws_cloudwatch_event_rule.invocation_schedule.name}"
   arn   = "${aws_lambda_alias.alias_no_vpc.arn}"
 }
 

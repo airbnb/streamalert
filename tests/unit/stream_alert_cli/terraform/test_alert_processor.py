@@ -52,7 +52,6 @@ class TestAlertProcessor(unittest.TestCase):
                 'alert_processor_lambda': {
                     'alarm_actions': ['arn:aws:sns:us-west-1:12345678910:stream_alert_monitoring'],
                     'aliased_version': '$LATEST',
-                    'concurrency_limit': '',
                     'description': 'StreamAlert Alert Processor',
                     'environment_variables': {
                         'ALERTS_TABLE': 'unit-testing_streamalert_alerts',
@@ -64,7 +63,6 @@ class TestAlertProcessor(unittest.TestCase):
                     'errors_alarm_threshold': 3,
                     'function_name': 'unit-testing_streamalert_alert_processor',
                     'handler': 'main.handler',
-                    'invocation_frequency_minutes': 0,
                     'log_retention_days': 7,
                     'memory_size_mb': 128,
                     'source': 'modules/tf_lambda',
@@ -108,27 +106,19 @@ class TestAlertProcessor(unittest.TestCase):
                     'source': 'modules/tf_alert_processor_iam'
                 },
                 'alert_processor_lambda': {
-                    'alarm_actions': ['arn:aws:sns:us-west-1:12345678910:stream_alert_monitoring'],
                     'aliased_version': '$LATEST',
-                    'concurrency_limit': '',
                     'description': 'StreamAlert Alert Processor',
-                    'errors_alarm_enabled': False,
                     'environment_variables': {
                         'ALERTS_TABLE': 'unit-testing_streamalert_alerts',
                         'LOGGER_LEVEL': 'info'
                     },
                     'function_name': 'unit-testing_streamalert_alert_processor',
                     'handler': 'main.handler',
-                    'invocation_frequency_minutes': 0,
-                    'log_retention_days': 14,
                     'memory_size_mb': 128,
                     'source': 'modules/tf_lambda',
                     'source_bucket': 'unit.testing.streamalert.source',
                     'source_object_key': 'lambda/alert/source.zip',
-                    'throttles_alarm_enabled': False,
                     'timeout_sec': 60,
-                    'vpc_security_group_ids': [],
-                    'vpc_subnet_ids': []
                 }
             }
         }
