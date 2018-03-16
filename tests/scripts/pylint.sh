@@ -1,3 +1,3 @@
 #! /bin/bash
 echo 'Starting pylint script'
-find . -name '*.py' -not -path './docs/source/*' -not -path './venv/*' -exec pylint '{}' +
+pylint *.py app_integrations helpers matchers rules stream_alert stream_alert_cli tests

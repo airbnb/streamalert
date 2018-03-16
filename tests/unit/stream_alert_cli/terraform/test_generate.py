@@ -17,7 +17,7 @@ import json
 
 from stream_alert_cli.config import CLIConfig
 from stream_alert_cli.terraform import (
-    _common,
+    common,
     cloudtrail,
     flow_logs,
     generate,
@@ -38,7 +38,7 @@ class TestTerraformGenerate(object):
 
     def setup(self):
         """Setup before each method"""
-        self.cluster_dict = _common.infinitedict()
+        self.cluster_dict = common.infinitedict()
         self.config = CLIConfig(config_path='tests/unit/conf')
 
     @staticmethod

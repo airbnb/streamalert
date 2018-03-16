@@ -31,9 +31,9 @@ class SuppressNoise(logging.Filter):
 
     def filter(self, record):
         suppressed_messages = (
-            'Starting download from S3*',
+            '*Starting download from S3*',
             'Completed download in*',
-            '*triggered an alert on log type*',
+            '*triggered alert*',
             '*Firehose*',
             'Got * normalized records'
         )

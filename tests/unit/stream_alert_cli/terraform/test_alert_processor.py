@@ -52,21 +52,25 @@ class TestAlertProcessor(unittest.TestCase):
                 'alert_processor_lambda': {
                     'alarm_actions': ['arn:aws:sns:us-west-1:12345678910:stream_alert_monitoring'],
                     'aliased_version': '$LATEST',
+                    'concurrency_limit': '',
                     'description': 'StreamAlert Alert Processor',
-                    'enable_metric_alarms': True,
                     'environment_variables': {
+                        'ALERTS_TABLE': 'unit-testing_streamalert_alerts',
                         'LOGGER_LEVEL': 'info'
                     },
+                    'errors_alarm_enabled': True,
                     'errors_alarm_evaluation_periods': 1,
                     'errors_alarm_period_secs': 2,
                     'errors_alarm_threshold': 3,
                     'function_name': 'unit-testing_streamalert_alert_processor',
                     'handler': 'main.handler',
+                    'invocation_frequency_minutes': 0,
                     'log_retention_days': 7,
                     'memory_size_mb': 128,
                     'source': 'modules/tf_lambda',
                     'source_bucket': 'unit.testing.streamalert.source',
                     'source_object_key': 'lambda/alert/source.zip',
+                    'throttles_alarm_enabled': True,
                     'throttles_alarm_evaluation_periods': 4,
                     'throttles_alarm_period_secs': 5,
                     'throttles_alarm_threshold': 6,
@@ -106,18 +110,22 @@ class TestAlertProcessor(unittest.TestCase):
                 'alert_processor_lambda': {
                     'alarm_actions': ['arn:aws:sns:us-west-1:12345678910:stream_alert_monitoring'],
                     'aliased_version': '$LATEST',
+                    'concurrency_limit': '',
                     'description': 'StreamAlert Alert Processor',
-                    'enable_metric_alarms': True,
+                    'errors_alarm_enabled': False,
                     'environment_variables': {
+                        'ALERTS_TABLE': 'unit-testing_streamalert_alerts',
                         'LOGGER_LEVEL': 'info'
                     },
                     'function_name': 'unit-testing_streamalert_alert_processor',
                     'handler': 'main.handler',
+                    'invocation_frequency_minutes': 0,
                     'log_retention_days': 14,
                     'memory_size_mb': 128,
                     'source': 'modules/tf_lambda',
                     'source_bucket': 'unit.testing.streamalert.source',
                     'source_object_key': 'lambda/alert/source.zip',
+                    'throttles_alarm_enabled': False,
                     'timeout_sec': 60,
                     'vpc_security_group_ids': [],
                     'vpc_subnet_ids': []
@@ -125,9 +133,3 @@ class TestAlertProcessor(unittest.TestCase):
             }
         }
         assert_equal(expected, result)
-
-    def test_generate_no_metric_alarms(self):
-        """CLI - Terraform Generate Alert Processor - Metric Alarms Disabled"""
-        self.alert_proc_config['metric_alarms']['enabled'] = False
-        result = alert_processor.generate_alert_processor(config=self.config)
-        assert_equal(False, result['module']['alert_processor_lambda']['enable_metric_alarms'])

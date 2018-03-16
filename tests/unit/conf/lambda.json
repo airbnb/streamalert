@@ -6,13 +6,18 @@
     "log_retention_days": 7,
     "memory": 128,
     "metric_alarms": {
-      "enabled": true,
-      "errors_alarm_evaluation_periods": 1,
-      "errors_alarm_period_secs": 2,
-      "errors_alarm_threshold": 3,
-      "throttles_alarm_evaluation_periods": 4,
-      "throttles_alarm_period_secs": 5,
-      "throttles_alarm_threshold": 6
+      "errors": {
+        "enabled": true,
+        "evaluation_periods": 1,
+        "period_secs": 2,
+        "threshold": 3
+      },
+      "throttles": {
+        "enabled": true,
+        "evaluation_periods": 4,
+        "period_secs": 5,
+        "threshold": 6
+      }
     },
     "source_bucket": "unit.testing.streamalert.source",
     "source_current_hash": "12345",

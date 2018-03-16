@@ -16,14 +16,14 @@ limitations under the License.
 from nose.tools import assert_equal, assert_true
 
 from stream_alert_cli.config import CLIConfig
-from stream_alert_cli.terraform import _common, kinesis_streams
+from stream_alert_cli.terraform import common, kinesis_streams
 
 CONFIG = CLIConfig(config_path='tests/unit/conf')
 
 
 def test_kinesis_streams():
     """CLI - Terraform Generate Kinesis Streams"""
-    cluster_dict = _common.infinitedict()
+    cluster_dict = common.infinitedict()
     result = kinesis_streams.generate_kinesis_streams('advanced',
                                                       cluster_dict,
                                                       CONFIG)
@@ -52,7 +52,7 @@ def test_kinesis_streams():
 
 def test_kinesis_streams_with_trusted_account():
     """CLI - Terraform Generate Kinesis Streams with trusted account"""
-    cluster_dict = _common.infinitedict()
+    cluster_dict = common.infinitedict()
     result = kinesis_streams.generate_kinesis_streams('trusted',
                                                       cluster_dict,
                                                       CONFIG)
