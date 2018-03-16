@@ -11,7 +11,7 @@ resource "aws_dynamodb_table" "alerts_table" {
   read_capacity  = "${var.alerts_table_read_capacity}"
   write_capacity = "${var.alerts_table_write_capacity}"
   hash_key       = "RuleName"
-  range_key      = "Timestamp"
+  range_key      = "AlertID"
 
   // Only the hash key and range key attributes need to be defined here.
 
@@ -20,7 +20,7 @@ resource "aws_dynamodb_table" "alerts_table" {
     type = "S"
   }
   attribute {
-    name = "Timestamp"
+    name = "AlertID"
     type = "S"
   }
   // Enable expriation time while testing Dynamo table for alerts

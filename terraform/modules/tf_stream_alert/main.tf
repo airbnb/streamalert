@@ -14,7 +14,7 @@ resource "aws_lambda_function" "streamalert_rule_processor" {
   environment {
     variables = {
       ALERT_PROCESSOR = "${var.prefix}_streamalert_alert_processor"
-      ALERT_TABLE     = "${var.prefix}_streamalert_alerts"
+      ALERTS_TABLE     = "${var.prefix}_streamalert_alerts"
       CLUSTER         = "${var.cluster}"
       ENABLE_METRICS  = "${var.rule_processor_enable_metrics}"
       LOGGER_LEVEL    = "${var.rule_processor_log_level}"

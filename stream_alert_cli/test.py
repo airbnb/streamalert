@@ -936,7 +936,7 @@ def stream_alert_test(options, config):
         # The Rule Processor uses env variables to determine where alerts should be forwarded:
         prefix = config['global']['account']['prefix']
         os.environ['ALERT_PROCESSOR'] = '{}_streamalert_alert_processor'.format(prefix)
-        os.environ['ALERT_TABLE'] = '{}_streamalert_alerts'.format(prefix)
+        os.environ['ALERTS_TABLE'] = '{}_streamalert_alerts'.format(prefix)
 
         if options.debug:
             # TODO(jack): Currently there is no (clean) way to set
