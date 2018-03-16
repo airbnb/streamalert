@@ -41,6 +41,11 @@ variable "source_object_key" {
   description = "S3 object key pointing to the function source code"
 }
 
+variable "concurrency_limit" {
+  default     = ""
+  description = "Optional reserved concurrency limit (number of concurrent executions allowed)"
+}
+
 variable "environment_variables" {
   type        = "map"
   description = "Map of environment variables available to the running Lambda function"
@@ -68,9 +73,19 @@ variable "auto_publish_versions" {
   description = "Whether Terraform should automatically publish new versions of the function"
 }
 
+variable "alias_name" {
+  default     = "production"
+  description = "An alias with this name is automatically created which points to aliased_version"
+}
+
 variable "aliased_version" {
   default     = ""
   description = "Alias points to this version (or the latest published version if not specified)"
+}
+
+variable "invocation_frequency_minutes" {
+  default     = 0
+  description = "If > 0, the Lambda function will be automatically invoked on this interval"
 }
 
 variable "log_retention_days" {
@@ -80,15 +95,15 @@ variable "log_retention_days" {
 
 // ***** CloudWatch metric alarms *****
 
-variable "enable_metric_alarms" {
-  default     = true
-  description = "Enable metric alarms for errors, throttles, and optionally IteratorAge."
-}
-
 variable "alarm_actions" {
   type        = "list"
   default     = []
   description = "Optional list of CloudWatch alarm actions (e.g. SNS topic ARNs)"
+}
+
+variable "errors_alarm_enabled" {
+  default     = true
+  description = "Enable CloudWatch metric alarm for invocation errors"
 }
 
 variable "errors_alarm_threshold" {
@@ -106,6 +121,11 @@ variable "errors_alarm_period_secs" {
   description = "Period over which to count the number of invocation errors"
 }
 
+variable "throttles_alarm_enabled" {
+  default     = true
+  description = "Enable CloudWatch metric alarm for throttled executions"
+}
+
 variable "throttles_alarm_threshold" {
   default     = 0
   description = "Alarm if Lambda throttles exceed this value in the specified period(s)"
@@ -121,7 +141,7 @@ variable "throttles_alarm_period_secs" {
   description = "Period over which to count the number of throttles"
 }
 
-variable "enable_iterator_age_alarm" {
+variable "iterator_age_alarm_enabled" {
   default     = false
   description = "Enable IteratorAge alarm (applicable only for stream-based invocations like Kinesis)"
 }
