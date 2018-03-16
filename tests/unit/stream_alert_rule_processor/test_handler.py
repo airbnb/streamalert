@@ -20,7 +20,7 @@ import logging
 import os
 
 from mock import call, patch
-from moto import mock_kinesis
+from moto import mock_dynamodb2, mock_kinesis
 from nose.tools import (
     assert_equal,
     assert_false,
@@ -43,6 +43,8 @@ from tests.unit.stream_alert_rule_processor.test_helpers import (
 rule = StreamRules.rule
 
 
+@mock_dynamodb2
+@patch.dict(os.environ, {'CLUSTER': 'corp'})
 class TestStreamAlert(object):
     """Test class for StreamAlert class"""
 
@@ -52,7 +54,7 @@ class TestStreamAlert(object):
                              'ALERTS_TABLE': 'unit-testing_streamalert_alerts'})
     def setup(self):
         """Setup before each method"""
-        self.__sa_handler = StreamAlert(get_mock_context(), False)
+        self.__sa_handler = StreamAlert(get_mock_context())
 
     def test_run_no_records(self):
         """StreamAlert Class - Run, No Records"""
@@ -120,13 +122,14 @@ class TestStreamAlert(object):
             'record'
         )
 
+    @patch('stream_alert.rule_processor.alert_forward.AlertForwarder.send_alerts')
     @patch('stream_alert.rule_processor.handler.StreamRules.process')
     @patch('stream_alert.rule_processor.handler.StreamClassifier.extract_service_and_entity')
-    def test_run_with_alert(self, extract_mock, rules_mock):
+    def test_run_with_alert(self, extract_mock, rules_mock, alerts_mock):
         """StreamAlert Class - Run, With Alert"""
+        alerts_mock.return_value = []
         extract_mock.return_value = ('kinesis', 'unit_test_default_stream')
         rules_mock.return_value = (['success!!'], ['normalized_records'])
-
         passed = self.__sa_handler.run(get_valid_event())
 
         assert_true(passed)
@@ -179,9 +182,6 @@ class TestStreamAlert(object):
         extract_mock.return_value = ('kinesis', 'unit_test_default_stream')
         rules_mock.return_value = (['success!!'], ['normalized_records'])
 
-        # Set send_alerts to true so the send_alerts happens
-        self.__sa_handler.enable_alert_processor = True
-
         # Swap out the alias so the logging occurs
         self.__sa_handler.env['lambda_alias'] = 'production'
 
@@ -190,12 +190,14 @@ class TestStreamAlert(object):
         forwarder_mock.assert_called_with(['success!!'])
 
     @patch('logging.Logger.debug')
+    @patch('stream_alert.rule_processor.alert_forward.AlertForwarder.send_alerts')
     @patch('stream_alert.rule_processor.handler.StreamRules.process')
     @patch('stream_alert.rule_processor.handler.StreamClassifier.extract_service_and_entity')
-    def test_run_debug_log_alert(self, extract_mock, rules_mock, log_mock):
+    def test_run_debug_log_alert(self, extract_mock, rules_mock, alerts_mock, log_mock):
         """StreamAlert Class - Run, Debug Log Alert"""
         extract_mock.return_value = ('kinesis', 'unit_test_default_stream')
         rules_mock.return_value = (['success!!'], ['normalized_records'])
+        alerts_mock.return_value = []
 
         # Cache the logger level
         log_level = LOGGER.getEffectiveLevel()
@@ -280,7 +282,7 @@ class TestStreamAlert(object):
         mock_threat_intel.return_value = StreamThreatIntel('test_table_name', 'us-east-1')
         mock_query.return_value = ([], [])
 
-        sa_handler = StreamAlert(get_mock_context(), False)
+        sa_handler = StreamAlert(get_mock_context())
         event = {
             'account': 123456,
             'region': '123456123456',

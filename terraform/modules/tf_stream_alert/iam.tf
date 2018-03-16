@@ -23,30 +23,6 @@ resource "aws_iam_role_policy_attachment" "stream_alert_rule_processor_cloudwatc
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
-// IAM Role Policy: Allow the Rule Processor to invoke the Alert Processor
-resource "aws_iam_role_policy" "streamalert_rule_processor_lambda" {
-  name = "LambdaInvokeAlertProcessor"
-  role = "${aws_iam_role.streamalert_rule_processor_role.id}"
-
-  policy = "${data.aws_iam_policy_document.rule_processor_invoke_alert_proc.json}"
-}
-
-// IAM Policy Doc: Allow the Rule Processor to invoke the Alert Processor
-data "aws_iam_policy_document" "rule_processor_invoke_alert_proc" {
-  statement {
-    effect = "Allow"
-
-    actions = [
-      "lambda:InvokeFunction",
-    ]
-
-    # Use interpolation because of the different VPC/non vpc resources
-    resources = [
-      "arn:aws:lambda:${var.region}:${var.account_id}:function:${var.prefix}_streamalert_alert_processor",
-    ]
-  }
-}
-
 // IAM Role Policy: Allow the Rule Processor to save alerts to dynamo.
 resource "aws_iam_role_policy" "save_alerts_to_dynamo" {
   name   = "SaveAlertsToDynamo"

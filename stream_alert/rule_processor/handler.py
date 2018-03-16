@@ -30,15 +30,12 @@ class StreamAlert(object):
     """Wrapper class for handling StreamAlert classificaiton and processing"""
     config = {}
 
-    def __init__(self, context, enable_alert_processor=True):
+    def __init__(self, context):
         """Initializer
 
         Args:
             context (dict): An AWS context object which provides metadata on the currently
                 executing lambda function.
-            enable_alert_processor (bool): If the user wants to send the alerts using their
-                own methods, 'enable_alert_processor' can be set to False to suppress
-                sending with the StreamAlert alert processor.
         """
         # Load the config. Validation occurs during load, which will
         # raise exceptions on any ConfigErrors
@@ -54,7 +51,6 @@ class StreamAlert(object):
         # Instantiate a classifier that is used for this run
         self.classifier = StreamClassifier(config=self.config)
 
-        self.enable_alert_processor = enable_alert_processor
         self._failed_record_count = 0
         self._processed_record_count = 0
         self._processed_size = 0
@@ -128,7 +124,7 @@ class StreamAlert(object):
         # Apply Threat Intel to normalized records in the end of Rule Processor invocation
         record_alerts = self._rule_engine.threat_intel_match(payload_with_normalized_records)
         self._alerts.extend(record_alerts)
-        if record_alerts and self.enable_alert_processor:
+        if record_alerts:
             self.alert_forwarder.send_alerts(record_alerts)
 
         MetricLogger.log_metric(FUNCTION_NAME,
@@ -218,7 +214,6 @@ class StreamAlert(object):
             # Extend the list of alerts with any new ones so they can be returned
             self._alerts.extend(record_alerts)
 
-            if self.enable_alert_processor:
-                self.alert_forwarder.send_alerts(record_alerts)
+            self.alert_forwarder.send_alerts(record_alerts)
 
         return payload_with_normalized_records

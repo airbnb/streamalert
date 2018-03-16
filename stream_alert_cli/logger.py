@@ -35,6 +35,7 @@ class SuppressNoise(logging.Filter):
             'Completed download in*',
             '*triggered alert*',
             '*Firehose*',
+            'Successfully sent*',
             'Got * normalized records'
         )
 
