@@ -18,7 +18,9 @@ from stream_alert_cli.terraform.common import monitoring_topic_arn
 
 def _lambda_config(function_name, config):
     """Find the config specific to this Lambda function."""
-    if function_name == shared.ALERT_PROCESSOR_NAME:
+    if function_name == shared.ALERT_MERGER_NAME:
+        return config['lambda']['alert_merger_config']
+    elif function_name == shared.ALERT_PROCESSOR_NAME:
         return config['lambda']['alert_processor_config']
     else:
         raise NotImplementedError(

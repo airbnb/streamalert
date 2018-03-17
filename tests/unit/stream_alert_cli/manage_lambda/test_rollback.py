@@ -26,6 +26,7 @@ class RollbackTest(unittest.TestCase):
         self.config = MockCLIConfig(config=basic_streamalert_config())
 
         # Find all function config sections (with 'current_version')
+        self.alert_merger_config = self.config['lambda']['alert_merger_config']
         self.alert_config = self.config['lambda']['alert_processor_config']
         self.apps_config_box = (
             self.config['clusters']['corp']['modules']['stream_alert_apps']['box_collector'])
@@ -39,8 +40,8 @@ class RollbackTest(unittest.TestCase):
             self.config['clusters']['corp']['modules']['stream_alert']['rule_processor'])
 
         self.func_configs = [
-            self.alert_config, self.apps_config_box, self.apps_config_duo, self.athena_config,
-            self.downloader_config, self.rule_config_prod, self.rule_config_corp
+            self.alert_merger_config, self.alert_config, self.apps_config_box, self.apps_config_duo,
+            self.athena_config, self.downloader_config, self.rule_config_prod, self.rule_config_corp
         ]
 
     def test_rollback_all(self, mock_runner, mock_generate, mock_logger):
@@ -59,6 +60,7 @@ class RollbackTest(unittest.TestCase):
         mock_logger.assert_not_called()
         mock_generate.assert_called_once_with(config=self.config)
         mock_runner.assert_called_once_with(targets=[
+            'module.alert_merger_lambda',
             'module.alert_processor_lambda',
             'module.box_collector_corp',
             'module.duo_admin_collector_corp',
@@ -78,6 +80,7 @@ class RollbackTest(unittest.TestCase):
 
         fmt = '%s cannot be rolled back from version %s'
         mock_logger.assert_has_calls([
+            call.warn(fmt, 'alert_merger', '$LATEST'),
             call.warn(fmt, 'alert_processor', '1'),
             call.warn(fmt, 'duo_admin_collector_corp', '$LATEST'),
             call.warn(fmt, 'box_collector_corp', '$LATEST'),

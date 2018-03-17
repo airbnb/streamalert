@@ -3,6 +3,7 @@ import logging
 import os
 
 
+ALERT_MERGER_NAME = 'alert_merger'
 ALERT_PROCESSOR_NAME = 'alert_processor'
 ATHENA_PARTITION_REFRESH_NAME = 'athena_partition_refresh'
 RULE_PROCESSOR_NAME = 'rule_processor'

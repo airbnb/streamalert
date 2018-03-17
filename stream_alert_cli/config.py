@@ -108,6 +108,7 @@ class CLIConfig(object):
             ['{}.streamalerts'.format(prefix)] = 'alerts'
 
         lambda_funcs = [
+            'alert_merger',
             'alert_processor',
             'athena_partition_refresh',
             'rule_processor',

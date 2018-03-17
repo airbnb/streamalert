@@ -300,6 +300,16 @@ class AlertProcessorPackage(LambdaPackage):
     version = stream_alert_version
 
 
+class AlertMergerPackage(LambdaPackage):
+    """Deployment package class for the StreamAlert Alert Merger function"""
+    package_folders = {'stream_alert/alert_merger', 'stream_alert/shared', 'conf'}
+    package_files = {'stream_alert/__init__.py'}
+    package_name = 'alert_merger'
+    config_key = 'alert_merger_config'
+    third_party_libs = {'backoff'}
+    version = stream_alert_version
+
+
 class AppIntegrationPackage(LambdaPackage):
     """Deployment package class for App integration functions"""
     package_folders = {'app_integrations'}
