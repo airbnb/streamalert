@@ -21,6 +21,7 @@ from mock import patch
 from nose.tools import (
     assert_equal,
     assert_false,
+    assert_in,
     assert_is_instance,
     assert_items_equal,
     assert_true,
@@ -200,7 +201,7 @@ class TestStreamRules(object):
             if NORMALIZATION_KEY in alert['record'].keys():
                 alert['record'].remove(NORMALIZATION_KEY)
             assert_items_equal(alert['record'].keys(), kinesis_data.keys())
-            assert_items_equal(alert['outputs'], rule_outputs_map[alert['rule_name']])
+            assert_in(rule_outputs_map[alert['rule_name']][0], alert['outputs'])
 
     def test_process_subkeys_nested_records(self):
         """Rules Engine - Required Subkeys with Nested Records"""
