@@ -85,6 +85,7 @@ def test_user_defined_properties():
         # The user defined properties should at a minimum contain a descriptor
         assert_is_not_none(props.get('descriptor'))
 
+
 def test_output_loading():
     """OutputDispatcher - Loading Output Classes"""
     loaded_outputs = set(StreamAlertOutput.get_all_outputs())
@@ -121,11 +122,6 @@ class TestOutputDispatcher(object):
         """OutputDispatcher - Local Temp Dir"""
         temp_dir = self._dispatcher._local_temp_dir()
         assert_equal(temp_dir.split('/')[-1], 'stream_alert_secrets')
-
-    def test_get_secrets_bucket_name(self):
-        """OutputDispatcher - Get Secrets Bucket Name"""
-        bucket_name = self._dispatcher._get_secrets_bucket_name(FUNCTION_NAME)
-        assert_equal(bucket_name, 'corp-prefix.streamalert.secrets')
 
     def test_output_cred_name(self):
         """OutputDispatcher - Output Cred Name"""

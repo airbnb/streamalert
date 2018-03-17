@@ -29,6 +29,7 @@ import jsonpath_rw
 from mock import patch
 
 from stream_alert.alert_processor import main as StreamOutput
+from stream_alert.rule_processor.alert_forward import AlertForwarder
 from stream_alert.rule_processor.handler import StreamAlert
 # import all rules loaded from the main handler
 import stream_alert.rule_processor.main  # pylint: disable=unused-import
@@ -630,7 +631,11 @@ class AlertProcessorTester(object):
             if self.context.mocked:
                 self.setup_outputs(alert)
 
-            for current_test_passed, output in StreamOutput.handler(alert, self.context):
+            # Convert alert to the Dynamo event format expected by the alert processor
+            event = AlertForwarder.dynamo_record(alert)
+            event['Outputs'] = list(event['Outputs'])
+
+            for output, current_test_passed in StreamOutput.handler(event, self.context).items():
                 self.all_tests_passed = current_test_passed and self.all_tests_passed
                 service, descriptor = output.split(':')
                 message = 'sending alert to \'{}\''.format(descriptor)
