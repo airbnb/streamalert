@@ -19,7 +19,7 @@ import uuid
 
 from stream_alert.rule_processor import LOGGER
 from stream_alert.rule_processor.threat_intel import StreamThreatIntel
-from stream_alert.shared import get_required_outputs, NORMALIZATION_KEY
+from stream_alert.shared import resources, NORMALIZATION_KEY
 
 DEFAULT_RULE_DESCRIPTION = 'No rule description provided'
 
@@ -53,7 +53,7 @@ class StreamRules(object):
     def __init__(self, config):
         """Initialize a StreamRules instance to cache a StreamThreatIntel instance."""
         self._threat_intel = StreamThreatIntel.load_from_config(config)
-        self._required_outputs = set(get_required_outputs(config['global']['account']['prefix']))
+        self._required_outputs = set(resources.get_required_outputs())
 
     @classmethod
     def get_rules(cls):
@@ -441,7 +441,9 @@ class StreamRules(object):
                         payload.entity, payload.service())
 
             # Combine the required alert outputs with the ones for this rule
-            all_outputs = list(self._required_outputs.union(set(rule.outputs)))
+            all_outputs = self._required_outputs
+            if rule.outputs:
+                all_outputs = all_outputs.union(set(rule.outputs))
 
             alert = {
                 'id': alert_id,
@@ -450,7 +452,7 @@ class StreamRules(object):
                 'rule_description': rule.rule_function.__doc__ or DEFAULT_RULE_DESCRIPTION,
                 'log_source': str(payload.log_source),
                 'log_type': payload.type,
-                'outputs': all_outputs,
+                'outputs': list(all_outputs),
                 'source_service': payload.service(),
                 'source_entity': payload.entity,
                 'context': rule.context}

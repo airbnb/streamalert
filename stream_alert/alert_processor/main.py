@@ -20,7 +20,7 @@ import json
 from stream_alert.alert_processor import LOGGER
 from stream_alert.alert_processor.helpers import validate_alert
 from stream_alert.alert_processor.outputs.output_base import StreamAlertOutput
-from stream_alert.shared import NORMALIZATION_KEY
+from stream_alert.shared import NORMALIZATION_KEY, resources
 
 
 def handler(event, context):
@@ -41,14 +41,15 @@ def handler(event, context):
     """
     # A failure to load the config will log the error in load_output_config
     # and return here
-    config = _load_output_config()
-    if not config:
-        return
-
     split_arn = context.invoked_function_arn.split(':')
     region = split_arn[3]
     account_id = split_arn[4]
     function_name = context.function_name
+    prefix = function_name.split('_')[0]
+
+    config = _load_output_config(prefix)
+    if not config:
+        return
 
     # Return the current list of statuses back to the caller
     return list(run(event, region, account_id, function_name, config))
@@ -151,7 +152,7 @@ def _sort_dict(unordered_dict):
     return result
 
 
-def _load_output_config(config_path='conf/outputs.json'):
+def _load_output_config(prefix, config_path='conf/outputs.json'):
     """Load the outputs configuration file from disk
 
     Returns:
@@ -163,5 +164,8 @@ def _load_output_config(config_path='conf/outputs.json'):
         except ValueError:
             LOGGER.error('The \'%s\' file could not be loaded into json', config_path)
             return
+
+    # Merge in the default outputs info
+    config = resources.merge_required_outputs(config, prefix)
 
     return config
