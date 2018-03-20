@@ -35,7 +35,8 @@ class SuppressNoise(logging.Filter):
             'Completed download in*',
             '*triggered alert*',
             '*Firehose*',
-            'Got * normalized records'
+            'Got * normalized records',
+            'Rule * triggered alert * on log type *'
         )
 
         message = record.getMessage()

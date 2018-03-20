@@ -39,7 +39,8 @@ def test_handler_run(run_mock):
 
     # This test will load the actual config, so we should compare the
     # function call against the same config here.
-    run_mock.assert_called_with(None, REGION, '5'*12, FUNCTION_NAME, _load_output_config())
+    run_mock.assert_called_with(
+        None, REGION, '5'*12, FUNCTION_NAME, _load_output_config('corp-prefix'))
 
 
 @patch('logging.Logger.error')
@@ -47,7 +48,7 @@ def test_bad_config(log_mock):
     """Load output config - bad config"""
     mock = mock_open(read_data='non-json string that will log an error')
     with patch('__builtin__.open', mock):
-        handler(None, None)
+        handler(None, get_mock_context())
 
     log_mock.assert_called_with(
         'The \'%s\' file could not be loaded into json',
@@ -65,7 +66,7 @@ def test_handler_return():
 
 def test_load_output_config():
     """Load outputs configuration file"""
-    config = _load_output_config('tests/unit/conf/outputs.json')
+    config = _load_output_config('corp-prefix', 'tests/unit/conf/outputs.json')
 
     assert_equal(set(config.keys()), {
         'aws-firehose', 'aws-s3', 'aws-lambda', 'aws-sns', 'aws-sqs',
@@ -103,7 +104,7 @@ def test_sort_dict_recursive():
 @patch('stream_alert.alert_processor.outputs.output_base.OutputDispatcher._load_creds')
 def test_running_success(creds_mock, config_mock, get_mock):
     """Alert Processor run handler - success"""
-    config_mock.return_value = _load_output_config('tests/unit/conf/outputs.json')
+    config_mock.return_value = _load_output_config('corp-prefix', 'tests/unit/conf/outputs.json')
     creds_mock.return_value = {'url': 'http://mock.url'}
     get_mock.return_value.status_code = 200
 
@@ -120,7 +121,7 @@ def test_running_success(creds_mock, config_mock, get_mock):
 @patch('stream_alert.alert_processor.main._load_output_config')
 def test_running_bad_output(config_mock, log_mock):
     """Alert Processor run handler - bad output"""
-    config_mock.return_value = _load_output_config('tests/unit/conf/outputs.json')
+    config_mock.return_value = _load_output_config('corp-prefix', 'tests/unit/conf/outputs.json')
 
     alert = get_alert()
     alert['outputs'] = ['slack']
@@ -144,7 +145,7 @@ def test_running_bad_output(config_mock, log_mock):
 @patch('stream_alert.alert_processor.outputs.output_base.StreamAlertOutput.get_dispatcher')
 def test_running_no_dispatcher(dispatch_mock, config_mock):
     """Alert Processor - Run Handler With No Dispatcher"""
-    config_mock.return_value = _load_output_config('tests/unit/conf/outputs.json')
+    config_mock.return_value = _load_output_config('corp-prefix', 'tests/unit/conf/outputs.json')
     dispatch_mock.return_value = None
 
     alert = get_alert()
@@ -167,7 +168,7 @@ def test_running_exception_occurred(creds_mock, dispatch_mock, config_mock, get_
     err = TypeError('bad error')
     creds_mock.return_value = {'url': 'mock.url'}
     dispatch_mock.return_value.dispatch.side_effect = err
-    config_mock.return_value = _load_output_config('tests/unit/conf/outputs.json')
+    config_mock.return_value = _load_output_config('corp-prefix', 'tests/unit/conf/outputs.json')
     get_mock.return_value.status_code = 200
 
     alert = _sort_dict(get_alert())

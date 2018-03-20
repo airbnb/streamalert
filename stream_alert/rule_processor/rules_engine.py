@@ -19,7 +19,7 @@ import uuid
 
 from stream_alert.rule_processor import LOGGER
 from stream_alert.rule_processor.threat_intel import StreamThreatIntel
-from stream_alert.shared import NORMALIZATION_KEY
+from stream_alert.shared import NORMALIZATION_KEY, resources
 
 DEFAULT_RULE_DESCRIPTION = 'No rule description provided'
 
@@ -53,6 +53,7 @@ class StreamRules(object):
     def __init__(self, config):
         """Initialize a StreamRules instance to cache a StreamThreatIntel instance."""
         self._threat_intel = StreamThreatIntel.load_from_config(config)
+        self._required_outputs_set = resources.get_required_outputs()
 
     @classmethod
     def get_rules(cls):
@@ -82,12 +83,6 @@ class StreamRules(object):
                 LOGGER.error(
                     'Invalid rule [%s] - rule must have either \'logs\' or \''
                     'datatypes\' declared',
-                    rule_name)
-                return
-
-            if not outputs:
-                LOGGER.error(
-                    'Invalid rule [%s] - rule must have \'outputs\' declared',
                     rule_name)
                 return
 
@@ -397,6 +392,8 @@ class StreamRules(object):
 
         return alerts, normalized_records
 
+
+
     def threat_intel_match(self, payload_with_normalized_records):
         """Apply Threat Intelligence on normalized records
 
@@ -421,8 +418,7 @@ class StreamRules(object):
                         self.rule_analysis(ioc_record.pre_parsed_record, rule, ioc_record, alerts)
         return alerts
 
-    @staticmethod
-    def rule_analysis(record, rule, payload, alerts):
+    def rule_analysis(self, record, rule, payload, alerts):
         """Class method to analyze rule against a record
 
         Args:
@@ -443,6 +439,10 @@ class StreamRules(object):
             LOGGER.info('Rule [%s] triggered alert [%s] on log type [%s] from entity \'%s\' '
                         'in service \'%s\'', rule.rule_name, alert_id, payload.log_source,
                         payload.entity, payload.service())
+
+            # Combine the required alert outputs with the ones for this rule
+            all_outputs = self._required_outputs_set.union(set(rule.outputs or []))
+
             alert = {
                 'id': alert_id,
                 'record': record,
@@ -450,7 +450,7 @@ class StreamRules(object):
                 'rule_description': rule.rule_function.__doc__ or DEFAULT_RULE_DESCRIPTION,
                 'log_source': str(payload.log_source),
                 'log_type': payload.type,
-                'outputs': rule.outputs,
+                'outputs': list(all_outputs), # TODO: @austinbyers - change this to a set
                 'source_service': payload.service(),
                 'source_entity': payload.entity,
                 'context': rule.context}

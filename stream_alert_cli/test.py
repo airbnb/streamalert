@@ -35,6 +35,7 @@ import stream_alert.rule_processor.main  # pylint: disable=unused-import
 from stream_alert.rule_processor.parsers import get_parser
 from stream_alert.rule_processor.payload import load_stream_payload
 from stream_alert.rule_processor.rules_engine import StreamRules
+from stream_alert.shared import resources
 from stream_alert_cli import helpers
 from stream_alert_cli.logger import (
     get_log_memory_handler,
@@ -652,7 +653,10 @@ class AlertProcessorTester(object):
         self.context = context
         self.kms_alias = 'alias/stream_alert_secrets_test'
         self.secrets_bucket = 'test.streamalert.secrets'
-        self.outputs_config = load_outputs_config()
+        self.outputs_config = resources.merge_required_outputs(
+            load_outputs_config(),
+            'test-prefix'
+        )
         self.region = config['global']['account']['region']
         self._cleanup_old_secrets()
         self.region = config['global']['account']['region']
@@ -786,7 +790,10 @@ class AlertProcessorTester(object):
         # Patch requests.get and requests.post
         self._setup_requests_mocks()
 
-        for output in alert.get('outputs', []):
+        alert_outputs = resources.get_required_outputs()
+        alert_outputs.update(set(alert.get('outputs', [])))
+
+        for output in alert_outputs:
             try:
                 service, descriptor = output.split(':')
             except ValueError:

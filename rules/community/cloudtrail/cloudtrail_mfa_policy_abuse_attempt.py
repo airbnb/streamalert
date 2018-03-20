@@ -6,9 +6,7 @@ rule = StreamRules.rule
 disable = StreamRules.disable()
 
 
-@rule(
-    logs=['cloudtrail:events'],
-    outputs=['aws-firehose:alerts'])
+@rule(logs=['cloudtrail:events'])
 def cloudtrail_mfa_policy_abuse_attempt(rec):
     """
     author:           Scott Piper of Summit Route in collaboration with Duo Security
