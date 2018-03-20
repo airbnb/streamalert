@@ -391,20 +391,19 @@ class RuleProcessorTester(object):
         configuration = event_log.get('configuration', {})
 
         # Add envelope keys
-        if configuration.get('envelope_keys'):
-            schema.update(configuration['envelope_keys'])
+        schema.update(configuration.get('envelope_keys', {}))
 
         # Setup the parser to access default optional values
-        self.parsers[parser] = self.parsers.get('parser', get_parser(parser))
-
-        # Setup the modified test event
-        default_test_event = {}
-        data = test_event['override_record'].copy()
+        self.parsers[parser] = self.parsers.get(parser, get_parser(parser))
 
         # Add apply default values based on the declared schema
-        for key, value in schema.iteritems():
-            default_test_event[key] = self.parsers[parser].default_optional_values(value)
+        default_test_event = {key: self.parsers[parser].default_optional_values(value)
+                              for key, value
+                              in schema.iteritems()}
 
+        # Fill in the fields left out in the 'override_record' field,
+        # and update the test event with a full 'data' key
+        data = test_event['override_record'].copy()
         data.update(default_test_event)
         test_event['data'] = data
 

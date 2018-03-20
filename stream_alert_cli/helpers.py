@@ -660,7 +660,11 @@ def load_test_file(path):
             return [], message
         else:
             # Check for legacy format, return a list
+            # TOOD: Remove legacy format support
             if 'records' in contents and isinstance(contents['records'], list):
+                LOGGER_CLI.warning('Legacy testing format detected, '
+                                   'test events should be a JSON list: [%s]',
+                                   os.path.basename(path))
                 return contents['records'], None
             # Expect that the test event is a JSON list
             elif isinstance(contents, list):
