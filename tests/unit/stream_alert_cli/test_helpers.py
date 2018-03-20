@@ -21,9 +21,9 @@ from mock import mock_open, patch
 from nose.tools import assert_equal, assert_false, assert_is_none, assert_items_equal
 
 
-def test_load_test_file():
-    """Load Rule Test File - Good File"""
-    test_data = {'records': []}
+def test_load_test_file_list():
+    """CLI - Helpers - Load Rule Test File - Good File (list)"""
+    test_data = [{'data': {'field': 'value'}}]
     mock = mock_open(read_data=json.dumps(test_data))
     with patch('__builtin__.open', mock):
         event, error = helpers.load_test_file('no/path')
@@ -32,29 +32,44 @@ def test_load_test_file():
     assert_is_none(error)
 
 
+def test_load_test_file_map():
+    """CLI - Helpers - Load Rule Test File - Good File (map)"""
+    test_data = {'records': [{'field': 'value'}]}
+    mock = mock_open(read_data=json.dumps(test_data))
+    with patch('__builtin__.open', mock):
+        event, error = helpers.load_test_file('no/path')
+
+    assert_equal(event, test_data['records'])
+    assert_is_none(error)
+
+
 def test_load_test_file_bad_value():
-    """Load Rule Test File - Bad Value"""
+    """CLI - Helpers - Load Rule Test File - Bad Value"""
     mock = mock_open(read_data='bad json string')
     with patch('__builtin__.open', mock):
         event, error = helpers.load_test_file('no/path')
 
-    assert_false(event)
+    assert_equal(event, [])
     assert_equal(error, 'Improperly formatted file (no/path): No JSON object could be decoded')
 
 
 def test_load_test_file_bad_format():
-    """Load Rule Test File - Bad Format"""
-    mock = mock_open(read_data=json.dumps({'record': []}))
+    """CLI - Helpers - Load Rule Test File - Bad Format"""
+    test_data = {'records': {'field': 'value'}}
+    mock = mock_open(read_data=json.dumps(test_data))
     with patch('__builtin__.open', mock):
         event, error = helpers.load_test_file('no/path')
 
     assert_false(event)
-    assert_equal(error, 'Improperly formatted file (no/path): File must be a dict (JSON '
-                        'object) with top level key \'records\'')
+    assert_equal(
+        error,
+        'Improperly formatted file (no/path): Test file must contain either '
+        'a list of maps, or a list of '
+        'maps preceeded with a `records` key')
 
 
 def test_get_rule_test_files():
-    """Get Rule Test Files - Load Files"""
+    """CLI - Helpers - Get Rule Test Files - Load Files"""
     with patch('os.walk') as mock_walk:
         mock_walk.return_value = [
             ('/root_dir', (), ('file.json', 'file2.json',)),
@@ -67,7 +82,7 @@ def test_get_rule_test_files():
 
 
 def test_get_rules_from_test_events():
-    """Get Rules From Test Events"""
+    """CLI - Helpers - Get Rules From Test Events"""
     with patch('os.walk') as mock_walk:
         mock_walk.return_value = [('/root_dir', (), ('file.json',))]
 

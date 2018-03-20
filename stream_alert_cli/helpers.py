@@ -27,16 +27,8 @@ import zlib
 
 import boto3
 from botocore.exceptions import ClientError
-from moto import (
-    mock_cloudwatch,
-    mock_dynamodb2,
-    mock_kinesis,
-    mock_kms,
-    mock_lambda,
-    mock_s3,
-    mock_sns,
-    mock_sqs
-)
+from moto import (mock_cloudwatch, mock_dynamodb2, mock_kinesis, mock_kms, mock_lambda, mock_s3,
+                  mock_sns, mock_sqs)
 
 from stream_alert_cli.logger import LOGGER_CLI
 from stream_alert.rule_processor.firehose import StreamAlertFirehose
@@ -53,9 +45,7 @@ def run_command(runner_args, **kwargs):
             quiet (bool): Whether to show command output or hide it
 
     """
-    default_error_message = "An error occurred while running: {}".format(
-        ' '.join(runner_args)
-    )
+    default_error_message = "An error occurred while running: {}".format(' '.join(runner_args))
     error_message = kwargs.get('error_message', default_error_message)
     default_cwd = 'terraform'
     cwd = kwargs.get('cwd', default_cwd)
@@ -123,8 +113,10 @@ def tf_runner(action='apply', refresh=True, auto_approve=False, targets=None):
     if not run_command(['terraform', 'get'], quiet=True):
         return False
 
-    tf_command = ['terraform', action, '-var-file=../conf/lambda.json',
-                  '-refresh={}'.format(str(refresh).lower())]
+    tf_command = [
+        'terraform', action, '-var-file=../conf/lambda.json', '-refresh={}'.format(
+            str(refresh).lower())
+    ]
 
     if action == 'destroy':
         # Terraform destroy has a '-force' flag instead of '-auto-approve'
@@ -253,10 +245,7 @@ def _get_record_template(service):
         }
 
     elif service == 'stream_alert_app':
-        return {
-            'stream_alert_app': '<TO_BE_REPLACED>',
-            'logs': ['<TO_BE_REPLACED>']
-        }
+        return {'stream_alert_app': '<TO_BE_REPLACED>', 'logs': ['<TO_BE_REPLACED>']}
 
     else:
         LOGGER_CLI.error('Unsupported service: %s', service)
@@ -340,26 +329,25 @@ def create_lambda_function(function_name, region):
     if function_name.find(':') != -1:
         function_name = function_name.split(':')[0]
 
-    boto3.client('lambda', region_name=region).create_function(
-        FunctionName=function_name,
-        Runtime='python2.7',
-        Role='test-iam-role',
-        Handler='function.handler',
-        Description='test lambda function',
-        Timeout=3,
-        MemorySize=128,
-        Publish=True,
-        Code={
-            'ZipFile': _make_lambda_package()
-        }
-    )
+    boto3.client(
+        'lambda', region_name=region).create_function(
+            FunctionName=function_name,
+            Runtime='python2.7',
+            Role='test-iam-role',
+            Handler='function.handler',
+            Description='test lambda function',
+            Timeout=3,
+            MemorySize=128,
+            Publish=True,
+            Code={
+                'ZipFile': _make_lambda_package()
+            })
 
 
 def encrypt_with_kms(data, region, alias):
     """Encrypt the given data with KMS."""
     kms_client = boto3.client('kms', region_name=region)
-    response = kms_client.encrypt(KeyId=alias,
-                                  Plaintext=data)
+    response = kms_client.encrypt(KeyId=alias, Plaintext=data)
 
     return response['CiphertextBlob']
 
@@ -407,8 +395,7 @@ def create_delivery_stream(region, stream_name, prefix=''):
                 'IntervalInSeconds': 124
             },
             'CompressionFormat': 'Snappy',
-        }
-    )
+        })
 
 
 @mock_kinesis
@@ -462,31 +449,44 @@ def setup_mock_dynamodb_ioc_table(config):
     )
 
     dynamodb_client.put_item(
-        Item={
-            'ioc_value': {'S': '1.1.1.2'},
-            'ioc_type': {'S': 'ip'},
-            'sub_type': {'S': 'mal_ip'}
+        Item={'ioc_value': {
+            'S': '1.1.1.2'
         },
-        TableName=table_name
-    )
+              'ioc_type': {
+                  'S': 'ip'
+              },
+              'sub_type': {
+                  'S': 'mal_ip'
+              }},
+        TableName=table_name)
 
     dynamodb_client.put_item(
         Item={
-            'ioc_value': {'S': '0123456789abcdef0123456789abcdef'},
-            'ioc_type': {'S': 'md5'},
-            'sub_type': {'S': 'mal_md5'}
+            'ioc_value': {
+                'S': '0123456789abcdef0123456789abcdef'
+            },
+            'ioc_type': {
+                'S': 'md5'
+            },
+            'sub_type': {
+                'S': 'mal_md5'
+            }
         },
-        TableName=table_name
-    )
+        TableName=table_name)
 
     dynamodb_client.put_item(
         Item={
-            'ioc_value': {'S': 'evil.com'},
-            'ioc_type': {'S': 'domain'},
-            'sub_type': {'S': 'c2_domain'}
+            'ioc_value': {
+                'S': 'evil.com'
+            },
+            'ioc_type': {
+                'S': 'domain'
+            },
+            'sub_type': {
+                'S': 'c2_domain'
+            }
         },
-        TableName=table_name
-    )
+        TableName=table_name)
 
 
 def put_mock_s3_object(bucket, key, data, region):
@@ -505,12 +505,7 @@ def put_mock_s3_object(bucket, key, data, region):
     except ClientError:
         s3_client.create_bucket(Bucket=bucket)
 
-    s3_client.put_object(
-        Body=data,
-        Bucket=bucket,
-        Key=key,
-        ServerSideEncryption='AES256'
-    )
+    s3_client.put_object(Body=data, Bucket=bucket, Key=key, ServerSideEncryption='AES256')
 
 
 def mock_me(context):
@@ -520,9 +515,11 @@ def mock_me(context):
     Args:
         context (namedtuple): A constructed aws context object
     """
+
     def wrap(func):
         """Wrap the returned function with or without mocks"""
         if context.mocked:
+
             @mock_cloudwatch
             @mock_kinesis
             @mock_kms
@@ -535,11 +532,13 @@ def mock_me(context):
                 override any boto3 calls. Wrapping this function here allows
                 us to mock out all calls that happen below this scope."""
                 return func(options, context)
+
             return mocked
 
         def unmocked(options, context):
             """This function will remain unmocked and operate normally"""
             return func(options, context)
+
         return unmocked
 
     return wrap
@@ -554,9 +553,7 @@ def get_context_from_config(cluster, config):
             includes cluster info, etc that can be used for constructing
             an aws context object
     """
-    context = namedtuple('aws_context', ['invoked_function_arn',
-                                         'function_name'
-                                         'mocked'])
+    context = namedtuple('aws_context', ['invoked_function_arn', 'function_name' 'mocked'])
 
     # Return a mocked context if the cluster is not provided
     # Otherwise construct the context from the config using the cluster
@@ -572,8 +569,7 @@ def get_context_from_config(cluster, config):
         account = config['global']['account']['aws_account_id']
         region = config['global']['account']['region']
         function_name = '{}_streamalert_alert_processor'.format(prefix)
-        arn = 'arn:aws:lambda:{}:{}:function:{}:testing'.format(
-            region, account, function_name)
+        arn = 'arn:aws:lambda:{}:{}:function:{}:testing'.format(region, account, function_name)
 
         context.invoked_function_arn = arn
         context.function_name = function_name
@@ -618,8 +614,8 @@ def user_input(requested_info, mask, input_restrictions):
         else:
             valid_response = not any(x in input_restrictions for x in response)
             if not valid_response:
-                restrictions = ', '.join('\'{}\''.format(restriction)
-                                         for restriction in input_restrictions)
+                restrictions = ', '.join(
+                    '\'{}\''.format(restriction) for restriction in input_restrictions)
                 LOGGER_CLI.error('The supplied input should not contain any of the following: %s',
                                  restrictions)
 
@@ -635,11 +631,25 @@ def user_input(requested_info, mask, input_restrictions):
 def load_test_file(path):
     """Helper to json load the contents of a file with some error handling
 
+    Test files can be either formatted as:
+
+    {
+        "records": [
+            {"data": {}, "description": "", ...}
+        ]
+    }
+
+    or
+
+    [
+        {"data": {}, "description": "", ...}
+    ]
+
     Args:
         path (str): Relative path to file on disk
 
     Returns:
-        dict: Loaded JSON from test event file
+        list: Loaded JSON from test event file
     """
     message_template = 'Improperly formatted file ({}): {}'
     with open(path, 'r') as test_event_file:
@@ -647,16 +657,23 @@ def load_test_file(path):
             contents = json.load(test_event_file)
         except (ValueError, TypeError) as err:
             message = message_template.format(path, err.message)
-            return False, message
+            return [], message
+        else:
+            # Check for legacy format, return a list
+            # TOOD: Remove legacy format support
+            if 'records' in contents and isinstance(contents['records'], list):
+                LOGGER_CLI.warning('Legacy testing format detected, '
+                                   'test events should be a JSON list: [%s]',
+                                   os.path.basename(path))
+                return contents['records'], None
+            # Expect that the test event is a JSON list
+            elif isinstance(contents, list):
+                return contents, None
 
-        # Make sure the test event file is formatted in the way we expect
-        if not (isinstance(contents, dict) and 'records' in contents):
-            message = message_template.format(path, 'File must be a dict (JSON '
-                                              'object) with top level key \'records\'')
-
-            return False, message
-
-        return contents, None
+        message = message_template.format(
+            path, 'Test file must contain either a list of maps, or a list of '
+            'maps preceeded with a `records` key')
+        return [], message
 
 
 def get_rules_from_test_events(test_files_dir):
@@ -675,7 +692,7 @@ def get_rules_from_test_events(test_files_dir):
         if not events:
             continue
 
-        for test_event in events['records']:
+        for test_event in events:
             if 'trigger_rules' not in test_event:
                 continue
 
@@ -694,6 +711,7 @@ def get_rule_test_files(test_files_dir):
         dict:  Information about test files on disk, where the key is the
             base name of the file and the value is the relative path to the file
     """
-    return {os.path.splitext(event_file)[0]: os.path.join(root, event_file)
-            for root, _, test_event_files in os.walk(test_files_dir)
-            for event_file in test_event_files}
+    return {
+        os.path.splitext(event_file)[0]: os.path.join(root, event_file)
+        for root, _, test_event_files in os.walk(test_files_dir) for event_file in test_event_files
+    }
