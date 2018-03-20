@@ -1,34 +1,32 @@
-{
-  "records": [
-    {
-      "data": {
-        "action": "bypass_create",
-        "description": "{\"bypass\": \"\", \"count\": 1, \"auto_generated\": false, \"valid_secs\": 10, \"remaining_uses\": 100, \"user_id\": \"...\"}",
-        "object": "...",
-        "timestamp": "1234567890",
-        "username": "..."
-      },
-      "description": "A DUO bypass code that was hand crafted should create an alert.",
-      "log": "duo:administrator",
-      "service": "stream_alert_app",
-      "source": "prefix_cluster_duo_admin_sm-app-name_app",
-      "trigger_rules": [
-        "duo_bypass_code_create_non_auto_generated"
-      ]
+[
+  {
+    "data":{
+      "action":"bypass_create",
+      "description":"{\"bypass\": \"\", \"count\": 1, \"auto_generated\": false, \"valid_secs\": 10, \"remaining_uses\": 100, \"user_id\": \"...\"}",
+      "object":"...",
+      "timestamp":"1234567890",
+      "username":"..."
     },
-    {
-      "data": {
-        "action": "bypass_create",
-        "description": "{\"bypass\": \"\", \"count\": 1, \"auto_generated\": true, \"valid_secs\": 10, \"remaining_uses\": 100, \"user_id\": \"...\"}",
-        "object": "...",
-        "timestamp": "1234567890",
-        "username": "..."
-      },
-      "description": "A DUO bypass code that was auto generated should not create an alert.",
-      "log": "duo:administrator",
-      "service": "stream_alert_app",
-      "source": "prefix_cluster_duo_admin_sm-app-name_app",
-      "trigger_rules": []
-    }
-  ]
-}
+    "description":"A DUO bypass code that was hand crafted should create an alert.",
+    "log":"duo:administrator",
+    "service":"stream_alert_app",
+    "source":"prefix_cluster_duo_admin_sm-app-name_app",
+    "trigger_rules":[
+      "duo_bypass_code_create_non_auto_generated"
+    ]
+  },
+  {
+    "data":{
+      "action":"bypass_create",
+      "description":"{\"bypass\": \"\", \"count\": 1, \"auto_generated\": true, \"valid_secs\": 10, \"remaining_uses\": 100, \"user_id\": \"...\"}",
+      "object":"...",
+      "timestamp":"1234567890",
+      "username":"..."
+    },
+    "description":"A DUO bypass code that was auto generated should not create an alert.",
+    "log":"duo:administrator",
+    "service":"stream_alert_app",
+    "source":"prefix_cluster_duo_admin_sm-app-name_app",
+    "trigger_rules":[]
+  }
+]
