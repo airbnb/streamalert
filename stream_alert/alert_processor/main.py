@@ -31,8 +31,16 @@ ALERT_PROCESSOR = None  # Cached instantiation of an Alert Processor
 
 class AlertProcessor(object):
     """Orchestrates delivery of alerts to the appropriate dispatchers."""
+    ALERT_PROCESSOR = None  # AlertProcessor instance which can be re-used across Lambda invocations
     BACKOFF_MAX_TRIES = 6
     OUTPUT_CONFIG_PATH = 'conf/outputs.json'
+
+    @classmethod
+    def get_instance(cls, invoked_function_arn):
+        """Get an instance of the AlertProcessor, using a cached version if possible."""
+        if not cls.ALERT_PROCESSOR:
+            cls.ALERT_PROCESSOR = AlertProcessor(invoked_function_arn)
+        return cls.ALERT_PROCESSOR
 
     def __init__(self, invoked_function_arn):
         """Initialization logic that can be cached across invocations.
@@ -192,8 +200,4 @@ def handler(event, context):
             For example, {'aws-firehose:sample': False, 'slack:example-channel': True}.
             NOTE: Invalid outputs are excluded from the result (they should not be retried)
     """
-    global ALERT_PROCESSOR  # pylint: disable=global-statement
-    if not ALERT_PROCESSOR:
-        # Create the alert processor if we haven't already
-        ALERT_PROCESSOR = AlertProcessor(context.invoked_function_arn)
-    return ALERT_PROCESSOR.run(event)
+    return AlertProcessor.get_instance(context.invoked_function_arn).run(event)

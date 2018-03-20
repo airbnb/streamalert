@@ -94,11 +94,22 @@ class TestAlertTable(object):
         assert_equal(Decimal('1'), item['Attempts'])
         assert_is_instance(item['Dispatched'], Decimal)
 
-    @patch.object(main, 'LOGGER')
-    def test_mark_as_dispatched_conditional_fail(self, mock_logger):
+    def test_mark_as_dispatched_conditional_fail(self):
         """Alert Merger - Alert Table - Dispatched Alert is Already Deleted"""
-        self.alert_table.mark_as_dispatched('nonsense', 'bears')
-        mock_logger.warn.assert_called_once_with('Conditional update failed: %s', ANY)
+        self.alert_table.table = MagicMock()
+
+        def mock_update(**kwargs):  # pylint: disable=unused-argument
+            raise ClientError({'Error': {'Code': 'ConditionalCheckFailedException'}}, 'UpdateItem')
+        self.alert_table.table.update_item.side_effect = mock_update
+
+        # No error should be raised if the conditional delete failed
+        self.alert_table.mark_as_dispatched('rule_name', 'alert_id')
+        self.alert_table.table.update_item.assert_called_once_with(
+            Key={'RuleName': 'rule_name', 'AlertID': 'alert_id'},
+            UpdateExpression='SET Dispatched = :now ADD Attempts :one',
+            ExpressionAttributeValues={':now': ANY, ':one': 1},
+            ConditionExpression='attribute_exists(AlertID)'
+        )
 
     def test_mark_as_dispatched_exception(self):
         """Alert Merger - Alert Table - An Unhandled Exception is Re-Raised"""
@@ -158,6 +169,6 @@ def test_handler(mock_instance):
     """Alert Merger - Handler (Entry Point)"""
     main.handler(None, None)
     mock_instance.assert_has_calls([
-        call(),
-        call().dispatch()
+        call.get_instance(),
+        call.get_instance().dispatch()
     ])

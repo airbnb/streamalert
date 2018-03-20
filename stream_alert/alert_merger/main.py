@@ -25,8 +25,6 @@ import boto3
 from boto3.dynamodb.conditions import Attr, Key
 from botocore.exceptions import ClientError
 
-MERGER = None  # Cache the instantiation of the AlertMerger for the life of the Lambda container.
-
 
 class AlertTable(object):
     """Provides convenience methods for accessing and modifying the alerts table."""
@@ -98,9 +96,9 @@ class AlertTable(object):
                 ConditionExpression='attribute_exists(AlertID)'
             )
         except ClientError as error:
-            if error.response['Error']['Code'] == 'ConditionalCheckFailedException':
-                LOGGER.warn('Conditional update failed: %s', error.response['Error']['Message'])
-            else:
+            # The update will fail if the alert was already deleted by the alert processor,
+            # in which case there's nothing to do! Any other error is re-raised.
+            if error.response['Error']['Code'] != 'ConditionalCheckFailedException':
                 raise
 
 
@@ -117,6 +115,15 @@ class AlertEncoder(json.JSONEncoder):
 # TODO: Alert merging will be implemented here
 class AlertMerger(object):
     """Dispatch alerts to the alert processor."""
+    ALERT_MERGER = None  # AlertMerger instance which can be re-used across Lambda invocations
+
+    @classmethod
+    def get_instance(cls):
+        """Get an instance of the AlertMerger, using a cached version if possible."""
+        if not cls.ALERT_MERGER:
+            cls.ALERT_MERGER = AlertMerger()
+        return cls.ALERT_MERGER
+
     def __init__(self):
         self.alerts_db = AlertTable(os.environ['ALERTS_TABLE'])
         self.alert_proc = os.environ['ALERT_PROCESSOR']
@@ -145,7 +152,4 @@ class AlertMerger(object):
 
 def handler(event, context):  # pylint: disable=unused-argument
     """Entry point for the alert merger."""
-    global MERGER  # pylint: disable=global-statement
-    if not MERGER:
-        MERGER = AlertMerger()
-    MERGER.dispatch()
+    AlertMerger.get_instance().dispatch()
