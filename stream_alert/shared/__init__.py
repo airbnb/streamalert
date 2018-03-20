@@ -1,7 +1,6 @@
 """Define some shared resources."""
 import logging
 import os
-import string
 
 
 ALERT_PROCESSOR_NAME = 'alert_processor'

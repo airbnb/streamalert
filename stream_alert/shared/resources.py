@@ -26,12 +26,9 @@ def get_required_outputs():
     Returns:
         set: Set of required output services and names in the form service:name
     """
-    outputs = set()
-    for service, value in REQUIRED_OUTPUTS.iteritems():
-        if not isinstance(value, dict):
-            continue
-        outputs.update({'{}:{}'.format(service, output) for output in value.keys()})
-    return outputs
+    return {'{}:{}'.format(service, output)
+            for service, value in REQUIRED_OUTPUTS.iteritems()
+            for output in value.keys()}
 
 
 def merge_required_outputs(user_config, prefix):
@@ -46,20 +43,18 @@ def merge_required_outputs(user_config, prefix):
         dict: Entire formatted outputs dictionary, including required items and
             user defined outputs
     """
+    config = user_config.copy()
     for service, value in REQUIRED_OUTPUTS.iteritems():
-        if not isinstance(value, dict):
-            continue
-
         # Format the resource with the prefix value
         for output, resource in value.iteritems():
             value[output] = resource.format(prefix=prefix)
 
         # Add the outputs for this service if none are defined
-        if service not in user_config:
-            user_config[service] = value
+        if service not in config:
+            config[service] = value
             continue
 
         # Merge the outputs with existing ones for this service
-        user_config[service].update(value)
+        config[service].update(value)
 
-    return user_config
+    return config
