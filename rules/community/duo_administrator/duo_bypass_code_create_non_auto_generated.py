@@ -5,7 +5,7 @@ from stream_alert.rule_processor.rules_engine import StreamRules
 rule = StreamRules.rule
 
 
-@rule(logs=['duo:administrator'], outputs=['aws-firehose:alerts'])
+@rule(logs=['duo:administrator'])
 def duo_bypass_code_create_non_auto_generated(rec):
     """
     author:       @mimeframe

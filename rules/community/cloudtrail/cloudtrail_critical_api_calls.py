@@ -6,9 +6,7 @@ rule = StreamRules.rule
 disable = StreamRules.disable()
 
 
-@rule(
-    logs=['cloudtrail:events'],
-    outputs=['aws-firehose:alerts'])
+@rule(logs=['cloudtrail:events'])
 def cloudtrail_critical_api_calls(rec):
     """
     author:           airbnb_csirt

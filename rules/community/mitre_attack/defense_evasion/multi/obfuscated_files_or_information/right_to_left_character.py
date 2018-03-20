@@ -5,9 +5,7 @@ from stream_alert.rule_processor.rules_engine import StreamRules
 rule = StreamRules.rule
 
 
-@rule(
-    datatypes=['command', 'filePath', 'processPath', 'fileName'],
-    outputs=['aws-firehose:alerts'])
+@rule(datatypes=['command', 'filePath', 'processPath', 'fileName'])
 def right_to_left_character(rec):
     """
     author:           @javutin
