@@ -36,10 +36,6 @@ def generate_cloudwatch_metric_filters(cluster_name, cluster_dict, config):
             continue
 
         if func not in stream_alert_config:
-            LOGGER_CLI.error(
-                'Function for metrics \'%s\' is not defined in stream alert config. '
-                'Options are: %s', func, ', '.join(
-                    '\'{}\''.format(key) for key in stream_alert_config))
             continue
 
         if not stream_alert_config[func].get('enable_metrics'):

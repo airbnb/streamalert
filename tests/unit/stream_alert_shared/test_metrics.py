@@ -32,15 +32,6 @@ class TestMetrics(object):
         reload(shared.metrics)
 
     @patch('logging.Logger.error')
-    def test_invalid_metric_function(self, log_mock):
-        """Metrics - Invalid Function Name"""
-        shared.metrics.MetricLogger.log_metric('rule_procesor', '', '')
-
-        log_mock.assert_called_with(
-            'Function \'%s\' not defined in available metrics. '
-            'Options are: %s', 'rule_procesor', '\'rule_processor\'')
-
-    @patch('logging.Logger.error')
     def test_invalid_metric_name(self, log_mock):
         """Metrics - Invalid Metric Name"""
         shared.metrics.MetricLogger.log_metric('rule_processor', 'FailedParsed', '')

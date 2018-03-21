@@ -20,6 +20,7 @@ import os
 import time
 
 from stream_alert.alert_merger import LOGGER
+from stream_alert.shared.metrics import ALERT_MERGER_NAME, MetricLogger
 
 import boto3
 from boto3.dynamodb.conditions import Attr, Key
@@ -132,8 +133,10 @@ class AlertMerger(object):
 
     def _dispatch_alert(self, alert):
         """Dispatch all alerts which need to be sent to the rule processor."""
+        this_attempt_num = alert.get('Attempts', 0) + 1
         LOGGER.info('Dispatching alert %s to %s (attempt %d)',
-                    alert['AlertID'], self.alert_proc, alert.get('Attempts', 0) + 1)
+                    alert['AlertID'], self.alert_proc, this_attempt_num)
+        MetricLogger.log_metric(ALERT_MERGER_NAME, MetricLogger.ALERT_ATTEMPTS, this_attempt_num)
 
         self.lambda_client.invoke(
             FunctionName=self.alert_proc,

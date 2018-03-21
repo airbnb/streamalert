@@ -16,6 +16,7 @@ limitations under the License.
 import os
 
 from stream_alert.shared import (
+    ALERT_MERGER_NAME,
     ALERT_PROCESSOR_NAME,
     ATHENA_PARTITION_REFRESH_NAME,
     LOGGER,
@@ -27,7 +28,10 @@ CLUSTER = os.environ.get('CLUSTER', 'unknown_cluster')
 # The FUNC_PREFIXES dict acts as a simple map to a human-readable name
 # Add ATHENA_PARTITION_REFRESH_NAME: 'AthenaPartitionRefresh', to the
 # below when metrics are supported there
-FUNC_PREFIXES = {RULE_PROCESSOR_NAME: 'RuleProcessor'}
+FUNC_PREFIXES = {
+    ALERT_MERGER_NAME: 'AlertMerger',
+    RULE_PROCESSOR_NAME: 'RuleProcessor'
+}
 
 try:
     ENABLE_METRICS = bool(int(os.environ.get('ENABLE_METRICS', 0)))
@@ -47,7 +51,7 @@ class MetricLogger(object):
     accessing properties and avoids doing dict lookups a ton.
     """
 
-    # Constant metric names used for CloudWatch
+    # Rule Processor metric names
     FAILED_PARSES = 'FailedParses'
     S3_DOWNLOAD_TIME = 'S3DownloadTime'
     TOTAL_PROCESSED_SIZE = 'TotalProcessedSize'
@@ -60,6 +64,9 @@ class MetricLogger(object):
     FIREHOSE_FAILED_RECORDS = 'FirehoseFailedRecords'
     NORMALIZED_RECORDS = 'NormalizedRecords'
 
+    # Alert Merger metric names
+    ALERT_ATTEMPTS = 'AlertAttempts'
+
     _default_filter = '{{ $.metric_name = "{}" }}'
     _default_value_lookup = '$.metric_value'
 
@@ -70,6 +77,9 @@ class MetricLogger(object):
     # If additional metric logging is added that does not conform to this default
     # configuration, new filters & lookups should be created to handle them as well.
     _available_metrics = {
+        ALERT_MERGER_NAME: {
+            ALERT_ATTEMPTS: (_default_filter.format(ALERT_ATTEMPTS), _default_value_lookup)
+        },
         ALERT_PROCESSOR_NAME: {},   # Placeholder for future alert processor metrics
         ATHENA_PARTITION_REFRESH_NAME: {},  # Placeholder for future athena processor metrics
         RULE_PROCESSOR_NAME: {

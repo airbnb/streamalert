@@ -40,7 +40,7 @@ def generate_alert_merger(config):
         ALERT_MERGER_NAME, config, {
             'ALERTS_TABLE': '{}_streamalert_alerts'.format(prefix),
             'ALERT_PROCESSOR': '{}_streamalert_alert_processor'.format(prefix),
-            'ALERT_PROCESSOR_TIMEOUT_SEC': config['lambda']['alert_processor_config']['timeout']
+            'ALERT_PROCESSOR_TIMEOUT_SEC': config['lambda']['alert_processor_config']['timeout'],
         }
     )
 

@@ -55,6 +55,7 @@ class TestAlertProcessor(unittest.TestCase):
                     'description': 'StreamAlert Alert Processor',
                     'environment_variables': {
                         'ALERTS_TABLE': 'unit-testing_streamalert_alerts',
+                        'ENABLE_METRICS': '0',
                         'LOGGER_LEVEL': 'info'
                     },
                     'errors_alarm_enabled': True,
@@ -110,6 +111,7 @@ class TestAlertProcessor(unittest.TestCase):
                     'description': 'StreamAlert Alert Processor',
                     'environment_variables': {
                         'ALERTS_TABLE': 'unit-testing_streamalert_alerts',
+                        'ENABLE_METRICS': '0',
                         'LOGGER_LEVEL': 'info'
                     },
                     'function_name': 'unit-testing_streamalert_alert_processor',

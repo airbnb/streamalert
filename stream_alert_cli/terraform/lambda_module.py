@@ -13,6 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from stream_alert import shared
+from stream_alert.shared import metrics
 from stream_alert_cli.terraform.common import monitoring_topic_arn
 
 
@@ -48,6 +49,22 @@ def _tf_metric_alarms(lambda_config, sns_arn):
     return result
 
 
+def _tf_metric_filters(lambda_config, function_name):
+    """Compute metric filter Terraform configuration from the Lambda config."""
+    if not lambda_config.get('enable_metrics'):
+        return {}
+
+    # Create a metric filter for each custom metric associated with this function.
+    metric_filters = []
+    function_metrics = metrics.MetricLogger.get_available_metrics()[function_name]
+    for metric, settings in function_metrics.items():
+        metric_name = '{}-{}'.format(metrics.FUNC_PREFIXES[function_name], metric)
+        filter_pattern, filter_value = settings
+        metric_filters.append('{},{},{}'.format(metric_name, filter_pattern, filter_value))
+
+    return {'log_metric_filters': metric_filters}
+
+
 def _tf_vpc_config(lambda_config):
     """Compute VPC configuration from the Lambda config."""
     result = {}
@@ -70,7 +87,7 @@ def generate_lambda(function_name, config, environment=None):
         function_name (str): Name of the Lambda function (e.g. 'alert_processor')
         config (dict): Parsed config from conf/
         environment (dict): Optional environment variables to specify.
-            LOGGER_LEVEL is included automatically.
+            ENABLE_METRICS and LOGGER_LEVEL are included automatically.
 
     Example Lambda config:
         {
@@ -115,6 +132,8 @@ def generate_lambda(function_name, config, environment=None):
 
     # Add logger level to any custom environment variables
     environment_variables = {
+        # Convert True/False to "1" or "0", respectively
+        'ENABLE_METRICS': str(int(lambda_config.get('enable_metrics', False))),
         'LOGGER_LEVEL': lambda_config.get('log_level', 'info')
     }
     if environment:
@@ -139,8 +158,9 @@ def generate_lambda(function_name, config, environment=None):
         if key in lambda_config:
             lambda_module[key] = lambda_config[key]
 
-    # Add metric alarms to the Lambda module definition
+    # Add metric alarms and filters to the Lambda module definition
     lambda_module.update(_tf_metric_alarms(lambda_config, monitoring_topic_arn(config)))
+    lambda_module.update(_tf_metric_filters(lambda_config, function_name))
 
     # Add VPC config to the Lambda module definition
     lambda_module.update(_tf_vpc_config(lambda_config))
