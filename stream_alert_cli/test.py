@@ -405,9 +405,8 @@ class RuleProcessorTester(object):
 
         # Fill in the fields left out in the 'override_record' field,
         # and update the test event with a full 'data' key
-        data = test_event['override_record'].copy()
-        data.update(default_test_event)
-        test_event['data'] = data
+        default_test_event.update(test_event['override_record'])
+        test_event['data'] = default_test_event
 
     @staticmethod
     def apply_helpers(test_record):
