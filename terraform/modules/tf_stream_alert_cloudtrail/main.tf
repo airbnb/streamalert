@@ -7,6 +7,19 @@ resource "aws_cloudtrail" "streamalert" {
   enable_logging                = "${var.enable_logging}"
   include_global_service_events = true
   is_multi_region_trail         = "${var.is_global_trail}"
+
+  event_selector {
+    read_write_type           = "All"
+    include_management_events = true
+
+    data_resource {
+      type = "AWS::S3::Object"
+
+      values = [
+        "arn:aws:s3",
+      ]
+    }
+  }
 }
 
 // S3 bucket for CloudTrail output
