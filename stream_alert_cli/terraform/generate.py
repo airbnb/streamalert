@@ -26,6 +26,7 @@ from stream_alert_cli.terraform.common import (
     infinitedict,
     monitoring_topic_arn
 )
+from stream_alert_cli.terraform.alert_merger import generate_alert_merger
 from stream_alert_cli.terraform.alert_processor import generate_alert_processor
 from stream_alert_cli.terraform.app_integrations import generate_app_integrations
 from stream_alert_cli.terraform.athena import generate_athena
@@ -392,6 +393,15 @@ def terraform_generate(config, init=False):
         config_generate_func=generate_alert_processor,
         tf_tmp_file='terraform/alert_processor.tf.json',
         message='Removing old Alert Processor Terraform file'
+    )
+
+    # Setup Alert Merger
+    generate_global_lambda_settings(
+        config,
+        config_name='alert_merger_config',
+        config_generate_func=generate_alert_merger,
+        tf_tmp_file='terraform/alert_merger.tf.json',
+        message='Removing old Alert Merger Terraform file'
     )
 
     return True

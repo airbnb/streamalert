@@ -115,6 +115,15 @@ def basic_streamalert_config():
             }
         },
         'lambda': {
+            'alert_merger_config': {
+                'current_version': '$LATEST',
+                'handler': 'stream_alert.alert_merger.main.handler',
+                'memory': 128,
+                'source_bucket': 'unit-testing.streamalert.source',
+                'source_current_hash': '<auto_generated>',
+                'source_object_key': '<auto_generated>',
+                'timeout': 10
+            },
             'alert_processor_config': {
                 'current_version': '$LATEST',
                 'handler': 'stream_alert.alert_processor.main.handler',
@@ -122,7 +131,6 @@ def basic_streamalert_config():
                 'source_bucket': 'unit-testing.streamalert.source',
                 'source_current_hash': '<auto_generated>',
                 'source_object_key': '<auto_generated>',
-                'third_party_libraries': [],
                 'timeout': 10
             },
             'athena_partition_refresh_config': {
@@ -139,7 +147,6 @@ def basic_streamalert_config():
                 'source_bucket': 'unit-testing.streamalert.source',
                 'source_current_hash': '<auto_generated>',
                 'source_object_key': '<auto_generated>',
-                'third_party_libraries': [],
                 'timeout': 60
             },
             'rule_processor_config': {
@@ -171,9 +178,6 @@ def basic_streamalert_config():
                 'table_rcu': 1000,
                 'table_wcu': 200,
                 'target_utilization': 70,
-                'third_party_libraries': [
-                    'requests'
-                ],
                 'timeout': 120
             }
         },

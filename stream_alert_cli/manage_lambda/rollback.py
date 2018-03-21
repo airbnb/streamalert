@@ -55,6 +55,13 @@ def _rollback_alert(config):
         return ['module.alert_processor_lambda']
 
 
+def _rollback_alert_merger(config):
+    """Decrement the current_version for the alert merger."""
+    lambda_config = config['lambda']['alert_merger_config']
+    if _try_decrement_version(lambda_config, 'alert_merger'):
+        return ['module.alert_merger_lambda']
+
+
 def _rollback_apps(config, clusters):
     """Decrement the current_version for all of the apps functions in the given clusters."""
     tf_targets = []
@@ -106,6 +113,9 @@ def rollback(options, config):
 
     if rollback_all or 'alert' in options.processor:
         tf_targets.extend(_rollback_alert(config) or [])
+
+    if rollback_all or 'alert_merger' in options.processor:
+        tf_targets.extend(_rollback_alert_merger(config) or [])
 
     if rollback_all or 'apps' in options.processor:
         tf_targets.extend(_rollback_apps(config, clusters) or [])

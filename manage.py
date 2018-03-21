@@ -986,7 +986,8 @@ def _add_default_lambda_args(lambda_parser):
     # require the name of the processor being deployed/rolled back
     lambda_parser.add_argument(
         '-p', '--processor',
-        choices=['alert', 'all', 'athena', 'rule', 'apps', 'threat_intel_downloader'],
+        choices=['all', 'alert', 'alert_merger', 'apps', 'athena', 'rule',
+                 'threat_intel_downloader'],
         help=ARGPARSE_SUPPRESS,
         nargs='+',
         action=UniqueSetAction,

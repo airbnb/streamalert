@@ -21,7 +21,7 @@ resource "aws_cloudwatch_event_target" "invoke_lambda_no_vpc" {
   arn   = "${aws_lambda_alias.alias_no_vpc.arn}"
 }
 
-// CloudWatch log group with configurable retention and tagging
+// CloudWatch log group with configurable retention, tagging, and metric filters
 
 resource "aws_cloudwatch_log_group" "lambda_log_group" {
   count             = "${var.enabled}"
@@ -30,6 +30,20 @@ resource "aws_cloudwatch_log_group" "lambda_log_group" {
 
   tags {
     Name = "${var.name_tag}"
+  }
+}
+
+// The split list is made up of: <filter_name>, <filter_pattern>, <value>
+resource "aws_cloudwatch_log_metric_filter" "rule_processor_cw_metric_filters" {
+  count          = "${length(var.log_metric_filters)}"
+  name           = "${element(split(",", var.log_metric_filters[count.index]), 0)}"
+  pattern        = "${element(split(",", var.log_metric_filters[count.index]), 1)}"
+  log_group_name = "${aws_cloudwatch_log_group.lambda_log_group.name}"
+
+  metric_transformation {
+    name      = "${element(split(",", var.log_metric_filters[count.index]), 0)}"
+    namespace = "${var.log_metric_filter_namespace}"
+    value     = "${element(split(",", var.log_metric_filters[count.index]), 2)}"
   }
 }
 

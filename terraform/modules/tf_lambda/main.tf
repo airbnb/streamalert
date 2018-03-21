@@ -94,4 +94,7 @@ resource "aws_lambda_permission" "allow_cloudwatch_invocation" {
   principal     = "events.amazonaws.com"
   source_arn    = "${aws_cloudwatch_event_rule.invocation_schedule.arn}"
   qualifier     = "${var.alias_name}"
+
+  // The alias must be created before we can grant permission to invoke it
+  depends_on = ["aws_lambda_alias.alias_vpc", "aws_lambda_alias.alias_no_vpc"]
 }

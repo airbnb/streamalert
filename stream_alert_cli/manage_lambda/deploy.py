@@ -36,7 +36,9 @@ def _publish_version(packages, config, clusters):
     Returns:
         bool: Result of Lambda version publishing
     """
-    global_packages = {'alert_processor', 'athena_partition_refresh', 'threat_intel_downloader'}
+    global_packages = {
+        'alert_merger', 'alert_processor', 'athena_partition_refresh', 'threat_intel_downloader'
+    }
 
     for package in packages:
         if package.package_name in global_packages:
@@ -68,7 +70,13 @@ def _create_and_upload(function_name, config, cluster=None):
         'alert': PackageMap(
             stream_alert_packages.AlertProcessorPackage,
             {'module.alert_processor_lambda'},
-            True),
+            True
+        ),
+        'alert_merger': PackageMap(
+            stream_alert_packages.AlertMergerPackage,
+            {'module.alert_merger_lambda'},
+            True
+        ),
         'apps': PackageMap(
             stream_alert_packages.AppIntegrationPackage,
             {'module.app_{}_{}'.format(app_name, cluster)
@@ -125,7 +133,7 @@ def deploy(options, config):
     packages = []
 
     if 'all' in options.processor:
-        processors = {'alert', 'athena', 'apps', 'rule', 'threat_intel_downloader'}
+        processors = {'alert', 'alert_merger', 'apps', 'athena', 'rule', 'threat_intel_downloader'}
     else:
         processors = options.processor
 

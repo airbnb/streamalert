@@ -1,6 +1,7 @@
 // Permissions specific to the alert processor: decrypting secrets, sending alerts to outputs
 
 locals {
+  dynamo_arn_prefix   = "arn:aws:dynamodb:${var.region}:${var.account_id}:table"
   firehose_arn_prefix = "arn:aws:firehose:${var.region}:${var.account_id}"
   lambda_arn_prefix   = "arn:aws:lambda:${var.region}:${var.account_id}:function"
   sns_arn_prefix      = "arn:aws:sns:${var.region}:${var.account_id}"
@@ -14,6 +15,26 @@ locals {
   s3_outputs     = "${concat(var.output_s3_buckets, list("unused"))}"
   sns_outputs    = "${concat(var.output_sns_topics, list("unused"))}"
   sqs_outputs    = "${concat(var.output_sqs_queues, list("unused"))}"
+}
+
+// Allow the Alert Processor to update the alerts table
+resource "aws_iam_role_policy" "update_alerts_table" {
+  name   = "UpdateAlertsTable"
+  role   = "${var.role_id}"
+  policy = "${data.aws_iam_policy_document.update_alerts_table.json}"
+}
+
+data "aws_iam_policy_document" "update_alerts_table" {
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "dynamodb:DeleteItem",
+      "dynamodb:UpdateItem",
+    ]
+
+    resources = ["${local.dynamo_arn_prefix}/${var.prefix}_streamalert_alerts"]
+  }
 }
 
 // Allow the Alert Processor to retrieve and decrypt output secrets

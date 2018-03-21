@@ -69,14 +69,14 @@ class StreamAlertOutput(object):
         return output
 
     @classmethod
-    def create_dispatcher(cls, service, region, account_id, function_name, config):
+    def create_dispatcher(cls, service, region, account_id, prefix, config):
         """Returns the subclass that should handle this particular service
 
         Args:
             service (str): The service identifier for this output
             region (str): The AWS region to use for some output types
             account_id (str): The AWS account ID for computing AWS output ARNs
-            function_name (str): The invoking AWS Lambda function name
+            prefix (str): The resource prefix
             config (dict): The loaded output configuration dict
 
         Returns:
@@ -86,7 +86,7 @@ class StreamAlertOutput(object):
         if not dispatcher:
             return False
 
-        return dispatcher(region, account_id, function_name, config)
+        return dispatcher(region, account_id, prefix, config)
 
     @classmethod
     def get_dispatcher(cls, service):
@@ -142,10 +142,10 @@ class OutputDispatcher(object):
     # out for both get and post requests. This applies to both connection and read timeouts
     _DEFAULT_REQUEST_TIMEOUT = 3.05
 
-    def __init__(self, region, account_id, function_name, config):
+    def __init__(self, region, account_id, prefix, config):
         self.region = region
         self.account_id = account_id
-        self.secrets_bucket = self._get_secrets_bucket_name(function_name)
+        self.secrets_bucket = '{}_streamalert_secrets'.format(prefix)
         self.config = config
 
     @staticmethod
@@ -204,12 +204,6 @@ class OutputDispatcher(object):
             creds_dict.update(defaults)
 
         return creds_dict
-
-    @classmethod
-    def _get_secrets_bucket_name(cls, function_name):
-        """Returns the streamalerts secrets s3 bucket name"""
-        prefix = function_name.split('_')[0]
-        return '.'.join([prefix, 'streamalert', 'secrets'])
 
     def _get_creds_from_s3(self, cred_location, descriptor):
         """Pull the encrypted credential blob for this service and destination from s3

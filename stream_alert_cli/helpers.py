@@ -489,6 +489,38 @@ def setup_mock_dynamodb_ioc_table(config):
         TableName=table_name)
 
 
+@mock_dynamodb2
+def setup_mock_alerts_table(table_name):
+    """Create a mock DynamoDB alerts table used by rule processor, alert processor, alert merger"""
+    boto3.client('dynamodb').create_table(
+        AttributeDefinitions=[
+            {
+                'AttributeName': 'RuleName',
+                'AttributeType': 'S'
+            },
+            {
+                'AttributeName': 'AlertID',
+                'AttributeType': 'S'
+            }
+        ],
+        KeySchema=[
+            {
+                'AttributeName': 'RuleName',
+                'KeyType': 'HASH'
+            },
+            {
+                'AttributeName': 'AlertID',
+                'KeyType': 'RANGE'
+            }
+        ],
+        ProvisionedThroughput={
+            'ReadCapacityUnits': 5,
+            'WriteCapacityUnits': 5
+        },
+        TableName=table_name
+    )
+
+
 def put_mock_s3_object(bucket, key, data, region):
     """Create a mock AWS S3 object for testing
 
@@ -521,6 +553,7 @@ def mock_me(context):
         if context.mocked:
 
             @mock_cloudwatch
+            @mock_dynamodb2
             @mock_kinesis
             @mock_kms
             @mock_lambda

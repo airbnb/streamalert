@@ -1,22 +1,28 @@
-'''
+"""
 Copyright 2017-present, Airbnb Inc.
-
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
-
    http://www.apache.org/licenses/LICENSE-2.0
-
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-'''
-from stream_alert.alert_processor.main import _load_output_config
+"""
+import json
+
+from stream_alert.shared import resources
 
 REGION = 'us-east-1'
 ACCOUNT_ID = '123456789012'
-FUNCTION_NAME = 'corp-prefix_prod_streamalert_alert_processor'
-CONFIG = _load_output_config('corp-prefix', 'tests/unit/conf/outputs.json')
+PREFIX = 'prefix'
+FUNCTION_NAME = '{}_streamalert_alert_processor'.format(PREFIX)
+
+OUTPUT_CONFIG_PATH = 'tests/unit/conf/outputs.json'
+with open(OUTPUT_CONFIG_PATH) as f:
+    base_config = json.load(f)
+CONFIG = resources.merge_required_outputs(base_config, PREFIX)
+
+ALERTS_TABLE = '{}_streamalert_alerts'.format(PREFIX)
 KMS_ALIAS = 'alias/stream_alert_secrets_test'

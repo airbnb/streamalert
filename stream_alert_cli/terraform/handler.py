@@ -120,7 +120,7 @@ def _terraform_init(config):
 
     LOGGER_CLI.info('Deploying Lambda Functions')
 
-    deploy(deploy_opts(['rule', 'alert', 'athena'], []), config)
+    deploy(deploy_opts(['rule', 'alert', 'alert_merger', 'athena'], []), config)
 
     # we need to manually create the streamalerts table since terraform does not support this
     # See: https://github.com/terraform-providers/terraform-provider-aws/issues/1486

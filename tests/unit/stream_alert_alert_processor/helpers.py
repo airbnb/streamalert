@@ -19,19 +19,6 @@ import random
 import shutil
 import tempfile
 
-from mock import Mock
-
-from tests.unit.stream_alert_alert_processor import FUNCTION_NAME, REGION
-
-
-def get_mock_context():
-    """Create a fake context object using Mock"""
-    arn = 'arn:aws:lambda:{}:555555555555:function:{}:production'
-    context = Mock(invoked_function_arn=(arn.format(REGION, FUNCTION_NAME)),
-                   function_name='corp-prefix_prod_streamalert_alert_processor')
-
-    return context
-
 
 def get_random_alert(key_count, rule_name, omit_rule_desc=False):
     """This loop generates key/value pairs with a key of length 6 and

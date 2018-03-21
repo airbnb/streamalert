@@ -23,12 +23,6 @@ resource "aws_dynamodb_table" "alerts_table" {
     name = "AlertID"
     type = "S"
   }
-  // Enable expriation time while testing Dynamo table for alerts
-  // TODO: Remove TTL once Alert Merger is implemented
-  ttl {
-    attribute_name = "TTL"
-    enabled        = true
-  }
   tags {
     Name = "StreamAlert"
   }

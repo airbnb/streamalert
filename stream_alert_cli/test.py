@@ -29,6 +29,7 @@ import jsonpath_rw
 from mock import patch
 
 from stream_alert.alert_processor import main as StreamOutput
+from stream_alert.rule_processor.alert_forward import AlertForwarder
 from stream_alert.rule_processor.handler import StreamAlert
 # import all rules loaded from the main handler
 import stream_alert.rule_processor.main  # pylint: disable=unused-import
@@ -81,7 +82,7 @@ class RuleProcessorTester(object):
         """
         # Create the RuleProcessor. Passing a mocked context object with fake
         # values and False for suppressing sending of alerts to alert processor
-        self.processor = StreamAlert(context, False)
+        self.processor = StreamAlert(context)
         self.cli_config = config
         # Use a list of status_messages to store pass/fail/warning info
         self.status_messages = []
@@ -537,7 +538,7 @@ class RuleProcessorTester(object):
         the end of the test run.
 
         Args:
-            rule_name (str): Name of rule being tested
+            file_name (str): Name of file containing the test event
             test_event (dict): Actual record data being tested
         """
         base_message = ('Invalid test event in file \'{}.json\' with description '
@@ -659,7 +660,6 @@ class AlertProcessorTester(object):
         )
         self.region = config['global']['account']['region']
         self._cleanup_old_secrets()
-        self.region = config['global']['account']['region']
         helpers.setup_mock_firehose_delivery_streams(config)
 
     def test_processor(self, alerts):
@@ -681,7 +681,11 @@ class AlertProcessorTester(object):
             if self.context.mocked:
                 self.setup_outputs(alert)
 
-            for current_test_passed, output in StreamOutput.handler(alert, self.context):
+            # Convert alert to the Dynamo event format expected by the alert processor
+            event = AlertForwarder.dynamo_record(alert)
+            event['Outputs'] = list(event['Outputs'])
+
+            for output, current_test_passed in StreamOutput.handler(event, self.context).items():
                 self.all_tests_passed = current_test_passed and self.all_tests_passed
                 service, descriptor = output.split(':')
                 message = 'sending alert to \'{}\''.format(descriptor)
@@ -984,10 +988,13 @@ def stream_alert_test(options, config):
             options (namedtuple): CLI options (debug, processor, etc)
             context (namedtuple): A constructed aws context object
         """
-        # The Rule Processor uses env variables to determine where alerts should be forwarded:
+        # The Rule Processor and Alert Processor need environment variables for many things
         prefix = config['global']['account']['prefix']
+        alerts_table = '{}_streamalert_alerts'.format(prefix)
         os.environ['ALERT_PROCESSOR'] = '{}_streamalert_alert_processor'.format(prefix)
-        os.environ['ALERTS_TABLE'] = '{}_streamalert_alerts'.format(prefix)
+        os.environ['ALERTS_TABLE'] = alerts_table
+        os.environ['AWS_DEFAULT_REGION'] = config['global']['account']['region']
+        os.environ['CLUSTER'] = run_options.get('cluster') or ''
 
         if options.debug:
             # TODO(jack): Currently there is no (clean) way to set
@@ -1033,6 +1040,8 @@ def stream_alert_test(options, config):
         files_filter = run_options.get('files', {})
 
         # Run the rule processor for all rules or designated rule set
+        if context.mocked:
+            helpers.setup_mock_alerts_table(alerts_table)
         for alerts in rule_proc_tester.test_processor(rules_filter,
                                                       files_filter,
                                                       validate_schemas):

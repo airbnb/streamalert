@@ -13,8 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-# pylint: disable=no-self-use,protected-access
-from datetime import datetime
 import os
 
 from botocore.exceptions import ClientError
@@ -25,7 +23,6 @@ from nose.tools import assert_equal
 from stream_alert.rule_processor.alert_forward import AlertForwarder
 from stream_alert.rule_processor.config import load_env
 from tests.unit.stream_alert_rule_processor.test_helpers import get_mock_context
-
 
 _MOCK_ALERT = {
     'id': 'test-uuid',
@@ -40,143 +37,54 @@ _MOCK_ALERT = {
     'source_entity': 'test_entity',
     'source_service': 'test_service'
 }
+_ALERT_TABLE = 'corp-prefix_streamalert_alerts'
+_CLUSTER = 'corp'
 
 
-@patch.dict(os.environ, {'CLUSTER': 'corp'})
+@patch.dict(os.environ, {'CLUSTER': _CLUSTER})
 class TestAlertForwarder(object):
     """Test class for AlertForwarder"""
-    ALERT_PROCESSOR = 'corp-prefix_streamalert_alert_processor'
-    ALERTS_TABLE = 'corp-prefix_streamalert_alerts'
+    # pylint: disable=no-self-use,protected-access
 
-    @classmethod
-    def setup_class(cls):
-        """Setup the class before any methods"""
-        patcher = patch('boto3.client')
-        cls.boto_mock = patcher.start()
-        context = get_mock_context()
-        env = load_env(context)
-        with patch.dict(os.environ, {'ALERT_PROCESSOR': cls.ALERT_PROCESSOR,
-                                     'ALERTS_TABLE': cls.ALERTS_TABLE}):
-            cls.forwarder = AlertForwarder(env)
+    @patch.dict(os.environ, {'ALERTS_TABLE': _ALERT_TABLE})
+    def setup(self):
+        # pylint: disable=attribute-defined-outside-init
+        self.forwarder = AlertForwarder(load_env(get_mock_context()))
 
-    @classmethod
-    def teardown_class(cls):
-        """Teardown the class after any methods"""
-        cls.forwarder = None
-        cls.boto_mock.stop()
-
-    def teardown(self):
-        """Teardown the class after each methods"""
-        self.forwarder.env['lambda_alias'] = 'development'
-
-    @patch('stream_alert.rule_processor.alert_forward.LOGGER')
-    def test_lambda_boto_error(self, log_mock):
-        """AlertForwarder - Lambda - Boto Error"""
-
-        err_response = {'Error': {'Code': 100}}
-
-        # Add ClientError side_effect to mock
-        self.boto_mock.return_value.invoke.side_effect = ClientError(
-            err_response, 'operation')
-
-        self.forwarder._send_to_lambda(['alert!!!'])
-
-        log_mock.assert_has_calls([
-            call.exception(
-                'An error occurred while sending alert to \'%s:production\'. '
-                'Error is: %s. Alert: %s', self.ALERT_PROCESSOR,
-                err_response, '"alert!!!"'
-            )
-        ])
-
-    @patch('stream_alert.rule_processor.alert_forward.LOGGER')
-    def test_lambda_resp_error(self, log_mock):
-        """AlertForwarder - Lambda - Boto Response Error"""
-        self.boto_mock.return_value.invoke.side_effect = [{
-            'ResponseMetadata': {'HTTPStatusCode': 201}}]
-
-        self.forwarder._send_to_lambda(['alert!!!'])
-
-        log_mock.assert_has_calls([
-            call.error('Failed to send alert to \'%s\': %s', self.ALERT_PROCESSOR, '"alert!!!"')
-        ])
-
-    @patch('stream_alert.rule_processor.alert_forward.LOGGER')
-    def test_lambda_success(self, log_mock):
-        """AlertForwarder - Lambda - Success"""
-        self.boto_mock.return_value.invoke.side_effect = [{
-            'ResponseMetadata': {
-                'HTTPStatusCode': 202,
-                'RequestId': 'reqID'
-            }
-        }]
-
-        # Swap out the alias so the logging occurs
-        self.forwarder.env['lambda_alias'] = 'production'
-
-        self.forwarder._send_to_lambda(['alert!!!'])
-
-        log_mock.assert_has_calls([
-            call.info('Sent alert to \'%s\' with Lambda request ID \'%s\'',
-                      self.ALERT_PROCESSOR, 'reqID')
-        ])
-
-    @patch('stream_alert.rule_processor.alert_forward.LOGGER')
-    def test_lambda_bad_obj(self, log_mock):
-        """AlertForwarder - Lambda - JSON Dump Bad Object"""
-        bad_object = datetime.utcnow()
-        self.forwarder._send_to_lambda([bad_object])
-
-        log_mock.assert_has_calls([
-            call.error('An error occurred while dumping alert to JSON: %s Alert: %s',
-                       '\'datetime.datetime\' object has no attribute \'__dict__\'', bad_object),
-        ])
-
-    def test_dynamo_record(self):
-        """AlertForwarder - Convert Alert to Dynamo Record"""
-        record = AlertForwarder.dynamo_record(_MOCK_ALERT)
+    def test_alert_item(self):
+        """AlertForwarder - Convert Alert to Dynamo Item"""
+        item = AlertForwarder.dynamo_record(_MOCK_ALERT)
         expected = {
             'RuleName': 'test_name',
             'AlertID': 'test-uuid',
             'Created': ANY,
-            'Cluster': 'corp',
+            'Cluster': _CLUSTER,
             'LogSource': 'test_source',
             'LogType': 'test_type',
             'RuleDescription': 'Test Description',
             'SourceEntity': 'test_entity',
             'SourceService': 'test_service',
             'Outputs': {'out1:here', 'out2:there'},  # Duplicates are ignored
-            'Record': '{"key":"value"}',
-            'TTL': ANY
+            'Record': '{"key":"value"}'
         }
-        assert_equal(expected, record)
+        assert_equal(expected, item)
 
     @mock_dynamodb2()
     @patch('stream_alert.rule_processor.alert_forward.LOGGER')
-    def test_send_to_dynamo(self, mock_logger):
-        """AlertForwarder - Send Alerts to Dynamo"""
-        self.forwarder._send_to_dynamo([_MOCK_ALERT] * 2)
+    def test_send_alerts(self, mock_logger):
+        """AlertForwarder - Send Alerts"""
+        self.forwarder.send_alerts([_MOCK_ALERT] * 2)
         mock_logger.assert_has_calls([
-            call.info('Successfully sent %d alert(s) to dynamo:%s', 2, self.ALERTS_TABLE)
+            call.info('Successfully sent %d alert(s) to dynamo:%s', 2, _ALERT_TABLE)
         ])
 
     @patch.object(AlertForwarder, '_send_to_dynamo')
-    @patch.object(AlertForwarder, '_send_to_lambda')
-    def test_send_alerts(self, mock_lambda, mock_dynamo):
-        """AlertForwarder - Send Alerts Entry Point"""
-        self.forwarder.send_alerts(None)
-        mock_lambda.assert_called_once_with(None)
-        mock_dynamo.assert_called_once_with(None)
-
-    @patch.object(AlertForwarder, '_send_to_dynamo')
-    @patch.object(AlertForwarder, '_send_to_lambda')
     @patch('stream_alert.rule_processor.alert_forward.LOGGER')
-    def test_send_alerts_dynamo_exception(self, mock_logger, mock_lambda, mock_dynamo):
+    def test_send_alerts_dynamo_exception(self, mock_logger, mock_dynamo):
         """AlertForwarder - Send Alerts with Dynamo Exception"""
         mock_dynamo.side_effect = ClientError({}, 'batch_write')
         self.forwarder.send_alerts(None)
 
-        mock_lambda.assert_called_once_with(None)
         mock_dynamo.assert_called_once_with(None)
         mock_logger.assert_has_calls([
             call.exception('Error saving alerts to Dynamo')
