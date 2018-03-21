@@ -5,7 +5,7 @@ rule = StreamRules.rule
 disable = StreamRules.disable()
 
 
-@rule(logs=['cloudwatch:events'], matchers=['guard_duty'], outputs=['aws-firehose:alerts'])
+@rule(logs=['cloudwatch:events'], matchers=['guard_duty'])
 def guard_duty_all(*_):
     """
     author:         spiper

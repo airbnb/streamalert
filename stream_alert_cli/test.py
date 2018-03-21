@@ -33,8 +33,10 @@ from stream_alert.rule_processor.alert_forward import AlertForwarder
 from stream_alert.rule_processor.handler import StreamAlert
 # import all rules loaded from the main handler
 import stream_alert.rule_processor.main  # pylint: disable=unused-import
+from stream_alert.rule_processor.parsers import get_parser
 from stream_alert.rule_processor.payload import load_stream_payload
 from stream_alert.rule_processor.rules_engine import StreamRules
+from stream_alert.shared import resources
 from stream_alert_cli import helpers
 from stream_alert_cli.logger import (
     get_log_memory_handler,
@@ -78,7 +80,6 @@ class RuleProcessorTester(object):
                 Warnings and errors captrued during rule processor testing
                 will still be written to stdout regardless of this setting.
         """
-        helpers.setup_mock_dynamodb_ioc_table(config)
         # Create the RuleProcessor. Passing a mocked context object with fake
         # values and False for suppressing sending of alerts to alert processor
         self.processor = StreamAlert(context)
@@ -88,7 +89,11 @@ class RuleProcessorTester(object):
         self.total_tests = 0
         self.all_tests_passed = True
         self.print_output = print_output
+        # Configure mocks for Firehose and DDB
         helpers.setup_mock_firehose_delivery_streams(config)
+        helpers.setup_mock_dynamodb_ioc_table(config)
+        # Create a cache map of parsers to parser classes
+        self.parsers = {}
 
     def test_processor(self, rules_filter, files_filter, validate_only):
         """Perform integration tests for the 'rule' Lambda function
@@ -113,14 +118,15 @@ class RuleProcessorTester(object):
 
         for name in sorted(test_file_info):
             path = test_file_info[name]
+
             events, error = helpers.load_test_file(path)
-            if not events:
+            if error is not None:
                 self.all_tests_passed = False
                 self.status_messages.append(StatusMessage(StatusMessage.WARNING, error))
                 continue
 
             print_header = True
-            for test_event in events['records']:
+            for test_event in events:
                 self.total_tests += 1
                 if self._detect_old_test_event(test_event):
                     self.all_tests_passed = False
@@ -135,12 +141,16 @@ class RuleProcessorTester(object):
                     self.all_tests_passed = False
                     continue
 
-                # Check if there are any rule filters in place
+                # Check if there are any rule filters in place, and if the current test event
+                # should be exeecuted per the filter
                 if rules_filter and set(test_event['trigger_rules']).isdisjoint(rules_filter):
                     self.total_tests -= 1
                     continue
 
                 self.apply_helpers(test_event)
+
+                if 'override_record' in test_event:
+                    self.apply_template(test_event)
 
                 formatted_record = helpers.format_lambda_test_record(test_event)
 
@@ -339,7 +349,7 @@ class RuleProcessorTester(object):
         Returns:
             bool: True if the proper keys are present
         """
-        required_keys = {'data', 'description', 'log', 'service', 'source', 'trigger_rules'}
+        required_keys = {'description', 'log', 'service', 'source', 'trigger_rules'}
 
         record_keys = set(test_event)
         if not required_keys.issubset(record_keys):
@@ -349,9 +359,16 @@ class RuleProcessorTester(object):
             self.status_messages.append(StatusMessage(StatusMessage.FAILURE, message))
             return False
 
+        input_data_keys = {'data', 'override_record'}
+        if not record_keys & input_data_keys:
+            missing_keys = ', '.join('\'{}\''.format(key) for key in input_data_keys)
+            message = 'Missing one of the following keys in log: {}'.format(missing_keys)
+            self.status_messages.append(StatusMessage(StatusMessage.FAILURE, message))
+            return False
+
         optional_keys = {'compress', 'validate_schema_only'}
 
-        key_diff = record_keys.difference(required_keys | optional_keys)
+        key_diff = record_keys.difference(required_keys | optional_keys | input_data_keys)
 
         # Log a warning if there are extra keys declared in the test log
         if key_diff:
@@ -361,11 +378,41 @@ class RuleProcessorTester(object):
             record_keys.difference_update(key_diff)
             self.status_messages.append(StatusMessage(StatusMessage.WARNING, message))
 
-        return record_keys.issubset(required_keys | optional_keys)
+        return record_keys.issubset(required_keys | optional_keys | input_data_keys)
+
+    def apply_template(self, test_event):
+        """Apply default values to the given test event
+
+        Args:
+            test_event (dict): The loaded test event
+        """
+        event_log = self.cli_config['logs'].get(test_event['log'])
+
+        parser = event_log['parser']
+        schema = event_log['schema']
+        configuration = event_log.get('configuration', {})
+
+        # Add envelope keys
+        schema.update(configuration.get('envelope_keys', {}))
+
+        # Setup the parser to access default optional values
+        self.parsers[parser] = self.parsers.get(parser, get_parser(parser))
+
+        # Add apply default values based on the declared schema
+        default_test_event = {key: self.parsers[parser].default_optional_values(value)
+                              for key, value
+                              in schema.iteritems()}
+
+        # Fill in the fields left out in the 'override_record' field,
+        # and update the test event with a full 'data' key
+        data = test_event['override_record'].copy()
+        data.update(default_test_event)
+        test_event['data'] = data
 
     @staticmethod
     def apply_helpers(test_record):
-        """Detect and apply helper functions to test fixtures
+        """Detect and apply helper functions to test event data
+
         Helpers are declared in test fixtures via the following keyword:
         "<helpers:helper_name>"
 
@@ -607,7 +654,10 @@ class AlertProcessorTester(object):
         self.context = context
         self.kms_alias = 'alias/stream_alert_secrets_test'
         self.secrets_bucket = 'test.streamalert.secrets'
-        self.outputs_config = load_outputs_config()
+        self.outputs_config = resources.merge_required_outputs(
+            load_outputs_config(),
+            'test-prefix'
+        )
         self.region = config['global']['account']['region']
         self._cleanup_old_secrets()
         helpers.setup_mock_firehose_delivery_streams(config)
@@ -744,7 +794,10 @@ class AlertProcessorTester(object):
         # Patch requests.get and requests.post
         self._setup_requests_mocks()
 
-        for output in alert.get('outputs', []):
+        alert_outputs = resources.get_required_outputs()
+        alert_outputs.update(set(alert.get('outputs', [])))
+
+        for output in alert_outputs:
             try:
                 service, descriptor = output.split(':')
             except ValueError:

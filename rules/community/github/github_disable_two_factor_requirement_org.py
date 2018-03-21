@@ -4,7 +4,7 @@ from stream_alert.rule_processor.rules_engine import StreamRules
 rule = StreamRules.rule
 
 
-@rule(logs=['ghe:general'], outputs=['aws-firehose:alerts'])
+@rule(logs=['ghe:general'])
 def github_disable_two_factor_requirement_org(rec):
     """
     author:       @mimeframe

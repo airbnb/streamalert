@@ -1,12 +1,9 @@
 """
 Copyright 2017-present, Airbnb Inc.
-
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
-
    http://www.apache.org/licenses/LICENSE-2.0
-
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,7 +17,7 @@ import os
 from stream_alert.alert_processor import LOGGER
 from stream_alert.alert_processor.helpers import ordered_dict
 from stream_alert.alert_processor.outputs.output_base import StreamAlertOutput
-from stream_alert.shared import backoff_handlers, NORMALIZATION_KEY
+from stream_alert.shared import backoff_handlers, NORMALIZATION_KEY, resources
 
 import backoff
 import boto3
@@ -44,29 +41,28 @@ class AlertProcessor(object):
 
     def __init__(self, invoked_function_arn):
         """Initialization logic that can be cached across invocations.
-
         Args:
             invoked_function_arn (str): The ARN of the alert processor when it was invoked.
                 This is used to calculate region, account, and prefix.
         """
-        with open(self.OUTPUT_CONFIG_PATH) as f:
-            self.config = json.load(f)
-
         # arn:aws:lambda:REGION:ACCOUNT:function:PREFIX_streamalert_alert_processor:production
         split_arn = invoked_function_arn.split(':')
         self.region = split_arn[3]
         self.account_id = split_arn[4]
         self.prefix = split_arn[6].split('_')[0]
 
+        # Merge user-specified output configuration with the required output configuration
+        with open(self.OUTPUT_CONFIG_PATH) as f:
+            output_config = json.load(f)
+        self.config = resources.merge_required_outputs(output_config, self.prefix)
+
         self.alerts_table = boto3.resource('dynamodb').Table(os.environ['ALERTS_TABLE'])
 
     @staticmethod
     def _build_alert_payload(record):
         """Transform a raw Dynamo record into a payload ready for dispatching.
-
         Args:
             record (dict): A row in the Dynamo alerts table
-
         Returns:
             OrderedDict: An alert payload ready to be sent to output dispatchers.
         """
@@ -88,10 +84,8 @@ class AlertProcessor(object):
 
     def _create_dispatcher(self, output):
         """Create a dispatcher for the given output.
-
         Args:
             output (str): Alert output, e.g. "aws-sns:topic-name"
-
         Returns:
             OutputDispatcher: Based on the output type.
                 Returns None if the output is invalid or not defined in the config.
@@ -114,7 +108,6 @@ class AlertProcessor(object):
     @staticmethod
     def _send_alert(alert_payload, output, dispatcher):
         """Send a single alert to the given output.
-
         Returns:
             bool: True if the alert was sent successfully.
         """
@@ -152,10 +145,8 @@ class AlertProcessor(object):
 
     def run(self, event):
         """Run the alert processor!
-
         Args:
             event (dict): Invocation event (record from Dynamo table)
-
         Returns:
             dict(str, bool): Maps each output to whether it was sent successfully.
                 Invalid outputs are excluded from the result.
@@ -175,7 +166,6 @@ class AlertProcessor(object):
 
 def handler(event, context):
     """StreamAlert Alert Processor - entry point
-
     Args:
         event (dict): Record from the alerts Dynamo table: {
             'AlertID': str,           # UUID
@@ -194,7 +184,6 @@ def handler(event, context):
             'SourceService': str,     # Service which generated the alert (e.g. "sns", "slack")
         }
         context (AWSLambdaContext): Lambda invocation context
-
     Returns:
         dict(str, bool): Maps each output to whether it was sent successfully.
             For example, {'aws-firehose:sample': False, 'slack:example-channel': True}.

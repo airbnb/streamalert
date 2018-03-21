@@ -6,7 +6,6 @@ rule = StreamRules.rule
 
 @rule(
     logs=['cloudwatch:events'],
-    outputs=['aws-firehose:alerts'],
     req_subkeys={
         'detail': ['requestParameters', 'eventName']
     })

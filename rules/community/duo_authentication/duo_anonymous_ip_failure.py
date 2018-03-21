@@ -4,7 +4,7 @@ from stream_alert.rule_processor.rules_engine import StreamRules
 rule = StreamRules.rule
 
 
-@rule(logs=['duo:authentication'], outputs=['aws-firehose:alerts'])
+@rule(logs=['duo:authentication'])
 def duo_anonymous_ip_failure(rec):
     """
     author:       airbnb_csirt
