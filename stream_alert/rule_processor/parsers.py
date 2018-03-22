@@ -155,7 +155,8 @@ class JSONParser(ParserBase):
                              'but received %s. Value: %s',
                              type(json_records[index]),
                              json_records[index])
-                return False
+                del json_records[index]
+                continue
             schema_match = False
             json_keys = set(json_records[index].keys())
             if json_keys == schema_keys:
