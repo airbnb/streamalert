@@ -32,7 +32,6 @@ _ALERT_PROCESSOR = 'PREFIX_streamalert_alert_processor'
 _ALERT_PROCESSOR_TIMEOUT_SEC = 60
 
 
-@mock_dynamodb2
 class TestAlertTable(object):
     """Tests for merger/main.py:AlertTable"""
 
@@ -40,6 +39,9 @@ class TestAlertTable(object):
     def setup(self):
         """Alert Merger - Alert Table - Add mock alerts to the table"""
         # pylint: disable=attribute-defined-outside-init
+        self.dynamo_mock = mock_dynamodb2()
+        self.dynamo_mock.start()
+
         setup_mock_alerts_table(_ALERTS_TABLE)
         self.alert_table = main.AlertTable(_ALERTS_TABLE)
 
@@ -61,6 +63,10 @@ class TestAlertTable(object):
                         'key2': 'value2'
                     })
                 })
+
+    def teardown(self):
+        """Alert Merger - Teardown - Stop Mocks"""
+        self.dynamo_mock.stop()
 
     def test_paginate_multiple(self):
         """Alert Merger - Alert Table - Paginate Traverses Multiple Pages"""

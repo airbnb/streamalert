@@ -418,7 +418,6 @@ def setup_mock_firehose_delivery_streams(config):
         create_delivery_stream(region, stream_name, prefix)
 
 
-@mock_dynamodb2
 def setup_mock_dynamodb_ioc_table(config):
     """Mock DynamoDB IOC table for rule testing
 
@@ -489,7 +488,6 @@ def setup_mock_dynamodb_ioc_table(config):
         TableName=table_name)
 
 
-@mock_dynamodb2
 def setup_mock_alerts_table(table_name):
     """Create a mock DynamoDB alerts table used by rule processor, alert processor, alert merger"""
     boto3.client('dynamodb').create_table(
