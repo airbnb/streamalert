@@ -150,6 +150,13 @@ class JSONParser(ParserBase):
         # Because elements are deleted off of json_records during
         # iteration, this block uses a reverse range.
         for index in reversed(range(len(json_records))):
+            if not isinstance(json_records[index], dict):
+                LOGGER.error('Skipping record. Expected type dict, '
+                             'but received %s. Value: %s',
+                             type(json_records[index]),
+                             json_records[index])
+                del json_records[index]
+                continue
             schema_match = False
             json_keys = set(json_records[index].keys())
             if json_keys == schema_keys:
