@@ -145,7 +145,7 @@ class OutputDispatcher(object):
     def __init__(self, region, account_id, prefix, config):
         self.region = region
         self.account_id = account_id
-        self.secrets_bucket = '{}_streamalert_secrets'.format(prefix)
+        self.secrets_bucket = '{}.streamalert.secrets'.format(prefix)
         self.config = config
 
     @staticmethod
