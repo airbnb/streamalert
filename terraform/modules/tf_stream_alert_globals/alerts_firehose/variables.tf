@@ -9,7 +9,7 @@ variable "buffer_interval" {
 }
 
 variable "cloudwatch_log_retention" {
-  default = 30
+  default = 14
 }
 
 variable "compression_format" {

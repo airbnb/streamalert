@@ -64,5 +64,5 @@ resource "aws_cloudwatch_event_target" "stream_alert_app_lambda_target" {
 // Log Retention Policy: StreamAlert App function
 resource "aws_cloudwatch_log_group" "stream_alert_app" {
   name              = "/aws/lambda/${var.function_prefix}_app"
-  retention_in_days = 60
+  retention_in_days = 14
 }
