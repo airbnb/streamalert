@@ -3,7 +3,7 @@ variable "account_id" {
 }
 
 variable "cloudwatch_log_retention" {
-  default = 60
+  default = 14
 }
 
 variable "cluster" {
