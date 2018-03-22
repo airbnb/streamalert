@@ -350,9 +350,7 @@ class StreamThreatIntel(object):
                               on_backoff=backoff_handler,
                               on_success=success_handler,
                               on_giveup=giveup_handler)
-        def _query(values):
-            result = []
-            query_keys = [{PRIMARY_KEY: {'S': ioc}} for ioc in values if ioc]
+        def _query(query_keys):
             response = self.dynamodb.batch_get_item(
                 RequestItems={
                     self._table: {
@@ -362,12 +360,15 @@ class StreamThreatIntel(object):
                 },
             )
 
+            result = []
             if response.get('Responses'):
                 result.extend(self._deserialize(response['Responses'].get(self._table)))
 
             return result, response.get('UnprocessedKeys')
 
-        return _query(values)
+        query_keys = [{PRIMARY_KEY: {'S': ioc}} for ioc in values if ioc]
+
+        return _query(query_keys)
 
     @staticmethod
     def _deserialize(dynamodb_data):

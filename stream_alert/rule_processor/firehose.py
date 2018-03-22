@@ -164,25 +164,27 @@ class StreamAlertFirehose(object):
                               on_backoff=backoff_handler,
                               on_success=success_handler,
                               on_giveup=giveup_handler)
-        def firehose_request_wrapper():
+        def firehose_request_wrapper(data):
             """Firehose request wrapper to use with backoff"""
             LOGGER.info('[Firehose] Sending %d records to %s',
                         record_batch_size,
                         stream_name)
             return self._firehose_client.put_record_batch(
                 DeliveryStreamName=stream_name,
-                # The newline at the end is required by Firehose,
-                # otherwise all records will be on a single line and
-                # unsearchable in Athena.
-                Records=[{'Data': json.dumps(self.sanitize_keys(record),
-                                             separators=(",", ":")) + '\n'}
-                         for record
-                         in record_batch])
+                Records=data)
+
+        # The newline at the end is required by Firehose,
+        # otherwise all records will be on a single line and
+        # unsearchable in Athena.
+        records_data = [
+            {'Data': json.dumps(self.sanitize_keys(record), separators=(",", ":")) + '\n'}
+            for record in record_batch
+        ]
 
         # The try/except here is to catch the raised error at the
         # end of the backoff.
         try:
-            resp = firehose_request_wrapper()
+            resp = firehose_request_wrapper(records_data)
         except exceptions_to_backoff as firehose_err:
             LOGGER.error(firehose_err)
             MetricLogger.log_metric(FUNCTION_NAME,
