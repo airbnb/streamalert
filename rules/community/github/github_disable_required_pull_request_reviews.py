@@ -1,5 +1,4 @@
 """Github 'Require pull request reviews before merging' was disabled for a repo."""
-from helpers.base import in_set
 from stream_alert.rule_processor.rules_engine import StreamRules
 
 rule = StreamRules.rule
@@ -21,4 +20,4 @@ def github_disable_required_pull_request_reviews(rec):
     actor_ignorelist = {}
     return (rec['action'] == 'protected_branch.dismissal_restricted_users_teams'
             and rec['data'].get('authorized_actors_only') is True
-            and not in_set(rec['actor'], actor_ignorelist))
+            and rec['actor'] not in actor_ignorelist)

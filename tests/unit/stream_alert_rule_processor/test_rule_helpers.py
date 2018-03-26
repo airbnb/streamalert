@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Copyright 2017-present, Airbnb Inc.
 
@@ -20,22 +21,40 @@ from nose.tools import assert_equal, assert_false, assert_true
 from helpers import base
 
 
-def test_in_set():
-    """Helpers - In Set"""
-    # basic example
-    test_list = ['this', 'is', 'a9', 'test']
-    data = 'test'
-    result = base.in_set(data, test_list)
-    assert_equal(result, True)
+def test_starts_with_any():
+    """Helpers - Starts With Any"""
+    prefixes = {'a', 'hello'}
+    assert_false(base.starts_with_any(None, prefixes))
+    assert_false(base.starts_with_any('false', prefixes))
+    assert_true(base.starts_with_any('alpha', prefixes))
+    assert_true(base.starts_with_any('hello_world', prefixes))
 
-    # with globbing
-    host_patterns = {'myhost*', 'yourhost*', 'ahost*'}
-    myhost = 'myhost1232312321'
-    yourhost = 'yourhost134931'
-    ahost = 'ahost12321-test'
 
-    result = all(base.in_set(host, host_patterns) for host in (myhost, yourhost, ahost))
-    assert_equal(result, True)
+def test_ends_with_any():
+    """Helpers - Starts With Any"""
+    suffixes = {'z', 'world'}
+    assert_false(base.ends_with_any(None, suffixes))
+    assert_false(base.ends_with_any('false', suffixes))
+    assert_true(base.ends_with_any('oz', suffixes))
+    assert_true(base.ends_with_any('hello_world', suffixes))
+
+
+def test_contains_any():
+    """Helpers - Contains Any"""
+    substrings = {'stream', 'alert'}
+    assert_false(base.contains_any(None, substrings))
+    assert_false(base.contains_any('StreamAlert', substrings))  # case-sensitive
+    assert_true(base.contains_any('streamalert', substrings))
+    assert_true(base.contains_any('binaryalert', substrings))
+
+
+def test_matches_any():
+    """Helpers - Matches Any"""
+    patterns = {'/root/*/file.txt', '*a*b*c*'}
+    assert_false(base.matches_any(None, patterns))
+    assert_false(base.matches_any('streamalert', patterns))
+    assert_true(base.matches_any('/root/some/long/path/file.txt', patterns))
+    assert_true(base.matches_any('abc', patterns))
 
 
 def test_last_hour():
@@ -73,6 +92,7 @@ def test_in_network():
 
     ip_not_in_cidr = '10.0.15.24'
     assert_equal(base.in_network(ip_not_in_cidr, cidrs), False)
+
 
 def test_fetch_values_by_datatype():
     """Helpers - Fetch values from a record by normalized type"""
@@ -124,6 +144,59 @@ def test_fetch_values_by_datatype():
     assert_equal(len(base.fetch_values_by_datatype(rec, 'cmd')), 0)
     assert_equal(base.fetch_values_by_datatype(rec, 'username'), ['alice'])
 
+
+def test_get_first_key():
+    """Helpers - Get First Key"""
+    data = {
+        'path': 'ABC',
+        'details': {
+            'parent': {
+                'path': 'DEF',
+            }
+        },
+        'empty_dict': {},
+        'empty_list': [],
+        'events': [
+            {
+                'path': 'GHI'
+            }
+        ]
+    }
+    # 'path' is a top-level key and so should always be returned first
+    assert_equal('ABC', base.get_first_key(data, 'path'))
+
+    # dicts and lists can be returned as well
+    assert_equal(data['details'], base.get_first_key(data, 'details'))
+
+    # None is returned by default if no value is found
+    assert_equal(None, base.get_first_key(data, 'no-key-found'))
+
+    # Custom default value is returned if specified
+    assert_equal({}, base.get_first_key(data, 'no-key-found', {}))
+
+
+def test_get_keys():
+    """Helpers - Get Keys"""
+    data = {
+        'path': 'ABC',
+        'details': {
+            'parent': {
+                'path': 'DEF'
+            }
+        },
+        'empty_dict': {},
+        'empty_list': [],
+        'events': [
+            {
+                'path': 'GHI'
+            }
+        ]
+    }
+    assert_equal({'ABC', 'DEF', 'GHI'}, set(base.get_keys(data, 'path')))
+    assert_equal(2, len(base.get_keys(data, 'path', max_matches=2)))
+    assert_equal([], base.get_keys({}, 'path'))
+
+
 def test_safe_json_loads_valid():
     """Helpers - Loading valid JSON"""
     json_str = '{"test": 0, "values": [1, 2, 3]}'
@@ -132,6 +205,7 @@ def test_safe_json_loads_valid():
     assert_equal(type(loaded_json), dict)
     assert_true(loaded_json)
     assert_equal(loaded_json, {'test': 0, 'values': [1, 2, 3]})
+
 
 def test_safe_json_loads_invalid():
     """Helpers - Loading invalid JSON"""

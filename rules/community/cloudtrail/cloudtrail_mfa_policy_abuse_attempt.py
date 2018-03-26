@@ -1,9 +1,21 @@
 """Alert on calls made without MFA that may be attempting to abuse a flawed enforcement policy"""
-from helpers.base import in_set
 from stream_alert.rule_processor.rules_engine import StreamRules
 
 rule = StreamRules.rule
 disable = StreamRules.disable()
+
+_IAM_ACTIONS = {
+    'CreateUser',
+    'CreateAccessKey',
+    'DetachUserPolicy',
+    'DetachGroupPolicy',
+    'RemoveUserFromGroup',
+    'DeleteUserPolicy',
+    'PutGroupPolicy',
+    'PutUserPolicy'
+}
+
+_EVENT_NAMES = {'CreateVirtualMFADevice', 'EnableMFADevice'}
 
 
 @rule(logs=['cloudtrail:events'])
@@ -46,17 +58,7 @@ def cloudtrail_mfa_policy_abuse_attempt(rec):
     # is an admin with the flawed policy. There are a lot of actions they could try, which should
     # be blocked by your policy anyway now, but these should detect most of the actions an attacker
     # would try.
-    iam_actions = {
-        'CreateUser',
-        'CreateAccessKey',
-        'DetachUserPolicy',
-        'DetachGroupPolicy',
-        'RemoveUserFromGroup',
-        'DeleteUserPolicy',
-        'PutGroupPolicy',
-        'PutUserPolicy'
-    }
-    if in_set(rec['eventName'], iam_actions):
+    if rec['eventName'] in _IAM_ACTIONS:
         return True
 
     # If the user tries to create or enable an MFA device, but they are unable to, it could mean
@@ -66,8 +68,7 @@ def cloudtrail_mfa_policy_abuse_attempt(rec):
     # - 'AccessDenied'
     # - 'EntityAlreadyExists': Can't create another MFA device with the same name.
     # - 'LimitExceeded': Can't enable a second MFA device for the same user.
-    if ('errorCode' in rec
-            and in_set(rec['eventName'], {'CreateVirtualMFADevice', 'EnableMFADevice'})):
+    if 'errorCode' in rec and rec['eventName'] in _EVENT_NAMES:
         return True
 
     return False
