@@ -218,12 +218,16 @@ class S3Payload(StreamPayload):
 
         # Convert the S3 object name to store as a file in the Lambda container
         suffix = key.replace('/', '-')
-        _, downloaded_s3_object = tempfile.mkstemp(suffix=suffix)
+        file_descriptor, downloaded_s3_object = tempfile.mkstemp(suffix=suffix)
 
         with open(downloaded_s3_object, 'wb') as data:
             client = boto3.client('s3', region_name=region)
             start_time = time.time()
             client.download_fileobj(bucket, key, data)
+
+        # Explicitly call os.close on the underlying open file descriptor
+        # Addresses https://github.com/airbnb/streamalert/issues/587
+        os.close(file_descriptor)
 
         total_time = time.time() - start_time
         LOGGER.info('Completed download in %s seconds', round(total_time, 2))
@@ -272,15 +276,18 @@ class S3Payload(StreamPayload):
         _, extension = os.path.splitext(s3_object)
 
         if extension == '.gz':
-            for num, line in enumerate(gzip.open(s3_object, 'r'), start=1):
-                yield num, line.rstrip()
+            with gzip.open(s3_object, 'r') as s3_file:
+                for num, line in enumerate(s3_file, start=1):
+                    yield num, line.rstrip()
         else:
-            for num, line in enumerate(open(s3_object, 'r'), start=1):
-                yield num, line.rstrip()
+            with open(s3_object, 'r') as s3_file:
+                for num, line in enumerate(s3_file, start=1):
+                    yield num, line.rstrip()
 
         # AWS Lambda apparently does not reallocate disk space when files are
         # removed using os.remove(), so we must truncate them before removal
-        open(s3_object, 'w')
+        with open(s3_object, 'w'):
+            pass
 
         os.remove(s3_object)
         if not os.path.exists(s3_object):

@@ -241,18 +241,47 @@ def basic_streamalert_config():
                         }
                     },
                     'stream_alert_apps': {
-                        'box_collector': {
+                        'unit-testing_corp_box_admin_events_box_collector_app': {
+                            'app_name': 'box_collector',
+                            'concurrency_limit': 2,
                             'current_version': '$LATEST',
-                            'interval': 'rate(5 minutes)',
-                            'log_level': 'debug',
+                            'handler': 'app_integrations.main.handler',
+                            'log_level': 'info',
+                            'log_retention_days': 14,
                             'memory': 128,
+                            'metric_alarms': {
+                                'errors': {
+                                    'enabled': True,
+                                    'evaluation_periods': 1,
+                                    'period_secs': 120
+                                }
+                            },
+                            'schedule_expression': 'rate(5 minutes)',
+                            'source_bucket': 'unit-testing.streamalert.source',
+                            'source_current_hash': '<auto_generated>',
+                            'source_object_key': '<auto_generated>',
                             'timeout': 60,
                             'type': 'box_admin_events'
                         },
-                        'duo_admin_collector': {
+                        'unit-testing_corp_duo_admin_duo_admin_collector_app': {
+                            'app_name': 'duo_admin_collector',
+                            'concurrency_limit': 2,
                             'current_version': '$LATEST',
-                            'interval': 'rate(30 minutes)',
+                            'handler': 'app_integrations.main.handler',
+                            'log_level': 'info',
+                            'log_retention_days': 14,
                             'memory': 128,
+                            'metric_alarms': {
+                                'errors': {
+                                    'enabled': True,
+                                    'evaluation_periods': 1,
+                                    'period_secs': 120
+                                }
+                            },
+                            'schedule_expression': 'rate(30 minutes)',
+                            'source_bucket': 'unit-testing.streamalert.source',
+                            'source_current_hash': '<auto_generated>',
+                            'source_object_key': '<auto_generated>',
                             'timeout': 40,
                             'type': 'duo_admin'
                         }

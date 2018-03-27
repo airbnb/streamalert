@@ -273,6 +273,10 @@ class MockDynamoDBClient(object):
                     {
                         'ioc_value': {'S': 'evil.com'},
                         'sub_type': {'S': 'c2_domain'}
+                    },
+                    {
+                        'ioc_value': {'S': 'md5-of-file'},
+                        'sub_type': {'S': 'test_file_hash'}
                     }
                 ]
             },

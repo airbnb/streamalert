@@ -73,7 +73,7 @@ class LambdaVersion(object):
 
         return int(version)
 
-    def _publish_helper(self, **kwargs):
+    def _publish_helper(self, cluster=None):
         """Handle clustered or single Lambda function publishing
 
         Keyword Arguments:
@@ -82,7 +82,6 @@ class LambdaVersion(object):
         Returns:
             bool: Result of the function publishes
         """
-        cluster = kwargs.get('cluster')
         # Clustered Lambda functions have a different naming pattern
         if cluster:
             region = self.config['clusters'][cluster]['region']
@@ -108,11 +107,9 @@ class LambdaVersion(object):
             if not 'stream_alert_apps' in self.config['clusters'][cluster]['modules']:
                 return True # nothing to publish for this cluster
 
-            for app_name, app_info in self.config['clusters'][cluster]['modules'] \
+            for function_name, app_info in self.config['clusters'][cluster]['modules'] \
                 ['stream_alert_apps'].iteritems():
-                # Name follows format: '<prefix>_<cluster>_<service>_<app_name>_app'
-                function_name = '_'.join([self.config['global']['account']['prefix'], cluster,
-                                          app_info['type'], app_name, 'app'])
+                # function_name follows format: '<prefix>_<cluster>_<service>_<app_name>_app'
                 new_version = self._publish(client, function_name, code_sha_256)
                 if not new_version:
                     continue

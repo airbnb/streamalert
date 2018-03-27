@@ -336,5 +336,14 @@
     "configuration": {
       "json_regex_key": "message"
     }
+  },
+  "test_log_threat_intel_custom": {
+    "schema": {
+      "Field1": {},
+      "Field2": {},
+      "Field3": {},
+      "Field4": {}
+    },
+    "parser": "json"
   }
 }

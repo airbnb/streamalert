@@ -351,9 +351,6 @@ class StreamRules(object):
             return alerts, normalized_records
 
         for record in payload.records:
-            # One record may be added to normalized records list multiple time due
-            # to each record is processed by all rules.
-            normalized_record_appended = False
             for rule in rules:
                 # subkey check
                 has_sub_keys = self.process_subkeys(record, payload.type, rule)
@@ -374,7 +371,7 @@ class StreamRules(object):
                 if types_result:
                     record_copy = record.copy()
                     record_copy[NORMALIZATION_KEY] = types_result
-                    if self._threat_intel and not normalized_record_appended:
+                    if self._threat_intel:
                         # A copy of payload which includes payload metadata.
                         # The payload metadata includes log_source, type, service,
                         # and entity. The metadata will be returned to along with
@@ -384,7 +381,6 @@ class StreamRules(object):
                         payload_copy.records = None
                         payload_copy.raw_record = None
                         normalized_records.append(payload_copy)
-                        normalized_record_appended = True
                 else:
                     record_copy = record
                 # rule analysis
@@ -477,11 +473,19 @@ class StreamRules(object):
         for exist_alert in alerts:
             if rule.rule_name == exist_alert['rule_name']:
                 record_copy = record.copy()
-                if StreamThreatIntel.IOC_KEY not in exist_alert['record']:
-                    record_copy.pop(StreamThreatIntel.IOC_KEY, None)
-                if NORMALIZATION_KEY not in exist_alert['record']:
-                    record_copy.pop(NORMALIZATION_KEY, None)
-                if record_copy == exist_alert['record']:
+                exist_alert_record_copy = exist_alert['record'].copy()
+                # Early return when two records are dumplicated.
+                if record_copy == exist_alert_record_copy:
+                    return True
+
+                # There is chance that there are different values in 'streamalert:normalization'
+                # or 'streamalert:ioc' fields. So do comparision again after removing
+                # two keys.
+                record_copy.pop(StreamThreatIntel.IOC_KEY, None)
+                record_copy.pop(NORMALIZATION_KEY, None)
+                exist_alert_record_copy.pop(StreamThreatIntel.IOC_KEY, None)
+                exist_alert_record_copy.pop(NORMALIZATION_KEY, None)
+                if record_copy == exist_alert_record_copy:
                     return True
 
         return False

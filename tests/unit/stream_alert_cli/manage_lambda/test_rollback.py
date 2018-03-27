@@ -29,9 +29,11 @@ class RollbackTest(unittest.TestCase):
         self.alert_merger_config = self.config['lambda']['alert_merger_config']
         self.alert_config = self.config['lambda']['alert_processor_config']
         self.apps_config_box = (
-            self.config['clusters']['corp']['modules']['stream_alert_apps']['box_collector'])
+            self.config['clusters']['corp']['modules']['stream_alert_apps']
+            ['unit-testing_corp_box_admin_events_box_collector_app'])
         self.apps_config_duo = (
-            self.config['clusters']['corp']['modules']['stream_alert_apps']['duo_admin_collector'])
+            self.config['clusters']['corp']['modules']['stream_alert_apps']
+            ['unit-testing_corp_duo_admin_duo_admin_collector_app'])
         self.athena_config = self.config['lambda']['athena_partition_refresh_config']
         self.downloader_config = self.config['lambda']['threat_intel_downloader_config']
         self.rule_config_prod = (
@@ -62,8 +64,8 @@ class RollbackTest(unittest.TestCase):
         mock_runner.assert_called_once_with(targets=[
             'module.alert_merger_lambda',
             'module.alert_processor_lambda',
-            'module.box_collector_corp',
-            'module.duo_admin_collector_corp',
+            'module.app_box_collector_corp',
+            'module.app_duo_admin_collector_corp',
             'module.stream_alert_athena',
             'module.stream_alert_corp',
             'module.stream_alert_prod',
@@ -82,8 +84,8 @@ class RollbackTest(unittest.TestCase):
         mock_logger.assert_has_calls([
             call.warn(fmt, 'alert_merger', '$LATEST'),
             call.warn(fmt, 'alert_processor', '1'),
-            call.warn(fmt, 'duo_admin_collector_corp', '$LATEST'),
-            call.warn(fmt, 'box_collector_corp', '$LATEST'),
+            call.warn(fmt, 'unit-testing_corp_duo_admin_duo_admin_collector_app', '$LATEST'),
+            call.warn(fmt, 'unit-testing_corp_box_admin_events_box_collector_app', '$LATEST'),
             call.warn(fmt, 'athena_partition_refresh', '$LATEST'),
             call.warn(fmt, 'rule_processor_prod', '$LATEST'),
             call.warn(fmt, 'rule_processor_corp', '$LATEST'),

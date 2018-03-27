@@ -69,9 +69,9 @@ def _rollback_apps(config, clusters):
     for cluster in clusters:
         apps_config = config['clusters'][cluster]['modules'].get('stream_alert_apps', {})
         for lambda_name, lambda_config in apps_config.iteritems():
-            clustered_name = '{}_{}'.format(lambda_name, cluster)
-            if _try_decrement_version(lambda_config, clustered_name):
-                tf_targets.append('module.{}'.format(clustered_name))
+            if _try_decrement_version(lambda_config, lambda_name):
+                module_prefix = 'app_{}_{}'.format(lambda_config['app_name'], cluster)
+                tf_targets.append('module.{}'.format(module_prefix))
 
     return tf_targets
 

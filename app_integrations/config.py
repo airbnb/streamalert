@@ -89,7 +89,7 @@ class AppConfig(dict):
         Returns:
             set: Set of required base keys
         """
-        return {'type', 'app_name', 'prefix', 'cluster', 'interval'}
+        return {'type', 'app_name', 'prefix', 'cluster', 'schedule_expression'}
 
     @classmethod
     def _state_keys(cls):
@@ -110,7 +110,7 @@ class AppConfig(dict):
                         'cluster': <cluster>,
                         'prefix': <prefix>,
                         'app_name': <app_name>,
-                        'interval': <rate_interval>,
+                        'schedule_expression': <rate_interval>,
                         'region': <aws_region>,
                         'account_id': <aws_account_id>,
                         'function_name': <function_name>,
@@ -337,14 +337,14 @@ class AppConfig(dict):
         """Get the interval at which this function is executing. This translates
         an AWS Rate Schedule Expression ('rate(2 hours)') into a second interval
         """
-        if 'interval' not in self:
+        if 'schedule_expression' not in self:
             raise AppIntegrationConfigError('The \'interval\' value is not defined in the config')
 
-        rate_match = AWS_RATE_RE.match(self['interval'])
+        rate_match = AWS_RATE_RE.match(self['schedule_expression'])
 
         if not rate_match:
             raise AppIntegrationConfigError('Invalid \'rate\' interval value: '
-                                            '{}'.format(self['interval']))
+                                            '{}'.format(self['schedule_expression']))
 
         value = rate_match.group(2) or rate_match.group(4)
         unit = rate_match.group(3) or rate_match.group(5).replace('s', '')
