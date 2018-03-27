@@ -25,6 +25,11 @@
         "test_log_type_syslog"
       ]
     },
+    "test_stream_threat_intel": {
+      "logs": [
+        "test_log_threat_intel_custom"
+      ]
+    },
     "unit_test_default_stream": {
       "logs": [
         "unit_test_simple_log",

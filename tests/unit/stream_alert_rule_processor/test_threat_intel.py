@@ -483,7 +483,7 @@ class TestStreamThreatIntel(object):
 
         test_values = ['1.1.1.2', '2.2.2.2', 'evil.com', 'abcdef0123456789']
         result, unprocessed_keys = threat_intel._query(test_values)
-        assert_equal(len(result), 2)
+        assert_equal(len(result), 3)
         assert_false(unprocessed_keys)
         assert_equal(result[0], {'ioc_value': '1.1.1.2', 'sub_type': 'mal_ip'})
         assert_equal(result[1], {'ioc_value': 'evil.com', 'sub_type': 'c2_domain'})
@@ -496,7 +496,7 @@ class TestStreamThreatIntel(object):
 
         test_values = ['1.1.1.2', '', 'evil.com', 'abcdef0123456789']
         result, _ = threat_intel._query(test_values)
-        assert_equal(len(result), 2)
+        assert_equal(len(result), 3)
 
     @raises(ParamValidationError)
     @patch('boto3.client')

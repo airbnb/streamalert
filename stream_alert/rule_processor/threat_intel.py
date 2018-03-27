@@ -155,7 +155,6 @@ class StreamThreatIntel(object):
         for datatype in record.pre_parsed_record[NORMALIZATION_KEY]:
             # Lookup mapped IOC type based on normalized CEF type from Class variable.
             ioc_type = self.__normalized_ioc_types_mapping.get(datatype, None)
-
             # A new StreamIoc instance will be created when normalized CEF type
             # has mapped IOC type.
             if ioc_type:
