@@ -75,7 +75,7 @@ data "aws_iam_policy_document" "app_invoke_self_policy" {
     ]
 
     resources = [
-      "arn:aws:lambda:${var.region}:${var.account_id}:function:${var.func_prefix}_app",
+      "arn:aws:lambda:${var.region}:${var.account_id}:function:${var.function_prefix}_app",
     ]
   }
 }
