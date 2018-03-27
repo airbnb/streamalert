@@ -216,7 +216,7 @@ class PagerDutyIncidentOutput(OutputDispatcher):
         OutputDispatcher.__init__(self, *args, **kwargs)
         self._base_url = None
         self._headers = None
-        self._escalation_policy = None
+        self._escalation_policy_id = None
 
     @classmethod
     def _get_default_properties(cls):
@@ -254,9 +254,15 @@ class PagerDutyIncidentOutput(OutputDispatcher):
             ('service_name',
              OutputProperty(description='the service name for this PagerDuty integration',
                             cred_requirement=True)),
+            ('service_id',
+             OutputProperty(description='the service ID for this PagerDuty integration',
+                            cred_requirement=True)),
             ('escalation_policy',
              OutputProperty(description='the name of the default escalation policy',
                             input_restrictions={},
+                            cred_requirement=True)),
+            ('escalation_policy_id',
+             OutputProperty(description='the ID of the default escalation policy',
                             cred_requirement=True)),
             ('email_from',
              OutputProperty(description='valid user email from the PagerDuty '
@@ -531,11 +537,12 @@ class PagerDutyIncidentOutput(OutputDispatcher):
             if user_assignee:
                 return 'assignments', [{'assignee': user_assignee}]
 
-        # If escalation policy was not provided, use default one
-        policy_to_assign = context.get('assigned_policy', self._escalation_policy)
+        # If escalation policy ID was not provided, use default one
+        policy_id_to_assign = context.get('assigned_policy_id', self._escalation_policy_id)
 
-        # Verify escalation policy, return tuple
-        return 'escalation_policy', self._policy_verify(policy_to_assign, self._escalation_policy)
+        # Assinged to escalation policy ID, return tuple
+        return 'escalation_policy', {
+            'id': policy_id_to_assign, 'type': 'escalation_policy_reference'}
 
     def _add_incident_note(self, incident_id, note):
         """Method to add a text note to the provided incident id
@@ -599,7 +606,7 @@ class PagerDutyIncidentOutput(OutputDispatcher):
         self._headers['From'] = user_email
 
         # Cache default escalation policy
-        self._escalation_policy = creds['escalation_policy']
+        self._escalation_policy_id = creds['escalation_policy_id']
 
         # Extracting context data to assign the incident
         rule_context = kwargs['alert'].get('context', {})
@@ -619,8 +626,8 @@ class PagerDutyIncidentOutput(OutputDispatcher):
             'type': 'incident_body',
             'details': kwargs['alert']['rule_description']
         }
-        # We need to get the service id from the API
-        incident_service = self._service_verify(creds['service_name'])
+        # Using the service ID for the PagerDuty API
+        incident_service = {'id': creds['service_id'], 'type': 'service_reference'}
         incident_data = {
             'incident': {
                 'type': 'incident',
