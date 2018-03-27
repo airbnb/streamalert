@@ -42,7 +42,7 @@ def generate_app_integrations(cluster_name, cluster_dict, config):
                                    'app_name': app_info['app_name'],
                                    'prefix': prefix,
                                    'cluster': cluster_name,
-                                   'interval': app_info['interval']})
+                                   'interval': app_info['schedule_expression']})
 
         # Format the iam module with 'app_<app_name_<cluster>_iam'
         cluster_dict['module']['{}_iam'.format(module_prefix)] = {
@@ -52,7 +52,7 @@ def generate_app_integrations(cluster_name, cluster_dict, config):
             'function_prefix': func_prefix,
             'prefix': prefix,
             'region': config['global']['account']['region'],
-            'role_id': '${{module.{}_lambda.role_id}}'.format(func_prefix),
+            'role_id': '${{module.{}_lambda.role_id}}'.format(module_prefix),
             'source': 'modules/tf_stream_alert_app_iam',
             'type': app_info['type']
         }
@@ -61,5 +61,5 @@ def generate_app_integrations(cluster_name, cluster_dict, config):
         cluster_dict['module']['{}_lambda'.format(module_prefix)] = generate_lambda(
             '{}_app'.format(func_prefix),
             config,
-            cluster_name
+            cluster=cluster_name
         )

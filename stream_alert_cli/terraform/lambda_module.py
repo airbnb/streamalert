@@ -82,7 +82,7 @@ def _tf_vpc_config(lambda_config):
     return result
 
 
-def generate_lambda(function_name, config, environment=None):
+def generate_lambda(function_name, config, **kwargs):
     """Generate an instance of the Lambda Terraform module.
 
     Args:
@@ -130,7 +130,7 @@ def generate_lambda(function_name, config, environment=None):
     Returns:
         dict: Terraform config for an instance of the tf_lambda module.
     """
-    lambda_config = _lambda_config(function_name, config)
+    lambda_config = _lambda_config(function_name, config, kwargs.get('cluster'))
 
     # Add logger level to any custom environment variables
     environment_variables = {
@@ -138,6 +138,8 @@ def generate_lambda(function_name, config, environment=None):
         'ENABLE_METRICS': str(int(lambda_config.get('enable_metrics', False))),
         'LOGGER_LEVEL': lambda_config.get('log_level', 'info')
     }
+
+    environment = kwargs.get('environment')
     if environment:
         environment_variables.update(environment)
 
