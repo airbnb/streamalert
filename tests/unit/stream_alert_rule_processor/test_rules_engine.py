@@ -880,11 +880,11 @@ class TestStreamRules(object):
         """Rules Engine - Testing Context Modification"""
         @rule(logs=['test_log_type_json_nested_with_data'],
               outputs=['s3:sample_bucket'],
-              context={'assigned_user': 'not_set', 'assigned_policy': 'not_set2'})
+              context={'assigned_user': 'not_set', 'assigned_policy_id': 'not_set2'})
         def modify_context_test(rec, context): # pylint: disable=unused-variable
             """Modify context rule"""
             context['assigned_user'] = 'valid_user'
-            context['assigned_policy'] = 'valid_policy'
+            context['assigned_policy_id'] = 'valid_policy_id'
             return rec['application'] == 'web-app'
 
         kinesis_data = json.dumps({
@@ -910,4 +910,4 @@ class TestStreamRules(object):
 
         # alert tests
         assert_equal(alerts[0]['context']['assigned_user'], 'valid_user')
-        assert_equal(alerts[0]['context']['assigned_policy'], 'valid_policy')
+        assert_equal(alerts[0]['context']['assigned_policy_id'], 'valid_policy_id')
