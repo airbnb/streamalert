@@ -55,5 +55,13 @@
       "owner",
       "invokedBy"
     ]
+  },
+  "test_log_threat_intel_custom": {
+    "fileHash:ioc_md5": [
+      "key2_md5"
+    ],
+    "sourceDomain:ioc_domain": [
+      "key3_source_domain"
+    ]
   }
 }
