@@ -80,7 +80,7 @@ class TestAppIntegrationConfig(object):
         param, _ = AppConfig._get_parameters(['{}_config'.format(FUNCTION_NAME)])
 
         assert_items_equal(param['{}_config'.format(FUNCTION_NAME)].keys(),
-                           {'cluster', 'app_name', 'type', 'prefix', 'interval'})
+                           {'cluster', 'app_name', 'type', 'prefix', 'schedule_expression'})
 
     @raises(AppIntegrationConfigError)
     def test_get_param_bad_value(self):
@@ -98,18 +98,18 @@ class TestAppIntegrationConfig(object):
     @raises(AppIntegrationConfigError)
     def test_evaluate_interval_no_interval(self):
         """AppIntegrationConfig - Evaluate Interval, No Interval"""
-        del self._config['interval']
+        del self._config['schedule_expression']
         self._config.evaluate_interval()
 
     @raises(AppIntegrationConfigError)
     def test_evaluate_interval_invalid(self):
         """AppIntegrationConfig - Evaluate Interval, Invalid Interval"""
-        self._config['interval'] = 'rate(1 hours)'
+        self._config['schedule_expression'] = 'rate(1 hours)'
         self._config.evaluate_interval()
 
     def test_evaluate_interval(self):
         """AppIntegrationConfig - Evaluate Interval"""
-        self._config['interval'] = 'rate(5 hours)'
+        self._config['schedule_expression'] = 'rate(5 hours)'
         assert_equal(self._config.evaluate_interval(), 3600 * 5)
 
     @patch('calendar.timegm')
@@ -121,7 +121,7 @@ class TestAppIntegrationConfig(object):
         # Use a mocked current time
         current_time = 1234567890
         time_mock.return_value = current_time
-        self._config['interval'] = 'rate(5 hours)'
+        self._config['schedule_expression'] = 'rate(5 hours)'
         assert_equal(self._config._determine_last_time(), 1234567890 - (3600 * 5))
 
     @patch('calendar.timegm')

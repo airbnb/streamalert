@@ -42,7 +42,7 @@ def generate_app_integrations(cluster_name, cluster_dict, config):
                                    'app_name': app_info['app_name'],
                                    'prefix': prefix,
                                    'cluster': cluster_name,
-                                   'interval': app_info['schedule_expression']})
+                                   'schedule_expression': app_info['schedule_expression']})
 
         # Format the iam module with 'app_<app_name_<cluster>_iam'
         cluster_dict['module']['{}_iam'.format(module_prefix)] = {

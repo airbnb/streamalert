@@ -429,7 +429,7 @@ class CLIConfig(object):
                         'period_secs': 120
                     }
                 },
-                'schedule_expression': app_info['interval'],
+                'schedule_expression': app_info['schedule_expression'],
                 'source_bucket': '<auto_generated>',
                 'source_current_hash': '<auto_generated>',
                 'source_object_key': '<auto_generated>',
@@ -443,7 +443,7 @@ class CLIConfig(object):
             # current parts of the configuration
             updated_app_config = {
                 'memory': app_info['memory'],
-                'schedule_expression': app_info['interval'],
+                'schedule_expression': app_info['schedule_expression'],
                 'timeout': app_info['timeout']
             }
             apps_config[func_name].update(updated_app_config)
