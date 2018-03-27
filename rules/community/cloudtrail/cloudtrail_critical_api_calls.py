@@ -1,10 +1,28 @@
 """Alert on destructive AWS API calls."""
-from helpers.base import in_set
 from stream_alert.rule_processor.rules_engine import StreamRules
 
 rule = StreamRules.rule
 disable = StreamRules.disable()
 
+_CRITICAL_EVENTS = {
+    # VPC Flow Logs (~netflow)
+    'DeleteFlowLogs',
+    # Critical, large resources
+    'DeleteSubnet',
+    'DeleteVpc',
+    'DeleteDBCluster',
+    'DeleteCluster',
+    # CloudTrail
+    'DeleteTrail',
+    'UpdateTrail',
+    'StopLogging',
+    # AWS Config
+    'DeleteDeliveryChannel',
+    'StopConfigurationRecorder',
+    # CloudWatch
+    'DeleteRule',
+    'DisableRule'
+}
 
 @rule(logs=['cloudtrail:events'])
 def cloudtrail_critical_api_calls(rec):
@@ -19,24 +37,4 @@ def cloudtrail_critical_api_calls(rec):
                       (b) identify what resource(s) are impacted by the API call
                       (c) determine if the intent is valid, malicious or accidental
     """
-    critical_events = {
-        # VPC Flow Logs (~netflow)
-        'DeleteFlowLogs',
-        # Critical, large resources
-        'DeleteSubnet',
-        'DeleteVpc',
-        'DeleteDBCluster',
-        'DeleteCluster',
-        # CloudTrail
-        'DeleteTrail',
-        'UpdateTrail',
-        'StopLogging',
-        # AWS Config
-        'DeleteDeliveryChannel',
-        'StopConfigurationRecorder',
-        # CloudWatch
-        'DeleteRule',
-        'DisableRule'
-    }
-
-    return in_set(rec['eventName'], critical_events)
+    return rec['eventName'] in _CRITICAL_EVENTS

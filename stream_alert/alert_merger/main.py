@@ -75,10 +75,15 @@ class AlertTable(object):
             dict: Each alert (row) with all columns and values.
         """
         kwargs = {
+            # We need a consistent read here in order to pick up the most recent updates from the
+            # alert processor. Otherwise, deleted/updated alerts may not yet have propagated.
+            'ConsistentRead': True,
+
             # Include only those alerts which have not yet dispatched or were dispatched more than
             # ALERT_PROCESSOR_TIMEOUT seconds ago
             'FilterExpression': (Attr('Dispatched').not_exists() |
                                  Attr('Dispatched').lt(int(time.time()) - alert_proc_timeout_sec)),
+
             'KeyConditionExpression': Key('RuleName').eq(rule_name),
             'Select': 'ALL_ATTRIBUTES'
         }

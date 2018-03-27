@@ -3,6 +3,11 @@ from stream_alert.rule_processor.rules_engine import StreamRules
 
 rule = StreamRules.rule
 
+_DENIED_ACLS = {
+    'http://acs.amazonaws.com/groups/global/AuthenticatedUsers',
+    'http://acs.amazonaws.com/groups/global/AllUsers'
+}
+
 
 @rule(
     logs=['cloudwatch:events'],
@@ -27,11 +32,6 @@ def cloudtrail_put_bucket_acl(rec):
         # requestParameters can be defined with a value of null
         return False
 
-    denied_acls = {
-        'http://acs.amazonaws.com/groups/global/AuthenticatedUsers',
-        'http://acs.amazonaws.com/groups/global/AllUsers'
-    }
-
     req_params = rec['detail']['requestParameters']
     access_control_policy = req_params.get('AccessControlPolicy')
     if not access_control_policy:
@@ -43,6 +43,6 @@ def cloudtrail_put_bucket_acl(rec):
     for grant in grants:
         grantee = grant.get('Grantee', [])
         if 'URI' in grantee:
-            bad_bucket_permissions.append(grantee['URI'] in denied_acls)
+            bad_bucket_permissions.append(grantee['URI'] in _DENIED_ACLS)
 
     return any(bad_bucket_permissions)

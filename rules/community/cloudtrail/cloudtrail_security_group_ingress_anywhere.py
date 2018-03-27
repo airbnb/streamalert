@@ -1,5 +1,5 @@
 """Alert on AWS Security Groups that allow ingress from anywhere."""
-from helpers.base import select_key
+from helpers.base import get_keys
 from stream_alert.rule_processor.rules_engine import StreamRules
 
 rule = StreamRules.rule
@@ -21,8 +21,8 @@ def cloudtrail_security_group_ingress_anywhere(rec):
     if rec['detail']['eventName'] != 'AuthorizeSecurityGroupIngress':
         return False
 
-    ipv4_cidrs = select_key(rec['detail']['requestParameters'], 'cidrIp')
-    ipv6_cidrs = select_key(rec['detail']['requestParameters'], 'cidrIpv6')
+    ipv4_cidrs = get_keys(rec['detail']['requestParameters'], 'cidrIp')
+    ipv6_cidrs = get_keys(rec['detail']['requestParameters'], 'cidrIpv6')
 
     if '0.0.0.0/0' in ipv4_cidrs:
         return True
