@@ -17,12 +17,14 @@ from stream_alert.shared import metrics
 from stream_alert_cli.terraform.common import monitoring_topic_arn
 
 
-def _lambda_config(function_name, config):
+def _lambda_config(function_name, config, cluster=None):
     """Find the config specific to this Lambda function."""
     if function_name == shared.ALERT_MERGER_NAME:
         return config['lambda']['alert_merger_config']
     elif function_name == shared.ALERT_PROCESSOR_NAME:
         return config['lambda']['alert_processor_config']
+    elif cluster is not None and function_name.endswith('_app'):
+        return config['clusters'][cluster]['modules']['stream_alert_apps'][function_name]
     else:
         raise NotImplementedError(
             'Lambda modules are not yet supported for {}'.format(function_name))
