@@ -384,12 +384,17 @@ class CLIConfig(object):
         exists, prompt_for_auth, overwrite = False, True, False
         app = StreamAlertApp.get_app(app_info, False)
 
+        cluster_name = app_info['cluster']
+        app_name = app_info['app_name']
+        func_name = app_info['function_name']
+
         # Check to see if there is an existing configuration for this app integration
-        cluster_config = self.config['clusters'][app_info['cluster']]
-        if app_info['app_name'] in cluster_config['modules'].get('stream_alert_apps', {}):
+        cluster_config = self.config['clusters'][cluster_name]
+
+        if func_name in cluster_config['modules'].get('stream_alert_apps', {}):
             prompt = ('An app with the name \'{}\' is already configured for cluster '
                       '\'{}\'. Would you like to update the existing app\'s configuration'
-                      '?'.format(app_info['app_name'], app_info['cluster']))
+                      '?'.format(app_name, cluster_name))
 
             exists = True
 
@@ -398,7 +403,7 @@ class CLIConfig(object):
                 return
 
             prompt = ('Would you also like to update the authentication information for '
-                      'app integration with name \'{}\'?'.format(app_info['app_name']))
+                      'app integration with name \'{}\'?'.format(app_name))
 
             # If this is true, we shouldn't prompt again to warn about overwriting
             prompt_for_auth = overwrite = continue_prompt(message=prompt)
@@ -407,18 +412,41 @@ class CLIConfig(object):
             return
 
         apps_config = cluster_config['modules'].get('stream_alert_apps', {})
-        local_config_keys = {'interval', 'timeout', 'memory'}
         if not exists:
-            # Save a default log level as info to the config
-            app_info['log_level'] = 'info'
-            app_info['current_version'] = '$LATEST'
-            local_config_keys.update({'log_level', 'current_version', 'type'})
-
-            apps_config[app_info['app_name']] = {key: app_info[key] for key in local_config_keys}
+            # Save a default app settings to the config for new apps
+            new_app_config = {
+                'app_name': app_info['app_name'],
+                'concurrency_limit': 2,
+                'current_version': '$LATEST',
+                'handler': 'app_integrations.main.handler',
+                'log_level': 'info',
+                'log_retention_days': 14,
+                'memory': app_info['memory'],
+                'metric_alarms': {
+                    'errors': {
+                        'enabled': True,
+                        'evaluation_periods': 1,
+                        'period_secs': 120
+                    }
+                },
+                'schedule_expression': app_info['schedule_expression'],
+                'source_bucket': '<auto_generated>',
+                'source_current_hash': '<auto_generated>',
+                'source_object_key': '<auto_generated>',
+                'timeout': app_info['timeout'],
+                'type': app_info['type']
+            }
+            apps_config[func_name] = new_app_config
         else:
-            apps_config[app_info['app_name']].update(
-                {key: app_info[key]
-                 for key in local_config_keys})
+
+            # Allow for updating certain attributes for the app without overwriting
+            # current parts of the configuration
+            updated_app_config = {
+                'memory': app_info['memory'],
+                'schedule_expression': app_info['schedule_expression'],
+                'timeout': app_info['timeout']
+            }
+            apps_config[func_name].update(updated_app_config)
 
         cluster_config['modules']['stream_alert_apps'] = apps_config
 

@@ -380,7 +380,8 @@ Resources:
 
     # App integration schedule expression (rate)
     app_integration_new_parser.add_argument(
-        '--interval', required=True, help=ARGPARSE_SUPPRESS, type=_validate_scheduled_interval)
+        '--interval', dest='schedule_expression',
+        required=True, help=ARGPARSE_SUPPRESS, type=_validate_scheduled_interval)
 
     # Validate the timeout value to make sure it is between 10 and 300
     def _validate_timeout(val):

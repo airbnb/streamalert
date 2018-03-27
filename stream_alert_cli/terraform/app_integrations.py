@@ -15,7 +15,7 @@ limitations under the License.
 """
 import json
 
-from stream_alert_cli.terraform.common import DEFAULT_SNS_MONITORING_TOPIC
+from stream_alert_cli.terraform.lambda_module import generate_lambda
 
 
 def generate_app_integrations(cluster_name, cluster_dict, config):
@@ -30,40 +30,36 @@ def generate_app_integrations(cluster_name, cluster_dict, config):
     Returns:
         bool: Result of applying the app integration module
     """
-    # Use the monitoring topic as a dead letter queue
-    infrastructure_config = config['global'].get('infrastructure')
-    dlq_topic = (DEFAULT_SNS_MONITORING_TOPIC
-                 if infrastructure_config.get('monitoring', {}).get('create_sns_topic')
-                 else infrastructure_config.get('monitoring', {}).get('sns_topic_name',
-                                                                      DEFAULT_SNS_MONITORING_TOPIC))
-
     prefix = config['global']['account']['prefix']
 
-    # App integration modules
-    for app_name, app_info in config['clusters'][cluster_name] \
+    for function_name, app_info in config['clusters'][cluster_name] \
         ['modules'].get('stream_alert_apps', {}).iteritems():
-        func_prefix = '_'.join([prefix, cluster_name, app_info['type'], app_name])
+        func_prefix = function_name.rstrip('_app')
+
+        module_prefix = 'app_{}_{}'.format(app_info['app_name'], cluster_name)
+
         config_param = json.dumps({'type': app_info['type'],
-                                   'app_name': app_name,
+                                   'app_name': app_info['app_name'],
                                    'prefix': prefix,
                                    'cluster': cluster_name,
-                                   'interval': app_info['interval']})
+                                   'schedule_expression': app_info['schedule_expression']})
 
-        cluster_dict['module']['app_{}_{}'.format(app_name, cluster_name)] = {
+        # Format the iam module with 'app_<app_name_<cluster>_iam'
+        cluster_dict['module']['{}_iam'.format(module_prefix)] = {
             'account_id': config['global']['account']['aws_account_id'],
-            'cluster': cluster_name,
-            'region': config['global']['account']['region'],
-            'prefix': prefix,
-            'function_prefix': func_prefix,
-            'type': app_info['type'],
-            'app_name': app_name,
-            'interval': app_info['interval'],
-            'current_version': app_info['current_version'],
-            'app_memory': app_info['memory'],
-            'app_timeout': app_info['timeout'],
-            'stream_alert_apps_config': '${var.stream_alert_apps_config}',
-            'log_level': app_info['log_level'],
-            'source': 'modules/tf_stream_alert_app',
             'app_config_parameter': config_param,
-            'monitoring_sns_topic': dlq_topic
+            'cluster': cluster_name,
+            'function_prefix': func_prefix,
+            'prefix': prefix,
+            'region': config['global']['account']['region'],
+            'role_id': '${{module.{}_lambda.role_id}}'.format(module_prefix),
+            'source': 'modules/tf_stream_alert_app_iam',
+            'type': app_info['type']
         }
+
+        # Format the lambda module with 'app_<app_name_<cluster>_lambda'
+        cluster_dict['module']['{}_lambda'.format(module_prefix)] = generate_lambda(
+            '{}_app'.format(func_prefix),
+            config,
+            cluster=cluster_name
+        )

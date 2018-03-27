@@ -81,7 +81,7 @@ class MockSSMClient(object):
                   'app_name': 'unit_app',
                   'prefix': 'unit_test_prefix',
                   'type': app_type,
-                  'interval': 'rate(1 hour)'}
+                  'schedule_expression': 'rate(1 hour)'}
         self.put_parameter(Name='{}_config'.format(FUNCTION_NAME),
                            Value=json.dumps(config),
                            Overwrite=True)
@@ -222,7 +222,7 @@ def get_valid_config_dict(app_type):
         'cluster': 'unit_test_cluster',
         'prefix': 'unit_test_prefix',
         'app_name': 'unit_app',
-        'interval': 'rate(1 hour)',
+        'schedule_expression': 'rate(1 hour)',
         'region': 'us-east-1',
         'account_id': '123456789012',
         'function_name': FUNCTION_NAME,

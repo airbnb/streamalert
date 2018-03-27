@@ -90,11 +90,24 @@ class LambdaPackage(object):
 
         # Set new config values and update
         full_package_name = os.path.join(self.package_name, generated_package_name)
-        self.config['lambda'][self.config_key]['source_object_key'] = full_package_name
-        self.config['lambda'][self.config_key]['source_current_hash'] = package_sha256
+
+        self._update_config_options(full_package_name, package_sha256)
+
         self.config.write()
 
         return True
+
+    def _update_config_options(self, full_package_name, package_sha256):
+        """Add the package name and the sha to the config to be saved
+
+        LambdaPackage subclasses can override this if they store these differently
+
+        Args:
+            full_package_name (str):
+            package_sha256 (str):
+        """
+        self.config['lambda'][self.config_key]['source_object_key'] = full_package_name
+        self.config['lambda'][self.config_key]['source_current_hash'] = package_sha256
 
     def _get_tmpdir(self):
         """Generate a temporary directory and package name
@@ -319,6 +332,19 @@ class AppIntegrationPackage(LambdaPackage):
     third_party_libs = {'boxsdk[jwt]==2.0.0a11', 'google-api-python-client', 'requests'}
     precompiled_libs = {'boxsdk[jwt]==2.0.0a11'}
     version = apps_version
+
+    def _update_config_options(self, full_package_name, package_sha256):
+        """Overriding the base class method since apps store these settings in the cluster config"""
+        # Iterate over all clusters and app configs
+        for cluster_config in self.config['clusters'].values():
+            app_configs = cluster_config['modules'].get('stream_alert_apps')
+            if not app_configs:
+                continue
+
+            # Update the individual apps settings
+            for app_config in app_configs.values():
+                app_config['source_object_key'] = full_package_name
+                app_config['source_current_hash'] = package_sha256
 
 
 class AthenaPackage(LambdaPackage):

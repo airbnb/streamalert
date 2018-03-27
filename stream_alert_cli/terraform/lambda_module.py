@@ -17,12 +17,14 @@ from stream_alert.shared import metrics
 from stream_alert_cli.terraform.common import monitoring_topic_arn
 
 
-def _lambda_config(function_name, config):
+def _lambda_config(function_name, config, cluster=None):
     """Find the config specific to this Lambda function."""
     if function_name == shared.ALERT_MERGER_NAME:
         return config['lambda']['alert_merger_config']
     elif function_name == shared.ALERT_PROCESSOR_NAME:
         return config['lambda']['alert_processor_config']
+    elif cluster is not None and function_name.endswith('_app'):
+        return config['clusters'][cluster]['modules']['stream_alert_apps'][function_name]
     else:
         raise NotImplementedError(
             'Lambda modules are not yet supported for {}'.format(function_name))
@@ -80,7 +82,7 @@ def _tf_vpc_config(lambda_config):
     return result
 
 
-def generate_lambda(function_name, config, environment=None):
+def generate_lambda(function_name, config, **kwargs):
     """Generate an instance of the Lambda Terraform module.
 
     Args:
@@ -128,7 +130,7 @@ def generate_lambda(function_name, config, environment=None):
     Returns:
         dict: Terraform config for an instance of the tf_lambda module.
     """
-    lambda_config = _lambda_config(function_name, config)
+    lambda_config = _lambda_config(function_name, config, kwargs.get('cluster'))
 
     # Add logger level to any custom environment variables
     environment_variables = {
@@ -136,6 +138,8 @@ def generate_lambda(function_name, config, environment=None):
         'ENABLE_METRICS': str(int(lambda_config.get('enable_metrics', False))),
         'LOGGER_LEVEL': lambda_config.get('log_level', 'info')
     }
+
+    environment = kwargs.get('environment')
     if environment:
         environment_variables.update(environment)
 
