@@ -474,6 +474,13 @@ class StreamRules(object):
             if rule.rule_name == exist_alert['rule_name']:
                 record_copy = record.copy()
                 exist_alert_record_copy = exist_alert['record'].copy()
+                # Early return when two records are dumplicated.
+                if record_copy == exist_alert_record_copy:
+                    return True
+
+                # There is chance that there are different values in 'streamalert:normalization'
+                # or 'streamalert:ioc' fields. So do comparision again after removing
+                # two keys.
                 record_copy.pop(StreamThreatIntel.IOC_KEY, None)
                 record_copy.pop(NORMALIZATION_KEY, None)
                 exist_alert_record_copy.pop(StreamThreatIntel.IOC_KEY, None)
