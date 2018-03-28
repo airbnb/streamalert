@@ -1240,7 +1240,10 @@ Required Arguments:
 
     -b/--bucket                        The name of the S3 bucket to be used for Athena
                                          query results.
-    -t/--table-name                    The name of the Athena table to create
+    -n/--table-name                    The name of the Athena table to create
+    -t/--table-type                    The type of table being created. This must be one of:
+                                         alert
+                                         data
 
 Optional Arguments:
 
@@ -1303,7 +1306,10 @@ Required Arguments:
 
     -b/--bucket                        The name of the S3 bucket to be used for Athena
                                          query results.
-    -t/--table-name                    The name of the Athena table to create
+    -n/--table-name                    The name of the Athena table to create
+    -t/--table-type                    The type of table being rebuilt. This must be one of:
+                                         alert
+                                         data
 
 Optional Arguments:
 
