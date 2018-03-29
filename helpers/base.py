@@ -136,12 +136,15 @@ def in_network(ip_address, cidrs):
     """Check that an ip_address is within a set of CIDRs
 
     Args:
-        ip_address (netaddr.IPAddress): IP address to check
+        ip_address (str or netaddr.IPAddress): IP address to check
         cidrs (set): String CIDRs
 
     Returns:
         Boolean representing if the given IP is within any CIDRs
     """
+    if not valid_ip(ip_address):
+        return False
+
     for cidr in cidrs:
         try:
             network = IPNetwork(cidr)
