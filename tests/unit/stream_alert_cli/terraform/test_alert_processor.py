@@ -52,7 +52,7 @@ class TestAlertProcessor(unittest.TestCase):
                 'alert_processor_lambda': {
                     'alarm_actions': ['arn:aws:sns:us-west-1:12345678910:stream_alert_monitoring'],
                     'aliased_version': '$LATEST',
-                    'description': 'StreamAlert Alert Processor',
+                    'description': 'Unit-Testing Streamalert Alert Processor',
                     'environment_variables': {
                         'ALERTS_TABLE': 'unit-testing_streamalert_alerts',
                         'ENABLE_METRICS': '0',
@@ -108,7 +108,7 @@ class TestAlertProcessor(unittest.TestCase):
                 },
                 'alert_processor_lambda': {
                     'aliased_version': '$LATEST',
-                    'description': 'StreamAlert Alert Processor',
+                    'description': 'Unit-Testing Streamalert Alert Processor',
                     'environment_variables': {
                         'ALERTS_TABLE': 'unit-testing_streamalert_alerts',
                         'ENABLE_METRICS': '0',
