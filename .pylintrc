@@ -358,7 +358,7 @@ valid-metaclass-classmethod-first-arg=mcs
 max-args=8
 
 # Maximum number of attributes for a class (see R0902).
-max-attributes=15
+max-attributes=20
 
 # Maximum number of boolean expressions in a if statement
 max-bool-expr=5
