@@ -19,7 +19,7 @@ import json
 import logging
 import os
 
-from mock import call, patch
+from mock import ANY, call, patch
 from moto import mock_dynamodb2, mock_kinesis
 from nose.tools import (
     assert_equal,
@@ -33,6 +33,7 @@ from stream_alert.rule_processor import LOGGER
 from stream_alert.rule_processor.handler import load_config, StreamAlert
 from stream_alert.rule_processor.rules_engine import StreamRules
 from stream_alert.rule_processor.threat_intel import StreamThreatIntel
+from stream_alert.shared.alert import Alert
 from tests.unit.stream_alert_rule_processor.test_helpers import (
     convert_events_to_kinesis,
     get_mock_context,
@@ -66,7 +67,7 @@ class TestStreamAlert(object):
         default_list = ['alert1', 'alert2']
         self.__sa_handler._alerts = default_list
 
-        assert_list_equal(self.__sa_handler.get_alerts(), default_list)
+        assert_list_equal(self.__sa_handler.alerts, default_list)
 
     @patch('stream_alert.rule_processor.handler.StreamClassifier.load_sources')
     @patch('stream_alert.rule_processor.handler.StreamClassifier.extract_service_and_entity')
@@ -196,7 +197,7 @@ class TestStreamAlert(object):
     def test_run_debug_log_alert(self, extract_mock, rules_mock, alerts_mock, log_mock):
         """StreamAlert Class - Run, Debug Log Alert"""
         extract_mock.return_value = ('kinesis', 'unit_test_default_stream')
-        rules_mock.return_value = (['success!!'], ['normalized_records'])
+        rules_mock.return_value = ([Alert('rule_name', {}, {'output'})], ['normalized_records'])
         alerts_mock.return_value = []
 
         # Cache the logger level
@@ -210,7 +211,7 @@ class TestStreamAlert(object):
         # Reset the logger level
         LOGGER.setLevel(log_level)
 
-        log_mock.assert_called_with('Alerts:\n%s', '[\n  "success!!"\n]')
+        log_mock.assert_called_with('Alerts:\n%s', ANY)
 
     @patch('stream_alert.rule_processor.handler.load_stream_payload')
     @patch('stream_alert.rule_processor.handler.StreamClassifier.load_sources')
