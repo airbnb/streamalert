@@ -80,10 +80,9 @@ module "stream_alert_athena" {
     <td>True</td>
   </tr>
   <tr>
-    <td>refresh_interval</td>
+    <td>schedule_expression</td>
     <td>The Cloudwatch-Lambda invocation schedule expression</td>
     <td>rate(10 minutes)</td>
     <td>False</td>
   </tr>
 </table>
-

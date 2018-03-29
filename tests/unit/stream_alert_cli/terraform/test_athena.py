@@ -61,7 +61,7 @@ def test_generate_athena():
                     'unit-testing.streamalert.data'
                 ],
                 'prefix': 'unit-testing',
-                'refresh_interval': 'rate(10 minutes)'
+                'schedule_expression': 'rate(10 minutes)'
             },
             'athena_monitoring': {
                 'source': 'modules/tf_stream_alert_monitoring',

@@ -57,7 +57,7 @@ def generate_athena(config):
         'lambda_s3_key': athena_config['source_object_key'],
         'lambda_log_level': athena_config.get('log_level', 'info'),
         'athena_data_buckets': data_buckets,
-        'refresh_interval': athena_config.get('refresh_interval', 'rate(10 minutes)'),
+        'schedule_expression': athena_config.get('schedule_expression', 'rate(10 minutes)'),
         'current_version': athena_config['current_version'],
         'enable_metrics': athena_config.get('enable_metrics', False),
         'prefix': prefix
