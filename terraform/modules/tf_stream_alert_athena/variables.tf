@@ -55,7 +55,7 @@ variable "queue_name" {
   type = "string"
 }
 
-variable "refresh_interval" {
+variable "schedule_expression" {
   type    = "string"
   default = "rate(10 minutes)"
 }
