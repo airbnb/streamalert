@@ -110,7 +110,7 @@ Table of Contents
   :maxdepth: 2
   :caption: Historical Search
 
-  athena-setup
+  athena-overview
   athena-arch
   athena-user-guide
   firehose
