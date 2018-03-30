@@ -35,6 +35,7 @@ from tests.unit.stream_alert_alert_processor import (
 _ARN = 'arn:aws:lambda:{}:{}:function:{}:production'.format(REGION, ACCOUNT_ID, FUNCTION_NAME)
 
 
+@patch.dict(os.environ, {'AWS_DEFAULT_REGION': 'us-east-1'})
 class TestAlertProcessor(object):
     """Tests for alert_processor/main.py"""
     # pylint: disable=no-member,no-self-use,protected-access

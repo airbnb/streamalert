@@ -13,10 +13,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+import os
 import time
 
 from botocore.exceptions import ClientError
-from mock import ANY, MagicMock
+from mock import ANY, MagicMock, patch
 from moto import mock_dynamodb2
 from nose.tools import assert_equal, assert_is_instance, assert_raises
 
@@ -31,6 +32,7 @@ class TestAlertTable(object):
     """Tests for shared/alert_table.py"""
     # pylint: disable=protected-access
 
+    @patch.dict(os.environ, {'AWS_DEFAULT_REGION': 'us-east-1'})
     def setup(self):
         """Alert Table - Create mock table and alerts"""
         # pylint: disable=attribute-defined-outside-init

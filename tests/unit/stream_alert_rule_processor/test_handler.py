@@ -45,14 +45,15 @@ rule = StreamRules.rule
 
 
 @mock_dynamodb2
-@patch.dict(os.environ, {'CLUSTER': 'corp'})
+@patch.dict(os.environ, {'AWS_DEFAULT_REGION': 'us-east-1', 'CLUSTER': 'corp'})
 class TestStreamAlert(object):
     """Test class for StreamAlert class"""
 
     @patch('stream_alert.rule_processor.handler.load_config',
            lambda: load_config('tests/unit/conf/'))
     @patch.dict(os.environ, {'ALERT_PROCESSOR': 'unit-testing_streamalert_alert_processor',
-                             'ALERTS_TABLE': 'unit-testing_streamalert_alerts'})
+                             'ALERTS_TABLE': 'unit-testing_streamalert_alerts',
+                             'AWS_DEFAULT_REGION': 'us-east-1'})
     def setup(self):
         """Setup before each method"""
         self.__sa_handler = StreamAlert(get_mock_context())
