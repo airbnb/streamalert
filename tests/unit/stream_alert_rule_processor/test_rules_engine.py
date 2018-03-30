@@ -876,67 +876,6 @@ class TestStreamRules(object):
         alerts = new_rules_engine.threat_intel_match(records)
         assert_equal(len(alerts), 2)
 
-    @patch('boto3.client')
-    def test_process_allow_multi_around_normalization(self, mock_client):
-        """Rules Engine - Threat Intel is enabled run multi-round_normalization"""
-
-        @rule(datatypes=['fileHash'], outputs=['s3:sample_bucket'])
-        def match_file_hash(rec): # pylint: disable=unused-variable
-            """Testing dummy rule to match file hash"""
-            return 'streamalert:ioc' in rec and 'md5' in rec['streamalert:ioc']
-
-        @rule(datatypes=['fileHash', 'sourceDomain'], outputs=['s3:sample_bucket'])
-        def match_source_domain(rec): # pylint: disable=unused-variable
-            """Testing dummy rule to match source domain and file hash"""
-            return 'streamalert:ioc' in rec
-
-        mock_client.return_value = MockDynamoDBClient()
-        toggled_config = self.config
-        toggled_config['global']['threat_intel']['enabled'] = True
-        toggled_config['global']['threat_intel']['dynamodb_table'] = 'test_table_name'
-
-        new_rules_engine = StreamRules(toggled_config)
-        kinesis_data = {
-            "Field1": {
-                "SubField1": {
-                    "key1": 17,
-                    "key2_md5": "md5-of-file",
-                    "key3_source_domain": "evil.com"
-                },
-                "SubField2": 1
-            },
-            "Field2": {
-                "Authentication": {}
-            },
-            "Field3": {},
-            "Field4": {}
-        }
-
-        kinesis_data = json.dumps(kinesis_data)
-        service, entity = 'kinesis', 'test_stream_threat_intel'
-        raw_record = make_kinesis_raw_record(entity, kinesis_data)
-        payload = load_and_classify_payload(toggled_config, service, entity, raw_record)
-        alerts, normalized_records = new_rules_engine.process(payload)
-
-        # Two testing rules are for threat intelligence matching. So no alert will be
-        # generated before threat intel takes effect.
-        assert_equal(len(alerts), 0)
-
-        # One record will be normalized twice by two different rules with different
-        # normalization keys. It should generate two alerts by two different rules
-        # from same record.
-        assert_equal(len(normalized_records), 2)
-        assert_equal(normalized_records[0].pre_parsed_record['streamalert:normalization'].keys(),
-                     ['fileHash'])
-        assert_equal(normalized_records[1].pre_parsed_record['streamalert:normalization'].keys(),
-                     ['fileHash', 'sourceDomain'])
-
-        # Pass normalized records to threat intel engine.
-        alerts_from_threat_intel = new_rules_engine.threat_intel_match(normalized_records)
-        assert_equal(len(alerts_from_threat_intel), 2)
-        assert_equal(alerts_from_threat_intel[0]['rule_name'], 'match_file_hash')
-        assert_equal(alerts_from_threat_intel[1]['rule_name'], 'match_source_domain')
-
     def test_rule_modify_context(self):
         """Rules Engine - Testing Context Modification"""
         @rule(logs=['test_log_type_json_nested_with_data'],
