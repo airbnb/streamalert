@@ -28,5 +28,4 @@ Links
 
 * `Announcement Post <https://medium.com/@airbnbeng/e8619e3e5043>`_
 * `User Guide <https://streamalert.readthedocs.io/>`_
-* `Twitter <https://twitter.com/streamalert_io>`_ (unofficial)
 * `Slack <https://streamalert.herokuapp.com/>`_ (unofficial)

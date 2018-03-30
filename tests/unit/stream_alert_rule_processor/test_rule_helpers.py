@@ -80,6 +80,16 @@ def test_valid_ip():
     assert_equal(base.valid_ip(test_ip_invalid), False)
 
 
+def test_in_network_invalid_ip():
+    """Helpers - In Network - Invalid IP"""
+    assert_false(base.in_network('a string that is not an ip', {'10.0.100.0/24'}))
+
+
+def test_in_network_invalid_cidr():
+    """Helpers - In Network - Invalid CIDR"""
+    assert_false(base.in_network('127.0.0.1', {'not a cidr'}))
+
+
 def test_in_network():
     """Helpers - In Network"""
     cidrs = {

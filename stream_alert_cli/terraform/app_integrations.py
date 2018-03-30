@@ -60,6 +60,6 @@ def generate_app_integrations(cluster_name, cluster_dict, config):
         # Format the lambda module with 'app_<app_name_<cluster>_lambda'
         cluster_dict['module']['{}_lambda'.format(module_prefix)] = generate_lambda(
             '{}_app'.format(func_prefix),
-            config,
-            cluster=cluster_name
+            config['clusters'][cluster_name]['modules']['stream_alert_apps'][function_name],
+            config
         )

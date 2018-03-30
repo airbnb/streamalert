@@ -855,7 +855,9 @@ class AlertProcessorTester(object):
                 output_name = '{}/{}'.format(service, descriptor)
                 creds = {'token': '247b97499078a015cc6c586bc0a92de6',
                          'service_name': '247b97499078a015cc6c586bc0a92de6',
+                         'service_id': 'SERVICEID123',
                          'escalation_policy': '247b97499078a015cc6c586bc0a92de6',
+                         'escalation_policy_id': 'POLICYID123',
                          'email_from': 'blah@foo.bar',
                          'integration_key': '247b97499078a015cc6c586bc0a92de6'}
                 helpers.put_mock_creds(output_name, creds, self.secrets_bucket,

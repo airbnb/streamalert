@@ -1,10 +1,7 @@
 Athena Architecture
 ===================
 
-Overview
---------
-
-The Athena Partition Refresh function exists to periodically refresh Athena tables, enabling the searchability of data.
+The Athena Partition Refresh function exists to periodically refresh Athena tables, enabling the searchability of alerts and log data.
 
 The default refresh interval is 10 minutes but can be configured by the user.
 
@@ -29,14 +26,14 @@ Diagram
 Internals
 ~~~~~~~~~
 
-Each time the Athena Partition Refresh Lambda function starts up, it does the following:
+Each time the Athena Partition Refresh Lambda function is invoked, it does the following:
 
-* Polls the SQS Queue for the latest S3 event notifications (up to 100)
+* Polls the SQS queue for the latest S3 event notifications (up to 100)
 * S3 event notifications contain context around any new object written to a data bucket (as configured below)
 * A set of unique S3 Bucket IDs is deduplicated from the notifications
 * Queries Athena to verify the ``streamalert`` database exists
-* Refreshes the Athena tables as configured below in the ``repair_type`` key
-* Deletes messages off the Queue once partitions are created
+* Refreshes the Athena tables for data in the relevant S3 buckets, as specified below in the list of ``buckets``
+* Deletes messages off the queue once partitions are created
 
 Configure Lambda Settings
 -------------------------
@@ -52,7 +49,7 @@ Key                                  Required  Default                Descriptio
 ``log_level``                        ``No``    ``info``               The log level for the Lambda function, can be either ``info`` or ``debug``.  Debug will help with diagnosing errors with polling SQS or sending Athena queries.
 ``memory``                           ``No``    ``128``                The amount of memory (in MB) allocated to the Lambda function
 ``timeout``                          ``No``    ``60``                 The maximum duration of the Lambda function (in seconds)
-``refresh_interval``                 ``No``    ``rate(10 minutes)``   The rate of which the Athena Lambda function is invoked in the form of a `CloudWatch schedule expression <http://amzn.to/2u5t0hS>`_.
+``schedule_expression``              ``No``    ``rate(10 minutes)``   The rate of which the Athena Partition Refresh Lambda function is invoked in the form of a `CloudWatch schedule expression <http://amzn.to/2u5t0hS>`_.
 ``buckets``                          ``Yes``   ``{}``                 Key value pairs of S3 buckets and associated Athena table names.  By default, the alerts bucket will exist in each deployment.
 ===================================  ========  ====================   ===========
 
@@ -83,7 +80,7 @@ If any of the settings above are changed from the initialized defaults, the Lamb
 
   $ python manage.py lambda deploy --processor athena
 
-Going forward, if the deploy flag ``--processor all`` is used, it will redeploy this function along with the ``rule_processor`` and ``alert_processor``.
+Going forward, if the deploy flag ``--processor all`` is used, it will redeploy this function along with the ``rule`` function and ``alert`` function.
 
 Monitoring
 ~~~~~~~~~~
@@ -96,6 +93,6 @@ To ensure the function is operating as expected, monitor the following SQS metri
 
 All three of these metrics should have very close values.
 
-If the ``NumberOfMessagesSent`` is much higher than the other two metrics, the ``refresh_interval`` should be increased in the configuration.
+If the ``NumberOfMessagesSent`` is much higher than the other two metrics, the ``schedule_expression`` should be increased in the configuration.
 
 For high throughput production environments, an interval of 1 to 2 minutes is recommended.

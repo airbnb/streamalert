@@ -1240,7 +1240,10 @@ Required Arguments:
 
     -b/--bucket                        The name of the S3 bucket to be used for Athena
                                          query results.
-    -t/--table-name                    The name of the Athena table to create
+    -n/--table-name                    The name of the Athena table to create
+    -t/--table-type                    The type of table being created. This must be one of:
+                                         alert
+                                         data
 
 Optional Arguments:
 
@@ -1253,7 +1256,8 @@ Examples:
 
     manage.py athena create-table \\
       --bucket s3.bucket.name \\
-      --table-name my_athena_table
+      --table-name my_athena_table \\
+      --table-type data
 
 """.format(version))
     athena_create_table_parser = athena_subparsers.add_parser(
@@ -1303,7 +1307,10 @@ Required Arguments:
 
     -b/--bucket                        The name of the S3 bucket to be used for Athena
                                          query results.
-    -t/--table-name                    The name of the Athena table to create
+    -n/--table-name                    The name of the Athena table to create
+    -t/--table-type                    The type of table being rebuilt. This can be one of:
+                                         alert
+                                         data
 
 Optional Arguments:
 
@@ -1313,7 +1320,8 @@ Examples:
 
     manage.py athena rebuild-partitions \\
       --bucket s3.bucket.name \\
-      --table_name my_athena_table
+      --table-name my_athena_table \\
+      --table-type data
 
 """.format(version))
     athena_rebuild_parser = athena_subparsers.add_parser(

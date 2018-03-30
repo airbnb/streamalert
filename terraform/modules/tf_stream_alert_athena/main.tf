@@ -98,7 +98,7 @@ resource "aws_cloudwatch_event_rule" "invoke_athena_refresh" {
   description = "Invoke the Athena Refresh Lambda function every minute"
 
   # https://amzn.to/2u5t0hS
-  schedule_expression = "${var.refresh_interval}"
+  schedule_expression = "${var.schedule_expression}"
 }
 
 // Cloudwatch Event Target: Point the Athena refresh rule to the Lambda function

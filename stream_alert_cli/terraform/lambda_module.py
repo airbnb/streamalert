@@ -12,22 +12,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from stream_alert import shared
 from stream_alert.shared import metrics
 from stream_alert_cli.terraform.common import monitoring_topic_arn
-
-
-def _lambda_config(function_name, config, cluster=None):
-    """Find the config specific to this Lambda function."""
-    if function_name == shared.ALERT_MERGER_NAME:
-        return config['lambda']['alert_merger_config']
-    elif function_name == shared.ALERT_PROCESSOR_NAME:
-        return config['lambda']['alert_processor_config']
-    elif cluster is not None and function_name.endswith('_app'):
-        return config['clusters'][cluster]['modules']['stream_alert_apps'][function_name]
-    else:
-        raise NotImplementedError(
-            'Lambda modules are not yet supported for {}'.format(function_name))
 
 
 def _tf_metric_alarms(lambda_config, sns_arn):
@@ -82,7 +68,7 @@ def _tf_vpc_config(lambda_config):
     return result
 
 
-def generate_lambda(function_name, config, **kwargs):
+def generate_lambda(function_name, lambda_config, config, environment=None):
     """Generate an instance of the Lambda Terraform module.
 
     Args:
@@ -130,8 +116,6 @@ def generate_lambda(function_name, config, **kwargs):
     Returns:
         dict: Terraform config for an instance of the tf_lambda module.
     """
-    lambda_config = _lambda_config(function_name, config, kwargs.get('cluster'))
-
     # Add logger level to any custom environment variables
     environment_variables = {
         # Convert True/False to "1" or "0", respectively
@@ -139,15 +123,13 @@ def generate_lambda(function_name, config, **kwargs):
         'LOGGER_LEVEL': lambda_config.get('log_level', 'info')
     }
 
-    environment = kwargs.get('environment')
     if environment:
         environment_variables.update(environment)
 
     lambda_module = {
         'source': 'modules/tf_lambda',
-        'function_name': '{}_streamalert_{}'.format(config['global']['account']['prefix'],
-                                                    function_name),
-        'description': 'StreamAlert {}'.format(function_name.replace('_', ' ').title()),
+        'function_name': function_name,
+        'description': function_name.replace('_', ' ').title(),
         'handler': lambda_config['handler'],
         'memory_size_mb': lambda_config['memory'],
         'timeout_sec': lambda_config['timeout'],

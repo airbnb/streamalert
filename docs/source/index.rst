@@ -35,7 +35,6 @@ Other Links
 -----------
 
 * `Github <https://github.com/airbnb/streamalert>`_
-* `Twitter (unofficial) <https://twitter.com/streamalert_io>`_
 * `Slack (unofficial) <https://streamalert.herokuapp.com>`_
 
 .. note:: Docs are under construction, don't mind the dust!
@@ -110,7 +109,7 @@ Table of Contents
   :maxdepth: 2
   :caption: Historical Search
 
-  athena-setup
+  athena-overview
   athena-arch
   athena-user-guide
   firehose

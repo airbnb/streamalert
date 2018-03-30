@@ -110,7 +110,7 @@ class LambdaVersion(object):
             for function_name, app_info in self.config['clusters'][cluster]['modules'] \
                 ['stream_alert_apps'].iteritems():
                 # function_name follows format: '<prefix>_<cluster>_<service>_<app_name>_app'
-                new_version = self._publish(client, function_name, code_sha_256)
+                new_version = self._publish(client, function_name, app_info['source_current_hash'])
                 if not new_version:
                     continue
 
