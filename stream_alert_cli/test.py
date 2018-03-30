@@ -29,7 +29,6 @@ import jsonpath_rw
 from mock import patch
 
 from stream_alert.alert_processor import main as StreamOutput
-from stream_alert.rule_processor.alert_forward import AlertForwarder
 from stream_alert.rule_processor.handler import StreamAlert
 # import all rules loaded from the main handler
 import stream_alert.rule_processor.main  # pylint: disable=unused-import
@@ -265,10 +264,10 @@ class RuleProcessorTester(object):
         # we only want alerts for the specific rule being tested (if trigger_rules are defined)
         if test_event['trigger_rules']:
             unexpected_alerts = [alert for alert in alerts
-                                 if alert['rule_name'] not in test_event['trigger_rules']]
+                                 if alert.rule_name not in test_event['trigger_rules']]
 
             alerts = [alert for alert in alerts
-                      if alert['rule_name'] in test_event['trigger_rules']]
+                      if alert.rule_name in test_event['trigger_rules']]
 
         alerted_properly = (len(alerts) == expected_alert_count) and not unexpected_alerts
         current_test_passed = alerted_properly and all_records_matched_schema
@@ -298,14 +297,14 @@ class RuleProcessorTester(object):
                 # If there was a failure due to alerts triggering for a test event
                 # that does not have any trigger_rules configured
                 context = 'is triggering the following rules but should not trigger at all: {}'
-                trigger_rules = ', '.join('\'{}\''.format(alert['rule_name']) for alert in alerts)
+                trigger_rules = ', '.join('\'{}\''.format(alert.rule_name) for alert in alerts)
                 message = '{} {}'.format(message, context.format(trigger_rules))
             elif unexpected_alerts:
                 # If there was a failure due to alerts triggering for other rules outside
                 # of the rules defined in the trigger_rules list for the event
                 context = 'is triggering the following rules but should not be: {}'
                 bad_rules = ', '.join(
-                    '\'{}\''.format(alert['rule_name']) for alert in unexpected_alerts)
+                    '\'{}\''.format(alert.rule_name) for alert in unexpected_alerts)
                 message = '{} {}'.format(message, context.format(bad_rules))
             elif expected_alert_count != len(alerts):
                 # If there was a failure due to alerts NOT triggering for 1+ rules
@@ -313,7 +312,7 @@ class RuleProcessorTester(object):
                 context = 'did not trigger the following rules: {}'
                 non_triggered_rules = ', '.join(
                     '\'{}\''.format(rule) for rule in test_event['trigger_rules']
-                    if rule not in [alert['rule_name'] for alert in alerts])
+                    if rule not in [alert.rule_name for alert in alerts])
                 message = '{} {}'.format(message, context.format(non_triggered_rules))
             else:
                 # If there was a failure for some other reason, just use a default message
@@ -503,9 +502,7 @@ class RuleProcessorTester(object):
         # Run the rule processor
         all_records_matched_schema = self.processor.run(record)
 
-        alerts = self.processor.get_alerts()
-
-        return alerts, all_records_matched_schema
+        return self.processor.alerts, all_records_matched_schema
 
     def check_log_declared_in_sources(self, base_message, test_event):
         """A simple check to see if this log type is defined in the sources for the service
@@ -681,7 +678,7 @@ class AlertProcessorTester(object):
                 self.setup_outputs(alert)
 
             # Convert alert to the Dynamo event format expected by the alert processor
-            event = AlertForwarder.dynamo_record(alert)
+            event = alert.dynamo_record()
             event['Outputs'] = list(event['Outputs'])
 
             for output, current_test_passed in StreamOutput.handler(event, self.context).items():
@@ -788,13 +785,13 @@ class AlertProcessorTester(object):
         """Helper function to handler any output setup
 
         Args:
-            alert (dict): The alert dictionary containing outputs the need mocking out
+            alert (Alert): The Alert instance containing outputs to be mocked out
         """
         # Patch requests.get and requests.post
         self._setup_requests_mocks()
 
         alert_outputs = resources.get_required_outputs()
-        alert_outputs.update(set(alert.get('outputs', [])))
+        alert_outputs.update(alert.outputs)
 
         for output in alert_outputs:
             try:
