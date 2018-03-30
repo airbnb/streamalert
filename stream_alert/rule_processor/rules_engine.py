@@ -32,6 +32,8 @@ RuleAttributes = namedtuple('Rule', ['rule_name',
                                      'req_subkeys',
                                      'context'])
 
+_IGNORE_KEYS = {StreamThreatIntel.IOC_KEY, NORMALIZATION_KEY}
+
 
 class StreamRules(object):
     """Container class for StreamAlert Rules
@@ -428,7 +430,7 @@ class StreamRules(object):
         """
         rule_result = StreamRules.process_rule(record, rule)
         if rule_result:
-            if StreamRules.check_alerts_duplication(record, rule, alerts):
+            if self.check_alerts_duplication(record, rule, alerts):
                 return
 
             alert_id = str(uuid.uuid4())  # Random unique alert ID
@@ -454,7 +456,13 @@ class StreamRules(object):
             alerts.append(alert)
 
     @staticmethod
-    def check_alerts_duplication(record, rule, alerts):
+    def _is_duplicate(alert, record, record_keys):
+        alert_keys = set(alert['record'].keys()) - _IGNORE_KEYS
+        if alert_keys != record_keys:
+            return False
+        return all(record[key] == alert['record'][key] for key in record_keys)
+
+    def check_alerts_duplication(self, record, rule, alerts):
         """The method to check if the record has been added to alerts list already.
 
         The reason we need to do check alerts duplication is because original records
@@ -470,22 +478,6 @@ class StreamRules(object):
         Returns:
             bool: Return True if both record and rule name exist in alerts list.
         """
-        for exist_alert in alerts:
-            if rule.rule_name == exist_alert['rule_name']:
-                record_copy = record.copy()
-                exist_alert_record_copy = exist_alert['record'].copy()
-                # Early return when two records are dumplicated.
-                if record_copy == exist_alert_record_copy:
-                    return True
-
-                # There is chance that there are different values in 'streamalert:normalization'
-                # or 'streamalert:ioc' fields. So do comparision again after removing
-                # two keys.
-                record_copy.pop(StreamThreatIntel.IOC_KEY, None)
-                record_copy.pop(NORMALIZATION_KEY, None)
-                exist_alert_record_copy.pop(StreamThreatIntel.IOC_KEY, None)
-                exist_alert_record_copy.pop(NORMALIZATION_KEY, None)
-                if record_copy == exist_alert_record_copy:
-                    return True
-
-        return False
+        record_keys = set(record.keys()) - _IGNORE_KEYS
+        return any(self._is_duplicate(alert, record, record_keys) for alert in alerts
+                   if rule.rule_name == alert['rule_name'])
