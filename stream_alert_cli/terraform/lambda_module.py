@@ -37,16 +37,16 @@ def _tf_metric_alarms(lambda_config, sns_arn):
     return result
 
 
-def _tf_metric_filters(lambda_config, function_name):
+def _tf_metric_filters(lambda_config, metrics_lookup):
     """Compute metric filter Terraform configuration from the Lambda config."""
-    if not lambda_config.get('enable_metrics'):
+    if not lambda_config.get('enable_metrics') or not metrics_lookup:
         return {}
 
     # Create a metric filter for each custom metric associated with this function.
     metric_filters = []
-    function_metrics = metrics.MetricLogger.get_available_metrics()[function_name]
+    function_metrics = metrics.MetricLogger.get_available_metrics()[metrics_lookup]
     for metric, settings in function_metrics.items():
-        metric_name = '{}-{}'.format(metrics.FUNC_PREFIXES[function_name], metric)
+        metric_name = '{}-{}'.format(metrics.FUNC_PREFIXES[metrics_lookup], metric)
         filter_pattern, filter_value = settings
         metric_filters.append('{},{},{}'.format(metric_name, filter_pattern, filter_value))
 
@@ -68,14 +68,16 @@ def _tf_vpc_config(lambda_config):
     return result
 
 
-def generate_lambda(function_name, lambda_config, config, environment=None):
+def generate_lambda(function_name, lambda_config, config, environment=None, metrics_lookup=None):
     """Generate an instance of the Lambda Terraform module.
 
     Args:
         function_name (str): Name of the Lambda function (e.g. 'alert_processor')
         config (dict): Parsed config from conf/
+        lambda_config (dict): Section of the config for this particular Lambda function
         environment (dict): Optional environment variables to specify.
             ENABLE_METRICS and LOGGER_LEVEL are included automatically.
+        metrics_lookup (str): Canonical name of this function (used to lookup custom metrics)
 
     Example Lambda config:
         {
@@ -146,7 +148,7 @@ def generate_lambda(function_name, lambda_config, config, environment=None):
 
     # Add metric alarms and filters to the Lambda module definition
     lambda_module.update(_tf_metric_alarms(lambda_config, monitoring_topic_arn(config)))
-    lambda_module.update(_tf_metric_filters(lambda_config, function_name))
+    lambda_module.update(_tf_metric_filters(lambda_config, metrics_lookup))
 
     # Add VPC config to the Lambda module definition
     lambda_module.update(_tf_vpc_config(lambda_config))
