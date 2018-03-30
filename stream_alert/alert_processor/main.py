@@ -18,21 +18,18 @@ import json
 import os
 
 from stream_alert.alert_processor import LOGGER
-from stream_alert.alert_processor.helpers import ordered_dict
 from stream_alert.alert_processor.outputs.output_base import StreamAlertOutput
 from stream_alert.shared import backoff_handlers, NORMALIZATION_KEY, resources
+from stream_alert.shared.alert_table import AlertTable
 
 import backoff
-import boto3
 from botocore.exceptions import ClientError
-
-ALERT_PROCESSOR = None  # Cached instantiation of an Alert Processor
 
 
 class AlertProcessor(object):
     """Orchestrates delivery of alerts to the appropriate dispatchers."""
     ALERT_PROCESSOR = None  # AlertProcessor instance which can be re-used across Lambda invocations
-    BACKOFF_MAX_TRIES = 6
+    BACKOFF_MAX_TRIES = 5
     OUTPUT_CONFIG_PATH = 'conf/outputs.json'
 
     @classmethod
@@ -60,33 +57,7 @@ class AlertProcessor(object):
             output_config = json.load(f)
         self.config = resources.merge_required_outputs(output_config, self.prefix)
 
-        self.alerts_table = boto3.resource('dynamodb').Table(os.environ['ALERTS_TABLE'])
-
-    @staticmethod
-    def _build_alert_payload(record):
-        """Transform a raw Dynamo record into a payload ready for dispatching.
-
-        Args:
-            record (dict): A row in the Dynamo alerts table
-
-        Returns:
-            OrderedDict: An alert payload ready to be sent to output dispatchers.
-        """
-        # Any problems with the alert keys or JSON loading will raise an exception here.
-        # This is what we want - an invalid alert is a show-stopper and shouldn't ever happen.
-        return ordered_dict({
-            'cluster': record['Cluster'],
-            'created': record['Created'],
-            'id': record['AlertID'],
-            'log_source': record['LogSource'],
-            'log_type': record['LogType'],
-            'outputs': record['Outputs'],
-            'record': json.loads(record['Record']),
-            'rule_description': record['RuleDescription'],
-            'rule_name': record['RuleName'],
-            'source_entity': record['SourceEntity'],
-            'source_service': record['SourceService']
-        }, exclude_keys={NORMALIZATION_KEY})
+        self.alerts_table = AlertTable(os.environ['ALERTS_TABLE'])
 
     def _create_dispatcher(self, output):
         """Create a dispatcher for the given output.
@@ -114,92 +85,108 @@ class AlertProcessor(object):
             service, self.region, self.account_id, self.prefix, self.config)
 
     @staticmethod
-    def _send_alert(alert_payload, output, dispatcher):
+    def _send_alert(alert, output, dispatcher):
         """Send a single alert to the given output.
+
+        Args:
+            alert (Alert): Alert to be sent
+            output (str):
 
         Returns:
             bool: True if the alert was sent successfully.
         """
-        LOGGER.info('Sending alert %s to %s', alert_payload['id'], output)
+        LOGGER.info('Sending %s to %s', alert, output)
         try:
-            return dispatcher.dispatch(descriptor=output.split(':')[1],
-                                       rule_name=alert_payload['rule_name'],
-                                       alert=alert_payload)
+            return dispatcher.dispatch(alert, output.split(':')[1])
         except Exception:  # pylint: disable=broad-except
-            LOGGER.exception('Exception when sending alert %s to %s. Alert:\n%s',
-                             alert_payload['id'], output, json.dumps(alert_payload, indent=2))
+            LOGGER.exception('Exception when sending %s to %s. Alert:\n%s',
+                             alert, output, repr(alert))
             return False
+
+    def _send_alerts(self, alert):
+        """Send an alert to each output.
+
+        Args:
+            alert (Alert): Alert to send
+
+        Returns:
+            dict: Maps output (str) to whether it sent successfully (bool)
+                Invalid outputs are excluded
+        """
+        result = {}
+
+        for output in alert.remaining_outputs:
+            dispatcher = self._create_dispatcher(output)
+            if not dispatcher:
+                continue  # Skip invalid output
+
+            result[output] = self._send_alert(alert, output, dispatcher)
+
+        alert.retry_outputs = set(output for output, success in result.items() if not success)
+        return result
 
     @backoff.on_exception(backoff.expo, ClientError,
                           max_tries=BACKOFF_MAX_TRIES, jitter=backoff.full_jitter,
                           on_backoff=backoff_handlers.backoff_handler,
                           on_success=backoff_handlers.success_handler,
                           on_giveup=backoff_handlers.giveup_handler)
-    def _update_alerts_table(self, rule_name, alert_id, results):
-        """Update the alerts table based on which outputs sent successfully."""
-        key = {'RuleName': rule_name, 'AlertID': alert_id}
-        if all(results.values()):
-            # All outputs sent successfully - delete Dynamo entry
-            self.alerts_table.delete_item(Key=key)
-        else:
-            # List failed outputs as needing a retry
-            self.alerts_table.update_item(
-                Key=key,
-                UpdateExpression='SET RetryOutputs = :failed_outputs',
-                ExpressionAttributeValues={
-                    ':failed_outputs': set(
-                        output for output, success in results.items() if not success)
-                }
-            )
+    def _update_table(self, alert, output_results):
+        """Update the alerts table based on the results of the outputs.
 
-    def run(self, event):
+        Args:
+            alert (Alert): Alert instance which was sent
+            output_results (dict): Maps output (str) to whether it sent successfully (bool)
+        """
+        if not output_results:
+            return
+
+        if all(output_results.values()):
+            # All outputs sent successfully - delete Dynamo entry
+            self.alerts_table.delete_alert(alert.rule_name, alert.alert_id)
+        elif any(output_results.values()):
+            # At least one output succeeded - update the table with those outputs which need retried
+            self.alerts_table.update_retry_outputs(alert)
+        # If all outputs failed, no table updates are necessary
+
+    def run(self, rule_name, alert_id):
         """Run the alert processor!
 
         Args:
-            event (dict): Invocation event (record from Dynamo table)
+            rule_name (str): Name of the rule which triggered the alert
+            alert_id (str): Alert UUID
 
         Returns:
-            dict(str, bool): Maps each output to whether it was sent successfully.
-                Invalid outputs are excluded from the result.
+            dict: Maps output (str) to whether it sent successfully (bool)
+                Invalid outputs are excluded
         """
-        payload = self._build_alert_payload(event)
+        alert = self.alerts_table.get_alert(rule_name, alert_id)
+        if not alert:
+            LOGGER.error('Alert %s does not exist', alert_id)
+            return
 
-        # Try sending to each output, keeping track of which was successful
-        results = {}
-        for output in event.get('RetryOutputs') or event['Outputs']:
-            dispatcher = self._create_dispatcher(output)
-            if dispatcher:
-                results[output] = self._send_alert(payload, output, dispatcher)
+        # Remove normalization key from the record
+        if NORMALIZATION_KEY in alert.record:
+            del alert.record[NORMALIZATION_KEY]
 
-        self._update_alerts_table(event['RuleName'], event['AlertID'], results)
-        return results
+        result = self._send_alerts(alert)
+        self._update_table(alert, result)
+        return result
 
 
 def handler(event, context):
     """StreamAlert Alert Processor - entry point
 
     Args:
-        event (dict): Record from the alerts Dynamo table: {
-            'AlertID': str,           # UUID
-            'Attempts': int,          # Number of attempts to send this alert so far
-            'Cluster': str,           # Cluster which generated the alert
-            'Created': str,           # Human-readable timestamp when the alert was created
-            'Dispatched': int,        # Time (seconds UTC) when the alert was last dispatched
-            'LogSource': str,         # Log source (e.g. "binaryalert") which generated the alert
-            'LogType' str,            # "json"
-            'Outputs': list[str],     # Unique list of service:descriptor output targets
-            'Record': str,            # JSON-encoded record body
-            'RetryOutputs': list[str] # Optional list of outputs which need to be retried
-            'RuleDescription': str    # Non-empty rule description
-            'RuleName': str,          # Non-empty rule name
-            'SourceEntity': str,      # Name of the alert source (e.g. "my-topic", "sample-channel")
-            'SourceService': str,     # Service which generated the alert (e.g. "sns", "slack")
+        event (dict): Key to lookup in the alerts table: {
+            'AlertID': str,  # UUID
+            'RuleName': str  # Non-empty rule name
         }
         context (AWSLambdaContext): Lambda invocation context
 
     Returns:
-        dict(str, bool): Maps each output to whether it was sent successfully.
-            For example, {'aws-firehose:sample': False, 'slack:example-channel': True}.
-            NOTE: Invalid outputs are excluded from the result (they should not be retried)
+        dict: Maps output (str) to whether it sent successfully (bool)
+            This includes only valid outputs which the alert processor attempted to send.
     """
-    return AlertProcessor.get_instance(context.invoked_function_arn).run(event)
+    event_name = event['RuleName']
+    alert_id = event['AlertID']
+    return AlertProcessor.get_instance(context.invoked_function_arn).run(event_name, alert_id)

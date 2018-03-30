@@ -63,7 +63,7 @@ class AWSOutput(OutputDispatcher):
                     **{values['descriptor'].value: values['aws_value'].value})
 
     @abstractmethod
-    def dispatch(self, **kwargs):
+    def dispatch(self, alert, descriptor):
         """Placeholder for implementation in the subclasses"""
 
 
@@ -94,16 +94,15 @@ class KinesisFirehoseOutput(AWSOutput):
              OutputProperty(description='the Firehose Delivery Stream name'))
         ])
 
-    def dispatch(self, **kwargs):
+    def dispatch(self, alert, descriptor):
         """Send alert to a Kinesis Firehose Delivery Stream
 
-        Keyword Args:
-            descriptor (str): Service descriptor (ie: slack channel, pd integration)
-            rule_name (str): Name of the triggered rule
-            alert (dict): Alert relevant to the triggered rule
+        Args:
+            alert (Alert): Alert instance which triggered a rule
+            descriptor (str): Output descriptor
 
         Returns:
-            bool: Indicates a successful or failed dispatch of the alert
+            bool: True if alert was sent successfully, False otherwise
         """
         @backoff.on_exception(backoff.fibo,
                               ClientError,
@@ -129,25 +128,21 @@ class KinesisFirehoseOutput(AWSOutput):
         if self.__aws_client__ is None:
             self.__aws_client__ = boto3.client('firehose', region_name=self.region)
 
-        json_alert = json.dumps(kwargs['alert'], separators=(',', ':')) + '\n'
+        json_alert = json.dumps(alert.output_dict(), separators=(',', ':')) + '\n'
         if len(json_alert) > self.MAX_RECORD_SIZE:
             LOGGER.error('Alert too large to send to Firehose: \n%s...', json_alert[0:1000])
             return False
 
-        delivery_stream = self.config[self.__service__][kwargs['descriptor']]
-        LOGGER.info('Sending alert [%s] to aws-firehose:%s',
-                    kwargs['rule_name'],
-                    delivery_stream)
+        delivery_stream = self.config[self.__service__][descriptor]
+        LOGGER.info('Sending %s to aws-firehose:%s', alert, delivery_stream)
 
         resp = _firehose_request_wrapper(json_alert, delivery_stream)
 
         if resp.get('RecordId'):
-            LOGGER.info('Alert [%s] successfully sent to aws-firehose:%s with RecordId:%s',
-                        kwargs['rule_name'],
-                        delivery_stream,
-                        resp['RecordId'])
+            LOGGER.info('%s successfully sent to aws-firehose:%s with RecordId:%s',
+                        alert, delivery_stream, resp['RecordId'])
 
-        return self._log_status(resp, kwargs['descriptor'])
+        return self._log_status(resp, descriptor)
 
 
 @StreamAlertOutput
@@ -183,20 +178,20 @@ class LambdaOutput(AWSOutput):
                             input_restrictions={' '})),
         ])
 
-    def dispatch(self, **kwargs):
+    def dispatch(self, alert, descriptor):
         """Send alert to a Lambda function
 
         The alert gets dumped to a JSON string to be sent to the Lambda function
 
         Args:
-            **kwargs: consists of any combination of the following items:
-                descriptor (str): Service descriptor (ie: slack channel, pd integration)
-                rule_name (str): Name of the triggered rule
-                alert (dict): Alert relevant to the triggered rule
+            alert (Alert): Alert instance which triggered a rule
+            descriptor (str): Output descriptor
+
+        Returns:
+            bool: True if alert was sent successfully, False otherwise
         """
-        alert = kwargs['alert']
-        alert_string = json.dumps(alert['record'])
-        function_name = self.config[self.__service__][kwargs['descriptor']]
+        alert_string = json.dumps(alert.record, separators=(',', ':'))
+        function_name = self.config[self.__service__][descriptor]
 
         # Check to see if there is an optional qualifier included here
         # Acceptable values for the output configuration are the full ARN,
@@ -230,7 +225,7 @@ class LambdaOutput(AWSOutput):
                                  InvocationType='Event',
                                  Payload=alert_string)
 
-        return self._log_status(resp, kwargs['descriptor'])
+        return self._log_status(resp, descriptor)
 
 
 @StreamAlertOutput
@@ -262,7 +257,7 @@ class S3Output(AWSOutput):
              OutputProperty(description='the AWS S3 bucket name to use for this S3 configuration'))
         ])
 
-    def dispatch(self, **kwargs):
+    def dispatch(self, alert, descriptor):
         """Send alert to an S3 bucket
 
         Organizes alert into the following folder structure:
@@ -270,46 +265,32 @@ class S3Output(AWSOutput):
         The alert gets dumped to a JSON string
 
         Args:
-            **kwargs: consists of any combination of the following items:
-                descriptor (str): Service descriptor (ie: slack channel, pd integration)
-                rule_name (str): Name of the triggered rule
-                alert (dict): Alert relevant to the triggered rule
+            alert (Alert): Alert instance which triggered a rule
+            descriptor (str): Output descriptor
+
+        Returns:
+            bool: True if alert was sent successfully, False otherwise
         """
-        alert = kwargs['alert']
-        service = alert['source_service']
-        entity = alert['source_entity']
-
-        current_date = datetime.now()
-
-        s3_alert = alert
-        # JSON dump the alert to retain a consistent alerts schema across log types.
-        # This will get replaced by a UUID which references a record in a
-        # different table in the future.
-        s3_alert['record'] = json.dumps(s3_alert['record'])
-        alert_string = json.dumps(s3_alert)
-
-        bucket = self.config[self.__service__][kwargs['descriptor']]
+        bucket = self.config[self.__service__][descriptor]
 
         # Prefix with alerts to account for generic non-streamalert buckets
         # Produces the following key format:
         #   alerts/dt=2017-01-25-00/kinesis_my-stream_my-rule_uuid.json
         # Keys need to be unique to avoid object overwriting
         key = 'alerts/dt={}/{}_{}_{}_{}.json'.format(
-            current_date.strftime('%Y-%m-%d-%H'),
-            service,
-            entity,
-            alert['rule_name'],
+            datetime.now().strftime('%Y-%m-%d-%H'),
+            alert.source_service,
+            alert.source_entity,
+            alert.rule_name,
             uuid.uuid4()
         )
 
-        LOGGER.debug('Sending alert to S3 bucket %s with key %s', bucket, key)
+        LOGGER.debug('Sending %s to S3 bucket %s with key %s', alert, bucket, key)
 
         client = boto3.client('s3', region_name=self.region)
-        resp = client.put_object(Body=alert_string,
-                                 Bucket=bucket,
-                                 Key=key)
+        resp = client.put_object(Body=json.dumps(alert.output_dict()), Bucket=bucket, Key=key)
 
-        return self._log_status(resp, kwargs['descriptor'])
+        return self._log_status(resp, descriptor)
 
 
 @StreamAlertOutput
@@ -330,21 +311,28 @@ class SNSOutput(AWSOutput):
             ('aws_value', OutputProperty(description='SNS topic name'))
         ])
 
-    def dispatch(self, **kwargs):
-        """Send alert to an SNS topic"""
+    def dispatch(self, alert, descriptor):
+        """Send alert to an SNS topic
+
+        Args:
+            alert (Alert): Alert instance which triggered a rule
+            descriptor (str): Output descriptor
+
+        Returns:
+            bool: True if alert was sent successfully, False otherwise
+        """
         # SNS topics can only be accessed via their ARN
-        topic_name = self.config[self.__service__][kwargs['descriptor']]
+        topic_name = self.config[self.__service__][descriptor]
         topic_arn = 'arn:aws:sns:{}:{}:{}'.format(self.region, self.account_id, topic_name)
         topic = boto3.resource('sns', region_name=self.region).Topic(topic_arn)
 
-        alert = kwargs['alert']
         response = topic.publish(
-            Message=json.dumps(alert, indent=2, sort_keys=True),
+            Message=json.dumps(alert.output_dict(), indent=2, sort_keys=True),
             # Subject must be < 100 characters long
             Subject=elide_string_middle(
-                '{} triggered alert {}'.format(kwargs['rule_name'], alert['id']), 99)
+                '{} triggered alert {}'.format(alert.rule_name, alert.alert_id), 99)
         )
-        return self._log_status(response, kwargs['descriptor'])
+        return self._log_status(response, descriptor)
 
 
 @StreamAlertOutput
@@ -365,13 +353,21 @@ class SQSOutput(AWSOutput):
             ('aws_value', OutputProperty(description='SQS queue name'))
         ])
 
-    def dispatch(self, **kwargs):
-        """Send alert to an SQS queue"""
+    def dispatch(self, alert, descriptor):
+        """Send alert to an SQS queue
+
+        Args:
+            alert (Alert): Alert instance which triggered a rule
+            descriptor (str): Output descriptor
+
+        Returns:
+            bool: True if alert was sent successfully, False otherwise
+        """
         # SQS queues can only be accessed via their URL
-        queue_name = self.config[self.__service__][kwargs['descriptor']]
+        queue_name = self.config[self.__service__][descriptor]
         queue_url = 'https://sqs.{}.amazonaws.com/{}/{}'.format(
             self.region, self.account_id, queue_name)
         queue = boto3.resource('sqs', region_name=self.region).Queue(queue_url)
 
-        response = queue.send_message(MessageBody=json.dumps(kwargs['alert']))
-        return self._log_status(response, kwargs['descriptor'])
+        response = queue.send_message(MessageBody=json.dumps(alert.output_dict()))
+        return self._log_status(response, descriptor)

@@ -53,9 +53,7 @@ class TestPhantomOutput(object):
         # dispatch
         post_mock.return_value.status_code = 200
 
-        assert_true(self._dispatcher.dispatch(descriptor=self.DESCRIPTOR,
-                                              rule_name='rule_name',
-                                              alert=get_alert()))
+        assert_true(self._dispatcher.dispatch(get_alert(), self.DESCRIPTOR))
 
         log_mock.assert_called_with('Successfully sent alert to %s:%s',
                                     self.SERVICE, self.DESCRIPTOR)
@@ -72,9 +70,7 @@ class TestPhantomOutput(object):
         post_mock.return_value.status_code = 200
         post_mock.return_value.json.return_value = {'id': 1948}
 
-        assert_true(self._dispatcher.dispatch(descriptor=self.DESCRIPTOR,
-                                              rule_name='rule_name',
-                                              alert=get_alert()))
+        assert_true(self._dispatcher.dispatch(get_alert(), self.DESCRIPTOR))
 
         log_mock.assert_called_with('Successfully sent alert to %s:%s',
                                     self.SERVICE, self.DESCRIPTOR)
@@ -92,9 +88,7 @@ class TestPhantomOutput(object):
         json_error = {'message': 'error message', 'errors': ['error1']}
         post_mock.return_value.json.return_value = json_error
 
-        assert_false(self._dispatcher.dispatch(descriptor=self.DESCRIPTOR,
-                                               rule_name='rule_name',
-                                               alert=get_alert()))
+        assert_false(self._dispatcher.dispatch(get_alert(), self.DESCRIPTOR))
 
         log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, self.DESCRIPTOR)
 
@@ -111,9 +105,7 @@ class TestPhantomOutput(object):
         json_error = {'message': 'error message', 'errors': ['error1']}
         post_mock.return_value.json.return_value = json_error
 
-        assert_false(self._dispatcher.dispatch(descriptor=self.DESCRIPTOR,
-                                               rule_name='rule_name',
-                                               alert=get_alert()))
+        assert_false(self._dispatcher.dispatch(get_alert(), self.DESCRIPTOR))
 
         log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, self.DESCRIPTOR)
 
@@ -129,9 +121,7 @@ class TestPhantomOutput(object):
         post_mock.return_value.status_code = 200
         post_mock.return_value.json.return_value = {}
 
-        assert_false(self._dispatcher.dispatch(descriptor=self.DESCRIPTOR,
-                                               rule_name='rule_name',
-                                               alert=get_alert()))
+        assert_false(self._dispatcher.dispatch(get_alert(), self.DESCRIPTOR))
 
         log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, self.DESCRIPTOR)
 
@@ -148,9 +138,7 @@ class TestPhantomOutput(object):
         post_mock.return_value.json.return_value = dict()
 
 
-        assert_false(self._dispatcher.dispatch(descriptor=self.DESCRIPTOR,
-                                               rule_name='rule_name',
-                                               alert=get_alert()))
+        assert_false(self._dispatcher.dispatch(get_alert(), self.DESCRIPTOR))
 
         log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, self.DESCRIPTOR)
 
@@ -167,18 +155,14 @@ class TestPhantomOutput(object):
         json_error = {'message': 'error message', 'errors': ['error1']}
         post_mock.return_value.json.return_value.side_effect = [{'id': 1948}, json_error]
 
-        assert_false(self._dispatcher.dispatch(descriptor=self.DESCRIPTOR,
-                                               rule_name='rule_name',
-                                               alert=get_alert()))
+        assert_false(self._dispatcher.dispatch(get_alert(), self.DESCRIPTOR))
 
         log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, self.DESCRIPTOR)
 
     @patch('logging.Logger.error')
     def test_dispatch_bad_descriptor(self, log_error_mock):
         """PhantomOutput - Dispatch Failure, Bad Descriptor"""
-        assert_false(self._dispatcher.dispatch(descriptor='bad_descriptor',
-                                               rule_name='rule_name',
-                                               alert=get_alert()))
+        assert_false(self._dispatcher.dispatch(get_alert(), 'bad_descriptor'))
 
         log_error_mock.assert_called_with('Failed to send alert to %s:%s',
                                           self.SERVICE, 'bad_descriptor')

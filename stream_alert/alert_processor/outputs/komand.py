@@ -56,22 +56,24 @@ class KomandOutput(OutputDispatcher):
                             cred_requirement=True))
         ])
 
-    def dispatch(self, **kwargs):
+    def dispatch(self, alert, descriptor):
         """Send alert to Komand
 
         Args:
-            **kwargs: consists of any combination of the following items:
-                descriptor (str): Service descriptor (ie: slack channel, pd integration)
-                alert (dict): Alert relevant to the triggered rule
+            alert (Alert): Alert instance which triggered a rule
+            descriptor (str): Output descriptor
+
+        Returns:
+            bool: True if alert was sent successfully, False otherwise
         """
-        creds = self._load_creds(kwargs['descriptor'])
+        creds = self._load_creds(descriptor)
         if not creds:
-            return self._log_status(False, kwargs['descriptor'])
+            return self._log_status(False, descriptor)
 
         headers = {'Authorization': creds['komand_auth_token']}
 
         LOGGER.debug('sending alert to Komand')
 
-        resp = self._post_request(creds['url'], {'data': kwargs['alert']}, headers, False)
+        resp = self._post_request(creds['url'], {'data': alert.output_dict()}, headers, False)
         success = self._check_http_response(resp)
-        return self._log_status(success, kwargs['descriptor'])
+        return self._log_status(success, descriptor)

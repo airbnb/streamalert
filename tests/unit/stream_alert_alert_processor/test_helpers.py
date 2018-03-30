@@ -13,20 +13,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from collections import OrderedDict
+from nose.tools import assert_equal
 
-from nose.tools import assert_equal, assert_is_instance
-
-from stream_alert.alert_processor.helpers import elide_string_middle, ordered_dict
-
-
-def test_ordered_dict():
-    """Alert Processor - Helpers - Ordered Dict"""
-    data = {'ignore': None, 'c': 3, 'a': 1, 'b': {'b': 2, 'c': 3, 'a': 1, 'skip': None}}
-    result = ordered_dict(data, exclude_keys={'skip', 'ignore'})
-    assert_is_instance(result, OrderedDict)
-    assert_equal(['a', 'b', 'c'], result.keys())
-    assert_equal(['a', 'b', 'c'], result['b'].keys())
+from stream_alert.alert_processor.helpers import elide_string_middle
 
 
 def test_elide_string_middle():

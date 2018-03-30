@@ -30,28 +30,27 @@ from stream_alert.shared.backoff_handlers import (
     giveup_handler
 )
 
-def events_v2_data(routing_key, with_record=True, **kwargs):
+
+def events_v2_data(alert, routing_key, with_record=True):
     """Helper method to generate the payload to create an event using PagerDuty Events API v2
 
-    Keyword Args:
+    Args:
+        alert (Alert): Alert relevant to the triggered rule
         routing_key (str): Routing key for this PagerDuty integration
         with_record (boolean): Option to add the record data or not
-        descriptor (str): Service descriptor (ie: slack channel, pd integration)
-        rule_name (str): Name of the triggered rule
-        alert (dict): Alert relevant to the triggered rule
 
     Returns:
-            dict: Contains JSON blob to be used as event
+        dict: Contains JSON blob to be used as event
     """
-    summary = 'StreamAlert Rule Triggered - {}'.format(kwargs['rule_name'])
+    summary = 'StreamAlert Rule Triggered - {}'.format(alert.rule_name)
     details = OrderedDict()
-    details['description'] = kwargs['alert']['rule_description']
+    details['description'] = alert.rule_description
     if with_record:
-        details['record'] = kwargs['alert']['record']
+        details['record'] = alert.record
 
     payload = {
         'summary': summary,
-        'source': kwargs['alert']['log_source'],
+        'source': alert.log_source,
         'severity': 'critical',
         'custom_details': details
     }
@@ -61,6 +60,7 @@ def events_v2_data(routing_key, with_record=True, **kwargs):
         'event_action': 'trigger',
         'client': 'StreamAlert'
     }
+
 
 @StreamAlertOutput
 class PagerDutyOutput(OutputDispatcher):
@@ -100,24 +100,24 @@ class PagerDutyOutput(OutputDispatcher):
                             cred_requirement=True))
         ])
 
-    def dispatch(self, **kwargs):
+    def dispatch(self, alert, descriptor):
         """Send alert to Pagerduty
 
         Args:
-            **kwargs: consists of any combination of the following items:
-                descriptor (str): Service descriptor (ie: slack channel, pd integration)
-                rule_name (str): Name of the triggered rule
-                alert (dict): Alert relevant to the triggered rule
-        """
-        creds = self._load_creds(kwargs['descriptor'])
-        if not creds:
-            return self._log_status(False, kwargs['descriptor'])
+            alert (Alert): Alert instance which triggered a rule
+            descriptor (str): Output descriptor
 
-        message = 'StreamAlert Rule Triggered - {}'.format(kwargs['rule_name'])
-        rule_desc = kwargs['alert']['rule_description']
+        Returns:
+            bool: True if alert was sent successfully, False otherwise
+        """
+        creds = self._load_creds(descriptor)
+        if not creds:
+            return self._log_status(False, descriptor)
+
+        message = 'StreamAlert Rule Triggered - {}'.format(alert.rule_name)
         details = {
-            'description': rule_desc,
-            'record': kwargs['alert']['record']
+            'description': alert.rule_description,
+            'record': alert.record
         }
         data = {
             'service_key': creds['service_key'],
@@ -132,7 +132,8 @@ class PagerDutyOutput(OutputDispatcher):
         except OutputRequestFailure:
             success = False
 
-        return self._log_status(success, kwargs['descriptor'])
+        return self._log_status(success, descriptor)
+
 
 @StreamAlertOutput
 class PagerDutyOutputV2(OutputDispatcher):
@@ -174,30 +175,33 @@ class PagerDutyOutputV2(OutputDispatcher):
                             cred_requirement=True))
         ])
 
-    def dispatch(self, **kwargs):
+    def dispatch(self, alert, descriptor):
         """Send alert to Pagerduty
 
         Args:
-            **kwargs: consists of any combination of the following items:
-                descriptor (str): Service descriptor (ie: slack channel, pd integration)
-                rule_name (str): Name of the triggered rule
-                alert (dict): Alert relevant to the triggered rule
-        """
-        creds = self._load_creds(kwargs['descriptor'])
-        if not creds:
-            return self._log_status(False, kwargs['descriptor'])
+            alert (Alert): Alert instance which triggered a rule
+            descriptor (str): Output descriptor
 
-        data = events_v2_data(creds['routing_key'], **kwargs)
+        Returns:
+            bool: True if alert was sent successfully, False otherwise
+        """
+        creds = self._load_creds(descriptor)
+        if not creds:
+            return self._log_status(False, descriptor)
+
+        data = events_v2_data(alert, creds['routing_key'])
 
         try:
             success = self._post_request_retry(creds['url'], data, None, True)
         except OutputRequestFailure:
             success = False
 
-        return self._log_status(success, kwargs['descriptor'])
+        return self._log_status(success, descriptor)
+
 
 class PagerdutySearchDelay(Exception):
     """PagerdutyAlertDelay handles any delays looking up PagerDuty Incidents"""
+
 
 @StreamAlertOutput
 class PagerDutyIncidentOutput(OutputDispatcher):
@@ -573,18 +577,19 @@ class PagerDutyIncidentOutput(OutputDispatcher):
 
         return note_rec.get('id', False)
 
-    def dispatch(self, **kwargs):
+    def dispatch(self, alert, descriptor):
         """Send incident to Pagerduty Incidents API v2
-        Keyword Args:
-            **kwargs: consists of any combination of the following items:
-                descriptor (str): Service descriptor (ie: slack channel, pd integration)
-                rule_name (str): Name of the triggered rule
-                alert (dict): Alert relevant to the triggered rule
-                alert['context'] (dict): Provides user or escalation policy
+
+        Args:
+            alert (Alert): Alert instance which triggered a rule
+            descriptor (str): Output descriptor
+
+        Returns:
+            bool: True if alert was sent successfully, False otherwise
         """
-        creds = self._load_creds(kwargs['descriptor'])
+        creds = self._load_creds(descriptor)
         if not creds:
-            return self._log_status(False, kwargs['descriptor'])
+            return self._log_status(False, descriptor)
 
         # Cache base_url
         self._base_url = creds['api']
@@ -600,7 +605,7 @@ class PagerDutyIncidentOutput(OutputDispatcher):
         user_email = creds['email_from']
         if not self._user_verify(user_email, False):
             LOGGER.error('Could not verify header From: %s, %s', user_email, self.__service__)
-            return self._log_status(False, kwargs['descriptor'])
+            return self._log_status(False, descriptor)
 
         # Add From to the headers after verifying
         self._headers['From'] = user_email
@@ -609,7 +614,7 @@ class PagerDutyIncidentOutput(OutputDispatcher):
         self._escalation_policy_id = creds['escalation_policy_id']
 
         # Extracting context data to assign the incident
-        rule_context = kwargs['alert'].get('context', {})
+        rule_context = alert.context
         if rule_context:
             rule_context = rule_context.get(self.__service__, {})
 
@@ -621,10 +626,10 @@ class PagerDutyIncidentOutput(OutputDispatcher):
         assigned_key, assigned_value = self._incident_assignment(rule_context)
 
         # Start preparing the incident JSON blob to be sent to the API
-        incident_title = 'StreamAlert Incident - Rule triggered: {}'.format(kwargs['rule_name'])
+        incident_title = 'StreamAlert Incident - Rule triggered: {}'.format(alert.rule_name)
         incident_body = {
             'type': 'incident_body',
-            'details': kwargs['alert']['rule_description']
+            'details': alert.rule_description
         }
         # Using the service ID for the PagerDuty API
         incident_service = {'id': creds['service_id'], 'type': 'service_reference'}
@@ -647,30 +652,30 @@ class PagerDutyIncidentOutput(OutputDispatcher):
 
         if not incident:
             LOGGER.error('Could not create main incident, %s', self.__service__)
-            return self._log_status(False, kwargs['descriptor'])
+            return self._log_status(False, descriptor)
 
         # Extract the json blob from the response, returned by self._post_request_retry
         incident_json = incident.json()
         if not incident_json:
-            return self._log_status(False, kwargs['descriptor'])
+            return self._log_status(False, descriptor)
 
         # Extract the incident id from the incident that was just created
         incident_id = incident_json.get('incident', {}).get('id')
 
         # Create alert to hold all the incident details
         with_record = rule_context.get('with_record', True)
-        event_data = events_v2_data(creds['integration_key'], with_record, **kwargs)
+        event_data = events_v2_data(alert, creds['integration_key'], with_record)
         event = self._create_event(event_data)
         if not event:
             LOGGER.error('Could not create incident event, %s', self.__service__)
-            return self._log_status(False, kwargs['descriptor'])
+            return self._log_status(False, descriptor)
 
         # Lookup the incident_key returned as dedup_key to get the incident id
         incident_key = event.get('dedup_key')
 
         if not incident_key:
             LOGGER.error('Could not get incident key, %s', self.__service__)
-            return self._log_status(False, kwargs['descriptor'])
+            return self._log_status(False, descriptor)
 
         # Keep that id to be merged later with the created incident
         event_incident_id = self._get_event_incident_id(incident_key)
@@ -688,4 +693,4 @@ class PagerDutyIncidentOutput(OutputDispatcher):
             note = rule_context.get('note', 'Creating SOX Incident')
             self._add_incident_note(merged_id, note)
 
-        return self._log_status(incident_id, kwargs['descriptor'])
+        return self._log_status(incident_id, descriptor)

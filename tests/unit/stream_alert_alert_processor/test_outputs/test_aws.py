@@ -34,7 +34,8 @@ from stream_alert.alert_processor.outputs.aws import (
     SQSOutput
 )
 from stream_alert_cli.helpers import create_lambda_function
-from tests.unit.stream_alert_alert_processor import ACCOUNT_ID, CONFIG, FUNCTION_NAME, REGION
+from tests.unit.stream_alert_alert_processor import (
+    ACCOUNT_ID, CONFIG, FUNCTION_NAME, PREFIX, REGION)
 from tests.unit.stream_alert_alert_processor.helpers import get_alert
 
 
@@ -67,7 +68,7 @@ class TestFirehoseOutput(object):
 
     def setup(self):
         """Setup before each method"""
-        self._dispatcher = KinesisFirehoseOutput(REGION, ACCOUNT_ID, FUNCTION_NAME, CONFIG)
+        self._dispatcher = KinesisFirehoseOutput(REGION, ACCOUNT_ID, PREFIX, CONFIG)
         delivery_stream = CONFIG[self.SERVICE][self.DESCRIPTOR]
         boto3.client('firehose', region_name=REGION).create_delivery_stream(
             DeliveryStreamName=delivery_stream,
@@ -84,16 +85,14 @@ class TestFirehoseOutput(object):
         )
 
     def test_locals(self):
-        """Output local variables - Kinesis Firehose"""
+        """Kinesis Firehose - Output local variables"""
         assert_equal(self._dispatcher.__class__.__name__, 'KinesisFirehoseOutput')
         assert_equal(self._dispatcher.__service__, self.SERVICE)
 
     @patch('logging.Logger.info')
     def test_dispatch(self, log_mock):
         """Kinesis Firehose - Output Dispatch Success"""
-        assert_true(self._dispatcher.dispatch(descriptor=self.DESCRIPTOR,
-                                              rule_name='rule_name',
-                                              alert=get_alert()))
+        assert_true(self._dispatcher.dispatch(get_alert(), self.DESCRIPTOR))
 
         log_mock.assert_called_with('Successfully sent alert to %s:%s',
                                     self.SERVICE, self.DESCRIPTOR)
@@ -101,10 +100,8 @@ class TestFirehoseOutput(object):
     def test_dispatch_ignore_large_payload(self):
         """Output Dispatch - Kinesis Firehose with Large Payload"""
         alert = get_alert()
-        alert['record'] = 'test' * 1000 * 1000
-        assert_false(self._dispatcher.dispatch(descriptor=self.DESCRIPTOR,
-                                               rule_name='rule_name',
-                                               alert=alert))
+        alert.record = 'test' * 1000 * 1000
+        assert_false(self._dispatcher.dispatch(alert, self.DESCRIPTOR))
 
 
 @mock_lambda
@@ -126,9 +123,7 @@ class TestLambdaOutput(object):
     @patch('logging.Logger.info')
     def test_dispatch(self, log_mock):
         """LambdaOutput dispatch"""
-        assert_true(self._dispatcher.dispatch(descriptor=self.DESCRIPTOR,
-                                              rule_name='rule_name',
-                                              alert=get_alert()))
+        assert_true(self._dispatcher.dispatch(get_alert(), self.DESCRIPTOR))
 
         log_mock.assert_called_with('Successfully sent alert to %s:%s',
                                     self.SERVICE, self.DESCRIPTOR)
@@ -139,9 +134,7 @@ class TestLambdaOutput(object):
         alt_descriptor = '{}_qual'.format(self.DESCRIPTOR)
         create_lambda_function(CONFIG[self.SERVICE][alt_descriptor], REGION)
 
-        assert_true(self._dispatcher.dispatch(descriptor=alt_descriptor,
-                                              rule_name='rule_name',
-                                              alert=get_alert()))
+        assert_true(self._dispatcher.dispatch(get_alert(), alt_descriptor))
 
         log_mock.assert_called_with('Successfully sent alert to %s:%s',
                                     self.SERVICE, alt_descriptor)
@@ -167,9 +160,7 @@ class TestS3Output(object):
     @patch('logging.Logger.info')
     def test_dispatch(self, log_mock):
         """S3Output - Dispatch Success"""
-        assert_true(self._dispatcher.dispatch(descriptor=self.DESCRIPTOR,
-                                              rule_name='rule_name',
-                                              alert=get_alert()))
+        assert_true(self._dispatcher.dispatch(get_alert(), self.DESCRIPTOR))
 
         log_mock.assert_called_with('Successfully sent alert to %s:%s',
                                     self.SERVICE, self.DESCRIPTOR)
@@ -190,9 +181,7 @@ class TestSNSOutput(object):
     @patch('logging.Logger.info')
     def test_dispatch(self, log_mock):
         """SNSOutput - Dispatch Success"""
-        assert_true(self._dispatcher.dispatch(descriptor=self.DESCRIPTOR,
-                                              rule_name='rule_name',
-                                              alert=get_alert()))
+        assert_true(self._dispatcher.dispatch(get_alert(), self.DESCRIPTOR))
 
         log_mock.assert_called_with('Successfully sent alert to %s:%s',
                                     self.SERVICE, self.DESCRIPTOR)
@@ -213,9 +202,7 @@ class TestSQSOutput(object):
     @patch('logging.Logger.info')
     def test_dispatch(self, log_mock):
         """SQSOutput - Dispatch Success"""
-        assert_true(self._dispatcher.dispatch(descriptor=self.DESCRIPTOR,
-                                              rule_name='rule_name',
-                                              alert=get_alert()))
+        assert_true(self._dispatcher.dispatch(get_alert(), self.DESCRIPTOR))
 
         log_mock.assert_called_with('Successfully sent alert to %s:%s',
                                     self.SERVICE, self.DESCRIPTOR)

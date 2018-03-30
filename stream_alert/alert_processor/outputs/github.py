@@ -69,18 +69,19 @@ class GithubOutput(OutputDispatcher):
         """
         return {'api': 'https://api.github.com'}
 
-    def dispatch(self, **kwargs):
+    def dispatch(self, alert, descriptor):
         """Send alert to Github
 
         Args:
-            **kwargs: consists of any combination of the following items:
-                descriptor (str): Service descriptor (ie: slack channel, pd integration)
-                rule_name (str): Name of the triggered rule
-                alert (dict): Alert relevant to the triggered rule
+            alert (Alert): Alert instance which triggered a rule
+            descriptor (str): Output descriptor
+
+        Returns:
+            bool: True if alert was sent successfully, False otherwise
         """
-        credentials = self._load_creds(kwargs['descriptor'])
+        credentials = self._load_creds(descriptor)
         if not credentials:
-            return self._log_status(False, kwargs['descriptor'])
+            return self._log_status(False, descriptor)
 
         username_password = "{}:{}".format(credentials['username'],
                                            credentials['access_token'])
@@ -89,10 +90,10 @@ class GithubOutput(OutputDispatcher):
         url = '{}/repos/{}/issues'.format(credentials['api'],
                                           credentials['repository'])
 
-        title = "StreamAlert: {}".format(kwargs['rule_name'])
+        title = "StreamAlert: {}".format(alert.rule_name)
         body_template = "### Description\n{}\n\n### Event data\n\n```\n{}\n```"
-        body = body_template.format(kwargs['alert']['rule_description'],
-                                    json.dumps(kwargs['alert']['record'], indent=2))
+        body = body_template.format(
+            alert.rule_description, json.dumps(alert.record, indent=2, sort_keys=True))
         issue = {'title': title, 'body': body, 'labels': credentials['labels'].split(',')}
 
         LOGGER.debug('sending alert to Github repository %s', credentials['repository'])
@@ -102,4 +103,4 @@ class GithubOutput(OutputDispatcher):
         except OutputRequestFailure:
             success = False
 
-        return self._log_status(success, kwargs['descriptor'])
+        return self._log_status(success, descriptor)
