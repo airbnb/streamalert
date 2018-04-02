@@ -352,8 +352,6 @@ class StreamRules(object):
             return alerts, normalized_records
 
         for record in payload.records:
-            # One record may be added to normalized records list multiple time due
-            # to each record is processed by all rules.
             for rule in rules:
                 # subkey check
                 has_sub_keys = self.process_subkeys(record, payload.type, rule)
@@ -368,13 +366,15 @@ class StreamRules(object):
                 if rule.datatypes:
                     # When rule 'datatypes' option is defined, rules engine will
                     # apply data normalization to all the record.
-                    self._apply_normalization(record, normalized_records, rule, payload, alerts)
+                    record_copy = self._apply_normalization(record, normalized_records,
+                                                            rule, payload)
+                    self.rule_analysis(record_copy, rule, payload, alerts)
                 else:
                     self.rule_analysis(record, rule, payload, alerts)
 
         return alerts, normalized_records
 
-    def _apply_normalization(self, record, normalized_records, rule, payload, alerts):
+    def _apply_normalization(self, record, normalized_records, rule, payload):
         """Apply data normalization to current record
 
         Args:
@@ -414,7 +414,7 @@ class StreamRules(object):
             else:
                 record_copy = record
 
-        self.rule_analysis(record_copy, rule, payload, alerts)
+        return record_copy
 
     @staticmethod
     def _update_normalized_record(payload, record_copy, normalized_records):
