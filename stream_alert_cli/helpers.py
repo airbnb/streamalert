@@ -34,6 +34,41 @@ from stream_alert_cli.logger import LOGGER_CLI
 from stream_alert.rule_processor.firehose import StreamAlertFirehose
 
 
+SCHEMA_TYPE_LOOKUP = {
+    bool: 'boolean',
+    float: 'float',
+    int: 'integer',
+    str: 'string',
+    dict: dict(),
+    list: list()
+}
+
+
+def record_to_schema(record, recursive=False):
+    """Take a record and return a schema that corresponds to it's keys/value types
+
+    Args:
+        record (dict): The record to generate a schema for
+        recursive (bool): True if sub-dictionaries should be recursed
+
+    Returns:
+        dict: A new record that reflects the original keys with values that reflect
+            the types of the original values
+    """
+    if not isinstance(record, dict):
+        return
+
+    result = {}
+    for key, value in record.iteritems():
+        # only worry about recursion for dicts, not lists
+        if recursive and isinstance(value, dict):
+            result[key] = record_to_schema(value, recursive)
+        else:
+            result[key] = SCHEMA_TYPE_LOOKUP.get(type(value), 'string')
+
+    return result
+
+
 def run_command(runner_args, **kwargs):
     """Helper function to run commands with error handling.
 
