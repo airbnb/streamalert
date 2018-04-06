@@ -18,13 +18,7 @@ import json
 from stream_alert_cli import helpers
 
 from mock import mock_open, patch
-from nose.tools import (
-    assert_equal,
-    assert_false,
-    assert_is_instance,
-    assert_is_none,
-    assert_items_equal
-)
+from nose.tools import assert_equal, assert_false, assert_is_none, assert_items_equal
 
 
 def test_load_test_file_list():
@@ -118,16 +112,18 @@ def test_record_to_schema_no_recurse():
         'boolean': True
     }
 
+    expected_result = {
+        'dict': {},
+        'list': [],
+        'string': 'string',
+        'float': 'float',
+        'integer': 'integer',
+        'boolean': 'boolean'
+    }
+
     result = helpers.record_to_schema(record, recursive=False)
 
-    assert_is_instance(result['dict'], dict)
-    assert_is_instance(result['list'], list)
-    assert_equal(result['string'], 'string')
-    assert_equal(result['float'], 'float')
-    assert_equal(result['integer'], 'integer')
-    assert_equal(result['boolean'], 'boolean')
-    # Check to make no recursion occurred
-    assert_equal(len(result['dict']), 0)
+    assert_equal(result, expected_result)
 
 
 def test_record_to_schema_recurse():
@@ -145,15 +141,19 @@ def test_record_to_schema_recurse():
         'boolean': True
     }
 
+    expected_result = {
+        'dict': {
+            'boolean': 'boolean',
+            'integer': 'integer'
+        },
+        'list': [],
+        'string': 'string',
+        'float': 'float',
+        'integer': 'integer',
+        'boolean': 'boolean'
+    }
+
+
     result = helpers.record_to_schema(record, recursive=True)
 
-    assert_is_instance(result['dict'], dict)
-    assert_is_instance(result['list'], list)
-    assert_equal(result['string'], 'string')
-    assert_equal(result['float'], 'float')
-    assert_equal(result['integer'], 'integer')
-    assert_equal(result['boolean'], 'boolean')
-    # Check to make recursion occurred
-    assert_equal(len(result['dict']), 2)
-    assert_equal(result['dict']['boolean'], 'boolean')
-    assert_equal(result['dict']['integer'], 'integer')
+    assert_equal(result, expected_result)

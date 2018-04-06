@@ -125,7 +125,7 @@ def _terraform_init(config):
     # we need to manually create the streamalerts table since terraform does not support this
     # See: https://github.com/terraform-providers/terraform-provider-aws/issues/1486
     alerts_bucket = '{}.streamalerts'.format(config['global']['account']['prefix'])
-    create_table(None, alerts_bucket, 'alerts', config)
+    create_table('alerts', alerts_bucket, config)
 
     LOGGER_CLI.info('Building Remainder Infrastructure')
     tf_runner(refresh=False)

@@ -67,6 +67,10 @@ def rebuild_partitions(table, bucket, config):
 
     unique_partitions = athena_helpers.unique_values_from_query(partitions)
 
+    if not unique_partitions:
+        LOGGER_CLI.info('No partitions to rebuild for %s, nothing to do', sanitized_table_name)
+        return
+
     # Drop the table
     LOGGER_CLI.info('Dropping table %s', sanitized_table_name)
     drop_success, _ = athena_client.run_athena_query(
@@ -79,6 +83,11 @@ def rebuild_partitions(table, bucket, config):
 
     LOGGER_CLI.info('Dropped table %s', sanitized_table_name)
 
+    LOGGER_CLI.info('Creating table %s', sanitized_table_name)
+
+    # Re-create the table with previous partitions
+    create_table(table, bucket, config)
+
     new_partitions_statement = athena_helpers.partition_statement(
         unique_partitions, bucket, sanitized_table_name)
 
@@ -88,9 +97,6 @@ def rebuild_partitions(table, bucket, config):
         with open('partitions_{}.txt'.format(sanitized_table_name), 'w') as partition_file:
             partition_file.write(new_partitions_statement)
         return
-
-    # Re-create the table with previous partitions
-    create_table(table, bucket, config)
 
     LOGGER_CLI.info('Creating %d new partitions for %s',
                     len(unique_partitions), sanitized_table_name)
@@ -195,7 +201,7 @@ def create_table(table, bucket, config, schema_override=None):
     sanitized_table_name = sa_firehose.firehose_log_name(table)
 
     # Check that the log type is enabled via Firehose
-    if sanitized_table_name not in sa_firehose.enabled_logs:
+    if sanitized_table_name != 'alerts' and sanitized_table_name not in sa_firehose.enabled_logs:
         LOGGER_CLI.error('Table name %s missing from configuration or '
                          'is not enabled.', sanitized_table_name)
         return

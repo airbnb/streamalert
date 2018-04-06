@@ -47,6 +47,8 @@ SCHEMA_TYPE_LOOKUP = {
 def record_to_schema(record, recursive=False):
     """Take a record and return a schema that corresponds to it's keys/value types
 
+    This generates a log schema that is compatible with schemas in conf/logs.json
+
     Args:
         record (dict): The record to generate a schema for
         recursive (bool): True if sub-dictionaries should be recursed
