@@ -16,6 +16,7 @@ limitations under the License.
 # pylint: disable=no-self-use,protected-access
 from collections import namedtuple
 import json
+import os
 
 from mock import patch
 from nose.tools import (
@@ -45,6 +46,7 @@ matcher = StreamRules.matcher()
 disable = StreamRules.disable()
 
 
+@patch.dict(os.environ, {'CLUSTER': ''})
 class TestStreamRules(object):
     """Test class for StreamRules"""
     @classmethod

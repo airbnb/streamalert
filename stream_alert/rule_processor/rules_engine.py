@@ -15,6 +15,7 @@ limitations under the License.
 """
 from collections import namedtuple
 from copy import copy
+import os
 
 from stream_alert.rule_processor import LOGGER
 from stream_alert.rule_processor.threat_intel import StreamThreatIntel
@@ -504,6 +505,7 @@ class StreamRules(object):
 
             alert = Alert(
                 rule.rule_name, record, all_outputs,
+                cluster=os.environ['CLUSTER'],
                 context=rule.context,
                 log_source=str(payload.log_source),
                 log_type=payload.type,
