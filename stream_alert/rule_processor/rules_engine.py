@@ -31,6 +31,8 @@ RuleAttributes = namedtuple('Rule', ['rule_name',
                                      'req_subkeys',
                                      'context'])
 
+_IGNORE_KEYS = {StreamThreatIntel.IOC_KEY, NORMALIZATION_KEY}
+
 
 class StreamRules(object):
     """Container class for StreamAlert Rules
@@ -350,9 +352,6 @@ class StreamRules(object):
             return alerts, normalized_records
 
         for record in payload.records:
-            # One record may be added to normalized records list multiple time due
-            # to each record is processed by all rules.
-            normalized_record_appended = False
             for rule in rules:
                 # subkey check
                 has_sub_keys = self.process_subkeys(record, payload.type, rule)
@@ -364,32 +363,100 @@ class StreamRules(object):
                 if not matcher_result:
                     continue
 
-                types_result = None
                 if rule.datatypes:
-                    types_result = self.match_types(record,
-                                                    payload.normalized_types,
-                                                    rule.datatypes)
-
-                if types_result:
-                    record_copy = record.copy()
-                    record_copy[NORMALIZATION_KEY] = types_result
-                    if self._threat_intel and not normalized_record_appended:
-                        # A copy of payload which includes payload metadata.
-                        # The payload metadata includes log_source, type, service,
-                        # and entity. The metadata will be returned to along with
-                        # normalized record for threat detection.
-                        payload_copy = copy(input_payload)
-                        payload_copy.pre_parsed_record = record_copy
-                        payload_copy.records = None
-                        payload_copy.raw_record = None
-                        normalized_records.append(payload_copy)
-                        normalized_record_appended = True
+                    # When rule 'datatypes' option is defined, rules engine will
+                    # apply data normalization to all the record.
+                    record_copy = self._apply_normalization(record, normalized_records,
+                                                            rule, payload)
+                    self.rule_analysis(record_copy, rule, payload, alerts)
                 else:
-                    record_copy = record
-                # rule analysis
-                self.rule_analysis(record_copy, rule, payload, alerts)
+                    self.rule_analysis(record, rule, payload, alerts)
 
         return alerts, normalized_records
+
+    def _apply_normalization(self, record, normalized_records, rule, payload):
+        """Apply data normalization to current record
+
+        Args:
+            record (dict): The parsed log w/wo data normalization.
+            normalized_records (list): Contains a list of payload objects which
+                have been normalized.
+            rule (namedtuple): Contains alerting logic.
+            payload (namedtuple): Contains parsed logs.
+        """
+        normalized, normalized_payload = self._is_normalized(record,
+                                                             normalized_records,
+                                                             rule.datatypes)
+
+        if normalized:
+            # If the record has been normalized, use normalized record copy
+            record_copy = normalized_payload.pre_parsed_record
+        else:
+            # If the record has been normalized, apply normalization logic to the record
+            # and insert normalization result to the record.
+            types_result = self.match_types(record,
+                                            payload.normalized_types,
+                                            rule.datatypes)
+
+            if types_result:
+                record_copy = record.copy()
+
+                # Insert normalization result to the record copy.
+                record_copy[NORMALIZATION_KEY] = types_result
+
+                if self._threat_intel:
+                    # If threat intel is enabled, add newly normalized record to
+                    # the list for future threat detection.
+                    self._update_normalized_record(payload, record_copy, normalized_records)
+
+            else:
+                record_copy = record
+
+        return record_copy
+
+    @staticmethod
+    def _update_normalized_record(payload, record_copy, normalized_records):
+        """Add normalized record to a list for future threat detection
+
+        Args:
+            payload (namedtuple): Contains parsed logs.
+            record_copy (dict): Contains log data with normalization information.
+            normalized_records (list): Contains a list of payload objects
+                with normalized records.
+        """
+        # It is required to have payload 'log_source', 'type', 'service' and 'entity'
+        # information when analyzing record and triggering alert later. So here,
+        # we make a copy of payload and reset unneccessary fields ('record', 'raw_record')
+        payload_copy = copy(payload)
+        payload_copy.pre_parsed_record = record_copy
+        payload_copy.records = None
+        payload_copy.raw_record = None
+        normalized_records.append(payload_copy)
+
+    def _is_normalized(self, record, normalized_records, datatypes):
+        """Check if the current record has been normalized
+
+        A record may be normalized multiple time only by different set of data types.
+
+        Args:
+            record (dict): The parsed log w/wo data normalization.
+            normalized_records (list): Contains a list of payload objects
+                with normalized records.
+            datatypes (list): Normalized types defined in the Rule options.
+
+        Return:
+            bool: Return True if current record has been found in normalized records.
+            namedtuple: A payload object contains normalized record.
+        """
+        for payload in normalized_records:
+            if self._is_equal(record, payload.pre_parsed_record):
+                if set(datatypes) - set(payload.pre_parsed_record.get(NORMALIZATION_KEY)):
+                    continue
+                else:
+                    # if all datatypes have been normalized in a record, we should not do
+                    # again
+                    return True, payload
+        return False, None
 
     def threat_intel_match(self, payload_with_normalized_records):
         """Apply Threat Intelligence on normalized records
@@ -427,7 +494,9 @@ class StreamRules(object):
         """
         rule_result = StreamRules.process_rule(record, rule)
         if rule_result:
-            if StreamRules.check_alerts_duplication(record, rule, alerts):
+            # when threat intel enabled, normalized records will be re-analyzed by
+            # all rules. Thus we need to check duplication.
+            if self._threat_intel and self.check_alerts_duplication(record, rule, alerts):
                 return
 
             # Combine the required alert outputs with the ones for this rule
@@ -450,13 +519,32 @@ class StreamRules(object):
             alerts.append(alert)
 
     @staticmethod
-    def check_alerts_duplication(record, rule, alerts):
-        """The method to check if the record has been added to alerts list already.
+    def _is_equal(record1, record2):
+        """Check if two records are same excluding data normalization and threat intel information
 
-        The reason we need to do check alerts duplication is because original records
-        would be modified by inserting normalization or/and IOC information if there
-        exist. Threat Intel feature will process normalized records again and it
-        will result alert duplication.
+        Compare key set before comparing values for better performance.
+
+        Args:
+            record1/record2 (dict): The parsed log w/wo data normalization and
+            threat intel information.
+
+        Returns:
+            bool: Return True only when two records have same keys and values.
+        """
+        record1_keys = set(record1.keys()) - _IGNORE_KEYS
+        record2_keys = set(record2.keys()) - _IGNORE_KEYS
+
+        if record1_keys != record2_keys:
+            return False
+
+        return all(record1[key] == record2[key] for key in record1_keys)
+
+    def check_alerts_duplication(self, record, rule, alerts):
+        """ Check if the record has been triggerred an alert by the same rule
+
+        The reason we need to do the duplication is because the record might be
+        modified by inserting normalization or/and IOC information after data
+        normalization. Threat Intel feature will re-analyze normalized records.
 
         Args:
             record (dict): A parsed log with data.
@@ -466,14 +554,6 @@ class StreamRules(object):
         Returns:
             bool: Return True if both record and rule name exist in alerts list.
         """
-        for exist_alert in alerts:
-            if rule.rule_name == exist_alert.rule_name:
-                record_copy = record.copy()
-                if StreamThreatIntel.IOC_KEY not in exist_alert.record:
-                    record_copy.pop(StreamThreatIntel.IOC_KEY, None)
-                if NORMALIZATION_KEY not in exist_alert.record:
-                    record_copy.pop(NORMALIZATION_KEY, None)
-                if record_copy == exist_alert.record:
-                    return True
-
-        return False
+        return any(self._is_equal(alert.record, record)
+                   for alert in alerts
+                   if rule.rule_name == alert.rule_name)
