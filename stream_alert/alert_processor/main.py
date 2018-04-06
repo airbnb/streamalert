@@ -146,7 +146,7 @@ class AlertProcessor(object):
         elif any(output_results.values()):
             # At least one output succeeded - update the table with those outputs which need retried
             self.alerts_table.update_retry_outputs(alert)
-        # If all outputs failed, no table updates are necessary
+        # else: If all outputs failed, no table updates are necessary
 
     def run(self, rule_name, alert_id):
         """Run the alert processor!
@@ -165,6 +165,7 @@ class AlertProcessor(object):
             return
 
         # Remove normalization key from the record
+        # TODO: Consider including this in at least some outputs, e.g. default Athena firehose
         if NORMALIZATION_KEY in alert.record:
             del alert.record[NORMALIZATION_KEY]
 

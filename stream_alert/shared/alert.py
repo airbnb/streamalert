@@ -33,6 +33,7 @@ class Alert(object):
         'log_type', 'merge_by_keys', 'merge_window_mins', 'retry_outputs', 'rule_description',
         'source_entity', 'source_service', 'staged'
     }
+    DEFAULT_RULE_DESCRIPTION = 'No rule description provided'
 
     def __init__(self, rule_name, record, outputs, **kwargs):
         """Create a new Alert with a random ID and timestamped now.
@@ -62,11 +63,14 @@ class Alert(object):
         """
         if not set(kwargs).issubset(self._EXPECTED_INIT_KWARGS):
             raise TypeError(
-                'Invalid Alert kwargs: {} is not a subset of {}'.format(
-                    ','.join(sorted(kwargs)), ','.join(sorted(self._EXPECTED_INIT_KWARGS))
-                )
+                'Invalid Alert kwargs: {} are not in the expected set of {}'.format(
+                    ', '.join(sorted(set(kwargs).difference(self._EXPECTED_INIT_KWARGS))),
+                    ', '.join(sorted(self._EXPECTED_INIT_KWARGS)))
             )
 
+        # Empty strings and empty sets are not allowed in Dynamo, so for safety we explicitly
+        # convert any Falsey value to the expected type during Alert creation.
+        # This is why we use "or" instead of kwargs.get() with a default value.
         self.alert_id = kwargs.get('alert_id') or str(uuid.uuid4())
         self.created = kwargs.get('created') or datetime.now().strftime('%Y-%m-%dT%H:%M:%S.%fZ')
 
@@ -74,7 +78,6 @@ class Alert(object):
         self.record = record
         self.rule_name = rule_name
 
-        # Empty strings and empty sets are not allowed in Dynamo, so we explicitly convert to None
         self.attempts = int(kwargs.get('attempts', 0)) or 0  # Convert possible Decimal to int
         self.cluster = kwargs.get('cluster') or None
         self.context = kwargs.get('context') or {}
@@ -84,7 +87,7 @@ class Alert(object):
         self.merge_by_keys = kwargs.get('merge_by_keys') or []
         self.merge_window_mins = int(kwargs.get('merge_window_mins', 0)) or 0
         self.retry_outputs = kwargs.get('retry_outputs') or None
-        self.rule_description = kwargs.get('rule_description') or None
+        self.rule_description = kwargs.get('rule_description') or self.DEFAULT_RULE_DESCRIPTION
         self.source_entity = kwargs.get('source_entity') or None
         self.source_service = kwargs.get('source_service') or None
         self.staged = kwargs.get('staged') or False
@@ -323,16 +326,11 @@ class Alert(object):
             'ValueDiffs': [cls._compute_diff(common, alert.record) for alert in alerts]
         }
 
-        # Union all of the outputs together.
-        all_outputs = set()
-        for alert in alerts:
-            all_outputs.update(alert.outputs)
-
         # TODO: the cluster, log_source, source_entity, etc, could be different between alerts
         return cls(
             alerts[0].rule_name,
             new_record,
-            all_outputs,
+            alerts[-1].outputs,  # Use the most recent set of outputs
             cluster=alerts[0].cluster,
             context=alerts[0].context,
             log_source=alerts[0].log_source,

@@ -336,7 +336,7 @@ class TestAlert(object):
 
         merged = Alert.merge([alert1, alert2])
         assert_is_instance(merged, Alert)
-        assert_equal({'aws-sns:topic', 'slack:channel'}, merged.outputs)  # Outputs were merged
+        assert_equal({'slack:channel'}, merged.outputs)  # Most recent outputs were used
 
         expected_record = {
             'AlertCount': 2,

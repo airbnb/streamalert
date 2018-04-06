@@ -21,7 +21,6 @@ from stream_alert.rule_processor.threat_intel import StreamThreatIntel
 from stream_alert.shared import NORMALIZATION_KEY, resources
 from stream_alert.shared.alert import Alert
 
-DEFAULT_RULE_DESCRIPTION = 'No rule description provided'
 
 RuleAttributes = namedtuple('Rule', ['rule_name',
                                      'rule_function',
@@ -439,7 +438,7 @@ class StreamRules(object):
                 context=rule.context,
                 log_source=str(payload.log_source),
                 log_type=payload.type,
-                rule_description=rule.rule_function.__doc__ or DEFAULT_RULE_DESCRIPTION,
+                rule_description=rule.rule_function.__doc__,
                 source_entity=payload.entity,
                 source_service=payload.service()
             )

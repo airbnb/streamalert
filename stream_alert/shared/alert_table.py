@@ -22,6 +22,29 @@ from botocore.exceptions import ClientError
 from stream_alert.shared.alert import Alert
 
 
+def ignore_conditional_failure(func):
+    """Decorator which ignores ClientErrors due to ConditionalCheckFailed.
+
+    Conditional checks prevent Dynamo updates from finishing if the existing state doesn't match
+    expectations. For example, if an Alert no longer exists, we don't want to send any other updates
+
+    Args:
+        func (function): Function with a conditional Dynamo update call.
+
+    Returns:
+        function: Wrapped function which ignores failures due to conditional checks.
+    """
+    def inner(*args, **kwargs):
+        """Ignore ConditionalCheckFailedException"""
+        try:
+            func(*args, **kwargs)
+        except ClientError as error:
+            if error.response['Error']['Code'] != 'ConditionalCheckFailedException':
+                raise
+
+    return inner
+
+
 class AlertTable(object):
     """Provides convenience methods for accessing and modifying the alerts table."""
     def __init__(self, table_name):
@@ -54,7 +77,7 @@ class AlertTable(object):
             if response.get('LastEvaluatedKey'):
                 func_kwargs['ExclusiveStartKey'] = response['LastEvaluatedKey']
             else:
-                return
+                raise StopIteration
 
     def rule_names(self):
         """Find all of the distinct rule names in the table.
@@ -123,11 +146,7 @@ class AlertTable(object):
             for alert in alerts:
                 batch.put_item(Item=alert.dynamo_record())
 
-    @staticmethod
-    def _is_conditional_failure(error):
-        """Returns True if the given ClientError was caused by a failed conditional check."""
-        return error.response['Error']['Code'] == 'ConditionalCheckFailedException'
-
+    @ignore_conditional_failure
     def mark_as_dispatched(self, alert):
         """Mark a specific alert as dispatched (in progress).
 
@@ -136,38 +155,27 @@ class AlertTable(object):
         """
         # Update the alerts table with the dispatch time, but only if the alert still exists.
         # (The alert processor could have deleted the alert before this table update finishes).
-        try:
-            self._table.update_item(
-                Key=alert.dynamo_key,
-                UpdateExpression='SET Attempts = :attempts, Dispatched = :dispatched',
-                ExpressionAttributeValues={
-                    ':dispatched': alert.dispatched, ':attempts': alert.attempts},
-                ConditionExpression='attribute_exists(AlertID)'
-            )
-        except ClientError as error:
-            # The update will fail if the alert was already deleted by the alert processor,
-            # in which case there's nothing to do! Any other error is re-raised.
-            if not self._is_conditional_failure(error):
-                raise
+        self._table.update_item(
+            Key=alert.dynamo_key,
+            UpdateExpression='SET Attempts = :attempts, Dispatched = :dispatched',
+            ExpressionAttributeValues={
+                ':dispatched': alert.dispatched, ':attempts': alert.attempts},
+            ConditionExpression='attribute_exists(AlertID)'
+        )
 
+    @ignore_conditional_failure
     def update_retry_outputs(self, alert):
         """Update the table with a new set of outputs to be retried.
 
         Args:
             alert (Alert): Alert instance with the list of failed outputs
         """
-        try:
-            self._table.update_item(
-                Key=alert.dynamo_key,
-                UpdateExpression='SET RetryOutputs = :failed_outputs',
-                ExpressionAttributeValues={':failed_outputs': alert.retry_outputs},
-                ConditionExpression='attribute_exists(AlertID)'
-            )
-        except ClientError as error:
-            # If the alert no longer exists, no need to update it. This could happen if the alert
-            # was manually deleted or if multiple alert processors somehow sent the same alert.
-            if not self._is_conditional_failure(error):
-                raise
+        self._table.update_item(
+            Key=alert.dynamo_key,
+            UpdateExpression='SET RetryOutputs = :failed_outputs',
+            ExpressionAttributeValues={':failed_outputs': alert.retry_outputs},
+            ConditionExpression='attribute_exists(AlertID)'
+        )
 
     def delete_alert(self, rule_name, alert_id):
         """Remove an alert from the table.
