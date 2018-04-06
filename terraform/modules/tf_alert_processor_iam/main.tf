@@ -30,6 +30,7 @@ data "aws_iam_policy_document" "update_alerts_table" {
 
     actions = [
       "dynamodb:DeleteItem",
+      "dynamodb:Query",
       "dynamodb:UpdateItem",
     ]
 

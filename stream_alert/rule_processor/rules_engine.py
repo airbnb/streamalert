@@ -15,13 +15,13 @@ limitations under the License.
 """
 from collections import namedtuple
 from copy import copy
-import uuid
+import os
 
 from stream_alert.rule_processor import LOGGER
 from stream_alert.rule_processor.threat_intel import StreamThreatIntel
 from stream_alert.shared import NORMALIZATION_KEY, resources
+from stream_alert.shared.alert import Alert
 
-DEFAULT_RULE_DESCRIPTION = 'No rule description provided'
 
 RuleAttributes = namedtuple('Rule', ['rule_name',
                                      'rule_function',
@@ -33,6 +33,7 @@ RuleAttributes = namedtuple('Rule', ['rule_name',
                                      'context'])
 
 _IGNORE_KEYS = {StreamThreatIntel.IOC_KEY, NORMALIZATION_KEY}
+
 
 class StreamRules(object):
     """Container class for StreamAlert Rules
@@ -215,7 +216,7 @@ class StreamRules(object):
             else:
                 for datatype in datatypes:
                     if datatype in normalized_types and key in normalized_types[datatype]:
-                        if not datatype in results:
+                        if datatype not in results:
                             results[datatype] = [[key]]
                         else:
                             results[datatype].append([key])
@@ -336,7 +337,7 @@ class StreamRules(object):
 
         Returns:
             A tuple(list, list).
-                First return is a list of alerts.
+                First return is a list of Alert instances.
                 Second return is a list of payload instance with normalized records.
         """
         alerts = []
@@ -383,13 +384,11 @@ class StreamRules(object):
                 have been normalized.
             rule (namedtuple): Contains alerting logic.
             payload (namedtuple): Contains parsed logs.
-            alerts (list): A list of triggered alerts.
         """
         normalized, normalized_payload = self._is_normalized(record,
                                                              normalized_records,
                                                              rule.datatypes)
 
-        record_copy = None
         if normalized:
             # If the record has been normalized, use normalized record copy
             record_copy = normalized_payload.pre_parsed_record
@@ -418,7 +417,7 @@ class StreamRules(object):
 
     @staticmethod
     def _update_normalized_record(payload, record_copy, normalized_records):
-        """Add normalized record to a list for future theat detection
+        """Add normalized record to a list for future threat detection
 
         Args:
             payload (namedtuple): Contains parsed logs.
@@ -460,7 +459,6 @@ class StreamRules(object):
                     return True, payload
         return False, None
 
-
     def threat_intel_match(self, payload_with_normalized_records):
         """Apply Threat Intelligence on normalized records
 
@@ -472,7 +470,7 @@ class StreamRules(object):
                 payload.type, payload.service and payload.entity).
 
         Returns:
-            list: A list of alerts triggered by Threat Intelligence.
+            list: A list of Alerts triggered by Threat Intelligence.
         """
         alerts = []
         if self._threat_intel:
@@ -486,16 +484,14 @@ class StreamRules(object):
         return alerts
 
     def rule_analysis(self, record, rule, payload, alerts):
-        """Class method to analyze rule against a record
+        """Analyze a rule against the record, adding a new alert if applicable.
 
         Args:
             record (dict): A parsed log with data.
-            rule: Rule attributes.
-            payload: The StreamPayload object.
-            alerts (list): A list of alerts which will be sent to alert processor.
-
-        Returns:
-            dict: A list of alerts.
+            rule (RuleAttributes): Attributes for the rule which triggered the alert.
+            payload (StreamPayload): Payload with information about the source of the record.
+            alerts (list): The current list of Alert instances.
+                If the rule returns True on the record, a new Alert instance is added to this list.
         """
         rule_result = StreamRules.process_rule(record, rule)
         if rule_result:
@@ -504,25 +500,23 @@ class StreamRules(object):
             if self._threat_intel and self.check_alerts_duplication(record, rule, alerts):
                 return
 
-            alert_id = str(uuid.uuid4())  # Random unique alert ID
-            LOGGER.info('Rule [%s] triggered alert [%s] on log type [%s] from entity \'%s\' '
-                        'in service \'%s\'', rule.rule_name, alert_id, payload.log_source,
-                        payload.entity, payload.service())
-
             # Combine the required alert outputs with the ones for this rule
             all_outputs = self._required_outputs_set.union(set(rule.outputs or []))
 
-            alert = {
-                'id': alert_id,
-                'record': record,
-                'rule_name': rule.rule_name,
-                'rule_description': rule.rule_function.__doc__ or DEFAULT_RULE_DESCRIPTION,
-                'log_source': str(payload.log_source),
-                'log_type': payload.type,
-                'outputs': list(all_outputs), # TODO: @austinbyers - change this to a set
-                'source_service': payload.service(),
-                'source_entity': payload.entity,
-                'context': rule.context}
+            alert = Alert(
+                rule.rule_name, record, all_outputs,
+                cluster=os.environ['CLUSTER'],
+                context=rule.context,
+                log_source=str(payload.log_source),
+                log_type=payload.type,
+                rule_description=rule.rule_function.__doc__,
+                source_entity=payload.entity,
+                source_service=payload.service()
+            )
+
+            LOGGER.info('Rule [%s] triggered alert [%s] on log type [%s] from entity \'%s\' '
+                        'in service \'%s\'', rule.rule_name, alert.alert_id, payload.log_source,
+                        payload.entity, payload.service())
 
             alerts.append(alert)
 
@@ -547,7 +541,6 @@ class StreamRules(object):
 
         return all(record1[key] == record2[key] for key in record1_keys)
 
-
     def check_alerts_duplication(self, record, rule, alerts):
         """ Check if the record has been triggerred an alert by the same rule
 
@@ -558,11 +551,11 @@ class StreamRules(object):
         Args:
             record (dict): A parsed log with data.
             rule: Rule attributes.
-            alerts (list): A list of alerts which will be sent to alert processor.
+            alerts (list): A list of Alert instances which will be sent to alert processor.
+
         Returns:
             bool: Return True if both record and rule name exist in alerts list.
         """
-
-        return any(self._is_equal(alert['record'], record)
+        return any(self._is_equal(alert.record, record)
                    for alert in alerts
-                   if rule.rule_name == alert['rule_name'])
+                   if rule.rule_name == alert.rule_name)

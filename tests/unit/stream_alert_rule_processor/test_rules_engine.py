@@ -16,13 +16,13 @@ limitations under the License.
 # pylint: disable=no-self-use,protected-access
 from collections import namedtuple
 import json
+import os
 
 from mock import patch
 from nose.tools import (
     assert_equal,
     assert_false,
     assert_in,
-    assert_is_instance,
     assert_items_equal,
     assert_true,
 )
@@ -46,6 +46,7 @@ matcher = StreamRules.matcher()
 disable = StreamRules.disable()
 
 
+@patch.dict(os.environ, {'CLUSTER': ''})
 class TestStreamRules(object):
     """Test class for StreamRules"""
     @classmethod
@@ -69,60 +70,6 @@ class TestStreamRules(object):
         self.config = load_config('tests/unit/conf')
         self.config['global']['threat_intel']['enabled'] = False
         self.rules_engine = StreamRules(self.config)
-
-    def test_alert_format(self):
-        """Rules Engine - Alert Format"""
-        @rule(logs=['test_log_type_json_nested_with_data'],
-              outputs=['s3:sample_bucket'])
-        def alert_format_test(rec):  # pylint: disable=unused-variable
-            """'alert_format_test' docstring for testing rule_description"""
-            return rec['application'] == 'web-app'
-
-        kinesis_data = json.dumps({
-            'date': 'Dec 01 2016',
-            'unixtime': '1483139547',
-            'host': 'host1.web.prod.net',
-            'application': 'web-app',
-            'environment': 'prod',
-            'data': {
-                'category': 'web-server',
-                'type': '1',
-                'source': 'eu'
-            }
-        })
-
-        # prepare the payloads
-        service, entity = 'kinesis', 'test_kinesis_stream'
-        raw_record = make_kinesis_raw_record(entity, kinesis_data)
-        payload = load_and_classify_payload(self.config, service, entity, raw_record)
-
-        # process payloads
-        alerts, _ = self.rules_engine.process(payload)
-
-        alert_keys = {
-            'id',
-            'record',
-            'rule_name',
-            'rule_description',
-            'log_type',
-            'log_source',
-            'outputs',
-            'source_service',
-            'source_entity',
-            'context'
-        }
-        assert_items_equal(alerts[0].keys(), alert_keys)
-        assert_is_instance(alerts[0]['id'], str)
-        assert_is_instance(alerts[0]['record'], dict)
-        assert_is_instance(alerts[0]['outputs'], list)
-        assert_is_instance(alerts[0]['context'], dict)
-
-        # test alert fields
-        assert_is_instance(alerts[0]['rule_name'], str)
-        assert_is_instance(alerts[0]['rule_description'], str)
-        assert_is_instance(alerts[0]['outputs'], list)
-        assert_is_instance(alerts[0]['log_type'], str)
-        assert_is_instance(alerts[0]['log_source'], str)
 
     @patch('stream_alert.rule_processor.rules_engine.LOGGER.exception')
     def test_bad_rule(self, log_mock):
@@ -198,10 +145,10 @@ class TestStreamRules(object):
         # doing this because after kinesis_data is read in, types are casted per
         # the schema
         for alert in alerts:
-            if NORMALIZATION_KEY in alert['record'].keys():
-                alert['record'].remove(NORMALIZATION_KEY)
-            assert_items_equal(alert['record'].keys(), kinesis_data.keys())
-            assert_in(rule_outputs_map[alert['rule_name']][0], alert['outputs'])
+            if NORMALIZATION_KEY in alert.record.keys():
+                alert.record.remove(NORMALIZATION_KEY)
+            assert_items_equal(alert.record.keys(), kinesis_data.keys())
+            assert_in(rule_outputs_map[alert.rule_name][0], alert.outputs)
 
     def test_process_subkeys_nested_records(self):
         """Rules Engine - Required Subkeys with Nested Records"""
@@ -355,8 +302,8 @@ class TestStreamRules(object):
         assert_equal(len(alerts), 2)
 
         # alert tests
-        assert_equal(alerts[0]['rule_name'], 'web_server')
-        assert_equal(alerts[1]['rule_name'], 'data_location')
+        assert_equal(alerts[0].rule_name, 'web_server')
+        assert_equal(alerts[1].rule_name, 'data_location')
 
     def test_syslog_rule(self):
         """Rules Engine - Syslog Rule"""
@@ -383,9 +330,9 @@ class TestStreamRules(object):
 
         # alert tests
         assert_equal(len(alerts), 1)
-        assert_equal(alerts[0]['rule_name'], 'syslog_sudo')
-        assert_equal(alerts[0]['record']['host'], 'vagrant-ubuntu-trusty-64')
-        assert_equal(alerts[0]['log_type'], 'syslog')
+        assert_equal(alerts[0].rule_name, 'syslog_sudo')
+        assert_equal(alerts[0].record['host'], 'vagrant-ubuntu-trusty-64')
+        assert_equal(alerts[0].log_type, 'syslog')
 
     def test_csv_rule(self):
         """Rules Engine - CSV Rule"""
@@ -411,7 +358,7 @@ class TestStreamRules(object):
 
         # alert tests
         assert_equal(len(alerts), 1)
-        assert_equal(alerts[0]['rule_name'], 'nested_csv')
+        assert_equal(alerts[0].rule_name, 'nested_csv')
 
     def test_rule_disable(self):
         """Rules Engine - Disable Rule"""
@@ -482,7 +429,7 @@ class TestStreamRules(object):
         # alert tests
         assert_equal(len(alerts), 2)
 
-        rule_name_alerts = [x['rule_name'] for x in alerts]
+        rule_name_alerts = [x.rule_name for x in alerts]
         assert_items_equal(rule_name_alerts, ['gid_500', 'auditd_bin_cat'])
 
     def test_match_types(self):
@@ -554,7 +501,7 @@ class TestStreamRules(object):
         assert_equal(len(alerts), 2)
 
         # alert tests
-        assert_equal(alerts[0]['rule_name'], 'match_ipaddress')
+        assert_equal(alerts[0].rule_name, 'match_ipaddress')
 
     def test_update(self):
         """Rules Engine - Update results passed to update method"""
@@ -727,7 +674,7 @@ class TestStreamRules(object):
         rule_names = ['no_logs_has_datatypes',
                       'has_logs_no_datatypes',
                       'has_logs_datatypes']
-        assert_items_equal([alerts[i]['rule_name'] for i in range(3)], rule_names)
+        assert_items_equal([alerts[i].rule_name for i in range(3)], rule_names)
 
     def test_process_required_logs(self):
         """Rules Engine - Logs is required when no datatypes defined"""
@@ -810,8 +757,8 @@ class TestStreamRules(object):
 
         assert_equal(len(alerts), 3)
         for alert in alerts:
-            has_key_normalized_types = NORMALIZATION_KEY in alert['record']
-            if alert.get('rule_name') == 'test_02_rule_without_datatypes':
+            has_key_normalized_types = NORMALIZATION_KEY in alert.record
+            if alert.rule_name == 'test_02_rule_without_datatypes':
                 assert_equal(has_key_normalized_types, False)
             else:
                 assert_equal(has_key_normalized_types, True)
@@ -933,8 +880,8 @@ class TestStreamRules(object):
         # Pass normalized records to threat intel engine.
         alerts_from_threat_intel = new_rules_engine.threat_intel_match(normalized_records)
         assert_equal(len(alerts_from_threat_intel), 2)
-        assert_equal(alerts_from_threat_intel[0]['rule_name'], 'match_file_hash')
-        assert_equal(alerts_from_threat_intel[1]['rule_name'], 'match_source_domain')
+        assert_equal(alerts_from_threat_intel[0].rule_name, 'match_file_hash')
+        assert_equal(alerts_from_threat_intel[1].rule_name, 'match_source_domain')
 
     def test_rule_modify_context(self):
         """Rules Engine - Testing Context Modification"""
@@ -969,5 +916,5 @@ class TestStreamRules(object):
         alerts, _ = self.rules_engine.process(payload)
 
         # alert tests
-        assert_equal(alerts[0]['context']['assigned_user'], 'valid_user')
-        assert_equal(alerts[0]['context']['assigned_policy_id'], 'valid_policy_id')
+        assert_equal(alerts[0].context['assigned_user'], 'valid_user')
+        assert_equal(alerts[0].context['assigned_policy_id'], 'valid_policy_id')

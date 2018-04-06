@@ -489,13 +489,13 @@ class OutputDispatcher(object):
         """
 
     @abstractmethod
-    def dispatch(self, **kwargs):
-        """Send alerts to the given service. This base class just
-            logs an error if not implemented on the inheriting class
+    def dispatch(self, alert, descriptor):
+        """Send alerts to the given service.
 
         Args:
-            **kwargs: consists of any combination of the following items:
-                descriptor (str): Service descriptor (ie: slack channel, pd integration)
-                rule_name (str): Name of the triggered rule
-                alert (dict): Alert relevant to the triggered rule
+            alert (Alert): Alert instance which triggered a rule
+            descriptor (str): Output descriptor (e.g. slack channel, pd integration)
+
+        Returns:
+            bool: True if alert was sent successfully, False otherwise
         """

@@ -60,9 +60,7 @@ class TestJiraOutput(object):
         post_mock.return_value.status_code = 200
         post_mock.return_value.json.side_effect = [auth_resp, {'id': 5000}]
 
-        assert_true(self._dispatcher.dispatch(descriptor=self.DESCRIPTOR,
-                                              rule_name='rule_name',
-                                              alert=get_alert()))
+        assert_true(self._dispatcher.dispatch(get_alert(), self.DESCRIPTOR))
 
         log_mock.assert_called_with('Successfully sent alert to %s:%s',
                                     self.SERVICE, self.DESCRIPTOR)
@@ -81,9 +79,7 @@ class TestJiraOutput(object):
         post_mock.return_value.status_code = 200
         post_mock.return_value.json.side_effect = [auth_resp, {'id': 5000}]
 
-        assert_true(self._dispatcher.dispatch(descriptor=self.DESCRIPTOR,
-                                              rule_name='rule_name',
-                                              alert=get_alert()))
+        assert_true(self._dispatcher.dispatch(get_alert(), self.DESCRIPTOR))
 
         log_mock.assert_called_with('Successfully sent alert to %s:%s',
                                     self.SERVICE, self.DESCRIPTOR)
@@ -102,9 +98,7 @@ class TestJiraOutput(object):
         type(post_mock.return_value).status_code = PropertyMock(side_effect=[200, 200, 200])
         post_mock.return_value.json.side_effect = [auth_resp, {}, {'id': 5000}]
 
-        assert_true(self._dispatcher.dispatch(descriptor=self.DESCRIPTOR,
-                                              rule_name='rule_name',
-                                              alert=get_alert()))
+        assert_true(self._dispatcher.dispatch(get_alert(), self.DESCRIPTOR))
 
         log_mock.assert_called_with('Successfully sent alert to %s:%s',
                                     self.SERVICE, self.DESCRIPTOR)
@@ -157,9 +151,7 @@ class TestJiraOutput(object):
         post_mock.return_value.content = 'content'
         post_mock.return_value.json.return_value = dict()
 
-        assert_false(self._dispatcher.dispatch(descriptor=self.DESCRIPTOR,
-                                               rule_name='rule_name',
-                                               alert=get_alert()))
+        assert_false(self._dispatcher.dispatch(get_alert(), self.DESCRIPTOR))
 
         log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, self.DESCRIPTOR)
 
@@ -171,9 +163,7 @@ class TestJiraOutput(object):
         post_mock.return_value.status_code = 200
         post_mock.return_value.json.return_value = {}
 
-        assert_false(self._dispatcher.dispatch(descriptor=self.DESCRIPTOR,
-                                               rule_name='rule_name',
-                                               alert=get_alert()))
+        assert_false(self._dispatcher.dispatch(get_alert(), self.DESCRIPTOR))
 
         log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, self.DESCRIPTOR)
 
@@ -191,9 +181,7 @@ class TestJiraOutput(object):
         post_mock.return_value.content = 'some bad content'
         post_mock.return_value.json.side_effect = [auth_resp, dict()]
 
-        assert_false(self._dispatcher.dispatch(descriptor=self.DESCRIPTOR,
-                                               rule_name='rule_name',
-                                               alert=get_alert()))
+        assert_false(self._dispatcher.dispatch(get_alert(), self.DESCRIPTOR))
 
         log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, self.DESCRIPTOR)
 
@@ -211,9 +199,7 @@ class TestJiraOutput(object):
         post_mock.return_value.content = 'some bad content'
         post_mock.return_value.json.side_effect = [auth_resp, dict()]
 
-        assert_false(self._dispatcher.dispatch(descriptor=self.DESCRIPTOR,
-                                               rule_name='rule_name',
-                                               alert=get_alert()))
+        assert_false(self._dispatcher.dispatch(get_alert(), self.DESCRIPTOR))
 
         log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, self.DESCRIPTOR)
 
@@ -230,9 +216,7 @@ class TestJiraOutput(object):
         auth_resp = {'session': {'name': 'cookie_name', 'value': 'cookie_value'}}
         post_mock.return_value.json.side_effect = [auth_resp, {}]
 
-        assert_false(self._dispatcher.dispatch(descriptor=self.DESCRIPTOR,
-                                               rule_name='rule_name',
-                                               alert=get_alert()))
+        assert_false(self._dispatcher.dispatch(get_alert(), self.DESCRIPTOR))
 
         log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, self.DESCRIPTOR)
 
@@ -250,9 +234,7 @@ class TestJiraOutput(object):
         auth_resp = {'session': {'name': 'cookie_name', 'value': 'cookie_value'}}
         post_mock.return_value.json.side_effect = [auth_resp, {'id': 6000}]
 
-        assert_true(self._dispatcher.dispatch(descriptor=self.DESCRIPTOR,
-                                              rule_name='rule_name',
-                                              alert=get_alert()))
+        assert_true(self._dispatcher.dispatch(get_alert(), self.DESCRIPTOR))
 
         log_mock.assert_called_with('Encountered an error when adding alert to existing Jira '
                                     'issue %s. Attempting to create new Jira issue.', 5000)
@@ -261,9 +243,7 @@ class TestJiraOutput(object):
     @patch('logging.Logger.error')
     def test_dispatch_bad_descriptor(self, log_error_mock):
         """JiraOutput - Dispatch Failure, Bad Descriptor"""
-        assert_false(self._dispatcher.dispatch(descriptor='bad_descriptor',
-                                               rule_name='rule_name',
-                                               alert=get_alert()))
+        assert_false(self._dispatcher.dispatch(get_alert(), 'bad_descriptor'))
 
         log_error_mock.assert_called_with('Failed to send alert to %s:%s',
                                           self.SERVICE, 'bad_descriptor')

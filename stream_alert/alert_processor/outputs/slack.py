@@ -63,7 +63,7 @@ class SlackOutput(OutputDispatcher):
 
         Args:
             rule_name (str): The name of the rule that triggered the alert
-            alert: Alert relevant to the triggered rule
+            alert (Alert): Alert relevant to the triggered rule
 
         Returns:
             dict: message with attachments to send to Slack.
@@ -76,7 +76,7 @@ class SlackOutput(OutputDispatcher):
                     ...
         """
         # Convert the alert we have to a nicely formatted string for slack
-        alert_text = '\n'.join(cls._json_to_slack_mrkdwn(alert['record'], 0))
+        alert_text = '\n'.join(cls._json_to_slack_mrkdwn(alert.record, 0))
         # Slack requires escaping the characters: '&', '>' and '<' and cgi does just that
         alert_text = cgi.escape(alert_text)
         messages = []
@@ -110,7 +110,7 @@ class SlackOutput(OutputDispatcher):
             rule_desc = ''
             # Only print the rule description on the first attachment
             if index == 0:
-                rule_desc = alert['rule_description']
+                rule_desc = alert.rule_description
                 rule_desc = '*Rule Description:*\n{}\n'.format(rule_desc)
 
             # Add this attachemnt to the full message array of attachments
@@ -163,7 +163,7 @@ class SlackOutput(OutputDispatcher):
             list: strings that have been properly tabbed and formatted for printing
         """
         all_lines = []
-        for key, value in json_values.iteritems():
+        for key, value in sorted(json_values.iteritems()):
             if isinstance(value, (dict, list)) and value:
                 all_lines.append('{}*{}:*'.format(tab*indent_count, key))
                 all_lines.extend(cls._json_to_slack_mrkdwn(value, indent_count+1))
@@ -209,24 +209,25 @@ class SlackOutput(OutputDispatcher):
 
         return all_lines
 
-    def dispatch(self, **kwargs):
+    def dispatch(self, alert, descriptor):
         """Send alert text to Slack
 
         Args:
-            **kwargs: consists of any combination of the following items:
-                descriptor (str): Service descriptor (ie: slack channel, pd integration)
-                rule_name (str): Name of the triggered rule
-                alert (dict): Alert relevant to the triggered rule
-        """
-        creds = self._load_creds(kwargs['descriptor'])
-        if not creds:
-            return self._log_status(False, kwargs['descriptor'])
+            alert (Alert): Alert instance which triggered a rule
+            descriptor (str): Output descriptor
 
-        slack_message = self._format_message(kwargs['rule_name'], kwargs['alert'])
+        Returns:
+            bool: True if alert was sent successfully, False otherwise
+        """
+        creds = self._load_creds(descriptor)
+        if not creds:
+            return self._log_status(False, descriptor)
+
+        slack_message = self._format_message(alert.rule_description, alert)
 
         try:
             success = self._post_request_retry(creds['url'], slack_message)
         except OutputRequestFailure:
             success = False
 
-        return self._log_status(success, kwargs['descriptor'])
+        return self._log_status(success, descriptor)

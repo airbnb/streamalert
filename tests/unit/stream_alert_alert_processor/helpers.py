@@ -13,11 +13,12 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from collections import OrderedDict
 import os
 import random
 import shutil
 import tempfile
+
+from stream_alert.shared.alert import Alert
 
 
 def get_random_alert(key_count, rule_name, omit_rule_desc=False):
@@ -33,31 +34,29 @@ def get_random_alert(key_count, rule_name, omit_rule_desc=False):
         Anything over 4000 characters will result in multi-part slack messages:
         55*160 = 8800 & 8800/4000 = ceil(2.2) = 3 messages needed
     """
-    values = OrderedDict([('{:06}'.format(key),
-                           '{:0148X}'.format(random.randrange(16**128)))
-                          for key in range(key_count)])
-
     # This default value is set in the rule processor's rules_engine.py
     rule_description = 'No rule description provided' if omit_rule_desc else 'rule test description'
-    alert = {
-        'record': values,
-        'rule_name': rule_name,
-        'rule_description': rule_description
-    }
 
-    return alert
+    return Alert(
+        rule_name,
+        {
+            '{:06}'.format(key): '{:0148X}'.format(random.randrange(16**128))
+            for key in range(key_count)
+        },
+        {'slack:unit_test_channel'},
+        rule_description=rule_description
+    )
 
 
 def get_alert(context=None):
     """This function generates a sample alert for testing purposes
 
     Args:
-        index (int): test_index value (0 by default)
-        context(dict): context dictionary (None by default)
+        context (dict): Optional alert context
     """
-    return {
-        'id': '79192344-4a6d-4850-8d06-9c3fef1060a4',
-        'record': {
+    return Alert(
+        'cb_binarystore_file_added',
+        {
             'compressed_size': '9982',
             'timestamp': '1496947381.18',
             'node_id': '1',
@@ -67,17 +66,15 @@ def get_alert(context=None):
             'file_path': '/tmp/5DA/AD8/0F9AA55DA3BDE84B35656AD8911A22E1.zip',
             'md5': '0F9AA55DA3BDE84B35656AD8911A22E1'
         },
-        'log_source': 'carbonblack:binarystore.file.added',
-        'rule_name': 'cb_binarystore_file_added',
-        'outputs': [
-            'slack:unit_test_channel'
-        ],
-        'context': context or dict(),
-        'source_service': 's3',
-        'source_entity': 'corp-prefix.prod.cb.region',
-        'log_type': 'json',
-        'rule_description': 'Info about this rule and what actions to take'
-    }
+        {'slack:unit_test_channel'},
+        alert_id='79192344-4a6d-4850-8d06-9c3fef1060a4',
+        context=context,
+        log_source='carbonblack:binarystore.file.added',
+        log_type='json',
+        rule_description='Info about this rule and what actions to take',
+        source_entity='corp-prefix.prod.cb.region',
+        source_service='s3'
+    )
 
 
 def remove_temp_secrets():

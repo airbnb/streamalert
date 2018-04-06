@@ -129,31 +129,31 @@ class PhantomOutput(OutputDispatcher):
 
         return response and response.get('id')
 
-    def dispatch(self, **kwargs):
+    def dispatch(self, alert, descriptor):
         """Send alert to Phantom
 
         Args:
-            **kwargs: consists of any combination of the following items:
-                descriptor (str): Service descriptor (ie: slack channel, pd integration)
-                rule_name (str): Name of the triggered rule
-                alert (dict): Alert relevant to the triggered rule
+            alert (Alert): Alert instance which triggered a rule
+            descriptor (str): Output descriptor
+
+        Returns:
+            bool: True if alert was sent successfully, False otherwise
         """
-        creds = self._load_creds(kwargs['descriptor'])
+        creds = self._load_creds(descriptor)
         if not creds:
-            return self._log_status(False, kwargs['descriptor'])
+            return self._log_status(False, descriptor)
 
         headers = {"ph-auth-token": creds['ph_auth_token']}
-        rule_desc = kwargs['alert']['rule_description']
-        container_id = self._setup_container(kwargs['rule_name'], rule_desc,
-                                             creds['url'], headers)
+        container_id = self._setup_container(
+            alert.rule_name, alert.rule_description, creds['url'], headers)
 
         LOGGER.debug('sending alert to Phantom container with id %s', container_id)
 
         success = False
         if container_id:
-            artifact = {'cef': kwargs['alert']['record'],
+            artifact = {'cef': alert.record,
                         'container_id': container_id,
-                        'data': kwargs['alert'],
+                        'data': alert.output_dict(),
                         'name': 'Phantom Artifact',
                         'label': 'Alert'}
             artifact_url = os.path.join(creds['url'], self.ARTIFACT_ENDPOINT)
@@ -162,4 +162,4 @@ class PhantomOutput(OutputDispatcher):
             except OutputRequestFailure:
                 success = False
 
-        return self._log_status(success, kwargs['descriptor'])
+        return self._log_status(success, descriptor)

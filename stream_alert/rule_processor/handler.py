@@ -27,7 +27,7 @@ from stream_alert.shared.metrics import MetricLogger
 
 
 class StreamAlert(object):
-    """Wrapper class for handling StreamAlert classificaiton and processing"""
+    """Wrapper class for handling StreamAlert classification and processing"""
     config = {}
 
     def __init__(self, context):
@@ -46,7 +46,7 @@ class StreamAlert(object):
 
         # Instantiate the send_alerts here to handle sending the triggered alerts to the
         # alert processor
-        self.alert_forwarder = AlertForwarder(self.env)
+        self.alert_forwarder = AlertForwarder()
 
         # Instantiate a classifier that is used for this run
         self.classifier = StreamClassifier(config=self.config)
@@ -143,30 +143,27 @@ class StreamAlert(object):
 
         LOGGER.debug('%s alerts triggered', len(self._alerts))
 
-        MetricLogger.log_metric(
-            FUNCTION_NAME, MetricLogger.TRIGGERED_ALERTS, len(
-                self._alerts))
+        MetricLogger.log_metric(FUNCTION_NAME, MetricLogger.TRIGGERED_ALERTS, len(self._alerts))
 
         # Check if debugging logging is on before json dumping alerts since
         # this can be time consuming if there are a lot of alerts
         if self._alerts and LOGGER.isEnabledFor(LOG_LEVEL_DEBUG):
-            LOGGER.debug('Alerts:\n%s', json.dumps(self._alerts, indent=2))
+            LOGGER.debug(
+                'Alerts:\n%s', json.dumps([alert.output_dict() for alert in self._alerts],
+                                          indent=2, sort_keys=True))
 
         if self._firehose_client:
             self._firehose_client.send()
 
         return self._failed_record_count == 0
 
-    def get_alerts(self):
-        """Public method to return alerts from class. Useful for testing.
-
-        Returns:
-            list: list of alerts as dictionaries
-        """
+    @property
+    def alerts(self):
+        """Returns list of Alert instances (useful for testing)."""
         return self._alerts
 
     def _process_alerts(self, payload):
-        """Process records for alerts and send them to the correct places
+        """Run the record through the rules, saving any alerts and forwarding them to Dynamo.
 
         Args:
             payload (StreamPayload): StreamAlert payload object being processed

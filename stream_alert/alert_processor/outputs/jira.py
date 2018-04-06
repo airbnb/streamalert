@@ -25,6 +25,7 @@ from stream_alert.alert_processor.outputs.output_base import (
     StreamAlertOutput
 )
 
+
 @StreamAlertOutput
 class JiraOutput(OutputDispatcher):
     """JiraOutput handles all alert dispatching for Jira"""
@@ -271,29 +272,31 @@ class JiraOutput(OutputDispatcher):
         return '{}={}'.format(resp_dict['session']['name'],
                               resp_dict['session']['value'])
 
-    def dispatch(self, **kwargs):
+    def dispatch(self, alert, descriptor):
         """Send alert to Jira
 
         Args:
-            **kwargs: consists of any combination of the following items:
-                descriptor (str): Service descriptor (ie: slack channel, pd integration)
-                rule_name (str): Name of the triggered rule
-                alert (dict): Alert relevant to the triggered rule
+            alert (Alert): Alert instance which triggered a rule
+            descriptor (str): Output descriptor
+
+        Returns:
+            bool: True if alert was sent successfully, False otherwise
         """
-        creds = self._load_creds(kwargs['descriptor'])
+        creds = self._load_creds(descriptor)
         if not creds:
-            return self._log_status(False, kwargs['descriptor'])
+            return self._log_status(False, descriptor)
 
         issue_id = None
         comment_id = None
-        issue_summary = 'StreamAlert {}'.format(kwargs['rule_name'])
-        alert_body = '{{code:JSON}}{}{{code}}'.format(json.dumps(kwargs['alert']))
+        issue_summary = 'StreamAlert {}'.format(alert.rule_name)
+        alert_body = '{{code:JSON}}{}{{code}}'.format(
+            json.dumps(alert.output_dict(), sort_keys=True))
         self._base_url = creds['url']
         self._auth_cookie = self._establish_session(creds['username'], creds['password'])
 
         # Validate successful authentication
         if not self._auth_cookie:
-            return self._log_status(False, kwargs['descriptor'])
+            return self._log_status(False, descriptor)
 
         # If aggregation is enabled, attempt to add alert to an existing issue. If a
         # failure occurs in this block, creation of a new Jira issue will be attempted.
@@ -305,7 +308,7 @@ class JiraOutput(OutputDispatcher):
                     LOGGER.debug('Sending alert to an existing Jira issue %s with comment %s',
                                  issue_id,
                                  comment_id)
-                    return self._log_status(True, kwargs['descriptor'])
+                    return self._log_status(True, descriptor)
                 else:
                     LOGGER.error('Encountered an error when adding alert to existing '
                                  'Jira issue %s. Attempting to create new Jira issue.',
@@ -319,4 +322,4 @@ class JiraOutput(OutputDispatcher):
         if issue_id:
             LOGGER.debug('Sending alert to a new Jira issue %s', issue_id)
 
-        return self._log_status(issue_id or comment_id, kwargs['descriptor'])
+        return self._log_status(issue_id or comment_id, descriptor)
