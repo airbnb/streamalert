@@ -95,3 +95,65 @@ def test_get_rules_from_test_events():
             returned_rules = helpers.get_rules_from_test_events('fake/path')
 
         assert_items_equal(rules, returned_rules)
+
+
+def test_record_to_schema_no_recurse():
+    """CLI - Helpers - Record to Schema, Non-recursive"""
+
+    record = {
+        'dict': {
+            'boolean': False,
+            'integer': 123
+        },
+        'list': [],
+        'string': 'this is a string',
+        'float': 1234.56,
+        'integer': 1234,
+        'boolean': True
+    }
+
+    expected_result = {
+        'dict': {},
+        'list': [],
+        'string': 'string',
+        'float': 'float',
+        'integer': 'integer',
+        'boolean': 'boolean'
+    }
+
+    result = helpers.record_to_schema(record, recursive=False)
+
+    assert_equal(result, expected_result)
+
+
+def test_record_to_schema_recurse():
+    """CLI - Helpers - Record to Schema, Recursive"""
+
+    record = {
+        'dict': {
+            'boolean': False,
+            'integer': 123
+        },
+        'list': [],
+        'string': 'this is a string',
+        'float': 1234.56,
+        'integer': 1234,
+        'boolean': True
+    }
+
+    expected_result = {
+        'dict': {
+            'boolean': 'boolean',
+            'integer': 'integer'
+        },
+        'list': [],
+        'string': 'string',
+        'float': 'float',
+        'integer': 'integer',
+        'boolean': 'boolean'
+    }
+
+
+    result = helpers.record_to_schema(record, recursive=True)
+
+    assert_equal(result, expected_result)

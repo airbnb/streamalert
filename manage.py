@@ -1240,10 +1240,8 @@ Required Arguments:
 
     -b/--bucket                        The name of the S3 bucket to be used for Athena
                                          query results.
-    -n/--table-name                    The name of the Athena table to create
-    -t/--table-type                    The type of table being created. This must be one of:
-                                         alert
-                                         data
+    -n/--table-name                    The name of the Athena table to create. This must be a
+                                         type of log defined in logs.json
 
 Optional Arguments:
 
@@ -1256,8 +1254,7 @@ Examples:
 
     manage.py athena create-table \\
       --bucket s3.bucket.name \\
-      --table-name my_athena_table \\
-      --table-type data
+      --table-name my_athena_table
 
 """.format(version))
     athena_create_table_parser = athena_subparsers.add_parser(
@@ -1307,10 +1304,8 @@ Required Arguments:
 
     -b/--bucket                        The name of the S3 bucket to be used for Athena
                                          query results.
-    -n/--table-name                    The name of the Athena table to create
-    -t/--table-type                    The type of table being rebuilt. This can be one of:
-                                         alert
-                                         data
+    -n/--table-name                    The name of the Athena table to create. This must be
+                                         either a type of log defined in logs.json or 'alerts'
 
 Optional Arguments:
 
@@ -1320,8 +1315,7 @@ Examples:
 
     manage.py athena rebuild-partitions \\
       --bucket s3.bucket.name \\
-      --table-name my_athena_table \\
-      --table-type data
+      --table-name my_athena_table
 
 """.format(version))
     athena_rebuild_parser = athena_subparsers.add_parser(
@@ -1373,12 +1367,6 @@ def _add_default_athena_args(athena_parser):
 
     athena_parser.add_argument(
         '-b', '--bucket',
-        help=ARGPARSE_SUPPRESS,
-        required=True)
-
-    athena_parser.add_argument(
-        '-t', '--table-type',
-        choices=['data', 'alert'],
         help=ARGPARSE_SUPPRESS,
         required=True)
 
