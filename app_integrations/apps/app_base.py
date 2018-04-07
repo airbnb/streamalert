@@ -352,8 +352,13 @@ class AppIntegration(object):
                      self.type(), self._poll_count)
 
         # Perform the request and return the response as a dict
-        response = requests.post(full_url, headers=headers,
-                                 json=data, timeout=self._DEFAULT_REQUEST_TIMEOUT)
+        if headers.get('Content-Type') == 'application/json':
+            response = requests.post(full_url, headers=headers,
+                                     json=data, timeout=self._DEFAULT_REQUEST_TIMEOUT)
+        else:
+            # if content type is form-encoded, the param is 'data' rather than 'json'
+            response = requests.post(full_url, headers=headers,
+                                     data=data, timeout=self._DEFAULT_REQUEST_TIMEOUT)
 
         return self._check_http_response(response), response.json()
 
