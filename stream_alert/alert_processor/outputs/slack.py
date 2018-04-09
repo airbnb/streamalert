@@ -223,7 +223,7 @@ class SlackOutput(OutputDispatcher):
         if not creds:
             return self._log_status(False, descriptor)
 
-        slack_message = self._format_message(alert.rule_description, alert)
+        slack_message = self._format_message(alert.rule_name, alert)
 
         try:
             success = self._post_request_retry(creds['url'], slack_message)
