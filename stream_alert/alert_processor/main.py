@@ -20,6 +20,7 @@ import os
 from stream_alert.alert_processor import LOGGER
 from stream_alert.alert_processor.outputs.output_base import StreamAlertOutput
 from stream_alert.shared import backoff_handlers, NORMALIZATION_KEY, resources
+from stream_alert.shared.alert import Alert, AlertCreationError
 from stream_alert.shared.alert_table import AlertTable
 
 import backoff
@@ -90,7 +91,8 @@ class AlertProcessor(object):
 
         Args:
             alert (Alert): Alert to be sent
-            output (str):
+            output (str): Alert output, e.g. "aws-sns:topic-name"
+            dispatcher (OutputDispatcher): Dispatcher to receive the alert
 
         Returns:
             bool: True if the alert was sent successfully.
@@ -103,26 +105,22 @@ class AlertProcessor(object):
                              alert, output, repr(alert))
             return False
 
-    def _send_alerts(self, alert):
-        """Send an alert to each output.
+    def _send_to_outputs(self, alert):
+        """Send an alert to each remaining output.
 
         Args:
             alert (Alert): Alert to send
 
         Returns:
             dict: Maps output (str) to whether it sent successfully (bool)
-                Invalid outputs are excluded
         """
         result = {}
 
         for output in alert.remaining_outputs:
             dispatcher = self._create_dispatcher(output)
-            if not dispatcher:
-                continue  # Skip invalid output
+            result[output] = self._send_alert(alert, output, dispatcher) if dispatcher else False
 
-            result[output] = self._send_alert(alert, output, dispatcher)
-
-        alert.retry_outputs = set(output for output, success in result.items() if not success)
+        alert.outputs_sent = set(output for output, success in result.items() if success)
         return result
 
     @backoff.on_exception(backoff.expo, ClientError,
@@ -140,36 +138,47 @@ class AlertProcessor(object):
         if not output_results:
             return
 
-        if all(output_results.values()):
-            # All outputs sent successfully - delete Dynamo entry
-            self.alerts_table.delete_alert(alert.rule_name, alert.alert_id)
+        if all(output_results.values()) and not alert.merge_enabled:
+            # All outputs sent successfully and the alert will not be merged later - delete it now
+            self.alerts_table.delete_alerts([(alert.rule_name, alert.alert_id)])
         elif any(output_results.values()):
-            # At least one output succeeded - update the table with those outputs which need retried
-            self.alerts_table.update_retry_outputs(alert)
+            # At least one output succeeded - update table accordingly
+            self.alerts_table.update_sent_outputs(alert)
         # else: If all outputs failed, no table updates are necessary
 
-    def run(self, rule_name, alert_id):
+    def run(self, event):
         """Run the alert processor!
 
         Args:
-            rule_name (str): Name of the rule which triggered the alert
-            alert_id (str): Alert UUID
+            event (dict): Lambda invocation event containing at least the rule name and alert ID.
 
         Returns:
-            dict: Maps output (str) to whether it sent successfully (bool)
-                Invalid outputs are excluded
+            dict: Maps output (str) to whether it sent successfully (bool).
+                An empty dict is returned if the Alert was improperly formatted.
         """
-        alert = self.alerts_table.get_alert(rule_name, alert_id)
-        if not alert:
-            LOGGER.error('Alert %s does not exist', alert_id)
-            return
+        # Grab the alert record from Dynamo (if needed).
+        if set(event) == {'AlertID', 'RuleName'}:
+            LOGGER.info('Retrieving %s from alerts table', event)
+            alert_record = self.alerts_table.get_alert_record(event['RuleName'], event['AlertID'])
+            if not alert_record:
+                LOGGER.error('%s does not exist in the alerts table', event)
+                return {}
+        else:
+            alert_record = event
 
-        # Remove normalization key from the record
+        # Convert record to an Alert instance.
+        try:
+            alert = Alert.create_from_dynamo_record(alert_record)
+        except AlertCreationError:
+            LOGGER.exception('Invalid alert %s', event)
+            return {}
+
+        # Remove normalization key from the record.
         # TODO: Consider including this in at least some outputs, e.g. default Athena firehose
         if NORMALIZATION_KEY in alert.record:
             del alert.record[NORMALIZATION_KEY]
 
-        result = self._send_alerts(alert)
+        result = self._send_to_outputs(alert)
         self._update_table(alert, result)
         return result
 
@@ -178,16 +187,18 @@ def handler(event, context):
     """StreamAlert Alert Processor - entry point
 
     Args:
-        event (dict): Key to lookup in the alerts table: {
+        event (dict): Contains either the entire Dynamo record or just the rule name and alert ID {
             'AlertID': str,  # UUID
-            'RuleName': str  # Non-empty rule name
+            'RuleName': str,  # Non-empty rule name
+
+            # Other data present only if the full record was sent
+            'Record': ...,
+            ...
         }
         context (AWSLambdaContext): Lambda invocation context
 
     Returns:
-        dict: Maps output (str) to whether it sent successfully (bool)
-            This includes only valid outputs which the alert processor attempted to send.
+        dict: Maps output (str) to whether it sent successfully (bool).
+            An empty dict is returned if the alert was improperly formatted.
     """
-    event_name = event['RuleName']
-    alert_id = event['AlertID']
-    return AlertProcessor.get_instance(context.invoked_function_arn).run(event_name, alert_id)
+    return AlertProcessor.get_instance(context.invoked_function_arn).run(event)

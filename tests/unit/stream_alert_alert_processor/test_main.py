@@ -21,7 +21,6 @@ from nose.tools import (
     assert_false,
     assert_is_instance,
     assert_is_none,
-    assert_not_in,
     assert_true
 )
 
@@ -108,28 +107,28 @@ class TestAlertProcessor(object):
     @patch.object(AlertProcessor, '_send_alert', return_value=True)
     def test_send_alerts_success(self, mock_send_alert, mock_create_dispatcher):
         """Alert Processor - Send Alerts Success"""
-        result = self.processor._send_alerts(self.alert)
+        result = self.processor._send_to_outputs(self.alert)
         mock_create_dispatcher.assert_called_once()
         mock_send_alert.assert_called_once()
         assert_equal({'slack:unit-test-channel': True}, result)
-        assert_equal(set(), self.alert.retry_outputs)
+        assert_equal(self.alert.outputs, self.alert.outputs_sent)
 
     @patch.object(AlertProcessor, '_create_dispatcher')
     @patch.object(AlertProcessor, '_send_alert', return_value=False)
     def test_send_alerts_failure(self, mock_send_alert, mock_create_dispatcher):
         """Alert Processor - Send Alerts Failure"""
-        result = self.processor._send_alerts(self.alert)
+        result = self.processor._send_to_outputs(self.alert)
         mock_create_dispatcher.assert_called_once()
         mock_send_alert.assert_called_once()
         assert_equal({'slack:unit-test-channel': False}, result)
-        assert_equal({'slack:unit-test-channel'}, self.alert.retry_outputs)
+        assert_equal(set(), self.alert.outputs_sent)
 
     @patch.object(AlertProcessor, '_create_dispatcher', return_value=None)
     def test_send_alerts_skip_invalid_outputs(self, mock_create_dispatcher):
         """Alert Processor - Send Alerts With Invalid Outputs"""
-        result = self.processor._send_alerts(self.alert)
+        result = self.processor._send_to_outputs(self.alert)
         mock_create_dispatcher.assert_called_once()
-        assert_equal({}, result)
+        assert_equal({'slack:unit-test-channel': False}, result)
 
     def test_update_alerts_table_none(self):
         """Alert Processor - Update Alerts Table - Empty Results"""
@@ -142,36 +141,53 @@ class TestAlertProcessor(object):
     def test_update_alerts_table_delete(self):
         """Alert Processor - Update Alerts Table - Delete Item"""
         self.processor._update_table(self.alert, {'out1': True, 'out2': True})
-        self.processor.alerts_table.delete_alert.assert_called_once_with(
-            self.alert.rule_name, self.alert.alert_id)
+        self.processor.alerts_table.delete_alerts.assert_called_once_with(
+            [(self.alert.rule_name, self.alert.alert_id)])
 
     def test_update_alerts_table_update(self):
         """Alert Processor - Update Alerts Table - Update With Failed Outputs"""
         self.processor._update_table(self.alert, {'out1': True, 'out2': False, 'out3': False})
-        self.processor.alerts_table.update_retry_outputs.assert_called_once_with(self.alert)
+        self.processor.alerts_table.update_sent_outputs.assert_called_once_with(self.alert)
 
-    @patch.object(AlertProcessor, '_send_alerts', return_value={'slack:unit-test-channel': True})
+    @patch.object(AlertProcessor, '_send_to_outputs',
+                  return_value={'slack:unit-test-channel': True})
     @patch.object(AlertProcessor, '_update_table')
-    def test_run(self, mock_send_alerts, mock_update_table):
-        """Alert Processor - Run"""
-        self.processor.alerts_table.get_alert.return_value = self.alert
-        result = self.processor.run(self.alert.rule_name, self.alert.alert_id)
+    def test_run_full_event(self, mock_send_alerts, mock_update_table):
+        """Alert Processor - Run With the Full Alert Record"""
+        result = self.processor.run(self.alert.dynamo_record())
+        assert_equal({'slack:unit-test-channel': True}, result)
+        mock_send_alerts.assert_called_once()
+        mock_update_table.assert_called_once()
+
+    @patch('stream_alert.alert_processor.main.LOGGER')
+    def test_run_invalid_alert(self, mock_logger):
+        """Alert Processor - Run With an Invalid Alert"""
+        result = self.processor.run({'Record': 'Nonsense'})
+        assert_equal({}, result)
+        mock_logger.exception.called_once_with('Invalid alert %s', {'Record': 'Nonsense'})
+
+    @patch.object(AlertProcessor, '_send_to_outputs',
+                  return_value={'slack:unit-test-channel': True})
+    @patch.object(AlertProcessor, '_update_table')
+    def test_run_get_alert_from_dynamo(self, mock_send_alerts, mock_update_table):
+        """Alert Processor - Run With Just the Alert Key"""
+        self.processor.alerts_table.get_alert_record = MagicMock(
+            return_value=self.alert.dynamo_record())
+        result = self.processor.run(self.alert.dynamo_key)
         assert_equal({'slack:unit-test-channel': True}, result)
 
-        self.processor.alerts_table.get_alert.assert_called_once_with(
+        self.processor.alerts_table.get_alert_record.assert_called_once_with(
             self.alert.rule_name, self.alert.alert_id)
         mock_send_alerts.assert_called_once()
         mock_update_table.assert_called_once()
 
-        # Verify normalized key was removed
-        assert_not_in(NORMALIZATION_KEY, self.alert.record)
-
     @patch('stream_alert.alert_processor.main.LOGGER')
     def test_run_alert_does_not_exist(self, mock_logger):
         """Alert Processor - Run - Alert Does Not Exist"""
-        self.processor.alerts_table.get_alert.return_value = None
-        self.processor.run(self.alert.rule_name, self.alert.alert_id)
-        mock_logger.error.assert_called_once_with('Alert %s does not exist', self.alert.alert_id)
+        self.processor.alerts_table.get_alert_record = MagicMock(return_value=None)
+        self.processor.run(self.alert.dynamo_key)
+        mock_logger.error.assert_called_once_with(
+            '%s does not exist in the alerts table', self.alert.dynamo_key)
 
     @patch.dict(os.environ, {'ALERTS_TABLE': ALERTS_TABLE})
     @patch.object(AlertProcessor, 'run', return_value={'output': True})
@@ -179,6 +195,7 @@ class TestAlertProcessor(object):
         """Alert Processor - Lambda Handler"""
         context = MagicMock()
         context.invoked_function_arn = _ARN
-        result = handler({'AlertID': 'abc', 'RuleName': 'hello_world'}, context)
+        event = {'AlertID': 'abc', 'RuleName': 'hello_world'}
+        result = handler(event, context)
         assert_equal({'output': True}, result)
-        mock_run.assert_called_once_with('hello_world', 'abc')
+        mock_run.assert_called_once_with(event)
