@@ -14,38 +14,40 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import copy
+from datetime import datetime, timedelta
 import json
 
-from stream_alert.shared.alert import Alert
+from stream_alert.shared.alert import Alert, AlertCreationError
 
-from nose.tools import assert_equal, assert_is_instance, assert_not_in, assert_raises
+from nose.tools import (
+    assert_equal, assert_false, assert_is_instance, assert_not_in, assert_raises, assert_true)
 
 
 class TestAlert(object):
     """Test shared Alert class."""
-    # pylint: disable=no-self-use,protected-access
+    # pylint: disable=no-self-use,protected-access,too-many-public-methods
 
     @staticmethod
     def _basic_alert():
-        return Alert('test_rule', {'abc': 123}, {'aws-sns:test-output'})
+        return Alert('test_rule', {'abc': 123}, {'aws-firehose:alerts', 'aws-sns:test-output'})
 
     @staticmethod
     def _customized_alert():
         return Alert(
             'test_rule',
             {'abc': 123},
-            {'aws-sns:test-output', 'aws-s3:other-output'},
+            {'aws-firehose:alerts', 'aws-sns:test-output', 'aws-s3:other-output'},
             alert_id='abc-123',
             attempts=1,
             cluster='',
             context={'rule': 'context'},
-            created='now',
-            dispatched=10,
+            created=datetime.utcnow(),
+            dispatched=datetime.utcnow(),
             log_source='source',
             log_type='csv',
             merge_by_keys=['abc'],
-            merge_window_mins=5,
-            retry_outputs={'aws-sns:test-output'},
+            merge_window=timedelta(minutes=5),
+            outputs_sent={'aws-sns:test-output'},
             rule_description='A Test Rule',
             source_entity='entity',
             source_service='s3',
@@ -58,7 +60,7 @@ class TestAlert(object):
 
     def test_init_invalid_kwargs(self):
         """Alert Class - Init With Invalid Kwargs"""
-        assert_raises(TypeError, Alert, '', {}, set(), cluster='test', invalid='nonsense')
+        assert_raises(AlertCreationError, Alert, '', {}, set(), cluster='test', invalid='nonsense')
 
     def test_ordering(self):
         """Alert Class - Alerts Are Sorted By Creation"""
@@ -80,12 +82,23 @@ class TestAlert(object):
         alert = self._customized_alert()
         assert_equal({'RuleName': 'test_rule', 'AlertID': 'abc-123'}, alert.dynamo_key)
 
-    def test_remaining_outputs(self):
-        """Alert Class - Remaining Outputs"""
-        # If there are no failed outputs, just the output set
-        assert_equal({'aws-sns:test-output'}, self._basic_alert().remaining_outputs)
-        # If there are failed outputs, just those should be returned
-        assert_equal({'aws-sns:test-output'}, self._customized_alert().remaining_outputs)
+    def test_remaining_outputs_merge_disabled(self):
+        """Alert Class - Remaining Outputs - No Merge Information"""
+        alert = self._basic_alert()
+        assert_equal(alert.outputs, alert.remaining_outputs)
+
+        # One output sent successfully
+        alert.outputs_sent = {'aws-sns:test-output'}
+        assert_equal({'aws-firehose:alerts'}, alert.remaining_outputs)
+
+        # All outputs sent successfully
+        alert.outputs_sent = {'aws-firehose:alerts', 'aws-sns:test-output'}
+        assert_equal(set(), alert.remaining_outputs)
+
+    def test_remaining_outputs_merge_enabled(self):
+        """Alert Class - Remaining Outputs - With Merge Config"""
+        # Only the required firehose output shows as remaining
+        assert_equal({'aws-firehose:alerts'}, self._customized_alert().remaining_outputs)
 
     def test_dynamo_record(self):
         """Alert Class - Dynamo Record"""
@@ -96,7 +109,7 @@ class TestAlert(object):
             created='',
             log_source='',
             log_type='',
-            retry_outputs=set(),
+            outputs_sent=set(),
             rule_description='',
             source_entity='',
             source_service=''
@@ -113,6 +126,10 @@ class TestAlert(object):
         new_alert = Alert.create_from_dynamo_record(record)
         assert_equal(alert.dynamo_record(), new_alert.dynamo_record())
 
+    def test_create_from_dynamo_record_invalid(self):
+        """Alert Class - AlertCreationError raised for an invalid Dynamo Record"""
+        assert_raises(AlertCreationError, Alert.create_from_dynamo_record, {})
+
     def test_output_dict(self):
         """Alert Class - Output Dict"""
         alert = self._basic_alert()
@@ -121,6 +138,90 @@ class TestAlert(object):
         assert_is_instance(json.dumps(result), str)
         # Ensure result is Athena compatible (no None values)
         assert_not_in(None, result.values())
+
+    def test_can_merge_no_config(self):
+        """Alert Class - Can Merge - False if Either Alert Does Not Have Merge Config"""
+        assert_false(self._basic_alert().can_merge(self._customized_alert()))
+        assert_false(self._customized_alert().can_merge(self._basic_alert()))
+
+    def test_can_merge_too_far_apart(self):
+        """Alert Class - Can Merge - False if Outside Merge Window"""
+        alert1 = Alert(
+            '', {'key': True}, set(),
+            created=datetime(year=2000, month=1, day=1, minute=0),
+            merge_by_keys=['key'],
+            merge_window=timedelta(minutes=10)
+        )
+        alert2 = Alert(
+            '', {'key': True}, set(),
+            created=datetime(year=2000, month=1, day=1, minute=11),
+            merge_by_keys=['key'],
+            merge_window=timedelta(minutes=10)
+        )
+        assert_false(alert1.can_merge(alert2))
+        assert_false(alert2.can_merge(alert1))
+
+    def test_can_merge_different_merge_keys(self):
+        """Alert Class - Can Merge - False if Different Merge Keys Defined"""
+        alert1 = Alert(
+            '', {'key': True}, set(),
+            merge_by_keys=['key'],
+            merge_window=timedelta(minutes=10)
+        )
+        alert2 = Alert(
+            '', {'key': True}, set(),
+            merge_by_keys=['other'],
+            merge_window=timedelta(minutes=10)
+        )
+        assert_false(alert1.can_merge(alert2))
+        assert_false(alert2.can_merge(alert1))
+
+    def test_can_merge_key_not_common(self):
+        """Alert Class - Can Merge - Merge Key Not Present in Both Records"""
+        alert1 = Alert(
+            '', {'key': True}, set(),
+            merge_by_keys=['key'],
+            merge_window=timedelta(minutes=10)
+        )
+        alert2 = Alert(
+            '', {'other': True}, set(),
+            merge_by_keys=['key'],
+            merge_window=timedelta(minutes=10)
+        )
+        assert_false(alert1.can_merge(alert2))
+        assert_false(alert2.can_merge(alert1))
+
+    def test_can_merge_different_values(self):
+        """Alert Class - Can Merge - Merge Key has Different Values"""
+        alert1 = Alert(
+            '', {'key': True}, set(),
+            merge_by_keys=['key'],
+            merge_window=timedelta(minutes=10)
+        )
+        alert2 = Alert(
+            '', {'key': False}, set(),
+            merge_by_keys=['key'],
+            merge_window=timedelta(minutes=10)
+        )
+        assert_false(alert1.can_merge(alert2))
+        assert_false(alert2.can_merge(alert1))
+
+    def test_can_merge_true(self):
+        """Alert Class - Can Merge - True Result"""
+        alert1 = Alert(
+            '', {'key': True}, set(),
+            created=datetime(year=2000, month=1, day=1, minute=0),
+            merge_by_keys=['key'],
+            merge_window=timedelta(minutes=10)
+        )
+        alert2 = Alert(
+            '', {'key': True, 'other': True}, set(),
+            created=datetime(year=2000, month=1, day=1, minute=10),
+            merge_by_keys=['key'],
+            merge_window=timedelta(minutes=10)
+        )
+        assert_true(alert1.can_merge(alert2))
+        assert_true(alert2.can_merge(alert1))
 
     def test_compute_common_empty_record(self):
         """Alert Class - Compute Common - Empty Record List"""
@@ -318,9 +419,9 @@ class TestAlert(object):
         }
         alert1 = Alert(
             'RuleName', record1, {'aws-sns:topic'},
-            created='time1',
+            created=datetime(year=2000, month=1, day=1),
             merge_by_keys=['hostname', 'username'],
-            merge_window_mins=5
+            merge_window=timedelta(minutes=5)
         )
 
         # Second alert has slightly different record and different outputs
@@ -329,9 +430,9 @@ class TestAlert(object):
         record2['timestamp'] = 9999
         alert2 = Alert(
             'RuleName', record2, {'slack:channel'},
-            created='time2',
+            created=datetime(year=2000, month=1, day=2),
             merge_by_keys=['hostname', 'username'],
-            merge_window_mins=5
+            merge_window=timedelta(minutes=5)
         )
 
         merged = Alert.merge([alert1, alert2])
@@ -340,8 +441,8 @@ class TestAlert(object):
 
         expected_record = {
             'AlertCount': 2,
-            'AlertTimeFirst': 'time1',
-            'AlertTimeLast': 'time2',
+            'AlertTimeFirst': '2000-01-01T00:00:00.000000Z',
+            'AlertTimeLast': '2000-01-02T00:00:00.000000Z',
             'MergedBy': {
                 'hostname': 'my-computer-name',
                 'username': 'user'
@@ -354,15 +455,16 @@ class TestAlert(object):
                 'comms_ip': '1.2.3.4',
                 'path': '/usr/bin/whoami',
             },
-            'ValueDiffs': [
-                {
+            'ValueDiffs': {
+                '2000-01-01T00:00:00.000000Z': {
                     'streamalert:ioc': {'hello': 'world'},
                     'timestamp': 1234.5678
                 },
-                {
+                '2000-01-02T00:00:00.000000Z': {
                     'streamalert:ioc': {'goodbye': 'world'},
                     'timestamp': 9999
                 }
-            ]
+            }
+
         }
         assert_equal(expected_record, merged.record)
