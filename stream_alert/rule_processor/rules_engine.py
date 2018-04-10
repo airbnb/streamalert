@@ -15,6 +15,7 @@ limitations under the License.
 """
 from collections import namedtuple
 from copy import copy
+from datetime import timedelta
 import os
 
 from stream_alert.rule_processor import LOGGER
@@ -28,6 +29,8 @@ RuleAttributes = namedtuple('Rule', ['rule_name',
                                      'matchers',
                                      'datatypes',
                                      'logs',
+                                     'merge_by_keys',
+                                     'merge_window_mins',
                                      'outputs',
                                      'req_subkeys',
                                      'context'])
@@ -75,6 +78,8 @@ class StreamRules(object):
             """Rule decorator logic."""
             rule_name = rule.__name__
             logs = opts.get('logs')
+            merge_by_keys = opts.get('merge_by_keys')
+            merge_window_mins = opts.get('merge_window_mins') or 0
             outputs = opts.get('outputs')
             matchers = opts.get('matchers')
             datatypes = opts.get('datatypes')
@@ -95,6 +100,8 @@ class StreamRules(object):
                                                     matchers,
                                                     datatypes,
                                                     logs,
+                                                    merge_by_keys,
+                                                    merge_window_mins,
                                                     outputs,
                                                     req_subkeys,
                                                     context)
@@ -502,13 +509,14 @@ class StreamRules(object):
 
             # Combine the required alert outputs with the ones for this rule
             all_outputs = self._required_outputs_set.union(set(rule.outputs or []))
-
             alert = Alert(
                 rule.rule_name, record, all_outputs,
                 cluster=os.environ['CLUSTER'],
                 context=rule.context,
                 log_source=str(payload.log_source),
                 log_type=payload.type,
+                merge_by_keys=rule.merge_by_keys,
+                merge_window=timedelta(minutes=rule.merge_window_mins),
                 rule_description=rule.rule_function.__doc__,
                 source_entity=payload.entity,
                 source_service=payload.service()
