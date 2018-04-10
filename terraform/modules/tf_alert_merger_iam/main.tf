@@ -10,6 +10,8 @@ data "aws_iam_policy_document" "manage_alerts_table" {
     effect = "Allow"
 
     actions = [
+      "dynamodb:BatchWriteItem",
+      "dynamodb:DeleteItem",
       "dynamodb:Query",
       "dynamodb:Scan",
       "dynamodb:UpdateItem",
