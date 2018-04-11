@@ -83,12 +83,7 @@ class TestTerraformGenerate(object):
 
     def test_generate_main(self):
         """CLI - Terraform Generate Main"""
-        init = False
-
-        tf_main = generate.generate_main(
-            config=self.config,
-            init=init
-        )
+        tf_main = generate.generate_main(config=self.config, init=False)
 
         tf_main_expected = {
             'provider': {
@@ -215,10 +210,7 @@ class TestTerraformGenerate(object):
                 'cloudwatch'
             ]
         }
-        tf_main = generate.generate_main(
-            config=self.config,
-            init=False
-        )
+        tf_main = generate.generate_main(config=self.config, init=False)
 
         generated_modules = tf_main['module']
         expected_kinesis_modules = {

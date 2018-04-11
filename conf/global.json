@@ -22,7 +22,7 @@
     },
     "rules_table": {
       "read_capacity": 20,
-      "write_capacity": 2
+      "write_capacity": 5
     }
   },
   "terraform": {

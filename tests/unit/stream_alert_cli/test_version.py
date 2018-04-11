@@ -63,8 +63,8 @@ def test_publish_helper():
     assert_true(result)
 
 
-def test_version_helper():
-    """CLI - Publish Helper"""
+def test_publish():
+    """CLI - Publish"""
     package = AthenaPackage(basic_streamalert_config())
     publish = LambdaVersion(
         config=basic_streamalert_config(),
@@ -72,19 +72,18 @@ def test_version_helper():
     )
     current_version = 10
     fake_client = MockLambdaClient('athena', current_version=current_version)
-    result = publish._version_helper(
+    result = publish._publish(
         client=fake_client,
         function_name='test',
-        code_sha_256='12345',
-        date='2017-01-01'
+        code_sha_256='12345'
     )
 
     assert_equal(result, current_version + 1)
 
 
 @patch('stream_alert_cli.manage_lambda.version.LOGGER_CLI')
-def test_version_helper_error(mock_logging):
-    """CLI - Publish Helper Raises Error"""
+def test_publish_error(mock_logging):
+    """CLI - Publish, Raises Error"""
     package = AthenaPackage(basic_streamalert_config())
     publish = LambdaVersion(
         config=basic_streamalert_config(),
@@ -94,11 +93,10 @@ def test_version_helper_error(mock_logging):
     fake_client = MockLambdaClient('athena',
                                    current_version=current_version,
                                    throw_exception=True)
-    result = publish._version_helper(
+    result = publish._publish(
         client=fake_client,
         function_name='test',
-        code_sha_256='12345',
-        date='2017-01-01'
+        code_sha_256='12345'
     )
 
     assert_false(result)
