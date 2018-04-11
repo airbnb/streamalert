@@ -224,7 +224,8 @@ class StreamAlertAthenaClient(object):
 
         if query_execution_result != 'SUCCEEDED':
             LOGGER.error(
-                'The query %s returned %s, exiting!',
+                'The query %s with execution ID %s returned %s, exiting!',
+                query_execution_resp['QueryExecutionId'],
                 kwargs['query'],
                 query_execution_result)
             return False, {}
