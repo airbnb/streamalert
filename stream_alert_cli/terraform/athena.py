@@ -29,7 +29,7 @@ def generate_athena(config):
     athena_dict = infinitedict()
     athena_config = config['lambda']['athena_partition_refresh_config']
 
-    data_buckets = list(set(athena_config['buckets']))
+    data_buckets = athena_config['buckets'].keys()
 
     prefix = config['global']['account']['prefix']
     database = athena_config.get('database_name', '{}_streamalert'.format(prefix))

@@ -955,16 +955,6 @@ Example:
         action=UniqueSetAction,
         required=True)
 
-    # add the optional ability to test against a rule/set of rules
-    lambda_test_parser.add_argument(
-        '-r',
-        '--test-rules',
-        dest='rules',
-        nargs='+',
-        help=ARGPARSE_SUPPRESS,
-        action=UniqueSetAction,
-        default=set())
-
     test_filter_group = lambda_test_parser.add_mutually_exclusive_group(required=False)
 
     # add the optional ability to test against a rule/set of rules
@@ -972,6 +962,16 @@ Example:
         '-f',
         '--test-files',
         dest='files',
+        nargs='+',
+        help=ARGPARSE_SUPPRESS,
+        action=UniqueSetAction,
+        default=set())
+
+    # add the optional ability to test against a rule/set of rules
+    test_filter_group.add_argument(
+        '-r',
+        '--test-rules',
+        dest='rules',
         nargs='+',
         help=ARGPARSE_SUPPRESS,
         action=UniqueSetAction,
