@@ -26,7 +26,6 @@ from app_integrations.apps.app_base import StreamAlertApp, AppIntegration
 
 class SalesforceAppError(Exception):
     """Salesforce App Error class"""
-    pass
 
 @StreamAlertApp
 class SalesforceApp(AppIntegration):
@@ -89,9 +88,9 @@ class SalesforceApp(AppIntegration):
         return '%Y-%m-%dT%H:%M:%SZ'
 
     def _request_token(self):
-        """Request OAuth token frome salesforce
+        """Request OAuth token from salesforce
 
-        Meanwhile, it will also get instance url which will be used in futher
+        Meanwhile, it will also get instance url which will be used in future
         requests. The instance url identifies the Salesforce instance to which
         API calls should be sent.
 
@@ -105,16 +104,20 @@ class SalesforceApp(AppIntegration):
             'client_id': self._config.auth['client_id'],
             'client_secret': self._config.auth['client_secret'],
             'username': self._config.auth['username'],
-            'password': self._config.auth['password']+self._config.auth['security_token'],
+            'password': '{}{}'.format(
+                self._config.auth['password'], self._config.auth['security_token']
+            ),
             'response_type': 'code',
             'redirect_uri': self._SALESFORCE_TOKEN_URL
         }
-        success, response = self._make_post_request(self._SALESFORCE_TOKEN_URL, headers, data)
+        success, response = self._make_post_request(
+            self._SALESFORCE_TOKEN_URL, headers, data, False
+        )
 
-        if not success:
+        if not (success and response):
             return False
 
-        if not response or not response.get('access_token') or not response.get('instance_url'):
+        if not (response.get('access_token') and response.get('instance_url')):
             LOGGER.error('Response invalid generating headers for service \'%s\'',
                          self.type())
             return False
@@ -268,23 +271,21 @@ class SalesforceApp(AppIntegration):
             }
         ]
         """
-        # instance_url identifies the Salesforce instance to which API calls should be sent.
-        if not self._instance_url:
-            LOGGER.error('No instance url found for %s %s', self.service, self._type)
-            return
-
         url = '{}/services/data/'.format(self._instance_url)
         success, response = self._make_get_request(url, self._auth_headers)
 
-        if not success:
+        if not (success and response):
             LOGGER.error('Failed to fetch lastest api version')
             return
 
-        if response:
-            versions = [float(version.get('version', 0)) for version in response]
-            if versions:
-                self._latest_api_version = str(sorted(versions)[-1])
-                LOGGER.debug('Successfully obtain latest API version %s', self._latest_api_version)
+        versions = [float(version.get('version', 0)) for version in response]
+        if versions:
+            self._latest_api_version = str(sorted(versions)[-1])
+            LOGGER.debug('Successfully obtain latest API version %s', self._latest_api_version)
+            return True
+
+        LOGGER.error('Failed to obtain latest API version')
+        return False
 
     def _list_log_files(self):
         """Fetch a list of available log files by event types.
@@ -366,13 +367,15 @@ class SalesforceApp(AppIntegration):
                 return None
 
             data = StringIO.StringIO(resp)
-            reader = csv.DictReader(data)
-        except (SalesforceAppError, IOError, csv.Error):
+            if data:
+                # skip header line before passing to rule processor
+                data.next()
+                return data
+        except (SalesforceAppError, IOError):
             LOGGER.exception('Failed to get event logs')
             if data:
                 data.close()
             return None
-        return [log for log in reader]
 
     def _gather_logs(self):
         """Gather all log events. There are 32 event types.
@@ -380,12 +383,12 @@ class SalesforceApp(AppIntegration):
         Returns:
             list: A list of dictionaries contains log events.
         """
-        self._request_token()
-        self._get_latest_api_version()
+        if not (self._request_token() and self._get_latest_api_version()):
+            return
 
         log_files = self._list_log_files()
         if not log_files:
-            return None
+            return
 
         logs = []
         for log_file_path in log_files:

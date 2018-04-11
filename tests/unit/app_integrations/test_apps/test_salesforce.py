@@ -239,12 +239,6 @@ class TestSalesforceApp(object):
         assert_equal(self._app._latest_api_version, '26.0')
 
     @patch('app_integrations.apps.salesforce.LOGGER.error')
-    def test_get_latest_api_version_no_instance_url(self, mock_logger):
-        """SalesforceApp - Try to get latest API version with empty instance_url"""
-        assert_equal(self._app._get_latest_api_version(), None)
-        mock_logger.assert_called_once()
-
-    @patch('app_integrations.apps.salesforce.LOGGER.error')
     @patch('requests.get')
     def test_get_latest_api_version_request_failed(self, mock_get, mock_logger):
         """SalesforceApp - Failed to get latest api versions"""

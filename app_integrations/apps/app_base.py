@@ -341,7 +341,7 @@ class AppIntegration(object):
         return self._check_http_response(response), response.json()
 
     @safe_timeout
-    def _make_post_request(self, full_url, headers, data):
+    def _make_post_request(self, full_url, headers, data, is_json=True):
         """Method for returning the json loaded response for this POST request
 
         Returns:
@@ -352,7 +352,7 @@ class AppIntegration(object):
                      self.type(), self._poll_count)
 
         # Perform the request and return the response as a dict
-        if headers.get('Content-Type') == 'application/json':
+        if is_json:
             response = requests.post(full_url, headers=headers,
                                      json=data, timeout=self._DEFAULT_REQUEST_TIMEOUT)
         else:
