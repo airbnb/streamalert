@@ -182,18 +182,28 @@ class StreamAlertAthenaClient(object):
             str: The result of the Query.  This value can be SUCCEEDED, FAILED, or CANCELLED.
                 Reference https://bit.ly/2uuRtda.
         """
+        states_to_backoff = {'QUEUED', 'RUNNING'}
         @backoff.on_predicate(backoff.fibo,
-                              lambda status: status in ('QUEUED', 'RUNNING'),
+                              lambda state: state in states_to_backoff,
                               max_value=10,
                               jitter=backoff.full_jitter,
                               on_backoff=_backoff_handler,
                               on_success=_success_handler)
-        def _get_query_execution(query_execution_id):
-            return self.athena_client.get_query_execution(
+        def _check_status(query_execution_id):
+            resp = self.athena_client.get_query_execution(
                 QueryExecutionId=query_execution_id
-            )['QueryExecution']['Status']['State']
+            )
 
-        return _get_query_execution(query_execution_id)
+            state = resp['QueryExecution']['Status']['State']
+            in_progress = state in states_to_backoff
+
+            if not in_progress and state != 'SUCCEEDED':
+                reason = resp['QueryExecution']['Status']['StateChangeReason']
+                LOGGER.error('Bad state recveived: %s, reason: %s', state, reason)
+
+            return state
+
+        return _check_status(query_execution_id)
 
     def run_athena_query(self, **kwargs):
         """Helper function to run Athena queries
