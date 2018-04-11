@@ -173,7 +173,11 @@ def generate_main(**kwargs):
         'alerts_table_read_capacity': (
             config['global']['infrastructure']['alerts_table']['read_capacity']),
         'alerts_table_write_capacity': (
-            config['global']['infrastructure']['alerts_table']['write_capacity'])
+            config['global']['infrastructure']['alerts_table']['write_capacity']),
+        'rules_table_read_capacity': (
+            config['global']['infrastructure']['rules_table']['read_capacity']),
+        'rules_table_write_capacity': (
+            config['global']['infrastructure']['rules_table']['write_capacity'])
     }
 
     # KMS Key and Alias creation
