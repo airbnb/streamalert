@@ -273,9 +273,10 @@ def create_table(table, bucket, config, schema_override=None):
         return
 
     # Update the CLI config
-    config['lambda']['athena_partition_refresh_config'] \
-          ['buckets'][bucket] = sanitized_table_name
-    config.write()
+    if (table != 'alerts' and
+            bucket not in config['lambda']['athena_partition_refresh_config']['buckets']):
+        config['lambda']['athena_partition_refresh_config']['buckets'][bucket] = 'data'
+        config.write()
 
     LOGGER_CLI.info('The %s table was successfully created!', sanitized_table_name)
 
