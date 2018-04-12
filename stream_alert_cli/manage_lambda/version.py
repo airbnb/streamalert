@@ -32,46 +32,15 @@ class LambdaVersion(object):
     All StreamAlert setups should start with "$LATEST".
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, config, package):
         """Initialize the version publishing
 
         Keyword Args:
             config (CLIConfig): Loaded StreamAlert CLI Config
             package (LambdaPackage): The created Lambda Package
         """
-        self.config = kwargs['config']
-        self.package = kwargs['package']
-
-    @staticmethod
-    def _version_helper(**kwargs):
-        """Make the API call to publish the Lambda function
-
-        Keyword Arguments:
-            client (boto3.client): Lambda boto3 client
-            function_name (str): Lambda function name to publish
-            code_sha_256 (str): The SHA256 of the current $LATEST package
-            date (datetime): Current time
-
-        Returns:
-            int: Version OR False if the publish fails
-        """
-        client = kwargs.get('client')
-        if not client:
-            LOGGER_CLI.error('No AWS client provided')
-            return False
-
-        try:
-            version = client.publish_version(
-                FunctionName=kwargs['function_name'],
-                CodeSha256=kwargs['code_sha_256'],
-                Description='Publish Lambda {} on {}'.format(kwargs['function_name'],
-                                                             kwargs['date'])
-            )['Version']
-        except ClientError as err:
-            LOGGER_CLI.error(err)
-            return False
-
-        return int(version)
+        self.config = config
+        self.package = package
 
     def _publish_helper(self, cluster=None):
         """Handle clustered or single Lambda function publishing
@@ -140,17 +109,22 @@ class LambdaVersion(object):
 
         return True
 
-    def _publish(self, client, function_name, code_sha_256):
+    @staticmethod
+    def _publish(client, function_name, code_sha_256):
         """Publish the function"""
         date = datetime.utcnow().strftime("%Y%m%d_T%H%M%S")
         LOGGER_CLI.debug('Publishing %s', function_name)
-        new_version = self._version_helper(
-            client=client,
-            function_name=function_name,
-            code_sha_256=code_sha_256,
-            date=date)
+        try:
+            version = client.publish_version(
+                FunctionName=function_name,
+                CodeSha256=code_sha_256,
+                Description='Publish Lambda {} on {}'.format(function_name, date)
+            )['Version']
+        except ClientError as err:
+            LOGGER_CLI.error(err)
+            return
 
-        return new_version
+        return int(version)
 
     def publish_function(self, **kwargs):
         """Main Publish Function method

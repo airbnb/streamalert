@@ -48,7 +48,7 @@ RESTRICTED_CLUSTER_NAMES = ('main', 'athena')
 TERRAFORM_VERSIONS = {'application': '~> 0.10.6', 'provider': {'aws': '~> 1.11.0'}}
 
 
-def generate_s3_bucket(**kwargs):
+def generate_s3_bucket(bucket, logging, **kwargs):
     """Generate an S3 Bucket dict
 
     Keyword Args:
@@ -62,34 +62,26 @@ def generate_s3_bucket(**kwargs):
     Returns:
         dict: S3 bucket Terraform dict to be used in clusters/main.tf.json
     """
-    bucket_name = kwargs.get('bucket')
-    acl = kwargs.get('acl', 'private')
-    logging_bucket = kwargs.get('logging')
-    logging = {
-        'target_bucket': logging_bucket,
-        'target_prefix': '{}/'.format(bucket_name)
-    }
-    force_destroy = kwargs.get('force_destroy', True)
-    versioning = kwargs.get('versioning', True)
-    lifecycle_rule = kwargs.get('lifecycle_rule')
-
-    bucket = {
-        'bucket': bucket_name,
-        'acl': acl,
-        'force_destroy': force_destroy,
+    s3_bucket = {
+        'bucket': bucket,
+        'acl': kwargs.get('acl', 'private'),
+        'force_destroy': kwargs.get('force_destroy', True),
         'versioning': {
-            'enabled': versioning
+            'enabled': kwargs.get('versioning', True)
         },
-        'logging': logging
+        'logging': {
+            'target_bucket': logging,
+            'target_prefix': '{}/'.format(bucket)
+        }
     }
-
+    lifecycle_rule = kwargs.get('lifecycle_rule')
     if lifecycle_rule:
-        bucket['lifecycle_rule'] = lifecycle_rule
+        s3_bucket['lifecycle_rule'] = lifecycle_rule
 
-    return bucket
+    return s3_bucket
 
 
-def generate_main(**kwargs):
+def generate_main(config, init=False):
     """Generate the main.tf.json Terraform dict
 
     Keyword Args:
@@ -99,8 +91,6 @@ def generate_main(**kwargs):
     Returns:
         dict: main.tf.json Terraform dict
     """
-    init = kwargs.get('init')
-    config = kwargs['config']
     main_dict = infinitedict()
 
     # Configure provider along with the minimum version
@@ -151,8 +141,8 @@ def generate_main(**kwargs):
         ),
         'logging_bucket': generate_s3_bucket(
             bucket=logging_bucket,
-            acl='log-delivery-write',
             logging=logging_bucket,
+            acl='log-delivery-write',
             lifecycle_rule=logging_bucket_lifecycle
         ),
         'streamalerts': generate_s3_bucket(
@@ -173,7 +163,11 @@ def generate_main(**kwargs):
         'alerts_table_read_capacity': (
             config['global']['infrastructure']['alerts_table']['read_capacity']),
         'alerts_table_write_capacity': (
-            config['global']['infrastructure']['alerts_table']['write_capacity'])
+            config['global']['infrastructure']['alerts_table']['write_capacity']),
+        'rules_table_read_capacity': (
+            config['global']['infrastructure']['rules_table']['read_capacity']),
+        'rules_table_write_capacity': (
+            config['global']['infrastructure']['rules_table']['write_capacity'])
     }
 
     # KMS Key and Alias creation
@@ -249,7 +243,7 @@ def generate_outputs(cluster_name, cluster_dict, config):
     return True
 
 
-def generate_cluster(**kwargs):
+def generate_cluster(config, cluster_name):
     """Generate a StreamAlert cluster file.
 
     Keyword Args:
@@ -259,9 +253,6 @@ def generate_cluster(**kwargs):
     Returns:
         dict: generated Terraform cluster dictionary
     """
-    config = kwargs.get('config')
-    cluster_name = kwargs.get('cluster_name')
-
     modules = config['clusters'][cluster_name]['modules']
     cluster_dict = infinitedict()
 
@@ -337,7 +328,7 @@ def terraform_generate(config, init=False):
     LOGGER_CLI.debug('Generating cluster file: main.tf.json')
     with open('terraform/main.tf.json', 'w') as tf_file:
         json.dump(
-            generate_main(init=init, config=config),
+            generate_main(config, init=init),
             tf_file,
             indent=2,
             sort_keys=True
@@ -354,7 +345,7 @@ def terraform_generate(config, init=False):
                 'Rename cluster "main" or "athena" to something else!')
 
         LOGGER_CLI.debug('Generating cluster file: %s.tf.json', cluster)
-        cluster_dict = generate_cluster(cluster_name=cluster, config=config)
+        cluster_dict = generate_cluster(config=config, cluster_name=cluster)
         if not cluster_dict:
             LOGGER_CLI.error(
                 'An error was generated while creating the %s cluster', cluster)
@@ -372,7 +363,7 @@ def terraform_generate(config, init=False):
     generate_global_lambda_settings(
         config,
         config_name='athena_partition_refresh_config',
-        config_generate_func=generate_athena,
+        generate_func=generate_athena,
         tf_tmp_file='terraform/athena.tf.json',
         message='Removing old Athena Terraform file'
     )
@@ -381,7 +372,7 @@ def terraform_generate(config, init=False):
     generate_global_lambda_settings(
         config,
         config_name='threat_intel_downloader_config',
-        config_generate_func=generate_threat_intel_downloader,
+        generate_func=generate_threat_intel_downloader,
         tf_tmp_file='terraform/ti_downloader.tf.json',
         message='Removing old Threat Intel Downloader Terraform file'
     )
@@ -390,7 +381,7 @@ def terraform_generate(config, init=False):
     generate_global_lambda_settings(
         config,
         config_name='alert_processor_config',
-        config_generate_func=generate_alert_processor,
+        generate_func=generate_alert_processor,
         tf_tmp_file='terraform/alert_processor.tf.json',
         message='Removing old Alert Processor Terraform file'
     )
@@ -399,7 +390,7 @@ def terraform_generate(config, init=False):
     generate_global_lambda_settings(
         config,
         config_name='alert_merger_config',
-        config_generate_func=generate_alert_merger,
+        generate_func=generate_alert_merger,
         tf_tmp_file='terraform/alert_merger.tf.json',
         message='Removing old Alert Merger Terraform file'
     )
@@ -407,7 +398,7 @@ def terraform_generate(config, init=False):
     return True
 
 
-def generate_global_lambda_settings(config, **kwargs):
+def generate_global_lambda_settings(config, config_name, generate_func, tf_tmp_file, message):
     """Generate settings for global Lambda functions
 
     Args:
@@ -419,15 +410,16 @@ def generate_global_lambda_settings(config, **kwargs):
         tf_tmp_file (str): filename of terraform file, generated by CLI.
         message (str): Message will be logged by LOGGER.
     """
-    config_name = kwargs.get('config_name')
-    tf_tmp_file = kwargs.get('tf_tmp_file')
-    if config_name and config['lambda'].get(config_name) and tf_tmp_file:
-        if config['lambda'][config_name].get('enabled', True):
-            generated_config = kwargs.get('config_generate_func')(config=config)
-            if generated_config:
-                with open(tf_tmp_file, 'w') as tf_file:
-                    json.dump(generated_config, tf_file, indent=2, sort_keys=True)
-        else:
-            if os.path.isfile(tf_tmp_file):
-                LOGGER_CLI.info(kwargs.get('message'))
-                os.remove(tf_tmp_file)
+    if not config['lambda'].get(config_name):
+        LOGGER_CLI.error('Config for \'%s\' not in lambda.json', config_name)
+        return
+
+    if config['lambda'][config_name].get('enabled', True):
+        generated_config = generate_func(config=config)
+        if generated_config:
+            with open(tf_tmp_file, 'w') as tf_file:
+                json.dump(generated_config, tf_file, indent=2, sort_keys=True)
+    else:
+        if os.path.isfile(tf_tmp_file):
+            LOGGER_CLI.info(message)
+            os.remove(tf_tmp_file)
