@@ -26,6 +26,7 @@ from tests.unit.app_integrations.test_helpers import (
 )
 
 
+@patch.object(AppConfig, 'MAX_SAVE_TRIES', 1)
 class TestAppIntegrationConfig(object):
     """Test class for AppIntegrationConfig"""
 

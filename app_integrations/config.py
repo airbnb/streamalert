@@ -19,6 +19,7 @@ import json
 import re
 import time
 
+import backoff
 import boto3
 from botocore.exceptions import ClientError
 
@@ -30,8 +31,10 @@ AWS_RATE_RE = re.compile(r'^rate\(((1) (minute|hour|day)|'
                          r'([2-9]+|[1-9]\d+) (minutes|hours|days))\)$')
 AWS_RATE_HELPER = 'http://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html'
 
+
 class AppConfig(dict):
     """Centralized config for handling configuration loading/parsing"""
+    MAX_SAVE_TRIES = 5
     SSM_CLIENT = None
 
     BASE_CONFIG_SUFFIX = 'config'
@@ -72,7 +75,14 @@ class AppConfig(dict):
 
         # If this is a key related to the state config, save the state in parameter store
         if key in self._state_keys() and current_value != value:
-            self._save_state()
+            state_name = '_'.join([self['function_name'], self.STATE_CONFIG_SUFFIX])
+            param_value = json.dumps({key: self[key] for key in self._state_keys()})
+            try:
+                self._save_state(state_name, param_value)
+            except ClientError as err:
+                raise AppIntegrationStateError('Could not save current state to parameter '
+                                               'store with name \'{}\'. Response: '
+                                               '{}'.format(state_name, err.response))
 
     @staticmethod
     def remaining_ms():
@@ -292,26 +302,25 @@ class AppConfig(dict):
 
         return self.last_timestamp
 
-    def _save_state(self):
-        """Function to save the value of this dictionary to parameter store
+    def _save_state(self, param_name, param_value):
+        @backoff.on_exception(backoff.expo,
+                              ClientError,
+                              max_tries=self.MAX_SAVE_TRIES,
+                              jitter=backoff.full_jitter)
+        def save():
+            """Function to save the value of this dictionary to parameter store
 
-        Raises:
-            AppIntegrationStateError: If state parameter cannot be saved, this is raised
-        """
-        state_name = '_'.join([self['function_name'], self.STATE_CONFIG_SUFFIX])
-        param_value = json.dumps({key: self[key] for key in self._state_keys()})
-        try:
-            AppConfig.SSM_CLIENT.put_parameter(
-                Name=state_name,
+            Raises:
+                AppIntegrationStateError: If state parameter cannot be saved, this is raised
+            """
+            self.SSM_CLIENT.put_parameter(
+                Name=param_name,
                 Description=self._STATE_DESCRIPTION.format(self['type'], self['app_name']),
                 Value=param_value,
                 Type='SecureString',
                 Overwrite=True
             )
-        except ClientError as err:
-            raise AppIntegrationStateError('Could not save current state to parameter '
-                                           'store with name \'{}\'. Response: '
-                                           '{}'.format(state_name, err.response))
+        return save()
 
     def _validate_config(self):
         """Validate the top level of the config to make sure it has all the right keys
