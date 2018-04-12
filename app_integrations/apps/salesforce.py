@@ -13,7 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-import StringIO
 import re
 
 import backoff
@@ -329,13 +328,12 @@ class SalesforceApp(AppIntegration):
             ]
         }
         """
-        event_type_format = 'AND+EventType+=+\'{}\''.format(self._type)
         url = self._SALESFORCE_QUERY_URL.format(
             instance_url=self._instance_url,
             api_version=self._latest_api_version,
             query=self._SALESFORCE_QUERY_FILTERS,
             start_time=self._SALESFORCE_CREATE_AFTER.format(self._last_timestamp),
-            event_type=event_type_format
+            event_type='AND+EventType+=+\'{}\''.format(self._type())
         )
         success, response = self._make_get_request(url, self._auth_headers)
         if not success:
@@ -360,23 +358,18 @@ class SalesforceApp(AppIntegration):
             list: a list of event logs or None.
         """
         url = '{}/{}'.format(self._instance_url, log_file_path)
-        data = None
         try:
             success, resp = self._make_get_request(url, self._auth_headers)
-            if not success:
-                LOGGER.error('Failed to get event logs')
-                return
-
-            data = StringIO.StringIO(resp)
-            if data:
-                # skip header line before passing to rule processor
-                data.next()
-                return data.readlines()
-        except (SalesforceAppError, IOError):
+        except SalesforceAppError:
             LOGGER.exception('Failed to get event logs')
-            if data:
-                data.close()
             return
+
+        if not (success and resp):
+            LOGGER.error('Failed to get event logs')
+            return
+
+        # skip header line before passing to rule processor
+        return resp.splitlines()[1:]
 
     def _gather_logs(self):
         """Gather all log events. There are 32 event types.
@@ -408,7 +401,7 @@ class SalesforceConsole(SalesforceApp):
 
     @classmethod
     def _type(cls):
-        return 'Console'
+        return 'console'
 
 @StreamAlertApp
 class SalesforceLogin(SalesforceApp):
@@ -419,7 +412,7 @@ class SalesforceLogin(SalesforceApp):
 
     @classmethod
     def _type(cls):
-        return 'Login'
+        return 'login'
 
 @StreamAlertApp
 class SalesforceLoginAs(SalesforceApp):
@@ -431,7 +424,7 @@ class SalesforceLoginAs(SalesforceApp):
 
     @classmethod
     def _type(cls):
-        return 'LoginAs'
+        return 'loginas'
 
 @StreamAlertApp
 class SalesforceReport(SalesforceApp):
@@ -442,7 +435,7 @@ class SalesforceReport(SalesforceApp):
 
     @classmethod
     def _type(cls):
-        return 'Report'
+        return 'report'
 
 @StreamAlertApp
 class SalesforceReportExport(SalesforceApp):
@@ -453,4 +446,4 @@ class SalesforceReportExport(SalesforceApp):
 
     @classmethod
     def _type(cls):
-        return 'ReportExport'
+        return 'reportexport'

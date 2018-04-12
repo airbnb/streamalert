@@ -55,11 +55,11 @@ def test_get_all_apps():
         'gsuite_saml',
         'gsuite_token',
         'onelogin_events',
-        'salesforce_Console',
-        'salesforce_Login',
-        'salesforce_LoginAs',
-        'salesforce_Report',
-        'salesforce_ReportExport'
+        'salesforce_console',
+        'salesforce_login',
+        'salesforce_loginas',
+        'salesforce_report',
+        'salesforce_reportexport'
     }
 
     apps = StreamAlertApp.get_all_apps()

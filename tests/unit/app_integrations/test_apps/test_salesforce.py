@@ -283,32 +283,12 @@ class TestSalesforceApp(object):
             text='key1,key2\nvalue1a,value2a\nvalue1b,value2b'
         )
         assert_equal(self._app._fetch_event_logs('LOG_FILE_PATH'),
-                     ['value1a,value2a\n', 'value1b,value2b'])
+                     ['value1a,value2a', 'value1b,value2b'])
 
-    @patch('app_integrations.apps.salesforce.StringIO.StringIO', Mock(side_effect=IOError))
     @patch('app_integrations.apps.salesforce.LOGGER.error')
-    @patch('requests.get')
-    def test_fetch_event_logs_failed(self, mock_get, mock_logger):
-        """SalesforceApp - Fetch event logs while IOError raised"""
-        mock_get.return_value = Mock(
-            status_code=200,
-            json=Mock(side_effect=ValueError),
-            text='key1,key2\nvalue1a,value2a\nvalue1b,value2b'
-        )
-        assert_equal(self._app._fetch_event_logs('LOG_FILE_PATH'), None)
-        mock_logger.assert_called_with('Failed to get event logs', exc_info=1)
-
-    @patch('app_integrations.apps.salesforce.StringIO.StringIO.readlines',
-           Mock(side_effect=IOError))
-    @patch('app_integrations.apps.salesforce.LOGGER.error')
-    @patch('requests.get')
-    def test_fetch_event_logs_readlines_failed(self, mock_get, mock_logger):
-        """SalesforceApp - Fetch event logs while IOError raised"""
-        mock_get.return_value = Mock(
-            status_code=200,
-            json=Mock(side_effect=ValueError),
-            text='key1,key2\nvalue1a,value2a\nvalue1b,value2b'
-        )
+    @patch('requests.get', Mock(side_effect=SalesforceAppError))
+    def test_fetch_event_logs_exception(self, mock_logger):
+        """SalesforceApp - Fetch event logs while SalesforceAppError raised"""
         assert_equal(self._app._fetch_event_logs('LOG_FILE_PATH'), None)
         mock_logger.assert_called_with('Failed to get event logs', exc_info=1)
 
