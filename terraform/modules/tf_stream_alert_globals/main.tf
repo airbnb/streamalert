@@ -27,3 +27,20 @@ resource "aws_dynamodb_table" "alerts_table" {
     Name = "StreamAlert"
   }
 }
+
+// DynamoDB table to store some rule information
+resource "aws_dynamodb_table" "rules_table" {
+  name           = "${var.prefix}_streamalert_rules"
+  read_capacity  = "${var.rules_table_read_capacity}"
+  write_capacity = "${var.rules_table_write_capacity}"
+  hash_key       = "RuleName"
+
+  attribute {
+    name = "RuleName"
+    type = "S"
+  }
+
+  tags {
+    Name = "StreamAlert"
+  }
+}

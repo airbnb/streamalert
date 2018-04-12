@@ -12,6 +12,10 @@
     },
     "monitoring": {
       "create_sns_topic": true
+    },
+    "rules_table": {
+      "read_capacity": 5,
+      "write_capacity": 5
     }
   },
   "terraform": {
