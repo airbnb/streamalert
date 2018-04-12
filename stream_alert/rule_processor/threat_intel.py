@@ -42,7 +42,7 @@ class StreamIoc(object):
     def __init__(self, **kwargs):
         """Initialize StreamIoc instance and store useful information
 
-        Keyword arguments:
+        Keyword Args:
             value (str): IOC value
             ioc_type (str): Type of IOC, 'domain', 'ip' or 'md5'
             sub_type (str): sub type of IOC.
