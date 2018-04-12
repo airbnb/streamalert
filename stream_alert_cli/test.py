@@ -35,7 +35,7 @@ import stream_alert.rule_processor.main  # pylint: disable=unused-import
 from stream_alert.rule_processor.parsers import get_parser
 from stream_alert.rule_processor.payload import load_stream_payload
 from stream_alert.rule_processor.rules_engine import StreamRules
-from stream_alert.shared import resources
+from stream_alert.shared import resources, stats
 from stream_alert_cli import helpers
 from stream_alert_cli.logger import (
     get_log_memory_handler,
@@ -1029,9 +1029,6 @@ def stream_alert_test(options, config):
                        if run_options.get('processor') else
                        run_options.get('command') == 'live-test')
 
-        rule_proc_tester = RuleProcessorTester(context, config, test_rules)
-        alert_proc_tester = AlertProcessorTester(config, context)
-
         validate_schemas = options.command == 'validate-schemas'
 
         rules_filter = run_options.get('rules', {})
@@ -1040,16 +1037,21 @@ def stream_alert_test(options, config):
         # Run the rule processor for all rules or designated rule set
         if context.mocked:
             helpers.setup_mock_alerts_table(alerts_table)
-        for alerts in rule_proc_tester.test_processor(rules_filter,
-                                                      files_filter,
-                                                      validate_schemas):
-            # If the alert processor should be tested, process any alerts
-            if test_alerts:
-                alert_proc_tester.test_processor(alerts)
 
-        # Report summary information for the alert processor if it was ran
-        if test_alerts:
-            AlertProcessorTester.report_output_summary()
+        rule_proc_tester = RuleProcessorTester(context, config, test_rules)
+        alert_proc_tester = AlertProcessorTester(config, context)
+
+        for _ in range(run_options.get('repeat', 1)):
+            for alerts in rule_proc_tester.test_processor(rules_filter,
+                                                          files_filter,
+                                                          validate_schemas):
+                # If the alert processor should be tested, process any alerts
+                if test_alerts:
+                    alert_proc_tester.test_processor(alerts)
+
+            # Report summary information for the alert processor if it was ran
+            if test_alerts:
+                AlertProcessorTester.report_output_summary()
 
         all_test_rules = None
         if rules_filter:
@@ -1066,7 +1068,7 @@ def stream_alert_test(options, config):
 
         if not (rule_proc_tester.all_tests_passed and
                 alert_proc_tester.all_tests_passed):
-            sys.exit(1)
+            return 1 # will exit with error
 
         # If there are any log records in the memory buffer, then errors occurred somewhere
         if log_mem_handler.buffer:
@@ -1079,6 +1081,13 @@ def stream_alert_test(options, config):
             log_mem_handler.setTarget(LOGGER_CLI)
             log_mem_handler.flush()
 
-            sys.exit(1)
+            return 1 # will exit with error
 
-    run_tests(options, context)
+        return 0 # will exit without error
+
+    result = run_tests(options, context)
+
+    if run_options.get('stats'):
+        stats.print_rule_stats()
+
+    sys.exit(result)

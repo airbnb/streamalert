@@ -23,6 +23,7 @@ from stream_alert.rule_processor.config import load_config, load_env
 from stream_alert.rule_processor.firehose import StreamAlertFirehose
 from stream_alert.rule_processor.payload import load_stream_payload
 from stream_alert.rule_processor.rules_engine import StreamRules
+from stream_alert.shared import stats
 from stream_alert.shared.metrics import MetricLogger
 
 
@@ -154,6 +155,12 @@ class StreamAlert(object):
 
         if self._firehose_client:
             self._firehose_client.send()
+
+        # Only log rule info here if this is not running tests
+        # During testing, this gets logged at the end and printing here could be confusing
+        # since stress testing calls this method multiple times
+        if self.env['lambda_alias'] != 'development':
+            stats.print_rule_stats(True)
 
         return self._failed_record_count == 0
 
