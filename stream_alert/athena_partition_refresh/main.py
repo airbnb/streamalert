@@ -184,24 +184,16 @@ class StreamAlertAthenaClient(object):
         """
         states_to_backoff = {'QUEUED', 'RUNNING'}
         @backoff.on_predicate(backoff.fibo,
-                              lambda state: state in states_to_backoff,
+                              lambda resp: \
+                              resp['QueryExecution']['Status']['State'] in states_to_backoff,
                               max_value=10,
                               jitter=backoff.full_jitter,
                               on_backoff=_backoff_handler,
                               on_success=_success_handler)
         def _check_status(query_execution_id):
-            resp = self.athena_client.get_query_execution(
+            return self.athena_client.get_query_execution(
                 QueryExecutionId=query_execution_id
             )
-
-            state = resp['QueryExecution']['Status']['State']
-            in_progress = state in states_to_backoff
-
-            if not in_progress and state != 'SUCCEEDED':
-                reason = resp['QueryExecution']['Status']['StateChangeReason']
-                LOGGER.error('Bad state recveived: %s, reason: %s', state, reason)
-
-            return state
 
         return _check_status(query_execution_id)
 
@@ -229,19 +221,19 @@ class StreamAlertAthenaClient(object):
         if kwargs.get('async') and query_execution_resp.get('QueryExecutionId'):
             return True, query_execution_resp
 
-        query_execution_result = self.check_query_status(
-            query_execution_resp['QueryExecutionId'])
+        exeuction_id = query_execution_resp['QueryExecutionId']
+        query_execution_result = self.check_query_status(exeuction_id)
 
-        if query_execution_result != 'SUCCEEDED':
-            LOGGER.error(
-                'The query %s with execution ID %s returned %s, exiting!',
-                query_execution_resp['QueryExecutionId'],
-                kwargs['query'],
-                query_execution_result)
+        state = query_execution_result['QueryExecution']['Status']['State']
+
+        if state != 'SUCCEEDED':
+            reason = query_execution_result['QueryExecution']['Status']['StateChangeReason']
+            LOGGER.error('Query %s %s with reason %s, exiting!', exeuction_id, state, reason)
+            LOGGER.error('Full query:\n%s', kwargs['query'])
             return False, {}
 
         query_results_resp = self.athena_client.get_query_results(
-            QueryExecutionId=query_execution_resp['QueryExecutionId'],
+            QueryExecutionId=exeuction_id,
         )
 
         # The idea here is to leave the processing logic to the calling functions.
