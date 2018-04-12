@@ -51,6 +51,7 @@ class ThreatStream(object):
 
     def __init__(self, config):
         self.ioc_types = config['ioc_types']
+        self.excluded_sub_types = config['excluded_sub_types']
         self.ioc_sources = config['ioc_filters']
         self.threshold = self._API_MAX_INDEX - self._API_MAX_LIMIT
         self.region = config['region']
@@ -157,15 +158,19 @@ class ThreatStream(object):
         """
         if not event:
             return None, None, False
-
+        query = '(status="{}")+AND+({})+AND+NOT+({})'.format(
+            self._IOC_STATUS,
+            "+OR+".join(['type="{}"'.format(ioc) for ioc in self.ioc_types]),
+            "+OR+".join(['itype="{}"'.format(itype) for itype in self.excluded_sub_types])
+        )
         next_url = event.get(
             'next_url',
-            '/api/v2/{}/?username={}&api_key={}&status={}&limit={}'.format(
+            '/api/v2/{}/?username={}&api_key={}&limit={}&q={}'.format(
                 self._API_RESOURCE,
                 self.api_user,
                 self.api_key,
-                self._IOC_STATUS,
-                self._API_MAX_LIMIT
+                self._API_MAX_LIMIT,
+                query
             )
         )
 
@@ -244,7 +249,7 @@ class ThreatStream(object):
         results = list()
         for obj in data:
             for source in self.ioc_sources:
-                if source in obj['source'].lower() and obj['type'] in self.ioc_types:
+                if source in obj['source'].lower():
                     filtered_obj = {key: value for key, value in obj.iteritems()
                                     if key in self.ioc_keys}
                     filtered_obj['expiration_ts'] = self._epoch_time(filtered_obj['expiration_ts'])
