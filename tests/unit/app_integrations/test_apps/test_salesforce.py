@@ -13,8 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-# pylint: disable=abstract-class-instantiated,protected-access,no-self-use
-import csv
+# pylint: disable=abstract-class-instantiated,protected-access,no-self-use,abstract-method,attribute-defined-outside-init
+
 from requests.exceptions import Timeout
 from mock import Mock, patch
 from nose.tools import (
@@ -35,6 +35,7 @@ from tests.unit.app_integrations.test_helpers import (
     MockSSMClient
 )
 
+@patch.object(SalesforceApp, '_type', Mock(return_value='Console'))
 @patch.object(SalesforceApp, 'type', Mock(return_value='type'))
 @patch.object(AppConfig, 'SSM_CLIENT', MockSSMClient())
 class TestSalesforceApp(object):
@@ -97,6 +98,12 @@ class TestSalesforceApp(object):
         mock_post.return_value = Mock(
             status_code=403,
             json=Mock(return_value='ERROR CODE')
+        )
+        assert_false(self._app._request_token())
+
+        mock_post.return_value = Mock(
+            status_code=200,
+            json=Mock(return_value={'access_token': 'ACCESS_TOKEN', 'instance_url': ''})
         )
         assert_false(self._app._request_token())
 
@@ -247,8 +254,16 @@ class TestSalesforceApp(object):
             json=Mock(return_value={'errorCode': 'ERROR_CODE', 'message': 'error message'})
         )
         self._app._instance_url = 'my_instance_url'
-        assert_equal(self._app._get_latest_api_version(), None)
+        assert_false(self._app._get_latest_api_version())
         mock_logger.assert_called_with('Failed to fetch lastest api version')
+
+        mock_get.return_value = Mock(
+            status_code=200,
+            json=Mock(return_value=[{'foo': 'bar'}])
+        )
+        self._app._instance_url = 'my_instance_url'
+        assert_false(self._app._get_latest_api_version())
+        mock_logger.assert_called_with('Failed to obtain latest API version')
 
     @patch('requests.get')
     def test_list_log_files(self, mock_get):
@@ -257,7 +272,7 @@ class TestSalesforceApp(object):
             status_code=200,
             json=Mock(return_value=get_salesforce_log_files())
         )
-        assert_equal(len(self._app._list_log_files()), 10)
+        assert_equal(len(self._app._list_log_files()), 2)
 
     @patch('requests.get')
     def test_fetch_event_logs(self, mock_get):
@@ -268,12 +283,12 @@ class TestSalesforceApp(object):
             text='key1,key2\nvalue1a,value2a\nvalue1b,value2b'
         )
         assert_equal(self._app._fetch_event_logs('LOG_FILE_PATH'),
-                     [{'key2': 'value2a', 'key1': 'value1a'},
-                      {'key2': 'value2b', 'key1': 'value1b'}])
+                     ['value1a,value2a\n', 'value1b,value2b'])
 
     @patch('app_integrations.apps.salesforce.StringIO.StringIO', Mock(side_effect=IOError))
+    @patch('app_integrations.apps.salesforce.LOGGER.error')
     @patch('requests.get')
-    def test_fetch_event_logs_failed(self, mock_get):
+    def test_fetch_event_logs_failed(self, mock_get, mock_logger):
         """SalesforceApp - Fetch event logs while IOError raised"""
         mock_get.return_value = Mock(
             status_code=200,
@@ -281,6 +296,21 @@ class TestSalesforceApp(object):
             text='key1,key2\nvalue1a,value2a\nvalue1b,value2b'
         )
         assert_equal(self._app._fetch_event_logs('LOG_FILE_PATH'), None)
+        mock_logger.assert_called_with('Failed to get event logs', exc_info=1)
+
+    @patch('app_integrations.apps.salesforce.StringIO.StringIO.readlines',
+           Mock(side_effect=IOError))
+    @patch('app_integrations.apps.salesforce.LOGGER.error')
+    @patch('requests.get')
+    def test_fetch_event_logs_readlines_failed(self, mock_get, mock_logger):
+        """SalesforceApp - Fetch event logs while IOError raised"""
+        mock_get.return_value = Mock(
+            status_code=200,
+            json=Mock(side_effect=ValueError),
+            text='key1,key2\nvalue1a,value2a\nvalue1b,value2b'
+        )
+        assert_equal(self._app._fetch_event_logs('LOG_FILE_PATH'), None)
+        mock_logger.assert_called_with('Failed to get event logs', exc_info=1)
 
     @patch('requests.get')
     def test_fetch_event_logs_timeout(self, mock_get):
@@ -291,18 +321,6 @@ class TestSalesforceApp(object):
         )
         assert_equal(self._app._fetch_event_logs('LOG_FILE_PATH'), None)
 
-    @patch('app_integrations.apps.salesforce.csv.DictReader', Mock(side_effect=csv.Error))
-    @patch('requests.get')
-    def test_fetch_event_logs_csv_error(self, mock_get):
-        """SalesforceApp - Fetch event logs while csv error raised"""
-        mock_get.return_value = Mock(
-            status_code=200,
-            json=Mock(side_effect=ValueError),
-            text='key1,key2\nvalue1a,value2a\nvalue1b,value2b'
-        )
-        assert_equal(self._app._fetch_event_logs('LOG_FILE_PATH'), None)
-
-    @patch.object(SalesforceApp, '_SALESFORCE_EVENT_TYPES', {'Console'})
     @patch('requests.get')
     @patch('requests.post')
     def test_gather_logs(self, mock_post, mock_get):
@@ -351,6 +369,12 @@ class TestSalesforceApp(object):
         assert_equal(self._app._gather_logs(), None)
         mock_logger.assert_called_once()
 
+        mock_get.return_value = Mock(
+            status_code=204,
+            json=Mock(return_value={'errorCode': 'ERROR_CODE', 'message': 'error message'})
+        )
+        assert_equal(self._app._gather_logs(), None)
+
     def test_sleep_seconds(self):
         """SalesforceApp - Verify sleep seconds"""
         assert_equal(self._app._sleep_seconds(), 0)
@@ -358,3 +382,12 @@ class TestSalesforceApp(object):
     def test_date_formatter(self):
         """SalesforceApp - Verify date format"""
         assert_equal(self._app.date_formatter(), '%Y-%m-%dT%H:%M:%SZ')
+
+
+@raises(NotImplementedError)
+def test_type_not_implemented():
+    """SalesforceApp - Subclassmethod _type not implemented"""
+    class SalesforceAppNoType(SalesforceApp): #pylint: disable=unused-variable
+        """Fake SalesforceApp that should raise a NotImplementedError"""
+
+    SalesforceApp._type()

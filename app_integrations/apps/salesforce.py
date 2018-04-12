@@ -13,7 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-import csv
 import StringIO
 import re
 
@@ -27,13 +26,15 @@ from app_integrations.apps.app_base import StreamAlertApp, AppIntegration
 class SalesforceAppError(Exception):
     """Salesforce App Error class"""
 
-@StreamAlertApp
 class SalesforceApp(AppIntegration):
-    """Salesforce StreamAlert App
+    """Salesforce StreamAlert Base App
 
-    Salesforce will audit 5 types of event logs include 'Console', 'Login',
+    SalesforceApp will audit 5 types of event logs include 'Console', 'Login',
     'LoginAs', 'Report' and 'ReportExport' for user access audit and data loss
     prevention, although Salesforce provides 42 types of event logs.
+
+    This base class will be inherited by different subclasssed based on different
+    event types.
 
     Console events:
         contain information about the performance and use of Salesforce Consoles.
@@ -58,8 +59,6 @@ class SalesforceApp(AppIntegration):
     _SALESFORCE_QUERY_FILTERS = ('query?q=SELECT+Id+,+EventType+,+LogFile+,+LogDate+,'
                                  '+LogFileLength+FROM+EventLogFile+')
 
-    # Log files filters. These typs of events should be auditted for security purpose.
-    _SALESFORCE_EVENT_TYPES = {'Console', 'Login', 'LoginAs', 'Report', 'ReportExport'}
     # Use "Where" and "LogDate" clause to filter log files which are generated after
     # last_timestamp.
     _SALESFORCE_CREATE_AFTER = 'WHERE+LogDate+>+{}+'
@@ -76,7 +75,7 @@ class SalesforceApp(AppIntegration):
 
     @classmethod
     def _type(cls):
-        return 'events'
+        raise NotImplementedError('Subclasses should implement the _type method')
 
     @classmethod
     def service(cls):
@@ -119,7 +118,7 @@ class SalesforceApp(AppIntegration):
 
         if not (response.get('access_token') and response.get('instance_url')):
             LOGGER.error('Response invalid generating headers for service \'%s\'',
-                         self.type())
+                         self._type())
             return False
 
         bearer = 'Bearer {}'.format(response.get('access_token'))
@@ -270,22 +269,25 @@ class SalesforceApp(AppIntegration):
                 "url": "/services/data/v26.0"
             }
         ]
+
+        Returns:
+            bool: Return True if get latest api version successfully.
         """
         url = '{}/services/data/'.format(self._instance_url)
         success, response = self._make_get_request(url, self._auth_headers)
 
         if not (success and response):
             LOGGER.error('Failed to fetch lastest api version')
-            return
+            return False
 
         versions = [float(version.get('version', 0)) for version in response]
         if versions:
             self._latest_api_version = str(sorted(versions)[-1])
+            if self._latest_api_version == '0.0':
+                LOGGER.error('Failed to obtain latest API version')
+                return False
             LOGGER.debug('Successfully obtain latest API version %s', self._latest_api_version)
             return True
-
-        LOGGER.error('Failed to obtain latest API version')
-        return False
 
     def _list_log_files(self):
         """Fetch a list of available log files by event types.
@@ -327,24 +329,23 @@ class SalesforceApp(AppIntegration):
             ]
         }
         """
-        log_files = []
-        for event_type in self._SALESFORCE_EVENT_TYPES:
-            event_type_format = 'AND+EventType+=+\'{}\''.format(event_type)
-            url = self._SALESFORCE_QUERY_URL.format(
-                instance_url=self._instance_url,
-                api_version=self._latest_api_version,
-                query=self._SALESFORCE_QUERY_FILTERS,
-                start_time=self._SALESFORCE_CREATE_AFTER.format(self._last_timestamp),
-                event_type=event_type_format
-            )
-            success, response = self._make_get_request(url, self._auth_headers)
-            if not success:
-                LOGGER.error('Failed to get a list of log files.')
-                return log_files
+        event_type_format = 'AND+EventType+=+\'{}\''.format(self._type)
+        url = self._SALESFORCE_QUERY_URL.format(
+            instance_url=self._instance_url,
+            api_version=self._latest_api_version,
+            query=self._SALESFORCE_QUERY_FILTERS,
+            start_time=self._SALESFORCE_CREATE_AFTER.format(self._last_timestamp),
+            event_type=event_type_format
+        )
+        success, response = self._make_get_request(url, self._auth_headers)
+        if not success:
+            LOGGER.error('Failed to get a list of log files.')
+            return
 
-            if response.get('records'):
-                log_files.extend([record['LogFile'] for record in response['records']
-                                  if record.get('LogFile')])
+        log_files = []
+        if response.get('records'):
+            log_files.extend([record['LogFile'] for record in response['records']
+                              if record.get('LogFile')])
 
         LOGGER.debug('Retrived %d log files', len(log_files))
         return log_files
@@ -364,18 +365,18 @@ class SalesforceApp(AppIntegration):
             success, resp = self._make_get_request(url, self._auth_headers)
             if not success:
                 LOGGER.error('Failed to get event logs')
-                return None
+                return
 
             data = StringIO.StringIO(resp)
             if data:
                 # skip header line before passing to rule processor
                 data.next()
-                return data
+                return data.readlines()
         except (SalesforceAppError, IOError):
             LOGGER.exception('Failed to get event logs')
             if data:
                 data.close()
-            return None
+            return
 
     def _gather_logs(self):
         """Gather all log events. There are 32 event types.
@@ -396,3 +397,60 @@ class SalesforceApp(AppIntegration):
             logs.extend(response)
 
         return logs
+
+@StreamAlertApp
+class SalesforceConsole(SalesforceApp):
+    """Salesforce Console Events app integration
+
+    Console events contain information about the performance and use of Salesforce
+    Consoles
+    """
+
+    @classmethod
+    def _type(cls):
+        return 'Console'
+
+@StreamAlertApp
+class SalesforceLogin(SalesforceApp):
+    """Salesforce Login Events app integration
+
+    Login events contain details about your org's user login history
+    """
+
+    @classmethod
+    def _type(cls):
+        return 'Login'
+
+@StreamAlertApp
+class SalesforceLoginAs(SalesforceApp):
+    """Salesforce LoginAs Events app integration
+
+    LoginAs events contain details about what a Salesforce admin did while logged
+    in as another user
+    """
+
+    @classmethod
+    def _type(cls):
+        return 'LoginAs'
+
+@StreamAlertApp
+class SalesforceReport(SalesforceApp):
+    """Salesforce Report Events app integration
+
+    Report events contain information about what happened when a user ran a report
+    """
+
+    @classmethod
+    def _type(cls):
+        return 'Report'
+
+@StreamAlertApp
+class SalesforceReportExport(SalesforceApp):
+    """Salesforce ReportExport Events app integration
+
+    ReportExport events contain details about reports that a user exported
+    """
+
+    @classmethod
+    def _type(cls):
+        return 'ReportExport'
