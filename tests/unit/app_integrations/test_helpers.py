@@ -44,7 +44,7 @@ class MockSSMClient(object):
     def get_parameter(self, **kwargs):
         """Mocked get_parameter function that returns a value for the key from a dict
 
-        Keyword Arguments:
+        Keyword Args:
             Name (str): The name of the parameter to retrieve
 
         Returns:
@@ -60,7 +60,7 @@ class MockSSMClient(object):
     def get_parameters(self, **kwargs):
         """Mocked get_parameters function that returns a list of values for the keys from a dict
 
-        Keyword Arguments:
+        Keyword Args:
             Name (list[str]): The names of the parameters to retrieve
 
         Returns:
@@ -160,7 +160,7 @@ class MockLambdaClient(object):
     def invoke(cls, **kwargs):
         """Mocked invoke function that returns a reponse mimicking boto3's reponse
 
-        Keyword Arguments:
+        Keyword Args:
             FuncitonName (str): The AWS Lambda function name being invoked
             InvocationType (str): Type of invocation (typically 'Event')
             Payload (str): Payload in string or file format to send to lambda

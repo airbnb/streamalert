@@ -543,11 +543,13 @@ class CLIConfig(object):
 
     def _config_reader(self, key, file_path, **kwargs):
         """Read a given file into a config key
+
         Args:
             key (str): The key in the config dictionary to place the loaded
                 config file.
             file_path (str): The location on disk to load the config file.
-        Keyword Arguments:
+
+        Keyword Args:
             cluster_file (bool): If the file to load is a cluster file.
         """
         # This accounts for non files passed in, such as a
