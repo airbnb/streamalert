@@ -88,6 +88,7 @@ def mock_config():
         'ioc_filters': ['crowdstrike', '@airbnb.com'],
         'ioc_keys': ['expiration_ts', 'itype', 'source', 'type', 'value'],
         'ioc_types': ['domain', 'ip', 'md5'],
+        'excluded_sub_types': ['bot_ip', 'brute_ip', 'scan_ip', 'spam_ip', 'tor_ip'],
         'log_level': 'info',
         'memory': '128',
         'qualifier': 'development',

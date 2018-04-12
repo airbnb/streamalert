@@ -1568,6 +1568,12 @@ Examples:
     )
 
     ti_downloader_parser.add_argument(
+        '--excluded_sub_types',
+        help=ARGPARSE_SUPPRESS,
+        default=['bot_ip', 'brute_ip', 'scan_ip', 'spam_ip', 'tor_ip']
+    )
+
+    ti_downloader_parser.add_argument(
         '--autoscale',
         help=ARGPARSE_SUPPRESS,
         default=False,
