@@ -1,7 +1,4 @@
 {
-  "aws-firehose": {
-    "alerts": "<prefix>_streamalert_alert_delivery"
-  },
   "aws-lambda": {
     "sample-lambda": "function-name:qualifier"
   },
