@@ -67,6 +67,8 @@ variable "ioc_keys" {}
 
 variable "ioc_types" {}
 
+variable "excluded_sub_types" {}
+
 variable "log_retention" {
   default = 14
 }
