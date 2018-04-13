@@ -1482,13 +1482,13 @@ Available Subcommands:
 
                               See the link in the Resources section below for more information.
     Optional Arguments:
-        --table_rcu          The DynamoDB table Read Capacity Unit.
-        --table_wcu          The DynamoDB table Write Capacity Unit.
+        --table_rcu          The DynamoDB table Read Capacity Unit. Default is 10.
+        --table_wcu          The DynamoDB table Write Capacity Unit. Default is 10.
         --ioc_keys           The keys (list) of IOC stored in DynamoDB table.
         --ioc_filters        Filters (list) applied while retrieving IOCs from Threat Feed.
         --ioc_types          IOC types (list) are defined by the Threat Feed. IOC types can be
                              different from different Threat Feeds.
-        --autoscale          Enable DynamoDB table read capacity autoscale.
+        --excluded_sub_types Sub ioc types want to excluded. Default it will exclude 'bot_ip', 'brute_ip', 'scan_ip', 'spam_ip', 'tor_ip'.
         --min_read_capacity  Maximal read capacity when autoscale enabled, default is 5.
         --max_read_capacity  Mimimal read capacity when autoscale enabled, default is 5.
         --target_utilization Utilization remains at or near the setting level when autoscale enabled.
