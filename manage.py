@@ -955,6 +955,38 @@ Example:
         action=UniqueSetAction,
         required=True)
 
+    # flag to run additional stats during testing
+    lambda_test_parser.add_argument(
+        '-s',
+        '--stats',
+        action='store_true',
+        help=ARGPARSE_SUPPRESS
+    )
+
+    # Validate the provided repitition value
+    def _validate_repitition(val):
+        """Make sure the input is between 1 and 1000"""
+        err = ('Invalid repitition value [{}]. Must be an integer between 1 '
+               'and 1000').format(val)
+        try:
+            count = int(val)
+        except TypeError:
+            raise lambda_test_parser.error(err)
+
+        if not 1 <= count <= 1000:
+            raise lambda_test_parser.error(err)
+
+        return count
+
+    # flag to run these tests a given number of times
+    lambda_test_parser.add_argument(
+        '-n',
+        '--repeat',
+        default=1,
+        type=_validate_repitition,
+        help=ARGPARSE_SUPPRESS
+    )
+
     test_filter_group = lambda_test_parser.add_mutually_exclusive_group(required=False)
 
     # add the optional ability to test against a rule/set of rules
