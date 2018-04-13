@@ -411,6 +411,7 @@ class CLIConfig(object):
         if prompt_for_auth and not save_app_auth_info(app, app_info, overwrite):
             return
 
+        prefix = self.config['global']['account']['prefix']
         apps_config = cluster_config['modules'].get('stream_alert_apps', {})
         if not exists:
             # Save a default app settings to the config for new apps
@@ -430,7 +431,7 @@ class CLIConfig(object):
                     }
                 },
                 'schedule_expression': app_info['schedule_expression'],
-                'source_bucket': '<auto_generated>',
+                'source_bucket': '{}.streamalert.source'.format(prefix),
                 'source_current_hash': '<auto_generated>',
                 'source_object_key': '<auto_generated>',
                 'timeout': app_info['timeout'],
@@ -455,6 +456,7 @@ class CLIConfig(object):
         app_sources = self.config['sources'].get('stream_alert_app', {})
         app_sources[app_info['function_name']] = {'logs': [app.service()]}
         self.config['sources']['stream_alert_app'] = app_sources
+
 
         LOGGER_CLI.info('Successfully added \'%s\' app integration to \'conf/clusters/%s.json\' '
                         'for service \'%s\'.', app_info['app_name'], app_info['cluster'],
