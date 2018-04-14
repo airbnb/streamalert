@@ -30,7 +30,7 @@ from stream_alert.rule_processor.config import load_config, load_env
 from stream_alert.rule_processor.parsers import get_parser
 from stream_alert.rule_processor.rules_engine import RulesEngine
 from stream_alert.shared import NORMALIZATION_KEY
-from stream_alert.shared.rule import disable, LOADED_MATCHERS, matcher, rule, Rule
+from stream_alert.shared.rule import disable, matcher, Matcher, rule, Rule
 
 from tests.unit.stream_alert_rule_processor.test_helpers import (
     get_mock_context,
@@ -61,7 +61,7 @@ class TestRulesEngine(object):
     def setup(self):
         """Setup before each method"""
         # Clear out the cached matchers and rules to avoid conflicts with production code
-        LOADED_MATCHERS.clear()  # pylint: disable=no-member
+        Matcher._matchers.clear()
         Rule._rules.clear()
         self.config = load_config('tests/unit/conf')
         self.config['global']['threat_intel']['enabled'] = False
@@ -78,13 +78,13 @@ class TestRulesEngine(object):
         def minimal_rule(rec):  # pylint: disable=unused-variable
             return rec['unixtime'] == 1483139547
 
-        @rule(matchers=['foobar', 'prod'],
+        @rule(matchers=['prod'],
               logs=['test_log_type_json_nested_with_data'],
               outputs=['pagerduty:sample_integration'])
         def chef_logs(rec):  # pylint: disable=unused-variable
             return rec['application'] == 'chef'
 
-        @rule(matchers=['foobar', 'prod'],
+        @rule(matchers=['prod'],
               logs=['test_log_type_json_nested_with_data'],
               outputs=['pagerduty:sample_integration'])
         def test_nest(rec):  # pylint: disable=unused-variable

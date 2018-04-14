@@ -16,8 +16,6 @@ limitations under the License.
 from stream_alert.shared import LOGGER
 from stream_alert.shared.stats import time_rule
 
-LOADED_MATCHERS = {}
-
 
 class RuleInvalid(Exception):
     """Exeception to raise for any errors with invalid rules"""
@@ -40,13 +38,45 @@ def disable(rule_instance):
 def matcher(matcher_func):
     """Registers a matcher to be used with rules
 
-    Matchers are rules which allow you to extract common logic
-    into helper functions. Each rule can contain multiple matchers.
+    Matchers extract common logic into helper functions. Each rule
+    can contain multiple matchers.
     """
-    if matcher_func.__name__ in LOADED_MATCHERS:
-        raise ValueError('matcher already defined: {}'.format(matcher_func.__name__))
-    LOADED_MATCHERS[matcher_func.__name__] = matcher_func
+    Matcher(matcher_func)
     return matcher_func
+
+
+class Matcher(object):
+    """Matcher class to handle matcher logic"""
+    _matchers = {}
+    def __init__(self, func):
+        if func.__name__ in Matcher._matchers:
+            raise ValueError('matcher already defined: {}'.format(func.__name__))
+
+        # Register the matcher
+        Matcher._matchers[func.__name__] = func
+
+    @classmethod
+    def process(cls, matcher_from_rule, record):
+        """Process will ensure this record is valid for this matcher
+
+        Args:
+            matcher_from_rule (str): Name of matcher supplied in the rule decorator
+            record (dict): Record that the matcher should be applied against
+
+        Returns:
+            bool: True if the matcher applied to this record, False otherwise
+        """
+        func = Matcher._matchers.get(matcher_from_rule)
+        if not func:
+            LOGGER.error('The matcher [%s] does not exist!', matcher_from_rule)
+            return False
+
+        try:
+            return func(record)
+        except Exception:  # pylint: disable=broad-except
+            LOGGER.exception('Encountered error with matcher: %s', func.__name__)
+
+        return False
 
 
 class Rule(object):
@@ -85,21 +115,35 @@ class Rule(object):
     def __repr__(self):
         return self.__str__()
 
+    def check_matchers(self, record):
+        """Run any rule matchers against the record
+
+        Args:
+            record (dict): Record that this rule should be run against
+
+        Returns:
+            bools: True if all matchers apply to this record, False otherwise
+        """
+        if not self.matchers:
+            return True
+
+        return all(Matcher.process(matcher_name, record) for matcher_name in self.matchers)
+
     @time_rule
-    def process(self, rec):
+    def process(self, record):
         """Process will call this rule's function on the passed record
 
         Args:
-            rec (dict): Record that this rule should be run against
+            record (dict): Record that this rule should be run against
 
         Returns:
             bool: True if this rule triggers for the passed record, False otherwise
         """
         try:
             if self.context:
-                return self.func(rec, self.context)
+                return self.func(record, self.context)
 
-            return self.func(rec)
+            return self.func(record)
         except Exception:  # pylint: disable=broad-except
             LOGGER.exception('Encountered error with rule: %s', self.rule_name)
 

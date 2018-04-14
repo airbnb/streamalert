@@ -21,7 +21,7 @@ from stream_alert.rule_processor import LOGGER
 from stream_alert.rule_processor.threat_intel import StreamThreatIntel
 from stream_alert.shared import NORMALIZATION_KEY, resources
 from stream_alert.shared.alert import Alert
-from stream_alert.shared.rule import LOADED_MATCHERS, Rule
+from stream_alert.shared.rule import Rule
 
 
 _IGNORE_KEYS = {StreamThreatIntel.IOC_KEY, NORMALIZATION_KEY}
@@ -33,42 +33,6 @@ class RulesEngine(object):
         """Initialize a RulesEngine instance to cache a StreamThreatIntel instance."""
         self._threat_intel = StreamThreatIntel.load_from_config(config)
         self._required_outputs_set = resources.get_required_outputs()
-
-    @staticmethod
-    def match_event(record, rule):
-        """Evaluate matchers on a record.
-
-        Given a list of matchers, evaluate a record through each
-        to find a match.  If any matcher is evaluated as false,
-        the loop breaks and no further matchers are evaluated.
-        Otherwise, returns True.
-
-        Args:
-            record: Record to be matched
-            rule: Rule containing the list of matchers
-
-        Returns:
-            bool: result of matcher processing
-        """
-        # matchers are optional for rules
-        if not rule.matchers:
-            return True
-
-        for matcher in rule.matchers:
-            matcher_function = LOADED_MATCHERS.get(matcher)
-            if matcher_function:
-                try:
-                    matcher_result = matcher_function(record)
-                except Exception as err:  # pylint: disable=broad-except
-                    matcher_result = False
-                    LOGGER.error('Matcher \'%s\' failed with error: %s',
-                                 matcher_function.__name__, err.message)
-                if not matcher_result:
-                    return False
-            else:
-                LOGGER.error('The matcher [%s] does not exist!', matcher)
-
-        return True
 
     @staticmethod
     def match_types(record, normalized_types, datatypes):
@@ -237,14 +201,12 @@ class RulesEngine(object):
 
         for record in payload.records:
             for rule in rules:
-                # subkey check
-                has_sub_keys = self.process_subkeys(record, payload.type, rule)
-                if not has_sub_keys:
+                # matcher check
+                if not rule.check_matchers(record):
                     continue
 
-                # matcher check
-                matcher_result = self.match_event(record, rule)
-                if not matcher_result:
+                # subkey check
+                if not self.process_subkeys(record, payload.type, rule):
                     continue
 
                 if rule.datatypes:
