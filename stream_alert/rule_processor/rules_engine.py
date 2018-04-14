@@ -348,14 +348,15 @@ class RulesEngine(object):
 
         # Combine the required alert outputs with the ones for this rule
         all_outputs = self._required_outputs_set.union(set(rule.outputs or []))
-
         alert = Alert(
             rule.rule_name, record, all_outputs,
             cluster=os.environ['CLUSTER'],
             context=rule.context,
             log_source=str(payload.log_source),
             log_type=payload.type,
-            rule_description=rule.func.__doc__,
+            merge_by_keys=rule.merge_by_keys,
+            merge_window=timedelta(minutes=rule.merge_window_mins),
+            rule_description=rule.rule_function.__doc__,
             source_entity=payload.entity,
             source_service=payload.service()
         )

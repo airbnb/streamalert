@@ -12,7 +12,6 @@ You can also supply multiple matchers for many common scenarios:
 @rule('root_logins', logs=['osquery:differential'],
       matchers=['prod', 'pci'], outputs=['pagerduty:sample-integration'])
 """
-# from helpers.base import in_set, last_hour
 from stream_alert.shared.rule import matcher
 
 

@@ -31,9 +31,9 @@ import boto3
 
 from stream_alert.rule_processor import LOGGER
 from stream_alert.rule_processor.handler import load_config, StreamAlert
-from stream_alert.shared.rule import rule
 from stream_alert.rule_processor.threat_intel import StreamThreatIntel
 from stream_alert.shared.alert import Alert
+from stream_alert.shared.rule import rule
 from tests.unit.stream_alert_rule_processor.test_helpers import (
     convert_events_to_kinesis,
     get_mock_context,
