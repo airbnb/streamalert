@@ -91,7 +91,8 @@ class Rule(object):
         self.matchers = kwargs.get('matchers')
         self.datatypes = kwargs.get('datatypes')
         self.req_subkeys = kwargs.get('req_subkeys')
-        self.context = kwargs.get('context', {})
+        self.initial_context = kwargs.get('context')
+        self.context = None
         self.disabled = False
 
         if not (self.logs or self.datatypes):
@@ -140,7 +141,11 @@ class Rule(object):
             bool: True if this rule triggers for the passed record, False otherwise
         """
         try:
-            if self.context:
+            # The initial_context object must be copied. This avoids
+            # bleed over from other runs of the rule using the same
+            # context object
+            if self.initial_context is not None:
+                self.context = self.initial_context.copy()
                 return self.func(record, self.context)
 
             return self.func(record)
