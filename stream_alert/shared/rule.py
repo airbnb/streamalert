@@ -75,6 +75,16 @@ class Rule(object):
 
         Rule._rules[self.rule_name] = self
 
+    def __str__(self):
+        return '<Rule: {}; outputs: {}; disabled: {}>'.format(
+            self.rule_name,
+            self.outputs,
+            self.disabled
+        )
+
+    def __repr__(self):
+        return self.__str__()
+
     @time_rule
     def process(self, rec):
         """Process will call this rule's function on the passed record
