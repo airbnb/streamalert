@@ -1,8 +1,7 @@
 """Identifies new S3 object ACLs that grant access to the public."""
 from helpers.base import data_has_value_from_substring_list
-from stream_alert.rule_processor.rules_engine import StreamRules
+from stream_alert.shared.rule import rule
 
-rule = StreamRules.rule
 
 _PUBLIC_ACLS = {
     'http://acs.amazonaws.com/groups/global/AuthenticatedUsers',

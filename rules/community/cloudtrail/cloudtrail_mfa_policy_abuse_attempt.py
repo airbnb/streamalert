@@ -1,8 +1,6 @@
 """Alert on calls made without MFA that may be attempting to abuse a flawed enforcement policy"""
-from stream_alert.rule_processor.rules_engine import StreamRules
+from stream_alert.shared.rule import rule
 
-rule = StreamRules.rule
-disable = StreamRules.disable()
 
 _IAM_ACTIONS = {
     'CreateUser',

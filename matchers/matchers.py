@@ -13,9 +13,8 @@ You can also supply multiple matchers for many common scenarios:
       matchers=['prod', 'pci'], outputs=['pagerduty:sample-integration'])
 """
 # from helpers.base import in_set, last_hour
-from stream_alert.rule_processor.rules_engine import StreamRules
+from stream_alert.shared.rule import matcher
 
-matcher = StreamRules.matcher()
 
 @matcher
 def guard_duty(record):
