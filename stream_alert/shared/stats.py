@@ -64,20 +64,15 @@ def time_me(func):
     return timed
 
 
-def time_rule(func=None, rule_name=None):
+def time_rule(rule_func):
     """Timing decorator for specifically timing a rule function"""
-    if not func:
-        def partial(inner):
-            return time_rule(inner, rule_name)
-        return partial
-
-    def timed(*args, **kw):
+    def timed(self, *args, **kwargs):
         """Wrapping function"""
         time_start = time.time()
-        result = func(*args, **kw)
+        result = rule_func(self, *args, **kwargs)
         time_end = time.time()
 
-        RULE_STATS[rule_name] += RuleStatistic((time_end - time_start) * 1000)
+        RULE_STATS[self.rule_name] += RuleStatistic((time_end - time_start) * 1000)
 
         return result
 

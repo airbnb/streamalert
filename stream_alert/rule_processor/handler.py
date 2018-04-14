@@ -22,7 +22,7 @@ from stream_alert.rule_processor.classifier import StreamClassifier
 from stream_alert.rule_processor.config import load_config, load_env
 from stream_alert.rule_processor.firehose import StreamAlertFirehose
 from stream_alert.rule_processor.payload import load_stream_payload
-from stream_alert.rule_processor.rules_engine import StreamRules
+from stream_alert.rule_processor.rules_engine import RulesEngine
 from stream_alert.shared import stats
 from stream_alert.shared.metrics import MetricLogger
 
@@ -59,7 +59,7 @@ class StreamAlert(object):
 
         # Create an instance of the StreamRules class that gets cached in the
         # StreamAlert class as an instance property
-        self._rule_engine = StreamRules(self.config)
+        self._rules_engine = RulesEngine(self.config)
 
         # Firehose client attribute
         self._firehose_client = None
@@ -123,7 +123,7 @@ class StreamAlert(object):
                                 len(payload_with_normalized_records))
 
         # Apply Threat Intel to normalized records in the end of Rule Processor invocation
-        record_alerts = self._rule_engine.threat_intel_match(payload_with_normalized_records)
+        record_alerts = self._rules_engine.threat_intel_match(payload_with_normalized_records)
         self._alerts.extend(record_alerts)
         if record_alerts:
             self.alert_forwarder.send_alerts(record_alerts)
@@ -197,7 +197,7 @@ class StreamAlert(object):
                 record.log_source,
                 record.entity)
 
-            record_alerts, normalized_records = self._rule_engine.process(record)
+            record_alerts, normalized_records = self._rules_engine.run(record)
 
             payload_with_normalized_records.extend(normalized_records)
 

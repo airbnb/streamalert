@@ -13,7 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from collections import namedtuple
 from copy import copy
 from datetime import timedelta
 import os
@@ -22,121 +21,21 @@ from stream_alert.rule_processor import LOGGER
 from stream_alert.rule_processor.threat_intel import StreamThreatIntel
 from stream_alert.shared import NORMALIZATION_KEY, resources
 from stream_alert.shared.alert import Alert
-from stream_alert.shared.stats import time_rule
+from stream_alert.shared.rule import LOADED_MATCHERS, Rule
 
-
-RuleAttributes = namedtuple('Rule', ['rule_name',
-                                     'rule_function',
-                                     'matchers',
-                                     'datatypes',
-                                     'logs',
-                                     'merge_by_keys',
-                                     'merge_window_mins',
-                                     'outputs',
-                                     'req_subkeys',
-                                     'context'])
 
 _IGNORE_KEYS = {StreamThreatIntel.IOC_KEY, NORMALIZATION_KEY}
 
 
-class StreamRules(object):
-    """Container class for StreamAlert Rules
-
-    The __rules dictionary stores rules with the following metadata:
-        key: Name of the rule
-        value: Named tuple (rule function, outputs, matchers, logs)
-
-    Example:
-        __rules[root_logins]: (<root_logins function>, ['pagerduty'], ['prod'], ['osquery'])
-
-    the __matchers dictionary stores:
-        Key: The name of the matcher
-        Value: The matcher function
-    """
-    __rules = {}
-    __matchers = {}
-
+class RulesEngine(object):
+    """Class to act as a rules engine that processes rules"""
     def __init__(self, config):
-        """Initialize a StreamRules instance to cache a StreamThreatIntel instance."""
+        """Initialize a RulesEngine instance to cache a StreamThreatIntel instance."""
         self._threat_intel = StreamThreatIntel.load_from_config(config)
         self._required_outputs_set = resources.get_required_outputs()
 
-    @classmethod
-    def get_rules(cls):
-        """Helper method to return private class property of __rules"""
-        return cls.__rules
-
-    @classmethod
-    def rule(cls, **opts):
-        """Register a rule that evaluates records against rules.
-
-        A rule maps events (by `logs`) to a function that accepts an event
-        and returns a boolean. If the function returns `True`, then the event is
-        passed on to the alert forwarder. If the function returns `False`, the event is
-        dropped.
-        """
-        def decorator(rule):
-            """Rule decorator logic."""
-            rule_name = rule.__name__
-            logs = opts.get('logs')
-            merge_by_keys = opts.get('merge_by_keys')
-            merge_window_mins = opts.get('merge_window_mins') or 0
-            outputs = opts.get('outputs')
-            matchers = opts.get('matchers')
-            datatypes = opts.get('datatypes')
-            req_subkeys = opts.get('req_subkeys')
-            context = opts.get('context', {})
-
-            if not (logs or datatypes):
-                LOGGER.error(
-                    'Invalid rule [%s] - rule must have either \'logs\' or \''
-                    'datatypes\' declared',
-                    rule_name)
-                return
-
-            if rule_name in cls.__rules:
-                raise ValueError('rule [{}] already defined'.format(rule_name))
-            cls.__rules[rule_name] = RuleAttributes(rule_name,
-                                                    rule,
-                                                    matchers,
-                                                    datatypes,
-                                                    logs,
-                                                    merge_by_keys,
-                                                    merge_window_mins,
-                                                    outputs,
-                                                    req_subkeys,
-                                                    context)
-            return rule
-        return decorator
-
-    @classmethod
-    def matcher(cls):
-        """Registers a matcher rule.
-
-        Matchers are rules which allow you to extract common logic
-        into helper functions. Each rule can contain multiple matchers.
-        """
-        def decorator(matcher):
-            """Match decorator."""
-            name = matcher.__name__
-            if name in cls.__matchers:
-                raise ValueError('matcher already defined: {}'.format(name))
-            cls.__matchers[name] = matcher
-            return matcher
-        return decorator
-
-    @classmethod
-    def disable(cls):
-        """Disables a rule from being run by removing it from the internal rules dict"""
-        def decorator(rule):
-            """Rule disable decorator."""
-            rule_name = rule.__name__
-            if rule_name in cls.__rules:
-                del cls.__rules[rule_name]
-            return rule
-        return decorator
-
-    def match_event(self, record, rule):
+    @staticmethod
+    def match_event(record, rule):
         """Evaluate matchers on a record.
 
         Given a list of matchers, evaluate a record through each
@@ -156,7 +55,7 @@ class StreamRules(object):
             return True
 
         for matcher in rule.matchers:
-            matcher_function = self.__matchers.get(matcher)
+            matcher_function = LOADED_MATCHERS.get(matcher)
             if matcher_function:
                 try:
                     matcher_result = matcher_function(record)
@@ -200,7 +99,7 @@ class StreamRules(object):
         if not (datatypes and normalized_types):
             return
 
-        return StreamRules.match_types_helper(record, normalized_types, datatypes)
+        return RulesEngine.match_types_helper(record, normalized_types, datatypes)
 
     @staticmethod
     def match_types_helper(record, normalized_types, datatypes):
@@ -219,8 +118,8 @@ class StreamRules(object):
             if key == NORMALIZATION_KEY:
                 continue
             if isinstance(val, dict):
-                nested_results = StreamRules.match_types_helper(val, normalized_types, datatypes)
-                StreamRules.update(results, key, nested_results)
+                nested_results = RulesEngine.match_types_helper(val, normalized_types, datatypes)
+                RulesEngine.update(results, key, nested_results)
             else:
                 for datatype in datatypes:
                     if datatype in normalized_types and key in normalized_types[datatype]:
@@ -279,32 +178,6 @@ class StreamRules(object):
                     results[key] = [val]
 
     @staticmethod
-    def process_rule(record, rule):
-        """Process rule functions on a given record
-
-        Args:
-            record (dict): Parsed payload of any type
-            rule (func): Rule function to process the record
-
-        Returns:
-            bool: The return function of the rule
-        """
-        @time_rule(rule_name=rule.rule_function.__name__)
-        def _run():
-            try:
-                if rule.context:
-                    rule_result = rule.rule_function(record, rule.context)
-                else:
-                    rule_result = rule.rule_function(record)
-            except Exception:  # pylint: disable=broad-except
-                rule_result = False
-                LOGGER.exception(
-                    'Encountered error with rule: %s',
-                    rule.rule_function.__name__)
-            return rule_result
-        return _run()
-
-    @staticmethod
     def process_subkeys(record, payload_type, rule):
         """Check payload record contains all subkeys needed for rules
 
@@ -339,7 +212,7 @@ class StreamRules(object):
 
         return True
 
-    def process(self, input_payload):
+    def run(self, input_payload):
         """Process rules on a record.
 
         Gather a list of rules based on the record's datasource type.
@@ -356,8 +229,7 @@ class StreamRules(object):
         normalized_records = []
         payload = copy(input_payload)
 
-        rules = [rule_attrs for rule_attrs in self.__rules.values()
-                 if rule_attrs.logs is None or payload.log_source in rule_attrs.logs]
+        rules = Rule.rules_for_log_type(payload.log_source)
 
         if not rules:
             LOGGER.debug('No rules to process for %s', payload)
@@ -486,8 +358,7 @@ class StreamRules(object):
         alerts = []
         if self._threat_intel:
             ioc_records = self._threat_intel.threat_detection(payload_with_normalized_records)
-            rules = [rule_attrs for rule_attrs in self.__rules.values()
-                     if rule_attrs.datatypes]
+            rules = Rule.rules_with_datatypes()
             if ioc_records:
                 for ioc_record in ioc_records:
                     for rule in rules:
@@ -504,33 +375,34 @@ class StreamRules(object):
             alerts (list): The current list of Alert instances.
                 If the rule returns True on the record, a new Alert instance is added to this list.
         """
-        rule_result = StreamRules.process_rule(record, rule)
-        if rule_result:
-            # when threat intel enabled, normalized records will be re-analyzed by
-            # all rules. Thus we need to check duplication.
-            if self._threat_intel and self.check_alerts_duplication(record, rule, alerts):
-                return
+        rule_result = rule.process(record)
+        if not rule_result:
+            return
 
-            # Combine the required alert outputs with the ones for this rule
-            all_outputs = self._required_outputs_set.union(set(rule.outputs or []))
-            alert = Alert(
-                rule.rule_name, record, all_outputs,
-                cluster=os.environ['CLUSTER'],
-                context=rule.context,
-                log_source=str(payload.log_source),
-                log_type=payload.type,
-                merge_by_keys=rule.merge_by_keys,
-                merge_window=timedelta(minutes=rule.merge_window_mins),
-                rule_description=rule.rule_function.__doc__,
-                source_entity=payload.entity,
-                source_service=payload.service()
-            )
+        # when threat intel enabled, normalized records will be re-analyzed by
+        # all rules. Thus we need to check duplication.
+        if self._threat_intel and self.check_alerts_duplication(record, rule, alerts):
+            return
 
-            LOGGER.info('Rule [%s] triggered alert [%s] on log type [%s] from entity \'%s\' '
-                        'in service \'%s\'', rule.rule_name, alert.alert_id, payload.log_source,
-                        payload.entity, payload.service())
+        # Combine the required alert outputs with the ones for this rule
+        all_outputs = self._required_outputs_set.union(set(rule.outputs or []))
 
-            alerts.append(alert)
+        alert = Alert(
+            rule.rule_name, record, all_outputs,
+            cluster=os.environ['CLUSTER'],
+            context=rule.context,
+            log_source=str(payload.log_source),
+            log_type=payload.type,
+            rule_description=rule.func.__doc__,
+            source_entity=payload.entity,
+            source_service=payload.service()
+        )
+
+        LOGGER.info('Rule [%s] triggered alert [%s] on log type [%s] from entity \'%s\' '
+                    'in service \'%s\'', rule.rule_name, alert.alert_id, payload.log_source,
+                    payload.entity, payload.service())
+
+        alerts.append(alert)
 
     @staticmethod
     def _is_equal(record1, record2):
