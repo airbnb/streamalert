@@ -77,6 +77,7 @@ def {}(_):
             pass
         test_rule = rule.Rule(test_rule, outputs=['foo'], logs=['bar'])
         assert_equal(str(test_rule), '<Rule: test_rule; outputs: [\'foo\']; disabled: False>')
+        assert_equal(repr(test_rule), '<Rule: test_rule; outputs: [\'foo\']; disabled: False>')
 
     @patch('logging.Logger.exception')
     def test_rule_process_exception(self, log_mock):
