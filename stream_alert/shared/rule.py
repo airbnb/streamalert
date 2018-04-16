@@ -42,10 +42,12 @@ class Rule(object):
     def __init__(self, func, **kwargs):
         self.func = func
         self.rule_name = func.__name__
-        self.logs = kwargs.get('logs')
-        self.outputs = kwargs.get('outputs')
-        self.matchers = kwargs.get('matchers')
         self.datatypes = kwargs.get('datatypes')
+        self.logs = kwargs.get('logs')
+        self.matchers = kwargs.get('matchers')
+        self.merge_by_keys = kwargs.get('merge_by_keys')
+        self.merge_window_mins = kwargs.get('merge_window_mins') or 0
+        self.outputs = kwargs.get('outputs')
         self.req_subkeys = kwargs.get('req_subkeys')
         self.initial_context = kwargs.get('context')
         self.context = None
