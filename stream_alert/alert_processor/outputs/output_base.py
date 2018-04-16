@@ -51,9 +51,9 @@ def retry_on_exception(exceptions):
                               exceptions, # This is a tuple with exceptions
                               max_tries=OutputDispatcher.MAX_RETRY_ATTEMPTS,
                               jitter=backoff.full_jitter,
-                              on_backoff=backoff_handler,
-                              on_success=success_handler,
-                              on_giveup=giveup_handler)
+                              on_backoff=backoff_handler(),
+                              on_success=success_handler(),
+                              on_giveup=giveup_handler())
         def wrapper(*args, **kwargs):
             return func(*args, **kwargs)
         return wrapper

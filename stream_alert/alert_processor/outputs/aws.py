@@ -108,9 +108,9 @@ class KinesisFirehoseOutput(AWSOutput):
                               ClientError,
                               max_tries=self.MAX_BACKOFF_ATTEMPTS,
                               jitter=backoff.full_jitter,
-                              on_backoff=backoff_handler,
-                              on_success=success_handler,
-                              on_giveup=giveup_handler)
+                              on_backoff=backoff_handler(),
+                              on_success=success_handler(),
+                              on_giveup=giveup_handler())
         def _firehose_request_wrapper(json_alert, delivery_stream):
             """Make the PutRecord request to Kinesis Firehose with backoff
 

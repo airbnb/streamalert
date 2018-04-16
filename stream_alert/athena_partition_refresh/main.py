@@ -25,46 +25,11 @@ import backoff
 import boto3
 
 from stream_alert.athena_partition_refresh import LOGGER
-
-
-def _backoff_handler(details):
-    """Backoff logging handler for when polling occurs.
-
-    Args:
-        details (dict): Backoff context containing the number of tries,
-            target function currently executing, kwargs, args, value,
-            and wait time.
-    """
-    LOGGER.debug('[Backoff]: Trying again in %f seconds after %d tries calling %s',
-                 details['wait'],
-                 details['tries'],
-                 details['target'].__name__)
-
-
-def _success_handler(details):
-    """Backoff logging handler for when backoff succeeds.
-
-    Args:
-        details (dict): Backoff context containing the number of tries,
-            target function currently executing, kwargs, args, value,
-            and wait time.
-    """
-    LOGGER.debug('[Backoff]: Completed after %d tries calling %s',
-                 details['tries'],
-                 details['target'].__name__)
-
-
-def _giveup_handler(details):
-    """Backoff logging handler for when backoff gives up.
-
-    Args:
-        details (dict): Backoff context containing the number of tries,
-            target function currently executing, kwargs, args, value,
-            and wait time.
-    """
-    LOGGER.debug('[Backoff]: Exiting after %d tries calling %s',
-                 details['tries'],
-                 details['target'].__name__)
+from stream_alert.shared.backoff_handlers import (
+    backoff_handler,
+    giveup_handler,
+    success_handler
+)
 
 
 def _load_config():
@@ -188,8 +153,8 @@ class StreamAlertAthenaClient(object):
                               resp['QueryExecution']['Status']['State'] in states_to_backoff,
                               max_value=10,
                               jitter=backoff.full_jitter,
-                              on_backoff=_backoff_handler,
-                              on_success=_success_handler)
+                              on_backoff=backoff_handler(),
+                              on_success=success_handler(True))
         def _check_status(query_execution_id):
             return self.athena_client.get_query_execution(
                 QueryExecutionId=query_execution_id
@@ -453,9 +418,9 @@ class StreamAlertSQSClient(object):
                               max_tries=max_tries,
                               max_value=max_value,
                               jitter=backoff.full_jitter,
-                              on_backoff=_backoff_handler,
-                              on_success=_success_handler,
-                              on_giveup=_giveup_handler)
+                              on_backoff=backoff_handler(),
+                              on_success=success_handler(True),
+                              on_giveup=giveup_handler(True))
         def _receive_messages():
             polled_messages = self.sqs_client.receive_message(
                 QueueUrl=self.athena_sqs_url,
@@ -480,8 +445,8 @@ class StreamAlertSQSClient(object):
                               max_value=10,
                               max_tries=self.SQS_BACKOFF_MAX_RETRIES,
                               jitter=backoff.full_jitter,
-                              on_backoff=_backoff_handler,
-                              on_success=_success_handler)
+                              on_backoff=backoff_handler(),
+                              on_success=success_handler())
         def _delete_messages_from_queue():
             # Determine the message batch for SQS message deletion
             len_processed_messages = len(self.processed_messages)
