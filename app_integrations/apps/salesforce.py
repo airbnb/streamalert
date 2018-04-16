@@ -13,7 +13,10 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+import calendar
+from datetime import datetime
 import re
+import time
 
 import backoff
 import requests
@@ -71,6 +74,7 @@ class SalesforceApp(AppIntegration):
         self._auth_headers = None
         self._instance_url = None
         self._latest_api_version = 0
+        self._current_time = int(calendar.timegm(time.gmtime()))
 
     @classmethod
     def _type(cls):
@@ -389,6 +393,10 @@ class SalesforceApp(AppIntegration):
             response = self._fetch_event_logs(log_file_path)
             logs.extend(response)
 
+        # Update last_timestamp to lambda function starting time
+        self._last_timestamp = datetime.utcfromtimestamp(
+            self._current_time
+        ).strftime(self.date_formatter())
         return logs
 
 @StreamAlertApp
