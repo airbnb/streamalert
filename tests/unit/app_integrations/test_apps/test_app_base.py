@@ -14,9 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 # pylint: disable=abstract-class-instantiated,protected-access,no-self-use
-from mock import Mock, patch
-
 from botocore.exceptions import ClientError
+from mock import Mock, patch
 from nose.tools import (
     assert_equal,
     assert_false,

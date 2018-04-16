@@ -40,7 +40,6 @@ class Alert(object):
         'source_entity', 'source_service', 'staged'
     }
     DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S.%fZ'
-    DEFAULT_RULE_DESCRIPTION = 'No rule description provided'
 
     def __init__(self, rule_name, record, outputs, **kwargs):
         """Create a new Alert with a random ID and timestamped now.
@@ -100,7 +99,7 @@ class Alert(object):
         self.merge_by_keys = kwargs.get('merge_by_keys') or []
         self.merge_window = kwargs.get('merge_window') or timedelta(minutes=0)
         self.outputs_sent = kwargs.get('outputs_sent') or set()
-        self.rule_description = kwargs.get('rule_description') or self.DEFAULT_RULE_DESCRIPTION
+        self.rule_description = kwargs.get('rule_description') or None
         self.source_entity = kwargs.get('source_entity') or None
         self.source_service = kwargs.get('source_service') or None
         self.staged = kwargs.get('staged') or False

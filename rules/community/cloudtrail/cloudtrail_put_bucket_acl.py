@@ -1,7 +1,5 @@
 """Alert on dangerous S3 bucket ACLs."""
-from stream_alert.rule_processor.rules_engine import StreamRules
-
-rule = StreamRules.rule
+from stream_alert.shared.rule import rule
 
 _DENIED_ACLS = {
     'http://acs.amazonaws.com/groups/global/AuthenticatedUsers',

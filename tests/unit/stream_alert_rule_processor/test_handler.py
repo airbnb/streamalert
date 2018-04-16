@@ -31,17 +31,15 @@ import boto3
 
 from stream_alert.rule_processor import LOGGER
 from stream_alert.rule_processor.handler import load_config, StreamAlert
-from stream_alert.rule_processor.rules_engine import StreamRules
 from stream_alert.rule_processor.threat_intel import StreamThreatIntel
 from stream_alert.shared.alert import Alert
+from stream_alert.shared.rule import rule
 from tests.unit.stream_alert_rule_processor.test_helpers import (
     convert_events_to_kinesis,
     get_mock_context,
     get_valid_event,
     make_kinesis_raw_record,
 )
-
-rule = StreamRules.rule
 
 
 @mock_dynamodb2
@@ -125,7 +123,7 @@ class TestStreamAlert(object):
         )
 
     @patch('stream_alert.rule_processor.alert_forward.AlertForwarder.send_alerts')
-    @patch('stream_alert.rule_processor.handler.StreamRules.process')
+    @patch('stream_alert.rule_processor.handler.RulesEngine.run')
     @patch('stream_alert.rule_processor.handler.StreamClassifier.extract_service_and_entity')
     def test_run_with_alert(self, extract_mock, rules_mock, alerts_mock):
         """StreamAlert Class - Run, With Alert"""
@@ -177,7 +175,7 @@ class TestStreamAlert(object):
         assert_equal(log_mock.call_args[0][2], '{"bad": "data"}')
 
     @patch('stream_alert.rule_processor.alert_forward.AlertForwarder.send_alerts')
-    @patch('stream_alert.rule_processor.handler.StreamRules.process')
+    @patch('stream_alert.rule_processor.handler.RulesEngine.run')
     @patch('stream_alert.rule_processor.handler.StreamClassifier.extract_service_and_entity')
     def test_run_send_alerts(self, extract_mock, rules_mock, forwarder_mock):
         """StreamAlert Class - Run, Send Alert"""
@@ -193,7 +191,7 @@ class TestStreamAlert(object):
 
     @patch('logging.Logger.debug')
     @patch('stream_alert.rule_processor.alert_forward.AlertForwarder.send_alerts')
-    @patch('stream_alert.rule_processor.handler.StreamRules.process')
+    @patch('stream_alert.rule_processor.handler.RulesEngine.run')
     @patch('stream_alert.rule_processor.handler.StreamClassifier.extract_service_and_entity')
     def test_run_debug_log_alert(self, extract_mock, rules_mock, alerts_mock, log_mock):
         """StreamAlert Class - Run, Debug Log Alert"""

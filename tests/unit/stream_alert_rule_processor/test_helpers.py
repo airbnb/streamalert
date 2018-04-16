@@ -18,7 +18,6 @@ import json
 
 from boto3.dynamodb.types import TypeDeserializer
 from botocore.exceptions import ClientError, ParamValidationError
-
 from mock import Mock
 
 from stream_alert.rule_processor.classifier import StreamClassifier

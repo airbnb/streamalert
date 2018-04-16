@@ -16,8 +16,6 @@ limitations under the License.
 # pylint: disable=abstract-class-instantiated,protected-access,attribute-defined-outside-init
 import os
 
-from requests.exceptions import Timeout as ReqTimeout
-
 from mock import Mock, patch
 from moto import mock_kms, mock_s3
 from nose.tools import (
@@ -27,6 +25,7 @@ from nose.tools import (
     assert_is_none,
     assert_items_equal
 )
+from requests.exceptions import Timeout as ReqTimeout
 
 from stream_alert.alert_processor.outputs.output_base import (
     OutputDispatcher,

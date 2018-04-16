@@ -14,7 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 # pylint: disable=no-self-use,protected-access
-from collections import namedtuple
 import json
 import os
 
@@ -29,8 +28,9 @@ from nose.tools import (
 
 from stream_alert.rule_processor.config import load_config, load_env
 from stream_alert.rule_processor.parsers import get_parser
-from stream_alert.rule_processor.rules_engine import RuleAttributes, StreamRules
+from stream_alert.rule_processor.rules_engine import RulesEngine
 from stream_alert.shared import NORMALIZATION_KEY
+from stream_alert.shared.rule import disable, matcher, Matcher, rule, Rule
 
 from tests.unit.stream_alert_rule_processor.test_helpers import (
     get_mock_context,
@@ -41,14 +41,10 @@ from tests.unit.stream_alert_rule_processor.test_helpers import (
 )
 from helpers.base import fetch_values_by_datatype
 
-rule = StreamRules.rule
-matcher = StreamRules.matcher()
-disable = StreamRules.disable()
-
 
 @patch.dict(os.environ, {'CLUSTER': ''})
-class TestStreamRules(object):
-    """Test class for StreamRules"""
+class TestRulesEngine(object):
+    """Test class for RulesEngine"""
     @classmethod
     def setup_class(cls):
         """Setup the class before any methods"""
@@ -65,27 +61,11 @@ class TestStreamRules(object):
     def setup(self):
         """Setup before each method"""
         # Clear out the cached matchers and rules to avoid conflicts with production code
-        StreamRules._StreamRules__matchers.clear()  # pylint: disable=no-member
-        StreamRules._StreamRules__rules.clear()  # pylint: disable=no-member
+        Matcher._matchers.clear()
+        Rule._rules.clear()
         self.config = load_config('tests/unit/conf')
         self.config['global']['threat_intel']['enabled'] = False
-        self.rules_engine = StreamRules(self.config)
-
-    @patch('stream_alert.rule_processor.rules_engine.LOGGER.exception')
-    def test_bad_rule(self, log_mock):
-        """Rules Engine - Process Bad Rule Function"""
-        bad_rule = namedtuple('BadRule', 'rule_function')
-
-        def bad_rule_function(_):
-            """A simple function that will raise an exception"""
-            raise AttributeError('This rule raises an error')
-
-        test_rule = bad_rule(bad_rule_function)
-
-        self.rules_engine.process_rule({}, test_rule)
-
-        log_mock.assert_called_with('Encountered error with rule: %s',
-                                    'bad_rule_function')
+        self.rules_engine = RulesEngine(self.config)
 
     def test_basic_rule_matcher_process(self):
         """Rules Engine - Basic Rule/Matcher"""
@@ -93,22 +73,18 @@ class TestStreamRules(object):
         def prod(rec):  # pylint: disable=unused-variable
             return rec['environment'] == 'prod'
 
-        @rule()
-        def incomplete_rule(_):  # pylint: disable=unused-variable
-            return True
-
         @rule(logs=['test_log_type_json_nested_with_data'],
               outputs=['s3:sample_bucket'])
         def minimal_rule(rec):  # pylint: disable=unused-variable
             return rec['unixtime'] == 1483139547
 
-        @rule(matchers=['foobar', 'prod'],
+        @rule(matchers=['prod'],
               logs=['test_log_type_json_nested_with_data'],
               outputs=['pagerduty:sample_integration'])
         def chef_logs(rec):  # pylint: disable=unused-variable
             return rec['application'] == 'chef'
 
-        @rule(matchers=['foobar', 'prod'],
+        @rule(matchers=['prod'],
               logs=['test_log_type_json_nested_with_data'],
               outputs=['pagerduty:sample_integration'])
         def test_nest(rec):  # pylint: disable=unused-variable
@@ -133,7 +109,7 @@ class TestStreamRules(object):
         payload = load_and_classify_payload(self.config, service, entity, raw_record)
 
         # process payloads
-        alerts, _ = self.rules_engine.process(payload)
+        alerts, _ = self.rules_engine.run(payload)
 
         # check alert output
         assert_equal(len(alerts), 3)
@@ -157,9 +133,9 @@ class TestStreamRules(object):
                 'us-east' in rec['awsRegion'] and
                 'AWS' in rec['requestParameters']['program']
             )
-        rule_attrs = RuleAttributes(
+        rule_attrs = Rule(
+            cloudtrail_us_east_logs,
             rule_name='cloudtrail_us_east_logs',
-            rule_function=cloudtrail_us_east_logs,
             matchers=[],
             datatypes=[],
             logs=['test_log_type_json_nested'],
@@ -246,12 +222,12 @@ class TestStreamRules(object):
 
         valid_record = [
             rec for rec in parsed_result if rec['requestParameters'] is not None][0]
-        valid_subkey_check = StreamRules.process_subkeys(valid_record, 'json', rule_attrs)
+        valid_subkey_check = RulesEngine.process_subkeys(valid_record, 'json', rule_attrs)
         assert_true(valid_subkey_check)
 
         invalid_record = [
             rec for rec in parsed_result if rec['requestParameters'] is None][0]
-        invalid_subkey_check = StreamRules.process_subkeys(invalid_record, 'json', rule_attrs)
+        invalid_subkey_check = RulesEngine.process_subkeys(invalid_record, 'json', rule_attrs)
         assert_false(invalid_subkey_check)
 
     def test_process_subkeys(self):
@@ -298,7 +274,7 @@ class TestStreamRules(object):
             raw_record = make_kinesis_raw_record(entity, kinesis_data)
             payload = load_and_classify_payload(self.config, service, entity, raw_record)
 
-            alerts.extend(self.rules_engine.process(payload)[0])
+            alerts.extend(self.rules_engine.run(payload)[0])
 
         # check alert output
         assert_equal(len(alerts), 2)
@@ -328,7 +304,7 @@ class TestStreamRules(object):
         payload = load_and_classify_payload(self.config, service, entity, raw_record)
 
         # process payloads
-        alerts, _ = self.rules_engine.process(payload)
+        alerts, _ = self.rules_engine.run(payload)
 
         # alert tests
         assert_equal(len(alerts), 1)
@@ -356,7 +332,7 @@ class TestStreamRules(object):
         payload = load_and_classify_payload(self.config, service, entity, raw_record)
 
         # process payloads
-        alerts, _ = self.rules_engine.process(payload)
+        alerts, _ = self.rules_engine.run(payload)
 
         # alert tests
         assert_equal(len(alerts), 1)
@@ -383,7 +359,7 @@ class TestStreamRules(object):
         payload = load_and_classify_payload(self.config, service, entity, raw_record)
 
         # process payloads
-        alerts, _ = self.rules_engine.process(payload)
+        alerts, _ = self.rules_engine.run(payload)
 
         # alert tests
         assert_equal(len(alerts), 0)
@@ -426,7 +402,7 @@ class TestStreamRules(object):
         payload = load_and_classify_payload(self.config, service, entity, raw_record)
 
         # process payloads
-        alerts, _ = self.rules_engine.process(payload)
+        alerts, _ = self.rules_engine.run(payload)
 
         # alert tests
         assert_equal(len(alerts), 2)
@@ -497,7 +473,7 @@ class TestStreamRules(object):
             raw_record = make_kinesis_raw_record(entity, kinesis_data)
             payload = load_and_classify_payload(self.config, service, entity, raw_record)
 
-            alerts.extend(self.rules_engine.process(payload)[0])
+            alerts.extend(self.rules_engine.run(payload)[0])
 
         # check alert output
         assert_equal(len(alerts), 2)
@@ -515,7 +491,7 @@ class TestStreamRules(object):
             'username': [['sub_key1']],
             'ipv4': [['sub_key2']]
         }
-        StreamRules.update(results, parent_key, nested_results)
+        RulesEngine.update(results, parent_key, nested_results)
         expected_results = {
             'username': [['key2', 'sub_key1']],
             'ipv4': [['key1'], ['key2', 'sub_key2']]
@@ -533,7 +509,7 @@ class TestStreamRules(object):
             'username': [['sub_key1', 'sub_key11']],
             'type': [['sub_key2']]
         }
-        StreamRules.update(results, parent_key, nested_results)
+        RulesEngine.update(results, parent_key, nested_results)
         expected_results = {
             'username': [['key2', 'sub_key1', 'sub_key11']],
             'type': [['key4'], ['key2', 'sub_key2']],
@@ -564,7 +540,7 @@ class TestStreamRules(object):
             'ipv4': ['destination', 'source', 'sourceIPAddress']
         }
         datatypes = ['account', 'ipv4', 'region']
-        results = StreamRules.match_types_helper(
+        results = RulesEngine.match_types_helper(
             record,
             normalized_types,
             datatypes
@@ -599,7 +575,7 @@ class TestStreamRules(object):
             'userName': ['userName', 'owner', 'invokedBy']
         }
         datatypes = ['account', 'ipv4', 'region', 'userName']
-        results = StreamRules.match_types_helper(
+        results = RulesEngine.match_types_helper(
             record,
             normalized_types,
             datatypes
@@ -670,41 +646,13 @@ class TestStreamRules(object):
             raw_record = make_kinesis_raw_record(entity, kinesis_data)
             payload = load_and_classify_payload(self.config, service, entity, raw_record)
 
-            alerts.extend(self.rules_engine.process(payload)[0])
+            alerts.extend(self.rules_engine.run(payload)[0])
 
         assert_equal(len(alerts), 3)
         rule_names = ['no_logs_has_datatypes',
                       'has_logs_no_datatypes',
                       'has_logs_datatypes']
         assert_items_equal([alerts[i].rule_name for i in range(3)], rule_names)
-
-    def test_process_required_logs(self):
-        """Rules Engine - Logs is required when no datatypes defined"""
-        @rule(outputs=['s3:sample_bucket'])
-        def match_ipaddress(): # pylint: disable=unused-variable
-            """Testing rule to detect matching IP address"""
-            return True
-
-        kinesis_data_items = [
-            {
-                'account': 123456,
-                'region': '123456123456',
-                'source': '1.1.1.2',
-                'detail': {
-                    'eventName': 'ConsoleLogin',
-                    'sourceIPAddress': '1.1.1.2',
-                    'recipientAccountId': '654321'
-                }
-            }
-        ]
-
-        for data in kinesis_data_items:
-            kinesis_data = json.dumps(data)
-            service, entity = 'kinesis', 'test_kinesis_stream'
-            raw_record = make_kinesis_raw_record(entity, kinesis_data)
-            payload = load_and_classify_payload(self.config, service, entity, raw_record)
-
-            assert_false(self.rules_engine.process(payload)[0])
 
     def test_reset_normalized_types(self):
         """Rules Engine - Normalized types should be reset after each iteration"""
@@ -755,7 +703,7 @@ class TestStreamRules(object):
             raw_record = make_kinesis_raw_record(entity, kinesis_data)
             payload = load_and_classify_payload(self.config, service, entity, raw_record)
 
-            alerts.extend(self.rules_engine.process(payload)[0])
+            alerts.extend(self.rules_engine.run(payload)[0])
 
         assert_equal(len(alerts), 3)
         for alert in alerts:
@@ -778,7 +726,7 @@ class TestStreamRules(object):
         toggled_config['global']['threat_intel']['enabled'] = True
         toggled_config['global']['threat_intel']['dynamodb_table'] = 'test_table_name'
 
-        new_rules_engine = StreamRules(toggled_config)
+        new_rules_engine = RulesEngine(toggled_config)
         kinesis_data_items = [
             {
                 'account': 123456,
@@ -798,7 +746,7 @@ class TestStreamRules(object):
             raw_record = make_kinesis_raw_record(entity, kinesis_data)
             payload = load_and_classify_payload(toggled_config, service, entity, raw_record)
 
-            assert_equal(len(new_rules_engine.process(payload)[0]), 1)
+            assert_equal(len(new_rules_engine.run(payload)[0]), 1)
 
     @patch('boto3.client')
     def test_threat_intel_match(self, mock_client):
@@ -814,7 +762,7 @@ class TestStreamRules(object):
         toggled_config['global']['threat_intel']['enabled'] = True
         toggled_config['global']['threat_intel']['dynamodb_table'] = 'test_table_name'
 
-        new_rules_engine = StreamRules(toggled_config)
+        new_rules_engine = RulesEngine(toggled_config)
         records = mock_normalized_records()
         alerts = new_rules_engine.threat_intel_match(records)
         assert_equal(len(alerts), 2)
@@ -843,7 +791,7 @@ class TestStreamRules(object):
         toggled_config['global']['threat_intel']['enabled'] = True
         toggled_config['global']['threat_intel']['dynamodb_table'] = 'test_table_name'
 
-        new_rules_engine = StreamRules(toggled_config)
+        new_rules_engine = RulesEngine(toggled_config)
         kinesis_data = {
             "Field1": {
                 "SubField1": {
@@ -864,7 +812,7 @@ class TestStreamRules(object):
         service, entity = 'kinesis', 'test_stream_threat_intel'
         raw_record = make_kinesis_raw_record(entity, kinesis_data)
         payload = load_and_classify_payload(toggled_config, service, entity, raw_record)
-        alerts, normalized_records = new_rules_engine.process(payload)
+        alerts, normalized_records = new_rules_engine.run(payload)
 
         # Two testing rules are for threat intelligence matching. So no alert will be
         # generated before threat intel takes effect.
@@ -915,7 +863,7 @@ class TestStreamRules(object):
         payload = load_and_classify_payload(self.config, service, entity, raw_record)
 
         # process payloads
-        alerts, _ = self.rules_engine.process(payload)
+        alerts, _ = self.rules_engine.run(payload)
 
         # alert tests
         assert_equal(alerts[0].context['assigned_user'], 'valid_user')

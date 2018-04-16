@@ -15,6 +15,7 @@ limitations under the License.
 """
 # pylint: disable=protected-access,attribute-defined-outside-init,no-self-use
 import base64
+
 from mock import patch
 from moto import mock_s3, mock_kms
 from nose.tools import assert_false, assert_true, assert_equal, assert_is_not_none

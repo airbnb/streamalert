@@ -15,9 +15,9 @@ limitations under the License.
 """
 # pylint: disable=abstract-class-instantiated,protected-access,no-self-use,abstract-method,attribute-defined-outside-init
 import json
-from mock import Mock, mock_open, patch
 
 from boxsdk.exception import BoxException
+from mock import Mock, mock_open, patch
 from nose.tools import assert_equal, assert_false, assert_items_equal, assert_true
 from requests.exceptions import ConnectionError, Timeout
 

@@ -1,7 +1,5 @@
 """Alert on AWS Network ACLs that allow ingress from anywhere."""
-from stream_alert.rule_processor.rules_engine import StreamRules
-
-rule = StreamRules.rule
+from stream_alert.shared.rule import rule
 
 
 @rule(

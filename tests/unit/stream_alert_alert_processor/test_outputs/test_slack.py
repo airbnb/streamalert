@@ -15,6 +15,7 @@ limitations under the License.
 """
 # pylint: disable=protected-access,attribute-defined-outside-init,no-self-use
 from collections import Counter, OrderedDict
+
 from mock import patch
 from moto import mock_s3, mock_kms
 from nose.tools import assert_equal, assert_false, assert_true, assert_set_equal

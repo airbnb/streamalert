@@ -1,8 +1,6 @@
 """Alert when a DUO bypass code is created that is non-expiring."""
 from helpers.base import safe_json_loads
-from stream_alert.rule_processor.rules_engine import StreamRules
-
-rule = StreamRules.rule
+from stream_alert.shared.rule import rule
 
 
 @rule(logs=['duo:administrator'])

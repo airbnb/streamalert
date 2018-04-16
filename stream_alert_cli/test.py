@@ -34,8 +34,7 @@ from stream_alert.rule_processor.handler import StreamAlert
 import stream_alert.rule_processor.main  # pylint: disable=unused-import
 from stream_alert.rule_processor.parsers import get_parser
 from stream_alert.rule_processor.payload import load_stream_payload
-from stream_alert.rule_processor.rules_engine import StreamRules
-from stream_alert.shared import resources, stats
+from stream_alert.shared import resources, stats, rule
 from stream_alert_cli import helpers
 from stream_alert_cli.logger import (
     get_log_memory_handler,
@@ -261,13 +260,19 @@ class RuleProcessorTester(object):
         # Get a list of any rules that triggerer but are not defined in the 'trigger_rules'
         unexpected_alerts = []
 
+        disabled_rules = [item for item in test_event['trigger_rules']
+                          if rule.Rule.get_rule(item).disabled]
+
+        expected_alert_count -= len(disabled_rules)
+
+        triggers = set(test_event['trigger_rules']) - set(disabled_rules)
         # we only want alerts for the specific rule being tested (if trigger_rules are defined)
-        if test_event['trigger_rules']:
+        if triggers:
             unexpected_alerts = [alert for alert in alerts
-                                 if alert.rule_name not in test_event['trigger_rules']]
+                                 if alert.rule_name not in triggers]
 
             alerts = [alert for alert in alerts
-                      if alert.rule_name in test_event['trigger_rules']]
+                      if alert.rule_name in triggers]
 
         alerted_properly = (len(alerts) == expected_alert_count) and not unexpected_alerts
         current_test_passed = alerted_properly and all_records_matched_schema
@@ -281,8 +286,11 @@ class RuleProcessorTester(object):
             print '\n{}'.format(file_name)
 
         if self.print_output:
+            disabled_output = ''
+            if disabled_rules:
+                disabled_output = ',disabled={}'.format(len(disabled_rules))
             report_output(current_test_passed, [
-                '[trigger={}]'.format(expected_alert_count),
+                '[trigger={}{}]'.format(expected_alert_count, disabled_output),
                 'rule',
                 test_event['service'],
                 test_event['description']])
@@ -293,7 +301,7 @@ class RuleProcessorTester(object):
         elif not alerted_properly:
             message = ('Test failure: [{}.json] Test event with description '
                        '\'{}\'').format(file_name, test_event['description'])
-            if alerts and not test_event['trigger_rules']:
+            if alerts and not triggers:
                 # If there was a failure due to alerts triggering for a test event
                 # that does not have any trigger_rules configured
                 context = 'is triggering the following rules but should not trigger at all: {}'
@@ -311,7 +319,7 @@ class RuleProcessorTester(object):
                 # defined in the trigger_rules list for the event
                 context = 'did not trigger the following rules: {}'
                 non_triggered_rules = ', '.join(
-                    '\'{}\''.format(rule) for rule in test_event['trigger_rules']
+                    '\'{}\''.format(rule) for rule in triggers
                     if rule not in [alert.rule_name for alert in alerts])
                 message = '{} {}'.format(message, context.format(non_triggered_rules))
             else:
@@ -926,7 +934,7 @@ def check_untested_rules(all_test_rules):
     Args:
         all_test_rules (set): A collection of all of the rules being tested
     """
-    untested_rules = set(StreamRules.get_rules()).difference(all_test_rules)
+    untested_rules = set(rule.Rule.rule_names()).difference(all_test_rules)
     if untested_rules:
         LOGGER_CLI.warn('%sNo test events configured for the following rules. Please add '
                         'corresponding tests for these rules in \'%s\' to avoid seeing '
@@ -940,7 +948,7 @@ def check_untested_files(all_test_rules):
     Args:
         all_test_rules (set): A collection of all of the rules being tested
     """
-    invalid_rules = all_test_rules.difference(set(StreamRules.get_rules()))
+    invalid_rules = all_test_rules.difference(set(rule.Rule.rule_names()))
     if invalid_rules:
         LOGGER_CLI.warn('%sNo rules found in \'rules/\' that match the rules declared within '
                         '\'trigger_rules\' in a test event.  Please update the list of '

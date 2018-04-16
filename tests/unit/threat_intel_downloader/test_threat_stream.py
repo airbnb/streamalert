@@ -14,6 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 # pylint: disable=abstract-class-instantiated,protected-access,no-self-use
+import boto3
+from botocore.exceptions import ClientError
 from mock import patch, call
 from nose.tools import (
     assert_equal,
@@ -23,14 +25,9 @@ from nose.tools import (
     raises
 )
 
-import boto3
-from botocore.exceptions import ClientError
-
 from stream_alert.threat_intel_downloader.exceptions import ThreatStreamCredsError
 from stream_alert.threat_intel_downloader.threat_stream import ThreatStream
-
 from tests.unit.app_integrations.test_helpers import MockSSMClient
-
 from tests.unit.threat_intel_downloader.test_helpers import (
     mock_requests_get,
     mock_config,
