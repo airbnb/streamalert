@@ -203,12 +203,12 @@ class RulesEngine(object):
 
         for record in payload.records:
             for rule in rules:
-                # matcher check
-                if not rule.check_matchers(record):
-                    continue
-
                 # subkey check
                 if not self.process_subkeys(record, payload.type, rule):
+                    continue
+
+                # matcher check
+                if not rule.check_matchers(record):
                     continue
 
                 if rule.datatypes:
