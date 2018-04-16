@@ -170,9 +170,9 @@ class TestStreamAlert(object):
         self.__sa_handler.run(event)
 
         assert_equal(
-            log_mock.call_args[0][0],
+            log_mock.call_args_list[0][0][0],
             'Record does not match any defined schemas: %s\n%s')
-        assert_equal(log_mock.call_args[0][2], '{"bad": "data"}')
+        assert_equal(log_mock.call_args_list[0][0][2], '{"bad": "data"}')
 
     @patch('stream_alert.rule_processor.alert_forward.AlertForwarder.send_alerts')
     @patch('stream_alert.rule_processor.handler.RulesEngine.run')

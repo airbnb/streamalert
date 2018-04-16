@@ -21,7 +21,7 @@ from stream_alert.rule_processor import LOGGER
 from stream_alert.rule_processor.threat_intel import StreamThreatIntel
 from stream_alert.shared import NORMALIZATION_KEY, resources
 from stream_alert.shared.alert import Alert
-from stream_alert.shared.rule import Rule
+from stream_alert.shared.rule import import_folders, Rule
 
 
 _IGNORE_KEYS = {StreamThreatIntel.IOC_KEY, NORMALIZATION_KEY}
@@ -33,6 +33,8 @@ class RulesEngine(object):
         """Initialize a RulesEngine instance to cache a StreamThreatIntel instance."""
         self._threat_intel = StreamThreatIntel.load_from_config(config)
         self._required_outputs_set = resources.get_required_outputs()
+        import_folders(*[item for location in {'rule_locations', 'matcher_locations'}
+                         for item in config['global']['general'][location]])
 
     @staticmethod
     def match_types(record, normalized_types, datatypes):
