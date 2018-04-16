@@ -13,9 +13,15 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 import uuid
+
+from stream_alert.shared import resources
+
+
+class AlertCreationError(Exception):
+    """Raised when alert creation fails because of an invalid format."""
 
 
 class Alert(object):
@@ -30,9 +36,10 @@ class Alert(object):
 
     _EXPECTED_INIT_KWARGS = {
         'alert_id', 'attempts', 'cluster', 'context', 'created', 'dispatched', 'log_source',
-        'log_type', 'merge_by_keys', 'merge_window_mins', 'retry_outputs', 'rule_description',
+        'log_type', 'merge_by_keys', 'merge_window', 'outputs_sent', 'rule_description',
         'source_entity', 'source_service', 'staged'
     }
+    DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S.%fZ'
     DEFAULT_RULE_DESCRIPTION = 'No rule description provided'
 
     def __init__(self, rule_name, record, outputs, **kwargs):
@@ -48,21 +55,24 @@ class Alert(object):
             attempts (int): Number of attempts to deliver this alert so far. Defaults to 0.
             cluster (str): Cluster from which the alert was generated.
             context (dict): Context dictionary associated with the triggering rule.
-            created (str): Human-readable creation timestamp. If not specified, uses current time.
-            dispatched (int): UNIX timestamp when the alert was last dispatched for processing.
+            created (datetime): Alert creation time (UTC).
+            dispatched (datetime): Time alert was last dispatched (UTC).
             log_source (str): Log type which triggered the alert, e.g. "binaryalert"
             log_type (str): The type of the triggering log. Usually "json"
             merge_by_keys (list): Alerts are merged if the values associated with all of these
                 top-level keys are equal. TODO: Support nested merge keys
-            merge_window_mins (int): Merged alerts are sent at this interval.
-            retry_outputs (set): Subset of outputs which failed to send and should be retried.
+            merge_window (timedelta): Merged alerts are sent at this interval.
+            outputs_sent (set): Subset of outputs which have sent successfully.
             rule_description (str): Description associated with the triggering rule.
             source_entity (str): Name of location from which the record originated. E.g. "mychannel"
             source_service (str): Input type from which the record originated. E.g. "slack"
             staged (bool): Whether this rule is currently in the staging process. Defaults to False
+
+        Raises:
+            AlertCreationError: If the keyword arguments are not in the expected set.
         """
         if not set(kwargs).issubset(self._EXPECTED_INIT_KWARGS):
-            raise TypeError(
+            raise AlertCreationError(
                 'Invalid Alert kwargs: {} are not in the expected set of {}'.format(
                     ', '.join(sorted(set(kwargs).difference(self._EXPECTED_INIT_KWARGS))),
                     ', '.join(sorted(self._EXPECTED_INIT_KWARGS)))
@@ -72,7 +82,7 @@ class Alert(object):
         # convert any Falsey value to the expected type during Alert creation.
         # This is why we use "or" instead of kwargs.get() with a default value.
         self.alert_id = kwargs.get('alert_id') or str(uuid.uuid4())
-        self.created = kwargs.get('created') or datetime.now().strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+        self.created = kwargs.get('created') or datetime.utcnow()
 
         self.outputs = outputs
         self.record = record
@@ -81,12 +91,15 @@ class Alert(object):
         self.attempts = int(kwargs.get('attempts', 0)) or 0  # Convert possible Decimal to int
         self.cluster = kwargs.get('cluster') or None
         self.context = kwargs.get('context') or {}
-        self.dispatched = int(kwargs.get('dispatched', 0)) or 0
+
+        # datetime.min isn't supported by strftime, so use Unix epoch instead for default value
+        self.dispatched = kwargs.get('dispatched') or datetime(year=1970, month=1, day=1)
+
         self.log_source = kwargs.get('log_source') or None
         self.log_type = kwargs.get('log_type') or None
         self.merge_by_keys = kwargs.get('merge_by_keys') or []
-        self.merge_window_mins = int(kwargs.get('merge_window_mins', 0)) or 0
-        self.retry_outputs = kwargs.get('retry_outputs') or None
+        self.merge_window = kwargs.get('merge_window') or timedelta(minutes=0)
+        self.outputs_sent = kwargs.get('outputs_sent') or set()
         self.rule_description = kwargs.get('rule_description') or self.DEFAULT_RULE_DESCRIPTION
         self.source_entity = kwargs.get('source_entity') or None
         self.source_service = kwargs.get('source_service') or None
@@ -110,9 +123,19 @@ class Alert(object):
         return {'RuleName': self.rule_name, 'AlertID': self.alert_id}
 
     @property
+    def merge_enabled(self):
+        """Return True if merge configuration is enabled for this alert."""
+        return self.merge_by_keys and self.merge_window
+
+    @property
     def remaining_outputs(self):
-        """Return the set of outputs which still need to be sent."""
-        return self.retry_outputs or self.outputs
+        """Return the set of outputs which still need to be sent for this alert."""
+        if self.merge_enabled:
+            # This alert will be merged later - for now, we care only about required outputs.
+            outputs_to_send_now = self.outputs.intersection(resources.get_required_outputs())
+        else:
+            outputs_to_send_now = self.outputs
+        return outputs_to_send_now.difference(self.outputs_sent)
 
     def dynamo_record(self):
         """Convert this alert to a complete Dynamo record for the alerts table.
@@ -126,17 +149,17 @@ class Alert(object):
             'Attempts': self.attempts,
             'Cluster': self.cluster,
             'Context': self.context,
-            'Created': self.created,
-            'Dispatched': self.dispatched,
+            'Created': self.created.strftime(self.DATETIME_FORMAT),
+            'Dispatched': self.dispatched.strftime(self.DATETIME_FORMAT),
             'LogSource': self.log_source,
             'LogType': self.log_type,
             'MergeByKeys': self.merge_by_keys,
-            'MergeWindowMins': self.merge_window_mins,
+            'MergeWindowMins': int(self.merge_window.total_seconds() / 60),
             'Outputs': self.outputs,
+            'OutputsSent': self.outputs_sent or None,  # Empty sets not allowed by Dynamo
             # Compact JSON encoding (no spaces). We have to JSON-encode here
             # (instead of just passing the dict) because Dynamo does not allow empty string values.
             'Record': json.dumps(self.record, separators=(',', ':')),
-            'RetryOutputs': self.retry_outputs,
             'RuleDescription': self.rule_description,
             'SourceEntity': self.source_entity,
             'SourceService': self.source_service,
@@ -152,27 +175,34 @@ class Alert(object):
 
         Returns:
             Alert: An alert with all properties populated from the Dynamo item
+
+        Raises:
+            AlertCreationError: If the record isn't formatted correctly.
         """
-        return cls(
-            record['RuleName'],
-            json.loads(record['Record']),
-            record['Outputs'],
-            alert_id=record['AlertID'],
-            attempts=record.get('Attempts'),
-            cluster=record.get('Cluster'),
-            context=record.get('Context'),
-            created=record.get('Created'),
-            dispatched=record.get('Dispatched'),
-            log_source=record.get('LogSource'),
-            log_type=record.get('LogType'),
-            merge_by_keys=record.get('MergeByKeys'),
-            merge_window_mins=record.get('MergeWindowMins'),
-            retry_outputs=record.get('RetryOutputs'),
-            rule_description=record.get('RuleDescription'),
-            source_entity=record.get('SourceEntity'),
-            source_service=record.get('SourceService'),
-            staged=record.get('Staged')
-        )
+        try:
+            return cls(
+                record['RuleName'],
+                json.loads(record['Record']),
+                set(record['Outputs']),  # In JSON, outputs may be a list - convert back to set
+                alert_id=record['AlertID'],
+                attempts=record.get('Attempts'),
+                cluster=record.get('Cluster'),
+                context=record.get('Context'),
+                created=datetime.strptime(record['Created'], cls.DATETIME_FORMAT),
+                dispatched=datetime.strptime(
+                    record['Dispatched'], cls.DATETIME_FORMAT) if 'Dispatched' in record else None,
+                log_source=record.get('LogSource'),
+                log_type=record.get('LogType'),
+                merge_by_keys=record.get('MergeByKeys'),
+                merge_window=timedelta(minutes=int(record.get('MergeWindowMins', 0))),
+                outputs_sent=set(record.get('OutputsSent') or []),
+                rule_description=record.get('RuleDescription'),
+                source_entity=record.get('SourceEntity'),
+                source_service=record.get('SourceService'),
+                staged=record.get('Staged')
+            )
+        except (KeyError, TypeError, ValueError) as error:
+            raise AlertCreationError(error)
 
     def output_dict(self):
         """Convert the alert into a dictionary ready to send to an output.
@@ -188,7 +218,7 @@ class Alert(object):
         return {
             'cluster': self.cluster or '',
             'context': self.context or {},
-            'created': self.created or '',
+            'created': self.created.strftime(self.DATETIME_FORMAT),
             'id': self.alert_id,
             'log_source': self.log_source or '',
             'log_type': self.log_type or '',
@@ -202,6 +232,38 @@ class Alert(object):
         }
 
     # ---------- Alert Merging ----------
+
+    def can_merge(self, other):
+        """Check if two alerts can be merged together.
+
+        Args:
+            other (Alert): Check if the instance can merge with this other alert.
+
+        Returns:
+            True if these alerts fit in the same merge window and have the same merge key values.
+        """
+        if not self.merge_enabled or not other.merge_enabled:
+            # Merge information is not defined for both of these alerts.
+            return False
+
+        older, newer = min(self, other), max(self, other)
+        if newer.created > older.created + older.merge_window:
+            # These alerts won't fit in a single merge window.
+            return False
+
+        if set(self.merge_by_keys) != set(other.merge_by_keys):
+            # These alerts have different definitions of merge keys.
+            return False
+
+        for key in self.merge_by_keys:
+            if key not in self.record or key not in other.record:
+                # This merge key doesn't exist in both records.
+                return False
+            if self.record[key] != other.record[key]:
+                # The value of this merge key isn't the same in both records.
+                return False
+
+        return True
 
     @classmethod
     def _compute_common(cls, records):
@@ -319,11 +381,14 @@ class Alert(object):
         # Keys are named such that more important information is at the beginning alphabetically.
         new_record = {
             'AlertCount': len(alerts),
-            'AlertTimeFirst': min(alert.created for alert in alerts),
-            'AlertTimeLast': max(alert.created for alert in alerts),
+            'AlertTimeFirst': min(alert.created for alert in alerts).strftime(cls.DATETIME_FORMAT),
+            'AlertTimeLast': max(alert.created for alert in alerts).strftime(cls.DATETIME_FORMAT),
             'MergedBy': merged_by,
             'OtherCommonKeys': {k: v for k, v in common.iteritems() if k not in merged_by},
-            'ValueDiffs': [cls._compute_diff(common, alert.record) for alert in alerts]
+            'ValueDiffs': {
+                alert.created.strftime(cls.DATETIME_FORMAT): cls._compute_diff(common, alert.record)
+                for alert in alerts
+            }
         }
 
         # TODO: the cluster, log_source, source_entity, etc, could be different between alerts

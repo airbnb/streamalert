@@ -13,13 +13,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from datetime import datetime
 import os
-import time
 
 from botocore.exceptions import ClientError
 from mock import ANY, MagicMock, patch
 from moto import mock_dynamodb2
-from nose.tools import assert_equal, assert_is_instance, assert_raises
+from nose.tools import assert_equal, assert_raises
 
 from stream_alert.shared import alert as alert_module, alert_table
 from stream_alert_cli.helpers import setup_mock_alerts_table
@@ -46,7 +46,7 @@ class TestAlertTable(object):
             alert_module.Alert(
                 'even' if i % 2 == 0 else 'odd',
                 {'key1': 'value1', 'key2': 'value2'},
-                {'aws-s3:test-bucket', 'slack:test-channel'},
+                {'aws-firehose:alerts', 'aws-s3:test-bucket', 'slack:test-channel'},
             )
             for i in range(3)
         ]
@@ -74,21 +74,18 @@ class TestAlertTable(object):
         """Alert Table - Rule Names From Table Scan"""
         assert_equal({'even', 'odd'}, self.alert_table.rule_names())
 
-    def test_pending_alerts(self):
+    def test_get_alert_records(self):
         """Alert Table - Pending Alerts From Table Query"""
-        result = list(self.alert_table.pending_alerts('odd', _ALERT_PROCESSOR_TIMEOUT_SEC))
+        result = list(self.alert_table.get_alert_records('odd', _ALERT_PROCESSOR_TIMEOUT_SEC))
         assert_equal(1, len(result))
-
-        original_alert = self.alerts[1]
-        result_alert = result[0]
         # All the properties should be the same between the two alerts
-        assert_equal(repr(original_alert), repr(result_alert))
+        assert_equal(self.alerts[1].dynamo_record(), result[0])
 
-    def test_get_alert(self):
+    def test_get_alert_record(self):
         """Alert Table - Get a Single Alert"""
-        result = self.alert_table.get_alert(self.alerts[0].rule_name, self.alerts[0].alert_id)
-        assert_is_instance(result, alert_module.Alert)
-        assert_equal(repr(self.alerts[0]), repr(result))
+        result = self.alert_table.get_alert_record(
+            self.alerts[0].rule_name, self.alerts[0].alert_id)
+        assert_equal(self.alerts[0].dynamo_record(), result)
 
     def test_add_alerts(self):
         """Alert Table - Add Alerts"""
@@ -99,12 +96,12 @@ class TestAlertTable(object):
         """Alert Table - Mark As Dispatched"""
         alert = self.alerts[1]
         alert.attempts = 1
-        alert.dispatched = int(time.time())
+        alert.dispatched = datetime.utcnow()
         self.alert_table.mark_as_dispatched(alert)
 
         # Verify that there is now 1 attempt
-        result = self.alert_table.get_alert(alert.rule_name, alert.alert_id)
-        assert_equal(1, result.attempts)
+        result = self.alert_table.get_alert_record(alert.rule_name, alert.alert_id)
+        assert_equal(1, result['Attempts'])
 
     def test_mark_as_dispatched_conditional_fail(self):
         """Alert Table - Mark As Dispatched - Alert is Already Deleted"""
@@ -117,7 +114,7 @@ class TestAlertTable(object):
         # No error should be raised if the conditional delete failed
         alert = self.alerts[1]
         alert.attempts = 1
-        alert.dispatched = int(time.time())
+        alert.dispatched = datetime.utcnow()
         self.alert_table.mark_as_dispatched(alert)
         self.alert_table._table.update_item.assert_called_once_with(
             Key={'RuleName': alert.rule_name, 'AlertID': alert.alert_id},
@@ -136,14 +133,14 @@ class TestAlertTable(object):
 
         assert_raises(ClientError, self.alert_table.mark_as_dispatched, self.alerts[0])
 
-    def test_update_retry_outputs(self):
+    def test_update_sent_outputs(self):
         """Alert Table - Update Retry Outputs"""
         alert = self.alerts[0]
-        alert.retry_outputs = {'aws-s3:test-bucket'}
-        self.alert_table.update_retry_outputs(alert)
+        alert.sent_outputs = {'aws-s3:test-bucket'}
+        self.alert_table.update_sent_outputs(alert)
         # Nothing else to verify - moto apparently doesn't support set updates
 
-    def test_update_retry_outputs_unhandled_exception(self):
+    def test_update_sent_outputs_unhandled_exception(self):
         """Alert Table - Update Retry Outputs - An Unhandled Exception is Re-Raised"""
         self.alert_table._table = MagicMock()
 
@@ -151,10 +148,9 @@ class TestAlertTable(object):
             raise ClientError({'Error': {'Code': 'TEST'}}, 'UpdateItem')
         self.alert_table._table.update_item.side_effect = mock_update
 
-        assert_raises(ClientError, self.alert_table.update_retry_outputs, self.alerts[0])
+        assert_raises(ClientError, self.alert_table.update_sent_outputs, self.alerts[0])
 
     def test_delete_alert(self):
         """Alert Table - Delete Alert"""
-        for alert in self.alerts:
-            self.alert_table.delete_alert(alert.rule_name, alert.alert_id)
+        self.alert_table.delete_alerts([(alert.rule_name, alert.alert_id) for alert in self.alerts])
         assert_equal(0, len(self.alert_table._table.scan()['Items']))

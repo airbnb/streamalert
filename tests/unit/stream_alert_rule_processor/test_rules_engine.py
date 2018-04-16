@@ -163,6 +163,8 @@ class TestStreamRules(object):
             matchers=[],
             datatypes=[],
             logs=['test_log_type_json_nested'],
+            merge_by_keys=[],
+            merge_window_mins=0,
             outputs=['s3:sample_bucket'],
             req_subkeys={'requestParameters': ['program']},
             context={}

@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-import time
+from datetime import datetime, timedelta
 
 import boto3
 from boto3.dynamodb.conditions import Attr, Key
@@ -91,7 +91,7 @@ class AlertTable(object):
         }
         return set(item['RuleName'] for item in self._paginate(self._table.scan, kwargs))
 
-    def pending_alerts(self, rule_name, alert_proc_timeout_sec):
+    def get_alert_records(self, rule_name, alert_proc_timeout_sec):
         """Find all alerts for the given rule which need to be dispatched to the alert processor.
 
         Args:
@@ -100,38 +100,43 @@ class AlertTable(object):
                 This is used to determine whether an alert could still be in progress
 
         Yields:
-            Alert: An alert instance for each row in the Dynamo table
+            dict: Each row in the Dynamo table which is not being worked on by the alert processor.
         """
+        # Any alert which was recently dispatched to the alert processor may still be in progress,
+        # so we'll skip over those for now.
+        in_progress_threshold = datetime.utcnow() - timedelta(seconds=alert_proc_timeout_sec)
+
         kwargs = {
             # We need a consistent read here in order to pick up the most recent updates from the
             # alert processor. Otherwise, deleted/updated alerts may not yet have propagated.
             'ConsistentRead': True,
 
             # Include only those alerts which have not yet dispatched or were dispatched more than
-            # ALERT_PROCESSOR_TIMEOUT seconds ago
-            'FilterExpression': (Attr('Dispatched').lt(int(time.time()) - alert_proc_timeout_sec)),
+            # ALERT_PROCESSOR_TIMEOUT seconds ago.
+            'FilterExpression': (
+                Attr('Dispatched').lt(in_progress_threshold.strftime(Alert.DATETIME_FORMAT))),
 
             'KeyConditionExpression': Key('RuleName').eq(rule_name)
         }
         for item in self._paginate(self._table.query, kwargs):
-            yield Alert.create_from_dynamo_record(item)
+            yield item
 
-    def get_alert(self, rule_name, alert_id):
-        """Get a single alert from the alerts table.
+    def get_alert_record(self, rule_name, alert_id):
+        """Get a single alert record from the alerts table.
 
         Args:
             rule_name (str): Name of the rule the alert triggered on
             alert_id (str): Alert UUID
 
         Returns:
-            Alert: Instance of an alert, or None if the alert was not found.
+            (dict): Dynamo record corresponding to this alert, or None if the alert was not found.
         """
         kwargs = {
             'ConsistentRead': True,
             'KeyConditionExpression': Key('RuleName').eq(rule_name) & Key('AlertID').eq(alert_id)
         }
         items = list(self._paginate(self._table.query, kwargs))
-        return Alert.create_from_dynamo_record(items[0]) if items else None
+        return items[0] if items else None
 
     # ---------- Add/Delete/Update Operations ----------
 
@@ -159,30 +164,32 @@ class AlertTable(object):
             Key=alert.dynamo_key,
             UpdateExpression='SET Attempts = :attempts, Dispatched = :dispatched',
             ExpressionAttributeValues={
-                ':dispatched': alert.dispatched, ':attempts': alert.attempts},
+                ':attempts': alert.attempts,
+                ':dispatched': alert.dispatched.strftime(Alert.DATETIME_FORMAT)
+            },
             ConditionExpression='attribute_exists(AlertID)'
         )
 
     @ignore_conditional_failure
-    def update_retry_outputs(self, alert):
-        """Update the table with a new set of outputs to be retried.
+    def update_sent_outputs(self, alert):
+        """Update the table with the set of outputs which have sent successfully.
 
         Args:
-            alert (Alert): Alert instance with the list of failed outputs
+            alert (Alert): Alert instance with sent outputs already updated.
         """
         self._table.update_item(
             Key=alert.dynamo_key,
-            UpdateExpression='SET RetryOutputs = :failed_outputs',
-            ExpressionAttributeValues={':failed_outputs': alert.retry_outputs},
+            UpdateExpression='SET OutputsSent = :outputs_sent',
+            ExpressionAttributeValues={':outputs_sent': alert.outputs_sent},
             ConditionExpression='attribute_exists(AlertID)'
         )
 
-    def delete_alert(self, rule_name, alert_id):
+    def delete_alerts(self, keys):
         """Remove an alert from the table.
 
         Args:
-            rule_name (str): Name of the rule which triggered the alert
-            alert_id (str): Alert UUID
+            keys (list): List of (rule_name, alert_id) str tuples
         """
-        # Note: we can't pass an Alert instance here because we can also delete invalid alerts
-        self._table.delete_item(Key={'RuleName': rule_name, 'AlertID': alert_id})
+        with self._table.batch_writer() as batch:
+            for rule_name, alert_id in keys:
+                batch.delete_item(Key={'RuleName': rule_name, 'AlertID': alert_id})
