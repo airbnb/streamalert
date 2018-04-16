@@ -65,8 +65,8 @@ class AlertMerger(object):
         self.alert_proc_timeout = int(os.environ['ALERT_PROCESSOR_TIMEOUT_SEC'])
         self.lambda_client = boto3.client('lambda')
 
-    def _sorted_alerts(self, rule_name):
-        """Build a list of Alert instances sorted by creation time."""
+    def _get_alerts(self, rule_name):
+        """Build a list of Alert instances triggered from the given rule name."""
         alerts = []
 
         for record in self.table.get_alert_records(rule_name, self.alert_proc_timeout):
@@ -136,8 +136,9 @@ class AlertMerger(object):
         merged_alerts = []  # List of newly created merge alerts
         alerts_to_delete = []  # List of alerts which can be deleted
 
+        # TODO: Find a way to avoid a full table scan just to get rule names
         for rule_name in self.table.rule_names():
-            alerts = self._sorted_alerts(rule_name)
+            alerts = self._get_alerts(rule_name)
             if not alerts:
                 continue
 

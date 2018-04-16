@@ -102,16 +102,19 @@ class AlertTable(object):
         Yields:
             dict: Each row in the Dynamo table which is not being worked on by the alert processor.
         """
-        time_to_retry = datetime.utcnow() - timedelta(seconds=alert_proc_timeout_sec)
+        # Any alert which was recently dispatched to the alert processor may still be in progress,
+        # so we'll skip over those for now.
+        in_progress_threshold = datetime.utcnow() - timedelta(seconds=alert_proc_timeout_sec)
+
         kwargs = {
             # We need a consistent read here in order to pick up the most recent updates from the
             # alert processor. Otherwise, deleted/updated alerts may not yet have propagated.
             'ConsistentRead': True,
 
             # Include only those alerts which have not yet dispatched or were dispatched more than
-            # ALERT_PROCESSOR_TIMEOUT seconds ago
+            # ALERT_PROCESSOR_TIMEOUT seconds ago.
             'FilterExpression': (
-                Attr('Dispatched').lt(time_to_retry.strftime(Alert.DATETIME_FORMAT))),
+                Attr('Dispatched').lt(in_progress_threshold.strftime(Alert.DATETIME_FORMAT))),
 
             'KeyConditionExpression': Key('RuleName').eq(rule_name)
         }
