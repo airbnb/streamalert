@@ -13,11 +13,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from copy import deepcopy
+
 from stream_alert.shared import LOGGER
 from stream_alert.shared.stats import time_rule
 
 
-class RuleInvalid(Exception):
+class RuleCreationError(Exception):
     """Exeception to raise for any errors with invalid rules"""
 
 
@@ -37,6 +39,8 @@ def disable(rule_instance):
 
 class Rule(object):
     """Rule class to handle processing"""
+    DEFAULT_RULE_DESCRIPTION = 'No rule description provided'
+
     _rules = {}
 
     def __init__(self, func, **kwargs):
@@ -54,13 +58,13 @@ class Rule(object):
         self.disabled = False
 
         if not (self.logs or self.datatypes):
-            raise RuleInvalid(
+            raise RuleCreationError(
                 "Invalid rule [{}] - rule must have either 'logs' "
                 "or 'datatypes' declared'".format(self.rule_name)
             )
 
         if self.rule_name in Rule._rules:
-            raise RuleInvalid('Rule [{}] already defined'.format(self.rule_name))
+            raise RuleCreationError('Rule [{}] already defined'.format(self.rule_name))
 
         Rule._rules[self.rule_name] = self
 
@@ -103,7 +107,7 @@ class Rule(object):
             # bleed over from other runs of the rule using the same
             # context object
             if self.initial_context is not None:
-                self.context = self.initial_context.copy()
+                self.context = deepcopy(self.initial_context)
                 return self.func(record, self.context)
 
             return self.func(record)
@@ -112,17 +116,25 @@ class Rule(object):
 
         return False
 
+    @property
+    def description(self):
+        return self.func.__doc__ or self.DEFAULT_RULE_DESCRIPTION
+
+    @property
+    def outputs_set(self):
+        return set(self.outputs or [])
+
     @classmethod
     def disable(cls, name):
         cls._rules[name].disabled = True
 
     @classmethod
-    def rule_names(cls):
-        return Rule._rules.keys()
-
-    @classmethod
     def get_rule(cls, rule_name):
         return Rule._rules.get(rule_name)
+
+    @classmethod
+    def rule_names(cls):
+        return Rule._rules.keys()
 
     @classmethod
     def rules_with_datatypes(cls):
@@ -135,7 +147,7 @@ class Rule(object):
                 if (item.logs is None or log_type in item.logs) and not item.disabled]
 
 
-class MatcherInvalid(Exception):
+class MatcherCreationError(Exception):
     """Exeception to raise for any errors with invalid matchers"""
 
 
@@ -154,7 +166,7 @@ class Matcher(object):
     _matchers = {}
     def __init__(self, func):
         if func.__name__ in Matcher._matchers:
-            raise MatcherInvalid('matcher already defined: {}'.format(func.__name__))
+            raise MatcherCreationError('matcher already defined: {}'.format(func.__name__))
 
         # Register the matcher
         Matcher._matchers[func.__name__] = func
