@@ -35,7 +35,7 @@ class LambdaVersion(object):
     def __init__(self, config, package):
         """Initialize the version publishing
 
-        Keyword Args:
+        Args:
             config (CLIConfig): Loaded StreamAlert CLI Config
             package (LambdaPackage): The created Lambda Package
         """
@@ -45,8 +45,8 @@ class LambdaVersion(object):
     def _publish_helper(self, cluster=None):
         """Handle clustered or single Lambda function publishing
 
-        Keyword Arguments:
-            cluster (str): The cluster to deploy to, this is optional
+        Args:
+            cluster (str): Optional cluster name to deploy to
 
         Returns:
             bool: Result of the function publishes

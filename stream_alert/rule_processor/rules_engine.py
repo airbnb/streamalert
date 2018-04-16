@@ -22,6 +22,7 @@ from stream_alert.rule_processor import LOGGER
 from stream_alert.rule_processor.threat_intel import StreamThreatIntel
 from stream_alert.shared import NORMALIZATION_KEY, resources
 from stream_alert.shared.alert import Alert
+from stream_alert.shared.stats import time_rule
 
 
 RuleAttributes = namedtuple('Rule', ['rule_name',
@@ -288,17 +289,20 @@ class StreamRules(object):
         Returns:
             bool: The return function of the rule
         """
-        try:
-            if rule.context:
-                rule_result = rule.rule_function(record, rule.context)
-            else:
-                rule_result = rule.rule_function(record)
-        except Exception:  # pylint: disable=broad-except
-            rule_result = False
-            LOGGER.exception(
-                'Encountered error with rule: %s',
-                rule.rule_function.__name__)
-        return rule_result
+        @time_rule(rule_name=rule.rule_function.__name__)
+        def _run():
+            try:
+                if rule.context:
+                    rule_result = rule.rule_function(record, rule.context)
+                else:
+                    rule_result = rule.rule_function(record)
+            except Exception:  # pylint: disable=broad-except
+                rule_result = False
+                LOGGER.exception(
+                    'Encountered error with rule: %s',
+                    rule.rule_function.__name__)
+            return rule_result
+        return _run()
 
     @staticmethod
     def process_subkeys(record, payload_type, rule):

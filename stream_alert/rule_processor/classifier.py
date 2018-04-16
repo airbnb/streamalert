@@ -347,5 +347,6 @@ class StreamClassifier(object):
 
             else:
                 LOGGER.error('Unsupported schema type: %s', value)
+                return False
 
         return True

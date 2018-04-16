@@ -44,7 +44,7 @@ class MockSSMClient(object):
     def get_parameter(self, **kwargs):
         """Mocked get_parameter function that returns a value for the key from a dict
 
-        Keyword Arguments:
+        Keyword Args:
             Name (str): The name of the parameter to retrieve
 
         Returns:
@@ -60,7 +60,7 @@ class MockSSMClient(object):
     def get_parameters(self, **kwargs):
         """Mocked get_parameters function that returns a list of values for the keys from a dict
 
-        Keyword Arguments:
+        Keyword Args:
             Name (list[str]): The names of the parameters to retrieve
 
         Returns:
@@ -147,6 +147,14 @@ class MockSSMClient(object):
                     'enterpriseID': '12345678'
                 }
             }
+        elif app_type == 'salesforce':
+            return {
+                'client_id': 'CLIENT_ID',
+                'client_secret': 'CLIENT_SECRET',
+                'username': 'USERNAME',
+                'password': 'PASSWORD',
+                'security_token': 'SECURITY_TOKEN'
+            }
 
         # Fill this out with future supported apps/services
         return {}
@@ -160,7 +168,7 @@ class MockLambdaClient(object):
     def invoke(cls, **kwargs):
         """Mocked invoke function that returns a reponse mimicking boto3's reponse
 
-        Keyword Arguments:
+        Keyword Args:
             FuncitonName (str): The AWS Lambda function name being invoked
             InvocationType (str): Type of invocation (typically 'Event')
             Payload (str): Payload in string or file format to send to lambda
@@ -209,7 +217,7 @@ def get_formatted_timestamp(app_type):
     elif app_type in {'onelogin', 'onelogin_events'}:
         return '2017-10-10T22:03:57Z'
     elif app_type in {'gsuite', 'gsuite_admin', 'gsuite_drive',
-                      'gsuite_login', 'gsuite_token'}:
+                      'gsuite_login', 'gsuite_token', 'salesforce'}:
         return '2017-06-17T15:39:18.460Z'
     elif app_type in {'box', 'box_admin_events'}:
         return '2017-10-27T12:31:22-07:00'
@@ -230,4 +238,55 @@ def get_valid_config_dict(app_type):
         'last_timestamp': get_formatted_timestamp(app_type),
         'current_state': 'succeeded',
         'auth': MockSSMClient.get_auth_info(app_type)
+    }
+
+def list_salesforce_api_versions():
+    """Helper function to return a list of supported API versions"""
+    return [
+        {
+            "version": "20.0",
+            "label": "Winter '11",
+            "url": "/services/data/v20.0"
+        },
+        {
+            "version": "21.0",
+            "label": "Spring '11",
+            "url": "/services/data/v21.0"
+        },
+        {
+            "version": "26.0",
+            "label": "Winter '13",
+            "url": "/services/data/v26.0"
+        }
+    ]
+
+def get_salesforce_log_files():
+    """Helper function to get a list available log files"""
+    return {
+        "totalSize": 2,
+        "done": True,
+        "records": [
+            {
+                "attributes": {
+                    "type": "EventLogFile",
+                    "url": "/services/data/v32.0/sobjects/EventLogFile/0ATD00001bROAQ"
+                },
+                "Id": "0ATD000000001bROAQ",
+                "EventType": "API",
+                "LogFile": "/services/data/v32.0/sobjects/EventLogFile/0ATD00001bROAQ/LogFile",
+                "LogDate": "2014-03-14T00:00:00.000+0000",
+                "LogFileLength": 2692.0
+            },
+            {
+                "attributes": {
+                    "type": "EventLogFile",
+                    "url": "/services/data/v32.0/sobjects/EventLogFile/0ATD000000001SdOAI"
+                },
+                "Id": "0ATD000000001SdOAI",
+                "EventType": "API",
+                "LogFile": "/services/data/v32.0/sobjects/EventLogFile/0ATD00001SdOAI/LogFile",
+                "LogDate": "2014-03-13T00:00:00.000+0000",
+                "LogFileLength": 1345.0
+            }
+        ]
     }

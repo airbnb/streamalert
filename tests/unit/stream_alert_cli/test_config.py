@@ -199,9 +199,10 @@ class TestCLIConfig(object):
             'ioc_filters': [],
             'ioc_keys': [],
             'ioc_types': [],
+            'excluded_sub_types': [],
             'log_level': 'info',
             'memory': '128',
-            'source_bucket': 'PREFIX_GOES_HERE.streamalert.source',
+            'source_bucket': 'unit-testing.streamalert.source',
             'source_current_hash': '<auto_generated>',
             'source_object_key': '<auto_generated>',
             'third_party_libraries': [

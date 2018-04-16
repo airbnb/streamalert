@@ -955,6 +955,38 @@ Example:
         action=UniqueSetAction,
         required=True)
 
+    # flag to run additional stats during testing
+    lambda_test_parser.add_argument(
+        '-s',
+        '--stats',
+        action='store_true',
+        help=ARGPARSE_SUPPRESS
+    )
+
+    # Validate the provided repitition value
+    def _validate_repitition(val):
+        """Make sure the input is between 1 and 1000"""
+        err = ('Invalid repitition value [{}]. Must be an integer between 1 '
+               'and 1000').format(val)
+        try:
+            count = int(val)
+        except TypeError:
+            raise lambda_test_parser.error(err)
+
+        if not 1 <= count <= 1000:
+            raise lambda_test_parser.error(err)
+
+        return count
+
+    # flag to run these tests a given number of times
+    lambda_test_parser.add_argument(
+        '-n',
+        '--repeat',
+        default=1,
+        type=_validate_repitition,
+        help=ARGPARSE_SUPPRESS
+    )
+
     test_filter_group = lambda_test_parser.add_mutually_exclusive_group(required=False)
 
     # add the optional ability to test against a rule/set of rules
@@ -1450,13 +1482,13 @@ Available Subcommands:
 
                               See the link in the Resources section below for more information.
     Optional Arguments:
-        --table_rcu          The DynamoDB table Read Capacity Unit.
-        --table_wcu          The DynamoDB table Write Capacity Unit.
+        --table_rcu          The DynamoDB table Read Capacity Unit. Default is 10.
+        --table_wcu          The DynamoDB table Write Capacity Unit. Default is 10.
         --ioc_keys           The keys (list) of IOC stored in DynamoDB table.
         --ioc_filters        Filters (list) applied while retrieving IOCs from Threat Feed.
         --ioc_types          IOC types (list) are defined by the Threat Feed. IOC types can be
                              different from different Threat Feeds.
-        --autoscale          Enable DynamoDB table read capacity autoscale.
+        --excluded_sub_types Sub ioc types want to excluded. Default it will exclude 'bot_ip', 'brute_ip', 'scan_ip', 'spam_ip', 'tor_ip'.
         --min_read_capacity  Maximal read capacity when autoscale enabled, default is 5.
         --max_read_capacity  Mimimal read capacity when autoscale enabled, default is 5.
         --target_utilization Utilization remains at or near the setting level when autoscale enabled.
@@ -1565,6 +1597,12 @@ Examples:
         '--ioc_types',
         help=ARGPARSE_SUPPRESS,
         default=['domain', 'ip', 'md5']
+    )
+
+    ti_downloader_parser.add_argument(
+        '--excluded_sub_types',
+        help=ARGPARSE_SUPPRESS,
+        default=['bot_ip', 'brute_ip', 'scan_ip', 'spam_ip', 'tor_ip']
     )
 
     ti_downloader_parser.add_argument(

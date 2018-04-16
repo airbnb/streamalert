@@ -55,6 +55,7 @@ def generate_threat_intel_downloader(config):
                                              ['expiration_ts', 'itype', 'source', 'type', 'value']),
         'ioc_filters': ti_downloader_config.get('ioc_filters', ['crowdstrike', '@airbnb.com']),
         'ioc_types': ti_downloader_config.get('ioc_types', ['domain', 'ip', 'md5']),
+        'excluded_sub_types': ti_downloader_config.get('excluded_sub_types'),
         'max_read_capacity': ti_downloader_config.get('max_read_capacity', '5'),
         'min_read_capacity': ti_downloader_config.get('min_read_capacity', '5'),
         'target_utilization': ti_downloader_config.get('target_utilization', '70')

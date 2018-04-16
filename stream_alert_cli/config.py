@@ -411,6 +411,7 @@ class CLIConfig(object):
         if prompt_for_auth and not save_app_auth_info(app, app_info, overwrite):
             return
 
+        prefix = self.config['global']['account']['prefix']
         apps_config = cluster_config['modules'].get('stream_alert_apps', {})
         if not exists:
             # Save a default app settings to the config for new apps
@@ -430,7 +431,7 @@ class CLIConfig(object):
                     }
                 },
                 'schedule_expression': app_info['schedule_expression'],
-                'source_bucket': '<auto_generated>',
+                'source_bucket': '{}.streamalert.source'.format(prefix),
                 'source_current_hash': '<auto_generated>',
                 'source_object_key': '<auto_generated>',
                 'timeout': app_info['timeout'],
@@ -456,6 +457,7 @@ class CLIConfig(object):
         app_sources[app_info['function_name']] = {'logs': [app.service()]}
         self.config['sources']['stream_alert_app'] = app_sources
 
+
         LOGGER_CLI.info('Successfully added \'%s\' app integration to \'conf/clusters/%s.json\' '
                         'for service \'%s\'.', app_info['app_name'], app_info['cluster'],
                         app_info['type'])
@@ -471,9 +473,10 @@ class CLIConfig(object):
         if not threat_intel_info:
             return
 
+        prefix = self.config['global']['account']['prefix']
         default_config = {
             'enabled': True,
-            'dynamodb_table': 'PREFIX_GOES_HERE_streamalert_threat_intel_downloader'
+            'dynamodb_table': '{}_streamalert_threat_intel_downloader'.format(prefix)
         }
 
         if 'threat_intel' not in self.config['global']:
@@ -503,6 +506,7 @@ class CLIConfig(object):
         Returns:
             (bool): Return True if writing settings of Lambda function successfully.
         """
+        prefix = self.config['global']['account']['prefix']
         default_config = {
             'autoscale': False,
             'enabled': True,
@@ -511,7 +515,7 @@ class CLIConfig(object):
             'interval': 'rate(1 day)',
             'log_level': 'info',
             'memory': '128',
-            'source_bucket': 'PREFIX_GOES_HERE.streamalert.source',
+            'source_bucket': '{}.streamalert.source'.format(prefix),
             'source_current_hash': '<auto_generated>',
             'source_object_key': '<auto_generated>',
             'third_party_libraries': ['requests'],
@@ -521,6 +525,7 @@ class CLIConfig(object):
             'ioc_keys': [],
             'ioc_filters': [],
             'ioc_types': [],
+            'excluded_sub_types': [],
             'max_read_capacity': 5,
             'min_read_capacity': 5,
             'target_utilization': 70
@@ -543,11 +548,13 @@ class CLIConfig(object):
 
     def _config_reader(self, key, file_path, **kwargs):
         """Read a given file into a config key
+
         Args:
             key (str): The key in the config dictionary to place the loaded
                 config file.
             file_path (str): The location on disk to load the config file.
-        Keyword Arguments:
+
+        Keyword Args:
             cluster_file (bool): If the file to load is a cluster file.
         """
         # This accounts for non files passed in, such as a
