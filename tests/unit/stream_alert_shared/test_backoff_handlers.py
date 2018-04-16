@@ -15,12 +15,12 @@ limitations under the License.
 """
 from mock import Mock, patch
 
-
 from stream_alert.shared.backoff_handlers import (
     backoff_handler,
     giveup_handler,
     success_handler
 )
+
 
 def _get_details(with_wait=False):
     """Return a details dict that conforms to what the backoff handlers expected

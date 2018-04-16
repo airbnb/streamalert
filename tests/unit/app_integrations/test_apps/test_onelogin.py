@@ -15,7 +15,6 @@ limitations under the License.
 """
 # pylint: disable=abstract-class-instantiated,protected-access,no-self-use
 from mock import Mock, patch
-
 from nose.tools import assert_equal, assert_false, assert_items_equal
 
 from app_integrations.apps.onelogin import OneLoginApp

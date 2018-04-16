@@ -15,7 +15,6 @@ limitations under the License.
 """
 # pylint: disable=protected-access
 from mock import call, patch
-
 from nose.tools import assert_equal, raises
 
 import app_integrations

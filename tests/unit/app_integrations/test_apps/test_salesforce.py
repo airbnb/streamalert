@@ -14,7 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 # pylint: disable=abstract-class-instantiated,protected-access,no-self-use,abstract-method,attribute-defined-outside-init
-
 from requests.exceptions import Timeout
 from mock import Mock, patch
 from nose.tools import (

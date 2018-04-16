@@ -29,19 +29,15 @@ from stream_alert.threat_intel_downloader.main import (
     load_config,
     parse_lambda_func_arn
 )
-
 from stream_alert.threat_intel_downloader.exceptions import (
     ThreatStreamLambdaInvokeError,
     ThreatStreamConfigError
 )
-
 from tests.unit.app_integrations.test_helpers import (
     MockLambdaClient,
     MockSSMClient
 )
-
 from tests.unit.helpers.base import mock_open
-
 from tests.unit.threat_intel_downloader.test_helpers import (
     get_mock_context,
     mock_config,

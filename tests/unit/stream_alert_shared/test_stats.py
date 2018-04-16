@@ -15,11 +15,11 @@ limitations under the License.
 """
 # pylint: disable=no-self-use
 from collections import namedtuple
+
 from mock import Mock, patch
+from nose.tools import assert_equal
 
 from stream_alert.shared import stats
-
-from nose.tools import assert_equal
 
 
 class TestRuleStats(object):

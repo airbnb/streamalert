@@ -15,10 +15,9 @@ limitations under the License.
 """
 # pylint: disable=no-self-use,protected-access
 from mock import patch
+from nose.tools import assert_equal, raises
 
 from stream_alert.shared import rule
-
-from nose.tools import assert_equal, raises
 
 
 class TestRule(object):
@@ -56,13 +55,13 @@ def {}(_):
         self._create_rule_helper('test_rule')
         assert_equal(rule.Rule._rules.keys(), ['test_rule'])
 
-    @raises(rule.RuleInvalid)
+    @raises(rule.RuleCreationError)
     def test_rule_invalid(self):
         """Rule - Create Rule, Missing Args"""
         # Rules must either have `logs` or `datatypes` defined
         self._create_rule_helper('test_rule', {'outputs': ['fake_output']})
 
-    @raises(rule.RuleInvalid)
+    @raises(rule.RuleCreationError)
     def test_rule_exists(self):
         """Rule - Create Rule, Rule Already Exists"""
         # Rules must either have `logs` or `datatypes` defined
@@ -199,7 +198,7 @@ def {}(_):
 
         exec custom_matcher_code #pylint: disable=exec-used
 
-    @raises(rule.MatcherInvalid)
+    @raises(rule.MatcherCreationError)
     def test_matcher_exists(self):
         """Matcher - Create Matcher, Matcher Already Exists"""
         self._create_matcher_helper('test_matcher')

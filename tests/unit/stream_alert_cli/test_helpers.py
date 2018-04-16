@@ -15,10 +15,10 @@ limitations under the License.
 """
 import json
 
-from stream_alert_cli import helpers
-
 from mock import mock_open, patch
 from nose.tools import assert_equal, assert_false, assert_is_none, assert_items_equal
+
+from stream_alert_cli import helpers
 
 
 def test_load_test_file_list():

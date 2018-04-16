@@ -18,10 +18,9 @@ import json
 import socket
 import ssl
 
-from mock import Mock, mock_open, patch
-
 import apiclient
 import oauth2client
+from mock import Mock, mock_open, patch
 from nose.tools import assert_equal, assert_false, assert_items_equal, assert_true, raises
 
 from app_integrations.apps.gsuite import GSuiteReportsApp
