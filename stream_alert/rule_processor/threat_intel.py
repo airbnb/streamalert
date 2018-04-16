@@ -346,9 +346,9 @@ class StreamThreatIntel(object):
                               self.EXCEPTIONS_TO_BACKOFF,
                               max_tries=self.BACKOFF_MAX_RETRIES,
                               giveup=exceptions_to_giveup,
-                              on_backoff=backoff_handler,
-                              on_success=success_handler,
-                              on_giveup=giveup_handler)
+                              on_backoff=backoff_handler(),
+                              on_success=success_handler(),
+                              on_giveup=giveup_handler())
         def _query(query_keys):
             response = self.dynamodb.batch_get_item(
                 RequestItems={

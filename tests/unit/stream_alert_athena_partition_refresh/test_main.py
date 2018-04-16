@@ -36,9 +36,7 @@ from nose.tools import (
 
 import stream_alert.athena_partition_refresh as apr
 from stream_alert.athena_partition_refresh.main import (
-    _backoff_handler,
     _load_config,
-    _success_handler,
     handler,
     ConfigError,
     StreamAlertAthenaClient,
@@ -137,17 +135,6 @@ class TestStreamAlertAthenaGlobals(object):
 
                 assert_equal(type(config), dict)
                 assert_equal(set(config), {'global', 'lambda'})
-
-    @patch('stream_alert.athena_partition_refresh.main.LOGGER')
-    def test_backoff_and_success_handlers(self, mock_logging):
-        """Athena - Backoff Handlers"""
-        def backoff():
-            pass
-        _backoff_handler({'wait': 1.0, 'tries': 3, 'target': backoff})
-        assert_true(mock_logging.debug.called)
-
-        _success_handler({'tries': 3, 'target': backoff})
-        assert_true(mock_logging.debug.called)
 
     @patch('stream_alert.athena_partition_refresh.main.LOGGER')
     @patch('stream_alert.athena_partition_refresh.main._load_config',

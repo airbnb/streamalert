@@ -314,9 +314,9 @@ class PagerDutyIncidentOutput(OutputDispatcher):
                           PagerdutySearchDelay,
                           max_tries=BACKOFF_MAX,
                           interval=BACKOFF_TIME,
-                          on_backoff=backoff_handler,
-                          on_success=success_handler,
-                          on_giveup=giveup_handler)
+                          on_backoff=backoff_handler(),
+                          on_success=success_handler(),
+                          on_giveup=giveup_handler())
     def _get_event_incident_id(self, incident_key):
         """Helper to lookup an incident using the incident_key and return the id
 

@@ -125,9 +125,9 @@ class AlertProcessor(object):
 
     @backoff.on_exception(backoff.expo, ClientError,
                           max_tries=BACKOFF_MAX_TRIES, jitter=backoff.full_jitter,
-                          on_backoff=backoff_handlers.backoff_handler,
-                          on_success=backoff_handlers.success_handler,
-                          on_giveup=backoff_handlers.giveup_handler)
+                          on_backoff=backoff_handlers.backoff_handler(),
+                          on_success=backoff_handlers.success_handler(),
+                          on_giveup=backoff_handlers.giveup_handler())
     def _update_table(self, alert, output_results):
         """Update the alerts table based on the results of the outputs.
 

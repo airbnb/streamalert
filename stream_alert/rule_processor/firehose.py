@@ -154,16 +154,16 @@ class StreamAlertFirehose(object):
                               max_tries=self.MAX_BACKOFF_ATTEMPTS,
                               max_value=self.MAX_BACKOFF_FIBO_VALUE,
                               jitter=backoff.full_jitter,
-                              on_backoff=backoff_handler,
-                              on_success=success_handler,
-                              on_giveup=giveup_handler)
+                              on_backoff=backoff_handler(),
+                              on_success=success_handler(),
+                              on_giveup=giveup_handler())
         @backoff.on_exception(backoff.fibo,
                               exceptions_to_backoff,
                               max_tries=self.MAX_BACKOFF_ATTEMPTS,
                               jitter=backoff.full_jitter,
-                              on_backoff=backoff_handler,
-                              on_success=success_handler,
-                              on_giveup=giveup_handler)
+                              on_backoff=backoff_handler(),
+                              on_success=success_handler(),
+                              on_giveup=giveup_handler())
         def firehose_request_wrapper(data):
             """Firehose request wrapper to use with backoff"""
             LOGGER.info('[Firehose] Sending %d records to %s',

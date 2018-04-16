@@ -17,7 +17,7 @@ limitations under the License.
 from stream_alert.shared import LOGGER
 
 
-def backoff_handler(details):
+def backoff_handler(debug_only=True):
     """Backoff logging handler for when polling occurs.
 
     Args:
@@ -25,13 +25,20 @@ def backoff_handler(details):
             target function currently executing, kwargs, args, value,
             and wait time.
     """
-    LOGGER.info('[Backoff]: Trying again in %f seconds after %d tries calling %s',
-                details['wait'],
-                details['tries'],
-                details['target'].__name__)
+    def _wrapped(details):
+        message = '[Backoff]: Calling \'{}\' again in {:f} seconds with {:d} tries so far'.format(
+            details['target'].__name__,
+            details['wait'],
+            details['tries']
+        )
+        if not debug_only:
+            LOGGER.info(message)
+        else:
+            LOGGER.debug(message)
+    return _wrapped
 
 
-def success_handler(details):
+def success_handler(debug_only=False):
     """Backoff logging handler for when backoff succeeds.
 
     Args:
@@ -39,12 +46,20 @@ def success_handler(details):
             target function currently executing, kwargs, args, value,
             and wait time.
     """
-    LOGGER.debug('[Backoff]: Completed after %d tries calling %s',
-                 details['tries'],
-                 details['target'].__name__)
+    def _wrapped(details):
+        message = '[Backoff]: Successfully called \'{}\' after {:f} seconds and {:d} tries'.format(
+            details['target'].__name__,
+            details['elapsed'],
+            details['tries'],
+        )
+        if not debug_only:
+            LOGGER.info(message)
+        else:
+            LOGGER.debug(message)
+    return _wrapped
 
 
-def giveup_handler(details):
+def giveup_handler(debug_only=False):
     """Backoff logging handler for when backoff gives up.
 
     Args:
@@ -52,6 +67,14 @@ def giveup_handler(details):
             target function currently executing, kwargs, args, value,
             and wait time.
     """
-    LOGGER.info('[Backoff]: Exiting after %d tries calling %s',
-                details['tries'],
-                details['target'].__name__)
+    def _wrapped(details):
+        message = '[Backoff]: Giving up calling \'{}\' after {:f} seconds and {:d} tries'.format(
+            details['target'].__name__,
+            details['elapsed'],
+            details['tries']
+        )
+        if not debug_only:
+            LOGGER.info(message)
+        else:
+            LOGGER.debug(message)
+    return _wrapped

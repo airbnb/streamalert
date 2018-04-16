@@ -91,9 +91,9 @@ class ThreatStream(object):
     @backoff.on_exception(backoff.constant,
                           EXCEPTIONS_TO_BACKOFF,
                           max_tries=BACKOFF_MAX_RETRIES,
-                          on_backoff=backoff_handler,
-                          on_success=success_handler,
-                          on_giveup=giveup_handler)
+                          on_backoff=backoff_handler(),
+                          on_success=success_handler(),
+                          on_giveup=giveup_handler())
     def _connect(self, next_url):
         """Send API call to ThreatStream with next token and return parsed IOCs
 
