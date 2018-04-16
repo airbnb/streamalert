@@ -29,12 +29,11 @@ _IGNORE_KEYS = {StreamThreatIntel.IOC_KEY, NORMALIZATION_KEY}
 
 class RulesEngine(object):
     """Class to act as a rules engine that processes rules"""
-    def __init__(self, config):
+    def __init__(self, config, *rule_paths):
         """Initialize a RulesEngine instance to cache a StreamThreatIntel instance."""
         self._threat_intel = StreamThreatIntel.load_from_config(config)
         self._required_outputs_set = resources.get_required_outputs()
-        import_folders(*[item for location in {'rule_locations', 'matcher_locations'}
-                         for item in config['global']['general'][location]])
+        import_folders(*rule_paths)
 
     @staticmethod
     def match_types(record, normalized_types, datatypes):
