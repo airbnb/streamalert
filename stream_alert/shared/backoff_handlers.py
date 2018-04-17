@@ -52,7 +52,8 @@ def success_handler(debug_only=False):
             details['elapsed'],
             details['tries'],
         )
-        if not debug_only:
+        # We will only want to log backoff on_success when tries more than 1.
+        if not debug_only and int(details['tries']) > 1:
             LOGGER.info(message)
         else:
             LOGGER.debug(message)
