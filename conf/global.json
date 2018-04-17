@@ -5,6 +5,14 @@
     "prefix": "PREFIX_GOES_HERE",
     "region": "us-east-1"
   },
+  "general": {
+    "rule_locations": [
+      "rules"
+    ],
+    "matcher_locations": [
+      "matchers"
+    ]
+  },
   "infrastructure": {
     "alerts_table": {
       "read_capacity": 5,

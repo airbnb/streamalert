@@ -5,6 +5,10 @@
     "prefix": "unit-testing",
     "region": "us-west-1"
   },
+  "general": {
+    "matcher_locations": [],
+    "rule_locations": []
+  },
   "infrastructure": {
     "alerts_table": {
       "read_capacity": 5,

@@ -57,9 +57,12 @@ class StreamAlert(object):
         self._processed_size = 0
         self._alerts = []
 
+        rule_import_paths = [item for location in {'rule_locations', 'matcher_locations'}
+                             for item in self.config['global']['general'][location]]
+
         # Create an instance of the StreamRules class that gets cached in the
         # StreamAlert class as an instance property
-        self._rules_engine = RulesEngine(self.config)
+        self._rules_engine = RulesEngine(self.config, *rule_import_paths)
 
         # Firehose client attribute
         self._firehose_client = None

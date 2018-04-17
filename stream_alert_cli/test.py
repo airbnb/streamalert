@@ -30,8 +30,6 @@ from mock import patch
 
 from stream_alert.alert_processor import main as StreamOutput
 from stream_alert.rule_processor.handler import StreamAlert
-# import all rules loaded from the main handler
-import stream_alert.rule_processor.main  # pylint: disable=unused-import
 from stream_alert.rule_processor.parsers import get_parser
 from stream_alert.rule_processor.payload import load_stream_payload
 from stream_alert.shared import resources, stats, rule

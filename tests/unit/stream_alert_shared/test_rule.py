@@ -14,8 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 # pylint: disable=no-self-use,protected-access
-from mock import patch
-from nose.tools import assert_equal, raises
+from mock import call, patch
+from nose.tools import assert_equal, assert_raises, raises
+from pyfakefs import fake_filesystem_unittest
 
 from stream_alert.shared import rule
 
@@ -222,3 +223,59 @@ def {}(_):
         result = matcher.process('matcher_exception', None)
         assert_equal(result, False)
         log_mock.assert_called_with('Encountered error with matcher: %s', 'matcher_exception')
+
+
+class RuleImportTest(fake_filesystem_unittest.TestCase):
+    """Test rule import logic with a mocked filesystem."""
+    # pylint: disable=protected-access
+
+    def setUp(self):
+        self.setUpPyfakefs()
+
+        # Add rules files which should be imported.
+        self.fs.CreateFile('matchers/matchers.py')
+        self.fs.CreateFile('rules/example.py')
+        self.fs.CreateFile('rules/community/cloudtrail/critical_api.py')
+
+        # Add other files which should NOT be imported.
+        self.fs.CreateFile('matchers/README')
+        self.fs.CreateFile('rules/__init__.py')
+        self.fs.CreateFile('rules/example.pyc')
+        self.fs.CreateFile('rules/community/REVIEWERS')
+
+    def tearDown(self):
+        self.tearDownPyfakefs()
+
+    @staticmethod
+    def test_python_rule_paths():
+        """Rule Processor Main - Find rule paths"""
+        result = set(rule._python_file_paths('rules', 'matchers'))
+        expected = {
+            'matchers/matchers.py',
+            'rules/example.py',
+            'rules/community/cloudtrail/critical_api.py'
+        }
+        assert_equal(expected, result)
+
+    @staticmethod
+    def test_path_to_module():
+        """Rule Processor Main - Convert rule path to module name"""
+        assert_equal('name', rule._path_to_module('name.py'))
+        assert_equal('a.b.c.name', rule._path_to_module('a/b/c/name.py'))
+
+    @staticmethod
+    def test_path_to_module_invalid():
+        """Rule Processor Main - Raise NameError for invalid Python filename."""
+        assert_raises(NameError, rule._path_to_module, 'a.b.py')
+        assert_raises(NameError, rule._path_to_module, 'a/b/old.name.py')
+
+    @staticmethod
+    @patch('importlib.import_module')
+    def test_import_rules(mock_import):
+        """Rule Processor Main - Import all rule modules."""
+        rule.import_folders('rules', 'matchers')
+        mock_import.assert_has_calls([
+            call('matchers.matchers'),
+            call('rules.example'),
+            call('rules.community.cloudtrail.critical_api')
+        ], any_order=True)

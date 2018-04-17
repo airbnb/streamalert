@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-# pylint: disable=no-self-use,protected-access
+# pylint: disable=no-self-use,protected-access,attribute-defined-outside-init
 import json
 import os
 
@@ -26,14 +26,13 @@ from nose.tools import (
     assert_true,
 )
 
-from stream_alert.rule_processor.config import load_config, load_env
+from stream_alert.rule_processor.config import load_config
 from stream_alert.rule_processor.parsers import get_parser
 from stream_alert.rule_processor.rules_engine import RulesEngine
 from stream_alert.shared import NORMALIZATION_KEY
 from stream_alert.shared.rule import disable, matcher, Matcher, rule, Rule
 
 from tests.unit.stream_alert_rule_processor.test_helpers import (
-    get_mock_context,
     load_and_classify_payload,
     make_kinesis_raw_record,
     MockDynamoDBClient,
@@ -45,18 +44,6 @@ from helpers.base import fetch_values_by_datatype
 @patch.dict(os.environ, {'CLUSTER': ''})
 class TestRulesEngine(object):
     """Test class for RulesEngine"""
-    @classmethod
-    def setup_class(cls):
-        """Setup the class before any methods"""
-        context = get_mock_context()
-        cls.env = load_env(context)
-
-    @classmethod
-    def teardown_class(cls):
-        """Teardown the class after all methods"""
-        cls.env = None
-        cls.config = None
-        cls.rules_engine = None
 
     def setup(self):
         """Setup before each method"""
