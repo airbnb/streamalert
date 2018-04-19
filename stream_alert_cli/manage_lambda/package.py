@@ -309,7 +309,7 @@ class AlertProcessorPackage(LambdaPackage):
     package_files = {'stream_alert/__init__.py'}
     package_name = 'alert_processor'
     config_key = 'alert_processor_config'
-    third_party_libs = {'backoff', 'requests'}
+    third_party_libs = {'backoff', 'cbapi', 'requests'}
     version = stream_alert_version
 
 
