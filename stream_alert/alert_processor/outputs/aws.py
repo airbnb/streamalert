@@ -363,11 +363,9 @@ class SQSOutput(AWSOutput):
         Returns:
             bool: True if alert was sent successfully, False otherwise
         """
-        # SQS queues can only be accessed via their URL
         queue_name = self.config[self.__service__][descriptor]
-        queue_url = 'https://sqs.{}.amazonaws.com/{}/{}'.format(
-            self.region, self.account_id, queue_name)
-        queue = boto3.resource('sqs', region_name=self.region).Queue(queue_url)
+        sqs = boto3.resource('sqs', region_name=self.region)
+        queue = sqs.get_queue_by_name(QueueName=queue_name)
 
-        response = queue.send_message(MessageBody=json.dumps(alert.output_dict()))
+        response = queue.send_message(MessageBody=json.dumps(alert.record, separators=(',', ':')))
         return self._log_status(response, descriptor)

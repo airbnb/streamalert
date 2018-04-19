@@ -174,8 +174,13 @@ data "aws_iam_policy_document" "send_to_sqs_queues" {
   count = "${length(var.output_sqs_queues)}"
 
   statement {
-    effect    = "Allow"
-    actions   = ["sqs:SendMessage*"]
+    effect = "Allow"
+
+    actions = [
+      "sqs:GetQueueUrl",
+      "sqs:SendMessage*",
+    ]
+
     resources = ["${local.sqs_arn_prefix}:${element(local.sqs_outputs, count.index)}"]
   }
 }
