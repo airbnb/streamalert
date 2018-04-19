@@ -575,7 +575,7 @@ class CLIConfig(object):
                     else:
                         self.config[key] = json.load(data)
             except ValueError:
-                raise CLIConfigError('[Config Error]: %s is not valid JSON', file_path)
+                raise CLIConfigError('[Config Error]: {} is not valid JSON'.format(file_path))
 
     @staticmethod
     def _config_writer(config, path, **kwargs):
