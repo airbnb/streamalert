@@ -30,6 +30,7 @@ import string
 
 
 from stream_alert import __version__ as version
+from stream_alert.alert_processor.outputs.output_base import StreamAlertOutput
 from stream_alert.shared import metrics
 from stream_alert_cli.logger import LOGGER_CLI
 from stream_alert_cli.runner import cli_runner
@@ -121,11 +122,7 @@ The following outputs are supported:
     # Output service options
     output_parser.add_argument(
         '--service',
-        choices=[
-            'aws-firehose', 'aws-lambda', 'aws-s3', 'aws-sns', 'aws-sqs',
-            'github', 'jira', 'komand', 'pagerduty', 'pagerduty-incident', 'pagerduty-v2',
-            'phantom', 'slack',
-        ],
+        choices=sorted(StreamAlertOutput.get_all_outputs().keys()),
         required=True,
         help=ARGPARSE_SUPPRESS)
     output_parser.add_argument('--debug', action='store_true', help=ARGPARSE_SUPPRESS)
