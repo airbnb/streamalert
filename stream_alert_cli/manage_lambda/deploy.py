@@ -60,6 +60,11 @@ def _update_rule_table(config):
     Args:
         config (CLIConfig): The loaded StreamAlert config
     """
+    # TODO: consider removing this once rule staging is feature complete
+    # Temporarily having a config setting that will disable updating the table for now
+    if not config['global']['infrastructure']['rules_table'].get('enabled', False):
+        return
+
     # Get the rule import paths to load
     rule_import_paths = config['global']['general']['rule_locations']
 
