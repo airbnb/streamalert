@@ -56,18 +56,6 @@ class RuleTable(object):
                 LOGGER.debug('Deleting rule \'%s\'', rule_name)
                 batch.delete_item(Key={'RuleName': rule_name})
 
-    def _get_remote_state(self):
-        """Return the current staging state for all rules stored in the database
-
-        Returns:
-            dict: key = rule name, value = True|False for staged
-        """
-        paginator = self._table.meta.client.get_paginator('scan')
-        page_iterator = paginator.paginate(TableName=self.name)
-        return {item['RuleName']: item['Staged']
-                for page in page_iterator
-                for item in page['Items']}
-
     @staticmethod
     def _dynamo_record(rule_name, init=False):
         """Generate a DynamoDB record with this rule information
@@ -119,7 +107,7 @@ class RuleTable(object):
     @property
     def local_not_remote(self):
         """Rules that exist locally but not within the remote database"""
-        return self.local_rule_names.difference(set(self.remote_rule_names))
+        return self.local_rule_names.difference(self.remote_rule_names)
 
     @property
     def local_rule_names(self):
@@ -131,14 +119,48 @@ class RuleTable(object):
         """Name of the DynamoDB table used to store alerts."""
         return self._table.table_name
 
+    def _load_remote_state(self):
+        """Return the state of all rules stored in the database
+
+        Returns:
+            dict: key = rule name, value = dictionary of staging information
+                Example:
+                    {
+                        'example_rule_name':
+                            {
+                                'Staged': True
+                                'StagedAt': '2018-04-19T02:23:13.332223Z',
+                                'NewlyStaged': True,
+                                'StagedUntil': '2018-04-21T02:23:13.332223Z'
+                            }
+                    }
+        """
+        paginator = self._table.meta.client.get_paginator('scan')
+        page_iterator = paginator.paginate(TableName=self.name, ConsistentRead=True)
+        return {
+            item['RuleName']: {
+                key: value for key, value in item.iteritems()
+                if key != 'RuleName'
+            }
+            for page in page_iterator
+            for item in page['Items']
+        }
+
+    @property
+    def remote_rule_info(self):
+        """All rule info from the remote database. Returns cache if it exists"""
+        if not self._remote_rule_info:
+            self._remote_rule_info = self._load_remote_state()
+        return self._remote_rule_info
+
     @property
     def remote_rule_names(self):
         """Rule names from the remote database. Returns cache if it exists"""
         if not self._remote_rule_info:
-            self._remote_rule_info = self._get_remote_state()
+            self._remote_rule_info = self._load_remote_state()
         return set(self._remote_rule_info)
 
     @property
     def remote_not_local(self):
         """Rules that exist in the remote database but not locally"""
-        return set(self.remote_rule_names).difference(self.local_rule_names)
+        return self.remote_rule_names.difference(self.local_rule_names)
