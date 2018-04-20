@@ -90,6 +90,33 @@ class RuleTable(object):
                 LOGGER.debug('Deleting rule \'%s\'', rule_name)
                 batch.delete_item(Key={'RuleName': rule_name})
 
+    def _load_remote_state(self):
+        """Return the state of all rules stored in the database
+
+        Returns:
+            dict: key = rule name, value = dictionary of staging information
+                Example:
+                    {
+                        'example_rule_name':
+                            {
+                                'Staged': True
+                                'StagedAt': '2018-04-19T02:23:13.332223Z',
+                                'NewlyStaged': True,
+                                'StagedUntil': '2018-04-21T02:23:13.332223Z'
+                            }
+                    }
+        """
+        paginator = self._table.meta.client.get_paginator('scan')
+        page_iterator = paginator.paginate(TableName=self.name, ConsistentRead=True)
+        return {
+            item['RuleName']: {
+                key: value for key, value in item.iteritems()
+                if key != 'RuleName'
+            }
+            for page in page_iterator
+            for item in page['Items']
+        }
+
     @staticmethod
     def _dynamo_record(rule_name, init=False):
         """Generate a DynamoDB record with this rule information
@@ -152,33 +179,6 @@ class RuleTable(object):
     def name(self):
         """Name of the DynamoDB table used to store alerts."""
         return self._table.table_name
-
-    def _load_remote_state(self):
-        """Return the state of all rules stored in the database
-
-        Returns:
-            dict: key = rule name, value = dictionary of staging information
-                Example:
-                    {
-                        'example_rule_name':
-                            {
-                                'Staged': True
-                                'StagedAt': '2018-04-19T02:23:13.332223Z',
-                                'NewlyStaged': True,
-                                'StagedUntil': '2018-04-21T02:23:13.332223Z'
-                            }
-                    }
-        """
-        paginator = self._table.meta.client.get_paginator('scan')
-        page_iterator = paginator.paginate(TableName=self.name, ConsistentRead=True)
-        return {
-            item['RuleName']: {
-                key: value for key, value in item.iteritems()
-                if key != 'RuleName'
-            }
-            for page in page_iterator
-            for item in page['Items']
-        }
 
     @property
     def remote_rule_info(self):
