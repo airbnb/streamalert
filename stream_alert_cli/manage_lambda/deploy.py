@@ -174,8 +174,9 @@ def deploy(options, config):
     if not helpers.tf_runner(targets=deploy_targets):
         sys.exit(1)
 
-    # Update the rule table
-    _update_rule_table(config)
+    # Update the rule table now if the rule processor is being deployed
+    if 'rule' in options.processor:
+        _update_rule_table(config)
 
     # Publish a new production Lambda version
     if not _publish_version(packages, config, options.clusters):
