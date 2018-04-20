@@ -72,12 +72,24 @@ class TestRuleTable(object):
         assert_equal(self.rule_table.local_rule_names, expected_result)
 
     def test_remote_rule_names(self):
-        """Rule Table - Remote Rules Names"""
+        """Rule Table - Remote Rule Names"""
         expected_result = {'remote_rule_01', 'remote_rule_02', 'remote_rule_03'}
         for rule_name in expected_result:
             self._create_db_rule_with_name(rule_name)
 
         assert_equal(self.rule_table.remote_rule_names, expected_result)
+
+    def test_remote_rule_info(self):
+        """Rule Table - Remote Rule Info"""
+        expected_result = {
+            'test_rule_01': {'Staged': False},
+            'test_rule_02': {'Staged': False},
+            'test_rule_03': {'Staged': False}
+        }
+        for rule_name in expected_result:
+            self._create_db_rule_with_name(rule_name)
+
+        assert_equal(self.rule_table.remote_rule_info, expected_result)
 
     def test_local_not_remote_names(self):
         """Rule Table - Local and Not Remote Rule Names"""
@@ -119,24 +131,26 @@ class TestRuleTable(object):
 
         # Ensure the remote state is updated for the deletion of a rule
         self.rule_table._del_old_rules()
-        assert_equal(len(self.rule_table._get_remote_state()), original_count-1)
+        assert_equal(len(self.rule_table._load_remote_state()), original_count-1)
 
-    def test_get_remote_state_init(self):
-        """Rule Table - Get Remote State of Rules, New Database"""
+    def test_load_remote_state_init(self):
+        """Rule Table - Load Remote State of Rules, New Database"""
         # Create 2 local rules and add them to the table
         self._create_local_rules(2)
         self.rule_table._add_new_rules()
 
         expected_state = {
-            'fake_rule_00': False,
-            'fake_rule_01': False
+            'fake_rule_00': {'Staged': False},
+            'fake_rule_01': {'Staged': False}
         }
 
-        state = self.rule_table._get_remote_state()
+        state = self.rule_table._load_remote_state()
         assert_equal(state, expected_state)
 
-    def test_get_remote_state(self):
-        """Rule Table - Get Remote State of Rules, Existing Database"""
+    @patch('stream_alert.shared.rule_table.RuleTable._staged_window')
+    def test_load_remote_state_state(self, window_mock):
+        """Rule Table - Load Remote State of Rules, Existing Database"""
+        window_mock.return_value = ('staged-at-date', 'staged-until-date')
         # Create 2 local rules and add them to the currently empty
         self._create_local_rules(2)
         self.rule_table._add_new_rules()
@@ -147,12 +161,17 @@ class TestRuleTable(object):
         self.rule_table._add_new_rules()
 
         expected_state = {
-            'fake_rule_00': False,
-            'fake_rule_01': False,
-            'now_staged_rule': True,
+            'fake_rule_00': {'Staged': False},
+            'fake_rule_01': {'Staged': False},
+            'now_staged_rule': {
+                'NewlyStaged': True,
+                'Staged': True,
+                'StagedAt': 'staged-at-date',
+                'StagedUntil': 'staged-until-date'
+            }
         }
 
-        state = self.rule_table._get_remote_state()
+        state = self.rule_table._load_remote_state()
         assert_equal(state, expected_state)
 
     def test_dynamo_record_init(self):
@@ -200,7 +219,7 @@ class TestRuleTable(object):
 
         # Run the update to ensure the old rule was deleted and the new rules are added
         self.rule_table.update()
-        assert_equal(len(self.rule_table._get_remote_state()), 2)
+        assert_equal(len(self.rule_table._load_remote_state()), 2)
         item = self.rule_table._table.get_item(Key={'RuleName': rule_name})
         assert_equal(item.get('Item'), None)
         item = self.rule_table._table.get_item(Key={'RuleName': 'test_rule_02'})
