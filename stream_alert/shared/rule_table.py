@@ -39,6 +39,40 @@ class RuleTable(object):
         import_folders(*rule_import_paths)
         self._remote_rule_info = None
 
+    def __str__(self, verbose=False):
+        """Return a human-readable respresentation of the table's data"""
+        if not self.remote_rule_names:
+            return 'Rule table is empty'
+
+        pad_size = max([len(rule) for rule in self.remote_rule_info.keys()]) + 4
+        output = ['{rule:<{pad}}Staged?'.format(rule='Rule', pad=pad_size+5)]
+        for index, rule in enumerate(sorted(self.remote_rule_info.keys()), start=1):
+            output.append(
+                '{index:>3d}: {rule: <{pad}}{staged}'.format(
+                    index=index,
+                    rule=rule,
+                    pad=pad_size,
+                    staged=self.remote_rule_info[rule]['Staged']
+                )
+            )
+            # Append additional information if verbose is enabled
+            if verbose:
+                details_pad_size = max([len(prop)
+                                        for prop in self.remote_rule_info[rule].keys()]) + 4
+                output.extend(
+                    '{prefix:>{left_pad}}{property: <{internal_pad}}{value}'.format(
+                        prefix='- ',
+                        left_pad=7,
+                        property='{}:'.format(prop),
+                        internal_pad=details_pad_size,
+                        value=value
+                    )
+                    for prop, value in self.remote_rule_info[rule].iteritems()
+                    if prop != 'Staged'
+                )
+
+        return '\n'.join(output)
+
     def _add_new_rules(self):
         """Add any new local rules (renamed rules included) to the remote database"""
         # If the table is empty, no rules have been added yet

@@ -15,6 +15,7 @@ limitations under the License.
 """
 from datetime import datetime
 import os
+from StringIO import StringIO
 
 from mock import Mock, patch
 from moto import mock_dynamodb2
@@ -224,3 +225,57 @@ class TestRuleTable(object):
         assert_equal(item.get('Item'), None)
         item = self.rule_table._table.get_item(Key={'RuleName': 'test_rule_02'})
         assert_equal(item['Item']['RuleName'], 'test_rule_02')
+
+    def test_print_table(self):
+        """Rule Table - Print Table"""
+        self._create_db_rule_with_name('test_01')
+        self.rule_table._table.put_item(Item={
+            'RuleName': 'test_02',
+            'Staged': True,
+            'StagedAt': 'staged-at-date',
+            'StagedUntil': 'staged-at-date',
+            'NewlyStaged': True
+        })
+        with patch('sys.stdout', new=StringIO()) as stdout:
+            print self.rule_table
+            expected_output = """
+Rule            Staged?
+  1: test_01    False
+  2: test_02    True
+"""
+
+            output = stdout.getvalue().strip()
+            assert_equal(output, expected_output.strip())
+
+
+    def test_print_table_empty(self):
+        """Rule Table - Print Table, Empty"""
+        with patch('sys.stdout', new=StringIO()) as stdout:
+            print self.rule_table
+            expected_output = 'Rule table is empty'
+            output = stdout.getvalue().strip()
+            assert_equal(output, expected_output.strip())
+
+    def test_print_table_verbose(self):
+        """Rule Table - Print Table, Verbose"""
+        self._create_db_rule_with_name('test_01')
+        self.rule_table._table.put_item(Item={
+            'RuleName': 'test_02',
+            'Staged': True,
+            'StagedAt': 'staged-at-date',
+            'StagedUntil': 'staged-at-date',
+            'NewlyStaged': True
+        })
+        with patch('sys.stdout', new=StringIO()) as stdout:
+            print self.rule_table.__str__(True)
+            expected_output = """
+Rule            Staged?
+  1: test_01    False
+  2: test_02    True
+     - StagedAt:      staged-at-date
+     - NewlyStaged:   True
+     - StagedUntil:   staged-at-date
+"""
+
+            output = stdout.getvalue().strip()
+            assert_equal(output, expected_output.strip())
