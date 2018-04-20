@@ -556,6 +556,29 @@ def setup_mock_alerts_table(table_name):
     )
 
 
+def setup_mock_rules_table(table_name):
+    """Create a mock DynamoDB rules table used by the CLI, rule processor, and rule promoter"""
+    boto3.client('dynamodb').create_table(
+        AttributeDefinitions=[
+            {
+                'AttributeName': 'RuleName',
+                'AttributeType': 'S'
+            }
+        ],
+        KeySchema=[
+            {
+                'AttributeName': 'RuleName',
+                'KeyType': 'HASH'
+            }
+        ],
+        ProvisionedThroughput={
+            'ReadCapacityUnits': 5,
+            'WriteCapacityUnits': 5
+        },
+        TableName=table_name
+    )
+
+
 def put_mock_s3_object(bucket, key, data, region):
     """Create a mock AWS S3 object for testing
 

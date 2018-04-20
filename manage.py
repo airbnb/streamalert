@@ -1625,6 +1625,63 @@ Examples:
         '--debug', action='store_true', help=ARGPARSE_SUPPRESS
     )
 
+def _add_rule_table_subparser(subparsers):
+    """Add the rule database helper subparser: manage.py rule-table [subcommand] [options]"""
+    rule_table_usage = 'manage.py rule-table [subcommand] [options]'
+    rule_table_description = ("""
+StreamAlertCLI v{}
+Print the status of or update remote StreamAlert rule information within the rule database
+
+Available Subcommands:
+
+    manage.py rule-table status          List the current staging status from the rules databse
+    manage.py rule-table update          Update the staging status of rules
+
+""".format(version))
+    rule_table_parser = subparsers.add_parser(
+        'rule-table',
+        usage=rule_table_usage,
+        description=rule_table_description,
+        formatter_class=RawTextHelpFormatter,
+        help=ARGPARSE_SUPPRESS)
+
+    # Set the name of this parser to 'rule-table'
+    rule_table_parser.set_defaults(command='rule-table')
+
+    rule_table_subparsers = rule_table_parser.add_subparsers()
+
+    _add_rule_table_status_subparser(rule_table_subparsers)
+
+def _add_rule_table_status_subparser(subparsers):
+    """Add the rule db status subparser: manage.py rule-table status"""
+    rule_table_list_usage = 'manage.py rule-table status'
+    rule_table_list_desc = ("""
+StreamAlertCLI v{}
+List all rules within the rule database and their staging status
+
+Command:
+
+    manage.py rule-table status       List rules in the rule database with their staging status
+
+Optional Arguments:
+
+    --verbose           Output additional information for rules in the database
+    --debug             Enable Debug logger output
+
+""".format(version))
+    rule_table_list_parser = subparsers.add_parser(
+        'status',
+        usage=rule_table_list_usage,
+        description=rule_table_list_desc,
+        formatter_class=RawTextHelpFormatter,
+        help=ARGPARSE_SUPPRESS)
+
+    rule_table_list_parser.set_defaults(subcommand='status')
+
+    # allow verbose output for the CLI with the --debug option
+    rule_table_list_parser.add_argument('--verbose', action='store_true', help=ARGPARSE_SUPPRESS)
+    rule_table_list_parser.add_argument('--debug', action='store_true', help=ARGPARSE_SUPPRESS)
+
 
 def build_parser():
     """Build the argument parser."""
@@ -1643,6 +1700,7 @@ Available Commands:
     manage.py live-test                  Send alerts to configured outputs
     manage.py metrics                    Enable or disable metrics for all lambda functions
     manage.py output                     Configure new StreamAlert outputs
+    manage.py rule-table                 Get the status of or update rules in the rules database
     manage.py terraform                  Manage StreamAlert infrastructure
     manage.py threat_intel               Enable, configure StreamAlert Threat Intelligence feature.
     manage.py threat_intel_downloader    Lambda function to retrieve IOC(s).
@@ -1680,6 +1738,7 @@ For additional details on the available commands, try:
     _add_kinesis_subparser(subparsers)
     _add_threat_intel_subparser(subparsers)
     _add_threat_intel_downloader_subparser(subparsers)
+    _add_rule_table_subparser(subparsers)
 
     return parser
 

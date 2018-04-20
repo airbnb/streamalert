@@ -16,6 +16,7 @@ limitations under the License.
 from collections import namedtuple
 import sys
 
+from stream_alert.shared import rule_table
 from stream_alert_cli import helpers
 from stream_alert_cli.manage_lambda import package as stream_alert_packages
 from stream_alert_cli.manage_lambda.version import LambdaVersion
@@ -52,6 +53,24 @@ def _publish_version(packages, config, clusters):
             return False
 
     return True
+
+def _update_rule_table(config):
+    """Update the rule table with any staging information
+
+    Args:
+        config (CLIConfig): The loaded StreamAlert config
+    """
+    # TODO: consider removing this once rule staging is feature complete
+    # Temporarily having a config setting that will disable updating the table for now
+    if not config['global']['infrastructure']['rules_table'].get('enabled', False):
+        return
+
+    # Get the rule import paths to load
+    rule_import_paths = config['global']['general']['rule_locations']
+
+    table_name = '{}_streamalert_rules'.format(config['global']['account']['prefix'])
+    table = rule_table.RuleTable(table_name, *rule_import_paths)
+    table.update()
 
 
 def _create_and_upload(function_name, config, cluster=None):
@@ -154,6 +173,9 @@ def deploy(options, config):
     # Run Terraform: Update the Lambda source code in $LATEST
     if not helpers.tf_runner(targets=deploy_targets):
         sys.exit(1)
+
+    # Update the rule table
+    _update_rule_table(config)
 
     # Publish a new production Lambda version
     if not _publish_version(packages, config, options.clusters):
