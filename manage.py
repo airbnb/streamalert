@@ -1645,7 +1645,7 @@ Available Subcommands:
         formatter_class=RawTextHelpFormatter,
         help=ARGPARSE_SUPPRESS)
 
-    # Set the name of this parser to 'app'
+    # Set the name of this parser to 'rule-table'
     rule_table_parser.set_defaults(command='rule-table')
 
     rule_table_subparsers = rule_table_parser.add_subparsers()

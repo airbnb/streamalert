@@ -51,8 +51,8 @@ class TestRuleTable(object):
         for i in range(count):
             cls._create_local_rule_with_name('fake_rule_{:02d}'.format(i))
 
-    @classmethod
-    def _create_local_rule_with_name(cls, name):
+    @staticmethod
+    def _create_local_rule_with_name(name):
         """Helper to create a fake local rule with specified name"""
         rule_module.Rule(Mock(__name__=name), logs=['fake_log_type'])
 
