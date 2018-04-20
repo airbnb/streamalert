@@ -22,6 +22,7 @@ from stream_alert_cli.helpers import user_input
 from stream_alert_cli.kinesis.handler import kinesis_handler
 from stream_alert_cli.logger import LOGGER_CLI
 from stream_alert_cli.manage_lambda.handler import lambda_handler
+from stream_alert_cli.rule_table import rule_table_handler
 from stream_alert_cli.terraform.handler import terraform_handler
 from stream_alert_cli.test import stream_alert_test
 from stream_alert_cli.threat_intel_downloader.handler import (
@@ -86,6 +87,9 @@ def cli_runner(options):
 
     elif options.command == 'threat_intel_downloader':
         threat_intel_downloader_handler(options, CONFIG)
+
+    elif options.command == 'rule-table':
+        rule_table_handler(options, CONFIG)
 
 
 def configure_handler(options):
