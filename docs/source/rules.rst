@@ -35,8 +35,7 @@ Each Rule file must contain the following at the top:
 
 .. code-block:: python
 
-  from stream_alert.rule_processor.rules_engine import StreamRules
-  rule = StreamRules.rule
+  from stream_alert.shared.rule import rule
 
 All rules take this structure:
 
@@ -104,7 +103,7 @@ Matchers are normally defined in ``rules/matchers.py``. If desired, matchers can
 
 .. code-block:: python
 
-  matcher = StreamRules.matcher()
+  from stream_alert.shared.rule import matcher
 
 In the above example, we are evaluating the ``pci`` matcher.  As you can likely deduce, this ensures alerts are only triggered if the incoming record is from the ``pci`` environment.
 
@@ -227,7 +226,7 @@ In the following example, ``@disable`` prevents the first rule from analyzing in
 .. code-block:: python
 
   # the decorator must be imported, similar to @rule and @matcher
-  disable = StreamRules.disable()
+  from stream_alert.shared.rule import disable
 
   @disable
   @rule(logs=['example'],

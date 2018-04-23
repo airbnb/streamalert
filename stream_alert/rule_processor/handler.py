@@ -60,7 +60,7 @@ class StreamAlert(object):
         rule_import_paths = [item for location in {'rule_locations', 'matcher_locations'}
                              for item in self.config['global']['general'][location]]
 
-        # Create an instance of the StreamRules class that gets cached in the
+        # Create an instance of the RulesEngine class that gets cached in the
         # StreamAlert class as an instance property
         self._rules_engine = RulesEngine(self.config, *rule_import_paths)
 
