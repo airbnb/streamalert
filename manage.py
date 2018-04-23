@@ -841,6 +841,8 @@ Required Arguments:
 
 Optional Arguments:
 
+    --skip-rule-staging                Skip staging of new rules so they go directly into
+                                         production.
     --debug                            Enable Debug logger output
 
 Examples:
@@ -856,6 +858,13 @@ Examples:
         help=ARGPARSE_SUPPRESS)
 
     lambda_deploy_parser.set_defaults(subcommand='deploy')
+
+    # flag to manually bypass rule staging for new rules upon deploy
+    lambda_deploy_parser.add_argument(
+        '--skip-rule-staging',
+        action='store_true',
+        help=ARGPARSE_SUPPRESS
+    )
 
     _add_default_lambda_args(lambda_deploy_parser)
 

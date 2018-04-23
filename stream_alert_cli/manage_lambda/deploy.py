@@ -54,7 +54,7 @@ def _publish_version(packages, config, clusters):
 
     return True
 
-def _update_rule_table(config):
+def _update_rule_table(config, skip_staging):
     """Update the rule table with any staging information
 
     Args:
@@ -70,7 +70,7 @@ def _update_rule_table(config):
 
     table_name = '{}_streamalert_rules'.format(config['global']['account']['prefix'])
     table = rule_table.RuleTable(table_name, *rule_import_paths)
-    table.update()
+    table.update(skip_staging)
 
 
 def _create_and_upload(function_name, config, cluster=None):
@@ -176,7 +176,7 @@ def deploy(options, config):
 
     # Update the rule table now if the rule processor is being deployed
     if 'rule' in options.processor:
-        _update_rule_table(config)
+        _update_rule_table(config, options.skip_rule_staging)
 
     # Publish a new production Lambda version
     if not _publish_version(packages, config, options.clusters):
