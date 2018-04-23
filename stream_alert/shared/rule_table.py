@@ -16,6 +16,7 @@ limitations under the License.
 from datetime import datetime, timedelta
 
 import boto3
+from botocore.exceptions import ClientError
 
 from stream_alert.shared import LOGGER
 from stream_alert.shared.rule import import_folders, Rule
@@ -65,9 +66,9 @@ class RuleTable(object):
                         left_pad=7,
                         property='{}:'.format(prop),
                         internal_pad=details_pad_size,
-                        value=value
+                        value=self.remote_rule_info[rule][prop]
                     )
-                    for prop, value in self.remote_rule_info[rule].iteritems()
+                    for prop in sorted(self.remote_rule_info[rule].keys())
                     if prop != 'Staged'
                 )
 
@@ -102,7 +103,6 @@ class RuleTable(object):
                             {
                                 'Staged': True
                                 'StagedAt': '2018-04-19T02:23:13.332223Z',
-                                'NewlyStaged': True,
                                 'StagedUntil': '2018-04-21T02:23:13.332223Z'
                             }
                     }
@@ -144,8 +144,7 @@ class RuleTable(object):
         staged_at, staged_until = RuleTable._staged_window()
         item.update({
             'StagedAt': staged_at,
-            'StagedUntil': staged_until,
-            'NewlyStaged': True
+            'StagedUntil': staged_until
         })
 
         return item
@@ -163,6 +162,42 @@ class RuleTable(object):
             staged_at.strftime(RuleTable.DATETIME_FORMAT),
             staged_until.strftime(RuleTable.DATETIME_FORMAT)
         )
+
+    def toggle_staged_state(self, rule_name, stage):
+        """Mark the specified rule as staged=True or staged=False
+
+        Args:
+            rule_name (string): The name of the rule being staged
+            stage (bool): True if this rule should be staged and False if
+                this rule should be promoted out of staging.
+        """
+        LOGGER.debug('Toggling staged state for rule \'%s\' to: %s', rule_name, stage)
+
+        update_expressions = ['set Staged = :staged']
+        expression_attributes = [':staged']
+        expression_values = [stage]
+
+        # If staging, add some additonal staging context to the expression
+        if stage:
+            update_expressions.extend(['StagedAt = :staged_at', 'StagedUntil = :staged_until'])
+            expression_attributes.extend([':staged_at', ':staged_until'])
+            expression_values.extend(self._staged_window())
+
+        args = {
+            'Key': {
+                'RuleName': rule_name
+            },
+            'UpdateExpression': ','.join(update_expressions),
+            'ExpressionAttributeValues': dict(zip(expression_attributes, expression_values)),
+            'ConditionExpression': 'attribute_exists(RuleName)'
+        }
+
+        try:
+            self._table.update_item(**args)
+        except ClientError as error:
+            if error.response['Error']['Code'] != 'ConditionalCheckFailedException':
+                raise
+            LOGGER.exception('Could not toggle rule staging status')
 
     def update(self, skip_staging=False):
         """Update the database with new local rules and remove deleted ones from remote"""
