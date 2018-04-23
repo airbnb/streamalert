@@ -56,9 +56,9 @@ class TestRuleTable(object):
         """Helper to create a fake local rule with specified name"""
         rule_module.Rule(Mock(__name__=name), logs=['fake_log_type'])
 
-    def _create_db_rule_with_name(self, name):
+    def _create_db_rule_with_name(self, name, stage=False):
         """Helper to create a fake database rule with specified name"""
-        self.rule_table._table.put_item(Item={'RuleName': name, 'Staged': False})
+        self.rule_table._table.put_item(Item={'RuleName': name, 'Staged': stage})
 
     def test_rule_table_name(self):
         """Rule Table - Table Name"""
@@ -165,7 +165,6 @@ class TestRuleTable(object):
             'fake_rule_00': {'Staged': False},
             'fake_rule_01': {'Staged': False},
             'now_staged_rule': {
-                'NewlyStaged': True,
                 'Staged': True,
                 'StagedAt': 'staged-at-date',
                 'StagedUntil': 'staged-until-date'
@@ -193,8 +192,7 @@ class TestRuleTable(object):
             'RuleName': 'foo_rule',
             'Staged': True,
             'StagedAt': 'staged-at-date',
-            'StagedUntil': 'staged-until-date',
-            'NewlyStaged': True
+            'StagedUntil': 'staged-until-date'
         }
 
         record = self.rule_table._dynamo_record('foo_rule', False)
@@ -233,8 +231,7 @@ class TestRuleTable(object):
             'RuleName': 'test_02',
             'Staged': True,
             'StagedAt': 'staged-at-date',
-            'StagedUntil': 'staged-at-date',
-            'NewlyStaged': True
+            'StagedUntil': 'staged-at-date'
         })
         with patch('sys.stdout', new=StringIO()) as stdout:
             print self.rule_table
@@ -263,8 +260,7 @@ Rule            Staged?
             'RuleName': 'test_02',
             'Staged': True,
             'StagedAt': 'staged-at-date',
-            'StagedUntil': 'staged-at-date',
-            'NewlyStaged': True
+            'StagedUntil': 'staged-until-date'
         })
         with patch('sys.stdout', new=StringIO()) as stdout:
             print self.rule_table.__str__(True)
@@ -273,8 +269,7 @@ Rule            Staged?
   1: test_01    False
   2: test_02    True
      - StagedAt:      staged-at-date
-     - NewlyStaged:   True
-     - StagedUntil:   staged-at-date
+     - StagedUntil:   staged-until-date
 """
 
             output = stdout.getvalue().strip()

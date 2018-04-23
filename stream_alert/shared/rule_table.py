@@ -102,7 +102,6 @@ class RuleTable(object):
                             {
                                 'Staged': True
                                 'StagedAt': '2018-04-19T02:23:13.332223Z',
-                                'NewlyStaged': True,
                                 'StagedUntil': '2018-04-21T02:23:13.332223Z'
                             }
                     }
@@ -144,8 +143,7 @@ class RuleTable(object):
         staged_at, staged_until = RuleTable._staged_window()
         item.update({
             'StagedAt': staged_at,
-            'StagedUntil': staged_until,
-            'NewlyStaged': True
+            'StagedUntil': staged_until
         })
 
         return item
