@@ -186,8 +186,8 @@ class Rule(object):
                         md5.update(ast.dump(expression))
 
                 self._checksum = md5.hexdigest()
-            except (TypeError, IndentationError, IndexError) as err:
-                LOGGER.error(err)
+            except (TypeError, IndentationError, IndexError):
+                LOGGER.exception('Could not checksum rule function')
                 self._checksum = self.CHECKSUM_UNKNOWN
 
         return self._checksum

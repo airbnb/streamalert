@@ -14,11 +14,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 # pylint: disable=no-self-use,protected-access
+import hashlib
+
 from mock import call, patch
 from nose.tools import assert_equal, assert_raises, raises
 from pyfakefs import fake_filesystem_unittest
 
 from stream_alert.shared import rule
+
+
+# Rule to be used for checksum testing
+def _test_checksum(_):
+    return False
+
+# Rule with docstring to be used for checksum testing
+def _test_checksum_doc(_):
+    """This has a docstring but should match the checksum of the above function"""
+    return False
 
 
 class TestRule(object):
@@ -137,6 +149,34 @@ def {}(_):
         for name in rule_names:
             self._create_rule_helper(name)
         assert_equal(rule.Rule.rule_names(), rule_names)
+
+    def test_rule_checksum(self):
+        """Rule - Rule Checksum"""
+        # The known dumped ast of a function that just returns False is below
+        ast_value = 'Return(value=Name(id=\'False\', ctx=Load()))'
+
+        # The known checksum of the above is # c119f541816c6364ea3e2e884ba18f9c
+        expected_checksum = hashlib.md5(ast_value).hexdigest()
+
+        # Test rule without a docstring
+        rule.Rule(_test_checksum, logs=['log_type'])
+        assert_equal(rule.Rule._rules['_test_checksum'].checksum, expected_checksum)
+
+        # Test rule with a docstring
+        rule.Rule(_test_checksum_doc, logs=['log_type'])
+        assert_equal(rule.Rule._rules['_test_checksum_doc'].checksum, expected_checksum)
+
+    @patch('logging.Logger.exception')
+    def test_rule_checksum_bad(self, log_mock):
+        """Rule - Rule Checksum, Bad Indentation"""
+        def test_rule(_):
+            return False
+
+        # Test rule that has bad indentation when loading from source
+        rule.Rule(test_rule, logs=['log_type'])
+        assert_equal(rule.Rule._rules['test_rule'].checksum, rule.Rule.CHECKSUM_UNKNOWN)
+        log_mock.assert_called_with('Could not checksum rule function')
+
 
     def test_get_rules_with_datatypes(self):
         """Rule - Get Rules, Rule With Datatypes"""
