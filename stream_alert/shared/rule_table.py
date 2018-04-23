@@ -81,7 +81,7 @@ class RuleTable(object):
         skip_staging = skip_staging or (len(self.remote_rule_names) == 0)
         with self._table.batch_writer() as batch:
             for rule_name in self.local_not_remote:
-                LOGGER.debug('Adding rule \'%s\' (init=%s)', rule_name, skip_staging)
+                LOGGER.debug('Adding rule \'%s\' (skip staging=%s)', rule_name, skip_staging)
                 batch.put_item(self._dynamo_record(rule_name, skip_staging))
 
     def _del_old_rules(self):
