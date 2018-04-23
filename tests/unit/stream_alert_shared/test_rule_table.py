@@ -17,9 +17,10 @@ from datetime import datetime
 import os
 from StringIO import StringIO
 
+from botocore.exceptions import ClientError
 from mock import Mock, patch
 from moto import mock_dynamodb2
-from nose.tools import assert_equal
+from nose.tools import assert_equal, assert_raises
 
 from stream_alert.shared import rule as rule_module, rule_table
 from stream_alert_cli.helpers import setup_mock_rules_table
@@ -223,6 +224,53 @@ class TestRuleTable(object):
         assert_equal(item.get('Item'), None)
         item = self.rule_table._table.get_item(Key={'RuleName': 'test_rule_02'})
         assert_equal(item['Item']['RuleName'], 'test_rule_02')
+
+    def test_toggle_staged_state_true(self):
+        """Rule Table - Toggle Staging, Staged=True"""
+        rule_name = 'unstaged_rule'
+        self._create_db_rule_with_name(rule_name)
+
+        # Make sure the item that was added is not staged
+        item = self.rule_table._table.get_item(Key={'RuleName': rule_name})
+        assert_equal(item['Item']['Staged'], False)
+
+        # Try to toggle the state to staged
+        self.rule_table.toggle_staged_state(rule_name, True)
+
+        # Make sure the item is now staged
+        item = self.rule_table._table.get_item(Key={'RuleName': rule_name})
+        assert_equal(item['Item']['Staged'], True)
+
+    def test_toggle_staged_state_false(self):
+        """Rule Table - Toggle Staging, Staged=False"""
+        rule_name = 'staged_rule'
+        self._create_db_rule_with_name(rule_name, True)
+
+        # Make sure the item that was added is staged
+        item = self.rule_table._table.get_item(Key={'RuleName': rule_name})
+        assert_equal(item['Item']['Staged'], True)
+
+        # Try to toggle the state to unstaged
+        self.rule_table.toggle_staged_state(rule_name, False)
+
+        # Make sure the item is now unstaged
+        item = self.rule_table._table.get_item(Key={'RuleName': rule_name})
+        assert_equal(item['Item']['Staged'], False)
+
+    @patch('logging.Logger.exception')
+    def test_toggle_staged_state_bad(self, log_mock):
+        """Rule Table - Toggle Staging, Rule Does Not Exist"""
+        # Try to toggle the state to staged, but use a name that does not exist
+        self.rule_table.toggle_staged_state('rule_does_not_exist', True)
+
+        # This should raise an exception that is caught and logged
+        log_mock.assert_called_with('Could not toggle rule staging status')
+
+    def test_toggle_staged_state_error(self):
+        """Rule Table - Toggle Staging, ClientError Occurred"""
+        with patch.object(self.rule_table._table, 'update_item',
+                          side_effect=ClientError({'Error': {'Code': 'TEST'}}, 'UpdateItem')):
+            assert_raises(ClientError, self.rule_table.toggle_staged_state, 'foo', True)
 
     def test_print_table(self):
         """Rule Table - Print Table"""
