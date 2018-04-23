@@ -195,7 +195,7 @@ class StreamThreatIntel(object):
             return False
         threat_intel_config = config.get('global').get('threat_intel')
         if threat_intel_config:
-            default_excluded_iocs = {"ip": {}, "domain": {}, "md5": {}}
+            default_excluded_iocs = {"ip": set(), "domain": set(), "md5": set()}
             cls.excluded_iocs = threat_intel_config.get('excluded_iocs', default_excluded_iocs)
             cls.excluded_iocs["ip"] = [IPNetwork(ip) for ip in cls.excluded_iocs["ip"]]
             if threat_intel_config.get('enabled') and threat_intel_config.get('dynamodb_table'):
