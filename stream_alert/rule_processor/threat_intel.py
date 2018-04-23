@@ -19,8 +19,8 @@ import backoff
 import boto3
 from boto3.dynamodb.types import TypeDeserializer
 from botocore.exceptions import ClientError, ParamValidationError
-from netaddr import IPAddress
-
+from netaddr import IPAddress, IPNetwork
+from netaddr.core import AddrFormatError
 from stream_alert.shared import NORMALIZATION_KEY
 from stream_alert.shared.backoff_handlers import (
     backoff_handler,
@@ -78,6 +78,9 @@ class StreamThreatIntel(object):
 
     # Class variable stores mapping between CEF normalized types and IOC types
     __normalized_ioc_types_mapping = {}
+
+    # Class variable loaded with IOC exclusions from config
+    excluded_iocs = {}
 
     def __init__(self, table, region='us-east-1'):
         self.dynamodb = boto3.client('dynamodb', region)
@@ -164,9 +167,8 @@ class StreamThreatIntel(object):
                         for original_key in original_keys:
                             value = value[original_key]
                     if value:
-                        # Threat Intel will only check against public IP addresses
-                        # while processing IP IOCs.
-                        if ioc_type == 'ip' and not self.is_public_ip(value):
+                        # Threat Intel will skip searching for known excluded IOCs
+                        if self.is_excluded_ioc(ioc_type, value):
                             continue
                         ioc_value_type_tuples.add((value, ioc_type))
         return [StreamIoc(value=str(value).lower(), ioc_type=ioc_type, associated_record=record)
@@ -191,13 +193,14 @@ class StreamThreatIntel(object):
         if cluster and not (config['clusters'][cluster]['modules']['stream_alert']
                             ['rule_processor'].get('enable_threat_intel', True)):
             return False
-
-        if (config.get('global')
-                and config['global'].get('threat_intel')
-                and config['global']['threat_intel'].get('enabled')
-                and config['global']['threat_intel'].get('dynamodb_table')):
-            return cls(config['global']['threat_intel']['dynamodb_table'],
-                       config['global']['account'].get('region', 'us-east-1'))
+        threat_intel_config = config.get('global').get('threat_intel')
+        if threat_intel_config:
+            default_excluded_iocs = {"ip": {}, "domain": {}, "md5": {}}
+            cls.excluded_iocs = threat_intel_config.get('excluded_iocs', default_excluded_iocs)
+            cls.excluded_iocs["ip"] = [IPNetwork(ip) for ip in cls.excluded_iocs["ip"]]
+            if threat_intel_config.get('enabled') and threat_intel_config.get('dynamodb_table'):
+                return cls(threat_intel_config['dynamodb_table'],
+                           config['global']['account'].get('region', 'us-east-1'))
 
         return False
 
@@ -411,11 +414,63 @@ class StreamThreatIntel(object):
         return cls.__normalized_types
 
     @staticmethod
-    def is_public_ip(ip_address):
+    def valid_ip(ip_address):
+        """Verify that a ip_address string is valid
+
+        Args:
+            ip_address (string): address to be tested
+
+        Returns:
+            True if the ip_address is valid, otherwise False
+        """
+
         try:
-            ip_addr = IPAddress(str(ip_address))
-            # We also need to filter multicast ip which is a private ip. For example,
-            # multicast ip '239.192.0.1', is a private ip.
-            return ip_addr.is_unicast() and not ip_addr.is_private()
-        except: # pylint: disable=bare-except
+            IPAddress(ip_address)
+        except AddrFormatError:
+            LOGGER.error('IP address failed parse: %s', ip_address)
             return False
+        return True
+
+    @staticmethod
+    def in_network(ip_address, networks):
+        """Check that an ip_address is within a set of CIDRs
+
+        Args:
+            ip_address (str or netaddr.IPAddress): IP address to check
+            networks (set): IPNetwork instances
+
+        Returns:
+            Boolean representing if the given IP is within any CIDRs
+        """
+
+        if not StreamThreatIntel.valid_ip(ip_address):
+            return False
+
+        for cidr in networks:
+            if ip_address in cidr:
+                return True
+        return False
+
+    @staticmethod
+    def is_excluded_ioc(ioc_type, ioc_value):
+        """
+        check if we should bypass IOC lookup for specified IOC
+        Args:
+            ioc_type (string): the type of IOC to evaluate (md5, ip, domain)
+            value (string): the value of IOC to evaluate
+
+        Returns:
+            True if IOC lookup should be bypassed for this value
+            False if IOC should be looked up
+        """
+        if ioc_type == 'ip':
+            try:
+                ip_addr = IPAddress(str(ioc_value))
+                excluded_networks = StreamThreatIntel.excluded_iocs.get("ip", set())
+                return StreamThreatIntel.in_network(ip_addr, excluded_networks)
+            except: # pylint: disable=bare-except
+                LOGGER.error('IP IOC Exclusion Failed: %s', ioc_value)
+                return False
+        else:
+            excluded = StreamThreatIntel.excluded_iocs.get(ioc_type, set())
+            return ioc_value in excluded
