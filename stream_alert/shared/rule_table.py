@@ -66,9 +66,9 @@ class RuleTable(object):
                         left_pad=7,
                         property='{}:'.format(prop),
                         internal_pad=details_pad_size,
-                        value=value
+                        value=self.remote_rule_info[rule][prop]
                     )
-                    for prop, value in self.remote_rule_info[rule].iteritems()
+                    for prop in sorted(self.remote_rule_info[rule].keys())
                     if prop != 'Staged'
                 )
 
