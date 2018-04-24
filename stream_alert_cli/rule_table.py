@@ -28,7 +28,8 @@ def rule_table_handler(options, config):
     if options.subcommand == 'status':
         print RuleTable(table_name).__str__(options.verbose)
 
-    if options.subcommand == 'stage':
+    if options.subcommand in {'stage', 'unstage'}:
+        stage = (options.subcommand == 'stage')
         table = RuleTable(table_name)
         for rule in options.rules:
-            table.toggle_staged_state(rule, options.stage)
+            table.toggle_staged_state(rule, stage)
