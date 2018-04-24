@@ -298,6 +298,36 @@ class TestStreamThreatIntel(object):
             result = self.threat_intel._extract_ioc_from_record(record)
             assert_equal(len(result), 0)
 
+    def test_extract_ioc_from_record_not_excluded(self):
+        records = [
+            {
+                'account': 12345,
+                'region': '123456123456',
+                'detail': {
+                    'eventType': 'AwsConsoleSignIn',
+                    'eventName': 'ConsoleLogin',
+                    'userIdentity': {
+                        'userName': 'alice',
+                        'type': 'Root',
+                        'principalId': '12345',
+                    },
+                    'sourceIPAddress': '8.8.8.8',
+                    'recipientAccountId': '12345'
+                },
+                'source': '8.8.8.8',
+                'streamalert:normalization': {
+                    'sourceAddress': [['detail', 'sourceIPAddress'], ['source']],
+                    'usernNme': [['detail', 'userIdentity', 'userName']]
+                },
+                'id': '12345'
+            }
+        ]
+        records = mock_normalized_records(records)
+        for record in records:
+            result = self.threat_intel._extract_ioc_from_record(record)
+        assert_equal(len(result), 1)
+        assert_equal(result[0].value, '8.8.8.8')
+
     def test_load_from_config(self):
         """Threat Intel - Test load_config method"""
         test_config = {
@@ -330,6 +360,15 @@ class TestStreamThreatIntel(object):
         assert_false(threat_intel)
 
         test_config = {
+            'global': {
+                'account': {
+                    'region': 'us-east-1'
+                },
+                'threat_intel': {
+                    'dynamodb_table': 'test_table_name',
+                    'enabled': False
+                }
+            },
             'types': {
                 'log_src1': {
                     'normalizedTypeFoo:ioc_foo': ['foo1', 'foo2'],
