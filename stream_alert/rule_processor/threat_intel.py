@@ -19,8 +19,7 @@ import backoff
 import boto3
 from boto3.dynamodb.types import TypeDeserializer
 from botocore.exceptions import ClientError, ParamValidationError
-from netaddr import IPAddress, IPNetwork
-from netaddr.core import AddrFormatError
+from netaddr import IPNetwork
 from stream_alert.shared import NORMALIZATION_KEY
 from stream_alert.shared.backoff_handlers import (
     backoff_handler,
@@ -28,7 +27,7 @@ from stream_alert.shared.backoff_handlers import (
     giveup_handler
 )
 from stream_alert.rule_processor import LOGGER
-from helpers.base import in_network
+from stream_alert.shared.helpers import in_network, valid_ip
 
 # DynamoDB Table settings
 MAX_QUERY_CNT = 100
@@ -416,24 +415,6 @@ class StreamThreatIntel(object):
         """Get normalized CEF types mapping to original keys from the records."""
         return cls.__normalized_types
 
-    @staticmethod
-    def valid_ip(ip_address):
-        """Verify that a ip_address string is valid
-
-        Args:
-            ip_address (string): address to be tested
-
-        Returns:
-            True if the ip_address is valid, otherwise False
-        """
-
-        try:
-            IPAddress(ip_address)
-        except AddrFormatError:
-            LOGGER.error('IP address failed parse: %s', ip_address)
-            return False
-        return True
-
     def is_excluded_ioc(self, ioc_type, ioc_value):
         """
         check if we should bypass IOC lookup for specified IOC
@@ -445,12 +426,7 @@ class StreamThreatIntel(object):
             False if IOC should be looked up
         """
         if ioc_type == 'ip':
-            try:
-                ip_addr = IPAddress(str(ioc_value))
-                excluded_networks = self.excluded_iocs.get('ip', set())
-                return in_network(ip_addr, excluded_networks)
-            except: # pylint: disable=bare-except
-                LOGGER.error('IP IOC Exclusion Failed: %s', ioc_value)
-                return True
-
+            excluded_networks = self.excluded_iocs.get('ip', set())
+            return not (valid_ip(ioc_value) # filter out *.amazonaws.com "IP"s
+                        or in_network(ioc_value, excluded_networks))
         return ioc_value in self.excluded_iocs.get(ioc_type, set())
