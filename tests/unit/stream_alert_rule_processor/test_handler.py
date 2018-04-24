@@ -279,7 +279,7 @@ class TestStreamAlert(object):
             """Testing dummy rule"""
             return True
 
-        mock_threat_intel.return_value = StreamThreatIntel('test_table_name', 'us-east-1')
+        mock_threat_intel.return_value = StreamThreatIntel({}, 'test_table_name', 'us-east-1')
         mock_query.return_value = ([], [])
 
         sa_handler = StreamAlert(get_mock_context())

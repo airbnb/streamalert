@@ -261,10 +261,10 @@ class TestStreamThreatIntel(object):
                         'type': 'Root',
                         'principalId': '12345',
                     },
-                    'sourceIPAddress': 'ec2.amazon.com',
+                    'sourceIPAddress': '192.168.1.2',
                     'recipientAccountId': '12345'
                 },
-                'source': 'ec2.amazon.com',
+                'source': '192.168.1.2',
                 'streamalert:normalization': {
                     'sourceAddress': [['detail', 'sourceIPAddress'], ['source']],
                     'usernNme': [['detail', 'userIdentity', 'userName']]
@@ -282,7 +282,7 @@ class TestStreamThreatIntel(object):
                         'type': 'Root',
                         'principalId': '12345',
                     },
-                    'sourceIPAddress': '192.168.1.2',
+                    'sourceIPAddress': '52.52.52.52',
                     'recipientAccountId': '12345'
                 },
                 'source': '192.168.1.2',
@@ -298,6 +298,39 @@ class TestStreamThreatIntel(object):
             result = self.threat_intel._extract_ioc_from_record(record)
             assert_equal(len(result), 0)
 
+    def test_extract_ioc_from_records_with_amazon_domains(self):
+        """
+        test extracting IOCs where the "IP" is actually an AWS domain
+        In cloudtrail_api events, many "ipaddress" values could be 
+        s3.amazonaws.com, ec2.amazonaws.com, cloudtrail.amazonaws.com, etc.
+        """
+        records = [
+            {
+                'account': 12345,
+                'region': '123456123456',
+                'detail': {
+                    'eventType': 'AwsConsoleSignIn',
+                    'eventName': 'ConsoleLogin',
+                    'userIdentity': {
+                        'userName': 'alice',
+                        'type': 'Root',
+                        'principalId': '12345',
+                    },
+                    'sourceIPAddress': 'ec2.amazon.com',
+                    'recipientAccountId': '12345'
+                },
+                'source': 'ec2.amazon.com',
+                'streamalert:normalization': {
+                    'sourceAddress': [['detail', 'sourceIPAddress'], ['source']],
+                    'usernNme': [['detail', 'userIdentity', 'userName']]
+                },
+                'id': '12345'
+            }
+        ]
+        records = mock_normalized_records(records)
+        for record in records:
+            result = self.threat_intel._extract_ioc_from_record(record)
+            assert_equal(len(result), 0)
     def test_extract_ioc_from_record_not_excluded(self):
         """ Threat Intel - Test we don't exclude IOCs unintentionally"""
         records = [
@@ -338,7 +371,16 @@ class TestStreamThreatIntel(object):
                 },
                 'threat_intel': {
                     'dynamodb_table': 'test_table_name',
-                    'enabled': True
+                    'enabled': True,
+                    'excluded_iocs': {
+                        'ip': [
+                            '127.0.0.0/8',
+                            '10.0.0.0/8',
+                            '172.16.0.0/12',
+                            '192.168.0.0/16',
+                            '52.52.52.52/32'
+                        ]
+                    }
                 }
             }
         }
