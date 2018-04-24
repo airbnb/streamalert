@@ -51,6 +51,26 @@ class UniqueSetAction(Action):
         setattr(namespace, self.dest, unique_items)
 
 
+class MutuallyExclusiveStagingAction(Action):
+    """Subclass of argparse.Action to avoid staging and unstaging the same rules"""
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        unique_items = set(values)
+        error = (
+            'The following rules cannot be within both the \'--stage-rules\' argument '
+            'and the \'--unstage-rules\' argument: {}'
+        )
+        if namespace.unstage_rules:
+            offending_rules = unique_items.intersection(namespace.unstage_rules)
+            if offending_rules:
+                raise parser.error(error.format(', '.join(list(offending_rules))))
+        if namespace.stage_rules:
+            offending_rules = unique_items.intersection(namespace.stage_rules)
+            if offending_rules:
+                raise parser.error(error.format(', '.join(list(offending_rules))))
+        setattr(namespace, self.dest, unique_items)
+
+
 class NormalizeFunctionAction(UniqueSetAction):
     """Subclass of argparse.Action -> UniqueSetAction that will return a unique set of
     normalized lambda function names.
@@ -780,6 +800,24 @@ Examples:
         '--skip-rule-staging',
         action='store_true',
         help=ARGPARSE_SUPPRESS
+    )
+
+    # flag to manually bypass rule staging for specific rules during deploy
+    lambda_deploy_parser.add_argument(
+        '--unstage-rules',
+        action=MutuallyExclusiveStagingAction,
+        default=set(),
+        help=ARGPARSE_SUPPRESS,
+        nargs='+'
+    )
+
+    # flag to manually demote specific rules to staging during deploy
+    lambda_deploy_parser.add_argument(
+        '--stage-rules',
+        action=MutuallyExclusiveStagingAction,
+        default=set(),
+        help=ARGPARSE_SUPPRESS,
+        nargs='+'
     )
 
     _add_default_lambda_args(lambda_deploy_parser)
