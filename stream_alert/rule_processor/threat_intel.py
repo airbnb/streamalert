@@ -470,7 +470,7 @@ class StreamThreatIntel(object):
                 return StreamThreatIntel.in_network(ip_addr, excluded_networks)
             except: # pylint: disable=bare-except
                 LOGGER.error('IP IOC Exclusion Failed: %s', ioc_value)
-                return False
+                return True
         else:
             excluded = StreamThreatIntel.excluded_iocs.get(ioc_type, set())
             return ioc_value in excluded
