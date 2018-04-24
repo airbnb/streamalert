@@ -299,6 +299,7 @@ class TestStreamThreatIntel(object):
             assert_equal(len(result), 0)
 
     def test_extract_ioc_from_record_not_excluded(self):
+        """ Threat Intel - Test we don't exclude IOCs unintentionally"""
         records = [
             {
                 'account': 12345,
