@@ -38,8 +38,6 @@ from stream_alert_cli.logger import (
     get_log_memory_handler,
     LOGGER_CLI,
     LOGGER_SA,
-    LOGGER_SH,
-    LOGGER_SO,
     SuppressNoise
 )
 
@@ -1000,20 +998,7 @@ def stream_alert_test(options, config):
         os.environ['AWS_DEFAULT_REGION'] = config['global']['account']['region']
         os.environ['CLUSTER'] = run_options.get('cluster') or ''
 
-        if options.debug:
-            # TODO(jack): Currently there is no (clean) way to set
-            #             the logger formatter to provide more verbose
-            #             output in debug mode.  Running basicConfig twice
-            #             does not actually change the formatter on the logger object.
-            #             This functionality can be added during the logging refactor
-            # Example Steps:
-            #   call .shutdown() on the existing logger
-            #   debug_formatter = logging.Formatter(
-            #       '%(name)s [%(levelname)s]: [%(module)s.%(funcName)s] %(message)s')
-            #   set the new logger to the formatter above
-            for streamalert_logger in (LOGGER_SA, LOGGER_SH, LOGGER_SO, LOGGER_CLI):
-                streamalert_logger.setLevel(logging.DEBUG)
-        else:
+        if not options.debug:
             # Add a filter to suppress a few noisy log messages
             LOGGER_SA.addFilter(SuppressNoise())
 
