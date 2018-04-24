@@ -285,7 +285,7 @@ class TestStreamThreatIntel(object):
                     'sourceIPAddress': '52.52.52.52',
                     'recipientAccountId': '12345'
                 },
-                'source': '192.168.1.2',
+                'source': '52.52.52.52',
                 'streamalert:normalization': {
                     'sourceAddress': [['detail', 'sourceIPAddress'], ['source']],
                     'usernNme': [['detail', 'userIdentity', 'userName']]
