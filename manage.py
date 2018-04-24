@@ -73,10 +73,32 @@ class NormalizeFunctionAction(UniqueSetAction):
         setattr(namespace, self.dest, values)
 
 
+def _generate_subparser(parser, name, usage, description, subcommand=False):
+    """Helper function to return a subparser with the given options"""
+    subparser = parser.add_parser(
+        name,
+        description=description,
+        formatter_class=RawTextHelpFormatter,
+        help=ARGPARSE_SUPPRESS,
+        usage=usage,
+    )
+
+    # allow verbose output with the --debug option
+    subparser.add_argument('--debug', action='store_true', help=ARGPARSE_SUPPRESS)
+
+    if subcommand:
+        subparser.set_defaults(subcommand=name)
+    else:
+        subparser.set_defaults(command=name)
+
+    return subparser
+
+
 def _add_output_subparser(subparsers):
     """Add the output subparser: manage.py output [subcommand] [options]"""
-    output_usage = 'manage.py output [subcommand] [options]'
-    output_description = ("""
+    usage = 'manage.py output [subcommand] [options]'
+    outputs = sorted(StreamAlertOutput.get_all_outputs().keys())
+    description = """
 StreamAlertCLI v{}
 Define new StreamAlert outputs to send alerts to
 
@@ -92,29 +114,10 @@ Examples:
 
 The following outputs are supported:
 
-    aws-firehose
-    aws-lambda
-    aws-s3
-    aws-sns
-    aws-sqs
-    github
-    jira
-    komand
-    pagerduty
-    pagerduty-incident
-    pagerduty-v2
-    phantom
-    slack
-""".format(version))
-    output_parser = subparsers.add_parser(
-        'output',
-        description=output_description,
-        usage=output_usage,
-        formatter_class=RawTextHelpFormatter,
-        help='Define a new output to send alerts to')
+{}
+""".format(version, '\n'.join('{:>4}{}'.format('', output) for output in outputs))
 
-    # Set the name of this parser to 'output'
-    output_parser.set_defaults(command='output')
+    output_parser = _generate_subparser(subparsers, 'output', usage, description)
 
     # Output parser arguments
     # The CLI library handles all configuration logic
@@ -122,40 +125,35 @@ The following outputs are supported:
     # Output service options
     output_parser.add_argument(
         '--service',
-        choices=sorted(StreamAlertOutput.get_all_outputs().keys()),
+        choices=outputs,
         required=True,
         help=ARGPARSE_SUPPRESS)
-    output_parser.add_argument('--debug', action='store_true', help=ARGPARSE_SUPPRESS)
 
 
 def _add_live_test_subparser(subparsers):
     """Add the live-test subparser: manage.py live-test [options]"""
-    live_test_usage = 'manage.py live-test [options]'
-    live_test_description = ("""
+    usage = 'manage.py live-test [options]'
+    description = """
 StreamAlertCLI v{}
 Run end-to-end tests that will attempt to send alerts
 
-Available Options:
+Required Arguments:
 
     --cluster               The cluster name to use for live testing
+
+Optional Arguments:
+
     --rules                 Name of rules to test, separated by spaces
-    --debug                 Enable Debug logger output
+    --debug                 Enable debug logger output
 
 Examples:
 
     manage.py live-test --cluster prod
     manage.py live-test --rules
 
-""".format(version))
-    live_test_parser = subparsers.add_parser(
-        'live-test',
-        description=live_test_description,
-        usage=live_test_usage,
-        formatter_class=RawTextHelpFormatter,
-        help=ARGPARSE_SUPPRESS)
+""".format(version)
 
-    # set the name of this parser to 'live-test'
-    live_test_parser.set_defaults(command='live-test')
+    live_test_parser = _generate_subparser(subparsers, 'live-test', usage, description)
 
     # add clusters for user to pick from
     live_test_parser.add_argument(
@@ -165,14 +163,11 @@ Examples:
     live_test_parser.add_argument(
         '-r', '--rules', nargs='+', help=ARGPARSE_SUPPRESS, action=UniqueSetAction, default=set())
 
-    # allow verbose output for the CLI with the --debug option
-    live_test_parser.add_argument('--debug', action='store_true', help=ARGPARSE_SUPPRESS)
-
 
 def _add_validate_schema_subparser(subparsers):
     """Add the validate-schemas subparser: manage.py validate-schemas [options]"""
-    schema_validation_usage = 'manage.py validate-schemas [options]'
-    schema_validation_description = ("""
+    usage = 'manage.py validate-schemas [options]'
+    description = """
 StreamAlertCLI v{}
 Run validation of schemas in logs.json using configured integration test files. Validation
 does not actually run the rules engine on test events.
@@ -190,22 +185,16 @@ Available Options:
 
 Optional Arguments:
 
-    --debug              Enable Debug logger output
+    --debug              Enable debug logger output
 
 Examples:
 
     manage.py validate-schemas --test-files <test_file_name_01.json> <test_file_name_02.json>
 
-""".format(version))
-    schema_validation_parser = subparsers.add_parser(
-        'validate-schemas',
-        description=schema_validation_description,
-        usage=schema_validation_usage,
-        formatter_class=RawTextHelpFormatter,
-        help=ARGPARSE_SUPPRESS)
+""".format(version)
 
-    # Set the name of this parser to 'validate-schemas'
-    schema_validation_parser.set_defaults(command='validate-schemas')
+    schema_validation_parser = _generate_subparser(
+        subparsers, 'validate-schemas', usage, description)
 
     # add the optional ability to test against specific files
     schema_validation_parser.add_argument(
@@ -217,14 +206,11 @@ Examples:
         action=UniqueSetAction,
         default=set())
 
-    # allow verbose output for the CLI with the --debug option
-    schema_validation_parser.add_argument('--debug', action='store_true', help=ARGPARSE_SUPPRESS)
-
 
 def _add_app_integration_subparser(subparsers):
     """Add the app integration subparser: manage.py app [subcommand] [options]"""
-    app_integration_usage = 'manage.py app [subcommand] [options]'
-    app_integration_description = ("""
+    usage = 'manage.py app [subcommand] [options]'
+    description = """
 StreamAlertCLI v{}
 Create, list, or update a StreamAlert app integration function to poll logs from various services
 
@@ -234,16 +220,9 @@ Available Subcommands:
     manage.py app update-auth         Update the authentication information for an
                                         existing app integration
 
-""".format(version))
-    app_integration_parser = subparsers.add_parser(
-        'app',
-        description=app_integration_description,
-        usage=app_integration_usage,
-        formatter_class=RawTextHelpFormatter,
-        help=ARGPARSE_SUPPRESS)
+""".format(version)
 
-    # Set the name of this parser to 'app'
-    app_integration_parser.set_defaults(command='app')
+    app_integration_parser = _generate_subparser(subparsers, 'app', usage, description)
 
     app_integration_subparsers = app_integration_parser.add_subparsers()
 
@@ -258,43 +237,32 @@ Available Subcommands:
 
 def _add_app_integration_list_subparser(subparsers):
     """Add the app list subparser: manage.py app list"""
-    app_integration_list_usage = 'manage.py app list'
-
-    app_integration_list_desc = ("""
+    usage = 'manage.py app list'
+    description = """
 StreamAlertCLI v{}
 List all configured StreamAlert app integration functions, grouped by cluseter
 
 Command:
 
-    manage.py app list              List all configured app functions, grouped by cluster
+    manage.py app list             List all configured app functions, grouped by cluster
 
 Optional Arguments:
 
-    --debug             Enable Debug logger output
+    --debug                        Enable debug logger output
 
-""".format(version))
-    app_integration_list_parser = subparsers.add_parser(
-        'list',
-        description=app_integration_list_desc,
-        usage=app_integration_list_usage,
-        formatter_class=RawTextHelpFormatter,
-        help=ARGPARSE_SUPPRESS)
+""".format(version)
 
-    app_integration_list_parser.set_defaults(subcommand='list')
-
-    # allow verbose output for the CLI with the --debug option
-    app_integration_list_parser.add_argument('--debug', action='store_true', help=ARGPARSE_SUPPRESS)
+    _generate_subparser(subparsers, 'list', usage, description, True)
 
 
 def _add_app_integration_new_subparser(subparsers, types, clusters):
     """Add the app new subparser: manage.py app new [options]"""
-    app_integration_new_usage = 'manage.py app new [options]'
+    usage = 'manage.py app new [options]'
 
-    types_block = ('\n').join('{:>26}{}'.format('', app_type) for app_type in types)
+    types_block = '\n'.join('{:>26}{}'.format('', app_type) for app_type in types)
+    cluster_choices_block = '\n'.join('{:>28}{}'.format('', cluster) for cluster in clusters)
 
-    cluster_choices_block = ('\n').join('{:>28}{}'.format('', cluster) for cluster in clusters)
-
-    app_integration_new_description = ("""
+    description = """
 StreamAlertCLI v{}
 Create a new StreamAlert app integration function to poll logs from various services
 
@@ -326,7 +294,7 @@ Required Arguments:
 
 Optional Arguments:
 
-    --debug             Enable Debug logger output
+    --debug             Enable debug logger output
 
 Examples:
 
@@ -342,15 +310,9 @@ Resources:
 
     AWS: {}
 
-""".format(version, types_block, cluster_choices_block, AWS_RATE_HELPER))
-    app_integration_new_parser = subparsers.add_parser(
-        'new',
-        description=app_integration_new_description,
-        usage=app_integration_new_usage,
-        formatter_class=RawTextHelpFormatter,
-        help=ARGPARSE_SUPPRESS)
+""".format(version, types_block, cluster_choices_block, AWS_RATE_HELPER)
 
-    app_integration_new_parser.set_defaults(subcommand='new')
+    app_integration_new_parser = _generate_subparser(subparsers, 'new', usage, description, True)
 
     _add_default_app_integration_args(app_integration_new_parser, clusters)
 
@@ -418,11 +380,11 @@ Resources:
 
 def _add_app_integration_update_auth_subparser(subparsers, clusters):
     """Add the app update-auth subparser: manage.py app update-auth [options]"""
-    app_integration_update_usage = 'manage.py app update-auth [options]'
+    usage = 'manage.py app update-auth [options]'
 
-    cluster_choices_block = ('\n').join('{:>28}{}'.format('', cluster) for cluster in clusters)
+    cluster_choices_block = '\n'.join('{:>28}{}'.format('', cluster) for cluster in clusters)
 
-    app_integration_update_desc = ("""
+    description = """
 StreamAlertCLI v{}
 Update a StreamAlert app integration function's authentication information in Parameter Store
 
@@ -441,7 +403,7 @@ Required Arguments:
 
 Optional Arguments:
 
-    --debug             Enable Debug logger output
+    --debug             Enable debug logger output
 
 Examples:
 
@@ -449,15 +411,10 @@ Examples:
       --cluster prod \\
       --name duo_prod_collector
 
-""".format(version, cluster_choices_block))
-    app_integration_update_parser = subparsers.add_parser(
-        'update-auth',
-        description=app_integration_update_desc,
-        usage=app_integration_update_usage,
-        formatter_class=RawTextHelpFormatter,
-        help=ARGPARSE_SUPPRESS)
+""".format(version, cluster_choices_block)
 
-    app_integration_update_parser.set_defaults(subcommand='update-auth')
+    app_integration_update_parser = _generate_subparser(
+        subparsers, 'update-auth', usage, description, True)
 
     _add_default_app_integration_args(app_integration_update_parser, clusters)
 
@@ -483,17 +440,14 @@ def _add_default_app_integration_args(app_integration_parser, clusters):
     app_integration_parser.add_argument(
         '--name', dest='app_name', required=True, help=ARGPARSE_SUPPRESS, type=_validate_name)
 
-    # Allow verbose output for the CLI with the --debug option
-    app_integration_parser.add_argument('--debug', action='store_true', help=ARGPARSE_SUPPRESS)
-
 
 def _add_metrics_subparser(subparsers):
     """Add the metrics subparser: manage.py metrics [options]"""
-    metrics_usage = 'manage.py metrics [options]'
+    usage = 'manage.py metrics [options]'
 
-    cluster_choices_block = ('\n').join('{:>28}{}'.format('', cluster) for cluster in CLUSTERS)
+    cluster_choices_block = '\n'.join('{:>28}{}'.format('', cluster) for cluster in CLUSTERS)
 
-    metrics_description = ("""
+    description = """
 StreamAlertCLI v{}
 Enable or disable metrics for all lambda functions. This toggles the creation of metric filters.
 
@@ -506,7 +460,7 @@ Available Options:
                             rule
                             alert (not implemented)
                             athena (not implemented)
-    --debug             Enable Debug logger output
+    --debug             Enable debug logger output
 
 Optional Arguemnts:
 
@@ -517,17 +471,9 @@ Examples:
 
     manage.py metrics --enable --functions rule
 
-""".format(version, cluster_choices_block))
+""".format(version, cluster_choices_block)
 
-    metrics_parser = subparsers.add_parser(
-        'metrics',
-        description=metrics_description,
-        usage=metrics_usage,
-        formatter_class=RawTextHelpFormatter,
-        help=ARGPARSE_SUPPRESS)
-
-    # Set the name of this parser to 'metrics'
-    metrics_parser.set_defaults(command='metrics')
+    metrics_parser = _generate_subparser(subparsers, 'metrics', usage, description)
 
     # allow the user to select 1 or more functions to enable metrics for
     metrics_parser.add_argument(
@@ -556,23 +502,18 @@ Examples:
         action=UniqueSetAction,
         default=CLUSTERS)
 
-    # allow verbose output for the CLI with the --debug option
-    metrics_parser.add_argument('--debug', action='store_true', help=ARGPARSE_SUPPRESS)
-
 
 def _add_metric_alarm_subparser(subparsers):
     """Add the create-alarm subparser: manage.py create-alarm [options]"""
-    metric_alarm_usage = 'manage.py create-alarm [options]'
+    usage = 'manage.py create-alarm [options]'
 
     # get the available metrics to be used
     available_metrics = metrics.MetricLogger.get_available_metrics()
     all_metrics = [metric for func in available_metrics for metric in available_metrics[func]]
+    metric_choices_block = '\n'.join('{:>35}{}'.format('', metric) for metric in all_metrics)
+    cluster_choices_block = '\n'.join('{:>37}{}'.format('', cluster) for cluster in CLUSTERS)
 
-    metric_choices_block = ('\n').join('{:>35}{}'.format('', metric) for metric in all_metrics)
-
-    cluster_choices_block = ('\n').join('{:>37}{}'.format('', cluster) for cluster in CLUSTERS)
-
-    metric_alarm_description = ("""
+    description = """
 StreamAlertCLI v{}
 Add a CloudWatch alarm for predefined metrics. These are save in the config and
 Terraform is used to create the alarms.
@@ -616,7 +557,7 @@ Optional Arguments:
                                      Sum
                                      Minimum
                                      Maximum
-    --debug                      Enable Debug logger output
+    --debug                      Enable debug logger output
 
 Other Constraints:
 
@@ -643,17 +584,9 @@ Resources:
     AWS:        https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_PutMetricAlarm.html
     Terraform:  https://www.terraform.io/docs/providers/aws/r/cloudwatch_metric_alarm.html
 
-""".format(version, metric_choices_block, cluster_choices_block))
+""".format(version, metric_choices_block, cluster_choices_block)
 
-    metric_alarm_parser = subparsers.add_parser(
-        'create-alarm',
-        description=metric_alarm_description,
-        usage=metric_alarm_usage,
-        formatter_class=RawTextHelpFormatter,
-        help=ARGPARSE_SUPPRESS)
-
-    # Set the name of this parser to 'create-alarm'
-    metric_alarm_parser.set_defaults(command='create-alarm')
+    metric_alarm_parser = _generate_subparser(subparsers, 'create-alarm', usage, description)
 
     # add all the required parameters
     # add metrics for user to pick from. Will be mapped to 'metric_name' in terraform
@@ -786,14 +719,11 @@ Resources:
         help=ARGPARSE_SUPPRESS,
         default='')
 
-    # allow verbose output for the CLI with the --debug option
-    metric_alarm_parser.add_argument('--debug', action='store_true', help=ARGPARSE_SUPPRESS)
-
 
 def _add_lambda_subparser(subparsers):
     """Add the Lambda subparser: manage.py lambda [subcommand] [options]"""
-    lambda_usage = 'manage.py lambda [subcommand] [options]'
-    lambda_description = ("""
+    usage = 'manage.py lambda [subcommand] [options]'
+    description = """
 StreamAlertCLI v{}
 Deploy, Rollback, and Test StreamAlert Lambda functions
 
@@ -803,16 +733,9 @@ Available Subcommands:
     manage.py lambda rollback          Rollback Lambda functions
     manage.py lambda test              Run rule tests
 
-""".format(version))
-    lambda_parser = subparsers.add_parser(
-        'lambda',
-        usage=lambda_usage,
-        description=lambda_description,
-        help=ARGPARSE_SUPPRESS,
-        formatter_class=RawTextHelpFormatter)
+""".format(version)
 
-    # Set the name of this parser to 'lambda'
-    lambda_parser.set_defaults(command='lambda')
+    lambda_parser = _generate_subparser(subparsers, 'lambda', usage, description)
 
     lambda_subparsers = lambda_parser.add_subparsers()
 
@@ -821,11 +744,10 @@ Available Subcommands:
     _add_lambda_test_subparser(lambda_subparsers)
 
 
-def _add_lambda_deploy_subparser(lambda_subparsers):
+def _add_lambda_deploy_subparser(subparsers):
     """Add the lambda deploy subparser: manage.py lambda deploy"""
-    lambda_deploy_usage = 'manage.py lambda deploy'
-
-    lambda_deploy_desc = ("""
+    usage = 'manage.py lambda deploy'
+    description = """
 StreamAlertCLI v{}
 Deploy Lambda functions
 
@@ -843,21 +765,15 @@ Optional Arguments:
 
     --skip-rule-staging                Skip staging of new rules so they go directly into
                                          production.
-    --debug                            Enable Debug logger output
+    --debug                            Enable debug logger output
 
 Examples:
 
     manage.py lambda deploy --processor rule alert
 
-""".format(version))
-    lambda_deploy_parser = lambda_subparsers.add_parser(
-        'deploy',
-        description=lambda_deploy_desc,
-        usage=lambda_deploy_usage,
-        formatter_class=RawTextHelpFormatter,
-        help=ARGPARSE_SUPPRESS)
+""".format(version)
 
-    lambda_deploy_parser.set_defaults(subcommand='deploy')
+    lambda_deploy_parser = _generate_subparser(subparsers, 'deploy', usage, description, True)
 
     # flag to manually bypass rule staging for new rules upon deploy
     lambda_deploy_parser.add_argument(
@@ -869,11 +785,10 @@ Examples:
     _add_default_lambda_args(lambda_deploy_parser)
 
 
-def _add_lambda_rollback_subparser(lambda_subparsers):
+def _add_lambda_rollback_subparser(subparsers):
     """Add the lambda rollback subparser: manage.py lambda rollback"""
-    lambda_rollback_usage = 'manage.py lambda rollback'
-
-    lambda_rollback_desc = ("""
+    usage = 'manage.py lambda rollback'
+    description = """
 StreamAlertCLI v{}
 Rollback Lambda functions
 
@@ -889,30 +804,23 @@ Required Arguments:
 
 Optional Arguments:
 
-    --debug                            Enable Debug logger output
+    --debug                            Enable debug logger output
 
 Examples:
 
     manage.py lambda rollback --processor rule alert
 
-""".format(version))
-    lambda_rollback_parser = lambda_subparsers.add_parser(
-        'rollback',
-        description=lambda_rollback_desc,
-        usage=lambda_rollback_usage,
-        formatter_class=RawTextHelpFormatter,
-        help=ARGPARSE_SUPPRESS)
+""".format(version)
 
-    lambda_rollback_parser.set_defaults(subcommand='rollback')
+    lambda_rollback_parser = _generate_subparser(subparsers, 'rollback', usage, description, True)
 
     _add_default_lambda_args(lambda_rollback_parser)
 
 
-def _add_lambda_test_subparser(lambda_subparsers):
+def _add_lambda_test_subparser(subparsers):
     """Add the lambda test subparser: manage.py lambda test"""
-    lambda_test_usage = 'manage.py lambda test'
-
-    lambda_test_desc = ("""
+    usage = 'manage.py lambda test'
+    description = """
 StreamAlertCLI v{}
 Run rule tests
 
@@ -935,21 +843,15 @@ Required Arguments:
 
 Optional Arguments:
 
-    --debug                            Enable Debug logger output
+    --debug                            Enable debug logger output
 
 Example:
 
     manage.py lambda test --processor rule --test-rules lateral_movement root_logins
 
-""".format(version))
-    lambda_test_parser = lambda_subparsers.add_parser(
-        'test',
-        description=lambda_test_desc,
-        usage=lambda_test_usage,
-        formatter_class=RawTextHelpFormatter,
-        help=ARGPARSE_SUPPRESS)
+""".format(version)
 
-    lambda_test_parser.set_defaults(subcommand='test')
+    lambda_test_parser = _generate_subparser(subparsers, 'test', usage, description, True)
 
     # require the name of the processor being tested
     lambda_test_parser.add_argument(
@@ -1015,9 +917,6 @@ Example:
         action=UniqueSetAction,
         default=set())
 
-    # Allow verbose output for the CLI with the --debug option
-    test_filter_group.add_argument('--debug', action='store_true', help=ARGPARSE_SUPPRESS)
-
 
 def _add_default_lambda_args(lambda_parser):
     """Add the default arguments to the lambda parsers"""
@@ -1037,14 +936,11 @@ def _add_default_lambda_args(lambda_parser):
         help=ARGPARSE_SUPPRESS,
         nargs='+')
 
-    # Allow verbose output for the CLI with the --debug option
-    lambda_parser.add_argument('--debug', action='store_true', help=ARGPARSE_SUPPRESS)
-
 
 def _add_terraform_subparser(subparsers):
     """Add Terraform subparser: manage.py terraform [subcommand] [options]"""
-    terraform_usage = 'manage.py terraform [subcommand] [options]'
-    terraform_description = ("""
+    usage = 'manage.py terraform [subcommand] [options]'
+    description = """
 StreamAlertCLI v{}
 Plan and Apply StreamAlert Infrastructure with Terraform
 
@@ -1078,16 +974,9 @@ Examples:
     manage.py terraform destroy
     manage.py terraform destroy -target cloudtrail
 
-""".format(version))
-    tf_parser = subparsers.add_parser(
-        'terraform',
-        usage=terraform_usage,
-        description=terraform_description,
-        help=ARGPARSE_SUPPRESS,
-        formatter_class=RawTextHelpFormatter)
+""".format(version)
 
-    # set the name of this parser to 'terraform'
-    tf_parser.set_defaults(command='terraform')
+    tf_parser = _generate_subparser(subparsers, 'terraform', usage, description)
 
     # add subcommand options for the terraform sub-parser
     tf_parser.add_argument(
@@ -1111,13 +1000,11 @@ Examples:
         help=ARGPARSE_SUPPRESS,
         nargs='+')
 
-    tf_parser.add_argument('--debug', action='store_true', help=ARGPARSE_SUPPRESS)
-
 
 def _add_kinesis_subparser(subparsers):
     """Add kinesis subparser"""
-    kinesis_usage = 'manage.py kinesis [disable-events]'
-    kinesis_description = ("""
+    usage = 'manage.py kinesis [disable-events]'
+    description = """
 StreamAlertCLI v{}
 Kinesis StreamAlert options
 
@@ -1128,29 +1015,25 @@ Available Commands:
     disable-events             Disable Kinesis Events
     enable-events              Enable Kinesis Events
 
-Arguments:
+Optional Arguments:
 
     --clusters                Space delimited set of clusters to modify, defaults to all
-    --debug                   Debug mode
+    --debug                   Enable debug logger output
     --skip-terraform          Only set the config, do not run Terraform after
 
 Examples:
 
     manage.py kinesis disable-events --clusters corp prod
 
-""".format(version))
-    kinesis_parser = subparsers.add_parser(
-        'kinesis',
-        usage=kinesis_usage,
-        description=kinesis_description,
-        help=ARGPARSE_SUPPRESS,
-        formatter_class=RawTextHelpFormatter)
+""".format(version)
 
-    kinesis_parser.set_defaults(command='kinesis')
+    kinesis_parser = _generate_subparser(subparsers, 'kinesis', usage, description)
+
     kinesis_parser.add_argument(
         'subcommand',
         choices=['disable-events', 'enable-events'],
         help=ARGPARSE_SUPPRESS)
+
     kinesis_parser.add_argument(
         '-c',
         '--clusters',
@@ -1159,14 +1042,14 @@ Examples:
         nargs='+',
         action=UniqueSetAction,
         default=set())
+
     kinesis_parser.add_argument('--skip-terraform', action='store_true', help=ARGPARSE_SUPPRESS)
-    kinesis_parser.add_argument('--debug', action='store_true', help=ARGPARSE_SUPPRESS)
 
 
 def _add_configure_subparser(subparsers):
     """Add configure subparser: manage.py configure [config_key] [config_value]"""
-    configure_usage = 'manage.py configure [config_key] [config_value]'
-    configure_description = ("""
+    usage = 'manage.py configure [config_key] [config_value]'
+    description = """
 StreamAlertCLI v{}
 Configure StreamAlert options
 
@@ -1179,28 +1062,20 @@ Examples:
 
     manage.py configure prefix my-organization
 
-""".format(version))
-    configure_parser = subparsers.add_parser(
-        'configure',
-        usage=configure_usage,
-        description=configure_description,
-        help=ARGPARSE_SUPPRESS,
-        formatter_class=RawTextHelpFormatter)
+""".format(version)
 
-    configure_parser.set_defaults(command='configure')
+    configure_parser = _generate_subparser(subparsers, 'configure', usage, description)
 
     configure_parser.add_argument(
         'config_key', choices=['prefix', 'aws_account_id'], help=ARGPARSE_SUPPRESS)
 
     configure_parser.add_argument('config_value', help=ARGPARSE_SUPPRESS)
 
-    configure_parser.add_argument('--debug', action='store_true', help=ARGPARSE_SUPPRESS)
-
 
 def _add_athena_subparser(subparsers):
     """Add athena subparser: manage.py athena [subcommand]"""
-    athena_usage = 'manage.py athena [subcommand]'
-    athena_description = ("""
+    usage = 'manage.py athena [subcommand]'
+    description = """
 StreamAlertCLI v{}
 Athena StreamAlert options
 
@@ -1211,15 +1086,9 @@ Available Subcommands:
     manage.py athena rebuild-partitions       Rebuild the partitions for an Athena table
     manage.py athena drop-all-tables          Drop all of the tables from the database
 
-""".format(version))
-    athena_parser = subparsers.add_parser(
-        'athena',
-        usage=athena_usage,
-        description=athena_description,
-        help=ARGPARSE_SUPPRESS,
-        formatter_class=RawTextHelpFormatter)
+""".format(version)
 
-    athena_parser.set_defaults(command='athena')
+    athena_parser = _generate_subparser(subparsers, 'athena', usage, description)
 
     athena_subparsers = athena_parser.add_subparsers()
 
@@ -1229,11 +1098,10 @@ Available Subcommands:
     _add_athena_drop_all_subparser(athena_subparsers)
 
 
-def _add_athena_init_subparser(athena_subparsers):
+def _add_athena_init_subparser(subparsers):
     """Add the athena init subparser: manage.py athena init"""
-    athena_init_usage = 'manage.py athena init'
-
-    athena_init_desc = ("""
+    usage = 'manage.py athena init'
+    description = """
 StreamAlertCLI v{}
 Initialize the Athena base config
 
@@ -1246,27 +1114,15 @@ Optional Arguments:
 
     --debug                              Enable debug logger output
 
-""".format(version))
-    athena_drop_all_parser = athena_subparsers.add_parser(
-        'init',
-        description=athena_init_desc,
-        usage=athena_init_usage,
-        formatter_class=RawTextHelpFormatter,
-        help=ARGPARSE_SUPPRESS)
+""".format(version)
 
-    athena_drop_all_parser.set_defaults(subcommand='init')
-
-    athena_drop_all_parser.add_argument(
-        '--debug',
-        action='store_true',
-        help=ARGPARSE_SUPPRESS)
+    _generate_subparser(subparsers, 'init', usage, description, True)
 
 
-def _add_athena_create_table_subparser(athena_subparsers):
+def _add_athena_create_table_subparser(subparsers):
     """Add the athena create-table subparser: manage.py athena create-table"""
-    athena_create_table_usage = 'manage.py athena create-table'
-
-    athena_create_table_desc = ("""
+    usage = 'manage.py athena create-table'
+    description = """
 StreamAlertCLI v{}
 Create an Athena table
 
@@ -1294,15 +1150,10 @@ Examples:
       --bucket s3.bucket.name \\
       --table-name my_athena_table
 
-""".format(version))
-    athena_create_table_parser = athena_subparsers.add_parser(
-        'create-table',
-        description=athena_create_table_desc,
-        usage=athena_create_table_usage,
-        formatter_class=RawTextHelpFormatter,
-        help=ARGPARSE_SUPPRESS)
+""".format(version)
 
-    athena_create_table_parser.set_defaults(subcommand='create-table')
+    athena_create_table_parser = _generate_subparser(
+        subparsers, 'create-table', usage, description, True)
 
     _add_default_athena_args(athena_create_table_parser)
 
@@ -1326,11 +1177,10 @@ Examples:
         type=_validate_override)
 
 
-def _add_athena_rebuild_subparser(athena_subparsers):
+def _add_athena_rebuild_subparser(subparsers):
     """Add the athena rebuild-partitions subparser: manage.py athena rebuild-partitions"""
-    athena_rebuild_usage = 'manage.py athena rebuild-partitions'
-
-    athena_rebuild_desc = ("""
+    usage = 'manage.py athena rebuild-partitions'
+    description = """
 StreamAlertCLI v{}
 Rebuild the partitions for an Athena table
 
@@ -1355,24 +1205,18 @@ Examples:
       --bucket s3.bucket.name \\
       --table-name my_athena_table
 
-""".format(version))
-    athena_rebuild_parser = athena_subparsers.add_parser(
-        'rebuild-partitions',
-        description=athena_rebuild_desc,
-        usage=athena_rebuild_usage,
-        formatter_class=RawTextHelpFormatter,
-        help=ARGPARSE_SUPPRESS)
+""".format(version)
 
-    athena_rebuild_parser.set_defaults(subcommand='rebuild-partitions')
+    athena_rebuild_parser = _generate_subparser(
+        subparsers, 'rebuild-partitions', usage, description, True)
 
     _add_default_athena_args(athena_rebuild_parser)
 
 
-def _add_athena_drop_all_subparser(athena_subparsers):
+def _add_athena_drop_all_subparser(subparsers):
     """Add the athena drop-all-tables subparser: manage.py athena drop-all-tables"""
-    athena_drop_all_usage = 'manage.py athena drop-all-tables'
-
-    athena_drop_all_desc = ("""
+    usage = 'manage.py athena drop-all-tables'
+    description = """
 StreamAlertCLI v{}
 Drop all tables from an Athena database
 
@@ -1384,20 +1228,9 @@ Optional Arguments:
 
     --debug                              Enable debug logger output
 
-""".format(version))
-    athena_drop_all_parser = athena_subparsers.add_parser(
-        'drop-all-tables',
-        description=athena_drop_all_desc,
-        usage=athena_drop_all_usage,
-        formatter_class=RawTextHelpFormatter,
-        help=ARGPARSE_SUPPRESS)
+""".format(version)
 
-    athena_drop_all_parser.set_defaults(subcommand='drop-all-tables')
-
-    athena_drop_all_parser.add_argument(
-        '--debug',
-        action='store_true',
-        help=ARGPARSE_SUPPRESS)
+    _generate_subparser(subparsers, 'drop-all-tables', usage, description, True)
 
 
 def _add_default_athena_args(athena_parser):
@@ -1413,65 +1246,49 @@ def _add_default_athena_args(athena_parser):
         help=ARGPARSE_SUPPRESS,
         required=True)
 
-    athena_parser.add_argument(
-        '--debug',
-        action='store_true',
-        help=ARGPARSE_SUPPRESS)
-
 
 def _add_threat_intel_subparser(subparsers):
-    """Add Threat Intel subparser: manage.py threat_intel [subcommand]"""
-    threat_intel_usage = 'manage.py threat_intel [subcommand]'
-    threat_intel_description = ("""
+    """Add Threat Intel subparser: manage.py threat-intel [subcommand]"""
+    usage = 'manage.py threat-intel [subcommand]'
+    description = """
 StreamAlertCLI v{}
 Enable, configure StreamAlert Threat Intelligence feature.
 
 Available Subcommands:
 
-    manage.py threat_intel enable        Enable the Threat Intelligence feature in Rule Processor
+    manage.py threat-intel enable        Enable the Threat Intelligence feature in Rule Processor
 
     Optional Arguments:
-        --dynamodb_table   The DynamoDB table name which stores IOC(s).
+        --dynamodb-table   The DynamoDB table name which stores IOC(s).
 
 Examples:
 
-    manage.py threat_intel enable
-    manage.py threat_intel enable --dynamodb_table my_ioc_table
-""".format(version))
-    threat_intel_parser = subparsers.add_parser(
-        'threat_intel',
-        usage=threat_intel_usage,
-        description=threat_intel_description,
-        help=ARGPARSE_SUPPRESS,
-        formatter_class=RawTextHelpFormatter
-    )
+    manage.py threat-intel enable
+    manage.py threat-intel enable --dynamodb-table my_ioc_table
+""".format(version)
 
-    threat_intel_parser.set_defaults(command='threat_intel')
+    threat_intel_parser = _generate_subparser(subparsers, 'threat-intel', usage, description)
 
     threat_intel_parser.add_argument(
         'subcommand', choices=['enable'], help=ARGPARSE_SUPPRESS
     )
 
     threat_intel_parser.add_argument(
-        '--dynamodb_table',
+        '--dynamodb-table',
         help=ARGPARSE_SUPPRESS
-    )
-
-    threat_intel_parser.add_argument(
-        '--debug', action='store_true', help=ARGPARSE_SUPPRESS
     )
 
 
 def _add_threat_intel_downloader_subparser(subparsers):
-    """Add threat intel downloader subparser: manage.py threat_intel_downloader [subcommand]"""
-    ti_downloader_usage = 'manage.py threat_intel_downloader [subcommand]'
-    ti_downloader_description = ("""
+    """Add threat intel downloader subparser: manage.py threat-intel-downloader [subcommand]"""
+    usage = 'manage.py threat-intel-downloader [subcommand]'
+    description = """
 StreamAlertCLI v{}
 Lambda function to retrieve IOC(s) from 3rd party threat feed vendor.
 
 Available Subcommands:
 
-    manage.py threat_intel_downloader enable        Enable the Threat Intel Downloader Lambda function
+    manage.py threat-intel-downloader enable        Enable the Threat Intel Downloader Lambda function
 
     Required Arguments:
 
@@ -1499,24 +1316,18 @@ Available Subcommands:
         --max_read_capacity  Mimimal read capacity when autoscale enabled, default is 5.
         --target_utilization Utilization remains at or near the setting level when autoscale enabled.
 
-    manage.py threat_intel_downloader update-auth   Update API credentials to parameter store.
+    manage.py threat-intel-downloader update-auth   Update API credentials to parameter store.
 
 Examples:
 
-    manage.py threat_intel_downloader enable \\
+    manage.py threat-intel-downloader enable \\
     --interval 'rate(1 day)' \\
     --timeout 120 \\
     --memory 128
-""".format(version))
-    ti_downloader_parser = subparsers.add_parser(
-        'threat_intel_downloader',
-        usage=ti_downloader_usage,
-        description=ti_downloader_description,
-        help=ARGPARSE_SUPPRESS,
-        formatter_class=RawTextHelpFormatter
-    )
+""".format(version)
 
-    ti_downloader_parser.set_defaults(command='threat_intel_downloader')
+    ti_downloader_parser = _generate_subparser(
+        subparsers, 'threat-intel-downloader', usage, description)
 
     ti_downloader_parser.add_argument(
         'subcommand', choices=['enable', 'update-auth'], help=ARGPARSE_SUPPRESS
@@ -1630,42 +1441,33 @@ Examples:
         '--target_utilization', help=ARGPARSE_SUPPRESS, default=70
     )
 
-    ti_downloader_parser.add_argument(
-        '--debug', action='store_true', help=ARGPARSE_SUPPRESS
-    )
 
 def _add_rule_table_subparser(subparsers):
     """Add the rule database helper subparser: manage.py rule-table [subcommand] [options]"""
-    rule_table_usage = 'manage.py rule-table [subcommand] [options]'
-    rule_table_description = ("""
+    usage = 'manage.py rule-table [subcommand] [options]'
+    description = """
 StreamAlertCLI v{}
 Print the status of or update remote StreamAlert rule information within the rule database
 
 Available Subcommands:
 
     manage.py rule-table status          List the current staging status from the rules databse
-    manage.py rule-table update          Update the staging status of rules
+    manage.py rule-table stage           Update the staging status of rules
 
-""".format(version))
-    rule_table_parser = subparsers.add_parser(
-        'rule-table',
-        usage=rule_table_usage,
-        description=rule_table_description,
-        formatter_class=RawTextHelpFormatter,
-        help=ARGPARSE_SUPPRESS)
+""".format(version)
 
-    # Set the name of this parser to 'rule-table'
-    rule_table_parser.set_defaults(command='rule-table')
+    rule_table_parser = _generate_subparser(subparsers, 'rule-table', usage, description)
 
     rule_table_subparsers = rule_table_parser.add_subparsers()
 
     _add_rule_table_status_subparser(rule_table_subparsers)
-    _add_rule_table_staging_subparsers(rule_table_subparsers)
+    _add_rule_table_stage_subparser(rule_table_subparsers)
+    _add_rule_table_unstage_subparser(rule_table_subparsers)
 
 def _add_rule_table_status_subparser(subparsers):
     """Add the rule db status subparser: manage.py rule-table status"""
-    rule_table_list_usage = 'manage.py rule-table status'
-    rule_table_list_desc = ("""
+    usage = 'manage.py rule-table status'
+    description = """
 StreamAlertCLI v{}
 List all rules within the rule database and their staging status
 
@@ -1676,27 +1478,19 @@ Command:
 Optional Arguments:
 
     --verbose           Output additional information for rules in the database
-    --debug             Enable Debug logger output
+    --debug             Enable debug logger output
 
-""".format(version))
-    rule_table_list_parser = subparsers.add_parser(
-        'status',
-        usage=rule_table_list_usage,
-        description=rule_table_list_desc,
-        formatter_class=RawTextHelpFormatter,
-        help=ARGPARSE_SUPPRESS)
+""".format(version)
 
-    rule_table_list_parser.set_defaults(subcommand='status')
+    rule_table_status_parser = _generate_subparser(subparsers, 'status', usage, description, True)
 
-    # allow verbose output for the CLI with the --debug option
-    rule_table_list_parser.add_argument('--verbose', action='store_true', help=ARGPARSE_SUPPRESS)
-    rule_table_list_parser.add_argument('--debug', action='store_true', help=ARGPARSE_SUPPRESS)
+    rule_table_status_parser.add_argument('--verbose', action='store_true', help=ARGPARSE_SUPPRESS)
 
 
-def _add_rule_table_staging_subparsers(subparsers):
+def _add_rule_table_stage_subparser(subparsers):
     """Add the rule db stage subparser: manage.py rule-table stage"""
-    rule_table_stage_usage = 'manage.py rule-table stage'
-    rule_table_stage_desc = ("""
+    usage = 'manage.py rule-table stage'
+    description = """
 StreamAlertCLI v{}
 Stage rules given their name as a space-separated list
 
@@ -1706,21 +1500,19 @@ Command:
 
 Optional Arguments:
 
-    --debug                            Enable Debug logger output
+    --debug                            Enable debug logger output
 
-""".format(version))
-    rule_table_stage_parser = subparsers.add_parser(
-        'stage',
-        usage=rule_table_stage_usage,
-        description=rule_table_stage_desc,
-        formatter_class=RawTextHelpFormatter,
-        help=ARGPARSE_SUPPRESS)
+""".format(version)
 
-    rule_table_stage_parser.set_defaults(subcommand='stage')
+    rule_table_stage_parser = _generate_subparser(subparsers, 'stage', usage, description, True)
+
     _add_default_rule_table_staging_args(rule_table_stage_parser)
 
-    rule_table_unstage_usage = 'manage.py rule-table unstage'
-    rule_table_unstage_desc = ("""
+
+def _add_rule_table_unstage_subparser(subparsers):
+    """Add the rule db unstage subparser: manage.py rule-table unstage"""
+    usage = 'manage.py rule-table unstage'
+    description = """
 StreamAlertCLI v{}
 Unstage rules given their name as a space-separated list
 
@@ -1730,18 +1522,15 @@ Command:
 
 Optional Arguments:
 
-    --debug                            Enable Debug logger output
+    --debug                            Enable debug logger output
 
-""".format(version))
-    rule_table_unstage_parser = subparsers.add_parser(
-        'unstage',
-        usage=rule_table_unstage_usage,
-        description=rule_table_unstage_desc,
-        formatter_class=RawTextHelpFormatter,
-        help=ARGPARSE_SUPPRESS)
+""".format(version)
 
-    rule_table_unstage_parser.set_defaults(subcommand='unstage')
+    rule_table_unstage_parser = _generate_subparser(
+        subparsers, 'unstage', usage, description, True)
+
     _add_default_rule_table_staging_args(rule_table_unstage_parser)
+
 
 def _add_default_rule_table_staging_args(subparser):
     """Add the default arguments to the rule table staging parsers"""
@@ -1753,13 +1542,11 @@ def _add_default_rule_table_staging_args(subparser):
         nargs='+'
     )
 
-    # allow debug output for the CLI with the --debug option
-    subparser.add_argument('--debug', action='store_true', help=ARGPARSE_SUPPRESS)
-
 
 def build_parser():
     """Build the argument parser."""
-    description = ("""
+    usage = '%(prog)s [command] [subcommand] [options]'
+    description = """
 StreamAlertCLI v{}
 Build, Deploy, Configure, and Test StreamAlert Infrastructure
 
@@ -1776,16 +1563,15 @@ Available Commands:
     manage.py output                     Configure new StreamAlert outputs
     manage.py rule-table                 Get the status of or update rules in the rules database
     manage.py terraform                  Manage StreamAlert infrastructure
-    manage.py threat_intel               Enable, configure StreamAlert Threat Intelligence feature.
-    manage.py threat_intel_downloader    Lambda function to retrieve IOC(s).
+    manage.py threat-intel               Enable, configure StreamAlert Threat Intelligence feature.
+    manage.py threat-intel-downloader    Lambda function to retrieve IOC(s).
     manage.py validate-schemas           Run validation of schemas
 
 For additional details on the available commands, try:
 
     manage.py [command] --help
 
-""".format(version))
-    usage = '%(prog)s [command] [subcommand] [options]'
+""".format(version)
 
     parser = ArgumentParser(
         description=description,
