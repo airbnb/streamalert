@@ -247,8 +247,8 @@ class TestStreamThreatIntel(object):
             assert_equal((results[3].value, results[3].ioc_type),
                          ('abcdef0123456789abcdef0123456789', 'md5'))
 
-    def test_extract_ioc_from_record_with_private_ip(self):
-        """Threat Intel - Test extracting values from a record based on normalized keys"""
+    def test_extract_ioc_from_record_with_excluded_ip(self):
+        """Threat Intel - Test extracting values from records with excluded IPs"""
         records = [
             {
                 'account': 12345,
