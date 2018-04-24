@@ -248,7 +248,10 @@ class TestStreamThreatIntel(object):
                          ('abcdef0123456789abcdef0123456789', 'md5'))
 
     def test_extract_ioc_from_record_with_excluded_ip(self):
-        """Threat Intel - Test extracting values from records with excluded IPs"""
+        """
+        Threat Intel - Test extracting values from records with excluded IPs
+        expected output: an empty array of records
+        """
         records = [
             {
                 'account': 12345,
@@ -298,11 +301,46 @@ class TestStreamThreatIntel(object):
             result = self.threat_intel._extract_ioc_from_record(record)
             assert_equal(len(result), 0)
 
+    def test_extract_ioc_from_record_without_excluded_ip(self):
+        """
+        Threat Intel - Test extracting values from records with excluded IPs
+        Expected output: an array with a single record for 6.6.6.6
+        """
+        records = [
+            {
+                'account': 12345,
+                'region': '123456123456',
+                'detail': {
+                    'eventType': 'AwsConsoleSignIn',
+                    'eventName': 'ConsoleLogin',
+                    'userIdentity': {
+                        'userName': 'alice',
+                        'type': 'Root',
+                        'principalId': '12345',
+                    },
+                    'sourceIPAddress': '6.6.6.6',
+                    'recipientAccountId': '12345'
+                },
+                'source': '6.6.6.6',
+                'streamalert:normalization': {
+                    'sourceAddress': [['detail', 'sourceIPAddress'], ['source']],
+                    'usernNme': [['detail', 'userIdentity', 'userName']]
+                },
+                'id': '12345'
+            }
+        ]
+        records = mock_normalized_records(records)
+        for record in records:
+            result = self.threat_intel._extract_ioc_from_record(record)
+            assert_equal(len(result), 1)
+
     def test_extract_ioc_from_records_with_amazon_domains(self):
         """
         test extracting IOCs where the "IP" is actually an AWS domain
         In cloudtrail_api events, many "ipaddress" values could be
         s3.amazonaws.com, ec2.amazonaws.com, cloudtrail.amazonaws.com, etc.
+
+        expected output: an empty array of records
         """
         records = [
             {
