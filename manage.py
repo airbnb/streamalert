@@ -1660,6 +1660,7 @@ Available Subcommands:
     rule_table_subparsers = rule_table_parser.add_subparsers()
 
     _add_rule_table_status_subparser(rule_table_subparsers)
+    _add_rule_table_staging_subparsers(rule_table_subparsers)
 
 def _add_rule_table_status_subparser(subparsers):
     """Add the rule db status subparser: manage.py rule-table status"""
@@ -1690,6 +1691,70 @@ Optional Arguments:
     # allow verbose output for the CLI with the --debug option
     rule_table_list_parser.add_argument('--verbose', action='store_true', help=ARGPARSE_SUPPRESS)
     rule_table_list_parser.add_argument('--debug', action='store_true', help=ARGPARSE_SUPPRESS)
+
+
+def _add_rule_table_staging_subparsers(subparsers):
+    """Add the rule db stage subparser: manage.py rule-table stage"""
+    rule_table_stage_usage = 'manage.py rule-table stage'
+    rule_table_stage_desc = ("""
+StreamAlertCLI v{}
+Stage rules given their name as a space-separated list
+
+Command:
+
+    manage.py rule-table stage         Stage the rules provided in a space-separated list
+
+Optional Arguments:
+
+    --debug                            Enable Debug logger output
+
+""".format(version))
+    rule_table_stage_parser = subparsers.add_parser(
+        'stage',
+        usage=rule_table_stage_usage,
+        description=rule_table_stage_desc,
+        formatter_class=RawTextHelpFormatter,
+        help=ARGPARSE_SUPPRESS)
+
+    rule_table_stage_parser.set_defaults(subcommand='stage')
+    _add_default_rule_table_staging_args(rule_table_stage_parser)
+
+    rule_table_unstage_usage = 'manage.py rule-table unstage'
+    rule_table_unstage_desc = ("""
+StreamAlertCLI v{}
+Unstage rules given their name as a space-separated list
+
+Command:
+
+    manage.py rule-table unstage       Unstage the rules provided in a space-separated list
+
+Optional Arguments:
+
+    --debug                            Enable Debug logger output
+
+""".format(version))
+    rule_table_unstage_parser = subparsers.add_parser(
+        'unstage',
+        usage=rule_table_unstage_usage,
+        description=rule_table_unstage_desc,
+        formatter_class=RawTextHelpFormatter,
+        help=ARGPARSE_SUPPRESS)
+
+    rule_table_unstage_parser.set_defaults(subcommand='unstage')
+    _add_default_rule_table_staging_args(rule_table_unstage_parser)
+
+def _add_default_rule_table_staging_args(subparser):
+    """Add the default arguments to the rule table staging parsers"""
+    subparser.add_argument(
+        'rules',
+        action=UniqueSetAction,
+        default=set(),
+        help=ARGPARSE_SUPPRESS,
+        nargs='+'
+    )
+
+    # allow debug output for the CLI with the --debug option
+    subparser.add_argument('--debug', action='store_true', help=ARGPARSE_SUPPRESS)
 
 
 def build_parser():

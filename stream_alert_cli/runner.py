@@ -20,7 +20,7 @@ from stream_alert_cli.athena.handler import athena_handler
 from stream_alert_cli.config import CLIConfig
 from stream_alert_cli.helpers import user_input
 from stream_alert_cli.kinesis.handler import kinesis_handler
-from stream_alert_cli.logger import LOGGER_CLI
+from stream_alert_cli.logger import LOGGER_CLI, set_logger_levels
 from stream_alert_cli.manage_lambda.handler import lambda_handler
 from stream_alert_cli.rule_table import rule_table_handler
 from stream_alert_cli.terraform.handler import terraform_handler
@@ -47,7 +47,7 @@ def cli_runner(options):
     LOGGER_CLI.info(cli_load_message)
 
     if options.debug:
-        LOGGER_CLI.setLevel('DEBUG')
+        set_logger_levels('DEBUG')
 
     if options.command == 'output':
         configure_output(options)
