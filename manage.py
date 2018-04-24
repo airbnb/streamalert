@@ -83,6 +83,9 @@ def _generate_subparser(parser, name, usage, description, subcommand=False):
         usage=usage,
     )
 
+    # allow verbose output with the --debug option
+    subparser.add_argument('--debug', action='store_true', help=ARGPARSE_SUPPRESS)
+
     if subcommand:
         subparser.set_defaults(subcommand=name)
     else:
@@ -125,7 +128,6 @@ The following outputs are supported:
         choices=outputs,
         required=True,
         help=ARGPARSE_SUPPRESS)
-    output_parser.add_argument('--debug', action='store_true', help=ARGPARSE_SUPPRESS)
 
 
 def _add_live_test_subparser(subparsers):
@@ -135,11 +137,14 @@ def _add_live_test_subparser(subparsers):
 StreamAlertCLI v{}
 Run end-to-end tests that will attempt to send alerts
 
-Available Options:
+Required Arguments:
 
     --cluster               The cluster name to use for live testing
+
+Optional Arguments:
+
     --rules                 Name of rules to test, separated by spaces
-    --debug                 Enable Debug logger output
+    --debug                 Enable debug logger output
 
 Examples:
 
@@ -157,9 +162,6 @@ Examples:
     # add the optional ability to test against a rule/set of rules
     live_test_parser.add_argument(
         '-r', '--rules', nargs='+', help=ARGPARSE_SUPPRESS, action=UniqueSetAction, default=set())
-
-    # allow verbose output for the CLI with the --debug option
-    live_test_parser.add_argument('--debug', action='store_true', help=ARGPARSE_SUPPRESS)
 
 
 def _add_validate_schema_subparser(subparsers):
@@ -183,7 +185,7 @@ Available Options:
 
 Optional Arguments:
 
-    --debug              Enable Debug logger output
+    --debug              Enable debug logger output
 
 Examples:
 
@@ -203,9 +205,6 @@ Examples:
         help=ARGPARSE_SUPPRESS,
         action=UniqueSetAction,
         default=set())
-
-    # allow verbose output for the CLI with the --debug option
-    schema_validation_parser.add_argument('--debug', action='store_true', help=ARGPARSE_SUPPRESS)
 
 
 def _add_app_integration_subparser(subparsers):
@@ -245,18 +244,15 @@ List all configured StreamAlert app integration functions, grouped by cluseter
 
 Command:
 
-    manage.py app list              List all configured app functions, grouped by cluster
+    manage.py app list             List all configured app functions, grouped by cluster
 
 Optional Arguments:
 
-    --debug             Enable Debug logger output
+    --debug                        Enable debug logger output
 
 """.format(version)
 
-    app_integration_list_parser = _generate_subparser(subparsers, 'list', usage, description, True)
-
-    # allow verbose output for the CLI with the --debug option
-    app_integration_list_parser.add_argument('--debug', action='store_true', help=ARGPARSE_SUPPRESS)
+    _generate_subparser(subparsers, 'list', usage, description, True)
 
 
 def _add_app_integration_new_subparser(subparsers, types, clusters):
@@ -298,7 +294,7 @@ Required Arguments:
 
 Optional Arguments:
 
-    --debug             Enable Debug logger output
+    --debug             Enable debug logger output
 
 Examples:
 
@@ -407,7 +403,7 @@ Required Arguments:
 
 Optional Arguments:
 
-    --debug             Enable Debug logger output
+    --debug             Enable debug logger output
 
 Examples:
 
@@ -444,9 +440,6 @@ def _add_default_app_integration_args(app_integration_parser, clusters):
     app_integration_parser.add_argument(
         '--name', dest='app_name', required=True, help=ARGPARSE_SUPPRESS, type=_validate_name)
 
-    # Allow verbose output for the CLI with the --debug option
-    app_integration_parser.add_argument('--debug', action='store_true', help=ARGPARSE_SUPPRESS)
-
 
 def _add_metrics_subparser(subparsers):
     """Add the metrics subparser: manage.py metrics [options]"""
@@ -467,7 +460,7 @@ Available Options:
                             rule
                             alert (not implemented)
                             athena (not implemented)
-    --debug             Enable Debug logger output
+    --debug             Enable debug logger output
 
 Optional Arguemnts:
 
@@ -508,9 +501,6 @@ Examples:
         nargs='+',
         action=UniqueSetAction,
         default=CLUSTERS)
-
-    # allow verbose output for the CLI with the --debug option
-    metrics_parser.add_argument('--debug', action='store_true', help=ARGPARSE_SUPPRESS)
 
 
 def _add_metric_alarm_subparser(subparsers):
@@ -567,7 +557,7 @@ Optional Arguments:
                                      Sum
                                      Minimum
                                      Maximum
-    --debug                      Enable Debug logger output
+    --debug                      Enable debug logger output
 
 Other Constraints:
 
@@ -729,9 +719,6 @@ Resources:
         help=ARGPARSE_SUPPRESS,
         default='')
 
-    # allow verbose output for the CLI with the --debug option
-    metric_alarm_parser.add_argument('--debug', action='store_true', help=ARGPARSE_SUPPRESS)
-
 
 def _add_lambda_subparser(subparsers):
     """Add the Lambda subparser: manage.py lambda [subcommand] [options]"""
@@ -778,7 +765,7 @@ Optional Arguments:
 
     --skip-rule-staging                Skip staging of new rules so they go directly into
                                          production.
-    --debug                            Enable Debug logger output
+    --debug                            Enable debug logger output
 
 Examples:
 
@@ -817,7 +804,7 @@ Required Arguments:
 
 Optional Arguments:
 
-    --debug                            Enable Debug logger output
+    --debug                            Enable debug logger output
 
 Examples:
 
@@ -856,7 +843,7 @@ Required Arguments:
 
 Optional Arguments:
 
-    --debug                            Enable Debug logger output
+    --debug                            Enable debug logger output
 
 Example:
 
@@ -930,9 +917,6 @@ Example:
         action=UniqueSetAction,
         default=set())
 
-    # Allow verbose output for the CLI with the --debug option
-    test_filter_group.add_argument('--debug', action='store_true', help=ARGPARSE_SUPPRESS)
-
 
 def _add_default_lambda_args(lambda_parser):
     """Add the default arguments to the lambda parsers"""
@@ -951,9 +935,6 @@ def _add_default_lambda_args(lambda_parser):
         '--clusters',
         help=ARGPARSE_SUPPRESS,
         nargs='+')
-
-    # Allow verbose output for the CLI with the --debug option
-    lambda_parser.add_argument('--debug', action='store_true', help=ARGPARSE_SUPPRESS)
 
 
 def _add_terraform_subparser(subparsers):
@@ -1019,8 +1000,6 @@ Examples:
         help=ARGPARSE_SUPPRESS,
         nargs='+')
 
-    tf_parser.add_argument('--debug', action='store_true', help=ARGPARSE_SUPPRESS)
-
 
 def _add_kinesis_subparser(subparsers):
     """Add kinesis subparser"""
@@ -1036,10 +1015,10 @@ Available Commands:
     disable-events             Disable Kinesis Events
     enable-events              Enable Kinesis Events
 
-Arguments:
+Optional Arguments:
 
     --clusters                Space delimited set of clusters to modify, defaults to all
-    --debug                   Debug mode
+    --debug                   Enable debug logger output
     --skip-terraform          Only set the config, do not run Terraform after
 
 Examples:
@@ -1065,7 +1044,6 @@ Examples:
         default=set())
 
     kinesis_parser.add_argument('--skip-terraform', action='store_true', help=ARGPARSE_SUPPRESS)
-    kinesis_parser.add_argument('--debug', action='store_true', help=ARGPARSE_SUPPRESS)
 
 
 def _add_configure_subparser(subparsers):
@@ -1092,8 +1070,6 @@ Examples:
         'config_key', choices=['prefix', 'aws_account_id'], help=ARGPARSE_SUPPRESS)
 
     configure_parser.add_argument('config_value', help=ARGPARSE_SUPPRESS)
-
-    configure_parser.add_argument('--debug', action='store_true', help=ARGPARSE_SUPPRESS)
 
 
 def _add_athena_subparser(subparsers):
@@ -1140,12 +1116,7 @@ Optional Arguments:
 
 """.format(version)
 
-    athena_drop_all_parser = _generate_subparser(subparsers, 'init', usage, description, True)
-
-    athena_drop_all_parser.add_argument(
-        '--debug',
-        action='store_true',
-        help=ARGPARSE_SUPPRESS)
+    _generate_subparser(subparsers, 'init', usage, description, True)
 
 
 def _add_athena_create_table_subparser(subparsers):
@@ -1259,13 +1230,7 @@ Optional Arguments:
 
 """.format(version)
 
-    athena_drop_all_parser = _generate_subparser(
-        subparsers, 'drop-all-tables', usage, description, True)
-
-    athena_drop_all_parser.add_argument(
-        '--debug',
-        action='store_true',
-        help=ARGPARSE_SUPPRESS)
+    _generate_subparser(subparsers, 'drop-all-tables', usage, description, True)
 
 
 def _add_default_athena_args(athena_parser):
@@ -1280,11 +1245,6 @@ def _add_default_athena_args(athena_parser):
         '-n', '--table-name',
         help=ARGPARSE_SUPPRESS,
         required=True)
-
-    athena_parser.add_argument(
-        '--debug',
-        action='store_true',
-        help=ARGPARSE_SUPPRESS)
 
 
 def _add_threat_intel_subparser(subparsers):
@@ -1316,10 +1276,6 @@ Examples:
     threat_intel_parser.add_argument(
         '--dynamodb-table',
         help=ARGPARSE_SUPPRESS
-    )
-
-    threat_intel_parser.add_argument(
-        '--debug', action='store_true', help=ARGPARSE_SUPPRESS
     )
 
 
@@ -1485,9 +1441,6 @@ Examples:
         '--target_utilization', help=ARGPARSE_SUPPRESS, default=70
     )
 
-    ti_downloader_parser.add_argument(
-        '--debug', action='store_true', help=ARGPARSE_SUPPRESS
-    )
 
 def _add_rule_table_subparser(subparsers):
     """Add the rule database helper subparser: manage.py rule-table [subcommand] [options]"""
@@ -1525,15 +1478,13 @@ Command:
 Optional Arguments:
 
     --verbose           Output additional information for rules in the database
-    --debug             Enable Debug logger output
+    --debug             Enable debug logger output
 
 """.format(version)
 
     rule_table_status_parser = _generate_subparser(subparsers, 'status', usage, description, True)
 
-    # allow verbose output for the CLI with the --debug option
     rule_table_status_parser.add_argument('--verbose', action='store_true', help=ARGPARSE_SUPPRESS)
-    rule_table_status_parser.add_argument('--debug', action='store_true', help=ARGPARSE_SUPPRESS)
 
 
 def _add_rule_table_stage_subparser(subparsers):
@@ -1549,7 +1500,7 @@ Command:
 
 Optional Arguments:
 
-    --debug                            Enable Debug logger output
+    --debug                            Enable debug logger output
 
 """.format(version)
 
@@ -1571,7 +1522,7 @@ Command:
 
 Optional Arguments:
 
-    --debug                            Enable Debug logger output
+    --debug                            Enable debug logger output
 
 """.format(version)
 
@@ -1590,9 +1541,6 @@ def _add_default_rule_table_staging_args(subparser):
         help=ARGPARSE_SUPPRESS,
         nargs='+'
     )
-
-    # allow debug output for the CLI with the --debug option
-    subparser.add_argument('--debug', action='store_true', help=ARGPARSE_SUPPRESS)
 
 
 def build_parser():
