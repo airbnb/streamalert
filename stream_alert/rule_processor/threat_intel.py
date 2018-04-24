@@ -78,10 +78,10 @@ class StreamThreatIntel(object):
     # Class variable stores mapping between CEF normalized types and IOC types
     __normalized_ioc_types_mapping = {}
 
-    def __init__(self, excluded_iocs, table, region='us-east-1'):
-        self._setup_excluded_iocs(excluded_iocs)
-        self.dynamodb = boto3.client('dynamodb', region)
-        self._table = table
+    def __init__(self, **kwargs):
+        self.excluded_iocs = self._setup_excluded_iocs(kwargs.get('excluded_iocs'))
+        self.dynamodb = boto3.client('dynamodb', kwargs.get('region', 'us-east-1'))
+        self._table = kwargs.get('table')
 
     def threat_detection(self, records):
         """Public instance method to run threat intelligence against normalized records
@@ -171,12 +171,13 @@ class StreamThreatIntel(object):
         return [StreamIoc(value=str(value).lower(), ioc_type=ioc_type, associated_record=record)
                 for value, ioc_type in ioc_value_type_tuples]
 
-    def _setup_excluded_iocs(self, config_excluded_iocs=None):
-        if config_excluded_iocs:
-            self.excluded_iocs = config_excluded_iocs
-        else:
-            self.excluded_iocs = {"ip": set(), "domain": set(), "md5": set()}
-        self.excluded_iocs["ip"] = {IPNetwork(ip) for ip in self.excluded_iocs["ip"]}
+    @staticmethod
+    def _setup_excluded_iocs(config_excluded_iocs=None):
+        if not config_excluded_iocs:
+            return {'ip': set(), 'domain': set(), 'md5': set()}
+        # Transform the IPs into IPNetwork objects
+        config_excluded_iocs['ip'] = {IPNetwork(ip) for ip in config_excluded_iocs.get('ip', [])}
+        return config_excluded_iocs
 
     @classmethod
     def load_from_config(cls, config):
@@ -200,9 +201,9 @@ class StreamThreatIntel(object):
         threat_intel_config = config.get('global').get('threat_intel')
         if threat_intel_config:
             if threat_intel_config.get('enabled') and threat_intel_config.get('dynamodb_table'):
-                return cls(threat_intel_config['excluded_iocs'],
-                           threat_intel_config['dynamodb_table'],
-                           config['global']['account'].get('region', 'us-east-1'))
+                return cls(excluded_iocs=threat_intel_config['excluded_iocs'],
+                           table=threat_intel_config['dynamodb_table'],
+                           region=config['global']['account'].get('region', 'us-east-1'))
 
         return False
 
@@ -439,7 +440,6 @@ class StreamThreatIntel(object):
         Args:
             ioc_type (string): the type of IOC to evaluate (md5, ip, domain)
             value (string): the value of IOC to evaluate
-
         Returns:
             True if IOC lookup should be bypassed for this value
             False if IOC should be looked up
@@ -452,6 +452,5 @@ class StreamThreatIntel(object):
             except: # pylint: disable=bare-except
                 LOGGER.error('IP IOC Exclusion Failed: %s', ioc_value)
                 return True
-        else:
-            excluded = self.excluded_iocs.get(ioc_type, set())
-            return ioc_value in excluded
+
+        return ioc_value in self.excluded_iocs.get(ioc_type, set())
