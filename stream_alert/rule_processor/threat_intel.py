@@ -427,6 +427,7 @@ class StreamThreatIntel(object):
         """
         if ioc_type == 'ip':
             excluded_networks = self.excluded_iocs.get('ip', set())
-            return not (valid_ip(ioc_value) # filter out *.amazonaws.com "IP"s
-                        or in_network(ioc_value, excluded_networks))
+            # filter out *.amazonaws.com "IP"s
+            return not valid_ip(ioc_value) or in_network(ioc_value, excluded_networks) 
+                        
         return ioc_value in self.excluded_iocs.get(ioc_type, set())
