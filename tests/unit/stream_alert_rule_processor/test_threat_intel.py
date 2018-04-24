@@ -301,7 +301,7 @@ class TestStreamThreatIntel(object):
     def test_extract_ioc_from_records_with_amazon_domains(self):
         """
         test extracting IOCs where the "IP" is actually an AWS domain
-        In cloudtrail_api events, many "ipaddress" values could be 
+        In cloudtrail_api events, many "ipaddress" values could be
         s3.amazonaws.com, ec2.amazonaws.com, cloudtrail.amazonaws.com, etc.
         """
         records = [
