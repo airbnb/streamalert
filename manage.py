@@ -1660,6 +1660,7 @@ Available Subcommands:
     rule_table_subparsers = rule_table_parser.add_subparsers()
 
     _add_rule_table_status_subparser(rule_table_subparsers)
+    _add_rule_table_stage_subparser(rule_table_subparsers)
 
 def _add_rule_table_status_subparser(subparsers):
     """Add the rule db status subparser: manage.py rule-table status"""
@@ -1690,6 +1691,51 @@ Optional Arguments:
     # allow verbose output for the CLI with the --debug option
     rule_table_list_parser.add_argument('--verbose', action='store_true', help=ARGPARSE_SUPPRESS)
     rule_table_list_parser.add_argument('--debug', action='store_true', help=ARGPARSE_SUPPRESS)
+
+
+def _add_rule_table_stage_subparser(subparsers):
+    """Add the rule db stage subparser: manage.py rule-table stage"""
+    rule_table_stage_usage = 'manage.py rule-table stage'
+    rule_table_stage_desc = ("""
+StreamAlertCLI v{}
+Stage or unstage rules given their name as a space-separated list
+
+Command:
+
+    manage.py rule-table stage    Stage the rules provided in a space-separated list
+
+Optional Arguments:
+
+    --unstage                     Inverts the default action and unstages the rules provided
+    --debug                       Enable Debug logger output
+
+""".format(version))
+    rule_table_stage_parser = subparsers.add_parser(
+        'stage',
+        usage=rule_table_stage_usage,
+        description=rule_table_stage_desc,
+        formatter_class=RawTextHelpFormatter,
+        help=ARGPARSE_SUPPRESS)
+
+    rule_table_stage_parser.set_defaults(subcommand='stage')
+
+    rule_table_stage_parser.add_argument(
+        'rules',
+        action=UniqueSetAction,
+        default=set(),
+        help=ARGPARSE_SUPPRESS,
+        nargs='+'
+    )
+
+    rule_table_stage_parser.add_argument(
+        '-u', '--unstage',
+        action='store_false',
+        dest='stage',
+        help=ARGPARSE_SUPPRESS
+    )
+
+    # allow debug output for the CLI with the --debug option
+    rule_table_stage_parser.add_argument('--debug', action='store_true', help=ARGPARSE_SUPPRESS)
 
 
 def build_parser():

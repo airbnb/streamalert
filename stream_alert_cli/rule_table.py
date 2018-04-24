@@ -27,3 +27,8 @@ def rule_table_handler(options, config):
     table_name = '{}_streamalert_rules'.format(config['global']['account']['prefix'])
     if options.subcommand == 'status':
         print RuleTable(table_name).__str__(options.verbose)
+
+    if options.subcommand == 'stage':
+        table = RuleTable(table_name)
+        for rule in options.rules:
+            table.toggle_staged_state(rule, options.stage)
