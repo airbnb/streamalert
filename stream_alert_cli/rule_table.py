@@ -20,7 +20,7 @@ def rule_table_handler(options, config):
     """Handle operations related to the rule table (listing, updating, etc)
 
     Args:
-        options (argparser.Namespace): Various options needed to by subcommand
+        options (argparser.Namespace): Various options needed by subcommand
             handlers
         config (CLIConfig): Loaded configuration from 'conf/' directory
     """
