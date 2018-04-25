@@ -369,6 +369,7 @@ class TestStreamThreatIntel(object):
         for record in records:
             result = self.threat_intel._extract_ioc_from_record(record)
             assert_equal(len(result), 0)
+
     def test_extract_ioc_from_record_not_excluded(self):
         """ Threat Intel - Test we don't exclude IOCs unintentionally"""
         records = [
@@ -399,6 +400,43 @@ class TestStreamThreatIntel(object):
             result = self.threat_intel._extract_ioc_from_record(record)
         assert_equal(len(result), 1)
         assert_equal(result[0].value, '8.8.8.8')
+
+    @patch('stream_alert.rule_processor.threat_intel.StreamThreatIntel.is_excluded_ioc')
+    def test_short_circuit_without_exclude_list(self, is_excluded_ioc):
+        """ ensure we skip threat intel exclusion if there are no excluded_iocs"""
+        self.config = load_config('tests/unit/conf')
+        self.config['global']['threat_intel']['enabled'] = True
+        del self.config['global']['threat_intel']['excluded_iocs']
+        self.threat_intel = StreamThreatIntel.load_from_config(self.config)
+        records = [
+            {
+                'account': 12345,
+                'region': '123456123456',
+                'detail': {
+                    'eventType': 'AwsConsoleSignIn',
+                    'eventName': 'ConsoleLogin',
+                    'userIdentity': {
+                        'userName': 'alice',
+                        'type': 'Root',
+                        'principalId': '12345',
+                    },
+                    'sourceIPAddress': '8.8.8.8',
+                    'recipientAccountId': '12345'
+                },
+                'source': '8.8.8.8',
+                'streamalert:normalization': {
+                    'sourceAddress': [['detail', 'sourceIPAddress'], ['source']],
+                    'usernNme': [['detail', 'userIdentity', 'userName']]
+                },
+                'id': '12345'
+            }
+        ]
+        records = mock_normalized_records(records)
+        for record in records:
+            result = self.threat_intel._extract_ioc_from_record(record)
+        assert_equal(len(result), 1)
+        assert_equal(result[0].value, '8.8.8.8')
+        assert not is_excluded_ioc.called
 
     def test_load_from_config(self):
         """Threat Intel - Test load_config method"""

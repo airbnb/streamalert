@@ -164,7 +164,7 @@ class StreamThreatIntel(object):
                             value = value[original_key]
                     if value:
                         # Threat Intel will skip searching for known excluded IOCs
-                        if self.is_excluded_ioc(ioc_type, value):
+                        if self.excluded_iocs and self.is_excluded_ioc(ioc_type, value):
                             continue
                         ioc_value_type_tuples.add((value, ioc_type))
         return [StreamIoc(value=str(value).lower(), ioc_type=ioc_type, associated_record=record)
@@ -173,7 +173,7 @@ class StreamThreatIntel(object):
     @staticmethod
     def _setup_excluded_iocs(config_excluded_iocs=None):
         if not config_excluded_iocs:
-            return {'ip': set(), 'domain': set(), 'md5': set()}
+            return None
         # Transform the IPs into IPNetwork objects
         config_excluded_iocs['ip'] = {IPNetwork(ip) for ip in config_excluded_iocs.get('ip', [])}
         return config_excluded_iocs
@@ -197,12 +197,12 @@ class StreamThreatIntel(object):
         if cluster and not (config['clusters'][cluster]['modules']['stream_alert']
                             ['rule_processor'].get('enable_threat_intel', True)):
             return False
-        threat_intel_config = config.get('global').get('threat_intel')
-        if threat_intel_config:
-            if threat_intel_config.get('enabled') and threat_intel_config.get('dynamodb_table'):
-                return cls(excluded_iocs=threat_intel_config['excluded_iocs'],
-                           table=threat_intel_config['dynamodb_table'],
-                           region=config['global']['account'].get('region', 'us-east-1'))
+        global_config = config.get('global', {})
+        intel_config = global_config.get('threat_intel')
+        if intel_config and intel_config.get('enabled') and intel_config.get('dynamodb_table'):
+            return cls(excluded_iocs=intel_config.get('excluded_iocs'),
+                       table=intel_config['dynamodb_table'],
+                       region=config['global']['account'].get('region', 'us-east-1'))
 
         return False
 
