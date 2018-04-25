@@ -54,10 +54,12 @@ def _publish_version(packages, config, clusters):
 
     return True
 
-def _update_rule_table(config, skip_staging):
+
+def _update_rule_table(options, config):
     """Update the rule table with any staging information
 
     Args:
+        options (argparser.Namespace): Various options from the CLI needed for actions
         config (CLIConfig): The loaded StreamAlert config
     """
     # TODO: consider removing this once rule staging is feature complete
@@ -70,7 +72,14 @@ def _update_rule_table(config, skip_staging):
 
     table_name = '{}_streamalert_rules'.format(config['global']['account']['prefix'])
     table = rule_table.RuleTable(table_name, *rule_import_paths)
-    table.update(skip_staging)
+    table.update(options.skip_rule_staging)
+
+    if options.stage_rules or options.unstage_rules:
+        # Create a dictionary of rule_name: stage=True|False
+        rules = {rule_name: False for rule_name in options.unstage_rules}
+        rules.update({rule_name: True for rule_name in options.stage_rules})
+        for rule, stage in rules.iteritems():
+            table.toggle_staged_state(rule, stage)
 
 
 def _create_and_upload(function_name, config, cluster=None):
@@ -176,7 +185,7 @@ def deploy(options, config):
 
     # Update the rule table now if the rule processor is being deployed
     if 'rule' in options.processor:
-        _update_rule_table(config, options.skip_rule_staging)
+        _update_rule_table(options, config)
 
     # Publish a new production Lambda version
     if not _publish_version(packages, config, options.clusters):
