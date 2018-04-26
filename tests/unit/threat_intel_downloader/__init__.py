@@ -1,4 +1,4 @@
-'''
+"""
 Copyright 2017-present, Airbnb Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,7 +12,9 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-'''
+"""
+from stream_alert.shared.config import load_config
 
 REGION = 'us-east-1'
 FUNCTION_NAME = 'prefix_threat_intel_downloader'
+CONFIG = load_config('tests/unit/conf/', include={'lambda.json'})
