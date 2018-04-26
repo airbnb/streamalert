@@ -14,63 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import json
-import os
 
 import boto3
 from botocore.exceptions import ClientError
 
 from stream_alert_cli.logger import LOGGER_CLI
-
-OUTPUTS_CONFIG = 'outputs.json'
-
-
-def load_outputs_config(conf_dir='conf'):
-    """Load the outputs configuration file from disk
-
-    Args:
-        conf_dir (str): Directory to read outputs config from
-
-    Returns:
-        dict: The output configuration settings
-    """
-    with open(os.path.join(conf_dir, OUTPUTS_CONFIG)) as outputs:
-        try:
-            values = json.load(outputs)
-        except ValueError:
-            LOGGER_CLI.error(
-                'The %s file could not be loaded into json',
-                OUTPUTS_CONFIG)
-            raise
-
-    return values
-
-
-def write_outputs_config(data, conf_dir='conf'):
-    """Write the outputs configuration file back to disk
-
-    Args:
-        data (dict): Dictionary to be converted to json and written to disk
-        conf_dir (str): Directory to write outputs config to
-    """
-    with open(os.path.join(conf_dir, OUTPUTS_CONFIG), 'w') as outputs:
-        json.dump(data, outputs, indent=2, separators=(',', ': '), sort_keys=True)
-
-
-def load_config(props, service):
-    """Gets the outputs config from disk and checks if the output already exists
-
-    Args:
-        props (OrderedDict): Contains various OutputProperty items
-        service (str): The service for which the user is adding a configuration
-
-    Returns:
-        dict: If the output doesn't exist, return the configuration, otherwise return False
-    """
-    config = load_outputs_config()
-    if output_exists(config, props, service):
-        return False
-
-    return config
 
 
 def encrypt_and_push_creds_to_s3(region, bucket, key, props, kms_key_alias):
@@ -162,16 +110,3 @@ def output_exists(config, props, service):
         return True
 
     return False
-
-
-def update_outputs_config(config, updated_config, service):
-    """Updates and writes the outputs config back to disk
-
-    Args:
-        config (dict): The loaded configuration as a dictionary
-        updated_config: The updated configuration for this service. this could
-            be a list, dictionary, etc depending on how this services stores config info
-        service (str): The service whose configuration is being updated
-    """
-    config[service] = updated_config
-    write_outputs_config(config)

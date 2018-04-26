@@ -41,7 +41,6 @@ from stream_alert_cli.logger import (
     SuppressNoise
 )
 
-from stream_alert_cli.outputs import load_outputs_config
 
 TEST_EVENTS_DIR = 'tests/integration/rules'
 COLOR_RED = '\033[0;31;1m'
@@ -655,7 +654,7 @@ class AlertProcessorTester(object):
         self.kms_alias = 'alias/stream_alert_secrets_test'
         self.secrets_bucket = 'test.streamalert.secrets'
         self.outputs_config = resources.merge_required_outputs(
-            load_outputs_config(),
+            config['outputs'],
             'test-prefix'
         )
         self.region = config['global']['account']['region']
