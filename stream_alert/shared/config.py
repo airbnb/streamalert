@@ -72,7 +72,6 @@ def load_config(conf_dir='conf/', **kwargs):
         exclude (set): Names of config files or folders that should not be loaded
         include (set): Names of specific config files to only load
         validate (bool): Validate aspects of the config to check for user error
-
     """
     default_files = {file for file in os.listdir(conf_dir) if file.endswith('.json')}
     conf_files = kwargs.get('include', default_files).copy()
@@ -125,7 +124,6 @@ def _validate_config(config):
     """
     # Check the log declarations
     if 'logs' in config:
-
         for log, attrs in config['logs'].iteritems():
             if 'schema' not in attrs:
                 raise ConfigError('The \'schema\' is missing for {}'.format(log))
