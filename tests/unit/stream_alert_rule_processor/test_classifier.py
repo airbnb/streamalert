@@ -26,8 +26,8 @@ from nose.tools import (
 )
 
 import stream_alert.rule_processor.classifier as sa_classifier
-from stream_alert.rule_processor.config import load_config
 from stream_alert.rule_processor.payload import load_stream_payload
+from stream_alert.shared.config import load_config
 from tests.unit.stream_alert_rule_processor.test_helpers import make_kinesis_raw_record
 
 
@@ -39,7 +39,7 @@ class TestStreamClassifier(object):
 
     def setup(self):
         """Setup before each method"""
-        config = load_config('tests/unit/conf')
+        config = load_config('tests/unit/conf', validate=True)
         self.classifier = sa_classifier.StreamClassifier(config)
 
     def _prepare_and_classify_payload(self, service, entity, raw_record):

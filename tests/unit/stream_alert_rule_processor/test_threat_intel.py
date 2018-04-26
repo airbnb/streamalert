@@ -24,8 +24,8 @@ from nose.tools import (
     raises,
 )
 
-from stream_alert.rule_processor.config import load_config
 from stream_alert.rule_processor.threat_intel import StreamThreatIntel, StreamIoc
+from stream_alert.shared.config import load_config
 from tests.unit.stream_alert_rule_processor.test_helpers import (
     MockDynamoDBClient,
     mock_normalized_records,

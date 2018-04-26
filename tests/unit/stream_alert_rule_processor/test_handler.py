@@ -19,7 +19,7 @@ import json
 import logging
 import os
 
-from mock import ANY, call, patch
+from mock import ANY, call, Mock, patch
 from moto import mock_dynamodb2, mock_kinesis
 from nose.tools import (
     assert_equal,
@@ -30,9 +30,10 @@ from nose.tools import (
 import boto3
 
 from stream_alert.rule_processor import LOGGER
-from stream_alert.rule_processor.handler import load_config, StreamAlert
+from stream_alert.rule_processor.handler import StreamAlert
 from stream_alert.rule_processor.threat_intel import StreamThreatIntel
 from stream_alert.shared.alert import Alert
+from stream_alert.shared.config import load_config
 from stream_alert.shared.rule import rule
 from tests.unit.stream_alert_rule_processor.test_helpers import (
     convert_events_to_kinesis,
@@ -47,8 +48,8 @@ from tests.unit.stream_alert_rule_processor.test_helpers import (
 class TestStreamAlert(object):
     """Test class for StreamAlert class"""
 
-    @patch('stream_alert.rule_processor.handler.load_config',
-           lambda: load_config('tests/unit/conf/'))
+    @patch('stream_alert.rule_processor.handler.config.load_config',
+           Mock(return_value=load_config('tests/unit/conf/', validate=True)))
     @patch.dict(os.environ, {'ALERT_PROCESSOR': 'unit-testing_streamalert_alert_processor',
                              'ALERTS_TABLE': 'unit-testing_streamalert_alerts',
                              'AWS_DEFAULT_REGION': 'us-east-1'})
@@ -166,7 +167,7 @@ class TestStreamAlert(object):
         event['Records'][0]['kinesis']['data'] = base64.b64encode('{"bad": "data"}')
 
         # Swap out the alias so the logging occurs
-        self.__sa_handler.env['lambda_alias'] = 'production'
+        self.__sa_handler.env['qualifier'] = 'production'
         self.__sa_handler.run(event)
 
         assert_equal(
@@ -183,7 +184,7 @@ class TestStreamAlert(object):
         rules_mock.return_value = (['success!!'], ['normalized_records'])
 
         # Swap out the alias so the logging occurs
-        self.__sa_handler.env['lambda_alias'] = 'production'
+        self.__sa_handler.env['qualifier'] = 'production'
 
         self.__sa_handler.run(get_valid_event())
 
