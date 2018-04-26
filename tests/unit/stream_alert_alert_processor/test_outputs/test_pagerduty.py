@@ -24,8 +24,13 @@ from stream_alert.alert_processor.outputs.pagerduty import (
     PagerDutyIncidentOutput
 )
 from stream_alert_cli.helpers import put_mock_creds
-from tests.unit.stream_alert_alert_processor import \
-    ACCOUNT_ID, CONFIG, FUNCTION_NAME, KMS_ALIAS, REGION
+from tests.unit.stream_alert_alert_processor import (
+    ACCOUNT_ID,
+    FUNCTION_NAME,
+    KMS_ALIAS,
+    REGION
+)
+
 from tests.unit.stream_alert_alert_processor.helpers import get_alert, remove_temp_secrets
 
 
@@ -41,7 +46,7 @@ class TestPagerDutyOutput(object):
 
     def setup(self):
         """Setup before each method"""
-        self._dispatcher = PagerDutyOutput(REGION, ACCOUNT_ID, FUNCTION_NAME, CONFIG)
+        self._dispatcher = PagerDutyOutput(REGION, ACCOUNT_ID, FUNCTION_NAME, None)
         remove_temp_secrets()
         output_name = self._dispatcher.output_cred_name(self.DESCRIPTOR)
         put_mock_creds(output_name, self.CREDS, self._dispatcher.secrets_bucket, REGION, KMS_ALIAS)
@@ -93,7 +98,7 @@ class TestPagerDutyOutputV2(object):
 
     def setup(self):
         """Setup before each method"""
-        self._dispatcher = PagerDutyOutputV2(REGION, ACCOUNT_ID, FUNCTION_NAME, CONFIG)
+        self._dispatcher = PagerDutyOutputV2(REGION, ACCOUNT_ID, FUNCTION_NAME, None)
         remove_temp_secrets()
         output_name = self._dispatcher.output_cred_name(self.DESCRIPTOR)
         put_mock_creds(output_name, self.CREDS, self._dispatcher.secrets_bucket, REGION, KMS_ALIAS)
@@ -156,7 +161,7 @@ class TestPagerDutyIncidentOutput(object):
 
     def setup(self):
         """Setup before each method"""
-        self._dispatcher = PagerDutyIncidentOutput(REGION, ACCOUNT_ID, FUNCTION_NAME, CONFIG)
+        self._dispatcher = PagerDutyIncidentOutput(REGION, ACCOUNT_ID, FUNCTION_NAME, None)
         self._dispatcher._base_url = self.CREDS['api']
         remove_temp_secrets()
         output_name = self._dispatcher.output_cred_name(self.DESCRIPTOR)

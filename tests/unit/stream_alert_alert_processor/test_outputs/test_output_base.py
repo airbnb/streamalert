@@ -35,8 +35,13 @@ from stream_alert.alert_processor.outputs.output_base import (
 )
 from stream_alert.alert_processor.outputs.aws import S3Output
 from stream_alert_cli.helpers import encrypt_with_kms, put_mock_creds, put_mock_s3_object
-from tests.unit.stream_alert_alert_processor import \
-    ACCOUNT_ID, CONFIG, FUNCTION_NAME, KMS_ALIAS, REGION
+from tests.unit.stream_alert_alert_processor import (
+    ACCOUNT_ID,
+    CONFIG,
+    FUNCTION_NAME,
+    KMS_ALIAS,
+    REGION
+)
 from tests.unit.stream_alert_alert_processor.helpers import remove_temp_secrets
 
 

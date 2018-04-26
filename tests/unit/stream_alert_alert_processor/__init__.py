@@ -13,15 +13,14 @@ limitations under the License.
 import json
 
 from stream_alert.shared import resources
+from stream_alert.shared.config import load_config
 
 REGION = 'us-east-1'
 ACCOUNT_ID = '123456789012'
 PREFIX = 'prefix'
 FUNCTION_NAME = '{}_streamalert_alert_processor'.format(PREFIX)
 
-OUTPUT_CONFIG_PATH = 'tests/unit/conf/outputs.json'
-with open(OUTPUT_CONFIG_PATH) as f:
-    base_config = json.load(f)
+base_config = load_config('tests/unit/conf/', include={'outputs.json'})['outputs']
 CONFIG = resources.merge_required_outputs(base_config, PREFIX)
 
 ALERTS_TABLE = '{}_streamalert_alerts'.format(PREFIX)
