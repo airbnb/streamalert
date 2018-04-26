@@ -32,7 +32,7 @@ def parse_lambda_arn(function_arn):
     Example:
         arn:aws:lambda:aws-region:acct-id:function:stream_alert:production
 
-    Arguments:
+    Args:
         function_arn (str): The AWS Lambda function ARN
 
     Returns:
@@ -53,7 +53,7 @@ def parse_lambda_arn(function_arn):
     }
 
 
-def load_config(conf_dir='conf/', **kwargs):
+def load_config(conf_dir='conf/', exclude=None, include=None, validate=False):
     """Load the configuration for StreamAlert.
 
     All configuration files live in the `conf` directory in JSON format.
@@ -65,46 +65,76 @@ def load_config(conf_dir='conf/', **kwargs):
     key denotes the name of the log type, and includes 'keys' used to match
     rules to log fields.
 
-    Arguments:
+    Args:
         conf_dir (str): [optional] Path from which to load the config
+        exclude (set): [optional] Names of config files or folders that should not be loaded
+        include (set): [optional] Names of specific config files to only load
+        validate (bool): [optional] Validate aspects of the config to check for user error
 
-    Keyword Arguemnts:
-        exclude (set): Names of config files or folders that should not be loaded
-        include (set): Names of specific config files to only load
-        validate (bool): Validate aspects of the config to check for user error
+    Raises:
+        ConfigError: Raised if errors occur with configuration file loading
+
+    Returns:
+        dict: Loaded configuration in dictionary form. Example:
+            {
+                'clusters': {
+                    'prod': <prod.json contents>
+                },
+                'global': <global.json contents>,
+                'lambda': <lambda.json contents>,
+                'logs': <logs.json contents>,
+                'outputs': <outputs.json contents>,
+                'sources': <sources.json contents>,
+                'types': <types.json contents>,
+            }
     """
     default_files = {file for file in os.listdir(conf_dir) if file.endswith('.json')}
-    conf_files = kwargs.get('include', default_files).copy()
+    conf_files = (include or default_files).copy()
     include_clusters = 'clusters' in conf_files
 
     conf_files.intersection_update(default_files)
-    if not (conf_files or include_clusters):
-        raise ConfigError('No config files to load')
-
-    exclusions = kwargs.get('exclude', set())
+    exclusions = exclude or set()
     conf_files = conf_files.difference(exclusions)
+
+    if not (conf_files or include_clusters):
+        available_files = ', '.join("'{}'".format(name) for name in sorted(default_files))
+        raise ConfigError('No config files to load. This is likely due the misuse of '
+                          'the \'include\' or \'exclude\' keyword arguments. Available '
+                          'files are: {}, and clusters'.format(available_files))
 
     config = defaultdict(dict)
     for name in conf_files:
         path = os.path.join(conf_dir, name)
         # we use object_pairs_hook=OrderdDict to preserve schema order for CSV/KV log types
-        config[os.path.splitext(name)[0]] = _load_json_file(path, True)
+        config[os.path.splitext(name)[0]] = _load_json_file(path, name == 'logs.json')
 
     # Load the configs for clusters if it is not excluded
-    if 'clusters' not in exclusions and not kwargs.get('include') or include_clusters:
+    if 'clusters' not in exclusions and not include or include_clusters:
         clusters = {file for file in os.listdir(os.path.join(conf_dir, 'clusters'))
                     if file.endswith('.json')}
         for cluster in clusters:
             cluster_path = os.path.join(conf_dir, 'clusters', cluster)
             config['clusters'][os.path.splitext(cluster)[0]] = _load_json_file(cluster_path)
 
-    if kwargs.get('validate'):
+    if validate:
         _validate_config(config)
 
     return config
 
 def _load_json_file(path, ordered=False):
-    """Helper to return the loaded json from a given path"""
+    """Helper to return the loaded json from a given path
+
+    Args:
+        path (str): Relative path to config file being loaded
+        ordered (bool): [optional] Boolean that indicates if the loaded JSON
+            file should have its order maintained an object_pairs_hook=OrderdDict
+
+    Returns:
+        dict: The loaded contents of the JSON file specified by path
+
+    Raises:
+        ConfigError: Raised if any ValueErrors occur during json.load(...)
+    """
     kwargs = {'object_pairs_hook': OrderedDict if ordered else None}
     with open(path) as data:
         try:
@@ -121,6 +151,12 @@ def _validate_config(config):
     Checks for `sources.json`
         - the sources contains either kinesis or s3 keys
         - each sources has a list of logs declared
+
+    Args:
+        config (dict): The loaded configuration dictionary
+
+    Raises:
+        ConfigError: Raised if any config validation errors occur
     """
     # Check the log declarations
     if 'logs' in config:
