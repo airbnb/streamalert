@@ -13,13 +13,12 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from collections import OrderedDict
 import json
 import os
 import re
 
 from app_integrations.apps.app_base import StreamAlertApp
-from stream_alert.shared import metrics
+from stream_alert.shared import config, metrics
 from stream_alert_cli.helpers import continue_prompt
 from stream_alert_cli.logger import LOGGER_CLI
 from stream_alert_cli.apps import save_app_auth_info
@@ -31,12 +30,11 @@ class CLIConfigError(Exception):
 
 class CLIConfig(object):
     """A class to load, modify, and display the StreamAlertCLI Config"""
-    DEFAULT_CONFIG_PATH = 'conf'
+    DEFAULT_CONFIG_PATH = 'conf/'
 
-    def __init__(self, **kwargs):
-        self.config_path = kwargs.get('config_path', self.DEFAULT_CONFIG_PATH)
-        self.config = {'clusters': {}}
-        self.load()
+    def __init__(self, config_path=DEFAULT_CONFIG_PATH):
+        self.config_path = config_path
+        self.config = config.load_config(config_path)
 
     def __repr__(self):
         return str(self.config)
@@ -546,74 +544,25 @@ class CLIConfig(object):
         self.write()
         return True
 
-    def _config_reader(self, key, file_path, **kwargs):
-        """Read a given file into a config key
-
-        Args:
-            key (str): The key in the config dictionary to place the loaded
-                config file.
-            file_path (str): The location on disk to load the config file.
-
-        Keyword Args:
-            cluster_file (bool): If the file to load is a cluster file.
-        """
-        # This accounts for non files passed in, such as a
-        # directory from os.listdir()
-        if not os.path.isfile(file_path):
-            return
-
-        with open(file_path) as data:
-            try:
-                if kwargs.get('cluster_file', False):
-                    self.config['clusters'][key] = json.load(data)
-                else:
-                    # For certain log types (csv), the order of the schema
-                    # must be retained.  By loading as an OrderedDict,
-                    # the configuration is guaranteed to keep its order.
-                    if key == 'logs':
-                        self.config[key] = json.load(data, object_pairs_hook=OrderedDict)
-                    else:
-                        self.config[key] = json.load(data)
-            except ValueError:
-                raise CLIConfigError('[Config Error]: {} is not valid JSON'.format(file_path))
-
     @staticmethod
-    def _config_writer(config, path, **kwargs):
+    def _config_writer(path, data, sort=True):
         with open(path, 'r+') as conf_file:
-            json.dump(
-                config,
-                conf_file,
-                indent=2,
-                separators=(',', ': '),
-                sort_keys=kwargs.get('sort_keys', True))
+            json.dump(data, conf_file, indent=2, separators=(',', ': '), sort_keys=sort)
             conf_file.truncate()
-
-    def load(self):
-        """Load all files found under conf, including cluster configurations"""
-        # Load configuration files
-        config_files = [conf for conf in os.listdir(self.config_path) if conf.endswith('.json')]
-        for config_file in config_files:
-            config_key = os.path.splitext(config_file)[0]
-            file_path = os.path.join(self.config_path, config_file)
-            self._config_reader(config_key, file_path)
-
-        # Load cluster files
-        for cluster_file in os.listdir(os.path.join(self.config_path, 'clusters')):
-            config_key = os.path.splitext(cluster_file)[0]
-            file_path = os.path.join(self.config_path, 'clusters', cluster_file)
-            self._config_reader(config_key, file_path, cluster_file=True)
 
     def write(self):
         """Write the current config in memory to disk"""
         # Write loaded configuration files
-        for config_key in [key for key in self.config if key != 'clusters']:
-            file_path = os.path.join(self.config_path, '{}.json'.format(config_key))
-            if config_key == 'logs':
-                self._config_writer(self.config[config_key], file_path, sort_keys=False)
-            else:
-                self._config_writer(self.config[config_key], file_path)
+        def format_path(parts):
+            return '{}.json'.format(os.path.join(*parts))
 
-        # Write loaded cluster files
-        for cluster_key in self.config['clusters']:
-            file_path = os.path.join(self.config_path, 'clusters', '{}.json'.format(cluster_key))
-            self._config_writer(self.config['clusters'][cluster_key], file_path)
+        for config_key in self.config:
+            path_parts = [self.config_path, config_key]
+            if config_key == 'clusters':
+                # Write loaded cluster files
+                for cluster_key in self.config['clusters']:
+                    parts = path_parts + [cluster_key]
+                    self._config_writer(format_path(parts), self.config['clusters'][cluster_key])
+            else:
+                sort = config_key != 'logs' # logs.json should not be sorted
+                self._config_writer(format_path(path_parts), self.config[config_key], sort)

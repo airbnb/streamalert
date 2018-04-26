@@ -18,14 +18,14 @@ limitations under the License.
 class ThreatStreamException(Exception):
     """Base exception class ThreatStream Error"""
 
+
 class ThreatStreamCredsError(ThreatStreamException):
     """Class for API Credential errors"""
 
-class ThreatStreamConfigError(ThreatStreamException):
-    """Class for Configuration errors"""
 
 class ThreatStreamLambdaInvokeError(ThreatStreamException):
     """Class for Lambda Invoke Error"""
+
 
 class ThreatStreamRequestsError(ThreatStreamException):
     """Classe for requests return code errors"""

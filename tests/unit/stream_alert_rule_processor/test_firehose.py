@@ -18,8 +18,8 @@ from mock import patch
 from moto import mock_kinesis
 from nose.tools import (assert_equal, assert_false, assert_true)
 
-from stream_alert.rule_processor.config import load_config
 from stream_alert.rule_processor.firehose import StreamAlertFirehose
+from stream_alert.shared.config import load_config
 
 
 @patch('stream_alert.rule_processor.firehose.StreamAlertFirehose.MAX_BACKOFF_ATTEMPTS', 1)

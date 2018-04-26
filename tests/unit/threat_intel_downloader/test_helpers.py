@@ -13,42 +13,22 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from copy import deepcopy
+
 from mock import Mock
 
-from tests.unit.threat_intel_downloader import FUNCTION_NAME, REGION
+from tests.unit.threat_intel_downloader import CONFIG, FUNCTION_NAME, REGION
 
-
-LAMBDA_FILE = 'conf/lambda.json'
-
-LAMBDA_SETTINGS = {
-    'alert_processor_config': {
-        'handler': 'stream_alert.alert_processor.main.handler',
-        'source_bucket': 'unit-testing.streamalert.source',
-        'source_current_hash': '<auto_generated>',
-        'source_object_key': '<auto_generated>',
-        'third_party_libraries': []
-    },
-    'rule_processor_config': {
-        'handler': 'stream_alert.rule_processor.main.handler',
-        'source_bucket': 'unit-testing.streamalert.source',
-        'source_current_hash': '<auto_generated>',
-        'source_object_key': '<auto_generated>',
-        'third_party_libraries': [
-            'jsonpath_rw',
-            'netaddr'
-        ]
-    },
-    'threat_intel_downloader_config': {
-        'enabled': True,
-        'handler': 'main.handler',
-        'timeout': '60',
-        'memory': '128',
-        'source_bucket': 'unit-testing.streamalert.source',
-        'source_current_hash': '<auto_generated>',
-        'source_object_key': '<auto_generated>',
-        'third_party_libraries': []
-    }
-}
+def mock_config():
+    """Return a copy of the config with the env set"""
+    ti_config = deepcopy(CONFIG['lambda']['threat_intel_downloader_config'])
+    ti_config.update({
+        'account_id': '123456789012',
+        'function_name': 'prefix_threat_intel_downloader',
+        'qualifier': 'development',
+        'region': 'us-east-1',
+    })
+    return ti_config
 
 
 def get_mock_context():
@@ -113,25 +93,4 @@ def mock_ssm_response():
 def mock_invalid_ssm_response():
     return {
         'threat_intel_downloader_api_creds': 'invalid_value'
-    }
-
-
-def mock_config():
-    '''Helper function to create a fake config for Threat Intel Downloader'''
-    return {
-        'account_id': '123456789012',
-        'function_name': 'prefix_threat_intel_downloader',
-        'handler': 'stream_alert.threat_intel_downloader.main.handler',
-        'interval': 'rate(1 day)',
-        'ioc_filters': ['crowdstrike', '@airbnb.com'],
-        'ioc_keys': ['expiration_ts', 'itype', 'source', 'type', 'value'],
-        'ioc_types': ['domain', 'ip', 'md5'],
-        'excluded_sub_types': ['bot_ip', 'brute_ip', 'scan_ip', 'spam_ip', 'tor_ip'],
-        'log_level': 'info',
-        'memory': '128',
-        'qualifier': 'development',
-        'region': 'us-east-1',
-        'table_rcu': 10,
-        'table_wcu': 10,
-        'timeout': '180'
     }

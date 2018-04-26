@@ -15,7 +15,7 @@ limitations under the License.
 """
 import os
 
-from mock import ANY, call, MagicMock, patch
+from mock import ANY, call, MagicMock, Mock, patch
 from nose.tools import (
     assert_equal,
     assert_false,
@@ -28,8 +28,9 @@ from stream_alert.alert_processor.main import AlertProcessor, handler
 from stream_alert.alert_processor.outputs.output_base import OutputDispatcher
 from stream_alert.shared import NORMALIZATION_KEY
 from stream_alert.shared.alert import Alert
+from stream_alert.shared.config import load_config
 from tests.unit.stream_alert_alert_processor import (
-    ACCOUNT_ID, ALERTS_TABLE, FUNCTION_NAME, OUTPUT_CONFIG_PATH, PREFIX, REGION)
+    ACCOUNT_ID, ALERTS_TABLE, FUNCTION_NAME, PREFIX, REGION)
 
 _ARN = 'arn:aws:lambda:{}:{}:function:{}:production'.format(REGION, ACCOUNT_ID, FUNCTION_NAME)
 
@@ -39,9 +40,10 @@ class TestAlertProcessor(object):
     """Tests for alert_processor/main.py"""
     # pylint: disable=no-member,no-self-use,protected-access
 
+    @patch('stream_alert.alert_processor.main.load_config',
+           Mock(return_value=load_config('tests/unit/conf/', validate=True)))
     @patch.dict(os.environ, {'ALERTS_TABLE': ALERTS_TABLE})
     @patch.object(AlertProcessor, 'BACKOFF_MAX_TRIES', 1)
-    @patch.object(AlertProcessor, 'OUTPUT_CONFIG_PATH', OUTPUT_CONFIG_PATH)
     @patch('stream_alert.alert_processor.main.AlertTable', MagicMock())
     def setup(self):
         """Alert Processor - Test Setup"""

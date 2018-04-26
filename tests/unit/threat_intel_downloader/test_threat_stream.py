@@ -29,9 +29,9 @@ from stream_alert.threat_intel_downloader.exceptions import ThreatStreamCredsErr
 from stream_alert.threat_intel_downloader.threat_stream import ThreatStream
 from tests.unit.app_integrations.test_helpers import MockSSMClient
 from tests.unit.threat_intel_downloader.test_helpers import (
-    mock_requests_get,
     mock_config,
     mock_invalid_ssm_response,
+    mock_requests_get,
     mock_ssm_response
 )
 

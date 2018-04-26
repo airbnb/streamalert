@@ -14,7 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from __future__ import absolute_import  # Suppresses RuntimeWarning import error in Lambda
-import json
 import os
 
 from stream_alert.alert_processor import LOGGER
@@ -22,6 +21,7 @@ from stream_alert.alert_processor.outputs.output_base import StreamAlertOutput
 from stream_alert.shared import backoff_handlers, NORMALIZATION_KEY, resources
 from stream_alert.shared.alert import Alert, AlertCreationError
 from stream_alert.shared.alert_table import AlertTable
+from stream_alert.shared.config import load_config
 
 import backoff
 from botocore.exceptions import ClientError
@@ -31,7 +31,6 @@ class AlertProcessor(object):
     """Orchestrates delivery of alerts to the appropriate dispatchers."""
     ALERT_PROCESSOR = None  # AlertProcessor instance which can be re-used across Lambda invocations
     BACKOFF_MAX_TRIES = 5
-    OUTPUT_CONFIG_PATH = 'conf/outputs.json'
 
     @classmethod
     def get_instance(cls, invoked_function_arn):
@@ -54,8 +53,7 @@ class AlertProcessor(object):
         self.prefix = split_arn[6].split('_')[0]
 
         # Merge user-specified output configuration with the required output configuration
-        with open(self.OUTPUT_CONFIG_PATH) as f:
-            output_config = json.load(f)
+        output_config = load_config(include={'outputs.json'})['outputs']
         self.config = resources.merge_required_outputs(output_config, self.prefix)
 
         self.alerts_table = AlertTable(os.environ['ALERTS_TABLE'])

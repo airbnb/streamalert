@@ -35,7 +35,12 @@ from stream_alert.alert_processor.outputs.aws import (
 )
 from stream_alert_cli.helpers import create_lambda_function
 from tests.unit.stream_alert_alert_processor import (
-    ACCOUNT_ID, CONFIG, FUNCTION_NAME, PREFIX, REGION)
+    ACCOUNT_ID,
+    CONFIG,
+    FUNCTION_NAME,
+    PREFIX,
+    REGION
+)
 from tests.unit.stream_alert_alert_processor.helpers import get_alert
 
 

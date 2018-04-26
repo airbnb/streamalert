@@ -25,8 +25,8 @@ from nose.tools import (
     assert_true
 )
 
-from stream_alert.rule_processor.config import load_config
 from stream_alert.rule_processor.parsers import get_parser
+from stream_alert.shared.config import load_config
 
 
 class TestParser(object):

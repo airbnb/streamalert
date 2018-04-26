@@ -19,11 +19,10 @@ import json
 from stream_alert.rule_processor import FUNCTION_NAME, LOGGER
 from stream_alert.rule_processor.alert_forward import AlertForwarder
 from stream_alert.rule_processor.classifier import StreamClassifier
-from stream_alert.rule_processor.config import load_config, load_env
 from stream_alert.rule_processor.firehose import StreamAlertFirehose
 from stream_alert.rule_processor.payload import load_stream_payload
 from stream_alert.rule_processor.rules_engine import RulesEngine
-from stream_alert.shared import stats
+from stream_alert.shared import config, stats
 from stream_alert.shared.metrics import MetricLogger
 
 
@@ -39,11 +38,11 @@ class StreamAlert(object):
                 executing lambda function.
         """
         # Load the config. Validation occurs during load, which will
-        # raise exceptions on any ConfigErrors
-        StreamAlert.config = StreamAlert.config or load_config()
+        # raise exceptions on any ConfigError
+        StreamAlert.config = StreamAlert.config or config.load_config(validate=True)
 
         # Load the environment from the context arn
-        self.env = load_env(context)
+        self.env = config.parse_lambda_arn(context.invoked_function_arn)
 
         # Instantiate the send_alerts here to handle sending the triggered alerts to the
         # alert processor
@@ -162,7 +161,7 @@ class StreamAlert(object):
         # Only log rule info here if this is not running tests
         # During testing, this gets logged at the end and printing here could be confusing
         # since stress testing calls this method multiple times
-        if self.env['lambda_alias'] != 'development':
+        if self.env['qualifier'] != 'development':
             stats.print_rule_stats(True)
 
         return self._failed_record_count == 0
@@ -184,7 +183,7 @@ class StreamAlert(object):
             self._processed_size += len(record.pre_parsed_record)
             self.classifier.classify_record(record)
             if not record.valid:
-                if self.env['lambda_alias'] != 'development':
+                if self.env['qualifier'] != 'development':
                     LOGGER.error('Record does not match any defined schemas: %s\n%s',
                                  record, record.pre_parsed_record)
 

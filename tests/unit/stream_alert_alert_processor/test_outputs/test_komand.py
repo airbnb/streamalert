@@ -20,8 +20,12 @@ from nose.tools import assert_false, assert_true
 
 from stream_alert.alert_processor.outputs.komand import KomandOutput
 from stream_alert_cli.helpers import put_mock_creds
-from tests.unit.stream_alert_alert_processor import \
-    ACCOUNT_ID, CONFIG, FUNCTION_NAME, KMS_ALIAS, REGION
+from tests.unit.stream_alert_alert_processor import (
+    ACCOUNT_ID,
+    FUNCTION_NAME,
+    KMS_ALIAS,
+    REGION
+)
 from tests.unit.stream_alert_alert_processor.helpers import get_alert, remove_temp_secrets
 
 
@@ -37,7 +41,7 @@ class TestKomandutput(object):
 
     def setup(self):
         """Setup before each method"""
-        self._dispatcher = KomandOutput(REGION, ACCOUNT_ID, FUNCTION_NAME, CONFIG)
+        self._dispatcher = KomandOutput(REGION, ACCOUNT_ID, FUNCTION_NAME, None)
         remove_temp_secrets()
         output_name = self._dispatcher.output_cred_name(self.DESCRIPTOR)
         put_mock_creds(output_name, self.CREDS, self._dispatcher.secrets_bucket, REGION, KMS_ALIAS)

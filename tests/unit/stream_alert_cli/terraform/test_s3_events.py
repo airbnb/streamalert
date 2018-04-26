@@ -29,8 +29,6 @@ def test_generate_s3_events_legacy():
         's3_bucket_id': 'unit-test-bucket.legacy.data'
     }
     result = s3_events.generate_s3_events('test', cluster_dict, CONFIG)
-    # Reload the config
-    CONFIG.load()
 
     assert_true(result)
     assert_equal(CONFIG['clusters']['test']['modules']['s3_events'],

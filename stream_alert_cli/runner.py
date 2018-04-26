@@ -136,11 +136,11 @@ def configure_output(options):
         props[name] = prop._replace(
             value=user_input(prop.description, prop.mask_input, prop.input_restrictions))
 
+    output_config = CONFIG['outputs']
     service = output.__service__
-    config = config_outputs.load_config(props, service)
-    # An empty config here means this configuration already exists,
-    # so we can ask for user input again for a unique configuration
-    if config is False:
+
+    # If it exists already, ask for user input again for a unique configuration
+    if config_outputs.output_exists(output_config, props, service):
         return configure_output(options)
 
     secrets_bucket = '{}.streamalert.secrets'.format(prefix)
@@ -150,8 +150,9 @@ def configure_output(options):
     # then update the local output configuration with properties
     if config_outputs.encrypt_and_push_creds_to_s3(region, secrets_bucket, secrets_key, props,
                                                    kms_key_alias):
-        updated_config = output.format_output_config(config, props)
-        config_outputs.update_outputs_config(config, updated_config, service)
+        updated_config = output.format_output_config(output_config, props)
+        output_config[service] = updated_config
+        CONFIG.write()
 
         LOGGER_CLI.info('Successfully saved \'%s\' output configuration for service \'%s\'',
                         props['descriptor'].value, options.service)

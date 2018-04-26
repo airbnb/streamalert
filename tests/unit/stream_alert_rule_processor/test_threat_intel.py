@@ -24,8 +24,8 @@ from nose.tools import (
     raises,
 )
 
-from stream_alert.rule_processor.config import load_config
 from stream_alert.rule_processor.threat_intel import StreamThreatIntel, StreamIoc
+from stream_alert.shared.config import load_config
 from tests.unit.stream_alert_rule_processor.test_helpers import (
     MockDynamoDBClient,
     mock_normalized_records,
@@ -513,22 +513,12 @@ class TestStreamThreatIntel(object):
         assert_equal(StreamThreatIntel.normalized_type_mapping(), expected_result)
 
     def test_load_from_config_with_cluster_env(self):
-        """Threat Intel - Test load_from_config to read cluster env variable"""
-        with patch.dict('os.environ', {'CLUSTER': 'advanced'}):
-            config = load_config('tests/unit/conf')
-            config['global']['threat_intel']['enabled'] = True
-            threat_intel = StreamThreatIntel.load_from_config(config)
-            assert_is_instance(threat_intel, StreamThreatIntel)
-            assert_equal(config['clusters'].keys(), ['advanced'])
-
-    def test_load_from_config_with_cluster_env_2(self):
-        """Threat Intel - Test load_from_config with threat intel disabled in cluster"""
-        with patch.dict('os.environ', {'CLUSTER': 'test'}):
-            config = load_config('tests/unit/conf')
-            config['global']['threat_intel']['enabled'] = True
-            threat_intel = StreamThreatIntel.load_from_config(config)
-            assert_false(isinstance(threat_intel, StreamThreatIntel))
-            assert_equal(config['clusters'].keys(), ['test'])
+        """Threat Intel - Test load_from_config to read cluster"""
+        config = load_config('tests/unit/conf')
+        config['global']['threat_intel']['enabled'] = True
+        threat_intel = StreamThreatIntel.load_from_config(config)
+        assert_is_instance(threat_intel, StreamThreatIntel)
+        assert_true('advanced' in config['clusters'].keys())
 
     def test_process_types_config(self):
         """Threat Intel - Test process_types_config method"""

@@ -26,10 +26,10 @@ from nose.tools import (
     assert_true,
 )
 
-from stream_alert.rule_processor.config import load_config
 from stream_alert.rule_processor.parsers import get_parser
 from stream_alert.rule_processor.rules_engine import RulesEngine
 from stream_alert.shared import NORMALIZATION_KEY
+from stream_alert.shared.config import load_config
 from stream_alert.shared.rule import disable, matcher, Matcher, rule, Rule
 
 from tests.unit.stream_alert_rule_processor.test_helpers import (

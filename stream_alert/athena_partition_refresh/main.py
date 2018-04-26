@@ -30,40 +30,7 @@ from stream_alert.shared.backoff_handlers import (
     giveup_handler,
     success_handler
 )
-
-
-def _load_config():
-    """Load the StreamAlert Athena configuration files
-
-    Returns:
-        dict: Configuration settings by file, includes two keys:
-            lambda, All lambda function settings
-            global, StreamAlert global settings
-
-    Raises:
-        ConfigError: For invalid or missing configuration files.
-    """
-    config_files = ('lambda', 'global')
-    config = {}
-    for config_file in config_files:
-        config_file_path = 'conf/{}.json'.format(config_file)
-
-        if not os.path.exists(config_file_path):
-            raise ConfigError('The \'{}\' config file was not found'.format(
-                config_file_path))
-
-        with open(config_file_path) as config_fh:
-            try:
-                config[config_file] = json.load(config_fh)
-            except ValueError:
-                raise ConfigError('The \'{}\' config file is not valid JSON'.format(
-                    config_file))
-
-    return config
-
-
-class ConfigError(Exception):
-    """Custom StreamAlertAthena Config Exception Class"""
+from stream_alert.shared.config import load_config
 
 
 class AthenaPartitionRefreshError(Exception):
@@ -540,7 +507,7 @@ class StreamAlertSQSClient(object):
 
 def handler(*_):
     """Athena Partition Refresher Handler Function"""
-    config = _load_config()
+    config = load_config(include={'lambda.json', 'global.json'})
 
     # Initialize the SQS client and recieve messages
     stream_alert_sqs = StreamAlertSQSClient(config)
