@@ -29,24 +29,18 @@ from nose.tools import (
     assert_is_instance,
     assert_is_none,
     assert_true,
-    raises,
     nottest,
     with_setup
 )
 
 import stream_alert.athena_partition_refresh as apr
 from stream_alert.athena_partition_refresh.main import (
-    _load_config,
     handler,
-    ConfigError,
     StreamAlertAthenaClient,
     StreamAlertSQSClient,
 )
 from tests.unit.helpers.aws_mocks import MockAthenaClient, MockSqsClient
-from tests.unit.helpers.base import mock_open
 
-GLOBAL_FILE = 'conf/global.json'
-LAMBDA_FILE = 'conf/lambda.json'
 TEST_REGION = 'us-east-2'
 
 CONFIG_DATA = {
@@ -106,38 +100,8 @@ CONFIG_DATA = {
 class TestStreamAlertAthenaGlobals(object):
     """Test class for global functions in Athena Partition Refresh"""
     # pylint: disable=no-self-use
-    @raises(ConfigError)
-    def test_invalid_json_config(self):
-        """Athena - Load Invalid Config"""
-        invalid_config_data = 'This is not JSON!!!'
-        with mock_open(LAMBDA_FILE, invalid_config_data):
-            with mock_open(GLOBAL_FILE, invalid_config_data):
-                _load_config()
-
-    @raises(ConfigError)
-    def test_invalid_missing_config(self):
-        """Athena - Load Missing Config File"""
-        invalid_config_data = 'test'
-        with mock_open(LAMBDA_FILE, invalid_config_data):
-            with mock_open(GLOBAL_FILE, invalid_config_data):
-                with patch('os.path.exists') as mock_exists:
-                    mock_exists.return_value = False
-                    _load_config()
-
-    def test_load_valid_config(self):
-        """Athena - Load Config"""
-        global_contents = json.dumps(CONFIG_DATA['global'], indent=4)
-        lambda_contents = json.dumps(CONFIG_DATA['lambda'], indent=4)
-
-        with mock_open(GLOBAL_FILE, global_contents):
-            with mock_open(LAMBDA_FILE, lambda_contents):
-                config = _load_config()
-
-                assert_equal(type(config), dict)
-                assert_equal(set(config), {'global', 'lambda'})
-
     @patch('stream_alert.athena_partition_refresh.main.LOGGER')
-    @patch('stream_alert.athena_partition_refresh.main._load_config',
+    @patch('stream_alert.athena_partition_refresh.main.load_config',
            return_value=CONFIG_DATA)
     @patch('stream_alert.athena_partition_refresh.main.StreamAlertSQSClient')
     @mock_sqs
@@ -154,7 +118,7 @@ class TestStreamAlertAthenaGlobals(object):
         assert_true(mock_logging.info.called)
 
     @patch('stream_alert.athena_partition_refresh.main.LOGGER')
-    @patch('stream_alert.athena_partition_refresh.main._load_config',
+    @patch('stream_alert.athena_partition_refresh.main.load_config',
            return_value=CONFIG_DATA)
     @patch('stream_alert.athena_partition_refresh.main.StreamAlertSQSClient')
     @mock_sqs
