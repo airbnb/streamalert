@@ -13,8 +13,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+import ast
 from copy import deepcopy
+import hashlib
 import importlib
+import inspect
 import os
 
 from stream_alert.shared import LOGGER
@@ -86,6 +89,7 @@ def disable(rule_instance):
 class Rule(object):
     """Rule class to handle processing"""
     DEFAULT_RULE_DESCRIPTION = 'No rule description provided'
+    CHECKSUM_UNKNOWN = 'checksum unknown'
 
     _rules = {}
 
@@ -102,6 +106,7 @@ class Rule(object):
         self.initial_context = kwargs.get('context')
         self.context = None
         self.disabled = False
+        self._checksum = None
 
         if not (self.logs or self.datatypes):
             raise RuleCreationError(
@@ -161,6 +166,31 @@ class Rule(object):
             LOGGER.exception('Encountered error with rule: %s', self.rule_name)
 
         return False
+
+    @property
+    def checksum(self):
+        """Produce an md5 for the contents of this rule.
+
+        This logic applies to expressions within the function only. It does not take
+        into account: the function name, docstring, comments, or decorator arguments
+        """
+        if not self._checksum:
+            try:
+                code = inspect.getsource(self.func)
+                root = ast.parse(code)
+                md5 = hashlib.md5()  # nosec
+                for expression in root.body[0].body:
+                    # This check is necessary to ensure changes to the docstring
+                    # are allowed without altering the checksum
+                    if not isinstance(expression, ast.Expr):
+                        md5.update(ast.dump(expression))
+
+                self._checksum = md5.hexdigest()
+            except (TypeError, IndentationError, IndexError):
+                LOGGER.exception('Could not checksum rule function')
+                self._checksum = self.CHECKSUM_UNKNOWN
+
+        return self._checksum
 
     @property
     def description(self):

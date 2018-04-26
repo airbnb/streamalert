@@ -60,11 +60,24 @@ logging.basicConfig(format='%(name)s [%(levelname)s]: %(message)s')
 LOGGER_CLI = logging.getLogger('StreamAlertCLI')
 LOGGER_CLI.setLevel(logging.INFO)
 
+ALL_LOGGERS = {LOGGER_SA, LOGGER_SO, LOGGER_SH, LOGGER_CLI}
+
+
 # silence imported loggers
 for logger in logging.Logger.manager.loggerDict:
     if logger.startswith('StreamAlert'):
         continue
     logging.getLogger(logger).setLevel(logging.CRITICAL)
+
+
+def set_logger_levels(level):
+    """Set all of the loggers that could be used to the provided logger level
+
+    Args:
+        level (str): The level at which the log verbosity should be set
+    """
+    for sa_logger in ALL_LOGGERS:
+        sa_logger.setLevel(level)
 
 
 def get_log_memory_handler():

@@ -20,10 +20,16 @@ def rule_table_handler(options, config):
     """Handle operations related to the rule table (listing, updating, etc)
 
     Args:
-        options (argparser.Namespace): Various options needed to by subcommand
+        options (argparser.Namespace): Various options needed by subcommand
             handlers
         config (CLIConfig): Loaded configuration from 'conf/' directory
     """
     table_name = '{}_streamalert_rules'.format(config['global']['account']['prefix'])
     if options.subcommand == 'status':
         print RuleTable(table_name).__str__(options.verbose)
+
+    if options.subcommand in {'stage', 'unstage'}:
+        stage = (options.subcommand == 'stage')
+        table = RuleTable(table_name)
+        for rule in options.rules:
+            table.toggle_staged_state(rule, stage)

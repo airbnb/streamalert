@@ -16,6 +16,7 @@ limitations under the License.
 from datetime import datetime, timedelta
 
 import boto3
+from botocore.exceptions import ClientError
 
 from stream_alert.shared import LOGGER
 from stream_alert.shared.rule import import_folders, Rule
@@ -65,23 +66,24 @@ class RuleTable(object):
                         left_pad=7,
                         property='{}:'.format(prop),
                         internal_pad=details_pad_size,
-                        value=value
+                        value=self.remote_rule_info[rule][prop]
                     )
-                    for prop, value in self.remote_rule_info[rule].iteritems()
+                    for prop in sorted(self.remote_rule_info[rule].keys())
                     if prop != 'Staged'
                 )
 
         return '\n'.join(output)
 
-    def _add_new_rules(self):
+    def _add_new_rules(self, skip_staging=False):
         """Add any new local rules (renamed rules included) to the remote database"""
         # If the table is empty, no rules have been added yet
         # Add them all as unstaged to avoid demoting rules from production status
-        init = (len(self.remote_rule_names) == 0)
+        # Also, allow the user to bypass staging with the skip_staging flag
+        skip_staging = skip_staging or (len(self.remote_rule_names) == 0)
         with self._table.batch_writer() as batch:
             for rule_name in self.local_not_remote:
-                LOGGER.debug('Adding rule \'%s\' (init=%s)', rule_name, init)
-                batch.put_item(self._dynamo_record(rule_name, init))
+                LOGGER.debug('Adding rule \'%s\' (skip staging=%s)', rule_name, skip_staging)
+                batch.put_item(self._dynamo_record(rule_name, skip_staging))
 
     def _del_old_rules(self):
         """Delete any rules that exist in the rule database but not locally"""
@@ -101,7 +103,6 @@ class RuleTable(object):
                             {
                                 'Staged': True
                                 'StagedAt': '2018-04-19T02:23:13.332223Z',
-                                'NewlyStaged': True,
                                 'StagedUntil': '2018-04-21T02:23:13.332223Z'
                             }
                     }
@@ -118,30 +119,32 @@ class RuleTable(object):
         }
 
     @staticmethod
-    def _dynamo_record(rule_name, init=False):
+    def _dynamo_record(rule_name, skip_staging=False):
         """Generate a DynamoDB record with this rule information
 
         Args:
             rule_name (string): Name of rule for this record
-            init (bool): [optional] argument that dictates if this is an initial
-                deploy of rule info to the rules table. Initial deployment of rule
-                info will skip the staging state as to avoid taking rules out of
-                production unexpectedly.
+            skip_staging (bool): [optional] Argument that dictates if this rule
+                should skip the staging phase.
+                An initial deployment of rule info will skip the staging state
+                as to avoid taking rules out of production unexpectedly. This
+                argument can also be used to during the deploy process to
+                immediately put new rules into production.
         """
         item = {
             'RuleName': rule_name,
-            'Staged': not init
+            'Staged': not skip_staging
         }
 
-        # If the database is empty (ie: newly created), do not stage existing rules
-        if init:
+        # We may want to skip staging if the database is empty (ie: newly created)
+        # or if the user is manually bypassing staging for this rule
+        if skip_staging:
             return item
 
         staged_at, staged_until = RuleTable._staged_window()
         item.update({
             'StagedAt': staged_at,
-            'StagedUntil': staged_until,
-            'NewlyStaged': True
+            'StagedUntil': staged_until
         })
 
         return item
@@ -160,9 +163,45 @@ class RuleTable(object):
             staged_until.strftime(RuleTable.DATETIME_FORMAT)
         )
 
-    def update(self):
+    def toggle_staged_state(self, rule_name, stage):
+        """Mark the specified rule as staged=True or staged=False
+
+        Args:
+            rule_name (string): The name of the rule being staged
+            stage (bool): True if this rule should be staged and False if
+                this rule should be promoted out of staging.
+        """
+        LOGGER.debug('Toggling staged state for rule \'%s\' to: %s', rule_name, stage)
+
+        update_expressions = ['set Staged = :staged']
+        expression_attributes = [':staged']
+        expression_values = [stage]
+
+        # If staging, add some additonal staging context to the expression
+        if stage:
+            update_expressions.extend(['StagedAt = :staged_at', 'StagedUntil = :staged_until'])
+            expression_attributes.extend([':staged_at', ':staged_until'])
+            expression_values.extend(self._staged_window())
+
+        args = {
+            'Key': {
+                'RuleName': rule_name
+            },
+            'UpdateExpression': ','.join(update_expressions),
+            'ExpressionAttributeValues': dict(zip(expression_attributes, expression_values)),
+            'ConditionExpression': 'attribute_exists(RuleName)'
+        }
+
+        try:
+            self._table.update_item(**args)
+        except ClientError as error:
+            if error.response['Error']['Code'] != 'ConditionalCheckFailedException':
+                raise
+            LOGGER.exception('Could not toggle rule staging status')
+
+    def update(self, skip_staging=False):
         """Update the database with new local rules and remove deleted ones from remote"""
-        self._add_new_rules()
+        self._add_new_rules(skip_staging)
         self._del_old_rules()
 
     @property
