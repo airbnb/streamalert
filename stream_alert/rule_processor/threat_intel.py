@@ -19,17 +19,15 @@ import backoff
 import boto3
 from boto3.dynamodb.types import TypeDeserializer
 from botocore.exceptions import ClientError, ParamValidationError
-from netaddr import IPAddress
-
+from netaddr import IPNetwork
 from stream_alert.shared import NORMALIZATION_KEY
 from stream_alert.shared.backoff_handlers import (
     backoff_handler,
     success_handler,
     giveup_handler
 )
-
 from stream_alert.rule_processor import LOGGER
-
+from stream_alert.shared.helpers import in_network, valid_ip
 
 # DynamoDB Table settings
 MAX_QUERY_CNT = 100
@@ -79,9 +77,10 @@ class StreamThreatIntel(object):
     # Class variable stores mapping between CEF normalized types and IOC types
     __normalized_ioc_types_mapping = {}
 
-    def __init__(self, table, region='us-east-1'):
-        self.dynamodb = boto3.client('dynamodb', region)
-        self._table = table
+    def __init__(self, **kwargs):
+        self.excluded_iocs = self._setup_excluded_iocs(kwargs.get('excluded_iocs'))
+        self.dynamodb = boto3.client('dynamodb', kwargs.get('region', 'us-east-1'))
+        self._table = kwargs.get('table')
 
     def threat_detection(self, records):
         """Public instance method to run threat intelligence against normalized records
@@ -164,13 +163,20 @@ class StreamThreatIntel(object):
                         for original_key in original_keys:
                             value = value[original_key]
                     if value:
-                        # Threat Intel will only check against public IP addresses
-                        # while processing IP IOCs.
-                        if ioc_type == 'ip' and not self.is_public_ip(value):
+                        # Threat Intel will skip searching for known excluded IOCs
+                        if self.excluded_iocs and self.is_excluded_ioc(ioc_type, value):
                             continue
                         ioc_value_type_tuples.add((value, ioc_type))
         return [StreamIoc(value=str(value).lower(), ioc_type=ioc_type, associated_record=record)
                 for value, ioc_type in ioc_value_type_tuples]
+
+    @staticmethod
+    def _setup_excluded_iocs(config_excluded_iocs=None):
+        if not config_excluded_iocs:
+            return None
+        # Transform the IPs into IPNetwork objects
+        config_excluded_iocs['ip'] = {IPNetwork(ip) for ip in config_excluded_iocs.get('ip', [])}
+        return config_excluded_iocs
 
     @classmethod
     def load_from_config(cls, config):
@@ -191,13 +197,12 @@ class StreamThreatIntel(object):
         if cluster and not (config['clusters'][cluster]['modules']['stream_alert']
                             ['rule_processor'].get('enable_threat_intel', True)):
             return False
-
-        if (config.get('global')
-                and config['global'].get('threat_intel')
-                and config['global']['threat_intel'].get('enabled')
-                and config['global']['threat_intel'].get('dynamodb_table')):
-            return cls(config['global']['threat_intel']['dynamodb_table'],
-                       config['global']['account'].get('region', 'us-east-1'))
+        global_config = config.get('global', {})
+        intel_config = global_config.get('threat_intel')
+        if intel_config and intel_config.get('enabled') and intel_config.get('dynamodb_table'):
+            return cls(excluded_iocs=intel_config.get('excluded_iocs'),
+                       table=intel_config['dynamodb_table'],
+                       region=config['global']['account'].get('region', 'us-east-1'))
 
         return False
 
@@ -410,12 +415,19 @@ class StreamThreatIntel(object):
         """Get normalized CEF types mapping to original keys from the records."""
         return cls.__normalized_types
 
-    @staticmethod
-    def is_public_ip(ip_address):
-        try:
-            ip_addr = IPAddress(str(ip_address))
-            # We also need to filter multicast ip which is a private ip. For example,
-            # multicast ip '239.192.0.1', is a private ip.
-            return ip_addr.is_unicast() and not ip_addr.is_private()
-        except: # pylint: disable=bare-except
-            return False
+    def is_excluded_ioc(self, ioc_type, ioc_value):
+        """
+        check if we should bypass IOC lookup for specified IOC
+        Args:
+            ioc_type (string): the type of IOC to evaluate (md5, ip, domain)
+            value (string): the value of IOC to evaluate
+        Returns:
+            True if IOC lookup should be bypassed for this value
+            False if IOC should be looked up
+        """
+        if ioc_type == 'ip':
+            excluded_networks = self.excluded_iocs.get('ip', set())
+            # filter out *.amazonaws.com "IP"s
+            return not valid_ip(ioc_value) or in_network(ioc_value, excluded_networks)
+
+        return ioc_value in self.excluded_iocs.get(ioc_type, set())

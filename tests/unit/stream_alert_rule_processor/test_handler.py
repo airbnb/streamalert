@@ -279,7 +279,51 @@ class TestStreamAlert(object):
             """Testing dummy rule"""
             return True
 
-        mock_threat_intel.return_value = StreamThreatIntel('test_table_name', 'us-east-1')
+        mock_threat_intel.return_value = StreamThreatIntel(excluded_iocs={},
+                                                           table='test_table_name',
+                                                           region='us-east-1')
+        mock_query.return_value = ([], [])
+
+        sa_handler = StreamAlert(get_mock_context())
+        event = {
+            'account': 123456,
+            'region': '123456123456',
+            'source': '1.1.1.2',
+            'detail': {
+                'eventName': 'ConsoleLogin',
+                'sourceIPAddress': '1.1.1.2',
+                'recipientAccountId': '654321'
+            }
+        }
+        events = []
+        for i in range(10):
+            event['source'] = '1.1.1.{}'.format(i)
+            events.append(event)
+
+        kinesis_events = {
+            'Records': [make_kinesis_raw_record('test_kinesis_stream', json.dumps(event))
+                        for event in events]
+        }
+
+        passed = sa_handler.run(kinesis_events)
+        assert_true(passed)
+
+        assert_equal(mock_query.call_count, 1)
+
+    @patch('stream_alert.rule_processor.threat_intel.StreamThreatIntel._query')
+    @patch('stream_alert.rule_processor.threat_intel.StreamThreatIntel.load_from_config')
+    @patch.dict(os.environ, {'ALERT_PROCESSOR': 'unit-testing_streamalert_alert_processor',
+                             'ALERTS_TABLE': 'unit-testing_streamalert_alerts'})
+    def test_run_threat_intel_empty_exclude_list(self, mock_threat_intel, mock_query): # pylint: disable=no-self-use
+        """StreamAlert Class - Run SA when threat intel enabled but null exclude list"""
+        @rule(datatypes=['sourceAddress'], outputs=['s3:sample_bucket'])
+        def match_ip_address(_): # pylint: disable=unused-variable
+            """Testing dummy rule"""
+            return True
+
+        mock_threat_intel.return_value = StreamThreatIntel(excluded_iocs=None,
+                                                           table='test_table_name',
+                                                           region='us-east-1')
         mock_query.return_value = ([], [])
 
         sa_handler = StreamAlert(get_mock_context())
