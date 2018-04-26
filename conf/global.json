@@ -6,11 +6,11 @@
     "region": "us-east-1"
   },
   "general": {
-    "rule_locations": [
-      "rules"
-    ],
     "matcher_locations": [
       "matchers"
+    ],
+    "rule_locations": [
+      "rules"
     ]
   },
   "infrastructure": {

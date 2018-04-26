@@ -314,8 +314,6 @@ class TestTerraformGenerate(object):
             'enabled': True
         }
         result = cloudtrail.generate_cloudtrail(cluster_name, self.cluster_dict, self.config)
-        # Reload the config
-        self.config.load()
 
         assert_true(result)
         assert_equal(set(self.config['clusters']['advanced']['modules']['cloudtrail'].keys()),
