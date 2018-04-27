@@ -31,7 +31,9 @@ class RuleTable(object):
         """Load the given table to be used for rule information updates
 
         Args:
-            rule_import_paths (string): Variable number of paths to import rules
+            table_name (str): The name of the DynamoDB table from which to load
+                rule info
+            rule_import_paths (str): Variable number of paths to import rules
                 from. Useful for using this as a standalone class. Items for this
                 can be ommitted if instantiated from a caller that has already
                 loaded the rules files.
