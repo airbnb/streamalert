@@ -454,7 +454,13 @@ class TestStreamThreatIntel(object):
                             '10.0.0.0/8',
                             '172.16.0.0/12',
                             '192.168.0.0/16',
-                            '52.52.52.52/32'
+                            {'indicator': '52.52.52.52/32', 'comment': 'test bad ip'}
+                        ],
+                        'md5': [
+                            {
+                                'indicator': '1B270F15270378CCF5E74A9CED55BAAE',
+                                'comment': '/usr/bin/ssh'
+                            }
                         ]
                     }
                 }
