@@ -72,7 +72,7 @@ def time_rule(rule_func):
         result = rule_func(self, *args, **kwargs)
         time_end = time.time()
 
-        RULE_STATS[self.rule_name] += RuleStatistic((time_end - time_start) * 1000)
+        RULE_STATS[self.name] += RuleStatistic((time_end - time_start) * 1000)
 
         return result
 

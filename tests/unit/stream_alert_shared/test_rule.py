@@ -141,7 +141,7 @@ def {}(_):
         rule_name = 'test_rule'
         self._create_rule_helper(rule_name)
         result = rule.Rule.get_rule(rule_name)
-        assert_equal(result.rule_name, rule_name)
+        assert_equal(result.name, rule_name)
 
     def test_rule_names(self):
         """Rule - Get Rule Names"""
@@ -191,7 +191,7 @@ def {}(_):
         assert_equal(len(rule.Rule.rule_names()), 2)
         # Check to see if the one with datatypes is returned
         assert_equal(len(result), 1)
-        assert_equal(result[0].rule_name, 'with_datatypes')
+        assert_equal(result[0].name, 'with_datatypes')
 
     def test_get_rules_for_log_type(self):
         """Rule - Get Rules, For Log Type"""
@@ -210,7 +210,7 @@ def {}(_):
         # Check to make sure the fourth rule has log_type_03
         result = rule.Rule.rules_for_log_type('log_type_03')
         assert_equal(len(result), 1)
-        assert_equal(result[0].rule_name, 'rule_04')
+        assert_equal(result[0].name, 'rule_04')
 
 
 class TestMatcher(object):

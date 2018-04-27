@@ -170,7 +170,7 @@ class RulesEngine(object):
             if not record.get(key):
                 LOGGER.debug(
                     'The required subkey %s is not found when trying to process %s: \n%s',
-                    key, rule.rule_name, record)
+                    key, rule.name, record)
                 return False
             if not all(record[key].get(x) for x in nested_keys):
                 return False
@@ -350,7 +350,7 @@ class RulesEngine(object):
         # Combine the required alert outputs with the ones for this rule
         all_outputs = self._required_outputs_set.union(rule.outputs_set)
         alert = Alert(
-            rule.rule_name, record, all_outputs,
+            rule.name, record, all_outputs,
             cluster=os.environ['CLUSTER'],
             context=rule.context,
             log_source=str(payload.log_source),
@@ -363,7 +363,7 @@ class RulesEngine(object):
         )
 
         LOGGER.info('Rule [%s] triggered alert [%s] on log type [%s] from entity \'%s\' '
-                    'in service \'%s\'', rule.rule_name, alert.alert_id, payload.log_source,
+                    'in service \'%s\'', rule.name, alert.alert_id, payload.log_source,
                     payload.entity, payload.service())
 
         alerts.append(alert)
@@ -406,4 +406,4 @@ class RulesEngine(object):
         """
         return any(self._is_equal(alert.record, record)
                    for alert in alerts
-                   if rule.rule_name == alert.rule_name)
+                   if rule.name == alert.rule_name)
