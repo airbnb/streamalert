@@ -88,7 +88,7 @@ class StreamAlert(object):
 
         firehose_config = self.config['global'].get('infrastructure', {}).get('firehose', {})
         if firehose_config.get('enabled'):
-            self._firehose_client = StreamAlertFirehose(self.env['lambda_region'],
+            self._firehose_client = StreamAlertFirehose(self.env['region'],
                                                         firehose_config,
                                                         self.config['logs'])
 
