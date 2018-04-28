@@ -387,8 +387,12 @@ class RulesEngine(object):
         if self._threat_intel and self.check_alerts_duplication(record, rule, alerts):
             return
 
-        # Combine the required alert outputs with the ones for this rule
-        all_outputs = self._required_outputs_set.union(rule.outputs_set)
+        # Check if the rule is staged and, if so, only use the required alert outputs
+        if rule.is_staged(self._RULE_TABLE):
+            all_outputs = self._required_outputs_set
+        else: # Otherwise, combine the required alert outputs with the ones for this rule
+            all_outputs = self._required_outputs_set.union(rule.outputs_set)
+
         alert = Alert(
             rule.name, record, all_outputs,
             cluster=os.environ['CLUSTER'],
