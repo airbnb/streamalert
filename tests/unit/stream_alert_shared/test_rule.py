@@ -177,6 +177,7 @@ def {}(_):
         assert_equal(rule.Rule._rules['test_rule'].checksum, rule.Rule.CHECKSUM_UNKNOWN)
         log_mock.assert_called_with('Could not checksum rule function')
 
+    @patch.dict('os.environ', {'AWS_DEFAULT_REGION': 'us-east-1'})
     def test_rule_is_staged_false(self):
         """Rule - Is Staged = False"""
         table = rule_table.RuleTable('table')
@@ -190,7 +191,7 @@ def {}(_):
         assert_equal(unstaged_rule.is_staged(None), False)
         assert_equal(unstaged_rule.is_staged(table), False)
 
-
+    @patch.dict('os.environ', {'AWS_DEFAULT_REGION': 'us-east-1'})
     def test_rule_is_staged(self):
         """Rule - Is Staged = True"""
         table = rule_table.RuleTable('table')

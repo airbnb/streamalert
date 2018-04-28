@@ -36,7 +36,7 @@ class TestRuleStats(object):
         def test_func(_):
             pass
 
-        fake = namedtuple('Rule', ['rule_name'])('test_rule')
+        fake = namedtuple('Rule', ['name'])('test_rule')
 
         test_func(fake)
 
