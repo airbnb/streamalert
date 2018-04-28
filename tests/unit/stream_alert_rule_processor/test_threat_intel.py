@@ -448,20 +448,34 @@ class TestStreamThreatIntel(object):
                 'threat_intel': {
                     'dynamodb_table': 'test_table_name',
                     'enabled': True,
-                    'excluded_iocs': {
-                        'ip': [
-                            '127.0.0.0/8',
-                            '10.0.0.0/8',
-                            '172.16.0.0/12',
-                            '192.168.0.0/16',
-                            {'indicator': '52.52.52.52/32', 'comment': 'test bad ip'}
-                        ],
-                        'md5': [
-                            {
-                                'indicator': '1B270F15270378CCF5E74A9CED55BAAE',
-                                'comment': '/usr/bin/ssh'
+                    "excluded_iocs": {
+                        "domain": {
+                            "not-evil.com": {
+                                "comment": "This domain is not evil"
                             }
-                        ]
+                        },
+                        "ip": {
+                            "10.0.0.0/8": {
+                                "comment": "RFC1918"
+                            },
+                            "127.0.0.0/8": {
+                                "comment": "localhost"
+                            },
+                            "172.16.0.0/12": {
+                                "comment": "RFC1918"
+                            },
+                            "192.168.0.0/16": {
+                                "comment": "RFC1918"
+                            },
+                            "52.52.52.52/32": {
+                                "comment": "Test IP"
+                            }
+                        },
+                        "md5": {
+                            "feca1deadbeefcafebeadbeefcafebee": {
+                                "comment": "not malicious, but delicious"
+                            }
+                        }
                     }
                 }
             }

@@ -174,10 +174,7 @@ class StreamThreatIntel(object):
     def _setup_excluded_iocs(excluded=None):
         if not excluded:
             return None
-
-        for (itype, iocs) in excluded.iteritems():
-            excluded[itype] = {ioc["indicator"] if isinstance(ioc, dict) else ioc for ioc in iocs}
-        # Transform the IPs into IPNetwork objects
+        excluded = {itype: set(iocs.keys()) for itype, iocs in excluded.items()}
         excluded['ip'] = {IPNetwork(ip) for ip in excluded.get('ip', set())}
         return excluded
 
