@@ -165,6 +165,14 @@ class RuleTable(object):
             staged_until.strftime(RuleTable.DATETIME_FORMAT)
         )
 
+    def rule_info(self, rule_name):
+        """Get the rule info from the table information
+
+        Returns:
+            dict: Rule information for the specified rule from the DynamoDB rule table
+        """
+        return self.remote_rule_info.get(rule_name)
+
     def toggle_staged_state(self, rule_name, stage):
         """Mark the specified rule as staged=True or staged=False
 

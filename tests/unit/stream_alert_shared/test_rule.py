@@ -20,7 +20,7 @@ from mock import call, patch
 from nose.tools import assert_equal, assert_raises, raises
 from pyfakefs import fake_filesystem_unittest
 
-from stream_alert.shared import rule
+from stream_alert.shared import rule, rule_table
 
 
 # Rule to be used for checksum testing
@@ -177,6 +177,31 @@ def {}(_):
         assert_equal(rule.Rule._rules['test_rule'].checksum, rule.Rule.CHECKSUM_UNKNOWN)
         log_mock.assert_called_with('Could not checksum rule function')
 
+    def test_rule_is_staged_false(self):
+        """Rule - Is Staged = False"""
+        table = rule_table.RuleTable('table')
+        table._remote_rule_info = {'test_rule': {'Staged': False}}
+
+        def test_rule(_):
+            return True
+
+        # Test rule is not staged
+        unstaged_rule = test_rule = rule.Rule(test_rule, logs=['bar'])
+        assert_equal(unstaged_rule.is_staged(None), False)
+        assert_equal(unstaged_rule.is_staged(table), False)
+
+
+    def test_rule_is_staged(self):
+        """Rule - Is Staged = True"""
+        table = rule_table.RuleTable('table')
+        table._remote_rule_info = {'test_rule': {'Staged': True}}
+
+        def test_rule(_):
+            return True
+
+        # Test rule is not staged
+        staged_rule = test_rule = rule.Rule(test_rule, logs=['bar'])
+        assert_equal(staged_rule.is_staged(table), True)
 
     def test_get_rules_with_datatypes(self):
         """Rule - Get Rules, Rule With Datatypes"""

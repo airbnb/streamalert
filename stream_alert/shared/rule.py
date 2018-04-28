@@ -143,6 +143,21 @@ class Rule(object):
 
         return all(Matcher.process(matcher_name, record) for matcher_name in self.matchers)
 
+    def is_staged(self, rule_table):
+        """Run any rule matchers against the record
+
+        Args:
+            rule_table (RuleTable): Front end for DynamoDB rule table to do rule info lookups
+
+        Returns:
+            bools: True if this rule is staged, False otherwise
+        """
+        if not rule_table:
+            return False
+
+        rule_info = rule_table.rule_info(self.name)
+        return rule_info.get('Staged', False)
+
     @time_rule
     def process(self, record):
         """Process will call this rule's function on the passed record
