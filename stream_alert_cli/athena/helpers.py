@@ -49,7 +49,7 @@ def add_partition_statement(partitions, bucket, table_name):
     statements = ['ALTER TABLE {} ADD IF NOT EXISTS'.format(table_name)]
     fmt_values = {
         'bucket': bucket,
-        'table': table_name
+        'table_name': table_name
     }
 
     for partition in sorted(partitions):
