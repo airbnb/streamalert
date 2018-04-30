@@ -24,7 +24,7 @@ from stream_alert_cli.logger import LOGGER_CLI
 CREATE_TABLE_STATEMENT = ('CREATE EXTERNAL TABLE {table_name} ({schema}) '
                           'PARTITIONED BY (dt string) '
                           'ROW FORMAT SERDE \'org.openx.data.jsonserde.JsonSerDe\' '
-                          'WITH SERDEPROPERTIES ( \'ignore.malformed.json\' = \'true\') '
+                          'WITH SERDEPROPERTIES (\'ignore.malformed.json\' = \'true\') '
                           'LOCATION \'s3://{bucket}/{table_name}/\'')
 
 MAX_QUERY_LENGTH = 262144
@@ -156,26 +156,22 @@ def _construct_create_table_statement(schema, table_name, bucket):
         str: The Hive DDL CREATE TABLE expression
     """
     # Construct the main Athena Schema
-    schema_statement = ''
-    for key_name, key_type in schema.iteritems():
+    schema_statement = []
+    for key_name in sorted(schema.keys()):
+        key_type = schema[key_name]
         if isinstance(key_type, str):
-            schema_statement += '{0} {1},'.format(key_name, key_type)
+            schema_statement.append('{0} {1}'.format(key_name, key_type))
         # Account for nested structs
         elif isinstance(key_type, dict):
-            struct_schema = ''.join([
-                '{0}:{1},'.format(sub_key, sub_type) for sub_key, sub_type in key_type.iteritems()
-            ])
-            nested_schema_statement = '{0} struct<{1}>, '.format(
-                key_name,
-                # Use the minus index to remove the last comma
-                struct_schema[:-1])
-
-            schema_statement += nested_schema_statement
+            struct_schema = ', '.join(
+                '{0}:{1}'.format(sub_key, key_type[sub_key])
+                for sub_key in sorted(key_type.keys())
+            )
+            schema_statement.append('{0} struct<{1}>'.format(key_name, struct_schema))
 
     return CREATE_TABLE_STATEMENT.format(
         table_name=table_name,
-        # Remove the last comma from the generated statement
-        schema=schema_statement[:-1],
+        schema=', '.join(schema_statement),
         bucket=bucket)
 
 
