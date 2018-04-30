@@ -82,7 +82,7 @@ def rule(**opts):
 
 def disable(rule_instance):
     """Decorator to be used for disabling a rule"""
-    Rule.disable(rule_instance.rule_name)
+    Rule.disable(rule_instance.name)
     return rule_instance
 
 
@@ -95,7 +95,7 @@ class Rule(object):
 
     def __init__(self, func, **kwargs):
         self.func = func
-        self.rule_name = func.__name__
+        self.name = func.__name__
         self.datatypes = kwargs.get('datatypes')
         self.logs = kwargs.get('logs')
         self.matchers = kwargs.get('matchers')
@@ -111,17 +111,17 @@ class Rule(object):
         if not (self.logs or self.datatypes):
             raise RuleCreationError(
                 "Invalid rule [{}] - rule must have either 'logs' "
-                "or 'datatypes' declared'".format(self.rule_name)
+                "or 'datatypes' declared'".format(self.name)
             )
 
-        if self.rule_name in Rule._rules:
-            raise RuleCreationError('Rule [{}] already defined'.format(self.rule_name))
+        if self.name in Rule._rules:
+            raise RuleCreationError('Rule [{}] already defined'.format(self.name))
 
-        Rule._rules[self.rule_name] = self
+        Rule._rules[self.name] = self
 
     def __str__(self):
         return '<Rule: {}; outputs: {}; disabled: {}>'.format(
-            self.rule_name,
+            self.name,
             self.outputs,
             self.disabled
         )
@@ -143,6 +143,21 @@ class Rule(object):
 
         return all(Matcher.process(matcher_name, record) for matcher_name in self.matchers)
 
+    def is_staged(self, rule_table):
+        """Run any rule matchers against the record
+
+        Args:
+            rule_table (RuleTable): Front end for DynamoDB rule table to do rule info lookups
+
+        Returns:
+            bools: True if this rule is staged, False otherwise
+        """
+        if not rule_table:
+            return False
+
+        rule_info = rule_table.rule_info(self.name)
+        return rule_info.get('Staged', False)
+
     @time_rule
     def process(self, record):
         """Process will call this rule's function on the passed record
@@ -163,7 +178,7 @@ class Rule(object):
 
             return self.func(record)
         except Exception:  # pylint: disable=broad-except
-            LOGGER.exception('Encountered error with rule: %s', self.rule_name)
+            LOGGER.exception('Encountered error with rule: %s', self.name)
 
         return False
 

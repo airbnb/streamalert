@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from copy import copy
-from datetime import timedelta
+from datetime import datetime, timedelta
 import os
 
 from stream_alert.rule_processor import LOGGER
@@ -22,6 +22,7 @@ from stream_alert.rule_processor.threat_intel import StreamThreatIntel
 from stream_alert.shared import NORMALIZATION_KEY, resources
 from stream_alert.shared.alert import Alert
 from stream_alert.shared.rule import import_folders, Rule
+from stream_alert.shared.rule_table import RuleTable
 
 
 _IGNORE_KEYS = {StreamThreatIntel.IOC_KEY, NORMALIZATION_KEY}
@@ -29,11 +30,48 @@ _IGNORE_KEYS = {StreamThreatIntel.IOC_KEY, NORMALIZATION_KEY}
 
 class RulesEngine(object):
     """Class to act as a rules engine that processes rules"""
+    _RULE_TABLE_LAST_REFRESH = datetime(year=1970, month=1, day=1)
+    _RULE_TABLE = None
+
     def __init__(self, config, *rule_paths):
         """Initialize a RulesEngine instance to cache a StreamThreatIntel instance."""
         self._threat_intel = StreamThreatIntel.load_from_config(config)
         self._required_outputs_set = resources.get_required_outputs()
         import_folders(*rule_paths)
+        self._load_rule_table(config)
+
+    @classmethod
+    def _load_rule_table(cls, config):
+        """Load and return a RuleTable class for communicating with the DynamoDB rule table
+
+        Args:
+            config (dict): Loaded configuration from 'conf/' directory
+
+        Returns:
+            rule_table.RuleTable: Loaded frontend for DynamoDB rules table
+        """
+        # Ensure the rules table is enabled
+        rt_config = config['global']['infrastructure']['rules_table']
+        if not rt_config.get('enabled', False):
+            return
+
+        now = datetime.utcnow()
+        refresh_delta = timedelta(minutes=rt_config.get('cache_refresh_minutes', 10))
+
+        # The rule table will need 'refreshed' if the refresh interval has been surpassed
+        needs_refresh = cls._RULE_TABLE_LAST_REFRESH + refresh_delta < now
+
+        if not needs_refresh:
+            LOGGER.debug('Rule table does not need refreshed (last refresh time: %s; '
+                         'current time: %s)', cls._RULE_TABLE_LAST_REFRESH, now)
+            return
+
+        LOGGER.info('Refreshing rule table (last refresh time: %s; current time: %s)',
+                    cls._RULE_TABLE_LAST_REFRESH, now)
+
+        table_name = '{}_streamalert_rules'.format(config['global']['account']['prefix'])
+        cls._RULE_TABLE = RuleTable(table_name)
+        cls._RULE_TABLE_LAST_REFRESH = now
 
     @staticmethod
     def match_types(record, normalized_types, datatypes):
@@ -170,7 +208,7 @@ class RulesEngine(object):
             if not record.get(key):
                 LOGGER.debug(
                     'The required subkey %s is not found when trying to process %s: \n%s',
-                    key, rule.rule_name, record)
+                    key, rule.name, record)
                 return False
             if not all(record[key].get(x) for x in nested_keys):
                 return False
@@ -347,10 +385,14 @@ class RulesEngine(object):
         if self._threat_intel and self.check_alerts_duplication(record, rule, alerts):
             return
 
-        # Combine the required alert outputs with the ones for this rule
-        all_outputs = self._required_outputs_set.union(rule.outputs_set)
+        # Check if the rule is staged and, if so, only use the required alert outputs
+        if rule.is_staged(self._RULE_TABLE):
+            all_outputs = self._required_outputs_set
+        else: # Otherwise, combine the required alert outputs with the ones for this rule
+            all_outputs = self._required_outputs_set.union(rule.outputs_set)
+
         alert = Alert(
-            rule.rule_name, record, all_outputs,
+            rule.name, record, all_outputs,
             cluster=os.environ['CLUSTER'],
             context=rule.context,
             log_source=str(payload.log_source),
@@ -363,7 +405,7 @@ class RulesEngine(object):
         )
 
         LOGGER.info('Rule [%s] triggered alert [%s] on log type [%s] from entity \'%s\' '
-                    'in service \'%s\'', rule.rule_name, alert.alert_id, payload.log_source,
+                    'in service \'%s\'', rule.name, alert.alert_id, payload.log_source,
                     payload.entity, payload.service())
 
         alerts.append(alert)
@@ -406,4 +448,4 @@ class RulesEngine(object):
         """
         return any(self._is_equal(alert.record, record)
                    for alert in alerts
-                   if rule.rule_name == alert.rule_name)
+                   if rule.name == alert.rule_name)

@@ -14,10 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 # pylint: disable=no-self-use,protected-access,attribute-defined-outside-init
+from datetime import datetime, timedelta
 import json
 import os
 
-from mock import patch
+from mock import Mock, patch
 from nose.tools import (
     assert_equal,
     assert_false,
@@ -31,6 +32,7 @@ from stream_alert.rule_processor.rules_engine import RulesEngine
 from stream_alert.shared import NORMALIZATION_KEY
 from stream_alert.shared.config import load_config
 from stream_alert.shared.rule import disable, matcher, Matcher, rule, Rule
+from stream_alert.shared.rule_table import RuleTable
 
 from tests.unit.stream_alert_rule_processor.test_helpers import (
     load_and_classify_payload,
@@ -855,3 +857,79 @@ class TestRulesEngine(object):
         # alert tests
         assert_equal(alerts[0].context['assigned_user'], 'valid_user')
         assert_equal(alerts[0].context['assigned_policy_id'], 'valid_policy_id')
+
+    def test_load_rule_table_disabled(self):
+        """Rules Engine - Load Rule Table, Disabled"""
+        self.config['global']['infrastructure']['rules_table']['enabled'] = False
+        self.rules_engine._load_rule_table(self.config)
+        assert_equal(self.rules_engine._RULE_TABLE, None)
+        assert_equal(self.rules_engine._RULE_TABLE_LAST_REFRESH,
+                     datetime(year=1970, month=1, day=1))
+
+    @patch('stream_alert.shared.rule_table.RuleTable', Mock(return_value=True))
+    @patch('logging.Logger.debug')
+    def test_load_rule_table_no_refresh(self, log_mock):
+        """Rules Engine - Load Rule Table, No Refresh"""
+        self.config['global']['infrastructure']['rules_table']['enabled'] = True
+        with patch.object(RulesEngine, '_RULE_TABLE', 'table'):
+            with patch.object(RulesEngine, '_RULE_TABLE_LAST_REFRESH', datetime.utcnow()):
+                self.rules_engine._load_rule_table(self.config)
+                assert_equal(self.rules_engine._RULE_TABLE, 'table')
+                log_mock.assert_called()
+
+    @patch('stream_alert.rule_processor.rules_engine.RuleTable', Mock(return_value=True))
+    @patch('stream_alert.rule_processor.rules_engine.datetime')
+    @patch('logging.Logger.info')
+    def test_load_rule_table_refresh(self, log_mock, date_mock):
+        """Rules Engine - Load Rule Table, Refresh"""
+        self.config['global']['infrastructure']['rules_table']['enabled'] = True
+        self.config['global']['infrastructure']['rules_table']['cache_refresh_minutes'] = 5
+
+        fake_date_now = datetime.utcnow()
+        date_mock.utcnow.return_value = fake_date_now
+
+        refresh_date = datetime.utcnow() - timedelta(minutes=6)
+        with patch.object(RulesEngine, '_RULE_TABLE', 'table'):
+            with patch.object(RulesEngine, '_RULE_TABLE_LAST_REFRESH', refresh_date):
+                self.rules_engine._load_rule_table(self.config)
+                assert_equal(self.rules_engine._RULE_TABLE, True)
+                assert_equal(self.rules_engine._RULE_TABLE_LAST_REFRESH, fake_date_now)
+                log_mock.assert_called()
+
+    @patch.dict('os.environ', {'AWS_DEFAULT_REGION': 'us-east-1'})
+    def test_rule_staged_only(self):
+        """Rules Engine - Staged Rule"""
+        @rule(logs=['cloudwatch:test_match_types'],
+              outputs=['foobar'])
+        def rule_staged_only(_): # pylint: disable=unused-variable
+            """Modify context rule"""
+            return True
+
+        kinesis_data = json.dumps({
+            'account': 123456,
+            'region': '123456123456',
+            'source': '1.1.1.2',
+            'detail': {
+                'eventName': 'ConsoleLogin',
+                'sourceIPAddress': '1.1.1.2',
+                'recipientAccountId': '654321'
+            }
+        })
+        table = RuleTable('table')
+        table._remote_rule_info = {'rule_staged_only': {'Staged': True}}
+        self.config['global']['infrastructure']['rules_table']['enabled'] = True
+        with patch.object(RulesEngine, '_RULE_TABLE', table), \
+                patch.object(RulesEngine, '_RULE_TABLE_LAST_REFRESH', datetime.utcnow()):
+
+            self.rules_engine._load_rule_table(self.config)
+
+            # prepare the payloads
+            service, entity = 'kinesis', 'test_kinesis_stream'
+            raw_record = make_kinesis_raw_record(entity, kinesis_data)
+            payload = load_and_classify_payload(self.config, service, entity, raw_record)
+
+            # process payloads
+            alerts, _ = self.rules_engine.run(payload)
+
+            # alert tests
+            assert_equal(list(alerts[0].outputs)[0], 'aws-firehose:alerts')

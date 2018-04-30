@@ -31,7 +31,9 @@ class RuleTable(object):
         """Load the given table to be used for rule information updates
 
         Args:
-            rule_import_paths (string): Variable number of paths to import rules
+            table_name (str): The name of the DynamoDB table from which to load
+                rule info
+            rule_import_paths (str): Variable number of paths to import rules
                 from. Useful for using this as a standalone class. Items for this
                 can be ommitted if instantiated from a caller that has already
                 loaded the rules files.
@@ -162,6 +164,14 @@ class RuleTable(object):
             staged_at.strftime(RuleTable.DATETIME_FORMAT),
             staged_until.strftime(RuleTable.DATETIME_FORMAT)
         )
+
+    def rule_info(self, rule_name):
+        """Get the rule info from the table information
+
+        Returns:
+            dict: Rule information for the specified rule from the DynamoDB rule table
+        """
+        return self.remote_rule_info.get(rule_name)
 
     def toggle_staged_state(self, rule_name, stage):
         """Mark the specified rule as staged=True or staged=False

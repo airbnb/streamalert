@@ -199,6 +199,14 @@ class TestRuleTable(object):
         record = self.rule_table._dynamo_record('foo_rule', False)
         assert_equal(record, expected_record)
 
+    def test_get_rule_info(self):
+        """Rule Table - Get Rule Info"""
+        rule_name = 'test_rule_01'
+        self._create_db_rule_with_name(rule_name, True)
+
+        expected_result = {'Staged': True}
+        assert_equal(self.rule_table.rule_info(rule_name), expected_result)
+
     @patch('stream_alert.shared.rule_table.datetime')
     def test_staged_window(self, date_mock):
         """Rule Table - Staged Window"""

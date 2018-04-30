@@ -42,6 +42,9 @@ CLUSTERS = [
     for cluster in files
 ]
 
+# TODO (ryandeivert): remove when rule staging lambda is complete
+ENABLE_RULE_STAGING = False
+
 
 class UniqueSetAction(Action):
     """Subclass of argparse.Action to avoid multiple of the same choice from a list"""
@@ -795,12 +798,23 @@ Examples:
 
     lambda_deploy_parser = _generate_subparser(subparsers, 'deploy', usage, description, True)
 
-    # flag to manually bypass rule staging for new rules upon deploy
-    lambda_deploy_parser.add_argument(
-        '--skip-rule-staging',
-        action='store_true',
-        help=ARGPARSE_SUPPRESS
-    )
+    # TODO (ryandeivert): the below change is temporary and allows
+    # for using rule staging prior to having a promotion lambda in place
+    # Remove this block when this feature is complete
+    if not ENABLE_RULE_STAGING:
+        lambda_deploy_parser.add_argument(
+            '--stage-new-rules',
+            action='store_false',
+            dest='skip_rule_staging',
+            help=ARGPARSE_SUPPRESS
+        )
+    else:
+        # flag to manually bypass rule staging for new rules upon deploy
+        lambda_deploy_parser.add_argument(
+            '--skip-rule-staging',
+            action='store_true',
+            help=ARGPARSE_SUPPRESS
+        )
 
     # flag to manually bypass rule staging for specific rules during deploy
     lambda_deploy_parser.add_argument(

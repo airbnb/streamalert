@@ -20,7 +20,7 @@ from mock import call, patch
 from nose.tools import assert_equal, assert_raises, raises
 from pyfakefs import fake_filesystem_unittest
 
-from stream_alert.shared import rule
+from stream_alert.shared import rule, rule_table
 
 
 # Rule to be used for checksum testing
@@ -141,7 +141,7 @@ def {}(_):
         rule_name = 'test_rule'
         self._create_rule_helper(rule_name)
         result = rule.Rule.get_rule(rule_name)
-        assert_equal(result.rule_name, rule_name)
+        assert_equal(result.name, rule_name)
 
     def test_rule_names(self):
         """Rule - Get Rule Names"""
@@ -177,6 +177,32 @@ def {}(_):
         assert_equal(rule.Rule._rules['test_rule'].checksum, rule.Rule.CHECKSUM_UNKNOWN)
         log_mock.assert_called_with('Could not checksum rule function')
 
+    @patch.dict('os.environ', {'AWS_DEFAULT_REGION': 'us-east-1'})
+    def test_rule_is_staged_false(self):
+        """Rule - Is Staged = False"""
+        table = rule_table.RuleTable('table')
+        table._remote_rule_info = {'test_rule': {'Staged': False}}
+
+        def test_rule(_):
+            return True
+
+        # Test rule is not staged
+        unstaged_rule = test_rule = rule.Rule(test_rule, logs=['bar'])
+        assert_equal(unstaged_rule.is_staged(None), False)
+        assert_equal(unstaged_rule.is_staged(table), False)
+
+    @patch.dict('os.environ', {'AWS_DEFAULT_REGION': 'us-east-1'})
+    def test_rule_is_staged(self):
+        """Rule - Is Staged = True"""
+        table = rule_table.RuleTable('table')
+        table._remote_rule_info = {'test_rule': {'Staged': True}}
+
+        def test_rule(_):
+            return True
+
+        # Test rule is not staged
+        staged_rule = test_rule = rule.Rule(test_rule, logs=['bar'])
+        assert_equal(staged_rule.is_staged(table), True)
 
     def test_get_rules_with_datatypes(self):
         """Rule - Get Rules, Rule With Datatypes"""
@@ -191,7 +217,7 @@ def {}(_):
         assert_equal(len(rule.Rule.rule_names()), 2)
         # Check to see if the one with datatypes is returned
         assert_equal(len(result), 1)
-        assert_equal(result[0].rule_name, 'with_datatypes')
+        assert_equal(result[0].name, 'with_datatypes')
 
     def test_get_rules_for_log_type(self):
         """Rule - Get Rules, For Log Type"""
@@ -210,7 +236,7 @@ def {}(_):
         # Check to make sure the fourth rule has log_type_03
         result = rule.Rule.rules_for_log_type('log_type_03')
         assert_equal(len(result), 1)
-        assert_equal(result[0].rule_name, 'rule_04')
+        assert_equal(result[0].name, 'rule_04')
 
 
 class TestMatcher(object):
