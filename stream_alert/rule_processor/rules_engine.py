@@ -30,7 +30,7 @@ _IGNORE_KEYS = {StreamThreatIntel.IOC_KEY, NORMALIZATION_KEY}
 
 class RulesEngine(object):
     """Class to act as a rules engine that processes rules"""
-    _RULE_TABLE_LAST_REFRESH = None
+    _RULE_TABLE_LAST_REFRESH = datetime(year=1970, month=1, day=1)
     _RULE_TABLE = None
 
     def __init__(self, config, *rule_paths):
@@ -56,12 +56,10 @@ class RulesEngine(object):
             return
 
         now = datetime.utcnow()
-        refresh_delta = timedelta(minutes=rt_config.get('refresh_minutes', 10))
+        refresh_delta = timedelta(minutes=rt_config.get('cache_refresh_minutes', 10))
 
-        # The rule table will need 'refreshed' if 1) the table or last refresh time
-        # do not exist, or 2) if the refresh interval has been surpassed
-        needs_refresh = (not (cls._RULE_TABLE and cls._RULE_TABLE_LAST_REFRESH) or
-                         cls._RULE_TABLE_LAST_REFRESH + refresh_delta < now)
+        # The rule table will need 'refreshed' if the refresh interval has been surpassed
+        needs_refresh = cls._RULE_TABLE_LAST_REFRESH + refresh_delta < now
 
         if not needs_refresh:
             LOGGER.debug('Rule table does not need refreshed (last refresh time: %s; '

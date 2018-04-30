@@ -863,7 +863,8 @@ class TestRulesEngine(object):
         self.config['global']['infrastructure']['rules_table']['enabled'] = False
         self.rules_engine._load_rule_table(self.config)
         assert_equal(self.rules_engine._RULE_TABLE, None)
-        assert_equal(self.rules_engine._RULE_TABLE_LAST_REFRESH, None)
+        assert_equal(self.rules_engine._RULE_TABLE_LAST_REFRESH,
+                     datetime(year=1970, month=1, day=1))
 
     @patch('stream_alert.shared.rule_table.RuleTable', Mock(return_value=True))
     @patch('logging.Logger.debug')
@@ -882,7 +883,7 @@ class TestRulesEngine(object):
     def test_load_rule_table_refresh(self, log_mock, date_mock):
         """Rules Engine - Load Rule Table, Refresh"""
         self.config['global']['infrastructure']['rules_table']['enabled'] = True
-        self.config['global']['infrastructure']['rules_table']['refresh_minutes'] = 5
+        self.config['global']['infrastructure']['rules_table']['cache_refresh_minutes'] = 5
 
         fake_date_now = datetime.utcnow()
         date_mock.utcnow.return_value = fake_date_now

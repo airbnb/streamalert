@@ -30,7 +30,7 @@
     },
     "rules_table": {
       "enabled": false,
-      "refresh_minutes": 10,
+      "cache_refresh_minutes": 10,
       "read_capacity": 20,
       "write_capacity": 5
     }
