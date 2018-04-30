@@ -100,6 +100,7 @@ def test_output_loading():
         'aws-s3',
         'aws-sns',
         'aws-sqs',
+        'carbonblack',
         'github',
         'jira',
         'komand',

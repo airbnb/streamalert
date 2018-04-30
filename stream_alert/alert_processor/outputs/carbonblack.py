@@ -77,9 +77,9 @@ class CarbonBlackOutput(OutputDispatcher):
         client = CbResponseAPI(**creds)
 
         # Get md5 hash 'value' from streamalert's rule processor
-        action = alert.context.get('action')
+        action = alert.context.get('carbonblack', {}).get('action')
         if action == 'ban':
-            binary_hash = alert.context.get('value')
+            binary_hash = alert.context.get('carbonblack', {}).get('value')
             # The binary should already exist in CarbonBlack
             binary = client.select(Binary, binary_hash)
 
@@ -88,7 +88,7 @@ class CarbonBlackOutput(OutputDispatcher):
             if binary.banned:
                 # Determine if the banned action is enabled, if true exit
                 if binary.banned.enabled:
-                    return
+                    return True
                 # If the binary is banned and disabled, begin the banning hash operation
                 banned_hash = client.select(BannedHash, binary_hash)
                 banned_hash.enabled = True
@@ -105,4 +105,4 @@ class CarbonBlackOutput(OutputDispatcher):
             return self._log_status(success, descriptor)
         else:
             LOGGER.error('[%s] Action not supported: %s', self.__service__, action)
-            return self._log_status(binary.banned.enabled, self.__service__)
+            return self._log_status(False, descriptor)
