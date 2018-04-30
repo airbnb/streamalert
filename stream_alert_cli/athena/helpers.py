@@ -13,6 +13,16 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+import re
+
+
+PARTITION_PARTS = re.compile(
+    r'dt=(?P<year>\d{4})\-(?P<month>\d{2})\-(?P<day>\d{2})\-(?P<hour>\d{2})')
+
+# The returned partition from the SHOW PARTITIONS command is dt=YYYY-MM-DD-HH,
+# But when re-creating new partitions this value must be quoted
+PARTITION_STMT = ("PARTITION (dt = '{year}-{month}-{day}-{hour}') "
+                  "LOCATION 's3://{bucket}/{table_name}/{year}/{month}/{day}/{hour}'")
 
 # How to map log schema types to Athena/Hive types
 SCHEMA_TYPE_MAPPING = {
@@ -26,6 +36,35 @@ SCHEMA_TYPE_MAPPING = {
 
 
 def to_athena_schema(log_schema):
+def add_partition_statement(partitions, bucket, table_name):
+    """Generate ALTER TABLE commands from existing partitions.
+
+    Args:
+        partitions (set): The unique set of partitions gathered from Athena
+        bucket (str): The bucket name
+        table_name (str): The name of the Athena table
+
+    Returns:
+        str: The ALTER TABLE statement to add the new partitions
+    """
+    statements = ['ALTER TABLE {} ADD IF NOT EXISTS'.format(table_name)]
+    fmt_values = {
+        'bucket': bucket,
+        'table': table_name
+    }
+
+    for partition in sorted(partitions):
+        parts = PARTITION_PARTS.match(partition)
+        if not parts:
+            continue
+
+        fmt_values.update(parts.groupdict())
+
+        statements.append(PARTITION_STMT.format(**fmt_values))
+
+    return ' '.join(statements)
+
+
     """Convert streamalert log schema to athena schema
 
     Args:
@@ -52,3 +91,20 @@ def to_athena_schema(log_schema):
             athena_schema[key_name] = SCHEMA_TYPE_MAPPING[key_type]
 
     return athena_schema
+
+
+def unique_values_from_query(query_result):
+    """Simplify Athena query results into a set of values.
+
+    Useful for listing tables, partitions, databases, enable_metrics
+
+    Args:
+        query_result (dict): The result of run_athena_query
+
+    Returns:
+        set: Unique values from the query result"""
+    return {
+        res
+        for row in query_result['ResultSet']['Rows'] for result in row['Data']
+        for res in result.values()
+    }

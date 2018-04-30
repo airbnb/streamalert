@@ -14,12 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from stream_alert.athena_partition_refresh.main import StreamAlertAthenaClient
-from stream_alert.athena_partition_refresh import helpers as athena_helpers
 from stream_alert.rule_processor.firehose import StreamAlertFirehose
 from stream_alert.shared.alert import Alert
-from stream_alert_cli.logger import LOGGER_CLI
+from stream_alert_cli.athena import helpers
 from stream_alert_cli.helpers import continue_prompt, record_to_schema
-from stream_alert_cli.athena import helpers as handler_helpers
+from stream_alert_cli.logger import LOGGER_CLI
 
 
 CREATE_TABLE_STATEMENT = ('CREATE EXTERNAL TABLE {table_name} ({schema}) '
@@ -65,7 +64,7 @@ def rebuild_partitions(table, bucket, config):
                          sanitized_table_name)
         return
 
-    unique_partitions = athena_helpers.unique_values_from_query(partitions)
+    unique_partitions = helpers.unique_values_from_query(partitions)
 
     if not unique_partitions:
         LOGGER_CLI.info('No partitions to rebuild for %s, nothing to do', sanitized_table_name)
@@ -88,7 +87,7 @@ def rebuild_partitions(table, bucket, config):
     # Re-create the table with previous partitions
     create_table(table, bucket, config)
 
-    new_partitions_statement = athena_helpers.partition_statement(
+    new_partitions_statement = helpers.add_partition_statement(
         unique_partitions, bucket, sanitized_table_name)
 
     # Make sure our new alter table statement is within the query API limits
@@ -132,7 +131,7 @@ def drop_all_tables(config):
         LOGGER_CLI.error('There was an issue getting all tables')
         return
 
-    unique_tables = athena_helpers.unique_values_from_query(all_tables)
+    unique_tables = helpers.unique_values_from_query(all_tables)
 
     for table in unique_tables:
         success, all_tables = athena_client.run_athena_query(
