@@ -788,6 +788,8 @@ Optional Arguments:
 
     --skip-rule-staging                Skip staging of new rules so they go directly into
                                          production.
+    --stage-rules                      Stage the rules provided in a space-separated list
+    --unstage-rules                    Unstage the rules provided in a space-separated list
     --debug                            Enable debug logger output
 
 Examples:
@@ -816,18 +818,18 @@ Examples:
             help=ARGPARSE_SUPPRESS
         )
 
-    # flag to manually bypass rule staging for specific rules during deploy
+    # flag to manually demote specific rules to staging during deploy
     lambda_deploy_parser.add_argument(
-        '--unstage-rules',
+        '--stage-rules',
         action=MutuallyExclusiveStagingAction,
         default=set(),
         help=ARGPARSE_SUPPRESS,
         nargs='+'
     )
 
-    # flag to manually demote specific rules to staging during deploy
+    # flag to manually bypass rule staging for specific rules during deploy
     lambda_deploy_parser.add_argument(
-        '--stage-rules',
+        '--unstage-rules',
         action=MutuallyExclusiveStagingAction,
         default=set(),
         help=ARGPARSE_SUPPRESS,
@@ -1504,7 +1506,8 @@ Print the status of or update remote StreamAlert rule information within the rul
 Available Subcommands:
 
     manage.py rule-table status          List the current staging status from the rules databse
-    manage.py rule-table stage           Update the staging status of rules
+    manage.py rule-table stage           Stage the rules provided in a space-separated list
+    manage.py rule-table unstage         Unstage the rules provided in a space-separated list
 
 """.format(version)
 
