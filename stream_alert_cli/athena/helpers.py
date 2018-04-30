@@ -102,9 +102,10 @@ def unique_values_from_query(query_result):
         query_result (dict): The result of run_athena_query
 
     Returns:
-        set: Unique values from the query result"""
+        set: Unique values from the query result
+    """
     return {
-        res
+        value
         for row in query_result['ResultSet']['Rows'] for result in row['Data']
-        for res in result.values()
+        for value in result.values()
     }
