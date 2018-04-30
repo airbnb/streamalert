@@ -14,18 +14,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from stream_alert.athena_partition_refresh.main import StreamAlertAthenaClient
-from stream_alert.athena_partition_refresh import helpers as athena_helpers
 from stream_alert.rule_processor.firehose import StreamAlertFirehose
 from stream_alert.shared.alert import Alert
-from stream_alert_cli.logger import LOGGER_CLI
+from stream_alert_cli.athena import helpers
 from stream_alert_cli.helpers import continue_prompt, record_to_schema
-from stream_alert_cli.athena import helpers as handler_helpers
+from stream_alert_cli.logger import LOGGER_CLI
 
 
 CREATE_TABLE_STATEMENT = ('CREATE EXTERNAL TABLE {table_name} ({schema}) '
                           'PARTITIONED BY (dt string) '
                           'ROW FORMAT SERDE \'org.openx.data.jsonserde.JsonSerDe\' '
-                          'WITH SERDEPROPERTIES ( \'ignore.malformed.json\' = \'true\') '
+                          'WITH SERDEPROPERTIES (\'ignore.malformed.json\' = \'true\') '
                           'LOCATION \'s3://{bucket}/{table_name}/\'')
 
 MAX_QUERY_LENGTH = 262144
@@ -65,7 +64,7 @@ def rebuild_partitions(table, bucket, config):
                          sanitized_table_name)
         return
 
-    unique_partitions = athena_helpers.unique_values_from_query(partitions)
+    unique_partitions = helpers.unique_values_from_query(partitions)
 
     if not unique_partitions:
         LOGGER_CLI.info('No partitions to rebuild for %s, nothing to do', sanitized_table_name)
@@ -88,7 +87,7 @@ def rebuild_partitions(table, bucket, config):
     # Re-create the table with previous partitions
     create_table(table, bucket, config)
 
-    new_partitions_statement = athena_helpers.partition_statement(
+    new_partitions_statement = helpers.add_partition_statement(
         unique_partitions, bucket, sanitized_table_name)
 
     # Make sure our new alter table statement is within the query API limits
@@ -132,7 +131,7 @@ def drop_all_tables(config):
         LOGGER_CLI.error('There was an issue getting all tables')
         return
 
-    unique_tables = athena_helpers.unique_values_from_query(all_tables)
+    unique_tables = helpers.unique_values_from_query(all_tables)
 
     for table in unique_tables:
         success, all_tables = athena_client.run_athena_query(
@@ -157,26 +156,22 @@ def _construct_create_table_statement(schema, table_name, bucket):
         str: The Hive DDL CREATE TABLE expression
     """
     # Construct the main Athena Schema
-    schema_statement = ''
-    for key_name, key_type in schema.iteritems():
+    schema_statement = []
+    for key_name in sorted(schema.keys()):
+        key_type = schema[key_name]
         if isinstance(key_type, str):
-            schema_statement += '{0} {1},'.format(key_name, key_type)
+            schema_statement.append('{0} {1}'.format(key_name, key_type))
         # Account for nested structs
         elif isinstance(key_type, dict):
-            struct_schema = ''.join([
-                '{0}:{1},'.format(sub_key, sub_type) for sub_key, sub_type in key_type.iteritems()
-            ])
-            nested_schema_statement = '{0} struct<{1}>, '.format(
-                key_name,
-                # Use the minus index to remove the last comma
-                struct_schema[:-1])
-
-            schema_statement += nested_schema_statement
+            struct_schema = ', '.join(
+                '{0}:{1}'.format(sub_key, key_type[sub_key])
+                for sub_key in sorted(key_type.keys())
+            )
+            schema_statement.append('{0} struct<{1}>'.format(key_name, struct_schema))
 
     return CREATE_TABLE_STATEMENT.format(
         table_name=table_name,
-        # Remove the last comma from the generated statement
-        schema=schema_statement[:-1],
+        schema=', '.join(schema_statement),
         bucket=bucket)
 
 
@@ -216,7 +211,7 @@ def create_table(table, bucket, config, schema_override=None):
         alert = Alert('temp_rule_name', {}, {})
         output = alert.output_dict()
         schema = record_to_schema(output)
-        athena_schema = handler_helpers.to_athena_schema(schema)
+        athena_schema = helpers.logs_schema_to_athena_schema(schema)
 
         query = _construct_create_table_statement(
             schema=athena_schema, table_name=table, bucket=bucket)
@@ -228,7 +223,7 @@ def create_table(table, bucket, config, schema_override=None):
         schema = dict(log_info['schema'])
         sanitized_schema = StreamAlertFirehose.sanitize_keys(schema)
 
-        athena_schema = handler_helpers.to_athena_schema(sanitized_schema)
+        athena_schema = helpers.logs_schema_to_athena_schema(sanitized_schema)
 
         # Add envelope keys to Athena Schema
         configuration_options = log_info.get('configuration')
@@ -237,7 +232,7 @@ def create_table(table, bucket, config, schema_override=None):
             if envelope_keys:
                 sanitized_envelope_key_schema = StreamAlertFirehose.sanitize_keys(envelope_keys)
                 # Note: this key is wrapped in backticks to be Hive compliant
-                athena_schema['`streamalert:envelope_keys`'] = handler_helpers.to_athena_schema(
+                athena_schema['`streamalert:envelope_keys`'] = helpers.logs_schema_to_athena_schema(
                     sanitized_envelope_key_schema)
 
         # Handle Schema overrides
