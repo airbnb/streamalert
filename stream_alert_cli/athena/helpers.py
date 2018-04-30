@@ -35,7 +35,6 @@ SCHEMA_TYPE_MAPPING = {
 }
 
 
-def to_athena_schema(log_schema):
 def add_partition_statement(partitions, bucket, table_name):
     """Generate ALTER TABLE commands from existing partitions.
 
@@ -65,6 +64,7 @@ def add_partition_statement(partitions, bucket, table_name):
     return ' '.join(statements)
 
 
+def logs_schema_to_athena_schema(log_schema):
     """Convert streamalert log schema to athena schema
 
     Args:
@@ -86,7 +86,7 @@ def add_partition_statement(partitions, bucket, table_name):
             athena_schema[key_name] = SCHEMA_TYPE_MAPPING[list]
         elif isinstance(key_type, dict):
             # For recursion
-            athena_schema[key_name] = to_athena_schema(key_type)
+            athena_schema[key_name] = logs_schema_to_athena_schema(key_type)
         else:
             athena_schema[key_name] = SCHEMA_TYPE_MAPPING[key_type]
 

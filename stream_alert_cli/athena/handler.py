@@ -215,7 +215,7 @@ def create_table(table, bucket, config, schema_override=None):
         alert = Alert('temp_rule_name', {}, {})
         output = alert.output_dict()
         schema = record_to_schema(output)
-        athena_schema = handler_helpers.to_athena_schema(schema)
+        athena_schema = helpers.logs_schema_to_athena_schema(schema)
 
         query = _construct_create_table_statement(
             schema=athena_schema, table_name=table, bucket=bucket)
@@ -227,7 +227,7 @@ def create_table(table, bucket, config, schema_override=None):
         schema = dict(log_info['schema'])
         sanitized_schema = StreamAlertFirehose.sanitize_keys(schema)
 
-        athena_schema = handler_helpers.to_athena_schema(sanitized_schema)
+        athena_schema = helpers.logs_schema_to_athena_schema(sanitized_schema)
 
         # Add envelope keys to Athena Schema
         configuration_options = log_info.get('configuration')
@@ -236,7 +236,7 @@ def create_table(table, bucket, config, schema_override=None):
             if envelope_keys:
                 sanitized_envelope_key_schema = StreamAlertFirehose.sanitize_keys(envelope_keys)
                 # Note: this key is wrapped in backticks to be Hive compliant
-                athena_schema['`streamalert:envelope_keys`'] = handler_helpers.to_athena_schema(
+                athena_schema['`streamalert:envelope_keys`'] = helpers.logs_schema_to_athena_schema(
                     sanitized_envelope_key_schema)
 
         # Handle Schema overrides
