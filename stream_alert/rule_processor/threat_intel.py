@@ -171,12 +171,12 @@ class StreamThreatIntel(object):
                 for value, ioc_type in ioc_value_type_tuples]
 
     @staticmethod
-    def _setup_excluded_iocs(config_excluded_iocs=None):
-        if not config_excluded_iocs:
+    def _setup_excluded_iocs(excluded=None):
+        if not excluded:
             return None
-        # Transform the IPs into IPNetwork objects
-        config_excluded_iocs['ip'] = {IPNetwork(ip) for ip in config_excluded_iocs.get('ip', [])}
-        return config_excluded_iocs
+        excluded = {itype: set(iocs.keys()) for itype, iocs in excluded.items()}
+        excluded['ip'] = {IPNetwork(ip) for ip in excluded.get('ip', set())}
+        return excluded
 
     @classmethod
     def load_from_config(cls, config):
