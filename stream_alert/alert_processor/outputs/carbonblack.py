@@ -15,6 +15,7 @@ limitations under the License.
 """
 from collections import OrderedDict
 from cbapi.response import BannedHash, Binary, CbResponseAPI
+from stream_alert.alert_processor import LOGGER
 
 from stream_alert.alert_processor.outputs.output_base import (
     OutputDispatcher,
@@ -22,22 +23,14 @@ from stream_alert.alert_processor.outputs.output_base import (
     StreamAlertOutput
 )
 
-SERVICE = 'carbonblack' # corresponds to the __service__ attribute in the output
-CONTEXT = {
-    SERVICE: {
-        'action': 'ban',
-        'value': '31283037CB17FFDBC4A78A75CF70B0C8' # this is a real hash for ykgo
-    }
-}
 
 @StreamAlertOutput
 class CarbonBlackOutput(OutputDispatcher):
     """CarbonBlackOutput handles all alert dispatching for CarbonBlack"""
     __service__ = 'carbonblack'
-    ARTIFACT_ENDPOINT = '/api/v1/banning/blacklist'
 
     @classmethod
-    def get_user_defined_properties(self):
+    def get_user_defined_properties(cls):
         """Get properties that must be asssigned by the user when configuring a new CarbonBlack
         output.  This should be sensitive or unique information for this use-case that needs
         to come from the user.
@@ -73,6 +66,10 @@ class CarbonBlackOutput(OutputDispatcher):
         Returns:
             bool: True if alert was sent successfully, False otherwise
         """
+        if not alert.context:
+            LOGGER.error('[%s] Alert must contain context to run actions', self.__service__)
+            return self._log_status(False, descriptor)
+
         creds = self._load_creds(descriptor)
         if not creds:
             return self._log_status(False, descriptor)
@@ -80,30 +77,32 @@ class CarbonBlackOutput(OutputDispatcher):
         client = CbResponseAPI(**creds)
 
         # Get md5 hash 'value' from streamalert's rule processor
-        if CONTEXT[SERVICE].get('action') == 'ban':
-            binary_hash = CONTEXT[SERVICE].get('value')
+        action = alert.context.get('action')
+        if action == 'ban':
+            binary_hash = alert.context.get('value')
             # The binary should already exist in CarbonBlack
             binary = client.select(Binary, binary_hash)
 
-            # Determine if the binary is banned
+            success = True
+            # Determine if the binary is currenty listed as banned
             if binary.banned:
-                # If the binary is banned and enabled, exit
+                # Determine if the banned action is enabled, if true exit
                 if binary.banned.enabled:
                     return
-
-                # If the binary is banned and disabled, begin banning hash operation
+                # If the binary is banned and disabled, begin the banning hash operation
                 banned_hash = client.select(BannedHash, binary_hash)
                 banned_hash.enabled = True
                 banned_hash.save()
             else:
                 # Create a new BannedHash object to be saved
                 banned_hash = client.create(BannedHash)
-                # Banning hash operation
+                # Begin the banning hash operation
                 banned_hash.md5hash = binary.md5
                 banned_hash.text = "Banned from StreamAlert"
                 banned_hash.enabled = True
                 banned_hash.save()
-        else:
-            print 'unsupported action'
 
-    self._log_status(boolean)
+            return self._log_status(success, descriptor)
+        else:
+            LOGGER.error('[%s] Action not supported: %s', self.__service__, action)
+            return self._log_status(binary.banned.enabled, self.__service__)
