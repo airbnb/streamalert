@@ -18,9 +18,13 @@ def valid_ip(ip_address):
     Returns:
         True if the ip_address is valid, otherwise False
     """
+    # Early return if ip address is '::1'
+    if ip_address == '::1':
+        return False
+
     try:
         IPAddress(ip_address)
-    except AddrFormatError:
+    except: # pylint: disable=bare-except
         return False
     return True
 
