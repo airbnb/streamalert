@@ -254,6 +254,7 @@ class TestTerraformGenerate(object):
                     'rule_processor_timeout': 25,
                     'rule_processor_version': '$LATEST',
                     'rule_processor_config': '${var.rule_processor_config}',
+                    'rules_table_arn': '${module.globals.rules_table_arn}',
                 }
             }
         }
@@ -285,11 +286,11 @@ class TestTerraformGenerate(object):
                     'rule_processor_timeout': 25,
                     'rule_processor_version': '$LATEST',
                     'rule_processor_config': '${var.rule_processor_config}',
+                    'rules_table_arn': '${module.globals.rules_table_arn}',
                     'input_sns_topics': ['my-sns-topic-name'],
                 }
             }
         }
-
 
         assert_equal(self.cluster_dict['module']['stream_alert_advanced'],
                      expected_advanced_cluster['module']['stream_alert_advanced'])
