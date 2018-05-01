@@ -17,6 +17,7 @@ limitations under the License.
 from collections import namedtuple, OrderedDict
 
 from cbapi.response import BannedHash, Binary
+
 from mock import call, patch
 from moto import mock_s3, mock_kms
 from nose.tools import assert_false, assert_is_instance, assert_true
@@ -24,9 +25,17 @@ from nose.tools import assert_false, assert_is_instance, assert_true
 from stream_alert.alert_processor.outputs import carbonblack
 from stream_alert.alert_processor.outputs.carbonblack import CarbonBlackOutput
 from stream_alert_cli.helpers import put_mock_creds
-from tests.unit.stream_alert_alert_processor import \
-    ACCOUNT_ID, CONFIG, FUNCTION_NAME, KMS_ALIAS, REGION
-from tests.unit.stream_alert_alert_processor.helpers import get_alert, remove_temp_secrets
+from tests.unit.stream_alert_alert_processor import (
+    ACCOUNT_ID,
+    CONFIG,
+    FUNCTION_NAME,
+    KMS_ALIAS,
+    REGION
+)
+from tests.unit.stream_alert_alert_processor.helpers import (
+    get_alert,
+    remove_temp_secrets
+)
 
 
 class MockBannedHash(object):

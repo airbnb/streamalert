@@ -14,9 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from collections import OrderedDict
-from cbapi.response import BannedHash, Binary, CbResponseAPI
-from stream_alert.alert_processor import LOGGER
 
+from cbapi.response import BannedHash, Binary, CbResponseAPI
+
+from stream_alert.alert_processor import LOGGER
 from stream_alert.alert_processor.outputs.output_base import (
     OutputDispatcher,
     OutputProperty,
@@ -44,11 +45,12 @@ class CarbonBlackOutput(OutputDispatcher):
                                         ' carbonblack output')),
             ('url',
              OutputProperty(description='URL to the CB Response server [https://hostname]:',
-                            mask_input=True,
+                            mask_input=False,
                             cred_requirement=True)),
             ('ssl_verify',
-             OutputProperty(description='Use SSL/TLS certificate validation [Y/N]:',
-                            mask_input=True,
+             OutputProperty(description='Use SSL/TLS certificate validation'
+                                        ' (answer "N" if using self-signed certs) [Y/N]:',
+                            mask_input=False,
                             cred_requirement=True)),
             ('token',
              OutputProperty(description='API token (if unknown, leave blank):',
