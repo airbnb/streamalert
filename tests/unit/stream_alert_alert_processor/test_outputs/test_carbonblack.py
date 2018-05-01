@@ -98,12 +98,12 @@ class TestCarbonBlackOutput(object):
         put_mock_creds(output_name, self.CREDS, self._dispatcher.secrets_bucket, REGION, KMS_ALIAS)
 
     def test_get_user_defined_properties(self):
-        """CarbonBlackOutput - Defined Properties"""
+        """CarbonBlackOutput - User Defined Properties"""
         assert_is_instance(CarbonBlackOutput.get_user_defined_properties(), OrderedDict)
 
     @patch('logging.Logger.error')
     def test_dispatch_no_context(self, mock_logger):
-        """CarbonBlackOutput - Dispatch no Context"""
+        """CarbonBlackOutput - Dispatch No Context"""
         assert_false(self._dispatcher.dispatch(get_alert(), self.DESCRIPTOR))
         mock_logger.assert_has_calls([
             call('[%s] Alert must contain context to run actions', 'carbonblack'),
