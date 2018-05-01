@@ -126,22 +126,3 @@ class MockAthenaClient(object):
         """Return a MockAthenaPaginator to yield results"""
         attr = getattr(self, func_name)
         return MockAthenaClient.MockAthenaPaginator(attr, 4)
-
-
-class MockSqsClient(object):
-    """Mock SQS client"""
-
-    def __init__(self, **kwargs):
-        self.region = kwargs.get('region')
-        self.failed = kwargs.get('failed')
-
-    def delete_message_batch(self, **kwargs): # pylint: disable=unused-argument
-        """Mock error handling in SQS delete_message_batch method"""
-        if self.failed:
-            return {'Failed': [{'Id': '1'}]}
-
-        return {'Successful': [{'foo': 'bar'}]}
-
-    def list_queues(self, **kwargs): # pylint: disable=unused-argument,no-self-use
-        """Mock list_queues method"""
-        return {'QueueUrls': ['url_foo', 'url_bar']}
