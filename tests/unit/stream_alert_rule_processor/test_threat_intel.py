@@ -301,6 +301,35 @@ class TestStreamThreatIntel(object):
             result = self.threat_intel._extract_ioc_from_record(record)
             assert_equal(len(result), 0)
 
+    def test_extract_ioc_from_record_corner_cases(self):
+        """
+        Threat Intel - Test extracting values with corner cases
+        """
+        records = [
+            {
+                'account': 54321,
+                'region': '654321654321',
+                'detail': {
+                    'eventName': 'ConsoleLogin',
+                    'userIdentity': {
+                        'userName': 'bob',
+                        'accountId': '54321'
+                    },
+                    'sourceIPAddress': '::1',
+                    'recipientAccountId': '54321'
+                },
+                'source': '1.1.1.2/24',
+                'streamalert:normalization': {
+                    'sourceAddress': [['detail', 'sourceIPAddress'], ['source']],
+                    'usernNme': [['detail', 'userIdentity', 'userName']]
+                }
+            }
+        ]
+        records = mock_normalized_records(records)
+        for record in records:
+            result = self.threat_intel._extract_ioc_from_record(record)
+            assert_equal(len(result), 0)
+
     def test_extract_ioc_from_record_without_excluded_ip(self):
         """
         Threat Intel - Test extracting values from records with excluded IPs
