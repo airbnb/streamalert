@@ -58,6 +58,8 @@ variable "rule_processor_metric_filters" {
   default = []
 }
 
+variable "rules_table_arn" {}
+
 variable "sns_topic_arn" {}
 
 variable "threat_intel_enabled" {

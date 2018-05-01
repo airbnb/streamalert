@@ -103,7 +103,7 @@ data "aws_iam_policy_document" "read_rules_table" {
     ]
 
     resources = [
-      "arn:aws:dynamodb:${var.region}:${var.account_id}:table/${var.prefix}_streamalert_rules",
+      "${var.rules_table_arn}",
     ]
   }
 }
