@@ -86,3 +86,24 @@ data "aws_iam_policy_document" "streamalert_rule_processor_read_dynamodb" {
     ]
   }
 }
+
+// Allow the Rule Processor to read the rules table
+resource "aws_iam_role_policy" "read_rules_table" {
+  name   = "ReadRulesTable"
+  role   = "${aws_iam_role.streamalert_rule_processor_role.id}"
+  policy = "${data.aws_iam_policy_document.read_rules_table.json}"
+}
+
+data "aws_iam_policy_document" "read_rules_table" {
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "dynamodb:Scan",
+    ]
+
+    resources = [
+      "arn:aws:dynamodb:${var.region}:${var.account_id}:table/${var.prefix}_streamalert_rules",
+    ]
+  }
+}

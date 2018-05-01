@@ -156,6 +156,9 @@ class Rule(object):
             return False
 
         rule_info = rule_table.rule_info(self.name)
+        if not rule_info:
+            return False
+
         return rule_info.get('Staged', False)
 
     @time_rule
