@@ -5,6 +5,7 @@ backoff
 bandit
 boto3
 boxsdk[jwt]==2.0.0a11
+cbapi
 coverage
 coveralls
 cryptography
@@ -21,4 +22,3 @@ requests
 Sphinx
 sphinx-rtd-theme
 yapf
-
