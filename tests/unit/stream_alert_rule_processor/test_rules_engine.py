@@ -480,7 +480,7 @@ class TestRulesEngine(object):
             'username': [['sub_key1']],
             'ipv4': [['sub_key2']]
         }
-        RulesEngine.update(results, parent_key, nested_results)
+        self.rules_engine.update(results, parent_key, nested_results)
         expected_results = {
             'username': [['key2', 'sub_key1']],
             'ipv4': [['key1'], ['key2', 'sub_key2']]
@@ -498,7 +498,7 @@ class TestRulesEngine(object):
             'username': [['sub_key1', 'sub_key11']],
             'type': [['sub_key2']]
         }
-        RulesEngine.update(results, parent_key, nested_results)
+        self.rules_engine.update(results, parent_key, nested_results)
         expected_results = {
             'username': [['key2', 'sub_key1', 'sub_key11']],
             'type': [['key4'], ['key2', 'sub_key2']],
@@ -508,6 +508,21 @@ class TestRulesEngine(object):
         assert_equal(results['ipv4'], expected_results['ipv4'])
         assert_equal(results['username'], expected_results['username'])
         assert_equal(results['type'], expected_results['type'])
+
+        results = {
+            'ipv4': [['key1']]
+        }
+        parent_key = 'key2'
+        nested_results = {
+            'username': 'sub_key1',
+            'ipv4': [['sub_key2']]
+        }
+        self.rules_engine.update(results, parent_key, nested_results)
+        expected_results = {
+            'username': [['key2', 'sub_key1', 'sub_key11']],
+            'type': [['key4'], ['key2', 'sub_key2']],
+            'ipv4': [['key1'], ['key3', 'sub_key3', 'sub_key4']]
+        }
 
     def test_match_types_helper(self):
         """Rules Engine - Recursively walk though all nested keys and update
@@ -529,7 +544,7 @@ class TestRulesEngine(object):
             'ipv4': ['destination', 'source', 'sourceIPAddress']
         }
         datatypes = ['account', 'ipv4', 'region']
-        results = RulesEngine.match_types_helper(
+        results = self.rules_engine.match_types_helper(
             record,
             normalized_types,
             datatypes
@@ -564,7 +579,7 @@ class TestRulesEngine(object):
             'userName': ['userName', 'owner', 'invokedBy']
         }
         datatypes = ['account', 'ipv4', 'region', 'userName']
-        results = RulesEngine.match_types_helper(
+        results = self.rules_engine.match_types_helper(
             record,
             normalized_types,
             datatypes
@@ -697,10 +712,10 @@ class TestRulesEngine(object):
         assert_equal(len(alerts), 3)
         for alert in alerts:
             has_key_normalized_types = NORMALIZATION_KEY in alert.record
-            if alert.rule_name == 'test_02_rule_without_datatypes':
-                assert_equal(has_key_normalized_types, False)
+            if alert.record.get('unixtime'):
+                assert_false(has_key_normalized_types)
             else:
-                assert_equal(has_key_normalized_types, True)
+                assert_true(has_key_normalized_types)
 
     @patch('boto3.client')
     def test_process_with_threat_intel_enabled(self, mock_client):
@@ -810,10 +825,8 @@ class TestRulesEngine(object):
         # One record will be normalized twice by two different rules with different
         # normalization keys. It should generate two alerts by two different rules
         # from same record.
-        assert_equal(len(normalized_records), 2)
+        assert_equal(len(normalized_records), 1)
         assert_equal(normalized_records[0].pre_parsed_record['streamalert:normalization'].keys(),
-                     ['fileHash'])
-        assert_equal(normalized_records[1].pre_parsed_record['streamalert:normalization'].keys(),
                      ['fileHash', 'sourceDomain'])
 
         # Pass normalized records to threat intel engine.
