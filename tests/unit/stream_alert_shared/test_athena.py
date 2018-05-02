@@ -54,14 +54,15 @@ class TestStreamAlertAthenaClient(object):
         """Athena - Fix Bucket Path"""
         date_now = datetime.utcnow()
         date_mock.utcnow.return_value = date_now
-        client = StreamAlertAthenaClient(
-            self._db_name,
-            'test.streamalert.athena-results',
-            'unit-testing'
-        )
         date_format = date_now.strftime('%Y/%m/%d')
         expected_path = 's3://test.streamalert.athena-results/unit-testing/{}'.format(date_format)
-        assert_equal(client._s3_results_path, expected_path)
+        with patch.dict(os.environ, {'AWS_DEFAULT_REGION': 'us-west-1'}):
+            client = StreamAlertAthenaClient(
+                self._db_name,
+                'test.streamalert.athena-results',
+                'unit-testing'
+            )
+            assert_equal(client._s3_results_path, expected_path)
 
     def test_unique_values_from_query(self):
         """Athena - Unique Values from Query"""

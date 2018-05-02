@@ -75,7 +75,7 @@ class StreamAlertAthenaClient(object):
         }
 
     def _execute_and_wait(self, query):
-        """Execute an Athena on the current database. This is a blocking operation
+        """Execute an Athena query on the current database. This is a blocking operation
 
         Args:
             query (str): SQL query to execute
@@ -97,7 +97,7 @@ class StreamAlertAthenaClient(object):
         return exeuction_id
 
     def _execute_query(self, query):
-        """Execute an Athena on the current database. This operation is non-blocking
+        """Execute an Athena query on the current database. This operation is non-blocking
 
         Args:
             query (str): SQL query to execute

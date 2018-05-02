@@ -47,7 +47,6 @@ class AthenaRefresher(object):
     ATHENA_S3_PREFIX = 'athena_partition_refresh'
 
     def __init__(self):
-
         config = load_config(include={'lambda.json', 'global.json'})
         prefix = config['global']['account']['prefix']
         athena_config = config['lambda']['athena_partition_refresh_config']
@@ -123,7 +122,7 @@ class AthenaRefresher(object):
 
         return partitions
 
-    def add_partition(self, s3_buckets_and_keys):
+    def _add_partition(self, s3_buckets_and_keys):
         """Execute a Hive Add Partition command on a given Athena table
 
         Args:
@@ -132,9 +131,7 @@ class AthenaRefresher(object):
         Returns:
             (bool): If the repair was successful for not
         """
-
         partitions = self._get_partitions_from_keys(s3_buckets_and_keys)
-
         if not partitions:
             LOGGER.error('No partitons to add')
             return False
@@ -185,7 +182,7 @@ class AthenaRefresher(object):
             LOGGER.error('No new Athena partitions to add, exiting')
             return
 
-        if not self.add_partition(s3_buckets_and_keys):
+        if not self._add_partition(s3_buckets_and_keys):
             LOGGER.error('Failed to add hive partition(s)')
             return
 

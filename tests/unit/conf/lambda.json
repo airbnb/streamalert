@@ -35,7 +35,8 @@
   },
   "athena_partition_refresh_config": {
     "buckets": {
-      "unit-testing-2.streamalerts": "alerts"
+      "unit-testing.streamalert.data": "data",
+      "unit-testing.streamalerts": "alerts"
     },
     "current_version": "$LATEST",
     "enable_metrics": false,
