@@ -47,11 +47,6 @@ class CarbonBlackOutput(OutputDispatcher):
              OutputProperty(description='URL to the CB Response server [https://hostname]:',
                             mask_input=False,
                             cred_requirement=True)),
-            ('ssl_verify',
-             OutputProperty(description='Use SSL/TLS certificate validation'
-                                        ' (answer "N" if using self-signed certs) [Y/N]:',
-                            mask_input=False,
-                            cred_requirement=True)),
             ('token',
              OutputProperty(description='API token (if unknown, leave blank):',
                             mask_input=True,
@@ -84,8 +79,6 @@ class CarbonBlackOutput(OutputDispatcher):
             binary_hash = alert.context.get('carbonblack', {}).get('value')
             # The binary should already exist in CarbonBlack
             binary = client.select(Binary, binary_hash)
-
-            success = True
             # Determine if the binary is currenty listed as banned
             if binary.banned:
                 # Determine if the banned action is enabled, if true exit
@@ -104,7 +97,7 @@ class CarbonBlackOutput(OutputDispatcher):
                 banned_hash.enabled = True
                 banned_hash.save()
 
-            return self._log_status(success, descriptor)
+            return self._log_status(banned_hash.enabled is True, descriptor)
         else:
             LOGGER.error('[%s] Action not supported: %s', self.__service__, action)
             return self._log_status(False, descriptor)
