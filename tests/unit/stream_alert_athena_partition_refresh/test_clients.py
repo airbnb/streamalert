@@ -18,21 +18,23 @@ import json
 import os
 
 import boto3
-from mock import patch
+from mock import Mock, patch
 from moto import mock_sqs
 from nose.tools import (
     assert_equal,
     assert_false,
     assert_is_instance,
     assert_is_none,
-    assert_true,
-    nottest
+    assert_true
 )
 
 from stream_alert.athena_partition_refresh.main import StreamAlertSQSClient
 from stream_alert.shared.config import load_config
 
 
+# Without this time.sleep patch, backoff performs sleep
+# operations and drastically slows down testing
+@patch('time.sleep', Mock(return_value=True))
 @patch.object(StreamAlertSQSClient, 'SQS_BACKOFF_MAX_RETRIES', 1)
 class TestStreamAlertSQSClient(object):
     """Test class for StreamAlertSQSClient"""
@@ -98,26 +100,15 @@ class TestStreamAlertSQSClient(object):
 
         self.client = StreamAlertSQSClient(config)
 
+    def teardown(self):
+        """Purge the Queue and reset the client between runs"""
+        self.mock_sqs.stop()
+
     @patch('logging.Logger.error')
     def test_delete_messages_none_received(self, mock_logging):
         """Athena SQS - Delete Messages - No Receieved Messages"""
         self.client.delete_messages()
         assert_true(mock_logging.called)
-
-    # The return value is not being mocked successfully
-    @nottest
-    @patch('stream_alert.athena_partition_refresh.main.StreamAlertSQSClient')
-    @patch('logging.Logger.error')
-    def test_delete_messages_failure(self, log_mock, mock_sqs_client):
-        """Athena SQS - Delete Messages - Failure Response"""
-        instance = mock_sqs_client.return_value
-        instance.sqs_client.delete_message_batch.return_value = {'Failed': [{'Id': '1'}]}
-
-        self.client.get_messages()
-        self.client.unique_s3_buckets_and_keys()
-        self.client.delete_messages()
-
-        assert_true(log_mock.called)
 
     @patch('logging.Logger.error')
     def test_delete_messages_failure_retries(self, log_mock):

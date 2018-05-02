@@ -53,10 +53,7 @@ class StreamAlertSQSClient(object):
         self.processed_messages = []
         self.deleted_message_count = 0
         self.sqs_client = boto3.client('sqs')
-
-        self.athena_sqs_url = self.sqs_client.list_queues(
-            QueueNamePrefix=self.queue_name
-        )['QueueUrls'][0]
+        self.athena_sqs_url = self.sqs_client.get_queue_url(QueueName=self.queue_name)['QueueUrl']
 
     @property
     def queue_name(self):
@@ -69,30 +66,26 @@ class StreamAlertSQSClient(object):
 
         return queue.replace(' ', '') # strip any spaces which are invalid queue names
 
-    def get_messages(self, **kwargs):
+    def get_messages(self, max_tries=5, max_value=5, max_messages=MAX_SQS_GET_MESSAGE_COUNT):
         """Poll the SQS queue for new messages
 
         Keyword Args:
             max_tries (int): The number of times to backoff
+                Backoff up to 5 times to limit the time spent in this operation
+                relative to the entire Lambda duration.
             max_value (int): The max wait interval between backoffs
+                This value restricts the max time of backoff each try.
+                This means the total backoff time for one function call is:
+                    max_tries (attempts) * max_value (seconds)
             max_messages (int): The max number of messages to get from SQS
         """
         start_message_count = len(self.received_messages)
 
-        # Backoff up to 5 times to limit the time spent in this operation
-        # relative to the entire Lambda duration.
-        max_tries = kwargs.get('max_tries', 5)
-
-        # This value restricts the max time of backoff each try.
-        # This means the total backoff time for one function call is:
-        #   max_tries (attempts) * max_value (seconds)
-        max_value = kwargs.get('max_value', 5)
-
         # Number of messages to poll from the stream.
-        max_messages = kwargs.get('max_messages', self.MAX_SQS_GET_MESSAGE_COUNT)
         if max_messages > self.MAX_SQS_GET_MESSAGE_COUNT:
-            LOGGER.error('SQS can only request up to 10 messages in one request')
-            return
+            LOGGER.error('The maximum requested messages exceeds the SQS limitation per request. '
+                         'Setting max messages to %d', self.MAX_SQS_GET_MESSAGE_COUNT)
+            max_messages = self.MAX_SQS_GET_MESSAGE_COUNT
 
         @backoff.on_predicate(backoff.fibo,
                               max_tries=max_tries,
@@ -106,9 +99,9 @@ class StreamAlertSQSClient(object):
                 QueueUrl=self.athena_sqs_url,
                 MaxNumberOfMessages=max_messages
             )
-
             if 'Messages' not in polled_messages:
-                return False
+                return True # return True to stop polling
+
             self.received_messages.extend(polled_messages['Messages'])
 
         _receive_messages()
