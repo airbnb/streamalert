@@ -17,7 +17,7 @@ from datetime import datetime, timedelta
 import json
 import uuid
 
-from stream_alert.shared import resources
+from stream_alert.shared import resources, utils
 
 
 class AlertCreationError(Exception):
@@ -59,7 +59,7 @@ class Alert(object):
             log_source (str): Log type which triggered the alert, e.g. "binaryalert"
             log_type (str): The type of the triggering log. Usually "json"
             merge_by_keys (list): Alerts are merged if the values associated with all of these
-                top-level keys are equal. TODO: Support nested merge keys
+                keys are equal. Keys can be present at any depth in the record.
             merge_window (timedelta): Merged alerts are sent at this interval.
             outputs_sent (set): Subset of outputs which have sent successfully.
             rule_description (str): Description associated with the triggering rule.
@@ -254,15 +254,26 @@ class Alert(object):
             # These alerts have different definitions of merge keys.
             return False
 
-        for key in self.merge_by_keys:
-            if key not in self.record or key not in other.record:
-                # This merge key doesn't exist in both records.
-                return False
-            if self.record[key] != other.record[key]:
-                # The value of this merge key isn't the same in both records.
-                return False
+        return all(utils.get_first_key(self.record, key) == utils.get_first_key(other.record, key)
+                   for key in self.merge_by_keys)
 
-        return True
+    @classmethod
+    def _clean_record(cls, record, ignored_keys):
+        """Remove ignored keys from every level of the record.
+
+        Args:
+            record (dict): Record to traverse
+            ignored_keys (set): Set of keys to remove from the record
+
+        Returns:
+            dict: A new record, with no ignored_keys
+        """
+        result = {}
+        for key, val in record.iteritems():
+            if key in ignored_keys:
+                continue
+            result[key] = cls._clean_record(val, ignored_keys) if isinstance(val, dict) else val
+        return result
 
     @classmethod
     def _compute_common(cls, records):
@@ -374,19 +385,23 @@ class Alert(object):
                 Other information (rule name, description, etc) is copied from the first alert.
         """
         alerts = sorted(alerts)  # Put alerts in chronological order.
-        common = cls._compute_common([alert.record for alert in alerts])
-        merged_by = {key: common[key] for key in alerts[0].merge_by_keys}
+        merge_keys = set(alerts[0].merge_by_keys)
+        # Remove merge keys from the alert record, so that it doesn't show up in common/diff
+        records = [cls._clean_record(alert.record, merge_keys) for alert in alerts]
+        common = cls._compute_common(records)
 
         # Keys are named such that more important information is at the beginning alphabetically.
         new_record = {
             'AlertCount': len(alerts),
             'AlertTimeFirst': min(alert.created for alert in alerts).strftime(cls.DATETIME_FORMAT),
             'AlertTimeLast': max(alert.created for alert in alerts).strftime(cls.DATETIME_FORMAT),
-            'MergedBy': merged_by,
-            'OtherCommonKeys': {k: v for k, v in common.iteritems() if k not in merged_by},
+            'MergedBy': {
+                key: utils.get_first_key(alerts[0].record, key, '(n/a)') for key in merge_keys
+            },
+            'OtherCommonKeys': common,
             'ValueDiffs': {
-                alert.created.strftime(cls.DATETIME_FORMAT): cls._compute_diff(common, alert.record)
-                for alert in alerts
+                alert.created.strftime(cls.DATETIME_FORMAT): cls._compute_diff(common, record)
+                for alert, record in zip(alerts, records)
             }
         }
 

@@ -299,27 +299,27 @@ class RuleProcessorPackage(LambdaPackage):
     }
     package_files = {'stream_alert/__init__.py'}
     package_name = 'rule_processor'
-    third_party_libs = {'backoff', 'jsonpath_rw'}
+    third_party_libs = {'backoff', 'netaddr', 'jsonpath_rw'}
     version = stream_alert_version
 
 
 class AlertProcessorPackage(LambdaPackage):
     """Deployment package class for the StreamAlert Alert Processor function"""
-    package_folders = {'stream_alert/alert_processor', 'stream_alert/shared', 'conf'}
+    package_folders = {'stream_alert/alert_processor', 'stream_alert/shared', 'conf', 'helpers'}
     package_files = {'stream_alert/__init__.py'}
     package_name = 'alert_processor'
     config_key = 'alert_processor_config'
-    third_party_libs = {'backoff', 'cbapi', 'requests'}
+    third_party_libs = {'backoff', 'cbapi', 'netaddr', 'requests'}
     version = stream_alert_version
 
 
 class AlertMergerPackage(LambdaPackage):
     """Deployment package class for the StreamAlert Alert Merger function"""
-    package_folders = {'stream_alert/alert_merger', 'stream_alert/shared', 'conf'}
+    package_folders = {'stream_alert/alert_merger', 'stream_alert/shared', 'conf', 'helpers'}
     package_files = {'stream_alert/__init__.py'}
     package_name = 'alert_merger'
     config_key = 'alert_merger_config'
-    third_party_libs = {'backoff'}
+    third_party_libs = {'backoff', 'netaddr'}
     version = stream_alert_version
 
 
