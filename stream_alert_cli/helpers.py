@@ -524,6 +524,19 @@ def setup_mock_dynamodb_ioc_table(config):
         },
         TableName=table_name)
 
+     dynamodb_client.put_item(
+        Item={
+            'ioc_value': {
+                'S': 'false.positive'
+            },
+            'ioc_type': {
+                'S': 'domain'
+            },
+            'sub_type': {
+                'S': 'c2_domain'
+            }
+        },
+        TableName=table_name)
 
 def setup_mock_alerts_table(table_name):
     """Create a mock DynamoDB alerts table used by rule processor, alert processor, alert merger"""
