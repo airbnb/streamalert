@@ -13,16 +13,18 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from collections import deque
 from fnmatch import fnmatch
 import logging
 import json
 import time
 
-from netaddr import IPAddress, IPNetwork
-from netaddr.core import AddrFormatError
-
 from stream_alert.shared import NORMALIZATION_KEY
+from stream_alert.shared.utils import (  # pylint: disable=unused-import
+    # Import some utility functions which are useful for rules as well
+    get_first_key,
+    get_keys,
+    in_network
+)
 
 logging.basicConfig()
 LOGGER = logging.getLogger('StreamAlert')
@@ -116,46 +118,6 @@ def last_hour(unixtime, hours=1):
     return int(time.time()) - int(unixtime) <= seconds if unixtime else False
 
 
-def valid_ip(ip_address):
-    """Verify that a ip_address string is valid
-
-    Args:
-        ip_address (string): address to be tested
-
-    Returns:
-        True if the ip_address is valid, otherwise False
-    """
-    try:
-        IPAddress(ip_address)
-    except AddrFormatError:
-        return False
-    return True
-
-
-def in_network(ip_address, cidrs):
-    """Check that an ip_address is within a set of CIDRs
-
-    Args:
-        ip_address (str or netaddr.IPAddress): IP address to check
-        cidrs (set): String CIDRs
-
-    Returns:
-        Boolean representing if the given IP is within any CIDRs
-    """
-    if not valid_ip(ip_address):
-        return False
-
-    for cidr in cidrs:
-        try:
-            network = IPNetwork(cidr)
-        except AddrFormatError:
-            LOGGER.error('Invalid IP Network: %s', cidr)
-            continue
-        if ip_address in network:
-            return True
-    return False
-
-
 def fetch_values_by_datatype(rec, datatype):
     """Fetch values of normalized_type.
 
@@ -180,90 +142,6 @@ def fetch_values_by_datatype(rec, datatype):
                 result = result[original_key]
         results.append(result)
 
-    return results
-
-
-def get_first_key(data, search_key, default_value=None):
-    """Search for the first occurrence of the given key anywhere in the nested data structure.
-
-    WARNING: Only use this if you are certain the search_key can't occur more than once.
-
-    Args:
-        data (dict or list): Record data to search
-        search_key (string): The first value associated with this key is returned
-        default_value (object): Value which should be returned if no match was found
-
-    Returns:
-        (object) First value found or default_value if no match was found
-    """
-    keys = get_keys(data, search_key, max_matches=1)
-    return keys[0] if keys else default_value
-
-
-# Nested types which should be further examined.
-# Predefining this here instead of in get_keys() is a ~15% performance optimization
-_CONTAINER_TYPES = (dict, list)
-
-
-def get_keys(data, search_key, max_matches=-1):
-    """Search for a key anywhere in the nested data structure, returning all associated values.
-
-    Example:
-        If data = {
-            'path': 'ABC',
-            'details': {
-                'parent': {
-                    'path': 'DEF'
-                }
-            },
-            'events': [
-                {
-                    'path': 'GHI'
-                }
-            ]
-        }
-        then get_keys(data, 'path') will return ['ABC', 'DEF', 'GHI'] (in any order)
-
-    Args:
-        data (dict or list): Record data to search
-        search_key (str): Values associated with this key are returned
-        max_matches (int): If > 0, only the first n matches are returned (performance optimization).
-            WARNING: Dictionary traversal order is essentially random. Only rely on this shortcut
-            if you are certain that there won't be more than n matches for the given key.
-
-    Returns:
-        (list) All values (or at most max_matches values) associated with the given key.
-            The values in the result can be of any type. In the example above,
-            get_keys(data, 'details') returns a list with a single element of type dict.
-    """
-    # NOTE: This function has been optimized for performance.
-    # If you change this function, use timeit to ensure there are no performance regressions.
-
-    # Recursion is generally inefficient due to stack shuffling for each function call/return.
-    # Instead, we use a deque (double-ended queue) in a loop: deques have ~O(1) pop/append
-    containers = deque()  # A queue of dicts and lists to examine
-    containers.append(data)
-    results = []
-    while containers:
-        obj = containers.popleft()
-
-        if isinstance(obj, dict):
-            if search_key in obj:
-                results.append(obj[search_key])
-                if 0 < max_matches == len(results):
-                    # We found n matches - return early
-                    return results
-
-            # Enqueue all nested dicts and lists for further searching
-            for val in obj.itervalues():
-                if val and isinstance(val, _CONTAINER_TYPES):
-                    containers.append(val)
-
-        else:
-            # Obj is a list - enqueue all nested dicts and lists for further searching
-            for val in obj:
-                if val and isinstance(val, _CONTAINER_TYPES):
-                    containers.append(val)
     return results
 
 

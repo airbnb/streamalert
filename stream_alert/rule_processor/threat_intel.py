@@ -27,7 +27,7 @@ from stream_alert.shared.backoff_handlers import (
     giveup_handler
 )
 from stream_alert.rule_processor import LOGGER
-from stream_alert.shared.helpers import in_network, valid_ip
+from stream_alert.shared.utils import in_network, valid_ip
 
 # DynamoDB Table settings
 MAX_QUERY_CNT = 100
