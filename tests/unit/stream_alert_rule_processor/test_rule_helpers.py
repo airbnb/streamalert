@@ -71,39 +71,6 @@ def test_last_hour():
     assert_equal(base.last_hour(two_hours_ago), False)
 
 
-def test_valid_ip():
-    """Helpers - Valid IP"""
-    test_ip_valid = '127.0.0.1'
-    assert_equal(base.valid_ip(test_ip_valid), True)
-
-    test_ip_invalid = 'test [1234]'
-    assert_equal(base.valid_ip(test_ip_invalid), False)
-
-
-def test_in_network_invalid_ip():
-    """Helpers - In Network - Invalid IP"""
-    assert_false(base.in_network('a string that is not an ip', {'10.0.100.0/24'}))
-
-
-def test_in_network_invalid_cidr():
-    """Helpers - In Network - Invalid CIDR"""
-    assert_false(base.in_network('127.0.0.1', {'not a cidr'}))
-
-
-def test_in_network():
-    """Helpers - In Network"""
-    cidrs = {
-        '10.0.16.0/24',
-        '10.0.17.0/24'
-    }
-
-    ip_in_cidr = '10.0.16.24'
-    assert_equal(base.in_network(ip_in_cidr, cidrs), True)
-
-    ip_not_in_cidr = '10.0.15.24'
-    assert_equal(base.in_network(ip_not_in_cidr, cidrs), False)
-
-
 def test_fetch_values_by_datatype():
     """Helpers - Fetch values from a record by normalized type"""
     rec = {
@@ -153,58 +120,6 @@ def test_fetch_values_by_datatype():
     assert_equal(len(base.fetch_values_by_datatype(rec, 'ipv4')), 2)
     assert_equal(len(base.fetch_values_by_datatype(rec, 'cmd')), 0)
     assert_equal(base.fetch_values_by_datatype(rec, 'username'), ['alice'])
-
-
-def test_get_first_key():
-    """Helpers - Get First Key"""
-    data = {
-        'path': 'ABC',
-        'details': {
-            'parent': {
-                'path': 'DEF',
-            }
-        },
-        'empty_dict': {},
-        'empty_list': [],
-        'events': [
-            {
-                'path': 'GHI'
-            }
-        ]
-    }
-    # 'path' is a top-level key and so should always be returned first
-    assert_equal('ABC', base.get_first_key(data, 'path'))
-
-    # dicts and lists can be returned as well
-    assert_equal(data['details'], base.get_first_key(data, 'details'))
-
-    # None is returned by default if no value is found
-    assert_equal(None, base.get_first_key(data, 'no-key-found'))
-
-    # Custom default value is returned if specified
-    assert_equal({}, base.get_first_key(data, 'no-key-found', {}))
-
-
-def test_get_keys():
-    """Helpers - Get Keys"""
-    data = {
-        'path': 'ABC',
-        'details': {
-            'parent': {
-                'path': 'DEF'
-            }
-        },
-        'empty_dict': {},
-        'empty_list': [],
-        'events': [
-            {
-                'path': 'GHI'
-            }
-        ]
-    }
-    assert_equal({'ABC', 'DEF', 'GHI'}, set(base.get_keys(data, 'path')))
-    assert_equal(2, len(base.get_keys(data, 'path', max_matches=2)))
-    assert_equal([], base.get_keys({}, 'path'))
 
 
 def test_safe_json_loads_valid():
