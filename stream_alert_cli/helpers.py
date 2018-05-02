@@ -524,7 +524,7 @@ def setup_mock_dynamodb_ioc_table(config):
         },
         TableName=table_name)
 
-     dynamodb_client.put_item(
+    dynamodb_client.put_item(
         Item={
             'ioc_value': {
                 'S': 'false.positive'
