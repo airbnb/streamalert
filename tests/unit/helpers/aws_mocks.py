@@ -57,16 +57,29 @@ class MockLambdaClient(object):
 class MockAthenaClient(object):
     """http://boto3.readthedocs.io/en/latest/reference/services/athena.html"""
 
+    class MockAthenaPaginator(object):
+        """Mock class for paginating athena results"""
+        def __init__(self, func, pages):
+            self._func = func
+            self._pages = pages
+
+        def paginate(self, **kwargs):
+            """Yield the number of pages requested"""
+            for _ in range(self._pages):
+                yield self._func(**kwargs)
+
     def __init__(self, **kwargs):
         self.query_executions = {}
         self.results = kwargs.get('results', [{'test': 'test'}])
         self.result_state = kwargs.get('result_state', 'SUCCEEDED')
+        self.raise_exception = False
 
-    def get_start_query_execution(self, **kwargs):  # pylint: disable=no-self-use
+    @staticmethod
+    def get_start_query_execution(**kwargs):
         """Get query start parameters."""
         return {
             'QueryExecution': {
-                'QueryExecutionId': uuid.uuid4(),
+                'QueryExecutionId': str(uuid.uuid4()),
                 'Query': kwargs.get('QueryString'),
                 'ResultConfiguration': {
                     'OutputLocation': kwargs.get('OutputLocation', ''),
@@ -88,6 +101,8 @@ class MockAthenaClient(object):
 
     def start_query_execution(self, **kwargs):
         """Start an Athena Query Exectuion."""
+        if self.raise_exception:
+            raise ClientError({'Error': {'Code': 10}}, 'InvalidRequestException')
         new_query_execution = self.get_start_query_execution(**kwargs)
         new_query_id = new_query_execution['QueryExecution']['QueryExecutionId']
         self.query_executions[new_query_id] = new_query_execution
@@ -105,23 +120,9 @@ class MockAthenaClient(object):
 
     def get_query_results(self, **kwargs):  # pylint: disable=unused-argument
         """Get the results of a executed query"""
-        return {'ResultSet': {'Rows': [{'Data': self.results}] if self.results else []}}
+        return {'ResultSet': {'Rows': self.results if self.results else []}}
 
-
-class MockSqsClient(object):
-    """Mock SQS client"""
-
-    def __init__(self, **kwargs):
-        self.region = kwargs.get('region')
-        self.failed = kwargs.get('failed')
-
-    def delete_message_batch(self, **kwargs): # pylint: disable=unused-argument
-        """Mock error handling in SQS delete_message_batch method"""
-        if self.failed:
-            return {'Failed': [{'Id': '1'}]}
-
-        return {'Successful': [{'foo': 'bar'}]}
-
-    def list_queues(self, **kwargs): # pylint: disable=unused-argument,no-self-use
-        """Mock list_queues method"""
-        return {'QueueUrls': ['url_foo', 'url_bar']}
+    def get_paginator(self, func_name):
+        """Return a MockAthenaPaginator to yield results"""
+        attr = getattr(self, func_name)
+        return MockAthenaClient.MockAthenaPaginator(attr, 4)
