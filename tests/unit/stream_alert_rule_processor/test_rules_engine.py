@@ -822,9 +822,8 @@ class TestRulesEngine(object):
         # generated before threat intel takes effect.
         assert_equal(len(alerts), 0)
 
-        # One record will be normalized twice by two different rules with different
-        # normalization keys. It should generate two alerts by two different rules
-        # from same record.
+        # One record will be normalized once by two different rules with different
+        # normalization keys.
         assert_equal(len(normalized_records), 1)
         assert_equal(normalized_records[0].pre_parsed_record['streamalert:normalization'].keys(),
                      ['fileHash', 'sourceDomain'])

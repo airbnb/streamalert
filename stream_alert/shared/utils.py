@@ -5,6 +5,8 @@ import logging
 from netaddr import IPAddress, IPNetwork
 from netaddr.core import AddrFormatError
 
+from stream_alert.shared import NORMALIZATION_KEY
+
 logging.basicConfig()
 LOGGER = logging.getLogger('StreamAlert')
 
@@ -125,7 +127,14 @@ def get_keys(data, search_key, max_matches=-1):
                     return results
 
             # Enqueue all nested dicts and lists for further searching
-            for val in obj.itervalues():
+            for key, val in obj.iteritems():
+                # The data may contain normalized keys if data normalization feature is in use.
+                # We need to exclude normalization information from the data, otherwise this
+                # helper may fetch info from normalization if there are keyname conflict.
+                # For example, Key name 'userName' is both existed as a normalized key defined
+                # in conf/types.json and cloudtrail record schemas.
+                if key == NORMALIZATION_KEY:
+                    continue
                 if val and isinstance(val, _CONTAINER_TYPES):
                     containers.append(val)
 
