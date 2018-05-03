@@ -14,9 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 # pylint: disable=no-self-use,unused-argument,attribute-defined-outside-init
-from collections import namedtuple, OrderedDict
-
-from cbapi.response import BannedHash, Binary
+from collections import OrderedDict
 
 from mock import call, patch
 from moto import mock_s3, mock_kms
@@ -24,7 +22,7 @@ from nose.tools import assert_false, assert_is_instance, assert_true
 
 from stream_alert.alert_processor.outputs import carbonblack
 from stream_alert.alert_processor.outputs.carbonblack import CarbonBlackOutput
-from stream_alert_cli.helpers import put_mock_creds
+from stream_alert_cli.helpers import MockCBAPI, put_mock_creds
 from tests.unit.stream_alert_alert_processor import (
     ACCOUNT_ID,
     CONFIG,
@@ -37,56 +35,6 @@ from tests.unit.stream_alert_alert_processor.helpers import (
     remove_temp_secrets
 )
 
-
-class MockBannedHash(object):
-    """Mock for cbapi.response.BannedHash"""
-
-    def __init__(self):
-        self.enabled = True
-        self.md5hash = None
-        self.text = ''
-
-    @staticmethod
-    def save():
-        return True
-
-
-class MockBinary(object):
-    """Mock for cbapi.response.Binary"""
-
-    def __init__(self, banned, enabled, md5):
-        self._banned = banned
-        self._enabled = enabled
-        self.md5 = md5
-
-    @property
-    def banned(self):
-        """Indicates whether binary is banned"""
-        if self._banned:
-            return namedtuple('MockBanned', ['enabled'])(self._enabled)
-        return False
-
-
-class MockCBAPI(object):
-    """Mock for CbResponseAPI"""
-
-    def __init__(self, **kwargs):
-        return
-
-    def create(self, model):
-        """Create banned hash"""
-        if model == BannedHash:
-            return MockBannedHash()
-
-    def select(self, model, file_hash):
-        if model == Binary:
-            if file_hash == 'BANNED_ENABLED_HASH':
-                return MockBinary(banned=True, enabled=True, md5=file_hash)
-            elif file_hash == 'BANNED_DISABLED_HASH':
-                return MockBinary(banned=True, enabled=False, md5=file_hash)
-            return MockBinary(banned=False, enabled=False, md5=file_hash)
-        elif model == BannedHash:
-            return MockBannedHash()
 
 @mock_s3
 @mock_kms
