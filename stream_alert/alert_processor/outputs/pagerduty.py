@@ -412,8 +412,13 @@ class PagerDutyIncidentOutput(OutputDispatcher):
         if not get_id:
             return True
 
+        # We need the list to have elements
+        target_element = response.get(target_key, [])
+        if not target_element:
+            return False
+
         # If there are results, get the first occurence from the list
-        return response[target_key][0]['id'] if target_key in response else False
+        return target_element[0].get('id', False)
 
     def _user_verify(self, user, get_id=True):
         """Method to verify the existance of an user with the API

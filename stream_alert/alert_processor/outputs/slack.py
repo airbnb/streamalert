@@ -16,6 +16,7 @@ limitations under the License.
 import cgi
 from collections import OrderedDict
 
+from stream_alert.alert_processor import LOGGER
 from stream_alert.alert_processor.outputs.output_base import (
     OutputDispatcher,
     OutputProperty,
@@ -30,6 +31,7 @@ class SlackOutput(OutputDispatcher):
     __service__ = 'slack'
     # Slack recommends no messages larger than 4000 bytes. This does not account for unicode
     MAX_MESSAGE_SIZE = 4000
+    MAX_ATTACHMENTS = 20
 
     @classmethod
     def get_user_defined_properties(cls):
@@ -104,6 +106,11 @@ class SlackOutput(OutputDispatcher):
         }
 
         for index, message in enumerate(messages):
+            if index == cls.MAX_ATTACHMENTS:
+                LOGGER.warning('%s: %d-part message truncated to %d parts',
+                               alert, len(messages), cls.MAX_ATTACHMENTS)
+                break
+
             title = 'Record:'
             if len(messages) > 1:
                 title = 'Record (Part {} of {}):'.format(index+1, len(messages))

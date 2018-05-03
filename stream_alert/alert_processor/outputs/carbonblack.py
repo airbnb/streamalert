@@ -44,11 +44,12 @@ class CarbonBlackOutput(OutputDispatcher):
              OutputProperty(description='a short and unique descriptor for this'
                                         ' carbonblack output')),
             ('url',
-             OutputProperty(description='URL to the CB Response server [https://hostname]:',
+             OutputProperty(description='URL to the CB Response server [https://hostname]',
                             mask_input=False,
+                            input_restrictions={' '},
                             cred_requirement=True)),
             ('token',
-             OutputProperty(description='API token (if unknown, leave blank):',
+             OutputProperty(description='API token (if unknown, leave blank)',
                             mask_input=True,
                             cred_requirement=True)),
         ])
