@@ -77,9 +77,7 @@
     "source_bucket": "PREFIX_GOES_HERE.streamalert.source",
     "source_current_hash": "<auto_generated>",
     "source_object_key": "<auto_generated>",
-    "third_party_libraries": [
-      "netaddr"
-    ]
+    "third_party_libraries": []
   },
   "stream_alert_apps_config": {
     "handler": "app_integrations.main.handler",

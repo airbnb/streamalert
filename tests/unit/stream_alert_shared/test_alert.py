@@ -177,7 +177,7 @@ class TestAlert(object):
         assert_false(alert2.can_merge(alert1))
 
     def test_can_merge_key_not_common(self):
-        """Alert Class - Can Merge - Merge Key Not Present in Both Records"""
+        """Alert Class - Can Merge - False if Merge Key Not Present in Both Records"""
         alert1 = Alert(
             '', {'key': True}, set(),
             merge_by_keys=['key'],
@@ -192,7 +192,7 @@ class TestAlert(object):
         assert_false(alert2.can_merge(alert1))
 
     def test_can_merge_different_values(self):
-        """Alert Class - Can Merge - Merge Key has Different Values"""
+        """Alert Class - Can Merge - False if Merge Key has Different Values"""
         alert1 = Alert(
             '', {'key': True}, set(),
             merge_by_keys=['key'],
@@ -205,6 +205,13 @@ class TestAlert(object):
         )
         assert_false(alert1.can_merge(alert2))
         assert_false(alert2.can_merge(alert1))
+
+    def test_can_merge_merge_keys_absent(self):
+        """Alert Class - Can Merge - True if Merge Keys Do Not Exist in Either Record"""
+        alert1 = Alert('', {}, set(), merge_by_keys=['key'], merge_window=timedelta(minutes=10))
+        alert2 = Alert('', {}, set(), merge_by_keys=['key'], merge_window=timedelta(minutes=10))
+        assert_true(alert1.can_merge(alert2))
+        assert_true(alert2.can_merge(alert1))
 
     def test_can_merge_true(self):
         """Alert Class - Can Merge - True Result"""
@@ -401,7 +408,7 @@ class TestAlert(object):
         assert_equal(expected_diff2, Alert._compute_diff(common, record2))
 
     def test_merge(self):
-        """Alert Class - Create Merged Alert"""
+        """Alert Class - Merge - Create Merged Alert"""
         # Example based on a CarbonBlack log
         record1 = {
             'alliance_data_virustotal': [],
@@ -467,4 +474,86 @@ class TestAlert(object):
             }
 
         }
+        assert_equal(expected_record, merged.record)
+
+    def test_merge_nested(self):
+        """Alert Class - Merge - Merge with Nested Keys"""
+        record1 = {
+            'NumMatchedRules': 1,
+            'FileInfo': {
+                'Deleted': None,
+                'Nested': [1, 2, 'three']
+            },
+            'MatchedRules': {
+                'Rule1': 'MatchedStrings'
+            }
+        }
+        alert1 = Alert(
+            'RuleName', record1, {'slack:channel'},
+            created=datetime(year=2000, month=1, day=1),
+            merge_by_keys=['Nested'],
+            merge_window=timedelta(minutes=5)
+        )
+
+        record2 = {
+            'NumMatchedRules': 2,
+            'FileInfo': {
+                'Deleted': None,
+                'Nested': [1, 2, 'three']
+            },
+            'MatchedRules': {
+                'Rule1': 'MatchedStrings'
+            }
+        }
+        alert2 = Alert(
+            'RuleName', record2, {'slack:channel'},
+            created=datetime(year=2000, month=1, day=2),
+            merge_by_keys=['Nested'],
+            merge_window=timedelta(minutes=5)
+        )
+
+        record3 = {
+            'MatchedRules': {
+                'Rule1': 'MatchedStrings'
+            },
+            'Nested': [1, 2, 'three']  # This is in a different place in the record
+        }
+        alert3 = Alert(
+            'RuleName', record3, {'slack:channel'},
+            created=datetime(year=2000, month=1, day=3),
+            merge_by_keys=['Nested'],
+            merge_window=timedelta(minutes=5)
+        )
+
+        merged = Alert.merge([alert1, alert2, alert3])
+
+        expected_record = {
+            'AlertCount': 3,
+            'AlertTimeFirst': '2000-01-01T00:00:00.000000Z',
+            'AlertTimeLast': '2000-01-03T00:00:00.000000Z',
+            'MergedBy': {
+                'Nested': [1, 2, 'three']
+            },
+            'OtherCommonKeys': {
+                'MatchedRules': {
+                    'Rule1': 'MatchedStrings'
+                }
+            },
+            'ValueDiffs': {
+                '2000-01-01T00:00:00.000000Z': {
+                    'NumMatchedRules': 1,
+                    'FileInfo': {
+                        'Deleted': None
+                    }
+                },
+                '2000-01-02T00:00:00.000000Z': {
+                    'NumMatchedRules': 2,
+                    'FileInfo': {
+                        'Deleted': None
+                    }
+                },
+                '2000-01-03T00:00:00.000000Z': {}
+            }
+        }
+
         assert_equal(expected_record, merged.record)
