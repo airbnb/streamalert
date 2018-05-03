@@ -82,13 +82,13 @@ Adding support for a new service involves five steps:
                                     '(ie: name of integration/channel/service/etc)'))
     ])
 
-  def dispatch(self, **kwargs):
+  def _dispatch(self, **kwargs):
     """Handles the actual sending of alerts to the configured service.
     Any external API calls for this service should be added here.
-    This method should call the `_log_status()` base class method upon completion.
+    This method should return a boolean where True means the alert was successfully sent.
     """
     ...
-    self._log_status(boolean)
+    return True
 
 **Note**: The ``OutputProperty`` object used in ``get_user_defined_properties`` is a namedtuple consisting of a few properties:
 
@@ -121,7 +121,7 @@ Adding support for a new service involves five steps:
 
    - The ``output_parser`` contains a ``choices`` list for ``--service`` that must include this new service.
 
-6. Extend the ``AlertProcessorTester.setup_outputs`` method in ``stream_alert_cli/test.py`` module to provide mock credentials for your new output. 
+6. Extend the ``AlertProcessorTester.setup_outputs`` method in ``stream_alert_cli/test.py`` module to provide mock credentials for your new output.
 
 .. note:: New AWS Service outputs should subclass ``AWSOutput`` instead of ``StreamOutputBase``
 
