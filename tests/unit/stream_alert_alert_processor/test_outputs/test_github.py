@@ -41,6 +41,7 @@ class TestGithubOutput(object):
     """Test class for GithubOutput"""
     DESCRIPTOR = 'unit_test_repo'
     SERVICE = 'github'
+    OUTPUT = ':'.join([SERVICE, DESCRIPTOR])
     CREDS = {'username': 'unit_test_user', 'access_token':
              'unit_test_access_token', 'repository': 'unit_test_org/unit_test_repo',
              'labels': 'label1,label2'}
@@ -59,7 +60,7 @@ class TestGithubOutput(object):
         url_mock.return_value.status_code = 200
         url_mock.return_value.json.return_value = dict()
 
-        assert_true(self._dispatcher.dispatch(get_alert(), self.DESCRIPTOR))
+        assert_true(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
 
         assert_equal(url_mock.call_args[0][0],
                      'https://api.github.com/repos/unit_test_org/unit_test_repo/issues')
@@ -80,7 +81,7 @@ class TestGithubOutput(object):
         url_mock.return_value.status_code = 200
         url_mock.return_value.json.return_value = dict()
 
-        assert_true(self._dispatcher.dispatch(get_alert(), self.DESCRIPTOR))
+        assert_true(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
 
         assert_equal(url_mock.call_args[1]['json']['labels'], ['label1', 'label2'])
         log_mock.assert_called_with('Successfully sent alert to %s:%s',
@@ -94,12 +95,14 @@ class TestGithubOutput(object):
         url_mock.return_value.json.return_value = json_error
         url_mock.return_value.status_code = 400
 
-        assert_false(self._dispatcher.dispatch(get_alert(), self.DESCRIPTOR))
+        assert_false(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
+
         log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, self.DESCRIPTOR)
 
     @patch('logging.Logger.error')
     def test_dispatch_bad_descriptor(self, log_mock):
         """GithubOutput - Dispatch Failure, Bad Descriptor"""
-        assert_false(self._dispatcher.dispatch(get_alert(), 'bad_descriptor'))
+        assert_false(
+            self._dispatcher.dispatch(get_alert(), ':'.join([self.SERVICE, 'bad_descriptor'])))
 
         log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, 'bad_descriptor')

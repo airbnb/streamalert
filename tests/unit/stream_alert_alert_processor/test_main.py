@@ -80,48 +80,23 @@ class TestAlertProcessor(object):
         dispatcher = self.processor._create_dispatcher('aws-s3:unit_test_bucket')
         assert_is_instance(dispatcher, OutputDispatcher)
 
-    @patch('stream_alert.alert_processor.main.LOGGER')
-    def test_send_alert_exception(self, mock_logger):
-        """Alert Processor - Send Alert - Exception"""
-        dispatcher = MagicMock()
-        dispatcher.dispatch.side_effect = AttributeError
-        alert = Alert('hello_world', {'abc': 123}, {'output'})
-        output = 'slack:unit_test_channel'
-
-        assert_false(AlertProcessor._send_alert(alert, output, dispatcher))
-        mock_logger.assert_has_calls([
-            call.info('Sending %s to %s', alert, output),
-            call.exception('Exception when sending %s to %s. Alert:\n%s', alert, output, ANY)
-        ])
-
-    @patch('stream_alert.alert_processor.main.LOGGER')
-    def test_send_alert(self, mock_logger):
-        """Alert Processor - Send Alert - Success"""
-        dispatcher = MagicMock()
-        dispatcher.dispatch.return_value = True
-        output = 'slack:unit_test_channel'
-
-        assert_true(AlertProcessor._send_alert(self.alert, output, dispatcher))
-        mock_logger.info.assert_called_once_with('Sending %s to %s', self.alert, output)
-        dispatcher.dispatch.assert_called_once_with(self.alert, 'unit_test_channel')
-
     @patch.object(AlertProcessor, '_create_dispatcher')
-    @patch.object(AlertProcessor, '_send_alert', return_value=True)
-    def test_send_alerts_success(self, mock_send_alert, mock_create_dispatcher):
+    def test_send_alerts_success(self, mock_create_dispatcher):
         """Alert Processor - Send Alerts Success"""
+        mock_create_dispatcher.return_value.dispatch.return_value = True
         result = self.processor._send_to_outputs(self.alert)
         mock_create_dispatcher.assert_called_once()
-        mock_send_alert.assert_called_once()
+        mock_create_dispatcher.return_value.dispatch.assert_called_once()
         assert_equal({'slack:unit-test-channel': True}, result)
         assert_equal(self.alert.outputs, self.alert.outputs_sent)
 
     @patch.object(AlertProcessor, '_create_dispatcher')
-    @patch.object(AlertProcessor, '_send_alert', return_value=False)
-    def test_send_alerts_failure(self, mock_send_alert, mock_create_dispatcher):
+    def test_send_alerts_failure(self, mock_create_dispatcher):
         """Alert Processor - Send Alerts Failure"""
+        mock_create_dispatcher.return_value.dispatch.return_value = False
         result = self.processor._send_to_outputs(self.alert)
         mock_create_dispatcher.assert_called_once()
-        mock_send_alert.assert_called_once()
+        mock_create_dispatcher.return_value.dispatch.assert_called_once()
         assert_equal({'slack:unit-test-channel': False}, result)
         assert_equal(set(), self.alert.outputs_sent)
 
