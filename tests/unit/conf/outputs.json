@@ -1,4 +1,7 @@
 {
+  "aws-cloudwatch-log": [
+    "unit_test_default"
+  ],
   "aws-firehose": {
     "unit_test_delivery_stream": "unit_test_delivery_stream"
   },

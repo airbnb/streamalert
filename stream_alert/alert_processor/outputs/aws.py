@@ -137,10 +137,8 @@ class KinesisFirehoseOutput(AWSOutput):
         LOGGER.info('Sending %s to aws-firehose:%s', alert, delivery_stream)
 
         resp = _firehose_request_wrapper(json_alert, delivery_stream)
-
-        if resp.get('RecordId'):
-            LOGGER.info('%s successfully sent to aws-firehose:%s with RecordId:%s',
-                        alert, delivery_stream, resp['RecordId'])
+        LOGGER.info('%s successfully sent to aws-firehose:%s',
+                    alert, delivery_stream)
 
         return self._log_status(resp, descriptor)
 
@@ -369,3 +367,30 @@ class SQSOutput(AWSOutput):
 
         response = queue.send_message(MessageBody=json.dumps(alert.record, separators=(',', ':')))
         return self._log_status(response, descriptor)
+
+
+@StreamAlertOutput
+class CloudwatchLogOutput(AWSOutput):
+    """Print alerts to the Cloudwatch Logger"""
+    __service__ = 'aws-cloudwatch-log'
+
+    @classmethod
+    def get_user_defined_properties(cls):
+        """Get properties that must be asssigned by the user when configuring a new Lambda
+        Returns:
+            OrderedDict: Contains various OutputProperty items
+        """
+        return OrderedDict([
+            ('descriptor',
+             OutputProperty(description='a short and unique descriptor for the cloudwatch log')),
+        ])
+
+    def dispatch(self, alert, descriptor):
+        """Send alert to Cloudwatch Logger for Lambda
+
+        Args:
+            alert (Alert): Alert instance which triggered a rule
+            descriptor (str): Output descriptor
+        """
+        LOGGER.info('New Alert:\n%s', json.dumps(alert.output_dict(), indent=4))
+        return self._log_status(True, descriptor)
