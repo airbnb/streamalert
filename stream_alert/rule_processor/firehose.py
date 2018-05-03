@@ -47,7 +47,8 @@ class StreamAlertFirehose(object):
     MAX_RECORD_SIZE = 1000 * 1000 - 2
 
     def __init__(self, region, firehose_config, log_sources):
-        self._firehose_client = boto3.client('firehose', region_name=region)
+        self._region = region
+        self._firehose_client = boto3.client('firehose', region_name=self._region)
         # Expand enabled logs into specific subtypes
         self._enabled_logs = self._load_enabled_log_sources(firehose_config, log_sources)
 
@@ -63,6 +64,10 @@ class StreamAlertFirehose(object):
         Returns:
             list: casts the set of enabled logs into a list for JSON serialization"""
         return list(self._enabled_logs)
+
+    def _reset_firehose_client(self):
+        """When errors are thrown, reset the Firehose client"""
+        self._firehose_client = boto3.client('firehose', region_name=self._region)
 
     def _segment_records_by_size(self, record_batch):
         """Segment record groups by size
@@ -139,6 +144,14 @@ class StreamAlertFirehose(object):
 
         return new_record
 
+    def _backoff_handler_firehose_reset(self, details):
+        """Custom backoff handler to re-instantiate the Firehose Client"""
+        LOGGER.info('[Backoff]: Calling \'%s\' again in %f seconds with %d tries so far',
+                    details['target'].__name__,
+                    details['wait'],
+                    details['tries'])
+        self._reset_firehose_client()
+
     def _firehose_request_helper(self, stream_name, record_batch):
         """Send record batches to Firehose
 
@@ -155,14 +168,14 @@ class StreamAlertFirehose(object):
                               max_tries=self.MAX_BACKOFF_ATTEMPTS,
                               max_value=self.MAX_BACKOFF_FIBO_VALUE,
                               jitter=backoff.full_jitter,
-                              on_backoff=backoff_handler(),
+                              on_backoff=backoff_handler(debug_only=False),
                               on_success=success_handler(),
                               on_giveup=giveup_handler())
         @backoff.on_exception(backoff.fibo,
                               exceptions_to_backoff,
                               max_tries=self.MAX_BACKOFF_ATTEMPTS,
                               jitter=backoff.full_jitter,
-                              on_backoff=backoff_handler(),
+                              on_backoff=self._backoff_handler_firehose_reset,
                               on_success=success_handler(),
                               on_giveup=giveup_handler())
         def firehose_request_wrapper(data):
