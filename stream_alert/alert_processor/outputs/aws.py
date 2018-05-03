@@ -363,8 +363,7 @@ class SQSOutput(AWSOutput):
         sqs = boto3.resource('sqs', region_name=self.region)
         queue = sqs.get_queue_by_name(QueueName=queue_name)
 
-        response = queue.send_message(MessageBody=json.dumps(alert.record, separators=(',', ':')))
-        return self._log_status(response, descriptor)
+        return queue.send_message(MessageBody=json.dumps(alert.record, separators=(',', ':')))
 
 
 @StreamAlertOutput
@@ -383,7 +382,7 @@ class CloudwatchLogOutput(AWSOutput):
              OutputProperty(description='a short and unique descriptor for the cloudwatch log')),
         ])
 
-    def dispatch(self, alert, descriptor):
+    def _dispatch(self, alert, descriptor):
         """Send alert to Cloudwatch Logger for Lambda
 
         Args:
@@ -391,4 +390,4 @@ class CloudwatchLogOutput(AWSOutput):
             descriptor (str): Output descriptor
         """
         LOGGER.info('New Alert:\n%s', json.dumps(alert.output_dict(), indent=4))
-        return self._log_status(True, descriptor)
+        return True

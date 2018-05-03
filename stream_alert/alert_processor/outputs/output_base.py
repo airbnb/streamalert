@@ -513,7 +513,7 @@ class OutputDispatcher(object):
         LOGGER.info('Sending %s to %s', alert, output)
         descriptor = output.split(':')[1]
         try:
-            sent = self._dispatch(alert, descriptor)
+            sent = bool(self._dispatch(alert, descriptor))
         except Exception:  # pylint: disable=broad-except
             LOGGER.exception('Exception when sending %s to %s. Alert:\n%s',
                              alert, output, repr(alert))

@@ -15,13 +15,11 @@ limitations under the License.
 """
 import os
 
-from mock import ANY, call, MagicMock, Mock, patch
+from mock import ANY, MagicMock, Mock, patch
 from nose.tools import (
     assert_equal,
-    assert_false,
     assert_is_instance,
-    assert_is_none,
-    assert_true
+    assert_is_none
 )
 
 from stream_alert.alert_processor.main import AlertProcessor, handler

@@ -224,6 +224,7 @@ class TestCloudwatchLogOutput(object):
     """Test class for CloudwatchLogOutput"""
     DESCRIPTOR = 'unit_test_default'
     SERVICE = 'aws-cloudwatch-log'
+    OUTPUT = ':'.join([SERVICE, DESCRIPTOR])
 
     def setup(self):
         """Create the Cloudwatch dispatcher"""
@@ -234,7 +235,7 @@ class TestCloudwatchLogOutput(object):
         """Cloudwatch - Dispatch"""
         alert = get_alert()
 
-        assert_true(self._dispatcher.dispatch(alert, self.DESCRIPTOR))
-        assert_equal(log_mock.call_count, 2)
+        assert_true(self._dispatcher.dispatch(alert, self.OUTPUT))
+        assert_equal(log_mock.call_count, 3)
         log_mock.assert_called_with('Successfully sent alert to %s:%s',
                                     self.SERVICE, self.DESCRIPTOR)
