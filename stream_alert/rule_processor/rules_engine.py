@@ -73,8 +73,7 @@ class RulesEngine(object):
         cls._RULE_TABLE = RuleTable(table_name)
         cls._RULE_TABLE_LAST_REFRESH = now
 
-    @staticmethod
-    def match_types(record, normalized_types, datatypes):
+    def match_types(self, record, normalized_types, datatypes):
         """Match normalized types against record
 
         Args:
@@ -102,10 +101,9 @@ class RulesEngine(object):
         if not (datatypes and normalized_types):
             return
 
-        return RulesEngine.match_types_helper(record, normalized_types, datatypes)
+        return self.match_types_helper(record, normalized_types, datatypes)
 
-    @staticmethod
-    def match_types_helper(record, normalized_types, datatypes):
+    def match_types_helper(self, record, normalized_types, datatypes):
         """Helper method to recursively visit all subkeys
 
         Args:
@@ -121,8 +119,8 @@ class RulesEngine(object):
             if key == NORMALIZATION_KEY:
                 continue
             if isinstance(val, dict):
-                nested_results = RulesEngine.match_types_helper(val, normalized_types, datatypes)
-                RulesEngine.update(results, key, nested_results)
+                nested_results = self.match_types_helper(val, normalized_types, datatypes)
+                self.update(results, key, nested_results)
             else:
                 for datatype in datatypes:
                     if datatype in normalized_types and key in normalized_types[datatype]:
@@ -170,15 +168,12 @@ class RulesEngine(object):
                 for item in val:
                     item.insert(0, parent_key)
             else:
-                val.insert(0, parent_key)
+                val = [val, parent_key]
 
             if key in results:
                 results[key] += val
             else:
-                if isinstance(val, list):
-                    results[key] = val
-                else:
-                    results[key] = [val]
+                results[key] = val
 
     @staticmethod
     def process_subkeys(record, payload_type, rule):
@@ -237,6 +232,15 @@ class RulesEngine(object):
         if not rules:
             LOGGER.debug('No rules to process for %s', payload)
             return alerts, normalized_records
+        # fetch all datatypes info from rules and run data normalization before
+        # rule match to improve performance. So one record will be normalized only
+        # once by all normalized datatypes from all rules.
+        datatypes_set = {datatype for rule in rules if rule.datatypes
+                         for datatype in rule.datatypes}
+
+        if datatypes_set:
+            for record in payload.records:
+                self._apply_normalization(record, normalized_records, datatypes_set, payload)
 
         for record in payload.records:
             for rule in rules:
@@ -248,56 +252,29 @@ class RulesEngine(object):
                 if not rule.check_matchers(record):
                     continue
 
-                if rule.datatypes:
-                    # When rule 'datatypes' option is defined, rules engine will
-                    # apply data normalization to all the record.
-                    record_copy = self._apply_normalization(record, normalized_records,
-                                                            rule, payload)
-                    self.rule_analysis(record_copy, rule, payload, alerts)
-                else:
-                    self.rule_analysis(record, rule, payload, alerts)
+                self.rule_analysis(record, rule, payload, alerts)
 
         return alerts, normalized_records
 
-    def _apply_normalization(self, record, normalized_records, rule, payload):
+    def _apply_normalization(self, record, normalized_records, datatypes_set, payload):
         """Apply data normalization to current record
 
         Args:
             record (dict): The parsed log w/wo data normalization.
             normalized_records (list): Contains a list of payload objects which
                 have been normalized.
-            rule (namedtuple): Contains alerting logic.
+            datatypes_set (set): Contains a set of datatypes from all rules.
             payload (namedtuple): Contains parsed logs.
         """
-        normalized, normalized_payload = self._is_normalized(record,
-                                                             normalized_records,
-                                                             rule.datatypes)
+        types_result = self.match_types(record, payload.normalized_types, datatypes_set)
 
-        if normalized:
-            # If the record has been normalized, use normalized record copy
-            record_copy = normalized_payload.pre_parsed_record
-        else:
-            # If the record has been normalized, apply normalization logic to the record
-            # and insert normalization result to the record.
-            types_result = self.match_types(record,
-                                            payload.normalized_types,
-                                            rule.datatypes)
-
-            if types_result:
-                record_copy = record.copy()
-
-                # Insert normalization result to the record copy.
-                record_copy[NORMALIZATION_KEY] = types_result
-
-                if self._threat_intel:
-                    # If threat intel is enabled, add newly normalized record to
-                    # the list for future threat detection.
-                    self._update_normalized_record(payload, record_copy, normalized_records)
-
-            else:
-                record_copy = record
-
-        return record_copy
+        if types_result:
+            # Add normalized keys to the record
+            record[NORMALIZATION_KEY] = types_result
+            if self._threat_intel:
+                # If threat intel is enabled, add newly normalized record to
+                # the list for future threat detection.
+                self._update_normalized_record(payload, record, normalized_records)
 
     @staticmethod
     def _update_normalized_record(payload, record_copy, normalized_records):
@@ -317,31 +294,6 @@ class RulesEngine(object):
         payload_copy.records = None
         payload_copy.raw_record = None
         normalized_records.append(payload_copy)
-
-    def _is_normalized(self, record, normalized_records, datatypes):
-        """Check if the current record has been normalized
-
-        A record may be normalized multiple time only by different set of data types.
-
-        Args:
-            record (dict): The parsed log w/wo data normalization.
-            normalized_records (list): Contains a list of payload objects
-                with normalized records.
-            datatypes (list): Normalized types defined in the Rule options.
-
-        Return:
-            bool: Return True if current record has been found in normalized records.
-            namedtuple: A payload object contains normalized record.
-        """
-        for payload in normalized_records:
-            if self._is_equal(record, payload.pre_parsed_record):
-                if set(datatypes) - set(payload.pre_parsed_record.get(NORMALIZATION_KEY)):
-                    continue
-                else:
-                    # if all datatypes have been normalized in a record, we should not do
-                    # again
-                    return True, payload
-        return False, None
 
     def threat_intel_match(self, payload_with_normalized_records):
         """Apply Threat Intelligence on normalized records
