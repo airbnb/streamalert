@@ -45,7 +45,7 @@ from stream_alert_cli.terraform.s3_events import generate_s3_events
 from stream_alert_cli.terraform.threat_intel_downloader import generate_threat_intel_downloader
 
 RESTRICTED_CLUSTER_NAMES = ('main', 'athena')
-TERRAFORM_VERSIONS = {'application': '~> 0.10.6', 'provider': {'aws': '~> 1.11.0'}}
+TERRAFORM_VERSIONS = {'application': '~> 0.11.7', 'provider': {'aws': '~> 1.17.0'}}
 
 
 def generate_s3_bucket(bucket, logging, **kwargs):
@@ -411,7 +411,7 @@ def generate_global_lambda_settings(config, config_name, generate_func, tf_tmp_f
         message (str): Message will be logged by LOGGER.
     """
     if not config['lambda'].get(config_name):
-        LOGGER_CLI.info('Config for \'%s\' not in lambda.json', config_name)
+        LOGGER_CLI.warning('Config for \'%s\' not in lambda.json', config_name)
         remove_temp_terraform_file(tf_tmp_file, message)
         return
 
