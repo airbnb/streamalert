@@ -27,6 +27,7 @@ import zlib
 
 import boto3
 from botocore.exceptions import ClientError
+from cbapi.response import BannedHash, Binary
 from moto import (mock_cloudwatch, mock_dynamodb2, mock_kinesis, mock_kms, mock_lambda, mock_s3,
                   mock_sns, mock_sqs)
 
@@ -42,6 +43,58 @@ SCHEMA_TYPE_LOOKUP = {
     dict: dict(),
     list: list()
 }
+
+
+class MockCBAPI(object):
+    """Mock for CbResponseAPI"""
+
+    class MockBannedHash(object):
+        """Mock for cbapi.response.BannedHash"""
+
+        def __init__(self):
+            self.enabled = True
+            self.md5hash = None
+            self.text = ''
+
+        @staticmethod
+        def save():
+            return True
+
+
+    class MockBinary(object):
+        """Mock for cbapi.response.Binary"""
+
+        def __init__(self, banned, enabled, md5):
+            self._banned = banned
+            self._enabled = enabled
+            self.md5 = md5
+
+        @property
+        def banned(self):
+            """Indicates whether binary is banned"""
+            if self._banned:
+                return namedtuple('MockBanned', ['enabled'])(self._enabled)
+            return False
+
+    def __init__(self, **kwargs):
+        pass
+
+    @staticmethod
+    def create(model):
+        """Create banned hash"""
+        if model == BannedHash:
+            return MockCBAPI.MockBannedHash()
+
+    @staticmethod
+    def select(model, file_hash):
+        if model == Binary:
+            if file_hash == 'BANNED_ENABLED_HASH':
+                return MockCBAPI.MockBinary(banned=True, enabled=True, md5=file_hash)
+            elif file_hash == 'BANNED_DISABLED_HASH':
+                return MockCBAPI.MockBinary(banned=True, enabled=False, md5=file_hash)
+            return MockCBAPI.MockBinary(banned=False, enabled=False, md5=file_hash)
+        elif model == BannedHash:
+            return MockCBAPI.MockBannedHash()
 
 
 def record_to_schema(record, recursive=False):

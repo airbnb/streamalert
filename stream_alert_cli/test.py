@@ -29,6 +29,7 @@ import jsonpath_rw
 from mock import patch
 
 from stream_alert.alert_processor import main as StreamOutput
+from stream_alert.alert_processor.outputs import carbonblack
 from stream_alert.rule_processor.handler import StreamAlert
 from stream_alert.rule_processor.parsers import get_parser
 from stream_alert.rule_processor.payload import load_stream_payload
@@ -715,7 +716,7 @@ class AlertProcessorTester(object):
                              failed_tests, total_tests, COLOR_RESET)
 
     @staticmethod
-    def _setup_requests_mocks():
+    def _setup_api_mocks():
         """Use some MagicMocks to patch get and post methods for requests
 
         This uses a dynamic function for the 'side_effect' to for custom responses
@@ -784,6 +785,9 @@ class AlertProcessorTester(object):
         # Set the patched requests.put return value to 200
         put_mock.return_value.status_code = 200
 
+        cb_patcher = patch.object(carbonblack, 'CbResponseAPI', side_effect=helpers.MockCBAPI)
+        cb_patcher.start()
+
     def setup_outputs(self, alert):
         """Helper function to handler any output setup
 
@@ -791,7 +795,7 @@ class AlertProcessorTester(object):
             alert (Alert): The Alert instance containing outputs to be mocked out
         """
         # Patch requests.get and requests.post
-        self._setup_requests_mocks()
+        self._setup_api_mocks()
 
         alert_outputs = resources.get_required_outputs()
         alert_outputs.update(alert.outputs)
@@ -834,6 +838,13 @@ class AlertProcessorTester(object):
             elif service == 'aws-sqs':
                 queue_name = self.outputs_config[service][descriptor]
                 boto3.client('sqs', region_name=self.region).create_queue(QueueName=queue_name)
+
+            elif service == 'carbonblack':
+                output_name = '{}/{}'.format(service, descriptor)
+                creds = {'token': 'e51273c7c8e0fd9fae431cc019ab244112345678',
+                         'url': 'cb.foo.bar'}
+                helpers.put_mock_creds(output_name, creds, self.secrets_bucket,
+                                       self.region, self.kms_alias)
 
             elif service == 'komand':
                 output_name = '{}/{}'.format(service, descriptor)
