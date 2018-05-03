@@ -103,7 +103,8 @@ class StreamAlertFirehose(object):
         Args:
             batch (list): Record batch to iterate on
         """
-        for index, record in enumerate(batch):
+        for index in reversed(xrange(len(batch))):
+            record = batch[index]
             if len(json.dumps(record, separators=(",", ":"))) > cls.MAX_RECORD_SIZE:
                 # Show the first 1k bytes in order to not overload CloudWatch logs
                 LOGGER.error('The following record is too large'
