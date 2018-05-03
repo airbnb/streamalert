@@ -54,7 +54,7 @@ class CarbonBlackOutput(OutputDispatcher):
                             cred_requirement=True)),
         ])
 
-    def dispatch(self, alert, descriptor):
+    def _dispatch(self, alert, descriptor):
         """Send ban hash command to CarbonBlack
 
         Args:
@@ -66,11 +66,11 @@ class CarbonBlackOutput(OutputDispatcher):
         """
         if not alert.context:
             LOGGER.error('[%s] Alert must contain context to run actions', self.__service__)
-            return self._log_status(False, descriptor)
+            return False
 
         creds = self._load_creds(descriptor)
         if not creds:
-            return self._log_status(False, descriptor)
+            return False
 
         client = CbResponseAPI(**creds)
 
@@ -98,7 +98,7 @@ class CarbonBlackOutput(OutputDispatcher):
                 banned_hash.enabled = True
                 banned_hash.save()
 
-            return self._log_status(banned_hash.enabled is True, descriptor)
+            return banned_hash.enabled is True
         else:
             LOGGER.error('[%s] Action not supported: %s', self.__service__, action)
-            return self._log_status(False, descriptor)
+            return False

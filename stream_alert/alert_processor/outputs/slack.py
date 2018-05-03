@@ -216,7 +216,7 @@ class SlackOutput(OutputDispatcher):
 
         return all_lines
 
-    def dispatch(self, alert, descriptor):
+    def _dispatch(self, alert, descriptor):
         """Send alert text to Slack
 
         Args:
@@ -228,13 +228,11 @@ class SlackOutput(OutputDispatcher):
         """
         creds = self._load_creds(descriptor)
         if not creds:
-            return self._log_status(False, descriptor)
+            return False
 
         slack_message = self._format_message(alert.rule_name, alert)
 
         try:
-            success = self._post_request_retry(creds['url'], slack_message)
+            return self._post_request_retry(creds['url'], slack_message)
         except OutputRequestFailure:
-            success = False
-
-        return self._log_status(success, descriptor)
+            return False

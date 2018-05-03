@@ -129,7 +129,7 @@ class PhantomOutput(OutputDispatcher):
 
         return response and response.get('id')
 
-    def dispatch(self, alert, descriptor):
+    def _dispatch(self, alert, descriptor):
         """Send alert to Phantom
 
         Args:
@@ -141,7 +141,7 @@ class PhantomOutput(OutputDispatcher):
         """
         creds = self._load_creds(descriptor)
         if not creds:
-            return self._log_status(False, descriptor)
+            return False
 
         headers = {"ph-auth-token": creds['ph_auth_token']}
         container_id = self._setup_container(
@@ -149,17 +149,16 @@ class PhantomOutput(OutputDispatcher):
 
         LOGGER.debug('sending alert to Phantom container with id %s', container_id)
 
-        success = False
-        if container_id:
-            artifact = {'cef': alert.record,
-                        'container_id': container_id,
-                        'data': alert.output_dict(),
-                        'name': 'Phantom Artifact',
-                        'label': 'Alert'}
-            artifact_url = os.path.join(creds['url'], self.ARTIFACT_ENDPOINT)
-            try:
-                success = self._post_request_retry(artifact_url, artifact, headers, False)
-            except OutputRequestFailure:
-                success = False
+        if not container_id:
+            return False
 
-        return self._log_status(success, descriptor)
+        artifact = {'cef': alert.record,
+                    'container_id': container_id,
+                    'data': alert.output_dict(),
+                    'name': 'Phantom Artifact',
+                    'label': 'Alert'}
+        artifact_url = os.path.join(creds['url'], self.ARTIFACT_ENDPOINT)
+        try:
+            return self._post_request_retry(artifact_url, artifact, headers, False)
+        except OutputRequestFailure:
+            return False

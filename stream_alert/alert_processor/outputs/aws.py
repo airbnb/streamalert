@@ -63,7 +63,7 @@ class AWSOutput(OutputDispatcher):
                     **{values['descriptor'].value: values['aws_value'].value})
 
     @abstractmethod
-    def dispatch(self, alert, descriptor):
+    def _dispatch(self, alert, descriptor):
         """Placeholder for implementation in the subclasses"""
 
 
@@ -94,7 +94,7 @@ class KinesisFirehoseOutput(AWSOutput):
              OutputProperty(description='the Firehose Delivery Stream name'))
         ])
 
-    def dispatch(self, alert, descriptor):
+    def _dispatch(self, alert, descriptor):
         """Send alert to a Kinesis Firehose Delivery Stream
 
         Args:
@@ -140,7 +140,7 @@ class KinesisFirehoseOutput(AWSOutput):
         LOGGER.info('%s successfully sent to aws-firehose:%s',
                     alert, delivery_stream)
 
-        return self._log_status(resp, descriptor)
+        return resp
 
 
 @StreamAlertOutput
@@ -176,7 +176,7 @@ class LambdaOutput(AWSOutput):
                             input_restrictions={' '})),
         ])
 
-    def dispatch(self, alert, descriptor):
+    def _dispatch(self, alert, descriptor):
         """Send alert to a Lambda function
 
         The alert gets dumped to a JSON string to be sent to the Lambda function
@@ -214,16 +214,14 @@ class LambdaOutput(AWSOutput):
         # with `Qualifier=''` or `Qualifier=None` does not work and thus we
         # have to perform different calls to client.invoke().
         if qualifier:
-            resp = client.invoke(FunctionName=function,
+            return client.invoke(FunctionName=function,
                                  InvocationType='Event',
                                  Payload=alert_string,
                                  Qualifier=qualifier)
-        else:
-            resp = client.invoke(FunctionName=function,
-                                 InvocationType='Event',
-                                 Payload=alert_string)
 
-        return self._log_status(resp, descriptor)
+        return client.invoke(FunctionName=function,
+                             InvocationType='Event',
+                             Payload=alert_string)
 
 
 @StreamAlertOutput
@@ -255,7 +253,7 @@ class S3Output(AWSOutput):
              OutputProperty(description='the AWS S3 bucket name to use for this S3 configuration'))
         ])
 
-    def dispatch(self, alert, descriptor):
+    def _dispatch(self, alert, descriptor):
         """Send alert to an S3 bucket
 
         Organizes alert into the following folder structure:
@@ -288,7 +286,7 @@ class S3Output(AWSOutput):
         client = boto3.client('s3', region_name=self.region)
         resp = client.put_object(Body=json.dumps(alert.output_dict()), Bucket=bucket, Key=key)
 
-        return self._log_status(resp, descriptor)
+        return resp
 
 
 @StreamAlertOutput
@@ -309,7 +307,7 @@ class SNSOutput(AWSOutput):
             ('aws_value', OutputProperty(description='SNS topic name'))
         ])
 
-    def dispatch(self, alert, descriptor):
+    def _dispatch(self, alert, descriptor):
         """Send alert to an SNS topic
 
         Args:
@@ -330,7 +328,7 @@ class SNSOutput(AWSOutput):
             Subject=elide_string_middle(
                 '{} triggered alert {}'.format(alert.rule_name, alert.alert_id), 99)
         )
-        return self._log_status(response, descriptor)
+        return response
 
 
 @StreamAlertOutput
@@ -351,7 +349,7 @@ class SQSOutput(AWSOutput):
             ('aws_value', OutputProperty(description='SQS queue name'))
         ])
 
-    def dispatch(self, alert, descriptor):
+    def _dispatch(self, alert, descriptor):
         """Send alert to an SQS queue
 
         Args:

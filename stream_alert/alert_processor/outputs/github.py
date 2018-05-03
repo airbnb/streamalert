@@ -69,7 +69,7 @@ class GithubOutput(OutputDispatcher):
         """
         return {'api': 'https://api.github.com'}
 
-    def dispatch(self, alert, descriptor):
+    def _dispatch(self, alert, descriptor):
         """Send alert to Github
 
         Args:
@@ -81,7 +81,7 @@ class GithubOutput(OutputDispatcher):
         """
         credentials = self._load_creds(descriptor)
         if not credentials:
-            return self._log_status(False, descriptor)
+            return False
 
         username_password = "{}:{}".format(credentials['username'],
                                            credentials['access_token'])
@@ -99,8 +99,6 @@ class GithubOutput(OutputDispatcher):
         LOGGER.debug('sending alert to Github repository %s', credentials['repository'])
 
         try:
-            success = self._post_request_retry(url, issue, headers)
+            return self._post_request_retry(url, issue, headers)
         except OutputRequestFailure:
-            success = False
-
-        return self._log_status(success, descriptor)
+            return False
