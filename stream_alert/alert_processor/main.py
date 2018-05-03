@@ -83,26 +83,6 @@ class AlertProcessor(object):
         return StreamAlertOutput.create_dispatcher(
             service, self.region, self.account_id, self.prefix, self.config)
 
-    @staticmethod
-    def _send_alert(alert, output, dispatcher):
-        """Send a single alert to the given output.
-
-        Args:
-            alert (Alert): Alert to be sent
-            output (str): Alert output, e.g. "aws-sns:topic-name"
-            dispatcher (OutputDispatcher): Dispatcher to receive the alert
-
-        Returns:
-            bool: True if the alert was sent successfully.
-        """
-        LOGGER.info('Sending %s to %s', alert, output)
-        try:
-            return dispatcher.dispatch(alert, output.split(':')[1])
-        except Exception:  # pylint: disable=broad-except
-            LOGGER.exception('Exception when sending %s to %s. Alert:\n%s',
-                             alert, output, repr(alert))
-            return False
-
     def _send_to_outputs(self, alert):
         """Send an alert to each remaining output.
 
@@ -116,7 +96,7 @@ class AlertProcessor(object):
 
         for output in alert.remaining_outputs:
             dispatcher = self._create_dispatcher(output)
-            result[output] = self._send_alert(alert, output, dispatcher) if dispatcher else False
+            result[output] = dispatcher.dispatch(alert, output) if dispatcher else False
 
         alert.outputs_sent = set(output for output, success in result.items() if success)
         return result
