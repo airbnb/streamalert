@@ -31,7 +31,8 @@ from stream_alert.alert_processor.outputs.aws import (
     LambdaOutput,
     S3Output,
     SNSOutput,
-    SQSOutput
+    SQSOutput,
+    CloudwatchLogOutput
 )
 from stream_alert_cli.helpers import create_lambda_function
 from tests.unit.stream_alert_alert_processor import (
@@ -209,5 +210,25 @@ class TestSQSOutput(object):
         """SQSOutput - Dispatch Success"""
         assert_true(self._dispatcher.dispatch(get_alert(), self.DESCRIPTOR))
 
+        log_mock.assert_called_with('Successfully sent alert to %s:%s',
+                                    self.SERVICE, self.DESCRIPTOR)
+
+
+class TestCloudwatchLogOutput(object):
+    """Test class for CloudwatchLogOutput"""
+    DESCRIPTOR = 'unit_test_default'
+    SERVICE = 'aws-cloudwatch-log'
+
+    def setup(self):
+        """Create the Cloudwatch dispatcher"""
+        self._dispatcher = CloudwatchLogOutput(REGION, ACCOUNT_ID, FUNCTION_NAME, CONFIG)
+
+    @patch('logging.Logger.info')
+    def test_dispatch(self, log_mock):
+        """Cloudwatch - Dispatch"""
+        alert = get_alert()
+
+        assert_true(self._dispatcher.dispatch(alert, self.DESCRIPTOR))
+        assert_equal(log_mock.call_count, 2)
         log_mock.assert_called_with('Successfully sent alert to %s:%s',
                                     self.SERVICE, self.DESCRIPTOR)
