@@ -21,4 +21,5 @@ pylint==1.7.4
 requests
 Sphinx
 sphinx-rtd-theme
+ushlex==0.99
 yapf
