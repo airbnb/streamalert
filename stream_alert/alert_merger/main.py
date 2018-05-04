@@ -28,6 +28,9 @@ import boto3
 
 class AlertMergeGroup(object):
     """A list of alerts within a single merge window which match on their merge keys."""
+    # In order to limit the size of a merged alert, cap the maximum number that can be merged.
+    MAX_ALERTS_PER_GROUP = 50
+
     def __init__(self, alert):
         """Initialize the group with the oldest alert remaining."""
         self.alerts = [alert]
@@ -38,6 +41,9 @@ class AlertMergeGroup(object):
         Returns:
             True if the alert matches this group and was added, False otherwise.
         """
+        if len(self.alerts) >= self.MAX_ALERTS_PER_GROUP:
+            return False
+
         if alert.can_merge(self.alerts[0]):
             self.alerts.append(alert)
             return True
