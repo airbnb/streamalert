@@ -38,12 +38,12 @@ class TestCLIConfig(object):
         self.fs_patcher = fake_filesystem_unittest.Patcher()
         self.fs_patcher.setUp()
 
-        self.fs_patcher.fs.CreateFile('/conf/global.json',
-                                      contents=json.dumps(config_data['global']))
-        self.fs_patcher.fs.CreateFile('/conf/lambda.json',
-                                      contents=json.dumps(config_data['lambda']))
-        self.fs_patcher.fs.CreateFile('/conf/clusters/prod.json',
-                                      contents=json.dumps(config_data['clusters']['prod']))
+        self.fs_patcher.fs.create_file(
+            '/conf/global.json', contents=json.dumps(config_data['global']))
+        self.fs_patcher.fs.create_file(
+            '/conf/lambda.json', contents=json.dumps(config_data['lambda']))
+        self.fs_patcher.fs.create_file(
+            '/conf/clusters/prod.json', contents=json.dumps(config_data['clusters']['prod']))
 
         # Create the config instance after creating the fake filesystem so that
         # CLIConfig uses our mocked config files instead of the real ones.
@@ -101,8 +101,7 @@ class TestCLIConfig(object):
         self.config.add_metric_alarm(alarm_info)
         log_mock.assert_called_with('Successfully added \'%s\' metric alarm for the '
                                     '\'%s\' function to \'conf/clusters/%s.json\'.',
-                                    'Prod Unit Testing Total Records Alarm',
-                                    'rule_processor',
+                                    'Prod Unit Testing Total Records Alarm', 'rule_processor',
                                     'prod')
 
     @patch('stream_alert_cli.config.CLIConfig.write', Mock())
@@ -140,10 +139,7 @@ class TestCLIConfig(object):
 
         self.config.add_threat_intel(threat_intel_info)
 
-        expected_config = {
-            'enabled': True,
-            'dynamodb_table': 'my_ioc_table'
-        }
+        expected_config = {'enabled': True, 'dynamodb_table': 'my_ioc_table'}
 
         assert_equal(self.config['global']['threat_intel'], expected_config)
         write_mock.assert_called()
@@ -153,11 +149,7 @@ class TestCLIConfig(object):
     @patch('stream_alert_cli.config.CLIConfig.write')
     def test_add_threat_intel_without_table_name(self, write_mock, log_mock):
         """CLI - Add Threat Intel config without dynamodb table name from cli"""
-        threat_intel_info = {
-            'command': 'threat_intel',
-            'debug': 'False',
-            'subcommand': 'enable'
-        }
+        threat_intel_info = {'command': 'threat_intel', 'debug': 'False', 'subcommand': 'enable'}
 
         self.config.add_threat_intel(threat_intel_info)
 
@@ -205,9 +197,7 @@ class TestCLIConfig(object):
             'source_bucket': 'unit-testing.streamalert.source',
             'source_current_hash': '<auto_generated>',
             'source_object_key': '<auto_generated>',
-            'third_party_libraries': [
-                'requests'
-            ],
+            'third_party_libraries': ['requests'],
             'table_rcu': 10,
             'table_wcu': 25,
             'timeout': '240',
