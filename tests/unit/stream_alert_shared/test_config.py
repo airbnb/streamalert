@@ -42,9 +42,6 @@ class TestConfigLoading(fake_filesystem_unittest.TestCase):
         self.fs.create_file('conf/sources.json', contents='{}')
         self.fs.create_file('conf/types.json', contents='{}')
 
-    def tearDown(self):
-        pass
-
     @raises(ConfigError)
     def test_load_invalid_file(self):
         """Shared - Config Loading - Bad JSON"""

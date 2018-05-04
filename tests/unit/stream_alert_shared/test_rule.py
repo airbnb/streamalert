@@ -309,9 +309,6 @@ class RuleImportTest(fake_filesystem_unittest.TestCase):
         self.fs.create_file('rules/example.pyc')
         self.fs.create_file('rules/community/REVIEWERS')
 
-    def tearDown(self):
-        pass
-
     @staticmethod
     def test_python_rule_paths():
         """Rule Processor Main - Find rule paths"""
