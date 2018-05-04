@@ -299,18 +299,18 @@ class RuleImportTest(fake_filesystem_unittest.TestCase):
         self.setUpPyfakefs()
 
         # Add rules files which should be imported.
-        self.fs.CreateFile('matchers/matchers.py')
-        self.fs.CreateFile('rules/example.py')
-        self.fs.CreateFile('rules/community/cloudtrail/critical_api.py')
+        self.fs.create_file('matchers/matchers.py')
+        self.fs.create_file('rules/example.py')
+        self.fs.create_file('rules/community/cloudtrail/critical_api.py')
 
         # Add other files which should NOT be imported.
-        self.fs.CreateFile('matchers/README')
-        self.fs.CreateFile('rules/__init__.py')
-        self.fs.CreateFile('rules/example.pyc')
-        self.fs.CreateFile('rules/community/REVIEWERS')
+        self.fs.create_file('matchers/README')
+        self.fs.create_file('rules/__init__.py')
+        self.fs.create_file('rules/example.pyc')
+        self.fs.create_file('rules/community/REVIEWERS')
 
     def tearDown(self):
-        self.tearDownPyfakefs()
+        pass
 
     @staticmethod
     def test_python_rule_paths():
@@ -332,8 +332,11 @@ class RuleImportTest(fake_filesystem_unittest.TestCase):
     @staticmethod
     def test_path_to_module_invalid():
         """Rule Processor Main - Raise NameError for invalid Python filename."""
-        assert_raises(NameError, rule._path_to_module, 'a.b.py')
-        assert_raises(NameError, rule._path_to_module, 'a/b/old.name.py')
+        with assert_raises(NameError):
+            rule._path_to_module('a.b.py')
+
+        with assert_raises(NameError):
+            rule._path_to_module('a/b/old.name.py')
 
     @staticmethod
     @patch('importlib.import_module')

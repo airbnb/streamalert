@@ -33,22 +33,22 @@ class TestConfigLoading(fake_filesystem_unittest.TestCase):
         self.setUpPyfakefs()
 
         # Add config files which should be loaded
-        self.fs.CreateFile('conf/clusters/prod.json', contents='{}')
-        self.fs.CreateFile('conf/clusters/dev.json', contents='{}')
-        self.fs.CreateFile('conf/global.json', contents='{}')
-        self.fs.CreateFile('conf/lambda.json', contents='{}')
-        self.fs.CreateFile('conf/logs.json', contents='{}')
-        self.fs.CreateFile('conf/outputs.json', contents='{}')
-        self.fs.CreateFile('conf/sources.json', contents='{}')
-        self.fs.CreateFile('conf/types.json', contents='{}')
+        self.fs.create_file('conf/clusters/prod.json', contents='{}')
+        self.fs.create_file('conf/clusters/dev.json', contents='{}')
+        self.fs.create_file('conf/global.json', contents='{}')
+        self.fs.create_file('conf/lambda.json', contents='{}')
+        self.fs.create_file('conf/logs.json', contents='{}')
+        self.fs.create_file('conf/outputs.json', contents='{}')
+        self.fs.create_file('conf/sources.json', contents='{}')
+        self.fs.create_file('conf/types.json', contents='{}')
 
     def tearDown(self):
-        self.tearDownPyfakefs()
+        pass
 
     @raises(ConfigError)
     def test_load_invalid_file(self):
         """Shared - Config Loading - Bad JSON"""
-        self.fs.CreateFile('conf/clusters/bad.json', contents='test string')
+        self.fs.create_file('conf/clusters/bad.json', contents='test string')
         load_config()
 
     @staticmethod
