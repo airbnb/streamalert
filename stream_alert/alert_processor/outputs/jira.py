@@ -272,7 +272,7 @@ class JiraOutput(OutputDispatcher):
         return '{}={}'.format(resp_dict['session']['name'],
                               resp_dict['session']['value'])
 
-    def dispatch(self, alert, descriptor):
+    def _dispatch(self, alert, descriptor):
         """Send alert to Jira
 
         Args:
@@ -284,7 +284,7 @@ class JiraOutput(OutputDispatcher):
         """
         creds = self._load_creds(descriptor)
         if not creds:
-            return self._log_status(False, descriptor)
+            return False
 
         issue_id = None
         comment_id = None
@@ -296,7 +296,7 @@ class JiraOutput(OutputDispatcher):
 
         # Validate successful authentication
         if not self._auth_cookie:
-            return self._log_status(False, descriptor)
+            return False
 
         # If aggregation is enabled, attempt to add alert to an existing issue. If a
         # failure occurs in this block, creation of a new Jira issue will be attempted.
@@ -308,7 +308,7 @@ class JiraOutput(OutputDispatcher):
                     LOGGER.debug('Sending alert to an existing Jira issue %s with comment %s',
                                  issue_id,
                                  comment_id)
-                    return self._log_status(True, descriptor)
+                    return True
                 else:
                     LOGGER.error('Encountered an error when adding alert to existing '
                                  'Jira issue %s. Attempting to create new Jira issue.',
@@ -322,4 +322,4 @@ class JiraOutput(OutputDispatcher):
         if issue_id:
             LOGGER.debug('Sending alert to a new Jira issue %s', issue_id)
 
-        return self._log_status(issue_id or comment_id, descriptor)
+        return bool(issue_id or comment_id)

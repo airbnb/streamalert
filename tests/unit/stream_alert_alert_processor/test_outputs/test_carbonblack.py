@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-# pylint: disable=no-self-use,unused-argument,attribute-defined-outside-init
+# pylint: disable=no-self-use,unused-argument,attribute-defined-outside-init,protected-access
 from collections import OrderedDict
 
 from mock import call, patch
@@ -43,6 +43,7 @@ class TestCarbonBlackOutput(object):
     """Test class for CarbonBlackOutput"""
     DESCRIPTOR = 'unit_test_carbonblack'
     SERVICE = 'carbonblack'
+    OUTPUT = ':'.join([SERVICE, DESCRIPTOR])
     CREDS = {'url': 'carbon.foo.bar',
              'ssl_verify': 'Y',
              'token': '1234567890127a3d7f37f4153270bff41b105899'}
@@ -61,7 +62,7 @@ class TestCarbonBlackOutput(object):
     @patch('logging.Logger.error')
     def test_dispatch_no_context(self, mock_logger):
         """CarbonBlackOutput - Dispatch No Context"""
-        assert_false(self._dispatcher.dispatch(get_alert(), self.DESCRIPTOR))
+        assert_false(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
         mock_logger.assert_has_calls([
             call('[%s] Alert must contain context to run actions', 'carbonblack'),
             call('Failed to send alert to %s:%s', 'carbonblack', 'unit_test_carbonblack')
@@ -76,7 +77,7 @@ class TestCarbonBlackOutput(object):
                 'value': 'BANNED_ENABLED_HASH'
             }
         }
-        assert_true(self._dispatcher.dispatch(get_alert(context=alert_context), self.DESCRIPTOR))
+        assert_true(self._dispatcher.dispatch(get_alert(context=alert_context), self.OUTPUT))
 
     @patch.object(carbonblack, 'CbResponseAPI', side_effect=MockCBAPI)
     def test_dispatch_banned_disabled(self, mock_cb):
@@ -87,7 +88,7 @@ class TestCarbonBlackOutput(object):
                 'value': 'BANNED_DISABLED_HASH'
             }
         }
-        assert_true(self._dispatcher.dispatch(get_alert(context=alert_context), self.DESCRIPTOR))
+        assert_true(self._dispatcher.dispatch(get_alert(context=alert_context), self.OUTPUT))
 
     @patch.object(carbonblack, 'CbResponseAPI', side_effect=MockCBAPI)
     def test_dispatch_not_banned(self, mock_cb):
@@ -98,7 +99,7 @@ class TestCarbonBlackOutput(object):
                 'value': 'NOT_BANNED_HASH'
             }
         }
-        assert_true(self._dispatcher.dispatch(get_alert(context=alert_context), self.DESCRIPTOR))
+        assert_true(self._dispatcher.dispatch(get_alert(context=alert_context), self.OUTPUT))
 
     @patch('logging.Logger.error')
     @patch.object(carbonblack, 'CbResponseAPI', side_effect=MockCBAPI)
@@ -109,7 +110,8 @@ class TestCarbonBlackOutput(object):
                 'action': 'rickroll',
             }
         }
-        assert_false(self._dispatcher.dispatch(get_alert(context=alert_context), self.DESCRIPTOR))
+        assert_false(self._dispatcher.dispatch(get_alert(context=alert_context), self.OUTPUT))
+
         mock_logger.assert_has_calls([
             call('[%s] Action not supported: %s', 'carbonblack', 'rickroll'),
             call('Failed to send alert to %s:%s', 'carbonblack', 'unit_test_carbonblack')

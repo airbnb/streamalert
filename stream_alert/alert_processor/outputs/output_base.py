@@ -260,8 +260,6 @@ class OutputDispatcher(object):
         else:
             LOGGER.error('Failed to send alert to %s:%s', cls.__service__, descriptor)
 
-        return bool(success)
-
     @classmethod
     def _catch_exceptions(cls):
         """Classmethod that returns a tuple of the exceptions to catch"""
@@ -489,7 +487,7 @@ class OutputDispatcher(object):
         """
 
     @abstractmethod
-    def dispatch(self, alert, descriptor):
+    def _dispatch(self, alert, descriptor):
         """Send alerts to the given service.
 
         Args:
@@ -499,3 +497,28 @@ class OutputDispatcher(object):
         Returns:
             bool: True if alert was sent successfully, False otherwise
         """
+
+    def dispatch(self, alert, output):
+        """Send alerts to the given service.
+
+        This wraps the protected subclass method of _dispatch to aid in usability
+
+        Args:
+            alert (Alert): Alert instance which triggered a rule
+            descriptor (str): Output descriptor (e.g. slack channel, pd integration)
+
+        Returns:
+            bool: True if alert was sent successfully, False otherwise
+        """
+        LOGGER.info('Sending %s to %s', alert, output)
+        descriptor = output.split(':')[1]
+        try:
+            sent = bool(self._dispatch(alert, descriptor))
+        except Exception:  # pylint: disable=broad-except
+            LOGGER.exception('Exception when sending %s to %s. Alert:\n%s',
+                             alert, output, repr(alert))
+            sent = False
+
+        self._log_status(sent, descriptor)
+
+        return sent

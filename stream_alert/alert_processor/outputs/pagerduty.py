@@ -100,7 +100,7 @@ class PagerDutyOutput(OutputDispatcher):
                             cred_requirement=True))
         ])
 
-    def dispatch(self, alert, descriptor):
+    def _dispatch(self, alert, descriptor):
         """Send alert to Pagerduty
 
         Args:
@@ -112,7 +112,7 @@ class PagerDutyOutput(OutputDispatcher):
         """
         creds = self._load_creds(descriptor)
         if not creds:
-            return self._log_status(False, descriptor)
+            return False
 
         message = 'StreamAlert Rule Triggered - {}'.format(alert.rule_name)
         details = {
@@ -128,11 +128,11 @@ class PagerDutyOutput(OutputDispatcher):
         }
 
         try:
-            success = self._post_request_retry(creds['url'], data, None, True)
+            self._post_request_retry(creds['url'], data, None, True)
         except OutputRequestFailure:
-            success = False
+            return False
 
-        return self._log_status(success, descriptor)
+        return True
 
 
 @StreamAlertOutput
@@ -175,7 +175,7 @@ class PagerDutyOutputV2(OutputDispatcher):
                             cred_requirement=True))
         ])
 
-    def dispatch(self, alert, descriptor):
+    def _dispatch(self, alert, descriptor):
         """Send alert to Pagerduty
 
         Args:
@@ -187,16 +187,16 @@ class PagerDutyOutputV2(OutputDispatcher):
         """
         creds = self._load_creds(descriptor)
         if not creds:
-            return self._log_status(False, descriptor)
+            return False
 
         data = events_v2_data(alert, creds['routing_key'])
 
         try:
-            success = self._post_request_retry(creds['url'], data, None, True)
+            self._post_request_retry(creds['url'], data, None, True)
         except OutputRequestFailure:
-            success = False
+            return False
 
-        return self._log_status(success, descriptor)
+        return True
 
 
 class PagerdutySearchDelay(Exception):
@@ -582,7 +582,7 @@ class PagerDutyIncidentOutput(OutputDispatcher):
 
         return note_rec.get('id', False)
 
-    def dispatch(self, alert, descriptor):
+    def _dispatch(self, alert, descriptor):
         """Send incident to Pagerduty Incidents API v2
 
         Args:
@@ -594,7 +594,7 @@ class PagerDutyIncidentOutput(OutputDispatcher):
         """
         creds = self._load_creds(descriptor)
         if not creds:
-            return self._log_status(False, descriptor)
+            return False
 
         # Cache base_url
         self._base_url = creds['api']
@@ -610,7 +610,7 @@ class PagerDutyIncidentOutput(OutputDispatcher):
         user_email = creds['email_from']
         if not self._user_verify(user_email, False):
             LOGGER.error('Could not verify header From: %s, %s', user_email, self.__service__)
-            return self._log_status(False, descriptor)
+            return False
 
         # Add From to the headers after verifying
         self._headers['From'] = user_email
@@ -657,12 +657,12 @@ class PagerDutyIncidentOutput(OutputDispatcher):
 
         if not incident:
             LOGGER.error('Could not create main incident, %s', self.__service__)
-            return self._log_status(False, descriptor)
+            return False
 
         # Extract the json blob from the response, returned by self._post_request_retry
         incident_json = incident.json()
         if not incident_json:
-            return self._log_status(False, descriptor)
+            return False
 
         # Extract the incident id from the incident that was just created
         incident_id = incident_json.get('incident', {}).get('id')
@@ -673,14 +673,14 @@ class PagerDutyIncidentOutput(OutputDispatcher):
         event = self._create_event(event_data)
         if not event:
             LOGGER.error('Could not create incident event, %s', self.__service__)
-            return self._log_status(False, descriptor)
+            return False
 
         # Lookup the incident_key returned as dedup_key to get the incident id
         incident_key = event.get('dedup_key')
 
         if not incident_key:
             LOGGER.error('Could not get incident key, %s', self.__service__)
-            return self._log_status(False, descriptor)
+            return False
 
         # Keep that id to be merged later with the created incident
         event_incident_id = self._get_event_incident_id(incident_key)
@@ -698,4 +698,4 @@ class PagerDutyIncidentOutput(OutputDispatcher):
             note = rule_context.get('note', 'Creating SOX Incident')
             self._add_incident_note(merged_id, note)
 
-        return self._log_status(incident_id, descriptor)
+        return True

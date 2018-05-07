@@ -42,6 +42,7 @@ class TestSlackOutput(object):
     """Test class for SlackOutput"""
     DESCRIPTOR = 'unit_test_channel'
     SERVICE = 'slack'
+    OUTPUT = ':'.join([SERVICE, DESCRIPTOR])
     CREDS = {'url': 'https://api.slack.com/web-hook-key'}
 
     def setup(self):
@@ -181,7 +182,7 @@ class TestSlackOutput(object):
         url_mock.return_value.status_code = 200
         url_mock.return_value.json.return_value = dict()
 
-        assert_true(self._dispatcher.dispatch(get_alert(), self.DESCRIPTOR))
+        assert_true(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
 
         log_mock.assert_called_with('Successfully sent alert to %s:%s',
                                     self.SERVICE, self.DESCRIPTOR)
@@ -194,13 +195,14 @@ class TestSlackOutput(object):
         url_mock.return_value.json.return_value = json_error
         url_mock.return_value.status_code = 400
 
-        assert_false(self._dispatcher.dispatch(get_alert(), self.DESCRIPTOR))
+        assert_false(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
 
         log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, self.DESCRIPTOR)
 
     @patch('logging.Logger.error')
     def test_dispatch_bad_descriptor(self, log_mock):
         """SlackOutput - Dispatch Failure, Bad Descriptor"""
-        assert_false(self._dispatcher.dispatch(get_alert(), 'bad_descriptor'))
+        assert_false(
+            self._dispatcher.dispatch(get_alert(), ':'.join([self.SERVICE, 'bad_descriptor'])))
 
         log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, 'bad_descriptor')
