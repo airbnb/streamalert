@@ -15,6 +15,7 @@ limitations under the License.
 """
 import re
 
+from stream_alert.threat_intel_downloader.main import ThreatStream
 from stream_alert_cli.apps import save_parameter
 from stream_alert_cli.helpers import user_input
 from stream_alert_cli.logger import LOGGER_CLI
@@ -79,8 +80,8 @@ def save_api_creds_info(region, overwrite=False):
     description = ('Required credentials for the Threat Intel Downloader')
 
     # Save these to the parameter store
-    param_name = 'threat_intel_downloader_api_creds'
-    saved = save_parameter(region, param_name, creds_dict, description, overwrite)
+    saved = save_parameter(region, ThreatStream.CRED_PARAMETER_NAME,
+                           creds_dict, description, overwrite)
     if saved:
         LOGGER_CLI.info('Threat Intel Downloader credentials were successfully '
                         'saved to parameter store.')

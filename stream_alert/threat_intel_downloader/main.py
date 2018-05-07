@@ -26,12 +26,14 @@ from stream_alert.shared.backoff_handlers import (
     success_handler,
     giveup_handler
 )
+from stream_alert.shared.config import load_config, parse_lambda_arn
 
 from stream_alert.threat_intel_downloader import LOGGER
 from stream_alert.threat_intel_downloader.exceptions import (
     ThreatStreamCredsError,
     ThreatStreamRequestsError
 )
+
 
 class ThreatStream(object):
     """Class to retrieve IOCs from ThreatStream.com and store them in DynamoDB"""
@@ -41,7 +43,7 @@ class ThreatStream(object):
     # max IOC objects received from one API call, default is 0 (equal to 1000)
     _API_MAX_LIMIT = 1000
     _API_MAX_INDEX = 500000
-    _PARAMETER_NAME = 'threat_intel_downloader_api_creds'
+    CRED_PARAMETER_NAME = 'threat_intel_downloader_api_creds'
 
     EXCEPTIONS_TO_BACKOFF = (requests.exceptions.Timeout,
                              requests.exceptions.ConnectionError,
@@ -49,31 +51,41 @@ class ThreatStream(object):
                              ThreatStreamRequestsError)
     BACKOFF_MAX_RETRIES = 3
 
-    def __init__(self, config):
-        self.ioc_types = config['ioc_types']
-        self.excluded_sub_types = config['excluded_sub_types']
-        self.ioc_sources = config['ioc_filters']
-        self.threshold = self._API_MAX_INDEX - self._API_MAX_LIMIT
-        self.region = config['region']
-        self.ioc_keys = config['ioc_keys']
+    def __init__(self, function_arn, timing_func):
+        self._config = self._load_config(function_arn)
+        self.timing_func = timing_func
         self.api_user = None
         self.api_key = None
-        self._get_api_creds()
-        self.table_name = config['function_name']
+
+    @staticmethod
+    def _load_config(function_arn):
+        """Load the Threat Intel Downloader configuration from conf/lambda.json file
+
+        Returns:
+            (dict): Configuration for Threat Intel Downloader
+
+        Raises:
+            ConfigError: For invalid or missing configuration files.
+        """
+
+        base_config = parse_lambda_arn(function_arn)
+        config = load_config(include={'lambda.json'})['lambda']
+        base_config.update(config.get('threat_intel_downloader_config', {}))
+        return base_config
 
     def _get_api_creds(self):
         """Retrieve ThreatStream API credentials from Parameter Store"""
         try:
             ssm = boto3.client('ssm', self.region)
             response = ssm.get_parameters(
-                Names=[self._PARAMETER_NAME], WithDecryption=True
+                Names=[self.CRED_PARAMETER_NAME], WithDecryption=True
             )
         except ClientError as err:
             LOGGER.error('SSM client error: %s', err)
             raise
 
         for cred in response['Parameters']:
-            if cred['Name'] == self._PARAMETER_NAME:
+            if cred['Name'] == self.CRED_PARAMETER_NAME:
                 try:
                     decoded_creds = json.loads(cred['Value'])
                     self.api_user = decoded_creds['api_user']
@@ -275,3 +287,31 @@ class ThreatStream(object):
         except ClientError as err:
             LOGGER.debug('DynamoDB client error: %s', err)
             raise
+
+    @property
+    def excluded_sub_types(self):
+        return self._config['excluded_sub_types']
+
+    @property
+    def ioc_keys(self):
+        return self._config['ioc_keys']
+
+    @property
+    def ioc_sources(self):
+        return self._config['ioc_filters']
+
+    @property
+    def ioc_types(self):
+        return self._config['ioc_types']
+
+    @property
+    def region(self):
+        return self._config['region']
+
+    @property
+    def table_name(self):
+        return self._config['function_name']
+
+    @property
+    def threshold(self):
+        return self._API_MAX_INDEX - self._API_MAX_LIMIT
