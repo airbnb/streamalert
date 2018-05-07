@@ -155,7 +155,7 @@ class SlackOutput(OutputDispatcher):
                     ...
         """
         header_text = '*StreamAlert Rule Triggered: {}*'.format(rule_name)
-        attachments = [attachment for attachment in cls._format_attachments(alert, header_text)]
+        attachments = list(cls._format_attachments(alert, header_text))
         full_message = {
             'text': header_text,
             'mrkdwn': True,
