@@ -20,6 +20,7 @@ from stream_alert_cli.apps import save_parameter
 from stream_alert_cli.helpers import user_input
 from stream_alert_cli.logger import LOGGER_CLI
 
+
 def handler(options, config):
     """Configure Threat Intel Downloader from command line
 
