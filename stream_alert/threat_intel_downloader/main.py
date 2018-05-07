@@ -29,7 +29,7 @@ from stream_alert.shared.backoff_handlers import (
 )
 from stream_alert.shared.config import load_config, parse_lambda_arn
 
-from stream_alert.threat_intel_downloader import END_TIME_BUFFER, LOGGER
+from stream_alert.threat_intel_downloader import LOGGER
 from stream_alert.threat_intel_downloader.exceptions import (
     ThreatStreamCredsError,
     ThreatStreamLambdaInvokeError,
@@ -45,6 +45,8 @@ class ThreatStream(object):
     # max IOC objects received from one API call, default is 0 (equal to 1000)
     _API_MAX_LIMIT = 1000
     _API_MAX_INDEX = 500000
+    # Remaining time in seconds before lambda termination
+    _END_TIME_BUFFER = 5
     CRED_PARAMETER_NAME = 'threat_intel_downloader_api_creds'
 
     EXCEPTIONS_TO_BACKOFF = (requests.exceptions.Timeout,
@@ -157,7 +159,7 @@ class ThreatStream(object):
             LOGGER.info('Write %d IOCs to DynamoDB table', len(intel))
             self._write_to_dynamodb_table(intel)
 
-        if next_url and self.timing_func() > END_TIME_BUFFER * 1000:
+        if next_url and self.timing_func() > self._END_TIME_BUFFER * 1000:
             self._invoke_lambda_function(next_url)
 
         LOGGER.debug("Time remaining (MS): %s", self.timing_func())
