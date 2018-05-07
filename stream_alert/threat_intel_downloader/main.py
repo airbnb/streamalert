@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from __future__ import absolute_import
 from datetime import datetime, timedelta
 import json
 
@@ -28,9 +29,10 @@ from stream_alert.shared.backoff_handlers import (
 )
 from stream_alert.shared.config import load_config, parse_lambda_arn
 
-from stream_alert.threat_intel_downloader import LOGGER
+from stream_alert.threat_intel_downloader import END_TIME_BUFFER, LOGGER
 from stream_alert.threat_intel_downloader.exceptions import (
     ThreatStreamCredsError,
+    ThreatStreamLambdaInvokeError,
     ThreatStreamRequestsError
 )
 
@@ -112,35 +114,22 @@ class ThreatStream(object):
         Args:
             next_url (str): url of next token to retrieve more objects from
                 ThreatStream
-
-        Returns:
-            (tuple): (list, str, bool)
-                - First object is a list of intelligence.
-                - Second object is a string of next token to retrieve more IOCs.
-                - Third object is bool to indicated if retrieve more IOCs from
-                    threat feed.
-                    Return False if next token is empty or threshold of number
-                    of IOCs is reached.
         """
-        continue_invoke = False
         intelligence = list()
+        https_req = requests.get('{}{}'.format(self._API_URL, next_url), timeout=10)
 
-        https_req = requests.get('{}{}'.format(self._API_URL, next_url),
-                                 timeout=10)
+        next_url = None
         if https_req.status_code == 200:
             data = https_req.json()
             if data.get('objects'):
                 intelligence.extend(self._process_data(data['objects']))
+
             LOGGER.info('IOC Offset: %d', data['meta']['offset'])
-            if not (data['meta']['next']
-                    and data['meta']['offset'] < self.threshold):
-                LOGGER.debug('Either next token is empty or IOC offset '
-                             'reaches threshold %d. Stop retrieve more '
-                             'IOCs.', self.threshold)
-                continue_invoke = False
+            if not (data['meta']['next'] and data['meta']['offset'] < self.threshold):
+                LOGGER.debug('Either next token is empty or IOC offset reaches threshold '
+                             '%d. Stop retrieve more IOCs.', self.threshold)
             else:
                 next_url = data['meta']['next']
-                continue_invoke = True
         elif https_req.status_code == 401:
             raise ThreatStreamRequestsError('Response status code 401, unauthorized.')
         elif https_req.status_code == 500:
@@ -150,45 +139,42 @@ class ThreatStream(object):
                                             'do not retry.'.format(https_req.status_code)
                                            )
 
-        return (intelligence, next_url, continue_invoke)
+        self._finalize(intelligence, next_url)
 
-    def runner(self, event):
-        """Process URL before making API call
-        Args:
-            event (dict): Contains lambda function invocation information. Initially,
-                Threat Intel Downloader lambda funciton is invoked by Cloudwatch
-                event. 'next_url' key will be inserted to event lambda function
-                invokes itself to retrieve more IOCs.
+    def _finalize(self, intel, next_url):
+        """Finalize the execution
 
-        Returns:
-            (tuple): (list, str, bool)
-                - First object is a list of intelligence.
-                - Second object is a string of next token to retrieve more IOCs.
-                - Third object is bool to indicated if retrieve more IOCs from
-                    threat feed.
+        Send data to dynamo and continue the invocation if necessary.
+
+        Arguments:
+            intel (list): List of intelligence to send to DynamoDB
+            next_url (str): Next token to retrieve more IOCs
+            continue_invoke (bool): Whether to retrieve more IOCs from
+                threat feed. False if next token is empty or threshold of number
+                of IOCs is reached.
         """
-        if not event:
-            return None, None, False
-        query = '(status="{}")+AND+({})+AND+NOT+({})'.format(
-            self._IOC_STATUS,
-            "+OR+".join(['type="{}"'.format(ioc) for ioc in self.ioc_types]),
-            "+OR+".join(['itype="{}"'.format(itype) for itype in self.excluded_sub_types])
-        )
-        next_url = event.get(
-            'next_url',
-            '/api/v2/{}/?username={}&api_key={}&limit={}&q={}'.format(
-                self._API_RESOURCE,
-                self.api_user,
-                self.api_key,
-                self._API_MAX_LIMIT,
-                query
+        if intel:
+            LOGGER.info('Write %d IOCs to DynamoDB table', len(intel))
+            self._write_to_dynamodb_table(intel)
+
+        if next_url and self.timing_func() > END_TIME_BUFFER * 1000:
+            self._invoke_lambda_function(next_url)
+
+        LOGGER.debug("Time remaining (MS): %s", self.timing_func())
+
+    def _invoke_lambda_function(self, next_url):
+        """Invoke lambda function itself with next token to continually retrieve IOCs"""
+        LOGGER.debug('This invocation is invoked by lambda function self.')
+        lambda_client = boto3.client('lambda', region_name=self.region)
+        try:
+            lambda_client.invoke(
+                FunctionName=self._config['function_name'],
+                InvocationType='Event',
+                Payload=json.dumps({'next_url': next_url}),
+                Qualifier=self._config['qualifier']
             )
-        )
-
-        if not next_url:
-            return None, None, False
-
-        return self._connect(next_url)
+        except ClientError as err:
+            raise ThreatStreamLambdaInvokeError('Error invoking function: {}'.format(err))
 
     @staticmethod
     def _epoch_time(time_str, days=90):
@@ -202,9 +188,8 @@ class ThreatStream(object):
             (int): Epoch time. If no expiration time presented, return to
                 default value which is current time + 90 days.
         """
-
         if not time_str:
-            return int((datetime.now()
+            return int((datetime.utcnow()
                         + timedelta(days)
                         - datetime.utcfromtimestamp(0)).total_seconds())
 
@@ -212,8 +197,7 @@ class ThreatStream(object):
             utc_time = datetime.strptime(time_str, "%Y-%m-%dT%H:%M:%S.%fZ")
             return int((utc_time - datetime.utcfromtimestamp(0)).total_seconds())
         except ValueError:
-            LOGGER.error('Cannot convert expiration date \'%s\' to epoch time',
-                         time_str)
+            LOGGER.error('Cannot convert expiration date \'%s\' to epoch time', time_str)
             raise
 
     def _process_data(self, data):
@@ -267,7 +251,7 @@ class ThreatStream(object):
                     results.append(filtered_obj)
         return results
 
-    def write_to_dynamodb_table(self, intelligence):
+    def _write_to_dynamodb_table(self, intelligence):
         """Store IOCs to DynamoDB table"""
         try:
             dynamodb = boto3.resource('dynamodb', region_name=self.region)
@@ -286,6 +270,43 @@ class ThreatStream(object):
         except ClientError as err:
             LOGGER.debug('DynamoDB client error: %s', err)
             raise
+
+    def runner(self, event):
+        """Process URL before making API call
+        Args:
+            event (dict): Contains lambda function invocation information. Initially,
+                Threat Intel Downloader lambda funciton is invoked by Cloudwatch
+                event. 'next_url' key will be inserted to event lambda function
+                invokes itself to retrieve more IOCs.
+
+        Returns:
+            (tuple): (list, str, bool)
+                - First object is a list of intelligence.
+                - Second object is a string of next token to retrieve more IOCs.
+                - Third object is bool to indicated if retrieve more IOCs from
+                    threat feed.
+        """
+        event = event or {}
+
+        self._load_api_creds()
+
+        query = '(status="{}")+AND+({})+AND+NOT+({})'.format(
+            self._IOC_STATUS,
+            "+OR+".join(['type="{}"'.format(ioc) for ioc in self.ioc_types]),
+            "+OR+".join(['itype="{}"'.format(itype) for itype in self.excluded_sub_types])
+        )
+        next_url = event.get(
+            'next_url',
+            '/api/v2/{}/?username={}&api_key={}&limit={}&q={}'.format(
+                self._API_RESOURCE,
+                self.api_user,
+                self.api_key,
+                self._API_MAX_LIMIT,
+                query
+            )
+        )
+
+        self._connect(next_url)
 
     @property
     def excluded_sub_types(self):
@@ -314,3 +335,8 @@ class ThreatStream(object):
     @property
     def threshold(self):
         return self._API_MAX_INDEX - self._API_MAX_LIMIT
+
+
+def handler(event, context):
+    """Lambda handler"""
+    ThreatStream(context.invoked_function_arn, context.get_remaining_time_in_millis).runner(event)
