@@ -79,6 +79,9 @@ class ThreatStream(object):
 
     def _load_api_creds(self):
         """Retrieve ThreatStream API credentials from Parameter Store"""
+        if self.api_user and self.api_key:
+            return # credentials already loaded from SSM
+
         try:
             ssm = boto3.client('ssm', self.region)
             response = ssm.get_parameter(Name=self.CRED_PARAMETER_NAME, WithDecryption=True)
@@ -137,9 +140,8 @@ class ThreatStream(object):
         elif https_req.status_code == 500:
             raise ThreatStreamRequestsError('Response status code 500, retry now.')
         else:
-            raise ThreatStreamRequestsError('Unknown status code {}, '
-                                            'do not retry.'.format(https_req.status_code)
-                                           )
+            raise ThreatStreamRequestsError(
+                'Unknown status code {}, do not retry.'.format(https_req.status_code))
 
         self._finalize(intelligence, next_url)
 

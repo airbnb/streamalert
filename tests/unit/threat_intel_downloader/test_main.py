@@ -142,7 +142,7 @@ class TestThreatStream(object):
             }
         ]
         assert_equal(processed_data, expected_result)
-    #
+
     @patch('boto3.client')
     def test_load_api_creds(self, mock_ssm):
         """ThreatStream - Load API creds from SSM"""
@@ -154,6 +154,20 @@ class TestThreatStream(object):
         self.threatstream._load_api_creds()
         assert_equal(self.threatstream.api_user, 'test_user')
         assert_equal(self.threatstream.api_key, 'test_key')
+
+    @patch('boto3.client')
+    def test_load_api_creds_cached(self, mock_ssm):
+        """ThreatStream - Load API creds from SSM, Cached"""
+        params = {
+            ThreatStream.CRED_PARAMETER_NAME: '{"api_user": "test_user", "api_key": "test_key"}'
+        }
+        mock_ssm.return_value = MockSSMClient(suppress_params=True,
+                                              parameters=params)
+        self.threatstream._load_api_creds()
+        assert_equal(self.threatstream.api_user, 'test_user')
+        assert_equal(self.threatstream.api_key, 'test_key')
+        self.threatstream._load_api_creds()
+        mock_ssm.assert_called_once() # Make sure the client was not loaded again
 
     @patch('boto3.client')
     @raises(ClientError)
