@@ -17,12 +17,12 @@ limitations under the License.
 from mock import patch, Mock
 from nose.tools import raises
 
-from stream_alert.threat_intel_downloader.threat_stream import ThreatStream
-from stream_alert.threat_intel_downloader.main import (
+from stream_alert.threat_intel_downloader.exceptions import ThreatStreamLambdaInvokeError
+from stream_alert.threat_intel_downloader.handler import (
     handler,
     invoke_lambda_function
 )
-from stream_alert.threat_intel_downloader.exceptions import ThreatStreamLambdaInvokeError
+from stream_alert.threat_intel_downloader.main import ThreatStream
 
 from tests.unit.app_integrations.test_helpers import (
     MockLambdaClient,
@@ -37,7 +37,7 @@ from tests.unit.threat_intel_downloader.test_helpers import (
 )
 
 
-@patch('stream_alert.threat_intel_downloader.main.load_config',
+@patch('stream_alert.threat_intel_downloader.handler.load_config',
        Mock(return_value=CONFIG))
 @patch('boto3.client')
 @patch.object(ThreatStream, '_connect')
@@ -48,10 +48,10 @@ def test_handler_without_next_token(mock_threatstream_connect, mock_ssm):
     handler(None, get_mock_context())
     mock_threatstream_connect.assert_not_called()
 
-@patch('stream_alert.threat_intel_downloader.main.load_config',
+@patch('stream_alert.threat_intel_downloader.handler.load_config',
        Mock(return_value=CONFIG))
 @patch('boto3.client')
-@patch('stream_alert.threat_intel_downloader.threat_stream.requests.get',
+@patch('stream_alert.threat_intel_downloader.main.requests.get',
        side_effect=mock_requests_get)
 def test_handler_next_token(mock_get, mock_ssm):
     """Threat Intel Downloader - Test handler with next token passed in"""

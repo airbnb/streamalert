@@ -26,7 +26,7 @@ from nose.tools import (
 )
 
 from stream_alert.threat_intel_downloader.exceptions import ThreatStreamCredsError
-from stream_alert.threat_intel_downloader.threat_stream import ThreatStream
+from stream_alert.threat_intel_downloader.main import ThreatStream
 from tests.unit.app_integrations.test_helpers import MockSSMClient
 from tests.unit.threat_intel_downloader.test_helpers import (
     mock_config,
@@ -45,7 +45,7 @@ class TestThreatStream(object):
         self.table_name = 'test_table_name'
 
     @patch('boto3.client')
-    @patch('stream_alert.threat_intel_downloader.threat_stream.requests.get',
+    @patch('stream_alert.threat_intel_downloader.main.requests.get',
            side_effect=mock_requests_get)
     def test_runner(self, mock_get, mock_ssm): # pylint: disable=unused-argument
         """ThreatStream - Test connection to threatstream"""
@@ -148,7 +148,7 @@ class TestThreatStream(object):
         ThreatStream(mock_config())
 
     @patch('boto3.client')
-    @patch('stream_alert.threat_intel_downloader.threat_stream.requests.get',
+    @patch('stream_alert.threat_intel_downloader.main.requests.get',
            side_effect=mock_requests_get)
     def test_connect(self, mock_get, mock_ssm): # pylint: disable=unused-argument
         """ThreatStream - Test connection to ThreatStream.com"""
@@ -172,7 +172,7 @@ class TestThreatStream(object):
 
     @patch('boto3.client')
     @patch.object(boto3, 'resource')
-    @patch('stream_alert.threat_intel_downloader.threat_stream.requests.get',
+    @patch('stream_alert.threat_intel_downloader.main.requests.get',
            side_effect=mock_requests_get)
     def test_write_to_dynamodb_table(self, mock_get, mock_boto3_resource, mock_ssm): # pylint: disable=unused-argument
         """ThreatStream - Test write action to dynamodb table"""
