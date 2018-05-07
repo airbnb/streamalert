@@ -175,6 +175,32 @@ class TestSlackOutput(object):
         assert_equal(len(result), 2)
         assert_equal(result[1], '*test_key_02:* test_value_02')
 
+    def test_split_attachment_text_newline(self):
+        """SlackOutput - Split Attachment, On Newline"""
+        message = {'messages': 'test\n' * 800}
+        result = list(SlackOutput._split_attachment_text(message))
+        assert_equal(len(result[0]), 3996)
+
+    def test_split_attachment_text_on_space(self):
+        """SlackOutput - Split Attachment, On Space"""
+        message = {'messages': 'test ' * 800}
+        result = list(SlackOutput._split_attachment_text(message))
+        assert_equal(len(result[0]), 3996)
+
+    def test_split_attachment_text_no_delimiter(self):
+        """SlackOutput - Split Attachment, No Delimiter"""
+        message = {'messages': 'test' * 2000}
+        result = list(SlackOutput._split_attachment_text(message))
+        assert_equal(len(result[1]), 4000)
+
+    @patch('logging.Logger.warning')
+    def test_max_attachments(self, log_mock):
+        """SlackOutput - Max Attachment Reached"""
+        alert = get_alert()
+        alert.record = {'info': 'test' * 20000}
+        list(SlackOutput._format_attachments(alert, 'foo'))
+        log_mock.assert_called_with('%s: %d-part message truncated to %d parts', alert, 21, 20)
+
     @patch('logging.Logger.info')
     @patch('requests.post')
     def test_dispatch_success(self, url_mock, log_mock):
