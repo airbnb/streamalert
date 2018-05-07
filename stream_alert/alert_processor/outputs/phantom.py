@@ -159,6 +159,8 @@ class PhantomOutput(OutputDispatcher):
                     'label': 'Alert'}
         artifact_url = os.path.join(creds['url'], self.ARTIFACT_ENDPOINT)
         try:
-            return self._post_request_retry(artifact_url, artifact, headers, False)
+            self._post_request_retry(artifact_url, artifact, headers, False)
         except OutputRequestFailure:
             return False
+
+        return True

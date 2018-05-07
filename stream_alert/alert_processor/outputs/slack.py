@@ -233,6 +233,8 @@ class SlackOutput(OutputDispatcher):
         slack_message = self._format_message(alert.rule_name, alert)
 
         try:
-            return self._post_request_retry(creds['url'], slack_message)
+            self._post_request_retry(creds['url'], slack_message)
         except OutputRequestFailure:
             return False
+
+        return True

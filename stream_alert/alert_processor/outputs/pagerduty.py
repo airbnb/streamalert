@@ -128,9 +128,11 @@ class PagerDutyOutput(OutputDispatcher):
         }
 
         try:
-            return self._post_request_retry(creds['url'], data, None, True)
+            self._post_request_retry(creds['url'], data, None, True)
         except OutputRequestFailure:
             return False
+
+        return True
 
 
 @StreamAlertOutput
@@ -190,9 +192,11 @@ class PagerDutyOutputV2(OutputDispatcher):
         data = events_v2_data(alert, creds['routing_key'])
 
         try:
-            return self._post_request_retry(creds['url'], data, None, True)
+            self._post_request_retry(creds['url'], data, None, True)
         except OutputRequestFailure:
             return False
+
+        return True
 
 
 class PagerdutySearchDelay(Exception):
@@ -694,4 +698,4 @@ class PagerDutyIncidentOutput(OutputDispatcher):
             note = rule_context.get('note', 'Creating SOX Incident')
             self._add_incident_note(merged_id, note)
 
-        return incident_id
+        return True

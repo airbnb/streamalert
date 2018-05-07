@@ -99,6 +99,8 @@ class GithubOutput(OutputDispatcher):
         LOGGER.debug('sending alert to Github repository %s', credentials['repository'])
 
         try:
-            return self._post_request_retry(url, issue, headers)
+            self._post_request_retry(url, issue, headers)
         except OutputRequestFailure:
             return False
+
+        return True

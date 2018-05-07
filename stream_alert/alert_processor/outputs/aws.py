@@ -122,8 +122,8 @@ class KinesisFirehoseOutput(AWSOutput):
                 dict: Firehose response in the format below
                     {'RecordId': 'string'}
             """
-            return self.__aws_client__.put_record(DeliveryStreamName=delivery_stream,
-                                                  Record={'Data': json_alert})
+            self.__aws_client__.put_record(DeliveryStreamName=delivery_stream,
+                                           Record={'Data': json_alert})
 
         if self.__aws_client__ is None:
             self.__aws_client__ = boto3.client('firehose', region_name=self.region)
@@ -136,11 +136,10 @@ class KinesisFirehoseOutput(AWSOutput):
         delivery_stream = self.config[self.__service__][descriptor]
         LOGGER.info('Sending %s to aws-firehose:%s', alert, delivery_stream)
 
-        resp = _firehose_request_wrapper(json_alert, delivery_stream)
-        LOGGER.info('%s successfully sent to aws-firehose:%s',
-                    alert, delivery_stream)
+        _firehose_request_wrapper(json_alert, delivery_stream)
+        LOGGER.info('%s successfully sent to aws-firehose:%s', alert, delivery_stream)
 
-        return resp
+        return True
 
 
 @StreamAlertOutput
@@ -210,18 +209,21 @@ class LambdaOutput(AWSOutput):
         LOGGER.debug('Sending alert to Lambda function %s', function_name)
 
         client = boto3.client('lambda', region_name=self.region)
-        # Use the qualifier if it's available. Passing an empty qualifier in
-        # with `Qualifier=''` or `Qualifier=None` does not work and thus we
-        # have to perform different calls to client.invoke().
-        if qualifier:
-            return client.invoke(FunctionName=function,
-                                 InvocationType='Event',
-                                 Payload=alert_string,
-                                 Qualifier=qualifier)
 
-        return client.invoke(FunctionName=function,
-                             InvocationType='Event',
-                             Payload=alert_string)
+        invoke_params = {
+            'FunctionName': function,
+            'InvocationType': 'Event',
+            'Payload': alert_string
+        }
+
+        # Use the qualifier if it's available. Passing an empty qualifier in
+        # with `Qualifier=''` or `Qualifier=None` does not work
+        if qualifier:
+            invoke_params['Qualifier'] = qualifier
+
+        client.invoke(**invoke_params)
+
+        return True
 
 
 @StreamAlertOutput
@@ -284,9 +286,9 @@ class S3Output(AWSOutput):
         LOGGER.debug('Sending %s to S3 bucket %s with key %s', alert, bucket, key)
 
         client = boto3.client('s3', region_name=self.region)
-        resp = client.put_object(Body=json.dumps(alert.output_dict()), Bucket=bucket, Key=key)
+        client.put_object(Body=json.dumps(alert.output_dict()), Bucket=bucket, Key=key)
 
-        return resp
+        return True
 
 
 @StreamAlertOutput
@@ -322,13 +324,14 @@ class SNSOutput(AWSOutput):
         topic_arn = 'arn:aws:sns:{}:{}:{}'.format(self.region, self.account_id, topic_name)
         topic = boto3.resource('sns', region_name=self.region).Topic(topic_arn)
 
-        response = topic.publish(
+        topic.publish(
             Message=json.dumps(alert.output_dict(), indent=2, sort_keys=True),
             # Subject must be < 100 characters long
             Subject=elide_string_middle(
                 '{} triggered alert {}'.format(alert.rule_name, alert.alert_id), 99)
         )
-        return response
+
+        return True
 
 
 @StreamAlertOutput
@@ -363,7 +366,9 @@ class SQSOutput(AWSOutput):
         sqs = boto3.resource('sqs', region_name=self.region)
         queue = sqs.get_queue_by_name(QueueName=queue_name)
 
-        return queue.send_message(MessageBody=json.dumps(alert.record, separators=(',', ':')))
+        queue.send_message(MessageBody=json.dumps(alert.record, separators=(',', ':')))
+
+        return True
 
 
 @StreamAlertOutput
