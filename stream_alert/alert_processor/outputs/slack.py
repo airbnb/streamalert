@@ -60,6 +60,83 @@ class SlackOutput(OutputDispatcher):
         ])
 
     @classmethod
+    def _split_attachment_text(cls, alert_record):
+        """Yield messages that should be sent to slack.
+
+        Args:
+            alert_record (dict): Dictionary represntation of the alert
+                relevant to the triggered rule
+
+        Yields:
+            str: Properly split messages to be sent as attachemnts to slack
+        """
+        # Convert the alert we have to a nicely formatted string for slack
+        alert_text = '\n'.join(cls._json_to_slack_mrkdwn(alert_record, 0))
+
+        # Slack requires escaping the characters: '&', '>' and '<' and cgi does just that
+        alert_text = cgi.escape(alert_text)
+
+        while alert_text:
+            if len(alert_text) <= cls.MAX_MESSAGE_SIZE:
+                yield alert_text
+                break
+
+            # Find the closest line break prior to this index
+            index = alert_text[:cls.MAX_MESSAGE_SIZE+1].rfind('\n')
+
+            # If a new line was not found, split on the closest space instead
+            if index == -1:
+                index = alert_text[:cls.MAX_MESSAGE_SIZE+1].rfind(' ')
+
+            # If there is no good place to split the message, just use the max index
+            if index == -1:
+                index = cls.MAX_MESSAGE_SIZE
+
+            # Append the message part up until this index, and move to the next chunk
+            yield alert_text[:index]
+            alert_text = alert_text[index+1:]
+
+    @classmethod
+    def _format_attachments(cls, alert, header_text):
+        """Format the message to be sent to slack.
+
+        Args:
+            alert (Alert): Alert relevant to the triggered rule
+            header_text (str): A formatted rule header to be included with each
+                attachemnt as fallback text (to be shown on mobile, etc)
+
+        Yields:
+            dict: A dictionary with the formatted attachemnt to be sent to Slack
+                as the text
+        """
+        messages = list(cls._split_attachment_text(alert.record))
+
+        for index, message in enumerate(messages, start=1):
+            title = 'Record:'
+            if len(messages) > 1:
+                title = 'Record (Part {} of {}):'.format(index, len(messages))
+            rule_desc = ''
+            # Only print the rule description on the first attachment
+            if index == 1:
+                rule_desc = alert.rule_description
+                rule_desc = '*Rule Description:*\n{}\n'.format(rule_desc)
+
+            # Yield this attachemnt to be sent with the list of attachments
+            yield {
+                'fallback': header_text,
+                'color': '#b22222',
+                'pretext': rule_desc,
+                'title': title,
+                'text': message,
+                'mrkdwn_in': ['text', 'pretext']
+            }
+
+            if index == cls.MAX_ATTACHMENTS:
+                LOGGER.warning('%s: %d-part message truncated to %d parts',
+                               alert, len(messages), cls.MAX_ATTACHMENTS)
+                break
+
+    @classmethod
     def _format_message(cls, rule_name, alert):
         """Format the message to be sent to slack.
 
@@ -77,58 +154,13 @@ class SlackOutput(OutputDispatcher):
                     Record (Part 1 of 2):
                     ...
         """
-        # Convert the alert we have to a nicely formatted string for slack
-        alert_text = '\n'.join(cls._json_to_slack_mrkdwn(alert.record, 0))
-        # Slack requires escaping the characters: '&', '>' and '<' and cgi does just that
-        alert_text = cgi.escape(alert_text)
-        messages = []
-        index = cls.MAX_MESSAGE_SIZE
-        while alert_text != '':
-            if len(alert_text) <= index:
-                messages.append(alert_text)
-                break
-
-            # Find the closest line break prior to this index
-            while index > 1 and alert_text[index] != '\n':
-                index -= 1
-
-            # Append the message part up until this index, and move to the next chunk
-            messages.append(alert_text[:index])
-            alert_text = alert_text[index+1:]
-
-            index = cls.MAX_MESSAGE_SIZE
-
         header_text = '*StreamAlert Rule Triggered: {}*'.format(rule_name)
+        attachments = [attachment for attachment in cls._format_attachments(alert, header_text)]
         full_message = {
             'text': header_text,
             'mrkdwn': True,
-            'attachments': []
+            'attachments': attachments
         }
-
-        for index, message in enumerate(messages):
-            if index == cls.MAX_ATTACHMENTS:
-                LOGGER.warning('%s: %d-part message truncated to %d parts',
-                               alert, len(messages), cls.MAX_ATTACHMENTS)
-                break
-
-            title = 'Record:'
-            if len(messages) > 1:
-                title = 'Record (Part {} of {}):'.format(index+1, len(messages))
-            rule_desc = ''
-            # Only print the rule description on the first attachment
-            if index == 0:
-                rule_desc = alert.rule_description
-                rule_desc = '*Rule Description:*\n{}\n'.format(rule_desc)
-
-            # Add this attachemnt to the full message array of attachments
-            full_message['attachments'].append({
-                'fallback': header_text,
-                'color': '#b22222',
-                'pretext': rule_desc,
-                'title': title,
-                'text': message,
-                'mrkdwn_in': ['text', 'pretext']
-            })
 
         # Return the json dict payload to be sent to slack
         return full_message
