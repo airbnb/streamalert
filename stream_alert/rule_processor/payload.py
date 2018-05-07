@@ -20,6 +20,7 @@ import base64
 import gzip
 import os
 import tempfile
+import subprocess
 import time
 import zlib
 
@@ -201,8 +202,8 @@ class S3Payload(StreamPayload):
         Returns:
             str: The downloaded path of the S3 object.
         """
-        size_kb = self.s3_object_size / 1024.0
-        size_mb = size_kb / 1024.0
+        size_kb = round(self.s3_object_size / 1024.0, 2)
+        size_mb = round(size_kb / 1024.0, 2)
         display_size = '{}MB'.format(size_mb) if size_mb else '{}KB'.format(size_kb)
 
         # File size checks before downloading
@@ -212,8 +213,11 @@ class S3Payload(StreamPayload):
             raise S3ObjectSizeError('[S3Payload] The S3 object {}/{} is too large [{}] to download '
                                     'from S3'.format(bucket, key, display_size))
 
+        # Shred the temp dir before downloading
+        self._shred_temp_directory()
         # Bandit warns about using a shell process, ignore with #nosec
-        LOGGER.debug(os.popen('df -h /tmp | tail -1').read().strip())  # nosec
+        LOGGER.debug(os.popen('df -h /{} | tail -1'.format( #nosec
+            tempfile.gettempdir())).read().strip())
         LOGGER.info('[S3Payload] Starting download from S3: %s/%s [%s]', bucket, key, display_size)
 
         # Convert the S3 object name to store as a file in the Lambda container
@@ -260,6 +264,19 @@ class S3Payload(StreamPayload):
         except IOError:
             LOGGER.exception('[S3Payload] The following error occurred while downloading')
             return
+
+    @staticmethod
+    def _shred_temp_directory():
+        """Delete all objects in the container's temp directory"""
+        LOGGER.debug('Shredding temp directory')
+
+        for root, dirs, files in os.walk(tempfile.gettempdir(), topdown=False):
+            for name in files:
+                subprocess.check_call([ #nosec
+                    'shred', '--force', '--iterations=1',
+                    '--remove', os.path.join(root, name)])
+            for name in dirs:
+                os.rmdir(os.path.join(root, name)) #nosec
 
     @staticmethod
     def _read_downloaded_s3_object(s3_object):
