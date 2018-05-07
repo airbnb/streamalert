@@ -73,31 +73,30 @@ class ThreatStream(object):
         base_config.update(config.get('threat_intel_downloader_config', {}))
         return base_config
 
-    def _get_api_creds(self):
+    def _load_api_creds(self):
         """Retrieve ThreatStream API credentials from Parameter Store"""
         try:
             ssm = boto3.client('ssm', self.region)
-            response = ssm.get_parameters(
-                Names=[self.CRED_PARAMETER_NAME], WithDecryption=True
-            )
-        except ClientError as err:
-            LOGGER.error('SSM client error: %s', err)
+            response = ssm.get_parameter(Name=self.CRED_PARAMETER_NAME, WithDecryption=True)
+        except ClientError:
+            LOGGER.exception('Failed to get SSM parameters')
             raise
 
-        for cred in response['Parameters']:
-            if cred['Name'] == self.CRED_PARAMETER_NAME:
-                try:
-                    decoded_creds = json.loads(cred['Value'])
-                    self.api_user = decoded_creds['api_user']
-                    self.api_key = decoded_creds['api_key']
-                except ValueError:
-                    LOGGER.error('Can not load value for parameter with '
-                                 'name \'%s\'. The value is not valid json: '
-                                 '\'%s\'', cred['Name'], cred['Value'])
-                    raise ThreatStreamCredsError('ValueError')
+        if not response:
+            raise ThreatStreamCredsError('Invalid response')
+
+        try:
+            decoded_creds = json.loads(response['Parameter']['Value'])
+        except ValueError:
+            raise ThreatStreamCredsError('Cannot load value for parameter with name '
+                                         '\'{}\'. The value is not valid json: '
+                                         '\'{}\''.format(response['Parameter']['Name'],
+                                                         response['Parameter']['Value']))
+
+        self.api_user = decoded_creds['api_user']
+        self.api_key = decoded_creds['api_key']
 
         if not (self.api_user and self.api_key):
-            LOGGER.error('API Creds Error')
             raise ThreatStreamCredsError('API Creds Error')
 
     @backoff.on_exception(backoff.constant,
