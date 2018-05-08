@@ -1,6 +1,6 @@
 // Lambda Permission: Allow S3 Event Notifications to invoke Lambda
 resource "aws_lambda_permission" "allow_bucket" {
-  statement_id  = "InvokeFromS3Bucket${title(replace(var.bucket_id, ".", ""))}"
+  statement_id  = "InvokeFromS3Bucket_${var.notification_id}"
   action        = "lambda:InvokeFunction"
   function_name = "${var.lambda_function_arn}"
   principal     = "s3.amazonaws.com"
@@ -24,7 +24,7 @@ resource "aws_s3_bucket_notification" "bucket_notification" {
 
 // IAM Policy: Allow Lambda to GetObjects from S3
 resource "aws_iam_role_policy" "lambda_s3_permission" {
-  name = "S3GetObjectsFrom${title(replace(var.bucket_id, ".", ""))}"
+  name = "S3GetObjects_${var.notification_id}"
   role = "${var.lambda_role_id}"
 
   policy = "${data.aws_iam_policy_document.s3_read_only.json}"
