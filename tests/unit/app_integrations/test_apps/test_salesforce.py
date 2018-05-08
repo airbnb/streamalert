@@ -34,6 +34,8 @@ from tests.unit.app_integrations.test_helpers import (
     MockSSMClient
 )
 
+
+@patch('time.sleep', Mock())
 @patch.object(SalesforceApp, '_type', Mock(return_value='Console'))
 @patch.object(SalesforceApp, 'type', Mock(return_value='type'))
 @patch.object(AppConfig, 'SSM_CLIENT', MockSSMClient())
