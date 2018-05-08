@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-# pylint: disable=abstract-class-instantiated,protected-access,no-self-use
+# pylint: disable=abstract-class-instantiated,protected-access,no-self-use,attribute-defined-outside-init
 from botocore.exceptions import ClientError
 from mock import Mock, patch
 from nose.tools import (
@@ -28,7 +28,6 @@ from nose.tools import (
 from requests.exceptions import ConnectTimeout
 
 from app_integrations.apps.app_base import AppIntegration, StreamAlertApp
-from app_integrations.batcher import Batcher
 from app_integrations.config import AppConfig
 from app_integrations.exceptions import AppIntegrationConfigError, AppIntegrationException
 from tests.unit.app_integrations.test_helpers import (
@@ -64,7 +63,7 @@ def test_get_all_apps():
     apps = StreamAlertApp.get_all_apps()
     assert_items_equal(expected_apps, apps)
 
-
+@patch('app_integrations.apps.app_base.Batcher', Mock())
 def test_get_app():
     """App Integration - App Base, Get App"""
     config = AppConfig(get_valid_config_dict('duo_auth'))
@@ -94,17 +93,13 @@ TEST_AUTH_KEYS = {'api_hostname', 'integration_key', 'secret_key'}
 @patch.object(AppConfig, 'SSM_CLIENT', MockSSMClient())
 @patch.object(AppIntegration, 'type', Mock(return_value='type'))
 @patch.object(AppIntegration, 'required_auth_info', Mock(return_value=TEST_AUTH_KEYS))
-@patch.object(Batcher, 'LAMBDA_CLIENT', MockLambdaClient)
 class TestAppIntegration(object):
     """Test class for the AppIntegration"""
-
-    @patch.object(AppIntegration, 'type', Mock(return_value='type'))
-    def __init__(self):
-        self._app = None
 
     # Remove all abstractmethods so we can instantiate AppIntegration for testing
     # Also patch some abstractproperty attributes
     @patch.object(AppIntegration, '__abstractmethods__', frozenset())
+    @patch('app_integrations.apps.app_base.Batcher', Mock())
     def setup(self):
         """Setup before each method"""
         self._app = AppIntegration(AppConfig(get_valid_config_dict('duo_admin'), None))

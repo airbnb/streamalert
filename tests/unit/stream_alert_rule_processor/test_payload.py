@@ -20,7 +20,7 @@ import logging
 import os
 import tempfile
 
-from mock import call, patch
+from mock import call, Mock, patch
 from nose.tools import (
     assert_equal,
     assert_false,
@@ -30,6 +30,7 @@ from nose.tools import (
     raises,
     with_setup
 )
+from pyfakefs import fake_filesystem_unittest
 
 from stream_alert.rule_processor import LOGGER
 from stream_alert.rule_processor.payload import load_stream_payload, S3ObjectSizeError, S3Payload
@@ -240,19 +241,16 @@ def test_get_object_ioerror(download_object_mock):
 
     assert_equal(result, None)
 
-@patch('stream_alert.rule_processor.payload.boto3.client')
-@patch('stream_alert.rule_processor.payload.S3Payload._read_downloaded_s3_object')
-@patch('subprocess.check_call')
-@patch('os.rmdir')
-def test_s3_download_object(os_mock, subprocess_mock, *_):
+
+@patch('stream_alert.rule_processor.payload.boto3.client', Mock())
+@patch('stream_alert.rule_processor.payload.S3Payload._read_downloaded_s3_object', Mock())
+@patch('stream_alert.rule_processor.payload.S3Payload._shred_temp_directory', Mock())
+def test_s3_download_object():
     """S3Payload - Download Object"""
     key = 'test/unit/s3-object.gz'
     raw_record = make_s3_raw_record('unit_bucket_name', key)
     s3_payload = load_stream_payload('s3', key, raw_record)
     S3Payload.s3_object_size = (1024 * 1024)
-
-    subprocess_mock.return_value.returncode = 0
-    os_mock.return_value.returncode = 0
 
     downloaded_path = s3_payload._download_object(
         'us-east-1', 'unit_bucket_name', key)
@@ -271,19 +269,16 @@ def test_s3_download_object_zero_size(*_):
 
 
 @with_setup(setup=None, teardown=teardown_s3)
-@patch('stream_alert.rule_processor.payload.boto3.client')
-@patch('stream_alert.rule_processor.payload.S3Payload._read_downloaded_s3_object')
+@patch('stream_alert.rule_processor.payload.boto3.client', Mock())
+@patch('stream_alert.rule_processor.payload.S3Payload._read_downloaded_s3_object', Mock())
+@patch('stream_alert.rule_processor.payload.S3Payload._shred_temp_directory', Mock())
 @patch('logging.Logger.info')
-@patch('subprocess.check_call')
-@patch('os.rmdir')
-def test_s3_download_object_mb(os_mock, subprocess_mock, log_mock, *_):
+def test_s3_download_object_mb(log_mock):
     """S3Payload - Download Object, Size in MB"""
     raw_record = make_s3_raw_record('unit_bucket_name', 'unit_key_name')
     s3_payload = load_stream_payload('s3', 'unit_key_name', raw_record)
     S3Payload.s3_object_size = (127.8 * 1024 * 1024)
 
-    subprocess_mock.return_value.returncode = 0
-    os_mock.return_value.returncode = 0
     s3_payload._download_object('us-east-1', 'unit_bucket_name', 'unit_key_name')
 
     assert_equal(log_mock.call_args_list[0],
@@ -330,3 +325,28 @@ def test_read_s3_failed_remove(_, log_mock):
     _ = [_ for _ in S3Payload._read_downloaded_s3_object(temp_file_path)]
 
     log_mock.assert_called_with('Failed to remove temp S3 file: %s', temp_file_path)
+
+
+class TestShredTemp(fake_filesystem_unittest.TestCase):
+    """Test shredding of the tmp directory"""
+    # pylint: disable=protected-access
+
+    def setUp(self):
+        self.setUpPyfakefs()
+        temp_dir = tempfile.gettempdir()
+        self.temp_file = os.path.join(temp_dir, 'file.json')
+        self.temp_dir = os.path.join(temp_dir, 'sub_folder')
+
+        # Create a file and folder to remove
+        self.fs.create_file(self.temp_file)
+        self.fs.create_dir(self.temp_dir)
+
+    @patch('os.rmdir')
+    @patch('subprocess.check_call')
+    def test_remove_files(self, subproc_mock, os_mock):
+        """S3Payload - Shred Temp Directory"""
+        S3Payload._shred_temp_directory()
+        subproc_mock.assert_called_with(['shred', '--force', '--iterations=1', '--remove',
+                                         self.temp_file])
+
+        os_mock.assert_called_with(self.temp_dir)
