@@ -210,7 +210,7 @@ def test_s3_object_too_large():
     """S3Payload - S3ObjectSizeError, Object too Large"""
     raw_record = make_s3_raw_record('unit_bucket_name', 'unit_key_name')
     s3_payload = load_stream_payload('s3', 'unit_key_name', raw_record)
-    S3Payload.s3_object_size = (128 * 1024 * 1024) + 10
+    S3Payload.s3_object_size = (128 * 1024 * 1024 * 1024)
 
     s3_payload._download_object('region', 'bucket', 'key')
 
@@ -242,12 +242,18 @@ def test_get_object_ioerror(download_object_mock):
 
 @patch('stream_alert.rule_processor.payload.boto3.client')
 @patch('stream_alert.rule_processor.payload.S3Payload._read_downloaded_s3_object')
-def test_s3_download_object(*_):
+@patch('subprocess.check_call')
+@patch('os.rmdir')
+def test_s3_download_object(os_mock, subprocess_mock, *_):
     """S3Payload - Download Object"""
     key = 'test/unit/s3-object.gz'
     raw_record = make_s3_raw_record('unit_bucket_name', key)
     s3_payload = load_stream_payload('s3', key, raw_record)
     S3Payload.s3_object_size = (1024 * 1024)
+
+    subprocess_mock.return_value.returncode = 0
+    os_mock.return_value.returncode = 0
+
     downloaded_path = s3_payload._download_object(
         'us-east-1', 'unit_bucket_name', key)
 
@@ -268,11 +274,16 @@ def test_s3_download_object_zero_size(*_):
 @patch('stream_alert.rule_processor.payload.boto3.client')
 @patch('stream_alert.rule_processor.payload.S3Payload._read_downloaded_s3_object')
 @patch('logging.Logger.info')
-def test_s3_download_object_mb(log_mock, *_):
+@patch('subprocess.check_call')
+@patch('os.rmdir')
+def test_s3_download_object_mb(os_mock, subprocess_mock, log_mock, *_):
     """S3Payload - Download Object, Size in MB"""
     raw_record = make_s3_raw_record('unit_bucket_name', 'unit_key_name')
     s3_payload = load_stream_payload('s3', 'unit_key_name', raw_record)
     S3Payload.s3_object_size = (127.8 * 1024 * 1024)
+
+    subprocess_mock.return_value.returncode = 0
+    os_mock.return_value.returncode = 0
     s3_payload._download_object('us-east-1', 'unit_bucket_name', 'unit_key_name')
 
     assert_equal(log_mock.call_args_list[0],

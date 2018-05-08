@@ -89,6 +89,9 @@ class RuleProcessorTester(object):
         # Create a cache map of parsers to parser classes
         self.parsers = {}
 
+        # Patch the tmp shredding as to not slow down testing
+        patch('stream_alert.rule_processor.payload.S3Payload._shred_temp_directory').start()
+
     def test_processor(self, rules_filter, files_filter, validate_only):
         """Perform integration tests for the 'rule' Lambda function
 
