@@ -55,7 +55,8 @@ class MockSSMClient(object):
             err = {'Error': {'Code': 403, 'Message': 'parameter does not exist'}}
             raise ClientError(err, 'get_parameter')
 
-        return {'Parameter': {'Value': self._parameters.get(kwargs.get('Name'))}}
+        return {'Parameter': {'Value': self._parameters.get(kwargs.get('Name')),
+                              'Name': kwargs.get('Name')}}
 
     def get_parameters(self, **kwargs):
         """Mocked get_parameters function that returns a list of values for the keys from a dict

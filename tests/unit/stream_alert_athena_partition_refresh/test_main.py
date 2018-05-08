@@ -54,7 +54,7 @@ def test_init_logging_int_level(log_mock):
 
 # Without this time.sleep patch, backoff performs sleep
 # operations and drastically slows down testing
-@patch('time.sleep', Mock(return_value=True))
+@patch('time.sleep', Mock())
 class TestAthenaRefresher(object):
     """Test class for AthenaRefresher"""
 
