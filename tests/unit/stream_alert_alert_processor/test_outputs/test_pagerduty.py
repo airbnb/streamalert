@@ -41,6 +41,7 @@ class TestPagerDutyOutput(object):
     """Test class for PagerDutyOutput"""
     DESCRIPTOR = 'unit_test_pagerduty'
     SERVICE = 'pagerduty'
+    OUTPUT = ':'.join([SERVICE, DESCRIPTOR])
     CREDS = {'url': 'http://pagerduty.foo.bar/create_event.json',
              'service_key': 'mocked_service_key'}
 
@@ -64,7 +65,7 @@ class TestPagerDutyOutput(object):
         """PagerDutyOutput - Dispatch Success"""
         post_mock.return_value.status_code = 200
 
-        assert_true(self._dispatcher.dispatch(get_alert(), self.DESCRIPTOR))
+        assert_true(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
 
         log_mock.assert_called_with('Successfully sent alert to %s:%s',
                                     self.SERVICE, self.DESCRIPTOR)
@@ -75,14 +76,15 @@ class TestPagerDutyOutput(object):
         """PagerDutyOutput - Dispatch Failure, Bad Request"""
         post_mock.return_value.status_code = 400
 
-        assert_false(self._dispatcher.dispatch(get_alert(), self.DESCRIPTOR))
+        assert_false(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
 
         log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, self.DESCRIPTOR)
 
     @patch('logging.Logger.error')
     def test_dispatch_bad_descriptor(self, log_mock):
         """PagerDutyOutput - Dispatch Failure, Bad Descriptor"""
-        assert_false(self._dispatcher.dispatch(get_alert(), 'bad_descriptor'))
+        assert_false(
+            self._dispatcher.dispatch(get_alert(), ':'.join([self.SERVICE, 'bad_descriptor'])))
 
         log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, 'bad_descriptor')
 
@@ -93,6 +95,7 @@ class TestPagerDutyOutputV2(object):
     """Test class for PagerDutyOutputV2"""
     DESCRIPTOR = 'unit_test_pagerduty-v2'
     SERVICE = 'pagerduty-v2'
+    OUTPUT = ':'.join([SERVICE, DESCRIPTOR])
     CREDS = {'url': 'http://pagerduty.foo.bar/create_event.json',
              'routing_key': 'mocked_routing_key'}
 
@@ -115,7 +118,7 @@ class TestPagerDutyOutputV2(object):
         """PagerDutyOutputV2 - Dispatch Success"""
         post_mock.return_value.status_code = 200
 
-        assert_true(self._dispatcher.dispatch(get_alert(), self.DESCRIPTOR))
+        assert_true(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
 
         log_mock.assert_called_with('Successfully sent alert to %s:%s',
                                     self.SERVICE, self.DESCRIPTOR)
@@ -128,14 +131,15 @@ class TestPagerDutyOutputV2(object):
         post_mock.return_value.json.return_value = json_error
         post_mock.return_value.status_code = 400
 
-        assert_false(self._dispatcher.dispatch(get_alert(), self.DESCRIPTOR))
+        assert_false(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
 
         log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, self.DESCRIPTOR)
 
     @patch('logging.Logger.error')
     def test_dispatch_bad_descriptor(self, log_mock):
         """PagerDutyOutputV2 - Dispatch Failure, Bad Descriptor"""
-        assert_false(self._dispatcher.dispatch(get_alert(), 'bad_descriptor'))
+        assert_false(
+            self._dispatcher.dispatch(get_alert(), ':'.join([self.SERVICE, 'bad_descriptor'])))
 
         log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, 'bad_descriptor')
 
@@ -150,6 +154,7 @@ class TestPagerDutyIncidentOutput(object):
     """Test class for PagerDutyIncidentOutput"""
     DESCRIPTOR = 'unit_test_pagerduty-incident'
     SERVICE = 'pagerduty-incident'
+    OUTPUT = ':'.join([SERVICE, DESCRIPTOR])
     CREDS = {'api': 'https://api.pagerduty.com',
              'token': 'mocked_token',
              'service_name': 'mocked_service_name',
@@ -491,7 +496,7 @@ class TestPagerDutyIncidentOutput(object):
 
         ctx = {'pagerduty-incident': {'assigned_user': 'valid_user'}}
 
-        assert_true(self._dispatcher.dispatch(get_alert(context=ctx), self.DESCRIPTOR))
+        assert_true(self._dispatcher.dispatch(get_alert(context=ctx), self.OUTPUT))
 
         log_mock.assert_called_with('Successfully sent alert to %s:%s',
                                     self.SERVICE, self.DESCRIPTOR)
@@ -523,7 +528,7 @@ class TestPagerDutyIncidentOutput(object):
 
         ctx = {'pagerduty-incident': {'assigned_policy_id': 'valid_policy_id'}}
 
-        assert_true(self._dispatcher.dispatch(get_alert(context=ctx), self.DESCRIPTOR))
+        assert_true(self._dispatcher.dispatch(get_alert(context=ctx), self.OUTPUT))
 
         log_mock.assert_called_with('Successfully sent alert to %s:%s',
                                     self.SERVICE, self.DESCRIPTOR)
@@ -560,7 +565,7 @@ class TestPagerDutyIncidentOutput(object):
             }
         }
 
-        assert_true(self._dispatcher.dispatch(get_alert(context=ctx), self.DESCRIPTOR))
+        assert_true(self._dispatcher.dispatch(get_alert(context=ctx), self.OUTPUT))
 
         log_mock.assert_called_with('Successfully sent alert to %s:%s',
                                     self.SERVICE, self.DESCRIPTOR)
@@ -593,7 +598,7 @@ class TestPagerDutyIncidentOutput(object):
 
         ctx = {'pagerduty-incident': {'assigned_user': 'invalid_user'}}
 
-        assert_true(self._dispatcher.dispatch(get_alert(context=ctx), self.DESCRIPTOR))
+        assert_true(self._dispatcher.dispatch(get_alert(context=ctx), self.OUTPUT))
 
         log_mock.assert_called_with('Successfully sent alert to %s:%s',
                                     self.SERVICE, self.DESCRIPTOR)
@@ -623,7 +628,7 @@ class TestPagerDutyIncidentOutput(object):
         # PUT /incidents/indicent_id/merge
         put_mock.return_value.status_code = 200
 
-        assert_true(self._dispatcher.dispatch(get_alert(), self.DESCRIPTOR))
+        assert_true(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
 
         log_mock.assert_called_with('Successfully sent alert to %s:%s',
                                     self.SERVICE, self.DESCRIPTOR)
@@ -643,7 +648,7 @@ class TestPagerDutyIncidentOutput(object):
         # POST /incidents
         post_mock.return_value.status_code = 400
 
-        assert_false(self._dispatcher.dispatch(get_alert(), self.DESCRIPTOR))
+        assert_false(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
 
         log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, self.DESCRIPTOR)
 
@@ -671,7 +676,7 @@ class TestPagerDutyIncidentOutput(object):
 
         ctx = {'pagerduty-incident': {'assigned_policy_id': 'valid_policy_id'}}
 
-        assert_true(self._dispatcher.dispatch(get_alert(context=ctx), self.DESCRIPTOR))
+        assert_true(self._dispatcher.dispatch(get_alert(context=ctx), self.OUTPUT))
 
         log_mock.assert_called_with('Successfully sent alert to %s:%s',
                                     self.SERVICE, self.DESCRIPTOR)
@@ -690,7 +695,7 @@ class TestPagerDutyIncidentOutput(object):
         post_mock.return_value.status_code = 200
         post_mock.return_value.json.return_value = {}
 
-        assert_false(self._dispatcher.dispatch(get_alert(), self.DESCRIPTOR))
+        assert_false(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
 
         log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, self.DESCRIPTOR)
 
@@ -710,7 +715,7 @@ class TestPagerDutyIncidentOutput(object):
         json_event = {}
         post_mock.return_value.json.side_effect = [json_incident, json_event]
 
-        assert_false(self._dispatcher.dispatch(get_alert(), self.DESCRIPTOR))
+        assert_false(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
 
         log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, self.DESCRIPTOR)
 
@@ -730,7 +735,7 @@ class TestPagerDutyIncidentOutput(object):
         json_event = {'not_dedup_key': 'returned_dedup_key'}
         post_mock.return_value.json.side_effect = [json_incident, json_event]
 
-        assert_false(self._dispatcher.dispatch(get_alert(), self.DESCRIPTOR))
+        assert_false(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
 
         log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, self.DESCRIPTOR)
 
@@ -747,7 +752,7 @@ class TestPagerDutyIncidentOutput(object):
         # /incidents
         post_mock.return_value.status_code = 400
 
-        assert_false(self._dispatcher.dispatch(get_alert(), self.DESCRIPTOR))
+        assert_false(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
 
         log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, self.DESCRIPTOR)
 
@@ -761,13 +766,14 @@ class TestPagerDutyIncidentOutput(object):
         json_user = {'not_users': [{'id': 'no_user_id'}]}
         get_mock.return_value.json.return_value = json_user
 
-        assert_false(self._dispatcher.dispatch(get_alert(), self.DESCRIPTOR))
+        assert_false(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
 
         log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, self.DESCRIPTOR)
 
     @patch('logging.Logger.error')
     def test_dispatch_bad_descriptor(self, log_mock):
         """PagerDutyIncidentOutput - Dispatch Failure, Bad Descriptor"""
-        assert_false(self._dispatcher.dispatch(get_alert(), 'bad_descriptor'))
+        assert_false(
+            self._dispatcher.dispatch(get_alert(), ':'.join([self.SERVICE, 'bad_descriptor'])))
 
         log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, 'bad_descriptor')

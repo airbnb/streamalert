@@ -42,6 +42,7 @@ class TestSlackOutput(object):
     """Test class for SlackOutput"""
     DESCRIPTOR = 'unit_test_channel'
     SERVICE = 'slack'
+    OUTPUT = ':'.join([SERVICE, DESCRIPTOR])
     CREDS = {'url': 'https://api.slack.com/web-hook-key'}
 
     def setup(self):
@@ -174,6 +175,32 @@ class TestSlackOutput(object):
         assert_equal(len(result), 2)
         assert_equal(result[1], '*test_key_02:* test_value_02')
 
+    def test_split_attachment_text_newline(self):
+        """SlackOutput - Split Attachment, On Newline"""
+        message = {'messages': 'test\n' * 800}
+        result = list(SlackOutput._split_attachment_text(message))
+        assert_equal(len(result[0]), 3996)
+
+    def test_split_attachment_text_on_space(self):
+        """SlackOutput - Split Attachment, On Space"""
+        message = {'messages': 'test ' * 800}
+        result = list(SlackOutput._split_attachment_text(message))
+        assert_equal(len(result[0]), 3996)
+
+    def test_split_attachment_text_no_delimiter(self):
+        """SlackOutput - Split Attachment, No Delimiter"""
+        message = {'messages': 'test' * 2000}
+        result = list(SlackOutput._split_attachment_text(message))
+        assert_equal(len(result[1]), 4000)
+
+    @patch('logging.Logger.warning')
+    def test_max_attachments(self, log_mock):
+        """SlackOutput - Max Attachment Reached"""
+        alert = get_alert()
+        alert.record = {'info': 'test' * 20000}
+        list(SlackOutput._format_attachments(alert, 'foo'))
+        log_mock.assert_called_with('%s: %d-part message truncated to %d parts', alert, 21, 20)
+
     @patch('logging.Logger.info')
     @patch('requests.post')
     def test_dispatch_success(self, url_mock, log_mock):
@@ -181,7 +208,7 @@ class TestSlackOutput(object):
         url_mock.return_value.status_code = 200
         url_mock.return_value.json.return_value = dict()
 
-        assert_true(self._dispatcher.dispatch(get_alert(), self.DESCRIPTOR))
+        assert_true(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
 
         log_mock.assert_called_with('Successfully sent alert to %s:%s',
                                     self.SERVICE, self.DESCRIPTOR)
@@ -194,13 +221,14 @@ class TestSlackOutput(object):
         url_mock.return_value.json.return_value = json_error
         url_mock.return_value.status_code = 400
 
-        assert_false(self._dispatcher.dispatch(get_alert(), self.DESCRIPTOR))
+        assert_false(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
 
         log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, self.DESCRIPTOR)
 
     @patch('logging.Logger.error')
     def test_dispatch_bad_descriptor(self, log_mock):
         """SlackOutput - Dispatch Failure, Bad Descriptor"""
-        assert_false(self._dispatcher.dispatch(get_alert(), 'bad_descriptor'))
+        assert_false(
+            self._dispatcher.dispatch(get_alert(), ':'.join([self.SERVICE, 'bad_descriptor'])))
 
         log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, 'bad_descriptor')

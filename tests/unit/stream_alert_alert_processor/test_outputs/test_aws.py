@@ -71,6 +71,7 @@ class TestFirehoseOutput(object):
     """Test class for AWS Kinesis Firehose"""
     DESCRIPTOR = 'unit_test_delivery_stream'
     SERVICE = 'aws-firehose'
+    OUTPUT = ':'.join([SERVICE, DESCRIPTOR])
 
     def setup(self):
         """Setup before each method"""
@@ -98,7 +99,7 @@ class TestFirehoseOutput(object):
     @patch('logging.Logger.info')
     def test_dispatch(self, log_mock):
         """Kinesis Firehose - Output Dispatch Success"""
-        assert_true(self._dispatcher.dispatch(get_alert(), self.DESCRIPTOR))
+        assert_true(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
 
         log_mock.assert_called_with('Successfully sent alert to %s:%s',
                                     self.SERVICE, self.DESCRIPTOR)
@@ -107,7 +108,7 @@ class TestFirehoseOutput(object):
         """Output Dispatch - Kinesis Firehose with Large Payload"""
         alert = get_alert()
         alert.record = 'test' * 1000 * 1000
-        assert_false(self._dispatcher.dispatch(alert, self.DESCRIPTOR))
+        assert_false(self._dispatcher.dispatch(alert, self.OUTPUT))
 
 
 @mock_lambda
@@ -115,6 +116,7 @@ class TestLambdaOutput(object):
     """Test class for LambdaOutput"""
     DESCRIPTOR = 'unit_test_lambda'
     SERVICE = 'aws-lambda'
+    OUTPUT = ':'.join([SERVICE, DESCRIPTOR])
 
     def setup(self):
         """Setup before each method"""
@@ -129,7 +131,7 @@ class TestLambdaOutput(object):
     @patch('logging.Logger.info')
     def test_dispatch(self, log_mock):
         """LambdaOutput dispatch"""
-        assert_true(self._dispatcher.dispatch(get_alert(), self.DESCRIPTOR))
+        assert_true(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
 
         log_mock.assert_called_with('Successfully sent alert to %s:%s',
                                     self.SERVICE, self.DESCRIPTOR)
@@ -140,7 +142,8 @@ class TestLambdaOutput(object):
         alt_descriptor = '{}_qual'.format(self.DESCRIPTOR)
         create_lambda_function(CONFIG[self.SERVICE][alt_descriptor], REGION)
 
-        assert_true(self._dispatcher.dispatch(get_alert(), alt_descriptor))
+        assert_true(
+            self._dispatcher.dispatch(get_alert(), ':'.join([self.SERVICE, alt_descriptor])))
 
         log_mock.assert_called_with('Successfully sent alert to %s:%s',
                                     self.SERVICE, alt_descriptor)
@@ -151,6 +154,7 @@ class TestS3Output(object):
     """Test class for S3Output"""
     DESCRIPTOR = 'unit_test_bucket'
     SERVICE = 'aws-s3'
+    OUTPUT = ':'.join([SERVICE, DESCRIPTOR])
 
     def setup(self):
         """Setup before each method"""
@@ -166,7 +170,7 @@ class TestS3Output(object):
     @patch('logging.Logger.info')
     def test_dispatch(self, log_mock):
         """S3Output - Dispatch Success"""
-        assert_true(self._dispatcher.dispatch(get_alert(), self.DESCRIPTOR))
+        assert_true(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
 
         log_mock.assert_called_with('Successfully sent alert to %s:%s',
                                     self.SERVICE, self.DESCRIPTOR)
@@ -177,6 +181,7 @@ class TestSNSOutput(object):
     """Test class for SNSOutput"""
     DESCRIPTOR = 'unit_test_topic'
     SERVICE = 'aws-sns'
+    OUTPUT = ':'.join([SERVICE, DESCRIPTOR])
 
     def setup(self):
         """Create the dispatcher and the mock SNS topic."""
@@ -187,7 +192,7 @@ class TestSNSOutput(object):
     @patch('logging.Logger.info')
     def test_dispatch(self, log_mock):
         """SNSOutput - Dispatch Success"""
-        assert_true(self._dispatcher.dispatch(get_alert(), self.DESCRIPTOR))
+        assert_true(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
 
         log_mock.assert_called_with('Successfully sent alert to %s:%s',
                                     self.SERVICE, self.DESCRIPTOR)
@@ -198,6 +203,7 @@ class TestSQSOutput(object):
     """Test class for SQSOutput"""
     DESCRIPTOR = 'unit_test_queue'
     SERVICE = 'aws-sqs'
+    OUTPUT = ':'.join([SERVICE, DESCRIPTOR])
 
     def setup(self):
         """Create the dispatcher and the mock SQS queue."""
@@ -208,7 +214,7 @@ class TestSQSOutput(object):
     @patch('logging.Logger.info')
     def test_dispatch(self, log_mock):
         """SQSOutput - Dispatch Success"""
-        assert_true(self._dispatcher.dispatch(get_alert(), self.DESCRIPTOR))
+        assert_true(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
 
         log_mock.assert_called_with('Successfully sent alert to %s:%s',
                                     self.SERVICE, self.DESCRIPTOR)
@@ -218,6 +224,7 @@ class TestCloudwatchLogOutput(object):
     """Test class for CloudwatchLogOutput"""
     DESCRIPTOR = 'unit_test_default'
     SERVICE = 'aws-cloudwatch-log'
+    OUTPUT = ':'.join([SERVICE, DESCRIPTOR])
 
     def setup(self):
         """Create the Cloudwatch dispatcher"""
@@ -228,7 +235,7 @@ class TestCloudwatchLogOutput(object):
         """Cloudwatch - Dispatch"""
         alert = get_alert()
 
-        assert_true(self._dispatcher.dispatch(alert, self.DESCRIPTOR))
-        assert_equal(log_mock.call_count, 2)
+        assert_true(self._dispatcher.dispatch(alert, self.OUTPUT))
+        assert_equal(log_mock.call_count, 3)
         log_mock.assert_called_with('Successfully sent alert to %s:%s',
                                     self.SERVICE, self.DESCRIPTOR)

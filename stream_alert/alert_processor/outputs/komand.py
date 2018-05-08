@@ -56,7 +56,7 @@ class KomandOutput(OutputDispatcher):
                             cred_requirement=True))
         ])
 
-    def dispatch(self, alert, descriptor):
+    def _dispatch(self, alert, descriptor):
         """Send alert to Komand
 
         Args:
@@ -68,12 +68,11 @@ class KomandOutput(OutputDispatcher):
         """
         creds = self._load_creds(descriptor)
         if not creds:
-            return self._log_status(False, descriptor)
+            return False
 
         headers = {'Authorization': creds['komand_auth_token']}
 
         LOGGER.debug('sending alert to Komand')
 
         resp = self._post_request(creds['url'], {'data': alert.output_dict()}, headers, False)
-        success = self._check_http_response(resp)
-        return self._log_status(success, descriptor)
+        return self._check_http_response(resp)

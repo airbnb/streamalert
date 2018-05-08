@@ -34,7 +34,7 @@ from stream_alert.shared.config import load_config
 
 # Without this time.sleep patch, backoff performs sleep
 # operations and drastically slows down testing
-@patch('time.sleep', Mock(return_value=True))
+@patch('time.sleep', Mock())
 @patch.object(StreamAlertSQSClient, 'SQS_BACKOFF_MAX_RETRIES', 1)
 class TestStreamAlertSQSClient(object):
     """Test class for StreamAlertSQSClient"""
