@@ -163,6 +163,22 @@ class TestAlertMerger(object):
         assert_equal(alerts[5:7], groups[2].alerts)
         assert_equal([alerts[7]], groups[3].alerts)
 
+    @patch.object(main.AlertMergeGroup, 'MAX_ALERTS_PER_GROUP', 2)
+    def test_merge_groups_limit_reached(self):
+        """Alert Merger - Alert Collection - Max Alerts Per Group"""
+        alerts = [
+            Alert('same_rule_name', {'key': 'A'}, set(),
+                  created=datetime(year=2000, month=1, day=1),
+                  merge_by_keys=['key'], merge_window=timedelta(minutes=5)),
+        ] * 5
+
+        # Since max alerts per group is 2, it should create 3 merged groups.
+        groups = main.AlertMerger._merge_groups(alerts)
+        assert_equal(3, len(groups))
+        assert_equal(alerts[0:2], groups[0].alerts)
+        assert_equal(alerts[2:4], groups[1].alerts)
+        assert_equal(alerts[4:], groups[2].alerts)
+
     @patch.object(main, 'LOGGER')
     @patch.object(main.AlertMerger, 'MAX_LAMBDA_PAYLOAD_SIZE', 600)
     def test_dispatch(self, mock_logger):

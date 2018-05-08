@@ -23,7 +23,8 @@ from stream_alert.shared.utils import (  # pylint: disable=unused-import
     # Import some utility functions which are useful for rules as well
     get_first_key,
     get_keys,
-    in_network
+    in_network,
+    valid_ip
 )
 
 logging.basicConfig()
