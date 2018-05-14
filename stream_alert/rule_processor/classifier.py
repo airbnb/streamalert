@@ -273,9 +273,13 @@ class StreamClassifier(object):
             # Convert data types per the schema
             # Use the root schema for the parser due to updates caused by
             # configuration settings such as envelope_keys and optional_keys
-            if not self._convert_type(
-                    parsed_data_value,
-                    schema_match.root_schema):
+            try:
+                if not self._convert_type(
+                        parsed_data_value,
+                        schema_match.root_schema):
+                    return False
+            except KeyError:
+                LOGGER.error('The payload is mis-classified. Payload [%s]', parsed_data_value)
                 return False
 
         normalized_types = StreamThreatIntel.normalized_type_mapping()
