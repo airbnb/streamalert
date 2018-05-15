@@ -19,6 +19,7 @@ import re
 
 import backoff
 import boto3
+from botocore import client
 from botocore.exceptions import ClientError
 from botocore.vendored.requests.exceptions import ConnectionError
 
@@ -45,10 +46,18 @@ class StreamAlertFirehose(object):
     MAX_BATCH_SIZE = 4000 * 1000
     # The subtraction of 2 accounts for the newline at the end
     MAX_RECORD_SIZE = 1000 * 1000 - 2
+    # Set a boto connect and read timeout in an attempt to shorten the time it takes to
+    # send to firehose. This will effectively cause retries to happen quicker
+    BOTO_TIMEOUT = 5
 
     def __init__(self, region, firehose_config, log_sources):
         self._region = region
-        self._firehose_client = boto3.client('firehose', region_name=self._region)
+        boto_config = client.Config(
+            connect_timeout=self.BOTO_TIMEOUT,
+            read_timeout=self.BOTO_TIMEOUT,
+            region_name=self._region
+        )
+        self._firehose_client = boto3.client('firehose', config=boto_config)
         # Expand enabled logs into specific subtypes
         self._enabled_logs = self._load_enabled_log_sources(firehose_config, log_sources)
 
