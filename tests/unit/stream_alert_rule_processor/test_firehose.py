@@ -258,6 +258,24 @@ class TestStreamAlertFirehose(object):
         assert_true(mock_logging.called)
         assert_not_equal(id_1, id_2)
 
+    def test_strip_successful_records(self):
+        """StreamAlertFirehose - Strip Successful Records"""
+        batch = [{'test': 'success'}, {'test': 'data'}, {'other': 'failure'}, {'other': 'info'}]
+        response = {
+            'FailedPutCount': 1,
+            'RequestResponses': [
+                {'RecordId': 'rec_id_00'},
+                {'RecordId': 'rec_id_01'},
+                {'ErrorCode': 10, 'ErrorMessage': 'foo'},
+                {'RecordId': 'rec_id_03'}
+            ]
+        }
+
+        expected_batch = [{'other': 'failure'}]
+        StreamAlertFirehose._strip_successful_records(batch, response)
+
+        assert_equal(batch, expected_batch)
+
     def test_segment_records_by_size(self):
         """StreamAlertFirehose - Segment Large Records"""
         sa_firehose = StreamAlertFirehose(region='us-east-1', firehose_config={}, log_sources={})
