@@ -189,12 +189,17 @@ class StreamAlertFirehose(object):
                               on_giveup=giveup_handler())
         def firehose_request_wrapper(data):
             """Firehose request wrapper to use with backoff"""
-            LOGGER.info('[Firehose] Sending %d records to %s',
-                        record_batch_size,
-                        stream_name)
-            return self._firehose_client.put_record_batch(
+            LOGGER.info('[Firehose] Sending %d records to %s', record_batch_size, stream_name)
+
+            response = self._firehose_client.put_record_batch(
                 DeliveryStreamName=stream_name,
                 Records=data)
+
+            # Log this as an error for now so it can be picked up in logs
+            if response['FailedPutCount'] > 0:
+                LOGGER.error('Receieved non-zero FailedPutCount: %d', response['FailedPutCount'])
+
+            return response
 
         # The newline at the end is required by Firehose,
         # otherwise all records will be on a single line and
