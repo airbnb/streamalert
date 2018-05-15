@@ -3,9 +3,9 @@ import re
 from app_integrations.apps.app_base import StreamAlertApp, AppIntegration
 
 class SlackApp(AppIntegration):
-    """SlackApp will audit 2 types of event logs: access logs and integration logs.
+    """SlackApp will collect 2 types of event logs: access logs and integration logs.
 
-    This base class will be inherited by different subclasssed based on different
+    This base class will be inherited by different subclasses based on different
     event types.
 
     Access logs:
@@ -28,9 +28,6 @@ class SlackApp(AppIntegration):
             NotImplementedError: If the subclasses do not properly implement this method
         """
         raise NotImplementedError('Subclasses should implement the _endpoint method')
-
-    def _process_log_payload(self, payload):
-        raise NotImplementedError('Subclasses shouls implement the _process_log_payload method')
 
     @classmethod
     def _type(cls):
@@ -68,7 +65,7 @@ class SlackApp(AppIntegration):
                 'Authorization': 'Bearer {}'.format(self._config.auth['auth_token'])
                 }
         success, response = self._make_post_request(
-                url, headers, params, False)
+                url, headers, None, False)
 
         if not success:
             LOGGER.exception('Received bad response from slack')
@@ -78,11 +75,42 @@ class SlackApp(AppIntegration):
             LOGGER.exception('Received error or warning from slack')
             return False
 
-        return _process_log_payload(response)
+        return response
 
 
 @StreamAlertApp
 class SlackAccessApp(SlackApp):
+    """An app that collects the logs from the team.accessLogs endpoint on Slack.
+
+    There are a couple of quirks with this endpoint. It returns one entry per unique
+    combination of user/ip/user_agent, with the values date_first and date_last
+    indicating the first and most recent access with this combination. Entries
+    are sorted by date_first descending, meaning that the entire log must be collected
+    to ensure that all possible updates are available.
+
+    Results are paginated, with the count parameter of the api dictating the max number
+    of results per page (max 1000) and the page parameter of the api dictating which page
+    is requested (max 100).
+
+    The result of a successful api call is json whose outermost schema is
+
+    {
+      "ok":True,
+      "login": [entries],
+      "pagination": {
+        "count": <number of entries per page>,
+        "total": <total number of entries>,
+        "page": <current page of results>,
+        "pages": <total number of pages of results>
+      }
+    }
+
+    Additionally, the 'before' parameter of the api call does not appear to be
+    functional. This has been confirmed with Slack's support.
+
+    Resource:
+        https://api.slack.com/methods/team.accessLogs
+    """
     _SLACK_ACCESS_LOGS_ENDPOINT = 'team.accessLogs'
 
     @classmethod
@@ -93,11 +121,62 @@ class SlackAccessApp(SlackApp):
     def _endpoint(cls):
         return cls._SLACK_ACCESS_LOGS_ENDPOINT
 
-    def _process_log_payload(self, payload):
-        """Perform endpoint specific processing of the response to extract log events.
+    def _sleep_seconds(self):
+        """Return the number of seconds this polling function should sleep for
+        between requests to avoid failed requests. The Slack team.accessLog API
+        has Tier 2 limiting, which is 20 requests per minute.
+
+        Resource:
+            http://api.slack.com/methods/team.accessLogs
 
         Returns:
-            list: a list of dictionaries containing log events
+            int: Number of seconds the polling function should sleep for
         """
-        return [m for m in payload[u'login'] ] 
+        return 3
 
+@StreamAlertApp
+class SlackIntegrationsApp(SlackApp):
+    """An app that collects the logs from the team.integrationLogs endpoint on Slack.
+
+    Results are paginated, with the count parameter of the api dictating the max number
+    of results per page (max 1000) and the page parameter of the api dictating which page
+    is requested (max 100).
+
+    The result of a successful api call is json whose outermost schema is
+
+    {
+      "ok":True,
+      "log": [entries],
+      "pagination": {
+        "count": <number of entries per page>,
+        "total": <total number of entries>,
+        "page": <current page of results>,
+        "pages": <total number of pages of results>
+      }
+    }
+
+    Resource:
+        https://api.slack.com/methods/team.integrationLogs
+    """
+    _SLACK_INTEGRATION_LOGS_ENDPOINT = 'team.integrationLogs'
+
+    @classmethod
+    def _type(cls):
+        return 'integration'
+
+    @classmethod
+    def _endpoint(cls):
+        return cls._SLACK_INTEGRATION_LOGS_ENDPOINT
+
+    def _sleep_seconds(self):
+        """Return the number of seconds this polling function should sleep for
+        between requests to avoid failed requests. The Slack team.integrationLog API
+        has Tier 2 limiting, which is 20 requests per minute.
+
+        Resource:
+            http://api.slack.com/methods/team.integrationLogs
+
+        Returns:
+            int: Number of seconds the polling function should sleep for
+        """
+        return 3
