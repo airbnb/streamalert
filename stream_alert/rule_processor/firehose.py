@@ -157,6 +157,23 @@ class StreamAlertFirehose(object):
         backoff_handler(debug_only=False)(details)
         self._firehose_client = self._create_firehose_client()
 
+    @staticmethod
+    def _strip_successful_records(batch, response):
+        """Inspect the response and remove any records records that have successfully to sent
+
+        Args:
+            batch (list): List of dicts with JSON dumped records that are being
+                sent to Firehose. Format is:
+                [{'Data': <json-dumped-rec}, {'Data': <json-dumped-rec}]
+            response (dict): Response object from the boto3.client.put_record_batch call
+                that contains metadata on the success status of the call
+        """
+        success_indices = [idx for idx, rec in enumerate(response['RequestResponses'])
+                           if rec.get('RecordId')]
+
+        for idx in sorted(success_indices, reverse=True):
+            del batch[idx]
+
     def _firehose_request_helper(self, stream_name, record_batch):
         """Send record batches to Firehose
 
@@ -193,7 +210,10 @@ class StreamAlertFirehose(object):
 
             # Log this as an error for now so it can be picked up in logs
             if response['FailedPutCount'] > 0:
-                LOGGER.error('Receieved non-zero FailedPutCount: %d', response['FailedPutCount'])
+                LOGGER.error('Received non-zero FailedPutCount: %d', response['FailedPutCount'])
+                # Strip out the successful records so only the failed ones are retried. This happens
+                # to the list of dictionary objects, so the called function sees the updated list
+                self._strip_successful_records(data, response)
 
             return response
 
