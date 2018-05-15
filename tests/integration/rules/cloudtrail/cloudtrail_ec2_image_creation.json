@@ -1,0 +1,126 @@
+[
+    {
+        "data": {
+            "account": "444444444444",
+            "region": "us-east-1",
+            "detail": {
+                "eventVersion": "1.05",
+                "eventID": "c6b72da7-5dc5-43bd-a890-d8a88cb41e15",
+                "eventTime": "2018-05-15T16:01:34Z",
+                "requestParameters": {
+                    "instanceId": "i-fffffffffffffffff",
+                    "blockDeviceMapping": {
+                        "items": [
+                            {
+                                "deviceName": "/dev/xvda",
+                                "ebs": {
+                                    "deleteOnTermination": true,
+                                    "volumeSize": 8,
+                                    "volumeType": "gp2",
+                                    "encrypted": false
+                                }
+                            }
+                        ]
+                    },
+                    "name": "test-01",
+                    "noReboot": false,
+                    "description": "test-01"
+                },
+                "eventType": "AwsApiCall",
+                "responseElements": {
+                    "imageId": "ami-6eb72111"
+                },
+                "awsRegion": "us-east-1",
+                "eventName": "CreateImage",
+                "userIdentity": {
+                    "userName": "test",
+                    "principalId": "444444444444",
+                    "accessKeyId": "ASIAJZ5FBXW6BLKSCUJQ",
+                    "sessionContext": {
+                        "attributes": {
+                            "creationDate": "2018-05-15T15:59:13Z",
+                            "mfaAuthenticated": "true"
+                        }
+                    },
+                    "type": "User",
+                    "arn": "arn:aws:iam::444444444444:user/test",
+                    "accountId": "444444444444"
+                },
+                "eventSource": "ec2.amazonaws.com",
+                "requestID": "c4f3ac65-9f3e-4ef1-b221-cead9aa4fe8f",
+                "userAgent": "console.ec2.amazonaws.com",
+                "sourceIPAddress": "12.10.0.1"
+            },
+            "source": "aws.ec2",
+            "version": "0",
+            "detail-type": "AWS API Call via CloudTrail",
+            "time": "2018-05-15T16:01:34Z",
+            "id": "131e6c98-9e4a-7fc6-af8d-d86067a76865",
+            "resources": []
+        },
+        "description": "Creating an AMI with unencrypted Volume should trigger an alert",
+        "log": "cloudwatch:events",
+        "service": "kinesis",
+        "source": "prefix_cluster1_stream_alert_kinesis",
+        "trigger_rules": ["unencrypted_ami_volume"]
+    },
+    {
+        "data": {
+            "account": "444444444444",
+            "region": "us-east-1",
+            "detail": {
+                "eventVersion": "1.05",
+                "eventID": "d1f68cab-64bc-481c-92b4-d0ca2e4a5e65",
+                "eventTime": "2018-05-15T16:17:48Z",
+                "requestParameters": {
+                    "launchPermission": {
+                        "add": {
+                            "items": [
+                                {
+                                    "group": "all"
+                                }
+                            ]
+                        }
+                    },
+                    "attributeType": "launchPermission",
+                    "imageId": "ami-6eb72111"
+                },
+                "eventType": "AwsApiCall",
+                "responseElements": {
+                    "_return": true
+                },
+                "awsRegion": "us-east-1",
+                "eventName": "ModifyImageAttribute",
+                "userIdentity": {
+                    "userName": "test",
+                    "principalId": "444444444444",
+                    "accessKeyId": "ASIAJZ5FBXW6BLKSCUJQ",
+                    "sessionContext": {
+                        "attributes": {
+                            "creationDate": "2018-05-15T15:59:13Z",
+                            "mfaAuthenticated": "true"
+                        }
+                    },
+                    "type": "User",
+                    "arn": "arn:aws:iam::444444444444:user/test",
+                    "accountId": "444444444444"
+                },
+                "eventSource": "ec2.amazonaws.com",
+                "requestID": "2fc285db-f3c5-46f9-997a-8cdc948d79e3",
+                "userAgent": "console.ec2.amazonaws.com",
+                "sourceIPAddress": "12.1.0.11"
+            },
+            "source": "aws.ec2",
+            "version": "0",
+            "detail-type": "AWS API Call via CloudTrail",
+            "time": "2018-05-15T16:17:48Z",
+            "id": "b6046969-ccad-0271-d96c-bc52de735f3d",
+            "resources": []
+        },
+        "description": "Creating a public AMI should trigger an alert",
+        "log": "cloudwatch:events",
+        "service": "kinesis",
+        "source": "prefix_cluster1_stream_alert_kinesis",
+        "trigger_rules": ["public_ami"]
+    }
+]
