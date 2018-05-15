@@ -16,7 +16,7 @@ limitations under the License.
 # pylint: disable=protected-access,no-self-use
 from mock import patch
 from moto import mock_kinesis
-from nose.tools import (assert_equal, assert_false, assert_not_equal, assert_true)
+from nose.tools import assert_equal, assert_false, assert_true
 
 from stream_alert.rule_processor.firehose import StreamAlertFirehose
 from stream_alert.shared.config import load_config
@@ -239,24 +239,6 @@ class TestStreamAlertFirehose(object):
 
         assert_equal(len(sa_firehose._enabled_logs), 0)
         assert_true(mock_logging.error.called)
-
-    @patch('logging.Logger.info')
-    @mock_kinesis
-    def test_firehose_reset(self, mock_logging):
-        """StreamAlertFirehose - Test Reset Firehose Client"""
-        def test_func():
-            pass
-        sa_firehose = StreamAlertFirehose(region='us-east-1', firehose_config={}, log_sources={})
-
-        id_1 = id(sa_firehose._firehose_client)
-        sa_firehose._backoff_handler_firehose_reset({
-            'target': test_func,
-            'wait': 0.134315135,
-            'tries': 3})
-        id_2 = id(sa_firehose._firehose_client)
-
-        assert_true(mock_logging.called)
-        assert_not_equal(id_1, id_2)
 
     def test_strip_successful_records(self):
         """StreamAlertFirehose - Strip Successful Records"""
