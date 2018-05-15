@@ -240,7 +240,7 @@ class TestStreamAlertFirehose(object):
         assert_equal(len(sa_firehose._enabled_logs), 0)
         assert_true(mock_logging.error.called)
 
-    @patch('stream_alert.rule_processor.firehose.LOGGER')
+    @patch('logging.Logger.info')
     @mock_kinesis
     def test_firehose_reset(self, mock_logging):
         """StreamAlertFirehose - Test Reset Firehose Client"""
@@ -251,11 +251,11 @@ class TestStreamAlertFirehose(object):
         id_1 = id(sa_firehose._firehose_client)
         sa_firehose._backoff_handler_firehose_reset({
             'target': test_func,
-            'wait': '0.134315135',
+            'wait': 0.134315135,
             'tries': 3})
         id_2 = id(sa_firehose._firehose_client)
 
-        assert_true(mock_logging.info.called)
+        assert_true(mock_logging.called)
         assert_not_equal(id_1, id_2)
 
     def test_segment_records_by_size(self):

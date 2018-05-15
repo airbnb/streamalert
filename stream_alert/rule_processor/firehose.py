@@ -51,13 +51,12 @@ class StreamAlertFirehose(object):
     BOTO_TIMEOUT = 5
 
     def __init__(self, region, firehose_config, log_sources):
-        self._region = region
-        boto_config = client.Config(
+        self._boto_config = client.Config(
             connect_timeout=self.BOTO_TIMEOUT,
             read_timeout=self.BOTO_TIMEOUT,
-            region_name=self._region
+            region_name=region
         )
-        self._firehose_client = boto3.client('firehose', config=boto_config)
+        self._firehose_client = self._create_firehose_client()
         # Expand enabled logs into specific subtypes
         self._enabled_logs = self._load_enabled_log_sources(firehose_config, log_sources)
 
@@ -74,9 +73,9 @@ class StreamAlertFirehose(object):
             list: casts the set of enabled logs into a list for JSON serialization"""
         return list(self._enabled_logs)
 
-    def _reset_firehose_client(self):
-        """When errors are thrown, reset the Firehose client"""
-        self._firehose_client = boto3.client('firehose', region_name=self._region)
+    def _create_firehose_client(self):
+        """When errors are thrown, this can be used to reset the Firehose client"""
+        return boto3.client('firehose', config=self._boto_config)
 
     def _segment_records_by_size(self, record_batch):
         """Segment record groups by size
@@ -155,11 +154,8 @@ class StreamAlertFirehose(object):
 
     def _backoff_handler_firehose_reset(self, details):
         """Custom backoff handler to re-instantiate the Firehose Client"""
-        LOGGER.info('[Backoff]: Calling \'%s\' again in %f seconds with %d tries so far',
-                    details['target'].__name__,
-                    details['wait'],
-                    details['tries'])
-        self._reset_firehose_client()
+        backoff_handler(debug_only=False)(details)
+        self._firehose_client = self._create_firehose_client()
 
     def _firehose_request_helper(self, stream_name, record_batch):
         """Send record batches to Firehose
