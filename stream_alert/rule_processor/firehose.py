@@ -19,8 +19,9 @@ import re
 
 import backoff
 import boto3
+from botocore import client
 from botocore.exceptions import ClientError
-from botocore.vendored.requests.exceptions import ConnectionError
+from botocore.vendored.requests.exceptions import ConnectionError, Timeout
 
 from stream_alert.rule_processor import FUNCTION_NAME, LOGGER
 from stream_alert.shared.metrics import MetricLogger
@@ -45,10 +46,17 @@ class StreamAlertFirehose(object):
     MAX_BATCH_SIZE = 4000 * 1000
     # The subtraction of 2 accounts for the newline at the end
     MAX_RECORD_SIZE = 1000 * 1000 - 2
+    # Set a boto connect and read timeout in an attempt to shorten the time it takes to
+    # send to firehose. This will effectively cause retries to happen quicker
+    BOTO_TIMEOUT = 5
 
     def __init__(self, region, firehose_config, log_sources):
-        self._region = region
-        self._firehose_client = boto3.client('firehose', region_name=self._region)
+        boto_config = client.Config(
+            connect_timeout=self.BOTO_TIMEOUT,
+            read_timeout=self.BOTO_TIMEOUT,
+            region_name=region
+        )
+        self._firehose_client = boto3.client('firehose', config=boto_config)
         # Expand enabled logs into specific subtypes
         self._enabled_logs = self._load_enabled_log_sources(firehose_config, log_sources)
 
@@ -64,10 +72,6 @@ class StreamAlertFirehose(object):
         Returns:
             list: casts the set of enabled logs into a list for JSON serialization"""
         return list(self._enabled_logs)
-
-    def _reset_firehose_client(self):
-        """When errors are thrown, reset the Firehose client"""
-        self._firehose_client = boto3.client('firehose', region_name=self._region)
 
     def _segment_records_by_size(self, record_batch):
         """Segment record groups by size
@@ -144,13 +148,25 @@ class StreamAlertFirehose(object):
 
         return new_record
 
-    def _backoff_handler_firehose_reset(self, details):
-        """Custom backoff handler to re-instantiate the Firehose Client"""
-        LOGGER.info('[Backoff]: Calling \'%s\' again in %f seconds with %d tries so far',
-                    details['target'].__name__,
-                    details['wait'],
-                    details['tries'])
-        self._reset_firehose_client()
+    @staticmethod
+    def _strip_successful_records(batch, response):
+        """Inspect the response and remove any records records that have successfully to sent
+
+        For each record, the index of the response element is the same as the index
+        used in the request array.
+
+        Args:
+            batch (list): List of dicts with JSON dumped records that are being
+                sent to Firehose. Format is:
+                [{'Data': <json-dumped-rec}, {'Data': <json-dumped-rec}]
+            response (dict): Response object from the boto3.client.put_record_batch call
+                that contains metadata on the success status of the call
+        """
+        success_indices = [idx for idx, rec in enumerate(response['RequestResponses'])
+                           if rec.get('RecordId')]
+
+        for idx in sorted(success_indices, reverse=True):
+            del batch[idx]
 
     def _firehose_request_helper(self, stream_name, record_batch):
         """Send record batches to Firehose
@@ -161,7 +177,7 @@ class StreamAlertFirehose(object):
         """
         resp = {}
         record_batch_size = len(record_batch)
-        exceptions_to_backoff = (ClientError, ConnectionError)
+        exceptions_to_backoff = (ClientError, ConnectionError, Timeout)
 
         @backoff.on_predicate(backoff.fibo,
                               lambda resp: resp['FailedPutCount'] > 0,
@@ -175,17 +191,25 @@ class StreamAlertFirehose(object):
                               exceptions_to_backoff,
                               max_tries=self.MAX_BACKOFF_ATTEMPTS,
                               jitter=backoff.full_jitter,
-                              on_backoff=self._backoff_handler_firehose_reset,
+                              on_backoff=backoff_handler(debug_only=False),
                               on_success=success_handler(),
                               on_giveup=giveup_handler())
         def firehose_request_wrapper(data):
             """Firehose request wrapper to use with backoff"""
-            LOGGER.info('[Firehose] Sending %d records to %s',
-                        record_batch_size,
-                        stream_name)
-            return self._firehose_client.put_record_batch(
+            LOGGER.info('[Firehose] Sending %d records to %s', record_batch_size, stream_name)
+
+            response = self._firehose_client.put_record_batch(
                 DeliveryStreamName=stream_name,
                 Records=data)
+
+            # Log this as an error for now so it can be picked up in logs
+            if response['FailedPutCount'] > 0:
+                LOGGER.error('Received non-zero FailedPutCount: %d', response['FailedPutCount'])
+                # Strip out the successful records so only the failed ones are retried. This happens
+                # to the list of dictionary objects, so the called function sees the updated list
+                self._strip_successful_records(data, response)
+
+            return response
 
         # The newline at the end is required by Firehose,
         # otherwise all records will be on a single line and
