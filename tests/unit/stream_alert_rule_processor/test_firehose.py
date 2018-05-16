@@ -57,7 +57,7 @@ class TestStreamAlertFirehose(object):
     def _mock_delivery_streams(self, delivery_stream_names):
         """Mock Kinesis Delivery Streams for tests"""
         for delivery_stream in delivery_stream_names:
-            self.__sa_firehose._firehose_client.create_delivery_stream(
+            self.__sa_firehose._client.create_delivery_stream(
                 DeliveryStreamName=delivery_stream,
                 S3DestinationConfiguration={
                     'RoleARN': 'arn:aws:iam::123456789012:role/firehose_delivery_role',
@@ -85,7 +85,7 @@ class TestStreamAlertFirehose(object):
         self._mock_delivery_streams(
             ['streamalert_data_test_log_type_json_nested', 'streamalert_data_unit_test_simple_log'])
 
-        with patch.object(self.__sa_firehose._firehose_client, 'put_record_batch') as firehose_mock:
+        with patch.object(self.__sa_firehose._client, 'put_record_batch') as firehose_mock:
             firehose_mock.side_effect = [{
                 'FailedPutCount':
                 3,
@@ -150,7 +150,7 @@ class TestStreamAlertFirehose(object):
             ['streamalert_data_test_log_type_json_nested', 'streamalert_data_unit_test_simple_log'])
 
         # Send the records
-        with patch.object(self.__sa_firehose._firehose_client, 'put_record_batch') as firehose_mock:
+        with patch.object(self.__sa_firehose._client, 'put_record_batch') as firehose_mock:
             firehose_mock.return_value = {'FailedPutCount': 0}
             self.__sa_firehose.send()
 
@@ -173,7 +173,7 @@ class TestStreamAlertFirehose(object):
             ['streamalert_data_test_log_type_json_nested', 'streamalert_data_unit_test_simple_log'])
 
         # Send the records
-        with patch.object(self.__sa_firehose._firehose_client, 'put_record_batch') as firehose_mock:
+        with patch.object(self.__sa_firehose._client, 'put_record_batch') as firehose_mock:
             firehose_mock.return_value = {
                 'FailedPutCount':
                 3,
