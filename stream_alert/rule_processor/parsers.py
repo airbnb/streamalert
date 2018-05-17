@@ -338,7 +338,7 @@ class CSVParser(ParserBase):
             StringIO: CSV reader object if the parse was successful OR
             False if parse was unsuccessful
         """
-        delimiter = self.options.get('delimiter', self.__default_delimiter)
+        delimiter = str(self.options.get('delimiter', self.__default_delimiter))
 
         # TODO(ryandeivert): either subclass a current parser or add a new
         # parser to support parsing CSV data that contains a header line
