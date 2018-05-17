@@ -43,14 +43,16 @@ def generate_flow_logs(cluster_name, cluster_dict, config):
             'cluster': cluster_name,
             'cross_account_ids': cross_account_ids,
             'destination_stream_arn': '${{module.kinesis_{}.arn}}'.format(cluster_name),
-            'flow_log_group_name': flow_log_group_name}
+            'flow_log_group_name': flow_log_group_name,
+            'log_retention': modules['flow_logs'].get('log_retention', 7)}
+
         for flow_log_input in ('vpcs', 'subnets', 'enis'):
             input_data = modules['flow_logs'].get(flow_log_input)
             if input_data:
                 cluster_dict['module']['flow_logs_{}'.format(
                     cluster_name)][flow_log_input] = input_data
+
         return True
 
     LOGGER_CLI.info('Flow logs disabled, nothing to do')
-
     return False
