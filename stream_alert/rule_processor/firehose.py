@@ -56,7 +56,7 @@ class StreamAlertFirehose(object):
             read_timeout=self.BOTO_TIMEOUT,
             region_name=region
         )
-        self._firehose_client = boto3.client('firehose', config=boto_config)
+        self._client = boto3.client('firehose', config=boto_config)
         # Expand enabled logs into specific subtypes
         self._enabled_logs = self._load_enabled_log_sources(firehose_config, log_sources)
 
@@ -175,8 +175,6 @@ class StreamAlertFirehose(object):
             stream_name (str): The name of the Delivery Stream to send to
             record_batch (list): The records to send
         """
-        resp = {}
-        record_batch_size = len(record_batch)
         exceptions_to_backoff = (ClientError, ConnectionError, Timeout)
 
         @backoff.on_predicate(backoff.fibo,
@@ -196,11 +194,10 @@ class StreamAlertFirehose(object):
                               on_giveup=giveup_handler())
         def firehose_request_wrapper(data):
             """Firehose request wrapper to use with backoff"""
-            LOGGER.info('[Firehose] Sending %d records to %s', record_batch_size, stream_name)
+            # Use the current length of data here so we can track failed records that are retried
+            LOGGER.info('[Firehose] Sending %d records to %s', len(data), stream_name)
 
-            response = self._firehose_client.put_record_batch(
-                DeliveryStreamName=stream_name,
-                Records=data)
+            response = self._client.put_record_batch(DeliveryStreamName=stream_name, Records=data)
 
             # Log this as an error for now so it can be picked up in logs
             if response['FailedPutCount'] > 0:
@@ -211,6 +208,8 @@ class StreamAlertFirehose(object):
 
             return response
 
+        original_batch_size = len(record_batch)
+
         # The newline at the end is required by Firehose,
         # otherwise all records will be on a single line and
         # unsearchable in Athena.
@@ -219,15 +218,16 @@ class StreamAlertFirehose(object):
             for record in record_batch
         ]
 
-        # The try/except here is to catch the raised error at the
-        # end of the backoff.
+        # The try/except here is to catch the raised error at the end of the backoff
         try:
             resp = firehose_request_wrapper(records_data)
         except exceptions_to_backoff as firehose_err:
             LOGGER.error(firehose_err)
+            # Use the current length of the records_data in case some records were
+            # successful but others were not
             MetricLogger.log_metric(FUNCTION_NAME,
                                     MetricLogger.FIREHOSE_FAILED_RECORDS,
-                                    record_batch_size)
+                                    len(records_data))
             return
 
         # Error handle if failures occurred in PutRecordBatch after
@@ -248,9 +248,9 @@ class StreamAlertFirehose(object):
         else:
             MetricLogger.log_metric(FUNCTION_NAME,
                                     MetricLogger.FIREHOSE_RECORDS_SENT,
-                                    record_batch_size)
+                                    original_batch_size)
             LOGGER.info('[Firehose] Successfully sent %d messages to %s with RequestId [%s]',
-                        record_batch_size,
+                        original_batch_size,
                         stream_name,
                         resp.get('ResponseMetadata', {}).get('RequestId', ''))
 
@@ -330,4 +330,4 @@ class StreamAlertFirehose(object):
 
         # explicitly close firehose client to resolve connection reset issue, suggested
         # by AWS support team.
-        self._firehose_client._endpoint.http_session.close() #pylint: disable=protected-access
+        self._client._endpoint.http_session.close() #pylint: disable=protected-access
