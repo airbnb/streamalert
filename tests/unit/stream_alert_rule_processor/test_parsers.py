@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from collections import OrderedDict
 import json
 
 from mock import patch
@@ -54,6 +55,42 @@ class TestParser(object):
         parser = self.parser_class(options)
         parsed_result = parser.parse(schema, data)
         return parsed_result
+
+
+class TestCSVParser(TestParser):
+    """Test class for CSVParser"""
+    @classmethod
+    def _parser_type(cls):
+        return 'csv'
+
+    def test_basic_csv_parsing(self):
+        """CSV Parser - Basic comma separated data"""
+        # setup
+        schema = OrderedDict([
+            ('host', 'string'), ('date', 'string'), ('message', 'string')])
+        options = {'delimiter': ','}
+        data = 'test-01.stg.foo.net,01-01-2018,test message!!!!'
+
+        # get parsed data
+        parsed_data = self.parser_helper(data=data, schema=schema, options=options)
+
+        assert_equal(len(parsed_data), 1)
+        assert_equal(parsed_data[0]['host'], 'test-01.stg.foo.net')
+
+    def test_csv_parsing_space_delimited(self):
+        """CSV Parser - Space separated data"""
+        # setup
+        schema = OrderedDict([
+            ('host', 'string'), ('date', 'string'), ('message', 'string')])
+        options = {'delimiter': ' '}
+        data = 'test-01.stg.foo.net 01-01-2018 "test message!!!!"'
+
+        # get parsed data
+        parsed_data = self.parser_helper(data=data, schema=schema, options=options)
+
+        assert_equal(len(parsed_data), 1)
+        assert_equal(parsed_data[0]['host'], 'test-01.stg.foo.net')
+        assert_equal(parsed_data[0]['message'], 'test message!!!!')
 
 
 class TestKVParser(TestParser):
