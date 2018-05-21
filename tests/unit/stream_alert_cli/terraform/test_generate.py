@@ -393,10 +393,10 @@ class TestTerraformGenerate(object):
             self.config
         )
 
-        # Count the modules for each region - there should be 17 since 1 is excluded
+        # Count the modules for each region - there should be 14 since 1 is excluded
         count = sum(1 for name in self.cluster_dict['module']
                     if name.startswith('cloudwatch_advanced'))
-        assert_equal(count, 17)
+        assert_equal(count, 14)
 
         expected_config = {
             'cluster': 'advanced',
@@ -449,10 +449,8 @@ class TestTerraformGenerate(object):
             'cloudwatch_advanced_eu-west-2',
             'cloudwatch_advanced_eu-west-3',
             'cloudwatch_advanced_us-west-2',
-            'cloudwatch_advanced_cn-north-1',
             'cloudwatch_advanced_sa-east-1',
             'cloudwatch_advanced_eu-central-1',
-            'cloudwatch_advanced_ap-northeast-3',
             'cloudwatch_advanced_ap-northeast-2',
             'cloudwatch_advanced_ap-northeast-1',
             'cloudwatch_advanced_ap-southeast-1',
@@ -461,7 +459,6 @@ class TestTerraformGenerate(object):
             'cloudwatch_advanced_us-east-1',
             'cloudwatch_advanced_us-east-2',
             'cloudwatch_advanced_ap-south-1',
-            'cloudwatch_advanced_cn-northwest-1',
             'cloudwatch_monitoring_advanced',
             'kinesis_advanced',
             'kinesis_events_advanced',
