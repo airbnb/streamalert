@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from abc import ABCMeta, abstractmethod
-from collections import OrderedDict
+from collections import defaultdict, OrderedDict
 import csv
 from fnmatch import fnmatch
 import json
@@ -398,6 +398,40 @@ class KVParser(ParserBase):
     __default_separator = '='
     __default_delimiter = ' '
 
+    @staticmethod
+    def _string_to_list(data, delimiter, separator):
+        """Convert incoming KV data into a valid list and account for spaces in pairs
+
+        Args:
+            data (str): The raw data to be parsed
+
+        Returns:
+            list: Of key-value pairs split on the delimiter value
+        """
+        # Remove any blank strings that may exist in our list
+        fields = [field for field in data.split(delimiter) if field]
+        fields_to_collect = defaultdict(list)
+
+        # Map the fields which need to merge together
+        last_good_index = 0
+        for index, kv_pair in enumerate(fields):
+            if index != 0 and separator not in kv_pair:
+                fields_to_collect[last_good_index].append(kv_pair)
+            else:
+                last_good_index = index
+
+        # Merge the fields and remove from the original list
+        for index, values in fields_to_collect.iteritems():
+            fields[index] = fields[index] + delimiter + delimiter.join(values)
+            for value in values:
+                fields.remove(value)
+
+        # Strip out any double quotes
+        for index, field in enumerate(fields):
+            fields[index] = field.replace('"', '')
+
+        return fields
+
     def parse(self, schema, data):
         """Parse a key value string into a dictionary.
 
@@ -409,16 +443,15 @@ class KVParser(ParserBase):
             list: A list of dictionaries representing parsed records OR
             False if the columns do not match.
         """
-        # get the delimiter (character between key/value pairs) and the
+        # Get the delimiter (character between key/value pairs) and the
         # separator (the character between keys and values)
         delimiter = self.options.get('delimiter', self.__default_delimiter)
         separator = self.options.get('separator', self.__default_separator)
 
         kv_payload = {}
         try:
-            # remove any blank strings that may exist in our list
-            fields = [field for field in data.split(delimiter) if field]
-            # first check the field length matches our # of keys
+            fields = self._string_to_list(data, delimiter, separator)
+            # First check the field length matches the declared number of schema keys
             if len(fields) != len(schema):
                 return False
 
