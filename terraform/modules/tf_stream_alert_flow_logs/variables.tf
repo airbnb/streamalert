@@ -25,7 +25,7 @@ variable "flow_log_group_name" {
 }
 
 variable "log_retention" {
-  default = 365
+  default = 7
 }
 
 variable "region" {
