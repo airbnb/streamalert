@@ -16,7 +16,7 @@ limitations under the License.
 from collections import OrderedDict
 import json
 
-from mock import patch
+from mock import call, patch
 from nose.tools import (
     assert_equal,
     assert_false,
@@ -411,14 +411,56 @@ class TestJSONParser(TestParser):
                        '"nested_key_2": "more_nested_info",'
                        '"nested_key_3": "even_more"}'
         })
-        parsed_result = self.parser_helper(data=data,
-                                           schema=schema,
-                                           options=options)
+        parsed_result = self.parser_helper(data=data, schema=schema, options=options)
 
         assert_items_equal(parsed_result[0].keys(),
                            ['nested_key_1',
                             'nested_key_2',
                             'nested_key_3'])
+
+    def test_embedded_json(self):
+        """JSON Parser - Embedded JSON"""
+        schema = self.config['logs']['json:embedded']['schema']
+        options = self.config['logs']['json:embedded']['configuration']
+
+        data = json.dumps({
+            'env_key_01': 'data',
+            'env_key_02': 'time',
+            'test_list': [
+                {
+                    'id': 'foo',
+                    'message': ('{\"nested_key_01\":\"bar\",'
+                                '\"nested_key_02\":\"baz\"}')
+                }
+            ]
+        })
+
+        parsed_result = self.parser_helper(data=data, schema=schema, options=options)
+        expected_keys = {'nested_key_01', 'nested_key_02', 'streamalert:envelope_keys'}
+        expected_env_keys = {'env_key_01', 'env_key_02'}
+        assert_items_equal(parsed_result[0].keys(), expected_keys)
+        assert_items_equal(parsed_result[0]['streamalert:envelope_keys'], expected_env_keys)
+
+    @patch('logging.Logger.warning')
+    def test_embedded_json_invalid(self, log_mock):
+        """JSON Parser - Embedded JSON, Invalid"""
+        schema = self.config['logs']['json:embedded']['schema']
+        options = self.config['logs']['json:embedded']['configuration']
+
+        data = json.dumps({
+            'env_key_01': 'data',
+            'env_key_02': 'time',
+            'test_list': [
+                {
+                    'id': 'foo',
+                    'message': '{\"invalid_json\"}'
+                }
+            ]
+        })
+
+        result = self.parser_helper(data=data, schema=schema, options=options)
+        assert_equal(result, False)
+        log_mock.assert_has_calls([call('Embedded json is invalid')])
 
     def test_basic_json(self):
         """JSON Parser - Non-nested JSON objects"""
