@@ -211,7 +211,7 @@ class JSONParser(ParserBase):
             json_payload (dict): The parsed json data
 
         Returns:
-            list: A list of JSON recrods extracted via JSONPath.
+            list: A list of parsed JSON records
         """
         # Check options and return the payload if there is nothing special to do
         if not self.options:
@@ -244,8 +244,28 @@ class JSONParser(ParserBase):
             envelope_matches = [match.value for match in envelope_jsonpath.find(json_payload)]
             envelope = dict(zip(envelope_keys, envelope_matches))
 
+        json_records = self._extract_records(json_payload, envelope)
+        if json_records is False:
+            return False
+
+        # If the final parsed record is singular
+        if not json_records:
+            json_records.append(json_payload)
+
+        return json_records
+
+    def _extract_records(self, json_payload, envelope):
+        """Extract records from the original json payload using the JSON configuration
+
+        Args:
+            json_payload (dict): The parsed json data
+
+        Returns:
+            list: A list of JSON records extracted via JSON path or regex
+        """
         json_records = []
         json_path_expression = self.options.get('json_path')
+        json_regex_key = self.options.get('json_regex_key')
         # Handle jsonpath extraction of records
         if json_path_expression:
             LOGGER.debug('Parsing records with JSONPath')
@@ -255,13 +275,19 @@ class JSONParser(ParserBase):
                 return False
             for match in matches:
                 record = match.value
+                embedded_json = self.options.get('embedded_json')
+                if embedded_json:
+                    try:
+                        record = json.loads(match.value)
+                    except ValueError:
+                        LOGGER.debug('Embedded json is invalid')
+                        continue
                 if envelope:
                     record.update({ENVELOPE_KEY: envelope})
                 json_records.append(record)
 
         # Handle nested json object regex matching
-        json_regex_key = self.options.get('json_regex_key')
-        if json_regex_key and json_payload.get(json_regex_key):
+        elif json_regex_key and json_payload.get(json_regex_key):
             LOGGER.debug('Parsing records with JSON Regex Key')
             match = self.__regex.search(str(json_payload[json_regex_key]))
             if not match:
@@ -281,10 +307,6 @@ class JSONParser(ParserBase):
                     new_record.update({ENVELOPE_KEY: envelope})
 
                 json_records.append(new_record)
-
-        # If the final parsed record is singular
-        if not json_records:
-            json_records.append(json_payload)
 
         return json_records
 
