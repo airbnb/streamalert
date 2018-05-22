@@ -1080,6 +1080,58 @@
     },
     "parser": "json"
   },
+  "cloudwatch:cloudtrail": {
+    "schema": {
+      "additionalEventData": {},
+      "apiVersion": "string",
+      "awsRegion": "string",
+      "errorCode": "string",
+      "errorMessage": "string",
+      "eventID": "string",
+      "eventName": "string",
+      "eventSource": "string",
+      "eventTime": "string",
+      "eventType": "string",
+      "eventVersion": "string",
+      "managementEvent": "boolean",
+      "readOnly": "boolean",
+      "recipientAccountId": "string",
+      "requestID": "string",
+      "requestParameters": {},
+      "resources": [],
+      "responseElements": {},
+      "serviceEventDetails": {},
+      "sharedEventID": "string",
+      "sourceIPAddress": "string",
+      "userAgent": "string",
+      "userIdentity": {},
+      "vpcEndpointId": "string"
+    },
+    "parser": "json",
+    "configuration": {
+      "embedded_json": true,
+      "envelope_keys": {
+        "logGroup": "string",
+        "logStream": "string",
+        "messageType": "string",
+        "owner": "string",
+        "subscriptionFilters": []
+      },
+      "json_path": "logEvents[*].message",
+      "optional_top_level_keys": [
+        "additionalEventData",
+        "apiVersion",
+        "errorCode",
+        "errorMessage",
+        "managementEvent",
+        "readOnly",
+        "resources",
+        "serviceEventDetails",
+        "sharedEventID",
+        "vpcEndpointId"
+      ]
+    }
+  },
   "cloudtrail:events": {
     "schema": {
       "additionalEventData": {},
