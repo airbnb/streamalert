@@ -280,7 +280,7 @@ class JSONParser(ParserBase):
                     try:
                         record = json.loads(match.value)
                     except ValueError:
-                        LOGGER.debug('Embedded json is invalid')
+                        LOGGER.warning('Embedded json is invalid')
                         continue
                 if envelope:
                     record.update({ENVELOPE_KEY: envelope})
