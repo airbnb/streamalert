@@ -20,6 +20,14 @@ from nose.tools import assert_equal, assert_false, assert_true
 
 from helpers import base
 
+def test_path_matches_any():
+    """Helpers - Path Matches Any"""
+    patterns = {'/users/*/foobar', '/users/*/path/*/file'}
+    assert_true(base.path_matches_any('/users/user/foobar', patterns))
+    assert_false(base.path_matches_any('/users/user/baz/foobar', patterns))
+    assert_true(base.path_matches_any('/users/user/path/to/file', patterns))
+    assert_false(base.path_matches_any('/users/user/foobar/path/to/baz/file', patterns))
+
 
 def test_starts_with_any():
     """Helpers - Starts With Any"""
