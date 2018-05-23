@@ -30,3 +30,6 @@ htmlcov/
 
 # Pycharm IDE
 .idea/
+
+# VSCode
+.vscode/
