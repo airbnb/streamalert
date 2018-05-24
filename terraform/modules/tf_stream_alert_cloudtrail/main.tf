@@ -1,6 +1,6 @@
 // StreamAlert CloudTrail, also sending to CloudWatch Logs group
 resource "aws_cloudtrail" "streamalert" {
-  count                         = "${!var.existing_trail && var.send_to_cloudwatch ? 1 : 0}"
+  count                         = "${var.send_to_cloudwatch && !var.existing_trail ? 1 : 0}"
   name                          = "${var.prefix}.${var.cluster}.streamalert.cloudtrail"
   s3_bucket_name                = "${aws_s3_bucket.cloudtrail_bucket.id}"
   cloud_watch_logs_role_arn     = "${aws_iam_role.cloudtrail_to_cloudwatch_role.arn}"
@@ -26,7 +26,7 @@ resource "aws_cloudtrail" "streamalert" {
 
 // StreamAlert CloudTrail, not sending to CloudWatch
 resource "aws_cloudtrail" "streamalert_no_cloudwatch" {
-  count                         = "${!var.existing_trail && !var.send_to_cloudwatch ? 1 : 0}"
+  count                         = "${!var.send_to_cloudwatch && !var.existing_trail ? 1 : 0}"
   name                          = "${var.prefix}.${var.cluster}.streamalert.cloudtrail"
   s3_bucket_name                = "${aws_s3_bucket.cloudtrail_bucket.id}"
   enable_log_file_validation    = true

@@ -45,7 +45,7 @@ variable "subscription_role_arn" {
 }
 
 variable "send_to_cloudwatch" {
-  default = true
+  default = false
 }
 
 variable "exclude_home_region_events" {

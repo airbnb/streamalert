@@ -36,7 +36,7 @@ def generate_cloudtrail(cluster_name, cluster_dict, config):
 
     cloudtrail_enabled = modules['cloudtrail'].get('enable_logging', True)
     kinesis_enabled = modules['cloudtrail'].get('enable_kinesis', True)
-    send_to_cloudwatch = modules['cloudtrail'].get('send_to_cloudwatch', True)
+    send_to_cloudwatch = modules['cloudtrail'].get('send_to_cloudwatch', False)
     exclude_home_region = modules['cloudtrail'].get('exclude_home_region_events', False)
 
     account_ids = list(
