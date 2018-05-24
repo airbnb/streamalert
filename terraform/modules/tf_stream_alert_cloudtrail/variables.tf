@@ -39,3 +39,17 @@ variable "prefix" {
 variable "s3_logging_bucket" {
   type = "string"
 }
+
+variable "subscription_role_arn" {
+  default = ""
+}
+
+variable "send_to_cloudwatch" {
+  default = false
+}
+
+variable "exclude_home_region_events" {
+  default = false
+}
+
+variable "region" {}
