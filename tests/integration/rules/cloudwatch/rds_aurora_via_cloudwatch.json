@@ -1,0 +1,26 @@
+[
+  {
+    "data": {
+      "messageType": "DATA_MESSAGE",
+      "owner": "123456789012",
+      "logGroup": "CloudTrail/DefaultLogGroup",
+      "logStream": "123456789012_CloudTrail_us-east-1",
+      "subscriptionFilters": [
+        "FooBarSubscription"
+      ],
+      "logEvents": [
+        {
+          "id": "44056647182143267075860006634052172261824828947338793472",
+          "timestamp": 1526951139360,
+          "message": "1526951139360429,server-name,username,localhost,70558,0,CONNECT,,,0"
+        }
+      ]
+    },
+    "description": "RDS Aurora logs via CloudWatch logs DATA_MESSAGE (validation only)",
+    "log": "cloudwatch:rds_aurora",
+    "service": "kinesis",
+    "source": "prefix_cluster1_stream_alert_kinesis",
+    "trigger_rules": [],
+    "validate_schema_only": true
+  }
+]
