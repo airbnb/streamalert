@@ -663,6 +663,29 @@ def put_mock_s3_object(bucket, key, data, region):
 
     s3_client.put_object(Body=data, Bucket=bucket, Key=key, ServerSideEncryption='AES256')
 
+def mock_s3_bucket(config):
+    """Mock S3 bucket for lookup tables testing"""
+    region = config['global']['account']['region']
+    lookup_tables_config = config['global']['infrastructure'].get('lookup_tables')
+    if lookup_tables_config:
+        buckets_info = lookup_tables_config.get(
+            'buckets', {'test_buckets': ['foo.json', 'bar.json']}
+        )
+    else:
+        buckets_info = {'test_buckets': ['foo.json', 'bar.json']}
+
+    for bucket, files in buckets_info.iteritems():
+        for json_file in files:
+            test_json_file = os.path.join('tests/integration/fixtures', json_file)
+            if os.path.isfile(test_json_file):
+                data = open(test_json_file, 'r')
+            else:
+                data = json.dumps({'key': 'value'})
+            put_mock_s3_object(bucket, json_file, data, region)
+
+            if isinstance(data, file):
+                data.close()
+
 
 def mock_me(context):
     """Decorator function for wrapping framework in mock calls

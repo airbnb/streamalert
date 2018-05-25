@@ -1041,6 +1041,8 @@ def stream_alert_test(options, config):
         # Run the rule processor for all rules or designated rule set
         if context.mocked:
             helpers.setup_mock_alerts_table(alerts_table)
+            # Mock S3 bucket for lookup tables testing
+            helpers.mock_s3_bucket(config)
 
         rule_proc_tester = RuleProcessorTester(context, config, test_rules)
         alert_proc_tester = AlertProcessorTester(config, context)
