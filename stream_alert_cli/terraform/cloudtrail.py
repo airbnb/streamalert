@@ -89,16 +89,18 @@ def generate_cloudtrail(cluster_name, cluster_dict, config):
         'is_global_trail': is_global_trail
     }
 
-    # If kinesis or cloudwatch logs support is enabled, add some additional info
-    cloudwatch_enabled = modules.get('cloudwatch', {}).get('enabled')
-    if kinesis_enabled or cloudwatch_enabled:
-        # use the kinesis output from the kinesis streams module
+    # use the kinesis output from the kinesis streams module
+    if kinesis_enabled:
         module_info['kinesis_arn'] = '${{module.kinesis_{}.arn}}'.format(cluster_name)
-        if kinesis_enabled:
-            module_info['event_pattern'] = json.dumps(event_pattern)
-        else:
-            module_info['cw_destination_arn'] = ('${{module.cloudwatch_{}_{}.cloudwatch_'
-                                                 'destination_arn}}'.format(cluster_name, region))
+        module_info['event_pattern'] = json.dumps(event_pattern)
+
+    if send_to_cloudwatch:
+        destination_arn = modules['cloudtrail'].get(
+            'cloudwatch_destination_arn',
+            '${{module.cloudwatch_{}_{}.cloudwatch_destination_arn}}'.format(cluster_name,
+                                                                             region)
+        )
+        module_info['cloudwatch_destination_arn'] = destination_arn
 
     cluster_dict['module'][cloudtrail_module] = module_info
 

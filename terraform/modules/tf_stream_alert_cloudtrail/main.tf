@@ -124,7 +124,7 @@ resource "aws_cloudwatch_log_subscription_filter" "cloudtrail_via_cloudwatch" {
   name            = "cloudtrail_delivery"
   log_group_name  = "${aws_cloudwatch_log_group.cloudtrail_logging.name}"
   filter_pattern  = "${var.exclude_home_region_events ? local.apply_filter_string : ""}"
-  destination_arn = "${var.cw_destination_arn}"
+  destination_arn = "${var.cloudwatch_destination_arn}"
   distribution    = "Random"
 }
 
