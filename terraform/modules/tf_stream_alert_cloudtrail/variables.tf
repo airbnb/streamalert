@@ -40,7 +40,7 @@ variable "s3_logging_bucket" {
   type = "string"
 }
 
-variable "subscription_role_arn" {
+variable "cw_destination_arn" {
   default = ""
 }
 

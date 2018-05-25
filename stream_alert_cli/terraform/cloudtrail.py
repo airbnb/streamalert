@@ -97,9 +97,8 @@ def generate_cloudtrail(cluster_name, cluster_dict, config):
         if kinesis_enabled:
             module_info['event_pattern'] = json.dumps(event_pattern)
         else:
-            module_info['subscription_role_arn'] = ('${{module.cloudwatch_{}_{}.cloudwatch_'
-                                                    'subscription_role_arn}}'.format(cluster_name,
-                                                                                     region))
+            module_info['cw_destination_arn'] = ('${{module.cloudwatch_{}_{}.cloudwatch_'
+                                                 'destination_arn}}'.format(cluster_name, region))
 
     cluster_dict['module'][cloudtrail_module] = module_info
 
