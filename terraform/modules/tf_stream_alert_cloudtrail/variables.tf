@@ -40,7 +40,7 @@ variable "s3_logging_bucket" {
   type = "string"
 }
 
-variable "cw_destination_arn" {
+variable "cloudwatch_destination_arn" {
   default = ""
 }
 
