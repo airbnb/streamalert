@@ -81,7 +81,7 @@ data "aws_iam_policy_document" "cross_account_destination_policy" {
     ]
 
     resources = [
-      "${var.kinesis_stream_arn}",
+      "${aws_cloudwatch_log_destination.cloudwatch_kinesis.arn}",
     ]
   }
 }
