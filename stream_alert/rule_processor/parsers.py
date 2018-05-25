@@ -462,6 +462,16 @@ class CSVParser(ParserBase):
         return csv_payloads
 
     def _parse_row(self, row, schema):
+        """Parse a single csv row and return the result
+
+        Args:
+            row (list): A list of strings representing a csv row
+            schema (dict): Schema to be used for parsing
+
+        Returns:
+            dict: Parsed row with the corresponding schema
+        """
+
         # check number of columns match
         if len(row) != len(schema):
             return False

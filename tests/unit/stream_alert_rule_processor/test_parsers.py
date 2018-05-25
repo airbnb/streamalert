@@ -110,6 +110,10 @@ class TestCSVParser(TestParser):
     {
       "uuid": "0F08CD2B-F21D-4F3A-9231-B527AD42AB91",
       "message": "1526951139360429,host-name,contents"
+    },
+    {
+      "uuid": "0F08CD2B-F21D-4F3A-9231-B527AD42AB91",
+      "message": "1526951139360430,host-name-02,contents-02"
     }
   ]
 }"""
@@ -117,17 +121,29 @@ class TestCSVParser(TestParser):
         # get parsed data
         parsed_data = self.parser_helper(data=data, schema=schema, options=options)
 
-        expected_data = {
-            'timestamp': '1526951139360429',
-            'host': 'host-name',
-            'message': 'contents',
-            'streamalert:envelope_keys': {
-                'env_key_01': 'DATA_MESSAGE',
-                'env_key_02': '123456789012'
+        expected_data = [
+            {
+                'timestamp': '1526951139360429',
+                'host': 'host-name',
+                'message': 'contents',
+                'streamalert:envelope_keys': {
+                    'env_key_01': 'DATA_MESSAGE',
+                    'env_key_02': '123456789012'
+                }
+            },
+            {
+                'timestamp': '1526951139360430',
+                'host': 'host-name-02',
+                'message': 'contents-02',
+                'streamalert:envelope_keys': {
+                    'env_key_01': 'DATA_MESSAGE',
+                    'env_key_02': '123456789012'
+                }
             }
-        }
-        assert_equal(len(parsed_data), 1)
-        assert_equal(parsed_data[0], expected_data)
+        ]
+
+        assert_equal(len(parsed_data), 2)
+        assert_equal(parsed_data, expected_data)
 
 
 class TestKVParser(TestParser):
