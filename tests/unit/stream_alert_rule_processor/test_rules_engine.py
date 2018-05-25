@@ -13,12 +13,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-# pylint: disable=no-self-use,protected-access,attribute-defined-outside-init
+# pylint: disable=no-self-use,protected-access,attribute-defined-outside-init,too-many-lines
 from datetime import datetime, timedelta
 import json
 import os
 
 from mock import Mock, patch
+from moto import mock_s3
 from nose.tools import (
     assert_equal,
     assert_false,
@@ -27,12 +28,14 @@ from nose.tools import (
     assert_true,
 )
 
+from stream_alert_cli.helpers import put_mock_s3_object
 from stream_alert.rule_processor.parsers import get_parser
 from stream_alert.rule_processor.rules_engine import RulesEngine
 from stream_alert.shared import NORMALIZATION_KEY
 from stream_alert.shared.config import load_config
 from stream_alert.shared.rule import disable, matcher, Matcher, rule, Rule
 from stream_alert.shared.rule_table import RuleTable
+from stream_alert.shared.lookup_tables import LookupTables
 
 from tests.unit.stream_alert_rule_processor.test_helpers import (
     load_and_classify_payload,
@@ -54,7 +57,13 @@ class TestRulesEngine(object):
         Rule._rules.clear()
         self.config = load_config('tests/unit/conf')
         self.config['global']['threat_intel']['enabled'] = False
+        self.config['global']['infrastructure']['lookup_tables']['enabled'] = False
         self.rules_engine = RulesEngine(self.config)
+
+    def teardown(self):
+        """Clean up setup for lookup tables"""
+        RulesEngine._LOOKUP_TABLES = {}
+        LookupTables._LOOKUP_TABLES_LAST_REFRESH = datetime(year=1970, month=1, day=1)
 
     def test_basic_rule_matcher_process(self):
         """Rules Engine - Basic Rule/Matcher"""
@@ -945,3 +954,42 @@ class TestRulesEngine(object):
 
             # alert tests
             assert_equal(list(alerts[0].outputs)[0], 'aws-firehose:alerts')
+
+    @patch('logging.Logger.error')
+    def test_load_lookup_tables_missing_config(self, mock_logger):
+        """Rules Engine - Load lookup tables with missing config"""
+        self.config['global']['infrastructure'].pop('lookup_tables')
+        _ = RulesEngine(self.config)
+        assert_equal(RulesEngine._LOOKUP_TABLES, {})
+        assert_equal(LookupTables._LOOKUP_TABLES_LAST_REFRESH,
+                     datetime(year=1970, month=1, day=1))
+        assert_equal(RulesEngine.get_lookup_table('table_name'), None)
+
+        self.config['global']['infrastructure']['lookup_tables'] = {
+            'cache_refresh_minutes': 10,
+            'enabled': True
+        }
+        _ = RulesEngine(self.config)
+        mock_logger.assert_called_with('Buckets not defined')
+
+    @patch('logging.Logger.debug')
+    def test_load_lookup_tables(self, mock_logger):
+        """Rules Engine - Load lookup table"""
+        s3_mock = mock_s3()
+        s3_mock.start()
+        put_mock_s3_object(
+            'bucket_name', 'foo.json', json.dumps({'key1': 'value1'}), 'us-east-1'
+        )
+        put_mock_s3_object(
+            'bucket_name', 'bar.json', json.dumps({'key2': 'value2'}), 'us-east-1'
+        )
+        self.config['global']['infrastructure']['lookup_tables']['enabled'] = True
+        _ = RulesEngine(self.config)
+        assert_equal(RulesEngine.get_lookup_table('foo'), {'key1': 'value1'})
+        assert_equal(RulesEngine.get_lookup_table('bar'), {'key2': 'value2'})
+        assert_equal(RulesEngine.get_lookup_table('not_exist'), None)
+
+        _ = RulesEngine(self.config)
+        mock_logger.assert_called()
+
+        s3_mock.stop()
