@@ -76,6 +76,56 @@ class ParserBase:
         """Returns the type of parser. Overriden in GzipJSONParser to just return json"""
         return self.__parserid__
 
+    @staticmethod
+    def _extract_envelope(schema, envelope_schema, json_payload):
+        """Extract envelope key/values from the original payload
+
+        Args:
+            schema (dict): Parsing schema
+            envelope_schema (dict): Envelope keys to be extracted
+            json_payload (dict): The parsed json data
+
+        Returns:
+            dict: Key/values extracted from the log to be used as the envelope
+        """
+        if not isinstance(json_payload, dict):
+            json_payload = json.loads(json_payload)
+        LOGGER.debug('Parsing envelope keys')
+        schema.update({ENVELOPE_KEY: envelope_schema})
+        envelope_keys = envelope_schema.keys()
+        envelope_jsonpath = jsonpath_rw.parse("$." + ",".join(envelope_keys))
+        envelope_matches = [match.value for match in envelope_jsonpath.find(json_payload)]
+        return dict(zip(envelope_keys, envelope_matches))
+
+    def _extract_json_path(self, json_payload):
+        """Extract records from the original json payload using a provided JSON path
+
+        Args:
+            json_payload (dict): The parsed json data
+
+        Returns:
+            list: A list of JSON records extracted via JSON path or regex
+        """
+        records = []
+        json_path_expression = self.options.get('json_path')
+        if not json_path_expression:
+            return records
+
+        # Handle jsonpath extraction of records
+        LOGGER.debug('Parsing records with JSONPath')
+        records_jsonpath = jsonpath_rw.parse(json_path_expression)
+
+        # If the csv parser is extracting csv from json, the payload is likely
+        # a string and needs to be loaded to a dict
+        if not isinstance(json_payload, dict):
+            json_payload = json.loads(json_payload)
+
+        matches = records_jsonpath.find(json_payload)
+        if not matches:
+            return False
+
+        return [match.value for match in matches]
+
     def matched_log_pattern(self, record, log_patterns):
         """Return True if all log patterns of this record match"""
         # Return True immediately if there are no log patterns
@@ -235,16 +285,7 @@ class JSONParser(ParserBase):
         elif envelope_schema and not all(x in json_payload for x in envelope_schema):
             return [json_payload]
 
-        envelope = {}
-        if envelope_schema:
-            LOGGER.debug('Parsing envelope keys')
-            schema.update({ENVELOPE_KEY: envelope_schema})
-            envelope_keys = envelope_schema.keys()
-            envelope_jsonpath = jsonpath_rw.parse("$." + ",".join(envelope_keys))
-            envelope_matches = [match.value for match in envelope_jsonpath.find(json_payload)]
-            envelope = dict(zip(envelope_keys, envelope_matches))
-
-        json_records = self._extract_records(json_payload, envelope)
+        json_records = self._extract_records(json_payload)
         if json_records is False:
             return False
 
@@ -252,9 +293,17 @@ class JSONParser(ParserBase):
         if not json_records:
             json_records.append(json_payload)
 
+        if envelope_schema:
+            envelope = self._extract_envelope(schema, envelope_schema, json_payload)
+            if not envelope:
+                return json_records
+
+            for record in json_records:
+                record.update({ENVELOPE_KEY: envelope})
+
         return json_records
 
-    def _extract_records(self, json_payload, envelope):
+    def _extract_records(self, json_payload):
         """Extract records from the original json payload using the JSON configuration
 
         Args:
@@ -264,30 +313,26 @@ class JSONParser(ParserBase):
             list: A list of JSON records extracted via JSON path or regex
         """
         json_records = []
-        json_path_expression = self.options.get('json_path')
-        json_regex_key = self.options.get('json_regex_key')
-        # Handle jsonpath extraction of records
-        if json_path_expression:
-            LOGGER.debug('Parsing records with JSONPath')
-            records_jsonpath = jsonpath_rw.parse(json_path_expression)
-            matches = records_jsonpath.find(json_payload)
-            if not matches:
-                return False
-            for match in matches:
-                record = match.value
-                embedded_json = self.options.get('embedded_json')
-                if embedded_json:
-                    try:
-                        record = json.loads(match.value)
-                    except ValueError:
-                        LOGGER.warning('Embedded json is invalid')
-                        continue
-                if envelope:
-                    record.update({ENVELOPE_KEY: envelope})
-                json_records.append(record)
+        extracted_records = self._extract_json_path(json_payload)
+        if extracted_records is False:
+            return False
 
+        if extracted_records:
+            if not self.options.get('embedded_json'):
+                return extracted_records
+
+            for record in extracted_records:
+                try:
+                    record = json.loads(record)
+                except ValueError:
+                    LOGGER.warning('Embedded json is invalid')
+                    continue
+                json_records.append(record)
+            return json_records
+
+        json_regex_key = self.options.get('json_regex_key')
         # Handle nested json object regex matching
-        elif json_regex_key and json_payload.get(json_regex_key):
+        if json_regex_key and json_payload.get(json_regex_key):
             LOGGER.debug('Parsing records with JSON Regex Key')
             match = self.__regex.search(str(json_payload[json_regex_key]))
             if not match:
@@ -303,8 +348,6 @@ class JSONParser(ParserBase):
                 # Valid JSON can be either
                 if not isinstance(new_record, dict):
                     return False
-                if envelope:
-                    new_record.update({ENVELOPE_KEY: envelope})
 
                 json_records.append(new_record)
 
@@ -383,35 +426,68 @@ class CSVParser(ParserBase):
             list: A list of dictionaries representing parsed records OR
             False if the data is not CSV or the columns do not match.
         """
-        reader = self._get_reader(data)
-        if not reader:
+        # Support extraction of csv data within json
+        records = self._extract_json_path(data)
+        if records is False:
             return False
+
+        if not records:
+            records = [data]
 
         csv_payloads = []
-        try:
-            for row in reader:
-                # check number of columns match
-                if len(row) != len(schema):
-                    return False
 
-                parsed_payload = {}
-                for index, key in enumerate(schema):
-                    # extract the keys from the row via the index
-                    parsed_payload[key] = row[index]
+        for item in records:
+            reader = self._get_reader(item)
+            if not reader:
+                continue
 
-                    # if the value for this key in the schema is a dict, this must be a nested
-                    # value, so we should try to parse it as one and replace the value
-                    if isinstance(schema[key], dict):
-                        parsed_data = self.parse(schema[key], row[index])
-                        if parsed_data:
-                            parsed_payload[key] = parsed_data[0]
+            try:
+                for row in reader:
+                    parsed_payload = self._parse_row(row, schema)
+                    if parsed_payload:
+                        csv_payloads.append(parsed_payload)
 
-                csv_payloads.append(parsed_payload)
+            except csv.Error:
+                return False
 
-            return csv_payloads
-        except csv.Error:
+        envelope_schema = self.options.get('envelope_keys')
+        if envelope_schema:
+            envelope = self._extract_envelope(schema, envelope_schema, data)
+            if not envelope:
+                return csv_payloads
+
+            for record in csv_payloads:
+                record.update({ENVELOPE_KEY: envelope})
+
+        return csv_payloads
+
+    def _parse_row(self, row, schema):
+        """Parse a single csv row and return the result
+
+        Args:
+            row (list): A list of strings representing a csv row
+            schema (dict): Schema to be used for parsing
+
+        Returns:
+            dict: Parsed row with the corresponding schema
+        """
+
+        # check number of columns match
+        if len(row) != len(schema):
             return False
 
+        parsed_payload = {}
+        for index, key in enumerate(schema):
+            # extract the keys from the row via the index
+            parsed_payload[key] = row[index]
+
+            # if the value for this key in the schema is a dict, this must be a nested
+            # value, so we should try to parse it as one and replace the value
+            if isinstance(schema[key], dict):
+                parsed_data = self.parse(schema[key], row[index])
+                if parsed_data:
+                    parsed_payload[key] = parsed_data[0]
+        return parsed_payload
 
 @parser
 class KVParser(ParserBase):

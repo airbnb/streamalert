@@ -1192,6 +1192,13 @@
         "owner": "string",
         "subscriptionFilters": []
       },
+      "log_patterns": {
+        "streamalert:envelope_keys": {
+          "messageType": [
+            "CONTROL_MESSAGE"
+          ]
+        }
+      },
       "json_path": "logEvents[*]"
     }
   },
@@ -1234,6 +1241,31 @@
         "owner": "integer"
       },
       "json_path": "logEvents[*].extractedFields"
+    }
+  },
+  "cloudwatch:rds_aurora": {
+    "schema": {
+      "timestamp": "integer",
+      "serverhost": "string",
+      "username": "string",
+      "host": "string",
+      "connectionid": "integer",
+      "queryid": "integer",
+      "operation": "string",
+      "database": "string",
+      "object": "string",
+      "retcode": "integer"
+    },
+    "parser": "csv",
+    "configuration": {
+      "envelope_keys": {
+        "logGroup": "string",
+        "logStream": "string",
+        "messageType": "string",
+        "owner": "string",
+        "subscriptionFilters": []
+      },
+      "json_path": "logEvents[*].message"
     }
   },
   "duo:administrator": {
