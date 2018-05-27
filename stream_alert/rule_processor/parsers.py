@@ -395,6 +395,7 @@ class CSVParser(ParserBase):
     """CSV record parser."""
     __parserid__ = 'csv'
     __default_delimiter = ','
+    __default_quotechar = '"'
 
     def _get_reader(self, data):
         """Return the CSV reader for the given payload source
@@ -404,12 +405,13 @@ class CSVParser(ParserBase):
             False if parse was unsuccessful
         """
         delimiter = str(self.options.get('delimiter', self.__default_delimiter))
+        quotechar = str(self.options.get('quotechar', self.__default_quotechar))
 
         # TODO(ryandeivert): either subclass a current parser or add a new
         # parser to support parsing CSV data that contains a header line
         try:
             csv_data = StringIO.StringIO(data)
-            reader = csv.reader(csv_data, delimiter=delimiter)
+            reader = csv.reader(csv_data, delimiter=delimiter, quotechar=quotechar)
         except (ValueError, csv.Error):
             return False
 
@@ -471,7 +473,6 @@ class CSVParser(ParserBase):
         Returns:
             dict: Parsed row with the corresponding schema
         """
-
         # check number of columns match
         if len(row) != len(schema):
             return False
