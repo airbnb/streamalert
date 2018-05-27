@@ -494,7 +494,7 @@ class TestJSONParser(TestParser):
         assert_items_equal(parsed_result[0].keys(), expected_keys)
         assert_items_equal(parsed_result[0]['streamalert:envelope_keys'], expected_env_keys)
 
-    @patch('logging.Logger.warning')
+    @patch('logging.Logger.debug')
     def test_embedded_json_invalid(self, log_mock):
         """JSON Parser - Embedded JSON, Invalid"""
         schema = self.config['logs']['json:embedded']['schema']

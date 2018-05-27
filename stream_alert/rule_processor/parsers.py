@@ -325,7 +325,7 @@ class JSONParser(ParserBase):
                 try:
                     record = json.loads(record)
                 except ValueError:
-                    LOGGER.warning('Embedded json is invalid')
+                    LOGGER.debug('Embedded json is invalid')
                     continue
                 json_records.append(record)
             return json_records
