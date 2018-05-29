@@ -1265,7 +1265,8 @@
         "owner": "string",
         "subscriptionFilters": []
       },
-      "json_path": "logEvents[*].message"
+      "json_path": "logEvents[*].message",
+      "quotechar": "'"
     }
   },
   "duo:administrator": {

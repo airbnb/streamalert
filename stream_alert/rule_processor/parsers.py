@@ -77,7 +77,7 @@ class ParserBase:
         return self.__parserid__
 
     @staticmethod
-    def _extract_envelope(schema, envelope_schema, json_payload):
+    def _extract_envelope(envelope_schema, json_payload):
         """Extract envelope key/values from the original payload
 
         Args:
@@ -91,7 +91,6 @@ class ParserBase:
         if not isinstance(json_payload, dict):
             json_payload = json.loads(json_payload)
         LOGGER.debug('Parsing envelope keys')
-        schema.update({ENVELOPE_KEY: envelope_schema})
         envelope_keys = envelope_schema.keys()
         envelope_jsonpath = jsonpath_rw.parse("$." + ",".join(envelope_keys))
         envelope_matches = [match.value for match in envelope_jsonpath.find(json_payload)]
@@ -294,10 +293,11 @@ class JSONParser(ParserBase):
             json_records.append(json_payload)
 
         if envelope_schema:
-            envelope = self._extract_envelope(schema, envelope_schema, json_payload)
+            envelope = self._extract_envelope(envelope_schema, json_payload)
             if not envelope:
                 return json_records
 
+            schema.update({ENVELOPE_KEY: envelope_schema})
             for record in json_records:
                 record.update({ENVELOPE_KEY: envelope})
 
@@ -325,7 +325,7 @@ class JSONParser(ParserBase):
                 try:
                     record = json.loads(record)
                 except ValueError:
-                    LOGGER.warning('Embedded json is invalid')
+                    LOGGER.debug('Embedded json is invalid')
                     continue
                 json_records.append(record)
             return json_records
@@ -395,6 +395,7 @@ class CSVParser(ParserBase):
     """CSV record parser."""
     __parserid__ = 'csv'
     __default_delimiter = ','
+    __default_quotechar = '"'
 
     def _get_reader(self, data):
         """Return the CSV reader for the given payload source
@@ -404,12 +405,13 @@ class CSVParser(ParserBase):
             False if parse was unsuccessful
         """
         delimiter = str(self.options.get('delimiter', self.__default_delimiter))
+        quotechar = str(self.options.get('quotechar', self.__default_quotechar))
 
         # TODO(ryandeivert): either subclass a current parser or add a new
         # parser to support parsing CSV data that contains a header line
         try:
             csv_data = StringIO.StringIO(data)
-            reader = csv.reader(csv_data, delimiter=delimiter)
+            reader = csv.reader(csv_data, delimiter=delimiter, quotechar=quotechar)
         except (ValueError, csv.Error):
             return False
 
@@ -452,7 +454,7 @@ class CSVParser(ParserBase):
 
         envelope_schema = self.options.get('envelope_keys')
         if envelope_schema:
-            envelope = self._extract_envelope(schema, envelope_schema, data)
+            envelope = self._extract_envelope(envelope_schema, data)
             if not envelope:
                 return csv_payloads
 
@@ -471,7 +473,6 @@ class CSVParser(ParserBase):
         Returns:
             dict: Parsed row with the corresponding schema
         """
-
         # check number of columns match
         if len(row) != len(schema):
             return False

@@ -92,6 +92,25 @@ class TestCSVParser(TestParser):
         assert_equal(parsed_data[0]['host'], 'test-01.stg.foo.net')
         assert_equal(parsed_data[0]['message'], 'test message!!!!')
 
+    def test_csv_parsing_alt_quoted(self):
+        """CSV Parser - Single Quoted Field"""
+        schema = OrderedDict([
+            ('host', 'string'), ('date', 'string'), ('message', 'string')])
+        options = {'quotechar': '\''}
+        data = ('test-host,datetime-value,\'CREATE TABLE test ( id '
+                'INTEGER, type VARCHAR(64) NOT NULL)\'')
+
+        # get parsed data
+        parsed_data = self.parser_helper(data=data, schema=schema, options=options)
+
+        expected_data = [{
+            'host': 'test-host',
+            'date': 'datetime-value',
+            'message': 'CREATE TABLE test ( id INTEGER, type VARCHAR(64) NOT NULL)'
+        }]
+
+        assert_equal(parsed_data, expected_data)
+
     def test_csv_parsing_from_json(self):
         """CSV Parser - CSV within JSON"""
         options = {
@@ -494,7 +513,7 @@ class TestJSONParser(TestParser):
         assert_items_equal(parsed_result[0].keys(), expected_keys)
         assert_items_equal(parsed_result[0]['streamalert:envelope_keys'], expected_env_keys)
 
-    @patch('logging.Logger.warning')
+    @patch('logging.Logger.debug')
     def test_embedded_json_invalid(self, log_mock):
         """JSON Parser - Embedded JSON, Invalid"""
         schema = self.config['logs']['json:embedded']['schema']
