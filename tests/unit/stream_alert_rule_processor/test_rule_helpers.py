@@ -16,9 +16,11 @@ limitations under the License.
 """
 import time
 
-from nose.tools import assert_equal, assert_false, assert_true
+from mock import patch
+from nose.tools import assert_equal, assert_false, assert_raises, assert_true
 
 from helpers import base
+
 
 def test_path_matches_any():
     """Helpers - Path Matches Any"""
@@ -148,3 +150,19 @@ def test_safe_json_loads_invalid():
     assert_equal(type(loaded_json), dict)
     assert_false(loaded_json)
     assert_equal(loaded_json, {})
+
+
+def test_random_bool_invalid():
+    """Helpers - Random Bool with invalid probability"""
+    assert_raises(ValueError, base.random_bool, -1)
+    assert_raises(ValueError, base.random_bool, 100)
+
+
+@patch('helpers.base.random.random', return_value=0.3)
+def test_random_bool(_):
+    """Helpers - Random Bool"""
+    assert_false(base.random_bool(0))
+    assert_false(base.random_bool(0.29))
+    assert_true(base.random_bool(0.3))
+    assert_true(base.random_bool(0.5))
+    assert_true(base.random_bool(1))
