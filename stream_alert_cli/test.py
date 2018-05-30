@@ -92,6 +92,9 @@ class RuleProcessorTester(object):
         # Patch the tmp shredding as to not slow down testing
         patch('stream_alert.rule_processor.payload.S3Payload._shred_temp_directory').start()
 
+        # Patch random_bool to always return true
+        patch('helpers.base.random_bool', return_value=True).start()
+
     def test_processor(self, rules_filter, files_filter, validate_only):
         """Perform integration tests for the 'rule' Lambda function
 
