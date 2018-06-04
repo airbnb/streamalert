@@ -69,6 +69,9 @@ resource "aws_sqs_queue" "streamalert_athena_data_bucket_notifications" {
   # Retain messages for one day
   message_retention_seconds = 86400
 
+  # Enable server-side encryption of messages in the queue
+  kms_master_key_id = "${aws_kms_key.sse.arn}"
+
   tags {
     Name = "StreamAlert"
   }

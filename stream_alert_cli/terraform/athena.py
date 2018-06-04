@@ -60,6 +60,7 @@ def generate_athena(config):
         'schedule_expression': athena_config.get('schedule_expression', 'rate(10 minutes)'),
         'current_version': athena_config['current_version'],
         'enable_metrics': athena_config.get('enable_metrics', False),
+        'account_id': config['global']['account']['aws_account_id'],
         'prefix': prefix
     }
 
