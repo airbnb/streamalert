@@ -23,6 +23,9 @@ resource "aws_dynamodb_table" "alerts_table" {
     name = "AlertID"
     type = "S"
   }
+  server_side_encryption {
+    enabled = true
+  }
   tags {
     Name = "StreamAlert"
   }
@@ -38,6 +41,10 @@ resource "aws_dynamodb_table" "rules_table" {
   attribute {
     name = "RuleName"
     type = "S"
+  }
+
+  server_side_encryption {
+    enabled = true
   }
 
   tags {
