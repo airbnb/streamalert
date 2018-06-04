@@ -107,7 +107,8 @@ def _create_and_upload(function_name, config, cluster=None):
         ),
         'apps': PackageMap(
             stream_alert_packages.AppIntegrationPackage,
-            {'module.app_{}_{}_lambda'.format(app_info['app_name'], cluster)
+            {'module.app_{}_{}_{}'.format(app_info['app_name'], cluster, suffix)
+             for suffix in {'lambda', 'iam'}
              for cluster, info in config['clusters'].iteritems()
              for app_info in info['modules'].get('stream_alert_apps', {}).values()
              if 'app_name' in app_info},
