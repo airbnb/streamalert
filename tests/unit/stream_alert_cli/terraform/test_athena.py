@@ -61,6 +61,7 @@ def test_generate_athena():
                     'unit-testing.streamalert.data'
                 ],
                 'prefix': 'unit-testing',
+                'account_id': '12345678910',
                 'schedule_expression': 'rate(10 minutes)'
             },
             'athena_monitoring': {

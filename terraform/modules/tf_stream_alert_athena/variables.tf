@@ -47,6 +47,10 @@ variable "database_name" {
   default = "streamalert"
 }
 
+variable "account_id" {
+  type = "string"
+}
+
 variable "prefix" {
   type = "string"
 }
