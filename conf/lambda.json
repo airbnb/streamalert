@@ -1,9 +1,7 @@
 {
   "alert_merger_config": {
     "concurrency_limit": 1,
-    "current_version": "$LATEST",
     "enable_metrics": true,
-    "handler": "stream_alert.alert_merger.main.handler",
     "log_level": "info",
     "log_retention_days": 14,
     "memory": 128,
@@ -29,8 +27,6 @@
     }
   },
   "alert_processor_config": {
-    "current_version": "$LATEST",
-    "handler": "stream_alert.alert_processor.main.handler",
     "log_level": "info",
     "log_retention_days": 14,
     "memory": 128,
@@ -58,18 +54,13 @@
     "buckets": {
       "PREFIX_GOES_HERE.streamalerts": "alerts"
     },
-    "current_version": "$LATEST",
     "enable_metrics": false,
-    "handler": "stream_alert.athena_partition_refresh.main.handler",
     "log_level": "info"
   },
   "rule_processor_config": {
-    "handler": "stream_alert.rule_processor.main.handler",
     "third_party_libraries": [
       "pathlib2"
     ]
   },
-  "stream_alert_apps_config": {
-    "handler": "app_integrations.main.handler"
-  }
+  "stream_alert_apps_config": {}
 }

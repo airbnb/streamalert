@@ -64,12 +64,10 @@ Contains the following:
         "alert_processor": {
           "timeout": 25,
           "memory": 128,
-          "current_version": "$LATEST"
         },
         "rule_processor": {
           "timeout": 10,
           "memory": 256,
-          "current_version": "$LATEST"
         }
       }
     },
@@ -114,14 +112,12 @@ Contains the following:
       ],
       "stream_alert": {
         "alert_processor": {
-          "current_version": "$LATEST",
           "enable_metrics": false,
           "log_level": "info",
           "memory": 128,
           "timeout": 10
         },
         "rule_processor": {
-          "current_version": "$LATEST",
           "enable_metrics": false,
           "log_level": "info",
           "memory": 128,

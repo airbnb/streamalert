@@ -21,7 +21,7 @@ deploying to AWS Lambda, and publishing production versions.
 
 To run terraform by hand, change to the terraform directory and run:
 
-terraform <cmd> -var-file=../terraform.tfvars -var-file=../variables.json
+terraform <cmd>
 """
 # pylint: disable=too-many-lines
 from argparse import Action, ArgumentParser, RawTextHelpFormatter, SUPPRESS as ARGPARSE_SUPPRESS

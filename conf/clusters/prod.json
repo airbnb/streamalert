@@ -23,7 +23,6 @@
     },
     "stream_alert": {
       "rule_processor": {
-        "current_version": "$LATEST",
         "enable_metrics": true,
         "log_level": "info",
         "memory": 128,
