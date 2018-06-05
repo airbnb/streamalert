@@ -22,9 +22,6 @@
       }
     },
     "schedule_expression": "rate(1 minute)",
-    "source_bucket": "PREFIX_GOES_HERE.streamalert.source",
-    "source_current_hash": "<auto_generated>",
-    "source_object_key": "<auto_generated>",
     "timeout": 60,
     "vpc_config": {
       "security_group_ids": [],
@@ -51,9 +48,6 @@
         "threshold": 0
       }
     },
-    "source_bucket": "PREFIX_GOES_HERE.streamalert.source",
-    "source_current_hash": "<auto_generated>",
-    "source_object_key": "<auto_generated>",
     "timeout": 60,
     "vpc_config": {
       "security_group_ids": [],
@@ -67,24 +61,15 @@
     "current_version": "$LATEST",
     "enable_metrics": false,
     "handler": "stream_alert.athena_partition_refresh.main.handler",
-    "log_level": "info",
-    "source_bucket": "PREFIX_GOES_HERE.streamalert.source",
-    "source_current_hash": "<auto_generated>",
-    "source_object_key": "<auto_generated>"
+    "log_level": "info"
   },
   "rule_processor_config": {
     "handler": "stream_alert.rule_processor.main.handler",
-    "source_bucket": "PREFIX_GOES_HERE.streamalert.source",
-    "source_current_hash": "<auto_generated>",
-    "source_object_key": "<auto_generated>",
     "third_party_libraries": [
       "pathlib2"
     ]
   },
   "stream_alert_apps_config": {
-    "handler": "app_integrations.main.handler",
-    "source_bucket": "PREFIX_GOES_HERE.streamalert.source",
-    "source_current_hash": "<auto_generated>",
-    "source_object_key": "<auto_generated>"
+    "handler": "app_integrations.main.handler"
   }
 }
