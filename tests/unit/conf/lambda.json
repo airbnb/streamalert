@@ -19,9 +19,6 @@
         "threshold": 6
       }
     },
-    "source_bucket": "unit.testing.streamalert.source",
-    "source_current_hash": "12345",
-    "source_object_key": "lambda/alert/source.zip",
     "third_party_libraries": [],
     "timeout": 60,
     "vpc_config": {
@@ -42,13 +39,10 @@
     "enable_metrics": false,
     "handler": "main.handler",
     "memory": "128",
-    "source_bucket": "unit-testing.streamalert.source",
-    "source_current_hash": "12345",
-    "source_object_key": "lambda/athena/source.zip",
     "timeout": "60"
   },
   "rule_processor_config": {
-    "source_bucket": "unit.testing.source.bucket"
+    "handler": "main.handler"
   },
   "threat_intel_downloader_config": {
     "enabled": true,
@@ -77,9 +71,6 @@
       "md5"
     ],
     "memory": "128",
-    "source_bucket": "unit-testing.streamalert.source",
-    "source_current_hash": "<auto_generated>",
-    "source_object_key": "<auto_generated>",
     "timeout": "60"
   }
 }

@@ -32,9 +32,6 @@ def test_generate_athena():
         'handler': 'main.handler',
         'timeout': '60',
         'memory': '128',
-        'source_bucket': 'unit-testing.streamalert.source',
-        'source_current_hash': '12345',
-        'source_object_key': 'lambda/athena/source.zip',
         'third_party_libraries': []
     }
 
@@ -54,8 +51,6 @@ def test_generate_athena():
                 'lambda_log_level': 'info',
                 'lambda_memory': '128',
                 'lambda_timeout': '60',
-                'lambda_s3_bucket': 'unit-testing.streamalert.source',
-                'lambda_s3_key': 'lambda/athena/source.zip',
                 'athena_data_buckets': [
                     'unit-testing.streamalerts',
                     'unit-testing.streamalert.data'
