@@ -51,6 +51,7 @@ def generate_alert_processor(config):
     # Set variables for the Lambda module
     result['module']['alert_processor_lambda'] = generate_lambda(
         '{}_streamalert_{}'.format(config['global']['account']['prefix'], ALERT_PROCESSOR_NAME),
+        'alert_processor.zip',
         config['lambda']['alert_processor_config'],
         config,
         environment={

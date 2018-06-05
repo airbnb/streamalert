@@ -42,8 +42,6 @@ def generate_threat_intel_downloader(config):
         'lambda_handler': ti_downloader_config['handler'],
         'lambda_memory': ti_downloader_config.get('memory', '128'),
         'lambda_timeout': ti_downloader_config.get('timeout', '60'),
-        'lambda_s3_bucket': ti_downloader_config['source_bucket'],
-        'lambda_s3_key': ti_downloader_config['source_object_key'],
         'lambda_log_level': ti_downloader_config.get('log_level', 'info'),
         'interval': ti_downloader_config.get('interval', 'rate(1 day)'),
         'current_version': ti_downloader_config['current_version'],

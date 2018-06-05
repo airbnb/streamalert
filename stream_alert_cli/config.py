@@ -76,9 +76,6 @@ class CLIConfig(object):
             'timeout': '60',
             'memory': '128',
             'log_level': 'info',
-            'source_bucket': '{}.streamalert.source'.format(prefix),
-            'source_current_hash': '<auto_generated>',
-            'source_object_key': '<auto_generated>',
             'third_party_libraries': []
         }
 
@@ -104,22 +101,6 @@ class CLIConfig(object):
         self.config['lambda']['athena_partition_refresh_config']['buckets'].clear()
         self.config['lambda']['athena_partition_refresh_config']['buckets'] \
             ['{}.streamalerts'.format(prefix)] = 'alerts'
-
-        lambda_funcs = [
-            'alert_merger',
-            'alert_processor',
-            'athena_partition_refresh',
-            'rule_processor',
-            'stream_alert_apps',
-            'threat_intel_downloader'
-        ]
-
-        # Update all function configurations with the source streamalert source bucket info
-        source_bucket = '{}.streamalert.source'.format(prefix)
-        for func in lambda_funcs:
-            func_config = '{}_config'.format(func)
-            if func_config in self.config['lambda']:
-                self.config['lambda'][func_config]['source_bucket'] = source_bucket
 
         self.write()
 
@@ -409,7 +390,6 @@ class CLIConfig(object):
         if prompt_for_auth and not save_app_auth_info(app, app_info, overwrite):
             return
 
-        prefix = self.config['global']['account']['prefix']
         apps_config = cluster_config['modules'].get('stream_alert_apps', {})
         if not exists:
             # Save a default app settings to the config for new apps
@@ -429,9 +409,6 @@ class CLIConfig(object):
                     }
                 },
                 'schedule_expression': app_info['schedule_expression'],
-                'source_bucket': '{}.streamalert.source'.format(prefix),
-                'source_current_hash': '<auto_generated>',
-                'source_object_key': '<auto_generated>',
                 'timeout': app_info['timeout'],
                 'type': app_info['type']
             }
@@ -504,7 +481,6 @@ class CLIConfig(object):
         Returns:
             (bool): Return True if writing settings of Lambda function successfully.
         """
-        prefix = self.config['global']['account']['prefix']
         default_config = {
             'autoscale': False,
             'enabled': True,
@@ -513,9 +489,6 @@ class CLIConfig(object):
             'interval': 'rate(1 day)',
             'log_level': 'info',
             'memory': '128',
-            'source_bucket': '{}.streamalert.source'.format(prefix),
-            'source_current_hash': '<auto_generated>',
-            'source_object_key': '<auto_generated>',
             'third_party_libraries': ['requests'],
             'timeout': '120',
             'table_rcu': 10,

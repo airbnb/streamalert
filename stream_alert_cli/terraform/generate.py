@@ -130,10 +130,6 @@ def generate_main(config, init=False):
 
     # Configure initial S3 buckets
     main_dict['resource']['aws_s3_bucket'] = {
-        'lambda_source': generate_s3_bucket(
-            bucket=config['lambda']['rule_processor_config']['source_bucket'],
-            logging=logging_bucket
-        ),
         'stream_alert_secrets': generate_s3_bucket(
             bucket='{}.streamalert.secrets'.format(config['global']['account']['prefix']),
             logging=logging_bucket

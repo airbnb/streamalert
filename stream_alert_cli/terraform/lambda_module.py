@@ -68,11 +68,13 @@ def _tf_vpc_config(lambda_config):
     return result
 
 
-def generate_lambda(function_name, lambda_config, config, environment=None, metrics_lookup=None):
+def generate_lambda(function_name, zip_file, lambda_config, config,
+                    environment=None, metrics_lookup=None):
     """Generate an instance of the Lambda Terraform module.
 
     Args:
         function_name (str): Name of the Lambda function (e.g. 'alert_processor')
+        zip_file (str): Path where the .zip deployment package lives
         config (dict): Parsed config from conf/
         lambda_config (dict): Section of the config for this particular Lambda function
         environment (dict): Optional environment variables to specify.
@@ -102,8 +104,6 @@ def generate_lambda(function_name, lambda_config, config, environment=None, metr
               }
             },
             "schedule_expression": "rate(5 minutes)",
-            "source_bucket": "BUCKET",
-            "source_object_key": "OBJECT_KEY",
             "timeout": 10,
             "vpc_config": {
                 "security_group_ids": [
@@ -135,8 +135,7 @@ def generate_lambda(function_name, lambda_config, config, environment=None, metr
         'handler': lambda_config['handler'],
         'memory_size_mb': lambda_config['memory'],
         'timeout_sec': lambda_config['timeout'],
-        'source_bucket': lambda_config['source_bucket'],
-        'source_object_key': lambda_config['source_object_key'],
+        'filename': zip_file,
         'environment_variables': environment_variables,
         'aliased_version': lambda_config['current_version'],
     }
