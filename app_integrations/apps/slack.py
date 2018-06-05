@@ -34,6 +34,10 @@ class SlackApp(AppIntegration):
         raise NotImplementedError('Subclasses should implement the _type method')
 
     @classmethod
+    def _subkey(cls):
+        raise NotImplementedError('Subclasses should implement the _subkey method')
+
+    @classmethod
     def service(cls):
         return 'slack'
 
@@ -53,6 +57,15 @@ class SlackApp(AppIntegration):
                     }
                 }
 
+    def _get_request_data(self):
+        '''The Slack API takes additional parameters to its endpoints in the body of the request.
+        Pagination control is one set of parameters.
+        '''
+        return {
+                'count': '1000',
+                'page': self._poll_count
+                }
+
     def _gather_logs(self):
         """Gather log events.
 
@@ -62,20 +75,29 @@ class SlackApp(AppIntegration):
         url = '{}{}'.format(self._SLACK_API_BASE_URL, self._endpoint())
         headers = {
                 'Content-Type': 'application/x-www-form-urlencoded',
-                'Authorization': 'Bearer {}'.format(self._config.auth['auth_token'])
+                'Authorization': 'Bearer {}'.format(self._config.auth['auth_token']),
                 }
+
+        data = self._get_request_data()
+
         success, response = self._make_post_request(
-                url, headers, None, False)
+                url, headers, data, False)
 
         if not success:
             LOGGER.exception('Received bad response from slack')
             return False
 
-        if not u'ok' in response.keys():
+        if not u'ok' in response.keys() or not response[u'ok']:
             LOGGER.exception('Received error or warning from slack')
             return False
 
-        return response
+        if not self._subkey() in response.keys():
+            LOGGER.exception('Received malformed response from slack')
+            return False
+
+        self._more_to_poll = int(response['paging']['pages']) > int(response['paging']['page'])
+
+        return response[self._subkey()]
 
 
 @StreamAlertApp
@@ -120,6 +142,10 @@ class SlackAccessApp(SlackApp):
     @classmethod
     def _endpoint(cls):
         return cls._SLACK_ACCESS_LOGS_ENDPOINT
+
+    @classmethod
+    def _subkey(cls):
+        return u'logins'
 
     def _sleep_seconds(self):
         """Return the number of seconds this polling function should sleep for
@@ -167,6 +193,10 @@ class SlackIntegrationsApp(SlackApp):
     @classmethod
     def _endpoint(cls):
         return cls._SLACK_INTEGRATION_LOGS_ENDPOINT
+
+    @classmethod
+    def _subkey(cls):
+        return u'logs'
 
     def _sleep_seconds(self):
         """Return the number of seconds this polling function should sleep for

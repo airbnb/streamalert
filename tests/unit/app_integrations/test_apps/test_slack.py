@@ -2,7 +2,7 @@ from mock import Mock, patch
 from nose.tools import assert_equal, assert_false, assert_items_equal, raises
 import requests
 
-from app_integrations.apps.slack import SlackApp, SlackAccessApp
+from app_integrations.apps.slack import SlackApp, SlackAccessApp, SlackIntegrationsApp
 from app_integrations.config import AppConfig
 
 
@@ -11,18 +11,16 @@ from tests.unit.app_integrations.test_helpers import (
         MockSSMClient
         )
 
-@patch.object(SlackApp, 'type', Mock(return_value='type'))
-@patch.object(SlackApp, '_endpoint', Mock(return_value='endpoint'))
 @patch.object(AppConfig, 'SSM_CLIENT', MockSSMClient())
-class TestSlackApp(object):
+class TestSlackAccessApp(object):
     """Test class for the SlackApp"""
 
     def __init__(self):
         self._app = None
 
-    @patch.object(SlackApp, '__abstractmethods__', frozenset())
+    @patch.object(SlackAccessApp, '__abstractmethods__', frozenset())
     def setup(self):
-        self._app = SlackApp(AppConfig(get_valid_config_dict('slack')))
+        self._app = SlackAccessApp(AppConfig(get_valid_config_dict('slack')))
 
     def test_required_auth_info(self):
         """SlackApp - Required Auth Info"""
@@ -66,10 +64,38 @@ class TestSlackApp(object):
                 }
             }
 
+    @patch('requests.post')
+    def test_gather_access_logs(self, requests_mock):
+        """SlackApp - Gather Logs Entry Point"""
+        logs = self._get_sample_access_logs()
+        requests_mock.return_value = Mock(
+                status_code=200,
+                json=Mock(return_value=logs)
+                )
+
+        gathered_logs = self._app._gather_logs()
+        assert_equal(len(gathered_logs), 2)
+
+
+@patch.object(AppConfig, 'SSM_CLIENT', MockSSMClient())
+class TestSlackIntegrationsApp(object):
+    """Test class for the SlackApp"""
+
+    def __init__(self):
+        self._app = None
+
+    @patch.object(SlackIntegrationsApp, '__abstractmethods__', frozenset())
+    def setup(self):
+        self._app = SlackIntegrationsApp(AppConfig(get_valid_config_dict('slack')))
+
+    def test_required_auth_info(self):
+        """SlackApp - Required Auth Info"""
+        assert_items_equal(self._app.required_auth_info().keys(), {'auth_token'})
+
     @staticmethod
-    def _get_sample_integration_logs():
+    def _get_sample_integrations_logs():
         return {
-            u"ok": true,
+            u"ok": True,
             u"logs": [
                 {
                     u"service_id": u"1234567890",
@@ -111,9 +137,9 @@ class TestSlackApp(object):
             }
 
     @patch('requests.post')
-    def test_gather_access_logs(self, requests_mock):
+    def test_gather_integrations_logs(self, requests_mock):
         """SlackApp - Gather Logs Entry Point"""
-        logs = self._get_sample_access_logs()
+        logs = self._get_sample_integrations_logs()
         requests_mock.return_value = Mock(
                 status_code=200,
                 json=Mock(return_value=logs)

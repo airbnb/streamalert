@@ -1545,10 +1545,7 @@
       "country": "string",
       "region": "string"
     },
-    "parser": "json",
-    "configuration": {
-      "json_path": "logins[*]"
-    }
+    "parser": "json"
   },
   "slack:integration": {
     "schema": {
@@ -1579,8 +1576,7 @@
         "rss_feed_title",
         "rss_feed_url",
         "reason"
-      ],
-      "json_path": "log[*]"
+      ]
     }
   }
 }
