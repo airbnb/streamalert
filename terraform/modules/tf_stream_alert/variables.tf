@@ -33,10 +33,11 @@ variable "region" {
   default = ""
 }
 
-variable "rule_processor_config" {
-  type    = "map"
-  default = {}
+variable "filename" {
+  default = "rule_processor.zip"
 }
+
+variable "lambda_handler" {}
 
 variable "rule_processor_log_level" {
   type    = "string"

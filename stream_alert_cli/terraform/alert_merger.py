@@ -38,6 +38,7 @@ def generate_alert_merger(config):
     # Set variables for the Lambda module
     result['module']['alert_merger_lambda'] = generate_lambda(
         '{}_streamalert_{}'.format(config['global']['account']['prefix'], ALERT_MERGER_NAME),
+        'alert_merger.zip',
         config['lambda']['alert_merger_config'],
         config,
         environment={

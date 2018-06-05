@@ -119,18 +119,12 @@ def basic_streamalert_config():
                 'current_version': '$LATEST',
                 'handler': 'stream_alert.alert_merger.main.handler',
                 'memory': 128,
-                'source_bucket': 'unit-testing.streamalert.source',
-                'source_current_hash': '<auto_generated>',
-                'source_object_key': '<auto_generated>',
                 'timeout': 10
             },
             'alert_processor_config': {
                 'current_version': '$LATEST',
                 'handler': 'stream_alert.alert_processor.main.handler',
                 'memory': 128,
-                'source_bucket': 'unit-testing.streamalert.source',
-                'source_current_hash': '<auto_generated>',
-                'source_object_key': '<auto_generated>',
                 'timeout': 10
             },
             'athena_partition_refresh_config': {
@@ -144,16 +138,10 @@ def basic_streamalert_config():
                         'unit-testing.streamalerts': 'alerts'
                     }
                 },
-                'source_bucket': 'unit-testing.streamalert.source',
-                'source_current_hash': '<auto_generated>',
-                'source_object_key': '<auto_generated>',
                 'timeout': 60
             },
             'rule_processor_config': {
                 'handler': 'stream_alert.rule_processor.main.handler',
-                'source_bucket': 'unit-testing.streamalert.source',
-                'source_current_hash': '<auto_generated>',
-                'source_object_key': '<auto_generated>',
                 'third_party_libraries': [
                     'jsonpath_rw',
                     'netaddr'
@@ -172,9 +160,6 @@ def basic_streamalert_config():
                 'max_read_capacity': 1000,
                 'memory': 128,
                 'min_read_capacity': 100,
-                'source_bucket': 'unit-testing.streamalert.source',
-                'source_current_hash': '<auto_generated>',
-                'source_object_key': '<auto_generated>',
                 'table_rcu': 1000,
                 'table_wcu': 200,
                 'target_utilization': 70,
@@ -257,9 +242,6 @@ def basic_streamalert_config():
                                 }
                             },
                             'schedule_expression': 'rate(5 minutes)',
-                            'source_bucket': 'unit-testing.streamalert.source',
-                            'source_current_hash': '<auto_generated>',
-                            'source_object_key': '<auto_generated>',
                             'timeout': 60,
                             'type': 'box_admin_events'
                         },
@@ -279,9 +261,6 @@ def basic_streamalert_config():
                                 }
                             },
                             'schedule_expression': 'rate(30 minutes)',
-                            'source_bucket': 'unit-testing.streamalert.source',
-                            'source_current_hash': '<auto_generated>',
-                            'source_object_key': '<auto_generated>',
                             'timeout': 40,
                             'type': 'duo_admin'
                         }

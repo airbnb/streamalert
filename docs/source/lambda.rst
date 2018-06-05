@@ -132,9 +132,6 @@ The ``conf/lambda.json`` configuration file controls common settings across all 
   {
     "alert_processor_config": {
       "handler": "stream_alert.rule_processor.main.handler",
-      "source_bucket": "prefix.streamalert.source",
-      "source_current_hash": "auto_generated_hash",
-      "source_object_key": "auto_generated_s3_object_key",
       "third_party_libraries": [
         "jsonpath_rw",
         "netaddr"
@@ -142,9 +139,6 @@ The ``conf/lambda.json`` configuration file controls common settings across all 
     },
     "rule_processor_config": {
       "handler": "stream_alert.rule_processor.main.handler",
-      "source_bucket": "prefix.streamalert.source",
-      "source_current_hash": "auto_generated_hash",
-      "source_object_key": "auto_generated_s3_object_key",
       "third_party_libraries": []
     }
   }
@@ -154,9 +148,6 @@ The ``conf/lambda.json`` configuration file controls common settings across all 
 =========================    ========  ===========
 Key                          Required  Description
 -------------------------    --------  -----------
-``source_bucket``            ``Yes``   The S3 bucket for uploading and storing the StreamAlert application code.  Open ``variables.json`` and replace the prefix with your company name.
-``source_current_hash``      ``Yes``   The checksum of the currently running Lambda function.  Used for version publishing.
-``source_object_key``        ``Yes``   The full path in S3 to the currently running Lambda function source code zip.
 ``handler``                  ``Yes``   The entry point to the Lambda function where events are passed into StreamAlert.
 ``third_party_libraries``    ``Yes``   Third-party Python libraries to package into the Lambda deployment package.
 =========================    ========  ===========

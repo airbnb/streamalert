@@ -7,8 +7,9 @@ resource "aws_lambda_function" "athena_partition_refresh" {
   handler       = "${var.lambda_handler}"
   memory_size   = "${var.lambda_memory}"
   timeout       = "${var.lambda_timeout}"
-  s3_bucket     = "${var.lambda_s3_bucket}"
-  s3_key        = "${var.lambda_s3_key}"
+
+  filename         = "${var.filename}"
+  source_code_hash = "${base64sha256(file(var.filename))}"
 
   environment {
     variables = {

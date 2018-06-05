@@ -68,18 +68,17 @@ class LambdaVersion(object):
 
         # Configure the Lambda client
         client = boto3.client('lambda', region_name=region)
-        code_sha_256 = self.config['lambda'][self.package.config_key]['source_current_hash']
 
         # Publish the function(s)
         # TODO: move the extra logic into the LambdaPackage subclasses instead of this
         if self.package.package_name == 'stream_alert_app':
-            if not 'stream_alert_apps' in self.config['clusters'][cluster]['modules']:
+            if 'stream_alert_apps' not in self.config['clusters'][cluster]['modules']:
                 return True # nothing to publish for this cluster
 
             for function_name, app_info in self.config['clusters'][cluster]['modules'] \
                 ['stream_alert_apps'].iteritems():
                 # function_name follows format: '<prefix>_<cluster>_<service>_<app_name>_app'
-                new_version = self._publish(client, function_name, app_info['source_current_hash'])
+                new_version = self._publish(client, function_name)
                 if not new_version:
                     continue
 
@@ -90,7 +89,7 @@ class LambdaVersion(object):
 
         else:
 
-            new_version = self._publish(client, function_name, code_sha_256)
+            new_version = self._publish(client, function_name)
             if not new_version:
                 return False
 
@@ -110,14 +109,13 @@ class LambdaVersion(object):
         return True
 
     @staticmethod
-    def _publish(client, function_name, code_sha_256):
+    def _publish(client, function_name):
         """Publish the function"""
         date = datetime.utcnow().strftime("%Y%m%d_T%H%M%S")
         LOGGER_CLI.debug('Publishing %s', function_name)
         try:
             version = client.publish_version(
                 FunctionName=function_name,
-                CodeSha256=code_sha_256,
                 Description='Publish Lambda {} on {}'.format(function_name, date)
             )['Version']
         except ClientError as err:

@@ -43,16 +43,6 @@ variable "kinesis_streams_config" {
   default = {}
 }
 
-variable "rule_processor_config" {
-  type    = "map"
-  default = {}
-}
-
-variable "rule_processor_lambda_config" {
-  type    = "map"
-  default = {}
-}
-
 variable "rule_processor_versions" {
   type    = "map"
   default = {}

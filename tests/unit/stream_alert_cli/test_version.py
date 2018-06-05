@@ -72,11 +72,7 @@ def test_publish():
     )
     current_version = 10
     fake_client = MockLambdaClient('athena', current_version=current_version)
-    result = publish._publish(
-        client=fake_client,
-        function_name='test',
-        code_sha_256='12345'
-    )
+    result = publish._publish(client=fake_client, function_name='test')
 
     assert_equal(result, current_version + 1)
 
@@ -93,11 +89,7 @@ def test_publish_error(mock_logging):
     fake_client = MockLambdaClient('athena',
                                    current_version=current_version,
                                    throw_exception=True)
-    result = publish._publish(
-        client=fake_client,
-        function_name='test',
-        code_sha_256='12345'
-    )
+    result = publish._publish(client=fake_client, function_name='test')
 
     assert_false(result)
     assert_true(mock_logging.error.called)

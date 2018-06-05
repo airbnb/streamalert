@@ -115,18 +115,6 @@ class TestTerraformGenerate(object):
                     }
                 },
                 'aws_s3_bucket': {
-                    'lambda_source': {
-                        'bucket': 'unit.testing.source.bucket',
-                        'acl': 'private',
-                        'force_destroy': True,
-                        'versioning': {
-                            'enabled': True
-                        },
-                        'logging': {
-                            'target_bucket': 'unit-testing.streamalert.s3-logging',
-                            'target_prefix': 'unit.testing.source.bucket/'
-                        }
-                    },
                     'stream_alert_secrets': {
                         'bucket': 'unit-testing.streamalert.secrets',
                         'acl': 'private',
@@ -244,13 +232,13 @@ class TestTerraformGenerate(object):
                     'prefix': 'unit-testing',
                     'cluster': 'test',
                     'dynamodb_ioc_table': 'test_table_name',
+                    'lambda_handler': 'main.handler',
                     'threat_intel_enabled': False,
                     'rule_processor_enable_metrics': True,
                     'rule_processor_log_level': 'info',
                     'rule_processor_memory': 128,
                     'rule_processor_timeout': 25,
                     'rule_processor_version': '$LATEST',
-                    'rule_processor_config': '${var.rule_processor_config}',
                     'rules_table_arn': '${module.globals.rules_table_arn}',
                 }
             }
@@ -276,13 +264,13 @@ class TestTerraformGenerate(object):
                     'prefix': 'unit-testing',
                     'cluster': 'advanced',
                     'dynamodb_ioc_table': 'test_table_name',
+                    'lambda_handler': 'main.handler',
                     'threat_intel_enabled': False,
                     'rule_processor_enable_metrics': True,
                     'rule_processor_log_level': 'info',
                     'rule_processor_memory': 128,
                     'rule_processor_timeout': 25,
                     'rule_processor_version': '$LATEST',
-                    'rule_processor_config': '${var.rule_processor_config}',
                     'rules_table_arn': '${module.globals.rules_table_arn}',
                     'input_sns_topics': ['my-sns-topic-name'],
                 }

@@ -33,12 +33,8 @@ variable "timeout_sec" {
   description = "Maximum duration before execution is terminated"
 }
 
-variable "source_bucket" {
-  description = "S3 bucket containing function source code"
-}
-
-variable "source_object_key" {
-  description = "S3 object key pointing to the function source code"
+variable "filename" {
+  description = "Path to .zip deployment package"
 }
 
 // NOTE: Due to https://github.com/terraform-providers/terraform-provider-aws/issues/3803,

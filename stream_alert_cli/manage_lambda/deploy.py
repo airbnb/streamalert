@@ -97,12 +97,12 @@ def _create_and_upload(function_name, config, cluster=None):
     package_mapping = {
         'alert': PackageMap(
             stream_alert_packages.AlertProcessorPackage,
-            {'module.alert_processor_lambda'},
+            {'module.alert_processor_iam', 'module.alert_processor_lambda'},
             True
         ),
         'alert_merger': PackageMap(
             stream_alert_packages.AlertMergerPackage,
-            {'module.alert_merger_lambda'},
+            {'module.alert_merger_iam', 'module.alert_merger_lambda'},
             True
         ),
         'apps': PackageMap(
@@ -135,7 +135,7 @@ def _create_and_upload(function_name, config, cluster=None):
         return False, False
 
     package = package_mapping[function_name].package_class(config=config)
-    success = package.create_and_upload()
+    success = package.create()
 
     if not success:
         sys.exit(1)

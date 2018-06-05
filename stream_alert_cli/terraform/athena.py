@@ -53,8 +53,6 @@ def generate_athena(config):
         'lambda_handler': athena_config['handler'],
         'lambda_memory': athena_config.get('memory', '128'),
         'lambda_timeout': athena_config.get('timeout', '60'),
-        'lambda_s3_bucket': athena_config['source_bucket'],
-        'lambda_s3_key': athena_config['source_object_key'],
         'lambda_log_level': athena_config.get('log_level', 'info'),
         'athena_data_buckets': data_buckets,
         'schedule_expression': athena_config.get('schedule_expression', 'rate(10 minutes)'),

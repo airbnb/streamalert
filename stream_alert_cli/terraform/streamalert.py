@@ -51,6 +51,7 @@ def generate_stream_alert(cluster_name, cluster_dict, config):
         'region': config['clusters'][cluster_name]['region'],
         'prefix': account['prefix'],
         'cluster': cluster_name,
+        'lambda_handler': config['lambda']['rule_processor_config']['handler'],
         'rule_processor_enable_metrics': modules['stream_alert'] \
             ['rule_processor'].get('enable_metrics', True),
         'rule_processor_log_level': modules['stream_alert'] \
@@ -58,7 +59,6 @@ def generate_stream_alert(cluster_name, cluster_dict, config):
         'rule_processor_memory': modules['stream_alert']['rule_processor']['memory'],
         'rule_processor_timeout': modules['stream_alert']['rule_processor']['timeout'],
         'rule_processor_version': modules['stream_alert']['rule_processor']['current_version'],
-        'rule_processor_config': '${var.rule_processor_config}',
         'rules_table_arn': '${module.globals.rules_table_arn}',
     }
 

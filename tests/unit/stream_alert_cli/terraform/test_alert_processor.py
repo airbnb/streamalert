@@ -62,13 +62,12 @@ class TestAlertProcessor(unittest.TestCase):
                     'errors_alarm_evaluation_periods': 1,
                     'errors_alarm_period_secs': 2,
                     'errors_alarm_threshold': 3,
+                    'filename': 'alert_processor.zip',
                     'function_name': 'unit-testing_streamalert_alert_processor',
                     'handler': 'main.handler',
                     'log_retention_days': 7,
                     'memory_size_mb': 128,
                     'source': 'modules/tf_lambda',
-                    'source_bucket': 'unit.testing.streamalert.source',
-                    'source_object_key': 'lambda/alert/source.zip',
                     'throttles_alarm_enabled': True,
                     'throttles_alarm_evaluation_periods': 4,
                     'throttles_alarm_period_secs': 5,
@@ -114,12 +113,11 @@ class TestAlertProcessor(unittest.TestCase):
                         'ENABLE_METRICS': '0',
                         'LOGGER_LEVEL': 'info'
                     },
+                    'filename': 'alert_processor.zip',
                     'function_name': 'unit-testing_streamalert_alert_processor',
                     'handler': 'main.handler',
                     'memory_size_mb': 128,
                     'source': 'modules/tf_lambda',
-                    'source_bucket': 'unit.testing.streamalert.source',
-                    'source_object_key': 'lambda/alert/source.zip',
                     'timeout_sec': 60,
                 }
             }
