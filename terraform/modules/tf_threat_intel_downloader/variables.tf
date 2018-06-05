@@ -34,10 +34,6 @@ variable "prefix" {
   type = "string"
 }
 
-variable "current_version" {
-  type = "string"
-}
-
 variable "interval" {
   type    = "string"
   default = "rate(1 day)"

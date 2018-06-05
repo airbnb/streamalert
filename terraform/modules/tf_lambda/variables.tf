@@ -69,7 +69,7 @@ variable "name_tag" {
 }
 
 variable "auto_publish_versions" {
-  default     = false
+  default     = true
   description = "Whether Terraform should automatically publish new versions of the function"
 }
 

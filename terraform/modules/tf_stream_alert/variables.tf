@@ -48,8 +48,6 @@ variable "rule_processor_enable_metrics" {
   default = false
 }
 
-variable "rule_processor_version" {}
-
 variable "rule_processor_memory" {}
 
 variable "rule_processor_timeout" {}
