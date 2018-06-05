@@ -203,10 +203,7 @@ def tf_runner(action='apply', refresh=True, auto_approve=False, targets=None):
     if not run_command(['terraform', 'get'], quiet=True):
         return False
 
-    tf_command = [
-        'terraform', action, '-var-file=../conf/lambda.json', '-refresh={}'.format(
-            str(refresh).lower())
-    ]
+    tf_command = ['terraform', action, '-refresh={}'.format(str(refresh).lower())]
 
     if action == 'destroy':
         # Terraform destroy has a '-force' flag instead of '-auto-approve'

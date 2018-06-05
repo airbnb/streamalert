@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from stream_alert.shared import metrics
+from stream_alert_cli.manage_lambda.package import AthenaPackage
 from stream_alert_cli.terraform.common import DEFAULT_SNS_MONITORING_TOPIC, infinitedict
 
 
@@ -50,13 +51,12 @@ def generate_athena(config):
         'database_name': database,
         'queue_name': queue_name,
         'results_bucket': results_bucket_name,
-        'lambda_handler': athena_config['handler'],
+        'lambda_handler': AthenaPackage.lambda_handler,
         'lambda_memory': athena_config.get('memory', '128'),
         'lambda_timeout': athena_config.get('timeout', '60'),
         'lambda_log_level': athena_config.get('log_level', 'info'),
         'athena_data_buckets': data_buckets,
         'schedule_expression': athena_config.get('schedule_expression', 'rate(10 minutes)'),
-        'current_version': athena_config['current_version'],
         'enable_metrics': athena_config.get('enable_metrics', False),
         'account_id': config['global']['account']['aws_account_id'],
         'prefix': prefix
