@@ -13,12 +13,9 @@ variable "lambda_timeout" {
   default = "60"
 }
 
-variable "lambda_s3_bucket" {
-  type = "string"
-}
-
-variable "lambda_s3_key" {
-  type = "string"
+variable "filename" {
+  type    = "string"
+  default = "athena_partition_refresh.zip"
 }
 
 variable "lambda_log_level" {
