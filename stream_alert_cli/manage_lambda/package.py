@@ -196,7 +196,12 @@ class AppIntegrationPackage(LambdaPackage):
     package_name = 'stream_alert_app'
     config_key = 'stream_alert_apps_config'
     third_party_libs = {
-        'backoff', 'boxsdk[jwt]==2.0.0a11', 'google-api-python-client', 'oauth2client', 'requests'}
+        'backoff',
+        'boxsdk[jwt]==2.0.0a11',
+        'google-api-python-client==1.6.4',
+        'oauth2client',
+        'requests'
+    }
     precompiled_libs = {'boxsdk[jwt]==2.0.0a11'}
     version = apps_version
 
