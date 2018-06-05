@@ -1,4 +1,5 @@
 import re
+import time
 
 from app_integrations.apps.app_base import StreamAlertApp, AppIntegration
 
@@ -97,6 +98,9 @@ class SlackApp(AppIntegration):
 
         self._more_to_poll = int(response['paging']['pages']) > int(response['paging']['page'])
 
+        if not self._more_to_poll:
+            self._last_timestamp = int(time.time())
+
         return response[self._subkey()]
 
 
@@ -127,13 +131,15 @@ class SlackAccessApp(SlackApp):
       }
     }
 
-    Additionally, the 'before' parameter of the api call does not appear to be
-    functional. This has been confirmed with Slack's support.
-
     Resource:
         https://api.slack.com/methods/team.accessLogs
     """
     _SLACK_ACCESS_LOGS_ENDPOINT = 'team.accessLogs'
+
+    def __init__(self, config):
+        super(SlackAccessApp, self).__init__(config)
+        self._before_time = None
+        self._next_page = 1
 
     @classmethod
     def _type(cls):
@@ -159,6 +165,64 @@ class SlackAccessApp(SlackApp):
             int: Number of seconds the polling function should sleep for
         """
         return 3
+
+    def _gather_logs(self):
+        """The team.accessLogs endpoint is not friendly for discovering changes.
+        Specifically, the log entries are sorted descending by 'date_first',
+        but new data will show in the `date_last` and `count` fields.
+
+        The only clear way to get all new data from the log is to walk the entire
+        set of entries and extract those whose `date_last` field is more recent
+        than the previous invocation.
+
+        Additionally, slack's pagination means that a maximum of 100,000 entries
+        can be returned (1000 per page, 100 pages max). However, the `before` parameter
+        permits walking further back.
+
+        Returns:
+            False on error, a list of dictionaries of log entries on success
+        """
+        url = '{}{}'.format(self._SLACK_API_BASE_URL, self._endpoint())
+        headers = {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Authorization': 'Bearer {}'.format(self._config.auth['auth_token']),
+                }
+
+        data = {
+                'count':'1000',
+                'page': self._next_page
+                }
+        if self._before_time is not None:
+            data['before'] = self._before_time
+
+        success, response = self._make_post_request(
+                url, headers, data, False)
+
+        if not success:
+            return False
+
+        if not u'ok' in response.keys() or not response[u'ok']:
+            return False
+
+        if not self._subkey() in response.keys():
+            return False
+
+        '''if we hit the maximum possible number of returned entries, there may still be more
+        to check. Grab the `date_first` value of the oldest entry for the next round'''
+        if response['paging']['page'] == 100 and response['paging']['count'] == 1000:
+            self._more_to_poll = True
+            self._before_time = response['logins'][999]['date_first']
+            self._next_page = 1
+        else:
+            self._more_to_poll = response['paging']['pages'] > response['paging']['page']
+            self._next_page += 1
+
+        results = [x for x in response['logins'] if x['date_last'] > self._last_timestamp]
+
+        if not self._more_to_poll:
+            self._last_timestamp = int(time.time())
+
+        return results
 
 @StreamAlertApp
 class SlackIntegrationsApp(SlackApp):

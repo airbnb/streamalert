@@ -35,7 +35,7 @@ class TestSlackAccessApp(object):
                     u"user_id": u"U12345",
                     u"username": u"bob",
                     u"date_first": 1422922864,
-                    u"date_last": 1422922864,
+                    u"date_last":  1422922864,
                     u"count": 1,
                     u"ip": u"127.0.0.1",
                     u"user_agent": u"SlackWeb Mozilla\/5.0 (Macintosh; Intel Mac OS X 10_10_2) AppleWebKit\/537.36 (KHTML, like Gecko) Chrome\/41.0.2272.35 Safari\/537.36",
@@ -75,6 +75,19 @@ class TestSlackAccessApp(object):
 
         gathered_logs = self._app._gather_logs()
         assert_equal(len(gathered_logs), 2)
+
+    @patch('requests.post')
+    def test_gather_access_logs_filtered(self, requests_mock):
+        """SlackApp - Gather Logs And Filter Old Entries"""
+        logs = self._get_sample_access_logs()
+        requests_mock.return_value = Mock(
+                status_code=200,
+                json=Mock(return_value=logs)
+                )
+
+        self._app._last_timestamp = 1422922593
+        gathered_logs = self._app._gather_logs()
+        assert_equal(len(gathered_logs), 1)
 
 
 @patch.object(AppConfig, 'SSM_CLIENT', MockSSMClient())

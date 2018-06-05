@@ -227,7 +227,7 @@ def get_formatted_timestamp(app_type):
     elif app_type in {'box', 'box_admin_events'}:
         return '2017-10-27T12:31:22-07:00'
     elif app_type in {'slack'}:
-        return '1422922864'
+        return 1422922593
 
 
 def get_valid_config_dict(app_type):
