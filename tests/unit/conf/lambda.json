@@ -1,7 +1,5 @@
 {
   "alert_processor_config": {
-    "current_version": "$LATEST",
-    "handler": "main.handler",
     "log_level": "info",
     "log_retention_days": 7,
     "memory": 128,
@@ -35,15 +33,11 @@
       "unit-testing.streamalert.data": "data",
       "unit-testing.streamalerts": "alerts"
     },
-    "current_version": "$LATEST",
     "enable_metrics": false,
-    "handler": "main.handler",
     "memory": "128",
     "timeout": "60"
   },
-  "rule_processor_config": {
-    "handler": "main.handler"
-  },
+  "rule_processor_config": {},
   "threat_intel_downloader_config": {
     "enabled": true,
     "excluded_sub_types": [
@@ -53,7 +47,6 @@
       "spam_ip",
       "tor_ip"
     ],
-    "handler": "main.handler",
     "ioc_filters": [
       "crowdstrike",
       "@airbnb.com"

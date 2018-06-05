@@ -53,7 +53,6 @@
     ],
     "stream_alert": {
       "rule_processor": {
-        "current_version": "$LATEST",
         "inputs": {
           "aws-sns": [
             "my-sns-topic-name"

@@ -185,8 +185,6 @@ class TestCLIConfig(object):
         expected_config = {
             'autoscale': True,
             'enabled': True,
-            'current_version': '$LATEST',
-            'handler': 'stream_alert.threat_intel_downloader.main.handler',
             'interval': 'rate(1 day)',
             'ioc_filters': [],
             'ioc_keys': [],
