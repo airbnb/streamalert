@@ -1,6 +1,7 @@
 import re
 import time
 
+from app_integrations import LOGGER
 from app_integrations.apps.app_base import StreamAlertApp, AppIntegration
 
 class SlackApp(AppIntegration):
@@ -17,6 +18,12 @@ class SlackApp(AppIntegration):
     """
 
     _SLACK_API_BASE_URL = 'https://slack.com/api/'
+    _SLACK_API_MAX_ENTRY_COUNT = 1000
+    _SLACK_API_MAX_PAGE_COUNT = 100
+
+    def __init__(self, config):
+        super(SlackApp, self).__init__(config)
+        self._next_page = 1
 
     @classmethod
     def _endpoint(cls):
@@ -33,10 +40,6 @@ class SlackApp(AppIntegration):
     @classmethod
     def _type(cls):
         raise NotImplementedError('Subclasses should implement the _type method')
-
-    @classmethod
-    def _subkey(cls):
-        raise NotImplementedError('Subclasses should implement the _subkey method')
 
     @classmethod
     def service(cls):
@@ -58,13 +61,20 @@ class SlackApp(AppIntegration):
                     }
                 }
 
+    def _check_for_more_to_poll(self, response):
+        self._next_page += 1
+        return not ('paging' in response.keys() and response['paging']['pages'] == response['paging']['page'])
+
+    def _filter_response_entries(self, response):
+        raise NotImplementedError("Subclasses must implement the _filter_response_entries method")
+
     def _get_request_data(self):
         '''The Slack API takes additional parameters to its endpoints in the body of the request.
         Pagination control is one set of parameters.
         '''
         return {
-                'count': '1000',
-                'page': self._poll_count
+                'count': self._SLACK_API_MAX_ENTRY_COUNT,
+                'page': self._next_page
                 }
 
     def _gather_logs(self):
@@ -92,17 +102,14 @@ class SlackApp(AppIntegration):
             LOGGER.exception('Received error or warning from slack')
             return False
 
-        if not self._subkey() in response.keys():
-            LOGGER.exception('Received malformed response from slack')
-            return False
+        self._more_to_poll = self._check_for_more_to_poll(response)
 
-        self._more_to_poll = int(response['paging']['pages']) > int(response['paging']['page'])
+        results = self._filter_response_entries(response)
 
         if not self._more_to_poll:
             self._last_timestamp = int(time.time())
 
-        return response[self._subkey()]
-
+        return results
 
 @StreamAlertApp
 class SlackAccessApp(SlackApp):
@@ -149,9 +156,34 @@ class SlackAccessApp(SlackApp):
     def _endpoint(cls):
         return cls._SLACK_ACCESS_LOGS_ENDPOINT
 
-    @classmethod
-    def _subkey(cls):
-        return u'logins'
+    def _filter_response_entries(self, response):
+        if 'logins' in response:
+            return [x for x in response['logins'] if x['date_last'] > self._last_timestamp]
+        return False
+
+    def _check_for_more_to_poll(self, response):
+        '''if we hit the maximum possible number of returned entries, there may still be more
+        to check. Grab the `date_first` value of the oldest entry for the next round'''
+        if response['paging']['page'] == self._SLACK_API_MAX_PAGE_COUNT and response['paging']['count'] == self._SLACK_API_MAX_ENTRY_COUNT:
+            self._before_time = response['logins'][-1]['date_first']
+            self._next_page = 1
+            return True
+        else:
+            self._next_page += 1
+            return response['paging']['pages'] > response['paging']['page']
+
+
+    def _get_request_data(self):
+        data = {
+                'count': self._SLACK_API_MAX_ENTRY_COUNT,
+                'page': self._next_page
+                }
+
+        if self._before_time:
+            data['before'] = self._before_time
+
+        return data
+
 
     def _sleep_seconds(self):
         """Return the number of seconds this polling function should sleep for
@@ -166,63 +198,6 @@ class SlackAccessApp(SlackApp):
         """
         return 3
 
-    def _gather_logs(self):
-        """The team.accessLogs endpoint is not friendly for discovering changes.
-        Specifically, the log entries are sorted descending by 'date_first',
-        but new data will show in the `date_last` and `count` fields.
-
-        The only clear way to get all new data from the log is to walk the entire
-        set of entries and extract those whose `date_last` field is more recent
-        than the previous invocation.
-
-        Additionally, slack's pagination means that a maximum of 100,000 entries
-        can be returned (1000 per page, 100 pages max). However, the `before` parameter
-        permits walking further back.
-
-        Returns:
-            False on error, a list of dictionaries of log entries on success
-        """
-        url = '{}{}'.format(self._SLACK_API_BASE_URL, self._endpoint())
-        headers = {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'Authorization': 'Bearer {}'.format(self._config.auth['auth_token']),
-                }
-
-        data = {
-                'count':'1000',
-                'page': self._next_page
-                }
-        if self._before_time is not None:
-            data['before'] = self._before_time
-
-        success, response = self._make_post_request(
-                url, headers, data, False)
-
-        if not success:
-            return False
-
-        if not u'ok' in response.keys() or not response[u'ok']:
-            return False
-
-        if not self._subkey() in response.keys():
-            return False
-
-        '''if we hit the maximum possible number of returned entries, there may still be more
-        to check. Grab the `date_first` value of the oldest entry for the next round'''
-        if response['paging']['page'] == 100 and response['paging']['count'] == 1000:
-            self._more_to_poll = True
-            self._before_time = response['logins'][999]['date_first']
-            self._next_page = 1
-        else:
-            self._more_to_poll = response['paging']['pages'] > response['paging']['page']
-            self._next_page += 1
-
-        results = [x for x in response['logins'] if x['date_last'] > self._last_timestamp]
-
-        if not self._more_to_poll:
-            self._last_timestamp = int(time.time())
-
-        return results
 
 @StreamAlertApp
 class SlackIntegrationsApp(SlackApp):
@@ -258,9 +233,10 @@ class SlackIntegrationsApp(SlackApp):
     def _endpoint(cls):
         return cls._SLACK_INTEGRATION_LOGS_ENDPOINT
 
-    @classmethod
-    def _subkey(cls):
-        return u'logs'
+    def _filter_response_entries(self, response):
+        if 'logs' in response:
+            return [x for x in response['logs'] if int(x['date']) > self._last_timestamp]
+        return False
 
     def _sleep_seconds(self):
         """Return the number of seconds this polling function should sleep for

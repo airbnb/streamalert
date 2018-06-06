@@ -12,8 +12,47 @@ from tests.unit.app_integrations.test_helpers import (
         )
 
 @patch.object(AppConfig, 'SSM_CLIENT', MockSSMClient())
+@patch.object(SlackApp, '_endpoint', Mock(return_value='endpoint'))
+@patch.object(SlackApp, '_type', Mock(return_value='type'))
+class TestSlackApp(object):
+    """Test class for the SlackAccessApp"""
+
+    def __init__(self):
+        self._app = None
+
+    @patch.object(SlackApp, '__abstractmethods__', frozenset())
+    def setup(self):
+        self._app = SlackApp(AppConfig(get_valid_config_dict('slack')))
+
+    def test_required_auth_info(self):
+        """SlackApp - Required Auth Info"""
+        assert_items_equal(self._app.required_auth_info().keys(), {'auth_token'})
+
+    @patch('requests.post')
+    @patch('logging.Logger.exception')
+    def test_error_code_return(self, log_mock, requests_mock):
+        """SlackApp - Gather Logs - Bad Response"""
+        requests_mock.return_value = Mock(
+                status_code=404
+                )
+        assert_false(self._app._gather_logs())
+        log_mock.assert_called_with('Received bad response from slack')
+
+    @patch('requests.post')
+    @patch('logging.Logger.exception')
+    def test_error_response_from_slack(self, log_mock, requests_mock):
+        """SlackApp - Gather Logs - Error Response"""
+        requests_mock.return_value = Mock(
+                status_code=200,
+                json=Mock(return_value={'ok':False, 'error':'paid_only'})
+                )
+        assert_false(self._app._gather_logs())
+        log_mock.assert_called_with('Received error or warning from slack')
+
+
+@patch.object(AppConfig, 'SSM_CLIENT', MockSSMClient())
 class TestSlackAccessApp(object):
-    """Test class for the SlackApp"""
+    """Test class for the SlackAccessApp"""
 
     def __init__(self):
         self._app = None
@@ -22,12 +61,9 @@ class TestSlackAccessApp(object):
     def setup(self):
         self._app = SlackAccessApp(AppConfig(get_valid_config_dict('slack')))
 
-    def test_required_auth_info(self):
-        """SlackApp - Required Auth Info"""
-        assert_items_equal(self._app.required_auth_info().keys(), {'auth_token'})
-
     @staticmethod
     def _get_sample_access_logs():
+        """Sample logs collected from the slack api documentation"""
         return {
             u"ok": True,
             u"logins": [
@@ -66,7 +102,7 @@ class TestSlackAccessApp(object):
 
     @patch('requests.post')
     def test_gather_access_logs(self, requests_mock):
-        """SlackApp - Gather Logs Entry Point"""
+        """SlackAccessApp - Gather Logs Entry Point"""
         logs = self._get_sample_access_logs()
         requests_mock.return_value = Mock(
                 status_code=200,
@@ -77,8 +113,8 @@ class TestSlackAccessApp(object):
         assert_equal(len(gathered_logs), 2)
 
     @patch('requests.post')
-    def test_gather_access_logs_filtered(self, requests_mock):
-        """SlackApp - Gather Logs And Filter Old Entries"""
+    def test_gather_access_logs_some_filtered(self, requests_mock):
+        """SlackAccessApp - Gather Logs - Some Filtered"""
         logs = self._get_sample_access_logs()
         requests_mock.return_value = Mock(
                 status_code=200,
@@ -89,10 +125,79 @@ class TestSlackAccessApp(object):
         gathered_logs = self._app._gather_logs()
         assert_equal(len(gathered_logs), 1)
 
+    @patch('requests.post')
+    def test_gather_access_logs_all_filtered(self, requests_mock):
+        """SlackAccessApp - Gather Logs - All Filtered"""
+        logs = self._get_sample_access_logs()
+        requests_mock.return_value = Mock(
+                status_code=200,
+                json=Mock(return_value=logs)
+                )
+
+        self._app._last_timestamp = 1522922593
+        gathered_logs = self._app._gather_logs()
+        assert_equal(len(gathered_logs), 0)
+
+    @patch('requests.post')
+    def test_gather_logs_no_entries(self, requests_mock):
+        """SlackAccessApp - Gather Logs - No Entries Returned"""
+        requests_mock.return_value = Mock(
+                status_code=200,
+                json=Mock(return_value={'ok':True,'logins':[],'paging':{'count':100,'total':0,'page':1,'pages':1}})
+                )
+        assert_equal(0, len(self._app._gather_logs()))
+
+    @patch('requests.post')
+    def test_gather_logs_malformed_response(self, requests_mock):
+        """SlackAccessApp - Gather Logs - Malformed Response"""
+        requests_mock.return_value = Mock(
+                status_code=200,
+                json=Mock(return_value={'ok':True,'paging':{'count':100,'total':0,'page':1,'pages':1}})
+                )
+        assert_false(self._app._gather_logs())
+
+    @patch('requests.post')
+    def test_gather_logs_basic_pagination(self, requests_mock):
+        """SlackAccessApp - Gather Logs - Basic Pagination Handling"""
+        logs = self._get_sample_access_logs()
+        logs['paging']['pages'] = logs['paging']['pages'] + 1
+        requests_mock.return_value = Mock(
+                status_code=200,
+                json=Mock(return_value=logs)
+                )
+
+        self._app._last_timestamp = 1522922593
+        gathered_logs = self._app._gather_logs()
+        assert_equal(len(gathered_logs), 0)
+        assert_equal(self._app._next_page, 2)
+        assert_equal(True, self._app._more_to_poll)
+
+    @patch('requests.post')
+    def test_gather_logs_before_parameter(self, requests_mock):
+        """SlackAccessApp - Gather Logs - Pagination With Before Parameter"""
+        logs = self._get_sample_access_logs()
+        self._app._SLACK_API_MAX_PAGE_COUNT = 1
+        self._app._SLACK_API_MAX_ENTRY_COUNT = 100
+        requests_mock.return_value = Mock(
+                status_code=200,
+                json=Mock(return_value=logs)
+                )
+
+        self._app._last_timestamp = 1522922593
+        gathered_logs = self._app._gather_logs()
+        assert('before' not in requests_mock.call_args[1]['data'].keys())
+        assert_equal(len(gathered_logs), 0)
+        assert_equal(self._app._next_page, 1)
+        assert_equal(True, self._app._more_to_poll)
+        assert_equal(self._app._before_time, logs['logins'][-1]['date_first'])
+
+        self._app._gather_logs()
+        assert('before' in requests_mock.call_args[1]['data'].keys())
+
 
 @patch.object(AppConfig, 'SSM_CLIENT', MockSSMClient())
 class TestSlackIntegrationsApp(object):
-    """Test class for the SlackApp"""
+    """Test class for the SlackIntegrationsApp"""
 
     def __init__(self):
         self._app = None
@@ -102,11 +207,21 @@ class TestSlackIntegrationsApp(object):
         self._app = SlackIntegrationsApp(AppConfig(get_valid_config_dict('slack')))
 
     def test_required_auth_info(self):
-        """SlackApp - Required Auth Info"""
+        """SlackIntegrationsApp - Required Auth Info"""
         assert_items_equal(self._app.required_auth_info().keys(), {'auth_token'})
+
+    @patch('requests.post')
+    def test_gather_logs_malformed_response(self, requests_mock):
+        """SlackIntegrationsApp - Gather Logs - Malformed Response"""
+        requests_mock.return_value = Mock(
+                status_code=200,
+                json=Mock(return_value={'ok':True,'paging':{'count':100,'total':0,'page':1,'pages':1}})
+                )
+        assert_false(self._app._gather_logs())
 
     @staticmethod
     def _get_sample_integrations_logs():
+        """Sample logs collected from the slack api documentation"""
         return {
             u"ok": True,
             u"logs": [
@@ -151,7 +266,7 @@ class TestSlackIntegrationsApp(object):
 
     @patch('requests.post')
     def test_gather_integrations_logs(self, requests_mock):
-        """SlackApp - Gather Logs Entry Point"""
+        """SlackIntegrationsApp - Gather Logs Entry Point"""
         logs = self._get_sample_integrations_logs()
         requests_mock.return_value = Mock(
                 status_code=200,
@@ -161,3 +276,31 @@ class TestSlackIntegrationsApp(object):
         gathered_logs = self._app._gather_logs()
         assert_equal(len(gathered_logs), 3)
 
+    @patch('requests.post')
+    def test_gather_integration_logs_filtered(self, requests_mock):
+        """SlackIntegrationsApp - Gather Logs - Some Filtered"""
+        logs = self._get_sample_integrations_logs()
+        requests_mock.return_value = Mock(
+                status_code=200,
+                json=Mock(return_value=logs)
+                )
+
+        self._app._last_timestamp = 1392163201
+        gathered_logs = self._app._gather_logs()
+        assert_equal(len(gathered_logs), 1)
+
+    @patch('requests.post')
+    def test_gather_logs_basic_pagination(self, requests_mock):
+        """SlackIntegrationsApp - Gather Logs - Basic Pagination Handling"""
+        logs = self._get_sample_integrations_logs()
+        logs['paging']['pages'] = logs['paging']['pages'] + 1
+        requests_mock.return_value = Mock(
+                status_code=200,
+                json=Mock(return_value=logs)
+                )
+
+        self._app._last_timestamp = 1392163204
+        gathered_logs = self._app._gather_logs()
+        assert_equal(len(gathered_logs), 0)
+        assert_equal(self._app._next_page, 2)
+        assert_equal(True, self._app._more_to_poll)
