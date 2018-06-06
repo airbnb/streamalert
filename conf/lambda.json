@@ -61,6 +61,5 @@
     "third_party_libraries": [
       "pathlib2"
     ]
-  },
-  "stream_alert_apps_config": {}
+  }
 }
