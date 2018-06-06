@@ -112,7 +112,7 @@ data "aws_iam_policy_document" "get_api_creds_from_ssm" {
     effect = "Allow"
 
     actions = [
-      "ssm:GetParameters",
+      "ssm:Get*",
     ]
 
     resources = [
