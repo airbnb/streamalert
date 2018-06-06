@@ -21,10 +21,18 @@ from botocore.exceptions import ClientError
 
 def _rollback_production(lambda_client, function_name):
     """Rollback the production alias for the given function name."""
-    response = lambda_client.get_alias(FunctionName=function_name, Name='production')
-    current_version = int(response['FunctionVersion'])
-    if current_version <= 1:
-        LOGGER_CLI.warn('%s:production is already at version %d', function_name, current_version)
+    version = lambda_client.get_alias(
+        FunctionName=function_name, Name='production')['FunctionVersion']
+
+    if version == '$LATEST':
+        # This won't happen with Terraform, but the alias could have been manually changed.
+        LOGGER_CLI.error('%s:production is pointing to $LATEST instead of a published version',
+                         function_name)
+        return
+
+    current_version = int(version)
+    if current_version == 1:
+        LOGGER_CLI.warn('%s:production is already at version 1', function_name)
         return
 
     LOGGER_CLI.info('Rolling back %s:production from version %d => %d',

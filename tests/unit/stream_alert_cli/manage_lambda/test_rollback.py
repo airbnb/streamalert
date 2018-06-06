@@ -22,7 +22,18 @@ class RollbackTest(unittest.TestCase):
     """Test the config updates and Terraform targets affected during a Lambda rollback."""
 
     @mock.patch.object(rollback, 'LOGGER_CLI')
-    def test_rollback_production_cannot(self, mock_logger):
+    def test_rollback_production_latest(self, mock_logger):
+        """CLI - Can't rollback a function at $LATEST"""
+        mock_client = mock.MagicMock()
+        mock_client.get_alias.return_value = {'FunctionVersion': '$LATEST'}
+
+        rollback._rollback_production(mock_client, 'test_function')
+
+        mock_logger.error.assert_called_once()
+        mock_client.update_alias.assert_not_called()
+
+    @mock.patch.object(rollback, 'LOGGER_CLI')
+    def test_rollback_production_one(self, mock_logger):
         """CLI - Can't rollback a function at version 1"""
         mock_client = mock.MagicMock()
         mock_client.get_alias.return_value = {'FunctionVersion': '1'}
