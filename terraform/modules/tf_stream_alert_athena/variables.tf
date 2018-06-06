@@ -23,10 +23,6 @@ variable "lambda_log_level" {
   default = "info"
 }
 
-variable "current_version" {
-  type = "string"
-}
-
 variable "athena_data_buckets" {
   type = "list"
 }

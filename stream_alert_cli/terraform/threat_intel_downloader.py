@@ -13,7 +13,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from stream_alert_cli.manage_lambda.package import ThreatIntelDownloaderPackage
 from stream_alert_cli.terraform.common import DEFAULT_SNS_MONITORING_TOPIC, infinitedict
+
 
 def generate_threat_intel_downloader(config):
     """Generate Threat Intel Downloader Terrafrom
@@ -39,12 +41,11 @@ def generate_threat_intel_downloader(config):
         'region': config['global']['account']['region'],
         'source': 'modules/tf_threat_intel_downloader',
         'lambda_function_arn': '${module.threat_intel_downloader.lambda_arn}',
-        'lambda_handler': ti_downloader_config['handler'],
+        'lambda_handler': ThreatIntelDownloaderPackage.lambda_handler,
         'lambda_memory': ti_downloader_config.get('memory', '128'),
         'lambda_timeout': ti_downloader_config.get('timeout', '60'),
         'lambda_log_level': ti_downloader_config.get('log_level', 'info'),
         'interval': ti_downloader_config.get('interval', 'rate(1 day)'),
-        'current_version': ti_downloader_config['current_version'],
         'prefix': config['global']['account']['prefix'],
         'monitoring_sns_topic': dlq_topic,
         'table_rcu': ti_downloader_config.get('table_rcu', '10'),

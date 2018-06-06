@@ -10,6 +10,7 @@ resource "aws_lambda_function" "athena_partition_refresh" {
 
   filename         = "${var.filename}"
   source_code_hash = "${base64sha256(file(var.filename))}"
+  publish          = true
 
   environment {
     variables = {
@@ -54,7 +55,7 @@ resource "aws_lambda_alias" "athena_partition_refresh_production" {
   name             = "production"
   description      = "Production StreamAlert Athena Parition Refresh Alias"
   function_name    = "${aws_lambda_function.athena_partition_refresh.arn}"
-  function_version = "${var.current_version}"
+  function_version = "${aws_lambda_function.athena_partition_refresh.version}"
 }
 
 // SQS Queue: Athena Data Bucket Notificaitons

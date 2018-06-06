@@ -90,7 +90,6 @@ class TestThreatStream(object):
                 'spam_ip',
                 'tor_ip'
             ],
-            'handler': 'main.handler',
             'ioc_filters': [
                 'crowdstrike',
                 '@airbnb.com'

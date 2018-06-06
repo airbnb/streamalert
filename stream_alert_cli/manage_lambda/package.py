@@ -18,9 +18,6 @@ import shutil
 import tempfile
 import zipfile
 
-from app_integrations import __version__ as apps_version
-from stream_alert import __version__ as stream_alert_version
-from stream_alert.threat_intel_downloader import __version__ as ti_downloader_version
 from stream_alert_cli.helpers import run_command
 from stream_alert_cli.logger import LOGGER_CLI
 
@@ -30,23 +27,13 @@ BUILD_DIRECTORY = os.path.join(THIS_DIRECTORY, '..', '..', 'terraform')
 
 
 class LambdaPackage(object):
-    """Build and upload a StreamAlert deployment package to S3.
-
-    Class Variables:
-        package_folders (set): The folders to zip into the Lambda package
-        package_files (set): The set of files to add to the Lambda package
-        package_name (str): The name of the zip file to put on S3
-        package_root_dir (str): Working directory to begin the zip
-        config_key (str): The configuration key to update after creation
-    """
-    config_key = None
-    package_folders = set()
-    package_files = set()
-    package_name = None
-    package_root_dir = '.'
-    precompiled_libs = set()
-    third_party_libs = set()
-    version = None
+    """Build a deployment package for a StreamAlert Lambda function."""
+    config_key = None         # Configuration key to access conf/lambda.json
+    lambda_handler = None     # Entry point for the Lambda function
+    package_files = set()     # The folders and files to zip into the Lambda package
+    package_name = None       # The name of the generated .zip file
+    precompiled_libs = set()  # Precompiled dependent libraries
+    third_party_libs = set()  # Pip libraries to install into each package
 
     def __init__(self, config):
         self.config = config
@@ -66,7 +53,7 @@ class LambdaPackage(object):
             exit(1)
 
         # Extract any precompiled third-party libs for this package
-        if not self._extract_precompiled_libs(temp_package_path):
+        if self.precompiled_libs and not self._extract_precompiled_libs(temp_package_path):
             LOGGER_CLI.exception('Failed to extract precompiled third-party libraries')
             exit(1)
 
@@ -82,17 +69,15 @@ class LambdaPackage(object):
 
     def _copy_files(self, temp_package_path):
         """Copy all files and folders into temporary package path."""
-        for package_folder in self.package_folders:
-            # Skip copying any files with a 'dependencies.zip' suffix
-            shutil.copytree(
-                os.path.join(self.package_root_dir, package_folder),
-                os.path.join(temp_package_path, package_folder),
-                ignore=shutil.ignore_patterns(*{'*dependencies.zip'}))
-
-        for package_file in self.package_files:
-            shutil.copy(
-                os.path.join(self.package_root_dir, package_file),
-                os.path.join(temp_package_path, package_file))
+        for path in self.package_files:
+            if os.path.isdir(path):
+                # Copy the directory, skipping any files with a 'dependencies.zip' suffix
+                shutil.copytree(
+                    path, os.path.join(temp_package_path, path),
+                    ignore=shutil.ignore_patterns(*{'*dependencies.zip'})
+                )
+            else:
+                shutil.copy(path, os.path.join(temp_package_path, path))
 
     def _extract_precompiled_libs(self, temp_package_path):
         """Extract any precompiled third-party packages into the deployment package folder
@@ -101,19 +86,20 @@ class LambdaPackage(object):
             temp_package_path (str): Full path to temp package path
 
         Returns:
-            bool: False if the required libs were not found, True if otherwise
+            bool: True if precompiled libs were extracted successfully, False if some are missing
         """
-        # Return true immediately if there are no precompiled requirements for this package
-        if not self.precompiled_libs:
-            return True
-
-        # Get any dependency files throughout the package folders that have
-        # the _dependencies.zip suffix
-        dependency_files = {
-            package_file: os.path.join(root, package_file)
-            for folder in self.package_folders for root, _, package_files in os.walk(folder)
-            for package_file in package_files if package_file.endswith('_dependencies.zip')
-        }
+        dependency_files = {}  # Map library name to location of its precompiled .zip file
+        for path in self.package_files:
+            if path.endswith('_dependencies.zip'):
+                dependency_files[os.path.basename(path)] = path
+            elif os.path.isdir(path):
+                # Traverse directory looking for .zip files
+                for root, _, package_files in os.walk(path):
+                    dependency_files.update({
+                        package_file: os.path.join(root, package_file)
+                        for package_file in package_files
+                        if package_file.endswith('_dependencies.zip')
+                    })
 
         for lib in self.precompiled_libs:
             libs_name = '_'.join([lib, 'dependencies.zip'])
@@ -160,41 +146,57 @@ class LambdaPackage(object):
 class RuleProcessorPackage(LambdaPackage):
     """Deployment package class for the StreamAlert Rule Processor function"""
     config_key = 'rule_processor_config'
-    package_folders = {
-        'stream_alert/rule_processor', 'stream_alert/shared', 'rules', 'matchers', 'helpers', 'conf'
+    lambda_handler = 'stream_alert.rule_processor.main.handler'
+    package_files = {
+        'conf',
+        'helpers',
+        'matchers',
+        'rules',
+        'stream_alert/__init__.py',
+        'stream_alert/rule_processor',
+        'stream_alert/shared',
     }
-    package_files = {'stream_alert/__init__.py'}
     package_name = 'rule_processor'
     third_party_libs = {'backoff', 'netaddr', 'jsonpath_rw'}
-    version = stream_alert_version
 
 
 class AlertProcessorPackage(LambdaPackage):
     """Deployment package class for the StreamAlert Alert Processor function"""
-    package_folders = {'stream_alert/alert_processor', 'stream_alert/shared', 'conf', 'helpers'}
-    package_files = {'stream_alert/__init__.py'}
-    package_name = 'alert_processor'
     config_key = 'alert_processor_config'
+    lambda_handler = 'stream_alert.alert_processor.main.handler'
+    package_files = {
+        'conf',
+        'helpers',
+        'stream_alert/__init__.py',
+        'stream_alert/alert_processor',
+        'stream_alert/shared'
+    }
+    package_name = 'alert_processor'
     third_party_libs = {'backoff', 'cbapi', 'netaddr', 'requests'}
-    version = stream_alert_version
 
 
 class AlertMergerPackage(LambdaPackage):
     """Deployment package class for the StreamAlert Alert Merger function"""
-    package_folders = {'stream_alert/alert_merger', 'stream_alert/shared', 'conf', 'helpers'}
-    package_files = {'stream_alert/__init__.py'}
-    package_name = 'alert_merger'
     config_key = 'alert_merger_config'
+    lambda_handler = 'stream_alert.alert_merger.main.handler'
+    package_files = {
+        'conf',
+        'helpers',
+        'stream_alert/__init__.py',
+        'stream_alert/alert_merger',
+        'stream_alert/shared'
+    }
+    package_name = 'alert_merger'
     third_party_libs = {'backoff', 'netaddr'}
-    version = stream_alert_version
 
 
 class AppIntegrationPackage(LambdaPackage):
     """Deployment package class for App integration functions"""
-    package_folders = {'app_integrations'}
-    package_files = {'app_integrations/__init__.py'}
-    package_name = 'stream_alert_app'
     config_key = 'stream_alert_apps_config'
+    lambda_handler = 'app_integrations.main.handler'
+    package_files = {'app_integrations'}
+    package_name = 'stream_alert_app'
+    precompiled_libs = {'boxsdk[jwt]==2.0.0a11'}
     third_party_libs = {
         'backoff',
         'boxsdk[jwt]==2.0.0a11',
@@ -202,25 +204,31 @@ class AppIntegrationPackage(LambdaPackage):
         'oauth2client',
         'requests'
     }
-    precompiled_libs = {'boxsdk[jwt]==2.0.0a11'}
-    version = apps_version
 
 
 class AthenaPackage(LambdaPackage):
     """Create the Athena Partition Refresh Lambda function package"""
-    package_folders = {'stream_alert/athena_partition_refresh', 'stream_alert/shared', 'conf'}
-    package_files = {'stream_alert/__init__.py'}
-    package_name = 'athena_partition_refresh'
     config_key = 'athena_partition_refresh_config'
+    lambda_handler = 'stream_alert.athena_partition_refresh.main.handler'
+    package_files = {
+        'conf',
+        'stream_alert/__init__.py',
+        'stream_alert/athena_partition_refresh',
+        'stream_alert/shared'
+    }
+    package_name = 'athena_partition_refresh'
     third_party_libs = {'backoff'}
-    version = stream_alert_version
 
 
 class ThreatIntelDownloaderPackage(LambdaPackage):
     """Create the Threat Intel Downloader Lambda function package"""
-    package_folders = {'stream_alert/threat_intel_downloader', 'stream_alert/shared', 'conf'}
-    package_files = {'stream_alert/__init__.py'}
-    package_name = 'threat_intel_downloader'
     config_key = 'threat_intel_downloader_config'
+    lambda_handler = 'stream_alert.threat_intel_downloader.main.handler'
+    package_files = {
+        'conf',
+        'stream_alert/__init__.py',
+        'stream_alert/shared',
+        'stream_alert/threat_intel_downloader'
+    }
+    package_name = 'threat_intel_downloader'
     third_party_libs = {'backoff', 'requests'}
-    version = ti_downloader_version

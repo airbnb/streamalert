@@ -11,6 +11,7 @@ resource "aws_lambda_function" "threat_intel_downloader" {
 
   filename         = "${var.filename}"
   source_code_hash = "${base64sha256(file(var.filename))}"
+  publish          = true
 
   environment {
     variables = {
@@ -33,7 +34,7 @@ resource "aws_lambda_alias" "production" {
   name             = "production"
   description      = "Production Threat Intel Dowwnloader Alias"
   function_name    = "${aws_lambda_function.threat_intel_downloader.arn}"
-  function_version = "${var.current_version}"
+  function_version = "${aws_lambda_function.threat_intel_downloader.version}"
 }
 
 // Lambda Permission: Allow Cloudwatch Scheduled Events to invoke Lambda

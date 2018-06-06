@@ -51,7 +51,6 @@ class TestAlertProcessor(unittest.TestCase):
                 },
                 'alert_processor_lambda': {
                     'alarm_actions': ['arn:aws:sns:us-west-1:12345678910:stream_alert_monitoring'],
-                    'aliased_version': '$LATEST',
                     'description': 'Unit-Testing Streamalert Alert Processor',
                     'environment_variables': {
                         'ALERTS_TABLE': 'unit-testing_streamalert_alerts',
@@ -64,7 +63,7 @@ class TestAlertProcessor(unittest.TestCase):
                     'errors_alarm_threshold': 3,
                     'filename': 'alert_processor.zip',
                     'function_name': 'unit-testing_streamalert_alert_processor',
-                    'handler': 'main.handler',
+                    'handler': 'stream_alert.alert_processor.main.handler',
                     'log_retention_days': 7,
                     'memory_size_mb': 128,
                     'source': 'modules/tf_lambda',
@@ -106,7 +105,6 @@ class TestAlertProcessor(unittest.TestCase):
                     'source': 'modules/tf_alert_processor_iam'
                 },
                 'alert_processor_lambda': {
-                    'aliased_version': '$LATEST',
                     'description': 'Unit-Testing Streamalert Alert Processor',
                     'environment_variables': {
                         'ALERTS_TABLE': 'unit-testing_streamalert_alerts',
@@ -115,7 +113,7 @@ class TestAlertProcessor(unittest.TestCase):
                     },
                     'filename': 'alert_processor.zip',
                     'function_name': 'unit-testing_streamalert_alert_processor',
-                    'handler': 'main.handler',
+                    'handler': 'stream_alert.alert_processor.main.handler',
                     'memory_size_mb': 128,
                     'source': 'modules/tf_lambda',
                     'timeout_sec': 60,

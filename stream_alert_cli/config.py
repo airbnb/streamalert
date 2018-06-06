@@ -68,11 +68,9 @@ class CLIConfig(object):
 
         athena_config_template = {
             'enable_metrics': False,
-            'current_version': '$LATEST',
             'buckets': {
                 '{}.streamalerts'.format(prefix): 'alert'
             },
-            'handler': 'stream_alert.athena_partition_refresh.main.handler',
             'timeout': '60',
             'memory': '128',
             'log_level': 'info',
@@ -396,8 +394,6 @@ class CLIConfig(object):
             new_app_config = {
                 'app_name': app_info['app_name'],
                 'concurrency_limit': 2,
-                'current_version': '$LATEST',
-                'handler': 'app_integrations.main.handler',
                 'log_level': 'info',
                 'log_retention_days': 14,
                 'memory': app_info['memory'],
@@ -484,8 +480,6 @@ class CLIConfig(object):
         default_config = {
             'autoscale': False,
             'enabled': True,
-            'current_version': '$LATEST',
-            'handler': 'stream_alert.threat_intel_downloader.main.handler',
             'interval': 'rate(1 day)',
             'log_level': 'info',
             'memory': '128',

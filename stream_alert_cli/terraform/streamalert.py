@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from stream_alert_cli.manage_lambda.package import RuleProcessorPackage
 
 
 def generate_stream_alert(cluster_name, cluster_dict, config):
@@ -27,7 +28,6 @@ def generate_stream_alert(cluster_name, cluster_dict, config):
 
         "stream_alert": {
           "rule_processor": {
-            "current_version": "$LATEST",
             "inputs": {
               "aws-sns": [
                 "sns_topic_arn"
@@ -51,14 +51,13 @@ def generate_stream_alert(cluster_name, cluster_dict, config):
         'region': config['clusters'][cluster_name]['region'],
         'prefix': account['prefix'],
         'cluster': cluster_name,
-        'lambda_handler': config['lambda']['rule_processor_config']['handler'],
+        'lambda_handler': RuleProcessorPackage.lambda_handler,
         'rule_processor_enable_metrics': modules['stream_alert'] \
             ['rule_processor'].get('enable_metrics', True),
         'rule_processor_log_level': modules['stream_alert'] \
             ['rule_processor'].get('log_level', 'info'),
         'rule_processor_memory': modules['stream_alert']['rule_processor']['memory'],
         'rule_processor_timeout': modules['stream_alert']['rule_processor']['timeout'],
-        'rule_processor_version': modules['stream_alert']['rule_processor']['current_version'],
         'rules_table_arn': '${module.globals.rules_table_arn}',
     }
 
