@@ -1616,5 +1616,677 @@
         ]
       }
     }
+  },
+  "bro:conn": {
+    "schema": {
+      "ts": "float",
+      "uid": "string",
+      "id_orig_h": "string",
+      "id_orig_p": "integer",
+      "id_resp_h": "string",
+      "id_resp_p": "integer",
+      "proto": "string",
+      "service": "string",
+      "duration": "string",
+      "orig_bytes": "string",
+      "resp_bytes": "string",
+      "conn_state": "string",
+      "local_orig": "string",
+      "local_resp": "string",
+      "missed_bytes": "string",
+      "history": "string",
+      "orig_pkts": "string",
+      "orig_ip_bytes": "string",
+      "resp_pkts": "string",
+      "resp_ip_bytes": "string",
+      "tunnel_parents": []
+    },
+    "parser": "json",
+    "configuration": {
+      "optional_top_level_keys": {
+        "orig_l2_addr": "string",
+        "resp_l2_addr": "string",
+        "vlan": "integer",
+        "inner_vlan": "integer"
+      }
+    }
+  },
+  "bro:dce_rpc": {
+    "schema": {
+      "ts": "float",
+      "uid": "string",
+      "id_orig_h": "string",
+      "id_orig_p": "integer",
+      "id_resp_h": "string",
+      "id_resp_p": "integer",
+      "rtt": "string",
+      "named_pipe": "string",
+      "endpoint": "string",
+      "operation": "string"
+    },
+    "parser": "json"
+  },
+  "bro:dhcp": {
+    "parser": "json",
+    "schema": {
+      "ts": "float",
+      "uid": "string",
+      "id_orig_h": "string",
+      "id_orig_p": "integer",
+      "id_resp_h": "string",
+      "id_resp_p": "integer",
+      "mac": "string",
+      "assigned_ip": "string",
+      "lease_time": "string",
+      "trans_id": "string"
+    },
+    "parser": "json"
+  },
+  "bro:dnp3": {
+    "schema": {
+      "ts": "float",
+      "uid": "string",
+      "id_orig_h": "string",
+      "id_orig_p": "integer",
+      "id_resp_h": "string",
+      "id_resp_p": "integer",
+      "fc_request": "string",
+      "fc_reply": "string",
+      "iin": "string"
+    },
+    "parser": "json"
+  },
+  "bro:dns": {
+    "schema": {
+      "ts": "float",
+      "uid": "string",
+      "id_orig_h": "string",
+      "id_orig_p": "integer",
+      "id_resp_h": "string",
+      "id_resp_p": "integer",
+      "proto": "string",
+      "trans_id": "string",
+      "rtt": "string",
+      "query": "string",
+      "qclass": "string",
+      "qclass_name": "string",
+      "qtype": "string",
+      "qtype_name": "string",
+      "rcode": "string",
+      "rcode_name": "string",
+      "AA": "boolean",
+      "TC": "boolean",
+      "RD": "boolean",
+      "RA": "boolean",
+      "Z": "string",
+      "answers": "string",
+      "TTLs": "string",
+      "rejected": "boolean",
+      "total_answers": "string",
+      "total_replies": "string",
+      "saw_query": "boolean",
+      "saw_reply": "boolean"
+    },
+    "parser": "json",
+    "configuration": {
+      "optional_top_level_keys": {
+        "auth": [],
+        "addl": []
+      }
+    }
+  },
+    "bro:files": {
+    "schema": {
+      "ts": "float",
+      "fuid": "string"
+    },
+    "parser": "json",
+    "configuration": {
+      "optional_top_level_keys": {
+      "tx_hosts": "string",
+      "rx_hosts": "string",
+      "conn_uids": "string",
+      "source": "string",
+      "depth": "integer",
+      "analyzers": "string",
+      "mime_type": "string",
+      "filename": "string",
+      "duration": "float",
+      "local_orig": "boolean",
+      "is_orig": "boolean",
+      "seen_bytes": "integer",
+      "total_bytes": "integer",
+      "missing_bytes": "integer",
+      "overflow_bytes": "integer",
+      "timedout": "boolean",
+      "parent_fuid": "string",
+      "md5": "string",
+      "sha1": "string",
+      "sha256": "string",
+      "extracted": "string",
+      "entropy": "float"
+    }
+  }
+},
+  "bro:ftp": {
+    "schema": {
+      "ts": "float",
+      "uid": "string",
+      "id_orig_h": "string",
+      "id_orig_p": "integer",
+      "id_resp_h": "string",
+      "id_resp_p": "integer",
+      "user": "string",
+      "password": "string",
+      "command": "string",
+      "arg": "string",
+      "mime_type": "string",
+      "file_size": "string",
+      "reply_code": "string",
+      "reply_msg": "string",
+      "data_channel": "string",
+      "cwd": "string",
+      "cmdarg": "string",
+      "pending_commands": "string",
+      "passive": "boolean",
+      "capture_password": "boolean"
+    },
+    "parser": "json",
+    "configuration": {
+      "optional_top_level_keys": {
+        "fuid": "string",
+        "last_auth_requested": "string"
+      }
+    }
+  },
+  "bro:http": {
+    "schema": {
+      "ts": "float",
+      "uid": "string",
+      "id_orig_h": "string",
+      "id_orig_p": "integer",
+      "id_resp_h": "string",
+      "id_resp_p": "integer",
+      "trans_depth": "string",
+      "method": "string",
+      "host": "string",
+      "uri": "string",
+      "referrer": "string",
+      "version": "string",
+      "user_agent": "string",
+      "request_body_len": "string",
+      "response_body_len": "string",
+      "status_code": "string",
+      "status_msg": "string",
+      "info_code": "string",
+      "info_msg": "string",
+      "tags": "string",
+      "username": "string",
+      "password": "string",
+      "capture_password": "string",
+      "proxied": "string",
+      "range_request": "string"
+    },
+    "parser": "json",
+    "configuration": {
+      "optional_top_level_keys": {
+        "orig_fuids": "string",
+        "orig_filenames": "string",
+        "orig_mime_types": "string",
+        "resp_fuids": "string",
+        "resp_filenames": "string",
+        "resp_mime_types": "string",
+        "current_entity": "string",
+        "orig_mime_depth": "integer",
+        "resp_mime_depth": "integer",
+        "client_header_names": "string",
+        "server_header_names": "string",
+        "omniture": "boolean",
+        "flash_version": "string",
+        "cookie_vars": "string",
+        "uri_vars": "string"
+      }
+    }
+  },
+  "bro:irc": {
+    "schema": {
+      "ts": "float",
+      "uid": "string",
+      "id_orig_h": "string",
+      "id_orig_p": "integer",
+      "id_resp_h": "string",
+      "id_resp_p": "integer",
+      "nick": "string",
+      "user": "string",
+      "command": "string",
+      "value": "string",
+      "addl": "string"
+    },
+    "parser": "json",
+    "configuration": {
+      "optional_top_level_keys": {
+        "dcc_file_name": "string",
+        "dcc_file_size": "string",
+        "dcc_mime_type": "string",
+        "fuid": "string"
+      }
+    }
+  },
+  "bro:kerberos": {
+    "schema": {
+      "ts": "float",
+      "uid": "string",
+      "id_orig_h": "string",
+      "id_orig_p": "integer",
+      "id_resp_h": "string",
+      "id_resp_p": "integer",
+      "request_type": "string",
+      "client": "string",
+      "service": "string",
+      "success": "string",
+      "error_code": "string",
+      "error_msg": "string",
+      "from": "string",
+      "till": "string",
+      "cipher": "string",
+      "forwardable": "string",
+      "renewable": "string",
+      "logged": "boolean"
+    },
+    "parser": "json",
+    "configuration": {
+      "optional_top_level_keys": {
+        "client_cert": "string",
+        "client_cert_subject": "string",
+        "client_cert_fuid": "string",
+        "server_cert": "string",
+        "server_cert_subject": "string",
+        "server_cert_fuid": "string"
+      }
+    }
+  },
+  "bro:modbus": {
+    "schema": {
+      "ts": "float",
+      "uid": "string",
+      "id_orig_h": "string",
+      "id_orig_p": "integer",
+      "id_resp_h": "string",
+      "id_resp_p": "integer",
+      "func": "string",
+      "exception": "string"
+    },
+    "parser": "json",
+    "configuration": {
+      "optional_top_level_keys": {
+        "track_address": "string"
+      }
+    }
+  },
+  "bro:modbus_register_change": {
+    "schema": {
+      "ts": "float",
+      "uid": "string",
+      "id_orig_h": "string",
+      "id_orig_p": "integer",
+      "id_resp_h": "string",
+      "id_resp_p": "integer",
+      "register": "string",
+      "old_val": "string",
+      "new_val": "string",
+      "delta": "string"
+    },
+    "parser": "json"
+  },
+  "bro:mysql": {
+    "schema": {
+      "ts": "float",
+      "uid": "string",
+      "id_orig_h": "string",
+      "id_orig_p": "integer",
+      "id_resp_h": "string",
+      "id_resp_p": "integer",
+      "cmd": "string",
+      "arg": "string",
+      "success": "boolean",
+      "rows": "string",
+      "response": "string"
+    },
+    "parser": "json"
+  },
+  "bro:ntlm": {
+    "schema": {
+      "ts": "float",
+      "uid": "string",
+      "id_orig_h": "string",
+      "id_orig_p": "integer",
+      "id_resp_h": "string",
+      "id_resp_p": "integer",
+      "username": "string",
+      "hostname": "string",
+      "domainname": "string",
+      "success": "boolean",
+      "status": "string",
+      "done": "boolean"
+    },
+    "parser": "json"
+  },
+  "bro:radius": {
+    "schema": {
+      "ts": "float",
+      "uid": "string",
+      "id_orig_h": "string",
+      "id_orig_p": "integer",
+      "id_resp_h": "string",
+      "id_resp_p": "integer",
+      "username": "string",
+      "mac": "string",
+      "remote_ip": "string",
+      "connect_info": "string",
+      "result": "string",
+      "logged": "string"
+    },
+    "parser": "json"
+  },
+  "bro:rdp": {
+    "schema": {
+      "ts": "float",
+      "uid": "string",
+      "id_orig_h": "string",
+      "id_orig_p": "integer",
+      "id_resp_h": "string",
+      "id_resp_p": "integer",
+      "cookie": "string",
+      "result": "string",
+      "security_protocol": "string",
+      "keyboard_layout": "string",
+      "client_build": "string",
+      "client_name": "string",
+      "client_dig_product_id": "string",
+      "desktop_width": "string",
+      "desktop_height": "string",
+      "requested_color_depth": "string",
+      "cert_type": "string",
+      "cert_count": "string",
+      "cert_permanent": "boolean",
+      "encryption_level": "string",
+      "analyzer_id": "string",
+      "done": "boolean"
+    },
+    "parser": "json",
+    "configuration": {
+      "optional_top_level_keys": {
+        "ssl": "boolean"
+      }
+    }
+  },
+  "bro:rfb": {
+    "schema": {
+      "ts": "float",
+      "uid": "string",
+      "id_orig_h": "string",
+      "id_orig_p": "integer",
+      "id_resp_h": "string",
+      "id_resp_p": "integer",
+      "client_major_version": "string",
+      "client_minor_version": "string",
+      "server_major_version": "string",
+      "server_minor_version": "string",
+      "authentication_method": "string",
+      "auth": "boolean",
+      "share_flag": "boolean",
+      "desktop_name": "string",
+      "width": "string",
+      "height": "string",
+      "done": "boolean"
+    },
+    "parser": "json"
+  },
+  "bro:sip": {
+    "schema": {
+      "ts": "float",
+      "uid": "string",
+      "id_orig_h": "string",
+      "id_orig_p": "integer",
+      "id_resp_h": "string",
+      "id_resp_p": "integer",
+      "trans_depth": "string",
+      "method": "string",
+      "uri": "string",
+      "date": "string",
+      "request_from": "string",
+      "request_to": "string",
+      "response_from": "string",
+      "response_to": "string",
+      "reply_to": "string",
+      "call_id": "string",
+      "seq": "string",
+      "subject": "string",
+      "request_path": "string",
+      "response_path": "string",
+      "user_agent": "string",
+      "status_code": "string",
+      "status_msg": "string",
+      "warning": "string",
+      "request_body_len": "string",
+      "response_body_len": "string",
+      "content_type": "string"
+    },
+    "parser": "json"
+  },
+  "bro:smb_cmd": {
+    "schema": {
+      "ts": "float",
+      "uid": "string",
+      "id_orig_h": "string",
+      "id_orig_p": "integer",
+      "id_resp_h": "string",
+      "id_resp_p": "integer",
+      "command": "string",
+      "sub_command": "string",
+      "argument": "string",
+      "status": "string",
+      "rtt": "string",
+      "version": "string",
+      "username": "string",
+      "tree": "string",
+      "tree_service": "string",
+      "referenced_file": "string",
+      "referenced_tree": "string"
+    },
+    "parser": "json",
+    "configuration": {
+      "optional_top_level_keys": {
+      "smb1_offered_dialects": "string",
+      "smb2_offered_dialects": "string"
+      }
+    }
+  },
+  "bro:smb_files": {
+    "schema": {
+      "ts": "float",
+      "uid": "string",
+      "id_orig_h": "string",
+      "id_orig_p": "integer",
+      "id_resp_h": "string",
+      "id_resp_p": "integer",
+      "fuid": "string",
+      "action": "string",
+      "path": "string",
+      "name": "string",
+      "size": "string",
+      "prev_name": "string",
+      "times": "string",
+      "fid": "string",
+      "uuid": "string"
+    },
+    "parser": "json"
+  },
+  "bro:smb_mapping": {
+    "schema": {
+      "ts": "float",
+      "uid": "string",
+      "id_orig_h": "string",
+      "id_orig_p": "integer",
+      "id_resp_h": "string",
+      "id_resp_p": "integer",
+      "path": "string",
+      "service": "string",
+      "native_file_system": "string",
+      "share_type": "string"
+    },
+    "parser": "json"
+  },
+  "bro:smtp": {
+    "schema": {
+      "ts": "float",
+      "uid": "string",
+      "id_orig_h": "string",
+      "id_orig_p": "integer",
+      "id_resp_h": "string",
+      "id_resp_p": "integer",
+      "trans_depth": "string",
+      "helo": "string",
+      "mailfrom": "string",
+      "rcptto": "string",
+      "date": "string",
+      "from": "string",
+      "to": "string",
+      "cc": "string",
+      "reply_to": "string",
+      "msg_id": "string",
+      "in_reply_to": "string",
+      "subject": "string",
+      "x_originating_ip": "string",
+      "first_received": "string",
+      "second_received": "string",
+      "last_reply": "string",
+      "path": "string",
+      "user_agent": "string",
+      "tls": "boolean",
+      "process_received_from": "boolean",
+      "has_client_activity": "boolean",
+      "entity": "string",
+      "fuids": "string",
+      "is_webmail": "boolean"
+    },
+    "parser": "json"
+  },
+  "bro:snmp": {
+    "schema": {
+      "ts": "float",
+      "uid": "string",
+      "id_orig_h": "string",
+      "id_orig_p": "integer",
+      "id_resp_h": "string",
+      "id_resp_p": "integer",
+      "duration": "string",
+      "version": "string",
+      "community": "string",
+      "get_requests": "string",
+      "get_bulk_requests": "string",
+      "get_responses": "string",
+      "set_requests": "string",
+      "display_string": "string",
+      "up_since": "string"
+    },
+    "parser": "json"
+  },
+  "bro:socks": {
+    "schema": {
+      "ts": "float",
+      "uid": "string",
+      "id_orig_h": "string",
+      "id_orig_p": "integer",
+      "id_resp_h": "string",
+      "id_resp_p": "integer",
+      "version": "string",
+      "user": "string",
+      "password": "string",
+      "status": "string",
+      "request": "string",
+      "request_p": "string",
+      "bound": "string",
+      "bound_p": "string"
+    },
+    "parser": "json"
+  },
+  "bro:ssh": {
+    "schema": {
+      "ts": "float",
+      "uid": "string",
+      "id_orig_h": "string",
+      "id_orig_p": "integer",
+      "id_resp_h": "string",
+      "id_resp_p": "integer",
+      "version": "string",
+      "auth_success": "boolean",
+      "auth_attempts": "string",
+      "direction": "string",
+      "client": "string",
+      "server": "string",
+      "cipher_alg": "string",
+      "mac_alg": "string",
+      "compression_alg": "string",
+      "kex_alg": "string",
+      "host_key_alg": "string",
+      "host_key": "string"
+    },
+    "parser": "json"
+  },
+  "bro:ssl": {
+    "schema": {
+      "ts": "float",
+      "uid": "string",
+      "id_orig_h": "string",
+      "id_orig_p": "integer",
+      "id_resp_h": "string",
+      "id_resp_p": "integer",
+      "version_num": "string",
+      "version": "string",
+      "cipher": "string",
+      "curve": "string",
+      "server_name": "string",
+      "session_id": "string",
+      "resumed": "boolean",
+      "client_ticket_empty_sessions_seen": "boolean",
+      "client_key_exchange_seen": "boolean",
+      "server_appdata": "string",
+      "client_appdata": "boolean",
+      "last_alert": "string",
+      "next_protocol": "string",
+      "analyzer_id": "string",
+      "established": "boolean",
+      "logged": "boolean"
+    },
+    "parser": "json"
+  },
+  "bro:syslog": {
+    "schema": {
+      "ts": "float",
+      "uid": "string",
+      "id_orig_h": "string",
+      "id_orig_p": "integer",
+      "id_resp_h": "string",
+      "id_resp_p": "integer",
+      "proto": "string",
+      "facility": "string",
+      "severity": "string",
+      "message": "string"
+    },
+    "parser": "json"
+  },
+  "bro:tunnel": {
+    "schema": {
+      "ts": "float",
+      "uid": "string",
+      "id_orig_h": "string",
+      "id_orig_p": "integer",
+      "id_resp_h": "string",
+      "id_resp_p": "integer",
+      "tunnel_type": "string",
+      "action": "string"
+    },
+    "parser": "json"
   }
 }

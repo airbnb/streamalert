@@ -1,0 +1,40 @@
+{
+  "records": [
+    {
+      "data": {
+        "ts": 1494446395.347763,
+        "fuid": "Fq4xXfKcmGFw7Gpn4",
+        "tx_hosts": [
+          "1.1.1.1"
+        ],
+        "rx_hosts": [
+          "2.2.2.2"
+        ],
+        "conn_uids": [
+          "CJErJl1fq8bfuDVFk6"
+        ],
+        "source": "HTTP",
+        "depth": 0,
+        "analyzers": [
+          "SHA1",
+          "MD5"
+        ],
+        "mime_type": "text/html",
+        "duration": 0.000024,
+        "local_orig": true,
+        "is_orig": false,
+        "seen_bytes": 4447,
+        "total_bytes": 4447,
+        "missing_bytes": 0,
+        "overflow_bytes": 0,
+        "timedout": false,
+        "md5": "2e4c97d6f496f7eeb4eb1160f19f578d",
+        "sha1": "79e158bfd2af735e0279aad917125e0c484c6b08"
+      },
+      "description": "bro:files",
+      "trigger": false,
+      "source": "prefix_cluster1_stream_alert_kinesis",
+      "service": "kinesis"
+    }
+  ]
+}
