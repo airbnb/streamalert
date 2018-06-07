@@ -48,6 +48,16 @@
       "logs": [
         "onelogin"
       ]
+    },
+    "prefix_cluster_slack_access_sm-app-name_app": {
+      "logs": [
+        "slack"
+      ]
+    },
+    "prefix_cluster_slack_integration_sm-app-name_app": {
+      "logs": [
+        "slack"
+      ]
     }
   }
 }

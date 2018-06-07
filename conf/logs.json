@@ -1549,6 +1549,7 @@
   },
   "slack:integration": {
     "schema": {
+      "channel": "string",
       "user_id": "string",
       "user_name": "string",
       "date": "string",
@@ -1567,6 +1568,7 @@
     "parser": "json",
     "configuration": {
       "optional_top_level_keys": [
+        "channel",
         "app_type",
         "app_id",
         "service_type",
