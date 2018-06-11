@@ -66,6 +66,8 @@ class SlackApp(AppIntegration):
         return not ('paging' in response.keys() and response['paging']['pages'] == response['paging']['page'])
 
     def _filter_response_entries(self, response):
+        """The slack endpoints don't provide a programatic way to filter for new results,
+        so subclasses must implement their own endpoint specific filtering methods"""
         raise NotImplementedError("Subclasses must implement the _filter_response_entries method")
 
     def _get_request_data(self):
@@ -164,7 +166,7 @@ class SlackAccessApp(SlackApp):
     def _check_for_more_to_poll(self, response):
         '''if we hit the maximum possible number of returned entries, there may still be more
         to check. Grab the `date_first` value of the oldest entry for the next round'''
-        if response['paging']['page'] == self._SLACK_API_MAX_PAGE_COUNT and response['paging']['count'] == self._SLACK_API_MAX_ENTRY_COUNT:
+        if response['paging']['page'] >= self._SLACK_API_MAX_PAGE_COUNT and response['paging']['count'] >= self._SLACK_API_MAX_ENTRY_COUNT:
             self._before_time = response['logins'][-1]['date_first']
             self._next_page = 1
             return True

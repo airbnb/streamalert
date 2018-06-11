@@ -206,10 +206,6 @@ class TestSlackIntegrationsApp(object):
     def setup(self):
         self._app = SlackIntegrationsApp(AppConfig(get_valid_config_dict('slack')))
 
-    def test_required_auth_info(self):
-        """SlackIntegrationsApp - Required Auth Info"""
-        assert_items_equal(self._app.required_auth_info().keys(), {'auth_token'})
-
     @patch('requests.post')
     def test_gather_logs_malformed_response(self, requests_mock):
         """SlackIntegrationsApp - Gather Logs - Malformed Response"""
