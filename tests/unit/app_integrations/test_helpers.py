@@ -158,7 +158,7 @@ class MockSSMClient(object):
             }
         elif app_type == 'slack':
             return {
-                    'auth_token': 'xoxp-aaaaaaa-111111111-eeeeeeeeee-fffffff'
+                'auth_token': 'xoxp-aaaaaaa-111111111-eeeeeeeeee-fffffff'
             }
 
         # Fill this out with future supported apps/services
