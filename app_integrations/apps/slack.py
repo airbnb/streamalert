@@ -213,7 +213,7 @@ class SlackIntegrationsApp(SlackApp):
 
     {
       "ok":True,
-      "log": [entries],
+      "logs": [entries],
       "pagination": {
         "count": <number of entries per page>,
         "total": <total number of entries>,
