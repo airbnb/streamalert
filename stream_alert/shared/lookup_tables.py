@@ -20,6 +20,7 @@ import time
 
 import boto3
 from botocore.exceptions import ClientError
+from botocore.vendored.requests.packages.urllib3.exceptions import TimeoutError
 
 from stream_alert.shared import LOGGER
 
@@ -57,6 +58,11 @@ class LookupTables(object):
                 except ClientError as err:
                     LOGGER.error('Encounterred error while downloading %s from %s, %s',
                                  json_file, bucket, err.response['Error']['Message'])
+                    return _lookup_tables
+                except TimeoutError:
+                    # Catching TimeoutError will catch both `ReadTimeoutError` and
+                    # `ConnectionTimeoutError`.
+                    LOGGER.error('Reading %s from S3 is timed out.', json_file)
                     return _lookup_tables
 
                 total_time = time.time() - start_time
