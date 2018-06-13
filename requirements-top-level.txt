@@ -16,6 +16,7 @@ moto==1.1.10
 netaddr
 nose
 nose-timer==0.7.1
+pathlib2
 pyfakefs
 pylint==1.7.4
 requests

@@ -185,8 +185,6 @@ class TestCLIConfig(object):
         expected_config = {
             'autoscale': True,
             'enabled': True,
-            'current_version': '$LATEST',
-            'handler': 'stream_alert.threat_intel_downloader.main.handler',
             'interval': 'rate(1 day)',
             'ioc_filters': [],
             'ioc_keys': [],
@@ -194,9 +192,6 @@ class TestCLIConfig(object):
             'excluded_sub_types': [],
             'log_level': 'info',
             'memory': '128',
-            'source_bucket': 'unit-testing.streamalert.source',
-            'source_current_hash': '<auto_generated>',
-            'source_object_key': '<auto_generated>',
             'third_party_libraries': ['requests'],
             'table_rcu': 10,
             'table_wcu': 25,

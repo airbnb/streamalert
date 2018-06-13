@@ -1080,6 +1080,58 @@
     },
     "parser": "json"
   },
+  "cloudwatch:cloudtrail": {
+    "schema": {
+      "additionalEventData": {},
+      "apiVersion": "string",
+      "awsRegion": "string",
+      "errorCode": "string",
+      "errorMessage": "string",
+      "eventID": "string",
+      "eventName": "string",
+      "eventSource": "string",
+      "eventTime": "string",
+      "eventType": "string",
+      "eventVersion": "string",
+      "managementEvent": "boolean",
+      "readOnly": "boolean",
+      "recipientAccountId": "string",
+      "requestID": "string",
+      "requestParameters": {},
+      "resources": [],
+      "responseElements": {},
+      "serviceEventDetails": {},
+      "sharedEventID": "string",
+      "sourceIPAddress": "string",
+      "userAgent": "string",
+      "userIdentity": {},
+      "vpcEndpointId": "string"
+    },
+    "parser": "json",
+    "configuration": {
+      "embedded_json": true,
+      "envelope_keys": {
+        "logGroup": "string",
+        "logStream": "string",
+        "messageType": "string",
+        "owner": "string",
+        "subscriptionFilters": []
+      },
+      "json_path": "logEvents[*].message",
+      "optional_top_level_keys": [
+        "additionalEventData",
+        "apiVersion",
+        "errorCode",
+        "errorMessage",
+        "managementEvent",
+        "readOnly",
+        "resources",
+        "serviceEventDetails",
+        "sharedEventID",
+        "vpcEndpointId"
+      ]
+    }
+  },
   "cloudtrail:events": {
     "schema": {
       "additionalEventData": {},
@@ -1140,6 +1192,13 @@
         "owner": "string",
         "subscriptionFilters": []
       },
+      "log_patterns": {
+        "streamalert:envelope_keys": {
+          "messageType": [
+            "CONTROL_MESSAGE"
+          ]
+        }
+      },
       "json_path": "logEvents[*]"
     }
   },
@@ -1182,6 +1241,32 @@
         "owner": "integer"
       },
       "json_path": "logEvents[*].extractedFields"
+    }
+  },
+  "cloudwatch:rds_aurora": {
+    "schema": {
+      "timestamp": "integer",
+      "serverhost": "string",
+      "username": "string",
+      "host": "string",
+      "connectionid": "integer",
+      "queryid": "integer",
+      "operation": "string",
+      "database": "string",
+      "object": "string",
+      "retcode": "integer"
+    },
+    "parser": "csv",
+    "configuration": {
+      "envelope_keys": {
+        "logGroup": "string",
+        "logStream": "string",
+        "messageType": "string",
+        "owner": "string",
+        "subscriptionFilters": []
+      },
+      "json_path": "logEvents[*].message",
+      "quotechar": "'"
     }
   },
   "duo:administrator": {

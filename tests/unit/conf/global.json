@@ -14,6 +14,16 @@
       "read_capacity": 5,
       "write_capacity": 5
     },
+    "lookup_tables": {
+      "buckets": {
+        "bucket_name": [
+          "foo.json",
+          "bar.json"
+        ]
+      },
+      "cache_refresh_minutes": 10,
+      "enabled": false
+    },
     "monitoring": {
       "create_sns_topic": true
     },

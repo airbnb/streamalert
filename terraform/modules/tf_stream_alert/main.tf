@@ -5,11 +5,13 @@ resource "aws_lambda_function" "streamalert_rule_processor" {
   description   = "StreamAlert Rule Processor"
   runtime       = "python2.7"
   role          = "${aws_iam_role.streamalert_rule_processor_role.arn}"
-  handler       = "${lookup(var.rule_processor_config, "handler")}"
+  handler       = "${var.lambda_handler}"
   memory_size   = "${var.rule_processor_memory}"
   timeout       = "${var.rule_processor_timeout}"
-  s3_bucket     = "${lookup(var.rule_processor_config, "source_bucket")}"
-  s3_key        = "${lookup(var.rule_processor_config, "source_object_key")}"
+
+  filename         = "${var.filename}"
+  source_code_hash = "${base64sha256(file(var.filename))}"
+  publish          = true
 
   environment {
     variables = {
@@ -30,7 +32,7 @@ resource "aws_lambda_alias" "rule_processor_production" {
   name             = "production"
   description      = "Production StreamAlert Rule Processor Alias"
   function_name    = "${aws_lambda_function.streamalert_rule_processor.arn}"
-  function_version = "${var.rule_processor_version}"
+  function_version = "${aws_lambda_function.streamalert_rule_processor.version}"
 }
 
 // Log Retention Policy: Rule Processor

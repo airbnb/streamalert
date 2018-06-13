@@ -44,7 +44,6 @@ Per Cluster Lambda Settings
         "timeout": 25,
         "log_level": "info",
         "memory": 128,
-        "current_version": "$LATEST",
         "outputs": {
           "aws-s3": [],
           "aws-lambda": []
@@ -54,7 +53,6 @@ Per Cluster Lambda Settings
         "timeout": 10,
         "log_level": "debug",
         "memory": 256,
-        "current_version": "$LATEST"
       }
     }
   }
@@ -67,7 +65,6 @@ Key                  Required  Description
 ``timeout``          ``Yes``   The time (in seconds) the Lambda function is allowed to process an incoming record. The timeout can be set to any value between 1 and 300 seconds.
 ``memory``           ``Yes``   The amount of memory allocated for the Lambda function execution.
 ``log_level``        ``No``    The log level for the Lambda function, can be either ``info`` or ``debug``. Default is ``info``, but enabling ``debug`` can help with diagnosing errors in each function.
-``current_version``  ``Yes``   The most current published version of the Lambda function.
 ``outputs``          ``Yes``   A collection of S3 bucket IDs or AWS Lambda function names to configure as valid outputs.  By default, ``aws-s3`` should contain the bucket created by the ``stream_alert`` module: ``prefix.cluster.streamalerts``.  Optionally, if the alert processor needs to invoke other Lambda functions from within your AWS account, specify a list of function names.
 ===================  ========  ===========
 
@@ -131,20 +128,12 @@ The ``conf/lambda.json`` configuration file controls common settings across all 
 
   {
     "alert_processor_config": {
-      "handler": "stream_alert.rule_processor.main.handler",
-      "source_bucket": "prefix.streamalert.source",
-      "source_current_hash": "auto_generated_hash",
-      "source_object_key": "auto_generated_s3_object_key",
       "third_party_libraries": [
         "jsonpath_rw",
         "netaddr"
       ]
     },
     "rule_processor_config": {
-      "handler": "stream_alert.rule_processor.main.handler",
-      "source_bucket": "prefix.streamalert.source",
-      "source_current_hash": "auto_generated_hash",
-      "source_object_key": "auto_generated_s3_object_key",
       "third_party_libraries": []
     }
   }
@@ -154,10 +143,6 @@ The ``conf/lambda.json`` configuration file controls common settings across all 
 =========================    ========  ===========
 Key                          Required  Description
 -------------------------    --------  -----------
-``source_bucket``            ``Yes``   The S3 bucket for uploading and storing the StreamAlert application code.  Open ``variables.json`` and replace the prefix with your company name.
-``source_current_hash``      ``Yes``   The checksum of the currently running Lambda function.  Used for version publishing.
-``source_object_key``        ``Yes``   The full path in S3 to the currently running Lambda function source code zip.
-``handler``                  ``Yes``   The entry point to the Lambda function where events are passed into StreamAlert.
 ``third_party_libraries``    ``Yes``   Third-party Python libraries to package into the Lambda deployment package.
 =========================    ========  ===========
 

@@ -36,6 +36,8 @@ def generate_cloudtrail(cluster_name, cluster_dict, config):
 
     cloudtrail_enabled = modules['cloudtrail'].get('enable_logging', True)
     kinesis_enabled = modules['cloudtrail'].get('enable_kinesis', True)
+    send_to_cloudwatch = modules['cloudtrail'].get('send_to_cloudwatch', False)
+    exclude_home_region = modules['cloudtrail'].get('exclude_home_region_events', False)
 
     account_ids = list(
         set([config['global']['account']['aws_account_id']] + modules['cloudtrail'].get(
@@ -53,6 +55,7 @@ def generate_cloudtrail(cluster_name, cluster_dict, config):
 
     existing_trail = modules['cloudtrail'].get('existing_trail', False)
     is_global_trail = modules['cloudtrail'].get('is_global_trail', True)
+    region = config['global']['account']['region']
 
     event_pattern_default = json.dumps({'account': [config['global']['account']['aws_account_id']]})
     try:
@@ -70,7 +73,7 @@ def generate_cloudtrail(cluster_name, cluster_dict, config):
         LOGGER_CLI.error('Config Error: Invalid CloudWatch Event Pattern!')
         return False
 
-    cluster_dict['module'][cloudtrail_module] = {
+    module_info = {
         'source': 'modules/tf_stream_alert_cloudtrail',
         'account_ids': account_ids,
         'cluster': cluster_name,
@@ -80,12 +83,25 @@ def generate_cloudtrail(cluster_name, cluster_dict, config):
         's3_logging_bucket':
         '{}.streamalert.s3-logging'.format(config['global']['account']['prefix']),
         'existing_trail': existing_trail,
+        'send_to_cloudwatch': send_to_cloudwatch,
+        'exclude_home_region_events': exclude_home_region,
+        'region': region,
         'is_global_trail': is_global_trail
     }
 
+    # use the kinesis output from the kinesis streams module
     if kinesis_enabled:
-        cluster_dict['module'][cloudtrail_module][
-            'kinesis_arn'] = '${{module.kinesis_{}.arn}}'.format(cluster_name)
-        cluster_dict['module'][cloudtrail_module]['event_pattern'] = json.dumps(event_pattern)
+        module_info['kinesis_arn'] = '${{module.kinesis_{}.arn}}'.format(cluster_name)
+        module_info['event_pattern'] = json.dumps(event_pattern)
+
+    if send_to_cloudwatch:
+        destination_arn = modules['cloudtrail'].get(
+            'cloudwatch_destination_arn',
+            '${{module.cloudwatch_{}_{}.cloudwatch_destination_arn}}'.format(cluster_name,
+                                                                             region)
+        )
+        module_info['cloudwatch_destination_arn'] = destination_arn
+
+    cluster_dict['module'][cloudtrail_module] = module_info
 
     return True

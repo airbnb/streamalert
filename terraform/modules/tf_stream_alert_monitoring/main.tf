@@ -13,7 +13,8 @@ resource "aws_cloudwatch_metric_alarm" "streamalert_lambda_invocation_errors" {
   evaluation_periods  = "${var.lambda_invocation_error_evaluation_periods}"
   period              = "${var.lambda_invocation_error_period}"
   alarm_description   = "StreamAlert Lambda Invocation Errors: ${element(var.lambda_functions, count.index)}"
-  alarm_actions       = ["${var.sns_topic_arn}"]
+
+  alarm_actions = ["${var.sns_topic_arn}"]
 
   dimensions {
     FunctionName = "${element(var.lambda_functions, count.index)}"
@@ -33,7 +34,9 @@ resource "aws_cloudwatch_metric_alarm" "streamalert_lambda_throttles" {
   evaluation_periods  = "${var.lambda_throttle_error_evaluation_periods}"
   period              = "${var.lambda_throttle_error_period}"
   alarm_description   = "StreamAlert Lambda Throttles: ${element(var.lambda_functions, count.index)}"
-  alarm_actions       = ["${var.sns_topic_arn}"]
+
+  alarm_actions = ["${var.sns_topic_arn}"]
+  ok_actions    = ["${var.sns_topic_arn}"]
 
   dimensions {
     FunctionName = "${element(var.lambda_functions, count.index)}"
@@ -53,7 +56,9 @@ resource "aws_cloudwatch_metric_alarm" "streamalert_lambda_iterator_age" {
   evaluation_periods  = "${var.lambda_iterator_age_error_evaluation_periods}"
   period              = "${var.lambda_iterator_age_error_period}"
   alarm_description   = "StreamAlert Lambda High Iterator Age: ${element(var.lambda_functions, count.index)}"
-  alarm_actions       = ["${var.sns_topic_arn}"]
+
+  alarm_actions = ["${var.sns_topic_arn}"]
+  ok_actions    = ["${var.sns_topic_arn}"]
 
   dimensions {
     FunctionName = "${element(var.lambda_functions, count.index)}"
@@ -73,7 +78,9 @@ resource "aws_cloudwatch_metric_alarm" "streamalert_kinesis_iterator_age" {
   evaluation_periods  = "${var.kinesis_iterator_age_error_evaluation_periods}"
   period              = "${var.kinesis_iterator_age_error_period}"
   alarm_description   = "StreamAlert Kinesis High Iterator Age: ${var.kinesis_stream}"
-  alarm_actions       = ["${var.sns_topic_arn}"]
+
+  alarm_actions = ["${var.sns_topic_arn}"]
+  ok_actions    = ["${var.sns_topic_arn}"]
 
   dimensions {
     StreamName = "${var.kinesis_stream}"
@@ -92,7 +99,9 @@ resource "aws_cloudwatch_metric_alarm" "streamalert_kinesis_write_exceeded" {
   evaluation_periods  = "${var.kinesis_write_throughput_exceeded_evaluation_periods}"
   period              = "${var.kinesis_write_throughput_exceeded_period}"
   alarm_description   = "StreamAlert Kinesis Write Throughput Exceeded: ${var.kinesis_stream}"
-  alarm_actions       = ["${var.sns_topic_arn}"]
+
+  alarm_actions = ["${var.sns_topic_arn}"]
+  ok_actions    = ["${var.sns_topic_arn}"]
 
   dimensions {
     StreamName = "${var.kinesis_stream}"

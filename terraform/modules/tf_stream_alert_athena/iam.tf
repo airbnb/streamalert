@@ -51,8 +51,20 @@ resource "aws_iam_role_policy" "sqs" {
   policy = "${data.aws_iam_policy_document.sqs.json}"
 }
 
-// IAM Policy Doc: Cloudwatch creation and logging of events
+// IAM Policy Doc: decrypt, read, and delete SQS messages
 data "aws_iam_policy_document" "sqs" {
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "kms:Decrypt",
+    ]
+
+    resources = [
+      "${aws_kms_key.sse.arn}",
+    ]
+  }
+
   statement {
     effect = "Allow"
 
@@ -214,5 +226,38 @@ data "aws_iam_policy_document" "athena_data_bucket_sqs_sendmessage" {
         "${formatlist("arn:aws:s3:*:*:%s", var.athena_data_buckets)}",
       ]
     }
+  }
+}
+
+// Allow S3 to use the SSE key when publishing events to SQS
+data "aws_iam_policy_document" "kms_sse_allow_s3" {
+  statement {
+    sid    = "Enable IAM User Permissions"
+    effect = "Allow"
+
+    principals {
+      type        = "AWS"
+      identifiers = ["arn:aws:iam::${var.account_id}:root"]
+    }
+
+    actions   = ["kms:*"]
+    resources = ["*"]
+  }
+
+  statement {
+    sid    = "AllowS3ToUseKey"
+    effect = "Allow"
+
+    principals {
+      type        = "Service"
+      identifiers = ["s3.amazonaws.com"]
+    }
+
+    actions = [
+      "kms:Decrypt",
+      "kms:GenerateDataKey",
+    ]
+
+    resources = ["*"]
   }
 }

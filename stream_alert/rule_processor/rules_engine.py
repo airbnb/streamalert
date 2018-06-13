@@ -22,8 +22,8 @@ from stream_alert.rule_processor.threat_intel import StreamThreatIntel
 from stream_alert.shared import NORMALIZATION_KEY, resources
 from stream_alert.shared.alert import Alert
 from stream_alert.shared.rule import import_folders, Rule
+from stream_alert.shared.lookup_tables import LookupTables
 from stream_alert.shared.rule_table import RuleTable
-
 
 _IGNORE_KEYS = {StreamThreatIntel.IOC_KEY, NORMALIZATION_KEY}
 
@@ -31,14 +31,38 @@ _IGNORE_KEYS = {StreamThreatIntel.IOC_KEY, NORMALIZATION_KEY}
 class RulesEngine(object):
     """Class to act as a rules engine that processes rules"""
     _RULE_TABLE_LAST_REFRESH = datetime(year=1970, month=1, day=1)
+    _LOOKUP_TABLES = {}
     _RULE_TABLE = None
 
     def __init__(self, config, *rule_paths):
         """Initialize a RulesEngine instance to cache a StreamThreatIntel instance."""
+
         self._threat_intel = StreamThreatIntel.load_from_config(config)
         self._required_outputs_set = resources.get_required_outputs()
         import_folders(*rule_paths)
         self._load_rule_table(config)
+        lookup_tables = LookupTables.load_lookup_tables(config)
+        if lookup_tables:
+            RulesEngine._LOOKUP_TABLES = lookup_tables.download_s3_objects()
+
+    @classmethod
+    def get_lookup_table(cls, table_name):
+        """Return lookup table by table name
+
+        Rule Processor supports to load arbitrary json files from S3 buckets into
+        memory for quick reference while writing rules. This information is stored
+        in class variable `_LOOKUP_TABLES` which is a dictionary. Json file name
+        without extension will the key name(a.k.a table_name), and json content
+        will be the value.
+
+        Args:
+            table_name (str): Lookup table name. It is also the json file name without
+                extension.
+
+        Returns:
+            dict: A dictionary contains lookup table information.
+        """
+        return cls._LOOKUP_TABLES.get(table_name)
 
     @classmethod
     def _load_rule_table(cls, config):

@@ -116,27 +116,15 @@ def basic_streamalert_config():
         },
         'lambda': {
             'alert_merger_config': {
-                'current_version': '$LATEST',
-                'handler': 'stream_alert.alert_merger.main.handler',
                 'memory': 128,
-                'source_bucket': 'unit-testing.streamalert.source',
-                'source_current_hash': '<auto_generated>',
-                'source_object_key': '<auto_generated>',
                 'timeout': 10
             },
             'alert_processor_config': {
-                'current_version': '$LATEST',
-                'handler': 'stream_alert.alert_processor.main.handler',
                 'memory': 128,
-                'source_bucket': 'unit-testing.streamalert.source',
-                'source_current_hash': '<auto_generated>',
-                'source_object_key': '<auto_generated>',
                 'timeout': 10
             },
             'athena_partition_refresh_config': {
-                'current_version': '$LATEST',
                 'enable_metrics': False,
-                'handler': 'main.handler',
                 'memory': 128,
                 'partitioning': {
                     'firehose': {},
@@ -144,16 +132,9 @@ def basic_streamalert_config():
                         'unit-testing.streamalerts': 'alerts'
                     }
                 },
-                'source_bucket': 'unit-testing.streamalert.source',
-                'source_current_hash': '<auto_generated>',
-                'source_object_key': '<auto_generated>',
                 'timeout': 60
             },
             'rule_processor_config': {
-                'handler': 'stream_alert.rule_processor.main.handler',
-                'source_bucket': 'unit-testing.streamalert.source',
-                'source_current_hash': '<auto_generated>',
-                'source_object_key': '<auto_generated>',
                 'third_party_libraries': [
                     'jsonpath_rw',
                     'netaddr'
@@ -161,9 +142,7 @@ def basic_streamalert_config():
             },
             'threat_intel_downloader_config': {
                 'autoscale': True,
-                'current_version': '$LATEST',
                 'enabled': True,
-                'handler': 'stream_alert.threat_intel_downloader.main.handler',
                 'interval': 'rate(1 day)',
                 'ioc_filters': [],
                 'ioc_keys': [],
@@ -172,9 +151,6 @@ def basic_streamalert_config():
                 'max_read_capacity': 1000,
                 'memory': 128,
                 'min_read_capacity': 100,
-                'source_bucket': 'unit-testing.streamalert.source',
-                'source_current_hash': '<auto_generated>',
-                'source_object_key': '<auto_generated>',
                 'table_rcu': 1000,
                 'table_wcu': 200,
                 'target_utilization': 70,
@@ -203,7 +179,6 @@ def basic_streamalert_config():
                     },
                     'stream_alert': {
                         'rule_processor': {
-                            'current_version': '$LATEST',
                             "enable_metrics": True,
                             'memory': 128,
                             'metric_alarms': {
@@ -235,7 +210,6 @@ def basic_streamalert_config():
                 'modules': {
                     'stream_alert': {
                         'rule_processor': {
-                            'current_version': '$LATEST',
                             'memory': 128,
                             'timeout': 10
                         }
@@ -244,8 +218,6 @@ def basic_streamalert_config():
                         'unit-testing_corp_box_admin_events_box_collector_app': {
                             'app_name': 'box_collector',
                             'concurrency_limit': 2,
-                            'current_version': '$LATEST',
-                            'handler': 'app_integrations.main.handler',
                             'log_level': 'info',
                             'log_retention_days': 14,
                             'memory': 128,
@@ -257,17 +229,12 @@ def basic_streamalert_config():
                                 }
                             },
                             'schedule_expression': 'rate(5 minutes)',
-                            'source_bucket': 'unit-testing.streamalert.source',
-                            'source_current_hash': '<auto_generated>',
-                            'source_object_key': '<auto_generated>',
                             'timeout': 60,
                             'type': 'box_admin_events'
                         },
                         'unit-testing_corp_duo_admin_duo_admin_collector_app': {
                             'app_name': 'duo_admin_collector',
                             'concurrency_limit': 2,
-                            'current_version': '$LATEST',
-                            'handler': 'app_integrations.main.handler',
                             'log_level': 'info',
                             'log_retention_days': 14,
                             'memory': 128,
@@ -279,9 +246,6 @@ def basic_streamalert_config():
                                 }
                             },
                             'schedule_expression': 'rate(30 minutes)',
-                            'source_bucket': 'unit-testing.streamalert.source',
-                            'source_current_hash': '<auto_generated>',
-                            'source_object_key': '<auto_generated>',
                             'timeout': 40,
                             'type': 'duo_admin'
                         }

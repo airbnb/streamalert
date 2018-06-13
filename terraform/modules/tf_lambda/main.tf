@@ -17,8 +17,9 @@ resource "aws_lambda_function" "function_vpc" {
   memory_size   = "${var.memory_size_mb}"
   publish       = "${var.auto_publish_versions}"
   timeout       = "${var.timeout_sec}"
-  s3_bucket     = "${var.source_bucket}"
-  s3_key        = "${var.source_object_key}"
+
+  filename         = "${var.filename}"
+  source_code_hash = "${base64sha256(file(var.filename))}"
 
   // Maximum number of concurrent executions allowed
   reserved_concurrent_executions = "${var.concurrency_limit}"
@@ -61,8 +62,9 @@ resource "aws_lambda_function" "function_no_vpc" {
   memory_size   = "${var.memory_size_mb}"
   publish       = "${var.auto_publish_versions}"
   timeout       = "${var.timeout_sec}"
-  s3_bucket     = "${var.source_bucket}"
-  s3_key        = "${var.source_object_key}"
+
+  filename         = "${var.filename}"
+  source_code_hash = "${base64sha256(file(var.filename))}"
 
   // Maximum number of concurrent executions allowed
   reserved_concurrent_executions = "${var.concurrency_limit}"

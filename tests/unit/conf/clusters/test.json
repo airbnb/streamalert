@@ -24,7 +24,6 @@
     ],
     "stream_alert": {
       "rule_processor": {
-        "current_version": "$LATEST",
         "enable_threat_intel": false,
         "memory": 128,
         "timeout": 25

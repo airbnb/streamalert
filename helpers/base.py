@@ -16,7 +16,9 @@ limitations under the License.
 from fnmatch import fnmatch
 import logging
 import json
+import random
 import time
+import pathlib2
 
 from stream_alert.shared import NORMALIZATION_KEY
 from stream_alert.shared.utils import (  # pylint: disable=unused-import
@@ -29,6 +31,27 @@ from stream_alert.shared.utils import (  # pylint: disable=unused-import
 
 logging.basicConfig()
 LOGGER = logging.getLogger('StreamAlert')
+
+
+def path_matches_any(text, patterns):
+    """Check if the text matches any of the given wildcard patterns.
+
+    NOTE: Intended for filepaths with wildcards where fnmatch is too greedy.
+    Especially useful in cases where a username in a filepath may need to be wildcarded.
+
+    For example;
+    path_matches_any('/Users/foobar/path/to/file', {'/Users/*/path/*/file'}) == True
+
+    Args:
+        text (str): Text to examine
+        patterns (iterable): Collection of string patterns, compatible with fnmatch (* wildcards)
+
+    Returns:
+        bool: True if the text matches at least one of the patterns, False otherwise.
+    """
+    if not isinstance(text, basestring):
+        return False
+    return any(pathlib2.PurePath(text).match(pattern) for pattern in patterns)
 
 
 def starts_with_any(text, prefixes):
@@ -240,3 +263,19 @@ def safe_json_loads(data):
         return json.loads(data)
     except ValueError:
         return {}
+
+
+def random_bool(probability_of_true):
+    """Randomly return True or False based on the given probability.
+
+    Useful for very noisy rules where you only want a sample of the matches.
+
+    Args:
+        probability_of_true (float): Probability that True should be returned (between 0 and 1).
+
+    Returns:
+        (bool) True or False
+    """
+    if probability_of_true < 0 or probability_of_true > 1:
+        raise ValueError('Probability must be between 0.0 and 1.0')
+    return random.random() <= probability_of_true

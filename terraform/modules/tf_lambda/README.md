@@ -18,8 +18,7 @@ permissions, attach/inline them to the created IAM role.
 module "alert_processor" {
   function_name     = "alert_processor"
   handler           = "stream_alert.alert_processor.main.handler"
-  source_bucket     = "SOURCE_BUCKET"
-  source_object_key = "SOURCE_OBJECT_KEY"
+  filename          = "alert_processor.zip"
 
   environment_variables = {
     LOGGER_LEVEL = "info"

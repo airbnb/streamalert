@@ -90,7 +90,6 @@ class TestThreatStream(object):
                 'spam_ip',
                 'tor_ip'
             ],
-            'handler': 'main.handler',
             'ioc_filters': [
                 'crowdstrike',
                 '@airbnb.com'
@@ -108,9 +107,6 @@ class TestThreatStream(object):
                 'md5'
             ],
             'memory': '128',
-            'source_bucket': 'unit-testing.streamalert.source',
-            'source_current_hash': '<auto_generated>',
-            'source_object_key': '<auto_generated>',
             'timeout': '60'
         }
         assert_equal(self.threatstream._load_config(arn), expected_config)

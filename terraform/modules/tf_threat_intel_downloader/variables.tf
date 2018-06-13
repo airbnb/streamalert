@@ -16,12 +16,9 @@ variable "lambda_timeout" {
   default = "120"
 }
 
-variable "lambda_s3_bucket" {
-  type = "string"
-}
-
-variable "lambda_s3_key" {
-  type = "string"
+variable "filename" {
+  type    = "string"
+  default = "threat_intel_downloader.zip"
 }
 
 variable "lambda_log_level" {
@@ -34,10 +31,6 @@ variable "enable_metrics" {
 }
 
 variable "prefix" {
-  type = "string"
-}
-
-variable "current_version" {
   type = "string"
 }
 

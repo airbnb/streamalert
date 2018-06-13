@@ -19,40 +19,8 @@ import sys
 from stream_alert.shared import rule_table
 from stream_alert_cli import helpers
 from stream_alert_cli.manage_lambda import package as stream_alert_packages
-from stream_alert_cli.manage_lambda.version import LambdaVersion
-from stream_alert_cli.terraform.generate import terraform_generate
-
 
 PackageMap = namedtuple('package_attrs', ['package_class', 'targets', 'enabled'])
-
-
-def _publish_version(packages, config, clusters):
-    """Publish production Lambda versions
-
-    Args:
-        packages (list[LambdaPackage])
-        config (CLIConfig)
-        clusters (set)
-
-    Returns:
-        bool: Result of Lambda version publishing
-    """
-    global_packages = {
-        'alert_merger', 'alert_processor', 'athena_partition_refresh', 'threat_intel_downloader'
-    }
-
-    for package in packages:
-        if package.package_name in global_packages:
-            published = LambdaVersion(
-                config=config, package=package).publish_function(clustered_deploy=False)
-        else:
-            published = LambdaVersion(
-                config=config, package=package).publish_function(clustered_deploy=True,
-                                                                 clusters=clusters)
-        if not published:
-            return False
-
-    return True
 
 
 def _update_rule_table(options, config):
@@ -82,7 +50,7 @@ def _update_rule_table(options, config):
             table.toggle_staged_state(rule, stage)
 
 
-def _create_and_upload(function_name, config, cluster=None):
+def _create(function_name, config, cluster=None):
     """
     Args:
         function_name: The name of the function to create and upload
@@ -97,17 +65,18 @@ def _create_and_upload(function_name, config, cluster=None):
     package_mapping = {
         'alert': PackageMap(
             stream_alert_packages.AlertProcessorPackage,
-            {'module.alert_processor_lambda'},
+            {'module.alert_processor_iam', 'module.alert_processor_lambda'},
             True
         ),
         'alert_merger': PackageMap(
             stream_alert_packages.AlertMergerPackage,
-            {'module.alert_merger_lambda'},
+            {'module.alert_merger_iam', 'module.alert_merger_lambda'},
             True
         ),
         'apps': PackageMap(
             stream_alert_packages.AppIntegrationPackage,
-            {'module.app_{}_{}_lambda'.format(app_info['app_name'], cluster)
+            {'module.app_{}_{}_{}'.format(app_info['app_name'], cluster, suffix)
+             for suffix in {'lambda', 'iam'}
              for cluster, info in config['clusters'].iteritems()
              for app_info in info['modules'].get('stream_alert_apps', {}).values()
              if 'app_name' in app_info},
@@ -134,7 +103,7 @@ def _create_and_upload(function_name, config, cluster=None):
         return False, False
 
     package = package_mapping[function_name].package_class(config=config)
-    success = package.create_and_upload()
+    success = package.create()
 
     if not success:
         sys.exit(1)
@@ -167,7 +136,7 @@ def deploy(options, config):
         processors = options.processor
 
     for processor in processors:
-        package, targets = _create_and_upload(processor, config, options.clusters)
+        package, targets = _create(processor, config, options.clusters)
         # Continue if the package isn't enabled
         if not all([package, targets]):
             continue
@@ -175,25 +144,9 @@ def deploy(options, config):
         packages.append(package)
         deploy_targets.update(targets)
 
-    # Regenerate the Terraform configuration with the new S3 keys
-    if not terraform_generate(config=config):
-        return
-
-    # Run Terraform: Update the Lambda source code in $LATEST
-    if not helpers.tf_runner(targets=deploy_targets):
-        sys.exit(1)
-
     # Update the rule table now if the rule processor is being deployed
     if 'rule' in options.processor:
         _update_rule_table(options, config)
 
-    # Publish a new production Lambda version
-    if not _publish_version(packages, config, options.clusters):
-        return
-
-    # Regenerate the Terraform configuration with the new Lambda versions
-    if not terraform_generate(config=config):
-        return
-
-    # Apply the changes to the Lambda aliases
-    helpers.tf_runner(targets=deploy_targets, refresh=False, auto_approve=True)
+    # Terraform applies the new package and publishes a new version
+    helpers.tf_runner(targets=deploy_targets)

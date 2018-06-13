@@ -13,21 +13,14 @@ variable "lambda_timeout" {
   default = "60"
 }
 
-variable "lambda_s3_bucket" {
-  type = "string"
-}
-
-variable "lambda_s3_key" {
-  type = "string"
+variable "filename" {
+  type    = "string"
+  default = "athena_partition_refresh.zip"
 }
 
 variable "lambda_log_level" {
   type    = "string"
   default = "info"
-}
-
-variable "current_version" {
-  type = "string"
 }
 
 variable "athena_data_buckets" {
@@ -45,6 +38,10 @@ variable "s3_logging_bucket" {
 variable "database_name" {
   type    = "string"
   default = "streamalert"
+}
+
+variable "account_id" {
+  type = "string"
 }
 
 variable "prefix" {

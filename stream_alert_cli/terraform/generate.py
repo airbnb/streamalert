@@ -31,6 +31,7 @@ from stream_alert_cli.terraform.alert_processor import generate_alert_processor
 from stream_alert_cli.terraform.app_integrations import generate_app_integrations
 from stream_alert_cli.terraform.athena import generate_athena
 from stream_alert_cli.terraform.cloudtrail import generate_cloudtrail
+from stream_alert_cli.terraform.cloudwatch import generate_cloudwatch
 from stream_alert_cli.terraform.firehose import generate_firehose
 from stream_alert_cli.terraform.flow_logs import generate_flow_logs
 from stream_alert_cli.terraform.kinesis_events import generate_kinesis_events
@@ -129,10 +130,6 @@ def generate_main(config, init=False):
 
     # Configure initial S3 buckets
     main_dict['resource']['aws_s3_bucket'] = {
-        'lambda_source': generate_s3_bucket(
-            bucket=config['lambda']['rule_processor_config']['source_bucket'],
-            logging=logging_bucket
-        ),
         'stream_alert_secrets': generate_s3_bucket(
             bucket='{}.streamalert.secrets'.format(config['global']['account']['prefix']),
             logging=logging_bucket
@@ -282,18 +279,19 @@ def generate_cluster(config, cluster_name):
         if not generate_kinesis_events(cluster_name, cluster_dict, config):
             return
 
-    cloudtrail_info = modules.get('cloudtrail')
-    if cloudtrail_info:
+    if modules.get('cloudtrail'):
         if not generate_cloudtrail(cluster_name, cluster_dict, config):
             return
 
-    flow_log_info = modules.get('flow_logs')
-    if flow_log_info:
+    if modules.get('cloudwatch'):
+        if not generate_cloudwatch(cluster_name, cluster_dict, config):
+            return
+
+    if modules.get('flow_logs'):
         if not generate_flow_logs(cluster_name, cluster_dict, config):
             return
 
-    s3_events_info = modules.get('s3_events')
-    if s3_events_info:
+    if modules.get('s3_events'):
         if not generate_s3_events(cluster_name, cluster_dict, config):
             return
 

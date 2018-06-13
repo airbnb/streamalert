@@ -1,7 +1,5 @@
 {
   "alert_processor_config": {
-    "current_version": "$LATEST",
-    "handler": "main.handler",
     "log_level": "info",
     "log_retention_days": 7,
     "memory": 128,
@@ -19,9 +17,6 @@
         "threshold": 6
       }
     },
-    "source_bucket": "unit.testing.streamalert.source",
-    "source_current_hash": "12345",
-    "source_object_key": "lambda/alert/source.zip",
     "third_party_libraries": [],
     "timeout": 60,
     "vpc_config": {
@@ -38,18 +33,11 @@
       "unit-testing.streamalert.data": "data",
       "unit-testing.streamalerts": "alerts"
     },
-    "current_version": "$LATEST",
     "enable_metrics": false,
-    "handler": "main.handler",
     "memory": "128",
-    "source_bucket": "unit-testing.streamalert.source",
-    "source_current_hash": "12345",
-    "source_object_key": "lambda/athena/source.zip",
     "timeout": "60"
   },
-  "rule_processor_config": {
-    "source_bucket": "unit.testing.source.bucket"
-  },
+  "rule_processor_config": {},
   "threat_intel_downloader_config": {
     "enabled": true,
     "excluded_sub_types": [
@@ -59,7 +47,6 @@
       "spam_ip",
       "tor_ip"
     ],
-    "handler": "main.handler",
     "ioc_filters": [
       "crowdstrike",
       "@airbnb.com"
@@ -77,9 +64,6 @@
       "md5"
     ],
     "memory": "128",
-    "source_bucket": "unit-testing.streamalert.source",
-    "source_current_hash": "<auto_generated>",
-    "source_object_key": "<auto_generated>",
     "timeout": "60"
   }
 }

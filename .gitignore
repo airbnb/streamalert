@@ -8,7 +8,8 @@ docs/build
 *.terraform/
 terraform.tfvars
 terraform/terraform.tfstate*
-*.tf.json
+terraform/*.zip
+terraform/*.tf.json
 
 # MacOS artifacts
 Thumbs.db
@@ -30,3 +31,6 @@ htmlcov/
 
 # Pycharm IDE
 .idea/
+
+# VSCode
+.vscode/

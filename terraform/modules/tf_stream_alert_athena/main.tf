@@ -7,8 +7,10 @@ resource "aws_lambda_function" "athena_partition_refresh" {
   handler       = "${var.lambda_handler}"
   memory_size   = "${var.lambda_memory}"
   timeout       = "${var.lambda_timeout}"
-  s3_bucket     = "${var.lambda_s3_bucket}"
-  s3_key        = "${var.lambda_s3_key}"
+
+  filename         = "${var.filename}"
+  source_code_hash = "${base64sha256(file(var.filename))}"
+  publish          = true
 
   environment {
     variables = {
@@ -53,7 +55,7 @@ resource "aws_lambda_alias" "athena_partition_refresh_production" {
   name             = "production"
   description      = "Production StreamAlert Athena Parition Refresh Alias"
   function_name    = "${aws_lambda_function.athena_partition_refresh.arn}"
-  function_version = "${var.current_version}"
+  function_version = "${aws_lambda_function.athena_partition_refresh.version}"
 }
 
 // SQS Queue: Athena Data Bucket Notificaitons
@@ -68,6 +70,9 @@ resource "aws_sqs_queue" "streamalert_athena_data_bucket_notifications" {
 
   # Retain messages for one day
   message_retention_seconds = 86400
+
+  # Enable server-side encryption of messages in the queue
+  kms_master_key_id = "${aws_kms_key.sse.arn}"
 
   tags {
     Name = "StreamAlert"

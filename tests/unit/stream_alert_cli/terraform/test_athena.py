@@ -24,17 +24,12 @@ def test_generate_athena():
     """CLI - Terraform Generate Athena"""
 
     CONFIG['lambda']['athena_partition_refresh_config'] = {
-        'current_version': '$LATEST',
         'buckets': {
             'unit-testing.streamalerts': 'alerts',
             'unit-testing.streamalert.data': 'data'
         },
-        'handler': 'main.handler',
         'timeout': '60',
         'memory': '128',
-        'source_bucket': 'unit-testing.streamalert.source',
-        'source_current_hash': '12345',
-        'source_object_key': 'lambda/athena/source.zip',
         'third_party_libraries': []
     }
 
@@ -48,19 +43,17 @@ def test_generate_athena():
                 'database_name': '{}_streamalert'.format(prefix),
                 'queue_name': '{}_streamalert_athena_s3_notifications'.format(prefix),
                 'results_bucket': '{}.streamalert.athena-results'.format(prefix),
-                'current_version': '$LATEST',
                 'enable_metrics': False,
-                'lambda_handler': 'main.handler',
+                'lambda_handler': 'stream_alert.athena_partition_refresh.main.handler',
                 'lambda_log_level': 'info',
                 'lambda_memory': '128',
                 'lambda_timeout': '60',
-                'lambda_s3_bucket': 'unit-testing.streamalert.source',
-                'lambda_s3_key': 'lambda/athena/source.zip',
                 'athena_data_buckets': [
                     'unit-testing.streamalerts',
                     'unit-testing.streamalert.data'
                 ],
                 'prefix': 'unit-testing',
+                'account_id': '12345678910',
                 'schedule_expression': 'rate(10 minutes)'
             },
             'athena_monitoring': {

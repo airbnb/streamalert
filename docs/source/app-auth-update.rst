@@ -25,7 +25,6 @@ Example output::
       interval:                      rate(2 hours)
       timeout:                       80
       memory:                        128
-      current_version:               $LATEST
       type:                          duo_auth
 
 

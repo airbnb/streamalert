@@ -15,6 +15,7 @@ limitations under the License.
 """
 import json
 
+from stream_alert_cli.manage_lambda.package import AppIntegrationPackage
 from stream_alert_cli.terraform.lambda_module import generate_lambda
 
 
@@ -32,8 +33,8 @@ def generate_app_integrations(cluster_name, cluster_dict, config):
     """
     prefix = config['global']['account']['prefix']
 
-    for function_name, app_info in config['clusters'][cluster_name] \
-        ['modules'].get('stream_alert_apps', {}).iteritems():
+    for function_name, app_info in config['clusters'][cluster_name]['modules'].get(
+            'stream_alert_apps', {}).iteritems():
         func_prefix = function_name.rstrip('_app')
 
         module_prefix = 'app_{}_{}'.format(app_info['app_name'], cluster_name)
@@ -60,6 +61,8 @@ def generate_app_integrations(cluster_name, cluster_dict, config):
         # Format the lambda module with 'app_<app_name_<cluster>_lambda'
         cluster_dict['module']['{}_lambda'.format(module_prefix)] = generate_lambda(
             '{}_app'.format(func_prefix),
+            AppIntegrationPackage.package_name + '.zip',
+            AppIntegrationPackage.lambda_handler,
             config['clusters'][cluster_name]['modules']['stream_alert_apps'][function_name],
             config
         )

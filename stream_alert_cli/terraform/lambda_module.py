@@ -68,13 +68,16 @@ def _tf_vpc_config(lambda_config):
     return result
 
 
-def generate_lambda(function_name, lambda_config, config, environment=None, metrics_lookup=None):
+def generate_lambda(function_name, zip_file, handler, lambda_config, config,
+                    environment=None, metrics_lookup=None):
     """Generate an instance of the Lambda Terraform module.
 
     Args:
         function_name (str): Name of the Lambda function (e.g. 'alert_processor')
-        config (dict): Parsed config from conf/
+        zip_file (str): Path where the .zip deployment package lives
+        handler (str): Lambda function handler
         lambda_config (dict): Section of the config for this particular Lambda function
+        config (dict): Parsed config from conf/
         environment (dict): Optional environment variables to specify.
             ENABLE_METRICS and LOGGER_LEVEL are included automatically.
         metrics_lookup (str): Canonical name of this function (used to lookup custom metrics)
@@ -82,8 +85,6 @@ def generate_lambda(function_name, lambda_config, config, environment=None, metr
     Example Lambda config:
         {
             "concurrency_limit": 1,
-            "current_version": "$LATEST",
-            "handler": "main.handler",
             "log_level": "info",
             "log_retention_days": 14,
             "memory": 128,
@@ -102,8 +103,6 @@ def generate_lambda(function_name, lambda_config, config, environment=None, metr
               }
             },
             "schedule_expression": "rate(5 minutes)",
-            "source_bucket": "BUCKET",
-            "source_object_key": "OBJECT_KEY",
             "timeout": 10,
             "vpc_config": {
                 "security_group_ids": [
@@ -132,13 +131,11 @@ def generate_lambda(function_name, lambda_config, config, environment=None, metr
         'source': 'modules/tf_lambda',
         'function_name': function_name,
         'description': function_name.replace('_', ' ').title(),
-        'handler': lambda_config['handler'],
+        'handler': handler,
         'memory_size_mb': lambda_config['memory'],
         'timeout_sec': lambda_config['timeout'],
-        'source_bucket': lambda_config['source_bucket'],
-        'source_object_key': lambda_config['source_object_key'],
-        'environment_variables': environment_variables,
-        'aliased_version': lambda_config['current_version'],
+        'filename': zip_file,
+        'environment_variables': environment_variables
     }
 
     # Include optional keys only if they are defined (otherwise use the module defaults)

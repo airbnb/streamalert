@@ -19,6 +19,7 @@ from stream_alert_cli.config import CLIConfig
 from stream_alert_cli.terraform import (
     common,
     cloudtrail,
+    cloudwatch,
     flow_logs,
     generate,
     streamalert
@@ -30,11 +31,7 @@ from nose.tools import assert_equal, assert_false, assert_true
 
 class TestTerraformGenerate(object):
     """Test class for the Terraform Cluster Generating"""
-    # pylint: disable=no-self-use
-
-    def __init__(self):
-        self.cluster_dict = None
-        self.config = None
+    # pylint: disable=no-self-use,attribute-defined-outside-init
 
     def setup(self):
         """Setup before each method"""
@@ -118,18 +115,6 @@ class TestTerraformGenerate(object):
                     }
                 },
                 'aws_s3_bucket': {
-                    'lambda_source': {
-                        'bucket': 'unit.testing.source.bucket',
-                        'acl': 'private',
-                        'force_destroy': True,
-                        'versioning': {
-                            'enabled': True
-                        },
-                        'logging': {
-                            'target_bucket': 'unit-testing.streamalert.s3-logging',
-                            'target_prefix': 'unit.testing.source.bucket/'
-                        }
-                    },
                     'stream_alert_secrets': {
                         'bucket': 'unit-testing.streamalert.secrets',
                         'acl': 'private',
@@ -247,13 +232,12 @@ class TestTerraformGenerate(object):
                     'prefix': 'unit-testing',
                     'cluster': 'test',
                     'dynamodb_ioc_table': 'test_table_name',
+                    'lambda_handler': 'stream_alert.rule_processor.main.handler',
                     'threat_intel_enabled': False,
                     'rule_processor_enable_metrics': True,
                     'rule_processor_log_level': 'info',
                     'rule_processor_memory': 128,
                     'rule_processor_timeout': 25,
-                    'rule_processor_version': '$LATEST',
-                    'rule_processor_config': '${var.rule_processor_config}',
                     'rules_table_arn': '${module.globals.rules_table_arn}',
                 }
             }
@@ -279,13 +263,12 @@ class TestTerraformGenerate(object):
                     'prefix': 'unit-testing',
                     'cluster': 'advanced',
                     'dynamodb_ioc_table': 'test_table_name',
+                    'lambda_handler': 'stream_alert.rule_processor.main.handler',
                     'threat_intel_enabled': False,
                     'rule_processor_enable_metrics': True,
                     'rule_processor_log_level': 'info',
                     'rule_processor_memory': 128,
                     'rule_processor_timeout': 25,
-                    'rule_processor_version': '$LATEST',
-                    'rule_processor_config': '${var.rule_processor_config}',
                     'rules_table_arn': '${module.globals.rules_table_arn}',
                     'input_sns_topics': ['my-sns-topic-name'],
                 }
@@ -330,6 +313,9 @@ class TestTerraformGenerate(object):
             's3_logging_bucket': 'unit-testing.streamalert.s3-logging',
             'existing_trail': False,
             'is_global_trail': True,
+            'region': 'us-west-1',
+            'exclude_home_region_events': False,
+            'send_to_cloudwatch': False,
             'event_pattern': '{"account": ["12345678910"]}'
         })
 
@@ -365,6 +351,9 @@ class TestTerraformGenerate(object):
             'prefix': 'unit-testing',
             'enable_logging': True,
             'enable_kinesis': True,
+            'region': 'us-west-1',
+            'exclude_home_region_events': False,
+            'send_to_cloudwatch': False,
             'source': 'modules/tf_stream_alert_cloudtrail',
             's3_logging_bucket': 'unit-testing.streamalert.s3-logging',
             'event_pattern': '{"source": ["aws.ec2"], "account": "12345678910",'
@@ -387,6 +376,30 @@ class TestTerraformGenerate(object):
         result = cloudtrail.generate_cloudtrail(cluster_name, self.cluster_dict, self.config)
         assert_false(result)
         assert_true(mock_logging.error.called)
+
+    def test_generate_cloudwatch(self):
+        """CLI - Terraform Generate CloudWatch"""
+        cloudwatch.generate_cloudwatch(
+            'advanced',
+            self.cluster_dict,
+            self.config
+        )
+
+        # Count the modules for each region - there should be 14 since 1 is excluded
+        count = sum(1 for name in self.cluster_dict['module']
+                    if name.startswith('cloudwatch_advanced'))
+        assert_equal(count, 14)
+
+        expected_config = {
+            'cluster': 'advanced',
+            'source': 'modules/tf_stream_alert_cloudwatch',
+            'region': 'eu-west-1',
+            'kinesis_stream_arn': '${module.kinesis_advanced.arn}',
+            'cross_account_ids': ['123456789012', '12345678910']
+        }
+
+        eu_west_config = self.cluster_dict['module']['cloudwatch_advanced_eu-west-1']
+        assert_equal(expected_config, eu_west_config)
 
     def test_generate_cluster_test(self):
         """CLI - Terraform Generate Test Cluster"""
@@ -424,6 +437,20 @@ class TestTerraformGenerate(object):
 
         advanced_modules = {
             'stream_alert_advanced',
+            'cloudwatch_advanced_eu-west-1',
+            'cloudwatch_advanced_eu-west-2',
+            'cloudwatch_advanced_eu-west-3',
+            'cloudwatch_advanced_us-west-2',
+            'cloudwatch_advanced_sa-east-1',
+            'cloudwatch_advanced_eu-central-1',
+            'cloudwatch_advanced_ap-northeast-2',
+            'cloudwatch_advanced_ap-northeast-1',
+            'cloudwatch_advanced_ap-southeast-1',
+            'cloudwatch_advanced_ca-central-1',
+            'cloudwatch_advanced_ap-southeast-2',
+            'cloudwatch_advanced_us-east-1',
+            'cloudwatch_advanced_us-east-2',
+            'cloudwatch_advanced_ap-south-1',
             'cloudwatch_monitoring_advanced',
             'kinesis_advanced',
             'kinesis_events_advanced',

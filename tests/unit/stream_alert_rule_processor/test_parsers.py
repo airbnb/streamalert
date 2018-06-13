@@ -13,9 +13,10 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from collections import OrderedDict
 import json
 
-from mock import patch
+from mock import call, patch
 from nose.tools import (
     assert_equal,
     assert_false,
@@ -54,6 +55,114 @@ class TestParser(object):
         parser = self.parser_class(options)
         parsed_result = parser.parse(schema, data)
         return parsed_result
+
+
+class TestCSVParser(TestParser):
+    """Test class for CSVParser"""
+    @classmethod
+    def _parser_type(cls):
+        return 'csv'
+
+    def test_basic_csv_parsing(self):
+        """CSV Parser - Basic comma separated data"""
+        # setup
+        schema = OrderedDict([
+            ('host', 'string'), ('date', 'string'), ('message', 'string')])
+        options = {'delimiter': ','}
+        data = 'test-01.stg.foo.net,01-01-2018,test message!!!!'
+
+        # get parsed data
+        parsed_data = self.parser_helper(data=data, schema=schema, options=options)
+
+        assert_equal(len(parsed_data), 1)
+        assert_equal(parsed_data[0]['host'], 'test-01.stg.foo.net')
+
+    def test_csv_parsing_space_delimited(self):
+        """CSV Parser - Space separated data"""
+        # setup
+        schema = OrderedDict([
+            ('host', 'string'), ('date', 'string'), ('message', 'string')])
+        options = {'delimiter': ' '}
+        data = 'test-01.stg.foo.net 01-01-2018 "test message!!!!"'
+
+        # get parsed data
+        parsed_data = self.parser_helper(data=data, schema=schema, options=options)
+
+        assert_equal(len(parsed_data), 1)
+        assert_equal(parsed_data[0]['host'], 'test-01.stg.foo.net')
+        assert_equal(parsed_data[0]['message'], 'test message!!!!')
+
+    def test_csv_parsing_alt_quoted(self):
+        """CSV Parser - Single Quoted Field"""
+        schema = OrderedDict([
+            ('host', 'string'), ('date', 'string'), ('message', 'string')])
+        options = {'quotechar': '\''}
+        data = ('test-host,datetime-value,\'CREATE TABLE test ( id '
+                'INTEGER, type VARCHAR(64) NOT NULL)\'')
+
+        # get parsed data
+        parsed_data = self.parser_helper(data=data, schema=schema, options=options)
+
+        expected_data = [{
+            'host': 'test-host',
+            'date': 'datetime-value',
+            'message': 'CREATE TABLE test ( id INTEGER, type VARCHAR(64) NOT NULL)'
+        }]
+
+        assert_equal(parsed_data, expected_data)
+
+    def test_csv_parsing_from_json(self):
+        """CSV Parser - CSV within JSON"""
+        options = {
+            'envelope_keys': {
+                'env_key_01': 'string',
+                'env_key_02': 'string'
+            },
+            'json_path': 'logEvents[*].message'
+        }
+        schema = OrderedDict([
+            ('timestamp', 'integer'), ('host', 'string'), ('message', 'string')])
+        data = """{
+  "env_key_01": "DATA_MESSAGE",
+  "env_key_02": "123456789012",
+  "logEvents": [
+    {
+      "uuid": "0F08CD2B-F21D-4F3A-9231-B527AD42AB91",
+      "message": "1526951139360429,host-name,contents"
+    },
+    {
+      "uuid": "0F08CD2B-F21D-4F3A-9231-B527AD42AB91",
+      "message": "1526951139360430,host-name-02,contents-02"
+    }
+  ]
+}"""
+
+        # get parsed data
+        parsed_data = self.parser_helper(data=data, schema=schema, options=options)
+
+        expected_data = [
+            {
+                'timestamp': '1526951139360429',
+                'host': 'host-name',
+                'message': 'contents',
+                'streamalert:envelope_keys': {
+                    'env_key_01': 'DATA_MESSAGE',
+                    'env_key_02': '123456789012'
+                }
+            },
+            {
+                'timestamp': '1526951139360430',
+                'host': 'host-name-02',
+                'message': 'contents-02',
+                'streamalert:envelope_keys': {
+                    'env_key_01': 'DATA_MESSAGE',
+                    'env_key_02': '123456789012'
+                }
+            }
+        ]
+
+        assert_equal(len(parsed_data), 2)
+        assert_equal(parsed_data, expected_data)
 
 
 class TestKVParser(TestParser):
@@ -374,14 +483,56 @@ class TestJSONParser(TestParser):
                        '"nested_key_2": "more_nested_info",'
                        '"nested_key_3": "even_more"}'
         })
-        parsed_result = self.parser_helper(data=data,
-                                           schema=schema,
-                                           options=options)
+        parsed_result = self.parser_helper(data=data, schema=schema, options=options)
 
         assert_items_equal(parsed_result[0].keys(),
                            ['nested_key_1',
                             'nested_key_2',
                             'nested_key_3'])
+
+    def test_embedded_json(self):
+        """JSON Parser - Embedded JSON"""
+        schema = self.config['logs']['json:embedded']['schema']
+        options = self.config['logs']['json:embedded']['configuration']
+
+        data = json.dumps({
+            'env_key_01': 'data',
+            'env_key_02': 'time',
+            'test_list': [
+                {
+                    'id': 'foo',
+                    'message': ('{\"nested_key_01\":\"bar\",'
+                                '\"nested_key_02\":\"baz\"}')
+                }
+            ]
+        })
+
+        parsed_result = self.parser_helper(data=data, schema=schema, options=options)
+        expected_keys = {'nested_key_01', 'nested_key_02', 'streamalert:envelope_keys'}
+        expected_env_keys = {'env_key_01', 'env_key_02'}
+        assert_items_equal(parsed_result[0].keys(), expected_keys)
+        assert_items_equal(parsed_result[0]['streamalert:envelope_keys'], expected_env_keys)
+
+    @patch('logging.Logger.debug')
+    def test_embedded_json_invalid(self, log_mock):
+        """JSON Parser - Embedded JSON, Invalid"""
+        schema = self.config['logs']['json:embedded']['schema']
+        options = self.config['logs']['json:embedded']['configuration']
+
+        data = json.dumps({
+            'env_key_01': 'data',
+            'env_key_02': 'time',
+            'test_list': [
+                {
+                    'id': 'foo',
+                    'message': '{\"invalid_json\"}'
+                }
+            ]
+        })
+
+        result = self.parser_helper(data=data, schema=schema, options=options)
+        assert_equal(result, False)
+        log_mock.assert_has_calls([call('Embedded json is invalid')])
 
     def test_basic_json(self):
         """JSON Parser - Non-nested JSON objects"""
