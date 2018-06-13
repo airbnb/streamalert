@@ -49,6 +49,11 @@ Supported Services
 
   - Admin Events
 
+* `Slack <https://api.slack.com/web/>`_
+
+  - Access Logs
+  - Integrations Logs
+
 * *More to come*
 
 
@@ -136,4 +141,18 @@ The recommended process is to deploy both the `apps` function and the `rule` pro
 .. code-block:: bash
 
   $ python manage.py lambda deploy --processor rule apps
+
+Authorizing the Slack App
+-------------------------
+The Slack endpoint API requires a bearer token, obtained by going through the slack oauth authentication process. Only one path through the process is supported by the Slack App: manually installing a custom integration.
+
+To obtain the bearer token, an administrator of the Slack workspace must create a custom Slack app, add the ``admin`` permission scope to the custom app, and install the app to the target workspace.
+
+Step by step:
+
+   1. Visit the `Create a Slack app <https://api.slack.com/apps/new>`_ page, and in the ``Create a Slack App`` dialog box fill in the ``App Name`` field with whatever you like and the select the target workspace from the ``Development Slack Workspace`` dropbdown box. Click ``Create App``.
+   2. On the ``Basic Information`` page of the app you just created, scroll to and click on ``OAuth & Permissions`` on the left hand sidebar.
+   3. Scroll to the ``Scopes`` section, click on the dropdown box under ``Select Permission Scopes``, and type ``admin`` to bring up the administrator scope (labeled ``Administer the workspace``). Select it, then click ``Save changes``.
+   4. Scroll to the top of that same page and click on ``Install App to Workspace``. Click ``Authorize`` on the next dialog. You should be returned to the ``OAuth & Permissions`` page.
+   5. The bearer token is the string labeled with ``OAuth Access Token`` and beginning with ``xoxp-``. Provide this when configuring the Slack StreamAlert app.
 
