@@ -57,7 +57,9 @@ def test_get_all_apps():
         'salesforce_login',
         'salesforce_loginas',
         'salesforce_report',
-        'salesforce_reportexport'
+        'salesforce_reportexport',
+        'slack_access',
+        'slack_integration'
     }
 
     apps = StreamAlertApp.get_all_apps()

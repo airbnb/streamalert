@@ -156,6 +156,10 @@ class MockSSMClient(object):
                 'password': 'PASSWORD',
                 'security_token': 'SECURITY_TOKEN'
             }
+        elif app_type == 'slack':
+            return {
+                'auth_token': 'xoxp-aaaaaaa-111111111-eeeeeeeeee-fffffff'
+            }
 
         # Fill this out with future supported apps/services
         return {}
@@ -222,6 +226,8 @@ def get_formatted_timestamp(app_type):
         return '2017-06-17T15:39:18.460Z'
     elif app_type in {'box', 'box_admin_events'}:
         return '2017-10-27T12:31:22-07:00'
+    elif app_type in {'slack'}:
+        return 1422922593
 
 
 def get_valid_config_dict(app_type):
