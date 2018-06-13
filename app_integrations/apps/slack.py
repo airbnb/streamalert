@@ -65,11 +65,6 @@ class SlackApp(AppIntegration):
         return 'slack'
 
     @classmethod
-    def date_formatter(cls):
-        """Slack API date format: unix epoch seconds"""
-        return '%s'
-
-    @classmethod
     def _required_auth_info(cls):
         """Required credentials for access to the workspace"""
         return {
@@ -86,14 +81,14 @@ class SlackApp(AppIntegration):
                     response['paging']['pages'] == response['paging']['page'])
 
     def _filter_response_entries(self, response):
-        """The slack endpoints don't provide a programatic way to filter for new results,
+        """The slack endpoints don't provide a programmatic way to filter for new results,
         so subclasses must implement their own endpoint specific filtering methods"""
         raise NotImplementedError("Subclasses must implement the _filter_response_entries method")
 
     def _get_request_data(self):
-        '''The Slack API takes additional parameters to its endpoints in the body of the request.
+        """The Slack API takes additional parameters to its endpoints in the body of the request.
         Pagination control is one set of parameters.
-        '''
+        """
         return {
             'count': self._SLACK_API_MAX_ENTRY_COUNT,
             'page': self._next_page
@@ -120,7 +115,7 @@ class SlackApp(AppIntegration):
             LOGGER.exception('Received bad response from slack')
             return False
 
-        if not u'ok' in response.keys() or not response[u'ok']:
+        if not response.get('ok'):
             LOGGER.exception('Received error or warning from slack')
             return False
 
@@ -128,8 +123,7 @@ class SlackApp(AppIntegration):
 
         results = self._filter_response_entries(response)
 
-        if not self._more_to_poll:
-            self._last_timestamp = int(time.time())
+        self._last_timestamp = int(time.time())
 
         return results
 
@@ -184,8 +178,8 @@ class SlackAccessApp(SlackApp):
         return False
 
     def _check_for_more_to_poll(self, response):
-        '''if we hit the maximum possible number of returned entries, there may still be more
-        to check. Grab the `date_first` value of the oldest entry for the next round'''
+        """if we hit the maximum possible number of returned entries, there may still be more
+        to check. Grab the `date_first` value of the oldest entry for the next round"""
         if (response['paging']['page'] >= self._SLACK_API_MAX_PAGE_COUNT and
                 response['paging']['count'] >= self._SLACK_API_MAX_ENTRY_COUNT):
             self._before_time = response['logins'][-1]['date_first']
@@ -194,7 +188,6 @@ class SlackAccessApp(SlackApp):
 
         self._next_page += 1
         return response['paging']['pages'] > response['paging']['page']
-
 
     def _get_request_data(self):
         data = {

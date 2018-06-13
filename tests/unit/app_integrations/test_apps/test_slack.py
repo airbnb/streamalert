@@ -43,10 +43,6 @@ class TestSlackApp(object):
         """SlackApp - Required Auth Info"""
         assert_items_equal(self._app.required_auth_info().keys(), {'auth_token'})
 
-    def test_date_formatter(self):
-        """SlackApp - Date Formatter"""
-        assert_equal("%s", self._app.date_formatter())
-
     @patch('requests.post')
     @patch('logging.Logger.exception')
     def test_error_code_return(self, log_mock, requests_mock):
@@ -88,42 +84,42 @@ class TestSlackAccessApp(object):
     def _get_sample_access_logs():
         """Sample logs collected from the slack api documentation"""
         return {
-            u"ok": True,
-            u"logins": [
+            'ok': True,
+            'logins': [
                 {
-                    u"user_id": u"U12345",
-                    u"username": u"bob",
-                    u"date_first": 1422922864,
-                    u"date_last":  1422922864,
-                    u"count": 1,
-                    u"ip": u"127.0.0.1",
-                    u"user_agent": u"SlackWeb Mozilla\/5.0 (Macintosh; Intel Mac OS X 10_10_2) "
-                                   "AppleWebKit\/537.36 (KHTML, like Gecko) Chrome\/41.0.2272.35 "
-                                   "Safari\/537.36",
-                    u"isp": u"BigCo ISP",
-                    u"country": u"US",
-                    u"region": u"CA"
+                    'user_id': 'U12345',
+                    'username': 'bob',
+                    'date_first': 1422922864,
+                    'date_last':  1422922864,
+                    'count': 1,
+                    'ip': '127.0.0.',
+                    'user_agent': 'SlackWeb Mozilla\/5.0 (Macintosh; Intel Mac OS X 10_10_2) '
+                                  'AppleWebKit\/537.36 (KHTML, like Gecko) Chrome\/41.0.2272.35 '
+                                  'Safari\/537.36',
+                    'isp': 'BigCo ISP',
+                    'country': 'US',
+                    'region': 'CA'
                     },
                 {
-                    u"user_id": u"U45678",
-                    u"username": u"alice",
-                    u"date_first": 1422922493,
-                    u"date_last": 1422922493,
-                    u"count": 1,
-                    u"ip": u"127.0.0.1",
-                    u"user_agent": u"SlackWeb Mozilla\/5.0 (iPhone; CPU iPhone OS 8_1_3 like Mac "
-                                   "OS X) AppleWebKit\/600.1.4 (KHTML, like Gecko) Version\/8.0 "
-                                   "Mobile\/12B466 Safari\/600.1.4",
-                    u"isp": u"BigCo ISP",
-                    u"country": u"US",
-                    u"region": u"CA"
+                    'user_id': 'U45678',
+                    'username': 'alice',
+                    'date_first': 1422922493,
+                    'date_last': 1422922493,
+                    'count': 1,
+                    'ip': '127.0.0.1',
+                    'user_agent': 'SlackWeb Mozilla\/5.0 (iPhone; CPU iPhone OS 8_1_3 like Mac '
+                                  'OS X) AppleWebKit\/600.1.4 (KHTML, like Gecko) Version\/8.0 '
+                                  'Mobile\/12B466 Safari\/600.1.4',
+                    'isp': 'BigCo ISP',
+                    'country': 'US',
+                    'region': 'CA'
                     },
                 ],
-            u"paging": {
-                u"count": 100,
-                u"total": 2,
-                u"page": 1,
-                u"pages": 1
+            'paging': {
+                'count': 100,
+                'total': 2,
+                'page': 1,
+                'pages': 1
                 }
             }
 
@@ -256,44 +252,44 @@ class TestSlackIntegrationsApp(object):
     def _get_sample_integrations_logs():
         """Sample logs collected from the slack api documentation"""
         return {
-            u"ok": True,
-            u"logs": [
+            'ok': True,
+            'logs': [
                 {
-                    u"service_id": u"1234567890",
-                    u"service_type": u"Google Calendar",
-                    u"user_id": u"U1234ABCD",
-                    u"user_name": u"Johnny",
-                    u"channel": u"C1234567890",
-                    u"date": u"1392163200",
-                    u"change_type": u"enabled",
-                    u"scope": u"incoming-webhook"
+                    'service_id': '1234567890',
+                    'service_type': 'Google Calendar',
+                    'user_id': 'U1234ABCD',
+                    'user_name': 'Johnny',
+                    'channel': 'C1234567890',
+                    'date': '1392163200',
+                    'change_type': 'enabled',
+                    'scope': 'incoming-webhook'
                     },
                 {
-                    u"app_id": u"2345678901",
-                    u"app_type": u"Johnny App",
-                    u"user_id": u"U2345BCDE",
-                    u"user_name": u"Billy",
-                    u"date": u"1392163201",
-                    u"change_type": u"added",
-                    u"scope": u"chat:write:user,channels:read"
+                    'app_id': '2345678901',
+                    'app_type': 'Johnny App',
+                    'user_id': 'U2345BCDE',
+                    'user_name': 'Billy',
+                    'date': '1392163201',
+                    'change_type': 'added',
+                    'scope': 'chat:write:user,channels:read'
                     },
                 {
-                    u"service_id": u"3456789012",
-                    u"service_type": u"Airbrake",
-                    u"user_id": u"U3456CDEF",
-                    u"user_name": u"Joey",
-                    u"channel": u"C1234567890",
-                    u"date": u"1392163202",
-                    u"change_type": u"disabled",
-                    u"reason": u"user",
-                    u"scope": u"incoming-webhook"
+                    'service_id': '3456789012',
+                    'service_type': 'Airbrake',
+                    'user_id': 'U3456CDEF',
+                    'user_name': 'Joey',
+                    'channel': 'C1234567890',
+                    'date': '1392163202',
+                    'change_type': 'disabled',
+                    'reason': 'user',
+                    'scope': 'incoming-webhook'
                     }
                 ],
-            u"paging": {
-                u"count": 3,
-                u"total": 3,
-                u"page": 1,
-                u"pages": 1
+            'paging': {
+                'count': 3,
+                'total': 3,
+                'page': 1,
+                'pages': 1
                 }
             }
 
