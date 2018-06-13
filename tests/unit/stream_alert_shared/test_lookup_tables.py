@@ -17,6 +17,8 @@ from datetime import datetime
 import json
 import os
 
+from botocore.vendored.requests.packages.urllib3.exceptions import ReadTimeoutError
+
 from mock import patch
 from moto import mock_s3
 from nose.tools import assert_equal
@@ -75,6 +77,19 @@ class TestLookupTables(object):
             'foo.json',
             'wrong_bucket',
             'The specified bucket does not exist'
+        )
+
+    @patch('botocore.response.StreamingBody.read')
+    @patch('logging.Logger.error')
+    def test_download_s3_object_bucket_timeout(self, mock_logger, mock_s3_conn): # pylint: disable=no-self-use
+        """LookupTables - Read file from S3 timeout"""
+        mock_s3_conn.side_effect = ReadTimeoutError(
+            'TestPool', 'Test url', 'Test Read timed out.'
+        )
+        result = self.lookup_tables.download_s3_objects()
+        assert_equal(result, {})
+        mock_logger.assert_called_with(
+            'Reading %s from S3 is timed out.', 'foo.json'
         )
 
     def test_download_s3_object_file_exception(self): # pylint: disable=no-self-use

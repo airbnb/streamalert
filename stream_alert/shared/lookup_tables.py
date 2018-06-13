@@ -19,7 +19,10 @@ import os
 import time
 
 import boto3
+from botocore import client
 from botocore.exceptions import ClientError
+from botocore.vendored.requests.exceptions import Timeout
+from botocore.vendored.requests.packages.urllib3.exceptions import TimeoutError
 
 from stream_alert.shared import LOGGER
 
@@ -28,8 +31,15 @@ class LookupTables(object):
 
     _LOOKUP_TABLES_LAST_REFRESH = datetime(year=1970, month=1, day=1)
 
+    # Explicitly set timeout for S3 connection. The default timeout is 60 seconds.
+    BOTO_TIMEOUT = 10
+
     def __init__(self, buckets_info):
-        self._s3_client = boto3.resource('s3')
+        boto_config = client.Config(
+            connect_timeout=self.BOTO_TIMEOUT,
+            read_timeout=self.BOTO_TIMEOUT
+        )
+        self._s3_client = boto3.resource('s3', config=boto_config)
         self._buckets_info = buckets_info
 
     def download_s3_objects(self):
@@ -57,6 +67,11 @@ class LookupTables(object):
                 except ClientError as err:
                     LOGGER.error('Encounterred error while downloading %s from %s, %s',
                                  json_file, bucket, err.response['Error']['Message'])
+                    return _lookup_tables
+                except(Timeout, TimeoutError):
+                    # Catching TimeoutError will catch both `ReadTimeoutError` and
+                    # `ConnectionTimeoutError`.
+                    LOGGER.error('Reading %s from S3 is timed out.', json_file)
                     return _lookup_tables
 
                 total_time = time.time() - start_time
