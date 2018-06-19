@@ -17,6 +17,7 @@ from datetime import datetime, timedelta
 import json
 import os
 import time
+import zlib
 
 import boto3
 from botocore import client
@@ -54,7 +55,6 @@ class LookupTables(object):
 
         for bucket, files in self._buckets_info.iteritems():
             for json_file in files:
-                table_name = os.path.splitext(json_file)[0]
                 try:
                     start_time = time.time()
                     s3_object = self._s3_client.Object(bucket, json_file).get()
@@ -62,8 +62,9 @@ class LookupTables(object):
                     size_mb = round(size_kb / 1024.0, 2)
                     display_size = '{}MB'.format(size_mb) if size_mb else '{}KB'.format(size_kb)
                     LOGGER.info('Downloaded S3 file size %s and updated lookup table %s',
-                                display_size, table_name)
-                    _lookup_tables[table_name] = json.loads(s3_object.get('Body').read())
+                                display_size, json_file)
+
+                    data = s3_object.get('Body').read()
                 except ClientError as err:
                     LOGGER.error('Encounterred error while downloading %s from %s, %s',
                                  json_file, bucket, err.response['Error']['Message'])
@@ -73,6 +74,16 @@ class LookupTables(object):
                     # `ConnectionTimeoutError`.
                     LOGGER.error('Reading %s from S3 is timed out.', json_file)
                     return _lookup_tables
+
+                 # The lookup data can optionally be compressed, so try to decompress
+                 # This will fall back and use the original data if decompression fails
+                try:
+                    data = zlib.decompress(data, 47)
+                except zlib.error:
+                    LOGGER.debug('Data in \'%s\' is not compressed', json_file)
+
+                table_name = os.path.splitext(json_file)[0]
+                _lookup_tables[table_name] = json.loads(data)
 
                 total_time = time.time() - start_time
                 LOGGER.info('Downloaded S3 file %s seconds', round(total_time, 2))
