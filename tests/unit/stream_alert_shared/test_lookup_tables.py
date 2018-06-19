@@ -16,6 +16,7 @@ limitations under the License.
 from datetime import datetime
 import json
 import os
+import zlib
 
 from botocore.vendored.requests.packages.urllib3.exceptions import ReadTimeoutError
 
@@ -127,3 +128,21 @@ class TestLookupTables(object):
 
         LookupTables.load_lookup_tables(self.config)
         mock_logger.assert_called()
+
+    @patch('logging.Logger.debug')
+    def test_load_lookup_tables_compresed(self, mock_logger):
+        """LookupTables - Load lookup table, compressed file"""
+        self.config['global']['infrastructure']['lookup_tables']['enabled'] = True
+        lookup_tables = LookupTables.load_lookup_tables(self.config)
+        # Replace one of the S3 objects with a compressed version
+        put_mock_s3_object(
+            'bucket_name',
+            'bar.json',
+            zlib.compress(json.dumps({'compressed_key': 'compressed_val'})),
+            self.region
+        )
+        result = lookup_tables.download_s3_objects()
+
+        assert_equal(result.get('bar'), {'compressed_key': 'compressed_val'})
+        assert_equal(result.get('foo'), {'bucket_name_key': 'foo_value'})
+        mock_logger.assert_any_call('Data in \'%s\' is not compressed', 'foo.json')
