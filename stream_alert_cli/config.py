@@ -92,10 +92,19 @@ class CLIConfig(object):
             LOGGER_CLI.error('Prefix cannot contain underscores')
             return
 
-        tf_state_bucket = '{}.streamalert.terraform.state'.format(prefix)
         self.config['global']['account']['prefix'] = prefix
         self.config['global']['account']['kms_key_alias'] = '{}_streamalert_secrets'.format(prefix)
-        self.config['global']['terraform']['tfstate_bucket'] = tf_state_bucket
+
+        # Set logging bucket name only if we will be creating it
+        if self.config['global']['s3_access_logging'].get('create_bucket', True):
+            self.config['global']['s3_access_logging']['logging_bucket'] = (
+                '{}.streamalert.s3-logging'.format(prefix))
+
+        # Set Terraform state bucket name only if we will be creating it
+        if self.config['global']['terraform'].get('create_bucket', True):
+            self.config['global']['terraform']['tfstate_bucket'] = (
+                '{}.streamalert.terraform.state'.format(prefix))
+
         self.config['lambda']['athena_partition_refresh_config']['buckets'].clear()
         self.config['lambda']['athena_partition_refresh_config']['buckets'] \
             ['{}.streamalerts'.format(prefix)] = 'alerts'

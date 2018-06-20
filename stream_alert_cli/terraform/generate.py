@@ -111,22 +111,14 @@ def generate_main(config, init=False):
             'path': 'terraform.tfstate'}
     else:
         main_dict['terraform']['backend']['s3'] = {
-            'bucket': '{}.streamalert.terraform.state'.format(
-                config['global']['account']['prefix']),
-            'key': 'stream_alert_state/terraform.tfstate',
+            'bucket': config['global']['terraform']['tfstate_bucket'],
+            'key': config['global']['terraform']['tfstate_s3_key'],
             'region': config['global']['account']['region'],
             'encrypt': True,
             'acl': 'private',
             'kms_key_id': 'alias/{}'.format(config['global']['account']['kms_key_alias'])}
 
-    logging_bucket = '{}.streamalert.s3-logging'.format(
-        config['global']['account']['prefix'])
-    logging_bucket_lifecycle = {
-        'prefix': '/',
-        'enabled': True,
-        'transition': {
-            'days': 30,
-            'storage_class': 'GLACIER'}}
+    logging_bucket = config['global']['s3_access_logging']['logging_bucket']
 
     # Configure initial S3 buckets
     main_dict['resource']['aws_s3_bucket'] = {
@@ -134,21 +126,34 @@ def generate_main(config, init=False):
             bucket='{}.streamalert.secrets'.format(config['global']['account']['prefix']),
             logging=logging_bucket
         ),
-        'terraform_remote_state': generate_s3_bucket(
-            bucket=config['global']['terraform']['tfstate_bucket'],
-            logging=logging_bucket
-        ),
-        'logging_bucket': generate_s3_bucket(
-            bucket=logging_bucket,
-            logging=logging_bucket,
-            acl='log-delivery-write',
-            lifecycle_rule=logging_bucket_lifecycle
-        ),
         'streamalerts': generate_s3_bucket(
             bucket='{}.streamalerts'.format(config['global']['account']['prefix']),
             logging=logging_bucket
         )
     }
+
+    # Create bucket for S3 access logs (if applicable)
+    if config['global']['s3_access_logging'].get('create_bucket', True):
+        main_dict['resource']['aws_s3_bucket']['logging_bucket'] = generate_s3_bucket(
+            bucket=logging_bucket,
+            logging=logging_bucket,
+            acl='log-delivery-write',
+            lifecycle_rule={
+                'prefix': '/',
+                'enabled': True,
+                'transition': {
+                    'days': 365,
+                    'storage_class': 'GLACIER'
+                }
+            }
+        )
+
+    # Create bucket for Terraform state (if applicable)
+    if config['global']['terraform'].get('create_bucket', True):
+        main_dict['resource']['aws_s3_bucket']['terraform_remote_state'] = generate_s3_bucket(
+            bucket=config['global']['terraform']['tfstate_bucket'],
+            logging=logging_bucket
+        )
 
     # Setup Firehose Delivery Streams
     generate_firehose(config, main_dict, logging_bucket)
