@@ -13,8 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-import json
-
 from stream_alert_cli.config import CLIConfig
 from stream_alert_cli.terraform import (
     common,
@@ -327,13 +325,13 @@ class TestTerraformGenerate(object):
             'enable_kinesis': True,
             'existing_trail': False,
             'is_global_trail': False,
-            'event_pattern': json.dumps({
+            'event_pattern': {
                 'source': ['aws.ec2'],
                 'account': '12345678910',
                 'detail': {
                     'state': ['running']
                 }
-            })
+            }
         }
         cloudtrail.generate_cloudtrail(
             cluster_name,
@@ -369,9 +367,9 @@ class TestTerraformGenerate(object):
             'enable_kinesis': True,
             'existing_trail': False,
             'is_global_trail': False,
-            'event_pattern': json.dumps({
+            'event_pattern': {
                 'invalid': ['aws.ec2']
-            })
+            }
         }
         result = cloudtrail.generate_cloudtrail(cluster_name, self.cluster_dict, self.config)
         assert_false(result)
