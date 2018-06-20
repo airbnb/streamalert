@@ -32,8 +32,14 @@
       "write_capacity": 5
     }
   },
+  "s3_access_logging": {
+    "create_bucket": true,
+    "logging_bucket": "unit-testing.streamalert.s3-logging"
+  },
   "terraform": {
-    "tfstate_bucket": "unit-testing.terraform.tfstate"
+    "create_bucket": true,
+    "tfstate_bucket": "unit-testing.streamalert.terraform.state",
+    "tfstate_s3_key": "stream_alert_state/terraform.tfstate"
   },
   "threat_intel": {
     "dynamodb_table": "test_table_name",

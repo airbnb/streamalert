@@ -35,9 +35,13 @@
       "write_capacity": 5
     }
   },
+  "s3_access_logging": {
+    "create_bucket": true,
+    "logging_bucket": "PREFIX_GOES_HERE.streamalert.s3-logging"
+  },
   "terraform": {
+    "create_bucket": true,
     "tfstate_bucket": "PREFIX_GOES_HERE.streamalert.terraform.state",
-    "tfstate_s3_key": "stream_alert_state/terraform.tfstate",
-    "tfvars": "terraform.tfvars"
+    "tfstate_s3_key": "stream_alert_state/terraform.tfstate"
   }
 }
