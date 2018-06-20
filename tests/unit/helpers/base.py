@@ -90,11 +90,6 @@ def basic_streamalert_config():
                 'prefix': 'unit-testing',
                 'region': 'us-west-2'
             },
-            'terraform': {
-                'tfstate_bucket': 'unit-testing.streamalert.terraform.state',
-                'tfstate_s3_key': 'stream_alert_state/terraform.tfstate',
-                'tfvars': 'terraform.tfvars'
-            },
             'infrastructure': {
                 'monitoring': {
                     'create_sns_topic': True,
@@ -112,7 +107,16 @@ def basic_streamalert_config():
                         }
                     }
                 }
-            }
+            },
+            's3_access_logging': {
+                'create_bucket': True,
+                'logging_bucket': 'unit-testing.streamalert.s3-logging'
+            },
+            'terraform': {
+                'create_bucket': True,
+                'tfstate_bucket': 'unit-testing.streamalert.terraform.state',
+                'tfstate_s3_key': 'stream_alert_state/terraform.tfstate'
+            },
         },
         'lambda': {
             'alert_merger_config': {

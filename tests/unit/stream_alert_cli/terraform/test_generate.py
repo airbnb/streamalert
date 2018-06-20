@@ -128,7 +128,7 @@ class TestTerraformGenerate(object):
                         }
                     },
                     'terraform_remote_state': {
-                        'bucket': 'unit-testing.terraform.tfstate',
+                        'bucket': 'unit-testing.streamalert.terraform.state',
                         'acl': 'private',
                         'force_destroy': True,
                         'versioning': {
@@ -136,7 +136,7 @@ class TestTerraformGenerate(object):
                         },
                         'logging': {
                             'target_bucket': 'unit-testing.streamalert.s3-logging',
-                            'target_prefix': 'unit-testing.terraform.tfstate/'
+                            'target_prefix': 'unit-testing.streamalert.terraform.state/'
                         }
                     },
                     'logging_bucket': {
@@ -154,7 +154,7 @@ class TestTerraformGenerate(object):
                             'prefix': '/',
                             'enabled': True,
                             'transition': {
-                                'days': 30,
+                                'days': 365,
                                 'storage_class': 'GLACIER'
                             }
                         }
