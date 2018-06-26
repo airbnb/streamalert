@@ -16,7 +16,7 @@ limitations under the License.
 from stream_alert.athena_partition_refresh.main import AthenaRefresher
 from stream_alert.rule_processor.firehose import StreamAlertFirehose
 from stream_alert.shared.alert import Alert
-from stream_alert.shared.athena import StreamAlertAthenaClient
+from stream_alert.shared.athena import AthenaClient
 from stream_alert_cli.athena import helpers
 from stream_alert_cli.helpers import continue_prompt, record_to_schema
 from stream_alert_cli.logger import LOGGER_CLI
@@ -38,7 +38,7 @@ def get_athena_client(config):
         config (CLIConfig): Loaded StreamAlert CLI
 
     Returns:
-        StreamAlertAthenaClient: instantiated client for performing athena actions
+        AthenaClient: instantiated client for performing athena actions
     """
     prefix = config['global']['account']['prefix']
     athena_config = config['lambda']['athena_partition_refresh_config']
@@ -46,15 +46,15 @@ def get_athena_client(config):
     db_name = athena_config.get(
         'database_name',
         AthenaRefresher.STREAMALERT_DATABASE.format(prefix)
-    ).strip()
+    )
 
     # Get the S3 bucket to store Athena query results
     results_bucket = athena_config.get(
         'results_bucket',
         's3://{}.streamalert.athena-results'.format(prefix)
-    ).strip()
+    )
 
-    return StreamAlertAthenaClient(db_name, results_bucket, 'stream_alert_cli')
+    return AthenaClient(db_name, results_bucket, 'stream_alert_cli')
 
 
 def rebuild_partitions(table, bucket, config):

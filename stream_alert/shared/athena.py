@@ -27,7 +27,7 @@ from stream_alert.shared.backoff_handlers import (
 )
 
 
-class StreamAlertAthenaClient(object):
+class AthenaClient(object):
     """A StreamAlert Athena Client for creating tables, databases, and executing queries
 
     Attributes:
@@ -43,7 +43,9 @@ class StreamAlertAthenaClient(object):
             results_prefix (str): S3 key prefix to prepend too results in the bucket
         """
         self._client = boto3.client('athena')
-        self.database = database_name
+        self.database = database_name.strip()
+
+        results_bucket = results_bucket.strip()
 
         # Make sure the required 's3://' prefix is included
         if not results_bucket.startswith('s3://'):
