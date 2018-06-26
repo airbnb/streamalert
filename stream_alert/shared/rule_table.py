@@ -94,6 +94,23 @@ class RuleTable(object):
                 LOGGER.debug('Deleting rule \'%s\'', rule_name)
                 batch.delete_item(Key={'RuleName': rule_name})
 
+    @classmethod
+    def _cast_value(cls, key, value):
+        """Cast certain values into their respective object types
+
+        Args:
+            key (str): Name of key that this value corresponds to
+            value (object): Object to be cast, could be various types
+
+        Returns:
+            object: Variant type object in the expected type
+        """
+        # Handle date casting from string to datetime object
+        if key in {'StagedAt', 'StagedUntil'}:
+            return datetime.strptime(value, cls.DATETIME_FORMAT)
+
+        return value
+
     def _load_remote_state(self):
         """Return the state of all rules stored in the database
 
@@ -104,8 +121,8 @@ class RuleTable(object):
                         'example_rule_name':
                             {
                                 'Staged': True
-                                'StagedAt': '2018-04-19T02:23:13.332223Z',
-                                'StagedUntil': '2018-04-21T02:23:13.332223Z'
+                                'StagedAt': datetime.datetime object,
+                                'StagedUntil': datetime.datetime object
                             }
                     }
         """
@@ -113,7 +130,8 @@ class RuleTable(object):
         page_iterator = paginator.paginate(TableName=self.name, ConsistentRead=True)
         return {
             item['RuleName']: {
-                key: value for key, value in item.iteritems()
+                key: self._cast_value(key, value)
+                for key, value in item.iteritems()
                 if key != 'RuleName'
             }
             for page in page_iterator
@@ -239,9 +257,7 @@ class RuleTable(object):
     @property
     def remote_rule_names(self):
         """Rule names from the remote database. Returns cache if it exists"""
-        if not self._remote_rule_info:
-            self._remote_rule_info = self._load_remote_state()
-        return set(self._remote_rule_info)
+        return set(self.remote_rule_info)
 
     @property
     def remote_not_local(self):
