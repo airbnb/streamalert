@@ -16,9 +16,9 @@ limitations under the License.
 from datetime import datetime, timedelta
 
 import boto3
-from botocore.exceptions import ClientError
 
 from stream_alert.shared import LOGGER
+from stream_alert.shared.helpers.dynamodb import ignore_conditional_failure
 from stream_alert.shared.rule import import_folders, Rule
 
 
@@ -139,6 +139,13 @@ class RuleTable(object):
         }
 
     @staticmethod
+    def _default_dynamo_kwargs(rule_name):
+        return {
+            'Key': {'RuleName': rule_name},
+            'ConditionExpression': 'attribute_exists(RuleName)'
+        }
+
+    @staticmethod
     def _dynamo_record(rule_name, skip_staging=False):
         """Generate a DynamoDB record with this rule information
 
@@ -191,6 +198,7 @@ class RuleTable(object):
         """
         return self.remote_rule_info.get(rule_name)
 
+    @ignore_conditional_failure
     def toggle_staged_state(self, rule_name, stage):
         """Mark the specified rule as staged=True or staged=False
 
@@ -212,20 +220,12 @@ class RuleTable(object):
             expression_values.extend(self._staged_window())
 
         args = {
-            'Key': {
-                'RuleName': rule_name
-            },
             'UpdateExpression': ','.join(update_expressions),
-            'ExpressionAttributeValues': dict(zip(expression_attributes, expression_values)),
-            'ConditionExpression': 'attribute_exists(RuleName)'
+            'ExpressionAttributeValues': dict(zip(expression_attributes, expression_values))
         }
+        args.update(self._default_dynamo_kwargs(rule_name))
 
-        try:
-            self._table.update_item(**args)
-        except ClientError as error:
-            if error.response['Error']['Code'] != 'ConditionalCheckFailedException':
-                raise
-            LOGGER.exception('Could not toggle rule staging status')
+        self._table.update_item(**args)
 
     def update(self, skip_staging=False):
         """Update the database with new local rules and remove deleted ones from remote"""

@@ -265,15 +265,6 @@ class TestRuleTable(object):
         item = self.rule_table._table.get_item(Key={'RuleName': rule_name})
         assert_equal(item['Item']['Staged'], False)
 
-    @patch('logging.Logger.exception')
-    def test_toggle_staged_state_bad(self, log_mock):
-        """Rule Table - Toggle Staging, Rule Does Not Exist"""
-        # Try to toggle the state to staged, but use a name that does not exist
-        self.rule_table.toggle_staged_state('rule_does_not_exist', True)
-
-        # This should raise an exception that is caught and logged
-        log_mock.assert_called_with('Could not toggle rule staging status')
-
     def test_toggle_staged_state_error(self):
         """Rule Table - Toggle Staging, ClientError Occurred"""
         with patch.object(self.rule_table._table, 'update_item',
