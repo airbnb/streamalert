@@ -14,7 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from datetime import datetime, timedelta
+import os
 
+from mock import patch
 from nose.tools import assert_equal
 
 from stream_alert.rule_promotion.statistic import StagingStatistic
@@ -24,6 +26,7 @@ class TestStagingStatistic(object):
     """Tests for rule_promotion/statistic.py:StagingStatistic"""
     # pylint: disable=protected-access
 
+    @patch.dict(os.environ, {'AWS_DEFAULT_REGION': 'us-east-1'})
     def setup(self):
         """StagingStatistic - Setup"""
         # pylint: disable=attribute-defined-outside-init
@@ -35,8 +38,8 @@ class TestStagingStatistic(object):
             rule='test_rule'
         )
 
-    def test_construct_count_query(self):
-        """RulePromoter - Construct Count Query"""
+    def test_construct_compound_count_query(self):
+        """StagingStatistic - Construct Compound Count Query"""
         query = StagingStatistic.construct_compound_count_query([self.statistic, self.statistic])
         expected_query = ("SELECT 'test_rule' AS rule_name, count(*) AS count "
                           "FROM alerts WHERE dt >= '2000-01-01-01' AND "

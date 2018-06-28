@@ -47,11 +47,11 @@ class TestRulePromoter(object):
         # pylint: disable=attribute-defined-outside-init
         self.dynamo_mock = mock_dynamodb2()
         self.dynamo_mock.start()
-        setup_mock_rules_table(_RULES_TABLE)
         with patch('stream_alert.rule_promotion.promoter.load_config') as config_mock, \
              patch('stream_alert.rule_promotion.promoter.StatsPublisher', Mock()), \
              patch('boto3.client', _mock_boto), \
              patch.dict(os.environ, {'AWS_DEFAULT_REGION': 'us-east-1'}):
+            setup_mock_rules_table(_RULES_TABLE)
             config_mock.return_value = config.load_config('tests/unit/conf/')
             self.promoter = RulePromoter()
             self._add_fake_stats()

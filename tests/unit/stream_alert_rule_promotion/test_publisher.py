@@ -15,6 +15,7 @@ limitations under the License.
 """
 from datetime import datetime, timedelta
 import json
+import os
 
 import boto3
 from mock import Mock, patch, PropertyMock
@@ -102,11 +103,12 @@ class TestStatsPublisher(object):
             'sent_daily_digest': False,
             'send_digest_hour_utc': 9
         }
-        self._put_ssm_param()
-        assert_equal(self.publisher._load_state(), expected_param)
+        with patch.dict(os.environ, {'AWS_DEFAULT_REGION': 'us-east-1'}):
+            self._put_ssm_param()
+            assert_equal(self.publisher._load_state(), expected_param)
 
-    @patch('stream_alert.rule_promotion.publisher.StatsPublisher.SSM_CLIENT.put_parameter')
-    def test_write_state(self, put_mock):
+    @patch('stream_alert.rule_promotion.publisher.StatsPublisher.SSM_CLIENT')
+    def test_write_state(self, ssm_mock):
         """StatsPublisher - Write State"""
         # Change the current time hour so the publisher assumes the digest was sent
         self.publisher._current_time = self.publisher._current_time.replace(hour=9)
@@ -122,7 +124,7 @@ class TestStatsPublisher(object):
             'Overwrite': True
         }
         self.publisher._write_state()
-        put_mock.assert_called_with(**args)
+        ssm_mock.put_parameter.assert_called_with(**args)
 
     def test_query_alerts_none(self):
         """StatsPublisher - Query Alerts, No Alerts for Stat"""
