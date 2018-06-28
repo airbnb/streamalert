@@ -47,7 +47,7 @@ class StatsPublisher(object):
         if not stats:
             return 'No currently staged rules to report on'
 
-        return '\n\n'.join([str(stat) for stat in sorted(stats, reverse=True)])
+        return '\n\n'.join(str(stat) for stat in sorted(stats, reverse=True))
 
     @classmethod
     def _load_state(cls):
