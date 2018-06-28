@@ -28,6 +28,9 @@
       ]
     }
   },
+  "alert_stats_publisher": {
+    "topic_arn": "arn:aws:sns:us-east-1:123456789012:stats-topic"
+  },
   "athena_partition_refresh_config": {
     "buckets": {
       "unit-testing.streamalert.data": "data",

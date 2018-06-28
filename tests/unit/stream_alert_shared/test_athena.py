@@ -25,25 +25,25 @@ from nose.tools import (
     assert_true
 )
 
-from stream_alert.shared.athena import StreamAlertAthenaClient
+from stream_alert.shared.athena import AthenaClient
 from stream_alert.shared.config import load_config
 
 from tests.unit.helpers.aws_mocks import MockAthenaClient
 
 
-class TestStreamAlertAthenaClient(object):
-    """Test class for StreamAlertAthenaClient"""
+class TestAthenaClient(object):
+    """Test class for AthenaClient"""
 
     @patch.dict(os.environ, {'AWS_DEFAULT_REGION': 'us-west-1'})
     @patch('boto3.client', Mock(side_effect=lambda c: MockAthenaClient()))
     def setup(self):
-        """Setup the StreamAlertAthenaClient tests"""
+        """Setup the AthenaClient tests"""
 
         self._db_name = 'test_database'
         config = load_config('tests/unit/conf/')
         prefix = config['global']['account']['prefix']
 
-        self.client = StreamAlertAthenaClient(
+        self.client = AthenaClient(
             self._db_name,
             's3://{}.streamalert.athena-results'.format(prefix),
             'unit-testing'
@@ -57,7 +57,7 @@ class TestStreamAlertAthenaClient(object):
         date_format = date_now.strftime('%Y/%m/%d')
         expected_path = 's3://test.streamalert.athena-results/unit-testing/{}'.format(date_format)
         with patch.dict(os.environ, {'AWS_DEFAULT_REGION': 'us-west-1'}):
-            client = StreamAlertAthenaClient(
+            client = AthenaClient(
                 self._db_name,
                 'test.streamalert.athena-results',
                 'unit-testing'
@@ -134,7 +134,7 @@ class TestStreamAlertAthenaClient(object):
         self.client._client.raise_exception = True
         assert_false(self.client.drop_table('test_table'))
 
-    @patch('stream_alert.shared.athena.StreamAlertAthenaClient.drop_table')
+    @patch('stream_alert.shared.athena.AthenaClient.drop_table')
     def test_drop_all_tables(self, drop_table_mock):
         """Athena - Drop All Tables, Success"""
         self.client._client.results = [
@@ -145,7 +145,7 @@ class TestStreamAlertAthenaClient(object):
         assert_true(self.client.drop_all_tables())
         assert_equal(drop_table_mock.call_count, 2)
 
-    @patch('stream_alert.shared.athena.StreamAlertAthenaClient.drop_table')
+    @patch('stream_alert.shared.athena.AthenaClient.drop_table')
     def test_drop_all_tables_failure(self, drop_table_mock):
         """Athena - Drop All Tables, Failure"""
         self.client._client.results = [
