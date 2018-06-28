@@ -41,6 +41,15 @@ class StagingStatistic(object):
         """Statistic should be ordered by their alert count."""
         return self.alert_count < other.alert_count
 
+    @classmethod
+    def construct_compound_count_query(cls, stats):
+        """Create a SQL query to get the alert counts for staged rules
+
+        Returns:
+            list: SQL statement for counting alerts created by staged rules
+        """
+        return ' UNION ALL '.join(stat.sql_count_statement for stat in stats)
+
     @property
     def sql_count_statement(self):
         """Athena count statement for this rule to get alert count."""

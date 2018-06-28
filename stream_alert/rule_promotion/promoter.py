@@ -85,22 +85,6 @@ class RulePromoter(object):
                 rule
             )
 
-    def _construct_count_query(self):
-        """Create a SQL query to get the alert counts for staged rules
-
-        Returns:
-            list: SQL statement for counting alerts created by staged rules
-        """
-        queries = [
-            self._staging_stats[name].sql_count_statement
-            for name in sorted(self._staging_stats)
-        ]
-
-        query = ' UNION ALL '.join(queries)
-        LOGGER.debug('Running compound query for alert count: \'%s\'', query)
-
-        return query
-
     def _update_alert_count(self):
         """Transform Athena query results into alert counts for rules_engine
 
@@ -111,7 +95,10 @@ class RulePromoter(object):
             dict: Representation of alert counts, where key is the rule name
                 and value is the alert count (int) since this rule was staged
         """
-        for results in self._athena_client.query_result_paginator(self._construct_count_query()):
+        query = StagingStatistic.construct_compound_count_query(self._staging_stats.values())
+        LOGGER.debug('Running compound query for alert count: \'%s\'', query)
+
+        for results in self._athena_client.query_result_paginator(query):
             for i, row in enumerate(results['ResultSet']['Rows']):
                 if i == 0: # skip header row
                     continue
