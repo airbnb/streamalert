@@ -81,7 +81,8 @@ def _create(function_name, config, cluster=None):
              for cluster, info in config['clusters'].iteritems()
              for app_info in info['modules'].get('stream_alert_apps', {}).values()
              if 'app_name' in app_info},
-            True
+            True if any(info['modules'].get('stream_alert_apps')
+                        for info in config['clusters'].itervalues()) else False
         ),
         'athena': PackageMap(
             stream_alert_packages.AthenaPackage,
