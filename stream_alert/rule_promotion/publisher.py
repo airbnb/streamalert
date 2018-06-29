@@ -90,6 +90,7 @@ class StatsPublisher(object):
         StatsPublisher.SSM_CLIENT.put_parameter(
             Name=self.SSM_STATE_NAME,
             Value=param_value,
+            Type='String',
             Overwrite=True
         )
 
