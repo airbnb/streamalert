@@ -190,6 +190,10 @@ class RuleTable(object):
             staged_until.strftime(RuleTable.DATETIME_FORMAT)
         )
 
+    def update_local_cache(self):
+        """Force the local cache of remote rule info to be updated"""
+        self._remote_rule_info = self._load_remote_state()
+
     def rule_info(self, rule_name):
         """Get the rule info from the table information
 
@@ -231,6 +235,8 @@ class RuleTable(object):
         """Update the database with new local rules and remove deleted ones from remote"""
         self._add_new_rules(skip_staging)
         self._del_old_rules()
+        # Refresh the cached remote rule info state
+        self.update_local_cache()
 
     @property
     def local_not_remote(self):
@@ -251,7 +257,7 @@ class RuleTable(object):
     def remote_rule_info(self):
         """All rule info from the remote database. Returns cache if it exists"""
         if not self._remote_rule_info:
-            self._remote_rule_info = self._load_remote_state()
+            self.update_local_cache()
         return self._remote_rule_info
 
     @property
