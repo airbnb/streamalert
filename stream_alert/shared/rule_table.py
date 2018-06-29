@@ -211,6 +211,19 @@ class RuleTable(object):
             stage (bool): True if this rule should be staged and False if
                 this rule should be promoted out of staging.
         """
+        if rule_name not in self.remote_rule_info:
+            LOGGER.error(
+                'Staging status for rule \'%s\' cannot be set to %s; rule does not exist',
+                rule_name, stage
+            )
+            return
+
+        if self.remote_rule_info[rule_name]['Staged'] and stage:
+            LOGGER.info(
+                'Rule \'%s\' is already staged and will have its staging window updated',
+                rule_name
+            )
+
         LOGGER.debug('Toggling staged state for rule \'%s\' to: %s', rule_name, stage)
 
         update_expressions = ['set Staged = :staged']
