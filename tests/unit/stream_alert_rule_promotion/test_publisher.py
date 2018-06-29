@@ -100,18 +100,18 @@ class TestStatsPublisher(object):
     def test_format_digest(self):
         """StatsPublisher - Format Digest"""
         expected_digest = u'''\u25E6 test_rule_1
-	- Staged At:                        2000-01-01 01:01:01 UTC
-	- Staged Until:                     2000-01-03 01:01:01 UTC
-	- Remaining Stage Time:             1d 0h 0m
-	- Alert Count:                      2
-	- Alert Info:                       n/a
+	- Staged At:					2000-01-01 01:01:01 UTC
+	- Staged Until:					2000-01-03 01:01:01 UTC
+	- Remaining Stage Time:		1d 0h 0m
+	- Alert Count:					2
+	- Alert Info:					n/a
 
 \u25E6 test_rule_0
-	- Staged At:                        2000-01-01 01:01:01 UTC
-	- Staged Until:                     2000-01-03 01:01:01 UTC
-	- Remaining Stage Time:             1d 0h 0m
-	- Alert Count:                      1
-	- Alert Info:                       n/a'''.encode('utf-8')
+	- Staged At:					2000-01-01 01:01:01 UTC
+	- Staged Until:					2000-01-03 01:01:01 UTC
+	- Remaining Stage Time:		1d 0h 0m
+	- Alert Count:					1
+	- Alert Info:					n/a'''.encode('utf-8')
         stats = list(self._get_fake_stats())
         digest = self.publisher._format_digest(stats)
         assert_equal(digest, expected_digest)
@@ -141,6 +141,7 @@ class TestStatsPublisher(object):
                 'sent_daily_digest': True,
                 'send_digest_hour_utc': 9
             }),
+            'Type': 'String',
             'Overwrite': True
         }
         self.publisher._write_state()
@@ -180,11 +181,11 @@ class TestStatsPublisher(object):
 
         args = {
             'Message': u'''\u25E6 test_rule_0
-	- Staged At:                        2000-01-01 01:01:01 UTC
-	- Staged Until:                     2000-01-03 01:01:01 UTC
-	- Remaining Stage Time:             1d 0h 0m
-	- Alert Count:                      1
-	- Alert Info:                       n/a'''.encode('utf-8'),
+	- Staged At:					2000-01-01 01:01:01 UTC
+	- Staged Until:					2000-01-03 01:01:01 UTC
+	- Remaining Stage Time:		1d 0h 0m
+	- Alert Count:					1
+	- Alert Info:					n/a'''.encode('utf-8'),
             'Subject': 'Alert statistics for 1 staged rule(s) [2000-01-01 01:01:01 UTC]'
         }
         boto_mock.resource.return_value.Topic.return_value.publish.assert_called_with(**args)

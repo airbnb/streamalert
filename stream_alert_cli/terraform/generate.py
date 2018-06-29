@@ -159,8 +159,6 @@ def generate_main(config, init=False):
     # Setup Firehose Delivery Streams
     generate_firehose(config, main_dict, logging_bucket)
 
-    enable_rule_staging = config['global']['infrastructure']['rule_staging'].get('enabled', False)
-
     # Configure global resources like Firehose alert delivery and alerts table
     main_dict['module']['globals'] = {
         'source': 'modules/tf_stream_alert_globals',

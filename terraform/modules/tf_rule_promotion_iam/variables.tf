@@ -14,10 +14,6 @@ variable "rules_table_arn" {
   description = "Rules DynamoDB Table arn exported from tf_stream_alert_globals"
 }
 
-variable "schedule_expression" {
-  default = "Rate at which the Rule Promotion function should be executed"
-}
-
 variable "role_id" {
   description = "Rule Promotion IAM Role ID"
 }
