@@ -48,17 +48,6 @@ def _update_rule_table(options, config):
         rules = {rule_name: False for rule_name in options.unstage_rules}
         rules.update({rule_name: True for rule_name in options.stage_rules})
         for rule, stage in rules.iteritems():
-            if rule not in table.remote_rule_info:
-                LOGGER_CLI.error(
-                    'Staging status for rule \'%s\' cannot be set to %s; rule does not exist',
-                    stage, rule
-                )
-                continue
-            if table.remote_rule_info[rule]['Staged'] and stage:
-                LOGGER_CLI.info(
-                    'Rule \'%s\' is already staged and will have its staging window updated',
-                    rule
-                )
             table.toggle_staged_state(rule, stage)
 
 
