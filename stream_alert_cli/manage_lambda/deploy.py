@@ -18,7 +18,6 @@ import sys
 
 from stream_alert.shared import rule_table
 from stream_alert_cli import helpers
-from stream_alert_cli.logger import LOGGER_CLI
 from stream_alert_cli.manage_lambda import package as stream_alert_packages
 
 PackageMap = namedtuple('package_attrs', ['package_class', 'targets', 'enabled'])
@@ -31,8 +30,7 @@ def _update_rule_table(options, config):
         options (argparser.Namespace): Various options from the CLI needed for actions
         config (CLIConfig): The loaded StreamAlert config
     """
-    # TODO: consider removing this once rule staging is feature complete
-    # Temporarily having a config setting that will disable updating the table for now
+    # If rule staging is disabled, do not update the rules table
     if not config['global']['infrastructure']['rule_staging'].get('enabled', False):
         return
 
