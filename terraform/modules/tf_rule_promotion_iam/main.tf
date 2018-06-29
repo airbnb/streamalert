@@ -43,12 +43,49 @@ data "aws_iam_policy_document" "rule_promotion_actions" {
     effect = "Allow"
 
     actions = [
-      "athena:StartQueryExecution",
+      "athena:GetQueryExecution",
       "athena:GetQueryResults",
+      "athena:StartQueryExecution",
+      "glue:GetPartitions",
+      "glue:GetTable",
     ]
 
     resources = [
       "*",
+    ]
+  }
+
+  statement {
+    sid    = "AthenaQueryResults"
+    effect = "Allow"
+
+    actions = [
+      "s3:GetBucketLocation",
+      "s3:GetObject",
+      "s3:ListBucket",
+      "s3:ListBucketMultipartUploads",
+      "s3:ListMultipartUploadParts",
+      "s3:AbortMultipartUpload",
+      "s3:CreateBucket",
+      "s3:PutObject",
+    ]
+
+    resources = [
+      "${var.athena_results_bucket_arn}*",
+    ]
+  }
+
+  statement {
+    sid    = "GetSSMParameter"
+    effect = "Allow"
+
+    actions = [
+      "ssm:GetParameter",
+      "ssm:PutParameter",
+    ]
+
+    resources = [
+      "${aws_ssm_parameter.stats_publisher_state.arn}",
     ]
   }
 }

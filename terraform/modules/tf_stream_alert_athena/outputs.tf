@@ -9,3 +9,7 @@ output "lambda_role_arn" {
 output "lambda_role_id" {
   value = "${aws_iam_role.athena_partition_role.id}"
 }
+
+output "results_bucket_arn" {
+  value = "${aws_s3_bucket.athena_results_bucket.arn}"
+}

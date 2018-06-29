@@ -175,6 +175,8 @@ class AthenaClient(object):
             bool: True if the query state is SUCCEEDED, False otherwise
                 Reference https://bit.ly/2uuRtda.
         """
+        LOGGER.debug('Checking status of query with execution ID: %s', query_execution_id)
+
         states_to_backoff = {'QUEUED', 'RUNNING'}
         @backoff.on_predicate(backoff.fibo,
                               lambda resp: \
