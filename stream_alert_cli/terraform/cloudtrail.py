@@ -75,8 +75,7 @@ def generate_cloudtrail(cluster_name, cluster_dict, config):
         'prefix': config['global']['account']['prefix'],
         'enable_logging': cloudtrail_enabled,
         'enable_kinesis': kinesis_enabled,
-        's3_logging_bucket':
-        '{}.streamalert.s3-logging'.format(config['global']['account']['prefix']),
+        's3_logging_bucket': config['global']['s3_access_logging']['logging_bucket'],
         'existing_trail': existing_trail,
         'send_to_cloudwatch': send_to_cloudwatch,
         'exclude_home_region_events': exclude_home_region,
