@@ -237,3 +237,17 @@ class ThreatIntelDownloaderPackage(LambdaPackage):
     }
     package_name = 'threat_intel_downloader'
     third_party_libs = {'backoff', 'requests'}
+
+
+class RulePromotionPackage(LambdaPackage):
+    """Deployment package class for the StreamAlert Rule Promotion function"""
+    config_key = 'rule_promotion_config'
+    lambda_handler = 'stream_alert.rule_promotion.main.handler'
+    package_files = {
+        'conf',
+        'stream_alert/__init__.py',
+        'stream_alert/rule_promotion',
+        'stream_alert/shared'
+    }
+    package_name = 'rule_promotion'
+    third_party_libs = {'backoff'}
