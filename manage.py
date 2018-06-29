@@ -782,7 +782,8 @@ Required Arguments:
 
     -p/--processor                     A list of the Lambda functions to deploy.
                                          Valid options include: rule, alert, athena, apps,
-                                         all, or any combination of these.
+                                         rule_promo, threat_intel_downloader, all,
+                                         or any combination of these.
 
 Optional Arguments:
 
@@ -979,7 +980,7 @@ def _add_default_lambda_args(lambda_parser):
     lambda_parser.add_argument(
         '-p', '--processor',
         choices=['all', 'alert', 'alert_merger', 'apps', 'athena', 'rule',
-                 'threat_intel_downloader'],
+                 'rule_promo', 'threat_intel_downloader'],
         help=ARGPARSE_SUPPRESS,
         nargs='+',
         action=UniqueSetAction,
@@ -1518,6 +1519,7 @@ Available Subcommands:
     _add_rule_table_status_subparser(rule_table_subparsers)
     _add_rule_table_stage_subparser(rule_table_subparsers)
     _add_rule_table_unstage_subparser(rule_table_subparsers)
+
 
 def _add_rule_table_status_subparser(subparsers):
     """Add the rule db status subparser: manage.py rule-table status"""

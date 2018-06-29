@@ -13,7 +13,7 @@ resource "aws_ssm_parameter" "stats_publisher_state" {
 
 // Allow the Rule Promotion function to send SNS messages
 resource "aws_iam_role_policy" "rule_promotion_actions" {
-  name   = "SendSNSDigest"
+  name   = "RulePromotionActions"
   role   = "${var.role_id}"
   policy = "${data.aws_iam_policy_document.rule_promotion_actions.json}"
 }

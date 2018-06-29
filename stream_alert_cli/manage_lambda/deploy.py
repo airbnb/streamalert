@@ -104,6 +104,11 @@ def _create(function_name, config, cluster=None):
             {'module.stream_alert_{}'.format(cluster) for cluster in clusters},
             True
         ),
+        'rule_promo': PackageMap(
+            stream_alert_packages.RulePromotionPackage,
+            {'module.rule_promotion_iam', 'module.rule_promotion_lambda'},
+            config['lambda'].get('rule_promotion_config', {}).get('enabled', False)
+        ),
         'threat_intel_downloader': PackageMap(
             stream_alert_packages.ThreatIntelDownloaderPackage,
             {'module.threat_intel_downloader'},
@@ -143,7 +148,15 @@ def deploy(options, config):
     packages = []
 
     if 'all' in options.processor:
-        processors = {'alert', 'alert_merger', 'apps', 'athena', 'rule', 'threat_intel_downloader'}
+        processors = {
+            'alert',
+            'alert_merger',
+            'apps',
+            'athena',
+            'rule',
+            'rule_promo',
+            'threat_intel_downloader'
+        }
     else:
         processors = options.processor
 
