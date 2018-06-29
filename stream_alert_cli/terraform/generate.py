@@ -167,20 +167,15 @@ def generate_main(config, init=False):
         'account_id': config['global']['account']['aws_account_id'],
         'region': config['global']['account']['region'],
         'prefix': config['global']['account']['prefix'],
-        'enable_rule_staging': enable_rule_staging,
         'alerts_table_read_capacity': (
             config['global']['infrastructure']['alerts_table']['read_capacity']),
         'alerts_table_write_capacity': (
-            config['global']['infrastructure']['alerts_table']['write_capacity'])
+            config['global']['infrastructure']['alerts_table']['write_capacity']),
+        'rules_table_read_capacity': (
+            config['global']['infrastructure']['rule_staging']['table']['read_capacity']),
+        'rules_table_write_capacity': (
+            config['global']['infrastructure']['rule_staging']['table']['write_capacity'])
     }
-
-    if enable_rule_staging:
-        main_dict['module']['globals']['rules_table_read_capacity'] = (
-            config['global']['infrastructure']['rule_staging']['table']['read_capacity']
-        )
-        main_dict['module']['globals']['rules_table_write_capacity'] = (
-            config['global']['infrastructure']['rule_staging']['table']['write_capacity']
-        )
 
     # KMS Key and Alias creation
     main_dict['resource']['aws_kms_key']['stream_alert_secrets'] = {

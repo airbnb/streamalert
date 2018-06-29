@@ -46,7 +46,8 @@ def generate_rule_promotion(config):
         'stats_publisher_state_value': state_param,
         'digest_sns_topic': StatsPublisher.formatted_sns_topic_arn(config).split(':')[-1],
         'role_id': '${module.rule_promotion_lambda.role_id}',
-        'rules_table_arn': '${module.globals.rules_table_arn}'
+        'rules_table_arn': '${module.globals.rules_table_arn}',
+        'athena_results_bucket_arn': '${module.stream_alert_athena.results_bucket_arn}'
     }
 
     # Set variables for the Lambda module
