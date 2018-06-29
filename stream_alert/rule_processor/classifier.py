@@ -308,6 +308,11 @@ class StreamClassifier(object):
         """
         for key, value in schema.iteritems():
             key = str(key)
+
+            # Allow for null/NoneType values
+            if payload[key] is None:
+                continue
+
             # if the schema value is declared as string
             if value == 'string':
                 try:
