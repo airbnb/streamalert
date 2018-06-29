@@ -97,7 +97,7 @@ class TestRulePromoter(object):
                 'StagedUntil': 'staged_until_time'
             }
         }
-        self.promoter._get_staging_info()
+        assert_equal(self.promoter._get_staging_info(), True)
         assert_equal(len(self.promoter._staging_stats), 1)
 
     @patch('stream_alert.shared.rule_table.RuleTable.remote_rule_info', new_callable=PropertyMock)
@@ -111,7 +111,7 @@ class TestRulePromoter(object):
                 'StagedUntil': 'staged_until_time'
             }
         }
-        self.promoter._get_staging_info()
+        assert_equal(self.promoter._get_staging_info(), False)
         assert_equal(len(self.promoter._staging_stats), 0)
 
     @patch('stream_alert.shared.athena.AthenaClient.query_result_paginator')
@@ -141,6 +141,13 @@ class TestRulePromoter(object):
              patch.object(self.promoter, '_promote_rules', Mock()):
             self.promoter.run()
             publisher_mock.publish.assert_called_with(self.promoter._staging_stats.values())
+
+    @patch('logging.Logger.debug')
+    def test_run_none_staged(self, log_mock):
+        """RulePromoter - Run, No Staged Rules"""
+        self.promoter._staging_stats.clear()
+        self.promoter.run()
+        log_mock.assert_called_with('No staged rules to promote')
 
     @patch('logging.Logger.info')
     def test_promote_rules(self, log_mock):

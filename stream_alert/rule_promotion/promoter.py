@@ -81,6 +81,8 @@ class RulePromoter(object):
                 rule
             )
 
+        return len(self._staging_stats) != 0
+
     def _update_alert_count(self):
         """Transform Athena query results into alert counts for rules_engine
 
@@ -106,7 +108,9 @@ class RulePromoter(object):
 
     def run(self):
         """Perform statistic analysis of currently staged rules"""
-        self._get_staging_info()
+        if not self._get_staging_info():
+            LOGGER.debug('No staged rules to promote')
+            return
 
         self._update_alert_count()
 
