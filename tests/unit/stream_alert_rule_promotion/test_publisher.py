@@ -24,6 +24,7 @@ from nose.tools import assert_equal
 
 from stream_alert.rule_promotion.publisher import StatsPublisher
 from stream_alert.rule_promotion.statistic import StagingStatistic
+from stream_alert.shared import config
 
 
 class TestStatsPublisher(object):
@@ -35,7 +36,7 @@ class TestStatsPublisher(object):
         """StatsPublisher - Setup"""
         # pylint: disable=attribute-defined-outside-init
         self.publisher = StatsPublisher(
-            topic_arn='arn:aws:sns:us-east-1:123456789012:test-topic',
+            config=config.load_config('tests/unit/conf/'),
             athena_client=None,
             current_time=datetime(year=2000, month=1, day=1, hour=1, minute=1, second=1)
         )
@@ -71,6 +72,25 @@ class TestStatsPublisher(object):
             )
             stat.alert_count = i + 1
             yield stat
+
+
+    def test_formatted_sns_topic_arn(self):
+        """StatsPublisher - Format SNS Topic"""
+        test_config = {
+            'global': {
+                'account': {
+                    'aws_account_id': '123456789012',
+                    'region': 'us-east-1'
+                }
+            },
+            'lambda': {
+                'rule_promotion_config': {
+                    'digest_sns_topic': 'foobar'
+                }
+            }
+        }
+        topic = self.publisher.formatted_sns_topic_arn(test_config)
+        assert_equal(topic, 'arn:aws:sns:us-east-1:123456789012:foobar')
 
     def test_format_digest_no_stats(self):
         """StatsPublisher - Format Digest, No Stats"""

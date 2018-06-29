@@ -51,11 +51,7 @@ class RulePromoter(object):
         self._current_time = datetime.utcnow()
 
         # Store the SNS topic arn to send alert stat information to
-        self._publisher = StatsPublisher(
-            config['lambda']['alert_stats_publisher']['topic_arn'],
-            self._athena_client,
-            self._current_time
-        )
+        self._publisher = StatsPublisher(config, self._athena_client, self._current_time)
 
         self._staging_stats = dict()
 
