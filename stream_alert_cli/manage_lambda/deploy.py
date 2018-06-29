@@ -33,7 +33,7 @@ def _update_rule_table(options, config):
     """
     # TODO: consider removing this once rule staging is feature complete
     # Temporarily having a config setting that will disable updating the table for now
-    if not config['global']['infrastructure']['rules_table'].get('enabled', False):
+    if not config['global']['infrastructure']['rule_staging'].get('enabled', False):
         return
 
     # Get the rule import paths to load

@@ -33,6 +33,7 @@ resource "aws_dynamodb_table" "alerts_table" {
 
 // DynamoDB table to store some rule information
 resource "aws_dynamodb_table" "rules_table" {
+  count          = "${var.enable_rule_staging ? 1 : 0}"
   name           = "${var.prefix}_streamalert_rules"
   read_capacity  = "${var.rules_table_read_capacity}"
   write_capacity = "${var.rules_table_write_capacity}"

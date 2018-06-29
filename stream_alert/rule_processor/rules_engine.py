@@ -75,7 +75,7 @@ class RulesEngine(object):
             rule_table.RuleTable: Loaded frontend for DynamoDB rules table
         """
         # Ensure the rules table is enabled
-        rt_config = config['global']['infrastructure']['rules_table']
+        rt_config = config['global']['infrastructure']['rule_staging']
         if not rt_config.get('enabled', False):
             return
 
