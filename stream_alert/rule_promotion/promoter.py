@@ -51,11 +51,7 @@ class RulePromoter(object):
         self._current_time = datetime.utcnow()
 
         # Store the SNS topic arn to send alert stat information to
-        self._publisher = StatsPublisher(
-            config['lambda']['alert_stats_publisher']['topic_arn'],
-            self._athena_client,
-            self._current_time
-        )
+        self._publisher = StatsPublisher(config, self._athena_client, self._current_time)
 
         self._staging_stats = dict()
 
@@ -85,6 +81,8 @@ class RulePromoter(object):
                 rule
             )
 
+        return len(self._staging_stats) != 0
+
     def _update_alert_count(self):
         """Transform Athena query results into alert counts for rules_engine
 
@@ -110,7 +108,9 @@ class RulePromoter(object):
 
     def run(self):
         """Perform statistic analysis of currently staged rules"""
-        self._get_staging_info()
+        if not self._get_staging_info():
+            LOGGER.debug('No staged rules to promote')
+            return
 
         self._update_alert_count()
 

@@ -30,9 +30,8 @@ def _update_rule_table(options, config):
         options (argparser.Namespace): Various options from the CLI needed for actions
         config (CLIConfig): The loaded StreamAlert config
     """
-    # TODO: consider removing this once rule staging is feature complete
-    # Temporarily having a config setting that will disable updating the table for now
-    if not config['global']['infrastructure']['rules_table'].get('enabled', False):
+    # If rule staging is disabled, do not update the rules table
+    if not config['global']['infrastructure']['rule_staging'].get('enabled', False):
         return
 
     # Get the rule import paths to load
@@ -80,7 +79,8 @@ def _create(function_name, config, cluster=None):
              for cluster, info in config['clusters'].iteritems()
              for app_info in info['modules'].get('stream_alert_apps', {}).values()
              if 'app_name' in app_info},
-            True
+            True if any(info['modules'].get('stream_alert_apps')
+                        for info in config['clusters'].itervalues()) else False
         ),
         'athena': PackageMap(
             stream_alert_packages.AthenaPackage,
@@ -91,6 +91,11 @@ def _create(function_name, config, cluster=None):
             stream_alert_packages.RuleProcessorPackage,
             {'module.stream_alert_{}'.format(cluster) for cluster in clusters},
             True
+        ),
+        'rule_promo': PackageMap(
+            stream_alert_packages.RulePromotionPackage,
+            {'module.rule_promotion_iam', 'module.rule_promotion_lambda'},
+            config['lambda'].get('rule_promotion_config', {}).get('enabled', False)
         ),
         'threat_intel_downloader': PackageMap(
             stream_alert_packages.ThreatIntelDownloaderPackage,
@@ -131,7 +136,15 @@ def deploy(options, config):
     packages = []
 
     if 'all' in options.processor:
-        processors = {'alert', 'alert_merger', 'apps', 'athena', 'rule', 'threat_intel_downloader'}
+        processors = {
+            'alert',
+            'alert_merger',
+            'apps',
+            'athena',
+            'rule',
+            'rule_promo',
+            'threat_intel_downloader'
+        }
     else:
         processors = options.processor
 

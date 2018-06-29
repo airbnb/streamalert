@@ -42,9 +42,6 @@ CLUSTERS = [
     for cluster in files
 ]
 
-# TODO (ryandeivert): remove when rule staging lambda is complete
-ENABLE_RULE_STAGING = False
-
 
 class UniqueSetAction(Action):
     """Subclass of argparse.Action to avoid multiple of the same choice from a list"""
@@ -782,7 +779,8 @@ Required Arguments:
 
     -p/--processor                     A list of the Lambda functions to deploy.
                                          Valid options include: rule, alert, athena, apps,
-                                         all, or any combination of these.
+                                         rule_promo, threat_intel_downloader, all,
+                                         or any combination of these.
 
 Optional Arguments:
 
@@ -800,23 +798,13 @@ Examples:
 
     lambda_deploy_parser = _generate_subparser(subparsers, 'deploy', usage, description, True)
 
-    # TODO (ryandeivert): the below change is temporary and allows
-    # for using rule staging prior to having a promotion lambda in place
-    # Remove this block when this feature is complete
-    if not ENABLE_RULE_STAGING:
-        lambda_deploy_parser.add_argument(
-            '--stage-new-rules',
-            action='store_false',
-            dest='skip_rule_staging',
-            help=ARGPARSE_SUPPRESS
-        )
-    else:
-        # flag to manually bypass rule staging for new rules upon deploy
-        lambda_deploy_parser.add_argument(
-            '--skip-rule-staging',
-            action='store_true',
-            help=ARGPARSE_SUPPRESS
-        )
+    # Flag to manually bypass rule staging for new rules upon deploy
+    # This only has an effect if rule staging is enabled
+    lambda_deploy_parser.add_argument(
+        '--skip-rule-staging',
+        action='store_true',
+        help=ARGPARSE_SUPPRESS
+    )
 
     # flag to manually demote specific rules to staging during deploy
     lambda_deploy_parser.add_argument(
@@ -979,7 +967,7 @@ def _add_default_lambda_args(lambda_parser):
     lambda_parser.add_argument(
         '-p', '--processor',
         choices=['all', 'alert', 'alert_merger', 'apps', 'athena', 'rule',
-                 'threat_intel_downloader'],
+                 'rule_promo', 'threat_intel_downloader'],
         help=ARGPARSE_SUPPRESS,
         nargs='+',
         action=UniqueSetAction,
@@ -1518,6 +1506,7 @@ Available Subcommands:
     _add_rule_table_status_subparser(rule_table_subparsers)
     _add_rule_table_stage_subparser(rule_table_subparsers)
     _add_rule_table_unstage_subparser(rule_table_subparsers)
+
 
 def _add_rule_table_status_subparser(subparsers):
     """Add the rule db status subparser: manage.py rule-table status"""

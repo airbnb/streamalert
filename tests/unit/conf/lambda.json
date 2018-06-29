@@ -28,9 +28,6 @@
       ]
     }
   },
-  "alert_stats_publisher": {
-    "topic_arn": "arn:aws:sns:us-east-1:123456789012:stats-topic"
-  },
   "athena_partition_refresh_config": {
     "buckets": {
       "unit-testing.streamalert.data": "data",
@@ -41,6 +38,28 @@
     "timeout": "60"
   },
   "rule_processor_config": {},
+  "rule_promotion_config": {
+    "enabled": false,
+    "log_level": "info",
+    "log_retention_days": 10,
+    "memory": 128,
+    "metric_alarms": {
+      "errors": {
+        "enabled": true,
+        "evaluation_periods": 1,
+        "period_secs": 2,
+        "threshold": 3
+      },
+      "throttles": {
+        "enabled": true,
+        "evaluation_periods": 4,
+        "period_secs": 5,
+        "threshold": 6
+      }
+    },
+    "send_digest_hour_utc": 16,
+    "timeout": 120
+  },
   "threat_intel_downloader_config": {
     "enabled": true,
     "excluded_sub_types": [

@@ -23,14 +23,35 @@ from stream_alert.rule_promotion import LOGGER
 class StatsPublisher(object):
     """Run queries to generate statistics on alerts."""
 
+    DEFAULT_STATS_SNS_TOPIC = 'staging_stats'
     SSM_STATE_NAME = 'staging_stats_publisher_state'
     SSM_CLIENT = None
 
-    def __init__(self, topic_arn, athena_client, current_time):
-        self._topic_arn = topic_arn
+    def __init__(self, config, athena_client, current_time):
+        self._topic_arn = self.formatted_sns_topic_arn(config)
         self._athena_client = athena_client
         self._current_time = current_time
         self._state = self._load_state()
+
+    @classmethod
+    def formatted_sns_topic_arn(cls, config):
+        """Format the sns topic into and aws ARN
+
+        Args:
+            config: Loaded config from conf/ containing user defined topic (if available)
+
+        Return:
+            str: Formatted SNS topic arn using either the config option or default topic
+        """
+        topic = config['lambda']['rule_promotion_config'].get(
+            'digest_sns_topic',
+            cls.DEFAULT_STATS_SNS_TOPIC
+        )
+        return 'arn:aws:sns:{region}:{account_id}:{topic}'.format(
+            region=config['global']['account']['region'],
+            account_id=config['global']['account']['aws_account_id'],
+            topic=topic
+        )
 
     @staticmethod
     def _format_digest(stats):
@@ -69,6 +90,7 @@ class StatsPublisher(object):
         StatsPublisher.SSM_CLIENT.put_parameter(
             Name=self.SSM_STATE_NAME,
             Value=param_value,
+            Type='String',
             Overwrite=True
         )
 

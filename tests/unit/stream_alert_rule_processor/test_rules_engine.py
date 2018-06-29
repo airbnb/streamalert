@@ -881,7 +881,7 @@ class TestRulesEngine(object):
 
     def test_load_rule_table_disabled(self):
         """Rules Engine - Load Rule Table, Disabled"""
-        self.config['global']['infrastructure']['rules_table']['enabled'] = False
+        self.config['global']['infrastructure']['rule_staging']['enabled'] = False
         self.rules_engine._load_rule_table(self.config)
         assert_equal(self.rules_engine._RULE_TABLE, None)
         assert_equal(self.rules_engine._RULE_TABLE_LAST_REFRESH,
@@ -891,7 +891,7 @@ class TestRulesEngine(object):
     @patch('logging.Logger.debug')
     def test_load_rule_table_no_refresh(self, log_mock):
         """Rules Engine - Load Rule Table, No Refresh"""
-        self.config['global']['infrastructure']['rules_table']['enabled'] = True
+        self.config['global']['infrastructure']['rule_staging']['enabled'] = True
         with patch.object(RulesEngine, '_RULE_TABLE', 'table'):
             with patch.object(RulesEngine, '_RULE_TABLE_LAST_REFRESH', datetime.utcnow()):
                 self.rules_engine._load_rule_table(self.config)
@@ -903,8 +903,8 @@ class TestRulesEngine(object):
     @patch('logging.Logger.info')
     def test_load_rule_table_refresh(self, log_mock, date_mock):
         """Rules Engine - Load Rule Table, Refresh"""
-        self.config['global']['infrastructure']['rules_table']['enabled'] = True
-        self.config['global']['infrastructure']['rules_table']['cache_refresh_minutes'] = 5
+        self.config['global']['infrastructure']['rule_staging']['enabled'] = True
+        self.config['global']['infrastructure']['rule_staging']['cache_refresh_minutes'] = 5
 
         fake_date_now = datetime.utcnow()
         date_mock.utcnow.return_value = fake_date_now
@@ -938,7 +938,7 @@ class TestRulesEngine(object):
         })
         table = RuleTable('table')
         table._remote_rule_info = {'rule_staged_only': {'Staged': True}}
-        self.config['global']['infrastructure']['rules_table']['enabled'] = True
+        self.config['global']['infrastructure']['rule_staging']['enabled'] = True
         with patch.object(RulesEngine, '_RULE_TABLE', table), \
                 patch.object(RulesEngine, '_RULE_TABLE_LAST_REFRESH', datetime.utcnow()):
 

@@ -78,17 +78,17 @@ class StagingStatistic(object):
         info = self.__dict__.copy()
 
         info.update({
-            'staged_at_label': 'Staged At:',
-            'staged_until_label': 'Staged Until:',
-            'alert_count_label': 'Alert Count:',
-            'alert_info_label': 'Alert Info:',
+            'staged_at_label': 'Staged At',
+            'staged_until_label': 'Staged Until',
+            'alert_count_label': 'Alert Count',
+            'alert_info_label': 'Alert Info',
             'pad': 34
         })
 
         info['staged_time_label'] = (
             'Remaining Stage Time:'
             if self.staged_until > self._current_time
-            else 'Time Past Staging:'
+            else 'Time Past Staging:\t'
         )
 
         staged_diff = abs(self._current_time - self.staged_until)
@@ -107,9 +107,9 @@ class StagingStatistic(object):
         # \u25E6 is unicode for a bullet
         return (
             u'\u25E6 {_rule_name}\n'
-            u'\t- {staged_at_label: <{pad}}{_staged_at} UTC\n'
-            u'\t- {staged_until_label: <{pad}}{staged_until} UTC\n'
-            u'\t- {staged_time_label: <{pad}}{staged_delta}\n'
-            u'\t- {alert_count_label: <{pad}}{alert_count}\n'
-            u'\t- {alert_info_label: <{pad}}{info_link}'
+            u'\t- {staged_at_label}:\t\t\t\t\t{_staged_at} UTC\n'
+            u'\t- {staged_until_label}:\t\t\t\t\t{staged_until} UTC\n'
+            u'\t- {staged_time_label}\t\t{staged_delta}\n'
+            u'\t- {alert_count_label}:\t\t\t\t\t{alert_count}\n'
+            u'\t- {alert_info_label}:\t\t\t\t\t{info_link}'
         ).encode('utf-8').format(**info)

@@ -31,6 +31,7 @@ _IGNORE_KEYS = {StreamThreatIntel.IOC_KEY, NORMALIZATION_KEY}
 class RulesEngine(object):
     """Class to act as a rules engine that processes rules"""
     _RULE_TABLE_LAST_REFRESH = datetime(year=1970, month=1, day=1)
+    _RULE_TABLE_DEFAULT_REFRESH_MIN = 10
     _LOOKUP_TABLES = {}
     _RULE_TABLE = None
 
@@ -75,12 +76,17 @@ class RulesEngine(object):
             rule_table.RuleTable: Loaded frontend for DynamoDB rules table
         """
         # Ensure the rules table is enabled
-        rt_config = config['global']['infrastructure']['rules_table']
-        if not rt_config.get('enabled', False):
+        rule_staging_config = config['global']['infrastructure']['rule_staging']
+        if not rule_staging_config.get('enabled', False):
             return
 
         now = datetime.utcnow()
-        refresh_delta = timedelta(minutes=rt_config.get('cache_refresh_minutes', 10))
+        refresh_delta = timedelta(
+            minutes=rule_staging_config.get(
+                'cache_refresh_minutes',
+                cls._RULE_TABLE_DEFAULT_REFRESH_MIN
+            )
+        )
 
         # The rule table will need 'refreshed' if the refresh interval has been surpassed
         needs_refresh = cls._RULE_TABLE_LAST_REFRESH + refresh_delta < now

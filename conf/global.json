@@ -28,11 +28,13 @@
     "monitoring": {
       "create_sns_topic": true
     },
-    "rules_table": {
+    "rule_staging": {
       "cache_refresh_minutes": 10,
       "enabled": false,
-      "read_capacity": 20,
-      "write_capacity": 5
+      "table": {
+        "read_capacity": 20,
+        "write_capacity": 5
+      }    
     }
   },
   "s3_access_logging": {

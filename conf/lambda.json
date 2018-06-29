@@ -61,5 +61,27 @@
     "third_party_libraries": [
       "pathlib2"
     ]
+  },
+  "rule_promotion_config": {
+    "enabled": false,
+    "log_level": "info",
+    "log_retention_days": 14,
+    "memory": 128,
+    "metric_alarms": {
+      "errors": {
+        "enabled": true,
+        "evaluation_periods": 1,
+        "period_secs": 120,
+        "threshold": 0
+      },
+      "throttles": {
+        "enabled": true,
+        "evaluation_periods": 1,
+        "period_secs": 120,
+        "threshold": 0
+      }
+    },
+    "send_digest_hour_utc": 16,
+    "timeout": 120
   }
 }

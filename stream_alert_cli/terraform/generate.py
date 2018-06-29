@@ -41,6 +41,7 @@ from stream_alert_cli.terraform.metrics import (
     generate_cloudwatch_metric_alarms
 )
 from stream_alert_cli.terraform.monitoring import generate_monitoring
+from stream_alert_cli.terraform.rule_promotion import generate_rule_promotion
 from stream_alert_cli.terraform.streamalert import generate_stream_alert
 from stream_alert_cli.terraform.s3_events import generate_s3_events
 from stream_alert_cli.terraform.threat_intel_downloader import generate_threat_intel_downloader
@@ -169,9 +170,9 @@ def generate_main(config, init=False):
         'alerts_table_write_capacity': (
             config['global']['infrastructure']['alerts_table']['write_capacity']),
         'rules_table_read_capacity': (
-            config['global']['infrastructure']['rules_table']['read_capacity']),
+            config['global']['infrastructure']['rule_staging']['table']['read_capacity']),
         'rules_table_write_capacity': (
-            config['global']['infrastructure']['rules_table']['write_capacity'])
+            config['global']['infrastructure']['rule_staging']['table']['write_capacity'])
     }
 
     # KMS Key and Alias creation
@@ -364,7 +365,7 @@ def terraform_generate(config, init=False):
                 sort_keys=True
             )
 
-    # Setup Athena if it is enabled
+    # Setup Athena
     generate_global_lambda_settings(
         config,
         config_name='athena_partition_refresh_config',
@@ -380,6 +381,15 @@ def terraform_generate(config, init=False):
         generate_func=generate_threat_intel_downloader,
         tf_tmp_file='terraform/ti_downloader.tf.json',
         message='Removing old Threat Intel Downloader Terraform file'
+    )
+
+    # Setup Rule Promotion if it is enabled
+    generate_global_lambda_settings(
+        config,
+        config_name='rule_promotion_config',
+        generate_func=generate_rule_promotion,
+        tf_tmp_file='terraform/rule_promotion.tf.json',
+        message='Removing old Rule Promotion Terraform file'
     )
 
     # Setup Alert Processor
