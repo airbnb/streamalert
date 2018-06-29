@@ -16,9 +16,9 @@ limitations under the License.
 from datetime import datetime, timedelta
 
 import boto3
-from botocore.exceptions import ClientError
 
 from stream_alert.shared import LOGGER
+from stream_alert.shared.helpers.dynamodb import ignore_conditional_failure
 from stream_alert.shared.rule import import_folders, Rule
 
 
@@ -94,6 +94,23 @@ class RuleTable(object):
                 LOGGER.debug('Deleting rule \'%s\'', rule_name)
                 batch.delete_item(Key={'RuleName': rule_name})
 
+    @classmethod
+    def _cast_value(cls, key, value):
+        """Cast certain values into their respective object types
+
+        Args:
+            key (str): Name of key that this value corresponds to
+            value (object): Object to be cast, could be various types
+
+        Returns:
+            object: Variant type object in the expected type
+        """
+        # Handle date casting from string to datetime object
+        if key in {'StagedAt', 'StagedUntil'}:
+            return datetime.strptime(value, cls.DATETIME_FORMAT)
+
+        return value
+
     def _load_remote_state(self):
         """Return the state of all rules stored in the database
 
@@ -104,8 +121,8 @@ class RuleTable(object):
                         'example_rule_name':
                             {
                                 'Staged': True
-                                'StagedAt': '2018-04-19T02:23:13.332223Z',
-                                'StagedUntil': '2018-04-21T02:23:13.332223Z'
+                                'StagedAt': datetime.datetime object,
+                                'StagedUntil': datetime.datetime object
                             }
                     }
         """
@@ -113,11 +130,19 @@ class RuleTable(object):
         page_iterator = paginator.paginate(TableName=self.name, ConsistentRead=True)
         return {
             item['RuleName']: {
-                key: value for key, value in item.iteritems()
+                key: self._cast_value(key, value)
+                for key, value in item.iteritems()
                 if key != 'RuleName'
             }
             for page in page_iterator
             for item in page['Items']
+        }
+
+    @staticmethod
+    def _default_dynamo_kwargs(rule_name):
+        return {
+            'Key': {'RuleName': rule_name},
+            'ConditionExpression': 'attribute_exists(RuleName)'
         }
 
     @staticmethod
@@ -173,6 +198,7 @@ class RuleTable(object):
         """
         return self.remote_rule_info.get(rule_name)
 
+    @ignore_conditional_failure
     def toggle_staged_state(self, rule_name, stage):
         """Mark the specified rule as staged=True or staged=False
 
@@ -194,20 +220,12 @@ class RuleTable(object):
             expression_values.extend(self._staged_window())
 
         args = {
-            'Key': {
-                'RuleName': rule_name
-            },
             'UpdateExpression': ','.join(update_expressions),
-            'ExpressionAttributeValues': dict(zip(expression_attributes, expression_values)),
-            'ConditionExpression': 'attribute_exists(RuleName)'
+            'ExpressionAttributeValues': dict(zip(expression_attributes, expression_values))
         }
+        args.update(self._default_dynamo_kwargs(rule_name))
 
-        try:
-            self._table.update_item(**args)
-        except ClientError as error:
-            if error.response['Error']['Code'] != 'ConditionalCheckFailedException':
-                raise
-            LOGGER.exception('Could not toggle rule staging status')
+        self._table.update_item(**args)
 
     def update(self, skip_staging=False):
         """Update the database with new local rules and remove deleted ones from remote"""
@@ -239,9 +257,7 @@ class RuleTable(object):
     @property
     def remote_rule_names(self):
         """Rule names from the remote database. Returns cache if it exists"""
-        if not self._remote_rule_info:
-            self._remote_rule_info = self._load_remote_state()
-        return set(self._remote_rule_info)
+        return set(self.remote_rule_info)
 
     @property
     def remote_not_local(self):

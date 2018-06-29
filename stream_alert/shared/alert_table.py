@@ -17,32 +17,9 @@ from datetime import datetime, timedelta
 
 import boto3
 from boto3.dynamodb.conditions import Attr, Key
-from botocore.exceptions import ClientError
 
 from stream_alert.shared.alert import Alert
-
-
-def ignore_conditional_failure(func):
-    """Decorator which ignores ClientErrors due to ConditionalCheckFailed.
-
-    Conditional checks prevent Dynamo updates from finishing if the existing state doesn't match
-    expectations. For example, if an Alert no longer exists, we don't want to send any other updates
-
-    Args:
-        func (function): Function with a conditional Dynamo update call.
-
-    Returns:
-        function: Wrapped function which ignores failures due to conditional checks.
-    """
-    def inner(*args, **kwargs):
-        """Ignore ConditionalCheckFailedException"""
-        try:
-            func(*args, **kwargs)
-        except ClientError as error:
-            if error.response['Error']['Code'] != 'ConditionalCheckFailedException':
-                raise
-
-    return inner
+from stream_alert.shared.helpers.dynamodb import ignore_conditional_failure
 
 
 class AlertTable(object):

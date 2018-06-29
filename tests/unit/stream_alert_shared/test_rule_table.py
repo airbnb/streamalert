@@ -152,7 +152,7 @@ class TestRuleTable(object):
     @patch('stream_alert.shared.rule_table.RuleTable._staged_window')
     def test_load_remote_state_state(self, window_mock):
         """Rule Table - Load Remote State of Rules, Existing Database"""
-        window_mock.return_value = ('staged-at-date', 'staged-until-date')
+        window_mock.return_value = ('2018-04-21T02:23:13.0Z', '2018-04-23T02:23:13.0Z')
         # Create 2 local rules and add them to the currently empty
         self._create_local_rules(2)
         self.rule_table._add_new_rules()
@@ -167,8 +167,8 @@ class TestRuleTable(object):
             'fake_rule_01': {'Staged': False},
             'now_staged_rule': {
                 'Staged': True,
-                'StagedAt': 'staged-at-date',
-                'StagedUntil': 'staged-until-date'
+                'StagedAt': datetime(year=2018, month=4, day=21, hour=2, minute=23, second=13),
+                'StagedUntil': datetime(year=2018, month=4, day=23, hour=2, minute=23, second=13)
             }
         }
 
@@ -265,15 +265,6 @@ class TestRuleTable(object):
         item = self.rule_table._table.get_item(Key={'RuleName': rule_name})
         assert_equal(item['Item']['Staged'], False)
 
-    @patch('logging.Logger.exception')
-    def test_toggle_staged_state_bad(self, log_mock):
-        """Rule Table - Toggle Staging, Rule Does Not Exist"""
-        # Try to toggle the state to staged, but use a name that does not exist
-        self.rule_table.toggle_staged_state('rule_does_not_exist', True)
-
-        # This should raise an exception that is caught and logged
-        log_mock.assert_called_with('Could not toggle rule staging status')
-
     def test_toggle_staged_state_error(self):
         """Rule Table - Toggle Staging, ClientError Occurred"""
         with patch.object(self.rule_table._table, 'update_item',
@@ -286,8 +277,8 @@ class TestRuleTable(object):
         self.rule_table._table.put_item(Item={
             'RuleName': 'test_02',
             'Staged': True,
-            'StagedAt': 'staged-at-date',
-            'StagedUntil': 'staged-at-date'
+            'StagedAt': '2018-04-21T02:23:13.0Z',
+            'StagedUntil':  '2018-04-23T02:23:13.0Z'
         })
         with patch('sys.stdout', new=StringIO()) as stdout:
             print self.rule_table
@@ -299,7 +290,6 @@ Rule            Staged?
 
             output = stdout.getvalue().strip()
             assert_equal(output, expected_output.strip())
-
 
     def test_print_table_empty(self):
         """Rule Table - Print Table, Empty"""
@@ -315,8 +305,8 @@ Rule            Staged?
         self.rule_table._table.put_item(Item={
             'RuleName': 'test_02',
             'Staged': True,
-            'StagedAt': 'staged-at-date',
-            'StagedUntil': 'staged-until-date'
+            'StagedAt': '2018-04-21T02:23:13.0Z',
+            'StagedUntil':  '2018-04-23T02:23:13.0Z'
         })
         with patch('sys.stdout', new=StringIO()) as stdout:
             print self.rule_table.__str__(True)
@@ -324,8 +314,8 @@ Rule            Staged?
 Rule            Staged?
   1: test_01    False
   2: test_02    True
-     - StagedAt:      staged-at-date
-     - StagedUntil:   staged-until-date
+     - StagedAt:      2018-04-21 02:23:13
+     - StagedUntil:   2018-04-23 02:23:13
 """
 
             output = stdout.getvalue().strip()

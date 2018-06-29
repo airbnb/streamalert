@@ -77,7 +77,12 @@ class LambdaPackage(object):
                     ignore=shutil.ignore_patterns(*{'*dependencies.zip'})
                 )
             else:
-                shutil.copy(path, os.path.join(temp_package_path, path))
+                # Ensure the parent directory of the file being copied already exists
+                copy_to_full_path = os.path.join(temp_package_path, path)
+                dir_of_file_dest = os.path.dirname(copy_to_full_path)
+                if not os.path.exists(dir_of_file_dest):
+                    os.makedirs(dir_of_file_dest)
+                shutil.copy(path, copy_to_full_path)
 
     def _extract_precompiled_libs(self, temp_package_path):
         """Extract any precompiled third-party packages into the deployment package folder

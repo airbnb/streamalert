@@ -22,7 +22,7 @@ import re
 from stream_alert.athena_partition_refresh.clients import StreamAlertSQSClient
 
 from stream_alert.athena_partition_refresh import LOGGER
-from stream_alert.shared.athena import StreamAlertAthenaClient
+from stream_alert.shared.athena import AthenaClient
 from stream_alert.shared.config import load_config
 
 
@@ -56,15 +56,15 @@ class AthenaRefresher(object):
         db_name = athena_config.get(
             'database_name',
             self.STREAMALERT_DATABASE.format(prefix)
-        ).strip()
+        )
 
         # Get the S3 bucket to store Athena query results
         results_bucket = athena_config.get(
             'results_bucket',
             's3://{}.streamalert.athena-results'.format(prefix)
-        ).strip()
+        )
 
-        self._athena_client = StreamAlertAthenaClient(
+        self._athena_client = AthenaClient(
             db_name,
             results_bucket,
             self.ATHENA_S3_PREFIX
