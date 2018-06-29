@@ -41,8 +41,8 @@ from stream_alert_cli.terraform.metrics import (
     generate_cloudwatch_metric_alarms
 )
 from stream_alert_cli.terraform.monitoring import generate_monitoring
-from stream_alert_cli.terraform.streamalert import generate_stream_alert
 from stream_alert_cli.terraform.rule_promotion import generate_rule_promotion
+from stream_alert_cli.terraform.streamalert import generate_stream_alert
 from stream_alert_cli.terraform.s3_events import generate_s3_events
 from stream_alert_cli.terraform.threat_intel_downloader import generate_threat_intel_downloader
 

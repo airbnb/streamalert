@@ -29,8 +29,8 @@
       "create_sns_topic": true
     },
     "rule_staging": {
-      "enabled": false,
       "cache_refresh_minutes": 10,
+      "enabled": false,
       "table": {
         "read_capacity": 20,
         "write_capacity": 5
