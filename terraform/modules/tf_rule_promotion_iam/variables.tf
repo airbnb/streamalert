@@ -21,3 +21,8 @@ variable "role_id" {
 variable "athena_results_bucket_arn" {
   description = "S3 bucket arn to use for Athena search results"
 }
+
+variable "athena_data_buckets" {
+  description = "List of S3 buckets where Athena data is stored"
+  type        = "list"
+}

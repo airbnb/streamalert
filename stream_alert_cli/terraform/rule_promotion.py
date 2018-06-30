@@ -33,6 +33,9 @@ def generate_rule_promotion(config):
     """
     result = infinitedict()
 
+    athena_config = config['lambda']['athena_partition_refresh_config']
+    data_buckets = athena_config['buckets'].keys()
+
     state_param = json.dumps({
         'send_digest_hour_utc':
             int(config['lambda']['rule_promotion_config']['send_digest_hour_utc']),
@@ -47,7 +50,8 @@ def generate_rule_promotion(config):
         'digest_sns_topic': StatsPublisher.formatted_sns_topic_arn(config).split(':')[-1],
         'role_id': '${module.rule_promotion_lambda.role_id}',
         'rules_table_arn': '${module.globals.rules_table_arn}',
-        'athena_results_bucket_arn': '${module.stream_alert_athena.results_bucket_arn}'
+        'athena_results_bucket_arn': '${module.stream_alert_athena.results_bucket_arn}',
+        'athena_data_buckets': data_buckets
     }
 
     # Set variables for the Lambda module
