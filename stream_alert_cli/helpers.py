@@ -505,6 +505,20 @@ def setup_mock_firehose_delivery_streams(config):
         create_delivery_stream(region, stream_name, prefix)
 
 
+def setup_mock_dynamodb_rules_table(config):
+    """Mock DynamoDB Rules table for rule testing
+    Args:
+        config (CLIConfig): The StreamAlert config
+    """
+    if not config['global']['infrastructure'].get('rule_staging', {}).get('enabled'):
+        return False
+
+    prefix = config['global']['account']['prefix']
+    table_name = '{}_streamalert_rules'.format(prefix)
+
+    setup_mock_rules_table(table_name)
+
+
 def setup_mock_dynamodb_ioc_table(config):
     """Mock DynamoDB IOC table for rule testing
 
