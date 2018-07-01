@@ -69,7 +69,7 @@ def import_folders(*paths):
 
 
 class RuleCreationError(Exception):
-    """Exeception to raise for any errors with invalid rules"""
+    """Exception to raise for any errors with invalid rules"""
 
 
 def rule(**opts):
@@ -242,7 +242,7 @@ class Rule(object):
 
 
 class MatcherCreationError(Exception):
-    """Exeception to raise for any errors with invalid matchers"""
+    """Exception to raise for any errors with invalid matchers"""
 
 
 def matcher(matcher_func):
