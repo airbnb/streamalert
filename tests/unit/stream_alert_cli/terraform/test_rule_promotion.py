@@ -41,7 +41,11 @@ class TestRulePromotion(object):
                     'stats_publisher_state_name': 'staging_stats_publisher_state',
                     'stats_publisher_state_value': state,
                     'digest_sns_topic': 'staging_stats',
-                    'athena_results_bucket_arn': '${module.stream_alert_athena.results_bucket_arn}'
+                    'athena_results_bucket_arn': '${module.stream_alert_athena.results_bucket_arn}',
+                    'athena_data_buckets': [
+                        'unit-testing.streamalert.data',
+                        'unit-testing.streamalerts'
+                    ]
                 },
                 'rule_promotion_lambda': {
                     'alarm_actions': ['arn:aws:sns:us-west-1:12345678910:stream_alert_monitoring'],

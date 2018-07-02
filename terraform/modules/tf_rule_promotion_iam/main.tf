@@ -20,10 +20,16 @@ resource "aws_iam_role_policy" "rule_promotion_actions" {
 
 data "aws_iam_policy_document" "rule_promotion_actions" {
   statement {
-    sid       = "PublishDigestToSNS"
-    effect    = "Allow"
-    actions   = ["sns:Publish"]
-    resources = ["${aws_sns_topic.digest_sns_topic.arn}"]
+    sid    = "PublishDigestToSNS"
+    effect = "Allow"
+
+    actions = [
+      "sns:Publish",
+    ]
+
+    resources = [
+      "${aws_sns_topic.digest_sns_topic.arn}",
+    ]
   }
 
   statement {
@@ -35,11 +41,13 @@ data "aws_iam_policy_document" "rule_promotion_actions" {
       "dynamodb:UpdateItem",
     ]
 
-    resources = ["${var.rules_table_arn}"]
+    resources = [
+      "${var.rules_table_arn}",
+    ]
   }
 
   statement {
-    sid    = "QueryAthenaAlerts"
+    sid    = "AthenaQueryAlerts"
     effect = "Allow"
 
     actions = [
@@ -56,7 +64,7 @@ data "aws_iam_policy_document" "rule_promotion_actions" {
   }
 
   statement {
-    sid    = "AthenaQueryResults"
+    sid    = "AthenaResultsAccess"
     effect = "Allow"
 
     actions = [
@@ -76,7 +84,7 @@ data "aws_iam_policy_document" "rule_promotion_actions" {
   }
 
   statement {
-    sid    = "GetSSMParameter"
+    sid    = "SSMParameterAccess"
     effect = "Allow"
 
     actions = [
@@ -86,6 +94,20 @@ data "aws_iam_policy_document" "rule_promotion_actions" {
 
     resources = [
       "${aws_ssm_parameter.stats_publisher_state.arn}",
+    ]
+  }
+
+  statement {
+    sid    = "AthenaDataAccess"
+    effect = "Allow"
+
+    actions = [
+      "s3:GetObject",
+      "s3:ListBucket",
+    ]
+
+    resources = [
+      "${formatlist("arn:aws:s3:::%s*", var.athena_data_buckets)}",
     ]
   }
 }
