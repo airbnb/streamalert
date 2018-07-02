@@ -20,11 +20,11 @@ import os
 import boto3
 from mock import Mock, patch, PropertyMock
 from moto import mock_ssm
-from nose.tools import assert_equal
+from nose.tools import assert_equal, assert_raises
 
 from stream_alert.rule_promotion.publisher import StatsPublisher
 from stream_alert.rule_promotion.statistic import StagingStatistic
-from stream_alert.shared import config
+from stream_alert.shared import athena, config
 
 
 class TestStatsPublisher(object):
@@ -147,24 +147,25 @@ class TestStatsPublisher(object):
         self.publisher._write_state()
         ssm_mock.put_parameter.assert_called_with(**args)
 
-    def test_query_alerts_none(self):
+    @patch('stream_alert.rule_promotion.publisher.StatsPublisher._publish_message')
+    @patch('stream_alert.rule_promotion.publisher.StatsPublisher._write_state', Mock())
+    def test_query_alerts_none(self, publish_mock):
         """StatsPublisher - Query Alerts, No Alerts for Stat"""
-        stat = list(self._get_fake_stats(count=1))[0]
-        stat.alert_count = 0
+        self.publisher._state['send_digest_hour_utc'] = 1
+        stats = list(self._get_fake_stats(count=1))
+        stats[0].alert_count = 0
         with patch.object(self.publisher, '_athena_client', new_callable=PropertyMock) as mock:
-            assert_equal(self.publisher._query_alerts(stat), None)
+            self.publisher.publish(stats)
+            assert_equal(stats[0].execution_id, None)
             mock.run_async_query.assert_not_called()
+            publish_mock.assert_called_with(stats)
 
-    @patch('logging.Logger.error')
-    def test_query_alerts_bad_reponse(self, log_mock):
+    def test_query_alerts_bad_reponse(self):
         """StatsPublisher - Query Alerts, Bad Response"""
         stat = list(self._get_fake_stats(count=1))[0]
         with patch.object(self.publisher, '_athena_client', new_callable=PropertyMock) as mock:
-            mock.run_async_query.return_value = None
-            assert_equal(self.publisher._query_alerts(stat), None)
-            mock.run_async_query.assert_called_once()
-            log_mock.assert_called_with(
-                'Failed to query alert info for rule: \'%s\'', 'test_rule_0')
+            mock.run_async_query.side_effect = athena.AthenaQueryExecutionError()
+            assert_raises(athena.AthenaQueryExecutionError, self.publisher._query_alerts, stat)
 
     def test_query_alerts(self):
         """StatsPublisher - Query Alerts"""

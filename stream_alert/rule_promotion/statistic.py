@@ -18,6 +18,8 @@ limitations under the License.
 class StagingStatistic(object):
     """Store information on generated alerts."""
 
+    _ALERT_COUNT_UNKOWN = 'unknown'
+
     _COUNT_QUERY_TEMPLATE = ("SELECT '{rule_name}' AS rule_name, count(*) AS count "
                              "FROM alerts WHERE dt >= '{date}-{hour:02}' AND "
                              "rule_name = '{rule_name}'")
@@ -34,8 +36,14 @@ class StagingStatistic(object):
         self._current_time = current_time
         self._staged_at = staged_at
         self.staged_until = staged_until
-        self.alert_count = 'unknown'
+        self.alert_count = self._ALERT_COUNT_UNKOWN
         self.execution_id = None
+
+    def __nonzero__(self):
+        return self.alert_count not in {0, self._ALERT_COUNT_UNKOWN}
+
+    # For forward compatibility to Python3
+    __bool__ = __nonzero__
 
     def __lt__(self, other):
         """Statistic should be ordered by their alert count."""

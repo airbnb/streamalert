@@ -100,7 +100,7 @@ def {}(_):
 
     @patch('logging.Logger.exception')
     def test_rule_process_exception(self, log_mock):
-        """Rule - Process, Exeception"""
+        """Rule - Process, Exception"""
         # Create a rule function that will raise an exception
         def test_rule(_):
             raise ValueError('this is a bad rule')

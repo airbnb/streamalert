@@ -27,6 +27,10 @@ from stream_alert.shared.backoff_handlers import (
 )
 
 
+class AthenaQueryExecutionError(Exception):
+    """Exception to be raised when an Athena query fails"""
+
+
 class AthenaClient(object):
     """A StreamAlert Athena Client for creating tables, databases, and executing queries
 
@@ -84,17 +88,18 @@ class AthenaClient(object):
 
         Returns:
             str: Athena execution ID for the query that was executed
+
+        Raises:
+            AthenaQueryExecutionError: If any failure occurs during the execution of the
+                query, this exception will be raised
         """
         response = self._execute_query(query)
-        if not response:
-            return
 
         exeuction_id = response['QueryExecutionId']
 
-        success = self.check_query_status(exeuction_id)
-        if not success:
-            LOGGER.error('Athena query failed:\n%s', query)
-            return
+        # This will block until the execution is complete, or raise an
+        # AthenaQueryExecutionError exception if an error occurs
+        self.check_query_status(exeuction_id)
 
         return exeuction_id
 
@@ -106,6 +111,10 @@ class AthenaClient(object):
 
         Returns:
             dict: Response object with the status of the running query
+
+        Raises:
+            AthenaQueryExecutionError: If any failure occurs during the execution of the
+                query, this exception will be raised
         """
         LOGGER.debug('Executing query: %s', query)
         try:
@@ -114,8 +123,8 @@ class AthenaClient(object):
                 QueryExecutionContext={'Database': self.database},
                 ResultConfiguration={'OutputLocation': self._s3_results_path}
             )
-        except ClientError:
-            LOGGER.exception('Athena query failed')
+        except ClientError as err:
+            raise AthenaQueryExecutionError('Athena query failed:\n{}'.format(err))
 
     def drop_all_tables(self):
         """Drop all table in the database
@@ -165,7 +174,7 @@ class AthenaClient(object):
 
         return self._unique_values_from_query(partitions)
 
-    def check_query_status(self, query_execution_id):
+    def check_query_status(self, execution_id):
         """Check in on the running query, back off if the job is running or queued
 
         Args:
@@ -174,8 +183,12 @@ class AthenaClient(object):
         Returns:
             bool: True if the query state is SUCCEEDED, False otherwise
                 Reference https://bit.ly/2uuRtda.
+
+        Raises:
+            AthenaQueryExecutionError: If any failure occurs while checking the status of the
+                query, this exception will be raised
         """
-        LOGGER.debug('Checking status of query with execution ID: %s', query_execution_id)
+        LOGGER.debug('Checking status of query with execution ID: %s', execution_id)
 
         states_to_backoff = {'QUEUED', 'RUNNING'}
         @backoff.on_predicate(backoff.fibo,
@@ -190,14 +203,16 @@ class AthenaClient(object):
                 QueryExecutionId=query_execution_id
             )
 
-        execution_result = _check_status(query_execution_id)
+        execution_result = _check_status(execution_id)
         state = execution_result['QueryExecution']['Status']['State']
-        if state != 'SUCCEEDED':
-            reason = execution_result['QueryExecution']['Status']['StateChangeReason']
-            LOGGER.error('Query %s %s with reason %s, exiting!', query_execution_id, state, reason)
-            return False
+        if state == 'SUCCEEDED':
+            return
 
-        return True
+        # When the state is not SUCCEEDED, something bad must have occurred, so raise an exception
+        reason = execution_result['QueryExecution']['Status']['StateChangeReason']
+        raise AthenaQueryExecutionError(
+            'Query \'{}\' {} with reason \'{}\', exiting'.format(execution_id, state, reason)
+        )
 
     def query_result_paginator(self, query):
         """Iterate over all results returned by the Athena query. This is a blocking operation
@@ -207,10 +222,12 @@ class AthenaClient(object):
 
         Yields:
             dict: Response objects with the results of the running query
+
+        Raises:
+            AthenaQueryExecutionError: If any failure occurs during the execution of the
+                query, this exception will be raised
         """
         execution_id = self._execute_and_wait(query)
-        if not execution_id:
-            return
 
         paginator = self._client.get_paginator('get_query_results')
 
@@ -226,6 +243,10 @@ class AthenaClient(object):
 
         Returns:
             dict: Response object with the status of the running query
+
+        Raises:
+            AthenaQueryExecutionError: If any failure occurs during the execution of the
+                query, this exception will be raised
         """
         return self._execute_query(query)
 
@@ -237,6 +258,10 @@ class AthenaClient(object):
 
         Returns:
             bool: True if the query ran successfully, False otherwise
+
+        Raises:
+            AthenaQueryExecutionError: If any failure occurs during the execution of the
+                query, this exception will be raised
         """
         return bool(self._execute_and_wait(query))
 
@@ -248,11 +273,12 @@ class AthenaClient(object):
 
         Returns:
             dict: Response object with the result of the running query
+
+        Raises:
+            AthenaQueryExecutionError: If any failure occurs during the execution of the
+                query, this exception will be raised
         """
         execution_id = self._execute_and_wait(query)
-        if not execution_id:
-            return
-
         query_results = self._client.get_query_results(QueryExecutionId=execution_id)
 
         # The idea here is to leave the processing logic to the calling functions.

@@ -104,6 +104,8 @@ class RulePromoter(object):
                 row_values = [data.values()[0] for data in row['Data']]
                 rule_name, alert_count = row_values[0], int(row_values[1])
 
+                LOGGER.debug('Found %d alerts for rule \'%s\'', alert_count, rule_name)
+
                 self._staging_stats[rule_name].alert_count = alert_count
 
     def run(self):

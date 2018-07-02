@@ -22,10 +22,12 @@ from nose.tools import (
     assert_equal,
     assert_false,
     assert_items_equal,
-    assert_true
+    assert_raises,
+    assert_true,
+    raises
 )
 
-from stream_alert.shared.athena import AthenaClient
+from stream_alert.shared.athena import AthenaClient, AthenaQueryExecutionError
 from stream_alert.shared.config import load_config
 
 from tests.unit.helpers.aws_mocks import MockAthenaClient
@@ -122,8 +124,7 @@ class TestAthenaClient(object):
     def test_get_table_partitions_error(self):
         """Athena - Get Table Partitions, Exception"""
         self.client._client.raise_exception = True
-        result = self.client.get_table_partitions('test_table')
-        assert_equal(result, None)
+        assert_raises(AthenaQueryExecutionError, self.client.get_table_partitions, 'test_table')
 
     def test_drop_table(self):
         """Athena - Drop Table, Success"""
@@ -132,7 +133,7 @@ class TestAthenaClient(object):
     def test_drop_table_failure(self):
         """Athena - Drop Table, Failure"""
         self.client._client.raise_exception = True
-        assert_false(self.client.drop_table('test_table'))
+        assert_raises(AthenaQueryExecutionError, self.client.drop_table, 'test_table')
 
     @patch('stream_alert.shared.athena.AthenaClient.drop_table')
     def test_drop_all_tables(self, drop_table_mock):
@@ -159,14 +160,12 @@ class TestAthenaClient(object):
     def test_drop_all_tables_exception(self):
         """Athena - Drop All Tables, Exception"""
         self.client._client.raise_exception = True
-        assert_false(self.client.drop_all_tables())
+        assert_raises(AthenaQueryExecutionError, self.client.drop_all_tables)
 
-    @patch('logging.Logger.exception')
-    def test_execute_query(self, log_mock):
+    def test_execute_query(self):
         """Athena - Execute Query"""
         self.client._client.raise_exception = True
-        self.client._execute_query('BAD SQL')
-        log_mock.assert_called_with('Athena query failed')
+        assert_raises(AthenaQueryExecutionError, self.client._execute_query, 'BAD SQL')
 
     def test_execute_and_wait(self):
         """Athena - Execute and Wait"""
@@ -176,13 +175,11 @@ class TestAthenaClient(object):
         result = self.client._execute_and_wait('SQL query')
         assert_true(result in self.client._client.query_executions)
 
-    @patch('logging.Logger.error')
-    def test_execute_and_wait_failed(self, log_mock):
+    def test_execute_and_wait_failed(self):
         """Athena - Execute and Wait, Failed"""
         query = 'SQL query'
         self.client._client.result_state = 'FAILED'
-        self.client._execute_and_wait(query)
-        log_mock.assert_called_with('Athena query failed:\n%s', query)
+        assert_raises(AthenaQueryExecutionError, self.client._execute_and_wait, query)
 
     def test_query_result_paginator(self):
         """Athena - Query Result Paginator"""
@@ -194,10 +191,11 @@ class TestAthenaClient(object):
         items = list(self.client.query_result_paginator('test query'))
         assert_items_equal(items, [{'ResultSet': {'Rows': [data]}}] * 4)
 
+    @raises(AthenaQueryExecutionError)
     def test_query_result_paginator_error(self):
         """Athena - Query Result Paginator, Exception"""
         self.client._client.raise_exception = True
-        assert_equal(list(self.client.query_result_paginator('test query')), list())
+        list(self.client.query_result_paginator('test query'))
 
     def test_run_async_query(self):
         """Athena - Run Async Query, Success"""
@@ -206,4 +204,4 @@ class TestAthenaClient(object):
     def test_run_async_query_failure(self):
         """Athena - Run Async Query, Failure"""
         self.client._client.raise_exception = True
-        assert_false(self.client.run_async_query('test query'))
+        assert_raises(AthenaQueryExecutionError, self.client.run_async_query, 'test query')

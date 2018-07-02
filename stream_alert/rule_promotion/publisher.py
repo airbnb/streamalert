@@ -103,17 +103,10 @@ class StatsPublisher(object):
         Returns:
             str: Execution ID for running Athena query
         """
-        # If there are no alerts, do not run the comprehensive query
-        if not stat.alert_count:
-            return
-
         info_statement = stat.sql_info_statement
         LOGGER.debug('Querying alert info for rule \'%s\': %s', stat.rule_name, info_statement)
 
         response = self._athena_client.run_async_query(info_statement)
-        if not response:
-            LOGGER.error('Failed to query alert info for rule: \'%s\'', stat.rule_name)
-            return
 
         return response['QueryExecutionId']
 
@@ -156,6 +149,10 @@ class StatsPublisher(object):
         if self._should_send_digest:
 
             for stat in stats:
+                # If there are no alerts, do not run the comprehensive query
+                if not stat:
+                    continue
+
                 stat.execution_id = self._query_alerts(stat)
 
             self._publish_message(stats)
