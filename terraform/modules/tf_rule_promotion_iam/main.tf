@@ -6,8 +6,8 @@ resource "aws_sns_topic" "digest_sns_topic" {
 // CloudWatch event to trigger Lambda and send digest on a schedule
 resource "aws_cloudwatch_event_rule" "send_digest_invocation_schedule" {
   name                = "rule_promotion_digest_schedule"
-  description         = "Invokes Rule Promotion function at ${var.schedule_expression}"
-  schedule_expression = "${var.schedule_expression}"
+  description         = "Invokes Rule Promotion function at ${var.send_digest_schedule_expression}"
+  schedule_expression = "${var.send_digest_schedule_expression}"
 }
 
 resource "aws_cloudwatch_event_target" "send_digest_invocation" {

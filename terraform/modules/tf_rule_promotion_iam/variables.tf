@@ -22,7 +22,7 @@ variable "function_alias_arn" {
   description = "Rule Promotion function alias arn, exported from the tf_lambda module"
 }
 
-variable "send_digest_cron" {
+variable "send_digest_schedule_expression" {
   description = "Cron or rate expression to be used for scheduling the sending of the rule staging digest"
 }
 

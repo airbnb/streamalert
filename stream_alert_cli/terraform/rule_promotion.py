@@ -38,7 +38,8 @@ def generate_rule_promotion(config):
     result['module']['rule_promotion_iam'] = {
         'source': 'modules/tf_rule_promotion_iam',
         'stats_publisher_state_name': StatsPublisher.SSM_STATE_NAME,
-        'send_digest_cron': config['lambda']['rule_promotion_config']['send_digest_cron'],
+        'send_digest_schedule_expression':
+            config['lambda']['rule_promotion_config']['send_digest_schedule_expression'],
         'digest_sns_topic': StatsPublisher.formatted_sns_topic_arn(config).split(':')[-1],
         'role_id': '${module.rule_promotion_lambda.role_id}',
         'rules_table_arn': '${module.globals.rules_table_arn}',

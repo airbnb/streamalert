@@ -39,7 +39,7 @@ class TestRulePromotion(object):
                     'rules_table_arn': '${module.globals.rules_table_arn}',
                     'source': 'modules/tf_rule_promotion_iam',
                     'stats_publisher_state_name': 'staging_stats_publisher_state',
-                    'send_digest_cron': 'cron(30 13 * * ? *)',
+                    'send_digest_schedule_expression': 'cron(30 13 * * ? *)',
                     'digest_sns_topic': 'staging_stats',
                     'athena_results_bucket_arn': '${module.stream_alert_athena.results_bucket_arn}',
                     'athena_data_buckets': [
