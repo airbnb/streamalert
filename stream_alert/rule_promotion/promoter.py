@@ -26,7 +26,7 @@ from stream_alert.shared.rule_table import RuleTable
 class RulePromoter(object):
     """Run queries to generate statistics on alerts."""
 
-    ATHENA_S3_PREFIX = 'athena_partition_refresh'
+    ATHENA_S3_PREFIX = 'rule_promoter'
     STREAMALERT_DATABASE = '{}_streamalert'
 
     def __init__(self):
@@ -123,7 +123,7 @@ class RulePromoter(object):
             publisher = StatsPublisher(self._config, self._athena_client, self._current_time)
             publisher.publish(self._staging_stats.values())
         else:
-            LOGGER.debug('Daily digest will not be sent')
+            LOGGER.debug('Staging statistics digest will not be sent')
 
     def _promote_rules(self):
         """Promote any rule that has not resulted in any alerts since being staged"""

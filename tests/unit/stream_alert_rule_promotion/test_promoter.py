@@ -153,7 +153,7 @@ class TestRulePromoter(object):
     def test_run_do_not_send_digest(self, log_mock):
         """RulePromoter - Run, Do Not Send Digest"""
         self.promoter.run(False)
-        log_mock.assert_called_with('Daily digest will not be sent')
+        log_mock.assert_called_with('Staging statistics digest will not be sent')
 
     @patch('logging.Logger.info')
     def test_promote_rules(self, log_mock):

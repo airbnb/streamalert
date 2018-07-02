@@ -22,8 +22,6 @@ class StatsPublisher(object):
     """Run queries to generate statistics on alerts."""
 
     DEFAULT_STATS_SNS_TOPIC = 'staging_stats'
-    SSM_STATE_NAME = 'staging_stats_publisher_state'
-    SSM_CLIENT = None
 
     def __init__(self, config, athena_client, current_time):
         self._topic_arn = self.formatted_sns_topic_arn(config)

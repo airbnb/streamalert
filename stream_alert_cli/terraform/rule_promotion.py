@@ -37,13 +37,13 @@ def generate_rule_promotion(config):
     # Set variables for the IAM permissions, etc module
     result['module']['rule_promotion_iam'] = {
         'source': 'modules/tf_rule_promotion_iam',
-        'stats_publisher_state_name': StatsPublisher.SSM_STATE_NAME,
         'send_digest_schedule_expression':
             config['lambda']['rule_promotion_config']['send_digest_schedule_expression'],
         'digest_sns_topic': StatsPublisher.formatted_sns_topic_arn(config).split(':')[-1],
         'role_id': '${module.rule_promotion_lambda.role_id}',
         'rules_table_arn': '${module.globals.rules_table_arn}',
         'function_alias_arn': '${module.rule_promotion_lambda.function_alias_arn}',
+        'function_name': '${module.rule_promotion_lambda.function_name}',
         'athena_results_bucket_arn': '${module.stream_alert_athena.results_bucket_arn}',
         'athena_data_buckets': data_buckets
     }

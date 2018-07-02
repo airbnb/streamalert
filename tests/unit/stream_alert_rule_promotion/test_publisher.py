@@ -14,9 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from datetime import datetime, timedelta
-import json
 
-import boto3
 from mock import patch, PropertyMock
 from nose.tools import assert_equal, assert_raises
 
@@ -42,19 +40,6 @@ class TestStatsPublisher(object):
             'sent_daily_digest': False,
             'send_digest_hour_utc': 12
         }
-
-    @staticmethod
-    def _put_ssm_param(sent=False):
-        """Helper function to put fake ssm param for StatsPublisher"""
-        param = json.dumps({
-            'sent_daily_digest': sent,
-            'send_digest_hour_utc': 9
-        })
-        boto3.client('ssm').put_parameter(
-            Name=StatsPublisher.SSM_STATE_NAME,
-            Value=param,
-            Type='String'
-        )
 
     @staticmethod
     def _get_fake_stats(count=2):
