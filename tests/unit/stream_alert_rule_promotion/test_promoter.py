@@ -125,7 +125,8 @@ class TestRulePromoter(object):
         assert_equal(self.promoter._staging_stats['test_rule_2'].alert_count, 5)
 
     @patch('stream_alert.shared.rule_table.RuleTable.remote_rule_info', new_callable=PropertyMock)
-    def test_run(self, table_mock):
+    @patch('stream_alert.rule_promotion.publisher.StatsPublisher.publish')
+    def test_run(self, publish_mock, table_mock):
         """RulePromoter - Run"""
         self.promoter._staging_stats.clear()
         table_mock.return_value = {
@@ -136,18 +137,23 @@ class TestRulePromoter(object):
             }
         }
 
-        with patch.object(self.promoter, '_publisher') as publisher_mock, \
-             patch.object(self.promoter, '_update_alert_count', Mock()), \
+        with patch.object(self.promoter, '_update_alert_count', Mock()), \
              patch.object(self.promoter, '_promote_rules', Mock()):
-            self.promoter.run()
-            publisher_mock.publish.assert_called_with(self.promoter._staging_stats.values())
+            self.promoter.run(True)
+            publish_mock.assert_called_with(self.promoter._staging_stats.values())
 
     @patch('logging.Logger.debug')
     def test_run_none_staged(self, log_mock):
         """RulePromoter - Run, No Staged Rules"""
         self.promoter._staging_stats.clear()
-        self.promoter.run()
+        self.promoter.run(False)
         log_mock.assert_called_with('No staged rules to promote')
+
+    @patch('logging.Logger.debug')
+    def test_run_do_not_send_digest(self, log_mock):
+        """RulePromoter - Run, Do Not Send Digest"""
+        self.promoter.run(False)
+        log_mock.assert_called_with('Daily digest will not be sent')
 
     @patch('logging.Logger.info')
     def test_promote_rules(self, log_mock):

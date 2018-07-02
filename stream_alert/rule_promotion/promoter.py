@@ -30,13 +30,13 @@ class RulePromoter(object):
     STREAMALERT_DATABASE = '{}_streamalert'
 
     def __init__(self):
-        config = load_config()
-        prefix = config['global']['account']['prefix']
+        self._config = load_config()
+        prefix = self._config['global']['account']['prefix']
 
         # Create the rule table class for getting staging information
         self._rule_table = RuleTable('{}_streamalert_rules'.format(prefix))
 
-        athena_config = config['lambda']['athena_partition_refresh_config']
+        athena_config = self._config['lambda']['athena_partition_refresh_config']
 
         # Get the name of the athena database to access
         db_name = athena_config.get('database_name', self.STREAMALERT_DATABASE.format(prefix))
@@ -49,10 +49,6 @@ class RulePromoter(object):
 
         self._athena_client = AthenaClient(db_name, results_bucket, self.ATHENA_S3_PREFIX)
         self._current_time = datetime.utcnow()
-
-        # Store the SNS topic arn to send alert stat information to
-        self._publisher = StatsPublisher(config, self._athena_client, self._current_time)
-
         self._staging_stats = dict()
 
     def _get_staging_info(self):
@@ -108,8 +104,13 @@ class RulePromoter(object):
 
                 self._staging_stats[rule_name].alert_count = alert_count
 
-    def run(self):
-        """Perform statistic analysis of currently staged rules"""
+    def run(self, send_digest):
+        """Perform statistic analysis of currently staged rules
+
+        Args:
+            send_digest (bool): True if the staging statistics digest should be
+                published, False otherwise
+        """
         if not self._get_staging_info():
             LOGGER.debug('No staged rules to promote')
             return
@@ -118,7 +119,11 @@ class RulePromoter(object):
 
         self._promote_rules()
 
-        self._publisher.publish(self._staging_stats.values())
+        if send_digest:
+            publisher = StatsPublisher(self._config, self._athena_client, self._current_time)
+            publisher.publish(self._staging_stats.values())
+        else:
+            LOGGER.debug('Daily digest will not be sent')
 
     def _promote_rules(self):
         """Promote any rule that has not resulted in any alerts since being staged"""
