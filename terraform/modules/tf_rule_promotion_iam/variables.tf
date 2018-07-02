@@ -11,11 +11,19 @@ variable "digest_sns_topic" {
 }
 
 variable "rules_table_arn" {
-  description = "Rules DynamoDB Table arn exported from tf_stream_alert_globals"
+  description = "Rules DynamoDB Table arn, exported from the tf_stream_alert_globals module"
 }
 
 variable "role_id" {
-  description = "Rule Promotion IAM Role ID"
+  description = "Rule Promotion IAM Role ID, exported from the tf_lambda module"
+}
+
+variable "function_alias_arn" {
+  description = "Rule Promotion function alias arn, exported from the tf_lambda module"
+}
+
+variable "send_digest_cron" {
+  description = "Cron or rate expression to be used for scheduling the sending of the rule staging digest"
 }
 
 variable "athena_results_bucket_arn" {

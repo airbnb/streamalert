@@ -13,8 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-import json
-
 import boto3
 
 from stream_alert.rule_promotion import LOGGER
@@ -31,7 +29,6 @@ class StatsPublisher(object):
         self._topic_arn = self.formatted_sns_topic_arn(config)
         self._athena_client = athena_client
         self._current_time = current_time
-        self._state = self._load_state()
 
     @classmethod
     def formatted_sns_topic_arn(cls, config):
@@ -70,30 +67,6 @@ class StatsPublisher(object):
 
         return '\n\n'.join(str(stat) for stat in sorted(stats, reverse=True))
 
-    @classmethod
-    def _load_state(cls):
-        """Retrieve the remote state configuration from systems manager
-
-        Returns:
-            dict: The JSON configuration loaded into a dictionary
-        """
-        cls.SSM_CLIENT = boto3.client('ssm')
-        response = cls.SSM_CLIENT.get_parameter(Name=cls.SSM_STATE_NAME)
-        return json.loads(response['Parameter']['Value'])
-
-    def _write_state(self):
-        """Write the new state configuration to systems manager"""
-        self._state['sent_daily_digest'] = (
-            self._state['send_digest_hour_utc'] == self._current_time.hour
-        )
-        param_value = json.dumps(self._state)
-        StatsPublisher.SSM_CLIENT.put_parameter(
-            Name=self.SSM_STATE_NAME,
-            Value=param_value,
-            Type='String',
-            Overwrite=True
-        )
-
     def _query_alerts(self, stat):
         """Execute a query for all alerts for a rule so the user can be sent the results
 
@@ -131,14 +104,6 @@ class StatsPublisher(object):
             Subject=subject
         )
 
-    @property
-    def _should_send_digest(self):
-        """Returns True if the daily digest should be sent, False otherwise"""
-        return (
-            self._state['send_digest_hour_utc'] == self._current_time.hour
-            and not self._state.get('sent_daily_digest')
-        )
-
     def publish(self, stats):
         """Public method for publishing alert statistics message to SNS
 
@@ -146,17 +111,11 @@ class StatsPublisher(object):
             stats (list<StagingStatistic>): Group of rule staging statistics
                 that are being reported on
         """
-        if self._should_send_digest:
+        for stat in stats:
+            # If there are no alerts, do not run the comprehensive query
+            if not stat:
+                continue
 
-            for stat in stats:
-                # If there are no alerts, do not run the comprehensive query
-                if not stat:
-                    continue
+            stat.execution_id = self._query_alerts(stat)
 
-                stat.execution_id = self._query_alerts(stat)
-
-            self._publish_message(stats)
-        else:
-            LOGGER.debug('Daily digest will not be sent')
-
-        self._write_state()
+        self._publish_message(stats)

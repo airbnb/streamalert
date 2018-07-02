@@ -3,15 +3,20 @@ resource "aws_sns_topic" "digest_sns_topic" {
   name = "${var.digest_sns_topic}"
 }
 
-// SSM Parameter that stores stat publishing information
-resource "aws_ssm_parameter" "stats_publisher_state" {
-  name      = "${var.stats_publisher_state_name}"
-  type      = "String"
-  value     = "${var.stats_publisher_state_value}"
-  overwrite = true
+// CloudWatch event to trigger Lambda and send digest on a schedule
+resource "aws_cloudwatch_event_rule" "send_digest_invocation_schedule" {
+  name                = "rule_promotion_digest_schedule"
+  description         = "Invokes Rule Promotion function at ${var.schedule_expression}"
+  schedule_expression = "${var.schedule_expression}"
 }
 
-// Allow the Rule Promotion function to send SNS messages
+resource "aws_cloudwatch_event_target" "send_digest_invocation" {
+  rule  = "${aws_cloudwatch_event_rule.send_digest_invocation_schedule.name}"
+  arn   = "${var.function_alias_arn}"
+  input = "{\"send_digest\": true}"
+}
+
+// Allow the Rule Promotion function to perform necessary actions
 resource "aws_iam_role_policy" "rule_promotion_actions" {
   name   = "RulePromotionActions"
   role   = "${var.role_id}"
@@ -81,20 +86,6 @@ data "aws_iam_policy_document" "rule_promotion_actions" {
 
     resources = [
       "${var.athena_results_bucket_arn}*",
-    ]
-  }
-
-  statement {
-    sid    = "SSMParameterAccess"
-    effect = "Allow"
-
-    actions = [
-      "ssm:GetParameter",
-      "ssm:PutParameter",
-    ]
-
-    resources = [
-      "${aws_ssm_parameter.stats_publisher_state.arn}",
     ]
   }
 

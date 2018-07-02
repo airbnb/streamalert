@@ -57,7 +57,7 @@
         "threshold": 6
       }
     },
-    "send_digest_hour_utc": 16,
+    "send_digest_cron": "cron(30 13 * * ? *)",
     "timeout": 120
   },
   "threat_intel_downloader_config": {

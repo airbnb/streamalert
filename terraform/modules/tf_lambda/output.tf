@@ -15,3 +15,8 @@ output "role_arn" {
 output "role_id" {
   value = "${aws_iam_role.role.0.id}"
 }
+
+// Combine the two mutually exclusive lists and export the first element as the function alias arn
+output "function_alias_arn" {
+  value = "${concat(aws_lambda_alias.alias_vpc.*.arn, aws_lambda_alias.alias_no_vpc.*.arn)[0]}"
+}
