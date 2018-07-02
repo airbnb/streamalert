@@ -158,7 +158,7 @@ def deploy(options, config):
         deploy_targets.update(targets)
 
     # Update the rule table now if the rule processor is being deployed
-    if 'rule' in options.processor:
+    if 'rule' in processors:
         _update_rule_table(options, config)
 
     # Terraform applies the new package and publishes a new version

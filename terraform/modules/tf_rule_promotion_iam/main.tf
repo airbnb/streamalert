@@ -54,6 +54,7 @@ data "aws_iam_policy_document" "rule_promotion_actions" {
       "athena:GetQueryExecution",
       "athena:GetQueryResults",
       "athena:StartQueryExecution",
+      "glue:GetPartition",
       "glue:GetPartitions",
       "glue:GetTable",
     ]
