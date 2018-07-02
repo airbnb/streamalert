@@ -81,7 +81,7 @@
         "threshold": 0
       }
     },
-    "send_digest_hour_utc": 16,
+    "send_digest_cron": "cron(30 13 * * ? *)",
     "timeout": 120
   }
 }
