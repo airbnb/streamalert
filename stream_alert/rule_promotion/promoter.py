@@ -91,10 +91,9 @@ class RulePromoter(object):
         """
         query = StagingStatistic.construct_compound_count_query(self._staging_stats.values())
         LOGGER.debug('Running compound query for alert count: \'%s\'', query)
-
-        for results in self._athena_client.query_result_paginator(query):
+        for page, results in enumerate(self._athena_client.query_result_paginator(query)):
             for i, row in enumerate(results['ResultSet']['Rows']):
-                if i == 0: # skip header row
+                if page == 0 and i == 0: # skip header row included in first page only
                     continue
 
                 row_values = [data.values()[0] for data in row['Data']]

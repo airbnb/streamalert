@@ -150,8 +150,10 @@ class TestRulePromoter(object):
         log_mock.assert_called_with('No staged rules to promote')
 
     @patch('logging.Logger.debug')
-    def test_run_do_not_send_digest(self, log_mock):
+    @patch('stream_alert.shared.athena.AthenaClient.query_result_paginator')
+    def test_run_do_not_send_digest(self, athena_mock, log_mock):
         """RulePromoter - Run, Do Not Send Digest"""
+        athena_mock.return_value = [self._mock_athena_data()]
         self.promoter.run(False)
         log_mock.assert_called_with('Staging statistics digest will not be sent')
 
