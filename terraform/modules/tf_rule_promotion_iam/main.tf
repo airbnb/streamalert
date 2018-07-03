@@ -3,15 +3,30 @@ resource "aws_sns_topic" "digest_sns_topic" {
   name = "${var.digest_sns_topic}"
 }
 
-// SSM Parameter that stores stat publishing information
-resource "aws_ssm_parameter" "stats_publisher_state" {
-  name      = "${var.stats_publisher_state_name}"
-  type      = "String"
-  value     = "${var.stats_publisher_state_value}"
-  overwrite = true
+// CloudWatch event to trigger Lambda and send digest on a schedule
+resource "aws_cloudwatch_event_rule" "send_digest_invocation_schedule" {
+  name                = "${var.function_name}_digest_schedule"
+  description         = "Invokes ${var.function_name} at ${var.send_digest_schedule_expression}"
+  schedule_expression = "${var.send_digest_schedule_expression}"
 }
 
-// Allow the Rule Promotion function to send SNS messages
+resource "aws_cloudwatch_event_target" "send_digest_invocation" {
+  rule  = "${aws_cloudwatch_event_rule.send_digest_invocation_schedule.name}"
+  arn   = "${var.function_alias_arn}"
+  input = "{\"send_digest\": true}"
+}
+
+// Allow Lambda function to be invoked via a CloudWatch event rule
+resource "aws_lambda_permission" "allow_cloudwatch_invocation" {
+  statement_id  = "AllowExecutionFromCloudWatch_${var.function_name}_digest_schedule"
+  action        = "lambda:InvokeFunction"
+  function_name = "${var.function_name}"
+  principal     = "events.amazonaws.com"
+  source_arn    = "${aws_cloudwatch_event_rule.send_digest_invocation_schedule.arn}"
+  qualifier     = "production"
+}
+
+// Allow the Rule Promotion function to perform necessary actions
 resource "aws_iam_role_policy" "rule_promotion_actions" {
   name   = "RulePromotionActions"
   role   = "${var.role_id}"
@@ -81,20 +96,6 @@ data "aws_iam_policy_document" "rule_promotion_actions" {
 
     resources = [
       "${var.athena_results_bucket_arn}*",
-    ]
-  }
-
-  statement {
-    sid    = "SSMParameterAccess"
-    effect = "Allow"
-
-    actions = [
-      "ssm:GetParameter",
-      "ssm:PutParameter",
-    ]
-
-    resources = [
-      "${aws_ssm_parameter.stats_publisher_state.arn}",
     ]
   }
 

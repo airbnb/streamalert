@@ -26,17 +26,17 @@ from stream_alert.shared.rule_table import RuleTable
 class RulePromoter(object):
     """Run queries to generate statistics on alerts."""
 
-    ATHENA_S3_PREFIX = 'athena_partition_refresh'
+    ATHENA_S3_PREFIX = 'rule_promoter'
     STREAMALERT_DATABASE = '{}_streamalert'
 
     def __init__(self):
-        config = load_config()
-        prefix = config['global']['account']['prefix']
+        self._config = load_config()
+        prefix = self._config['global']['account']['prefix']
 
         # Create the rule table class for getting staging information
         self._rule_table = RuleTable('{}_streamalert_rules'.format(prefix))
 
-        athena_config = config['lambda']['athena_partition_refresh_config']
+        athena_config = self._config['lambda']['athena_partition_refresh_config']
 
         # Get the name of the athena database to access
         db_name = athena_config.get('database_name', self.STREAMALERT_DATABASE.format(prefix))
@@ -49,10 +49,6 @@ class RulePromoter(object):
 
         self._athena_client = AthenaClient(db_name, results_bucket, self.ATHENA_S3_PREFIX)
         self._current_time = datetime.utcnow()
-
-        # Store the SNS topic arn to send alert stat information to
-        self._publisher = StatsPublisher(config, self._athena_client, self._current_time)
-
         self._staging_stats = dict()
 
     def _get_staging_info(self):
@@ -95,10 +91,9 @@ class RulePromoter(object):
         """
         query = StagingStatistic.construct_compound_count_query(self._staging_stats.values())
         LOGGER.debug('Running compound query for alert count: \'%s\'', query)
-
-        for results in self._athena_client.query_result_paginator(query):
+        for page, results in enumerate(self._athena_client.query_result_paginator(query)):
             for i, row in enumerate(results['ResultSet']['Rows']):
-                if i == 0: # skip header row
+                if page == 0 and i == 0: # skip header row included in first page only
                     continue
 
                 row_values = [data.values()[0] for data in row['Data']]
@@ -108,8 +103,13 @@ class RulePromoter(object):
 
                 self._staging_stats[rule_name].alert_count = alert_count
 
-    def run(self):
-        """Perform statistic analysis of currently staged rules"""
+    def run(self, send_digest):
+        """Perform statistic analysis of currently staged rules
+
+        Args:
+            send_digest (bool): True if the staging statistics digest should be
+                published, False otherwise
+        """
         if not self._get_staging_info():
             LOGGER.debug('No staged rules to promote')
             return
@@ -118,7 +118,11 @@ class RulePromoter(object):
 
         self._promote_rules()
 
-        self._publisher.publish(self._staging_stats.values())
+        if send_digest:
+            publisher = StatsPublisher(self._config, self._athena_client, self._current_time)
+            publisher.publish(self._staging_stats.values())
+        else:
+            LOGGER.debug('Staging statistics digest will not be sent')
 
     def _promote_rules(self):
         """Promote any rule that has not resulted in any alerts since being staged"""

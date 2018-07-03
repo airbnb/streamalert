@@ -31,15 +31,15 @@ class TestRulePromotion(object):
     def test_generate(self):
         """CLI - Terraform Generate Rule Promotion"""
         result = rule_promotion.generate_rule_promotion(config=self.config)
-        state = '{"send_digest_hour_utc": 16, "sent_daily_digest": false}'
         expected = {
             'module': {
                 'rule_promotion_iam': {
                     'role_id': '${module.rule_promotion_lambda.role_id}',
+                    'function_alias_arn': '${module.rule_promotion_lambda.function_alias_arn}',
+                    'function_name': '${module.rule_promotion_lambda.function_name}',
                     'rules_table_arn': '${module.globals.rules_table_arn}',
                     'source': 'modules/tf_rule_promotion_iam',
-                    'stats_publisher_state_name': 'staging_stats_publisher_state',
-                    'stats_publisher_state_value': state,
+                    'send_digest_schedule_expression': 'cron(30 13 * * ? *)',
                     'digest_sns_topic': 'staging_stats',
                     'athena_results_bucket_arn': '${module.stream_alert_athena.results_bucket_arn}',
                     'athena_data_buckets': [
@@ -68,7 +68,8 @@ class TestRulePromotion(object):
                     'throttles_alarm_evaluation_periods': 4,
                     'throttles_alarm_period_secs': 5,
                     'throttles_alarm_threshold': 6,
-                    'timeout_sec': 120
+                    'timeout_sec': 120,
+                    'schedule_expression': 'rate(10 minutes)'
                 }
             }
         }

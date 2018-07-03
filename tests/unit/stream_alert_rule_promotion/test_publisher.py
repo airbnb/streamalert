@@ -14,12 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from datetime import datetime, timedelta
-import json
-import os
 
-import boto3
-from mock import Mock, patch, PropertyMock
-from moto import mock_ssm
+from mock import patch, PropertyMock
 from nose.tools import assert_equal, assert_raises
 
 from stream_alert.rule_promotion.publisher import StatsPublisher
@@ -31,7 +27,6 @@ class TestStatsPublisher(object):
     """Tests for rule_promotion/publisher.py:StatsPublisher"""
     # pylint: disable=protected-access
 
-    @patch.object(StatsPublisher, '_load_state', Mock())
     def setup(self):
         """StatsPublisher - Setup"""
         # pylint: disable=attribute-defined-outside-init
@@ -45,19 +40,6 @@ class TestStatsPublisher(object):
             'sent_daily_digest': False,
             'send_digest_hour_utc': 12
         }
-
-    @staticmethod
-    def _put_ssm_param(sent=False):
-        """Helper function to put fake ssm param for StatsPublisher"""
-        param = json.dumps({
-            'sent_daily_digest': sent,
-            'send_digest_hour_utc': 9
-        })
-        boto3.client('ssm').put_parameter(
-            Name=StatsPublisher.SSM_STATE_NAME,
-            Value=param,
-            Type='String'
-        )
 
     @staticmethod
     def _get_fake_stats(count=2):
@@ -116,39 +98,7 @@ class TestStatsPublisher(object):
         digest = self.publisher._format_digest(stats)
         assert_equal(digest, expected_digest)
 
-    @mock_ssm
-    def test_load_state(self):
-        """StatsPublisher - Load State"""
-        expected_param = {
-            'sent_daily_digest': False,
-            'send_digest_hour_utc': 9
-        }
-        with patch.dict(os.environ, {'AWS_DEFAULT_REGION': 'us-east-1'}):
-            self._put_ssm_param()
-            assert_equal(self.publisher._load_state(), expected_param)
-
-    @patch('stream_alert.rule_promotion.publisher.StatsPublisher.SSM_CLIENT')
-    def test_write_state(self, ssm_mock):
-        """StatsPublisher - Write State"""
-        # Change the current time hour so the publisher assumes the digest was sent
-        self.publisher._current_time = self.publisher._current_time.replace(hour=9)
-        self.publisher._state['send_digest_hour_utc'] = 9
-
-        # sent_daily_digest should be True now since the hour in the day == 9
-        args = {
-            'Name': 'staging_stats_publisher_state',
-            'Value': json.dumps({
-                'sent_daily_digest': True,
-                'send_digest_hour_utc': 9
-            }),
-            'Type': 'String',
-            'Overwrite': True
-        }
-        self.publisher._write_state()
-        ssm_mock.put_parameter.assert_called_with(**args)
-
     @patch('stream_alert.rule_promotion.publisher.StatsPublisher._publish_message')
-    @patch('stream_alert.rule_promotion.publisher.StatsPublisher._write_state', Mock())
     def test_query_alerts_none(self, publish_mock):
         """StatsPublisher - Query Alerts, No Alerts for Stat"""
         self.publisher._state['send_digest_hour_utc'] = 1
@@ -191,27 +141,8 @@ class TestStatsPublisher(object):
         }
         boto_mock.resource.return_value.Topic.return_value.publish.assert_called_with(**args)
 
-    def test_should_send_digest(self):
-        """StatsPublisher - Should Send Digest Property, True"""
-        # the 'current hour' is also 1, so set digest sending hour to 1
-        self.publisher._state['send_digest_hour_utc'] = 1
-        assert_equal(self.publisher._should_send_digest, True)
-
-    def test_should_not_send_digest(self):
-        """StatsPublisher - Should Send Digest Property, False"""
-        assert_equal(self.publisher._should_send_digest, False)
-
-    @patch('logging.Logger.debug')
-    @patch('stream_alert.rule_promotion.publisher.StatsPublisher._write_state')
-    def test_do_not_publish(self, write_mock, log_mock):
-        """StatsPublisher - Publish, False"""
-        self.publisher.publish(None)
-        log_mock.assert_called_with('Daily digest will not be sent')
-        write_mock.assert_called_once()
-
     @patch('stream_alert.rule_promotion.publisher.StatsPublisher._publish_message')
     @patch('stream_alert.rule_promotion.publisher.StatsPublisher._query_alerts')
-    @patch('stream_alert.rule_promotion.publisher.StatsPublisher._write_state', Mock())
     def test_publish(self, query_mock, publish_mock):
         """StatsPublisher - Publish, False"""
         query_mock.return_value = 'fake-id'

@@ -13,8 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-import json
-
 from stream_alert.rule_promotion.publisher import StatsPublisher
 from stream_alert.shared import RULE_PROMOTION_NAME
 from stream_alert_cli.manage_lambda.package import RulePromotionPackage
@@ -36,20 +34,16 @@ def generate_rule_promotion(config):
     athena_config = config['lambda']['athena_partition_refresh_config']
     data_buckets = athena_config['buckets'].keys()
 
-    state_param = json.dumps({
-        'send_digest_hour_utc':
-            int(config['lambda']['rule_promotion_config']['send_digest_hour_utc']),
-        'sent_daily_digest': False
-    }, sort_keys=True)
-
     # Set variables for the IAM permissions, etc module
     result['module']['rule_promotion_iam'] = {
         'source': 'modules/tf_rule_promotion_iam',
-        'stats_publisher_state_name': StatsPublisher.SSM_STATE_NAME,
-        'stats_publisher_state_value': state_param,
+        'send_digest_schedule_expression':
+            config['lambda']['rule_promotion_config']['send_digest_schedule_expression'],
         'digest_sns_topic': StatsPublisher.formatted_sns_topic_arn(config).split(':')[-1],
         'role_id': '${module.rule_promotion_lambda.role_id}',
         'rules_table_arn': '${module.globals.rules_table_arn}',
+        'function_alias_arn': '${module.rule_promotion_lambda.function_alias_arn}',
+        'function_name': '${module.rule_promotion_lambda.function_name}',
         'athena_results_bucket_arn': '${module.stream_alert_athena.results_bucket_arn}',
         'athena_data_buckets': data_buckets
     }
