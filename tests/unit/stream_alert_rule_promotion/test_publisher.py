@@ -36,11 +36,6 @@ class TestStatsPublisher(object):
             current_time=datetime(year=2000, month=1, day=1, hour=1, minute=1, second=1)
         )
 
-        self.publisher._state = {
-            'sent_daily_digest': False,
-            'send_digest_hour_utc': 12
-        }
-
     @staticmethod
     def _get_fake_stats(count=2):
         """Helper function to return fake StagingStatistics"""
@@ -101,7 +96,6 @@ class TestStatsPublisher(object):
     @patch('stream_alert.rule_promotion.publisher.StatsPublisher._publish_message')
     def test_query_alerts_none(self, publish_mock):
         """StatsPublisher - Query Alerts, No Alerts for Stat"""
-        self.publisher._state['send_digest_hour_utc'] = 1
         stats = list(self._get_fake_stats(count=1))
         stats[0].alert_count = 0
         with patch.object(self.publisher, '_athena_client', new_callable=PropertyMock) as mock:
@@ -147,6 +141,5 @@ class TestStatsPublisher(object):
         """StatsPublisher - Publish, False"""
         query_mock.return_value = 'fake-id'
         stats = list(self._get_fake_stats(count=1))
-        self.publisher._state['send_digest_hour_utc'] = 1
         self.publisher.publish(stats)
         publish_mock.assert_called_with(stats)
