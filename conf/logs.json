@@ -1266,6 +1266,7 @@
         "subscriptionFilters": []
       },
       "json_path": "logEvents[*].message",
+      "escapechar": "\\",
       "quotechar": "'"
     }
   },
