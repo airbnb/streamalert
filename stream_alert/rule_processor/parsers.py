@@ -396,6 +396,7 @@ class CSVParser(ParserBase):
     __parserid__ = 'csv'
     __default_delimiter = ','
     __default_quotechar = '"'
+    __default_escapechar = None # None is the default for this option in the csv module
 
     def _get_reader(self, data):
         """Return the CSV reader for the given payload source
@@ -406,12 +407,20 @@ class CSVParser(ParserBase):
         """
         delimiter = str(self.options.get('delimiter', self.__default_delimiter))
         quotechar = str(self.options.get('quotechar', self.__default_quotechar))
+        # only cast to string if it exists since casting NoneType to string will result in 'None'
+        escapechar = (str(self.options.get('escapechar'))
+                      if 'escapechar' in self.options else self.__default_escapechar)
 
         # TODO(ryandeivert): either subclass a current parser or add a new
         # parser to support parsing CSV data that contains a header line
         try:
             csv_data = StringIO.StringIO(data)
-            reader = csv.reader(csv_data, delimiter=delimiter, quotechar=quotechar)
+            reader = csv.reader(
+                csv_data,
+                delimiter=delimiter,
+                quotechar=quotechar,
+                escapechar=escapechar
+            )
         except (ValueError, csv.Error):
             return False
 
