@@ -15,7 +15,11 @@ variable "role_id" {
 }
 
 variable "kms_key_arn" {
-  description = "KMS key ARN used for encrypting output secrets"
+  description = "KMS key ARN used for (client-side) encrypting output secrets"
+}
+
+variable "sse_kms_key_arn" {
+  description = "KMS key ARN for server-side encryption of the secrets bucket"
 }
 
 variable "output_lambda_functions" {
