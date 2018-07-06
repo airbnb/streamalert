@@ -15,8 +15,8 @@ limitations under the License.
 """
 # pylint: disable=abstract-class-instantiated,protected-access,attribute-defined-outside-init,no-self-use
 import boto3
-from mock import patch
-from moto import mock_kinesis, mock_lambda, mock_s3, mock_sns, mock_sqs
+from mock import MagicMock, patch
+from moto import mock_kinesis, mock_s3, mock_sns, mock_sqs
 from nose.tools import (
     assert_equal,
     assert_false,
@@ -25,6 +25,7 @@ from nose.tools import (
 )
 
 from stream_alert.alert_processor.outputs.output_base import OutputProperty
+from stream_alert.alert_processor.outputs import aws as aws_outputs
 from stream_alert.alert_processor.outputs.aws import (
     AWSOutput,
     KinesisFirehoseOutput,
@@ -34,7 +35,6 @@ from stream_alert.alert_processor.outputs.aws import (
     SQSOutput,
     CloudwatchLogOutput
 )
-from stream_alert_cli.helpers import create_lambda_function
 from tests.unit.stream_alert_alert_processor import (
     ACCOUNT_ID,
     CONFIG,
@@ -111,7 +111,7 @@ class TestFirehoseOutput(object):
         assert_false(self._dispatcher.dispatch(alert, self.OUTPUT))
 
 
-@mock_lambda
+@patch.object(aws_outputs, 'boto3', MagicMock())
 class TestLambdaOutput(object):
     """Test class for LambdaOutput"""
     DESCRIPTOR = 'unit_test_lambda'
@@ -121,7 +121,6 @@ class TestLambdaOutput(object):
     def setup(self):
         """Setup before each method"""
         self._dispatcher = LambdaOutput(REGION, ACCOUNT_ID, FUNCTION_NAME, CONFIG)
-        create_lambda_function(CONFIG[self.SERVICE][self.DESCRIPTOR], REGION)
 
     def test_locals(self):
         """LambdaOutput local variables"""
@@ -140,7 +139,6 @@ class TestLambdaOutput(object):
     def test_dispatch_with_qualifier(self, log_mock):
         """LambdaOutput - Dispatch Success, With Qualifier"""
         alt_descriptor = '{}_qual'.format(self.DESCRIPTOR)
-        create_lambda_function(CONFIG[self.SERVICE][alt_descriptor], REGION)
 
         assert_true(
             self._dispatcher.dispatch(get_alert(), ':'.join([self.SERVICE, alt_descriptor])))

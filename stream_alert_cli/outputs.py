@@ -75,12 +75,7 @@ def send_creds_to_s3(region, bucket, key, blob_data):
     """
     try:
         client = boto3.client('s3', region_name=region)
-        client.put_object(
-            Body=blob_data,
-            Bucket=bucket,
-            Key=key,
-            ServerSideEncryption='AES256'
-        )
+        client.put_object(Body=blob_data, Bucket=bucket, Key=key)
 
         return True
     except ClientError as err:

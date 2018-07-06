@@ -51,6 +51,7 @@ def generate_athena(config):
         'database_name': database,
         'queue_name': queue_name,
         'results_bucket': results_bucket_name,
+        'kms_key_id': '${aws_kms_key.server_side_encryption.key_id}',
         'lambda_handler': AthenaPackage.lambda_handler,
         'lambda_memory': athena_config.get('memory', '128'),
         'lambda_timeout': athena_config.get('timeout', '60'),

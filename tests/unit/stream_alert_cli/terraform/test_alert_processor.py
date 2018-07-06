@@ -47,7 +47,8 @@ class TestAlertProcessor(unittest.TestCase):
                     'prefix': 'unit-testing',
                     'region': 'us-west-1',
                     'role_id': '${module.alert_processor_lambda.role_id}',
-                    'source': 'modules/tf_alert_processor_iam'
+                    'source': 'modules/tf_alert_processor_iam',
+                    'sse_kms_key_arn': '${aws_kms_key.server_side_encryption.arn}'
                 },
                 'alert_processor_lambda': {
                     'alarm_actions': ['arn:aws:sns:us-west-1:12345678910:stream_alert_monitoring'],
@@ -102,7 +103,8 @@ class TestAlertProcessor(unittest.TestCase):
                     'prefix': 'unit-testing',
                     'region': 'us-west-1',
                     'role_id': '${module.alert_processor_lambda.role_id}',
-                    'source': 'modules/tf_alert_processor_iam'
+                    'source': 'modules/tf_alert_processor_iam',
+                    'sse_kms_key_arn': '${aws_kms_key.server_side_encryption.arn}'
                 },
                 'alert_processor_lambda': {
                     'description': 'Unit-Testing Streamalert Alert Processor',

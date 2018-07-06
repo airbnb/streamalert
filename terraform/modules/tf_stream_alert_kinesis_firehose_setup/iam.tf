@@ -46,6 +46,18 @@ data "aws_iam_policy_document" "firehose_s3" {
       "arn:aws:s3:::${var.s3_bucket_name}/*",
     ]
   }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "kms:Encrypt",
+      "kms:Decrypt",
+      "kms:GenerateDataKey*",
+    ]
+
+    resources = ["arn:aws:kms:${var.region}:${var.account_id}:key/${var.kms_key_id}"]
+  }
 }
 
 // IAM Policy: Write logs to CloudWatch
