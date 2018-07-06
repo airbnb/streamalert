@@ -4,6 +4,8 @@ variable "prefix" {}
 
 variable "region" {}
 
+variable "kms_key_arn" {}
+
 variable "alerts_table_read_capacity" {}
 
 variable "alerts_table_write_capacity" {}

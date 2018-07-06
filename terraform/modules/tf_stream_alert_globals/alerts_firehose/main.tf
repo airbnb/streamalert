@@ -10,6 +10,7 @@ resource "aws_kinesis_firehose_delivery_stream" "stream_alerts" {
     buffer_size        = "${var.buffer_size}"
     buffer_interval    = "${var.buffer_interval}"
     compression_format = "${var.compression_format}"
+    kms_key_arn        = "${var.kms_key_arn}"
 
     cloudwatch_logging_options {
       enabled         = true

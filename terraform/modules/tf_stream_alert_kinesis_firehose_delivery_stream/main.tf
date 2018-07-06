@@ -15,5 +15,6 @@ resource "aws_kinesis_firehose_delivery_stream" "stream_alert_data" {
     buffer_size        = "${var.buffer_size}"
     buffer_interval    = "${var.buffer_interval}"
     compression_format = "${var.compression_format}"
+    kms_key_arn        = "${var.kms_key_arn}"
   }
 }

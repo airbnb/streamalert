@@ -1,8 +1,9 @@
 module "alerts_firehose" {
-  source     = "alerts_firehose"
-  account_id = "${var.account_id}"
-  prefix     = "${var.prefix}"
-  region     = "${var.region}"
+  source      = "alerts_firehose"
+  account_id  = "${var.account_id}"
+  prefix      = "${var.prefix}"
+  region      = "${var.region}"
+  kms_key_arn = "${var.kms_key_arn}"
 }
 
 // TODO: Autoscaling

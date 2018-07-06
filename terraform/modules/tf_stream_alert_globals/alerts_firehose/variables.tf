@@ -16,6 +16,8 @@ variable "compression_format" {
   default = "GZIP"
 }
 
+variable "kms_key_arn" {}
+
 variable "prefix" {}
 
 variable "region" {}
