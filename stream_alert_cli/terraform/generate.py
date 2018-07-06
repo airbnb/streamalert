@@ -92,10 +92,7 @@ def generate_s3_bucket(bucket, logging, **kwargs):
     if sse_algorithm == 'aws:kms':
         s3_bucket['server_side_encryption_configuration']['rule'][
             'apply_server_side_encryption_by_default']['kms_master_key_id'] = (
-            '${aws_kms_key.server_side_encryption.key_id}'
-        )
-
-
+                '${aws_kms_key.server_side_encryption.key_id}')
 
     lifecycle_rule = kwargs.get('lifecycle_rule')
     if lifecycle_rule:

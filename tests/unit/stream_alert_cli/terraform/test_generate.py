@@ -23,7 +23,7 @@ from stream_alert_cli.terraform import (
     streamalert
 )
 
-from mock import patch
+from mock import ANY, patch
 from nose.tools import assert_equal, assert_false, assert_true
 
 
@@ -50,7 +50,8 @@ class TestTerraformGenerate(object):
             'acl',
             'force_destroy',
             'versioning',
-            'logging'
+            'logging',
+            'server_side_encryption_configuration'
         }
 
         assert_equal(type(bucket), dict)
@@ -101,12 +102,21 @@ class TestTerraformGenerate(object):
             },
             'resource': {
                 'aws_kms_key': {
+                    'server_side_encryption': {
+                        'enable_key_rotation': True,
+                        'description': 'StreamAlert S3 Server-Side Encryption',
+                        'policy': ANY
+                    },
                     'stream_alert_secrets': {
                         'enable_key_rotation': True,
                         'description': 'StreamAlert secret management'
                     }
                 },
                 'aws_kms_alias': {
+                    'server_side_encryption': {
+                        'name': 'alias/unit-testing_server-side-encryption',
+                        'target_key_id': '${aws_kms_key.server_side_encryption.key_id}'
+                    },
                     'stream_alert_secrets': {
                         'name': 'alias/unit-testing',
                         'target_key_id': '${aws_kms_key.stream_alert_secrets.key_id}'
@@ -123,6 +133,15 @@ class TestTerraformGenerate(object):
                         'logging': {
                             'target_bucket': 'unit-testing.streamalert.s3-logging',
                             'target_prefix': 'unit-testing.streamalert.secrets/'
+                        },
+                        'server_side_encryption_configuration': {
+                            'rule': {
+                                'apply_server_side_encryption_by_default': {
+                                    'sse_algorithm': 'aws:kms',
+                                    'kms_master_key_id': (
+                                        '${aws_kms_key.server_side_encryption.key_id}')
+                                }
+                            }
                         }
                     },
                     'terraform_remote_state': {
@@ -135,6 +154,15 @@ class TestTerraformGenerate(object):
                         'logging': {
                             'target_bucket': 'unit-testing.streamalert.s3-logging',
                             'target_prefix': 'unit-testing.streamalert.terraform.state/'
+                        },
+                        'server_side_encryption_configuration': {
+                            'rule': {
+                                'apply_server_side_encryption_by_default': {
+                                    'sse_algorithm': 'aws:kms',
+                                    'kms_master_key_id': (
+                                        '${aws_kms_key.server_side_encryption.key_id}')
+                                }
+                            }
                         }
                     },
                     'logging_bucket': {
@@ -155,6 +183,13 @@ class TestTerraformGenerate(object):
                                 'days': 365,
                                 'storage_class': 'GLACIER'
                             }
+                        },
+                        'server_side_encryption_configuration': {
+                            'rule': {
+                                'apply_server_side_encryption_by_default': {
+                                    'sse_algorithm': 'AES256'
+                                }
+                            }
                         }
                     },
                     'streamalerts': {
@@ -167,6 +202,15 @@ class TestTerraformGenerate(object):
                         'logging': {
                             'target_bucket': 'unit-testing.streamalert.s3-logging',
                             'target_prefix': 'unit-testing.streamalerts/'
+                        },
+                        'server_side_encryption_configuration': {
+                            'rule': {
+                                'apply_server_side_encryption_by_default': {
+                                    'sse_algorithm': 'aws:kms',
+                                    'kms_master_key_id': (
+                                        '${aws_kms_key.server_side_encryption.key_id}')
+                                }
+                            }
                         }
                     }
                 },
@@ -302,6 +346,7 @@ class TestTerraformGenerate(object):
                      {'enable_logging', 'enable_kinesis'})
         assert_equal(self.cluster_dict['module']['cloudtrail_advanced'], {
             'account_ids': ['12345678910'],
+            'primary_account_id': '12345678910',
             'cluster': 'advanced',
             'kinesis_arn': '${module.kinesis_advanced.arn}',
             'prefix': 'unit-testing',
@@ -342,6 +387,7 @@ class TestTerraformGenerate(object):
         assert_equal('cloudtrail_advanced' in self.cluster_dict['module'], True)
         assert_equal(self.cluster_dict['module']['cloudtrail_advanced'], {
             'account_ids': ['12345678910'],
+            'primary_account_id': '12345678910',
             'cluster': 'advanced',
             'existing_trail': False,
             'is_global_trail': False,
