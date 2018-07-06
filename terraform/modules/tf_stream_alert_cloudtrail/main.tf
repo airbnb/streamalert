@@ -1,3 +1,87 @@
+// KMS key for encrypting CloudTrail logs
+resource "aws_kms_key" "cloudtrail_encryption" {
+  description         = "Encrypt Cloudtrail logs for ${var.prefix}.${var.cluster}.streamalert.cloudtrail"
+  policy              = "${data.aws_iam_policy_document.cloudtrail_encryption.json}"
+  enable_key_rotation = true
+}
+
+data "aws_iam_policy_document" "cloudtrail_encryption" {
+  statement {
+    sid = "Enable IAM User Permissions"
+
+    principals {
+      type        = "AWS"
+      identifiers = ["arn:aws:iam::${var.primary_account_id}:root"]
+    }
+
+    actions   = ["kms:*"]
+    resources = ["*"]
+  }
+
+  statement {
+    sid = "Allow CloudTrail to encrypt logs"
+
+    principals {
+      type        = "Service"
+      identifiers = ["cloudtrail.amazonaws.com"]
+    }
+
+    actions   = ["kms:GenerateDataKey*"]
+    resources = ["*"]
+
+    condition {
+      test     = "StringLike"
+      variable = "kms:EncryptionContext:aws:cloudtrail:arn"
+      values   = ["arn:aws:cloudtrail:*:${var.primary_account_id}:trail/*"]
+    }
+  }
+
+  statement {
+    sid = "Allow CloudTrail to describe key"
+
+    principals {
+      type        = "Service"
+      identifiers = ["cloudtrail.amazonaws.com"]
+    }
+
+    actions   = ["kms:DescribeKey"]
+    resources = ["*"]
+  }
+
+  statement {
+    sid = "Allow principals in the account to decrypt log files"
+
+    principals {
+      type        = "AWS"
+      identifiers = ["*"]
+    }
+
+    actions = [
+      "kms:Decrypt",
+      "kms:ReEncryptFrom",
+    ]
+
+    resources = ["*"]
+
+    condition {
+      test     = "StringEquals"
+      variable = "kms:CallerAccount"
+      values   = ["${var.primary_account_id}"]
+    }
+
+    condition {
+      test     = "StringLike"
+      variable = "kms:EncryptionContext:aws:cloudtrail:arn"
+      values   = ["arn:aws:cloudtrail:*:${var.primary_account_id}:trail/*"]
+    }
+  }
+}
+
+resource "aws_kms_alias" "cloudtrail_encryption" {
+  name          = "alias/${var.prefix}-${var.cluster}-streamalert-cloudtrail"
+  target_key_id = "${aws_kms_key.cloudtrail_encryption.key_id}"
+}
+
 // StreamAlert CloudTrail, also sending to CloudWatch Logs group
 resource "aws_cloudtrail" "streamalert" {
   count                         = "${var.send_to_cloudwatch && !var.existing_trail ? 1 : 0}"
@@ -9,6 +93,7 @@ resource "aws_cloudtrail" "streamalert" {
   enable_logging                = "${var.enable_logging}"
   include_global_service_events = true
   is_multi_region_trail         = "${var.is_global_trail}"
+  kms_key_id                    = "${aws_kms_key.cloudtrail_encryption.arn}"
 
   event_selector {
     read_write_type           = "All"
@@ -33,6 +118,7 @@ resource "aws_cloudtrail" "streamalert_no_cloudwatch" {
   enable_logging                = "${var.enable_logging}"
   include_global_service_events = true
   is_multi_region_trail         = "${var.is_global_trail}"
+  kms_key_id                    = "${aws_kms_key.cloudtrail_encryption.arn}"
 
   event_selector {
     read_write_type           = "All"
@@ -90,25 +176,30 @@ data "aws_iam_policy_document" "cloudtrail_to_cloudwatch_create_logs" {
   count = "${var.send_to_cloudwatch ? 1 : 0}"
 
   statement {
-    sid    = "AWSCloudTrailCreateLogStream"
-    effect = "Allow"
-
-    actions = [
-      "logs:CreateLogStream",
-    ]
-
+    sid       = "AWSCloudTrailCreateLogStream"
+    effect    = "Allow"
+    actions   = ["logs:CreateLogStream"]
     resources = ["${aws_cloudwatch_log_group.cloudtrail_logging.arn}"]
   }
 
   statement {
-    sid    = "AWSCloudTrailPutLogEvents"
+    sid       = "AWSCloudTrailPutLogEvents"
+    effect    = "Allow"
+    actions   = ["logs:PutLogEvents"]
+    resources = ["${aws_cloudwatch_log_group.cloudtrail_logging.arn}"]
+  }
+
+  statement {
+    sid    = "AWSCloudTrailEncryptLogEvents"
     effect = "Allow"
 
     actions = [
-      "logs:PutLogEvents",
+      "kms:Decrypt",
+      "kms:Encrypt",
+      "kms:GenerateDataKey*",
     ]
 
-    resources = ["${aws_cloudwatch_log_group.cloudtrail_logging.arn}"]
+    resources = ["${aws_kms_key.cloudtrail_encryption.arn}"]
   }
 }
 
@@ -144,6 +235,15 @@ resource "aws_s3_bucket" "cloudtrail_bucket" {
   }
 
   policy = "${data.aws_iam_policy_document.cloudtrail_bucket.json}"
+
+  server_side_encryption_configuration {
+    rule {
+      apply_server_side_encryption_by_default {
+        sse_algorithm     = "aws:kms"
+        kms_master_key_id = "${aws_kms_key.cloudtrail_encryption.key_id}"
+      }
+    }
+  }
 
   tags {
     Name    = "${var.prefix}.${var.cluster}.streamalert.cloudtrail"
