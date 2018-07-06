@@ -1,3 +1,5 @@
+variable "primary_account_id" {}
+
 variable "account_ids" {
   type = "list"
 }

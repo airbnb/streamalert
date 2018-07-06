@@ -56,7 +56,7 @@ data "aws_iam_policy_document" "output_secrets" {
       "kms:DescribeKey",
     ]
 
-    resources = ["${var.kms_key_arn}"]
+    resources = ["${var.kms_key_arn}", "${var.sse_kms_key_arn}"]
   }
 
   // Allow retrieving encrypted output secrets

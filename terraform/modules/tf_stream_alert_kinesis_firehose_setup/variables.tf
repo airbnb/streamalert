@@ -11,3 +11,5 @@ variable "region" {}
 variable "s3_bucket_name" {}
 
 variable "s3_logging_bucket" {}
+
+variable "kms_key_id" {}

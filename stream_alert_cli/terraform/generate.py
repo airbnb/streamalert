@@ -60,12 +60,15 @@ def generate_s3_bucket(bucket, logging, **kwargs):
     Keyword Args:
         acl (str): The S3 bucket ACL
         force_destroy (bool): To enable or disable force destroy of the bucket
+        sse_algorithm (str): Server-side encryption algorithm 'AES256' or 'aws:kms' (default)
         versioning (bool): To enable or disable S3 object versioning
         lifecycle_rule (dict): The S3 bucket lifecycle rule
 
     Returns:
         dict: S3 bucket Terraform dict to be used in clusters/main.tf.json
     """
+    sse_algorithm = kwargs.get('sse_algorithm', 'aws:kms')
+
     s3_bucket = {
         'bucket': bucket,
         'acl': kwargs.get('acl', 'private'),
@@ -76,8 +79,21 @@ def generate_s3_bucket(bucket, logging, **kwargs):
         'logging': {
             'target_bucket': logging,
             'target_prefix': '{}/'.format(bucket)
+        },
+        'server_side_encryption_configuration': {
+            'rule': {
+                'apply_server_side_encryption_by_default': {
+                    'sse_algorithm': sse_algorithm
+                }
+            }
         }
     }
+
+    if sse_algorithm == 'aws:kms':
+        s3_bucket['server_side_encryption_configuration']['rule'][
+            'apply_server_side_encryption_by_default']['kms_master_key_id'] = (
+                '${aws_kms_key.server_side_encryption.key_id}')
+
     lifecycle_rule = kwargs.get('lifecycle_rule')
     if lifecycle_rule:
         s3_bucket['lifecycle_rule'] = lifecycle_rule
@@ -146,7 +162,8 @@ def generate_main(config, init=False):
                     'days': 365,
                     'storage_class': 'GLACIER'
                 }
-            }
+            },
+            sse_algorithm='AES256'  # SSE-KMS doesn't seem to work with access logs
         )
 
     # Create bucket for Terraform state (if applicable)
@@ -165,6 +182,7 @@ def generate_main(config, init=False):
         'account_id': config['global']['account']['aws_account_id'],
         'region': config['global']['account']['region'],
         'prefix': config['global']['account']['prefix'],
+        'kms_key_arn': '${aws_kms_key.server_side_encryption.arn}',
         'alerts_table_read_capacity': (
             config['global']['infrastructure']['alerts_table']['read_capacity']),
         'alerts_table_write_capacity': (
@@ -176,6 +194,43 @@ def generate_main(config, init=False):
     }
 
     # KMS Key and Alias creation
+    main_dict['resource']['aws_kms_key']['server_side_encryption'] = {
+        'enable_key_rotation': True,
+        'description': 'StreamAlert S3 Server-Side Encryption',
+        'policy': json.dumps({
+            'Version': '2012-10-17',
+            'Statement': [
+                {
+                    'Sid': 'Enable IAM User Permissions',
+                    'Effect': 'Allow',
+                    'Principal': {
+                        'AWS': 'arn:aws:iam::{}:root'.format(
+                            config['global']['account']['aws_account_id']
+                        )
+                    },
+                    'Action': 'kms:*',
+                    'Resource': '*'
+                },
+                {
+                    'Sid': 'Allow principals in the account to use the key',
+                    'Effect': 'Allow',
+                    'Principal': '*',
+                    'Action': ['kms:Decrypt', 'kms:GenerateDataKey*', 'kms:Encrypt'],
+                    'Resource': '*',
+                    'Condition': {
+                        'StringEquals': {
+                            'kms:CallerAccount': config['global']['account']['aws_account_id']
+                        }
+                    }
+                }
+            ]
+        })
+    }
+    main_dict['resource']['aws_kms_alias']['server_side_encryption'] = {
+        'name': 'alias/{}_server-side-encryption'.format(config['global']['account']['prefix']),
+        'target_key_id': '${aws_kms_key.server_side_encryption.key_id}'
+    }
+
     main_dict['resource']['aws_kms_key']['stream_alert_secrets'] = {
         'enable_key_rotation': True,
         'description': 'StreamAlert secret management'

@@ -17,7 +17,7 @@ limitations under the License.
 from datetime import datetime, timedelta
 import os
 
-from mock import ANY, call, patch
+from mock import ANY, call, patch, MagicMock
 from moto import mock_dynamodb2, mock_lambda
 from nose.tools import assert_equal, assert_false, assert_true
 
@@ -183,6 +183,8 @@ class TestAlertMerger(object):
     @patch.object(main.AlertMerger, 'MAX_LAMBDA_PAYLOAD_SIZE', 600)
     def test_dispatch(self, mock_logger):
         """Alert Merger - Dispatch to Alert Processor Lambda"""
+        self.merger.lambda_client = MagicMock()
+
         self.merger.table.add_alerts([
             # An alert without any merge criteria
             Alert('no_merging', {}, {'output'}),

@@ -42,7 +42,8 @@ def generate_firehose(config, main_dict, logging_bucket):
         'prefix': config['global']['account']['prefix'],
         'region': config['global']['account']['region'],
         's3_logging_bucket': logging_bucket,
-        's3_bucket_name': firehose_s3_bucket_name
+        's3_bucket_name': firehose_s3_bucket_name,
+        'kms_key_id': '${aws_kms_key.server_side_encryption.key_id}'
     }
 
     # Add the Delivery Streams individually
@@ -57,5 +58,6 @@ def generate_firehose(config, main_dict, logging_bucket):
                                   ['firehose'].get('compression_format', 'GZIP'),
             'log_name': enabled_log,
             'role_arn': '${module.kinesis_firehose_setup.firehose_role_arn}',
-            's3_bucket_name': firehose_s3_bucket_name
+            's3_bucket_name': firehose_s3_bucket_name,
+            'kms_key_arn': '${aws_kms_key.server_side_encryption.arn}'
         }
