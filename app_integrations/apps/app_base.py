@@ -101,7 +101,7 @@ class AppIntegration(object):
     _POLL_BUFFER_MULTIPLIER = 1.5
     # _DEFAULT_REQUEST_TIMEOUT indicates how long the requests library will wait before timing
     # out for both get and post requests. This applies to both connection and read timeouts
-    _DEFAULT_REQUEST_TIMEOUT = 3.05
+    _DEFAULT_REQUEST_TIMEOUT = 5
     # _EOF_SECONDS_BUFFER is the end-of-function padding in seconds needed to handle cleanup, etc
     _EOF_SECONDS_BUFFER = 2
 
