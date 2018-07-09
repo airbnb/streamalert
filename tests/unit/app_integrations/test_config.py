@@ -26,7 +26,7 @@ from tests.unit.app_integrations.test_helpers import (
 )
 
 
-@patch.object(AppConfig, 'MAX_SAVE_TRIES', 1)
+@patch.object(AppConfig, 'MAX_STATE_SAVE_TRIES', 1)
 class TestAppIntegrationConfig(object):
     """Test class for AppIntegrationConfig"""
 
@@ -60,7 +60,7 @@ class TestAppIntegrationConfig(object):
         boto_mock.return_value = MockSSMClient(app_type='onelogin_events')
         with patch.object(AppConfig, 'SSM_CLIENT', None):
             self._config = AppConfig.load_config(get_mock_context(), None)
-            boto_mock.assert_called_with('ssm', region_name='us-east-1')
+            boto_mock.assert_called()
 
     @raises(AppIntegrationConfigError)
     def test_load_config_bad(self):
