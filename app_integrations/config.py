@@ -21,6 +21,7 @@ import time
 
 import backoff
 import boto3
+from botocore import client
 from botocore.exceptions import ClientError
 
 from app_integrations import LOGGER
@@ -34,7 +35,8 @@ AWS_RATE_HELPER = 'http://docs.aws.amazon.com/AmazonCloudWatch/latest/events/Sch
 
 class AppConfig(dict):
     """Centralized config for handling configuration loading/parsing"""
-    MAX_SAVE_TRIES = 5
+    MAX_STATE_SAVE_TRIES = 5
+    BOTO_TIMEOUT = 5
     SSM_CLIENT = None
 
     BASE_CONFIG_SUFFIX = 'config'
@@ -140,7 +142,12 @@ class AppConfig(dict):
         # Create the ssm boto3 client that will be cached and used throughout this execution
         # if one does not exist already
         if AppConfig.SSM_CLIENT is None:
-            AppConfig.SSM_CLIENT = boto3.client('ssm', region_name=base_config['region'])
+            boto_config = client.Config(
+                connect_timeout=cls.BOTO_TIMEOUT,
+                read_timeout=cls.BOTO_TIMEOUT,
+                region_name=base_config['region']
+            )
+            AppConfig.SSM_CLIENT = boto3.client('ssm', config=boto_config)
 
         # Generate a map of all the suffixes and full parameter names
         param_names = {key: '_'.join([base_config['function_name'], key])
@@ -305,7 +312,7 @@ class AppConfig(dict):
     def _save_state(self, param_name, param_value):
         @backoff.on_exception(backoff.expo,
                               ClientError,
-                              max_tries=self.MAX_SAVE_TRIES,
+                              max_tries=self.MAX_STATE_SAVE_TRIES,
                               jitter=backoff.full_jitter)
         def save():
             """Function to save the value of this dictionary to parameter store
