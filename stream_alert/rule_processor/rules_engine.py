@@ -235,7 +235,7 @@ class RulesEngine(object):
                     'The required subkey %s is not found when trying to process %s: \n%s',
                     key, rule.name, record)
                 return False
-            if not all(record[key].get(x) for x in nested_keys):
+            if any(x not in record[key] for x in nested_keys):
                 return False
 
         return True

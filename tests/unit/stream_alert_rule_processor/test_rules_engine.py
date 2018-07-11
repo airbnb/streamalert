@@ -281,6 +281,57 @@ class TestRulesEngine(object):
         assert_equal(alerts[0].rule_name, 'web_server')
         assert_equal(alerts[1].rule_name, 'data_location')
 
+    def test_process_subkeys_false_none_value(self):
+        """Rules Engine - Req Subkeys with False and None values"""
+        @rule(logs=['test_log_type_json_nested'],
+              outputs=['s3:sample_bucket'],
+              req_subkeys={'data': ['value']})
+        def value_false(rec):  # pylint: disable=unused-variable
+            return rec['data']['value'] == False
+
+        @rule(logs=['test_log_type_json_nested'],
+              outputs=['s3:sample_bucket'],
+              req_subkeys={'data': ['value']})
+        def value_none(rec):  # pylint: disable=unused-variable
+            return rec['data']['value'] is None
+
+        kinesis_data_items = [
+            {
+                'date': 'Dec 01 2016',
+                'unixtime': '1483139547',
+                'host': 'host1.web.prod.net',
+                'data': {
+                    'value': False
+                }
+            },
+            {
+                'date': 'Dec 01 2016',
+                'unixtime': '1483139547',
+                'host': 'host1.web.prod.net',
+                'data': {
+                    'value': None
+                }
+            }
+        ]
+
+        # prepare payloads
+        alerts = []
+        for data in kinesis_data_items:
+            kinesis_data = json.dumps(data)
+            # prepare the payloads
+            service, entity = 'kinesis', 'test_kinesis_stream'
+            raw_record = make_kinesis_raw_record(entity, kinesis_data)
+            payload = load_and_classify_payload(self.config, service, entity, raw_record)
+
+            alerts.extend(self.rules_engine.run(payload)[0])
+
+        # check alert output
+        assert_equal(len(alerts), 2)
+
+        # alert tests
+        assert_equal(alerts[0].rule_name, 'value_false')
+        assert_equal(alerts[1].rule_name, 'value_none')
+
     def test_syslog_rule(self):
         """Rules Engine - Syslog Rule"""
         @rule(logs=['test_log_type_syslog'],
