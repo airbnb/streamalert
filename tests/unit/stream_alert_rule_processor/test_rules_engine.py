@@ -287,7 +287,7 @@ class TestRulesEngine(object):
               outputs=['s3:sample_bucket'],
               req_subkeys={'data': ['value']})
         def value_false(rec):  # pylint: disable=unused-variable
-            return rec['data']['value'] == False
+            return rec['data']['value'] is False
 
         @rule(logs=['test_log_type_json_nested'],
               outputs=['s3:sample_bucket'],
