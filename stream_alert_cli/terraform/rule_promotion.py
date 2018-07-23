@@ -45,7 +45,8 @@ def generate_rule_promotion(config):
         'function_alias_arn': '${module.rule_promotion_lambda.function_alias_arn}',
         'function_name': '${module.rule_promotion_lambda.function_name}',
         'athena_results_bucket_arn': '${module.stream_alert_athena.results_bucket_arn}',
-        'athena_data_buckets': data_buckets
+        'athena_data_buckets': data_buckets,
+        's3_kms_key_arn': '${aws_kms_key.server_side_encryption.arn}'
     }
 
     # Set variables for the Lambda module
