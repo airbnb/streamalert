@@ -160,6 +160,12 @@ class MockSSMClient(object):
             return {
                 'auth_token': 'xoxp-aaaaaaa-111111111-eeeeeeeeee-fffffff'
             }
+        elif app_type == 'aliyun':
+            return {
+                'access_key_id':'ACCESS_KEY_ID',
+                'access_key_secret':'ACCESS_KEY_SECRET',
+                'region_id':'REGION_ID'
+            }
 
         # Fill this out with future supported apps/services
         return {}
@@ -228,6 +234,8 @@ def get_formatted_timestamp(app_type):
         return '2017-10-27T12:31:22-07:00'
     elif app_type in {'slack'}:
         return 1422922593
+    elif app_type in {'aliyun'}:
+        return '2018-07-23T15:42:11Z'
 
 
 def get_valid_config_dict(app_type):
