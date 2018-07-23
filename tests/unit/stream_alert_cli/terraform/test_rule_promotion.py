@@ -45,7 +45,8 @@ class TestRulePromotion(object):
                     'athena_data_buckets': [
                         'unit-testing.streamalert.data',
                         'unit-testing.streamalerts'
-                    ]
+                    ],
+                    's3_kms_key_arn': '${aws_kms_key.server_side_encryption.arn}'
                 },
                 'rule_promotion_lambda': {
                     'alarm_actions': ['arn:aws:sns:us-west-1:12345678910:stream_alert_monitoring'],
