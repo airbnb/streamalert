@@ -1,3 +1,12 @@
+How to set up the aliyun app
+###########################
+
+The Aliyun API requires an access key and access key secret for an authorized user.
+
+To obtain the access key and access key secret, an authorized user of the Aliyun account should follow their directions to `Create an Access Key <https://www.alibabacloud.com/help/doc-detail/53045.htm>`_.
+
+Additionly, the user for whom the access key was created must have sufficient privileges to make use of ActionTrail; follow the directions on the `Grant ActionTrail permissions to RAM users <https://www.alibabacloud.com/help/doc-detail/28818.htm>`_ page.
+
 How to set up the slack app
 ###########################
 

@@ -38,14 +38,28 @@ class TestAliyunApp(object):
     def setup(self):
         self._app = AliyunApp(AppConfig(get_valid_config_dict('aliyun')))
 
+    def test_sleep_seconds(self):
+        """AliyunApp - Sleep Seconds"""
+        assert_equal(0, self._app._sleep_seconds())
+
+    def test_date_formatter(self):
+        """AliyunApp - Date Formatter"""
+        assert_equal(self._app.date_formatter(), '%Y-%m-%dT%H:%M:%SZ')
+
     def test_required_auth_into(self):
         """AliyunApp - Required Auth Info"""
         assert_items_equal(self._app.required_auth_info().keys(),
                            {'access_key_id', 'access_key_secret', 'region_id'})
 
-    def test_sleep_seconds(self):
-        """AliyunApp - Sleep Seconds"""
-        assert_equal(0, self._app._sleep_seconds())
+    def test_region_validator_success(self):
+        """AliyunApp - Region Validation, Success"""
+        validation_function = self._app.required_auth_info()['region_id']['format']
+        assert_equal(validation_function('ap-northeast-1'), 'ap-northeast-1')
+
+    def test_region_validator_failure(self):
+        """AliyunApp - Region Validation, Failure"""
+        validation_function = self._app.required_auth_info()['region_id']['format']
+        assert_equal(validation_function('ap-northeast'), False)
 
     @patch('aliyunsdkcore.client.AcsClient.do_action_with_exception')
     @patch('logging.Logger.exception')

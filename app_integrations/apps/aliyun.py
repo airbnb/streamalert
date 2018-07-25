@@ -45,7 +45,7 @@ class AliyunApp(AppIntegration):
         https://www.alibabacloud.com/help/doc-detail/28849.htm
     """
 
-    _PAGE_SIZE = 50
+    _MAX_RESULTS = 50
 
     def __init__(self, config):
         super(AliyunApp, self).__init__(config)
@@ -60,21 +60,21 @@ class AliyunApp(AppIntegration):
         return 'aliyun'
 
 
-    #@classmethod
-    #def date_formatter(cls):
-    #    """Return a format string for a date, ie: 2014-05-26T12:00:00Z
+    @classmethod
+    def date_formatter(cls):
+        """Return a format string for a date, ie: 2014-05-26T12:00:00Z
 
-    #    This format is consisten with the format used by the Aliyun API:
-    #        https://www.alibabacloud.com/help/doc-detail/28849.htm
-    #    """
-    #    return '%y-%m-%dT%h:%m:%sZ'
+        This format is consisten with the format used by the Aliyun API:
+            https://www.alibabacloud.com/help/doc-detail/28849.htm
+        """
+        return '%Y-%m-%dT%H:%M:%SZ'
 
     def _gather_logs(self):
         auth = self._config.auth
         client = AcsClient(auth['access_key_id'], auth['access_key_secret'], auth['region_id'])
 
         request = LookupEventsRequest.LookupEventsRequest()
-        request.set_MaxResults(self._PAGE_SIZE)
+        request.set_MaxResults(self._MAX_RESULTS)
         request.set_StartTime = self._last_timestamp
         if self._next_token:
             request.set_NextToken(self._next_token)
@@ -101,19 +101,33 @@ class AliyunApp(AppIntegration):
     @classmethod
     def _required_auth_info(cls):
         """Required credentials for access to the resources"""
-        #TODO: support more regions, and lay out documentation for which regions are supported.
+
+        def region_validator(region):
+            """Region names pulled from https://www.alibabacloud.com/help/doc-detail/40654.htm"""
+
+            if region in ["cn-qingdao", "cn-beijing", "cn-zhangjiakou", "cn-huhehaote",
+                          "cn-hangzhou", "cn-shanghai", "cn-shenzhen", "cn-hongkong",
+                          "ap-southeast-1", "ap-southeast-2", "ap-southeast-3", "ap-southeast-5",
+                          "ap-northeast-1", "ap-south-1", "us-west-1", "us-east-1",
+                          "eu-central-1", "me-east-1"]:
+                return region
+            return False
+
         return {
             'access_key_id': {
-                'description': ('The access key id generated for a RAM user.'),
+                'description': ('The access key id generated for a RAM user. This '
+                                'should be a string of alphanumeric characters.'),
                 'format': re.compile(r'.*')
                 },
             'access_key_secret': {
-                'description': ('The access key secret generated for a RAM user.'),
+                'description': ('The access key secret generated for a RAM user. This '
+                                'should be a string of alphanumeric characters.'),
                 'format': re.compile(r'.*')
                 },
             'region_id': {
-                'description': ('The region identifier to collect data from.'),
-                'format': lambda x: x == 'ap-northeast-1'
+                'description': ('The region for the Aliyun API. This should be '
+                                'a string like \'ap-northeast-1\'.'),
+                'format': region_validator
                 },
             }
 
