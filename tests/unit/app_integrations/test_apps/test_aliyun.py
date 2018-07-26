@@ -17,15 +17,12 @@ limitations under the License.
 from mock import patch
 from nose.tools import assert_equal, assert_false, assert_items_equal
 
-from aliyunsdkcore.acs_exception.exceptions import ClientException
 from aliyunsdkcore.acs_exception.exceptions import ServerException
 
 from app_integrations.apps.aliyun import AliyunApp
 from app_integrations.config import AppConfig
 
-from tests.unit.app_integrations.test_helpers import (
-    get_valid_config_dict
-    )
+from tests.unit.app_integrations.test_helpers import get_valid_config_dict
 
 
 class TestAliyunApp(object):
@@ -46,7 +43,7 @@ class TestAliyunApp(object):
         """AliyunApp - Date Formatter"""
         assert_equal(self._app.date_formatter(), '%Y-%m-%dT%H:%M:%SZ')
 
-    def test_required_auth_into(self):
+    def test_required_auth_info(self):
         """AliyunApp - Required Auth Info"""
         assert_items_equal(self._app.required_auth_info().keys(),
                            {'access_key_id', 'access_key_secret', 'region_id'})
@@ -69,16 +66,19 @@ class TestAliyunApp(object):
         assert_false(self._app._gather_logs())
         log_mock.assert_called_with("%s error occurred", "Server")
 
+    def test_gather_logs_last_timestamp_set(self):
+        """AliyunApp - Request Creation"""
+        assert_equal(self._app.request.get_StartTime(),
+                     get_valid_config_dict('aliyun')['last_timestamp'])
+        assert_equal(self._app.request.get_MaxResults(), AliyunApp._MAX_RESULTS)
+
     @patch('aliyunsdkcore.client.AcsClient.do_action_with_exception')
     def test_gather_logs_no_more_entries(self, client_mock):
         """AliyunApp - Gather Logs with no entries"""
         client_mock.return_value = '{"RequestId":"B1DE97F8-5450-4593-AB38-FB61B799E91D",' \
                                    '"Events":[],"EndTime":"2018-07-23T19:28:00Z",' \
                                    '"StartTime":"2018-06-23T19:28:30Z"}'
-        self._app._next_token = "20"
         logs = self._app._gather_logs()
-        args, _ = client_mock.call_args
-        assert_equal(args[0].get_NextToken(), "20")
         assert_equal(0, len(logs))
         assert_false(self._app._more_to_poll)
         assert_equal("2018-07-23T19:28:00Z", self._app._last_timestamp)
@@ -94,4 +94,4 @@ class TestAliyunApp(object):
         logs = self._app._gather_logs()
         assert_equal(2, len(logs))
         assert self._app._more_to_poll
-        assert_equal(self._app._next_token, "20")
+        assert_equal(self._app.request.get_NextToken(), "20")

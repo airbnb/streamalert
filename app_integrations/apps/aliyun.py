@@ -49,9 +49,12 @@ class AliyunApp(AppIntegration):
 
     def __init__(self, config):
         super(AliyunApp, self).__init__(config)
-        self._next_token = None
-        auth = self._config.auth
+        auth = config.auth
         self.client = AcsClient(auth['access_key_id'], auth['access_key_secret'], auth['region_id'])
+
+        self.request = LookupEventsRequest.LookupEventsRequest()
+        self.request.set_MaxResults(self._MAX_RESULTS)
+        self.request.set_StartTime(config['last_timestamp'])
 
     @classmethod
     def _type(cls):
@@ -72,18 +75,12 @@ class AliyunApp(AppIntegration):
 
     def _gather_logs(self):
 
-        request = LookupEventsRequest.LookupEventsRequest()
-        request.set_MaxResults(self._MAX_RESULTS)
-        request.set_StartTime = self._last_timestamp
-        if self._next_token:
-            request.set_NextToken(self._next_token)
-
         try:
-            response = self.client.do_action_with_exception(request)
+            response = self.client.do_action_with_exception(self.request)
             json_response = json.loads(response)
             if 'NextToken' in json_response:
                 self._more_to_poll = True
-                self._next_token = json_response['NextToken']
+                self.request.set_NextToken(json_response['NextToken'])
             else:
                 self._more_to_poll = False
                 self._last_timestamp = json_response['EndTime']
@@ -101,11 +98,11 @@ class AliyunApp(AppIntegration):
         def region_validator(region):
             """Region names pulled from https://www.alibabacloud.com/help/doc-detail/40654.htm"""
 
-            if region in ['cn-qingdao', 'cn-beijing', 'cn-zhangjiakou', 'cn-huhehaote',
+            if region in {'cn-qingdao', 'cn-beijing', 'cn-zhangjiakou', 'cn-huhehaote',
                           'cn-hangzhou', 'cn-shanghai', 'cn-shenzhen', 'cn-hongkong',
                           'ap-southeast-1', 'ap-southeast-2', 'ap-southeast-3', 'ap-southeast-5',
                           'ap-northeast-1', 'ap-south-1', 'us-west-1', 'us-east-1',
-                          'eu-central-1', 'me-east-1']:
+                          'eu-central-1', 'me-east-1'}:
                 return region
             return False
 
