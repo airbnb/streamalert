@@ -60,7 +60,7 @@ def test_get_all_apps():
         'salesforce_reportexport',
         'slack_access',
         'slack_integration',
-        'aliyun_events'
+        'aliyun_actiontrail'
     }
 
     apps = StreamAlertApp.get_all_apps()
