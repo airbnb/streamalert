@@ -59,7 +59,7 @@
         "slack"
       ]
     },
-    "prefix_cluster_aliyun_events_sm-app-name_app": {
+    "prefix_cluster_aliyun_actiontrail_sm-app-name_app": {
       "logs": [
         "aliyun"
       ]

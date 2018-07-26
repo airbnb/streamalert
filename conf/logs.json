@@ -1667,7 +1667,7 @@
       ]
     }
   },
-  "aliyun:events": {
+  "aliyun:actiontrail": {
     "schema": {
       "eventId": "string",
       "eventVersion": "string",

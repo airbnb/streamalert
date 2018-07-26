@@ -37,10 +37,10 @@
       "serviceName": "Ram",
       "sourceIpAddress": "65.205.72.122"
     },
-    "description":"schema validation check for aliyun:events with api call event",
-    "log":"aliyun:events",
+    "description":"schema validation check for aliyun:actiontrail with ApiCall call event",
+    "log":"aliyun:actiontrail",
     "service":"stream_alert_app",
-    "source":"prefix_cluster_aliyun_events_sm-app-name_app",
+    "source":"prefix_cluster_aliyun_actiontrail_sm-app-name_app",
     "trigger_rules":[]
   },
   {
@@ -73,10 +73,10 @@
           "userName": "Alice"
       }
     },
-    "description":"schema validation check for aliyun:events with example event data",
-    "log":"aliyun:events",
+    "description":"schema validation check for aliyun:actiontrail with example ApiCall event data",
+    "log":"aliyun:actiontrail",
     "service":"stream_alert_app",
-    "source":"prefix_cluster_aliyun_events_sm-app-name_app",
+    "source":"prefix_cluster_aliyun_actiontrail_sm-app-name_app",
     "trigger_rules":[]
   },
   {
@@ -110,10 +110,10 @@
         }
       }
     },
-    "description":"schema validation check for aliyun:events with example console event data",
-    "log":"aliyun:events",
+    "description":"schema validation check for aliyun:actiontrail with example StopInstance console event data",
+    "log":"aliyun:actiontrail",
     "service":"stream_alert_app",
-    "source":"prefix_cluster_aliyun_events_sm-app-name_app",
+    "source":"prefix_cluster_aliyun_actiontrail_sm-app-name_app",
     "trigger_rules":[]
   },
   {
@@ -147,10 +147,10 @@
         }
       }
     },
-    "description":"schema validation check for aliyun:events with example AssumeRole event data",
-    "log":"aliyun:events",
+    "description":"schema validation check for aliyun:actiontrail with example AssumeRole event data",
+    "log":"aliyun:actiontrail",
     "service":"stream_alert_app",
-    "source":"prefix_cluster_aliyun_events_sm-app-name_app",
+    "source":"prefix_cluster_aliyun_actiontrail_sm-app-name_app",
     "trigger_rules":[]
   }
 ]

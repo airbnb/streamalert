@@ -17,12 +17,12 @@ import json
 import re
 
 from aliyunsdkcore.client import AcsClient
-from aliyunsdkcore.acs_exception.exceptions import ClientException
-from aliyunsdkcore.acs_exception.exceptions import ServerException
+from aliyunsdkcore.acs_exception.exceptions import ServerException, ClientException
 from aliyunsdkactiontrail.request.v20171204 import LookupEventsRequest
 
 from app_integrations import LOGGER
 from app_integrations.apps.app_base import StreamAlertApp, AppIntegration
+
 
 @StreamAlertApp
 class AliyunApp(AppIntegration):
@@ -50,15 +50,16 @@ class AliyunApp(AppIntegration):
     def __init__(self, config):
         super(AliyunApp, self).__init__(config)
         self._next_token = None
+        auth = self._config.auth
+        self.client = AcsClient(auth['access_key_id'], auth['access_key_secret'], auth['region_id'])
 
     @classmethod
     def _type(cls):
-        return 'events'
+        return 'actiontrail'
 
     @classmethod
     def service(cls):
         return 'aliyun'
-
 
     @classmethod
     def date_formatter(cls):
@@ -70,8 +71,6 @@ class AliyunApp(AppIntegration):
         return '%Y-%m-%dT%H:%M:%SZ'
 
     def _gather_logs(self):
-        auth = self._config.auth
-        client = AcsClient(auth['access_key_id'], auth['access_key_secret'], auth['region_id'])
 
         request = LookupEventsRequest.LookupEventsRequest()
         request.set_MaxResults(self._MAX_RESULTS)
@@ -80,7 +79,7 @@ class AliyunApp(AppIntegration):
             request.set_NextToken(self._next_token)
 
         try:
-            response = client.do_action_with_exception(request)
+            response = self.client.do_action_with_exception(request)
             json_response = json.loads(response)
             if 'NextToken' in json_response:
                 self._more_to_poll = True
@@ -91,11 +90,8 @@ class AliyunApp(AppIntegration):
 
             return json_response['Events']
 
-        except ServerException as e:
-            LOGGER.exception("Server Exception: %s", str(e))
-            return False
-        except ClientException as e:
-            LOGGER.exception("Client Exception: %s", str(e))
+        except (ServerException, ClientException) as e:
+            LOGGER.exception("%s error occurred", e.get_error_type())
             return False
 
     @classmethod
@@ -105,11 +101,11 @@ class AliyunApp(AppIntegration):
         def region_validator(region):
             """Region names pulled from https://www.alibabacloud.com/help/doc-detail/40654.htm"""
 
-            if region in ["cn-qingdao", "cn-beijing", "cn-zhangjiakou", "cn-huhehaote",
-                          "cn-hangzhou", "cn-shanghai", "cn-shenzhen", "cn-hongkong",
-                          "ap-southeast-1", "ap-southeast-2", "ap-southeast-3", "ap-southeast-5",
-                          "ap-northeast-1", "ap-south-1", "us-west-1", "us-east-1",
-                          "eu-central-1", "me-east-1"]:
+            if region in ['cn-qingdao', 'cn-beijing', 'cn-zhangjiakou', 'cn-huhehaote',
+                          'cn-hangzhou', 'cn-shanghai', 'cn-shenzhen', 'cn-hongkong',
+                          'ap-southeast-1', 'ap-southeast-2', 'ap-southeast-3', 'ap-southeast-5',
+                          'ap-northeast-1', 'ap-south-1', 'us-west-1', 'us-east-1',
+                          'eu-central-1', 'me-east-1']:
                 return region
             return False
 

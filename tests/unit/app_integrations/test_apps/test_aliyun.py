@@ -64,20 +64,10 @@ class TestAliyunApp(object):
     @patch('aliyunsdkcore.client.AcsClient.do_action_with_exception')
     @patch('logging.Logger.exception')
     def test_server_exception(self, log_mock, client_mock):
-        """AliyunApp - Server Exception"""
+        """AliyunApp - Gather Logs, Exception"""
         client_mock.side_effect = ServerException("error", "bad server response")
         assert_false(self._app._gather_logs())
-        log_mock.assert_called_with("Server Exception: %s",
-                                    "HTTP Status: None Error:error bad server "
-                                    "response RequestID: None")
-
-    @patch('aliyunsdkcore.client.AcsClient.do_action_with_exception')
-    @patch('logging.Logger.exception')
-    def test_client_exception(self, log_mock, client_mock):
-        """AliyunApp - Client Exception"""
-        client_mock.side_effect = ClientException("error", "bad client")
-        assert_false(self._app._gather_logs())
-        log_mock.assert_called_with("Client Exception: %s", "error bad client")
+        log_mock.assert_called_with("%s error occurred", "Server")
 
     @patch('aliyunsdkcore.client.AcsClient.do_action_with_exception')
     def test_gather_logs_no_more_entries(self, client_mock):
