@@ -30,3 +30,7 @@ variable "athena_data_buckets" {
   description = "List of S3 buckets where Athena data is stored"
   type        = "list"
 }
+
+variable "s3_kms_key_arn" {
+  description = "KMS key ARN used for server-side encryption"
+}

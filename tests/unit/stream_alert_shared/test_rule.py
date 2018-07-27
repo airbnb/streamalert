@@ -219,6 +219,17 @@ def {}(_):
         assert_equal(len(result), 1)
         assert_equal(result[0].name, 'with_datatypes')
 
+    def test_set_description(self):
+        """Rule - Set Description"""
+        def test_rule(_):
+            pass
+        test_rule = rule.Rule(test_rule, outputs=['foo'], logs=['bar'])
+
+        description = 'foobar description'
+        test_rule.description = description
+
+        assert_equal(test_rule.description, description)
+
     def test_get_rules_for_log_type(self):
         """Rule - Get Rules, For Log Type"""
         self._create_rule_helper('rule_01')

@@ -80,6 +80,13 @@ data "aws_iam_policy_document" "rule_promotion_actions" {
   }
 
   statement {
+    sid       = "AthenaDecryptKMS"
+    effect    = "Allow"
+    actions   = ["kms:Decrypt"]
+    resources = ["${var.s3_kms_key_arn}"]
+  }
+
+  statement {
     sid    = "AthenaResultsAccess"
     effect = "Allow"
 
