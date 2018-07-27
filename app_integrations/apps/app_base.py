@@ -24,6 +24,7 @@ from botocore.exceptions import ClientError
 import requests
 
 from app_integrations import LOGGER
+from app_integrations.config import AppConfig
 from app_integrations.batcher import Batcher
 
 
@@ -65,9 +66,9 @@ class AppIntegration(object):
     # _EOF_SECONDS_BUFFER is the end-of-function padding in seconds needed to handle cleanup, etc
     _EOF_SECONDS_BUFFER = 2
 
-    def __init__(self, config):
-        self._config = config
-        self._batcher = Batcher(config)
+    def __init__(self, event, context):
+        self._config = AppConfig.load_config(event, context)
+        self._batcher = Batcher(self._config.function_name, self._config.destination_function)
         self._gathered_log_count = 0
         self._more_to_poll = False
         self._poll_count = 0
@@ -249,24 +250,24 @@ class AppIntegration(object):
         when checking the 'self._config.is_running' property. This allows for chained
         invocations without the worry of duplicated effort or collisions.
         """
+        lambda_client = boto3.client('lambda')
         try:
-            lambda_client = boto3.client('lambda', region_name=self._config['region'])
             response = lambda_client.invoke(
-                FunctionName=self._config['function_name'],
+                FunctionName=self._config.function_name,
                 InvocationType='Event',
                 Payload=json.dumps({'invocation_type': self._config.Events.SUCCESSIVE_INVOKE}),
-                Qualifier=self._config['qualifier']
+                Qualifier=self._config.function_version
             )
         except ClientError as err:
             LOGGER.error('An error occurred while invoking a subsequent app function '
                          '(\'%s:%s\'). Error is: %s',
-                         self._config['function_name'],
-                         self._config['qualifier'],
+                         self._config.function_name,
+                         self._config.function_version,
                          err.response)
             raise
 
         LOGGER.info('Invoking successive apps function \'%s\' with Lambda request ID \'%s\'',
-                    self._config['function_name'],
+                    self._config.function_name,
                     response['ResponseMetadata']['RequestId'])
 
     def _check_http_response(self, response):
@@ -322,33 +323,9 @@ class AppIntegration(object):
 
         return self._check_http_response(response), response.json()
 
-    def _validate_auth(self):
-        """Method for validating the authentication dictionary retrieved from
-        AWS Parameter Store
 
         Returns:
-            bool: Indicator of successful validation
         """
-        if not self._config:
-            raise AppIntegrationConfigError(
-                'Config for service \'{}\' is empty'.format(self.type())
-            )
-
-        # The config validates that the 'auth' dict was loaded, but do a safety check here
-        if not self._config.auth:
-            raise AppIntegrationConfigError(
-                'Auth config for service \'{}\' is empty'.format(self.type())
-            )
-
-        # Get the required authentication keys from the info returned by the subclass
-        required_keys = set(self.required_auth_info())
-        auth_key_diff = required_keys.difference(set(self._config.auth))
-        if not auth_key_diff:
-            return
-
-        missing_auth_keys = ', '.join('\'{}\''.format(key) for key in auth_key_diff)
-        raise AppIntegrationConfigError('Auth config for service \'{}\' is missing the following '
-                                        'required keys: {}'.format(self.type(), missing_auth_keys))
 
     def _gather(self):
         """Protected entry point for the beginning of polling"""
