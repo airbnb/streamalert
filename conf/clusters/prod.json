@@ -2,11 +2,11 @@
   "id": "prod",
   "modules": {
     "cloudtrail": {
-      "enable_logging": true
+      "enable_logging": false
     },
     "cloudwatch_monitoring": {
       "enabled": true,
-      "kinesis_alarms_enabled": true,
+      "kinesis_alarms_enabled": false,
       "lambda_alarms_enabled": true
     },
     "kinesis": {
@@ -19,7 +19,7 @@
     },
     "kinesis_events": {
       "batch_size": 100,
-      "enabled": true
+      "enabled": false
     },
     "stream_alert": {
       "rule_processor": {

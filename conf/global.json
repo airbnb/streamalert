@@ -34,7 +34,7 @@
       "table": {
         "read_capacity": 20,
         "write_capacity": 5
-      }    
+      }
     }
   },
   "s3_access_logging": {
