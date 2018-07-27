@@ -13,9 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-import json
-
-from stream_alert_cli.manage_lambda.package import AppIntegrationPackage
+from stream_alert_cli.manage_lambda.package import AppPackage
 from stream_alert_cli.terraform.lambda_module import generate_lambda
 
 
@@ -35,34 +33,33 @@ def generate_app_integrations(cluster_name, cluster_dict, config):
 
     for function_name, app_info in config['clusters'][cluster_name]['modules'].get(
             'stream_alert_apps', {}).iteritems():
-        func_prefix = function_name.rstrip('_app')
 
-        module_prefix = 'app_{}_{}'.format(app_info['app_name'], cluster_name)
+        tf_module_prefix = 'app_{}_{}'.format(app_info['app_name'], cluster_name)
 
-        config_param = json.dumps({'type': app_info['type'],
-                                   'app_name': app_info['app_name'],
-                                   'prefix': prefix,
-                                   'cluster': cluster_name,
-                                   'schedule_expression': app_info['schedule_expression']})
+        destination_func = '{}_{}_streamalert_rule_processor'.format(prefix, cluster_name),
+
+        config = {
+            'app_type': app_info['type'],
+            'destination_function_name': destination_func,
+            'schedule_expression': app_info['schedule_expression']
+        }
 
         # Format the iam module with 'app_<app_name_<cluster>_iam'
-        cluster_dict['module']['{}_iam'.format(module_prefix)] = {
+        cluster_dict['module']['{}_iam'.format(tf_module_prefix)] = {
             'account_id': config['global']['account']['aws_account_id'],
-            'app_config_parameter': config_param,
-            'cluster': cluster_name,
-            'function_prefix': func_prefix,
-            'prefix': prefix,
+            'destination_function_name': destination_func,
+            'function_name': function_name,
             'region': config['global']['account']['region'],
-            'role_id': '${{module.{}_lambda.role_id}}'.format(module_prefix),
-            'source': 'modules/tf_stream_alert_app_iam',
-            'type': app_info['type']
+            'role_id': '${{module.{}_lambda.role_id}}'.format(tf_module_prefix),
+            'source': 'modules/tf_stream_alert_app_iam'
         }
 
         # Format the lambda module with 'app_<app_name_<cluster>_lambda'
-        cluster_dict['module']['{}_lambda'.format(module_prefix)] = generate_lambda(
-            '{}_app'.format(func_prefix),
-            AppIntegrationPackage.package_name + '.zip',
-            AppIntegrationPackage.lambda_handler,
+        cluster_dict['module']['{}_lambda'.format(tf_module_prefix)] = generate_lambda(
+            function_name,
+            AppPackage.package_name + '.zip',
+            AppPackage.lambda_handler,
             config['clusters'][cluster_name]['modules']['stream_alert_apps'][function_name],
-            config
+            config,
+            input_event=config
         )
