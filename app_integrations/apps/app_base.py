@@ -25,50 +25,10 @@ import requests
 
 from app_integrations import LOGGER
 from app_integrations.batcher import Batcher
-from app_integrations.exceptions import AppIntegrationException, AppIntegrationConfigError
 
 
-class StreamAlertApp(object):
-    """Class to be used as a decorator to register all AppIntegration subclasses"""
-    _apps = {}
 
-    def __new__(cls, app):
-        StreamAlertApp._apps[app.type()] = app
-        return app
 
-    @classmethod
-    def get_app(cls, config, init=True):
-        """Return the proper app integration class for this service
-
-        Args:
-            config (AppConfig): Loaded configuration with service, etc
-            init (bool): Whether or not this class should be instantiated with
-                the config that has been passed in
-
-        Returns:
-            AppIntegration: Subclass of AppIntegration corresponding to the config
-        """
-        try:
-            if not init:
-                return cls._apps[config['type']]
-
-            return cls._apps[config['type']](config)
-        except KeyError:
-            if 'type' not in config:
-                raise AppIntegrationException('The \'type\' is not defined in the config.')
-            else:
-                raise AppIntegrationException('App integration does not exist for type: '
-                                              '{}'.format(config['type']))
-
-    @classmethod
-    def get_all_apps(cls):
-        """Return a copy of the cache containing all of the app subclasses
-
-        Returns:
-            dict: Cached dictionary of all registered StreamAlertApps where
-                the key is the app type and the value is the class object
-        """
-        return cls._apps.copy()
 
 
 def safe_timeout(func):
