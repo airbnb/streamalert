@@ -156,3 +156,11 @@ Step by step:
    4. Scroll to the top of that same page and click on ``Install App to Workspace``. Click ``Authorize`` on the next dialog. You should be returned to the ``OAuth & Permissions`` page.
    5. The bearer token is the string labeled with ``OAuth Access Token`` and beginning with ``xoxp-``. Provide this when configuring the Slack StreamAlert app.
 
+Enabling the Aliyun App
+-----------------------
+The Aliyun API requires an access key and access key secret for an authorized user.
+
+To obtain the access key and access key secret, an authorized user of the Aliyun account should follow their directions to `Create an Access Key <https://www.alibabacloud.com/help/doc-detail/53045.htm>`_.
+
+Additionly, the user for whom the access key was created must have sufficient privileges to make use of ActionTrail; follow the directions on the `Grant ActionTrail permissions to RAM users <https://www.alibabacloud.com/help/doc-detail/28818.htm>`_ page.
+

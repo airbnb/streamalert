@@ -203,6 +203,8 @@ class AppIntegrationPackage(LambdaPackage):
     package_name = 'stream_alert_app'
     precompiled_libs = {'boxsdk[jwt]==2.0.0a11'}
     third_party_libs = {
+        'aliyun-python-sdk-core==2.8.5',
+        'aliyun-python-sdk-actiontrail==2.0.0',
         'backoff',
         'boxsdk[jwt]==2.0.0a11',
         'google-api-python-client==1.6.4',
