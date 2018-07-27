@@ -88,6 +88,12 @@ variable "schedule_expression" {
   description = "Optional rate() or cron() expression to schedule the Lambda function at regular intervals"
 }
 
+variable "lambda_input_event" {
+  type        = "map"
+  default     = {}
+  description = "Optional dictionary representing input to be encoded to json and passed to the Lambda function"
+}
+
 variable "log_retention_days" {
   default     = 14
   description = "CloudWatch logs for the Lambda function will be retained for this many days"
