@@ -2,19 +2,8 @@ variable "account_id" {}
 
 variable "region" {}
 
-variable "prefix" {}
+variable "function_name" {}
 
-variable "cluster" {}
+variable "function_role_id" {}
 
-variable "function_prefix" {}
-
-variable "type" {}
-
-variable "app_config_parameter" {}
-
-variable "role_id" {}
-
-variable "stream_alert_apps_config" {
-  type    = "map"
-  default = {}
-}
+variable "destination_function_name" {}
