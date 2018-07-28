@@ -14,10 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from abc import ABCMeta, abstractmethod, abstractproperty
-from decimal import Decimal
-import json
 import time
-from timeit import timeit
 
 import boto3
 from botocore.exceptions import ClientError
@@ -28,24 +25,35 @@ from app_integrations.config import AppConfig
 from app_integrations.batcher import Batcher
 
 
+def _report_time(func):
+    """Decorator that returns the time the wrapped function took to run
 
+    This should not be applied to functions where the return value is needed by the caller
 
+    Returns:
+        float: time, in seconds, for which the wrapped function ran
+    """
+    def _wrapper(*args, **kwargs):
+        start = time.time()
+        func(*args, **kwargs)
+        total = time.time() - start
+        LOGGER.info('[%s] Function executed in %.4f seconds.', func.__name__, total)
+        return total
+    return _wrapper
 
 
 def safe_timeout(func):
     """Try/Except decorator to catch any timeout error raised by requests
 
-    NOTE: Use this wrapper on instance methods only, ie: methods with 'self' as the first param
-
     Args:
-        func (im_func): Instance method wrapper function for safety netting requests
-            that could result in a connection or read timeout.
+        func (im_func): Function wrapper for safety catching requests that
+            could result in a connection or read timeout.
     """
     def _wrapper(*args, **kwargs):
         try:
             return func(*args, **kwargs)
         except requests.exceptions.Timeout:
-            LOGGER.exception('Request timed out for %s', args[0].type())
+            LOGGER.exception('[%s] Request timed out', func.__name__)
             return False, None
     return _wrapper
 
@@ -73,6 +81,9 @@ class AppIntegration(object):
         self._more_to_poll = False
         self._poll_count = 0
         self._last_timestamp = 0
+
+    def __str__(self):
+        return self.type()
 
     @classmethod
     @abstractproperty
@@ -177,7 +188,7 @@ class AppIntegration(object):
 
         # Sleep for n seconds so the called API does not return a bad response
         sleep_for_secs = self._sleep_seconds()
-        LOGGER.debug('Sleeping \'%s\' app for %d seconds...', self.type(), sleep_for_secs)
+        LOGGER.debug('[%s] Sleeping for %d seconds...', self, sleep_for_secs)
 
         time.sleep(sleep_for_secs)
 
@@ -185,22 +196,24 @@ class AppIntegration(object):
         """Method for performing any startup steps, like setting state to running"""
         # Perform another safety check to make sure this is not being invoked already
         if self._config.is_running:
-            LOGGER.error('App already running for service \'%s\'.', self.type())
+            LOGGER.error('[%s] App already running', self)
             return False
 
         # Check if this is an invocation spawned from a previous partial execution
         # Return if the config is marked as 'partial' but the invocation type is wrong
         if not self._config.is_successive_invocation and self._config.is_partial:
-            LOGGER.error('App in partial execution state for service \'%s\'.', self.type())
+            LOGGER.error('[%s] App in partial execution state, exiting', self)
             return False
 
-        LOGGER.info('App starting for service \'%s\'.', self.type())
+        LOGGER.info('[%s] Starting app', self)
 
         LOGGER.info('App executing as a successive invocation: %s',
                     self._config.is_successive_invocation)
 
         # Validate the auth in the config. This raises an exception upon failure
-        self._validate_auth()
+        self._config.validate_auth(set(self.required_auth_info()))
+
+        self._config.set_starting_timestamp(self.date_formatter())
 
         self._last_timestamp = self._config.last_timestamp
 
@@ -220,11 +233,11 @@ class AppIntegration(object):
                          'due to the subclass not setting this value.')
 
         if self._last_timestamp == self._config.start_last_timestamp:
-            LOGGER.error('Ending last timestamp is the same as the beginning last timestamp. '
-                         'This could occur if there were no logs collected for this execution.')
+            LOGGER.warning('Ending last timestamp is the same as the beginning last timestamp. '
+                           'This could occur if there were no logs collected for this execution.')
 
-        LOGGER.info('App complete for service \'%s\'. Gathered %d logs in %d polls.',
-                    self.type(), self._gathered_log_count, self._poll_count)
+        LOGGER.info('[%s] App complete; gathered %d logs in %d polls.',
+                    self, self._gathered_log_count, self._poll_count)
 
         self._config.last_timestamp = self._last_timestamp
 
@@ -233,13 +246,12 @@ class AppIntegration(object):
         # scheduled function invocations from running alongside chained invocations.
         if self._more_to_poll:
             self._config.mark_partial()
-
-            self._invoke_successive_gather()
+            self._invoke_successive_app()
             return
 
         self._config.mark_success()
 
-    def _invoke_successive_gather(self):
+    def _invoke_successive_app(self):
         """Invoke a successive app function to handle more logs
 
         This is useful when there were more logs to collect than could be accomplished
@@ -255,7 +267,7 @@ class AppIntegration(object):
             response = lambda_client.invoke(
                 FunctionName=self._config.function_name,
                 InvocationType='Event',
-                Payload=json.dumps({'invocation_type': self._config.Events.SUCCESSIVE_INVOKE}),
+                Payload=self._config.successive_event,
                 Qualifier=self._config.function_version
             )
         except ClientError as err:
@@ -278,10 +290,9 @@ class AppIntegration(object):
         """
         success = response is not None and (200 <= response.status_code <= 299)
         if not success:
-            LOGGER.error('HTTP request failed for service \'%s\': [%d] %s',
-                         self.type(),
-                         response.status_code,
-                         response.content)
+            LOGGER.error(
+                '[%s] HTTP request failed: [%d] %s', self, response.status_code, response.content
+            )
         return success
 
     @safe_timeout
@@ -292,8 +303,7 @@ class AppIntegration(object):
             tuple (bool, dict): False if the was an error performing the request,
                 and the dictionary loaded from the json response
         """
-        LOGGER.debug('Making GET request for service \'%s\' on poll #%d',
-                     self.type(), self._poll_count)
+        LOGGER.debug('[%s] Making GET request on poll #%d', self, self._poll_count)
 
         # Perform the request and return the response as a dict
         response = requests.get(full_url, headers=headers,
@@ -309,8 +319,7 @@ class AppIntegration(object):
             tuple (bool, dict): False if the was an error performing the request,
                 and the dictionary loaded from the json response
         """
-        LOGGER.debug('Making POST request for service \'%s\' on poll #%d',
-                     self.type(), self._poll_count)
+        LOGGER.debug('[%s] Making POST request on poll #%d', self, self._poll_count)
 
         # Perform the request and return the response as a dict
         if is_json:
@@ -323,75 +332,72 @@ class AppIntegration(object):
 
         return self._check_http_response(response), response.json()
 
+    @_report_time
+    def _gather(self):
+        """Protected entry point to peform the gather that returns the time the process took
 
         Returns:
+            float: time, in seconds, for which the function ran
         """
-
-    def _gather(self):
-        """Protected entry point for the beginning of polling"""
-
         # Make this request sleep if the API throttles requests
         self._sleep()
-        def do_gather():
-            """Perform the gather using this scoped method so we can time it"""
-            # Increment the poll count
-            self._poll_count += 1
 
-            logs = self._gather_logs()
+        # Increment the poll count
+        self._poll_count += 1
 
-            # Make sure there are logs, this can be False if there was an issue polling
-            # of if there are no new logs to be polled
-            if not logs:
-                self._more_to_poll = False
-                LOGGER.error('Gather process for service \'%s\' was not able to poll any logs '
-                             'on poll #%d', self.type(), self._poll_count)
-                return
+        logs = self._gather_logs()
 
-            # Increment the count of logs gathered
-            self._gathered_log_count += len(logs)
+        # Make sure there are logs, this can be False if there was an issue polling
+        # of if there are no new logs to be polled
+        if not logs:
+            self._more_to_poll = False
+            LOGGER.error('[%s] Gather process was not able to poll any logs '
+                         'on poll #%d', self, self._poll_count)
+            return
 
-            # Utilize the batcher to send logs to the rule processor
-            self._batcher.send_logs(self._config['function_name'], logs)
+        # Increment the count of logs gathered
+        self._gathered_log_count += len(logs)
 
-            LOGGER.debug('Updating config last timestamp from %s to %s',
-                         self._config.last_timestamp, self._last_timestamp)
+        # Utilize the batcher to send logs to the rule processor
+        self._batcher.send_logs(logs)
 
-            # Save the config's last timestamp after each function run
-            self._config.last_timestamp = self._last_timestamp
+        LOGGER.debug('Updating config last timestamp from %s to %s',
+                     self._config.last_timestamp, self._last_timestamp)
 
-        # Use timeit to track how long one poll takes, and cast to a decimal.
-        # Use decimal since these floating point values can be very small and the
-        # builtin float uses scientific notation when handling very small values
-        exec_time = Decimal(timeit(do_gather, number=1))
-
-        LOGGER.info('Gather process for \'%s\' executed in %f seconds.', self.type(), exec_time)
-
-        # Add a 50% buffer to the time it took to account for some unforeseen delay and to give
-        # this function enough time to spawn a new invocation if there are more logs to poll
-        # Cast this back to float so general arithemtic works
-        return float(exec_time * Decimal(self._POLL_BUFFER_MULTIPLIER))
+        # Save the config's last timestamp after each function run
+        self._config.last_timestamp = self._last_timestamp
 
     def gather(self):
         """Public method for actual gathering of logs"""
-        # Initialize, saving state to 'running'
+        # Initialize the app, saving state to 'running'
         if not self._initialize():
             return
 
-        while (self._gather() + self._sleep_seconds() <
-               (self._config.remaining_ms() / 1000.0) - self._EOF_SECONDS_BUFFER):
-            LOGGER.debug('More logs to poll for \'%s\': %s', self.type(), self._more_to_poll)
+        try:
+            # Add a 50% buffer to the time it took to account for some unforeseen delay and to give
+            # this function enough time to spawn a new invocation if there are more logs to poll
+            while (self._gather() * self._POLL_BUFFER_MULTIPLIER) < self._remaining_seconds:
+                LOGGER.debug('[%s] More logs to poll: %s', self, self._more_to_poll)
+                self._config.report_remaining_seconds()
+                if not self._more_to_poll:
+                    break
+
+                # Reset the boolean indicating that there is more data to poll. Subclasses should
+                # set this to 'True' within their implementation of the '_gather_logs' function
+                self._more_to_poll = not self._more_to_poll
+
+            LOGGER.debug('[%s] Gathered all logs possible for this execution. More logs to poll: '
+                         '%s', self, self._more_to_poll)
+
             self._config.report_remaining_seconds()
-            if not self._more_to_poll:
-                break
 
-            # Reset the boolean indicating that there is more data to poll. Subclasses should
-            # set this to 'True' within their implementation of the '_gather_logs' function
-            self._more_to_poll = not self._more_to_poll
+            # Finalize, saving state to 'succeeded'
+            self._finalize()
+        finally:
+            # Make sure the config is not left marked as running, which could be problematic
+            if self._config and self._config.is_running:
+                self._config.mark_failure()
 
-        LOGGER.debug('Gathered all logs possible for this execution. More logs to poll '
-                     'for \'%s\': %s', self.type(), self._more_to_poll)
-
-        self._config.report_remaining_seconds()
-
-        # Finalize, saving state to 'succeeded'
-        self._finalize()
+    @property
+    def _remaining_seconds(self):
+        return (self._config.remaining_ms() / 1000.0) - self._EOF_SECONDS_BUFFER

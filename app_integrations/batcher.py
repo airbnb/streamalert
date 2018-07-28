@@ -21,26 +21,25 @@ from botocore.exceptions import ClientError
 
 from app_integrations import LOGGER
 
-# Max lambda input payload size is 128K for the 'event' invocation type
-MAX_LAMBDA_PAYLOAD_SIZE = 128 * 1000
-
 
 class Batcher(object):
     """Batcher class to handle segmenting large messages going to the
     rule processor lambda function
     """
+    # Max lambda input payload size is 128K for the 'event' invocation type
+    MAX_LAMBDA_PAYLOAD_SIZE = 128 * 1000
     LAMBDA_CLIENT = None
 
-    def __init__(self, config):
+    def __init__(self, source_func, destination_func):
         # Create the lambda client if it does not exist
         if Batcher.LAMBDA_CLIENT is None:
-            Batcher.LAMBDA_CLIENT = boto3.client('lambda', region_name=config['region'])
+            Batcher.LAMBDA_CLIENT = boto3.client('lambda')
+        self._source_function = source_func
         # The rule processor function name will look like:
         # <prefix>_<cluster>_streamalert_rule_processor
-        self.rp_function = '_'.join([config['prefix'], config['cluster'],
-                                     'streamalert_rule_processor'])
+        self._destination_function = destination_func
 
-    def send_logs(self, source_function, logs):
+    def send_logs(self, logs):
         """Public method to send the logs to the rule processor
 
         Args:
@@ -50,16 +49,16 @@ class Batcher(object):
         LOGGER.info('Starting batch send of %d logs to the rule processor', len(logs))
 
         # Try to send all of the logs in one fell swoop
-        if self._send_logs_to_stream_alert(source_function, logs):
+        if self._send_logs_to_lambda(logs):
             return
 
         # Fall back on segmenting the list of logs into multiple requests
         # if they could not be sent at once
-        self._segment_and_send(source_function, logs)
+        self._segment_and_send(logs)
 
         LOGGER.info('Finished batch send of %d logs to the rule processor', len(logs))
 
-    def _segment_and_send(self, source_function, logs):
+    def _segment_and_send(self, logs):
         """Protected method for segmenting a list of logs into smaller lists
         so they conform to the input limit of AWS Lambda
 
@@ -75,12 +74,12 @@ class Batcher(object):
             subset = logs[index:segment_size + index]
             # Try to send this current subset to the rule processor
             # and segment again if they are too large to be sent at once
-            if not self._send_logs_to_stream_alert(source_function, subset):
-                self._segment_and_send(source_function, subset)
+            if not self._send_logs_to_lambda(subset):
+                self._segment_and_send(subset)
 
         return True
 
-    def _send_logs_to_stream_alert(self, source_function, logs):
+    def _send_logs_to_lambda(self, logs):
         """Protected method for sending logs to the rule processor lambda
         function for processing. This performs some size checks before sending.
 
@@ -90,17 +89,18 @@ class Batcher(object):
         """
         # Create a payload to be sent to the rule processor that contains the
         # service these logs were collected from and the list of logs
-        payload = {'Records': [{'stream_alert_app': source_function, 'logs': logs}]}
+        payload = {'Records': [{'stream_alert_app': self._source_function, 'logs': logs}]}
         payload_json = json.dumps(payload, separators=(',', ':'))
-        if len(payload_json) > MAX_LAMBDA_PAYLOAD_SIZE:
+        if len(payload_json) > self.MAX_LAMBDA_PAYLOAD_SIZE:
             if len(logs) == 1:
                 LOGGER.error('Log payload size for single log exceeds input limit and will be '
-                             'dropped (%d > %d max).', len(payload_json), MAX_LAMBDA_PAYLOAD_SIZE)
+                             'dropped (%d > %d max).', len(payload_json),
+                             self.MAX_LAMBDA_PAYLOAD_SIZE)
                 return True
 
             LOGGER.debug('Log payload size for %d logs exceeds limit and will be '
                          'segmented (%d > %d max).', len(logs), len(payload_json),
-                         MAX_LAMBDA_PAYLOAD_SIZE)
+                         self.MAX_LAMBDA_PAYLOAD_SIZE)
             return False
 
         LOGGER.debug('Sending %d logs to rule processor with payload size %d',
@@ -108,7 +108,7 @@ class Batcher(object):
 
         try:
             response = Batcher.LAMBDA_CLIENT.invoke(
-                FunctionName=self.rp_function,
+                FunctionName=self._destination_function,
                 InvocationType='Event',
                 Payload=payload_json,
                 Qualifier='production'
@@ -117,13 +117,13 @@ class Batcher(object):
         except ClientError as err:
             LOGGER.error('An error occurred while sending logs to '
                          '\'%s:production\'. Error is: %s',
-                         self.rp_function,
+                         self._destination_function,
                          err.response)
             raise
 
         LOGGER.info('Sent %d logs to \'%s\' with Lambda request ID \'%s\'',
                     len(logs),
-                    self.rp_function,
+                    self._destination_function,
                     response['ResponseMetadata']['RequestId'])
 
         return True
