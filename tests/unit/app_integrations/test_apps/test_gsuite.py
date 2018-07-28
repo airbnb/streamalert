@@ -13,7 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-# pylint: disable=abstract-class-instantiated,protected-access,no-self-use,abstract-method,attribute-defined-outside-init
 import json
 import socket
 import ssl
@@ -21,27 +20,35 @@ import ssl
 import apiclient
 import oauth2client
 from mock import Mock, mock_open, patch
+from moto import mock_ssm
 from nose.tools import assert_equal, assert_false, assert_items_equal, assert_true, raises
 
 from app_integrations.apps.gsuite import GSuiteReportsApp
-from app_integrations.config import AppConfig
 
 from tests.unit.app_integrations.test_helpers import (
-    get_valid_config_dict,
-    MockSSMClient
+    get_event,
+    get_mock_context,
+    put_mock_params
 )
 
+@mock_ssm
 @patch.object(GSuiteReportsApp, '_type', Mock(return_value='admin'))
 @patch.object(GSuiteReportsApp, 'type', Mock(return_value='type'))
-@patch.object(AppConfig, 'SSM_CLIENT', MockSSMClient())
 class TestGSuiteReportsApp(object):
     """Test class for the GSuiteReportsApp"""
+    # pylint: disable=protected-access
 
     # Remove all abstractmethods so we can instantiate GSuiteReportsApp for testing
     @patch.object(GSuiteReportsApp, '__abstractmethods__', frozenset())
     def setup(self):
         """Setup before each method"""
-        self._app = GSuiteReportsApp(AppConfig(get_valid_config_dict('gsuite_admin')))
+        # pylint: disable=abstract-class-instantiated,attribute-defined-outside-init
+        self._test_app_name = 'gsuite_admin'
+        put_mock_params(self._test_app_name)
+        self._event = get_event(self._test_app_name)
+        self._context = get_mock_context()
+        self._context.function_name = self._test_app_name
+        self._app = GSuiteReportsApp(self._event, self._context)
 
     def test_sleep(self):
         """GSuiteReportsApp - Sleep Seconds"""
@@ -106,7 +113,7 @@ class TestGSuiteReportsApp(object):
         """GSuiteReportsApp - Create Service, Exists"""
         self._app._activities_service = True
         assert_true(self._app._create_service())
-        log_mock.assert_called_with('Service already instantiated for %s', 'type')
+        log_mock.assert_called_with('[%s] Service already instantiated', self._app)
 
     @patch('app_integrations.apps.gsuite.GSuiteReportsApp._load_credentials',
            Mock(return_value=False))
@@ -121,7 +128,7 @@ class TestGSuiteReportsApp(object):
         """GSuiteReportsApp - Create Service, Google API Error"""
         build_mock.side_effect = apiclient.errors.Error('This is bad')
         assert_false(self._app._create_service())
-        log_mock.assert_called_with('Failed to build discovery service for %s', 'type')
+        log_mock.assert_called_with('[%s] Failed to build discovery service', self._app)
 
     @patch('app_integrations.apps.gsuite.GSuiteReportsApp._load_credentials', Mock())
     @patch('logging.Logger.exception')
@@ -130,7 +137,7 @@ class TestGSuiteReportsApp(object):
         """GSuiteReportsApp - Create Service, SSL Handshake Error"""
         build_mock.side_effect = ssl.SSLError('_ssl.c:574: The handshake operation timed out')
         assert_false(self._app._create_service())
-        log_mock.assert_called_with('Failed to build discovery service for %s', 'type')
+        log_mock.assert_called_with('[%s] Failed to build discovery service', self._app)
 
     @patch('app_integrations.apps.gsuite.GSuiteReportsApp._load_credentials', Mock())
     @patch('logging.Logger.exception')
@@ -139,7 +146,7 @@ class TestGSuiteReportsApp(object):
         """GSuiteReportsApp - Create Service, Socket Timeout"""
         build_mock.side_effect = socket.timeout('timeout: timed out')
         assert_false(self._app._create_service())
-        log_mock.assert_called_with('Failed to build discovery service for %s', 'type')
+        log_mock.assert_called_with('[%s] Failed to build discovery service', self._app)
 
     def test_gather_logs(self):
         """GSuiteReportsApp - Gather Logs, Success"""
@@ -163,7 +170,7 @@ class TestGSuiteReportsApp(object):
             error = apiclient.errors.HttpError('response', bytes('bad'))
             service_mock.list.return_value.execute.side_effect = error
             assert_false(self._app._gather_logs())
-            log_mock.assert_called_with('Failed to execute activities listing for %s', 'type')
+            log_mock.assert_called_with('[%s] Failed to execute activities listing', self._app)
 
     @patch('app_integrations.apps.gsuite.GSuiteReportsApp._create_service',
            Mock(return_value=True))
@@ -174,7 +181,7 @@ class TestGSuiteReportsApp(object):
             error = oauth2client.client.HttpAccessTokenRefreshError('bad', status=502)
             service_mock.list.return_value.execute.side_effect = error
             assert_false(self._app._gather_logs())
-            log_mock.assert_called_with('Failed to execute activities listing for %s', 'type')
+            log_mock.assert_called_with('[%s] Failed to execute activities listing', self._app)
 
     @patch('app_integrations.apps.gsuite.GSuiteReportsApp._create_service',
            Mock(return_value=True))
@@ -185,7 +192,7 @@ class TestGSuiteReportsApp(object):
             error = ssl.SSLError('_ssl.c:574: The handshake operation timed out')
             service_mock.list.return_value.execute.side_effect = error
             assert_false(self._app._gather_logs())
-            log_mock.assert_called_with('Failed to execute activities listing for %s', 'type')
+            log_mock.assert_called_with('[%s] Failed to execute activities listing', self._app)
 
     @patch('app_integrations.apps.gsuite.GSuiteReportsApp._create_service',
            Mock(return_value=True))
@@ -196,7 +203,7 @@ class TestGSuiteReportsApp(object):
             error = socket.timeout('timeout: timed out')
             service_mock.list.return_value.execute.side_effect = error
             assert_false(self._app._gather_logs())
-            log_mock.assert_called_with('Failed to execute activities listing for %s', 'type')
+            log_mock.assert_called_with('[%s] Failed to execute activities listing', self._app)
 
     @patch('app_integrations.apps.gsuite.GSuiteReportsApp._load_credentials',
            Mock(return_value=False))
@@ -215,8 +222,9 @@ class TestGSuiteReportsApp(object):
         with patch.object(self._app, '_activities_service') as service_mock:
             service_mock.list.return_value.execute.return_value = None
             assert_false(self._app._gather_logs())
-            log_mock.assert_called_with('No results received from the G Suite API request for %s',
-                                        'type')
+            log_mock.assert_called_with(
+                '[%s] No results received from the G Suite API request', self._app
+            )
 
     @patch('app_integrations.apps.gsuite.GSuiteReportsApp._create_service',
            Mock(return_value=True))
@@ -231,8 +239,9 @@ class TestGSuiteReportsApp(object):
             }
             service_mock.list.return_value.execute.return_value = payload
             assert_false(self._app._gather_logs())
-            log_mock.assert_called_with('No logs in response from G Suite API request for %s',
-                                        'type')
+            log_mock.assert_called_with(
+                '[%s] No logs in response from G Suite API request', self._app
+            )
 
     @staticmethod
     def _get_sample_logs(count):
@@ -273,6 +282,7 @@ class TestGSuiteReportsApp(object):
 @raises(NotImplementedError)
 def test_type_not_implemented():
     """GSuiteReportsApp - Subclass Type Not Implemented"""
+    # pylint: disable=protected-access,abstract-method
     class GSuiteFakeApp(GSuiteReportsApp):
         """Fake GSuiteReports app that should raise a NotImplementedError"""
 

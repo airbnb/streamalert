@@ -13,201 +13,164 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-# pylint: disable=no-self-use,protected-access,attribute-defined-outside-init
+import json
+import os
+
+import boto3
+from botocore.exceptions import ClientError
 from mock import patch
-from nose.tools import assert_equal, assert_false, assert_items_equal, assert_true, raises
+from moto import mock_ssm
+from nose.tools import assert_equal, assert_false, assert_true, raises
 
 from app_integrations.config import AppConfig
-from app_integrations.exceptions import AppIntegrationConfigError, AppIntegrationStateError
-from tests.unit.app_integrations import FUNCTION_NAME
-from tests.unit.app_integrations.test_helpers import (
-    get_mock_context,
-    MockSSMClient
-)
+from app_integrations.exceptions import AppAuthError, AppConfigError, AppStateError
+# from tests.unit.app_integrations import FUNCTION_NAME
+from tests.unit.app_integrations.test_helpers import get_event, get_mock_context, put_mock_params
 
 
+@mock_ssm
+@patch.dict(os.environ, {'AWS_DEFAULT_REGION': 'us-east-1'})
 @patch.object(AppConfig, 'MAX_STATE_SAVE_TRIES', 1)
-class TestAppIntegrationConfig(object):
-    """Test class for AppIntegrationConfig"""
+class TestAppConfig(object):
+    """Test class for AppConfig"""
+    # pylint: disable=protected-access,no-self-use
 
     def setup(self):
         """Setup before each method"""
-        self.ssm_patcher = patch.object(AppConfig, 'SSM_CLIENT', MockSSMClient())
-        self.mock_ssm = self.ssm_patcher.start()
-        self._config = AppConfig.load_config(get_mock_context(),
-                                             {'invocation_type': 'successive_invoke'})
+        # pylint: disable=attribute-defined-outside-init
+        self._test_app_name = 'test_app'
+        put_mock_params(self._test_app_name)
+        self._event = get_event(self._test_app_name)
+        self._context = get_mock_context()
+        self._context.function_name = self._test_app_name
+        self._config = AppConfig.load_config(self._event, self._context)
 
-    def teardown(self):
-        """Teardown after each method"""
-        self.ssm_patcher.stop()
-
-    def test_parse_context(self):
-        """AppIntegrationConfig - Parse Context"""
-        mock_context = get_mock_context()
-        result = AppConfig._parse_context(mock_context)
-
-        assert_equal(AppConfig.remaining_ms, mock_context.get_remaining_time_in_millis)
-        assert_equal(AppConfig.remaining_ms(), 100)
-        assert_equal(result['function_name'], FUNCTION_NAME)
-
-    def test_load_config(self):
-        """AppIntegrationConfig - Load config from SSM"""
-        assert_equal(len(self._config.keys()), 12)
-
-    @patch('boto3.client')
-    def test_load_config_new_client(self, boto_mock):
-        """AppIntegrationConfig - Load config, new SSM client"""
-        boto_mock.return_value = MockSSMClient(app_type='onelogin_events')
-        with patch.object(AppConfig, 'SSM_CLIENT', None):
-            self._config = AppConfig.load_config(get_mock_context(), None)
-            boto_mock.assert_called()
-
-    @raises(AppIntegrationConfigError)
-    def test_load_config_bad(self):
-        """AppIntegrationConfig - Load config from SSM, missing key"""
+    @raises(AppConfigError)
+    def test_load_config_bad_event(self):
+        """AppConfig - Load config with a bad event"""
         # Remove one of the required keys from the state
-        del self._config['qualifier']
-        self._config._validate_config()
+        event = get_event(self._test_app_name)
+        del event['destination_function_name']
+        AppConfig.load_config(event, get_mock_context())
 
-    @raises(AppIntegrationConfigError)
-    def test_load_config_empty(self):
-        """AppIntegrationConfig - Load config from SSM, empty config"""
-        # Empty the config so the dict validates to False
-        self._config.clear()
-        self._config._validate_config()
-
-    def test_get_param(self):
-        """AppIntegrationConfig - Get parameter"""
-        param, _ = AppConfig._get_parameters(['{}_config'.format(FUNCTION_NAME)])
-
-        assert_items_equal(param['{}_config'.format(FUNCTION_NAME)].keys(),
-                           {'cluster', 'app_name', 'type', 'prefix', 'schedule_expression'})
-
-    @raises(AppIntegrationConfigError)
-    def test_get_param_bad_value(self):
-        """AppIntegrationConfig - Get parameter, bad json value"""
-        config_name = '{}_config'.format(FUNCTION_NAME)
-        with patch.dict(AppConfig.SSM_CLIENT._parameters, {config_name: 'bad json'}):
-            AppConfig._get_parameters([config_name])
-
-    @raises(AppIntegrationConfigError)
-    def test_get_param_client_error(self):
-        """AppIntegrationConfig - Get parameter, Exception"""
-        self.mock_ssm.raise_exception = True
-        AppConfig._get_parameters([])
-
-    @raises(AppIntegrationConfigError)
-    def test_evaluate_interval_no_interval(self):
-        """AppIntegrationConfig - Evaluate Interval, No Interval"""
-        del self._config['schedule_expression']
-        self._config.evaluate_interval()
-
-    @raises(AppIntegrationConfigError)
+    @raises(AppConfigError)
     def test_evaluate_interval_invalid(self):
-        """AppIntegrationConfig - Evaluate Interval, Invalid Interval"""
-        self._config['schedule_expression'] = 'rate(1 hours)'
-        self._config.evaluate_interval()
+        """AppConfig - Evaluate Interval, Invalid Interval"""
+        self._config._event['schedule_expression'] = 'rate(1 hours)'
+        self._config._evaluate_interval()
+
+    def test_validate_auth_(self):
+        """AppConfig - Validate Authentication Info"""
+        assert_equal(self._config.validate_auth({'host', 'secret'}), True)
+
+    @raises(AppAuthError)
+    def test_validate_auth_empty(self):
+        """AppConfig - Validate Authentication Info, No Auth"""
+        self._config._auth_config.clear()
+        self._config.validate_auth({'host', 'secret'})
+
+    @raises(AppAuthError)
+    def test_validate_auth_missing_key(self):
+        """AppConfig - Validate Authentication Info, Missing Auth Key"""
+        self._config.validate_auth({'new_key'})
+
+    def test_successive_event(self):
+        """AppConfig - Get Successive Event"""
+        event = self._config.successive_event
+        expected_event = json.dumps({
+            'app_type': 'test_app',
+            'schedule_expression': 'rate(10 minutes)',
+            'destination_function_name':
+                'unit_test_prefix_unit_test_cluster_streamalert_rule_processor',
+            'invocation_type': 'successive'
+        })
+        assert_equal(event, expected_event)
+
+    def test_set_starting_timestamp(self):
+        """AppConfig - Set Starting Timestamp"""
+        assigned_value = 'test'
+        self._config.last_timestamp = assigned_value
+        self._config.set_starting_timestamp(None)
+        assert_equal(self._config.start_last_timestamp, assigned_value)
+
+    @patch('calendar.timegm')
+    def test_determine_last_time_no_format(self, time_mock):
+        """AppConfig - Determine Last Timestamp, No Format"""
+        self._config.last_timestamp = None
+        time_mock.return_value = 1000
+        expected_result = 400
+        result = self._config._determine_last_time(None)
+        assert_equal(result, expected_result)
+
+    @patch('calendar.timegm')
+    def test_determine_last_time_formatted(self, time_mock):
+        """AppConfig - Determine Last Timestamp, Value Set"""
+        self._config.last_timestamp = None
+        time_mock.return_value = 1000
+        expected_result = '1970-01-01T00:06:40-00:00'
+        result = self._config._determine_last_time('%Y-%m-%dT%H:%M:%S-00:00')
+        assert_equal(result, expected_result)
+
+    @raises(AppConfigError)
+    def test_get_parameters_invalid_json(self):
+        """AppConfig - Get Parameters, Invalid JSON"""
+        key = '{}_state'.format(self._test_app_name)
+        boto3.client('ssm').put_parameter(
+            Name=key,
+            Value='foobar',
+            Type='SecureString',
+            Overwrite=True
+        )
+        self._config._get_parameters(key)
+
+    @raises(AppConfigError)
+    @patch('app_integrations.config.AppConfig.SSM_CLIENT')
+    def test_get_parameters_exception(self, client_mock):
+        """AppConfig - Get Parameters, ClientError"""
+        with patch.object(AppConfig, 'MAX_STATE_SAVE_TRIES', 1):
+            client_mock.get_parameters.side_effect = ClientError(
+                {'Error': {'Code': 'TEST', 'Message': 'BadError'}}, 'GetParameters')
+            self._config._get_parameters('{}_state'.format(self._test_app_name))
+
+    @patch('app_integrations.config.json')
+    def test_get_parameters_bad_names(self, json_mock):
+        """AppConfig - Get parameter, Bad Names"""
+        _, invalid_names = AppConfig._get_parameters('bad_name')
+        assert_equal(invalid_names[0], 'bad_name')
+        json_mock.loads.assert_not_called()
 
     def test_evaluate_interval(self):
-        """AppIntegrationConfig - Evaluate Interval"""
-        self._config['schedule_expression'] = 'rate(5 hours)'
-        assert_equal(self._config.evaluate_interval(), 3600 * 5)
+        """AppConfig - Evaluate Interval"""
+        assert_equal(self._config._evaluate_interval(), 60 * 10)
 
-    @patch('calendar.timegm')
-    def test_determine_last_timestamp_duo(self, time_mock):
-        """AppIntegrationConfig - Determine Last Timestamp, Duo"""
-        # Reset the last timestamp to None
-        self._config.last_timestamp = None
-
-        # Use a mocked current time
-        current_time = 1234567890
-        time_mock.return_value = current_time
-        self._config['schedule_expression'] = 'rate(5 hours)'
-        assert_equal(self._config._determine_last_time(), 1234567890 - (3600 * 5))
-
-    @patch('calendar.timegm')
-    def test_determine_last_timestamp_onelogin(self, time_mock):
-        """AppIntegrationConfig - Determine Last Timestamp, OneLogin"""
-        with patch.object(AppConfig, 'SSM_CLIENT', MockSSMClient(app_type='onelogin_events')):
-            self._config = AppConfig.load_config(get_mock_context(), None)
-
-            # Reset the last timestamp to None
-            self._config.last_timestamp = None
-
-            # Use a mocked current time
-            time_mock.return_value = 1234567890
-            assert_equal(self._config._determine_last_time(), '2009-02-13T22:31:30Z')
-
-    @patch('calendar.timegm')
-    def test_determine_last_timestamp_gsuite(self, time_mock):
-        """AppIntegrationConfig - Determine Last Timestamp, GSuite"""
-        with patch.object(AppConfig, 'SSM_CLIENT', MockSSMClient(app_type='gsuite_admin')):
-            self._config = AppConfig.load_config(get_mock_context(), None)
-
-            # Reset the last timestamp to None
-            self._config.last_timestamp = None
-
-            # Use a mocked current time
-            time_mock.return_value = 1234567890
-            assert_equal(self._config._determine_last_time(), '2009-02-13T22:31:30Z')
-
-    @patch('calendar.timegm')
-    def test_determine_last_timestamp_box(self, time_mock):
-        """AppIntegrationConfig - Determine Last Timestamp, Box"""
-        with patch.object(AppConfig, 'SSM_CLIENT', MockSSMClient(app_type='box_admin_events')):
-            self._config = AppConfig.load_config(get_mock_context(), None)
-
-            # Reset the last timestamp to None
-            self._config.last_timestamp = None
-
-            # Use a mocked current time
-            time_mock.return_value = 1234567890
-            assert_equal(self._config._determine_last_time(), '2009-02-13T22:31:30-00:00')
+    @raises(AppStateError)
+    @patch('app_integrations.config.AppConfig.SSM_CLIENT')
+    def test_save_state_error(self, client_mock):
+        """AppConfig - Save State, Error"""
+        with patch.object(AppConfig, 'MAX_STATE_SAVE_TRIES', 1):
+            client_mock.put_parameter.side_effect = ClientError(
+                {'Error': {'Code': 'TEST'}}, 'PutParameter')
+            self._config._save_state()
 
     @patch('logging.Logger.error')
     def test_set_item(self, log_mock):
-        """AppIntegrationConfig - Set Item, Bad Value"""
+        """AppConfig - Set Item, Bad Value"""
         bad_state = 'bad value'
-        self._config['current_state'] = bad_state
+        self._config.current_state = bad_state
         log_mock.assert_called_with('Current state cannot be saved with value \'%s\'', bad_state)
-
-    def test_is_successive_invocation(self):
-        """AppIntegrationConfig - Is Successive Invocation"""
-        assert_true(self._config.is_successive_invocation)
-        self._config = AppConfig.load_config(get_mock_context(), None)
-        assert_false(self._config.is_successive_invocation)
-
-    @raises(AppIntegrationStateError)
-    def test_save_state_exception(self):
-        """AppIntegrationConfig - Save State, Exception"""
-        self.mock_ssm.raise_exception = True
-        self._config['current_state'] = 'RUNNING'
-
-    def test_mark_failure(self):
-        """AppIntegrationConfig - Mark Failure"""
-        self._config.mark_failure()
-        assert_equal(self._config['current_state'], 'failed')
-
-    def test_is_failing(self):
-        """AppIntegrationConfig - Check If Failing"""
-        assert_false(self._config.is_failing)
-
-    def test_is_success(self):
-        """AppIntegrationConfig - Check If Success"""
-        assert_false(self._config.is_success)
 
     @patch('app_integrations.config.AppConfig._save_state')
     def test_suppress_state_save_no_change(self, save_mock):
-        """AppIntegrationConfig - Suppress Save State on No Change"""
+        """AppConfig - Suppress Save State on No Change"""
         # Try to mark with success more than once
-        self._config.mark_success()
-        self._config.mark_success()
+        self._config.mark_running()
+        self._config.mark_running()
 
         save_mock.assert_called_once()
 
     @patch('app_integrations.config.AppConfig._save_state')
     def test_suppress_state_save(self, save_mock):
-        """AppIntegrationConfig - Save State on Change"""
+        """AppConfig - Save State on Change"""
         # Try to mark with failure followed by success
         self._config.mark_failure()
         self._config.mark_success()
@@ -215,13 +178,56 @@ class TestAppIntegrationConfig(object):
         assert_equal(save_mock.call_count, 2)
 
     def test_scrub_auth_info(self):
-        """AppIntegrationConfig - Scrub Auth Info"""
-        auth_key = '{}_auth'.format(FUNCTION_NAME)
-        param_dict = {auth_key: self._config.auth}
+        """AppConfig - Scrub Auth Info"""
+        auth_key = 'test_auth'
+        param_dict = {auth_key: {'api_hostname': 'test_data'}}
         scrubbed_config = self._config._scrub_auth_info(param_dict, auth_key)
-        assert_equal(scrubbed_config[auth_key]['api_hostname'],
-                     '*' * len(self._config.auth['api_hostname']))
-        assert_equal(scrubbed_config[auth_key]['integration_key'],
-                     '*' * len(self._config.auth['integration_key']))
-        assert_equal(scrubbed_config[auth_key]['secret_key'],
-                     '*' * len(self._config.auth['secret_key']))
+        assert_equal(scrubbed_config[auth_key]['api_hostname'], '*********')
+
+    @patch('logging.Logger.info')
+    def test_report_remaining_seconds(self, log_mock):
+        """AppConfig - Report Remaining Seconds"""
+        self._config.report_remaining_seconds()
+        log_mock.assert_called_with('Lambda remaining seconds: %.2f', 1.00)
+
+    @patch('app_integrations.config.AppConfig._save_state')
+    def test_set_last_timestamp_same(self, save_mock):
+        """AppConfig - Set Last Timestamp, Same Value"""
+        self._config.last_timestamp = 1234567890
+        save_mock.assert_not_called()
+
+    def test_is_failing(self):
+        """AppConfig - Check If Failing"""
+        assert_false(self._config.is_failing)
+
+    def test_is_partial(self):
+        """AppConfig - Check If Partial Run"""
+        assert_false(self._config.is_partial)
+
+    def test_is_running(self):
+        """AppConfig - Check If Running"""
+        assert_false(self._config.is_running)
+
+    def test_is_success(self):
+        """AppConfig - Check If Success"""
+        assert_true(self._config.is_success)
+
+    def test_mark_partial(self):
+        """AppConfig - Mark Partial"""
+        self._config.mark_partial()
+        assert_equal(self._config.current_state, 'partial')
+
+    def test_mark_running(self):
+        """AppConfig - Mark Running"""
+        self._config.mark_running()
+        assert_equal(self._config.current_state, 'running')
+
+    def test_mark_success(self):
+        """AppConfig - Mark Success"""
+        self._config.mark_success()
+        assert_equal(self._config.current_state, 'succeeded')
+
+    def test_mark_failure(self):
+        """AppConfig - Mark Failure"""
+        self._config.mark_failure()
+        assert_equal(self._config.current_state, 'failed')

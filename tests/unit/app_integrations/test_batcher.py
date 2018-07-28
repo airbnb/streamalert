@@ -30,9 +30,7 @@ class TestAppBatcher(object):
 
     def setup(self):
         """Setup class before tests"""
-        self.batcher = Batcher({'cluster': 'cluster',
-                                'prefix': 'prefix',
-                                'region': 'us-east-1'})
+        self.batcher = Batcher('duo_auth', 'destination_func')
 
         # Use a mocked version of the Lambda client to patch out the instance client
         Batcher.LAMBDA_CLIENT = MockLambdaClient
@@ -45,11 +43,11 @@ class TestAppBatcher(object):
                  'eventtype': 'authentication',
                  'host': 'host'} for _ in range(log_count)]
 
-        result = self.batcher._send_logs_to_stream_alert('duo_auth', logs)
+        result = self.batcher._send_logs_to_lambda(logs)
 
         assert_true(result)
         log_mock.assert_called_with('Sent %d logs to \'%s\' with Lambda request ID \'%s\'',
-                                    log_count, 'prefix_cluster_streamalert_rule_processor',
+                                    log_count, 'destination_func',
                                     '9af88643-7b3c-43cd-baae-addb73bb4d27')
 
     @raises(ClientError)
@@ -60,7 +58,7 @@ class TestAppBatcher(object):
                  'eventtype': 'authentication',
                  'host': 'host'}]
 
-        self.batcher._send_logs_to_stream_alert('duo_auth', logs)
+        self.batcher._send_logs_to_lambda(logs)
 
     def test_send_logs_lambda_too_large(self):
         """App Integration Batcher - Send Logs to StreamAlert, Exceeds Size"""
@@ -69,7 +67,7 @@ class TestAppBatcher(object):
         logs = [{'timestamp': 'time',
                  'eventtype': 'authentication',
                  'host': 'host'} for _ in range(2000)]
-        result = self.batcher._send_logs_to_stream_alert('duo_auth', logs)
+        result = self.batcher._send_logs_to_lambda(logs)
 
         assert_false(result)
 
@@ -77,30 +75,30 @@ class TestAppBatcher(object):
     def test_segment_and_send_one_over_max(self, log_mock):
         """App Integration Batcher - Drop One Log Over Max Size"""
         logs = [{'random_data': 'a' * 128000}]
-        assert_true(self.batcher._send_logs_to_stream_alert('duo_auth', logs))
+        assert_true(self.batcher._send_logs_to_lambda(logs))
 
         log_mock.assert_called_with('Log payload size for single log exceeds input '
                                     'limit and will be dropped (%d > %d max).',
                                     128073, 128000)
 
-    @patch('app_integrations.batcher.Batcher._send_logs_to_stream_alert')
+    @patch('app_integrations.batcher.Batcher._send_logs_to_lambda')
     def test_segment_and_send(self, batcher_mock):
         """App Integration Batcher - Segment and Send Logs to StreamAlert"""
         logs = [{'timestamp': 'time',
                  'eventtype': 'authentication',
                  'host': 'host'} for _ in range(3000)]
-        self.batcher._segment_and_send('duo_auth', logs)
+        self.batcher._segment_and_send(logs)
 
         assert_equal(batcher_mock.call_count, 2)
 
-    @patch('app_integrations.batcher.Batcher._send_logs_to_stream_alert')
+    @patch('app_integrations.batcher.Batcher._send_logs_to_lambda')
     def test_segment_and_send_multi(self, batcher_mock):
         """App Integration Batcher - Segment and Send Logs to StreamAlert, Multi-segment"""
         batcher_mock.side_effect = [False, True, True, True]
         logs = [{'timestamp': 'time',
                  'eventtype': 'authentication',
                  'host': 'host'} for _ in range(6000)]
-        self.batcher._segment_and_send('duo_auth', logs)
+        self.batcher._segment_and_send(logs)
 
         assert_equal(batcher_mock.call_count, 4)
 
@@ -110,7 +108,7 @@ class TestAppBatcher(object):
         logs = [{'timestamp': 'time',
                  'eventtype': 'authentication',
                  'host': 'host'} for _ in range(1000)]
-        self.batcher.send_logs('duo_auth', logs)
+        self.batcher.send_logs(logs)
 
         batcher_mock.assert_not_called()
 
@@ -120,6 +118,6 @@ class TestAppBatcher(object):
         logs = [{'timestamp': 'time',
                  'eventtype': 'authentication',
                  'host': 'host'} for _ in range(3000)]
-        self.batcher.send_logs('duo_auth', logs)
+        self.batcher.send_logs(logs)
 
         batcher_mock.assert_called()

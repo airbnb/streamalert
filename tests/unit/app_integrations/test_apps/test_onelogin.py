@@ -13,33 +13,36 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-# pylint: disable=abstract-class-instantiated,protected-access,no-self-use
 from mock import Mock, patch
+from moto import mock_ssm
 from nose.tools import assert_equal, assert_false, assert_items_equal
 
 from app_integrations.apps.onelogin import OneLoginApp
-from app_integrations.config import AppConfig
 
 from tests.unit.app_integrations.test_helpers import (
-    get_valid_config_dict,
-    MockSSMClient
+    get_event,
+    get_mock_context,
+    put_mock_params
 )
 
 
+@mock_ssm
 @patch.object(OneLoginApp, 'type', Mock(return_value='type'))
-@patch.object(AppConfig, 'SSM_CLIENT', MockSSMClient())
 class TestOneLoginApp(object):
     """Test class for the OneLoginApp"""
-
-    def __init__(self):
-        self._app = None
+    # pylint: disable=protected-access
 
     # Remove all abstractmethods so we can instantiate OneLoginApp for testing
-    # Also patch some abstractproperty attributes
     @patch.object(OneLoginApp, '__abstractmethods__', frozenset())
     def setup(self):
         """Setup before each method"""
-        self._app = OneLoginApp(AppConfig(get_valid_config_dict('onelogin')))
+        # pylint: disable=abstract-class-instantiated,attribute-defined-outside-init
+        self._test_app_name = 'onelogin'
+        put_mock_params(self._test_app_name)
+        self._event = get_event(self._test_app_name)
+        self._context = get_mock_context()
+        self._context.function_name = self._test_app_name
+        self._app = OneLoginApp(self._event, self._context)
 
     def set_config_values(self, region, client_id, client_secret):
         """Helper function to setup the auth values"""
@@ -294,6 +297,7 @@ class TestOneLoginApp(object):
 
 def test_onelogin_events_type():
     """OneLoginApp - Verify Events Type"""
+    # pylint: disable=protected-access
     assert_equal(OneLoginApp._type(), 'events')
 
 def test_onelogin_event_service():

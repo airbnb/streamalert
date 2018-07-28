@@ -13,68 +13,76 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-# pylint: disable=abstract-class-instantiated,protected-access,no-self-use,abstract-method,anomalous-backslash-in-string
 from mock import Mock, patch
+from moto import mock_ssm
 from nose.tools import assert_equal, assert_false, assert_items_equal, raises
 
 from app_integrations.apps.slack import SlackApp, SlackAccessApp, SlackIntegrationsApp
-from app_integrations.config import AppConfig
-
 
 from tests.unit.app_integrations.test_helpers import (
-    get_valid_config_dict,
-    MockSSMClient
-    )
+    get_event,
+    get_mock_context,
+    put_mock_params
+)
 
-@patch.object(AppConfig, 'SSM_CLIENT', MockSSMClient())
+
+@mock_ssm
 @patch.object(SlackApp, '_endpoint', Mock(return_value='endpoint'))
 @patch.object(SlackApp, '_type', Mock(return_value='type'))
 class TestSlackApp(object):
-    """Test class for the SlackAccessApp"""
-
-    def __init__(self):
-        self._app = None
+    """Test class for the SlackApp"""
+    # pylint: disable=protected-access
 
     @patch.object(SlackApp, '__abstractmethods__', frozenset())
     def setup(self):
-        self._app = SlackApp(AppConfig(get_valid_config_dict('slack')))
+        """Setup before each method"""
+        # pylint: disable=abstract-class-instantiated,attribute-defined-outside-init
+        self._test_app_name = 'slack'
+        put_mock_params(self._test_app_name)
+        self._event = get_event(self._test_app_name)
+        self._context = get_mock_context()
+        self._context.function_name = self._test_app_name
+        self._app = SlackApp(self._event, self._context)
 
     def test_required_auth_info(self):
         """SlackApp - Required Auth Info"""
         assert_items_equal(self._app.required_auth_info().keys(), {'auth_token'})
 
     @patch('requests.post')
-    @patch('logging.Logger.exception')
+    @patch('logging.Logger.error')
     def test_error_code_return(self, log_mock, requests_mock):
         """SlackApp - Gather Logs - Bad Response"""
-        requests_mock.return_value = Mock(
-            status_code=404
-            )
+        requests_mock.return_value = Mock(status_code=404)
         assert_false(self._app._gather_logs())
         log_mock.assert_called_with('Received bad response from slack')
 
     @patch('requests.post')
-    @patch('logging.Logger.exception')
+    @patch('logging.Logger.error')
     def test_error_response_from_slack(self, log_mock, requests_mock):
         """SlackApp - Gather Logs - Error Response"""
         requests_mock.return_value = Mock(
             status_code=200,
             json=Mock(return_value={'ok':False, 'error':'paid_only'})
-            )
+        )
         assert_false(self._app._gather_logs())
         log_mock.assert_called_with('Received error or warning from slack')
 
 
-@patch.object(AppConfig, 'SSM_CLIENT', MockSSMClient())
+@mock_ssm
 class TestSlackAccessApp(object):
     """Test class for the SlackAccessApp"""
-
-    def __init__(self):
-        self._app = None
+    # pylint: disable=protected-access
 
     @patch.object(SlackAccessApp, '__abstractmethods__', frozenset())
     def setup(self):
-        self._app = SlackAccessApp(AppConfig(get_valid_config_dict('slack')))
+        """Setup before each method"""
+        # pylint: disable=abstract-class-instantiated,attribute-defined-outside-init
+        self._test_app_name = 'slack'
+        put_mock_params(self._test_app_name)
+        self._event = get_event(self._test_app_name)
+        self._context = get_mock_context()
+        self._context.function_name = self._test_app_name
+        self._app = SlackAccessApp(self._event, self._context)
 
     def test_sleep_seconds(self):
         """SlackAccessApp - Sleep Seconds"""
@@ -93,13 +101,13 @@ class TestSlackAccessApp(object):
                     'date_last':  1422922864,
                     'count': 1,
                     'ip': '127.0.0.',
-                    'user_agent': 'SlackWeb Mozilla\/5.0 (Macintosh; Intel Mac OS X 10_10_2) '
-                                  'AppleWebKit\/537.36 (KHTML, like Gecko) Chrome\/41.0.2272.35 '
-                                  'Safari\/537.36',
+                    'user_agent': 'SlackWeb Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_2) '
+                                  'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2272.35 '
+                                  'Safari/537.36',
                     'isp': 'BigCo ISP',
                     'country': 'US',
                     'region': 'CA'
-                    },
+                },
                 {
                     'user_id': 'U45678',
                     'username': 'alice',
@@ -107,21 +115,21 @@ class TestSlackAccessApp(object):
                     'date_last': 1422922493,
                     'count': 1,
                     'ip': '127.0.0.1',
-                    'user_agent': 'SlackWeb Mozilla\/5.0 (iPhone; CPU iPhone OS 8_1_3 like Mac '
-                                  'OS X) AppleWebKit\/600.1.4 (KHTML, like Gecko) Version\/8.0 '
-                                  'Mobile\/12B466 Safari\/600.1.4',
+                    'user_agent': 'SlackWeb Mozilla/5.0 (iPhone; CPU iPhone OS 8_1_3 like Mac '
+                                  'OS X) AppleWebKit/600.1.4 (KHTML, like Gecko) Version/8.0 '
+                                  'Mobile/12B466 Safari/600.1.4',
                     'isp': 'BigCo ISP',
                     'country': 'US',
                     'region': 'CA'
-                    },
-                ],
+                },
+            ],
             'paging': {
                 'count': 100,
                 'total': 2,
                 'page': 1,
                 'pages': 1
-                }
             }
+        }
 
     @patch('requests.post')
     def test_gather_access_logs(self, requests_mock):
@@ -130,7 +138,7 @@ class TestSlackAccessApp(object):
         requests_mock.return_value = Mock(
             status_code=200,
             json=Mock(return_value=logs)
-            )
+        )
 
         gathered_logs = self._app._gather_logs()
         assert_equal(len(gathered_logs), 2)
@@ -142,7 +150,7 @@ class TestSlackAccessApp(object):
         requests_mock.return_value = Mock(
             status_code=200,
             json=Mock(return_value=logs)
-            )
+        )
 
         self._app._last_timestamp = 1422922593
         gathered_logs = self._app._gather_logs()
@@ -155,7 +163,7 @@ class TestSlackAccessApp(object):
         requests_mock.return_value = Mock(
             status_code=200,
             json=Mock(return_value=logs)
-            )
+        )
 
         self._app._last_timestamp = 1522922593
         gathered_logs = self._app._gather_logs()
@@ -168,8 +176,9 @@ class TestSlackAccessApp(object):
             status_code=200,
             json=Mock(return_value={
                 'ok':True,
-                'logins':[], 'paging':{'count':100, 'total':0, 'page':1, 'pages':1}})
-            )
+                'logins':[], 'paging':{'count':100, 'total':0, 'page':1, 'pages':1}
+            })
+        )
         assert_equal(0, len(self._app._gather_logs()))
 
     @patch('requests.post')
@@ -191,7 +200,7 @@ class TestSlackAccessApp(object):
         requests_mock.return_value = Mock(
             status_code=200,
             json=Mock(return_value=logs)
-            )
+        )
 
         self._app._last_timestamp = 1522922593
         gathered_logs = self._app._gather_logs()
@@ -208,7 +217,7 @@ class TestSlackAccessApp(object):
         requests_mock.return_value = Mock(
             status_code=200,
             json=Mock(return_value=logs)
-            )
+        )
 
         self._app._last_timestamp = 1522922593
         gathered_logs = self._app._gather_logs()
@@ -222,16 +231,24 @@ class TestSlackAccessApp(object):
         assert 'before' in requests_mock.call_args[1]['data'].keys()
 
 
-@patch.object(AppConfig, 'SSM_CLIENT', MockSSMClient())
+@mock_ssm
 class TestSlackIntegrationsApp(object):
     """Test class for the SlackIntegrationsApp"""
+    # pylint: disable=protected-access
 
     def __init__(self):
         self._app = None
 
     @patch.object(SlackIntegrationsApp, '__abstractmethods__', frozenset())
     def setup(self):
-        self._app = SlackIntegrationsApp(AppConfig(get_valid_config_dict('slack')))
+        """Setup before each method"""
+        # pylint: disable=abstract-class-instantiated,attribute-defined-outside-init
+        self._test_app_name = 'slack'
+        put_mock_params(self._test_app_name)
+        self._event = get_event(self._test_app_name)
+        self._context = get_mock_context()
+        self._context.function_name = self._test_app_name
+        self._app = SlackIntegrationsApp(self._event, self._context)
 
     def test_sleep_seconds(self):
         """SlackIntegrationsApp - Sleep Seconds"""
@@ -263,7 +280,7 @@ class TestSlackIntegrationsApp(object):
                     'date': '1392163200',
                     'change_type': 'enabled',
                     'scope': 'incoming-webhook'
-                    },
+                },
                 {
                     'app_id': '2345678901',
                     'app_type': 'Johnny App',
@@ -272,7 +289,7 @@ class TestSlackIntegrationsApp(object):
                     'date': '1392163201',
                     'change_type': 'added',
                     'scope': 'chat:write:user,channels:read'
-                    },
+                },
                 {
                     'service_id': '3456789012',
                     'service_type': 'Airbrake',
@@ -283,15 +300,15 @@ class TestSlackIntegrationsApp(object):
                     'change_type': 'disabled',
                     'reason': 'user',
                     'scope': 'incoming-webhook'
-                    }
-                ],
+                }
+            ],
             'paging': {
                 'count': 3,
                 'total': 3,
                 'page': 1,
                 'pages': 1
-                }
             }
+        }
 
     @patch('requests.post')
     def test_gather_integrations_logs(self, requests_mock):
@@ -300,7 +317,7 @@ class TestSlackIntegrationsApp(object):
         requests_mock.return_value = Mock(
             status_code=200,
             json=Mock(return_value=logs)
-            )
+        )
 
         gathered_logs = self._app._gather_logs()
         assert_equal(len(gathered_logs), 3)
@@ -312,7 +329,7 @@ class TestSlackIntegrationsApp(object):
         requests_mock.return_value = Mock(
             status_code=200,
             json=Mock(return_value=logs)
-            )
+        )
 
         self._app._last_timestamp = 1392163201
         gathered_logs = self._app._gather_logs()
@@ -326,7 +343,7 @@ class TestSlackIntegrationsApp(object):
         requests_mock.return_value = Mock(
             status_code=200,
             json=Mock(return_value=logs)
-            )
+        )
 
         self._app._last_timestamp = 1392163204
         gathered_logs = self._app._gather_logs()
@@ -337,6 +354,7 @@ class TestSlackIntegrationsApp(object):
 @raises(NotImplementedError)
 def test_type_not_implemented():
     """SlackApp - Subclass Type Not Implemented"""
+    # pylint: disable=protected-access,abstract-method
     class SlackFakeApp(SlackApp):
         """Fake Slack app that should raise a NotImplementedError"""
         @classmethod
@@ -347,11 +365,12 @@ def test_type_not_implemented():
         def _sleep_seconds(cls):
             return 0
 
-    SlackFakeApp(get_valid_config_dict('slack'))._type()
+    SlackFakeApp._type()
 
 @raises(NotImplementedError)
 def test_sleep_not_implemented():
     """SlackApp - Subclass Sleep Seconds Not Implemented"""
+    # pylint: disable=protected-access,abstract-method
     class SlackFakeApp(SlackApp):
         """Fake Slack app that should raise a NotImplementedError"""
         @classmethod
@@ -362,11 +381,12 @@ def test_sleep_not_implemented():
         def _endpoint(cls):
             return 0
 
-    SlackFakeApp(get_valid_config_dict('slack'))._sleep_seconds()
+    SlackFakeApp._sleep_seconds()
 
 @raises(NotImplementedError)
 def test_endpoint_not_implemented():
     """SlackApp - Subclass Endpoint Not Implemented"""
+    # pylint: disable=protected-access,abstract-method
     class SlackFakeApp(SlackApp):
         """Fake Slack app that should raise a NotImplementedError"""
         @classmethod
@@ -377,11 +397,13 @@ def test_endpoint_not_implemented():
         def _sleep_seconds(cls):
             return 0
 
-    SlackFakeApp(get_valid_config_dict('slack'))._endpoint()
+    SlackFakeApp._endpoint()
 
+@mock_ssm
 @raises(NotImplementedError)
 def test_filter_entries_not_implemented():
     """SlackApp - Subclass Filter Entries Not Implemented"""
+    # pylint: disable=protected-access,abstract-method
     class SlackFakeApp(SlackApp):
         """Fake Slack app that should raise a NotImplementedError"""
         @classmethod
@@ -392,4 +414,9 @@ def test_filter_entries_not_implemented():
         def _endpoint(cls):
             return 0
 
-    SlackFakeApp(get_valid_config_dict('slack'))._filter_response_entries("")
+    app_name = 'fake'
+    event = get_event(app_name)
+    context = get_mock_context()
+    put_mock_params(app_name)
+    context.function_name = app_name
+    SlackFakeApp(event, context)._filter_response_entries("")

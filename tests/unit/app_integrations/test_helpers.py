@@ -15,160 +15,115 @@ limitations under the License.
 """
 import json
 
+import boto3
+
 from botocore.exceptions import ClientError, ParamValidationError
 from mock import Mock
 
 from tests.unit.app_integrations import FUNCTION_NAME, REGION
 
 
-class MockSSMClient(object):
-    """Helper mock class to act as the ssm boto3 client"""
+def put_mock_params(app_name):
+    """Helper function to put mock parameters in parameter store for an app integration"""
+    params = {
+        '{}_state'.format(app_name): {
+            'last_timestamp': 1234567890,
+            'current_state': 'succeeded'
+        },
+        '{}_auth'.format(app_name): get_auth_info(app_name)
+    }
+    ssm_client = boto3.client('ssm')
+    for key, value in params.iteritems():
+        ssm_client.put_parameter(
+            Name=key,
+            Value=json.dumps(value),
+            Type='SecureString',
+            Overwrite=True
+        )
 
-    def __init__(self, suppress_params=False, app_type='', **kwargs):
-        self._parameters = kwargs.get('parameters', dict())
-        self.raise_exception = kwargs.get('raise_exception', False)
-        if not suppress_params:
-            self.put_mock_params(app_type or 'duo_auth')
 
-    def put_parameter(self, **kwargs):
-        """Mocked put_parameter function that adds key/value pairs to a dict"""
-        if kwargs.get('Name') in self._parameters and not kwargs.get('Overwrite'):
-            return
+def get_state_config():
+    return {
+        'current_state': 'finished',
+        'last_timestamp': 1234567890
+    }
 
-        if self.raise_exception:
-            err = {'Error': {'Code': 403, 'Message': 'error putting parameter'}}
-            raise ClientError(err, 'put_parameter')
-
-        self._parameters[kwargs.get('Name')] = kwargs.get('Value')
-
-    def get_parameter(self, **kwargs):
-        """Mocked get_parameter function that returns a value for the key from a dict
-
-        Keyword Args:
-            Name (str): The name of the parameter to retrieve
-
-        Returns:
-            dict: Parameter dictionary containing this parameter's value
-        """
-        # Raise a botocore ClientError if the param doesn't exist
-        if kwargs.get('Name') not in self._parameters:
-            err = {'Error': {'Code': 403, 'Message': 'parameter does not exist'}}
-            raise ClientError(err, 'get_parameter')
-
-        return {'Parameter': {'Value': self._parameters.get(kwargs.get('Name')),
-                              'Name': kwargs.get('Name')}}
-
-    def get_parameters(self, **kwargs):
-        """Mocked get_parameters function that returns a list of values for the keys from a dict
-
-        Keyword Args:
-            Name (list[str]): The names of the parameters to retrieve
-
-        Returns:
-            dict: Parameter dictionary containing the value for these parameter names
-        """
-        if self.raise_exception:
-            err = {'Error': {'Code': 403, 'Message': 'error getting parameters'}}
-            raise ClientError(err, 'get_parameters')
-
-        return {'Parameters': [{'Name': name, 'Value': self._parameters[name]}
-                               for name in kwargs.get('Names') if name in self._parameters],
-                'InvalidParameters': [name for name in kwargs.get('Names')
-                                      if name not in self._parameters]}
-
-    def put_mock_params(self, app_type):
-        """Helper function to put mock parameters in parameter store for an app integration"""
-        config = {'cluster': 'unit_test_cluster',
-                  'app_name': 'unit_app',
-                  'prefix': 'unit_test_prefix',
-                  'type': app_type,
-                  'schedule_expression': 'rate(1 hour)'}
-        self.put_parameter(Name='{}_config'.format(FUNCTION_NAME),
-                           Value=json.dumps(config),
-                           Overwrite=True)
-
-        state = {'last_timestamp': 1505591798,
-                 'current_state': 'running'}
-        self.put_parameter(Name='{}_state'.format(FUNCTION_NAME),
-                           Value=json.dumps(state),
-                           Overwrite=True)
-
-        self.put_parameter(Name='{}_auth'.format(FUNCTION_NAME),
-                           Value=json.dumps(self.get_auth_info(app_type)),
-                           Overwrite=True)
-
-    @classmethod
-    def get_auth_info(cls, app_type):
-        """Helper to return valid auth info for a given app type"""
-        if app_type in {'duo', 'duo_admin', 'duo_auth'}:
-            return {
-                'api_hostname': 'api-abcdef12.duosecurity.com',
-                'integration_key': 'DI1234567890ABCDEF12',
-                'secret_key': 'abcdefghijklmnopqrstuvwxyz1234567890ABCD'
+def get_auth_info(app_type):
+    """Helper to return valid auth info for a given app type"""
+    if app_type in {'duo', 'duo_admin', 'duo_auth'}:
+        return {
+            'api_hostname': 'api-abcdef12.duosecurity.com',
+            'integration_key': 'DI1234567890ABCDEF12',
+            'secret_key': 'abcdefghijklmnopqrstuvwxyz1234567890ABCD'
+        }
+    elif app_type in {'onelogin', 'onelogin_events'}:
+        return {
+            'region': 'us',
+            'client_secret': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+            'client_id': 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
+        }
+    elif app_type in {'gsuite', 'gsuite_admin', 'gsuite_drive',
+                      'gsuite_login', 'gsuite_token'}:
+        return {
+            'delegation_email': 'test@email.com',
+            'keyfile': {
+                'type': 'service_account',
+                'project_id': 'myapp-123456',
+                'private_key_id': 'a5427e441234a5f416ab0a2e5d759752ef69fbf1',
+                'private_key': ('-----BEGIN PRIVATE KEY-----\nVGhpcyBpcyBub3QgcmVhbA==\n'
+                                '-----END PRIVATE KEY-----\n'),
+                'client_email': 'a-test-200%40myapp-123456.iam.gserviceaccount.com',
+                'client_id': '316364948779587921167',
+                'auth_uri': 'https://accounts.google.com/o/oauth2/auth',
+                'token_uri': 'https://accounts.google.com/o/oauth2/token',
+                'auth_provider_x509_cert_url': 'https://www.googleapis.com/oauth2/v1/certs',
+                'client_x509_cert_url': ('https://www.googleapis.com/robot/v1/metadata/x509/'
+                                         'a-test-200%40myapp-123456.iam.gserviceaccount.com')
             }
-        elif app_type in {'onelogin', 'onelogin_events'}:
-            return {
-                'region': 'us',
-                'client_secret': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-                'client_id': 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
+        }
+    elif app_type in {'box', 'box_admin_events'}:
+        return {
+            'keyfile' : {
+                'boxAppSettings': {
+                    'clientID': 'sc0ikmesi43elk4rxus11sbee1najitr',
+                    'clientSecret': '9ccOBWPh8ab5wHN2uGy0nFOrUtY82xcZ',
+                    'appAuth': {
+                        'publicKeyID': 'zqxhbd44',
+                        'privateKey': ('-----BEGIN ENCRYPTED PRIVATE KEY-----\n'
+                                       'VGhpcyBpcyBub3QgcmVhbA==\n-----END ENCRYPTED '
+                                       'PRIVATE KEY-----\n'),
+                        'passphrase': 'e8a88b08eff2797234d6313686f7bad7'
+                    }
+                },
+                'enterpriseID': '12345678'
             }
-        elif app_type in {'gsuite', 'gsuite_admin', 'gsuite_drive',
-                          'gsuite_login', 'gsuite_token'}:
-            return {
-                'delegation_email': 'test@email.com',
-                'keyfile': {
-                    'type': 'service_account',
-                    'project_id': 'myapp-123456',
-                    'private_key_id': 'a5427e441234a5f416ab0a2e5d759752ef69fbf1',
-                    'private_key': ('-----BEGIN PRIVATE KEY-----\nVGhpcyBpcyBub3QgcmVhbA==\n'
-                                    '-----END PRIVATE KEY-----\n'),
-                    'client_email': 'a-test-200%40myapp-123456.iam.gserviceaccount.com',
-                    'client_id': '316364948779587921167',
-                    'auth_uri': 'https://accounts.google.com/o/oauth2/auth',
-                    'token_uri': 'https://accounts.google.com/o/oauth2/token',
-                    'auth_provider_x509_cert_url': 'https://www.googleapis.com/oauth2/v1/certs',
-                    'client_x509_cert_url': ('https://www.googleapis.com/robot/v1/metadata/x509/'
-                                             'a-test-200%40myapp-123456.iam.gserviceaccount.com')
-                }
-            }
-        elif app_type in {'box', 'box_admin_events'}:
-            return {
-                'keyfile' : {
-                    'boxAppSettings': {
-                        'clientID': 'sc0ikmesi43elk4rxus11sbee1najitr',
-                        'clientSecret': '9ccOBWPh8ab5wHN2uGy0nFOrUtY82xcZ',
-                        'appAuth': {
-                            'publicKeyID': 'zqxhbd44',
-                            'privateKey': ('-----BEGIN ENCRYPTED PRIVATE KEY-----\n'
-                                           'VGhpcyBpcyBub3QgcmVhbA==\n-----END ENCRYPTED '
-                                           'PRIVATE KEY-----\n'),
-                            'passphrase': 'e8a88b08eff2797234d6313686f7bad7'
-                        }
-                    },
-                    'enterpriseID': '12345678'
-                }
-            }
-        elif app_type == 'salesforce':
-            return {
-                'client_id': 'CLIENT_ID',
-                'client_secret': 'CLIENT_SECRET',
-                'username': 'USERNAME',
-                'password': 'PASSWORD',
-                'security_token': 'SECURITY_TOKEN'
-            }
-        elif app_type == 'slack':
-            return {
-                'auth_token': 'xoxp-aaaaaaa-111111111-eeeeeeeeee-fffffff'
-            }
-        elif app_type == 'aliyun':
-            return {
-                'access_key_id':'ACCESS_KEY_ID',
-                'access_key_secret':'ACCESS_KEY_SECRET',
-                'region_id':'REGION_ID'
-            }
+        }
+    elif app_type == 'aliyun':
+        return {
+            'access_key_id':'ACCESS_KEY_ID',
+            'access_key_secret':'ACCESS_KEY_SECRET',
+            'region_id':'REGION_ID'
+        }
+    elif app_type == 'salesforce':
+        return {
+            'client_id': 'CLIENT_ID',
+            'client_secret': 'CLIENT_SECRET',
+            'username': 'USERNAME',
+            'password': 'PASSWORD',
+            'security_token': 'SECURITY_TOKEN'
+        }
+    elif app_type == 'slack':
+        return {
+            'auth_token': 'xoxp-aaaaaaa-111111111-eeeeeeeeee-fffffff'
+        }
 
-        # Fill this out with future supported apps/services
-        return {}
+    # Fill this out with future supported apps/services
+
+    # Return basic test info
+    return {
+        'host': 'foobar',
+        'secret': 'barfoo'
+    }
 
 
 class MockLambdaClient(object):
@@ -216,7 +171,8 @@ def get_mock_context():
     arn = 'arn:aws:lambda:{}:123456789012:function:{}:development'
     context = Mock(invoked_function_arn=(arn.format(REGION, FUNCTION_NAME)),
                    function_name=FUNCTION_NAME,
-                   get_remaining_time_in_millis=Mock(return_value=100))
+                   function_version='production',
+                   get_remaining_time_in_millis=Mock(return_value=1000))
 
     return context
 
@@ -238,22 +194,15 @@ def get_formatted_timestamp(app_type):
         return '2018-07-23T15:42:11Z'
 
 
-def get_valid_config_dict(app_type):
-    """Helper function to get a dict that is reflective of a valid AppConfig"""
+def get_event(app_type):
+    """Helper function to get a dict that is reflective of a valid input event for an App"""
     return {
-        'type': app_type,
-        'cluster': 'unit_test_cluster',
-        'prefix': 'unit_test_prefix',
-        'app_name': 'unit_app',
-        'schedule_expression': 'rate(1 hour)',
-        'region': 'us-east-1',
-        'account_id': '123456789012',
-        'function_name': FUNCTION_NAME,
-        'qualifier': 'production',
-        'last_timestamp': get_formatted_timestamp(app_type),
-        'current_state': 'succeeded',
-        'auth': MockSSMClient.get_auth_info(app_type)
+        'app_type': app_type,
+        'schedule_expression': 'rate(10 minutes)',
+        'destination_function_name':
+            'unit_test_prefix_unit_test_cluster_streamalert_rule_processor'
     }
+
 
 def list_salesforce_api_versions():
     """Helper function to return a list of supported API versions"""
