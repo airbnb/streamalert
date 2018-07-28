@@ -13,7 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-# pylint: disable=protected-access
+import os
+
 from botocore.exceptions import ClientError
 from mock import patch
 from nose.tools import assert_equal, assert_false, assert_true, raises
@@ -24,12 +25,12 @@ from tests.unit.app_integrations.test_helpers import MockLambdaClient
 
 class TestAppBatcher(object):
     """Class for handling testing of the app integration output batcher"""
+    # pylint: disable=protected-access
 
-    def __init__(self):
-        self.batcher = None
-
+    @patch.dict(os.environ, {'AWS_DEFAULT_REGION': 'us-east-1'})
     def setup(self):
         """Setup class before tests"""
+        # pylint: disable=attribute-defined-outside-init
         self.batcher = Batcher('duo_auth', 'destination_func')
 
         # Use a mocked version of the Lambda client to patch out the instance client

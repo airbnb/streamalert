@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from datetime import datetime
+import os
 
 import boto3
 from botocore.exceptions import ClientError
@@ -143,6 +144,7 @@ class TestThreatStream(object):
         assert_equal(processed_data, expected_result)
 
     @mock_ssm
+    @patch.dict(os.environ, {'AWS_DEFAULT_REGION': 'us-east-1'})
     def test_load_api_creds(self):
         """ThreatStream - Load API creds from SSM"""
         value = {'api_user': 'test_user', 'api_key': 'test_key'}
@@ -152,6 +154,7 @@ class TestThreatStream(object):
         assert_equal(self.threatstream.api_key, 'test_key')
 
     @mock_ssm
+    @patch.dict(os.environ, {'AWS_DEFAULT_REGION': 'us-east-1'})
     def test_load_api_creds_cached(self):
         """ThreatStream - Load API creds from SSM, Cached"""
         value = {'api_user': 'test_user', 'api_key': 'test_key'}
@@ -176,6 +179,7 @@ class TestThreatStream(object):
 
     @mock_ssm
     @raises(ThreatStreamCredsError)
+    @patch.dict(os.environ, {'AWS_DEFAULT_REGION': 'us-east-1'})
     def test_load_api_creds_invalid_json(self):
         """ThreatStream - Load API creds from SSM with invalid JSON"""
         boto3.client('ssm').put_parameter(
@@ -188,6 +192,7 @@ class TestThreatStream(object):
 
     @mock_ssm
     @raises(ThreatStreamCredsError)
+    @patch.dict(os.environ, {'AWS_DEFAULT_REGION': 'us-east-1'})
     def test_load_api_creds_no_api_key(self):
         """ThreatStream - Load API creds from SSM, No API Key"""
         value = {'api_user': 'test_user', 'api_key': ''}

@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import json
+import os
 import socket
 import ssl
 
@@ -40,6 +41,7 @@ class TestGSuiteReportsApp(object):
 
     # Remove all abstractmethods so we can instantiate GSuiteReportsApp for testing
     @patch.object(GSuiteReportsApp, '__abstractmethods__', frozenset())
+    @patch.dict(os.environ, {'AWS_DEFAULT_REGION': 'us-east-1'})
     def setup(self):
         """Setup before each method"""
         # pylint: disable=abstract-class-instantiated,attribute-defined-outside-init

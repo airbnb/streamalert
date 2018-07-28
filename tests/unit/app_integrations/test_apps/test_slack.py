@@ -13,6 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+import os
+
 from mock import Mock, patch
 from moto import mock_ssm
 from nose.tools import assert_equal, assert_false, assert_items_equal, raises
@@ -34,6 +36,7 @@ class TestSlackApp(object):
     # pylint: disable=protected-access
 
     @patch.object(SlackApp, '__abstractmethods__', frozenset())
+    @patch.dict(os.environ, {'AWS_DEFAULT_REGION': 'us-east-1'})
     def setup(self):
         """Setup before each method"""
         # pylint: disable=abstract-class-instantiated,attribute-defined-outside-init
@@ -74,6 +77,7 @@ class TestSlackAccessApp(object):
     # pylint: disable=protected-access
 
     @patch.object(SlackAccessApp, '__abstractmethods__', frozenset())
+    @patch.dict(os.environ, {'AWS_DEFAULT_REGION': 'us-east-1'})
     def setup(self):
         """Setup before each method"""
         # pylint: disable=abstract-class-instantiated,attribute-defined-outside-init
@@ -236,10 +240,8 @@ class TestSlackIntegrationsApp(object):
     """Test class for the SlackIntegrationsApp"""
     # pylint: disable=protected-access
 
-    def __init__(self):
-        self._app = None
-
     @patch.object(SlackIntegrationsApp, '__abstractmethods__', frozenset())
+    @patch.dict(os.environ, {'AWS_DEFAULT_REGION': 'us-east-1'})
     def setup(self):
         """Setup before each method"""
         # pylint: disable=abstract-class-instantiated,attribute-defined-outside-init
@@ -417,6 +419,8 @@ def test_filter_entries_not_implemented():
     app_name = 'fake'
     event = get_event(app_name)
     context = get_mock_context()
-    put_mock_params(app_name)
     context.function_name = app_name
-    SlackFakeApp(event, context)._filter_response_entries("")
+
+    with patch.dict(os.environ, {'AWS_DEFAULT_REGION': 'us-east-1'}):
+        put_mock_params(app_name)
+        SlackFakeApp(event, context)._filter_response_entries("")

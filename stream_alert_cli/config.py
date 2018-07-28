@@ -368,7 +368,7 @@ class CLIConfig(object):
                 a new app integration
         """
         exists, prompt_for_auth, overwrite = False, True, False
-        app = StreamAlertApp.get_app(app_info, False)
+        app = StreamAlertApp.get_app(app_info['type'])
 
         cluster_name = app_info['cluster']
         app_name = app_info['app_name']

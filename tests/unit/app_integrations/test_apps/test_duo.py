@@ -13,12 +13,14 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+import os
+
 from mock import Mock, patch
 from moto import mock_ssm
 from nose.tools import assert_equal, assert_false, assert_items_equal, raises
 import requests
 
-from app_integrations.apps.duo import DuoApp, DuoAdminApp, DuoAuthApp
+from app_integrations.apps.duo import DuoAdminApp, DuoApp, DuoAuthApp
 
 from tests.unit.app_integrations.test_helpers import (
     get_event,
@@ -36,6 +38,7 @@ class TestDuoApp(object):
 
     # Remove all abstractmethods so we can instantiate DuoApp for testing
     @patch.object(DuoApp, '__abstractmethods__', frozenset())
+    @patch.dict(os.environ, {'AWS_DEFAULT_REGION': 'us-east-1'})
     def setup(self):
         """Setup before each method"""
         # pylint: disable=abstract-class-instantiated,attribute-defined-outside-init

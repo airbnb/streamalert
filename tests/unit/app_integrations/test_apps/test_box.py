@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import json
+import os
 
 from boxsdk.exception import BoxException
 from mock import Mock, mock_open, patch
@@ -37,6 +38,7 @@ class TestBoxApp(object):
 
     # Remove all abstractmethods so we can instantiate BoxApp for testing
     @patch.object(BoxApp, '__abstractmethods__', frozenset())
+    @patch.dict(os.environ, {'AWS_DEFAULT_REGION': 'us-east-1'})
     def setup(self):
         """Setup before each method"""
         # pylint: disable=abstract-class-instantiated

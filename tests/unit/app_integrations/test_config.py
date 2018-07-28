@@ -29,12 +29,12 @@ from tests.unit.app_integrations.test_helpers import get_event, get_mock_context
 
 
 @mock_ssm
-@patch.dict(os.environ, {'AWS_DEFAULT_REGION': 'us-east-1'})
 @patch.object(AppConfig, 'MAX_STATE_SAVE_TRIES', 1)
 class TestAppConfig(object):
     """Test class for AppConfig"""
     # pylint: disable=protected-access,no-self-use
 
+    @patch.dict(os.environ, {'AWS_DEFAULT_REGION': 'us-east-1'})
     def setup(self):
         """Setup before each method"""
         # pylint: disable=attribute-defined-outside-init
@@ -114,14 +114,15 @@ class TestAppConfig(object):
     @raises(AppConfigError)
     def test_get_parameters_invalid_json(self):
         """AppConfig - Get Parameters, Invalid JSON"""
-        key = '{}_state'.format(self._test_app_name)
-        boto3.client('ssm').put_parameter(
-            Name=key,
-            Value='foobar',
-            Type='SecureString',
-            Overwrite=True
-        )
-        self._config._get_parameters(key)
+        with patch.dict(os.environ, {'AWS_DEFAULT_REGION': 'us-east-1'}):
+            key = '{}_state'.format(self._test_app_name)
+            boto3.client('ssm').put_parameter(
+                Name=key,
+                Value='foobar',
+                Type='SecureString',
+                Overwrite=True
+            )
+            self._config._get_parameters(key)
 
     @raises(AppConfigError)
     @patch('app_integrations.config.AppConfig.SSM_CLIENT')

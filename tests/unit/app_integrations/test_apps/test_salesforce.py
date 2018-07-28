@@ -13,7 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from requests.exceptions import Timeout
+import os
+
 from mock import Mock, patch
 from moto import mock_ssm
 from nose.tools import (
@@ -23,6 +24,7 @@ from nose.tools import (
     assert_items_equal,
     raises
 )
+from requests.exceptions import Timeout
 
 from app_integrations.apps.salesforce import SalesforceApp, SalesforceAppError
 
@@ -45,6 +47,7 @@ class TestSalesforceApp(object):
 
     # Remove all abstractmethods so we can instantiate SalesforceApp for testing
     @patch.object(SalesforceApp, '__abstractmethods__', frozenset())
+    @patch.dict(os.environ, {'AWS_DEFAULT_REGION': 'us-east-1'})
     def setup(self):
         """Setup before each method"""
         # pylint: disable=abstract-class-instantiated,attribute-defined-outside-init
