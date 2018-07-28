@@ -17,7 +17,9 @@ import re
 import time
 
 from app_integrations import LOGGER
-from app_integrations.apps.app_base import StreamAlertApp, AppIntegration
+from app_integrations.apps import StreamAlertApp
+from app_integrations.apps.app_base import AppIntegration
+
 
 class SlackApp(AppIntegration):
     """SlackApp will collect 2 types of event logs: access logs and integration logs.
@@ -37,8 +39,8 @@ class SlackApp(AppIntegration):
     _SLACK_API_MAX_ENTRY_COUNT = 1000
     _SLACK_API_MAX_PAGE_COUNT = 100
 
-    def __init__(self, config):
-        super(SlackApp, self).__init__(config)
+    def __init__(self, event, context):
+        super(SlackApp, self).__init__(event, context)
         self._next_page = 1
 
     @classmethod
@@ -101,23 +103,22 @@ class SlackApp(AppIntegration):
         Returns:
             list: A list of dictionaries containing log events.
         """
-        url = '{}{}'.format(self._SLACK_API_BASE_URL, self._endpoint())
         headers = {
             'Content-Type': 'application/x-www-form-urlencoded',
-            'Authorization': 'Bearer {}'.format(self._config.auth['auth_token']),
-            }
+            'Authorization': 'Bearer {}'.format(self._config.auth['auth_token'])
+        }
 
         data = self._get_request_data()
 
-        success, response = self._make_post_request(
-            url, headers, data, False)
+        url = '{}{}'.format(self._SLACK_API_BASE_URL, self._endpoint())
+        success, response = self._make_post_request(url, headers, data, False)
 
         if not success:
-            LOGGER.exception('Received bad response from slack')
+            LOGGER.error('Received bad response from slack')
             return False
 
         if not response.get('ok'):
-            LOGGER.exception('Received error or warning from slack')
+            LOGGER.error('Received error or warning from slack')
             return False
 
         self._more_to_poll = self._check_for_more_to_poll(response)
@@ -160,8 +161,8 @@ class SlackAccessApp(SlackApp):
     """
     _SLACK_ACCESS_LOGS_ENDPOINT = 'team.accessLogs'
 
-    def __init__(self, config):
-        super(SlackAccessApp, self).__init__(config)
+    def __init__(self, event, context):
+        super(SlackAccessApp, self).__init__(event, context)
         self._before_time = None
         self._next_page = 1
 

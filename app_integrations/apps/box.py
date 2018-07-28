@@ -21,7 +21,8 @@ from boxsdk.object.events import EnterpriseEventsStreamType
 from requests.exceptions import ConnectionError
 
 from app_integrations import LOGGER
-from app_integrations.apps.app_base import StreamAlertApp, AppIntegration, safe_timeout
+from app_integrations.apps import StreamAlertApp
+from app_integrations.apps.app_base import AppIntegration, safe_timeout
 
 
 @StreamAlertApp
@@ -29,8 +30,8 @@ class BoxApp(AppIntegration):
     """BoxApp integration"""
     _MAX_CHUNK_SIZE = 500
 
-    def __init__(self, config):
-        super(BoxApp, self).__init__(config)
+    def __init__(self, event, context):
+        super(BoxApp, self).__init__(event, context)
         self._client = None
         self._next_stream_position = None
 
@@ -78,7 +79,7 @@ class BoxApp(AppIntegration):
                 if any errors occurred during the creation of the client
         """
         if self._client:
-            LOGGER.debug('Client already instantiated for %s', self.type())
+            LOGGER.debug('[%s] Client already instantiated', self)
             return True
 
         auth = self._load_auth(self._config.auth['keyfile'])
@@ -113,7 +114,7 @@ class BoxApp(AppIntegration):
         else:
             params['created_after'] = self._last_timestamp
 
-        LOGGER.debug('Requesting events for %s', self.type())
+        LOGGER.debug('[%s] Requesting events', self)
 
         def _perform_request(allow_retry=True):
             try:
@@ -126,7 +127,7 @@ class BoxApp(AppIntegration):
                     timeout=self._DEFAULT_REQUEST_TIMEOUT
                 )
             except BoxException:
-                LOGGER.exception('Failed to get events for %s', self.type())
+                LOGGER.exception('[%s] Failed to get events', self)
                 return False, None   # Return a tuple to conform to return value of safe_timeout
             except ConnectionError:
                 # In testing, the requests connection seemed to get reset for no
@@ -157,7 +158,7 @@ class BoxApp(AppIntegration):
                 Otherwise, return a list of box admin event entries.
         """
         if not self._create_client():
-            LOGGER.error('Could not create box client for %s', self.type())
+            LOGGER.error('[%s] Could not create client', self)
             return False
 
         result, response = self._make_request()
@@ -168,14 +169,14 @@ class BoxApp(AppIntegration):
             return False
 
         if not response:
-            LOGGER.error('No results received from the Box API request for %s', self.type())
+            LOGGER.error('[%s] No results received in request', self)
             return False
 
         self._more_to_poll = int(response['chunk_size']) >= self._MAX_CHUNK_SIZE
 
         events = response.get('entries', [])
         if not events:
-            LOGGER.info('No events in response from the Box API request for %s', self.type())
+            LOGGER.info('[%s] No events found in result', self)
             return False
 
         self._next_stream_position = response['next_stream_position']

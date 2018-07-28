@@ -16,7 +16,8 @@ limitations under the License.
 import re
 
 from app_integrations import LOGGER
-from app_integrations.apps.app_base import StreamAlertApp, AppIntegration
+from app_integrations.apps import StreamAlertApp
+from app_integrations.apps.app_base import AppIntegration
 
 
 @StreamAlertApp
@@ -29,8 +30,8 @@ class OneLoginApp(AppIntegration):
     _MAX_EVENTS_LIMIT = 50
 
     # Define our authorization headers variable
-    def __init__(self, config):
-        super(OneLoginApp, self).__init__(config)
+    def __init__(self, event, config):
+        super(OneLoginApp, self).__init__(event, config)
         self._auth_headers = None
         self._next_page_url = None
         self._rate_limit_sleep = 0
@@ -98,8 +99,7 @@ class OneLoginApp(AppIntegration):
             return False
 
         if not response:
-            LOGGER.error('Response invalid generating headers for service \'%s\'',
-                         self.type())
+            LOGGER.error('[%s] Response invalid, could not generate headers', self)
             return False
 
         bearer = 'bearer:{}'.format(response.get('access_token'))
@@ -119,8 +119,7 @@ class OneLoginApp(AppIntegration):
         # Make sure we have authentication headers
         if not self._auth_headers:
             self._rate_limit_sleep = 0
-            LOGGER.error('No authentication headers for service \'%s\'',
-                         self.type())
+            LOGGER.error('[%s] No authentication headers set', self)
             return
 
         result, response = self._make_get_request(self._rate_limit_endpoint(),
@@ -132,13 +131,12 @@ class OneLoginApp(AppIntegration):
 
         # Making sure we have a valid response
         if not response:
-            LOGGER.error('Response invalid getting rate limit data for service \'%s\'',
-                         self.type())
+            LOGGER.error('[%s] Response invalid, could not get rate limit info', self)
             self._rate_limit_sleep = 0
             return
 
         self._rate_limit_sleep = response.get('data')['X-RateLimit-Reset']
-        LOGGER.info('Rate limit sleep set for \'%s\': %d', self.type(), self._rate_limit_sleep)
+        LOGGER.info('[%s] Rate limit sleep set: %d', self, self._rate_limit_sleep)
 
     def _get_onelogin_events(self):
         """Get all events from the endpoint for this timeframe
@@ -181,8 +179,7 @@ class OneLoginApp(AppIntegration):
         """
         # Make sure we have authentication headers
         if not self._auth_headers:
-            LOGGER.error('No authentication headers for service \'%s\'',
-                         self.type())
+            LOGGER.error('[%s] No authentication headers set', self)
             return False
 
         # Are we just getting events or getting paginated events?
@@ -206,7 +203,7 @@ class OneLoginApp(AppIntegration):
 
         # Fail if response is invalid
         if not response:
-            LOGGER.error('Response is invalid for service \'%s\'', self.type())
+            LOGGER.error('[%s] Received invalid response', self)
             return False
 
         # Set pagination link, if there is any
@@ -215,7 +212,7 @@ class OneLoginApp(AppIntegration):
 
         # Adjust the last seen event, if the events list is not empty
         if not response['data']:
-            LOGGER.info('Empty list of events for service \'%s\'', self.type())
+            LOGGER.info('[%s] Received empty list of events', self)
             return False
 
         self._last_timestamp = response['data'][-1]['created_at']

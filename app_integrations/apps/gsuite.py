@@ -23,7 +23,9 @@ import apiclient
 from oauth2client import client, service_account
 
 from app_integrations import LOGGER
-from app_integrations.apps.app_base import StreamAlertApp, AppIntegration
+from app_integrations.apps import StreamAlertApp
+from app_integrations.apps.app_base import AppIntegration
+
 
 # Disable noisy google api client logger
 logging.getLogger('googleapiclient.discovery_cache').setLevel(logging.ERROR)
@@ -36,8 +38,8 @@ class GSuiteReportsApp(AppIntegration):
     _GOOGLE_API_EXCEPTIONS = (apiclient.errors.Error, client.Error, socket.timeout,
                               ssl.SSLError)
 
-    def __init__(self, config):
-        super(GSuiteReportsApp, self).__init__(config)
+    def __init__(self, event, context):
+        super(GSuiteReportsApp, self).__init__(event, context)
         self._activities_service = None
         self._last_event_timestamp = None
         self._next_page_token = None
@@ -72,7 +74,7 @@ class GSuiteReportsApp(AppIntegration):
                 keydata, scopes=cls._SCOPES)
         except (ValueError, KeyError):
             # This has the potential to raise errors. See: https://tinyurl.com/y8q5e9rm
-            LOGGER.exception('Could not generate credentials from keyfile for %s', cls.type())
+            LOGGER.exception('[%s] Could not generate credentials from keyfile', cls.type())
             return False
 
         return creds
@@ -84,10 +86,10 @@ class GSuiteReportsApp(AppIntegration):
             bool: True if the Google API discovery service was successfully established or False
                 if any errors occurred during the creation of the Google discovery service,
         """
-        LOGGER.debug('Creating activities service for %s', self.type())
+        LOGGER.debug('[%s] Creating activities service', self)
 
         if self._activities_service:
-            LOGGER.debug('Service already instantiated for %s', self.type())
+            LOGGER.debug('[%s] Service already instantiated', self)
             return True
 
         creds = self._load_credentials(self._config.auth['keyfile'])
@@ -98,7 +100,7 @@ class GSuiteReportsApp(AppIntegration):
         try:
             resource = apiclient.discovery.build('admin', 'reports_v1', credentials=delegation)
         except self._GOOGLE_API_EXCEPTIONS:
-            LOGGER.exception('Failed to build discovery service for %s', self.type())
+            LOGGER.exception('[%s] Failed to build discovery service', self)
             return False
 
         # The google discovery service 'Resource' class that is returned by
@@ -122,8 +124,8 @@ class GSuiteReportsApp(AppIntegration):
         if not self._next_page_token:
             self._last_event_timestamp = self._last_timestamp
 
-        LOGGER.debug('Querying activities since %s for %s', self._last_event_timestamp, self.type())
-        LOGGER.debug('Using next page token: %s', self._next_page_token)
+        LOGGER.debug('[%s] Querying activities since %s', self, self._last_event_timestamp)
+        LOGGER.debug('[%s] Using next page token: %s', self, self._next_page_token)
 
         activities_list = self._activities_service.list(
             userKey='all',
@@ -135,16 +137,16 @@ class GSuiteReportsApp(AppIntegration):
         try:
             results = activities_list.execute()
         except self._GOOGLE_API_EXCEPTIONS:
-            LOGGER.exception('Failed to execute activities listing for %s', self.type())
+            LOGGER.exception('[%s] Failed to execute activities listing', self)
             return False
 
         if not results:
-            LOGGER.error('No results received from the G Suite API request for %s', self.type())
+            LOGGER.error('[%s] No results received from the G Suite API request', self)
             return False
 
         activities = results.get('items', [])
         if not activities:
-            LOGGER.info('No logs in response from G Suite API request for %s', self.type())
+            LOGGER.info('[%s] No logs in response from G Suite API request', self)
             return False
 
         # The activity api returns logs in reverse chronological order, for some reason, and
