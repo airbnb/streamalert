@@ -36,9 +36,9 @@ def generate_app_integrations(cluster_name, cluster_dict, config):
 
         tf_module_prefix = 'app_{}_{}'.format(app_info['app_name'], cluster_name)
 
-        destination_func = '{}_{}_streamalert_rule_processor'.format(prefix, cluster_name),
+        destination_func = '{}_{}_streamalert_rule_processor'.format(prefix, cluster_name)
 
-        config = {
+        app_config = {
             'app_type': app_info['type'],
             'destination_function_name': destination_func,
             'schedule_expression': app_info['schedule_expression']
@@ -50,7 +50,7 @@ def generate_app_integrations(cluster_name, cluster_dict, config):
             'destination_function_name': destination_func,
             'function_name': function_name,
             'region': config['global']['account']['region'],
-            'role_id': '${{module.{}_lambda.role_id}}'.format(tf_module_prefix),
+            'function_role_id': '${{module.{}_lambda.role_id}}'.format(tf_module_prefix),
             'source': 'modules/tf_stream_alert_app_iam'
         }
 
@@ -61,5 +61,5 @@ def generate_app_integrations(cluster_name, cluster_dict, config):
             AppPackage.lambda_handler,
             config['clusters'][cluster_name]['modules']['stream_alert_apps'][function_name],
             config,
-            input_event=config
+            input_event=app_config
         )

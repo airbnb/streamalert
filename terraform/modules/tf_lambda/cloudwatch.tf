@@ -13,14 +13,14 @@ resource "aws_cloudwatch_event_target" "invoke_lambda_vpc" {
   count = "${var.enabled && local.schedule_enabled && local.vpc_enabled ? 1 : 0}"
   rule  = "${aws_cloudwatch_event_rule.invocation_schedule.name}"
   arn   = "${aws_lambda_alias.alias_vpc.arn}"
-  input = "${jsonencode(${var.lambda_input_event})}"
+  input = "${jsonencode(var.lambda_input_event)}"
 }
 
 resource "aws_cloudwatch_event_target" "invoke_lambda_no_vpc" {
   count = "${var.enabled && local.schedule_enabled && !(local.vpc_enabled) ? 1 : 0}"
   rule  = "${aws_cloudwatch_event_rule.invocation_schedule.name}"
   arn   = "${aws_lambda_alias.alias_no_vpc.arn}"
-  input = "${jsonencode(${var.lambda_input_event})}"
+  input = "${jsonencode(var.lambda_input_event)}"
 }
 
 // CloudWatch log group with configurable retention, tagging, and metric filters

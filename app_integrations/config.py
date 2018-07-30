@@ -131,7 +131,7 @@ class AppConfig(object):
         # Patch out the protected _remaining_ms method to the AWS timing function
         AppConfig.remaining_ms = context.get_remaining_time_in_millis
         func_name = context.function_name
-        func_version = context.func_version
+        func_version = context.function_version
 
         # Get full parameter names for authentication and state parameters
         auth_param_name = '_'.join([func_name, cls.AUTH_CONFIG_SUFFIX])

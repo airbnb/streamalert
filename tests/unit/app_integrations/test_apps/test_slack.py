@@ -65,10 +65,15 @@ class TestSlackApp(object):
         """SlackApp - Gather Logs - Error Response"""
         requests_mock.return_value = Mock(
             status_code=200,
-            json=Mock(return_value={'ok':False, 'error':'paid_only'})
+            json=Mock(
+                return_value={
+                    'ok': False,
+                    'error': 'paid_only'
+                }
+            )
         )
         assert_false(self._app._gather_logs())
-        log_mock.assert_called_with('Received error or warning from slack')
+        log_mock.assert_called_with('Received error or warning from slack: %s', 'paid_only')
 
 
 @mock_ssm
@@ -178,10 +183,13 @@ class TestSlackAccessApp(object):
         """SlackAccessApp - Gather Logs - No Entries Returned"""
         requests_mock.return_value = Mock(
             status_code=200,
-            json=Mock(return_value={
-                'ok':True,
-                'logins':[], 'paging':{'count':100, 'total':0, 'page':1, 'pages':1}
-            })
+            json=Mock(
+                return_value={
+                    'ok': True,
+                    'logins': [],
+                    'paging': {'count': 100, 'total': 0, 'page': 1, 'pages': 1}
+                }
+            )
         )
         assert_equal(0, len(self._app._gather_logs()))
 
@@ -190,10 +198,13 @@ class TestSlackAccessApp(object):
         """SlackAccessApp - Gather Logs - Malformed Response"""
         requests_mock.return_value = Mock(
             status_code=200,
-            json=Mock(return_value={
-                'ok':True,
-                'paging':{'count':100, 'total':0, 'page':1, 'pages':1}})
+            json=Mock(
+                return_value={
+                    'ok': True,
+                    'paging': {'count': 100, 'total': 0, 'page': 1, 'pages': 1}
+                }
             )
+        )
         assert_false(self._app._gather_logs())
 
     @patch('requests.post')
@@ -261,10 +272,13 @@ class TestSlackIntegrationsApp(object):
         """SlackIntegrationsApp - Gather Logs - Malformed Response"""
         requests_mock.return_value = Mock(
             status_code=200,
-            json=Mock(return_value={
-                'ok':True,
-                'paging':{'count':100, 'total':0, 'page':1, 'pages':1}})
+            json=Mock(
+                return_value={
+                    'ok': True,
+                    'paging': {'count': 100, 'total': 0, 'page': 1, 'pages': 1}
+                }
             )
+        )
         assert_false(self._app._gather_logs())
 
     @staticmethod
