@@ -34,17 +34,14 @@ class TestOneLoginApp(object):
     """Test class for the OneLoginApp"""
     # pylint: disable=protected-access
 
-    # Remove all abstractmethods so we can instantiate OneLoginApp for testing
-    @patch.object(OneLoginApp, '__abstractmethods__', frozenset())
     @patch.dict(os.environ, {'AWS_DEFAULT_REGION': 'us-east-1'})
     def setup(self):
         """Setup before each method"""
-        # pylint: disable=abstract-class-instantiated,attribute-defined-outside-init
+        # pylint: disable=attribute-defined-outside-init
         self._test_app_name = 'onelogin'
         put_mock_params(self._test_app_name)
         self._event = get_event(self._test_app_name)
-        self._context = get_mock_context()
-        self._context.function_name = self._test_app_name
+        self._context = get_mock_context(self._test_app_name)
         self._app = OneLoginApp(self._event, self._context)
 
     def set_config_values(self, region, client_id, client_secret):

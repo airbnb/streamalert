@@ -36,8 +36,6 @@ class TestDuoApp(object):
     """Test class for the DuoApp"""
     # pylint: disable=protected-access
 
-    # Remove all abstractmethods so we can instantiate DuoApp for testing
-    @patch.object(DuoApp, '__abstractmethods__', frozenset())
     @patch.dict(os.environ, {'AWS_DEFAULT_REGION': 'us-east-1'})
     def setup(self):
         """Setup before each method"""
@@ -45,8 +43,7 @@ class TestDuoApp(object):
         self._test_app_name = 'duo'
         put_mock_params(self._test_app_name)
         self._event = get_event(self._test_app_name)
-        self._context = get_mock_context()
-        self._context.function_name = self._test_app_name
+        self._context = get_mock_context(self._test_app_name)
         self._app = DuoApp(self._event, self._context)
 
     @patch('logging.Logger.exception')

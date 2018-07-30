@@ -20,17 +20,15 @@ import boto3
 from botocore.exceptions import ClientError, ParamValidationError
 from mock import Mock
 
-from tests.unit.app_integrations import FUNCTION_NAME, REGION
 
-
-def put_mock_params(app_name):
+def put_mock_params(app_type):
     """Helper function to put mock parameters in parameter store for an app integration"""
     params = {
-        '{}_state'.format(app_name): {
-            'last_timestamp': 1234567890,
+        '{}_state'.format(app_type): {
+            'last_timestamp': _get_formatted_timestamp(app_type),
             'current_state': 'succeeded'
         },
-        '{}_auth'.format(app_name): get_auth_info(app_name)
+        '{}_auth'.format(app_type): _get_auth_info(app_type)
     }
     ssm_client = boto3.client('ssm')
     for key, value in params.iteritems():
@@ -42,28 +40,21 @@ def put_mock_params(app_name):
         )
 
 
-def get_state_config():
-    return {
-        'current_state': 'finished',
-        'last_timestamp': 1234567890
-    }
-
-def get_auth_info(app_type):
+def _get_auth_info(app_type):
     """Helper to return valid auth info for a given app type"""
-    if app_type in {'duo', 'duo_admin', 'duo_auth'}:
+    if app_type.startswith('duo'):
         return {
             'api_hostname': 'api-abcdef12.duosecurity.com',
             'integration_key': 'DI1234567890ABCDEF12',
             'secret_key': 'abcdefghijklmnopqrstuvwxyz1234567890ABCD'
         }
-    elif app_type in {'onelogin', 'onelogin_events'}:
+    elif app_type.startswith('onelogin'):
         return {
             'region': 'us',
             'client_secret': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
             'client_id': 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
         }
-    elif app_type in {'gsuite', 'gsuite_admin', 'gsuite_drive',
-                      'gsuite_login', 'gsuite_token'}:
+    elif app_type.startswith('gsuite'):
         return {
             'delegation_email': 'test@email.com',
             'keyfile': {
@@ -81,7 +72,7 @@ def get_auth_info(app_type):
                                          'a-test-200%40myapp-123456.iam.gserviceaccount.com')
             }
         }
-    elif app_type in {'box', 'box_admin_events'}:
+    elif app_type.startswith('box'):
         return {
             'keyfile' : {
                 'boxAppSettings': {
@@ -166,32 +157,33 @@ class MockLambdaClient(object):
         return {'ResponseMetadata': {'RequestId': '9af88643-7b3c-43cd-baae-addb73bb4d27'}}
 
 
-def get_mock_context():
+def get_mock_context(func_name):
     """Helper function to create a fake context object using Mock"""
-    arn = 'arn:aws:lambda:{}:123456789012:function:{}:development'
-    context = Mock(invoked_function_arn=(arn.format(REGION, FUNCTION_NAME)),
-                   function_name=FUNCTION_NAME,
+    arn = 'arn:aws:lambda:us-east-1:123456789012:function:{}:development'
+    context = Mock(invoked_function_arn=(arn.format(func_name)),
+                   function_name=func_name,
                    function_version='production',
                    get_remaining_time_in_millis=Mock(return_value=1000))
 
     return context
 
 
-def get_formatted_timestamp(app_type):
+def _get_formatted_timestamp(app_type):
     """Different services required different date formats - return the proper format here"""
-    if app_type in {'duo', 'duo_admin', 'duo_auth'}:
+    if app_type.startswith('duo'):
         return 1505316432
-    elif app_type in {'onelogin', 'onelogin_events'}:
+    elif app_type.startswith('onelogin'):
         return '2017-10-10T22:03:57Z'
-    elif app_type in {'gsuite', 'gsuite_admin', 'gsuite_drive',
-                      'gsuite_login', 'gsuite_token', 'salesforce'}:
+    elif app_type.startswith('gsuite') or app_type == 'salesforce':
         return '2017-06-17T15:39:18.460Z'
-    elif app_type in {'box', 'box_admin_events'}:
+    elif app_type.startswith('box'):
         return '2017-10-27T12:31:22-07:00'
-    elif app_type in {'slack'}:
+    elif app_type == 'slack':
         return 1422922593
-    elif app_type in {'aliyun'}:
+    elif app_type == 'aliyun':
         return '2018-07-23T15:42:11Z'
+
+    return 1234567890
 
 
 def get_event(app_type):

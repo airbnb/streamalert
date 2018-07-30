@@ -24,7 +24,6 @@ from nose.tools import assert_equal, assert_false, assert_true, raises
 
 from app_integrations.config import AppConfig
 from app_integrations.exceptions import AppAuthError, AppConfigError, AppStateError
-# from tests.unit.app_integrations import FUNCTION_NAME
 from tests.unit.app_integrations.test_helpers import get_event, get_mock_context, put_mock_params
 
 
@@ -41,8 +40,7 @@ class TestAppConfig(object):
         self._test_app_name = 'test_app'
         put_mock_params(self._test_app_name)
         self._event = get_event(self._test_app_name)
-        self._context = get_mock_context()
-        self._context.function_name = self._test_app_name
+        self._context = get_mock_context(self._test_app_name)
         self._config = AppConfig.load_config(self._event, self._context)
 
     @raises(AppConfigError)
@@ -51,7 +49,7 @@ class TestAppConfig(object):
         # Remove one of the required keys from the state
         event = get_event(self._test_app_name)
         del event['destination_function_name']
-        AppConfig.load_config(event, get_mock_context())
+        AppConfig.load_config(event, get_mock_context(self._test_app_name))
 
     @raises(AppConfigError)
     def test_evaluate_interval_invalid(self):

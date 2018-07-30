@@ -87,7 +87,7 @@ class TestStreamAlertApp(object):
 @patch.object(AppIntegration, 'type', Mock(return_value='type'))
 class TestAppIntegration(object):
     """Test class for the AppIntegration"""
-    # pylint: disable=protected-access,no-self-use
+    # pylint: disable=protected-access
 
     # Remove all abstractmethods so we can instantiate AppIntegration for testing
     @patch.object(AppIntegration, '__abstractmethods__', frozenset())
@@ -99,8 +99,7 @@ class TestAppIntegration(object):
         self._test_app_name = 'test_app'
         put_mock_params(self._test_app_name)
         self._event = get_event(self._test_app_name)
-        self._context = get_mock_context()
-        self._context.function_name = self._test_app_name
+        self._context = get_mock_context(self._test_app_name)
         self._app = AppIntegration(self._event, self._context)
 
     @patch('logging.Logger.debug')
@@ -126,6 +125,7 @@ class TestAppIntegration(object):
     @patch('app_integrations.apps.app_base.time')
     def test_report_time(self, time_mock, log_mock):
         """App Integration - Report Time"""
+        # pylint: disable=no-self-use
         time_mock.time.side_effect = [100.0, 300.0]
         @_report_time
         def _test():
@@ -136,6 +136,7 @@ class TestAppIntegration(object):
 
     def test_safe_timeout(self):
         """App Integration - Safe Timeout"""
+        # pylint: disable=no-self-use
         @safe_timeout
         def _test():
             raise ConnectTimeout(response='too slow')

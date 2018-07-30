@@ -13,27 +13,37 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-# pylint: disable=abstract-class-instantiated,protected-access,no-self-use,abstract-method,anomalous-backslash-in-string
+import os
+
 from mock import patch
+from moto import mock_ssm
 from nose.tools import assert_equal, assert_false, assert_items_equal
 
 from aliyunsdkcore.acs_exception.exceptions import ServerException
 
 from app_integrations.apps.aliyun import AliyunApp
-from app_integrations.config import AppConfig
 
-from tests.unit.app_integrations.test_helpers import get_valid_config_dict
+from tests.unit.app_integrations.test_helpers import (
+    get_event,
+    get_mock_context,
+    put_mock_params
+)
 
 
+@mock_ssm
 class TestAliyunApp(object):
     """Test class for the AliyunApp"""
+    # pylint: disable=protected-access
 
-    def __init__(self):
-        self._app = None
-
-    @patch.object(AliyunApp, '__abstractmethods__', frozenset())
+    @patch.dict(os.environ, {'AWS_DEFAULT_REGION': 'us-east-1'})
     def setup(self):
-        self._app = AliyunApp(AppConfig(get_valid_config_dict('aliyun')))
+        """Setup before each method"""
+        # pylint: disable=attribute-defined-outside-init
+        self._test_app_name = 'aliyun'
+        put_mock_params(self._test_app_name)
+        self._event = get_event(self._test_app_name)
+        self._context = get_mock_context(self._test_app_name)
+        self._app = AliyunApp(self._event, self._context)
 
     def test_sleep_seconds(self):
         """AliyunApp - Sleep Seconds"""
@@ -68,8 +78,7 @@ class TestAliyunApp(object):
 
     def test_gather_logs_last_timestamp_set(self):
         """AliyunApp - Request Creation"""
-        assert_equal(self._app.request.get_StartTime(),
-                     get_valid_config_dict('aliyun')['last_timestamp'])
+        assert_equal(self._app.request.get_StartTime(), '2018-07-23T15:42:11Z')
         assert_equal(self._app.request.get_MaxResults(), AliyunApp._MAX_RESULTS)
 
     @patch('aliyunsdkcore.client.AcsClient.do_action_with_exception')

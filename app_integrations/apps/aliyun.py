@@ -21,7 +21,8 @@ from aliyunsdkcore.acs_exception.exceptions import ServerException, ClientExcept
 from aliyunsdkactiontrail.request.v20171204 import LookupEventsRequest
 
 from app_integrations import LOGGER
-from app_integrations.apps.app_base import StreamAlertApp, AppIntegration
+from app_integrations.apps import StreamAlertApp
+from app_integrations.apps.app_base import AppIntegration
 
 
 @StreamAlertApp
@@ -47,14 +48,14 @@ class AliyunApp(AppIntegration):
 
     _MAX_RESULTS = 50
 
-    def __init__(self, config):
-        super(AliyunApp, self).__init__(config)
-        auth = config.auth
+    def __init__(self, event, context):
+        super(AliyunApp, self).__init__(event, context)
+        auth = self._config.auth
         self.client = AcsClient(auth['access_key_id'], auth['access_key_secret'], auth['region_id'])
 
         self.request = LookupEventsRequest.LookupEventsRequest()
         self.request.set_MaxResults(self._MAX_RESULTS)
-        self.request.set_StartTime(config['last_timestamp'])
+        self.request.set_StartTime(self._config.last_timestamp)
 
     @classmethod
     def _type(cls):
@@ -111,18 +112,18 @@ class AliyunApp(AppIntegration):
                 'description': ('The access key id generated for a RAM user. This '
                                 'should be a string of alphanumeric characters.'),
                 'format': re.compile(r'.*')
-                },
+            },
             'access_key_secret': {
                 'description': ('The access key secret generated for a RAM user. This '
                                 'should be a string of alphanumeric characters.'),
                 'format': re.compile(r'.*')
-                },
+            },
             'region_id': {
                 'description': ('The region for the Aliyun API. This should be '
                                 'a string like \'ap-northeast-1\'.'),
                 'format': region_validator
-                },
-            }
+            },
+        }
 
     @classmethod
     def _sleep_seconds(cls):

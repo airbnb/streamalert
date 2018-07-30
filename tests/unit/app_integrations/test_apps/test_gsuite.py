@@ -39,17 +39,14 @@ class TestGSuiteReportsApp(object):
     """Test class for the GSuiteReportsApp"""
     # pylint: disable=protected-access
 
-    # Remove all abstractmethods so we can instantiate GSuiteReportsApp for testing
-    @patch.object(GSuiteReportsApp, '__abstractmethods__', frozenset())
     @patch.dict(os.environ, {'AWS_DEFAULT_REGION': 'us-east-1'})
     def setup(self):
         """Setup before each method"""
-        # pylint: disable=abstract-class-instantiated,attribute-defined-outside-init
+        # pylint: disable=attribute-defined-outside-init
         self._test_app_name = 'gsuite_admin'
         put_mock_params(self._test_app_name)
         self._event = get_event(self._test_app_name)
-        self._context = get_mock_context()
-        self._context.function_name = self._test_app_name
+        self._context = get_mock_context(self._test_app_name)
         self._app = GSuiteReportsApp(self._event, self._context)
 
     def test_sleep(self):

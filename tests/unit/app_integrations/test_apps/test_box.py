@@ -34,19 +34,16 @@ from tests.unit.app_integrations.test_helpers import (
 @patch.object(BoxApp, 'type', Mock(return_value='type'))
 class TestBoxApp(object):
     """Test class for the BoxApp"""
-    # pylint: disable=protected-access,no-self-use,attribute-defined-outside-init
+    # pylint: disable=protected-access,no-self-use
 
-    # Remove all abstractmethods so we can instantiate BoxApp for testing
-    @patch.object(BoxApp, '__abstractmethods__', frozenset())
     @patch.dict(os.environ, {'AWS_DEFAULT_REGION': 'us-east-1'})
     def setup(self):
         """Setup before each method"""
-        # pylint: disable=abstract-class-instantiated
+        # pylint: disable=attribute-defined-outside-init
         self._test_app_name = 'box_admin_events'
         put_mock_params(self._test_app_name)
         self._event = get_event(self._test_app_name)
-        self._context = get_mock_context()
-        self._context.function_name = self._test_app_name
+        self._context = get_mock_context(self._test_app_name)
         self._app = BoxApp(self._event, self._context)
 
     def test_sleep(self):
