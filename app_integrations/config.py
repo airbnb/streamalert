@@ -123,6 +123,7 @@ class AppConfig(object):
         """Load the configuration for this app invocation
 
         Args:
+            event (dict): The AWS Lambda input event, which is JSON serialized to a dictionary
             context (LambdaContext): The AWS LambdaContext object, passed in via the handler.
 
         Returns:

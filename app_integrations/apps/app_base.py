@@ -233,8 +233,8 @@ class AppIntegration(object):
                          'due to the subclass not setting this value.')
 
         if self._last_timestamp == self._config.start_last_timestamp:
-            LOGGER.warning('Ending last timestamp is the same as the beginning last timestamp. '
-                           'This could occur if there were no logs collected for this execution.')
+            LOGGER.info('Ending last timestamp is the same as the beginning last timestamp. '
+                        'This could occur if there were no logs collected for this execution.')
 
         LOGGER.info('[%s] App complete; gathered %d logs in %d polls.',
                     self, self._gathered_log_count, self._poll_count)

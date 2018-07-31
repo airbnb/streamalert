@@ -24,6 +24,9 @@ class StreamAlertApp(object):
 
         Returns:
             AppIntegration: Subclass of AppIntegration corresponding to the config
+
+        Raises:
+            AppException: Error is raised if the requested app does not exist
         """
         try:
             return cls._apps[app_type]

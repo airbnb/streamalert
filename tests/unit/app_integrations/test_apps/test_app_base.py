@@ -16,7 +16,7 @@ limitations under the License.
 import os
 
 from botocore.exceptions import ClientError
-from mock import Mock, patch
+from mock import call, Mock, patch
 from moto import mock_ssm
 from nose.tools import (
     assert_equal,
@@ -204,14 +204,18 @@ class TestAppIntegration(object):
         log_mock.assert_called_with('Ending last timestamp is 0. This should not happen and '
                                     'is likely due to the subclass not setting this value.')
 
-    @patch('logging.Logger.warning')
+    @patch('logging.Logger.info')
     def test_finalize_same_time(self, log_mock):
         """App Integration - Finalize, Same Time Error"""
         self._app._last_timestamp = self._app._config.start_last_timestamp
         self._app._finalize()
-        log_mock.assert_called_with('Ending last timestamp is the same as '
-                                    'the beginning last timestamp. This could occur if '
-                                    'there were no logs collected for this execution.')
+        calls = [
+            call('Ending last timestamp is the same as '
+                 'the beginning last timestamp. This could occur if '
+                 'there were no logs collected for this execution.'),
+            call('[%s] App complete; gathered %d logs in %d polls.', self._app, 0, 0)
+        ]
+        log_mock.assert_has_calls(calls)
 
     @raises(ClientError)
     @patch('boto3.client')
