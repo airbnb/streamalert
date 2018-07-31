@@ -23,13 +23,15 @@ import urllib
 import requests
 
 from app_integrations import LOGGER
-from app_integrations.apps.app_base import StreamAlertApp, AppIntegration
+from app_integrations.apps import StreamAlertApp
+from app_integrations.apps.app_base import AppIntegration
 
 
 class DuoApp(AppIntegration):
     """Duo base app integration. This is subclassed for the auth and admin APIs"""
     # Duo's api returns a max of 1000 logs per request
     _MAX_RESPONSE_LOGS = 1000
+    _ENDPOINT_PREFIX = '/admin/v1/logs/'
 
     @classmethod
     def _endpoint(cls):
@@ -182,8 +184,6 @@ class DuoApp(AppIntegration):
 class DuoAuthApp(DuoApp):
     """Duo authentication log app integration"""
 
-    _DUO_AUTH_LOGS_ENDPOINT = '/admin/v1/logs/authentication'
-
     @classmethod
     def _type(cls):
         return 'auth'
@@ -195,14 +195,12 @@ class DuoAuthApp(DuoApp):
         Returns:
             str: Path of the authentication endpoint to query
         """
-        return cls._DUO_AUTH_LOGS_ENDPOINT
+        return '{}authentication'.format(cls._ENDPOINT_PREFIX)
 
 
 @StreamAlertApp
 class DuoAdminApp(DuoApp):
     """Duo administrator log app integration"""
-
-    _DUO_ADMIN_LOGS_ENDPOINT = '/admin/v1/logs/administrator'
 
     @classmethod
     def _type(cls):
@@ -215,4 +213,4 @@ class DuoAdminApp(DuoApp):
         Returns:
             str: Path of the administrator endpoint to query
         """
-        return cls._DUO_ADMIN_LOGS_ENDPOINT
+        return '{}administrator'.format(cls._ENDPOINT_PREFIX)

@@ -13,7 +13,21 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+import json
+
+import boto3
 from mock import Mock
+
+
+def put_mock_params(key, value):
+    """Helper function to put mock parameters in parameter store"""
+    ssm_client = boto3.client('ssm')
+    ssm_client.put_parameter(
+        Name=key,
+        Value=json.dumps(value),
+        Type='SecureString',
+        Overwrite=True
+    )
 
 
 def get_mock_context(milliseconds=100):

@@ -22,7 +22,8 @@ import backoff
 import requests
 
 from app_integrations import LOGGER
-from app_integrations.apps.app_base import StreamAlertApp, AppIntegration
+from app_integrations.apps import StreamAlertApp
+from app_integrations.apps.app_base import AppIntegration
 
 
 class SalesforceAppError(Exception):
@@ -69,8 +70,8 @@ class SalesforceApp(AppIntegration):
     EXCEPTIONS_TO_BACKOFF = (SalesforceAppError,)
     BACKOFF_MAX_RETRIES = 3
 
-    def __init__(self, config):
-        super(SalesforceApp, self).__init__(config)
+    def __init__(self, event, context):
+        super(SalesforceApp, self).__init__(event, context)
         self._auth_headers = None
         self._instance_url = None
         self._latest_api_version = 0

@@ -13,32 +13,38 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-# pylint: disable=abstract-class-instantiated,protected-access,no-self-use,abstract-method,attribute-defined-outside-init
 import json
+import os
 
 from boxsdk.exception import BoxException
 from mock import Mock, mock_open, patch
+from moto import mock_ssm
 from nose.tools import assert_equal, assert_false, assert_items_equal, assert_true
 from requests.exceptions import ConnectionError, Timeout
 
 from app_integrations.apps.box import BoxApp
-from app_integrations.config import AppConfig
 
 from tests.unit.app_integrations.test_helpers import (
-    get_valid_config_dict,
-    MockSSMClient
+    get_event,
+    get_mock_context,
+    put_mock_params
 )
 
+@mock_ssm
 @patch.object(BoxApp, 'type', Mock(return_value='type'))
-@patch.object(AppConfig, 'SSM_CLIENT', MockSSMClient())
 class TestBoxApp(object):
     """Test class for the BoxApp"""
+    # pylint: disable=protected-access,no-self-use
 
-    # Remove all abstractmethods so we can instantiate BoxApp for testing
-    @patch.object(BoxApp, '__abstractmethods__', frozenset())
+    @patch.dict(os.environ, {'AWS_DEFAULT_REGION': 'us-east-1'})
     def setup(self):
         """Setup before each method"""
-        self._app = BoxApp(AppConfig(get_valid_config_dict('box_admin_events')))
+        # pylint: disable=attribute-defined-outside-init
+        self._test_app_name = 'box_admin_events'
+        put_mock_params(self._test_app_name)
+        self._event = get_event(self._test_app_name)
+        self._context = get_mock_context(self._test_app_name)
+        self._app = BoxApp(self._event, self._context)
 
     def test_sleep(self):
         """BoxApp - Sleep Seconds"""
@@ -103,7 +109,7 @@ class TestBoxApp(object):
         """BoxApp - Create Client, Exists"""
         self._app._client = True
         assert_true(self._app._create_client())
-        log_mock.assert_called_with('Client already instantiated for %s', 'type')
+        log_mock.assert_called_with('[%s] Client already instantiated', self._app)
 
     @patch('app_integrations.apps.box.BoxApp._load_auth',
            Mock(return_value=False))
@@ -132,7 +138,7 @@ class TestBoxApp(object):
         with patch.object(self._app, '_client') as client_mock:
             client_mock.make_request.side_effect = BoxException('bad error')
             assert_false(self._app._gather_logs())
-            log_mock.assert_called_with('Failed to get events for %s', 'type')
+            log_mock.assert_called_with('[%s] Failed to get events', self._app)
 
     @patch('app_integrations.apps.box.BoxApp._create_client',
            Mock(return_value=True))
@@ -153,7 +159,7 @@ class TestBoxApp(object):
         with patch.object(self._app, '_client') as client_mock:
             client_mock.make_request.side_effect = Timeout(response='request timed out')
             assert_false(self._app._gather_logs())
-            log_mock.assert_called_with('Request timed out for %s', 'type')
+            log_mock.assert_called_with('[%s] Request timed out', '_make_request')
 
     @patch('app_integrations.apps.box.BoxApp._load_auth',
            Mock(return_value=False))
@@ -172,8 +178,7 @@ class TestBoxApp(object):
         with patch.object(self._app, '_client') as client_mock:
             client_mock.make_request.return_value.json.return_value = None
             assert_false(self._app._gather_logs())
-            log_mock.assert_called_with('No results received from the Box API request for %s',
-                                        'type')
+            log_mock.assert_called_with('[%s] No results received in request', self._app)
 
     @patch('app_integrations.apps.box.BoxApp._create_client',
            Mock(return_value=True))
@@ -188,8 +193,7 @@ class TestBoxApp(object):
             }
             client_mock.make_request.return_value.json.return_value = payload
             assert_false(self._app._gather_logs())
-            log_mock.assert_called_with('No events in response from the Box API request for %s',
-                                        'type')
+            log_mock.assert_called_with('[%s] No events found in result', self._app)
 
     @staticmethod
     def _get_sample_logs(count):

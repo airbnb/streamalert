@@ -14,8 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from __future__ import absolute_import
-from app_integrations.apps.app_base import StreamAlertApp
-from app_integrations.config import AppConfig
+from app_integrations.apps import StreamAlertApp
 
 
 def handler(event, context):
@@ -28,18 +27,4 @@ def handler(event, context):
             the future, support for historical invocations)
         context (LambdaContxt): AWS LambdaContext object
     """
-    try:
-        # Load the config from this context object, pulling info from parameter store
-        # The event object can contain detail about what to do, ie: 'invocation_type'
-        config = AppConfig.load_config(context, event)
-
-        # The config specifies what app this function is supposed to run
-        app = StreamAlertApp.get_app(config)
-
-        # Run the gather operation
-        app.gather()
-    finally:
-        # If the config was loaded, save a bad state if the current state is still
-        # marked as 'running' (aka not 'success' or 'partial' runs)
-        if 'config' in locals() and config.is_running:
-            config.mark_failure()
+    StreamAlertApp.get_app(event['app_type'])(event, context).gather()

@@ -15,13 +15,17 @@ limitations under the License.
 """
 
 
-class AppIntegrationException(Exception):
+class AppException(Exception):
     """Base exception class StreamAlert apps"""
 
 
-class AppIntegrationConfigError(AppIntegrationException):
+class AppConfigError(AppException):
     """Class for config related errors"""
 
 
-class AppIntegrationStateError(AppIntegrationException):
+class AppAuthError(AppException):
+    """Class for auth related errors"""
+
+
+class AppStateError(AppException):
     """Class for any errors when loading the state"""

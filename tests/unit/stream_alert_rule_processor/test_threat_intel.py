@@ -365,7 +365,7 @@ class TestStreamThreatIntel(object):
 
     def test_extract_ioc_from_records_with_amazon_domains(self):
         """
-        test extracting IOCs where the "IP" is actually an AWS domain
+        Threat Intel - Test extracting IOCs where the "IP" is actually an AWS domain
         In cloudtrail_api events, many "ipaddress" values could be
         s3.amazonaws.com, ec2.amazonaws.com, cloudtrail.amazonaws.com, etc.
 
@@ -400,7 +400,7 @@ class TestStreamThreatIntel(object):
             assert_equal(len(result), 0)
 
     def test_extract_ioc_from_record_not_excluded(self):
-        """ Threat Intel - Test we don't exclude IOCs unintentionally"""
+        """Threat Intel - Test we don't exclude IOCs unintentionally"""
         records = [
             {
                 'account': 12345,
@@ -432,7 +432,7 @@ class TestStreamThreatIntel(object):
 
     @patch('stream_alert.rule_processor.threat_intel.StreamThreatIntel.is_excluded_ioc')
     def test_short_circuit_without_exclude_list(self, is_excluded_ioc):
-        """ ensure we skip threat intel exclusion if there are no excluded_iocs"""
+        """Threat Intel - ensure we skip threat intel exclusion if there are no excluded_iocs"""
         self.config = load_config('tests/unit/conf')
         self.config['global']['threat_intel']['enabled'] = True
         del self.config['global']['threat_intel']['excluded_iocs']

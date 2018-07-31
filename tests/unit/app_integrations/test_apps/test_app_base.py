@@ -13,99 +13,94 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-# pylint: disable=abstract-class-instantiated,protected-access,no-self-use,attribute-defined-outside-init
+import os
+
 from botocore.exceptions import ClientError
-from mock import Mock, patch
+from mock import call, Mock, patch
+from moto import mock_ssm
 from nose.tools import (
     assert_equal,
     assert_false,
-    assert_is_none,
-    assert_is_not_none,
+    assert_is_instance,
     assert_items_equal,
     assert_true,
     raises
 )
 from requests.exceptions import ConnectTimeout
 
-from app_integrations.apps.app_base import AppIntegration, StreamAlertApp
-from app_integrations.config import AppConfig
-from app_integrations.exceptions import AppIntegrationConfigError, AppIntegrationException
+from app_integrations.apps import StreamAlertApp
+from app_integrations.apps.app_base import AppIntegration, _report_time, safe_timeout
+from app_integrations.apps.duo import DuoAuthApp
+from app_integrations.exceptions import AppException
 from tests.unit.app_integrations.test_helpers import (
-    get_valid_config_dict,
-    MockLambdaClient,
-    MockSSMClient
+    get_event,
+    get_mock_context,
+    put_mock_params
 )
 
-def test_get_all_apps():
-    """App Integration - App Base, Get All Apps"""
-    expected_apps = {
-        'box_admin_events',
-        'duo_admin',
-        'duo_auth',
-        'gsuite_admin',
-        'gsuite_calendar',
-        'gsuite_drive',
-        'gsuite_gplus',
-        'gsuite_groups',
-        'gsuite_login',
-        'gsuite_mobile',
-        'gsuite_rules',
-        'gsuite_saml',
-        'gsuite_token',
-        'onelogin_events',
-        'salesforce_console',
-        'salesforce_login',
-        'salesforce_loginas',
-        'salesforce_report',
-        'salesforce_reportexport',
-        'slack_access',
-        'slack_integration',
-        'aliyun_actiontrail'
-    }
 
-    apps = StreamAlertApp.get_all_apps()
-    assert_items_equal(expected_apps, apps)
+class TestStreamAlertApp(object):
+    """Test class for the StreamAlertApp"""
+    # pylint: disable=no-self-use
 
-@patch('app_integrations.apps.app_base.Batcher', Mock())
-def test_get_app():
-    """App Integration - App Base, Get App"""
-    config = AppConfig(get_valid_config_dict('duo_auth'))
-    app = StreamAlertApp.get_app(config)
-    assert_is_not_none(app)
+    def test_get_all_apps(self):
+        """StreamAlertApp - Get All Apps"""
+        expected_apps = {
+            'box_admin_events',
+            'duo_admin',
+            'duo_auth',
+            'gsuite_admin',
+            'gsuite_calendar',
+            'gsuite_drive',
+            'gsuite_gplus',
+            'gsuite_groups',
+            'gsuite_login',
+            'gsuite_mobile',
+            'gsuite_rules',
+            'gsuite_saml',
+            'gsuite_token',
+            'onelogin_events',
+            'salesforce_console',
+            'salesforce_login',
+            'salesforce_loginas',
+            'salesforce_report',
+            'salesforce_reportexport',
+            'slack_access',
+            'slack_integration',
+            'aliyun_actiontrail'
+        }
 
+        assert_items_equal(expected_apps, StreamAlertApp.get_all_apps())
 
-@raises(AppIntegrationException)
-def test_get_app_exception_type():
-    """App Integration - App Base, Get App Exception for No 'type'"""
-    config = AppConfig(get_valid_config_dict('duo_auth'))
-    del config['type']
-    StreamAlertApp.get_app(config)
+    @patch('app_integrations.apps.app_base.Batcher', Mock())
+    def test_get_app(self):
+        """StreamAlertApp - Get App"""
+        assert_equal(StreamAlertApp.get_app('duo_auth'), DuoAuthApp)
 
-
-@raises(AppIntegrationException)
-def test_get_app_exception_invalid():
-    """App Integration - App Base, Get App Exception for Invalid Service"""
-    config = AppConfig(get_valid_config_dict('duo_auth'))
-    config['type'] = 'bad_service_type'
-    StreamAlertApp.get_app(config)
+    @raises(AppException)
+    def test_get_app_invalid_type(self):
+        """StreamAlertApp - Get App, Invalid Type"""
+        StreamAlertApp.get_app('bad_app')
 
 
-# Patch the required_auth_info method with values that a subclass _would_ return
-TEST_AUTH_KEYS = {'api_hostname', 'integration_key', 'secret_key'}
-
-@patch.object(AppConfig, 'SSM_CLIENT', MockSSMClient())
+@mock_ssm
 @patch.object(AppIntegration, 'type', Mock(return_value='type'))
-@patch.object(AppIntegration, 'required_auth_info', Mock(return_value=TEST_AUTH_KEYS))
 class TestAppIntegration(object):
     """Test class for the AppIntegration"""
+    # pylint: disable=protected-access
 
     # Remove all abstractmethods so we can instantiate AppIntegration for testing
-    # Also patch some abstractproperty attributes
     @patch.object(AppIntegration, '__abstractmethods__', frozenset())
     @patch('app_integrations.apps.app_base.Batcher', Mock())
+    @patch.dict(os.environ, {'AWS_DEFAULT_REGION': 'us-east-1'})
     def setup(self):
         """Setup before each method"""
-        self._app = AppIntegration(AppConfig(get_valid_config_dict('duo_admin'), None))
+        # pylint: disable=abstract-class-instantiated,attribute-defined-outside-init
+        self._test_app_name = 'test_app'
+        put_mock_params(self._test_app_name)
+        self._event = get_event(self._test_app_name)
+        self._context = get_mock_context(self._test_app_name)
+        self._app = AppIntegration(self._event, self._context)
 
     @patch('logging.Logger.debug')
     def test_no_sleep(self, log_mock):
@@ -121,33 +116,41 @@ class TestAppIntegration(object):
         self._app._sleep()
         time_mock.assert_called_with(1)
 
-    def test_validate_auth_(self):
-        """App Integration - Validate Authentication Info"""
-        assert_is_none(self._app._validate_auth())
-
-    @raises(AppIntegrationConfigError)
-    def test_validate_auth_empty(self):
-        """App Integration - Validate Authentication Info, No Config Exception"""
-        self._app._config.clear()
-        self._app._validate_auth()
-
-    @raises(AppIntegrationConfigError)
-    def test_validate_auth_no_auth(self):
-        """App Integration - Validate Authentication Info, No Auth Exception"""
-        del self._app._config['auth']
-        self._app._validate_auth()
-
-    @raises(AppIntegrationConfigError)
-    def test_validate_auth_missing_auth(self):
-        """App Integration - Validate Authentication Info, Missing Auth Key Exception"""
-        with patch.object(AppIntegration, 'required_auth_info') as auth_keys_mock:
-            auth_keys_mock.return_value = {'new_auth_key'}
-            self._app._validate_auth()
-
     def test_check_http_response_good(self):
         """App Integration - Check HTTP Response, Success"""
         response = Mock(status_code=200)
         assert_true(self._app._check_http_response(response))
+
+    @patch('logging.Logger.info')
+    @patch('app_integrations.apps.app_base.time')
+    def test_report_time(self, time_mock, log_mock):
+        """App Integration - Report Time"""
+        # pylint: disable=no-self-use
+        time_mock.time.side_effect = [100.0, 300.0]
+        @_report_time
+        def _test():
+            pass
+
+        assert_equal(_test(), 200.0)
+        log_mock.assert_called_with('[%s] Function executed in %.4f seconds.', '_test', 200.0)
+
+    def test_safe_timeout(self):
+        """App Integration - Safe Timeout"""
+        # pylint: disable=no-self-use
+        @safe_timeout
+        def _test():
+            raise ConnectTimeout(response='too slow')
+        assert_equal(_test(), (False, None))
+
+    @patch('app_integrations.apps.app_base.AppIntegration._required_auth_info')
+    def test_required_auth_info(self, auth_mock):
+        """App Integration - Required Auth Info"""
+        expected_result = {'host': 'host_name'}
+        auth_mock.return_value = expected_result
+        assert_equal(self._app.required_auth_info(), expected_result)
+
+        auth_mock.return_value = None
+        assert_equal(self._app.required_auth_info(), dict())
 
     @patch('logging.Logger.error')
     def test_check_http_response_bad(self, log_mock):
@@ -158,8 +161,7 @@ class TestAppIntegration(object):
         assert_false(self._app._check_http_response(response))
 
         # Make sure the logger was called with the proper info
-        log_mock.assert_called_with('HTTP request failed for service \'%s\': [%d] %s',
-                                    'type', 404, 'hey')
+        log_mock.assert_called_with('[%s] HTTP request failed: [%d] %s', self._app, 404, 'hey')
 
     def test_initialize(self):
         """App Integration - Initialize, Valid"""
@@ -168,40 +170,32 @@ class TestAppIntegration(object):
     @patch('logging.Logger.error')
     def test_initialize_running(self, log_mock):
         """App Integration - Initialize, Already Running"""
-        self._app._config['current_state'] = 'running'
+        self._app._config.current_state = 'running'
         assert_false(self._app._initialize())
-        log_mock.assert_called_with('App already running for service \'%s\'.', 'type')
+        log_mock.assert_called_with('[%s] App already running', self._app)
 
     @patch('logging.Logger.error')
     def test_initialize_partial(self, log_mock):
         """App Integration - Initialize, Partial Execution"""
-        self._app._config['current_state'] = 'partial'
+        self._app._config.current_state = 'partial'
         assert_false(self._app._initialize())
-        log_mock.assert_called_with('App in partial execution state for service \'%s\'.', 'type')
+        log_mock.assert_called_with('[%s] App in partial execution state, exiting', self._app)
 
-    def test_finalize(self):
+    @patch('app_integrations.config.AppConfig.mark_success')
+    def test_finalize(self, mark_mock):
         """App Integration - Finalize, Valid"""
         test_new_time = 50000000
         self._app._last_timestamp = test_new_time
         self._app._finalize()
         assert_equal(self._app._config.last_timestamp, test_new_time)
+        mark_mock.assert_called()
 
-    @patch('boto3.client', Mock(return_value=MockLambdaClient()))
-    @patch('app_integrations.config.AppConfig.mark_success')
-    def test_finalize_more_logs(self, config_mock):
+    @patch('app_integrations.apps.app_base.AppIntegration._invoke_successive_app')
+    def test_finalize_more_logs_error(self, invoke_mock):
         """App Integration - Finalize, More Logs"""
         self._app._more_to_poll = True
         self._app._finalize()
-
-        config_mock.assert_not_called()
-
-    @raises(ClientError)
-    @patch('boto3.client', Mock(return_value=MockLambdaClient()))
-    def test_finalize_more_logs_error(self):
-        """App Integration - Finalize, More Logs"""
-        MockLambdaClient._raise_exception = True
-        self._app._more_to_poll = True
-        self._app._finalize()
+        invoke_mock.assert_called()
 
     @patch('logging.Logger.error')
     def test_finalize_zero_time(self, log_mock):
@@ -210,33 +204,123 @@ class TestAppIntegration(object):
         log_mock.assert_called_with('Ending last timestamp is 0. This should not happen and '
                                     'is likely due to the subclass not setting this value.')
 
-    @patch('logging.Logger.error')
+    @patch('logging.Logger.info')
     def test_finalize_same_time(self, log_mock):
         """App Integration - Finalize, Same Time Error"""
         self._app._last_timestamp = self._app._config.start_last_timestamp
         self._app._finalize()
-        log_mock.assert_called_with('Ending last timestamp is the same as '
-                                    'the beginning last timestamp. This could occur if '
-                                    'there were no logs collected for this execution.')
+        calls = [
+            call('Ending last timestamp is the same as '
+                 'the beginning last timestamp. This could occur if '
+                 'there were no logs collected for this execution.'),
+            call('[%s] App complete; gathered %d logs in %d polls.', self._app, 0, 0)
+        ]
+        log_mock.assert_has_calls(calls)
 
+    @raises(ClientError)
+    @patch('boto3.client')
+    @patch('logging.Logger.error')
+    def test_invoke_successive_app_exception(self, log_mock, boto_mock):
+        """App Integration - Invoke Successive App, Exception"""
+        err = ClientError({'Error': {'Code': 'TEST', 'Message': 'bad'}}, 'Invoke')
+        boto_mock.return_value.invoke.side_effect = err
+        self._app._invoke_successive_app()
+        log_mock.assert_called_with(
+            'An error occurred while invoking a subsequent app function (\'%s:%s\'). Error is: %s',
+            self._test_app_name,
+            'production',
+            'bad'
+        )
+
+    @patch('boto3.client')
     @patch('logging.Logger.info')
-    def test_gather_success(self, log_mock):
-        """App Integration - Gather, Success"""
-        with patch.object(AppIntegration, '_gather_logs') as subclass_gather_mock:
-            subclass_gather_mock.return_value = ['log01', 'log02', 'log03']
-            self._app._gather()
-            log_mock.assert_called()
-            assert_equal(log_mock.call_args_list[-1][0][0],
-                         'Gather process for \'%s\' executed in %f seconds.')
+    def test_invoke_successive_app(self, log_mock, boto_mock):
+        """App Integration - Invoke Successive App"""
+        boto_mock.return_value.invoke.return_value = {'ResponseMetadata': {'RequestId': 'foobar'}}
+        self._app._invoke_successive_app()
+        boto_mock.return_value.invoke.assert_called()
+        log_mock.assert_called_with(
+            'Invoking successive apps function \'%s\' with Lambda request ID \'%s\'',
+            self._test_app_name,
+            'foobar'
+        )
+
+    @patch('requests.get')
+    def test_make_get_request_bad_response(self, requests_mock):
+        """App Integration - Make Get Request, Bad Response"""
+        failed_message = 'something went wrong'
+        requests_mock.return_value = Mock(
+            status_code=404,
+            content=failed_message,
+            json=Mock(return_value={'message': failed_message})
+        )
+
+        result, response = self._app._make_get_request('hostname', None, None)
+        assert_false(result)
+        assert_equal(response['message'], failed_message)
+
+        # The .json should be called on the response once, to return the response.
+        assert_equal(requests_mock.return_value.json.call_count, 1)
+
+    @patch('requests.post')
+    def test_make_post_request_json(self, requests_mock):
+        """App Integration - Make Post Request, With JSON"""
+        message = {'data': 'test_data'}
+        requests_mock.return_value = Mock(
+            status_code=200,
+            json=Mock(return_value=message)
+        )
+        args = 'hostname'
+        result, response = self._app._make_post_request(args, None, None)
+        assert_true(result)
+        kwargs = {'headers': None, 'json': None, 'timeout': 3.05}
+        requests_mock.assert_called_with(args, **kwargs)
+        assert_equal(response, message)
+
+        # The .json should be called on the response once, to return the response.
+        assert_equal(requests_mock.return_value.json.call_count, 1)
+
+    @patch('requests.post')
+    def test_make_post_request_non_json(self, requests_mock):
+        """App Integration - Make Post Request, Not JSON"""
+        message = {'data': 'test_data'}
+        requests_mock.return_value = Mock(
+            status_code=200,
+            json=Mock(return_value=message)
+        )
+        args = 'hostname'
+        result, response = self._app._make_post_request(args, None, None, False)
+        assert_true(result)
+        kwargs = {'headers': None, 'data': None, 'timeout': 3.05}
+        requests_mock.assert_called_with(args, **kwargs)
+        assert_equal(response, message)
+
+        # The .json should be called on the response once, to return the response.
+        assert_equal(requests_mock.return_value.json.call_count, 1)
 
     @patch('logging.Logger.error')
     def test_gather_no_logs(self, log_mock):
         """App Integration - Gather, No Logs"""
         with patch.object(AppIntegration, '_gather_logs') as subclass_gather_mock:
             subclass_gather_mock.return_value = []
+            result = self._app._gather()
+            assert_is_instance(result, float)
+            log_mock.assert_called_with(
+                '[%s] Gather process was not able to poll any logs on poll #%d', self._app, 1
+            )
+
+    @patch('logging.Logger.info')
+    @patch('app_integrations.apps.app_base.time')
+    def test_gather_success(self, time_mock, log_mock):
+        """App Integration - Gather, Success"""
+        time_mock.time.side_effect = [100.0, 300.0]
+        with patch.object(AppIntegration, '_gather_logs') as subclass_gather_mock:
+            subclass_gather_mock.return_value = ['log01', 'log02', 'log03']
             self._app._gather()
-            log_mock.assert_called_with('Gather process for service \'%s\' was not able '
-                                        'to poll any logs on poll #%d', 'type', 1)
+            assert_equal(self._app._gathered_log_count, 3)
+            log_mock.assert_called_with(
+                '[%s] Function executed in %.4f seconds.', '_gather', 200.0
+            )
 
     @patch('app_integrations.apps.app_base.AppIntegration._finalize')
     @patch('app_integrations.apps.app_base.AppIntegration._sleep_seconds', Mock(return_value=1))
@@ -261,31 +345,6 @@ class TestAppIntegration(object):
     @patch('app_integrations.apps.app_base.AppIntegration._finalize')
     def test_gather_running(self, finalize_mock):
         """App Integration - Gather, Entry Point, Already Running"""
-        self._app._config['current_state'] = 'running'
+        self._app._config.current_state = 'running'
         self._app.gather()
         finalize_mock.assert_not_called()
-
-    @patch('requests.get')
-    def test_make_request_bad_response(self, requests_mock):
-        """App Integration - Make Request, Bad Response"""
-        failed_message = 'something went wrong'
-        requests_mock.return_value = Mock(
-            status_code=404,
-            content=failed_message,
-            json=Mock(return_value={'message': failed_message})
-        )
-
-        result, response = self._app._make_get_request('hostname', None, None)
-        assert_false(result)
-        assert_equal(response['message'], failed_message)
-
-        # The .json should be called on the response once, to return the response.
-        assert_equal(requests_mock.return_value.json.call_count, 1)
-
-    @patch('requests.get')
-    def test_make_request_timeout(self, requests_mock):
-        """App Integration - Make Request, Timeout"""
-        requests_mock.side_effect = ConnectTimeout(None, response='too slow')
-        result, response = self._app._make_get_request('hostname', None, None)
-        assert_false(result)
-        assert_is_none(response)

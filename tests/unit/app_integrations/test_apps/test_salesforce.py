@@ -13,9 +13,10 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-# pylint: disable=abstract-class-instantiated,protected-access,no-self-use,abstract-method,attribute-defined-outside-init
-from requests.exceptions import Timeout
+import os
+
 from mock import Mock, patch
+from moto import mock_ssm
 from nose.tools import (
     assert_equal,
     assert_false,
@@ -23,34 +24,36 @@ from nose.tools import (
     assert_items_equal,
     raises
 )
+from requests.exceptions import Timeout
 
 from app_integrations.apps.salesforce import SalesforceApp, SalesforceAppError
-from app_integrations.config import AppConfig
 
 from tests.unit.app_integrations.test_helpers import (
+    get_event,
+    get_mock_context,
     get_salesforce_log_files,
-    get_valid_config_dict,
     list_salesforce_api_versions,
-    MockSSMClient
+    put_mock_params
 )
 
 
+@mock_ssm
 @patch('time.sleep', Mock())
 @patch.object(SalesforceApp, '_type', Mock(return_value='Console'))
 @patch.object(SalesforceApp, 'type', Mock(return_value='type'))
-@patch.object(AppConfig, 'SSM_CLIENT', MockSSMClient())
 class TestSalesforceApp(object):
     """Test class for the SalesforceApp"""
+    # pylint: disable=protected-access
 
-    def __init__(self):
-        self._app = None
-
-    # Remove all abstractmethods so we can instantiate SalesforceApp for testing
-    # Also patch some abstractproperty attributes
-    @patch.object(SalesforceApp, '__abstractmethods__', frozenset())
+    @patch.dict(os.environ, {'AWS_DEFAULT_REGION': 'us-east-1'})
     def setup(self):
         """Setup before each method"""
-        self._app = SalesforceApp(AppConfig(get_valid_config_dict('salesforce')))
+        # pylint: disable=attribute-defined-outside-init
+        self._test_app_name = 'salesforce'
+        put_mock_params(self._test_app_name)
+        self._event = get_event(self._test_app_name)
+        self._context = get_mock_context(self._test_app_name)
+        self._app = SalesforceApp(self._event, self._context)
 
     def set_config_values(self, client_id, client_secret, username, password, security_token):
         """Helper function to setup the auth values"""
@@ -368,7 +371,8 @@ class TestSalesforceApp(object):
 @raises(NotImplementedError)
 def test_type_not_implemented():
     """SalesforceApp - Subclassmethod _type not implemented"""
-    class SalesforceAppNoType(SalesforceApp): #pylint: disable=unused-variable
+    # pylint: disable=protected-access,abstract-method
+    class SalesforceAppNoType(SalesforceApp):
         """Fake SalesforceApp that should raise a NotImplementedError"""
 
-    SalesforceApp._type()
+    SalesforceAppNoType._type()

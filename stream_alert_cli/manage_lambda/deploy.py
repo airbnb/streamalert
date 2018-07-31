@@ -73,7 +73,7 @@ def _create(function_name, config, cluster=None):
             True
         ),
         'apps': PackageMap(
-            stream_alert_packages.AppIntegrationPackage,
+            stream_alert_packages.AppPackage,
             {'module.app_{}_{}_{}'.format(app_info['app_name'], cluster, suffix)
              for suffix in {'lambda', 'iam'}
              for cluster, info in config['clusters'].iteritems()

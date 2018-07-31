@@ -17,7 +17,7 @@ import json
 import os
 import re
 
-from app_integrations.apps.app_base import StreamAlertApp
+from app_integrations.apps import StreamAlertApp
 from stream_alert.shared import config, metrics
 from stream_alert_cli.helpers import continue_prompt
 from stream_alert_cli.logger import LOGGER_CLI
@@ -368,7 +368,7 @@ class CLIConfig(object):
                 a new app integration
         """
         exists, prompt_for_auth, overwrite = False, True, False
-        app = StreamAlertApp.get_app(app_info, False)
+        app = StreamAlertApp.get_app(app_info['type'])
 
         cluster_name = app_info['cluster']
         app_name = app_info['app_name']

@@ -13,35 +13,38 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-# pylint: disable=abstract-class-instantiated,protected-access,no-self-use,abstract-method
+import os
+
 from mock import Mock, patch
+from moto import mock_ssm
 from nose.tools import assert_equal, assert_false, assert_items_equal, raises
 import requests
 
-from app_integrations.apps.duo import DuoApp, DuoAdminApp, DuoAuthApp
-from app_integrations.config import AppConfig
+from app_integrations.apps.duo import DuoAdminApp, DuoApp, DuoAuthApp
 
 from tests.unit.app_integrations.test_helpers import (
-    get_valid_config_dict,
-    MockSSMClient
+    get_event,
+    get_mock_context,
+    put_mock_params
 )
 
 
+@mock_ssm
 @patch.object(DuoApp, 'type', Mock(return_value='type'))
 @patch.object(DuoApp, '_endpoint', Mock(return_value='endpoint'))
-@patch.object(AppConfig, 'SSM_CLIENT', MockSSMClient())
 class TestDuoApp(object):
     """Test class for the DuoApp"""
+    # pylint: disable=protected-access
 
-    def __init__(self):
-        self._app = None
-
-    # Remove all abstractmethods so we can instantiate DuoApp for testing
-    # Also patch some abstractproperty attributes
-    @patch.object(DuoApp, '__abstractmethods__', frozenset())
+    @patch.dict(os.environ, {'AWS_DEFAULT_REGION': 'us-east-1'})
     def setup(self):
         """Setup before each method"""
-        self._app = DuoApp(AppConfig(get_valid_config_dict('duo')))
+        # pylint: disable=abstract-class-instantiated,attribute-defined-outside-init
+        self._test_app_name = 'duo'
+        put_mock_params(self._test_app_name)
+        self._event = get_event(self._test_app_name)
+        self._context = get_mock_context(self._test_app_name)
+        self._app = DuoApp(self._event, self._context)
 
     @patch('logging.Logger.exception')
     def test_generate_auth_hmac_failure(self, log_mock):
@@ -142,30 +145,35 @@ class TestDuoApp(object):
 @raises(NotImplementedError)
 def test_endpoint_not_implemented():
     """DuoApp - Subclass Endpoint Not Implemented"""
+    # pylint: disable=protected-access,abstract-method
     class DuoFakeApp(DuoApp):
         """Fake Duo app that should raise a NotImplementedError"""
         @classmethod
         def _type(cls):
             return 'fake'
 
-    DuoFakeApp(get_valid_config_dict('duo'))._endpoint()
+    DuoFakeApp._endpoint()
 
 
 def test_duo_admin_endpoint():
     """DuoAdminApp - Verify Endpoint"""
+    # pylint: disable=protected-access
     assert_equal(DuoAdminApp._endpoint(), '/admin/v1/logs/administrator')
 
 
 def test_duo_admin_type():
     """DuoAdminApp - Verify Type"""
+    # pylint: disable=protected-access
     assert_equal(DuoAdminApp._type(), 'admin')
 
 
 def test_duo_auth_endpoint():
     """DuoAuthApp - Verify Endpoint"""
+    # pylint: disable=protected-access
     assert_equal(DuoAuthApp._endpoint(), '/admin/v1/logs/authentication')
 
 
 def test_duo_auth_type():
     """DuoAuthApp - Verify Type"""
+    # pylint: disable=protected-access
     assert_equal(DuoAuthApp._type(), 'auth')
