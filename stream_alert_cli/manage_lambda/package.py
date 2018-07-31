@@ -202,9 +202,8 @@ class AppPackage(LambdaPackage):
     lambda_handler = 'app_integrations.main.handler'
     package_files = {'app_integrations'}
     package_name = 'stream_alert_app'
-    precompiled_libs = {'boxsdk[jwt]==2.0.0a11'}
+    precompiled_libs = {'boxsdk[jwt]==2.0.0a11', 'aliyun-python-sdk-actiontrail==2.0.0'}
     third_party_libs = {
-        'aliyun-python-sdk-core==2.8.5',
         'aliyun-python-sdk-actiontrail==2.0.0',
         'backoff',
         'boxsdk[jwt]==2.0.0a11',
