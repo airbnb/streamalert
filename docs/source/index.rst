@@ -6,7 +6,7 @@ StreamAlert
   :alt: StreamAlert
 
 StreamAlert is a serverless, real-time data analysis framework which empowers you to ingest, analyze, and alert on data from any environment, using data sources and alerting logic you define.
-Security teams use StreamAlert to scan terabytes of log data every day for proactive threat detection and prevention.
+Computer security teams use StreamAlert to scan terabytes of log data every day for incident detection and response.
 
 Overview
 --------
@@ -25,13 +25,15 @@ Features
 
 * Rules are written in Python; they can utilize any Python libraries or functions
 * Ingested logs and generated alerts can be retroactively searched for compliance and research
-* Serverless design is cheaper and easier to maintain and scales to terabytes per day
+* Serverless design is cheaper, easier to maintain, and scales to terabytes per day
 * Deployment is automated: simple, safe and repeatable for any AWS account
 * Secure by design: least-privilege execution, containerized analysis, and encrypted data storage
 * Merge similar alerts and automatically promote new rules if they are not too noisy
-* Includes built-in support for dozens of log types and schemas
-* Includes a collection of broadly applicable community rules
+* Built-in support for dozens of log types and schemas
+* Built-in collection of broadly applicable community rules
 * Fully open source and customizable: add your own log schemas, rules, and alert outputs
+
+Ready? Let's `get started! <getting-started.html>`_
 
 Resources
 -----------
@@ -56,8 +58,9 @@ Table of Contents
 
 .. toctree::
    :maxdepth: 2
-   :caption: Data Config
+   :caption: Data Ingestion
 
+   clusters
    datatypes
    datasources
    conf-datasources
@@ -71,7 +74,6 @@ Table of Contents
    :caption: Infrastructure Config
 
    account
-   clusters
    kinesis
    lambda
 
