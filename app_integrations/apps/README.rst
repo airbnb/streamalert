@@ -23,8 +23,8 @@ Step by step:
    5. The bearer token is the string labeled with ``OAuth Access Token`` and beginning with ``xoxp-``. It's what's needed to authorize the Slack StreamAlert app.
 
 
-How to update boxsdk dependencies
-#################################
+How to update necessary dependencies
+####################################
 
 
 Create an EC2 Instance
@@ -63,8 +63,11 @@ on ec2 instance
   $ mkdir $HOME/build_temp $HOME/pip_temp
 
   # Install all of the dependencies to this directory
+  $ pip install boxsdk[jwt]==2.0.0a11 --build $HOME/build_temp/ --target $HOME/pip_temp
+
   # Replace the `boxsdk[jwt]==2.0.0a11` below with the desired package & version
-  $ python -c "import pip; pip.main(['install', 'boxsdk[jwt]==2.0.0a11', '--build', '$HOME/build_temp/',  '--target', '$HOME/pip_temp'])"
+  # For example, the following would update the aliyun dependencies:
+  # pip install aliyun-python-sdk-actiontrail==2.0.0 --build $HOME/build_temp/ --target $HOME/pip_temp
 
   # Change into the install directory
   $ cd $HOME/pip_temp
