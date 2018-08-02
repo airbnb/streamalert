@@ -17,7 +17,7 @@ from stream_alert_cli.manage_lambda.package import AppPackage
 from stream_alert_cli.terraform.lambda_module import generate_lambda
 
 
-def generate_app_integrations(cluster_name, cluster_dict, config):
+def generate_apps(cluster_name, cluster_dict, config):
     """Add the app integrations module to the Terraform cluster dict.
 
     Args:

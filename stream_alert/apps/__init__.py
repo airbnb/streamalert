@@ -1,8 +1,26 @@
-"""Create some package level items to make this nicer to use"""
+"""Initialize logging for the app."""
 import importlib
+import logging
 import os
 
-from app_integrations.exceptions import AppException
+from stream_alert.apps.exceptions import AppException
+
+
+# Create a package level logger to import
+LEVEL = os.environ.get('LOGGER_LEVEL', 'INFO').upper()
+
+# Cast integer levels to avoid a ValueError
+if LEVEL.isdigit():
+    LEVEL = int(LEVEL)
+
+logging.basicConfig(format='%(name)s [%(levelname)s]: [%(module)s.%(funcName)s] %(message)s')
+
+LOGGER = logging.getLogger('StreamAlertApp')
+try:
+    LOGGER.setLevel(LEVEL)
+except (TypeError, ValueError) as err:
+    LOGGER.setLevel('INFO')
+    LOGGER.error('Defaulting to INFO logging: %s', err)
 
 
 class StreamAlertApp(object):
@@ -45,11 +63,11 @@ class StreamAlertApp(object):
 
 
 # Import all files containing subclasses of AppIntegration, skipping the common base class
-for app_file in os.listdir(os.path.dirname(__file__)):
+for app_file in os.listdir(os.path.join(os.path.dirname(__file__), '_apps')):
     # Skip the common base file and any non-py files
-    if app_file.startswith(('__init__', 'app_base')) or not app_file.endswith('.py'):
+    if app_file.startswith('__init__') or not app_file.endswith('.py'):
         continue
 
-    full_import = ['app_integrations', 'apps', os.path.splitext(app_file)[0]]
+    full_import = ['stream_alert', 'apps', '_apps', os.path.splitext(app_file)[0]]
 
     importlib.import_module('.'.join(full_import))

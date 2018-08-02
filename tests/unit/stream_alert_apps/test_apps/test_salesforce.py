@@ -26,9 +26,9 @@ from nose.tools import (
 )
 from requests.exceptions import Timeout
 
-from app_integrations.apps.salesforce import SalesforceApp, SalesforceAppError
+from stream_alert.apps._apps.salesforce import SalesforceApp, SalesforceAppError
 
-from tests.unit.app_integrations.test_helpers import (
+from tests.unit.stream_alert_apps.test_helpers import (
     get_event,
     get_mock_context,
     get_salesforce_log_files,
@@ -135,7 +135,7 @@ class TestSalesforceApp(object):
         )
         self._app._validate_status_code(resp)
 
-    @patch('app_integrations.apps.salesforce.LOGGER.error')
+    @patch('stream_alert.apps._apps.salesforce.LOGGER.error')
     @patch('requests.post')
     def test_validate_status_code_403(self, mock_post, mock_logger):
         """SalesforceApp - Validate status code 403"""
@@ -171,7 +171,7 @@ class TestSalesforceApp(object):
         )
         self._app._validate_status_code(resp)
 
-    @patch('app_integrations.apps.salesforce.LOGGER.error')
+    @patch('stream_alert.apps._apps.salesforce.LOGGER.error')
     @patch('requests.post')
     def test_validate_status_code_204(self, mock_post, mock_logger):
         """SalesforceApp - Validate status code 204"""
@@ -224,7 +224,7 @@ class TestSalesforceApp(object):
         assert_true(success)
         assert_equal(response, 'TEXT CONTENT')
 
-    @patch('app_integrations.apps.salesforce.LOGGER.exception')
+    @patch('stream_alert.apps._apps.salesforce.LOGGER.exception')
     @patch('requests.get')
     def test_make_get_reques_timeout(self, mock_get, mock_logger):
         """SalesforceApp - Make get request and timed out"""
@@ -249,7 +249,7 @@ class TestSalesforceApp(object):
         self._app._get_latest_api_version()
         assert_equal(self._app._latest_api_version, '26.0')
 
-    @patch('app_integrations.apps.salesforce.LOGGER.error')
+    @patch('stream_alert.apps._apps.salesforce.LOGGER.error')
     @patch('requests.get')
     def test_get_latest_api_version_request_failed(self, mock_get, mock_logger):
         """SalesforceApp - Failed to get latest api versions"""
@@ -289,7 +289,7 @@ class TestSalesforceApp(object):
         assert_equal(self._app._fetch_event_logs('LOG_FILE_PATH'),
                      ['value1a,value2a', 'value1b,value2b'])
 
-    @patch('app_integrations.apps.salesforce.LOGGER.error')
+    @patch('stream_alert.apps._apps.salesforce.LOGGER.error')
     @patch('requests.get', Mock(side_effect=SalesforceAppError))
     def test_fetch_event_logs_exception(self, mock_logger):
         """SalesforceApp - Fetch event logs while SalesforceAppError raised"""
@@ -330,7 +330,7 @@ class TestSalesforceApp(object):
 
         assert_equal(len(self._app._gather_logs()), 4)
 
-    @patch('app_integrations.apps.salesforce.LOGGER.exception')
+    @patch('stream_alert.apps._apps.salesforce.LOGGER.exception')
     @patch('requests.get')
     @patch('requests.post')
     def test_gather_logs_failed(self, mock_post, mock_get, mock_logger):

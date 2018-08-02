@@ -22,9 +22,7 @@ import urllib
 
 import requests
 
-from app_integrations import LOGGER
-from app_integrations.apps import StreamAlertApp
-from app_integrations.apps.app_base import AppIntegration
+from . import AppIntegration, LOGGER, StreamAlertApp
 
 
 class DuoApp(AppIntegration):

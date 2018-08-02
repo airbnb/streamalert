@@ -18,7 +18,7 @@ import json
 import boto3
 from botocore.exceptions import ClientError
 
-from app_integrations.config import AppConfig
+from stream_alert.apps.config import AppConfig
 from stream_alert_cli.helpers import continue_prompt, user_input
 from stream_alert_cli.logger import LOGGER_CLI
 

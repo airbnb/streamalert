@@ -17,7 +17,7 @@ import json
 import os
 import re
 
-from app_integrations.apps import StreamAlertApp
+from stream_alert.apps import StreamAlertApp
 from stream_alert.shared import config, metrics
 from stream_alert_cli.helpers import continue_prompt
 from stream_alert_cli.logger import LOGGER_CLI
@@ -360,7 +360,7 @@ class CLIConfig(object):
         # Save all of the alarm updates to disk
         self.write()
 
-    def add_app_integration(self, app_info):
+    def add_app(self, app_info):
         """Add a configuration for a new streamalert app integration function
 
         Args:

@@ -20,9 +20,9 @@ from moto import mock_ssm
 from nose.tools import assert_equal, assert_false, assert_items_equal, raises
 import requests
 
-from app_integrations.apps.duo import DuoAdminApp, DuoApp, DuoAuthApp
+from stream_alert.apps._apps.duo import DuoAdminApp, DuoApp, DuoAuthApp
 
-from tests.unit.app_integrations.test_helpers import (
+from tests.unit.stream_alert_apps.test_helpers import (
     get_event,
     get_mock_context,
     put_mock_params

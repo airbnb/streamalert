@@ -22,9 +22,9 @@ from mock import patch
 from moto import mock_ssm
 from nose.tools import assert_equal, assert_false, assert_true, raises
 
-from app_integrations.config import AppConfig
-from app_integrations.exceptions import AppAuthError, AppConfigError, AppStateError
-from tests.unit.app_integrations.test_helpers import get_event, get_mock_context, put_mock_params
+from stream_alert.apps.config import AppConfig
+from stream_alert.apps.exceptions import AppAuthError, AppConfigError, AppStateError
+from tests.unit.stream_alert_apps.test_helpers import get_event, get_mock_context, put_mock_params
 
 
 @mock_ssm
@@ -123,7 +123,7 @@ class TestAppConfig(object):
             self._config._get_parameters(key)
 
     @raises(AppConfigError)
-    @patch('app_integrations.config.AppConfig.SSM_CLIENT')
+    @patch('stream_alert.apps.config.AppConfig.SSM_CLIENT')
     def test_get_parameters_exception(self, client_mock):
         """AppConfig - Get Parameters, ClientError"""
         with patch.object(AppConfig, 'MAX_STATE_SAVE_TRIES', 1):
@@ -131,7 +131,7 @@ class TestAppConfig(object):
                 {'Error': {'Code': 'TEST', 'Message': 'BadError'}}, 'GetParameters')
             self._config._get_parameters('{}_state'.format(self._test_app_name))
 
-    @patch('app_integrations.config.json')
+    @patch('stream_alert.apps.config.json')
     def test_get_parameters_bad_names(self, json_mock):
         """AppConfig - Get parameter, Bad Names"""
         _, invalid_names = AppConfig._get_parameters('bad_name')
@@ -143,7 +143,7 @@ class TestAppConfig(object):
         assert_equal(self._config._evaluate_interval(), 60 * 10)
 
     @raises(AppStateError)
-    @patch('app_integrations.config.AppConfig.SSM_CLIENT')
+    @patch('stream_alert.apps.config.AppConfig.SSM_CLIENT')
     def test_save_state_error(self, client_mock):
         """AppConfig - Save State, Error"""
         with patch.object(AppConfig, 'MAX_STATE_SAVE_TRIES', 1):
@@ -158,7 +158,7 @@ class TestAppConfig(object):
         self._config.current_state = bad_state
         log_mock.assert_called_with('Current state cannot be saved with value \'%s\'', bad_state)
 
-    @patch('app_integrations.config.AppConfig._save_state')
+    @patch('stream_alert.apps.config.AppConfig._save_state')
     def test_suppress_state_save_no_change(self, save_mock):
         """AppConfig - Suppress Save State on No Change"""
         # Try to mark with success more than once
@@ -167,7 +167,7 @@ class TestAppConfig(object):
 
         save_mock.assert_called_once()
 
-    @patch('app_integrations.config.AppConfig._save_state')
+    @patch('stream_alert.apps.config.AppConfig._save_state')
     def test_suppress_state_save(self, save_mock):
         """AppConfig - Save State on Change"""
         # Try to mark with failure followed by success
@@ -189,7 +189,7 @@ class TestAppConfig(object):
         self._config.report_remaining_seconds()
         log_mock.assert_called_with('Lambda remaining seconds: %.2f', 1.00)
 
-    @patch('app_integrations.config.AppConfig._save_state')
+    @patch('stream_alert.apps.config.AppConfig._save_state')
     def test_set_last_timestamp_same(self, save_mock):
         """AppConfig - Set Last Timestamp, Same Value"""
         self._config.last_timestamp = 1234567890

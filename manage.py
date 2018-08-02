@@ -31,11 +31,11 @@ import string
 
 from stream_alert import __version__ as version
 from stream_alert.alert_processor.outputs.output_base import StreamAlertOutput
+from stream_alert.apps import StreamAlertApp
+from stream_alert.apps.config import AWS_RATE_RE, AWS_RATE_HELPER
 from stream_alert.shared import metrics
 from stream_alert_cli.logger import LOGGER_CLI
 from stream_alert_cli.runner import cli_runner
-from app_integrations.apps import StreamAlertApp
-from app_integrations.config import AWS_RATE_RE, AWS_RATE_HELPER
 
 CLUSTERS = [
     os.path.splitext(cluster)[0] for _, _, files in os.walk('conf/clusters')
@@ -227,7 +227,7 @@ Examples:
         default=set())
 
 
-def _add_app_integration_subparser(subparsers):
+def _add_app_subparser(subparsers):
     """Add the app integration subparser: manage.py app [subcommand] [options]"""
     usage = 'manage.py app [subcommand] [options]'
     description = """
@@ -242,20 +242,20 @@ Available Subcommands:
 
 """.format(version)
 
-    app_integration_parser = _generate_subparser(subparsers, 'app', usage, description)
+    app_parser = _generate_subparser(subparsers, 'app', usage, description)
 
-    app_integration_subparsers = app_integration_parser.add_subparsers()
+    app_subparsers = app_parser.add_subparsers()
 
-    _add_app_integration_list_subparser(app_integration_subparsers)
-    _add_app_integration_new_subparser(
-        app_integration_subparsers,
+    _add_app_list_subparser(app_subparsers)
+    _add_app_new_subparser(
+        app_subparsers,
         sorted(StreamAlertApp.get_all_apps()),
         CLUSTERS
     )
-    _add_app_integration_update_auth_subparser(app_integration_subparsers, CLUSTERS)
+    _add_app_update_auth_subparser(app_subparsers, CLUSTERS)
 
 
-def _add_app_integration_list_subparser(subparsers):
+def _add_app_list_subparser(subparsers):
     """Add the app list subparser: manage.py app list"""
     usage = 'manage.py app list'
     description = """
@@ -275,7 +275,7 @@ Optional Arguments:
     _generate_subparser(subparsers, 'list', usage, description, True)
 
 
-def _add_app_integration_new_subparser(subparsers, types, clusters):
+def _add_app_new_subparser(subparsers, types, clusters):
     """Add the app new subparser: manage.py app new [options]"""
     usage = 'manage.py app new [options]'
 
@@ -332,13 +332,12 @@ Resources:
 
 """.format(version, types_block, cluster_choices_block, AWS_RATE_HELPER)
 
-    app_integration_new_parser = _generate_subparser(subparsers, 'new', usage, description, True)
+    app_new_parser = _generate_subparser(subparsers, 'new', usage, description, True)
 
-    _add_default_app_integration_args(app_integration_new_parser, clusters)
+    _add_default_app_args(app_new_parser, clusters)
 
     # App type options
-    app_integration_new_parser.add_argument(
-        '--type', choices=types, required=True, help=ARGPARSE_SUPPRESS)
+    app_new_parser.add_argument('--type', choices=types, required=True, help=ARGPARSE_SUPPRESS)
 
     # Validate the rate at which this should run
     def _validate_scheduled_interval(val):
@@ -352,13 +351,13 @@ Resources:
         if val.startswith('rate('):
             err = ('Invalid rate expression \'{}\'. For help see {}'
                    .format(val, '{}#RateExpressions'.format(AWS_RATE_HELPER)))
-            raise app_integration_new_parser.error(err)
+            raise app_new_parser.error(err)
 
-        raise app_integration_new_parser.error('Invalid expression \'{}\'. For help '
-                                               'see {}'.format(val, AWS_RATE_HELPER))
+        raise app_new_parser.error('Invalid expression \'{}\'. For help '
+                                   'see {}'.format(val, AWS_RATE_HELPER))
 
     # App integration schedule expression (rate)
-    app_integration_new_parser.add_argument(
+    app_new_parser.add_argument(
         '--interval', dest='schedule_expression',
         required=True, help=ARGPARSE_SUPPRESS, type=_validate_scheduled_interval)
 
@@ -369,15 +368,15 @@ Resources:
         try:
             timeout = int(val)
         except ValueError:
-            raise app_integration_new_parser.error(error)
+            raise app_new_parser.error(error)
 
         if not 10 <= timeout <= 300:
-            raise app_integration_new_parser.error(error)
+            raise app_new_parser.error(error)
 
         return timeout
 
     # App integration function timeout
-    app_integration_new_parser.add_argument(
+    app_new_parser.add_argument(
         '--timeout', required=True, help=ARGPARSE_SUPPRESS, type=_validate_timeout)
 
     # Validate the memory value to make sure it is between 128 and 1536
@@ -387,18 +386,18 @@ Resources:
         try:
             memory = int(val)
         except ValueError:
-            raise app_integration_new_parser.error(error)
+            raise app_new_parser.error(error)
 
         if not 128 <= memory <= 1536:
-            raise app_integration_new_parser.error(error)
+            raise app_new_parser.error(error)
 
         return memory
 
     # App integration function max memory
-    app_integration_new_parser.add_argument(
+    app_new_parser.add_argument(
         '--memory', required=True, help=ARGPARSE_SUPPRESS, type=_validate_memory)
 
-def _add_app_integration_update_auth_subparser(subparsers, clusters):
+def _add_app_update_auth_subparser(subparsers, clusters):
     """Add the app update-auth subparser: manage.py app update-auth [options]"""
     usage = 'manage.py app update-auth [options]'
 
@@ -433,31 +432,29 @@ Examples:
 
 """.format(version, cluster_choices_block)
 
-    app_integration_update_parser = _generate_subparser(
-        subparsers, 'update-auth', usage, description, True)
+    app_update_parser = _generate_subparser(subparsers, 'update-auth', usage, description, True)
 
-    _add_default_app_integration_args(app_integration_update_parser, clusters)
+    _add_default_app_args(app_update_parser, clusters)
 
 
-def _add_default_app_integration_args(app_integration_parser, clusters):
+def _add_default_app_args(app_parser, clusters):
     """Add the default arguments to the app integration parsers"""
 
     # App integration cluster options
-    app_integration_parser.add_argument(
-        '--cluster', choices=clusters, required=True, help=ARGPARSE_SUPPRESS)
+    app_parser.add_argument('--cluster', choices=clusters, required=True, help=ARGPARSE_SUPPRESS)
 
     # Validate the name being used to make sure it does not contain specific characters
     def _validate_name(val):
         """Validate acceptable inputs for the name of the function"""
         acceptable_chars = ''.join([string.digits, string.letters, '_-'])
         if not set(str(val)).issubset(acceptable_chars):
-            raise app_integration_parser.error('Name must contain only letters, numbers, '
-                                               'hyphens, or underscores.')
+            raise app_parser.error('Name must contain only letters, numbers, '
+                                   'hyphens, or underscores.')
 
         return val
 
     # App integration name to be used for this instance that must be unique per cluster
-    app_integration_parser.add_argument(
+    app_parser.add_argument(
         '--name', dest='app_name', required=True, help=ARGPARSE_SUPPRESS, type=_validate_name)
 
 
@@ -1638,7 +1635,7 @@ For additional details on the available commands, try:
     _add_terraform_subparser(subparsers)
     _add_configure_subparser(subparsers)
     _add_athena_subparser(subparsers)
-    _add_app_integration_subparser(subparsers)
+    _add_app_subparser(subparsers)
     _add_kinesis_subparser(subparsers)
     _add_threat_intel_subparser(subparsers)
     _add_threat_intel_downloader_subparser(subparsers)

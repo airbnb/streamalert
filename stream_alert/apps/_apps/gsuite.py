@@ -22,10 +22,7 @@ import ssl
 import apiclient
 from oauth2client import client, service_account
 
-from app_integrations import LOGGER
-from app_integrations.apps import StreamAlertApp
-from app_integrations.apps.app_base import AppIntegration
-
+from . import AppIntegration, LOGGER, StreamAlertApp
 
 # Disable noisy google api client logger
 logging.getLogger('googleapiclient.discovery_cache').setLevel(logging.ERROR)

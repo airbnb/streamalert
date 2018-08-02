@@ -28,7 +28,7 @@ from stream_alert_cli.terraform.common import (
 )
 from stream_alert_cli.terraform.alert_merger import generate_alert_merger
 from stream_alert_cli.terraform.alert_processor import generate_alert_processor
-from stream_alert_cli.terraform.app_integrations import generate_app_integrations
+from stream_alert_cli.terraform.apps import generate_apps
 from stream_alert_cli.terraform.athena import generate_athena
 from stream_alert_cli.terraform.cloudtrail import generate_cloudtrail
 from stream_alert_cli.terraform.cloudwatch import generate_cloudwatch
@@ -356,7 +356,7 @@ def generate_cluster(config, cluster_name):
         if not generate_s3_events(cluster_name, cluster_dict, config):
             return
 
-    generate_app_integrations(cluster_name, cluster_dict, config)
+    generate_apps(cluster_name, cluster_dict, config)
 
     return cluster_dict
 

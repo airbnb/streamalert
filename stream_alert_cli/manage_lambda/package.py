@@ -199,8 +199,11 @@ class AlertMergerPackage(LambdaPackage):
 class AppPackage(LambdaPackage):
     """Deployment package class for App functions"""
     config_key = 'stream_alert_apps_config'
-    lambda_handler = 'app_integrations.main.handler'
-    package_files = {'app_integrations'}
+    lambda_handler = 'stream_alert.apps.main.handler'
+    package_files = {
+        'stream_alert/__init__.py',
+        'stream_alert/apps'
+    }
     package_name = 'stream_alert_app'
     precompiled_libs = {'boxsdk[jwt]==2.0.0a11', 'aliyun-python-sdk-actiontrail==2.0.0'}
     third_party_libs = {

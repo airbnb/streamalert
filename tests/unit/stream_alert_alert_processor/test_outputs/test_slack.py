@@ -35,8 +35,6 @@ from tests.unit.stream_alert_alert_processor.helpers import (
 )
 
 
-@mock_s3
-@mock_kms
 @patch('stream_alert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS', 1)
 class TestSlackOutput(object):
     """Test class for SlackOutput"""
@@ -47,10 +45,19 @@ class TestSlackOutput(object):
 
     def setup(self):
         """Setup before each method"""
+        self._mock_s3 = mock_s3()
+        self._mock_s3.start()
+        self._mock_kms = mock_kms()
+        self._mock_kms.start()
         self._dispatcher = SlackOutput(REGION, ACCOUNT_ID, FUNCTION_NAME, None)
         remove_temp_secrets()
         output_name = self._dispatcher.output_cred_name(self.DESCRIPTOR)
         put_mock_creds(output_name, self.CREDS, self._dispatcher.secrets_bucket, REGION, KMS_ALIAS)
+
+    def teardown(self):
+        """Teardown after each method"""
+        self._mock_s3.stop()
+        self._mock_kms.stop()
 
     def test_format_message_single(self):
         """SlackOutput - Format Single Message - Slack"""
