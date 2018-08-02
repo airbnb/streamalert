@@ -29,7 +29,8 @@ class TestRulePromotion(object):
         self.rule_promo_config = self.config['lambda']['rule_promotion_config']
 
     def test_generate(self):
-        """CLI - Terraform Generate Rule Promotion"""
+        """CLI - Terraform Generate Rule Promotion, Staging Enabled"""
+        self.config['global']['infrastructure']['rule_staging']['enabled'] = True
         result = rule_promotion.generate_rule_promotion(config=self.config)
         expected = {
             'module': {
@@ -75,4 +76,9 @@ class TestRulePromotion(object):
             }
         }
 
-        assert_equal(expected, result)
+        assert_equal(result, expected)
+
+    def test_generate_disabled(self):
+        """CLI - Terraform Generate Rule Promotion, Staging Disabled"""
+        result = rule_promotion.generate_rule_promotion(config=self.config)
+        assert_equal(result, False)
