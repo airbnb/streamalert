@@ -5,40 +5,42 @@ StreamAlert
   :align: center
   :alt: StreamAlert
 
-StreamAlert is a serverless, realtime data analysis framework which empowers you to ingest, analyze, and alert on data from any environment, using datasources and alerting logic you define.
+StreamAlert is a serverless, real-time data analysis framework which empowers you to ingest, analyze, and alert on data from any environment, using data sources and alerting logic you define.
+Computer security teams use StreamAlert to scan terabytes of log data every day for incident detection and response.
 
-For more details, see our `announcement post <https://medium.com/@airbnbeng/e8619e3e5043>`_.
-
-At a high-level
----------------
-
-* Deployment is automated: simple, safe and repeatable for any AWS account
-* Easily scalable from megabytes to terabytes per day
-* Infrastructure maintenance is minimal, no devops expertise required
-* Infrastructure security is a default, no security expertise required
-* Supports data from different environments (ex: IT, PCI, Engineering)
-* Supports data from different environment types (ex: Cloud, Datacenter, Office)
-* Supports different types of data (Ex: JSON, CSV, Key-Value, and Syslog)
-* Supports different use-cases like security, infrastructure, compliance and more
-
-Components
-----------
+Overview
+--------
+Incoming log data is classified and scanned by the StreamAlert rules engine running in your AWS account.
+Rule matches are reported to one or more alert outputs:
 
 .. figure:: ../images/sa-high-level-arch.png
   :alt: StreamAlert High Level Architecture
   :align: center
   :target: _images/sa-high-level-arch.png
 
-  (Click figure to enlarge)
+  (Click to enlarge)
 
-Other Links
+Features
+--------
+
+* Rules are written in Python; they can utilize any Python libraries or functions
+* Ingested logs and generated alerts can be retroactively searched for compliance and research
+* Serverless design is cheaper, easier to maintain, and scales to terabytes per day
+* Deployment is automated: simple, safe and repeatable for any AWS account
+* Secure by design: least-privilege execution, containerized analysis, and encrypted data storage
+* Merge similar alerts and automatically promote new rules if they are not too noisy
+* Built-in support for dozens of log types and schemas
+* Built-in collection of broadly applicable community rules
+* Fully open source and customizable: add your own log schemas, rules, and alert outputs
+
+Ready? Let's `get started! <getting-started.html>`_
+
+Resources
 -----------
 
-* `Github <https://github.com/airbnb/streamalert>`_
+* `Blog Post <https://medium.com/@airbnbeng/e8619e3e5043>`_
+* `GitHub <https://github.com/airbnb/streamalert>`_
 * `Slack (unofficial) <https://streamalert.herokuapp.com>`_
-
-.. note:: Docs are under construction, don't mind the dust!
-
 
 Table of Contents
 =================
@@ -49,30 +51,17 @@ Table of Contents
    :maxdepth: 2
    :caption: Introduction
 
-   overview
-   benefits
-   requirements
-   datatypes
-   alternatives
-   roadmap
-   faq
-
-.. _getting-started:
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Getting Started
-
    getting-started
-   deployment
-   deploy-rollback
+   architecture
 
 .. _data_configuration:
 
 .. toctree::
    :maxdepth: 2
-   :caption: Data Config
+   :caption: Data Ingestion
 
+   clusters
+   datatypes
    datasources
    conf-datasources
    conf-schemas
@@ -85,7 +74,6 @@ Table of Contents
    :caption: Infrastructure Config
 
    account
-   clusters
    kinesis
    lambda
 
@@ -95,6 +83,8 @@ Table of Contents
    :maxdepth: 2
    :caption: User Guide
 
+   deployment
+   deploy-rollback
    rules
    rule-testing
    outputs
@@ -102,6 +92,8 @@ Table of Contents
    troubleshooting
    report-bugs-features
    questions
+   faq
+   alternatives
 
 .. _historical_search:
 
