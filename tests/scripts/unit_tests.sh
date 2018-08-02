@@ -4,7 +4,6 @@ if [ -f .coverage ]; then
 fi
 nosetests tests/unit \
 --with-coverage \
---cover-package=app_integrations \
 --cover-package=stream_alert \
 --cover-package=stream_alert_cli \
 --cover-min-percentage=80 \

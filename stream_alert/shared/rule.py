@@ -106,6 +106,7 @@ class Rule(object):
         self.initial_context = kwargs.get('context')
         self.context = None
         self.disabled = False
+        self._description = func.__doc__
         self._checksum = None
 
         if not (self.logs or self.datatypes):
@@ -212,7 +213,11 @@ class Rule(object):
 
     @property
     def description(self):
-        return self.func.__doc__ or self.DEFAULT_RULE_DESCRIPTION
+        return self._description or self.DEFAULT_RULE_DESCRIPTION
+
+    @description.setter
+    def description(self, description):
+        self._description = str(description)
 
     @property
     def outputs_set(self):

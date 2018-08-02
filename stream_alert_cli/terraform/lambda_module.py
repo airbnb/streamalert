@@ -69,7 +69,7 @@ def _tf_vpc_config(lambda_config):
 
 
 def generate_lambda(function_name, zip_file, handler, lambda_config, config,
-                    environment=None, metrics_lookup=None):
+                    environment=None, metrics_lookup=None, input_event=None):
     """Generate an instance of the Lambda Terraform module.
 
     Args:
@@ -137,6 +137,10 @@ def generate_lambda(function_name, zip_file, handler, lambda_config, config,
         'filename': zip_file,
         'environment_variables': environment_variables
     }
+
+    # If the Lambda is being invoke on a schedule, an optional input event can be passed in
+    if input_event:
+        lambda_module['lambda_input_event'] = input_event
 
     # Include optional keys only if they are defined (otherwise use the module defaults)
     for key in ['concurrency_limit', 'log_retention_days', 'schedule_expression']:

@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from app_integrations.apps.app_base import StreamAlertApp
+from stream_alert.apps import StreamAlertApp
 from stream_alert.alert_processor.outputs.output_base import StreamAlertOutput
 from stream_alert_cli.apps import save_app_auth_info
 from stream_alert_cli.athena.handler import athena_handler
@@ -77,7 +77,7 @@ def cli_runner(options):
         _create_alarm(options)
 
     elif options.command == 'app':
-        _app_integration_handler(options)
+        _app_handler(options)
 
     elif options.command == 'kinesis':
         kinesis_handler(options, CONFIG)
@@ -199,8 +199,8 @@ def _create_alarm(options):
     CONFIG.add_metric_alarm(vars(options))
 
 
-def _app_integration_handler(options):
-    """Perform app integration related functions
+def _app_handler(options):
+    """Perform app related functions
 
     Args:
         options (argparser): Contains all of the necessary info for configuring
@@ -224,7 +224,7 @@ def _app_integration_handler(options):
         app_info['function_name'] = '_'.join([app_info.get(value)
                                               for value in func_parts] + ['app'])
 
-        CONFIG.add_app_integration(app_info)
+        CONFIG.add_app(app_info)
         return
 
     # Update the auth information for an existing app integration function
@@ -243,7 +243,7 @@ def _app_integration_handler(options):
         app_info['function_name'] = '_'.join([app_info.get(value)
                                               for value in func_parts] + ['app'])
 
-        app = StreamAlertApp.get_app(app_info, False)
+        app = StreamAlertApp.get_app(app_info['type'])
 
         if not save_app_auth_info(app, app_info, True):
             return

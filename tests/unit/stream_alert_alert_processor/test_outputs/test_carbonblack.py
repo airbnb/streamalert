@@ -36,8 +36,6 @@ from tests.unit.stream_alert_alert_processor.helpers import (
 )
 
 
-@mock_s3
-@mock_kms
 @patch('stream_alert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS', 1)
 class TestCarbonBlackOutput(object):
     """Test class for CarbonBlackOutput"""
@@ -50,10 +48,19 @@ class TestCarbonBlackOutput(object):
 
     def setup(self):
         """Setup before each method"""
+        self._mock_s3 = mock_s3()
+        self._mock_s3.start()
+        self._mock_kms = mock_kms()
+        self._mock_kms.start()
         self._dispatcher = CarbonBlackOutput(REGION, ACCOUNT_ID, FUNCTION_NAME, CONFIG)
         remove_temp_secrets()
         output_name = self._dispatcher.output_cred_name(self.DESCRIPTOR)
         put_mock_creds(output_name, self.CREDS, self._dispatcher.secrets_bucket, REGION, KMS_ALIAS)
+
+    def teardown(self):
+        """Teardown after each method"""
+        self._mock_s3.stop()
+        self._mock_kms.stop()
 
     def test_get_user_defined_properties(self):
         """CarbonBlackOutput - User Defined Properties"""

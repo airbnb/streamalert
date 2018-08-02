@@ -17,6 +17,7 @@ limitations under the License.
 from mock import patch, PropertyMock
 from moto import mock_s3, mock_kms
 from nose.tools import assert_equal, assert_false, assert_true
+# import cProfile, pstats, StringIO
 
 from stream_alert.alert_processor.outputs.pagerduty import (
     PagerDutyOutput,
@@ -34,8 +35,6 @@ from tests.unit.stream_alert_alert_processor import (
 from tests.unit.stream_alert_alert_processor.helpers import get_alert, remove_temp_secrets
 
 
-@mock_s3
-@mock_kms
 @patch('stream_alert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS', 1)
 class TestPagerDutyOutput(object):
     """Test class for PagerDutyOutput"""
@@ -47,10 +46,19 @@ class TestPagerDutyOutput(object):
 
     def setup(self):
         """Setup before each method"""
+        self._mock_s3 = mock_s3()
+        self._mock_s3.start()
+        self._mock_kms = mock_kms()
+        self._mock_kms.start()
         self._dispatcher = PagerDutyOutput(REGION, ACCOUNT_ID, FUNCTION_NAME, None)
         remove_temp_secrets()
         output_name = self._dispatcher.output_cred_name(self.DESCRIPTOR)
         put_mock_creds(output_name, self.CREDS, self._dispatcher.secrets_bucket, REGION, KMS_ALIAS)
+
+    def teardown(self):
+        """Teardown after each method"""
+        self._mock_s3.stop()
+        self._mock_kms.stop()
 
     def test_get_default_properties(self):
         """PagerDutyOutput - Get Default Properties"""
@@ -88,8 +96,7 @@ class TestPagerDutyOutput(object):
 
         log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, 'bad_descriptor')
 
-@mock_s3
-@mock_kms
+
 @patch('stream_alert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS', 1)
 class TestPagerDutyOutputV2(object):
     """Test class for PagerDutyOutputV2"""
@@ -101,10 +108,19 @@ class TestPagerDutyOutputV2(object):
 
     def setup(self):
         """Setup before each method"""
+        self._mock_s3 = mock_s3()
+        self._mock_s3.start()
+        self._mock_kms = mock_kms()
+        self._mock_kms.start()
         self._dispatcher = PagerDutyOutputV2(REGION, ACCOUNT_ID, FUNCTION_NAME, None)
         remove_temp_secrets()
         output_name = self._dispatcher.output_cred_name(self.DESCRIPTOR)
         put_mock_creds(output_name, self.CREDS, self._dispatcher.secrets_bucket, REGION, KMS_ALIAS)
+
+    def teardown(self):
+        """Teardown after each method"""
+        self._mock_s3.stop()
+        self._mock_kms.stop()
 
     def test_get_default_properties(self):
         """PagerDutyOutputV2 - Get Default Properties"""
@@ -145,8 +161,6 @@ class TestPagerDutyOutputV2(object):
 
 
 #pylint: disable=too-many-public-methods
-@mock_s3
-@mock_kms
 @patch('stream_alert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS', 1)
 @patch('stream_alert.alert_processor.outputs.pagerduty.PagerDutyIncidentOutput.BACKOFF_MAX', 0)
 @patch('stream_alert.alert_processor.outputs.pagerduty.PagerDutyIncidentOutput.BACKOFF_TIME', 0)
@@ -166,11 +180,20 @@ class TestPagerDutyIncidentOutput(object):
 
     def setup(self):
         """Setup before each method"""
+        self._mock_s3 = mock_s3()
+        self._mock_s3.start()
+        self._mock_kms = mock_kms()
+        self._mock_kms.start()
         self._dispatcher = PagerDutyIncidentOutput(REGION, ACCOUNT_ID, FUNCTION_NAME, None)
         self._dispatcher._base_url = self.CREDS['api']
         remove_temp_secrets()
         output_name = self._dispatcher.output_cred_name(self.DESCRIPTOR)
         put_mock_creds(output_name, self.CREDS, self._dispatcher.secrets_bucket, REGION, KMS_ALIAS)
+
+    def teardown(self):
+        """Teardown after each method"""
+        self._mock_s3.stop()
+        self._mock_kms.stop()
 
     def test_get_default_properties(self):
         """PagerDutyIncidentOutput - Get Default Properties"""

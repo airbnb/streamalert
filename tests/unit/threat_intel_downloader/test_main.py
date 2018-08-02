@@ -13,11 +13,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-# pylint: disable=abstract-class-instantiated,attribute-defined-outside-init,protected-access,no-self-use
 from datetime import datetime
+import os
 
+import boto3
 from botocore.exceptions import ClientError
 from mock import Mock, patch
+from moto import mock_ssm
 from nose.tools import (
     assert_equal,
     raises
@@ -30,18 +32,20 @@ from stream_alert.threat_intel_downloader.exceptions import (
     ThreatStreamRequestsError
 )
 from stream_alert.threat_intel_downloader.main import ThreatStream
-from tests.unit.app_integrations.test_helpers import MockLambdaClient, MockSSMClient
-from tests.unit.threat_intel_downloader.test_helpers import get_mock_context
+from tests.unit.stream_alert_apps.test_helpers import MockLambdaClient
+from tests.unit.threat_intel_downloader.test_helpers import get_mock_context, put_mock_params
 
 
 @patch('time.sleep', Mock())
 class TestThreatStream(object):
     """Test class to test ThreatStream functionalities"""
+    # pylint: disable=protected-access
 
     @patch('stream_alert.threat_intel_downloader.main.load_config',
            Mock(return_value=load_config('tests/unit/conf/')))
     def setup(self):
         """Setup TestThreatStream"""
+        # pylint: disable=attribute-defined-outside-init
         context = get_mock_context(100000)
         self.threatstream = ThreatStream(context.invoked_function_arn,
                                          context.get_remaining_time_in_millis)
@@ -139,68 +143,60 @@ class TestThreatStream(object):
         ]
         assert_equal(processed_data, expected_result)
 
-    @patch('boto3.client')
-    def test_load_api_creds(self, mock_ssm):
+    @mock_ssm
+    @patch.dict(os.environ, {'AWS_DEFAULT_REGION': 'us-east-1'})
+    def test_load_api_creds(self):
         """ThreatStream - Load API creds from SSM"""
-        params = {
-            ThreatStream.CRED_PARAMETER_NAME: '{"api_user": "test_user", "api_key": "test_key"}'
-        }
-        mock_ssm.return_value = MockSSMClient(suppress_params=True,
-                                              parameters=params)
+        value = {'api_user': 'test_user', 'api_key': 'test_key'}
+        put_mock_params(ThreatStream.CRED_PARAMETER_NAME, value)
         self.threatstream._load_api_creds()
         assert_equal(self.threatstream.api_user, 'test_user')
         assert_equal(self.threatstream.api_key, 'test_key')
 
-    @patch('boto3.client')
-    def test_load_api_creds_cached(self, mock_ssm):
+    @mock_ssm
+    @patch.dict(os.environ, {'AWS_DEFAULT_REGION': 'us-east-1'})
+    def test_load_api_creds_cached(self):
         """ThreatStream - Load API creds from SSM, Cached"""
-        params = {
-            ThreatStream.CRED_PARAMETER_NAME: '{"api_user": "test_user", "api_key": "test_key"}'
-        }
-        mock_ssm.return_value = MockSSMClient(suppress_params=True,
-                                              parameters=params)
+        value = {'api_user': 'test_user', 'api_key': 'test_key'}
+        put_mock_params(ThreatStream.CRED_PARAMETER_NAME, value)
         self.threatstream._load_api_creds()
         assert_equal(self.threatstream.api_user, 'test_user')
         assert_equal(self.threatstream.api_key, 'test_key')
         self.threatstream._load_api_creds()
-        mock_ssm.assert_called_once() # Make sure the client was not loaded again
 
-    @patch('boto3.client')
+    @mock_ssm
     @raises(ClientError)
-    def test_load_api_creds_client_errors(self, mock_ssm):
+    def test_load_api_creds_client_errors(self):
         """ThreatStream - Load API creds from SSM, ClientError"""
-        mock_ssm.return_value = MockSSMClient(suppress_params=True, parameters={})
         self.threatstream._load_api_creds()
 
     @patch('boto3.client')
     @raises(ThreatStreamCredsError)
-    def test_load_api_creds_empty_response(self, mock_ssm):
+    def test_load_api_creds_empty_response(self, boto_mock):
         """ThreatStream - Load API creds from SSM, Empty Response"""
-        mock_ssm.return_value.get_parameter.return_value = None
+        boto_mock.return_value.get_parameter.return_value = None
         self.threatstream._load_api_creds()
-        assert_equal(self.threatstream.api_user, 'test_user')
-        assert_equal(self.threatstream.api_key, 'test_key')
 
-    @patch('boto3.client')
+    @mock_ssm
     @raises(ThreatStreamCredsError)
-    def test_load_api_creds_invalid_json(self, mock_ssm):
+    @patch.dict(os.environ, {'AWS_DEFAULT_REGION': 'us-east-1'})
+    def test_load_api_creds_invalid_json(self):
         """ThreatStream - Load API creds from SSM with invalid JSON"""
-        params = {
-            'threat_intel_downloader_api_creds': 'invalid_value'
-        }
-        mock_ssm.return_value = MockSSMClient(suppress_params=True,
-                                              parameters=params)
+        boto3.client('ssm').put_parameter(
+            Name=ThreatStream.CRED_PARAMETER_NAME,
+            Value='invalid_value',
+            Type='SecureString',
+            Overwrite=True
+        )
         self.threatstream._load_api_creds()
 
-    @patch('boto3.client')
+    @mock_ssm
     @raises(ThreatStreamCredsError)
-    def test_load_api_creds_no_api_key(self, mock_ssm):
+    @patch.dict(os.environ, {'AWS_DEFAULT_REGION': 'us-east-1'})
+    def test_load_api_creds_no_api_key(self):
         """ThreatStream - Load API creds from SSM, No API Key"""
-        params = {
-            'threat_intel_downloader_api_creds': '{"api_user": "test_user", "api_key": ""}'
-        }
-        mock_ssm.return_value = MockSSMClient(suppress_params=True,
-                                              parameters=params)
+        value = {'api_user': 'test_user', 'api_key': ''}
+        put_mock_params(ThreatStream.CRED_PARAMETER_NAME, value)
         self.threatstream._load_api_creds()
 
     @patch('stream_alert.threat_intel_downloader.main.datetime')

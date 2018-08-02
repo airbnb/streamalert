@@ -131,8 +131,9 @@ class LambdaPackage(object):
         third_party_libs = self.third_party_libs.difference(self.precompiled_libs)
 
         # Add any custom libs needed by rules, etc
-        third_party_libs.update(
-            set(self.config['lambda'][self.config_key].get('third_party_libraries', [])))
+        if self.config_key in self.config['lambda']:
+            third_party_libs.update(
+                set(self.config['lambda'][self.config_key].get('third_party_libraries', [])))
 
         # Return a default of True here if no libraries to install
         if not third_party_libs:
@@ -195,14 +196,18 @@ class AlertMergerPackage(LambdaPackage):
     third_party_libs = {'backoff', 'netaddr'}
 
 
-class AppIntegrationPackage(LambdaPackage):
-    """Deployment package class for App integration functions"""
+class AppPackage(LambdaPackage):
+    """Deployment package class for App functions"""
     config_key = 'stream_alert_apps_config'
-    lambda_handler = 'app_integrations.main.handler'
-    package_files = {'app_integrations'}
+    lambda_handler = 'stream_alert.apps.main.handler'
+    package_files = {
+        'stream_alert/__init__.py',
+        'stream_alert/apps'
+    }
     package_name = 'stream_alert_app'
-    precompiled_libs = {'boxsdk[jwt]==2.0.0a11'}
+    precompiled_libs = {'boxsdk[jwt]==2.0.0a11', 'aliyun-python-sdk-actiontrail==2.0.0'}
     third_party_libs = {
+        'aliyun-python-sdk-actiontrail==2.0.0',
         'backoff',
         'boxsdk[jwt]==2.0.0a11',
         'google-api-python-client==1.6.4',
