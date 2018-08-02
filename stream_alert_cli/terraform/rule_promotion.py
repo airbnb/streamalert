@@ -29,7 +29,7 @@ def generate_rule_promotion(config):
     Returns:
         dict: Rule Promotion dict to be marshaled to JSON
     """
-    # The Rule Promotion Lambda function is dependent on the rule staging feature being,
+    # The Rule Promotion Lambda function is dependent on the rule staging feature being
     # enabled, so do not generate the code for this Lambda function if it not enabled
     if not config['global']['infrastructure']['rule_staging'].get('enabled', False):
         return False
