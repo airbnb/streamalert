@@ -31,7 +31,7 @@ import string
 
 from stream_alert import __version__ as version
 from stream_alert.alert_processor.outputs.output_base import StreamAlertOutput
-from stream_alert.apps._apps import StreamAlertApp
+from stream_alert.apps import StreamAlertApp
 from stream_alert.apps.config import AWS_RATE_RE, AWS_RATE_HELPER
 from stream_alert.shared import metrics
 from stream_alert_cli.logger import LOGGER_CLI

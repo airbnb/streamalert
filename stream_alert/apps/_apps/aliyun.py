@@ -20,9 +20,7 @@ from aliyunsdkcore.client import AcsClient
 from aliyunsdkcore.acs_exception.exceptions import ServerException, ClientException
 from aliyunsdkactiontrail.request.v20171204 import LookupEventsRequest
 
-from stream_alert.apps import LOGGER
-from stream_alert.apps._apps import StreamAlertApp
-from stream_alert.apps._apps.app_base import AppIntegration
+from . import AppIntegration, LOGGER, StreamAlertApp
 
 
 @StreamAlertApp

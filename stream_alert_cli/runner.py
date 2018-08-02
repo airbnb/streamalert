@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from stream_alert.apps._apps import StreamAlertApp
+from stream_alert.apps import StreamAlertApp
 from stream_alert.alert_processor.outputs.output_base import StreamAlertOutput
 from stream_alert_cli.apps import save_app_auth_info
 from stream_alert_cli.athena.handler import athena_handler

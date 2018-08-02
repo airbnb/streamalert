@@ -9,7 +9,7 @@ An App can be created to collect logs from virtually any RESTful API that suppor
 Developing an App for a currently unsupported service is as easy as:
 
 1. Add a new file in ``stream_alert/apps/_apps`` to correspond to the new service (ie: ``box.py``).
-2. Create a subclass of the ``AppIntegration`` class found in ``stream_alert/apps/_apps/app_base.py``.
+2. Create a subclass of the ``AppIntegration`` class found in ``stream_alert/apps/app_base.py``.
 3. Implement the required abstract properties and methods on the new subclass.
 
 
@@ -22,10 +22,10 @@ to outline what methods from the base ``AppIntegration`` class must be implement
 .. code:: python
   :name: stream_alert/apps/_apps/box.py
 
-  # astream_alert/apps/_apps/box.py
-  from stream_alert.apps._apps.app_base import StreamAlertApp, AppIntegration
+  # stream_alert/apps/_apps/box.py
+  from . import AppIntegration, LOGGER, StreamAlertApp
 
-  # @StreamAlertApp
+  @StreamAlertApp
   class BoxApp(AppIntegration):
     """Box StreamAlert App"""
 

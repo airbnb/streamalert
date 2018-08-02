@@ -21,9 +21,7 @@ import time
 import backoff
 import requests
 
-from stream_alert.apps import LOGGER
-from stream_alert.apps._apps import StreamAlertApp
-from stream_alert.apps._apps.app_base import AppIntegration
+from . import AppIntegration, LOGGER, StreamAlertApp
 
 
 class SalesforceAppError(Exception):

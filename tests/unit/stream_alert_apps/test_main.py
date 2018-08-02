@@ -28,7 +28,7 @@ from tests.unit.stream_alert_apps.test_helpers import (
 
 @mock_ssm
 @patch.dict(os.environ, {'AWS_DEFAULT_REGION': 'us-east-1'})
-@patch('stream_alert.apps._apps.app_base.AppIntegration.gather')
+@patch('stream_alert.apps.app_base.AppIntegration.gather')
 def test_handler(gather_mock):
     """StreamAlertApp Lambda - Test Handler"""
     app_type = 'duo_auth'

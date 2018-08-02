@@ -17,7 +17,7 @@ import json
 import os
 import re
 
-from stream_alert.apps._apps import StreamAlertApp
+from stream_alert.apps import StreamAlertApp
 from stream_alert.shared import config, metrics
 from stream_alert_cli.helpers import continue_prompt
 from stream_alert_cli.logger import LOGGER_CLI
