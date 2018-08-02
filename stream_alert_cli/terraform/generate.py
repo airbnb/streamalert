@@ -177,7 +177,7 @@ def generate_main(config, init=False):
     generate_firehose(config, main_dict, logging_bucket)
 
     # Configure global resources like Firehose alert delivery and alerts table
-    main_dict['module']['globals'] = {
+    global_module = {
         'source': 'modules/tf_stream_alert_globals',
         'account_id': config['global']['account']['aws_account_id'],
         'region': config['global']['account']['region'],
@@ -186,12 +186,17 @@ def generate_main(config, init=False):
         'alerts_table_read_capacity': (
             config['global']['infrastructure']['alerts_table']['read_capacity']),
         'alerts_table_write_capacity': (
-            config['global']['infrastructure']['alerts_table']['write_capacity']),
-        'rules_table_read_capacity': (
-            config['global']['infrastructure']['rule_staging']['table']['read_capacity']),
-        'rules_table_write_capacity': (
-            config['global']['infrastructure']['rule_staging']['table']['write_capacity'])
+            config['global']['infrastructure']['alerts_table']['write_capacity'])
     }
+
+    if config['global']['infrastructure']['rule_staging'].get('enabled'):
+        global_module['enable_rule_staging'] = True
+        global_module['rules_table_read_capacity'] = (
+            config['global']['infrastructure']['rule_staging']['table']['read_capacity'])
+        global_module['rules_table_write_capacity'] = (
+            config['global']['infrastructure']['rule_staging']['table']['write_capacity'])
+
+    main_dict['module']['globals'] = global_module
 
     # KMS Key and Alias creation
     main_dict['resource']['aws_kms_key']['server_side_encryption'] = {

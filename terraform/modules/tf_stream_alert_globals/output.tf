@@ -1,3 +1,3 @@
 output "rules_table_arn" {
-  value = "${aws_dynamodb_table.rules_table.arn}"
+  value = "${element(concat(aws_dynamodb_table.rules_table.*.arn, list("")), 0)}"
 }

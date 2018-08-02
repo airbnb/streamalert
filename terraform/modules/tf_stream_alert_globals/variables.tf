@@ -10,6 +10,10 @@ variable "alerts_table_read_capacity" {}
 
 variable "alerts_table_write_capacity" {}
 
+variable "enable_rule_staging" {
+  default = false
+}
+
 variable "rules_table_read_capacity" {
   default = 5
 }
