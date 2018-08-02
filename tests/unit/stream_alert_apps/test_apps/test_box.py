@@ -22,9 +22,9 @@ from moto import mock_ssm
 from nose.tools import assert_equal, assert_false, assert_items_equal, assert_true
 from requests.exceptions import ConnectionError, Timeout
 
-from app_integrations.apps.box import BoxApp
+from stream_alert.apps._apps.box import BoxApp
 
-from tests.unit.app_integrations.test_helpers import (
+from tests.unit.stream_alert_apps.test_helpers import (
     get_event,
     get_mock_context,
     put_mock_params
@@ -54,7 +54,7 @@ class TestBoxApp(object):
         """BoxApp - Required Auth Info"""
         assert_items_equal(self._app.required_auth_info().keys(), {'keyfile'})
 
-    @patch('app_integrations.apps.box.JWTAuth.from_settings_dictionary',
+    @patch('stream_alert.apps._apps.box.JWTAuth.from_settings_dictionary',
            Mock(return_value=True))
     def test_keyfile_validator(self):
         """BoxApp - Keyfile Validation, Success"""
@@ -65,7 +65,7 @@ class TestBoxApp(object):
             loaded_keydata = validation_function('fakepath')
             assert_equal(loaded_keydata, data)
 
-    @patch('app_integrations.apps.box.JWTAuth.from_settings_dictionary')
+    @patch('stream_alert.apps._apps.box.JWTAuth.from_settings_dictionary')
     def test_keyfile_validator_failure(self, cred_mock):
         """BoxApp - Keyfile Validation, Failure"""
         validation_function = self._app.required_auth_info()['keyfile']['format']
@@ -75,7 +75,7 @@ class TestBoxApp(object):
             assert_false(validation_function('fakepath'))
             cred_mock.assert_called()
 
-    @patch('app_integrations.apps.box.JWTAuth.from_settings_dictionary')
+    @patch('stream_alert.apps._apps.box.JWTAuth.from_settings_dictionary')
     def test_keyfile_validator_bad_json(self, cred_mock):
         """BoxApp - Keyfile Validation, Bad JSON"""
         validation_function = self._app.required_auth_info()['keyfile']['format']
@@ -84,21 +84,21 @@ class TestBoxApp(object):
             assert_false(validation_function('fakepath'))
             cred_mock.assert_not_called()
 
-    @patch('app_integrations.apps.box.JWTAuth.from_settings_dictionary',
+    @patch('stream_alert.apps._apps.box.JWTAuth.from_settings_dictionary',
            Mock(return_value=True))
     def test_load_credentials(self):
         """BoxApp - Load Auth, Success"""
         assert_true(self._app._load_auth('fakedata'))
 
-    @patch('app_integrations.apps.box.JWTAuth.from_settings_dictionary')
+    @patch('stream_alert.apps._apps.box.JWTAuth.from_settings_dictionary')
     def test_load_credentials_bad(self, cred_mock):
         """BoxApp - Load Auth, ValueError"""
         cred_mock.side_effect = ValueError('Bad things happened')
         assert_false(self._app._load_auth('fakedata'))
 
-    @patch('app_integrations.apps.box.Client',
+    @patch('stream_alert.apps._apps.box.Client',
            Mock(return_value=True))
-    @patch('app_integrations.apps.box.BoxApp._load_auth')
+    @patch('stream_alert.apps._apps.box.BoxApp._load_auth')
     def test_create_client(self, auth_mock):
         """BoxApp - Create Client, Success"""
         assert_true(self._app._create_client())
@@ -111,7 +111,7 @@ class TestBoxApp(object):
         assert_true(self._app._create_client())
         log_mock.assert_called_with('[%s] Client already instantiated', self._app)
 
-    @patch('app_integrations.apps.box.BoxApp._load_auth',
+    @patch('stream_alert.apps._apps.box.BoxApp._load_auth',
            Mock(return_value=False))
     def test_create_client_fail_auth(self):
         """BoxApp - Create Client, Auth Failure"""
@@ -130,7 +130,7 @@ class TestBoxApp(object):
             assert_equal(len(self._app._gather_logs()), 10)
             assert_equal(self._app._last_timestamp, '2017-10-27T12:31:22-07:00')
 
-    @patch('app_integrations.apps.box.BoxApp._create_client',
+    @patch('stream_alert.apps._apps.box.BoxApp._create_client',
            Mock(return_value=True))
     @patch('logging.Logger.exception')
     def test_gather_logs_box_error(self, log_mock):
@@ -140,7 +140,7 @@ class TestBoxApp(object):
             assert_false(self._app._gather_logs())
             log_mock.assert_called_with('[%s] Failed to get events', self._app)
 
-    @patch('app_integrations.apps.box.BoxApp._create_client',
+    @patch('stream_alert.apps._apps.box.BoxApp._create_client',
            Mock(return_value=True))
     @patch('logging.Logger.exception')
     def test_gather_logs_requests_error(self, log_mock):
@@ -151,7 +151,7 @@ class TestBoxApp(object):
             assert_false(self._app._gather_logs())
             log_mock.assert_called_with('Bad response received from host, will retry once')
 
-    @patch('app_integrations.apps.box.BoxApp._create_client',
+    @patch('stream_alert.apps._apps.box.BoxApp._create_client',
            Mock(return_value=True))
     @patch('logging.Logger.exception')
     def test_gather_logs_requests_timeout(self, log_mock):
@@ -161,7 +161,7 @@ class TestBoxApp(object):
             assert_false(self._app._gather_logs())
             log_mock.assert_called_with('[%s] Request timed out', '_make_request')
 
-    @patch('app_integrations.apps.box.BoxApp._load_auth',
+    @patch('stream_alert.apps._apps.box.BoxApp._load_auth',
            Mock(return_value=False))
     def test_gather_logs_no_client(self):
         """BoxApp - Gather Logs, No Client"""
@@ -170,7 +170,7 @@ class TestBoxApp(object):
             assert_false(self._app._gather_logs())
             client_mock.make_request.assert_not_called()
 
-    @patch('app_integrations.apps.box.BoxApp._create_client',
+    @patch('stream_alert.apps._apps.box.BoxApp._create_client',
            Mock(return_value=True))
     @patch('logging.Logger.error')
     def test_gather_logs_no_results(self, log_mock):
@@ -180,7 +180,7 @@ class TestBoxApp(object):
             assert_false(self._app._gather_logs())
             log_mock.assert_called_with('[%s] No results received in request', self._app)
 
-    @patch('app_integrations.apps.box.BoxApp._create_client',
+    @patch('stream_alert.apps._apps.box.BoxApp._create_client',
            Mock(return_value=True))
     @patch('logging.Logger.info')
     def test_gather_logs_empty_items(self, log_mock):

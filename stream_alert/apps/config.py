@@ -24,8 +24,8 @@ import boto3
 from botocore import client
 from botocore.exceptions import ClientError
 
-from app_integrations import LOGGER
-from app_integrations.exceptions import AppAuthError, AppConfigError, AppStateError
+from stream_alert.apps import LOGGER
+from stream_alert.apps.exceptions import AppAuthError, AppConfigError, AppStateError
 
 AWS_RATE_RE = re.compile(r'^rate\(((1) (minute|hour|day)|'
                          r'([2-9]+|[1-9]\d+) (minutes|hours|days))\)$')

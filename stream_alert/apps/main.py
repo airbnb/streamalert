@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from __future__ import absolute_import
-from app_integrations.apps import StreamAlertApp
+from stream_alert.apps._apps import StreamAlertApp
 
 
 def handler(event, context):

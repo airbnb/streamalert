@@ -19,8 +19,8 @@ from botocore.exceptions import ClientError
 from mock import patch
 from nose.tools import assert_equal, assert_false, assert_true, raises
 
-from app_integrations.batcher import Batcher
-from tests.unit.app_integrations.test_helpers import MockLambdaClient
+from stream_alert.apps.batcher import Batcher
+from tests.unit.stream_alert_apps.test_helpers import MockLambdaClient
 
 
 class TestAppBatcher(object):
@@ -82,7 +82,7 @@ class TestAppBatcher(object):
                                     'limit and will be dropped (%d > %d max).',
                                     128073, 128000)
 
-    @patch('app_integrations.batcher.Batcher._send_logs_to_lambda')
+    @patch('stream_alert.apps.batcher.Batcher._send_logs_to_lambda')
     def test_segment_and_send(self, batcher_mock):
         """App Integration Batcher - Segment and Send Logs to StreamAlert"""
         logs = [{'timestamp': 'time',
@@ -92,7 +92,7 @@ class TestAppBatcher(object):
 
         assert_equal(batcher_mock.call_count, 2)
 
-    @patch('app_integrations.batcher.Batcher._send_logs_to_lambda')
+    @patch('stream_alert.apps.batcher.Batcher._send_logs_to_lambda')
     def test_segment_and_send_multi(self, batcher_mock):
         """App Integration Batcher - Segment and Send Logs to StreamAlert, Multi-segment"""
         batcher_mock.side_effect = [False, True, True, True]
@@ -103,7 +103,7 @@ class TestAppBatcher(object):
 
         assert_equal(batcher_mock.call_count, 4)
 
-    @patch('app_integrations.batcher.Batcher._segment_and_send')
+    @patch('stream_alert.apps.batcher.Batcher._segment_and_send')
     def test_send_logs_one_batch(self, batcher_mock):
         """App Integration Batcher - Send Logs, One batch"""
         logs = [{'timestamp': 'time',
@@ -113,7 +113,7 @@ class TestAppBatcher(object):
 
         batcher_mock.assert_not_called()
 
-    @patch('app_integrations.batcher.Batcher._segment_and_send')
+    @patch('stream_alert.apps.batcher.Batcher._segment_and_send')
     def test_send_logs_multi_batch(self, batcher_mock):
         """App Integration Batcher - Send Logs, Multi-batch"""
         logs = [{'timestamp': 'time',

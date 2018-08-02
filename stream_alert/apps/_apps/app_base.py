@@ -20,9 +20,9 @@ import boto3
 from botocore.exceptions import ClientError
 import requests
 
-from app_integrations import LOGGER
-from app_integrations.config import AppConfig
-from app_integrations.batcher import Batcher
+from stream_alert.apps import LOGGER
+from stream_alert.apps.config import AppConfig
+from stream_alert.apps.batcher import Batcher
 
 
 def _report_time(func):

@@ -21,9 +21,9 @@ from nose.tools import assert_equal, assert_false, assert_items_equal
 
 from aliyunsdkcore.acs_exception.exceptions import ServerException
 
-from app_integrations.apps.aliyun import AliyunApp
+from stream_alert.apps._apps.aliyun import AliyunApp
 
-from tests.unit.app_integrations.test_helpers import (
+from tests.unit.stream_alert_apps.test_helpers import (
     get_event,
     get_mock_context,
     put_mock_params

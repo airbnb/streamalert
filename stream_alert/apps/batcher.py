@@ -19,7 +19,7 @@ import math
 import boto3
 from botocore.exceptions import ClientError
 
-from app_integrations import LOGGER
+from stream_alert.apps import LOGGER
 
 
 class Batcher(object):

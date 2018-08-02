@@ -18,8 +18,8 @@ import os
 from mock import patch
 from moto import mock_ssm
 
-from app_integrations.main import handler
-from tests.unit.app_integrations.test_helpers import (
+from stream_alert.apps.main import handler
+from tests.unit.stream_alert_apps.test_helpers import (
     get_event,
     get_mock_context,
     put_mock_params
@@ -28,7 +28,7 @@ from tests.unit.app_integrations.test_helpers import (
 
 @mock_ssm
 @patch.dict(os.environ, {'AWS_DEFAULT_REGION': 'us-east-1'})
-@patch('app_integrations.apps.app_base.AppIntegration.gather')
+@patch('stream_alert.apps._apps.app_base.AppIntegration.gather')
 def test_handler(gather_mock):
     """StreamAlertApp Lambda - Test Handler"""
     app_type = 'duo_auth'

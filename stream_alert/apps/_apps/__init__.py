@@ -2,7 +2,7 @@
 import importlib
 import os
 
-from app_integrations.exceptions import AppException
+from stream_alert.apps.exceptions import AppException
 
 
 class StreamAlertApp(object):
@@ -50,6 +50,6 @@ for app_file in os.listdir(os.path.dirname(__file__)):
     if app_file.startswith(('__init__', 'app_base')) or not app_file.endswith('.py'):
         continue
 
-    full_import = ['app_integrations', 'apps', os.path.splitext(app_file)[0]]
+    full_import = ['stream_alert', 'apps', '_apps', os.path.splitext(app_file)[0]]
 
     importlib.import_module('.'.join(full_import))

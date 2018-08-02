@@ -16,9 +16,9 @@ limitations under the License.
 import re
 import time
 
-from app_integrations import LOGGER
-from app_integrations.apps import StreamAlertApp
-from app_integrations.apps.app_base import AppIntegration
+from stream_alert.apps import LOGGER
+from stream_alert.apps._apps import StreamAlertApp
+from stream_alert.apps._apps.app_base import AppIntegration
 
 
 class SlackApp(AppIntegration):

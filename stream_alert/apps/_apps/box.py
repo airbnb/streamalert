@@ -20,9 +20,9 @@ from boxsdk.exception import BoxException
 from boxsdk.object.events import EnterpriseEventsStreamType
 from requests.exceptions import ConnectionError
 
-from app_integrations import LOGGER
-from app_integrations.apps import StreamAlertApp
-from app_integrations.apps.app_base import AppIntegration, safe_timeout
+from stream_alert.apps import LOGGER
+from stream_alert.apps._apps import StreamAlertApp
+from stream_alert.apps._apps.app_base import AppIntegration, safe_timeout
 
 
 @StreamAlertApp
