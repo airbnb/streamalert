@@ -1,9 +1,18 @@
 Rule Staging
 ============
 
-Rule staging allows dynamic toggling of rules from a staging to production state, and vice versa.
+Rule Staging allows dynamic toggling of rules from a staging to production state, and vice versa.
 Staged rules will only send alerts for historical retention, and the alerts will not be sent to any
 user-defined outputs, such as Slack, PagerDuty, etc.
+
+To ensure that new rules do not flood alerting outputs with a ton of potential false positives,
+rules can be staged. After an initial 'baking' period, where in a noisy rule is tuned to limit
+the amount of false positives, staged rules can be promoted.
+
+When Rule Staging is enabled, new rules will, by default, be *staged* upon a deploy of the
+Rule Processor Lambda function.
+See the `Skip Staging During Deploy`_ section
+for more information.
 
 Enabling Rule Staging
 ---------------------
@@ -37,16 +46,16 @@ Configuration Options
 
 A few configuration options are available to customize the feature to your needs.
 
-===========================  ========  =======  ===========
-Key                          Required  Default  Description
----------------------------  --------  -------  -----------
-``cache_refresh_minutes``    ``No``    ``10``   Maximum amount of time (in minutes) the Rule Processor
-                                                should wait to force refresh the rule staging information.
-``table.read_capacity``      ``Yes``   ``20``   DynamoDB read capacity to allocate to the table that stores staging
-                                                information. The default setting should be sufficient in most use cases.
-``table.write_capacity``     ``Yes``   ``5``    DynamoDB write capacity to allocate to the table that stores staging
-                                                information. The default setting should be sufficient in most use cases.
-===========================  ========  =======  ===========
+===========================  =======  ===========
+Key                          Default  Description
+---------------------------  -------  -----------
+``cache_refresh_minutes``    ``10``   Maximum amount of time (in minutes) the Rule Processor
+                                      should wait to force refresh the rule staging information.
+``table.read_capacity``      ``20``   DynamoDB read capacity to allocate to the table that stores staging
+                                      information. The default setting should be sufficient in most use cases.
+``table.write_capacity``     ``5``    DynamoDB write capacity to allocate to the table that stores staging
+                                      information. The default setting should be sufficient in most use cases.
+===========================  =======  ===========
 
 The initial implementation of the Rule Staging feature has a hard-coded 'staging period', or the time
 a rule should remain in staging before being auto-promoted to send to user-defined outputs. This is
@@ -88,6 +97,22 @@ with the following command:
 .. code-block:: bash
 
   python manage.py rule-staging unstage <rule_001> <rule_002>
+
+Skip Staging During Deploy
+++++++++++++++++++++++++++
+
+As noted above, all new rules will be *staged* by default during a Rule Processor deploy when the
+Rule Staging feature is enabled. There may, however, be occasions when all new rules should not be
+staged during a deploy. To allow for this, the Rule Processor can be deployed with the following command:
+
+.. code-block:: bash
+
+  python manage.py lambda deploy -p rule --skip-rule-staging
+
+This will force all new rules to send to user-defined outputs immediately upon deploy, bypassing
+the default staging period. Alternatively, the ``--stage-rules`` and ``--unstage-rules`` flags
+can be used (instead of the ``--skip-rule-staging`` flag) to stage or unstage specific rules only.
+
 
 Triaging Staged Rules
 ---------------------
