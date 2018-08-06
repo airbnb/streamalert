@@ -124,6 +124,16 @@ class CLIConfig(object):
 
         LOGGER_CLI.info('AWS Account ID successfully configured')
 
+    def toggle_rule_staging(self, enabled):
+        """Toggle rule staging on or off
+
+        Args:
+            enabled (bool): False if disabling rule staging, true if enabling
+        """
+        print 'Setting rule staging enabled setting to: {}'.format(enabled)
+        self.config['global']['infrastructure']['rule_staging']['enabled'] = enabled
+        self.write()
+
     def toggle_metrics(self, enabled, clusters, lambda_functions):
         """Toggle CloudWatch metric logging and filter creation
 

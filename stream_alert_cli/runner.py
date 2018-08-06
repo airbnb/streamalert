@@ -88,7 +88,7 @@ def cli_runner(options):
     elif options.command == 'threat_intel_downloader':
         threat_intel_downloader_handler(options, CONFIG)
 
-    elif options.command == 'rule-table':
+    elif options.command == 'rule-staging':
         rule_table_handler(options, CONFIG)
 
 

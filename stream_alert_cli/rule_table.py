@@ -24,6 +24,9 @@ def rule_table_handler(options, config):
             handlers
         config (CLIConfig): Loaded configuration from 'conf/' directory
     """
+    if options.subcommand == 'enable':
+        config.toggle_rule_staging(options.enable)
+
     table_name = '{}_streamalert_rules'.format(config['global']['account']['prefix'])
     if options.subcommand == 'status':
         print RuleTable(table_name).__str__(options.verbose)
