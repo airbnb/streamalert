@@ -1482,39 +1482,71 @@ Examples:
 
 
 def _add_rule_table_subparser(subparsers):
-    """Add the rule database helper subparser: manage.py rule-table [subcommand] [options]"""
-    usage = 'manage.py rule-table [subcommand] [options]'
+    """Add the rule database helper subparser: manage.py rule-staging [subcommand] [options]"""
+    usage = 'manage.py rule-staging [subcommand] [options]'
     description = """
 StreamAlertCLI v{}
 Print the status of or update remote StreamAlert rule information within the rule database
 
 Available Subcommands:
 
-    manage.py rule-table status          List the current staging status from the rules databse
-    manage.py rule-table stage           Stage the rules provided in a space-separated list
-    manage.py rule-table unstage         Unstage the rules provided in a space-separated list
+    manage.py rule-staging enable          Enable or disable the rule staging feature
+    manage.py rule-staging status          List the current staging status from the rules databse
+    manage.py rule-staging stage           Stage the rules provided in a space-separated list
+    manage.py rule-staging unstage         Unstage the rules provided in a space-separated list
 
 """.format(version)
 
-    rule_table_parser = _generate_subparser(subparsers, 'rule-table', usage, description)
+    rule_table_parser = _generate_subparser(subparsers, 'rule-staging', usage, description)
 
     rule_table_subparsers = rule_table_parser.add_subparsers()
 
+    _add_rule_table_enable_subparser(rule_table_subparsers)
     _add_rule_table_status_subparser(rule_table_subparsers)
     _add_rule_table_stage_subparser(rule_table_subparsers)
     _add_rule_table_unstage_subparser(rule_table_subparsers)
 
+def _add_rule_table_enable_subparser(subparsers):
+    """Add the rule staging enable subparser: manage.py rule-staging enable"""
+    usage = 'manage.py rule-staging enable'
+    description = """
+StreamAlertCLI v{}
+Enable or disable the rule staging feature
+
+Command:
+
+    manage.py rule-staging enabled       Enable or disable the rule staging feature
+
+Required Arguments:
+
+    --true/--false                       Boolean flag for rule staging enabling or disabling
+
+Optional Arguments:
+
+    --verbose           Output additional information for rules in the database
+    --debug             Enable debug logger output
+
+""".format(version)
+
+    rule_table_enable_parser = _generate_subparser(subparsers, 'enable', usage, description, True)
+
+    toggle_group = rule_table_enable_parser.add_mutually_exclusive_group(required=True)
+    toggle_group.add_argument('--true', '-t', dest='enable', action='store_true')
+    toggle_group.add_argument('--false', '-f', dest='enable', action='store_false')
+
+    rule_table_enable_parser.add_argument('--verbose', action='store_true', help=ARGPARSE_SUPPRESS)
+
 
 def _add_rule_table_status_subparser(subparsers):
-    """Add the rule db status subparser: manage.py rule-table status"""
-    usage = 'manage.py rule-table status'
+    """Add the rule staging status subparser: manage.py rule-staging status"""
+    usage = 'manage.py rule-staging status'
     description = """
 StreamAlertCLI v{}
 List all rules within the rule database and their staging status
 
 Command:
 
-    manage.py rule-table status       List rules in the rule database with their staging status
+    manage.py rule-staging status       List rules in the rule database with their staging status
 
 Optional Arguments:
 
@@ -1529,15 +1561,15 @@ Optional Arguments:
 
 
 def _add_rule_table_stage_subparser(subparsers):
-    """Add the rule db stage subparser: manage.py rule-table stage"""
-    usage = 'manage.py rule-table stage'
+    """Add the rule staging stage subparser: manage.py rule-staging stage"""
+    usage = 'manage.py rule-staging stage'
     description = """
 StreamAlertCLI v{}
 Stage rules given their name as a space-separated list
 
 Command:
 
-    manage.py rule-table stage         Stage the rules provided in a space-separated list
+    manage.py rule-staging stage         Stage the rules provided in a space-separated list
 
 Optional Arguments:
 
@@ -1551,15 +1583,15 @@ Optional Arguments:
 
 
 def _add_rule_table_unstage_subparser(subparsers):
-    """Add the rule db unstage subparser: manage.py rule-table unstage"""
-    usage = 'manage.py rule-table unstage'
+    """Add the rule staging unstage subparser: manage.py rule-staging unstage"""
+    usage = 'manage.py rule-staging unstage'
     description = """
 StreamAlertCLI v{}
 Unstage rules given their name as a space-separated list
 
 Command:
 
-    manage.py rule-table unstage       Unstage the rules provided in a space-separated list
+    manage.py rule-staging unstage       Unstage the rules provided in a space-separated list
 
 Optional Arguments:
 
@@ -1602,7 +1634,7 @@ Available Commands:
     manage.py live-test                  Send alerts to configured outputs
     manage.py metrics                    Enable or disable metrics for all lambda functions
     manage.py output                     Configure new StreamAlert outputs
-    manage.py rule-table                 Get the status of or update rules in the rules database
+    manage.py rule-staging               Get the status of or update rules in the rules database
     manage.py terraform                  Manage StreamAlert infrastructure
     manage.py threat-intel               Enable, configure StreamAlert Threat Intelligence feature.
     manage.py threat-intel-downloader    Lambda function to retrieve IOC(s).
