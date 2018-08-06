@@ -1481,7 +1481,7 @@ Examples:
     )
 
 
-def _add_rule_table_subparser(subparsers):
+def _add_rule_staging_subparser(subparsers):
     """Add the rule database helper subparser: manage.py rule-staging [subcommand] [options]"""
     usage = 'manage.py rule-staging [subcommand] [options]'
     description = """
@@ -1497,16 +1497,16 @@ Available Subcommands:
 
 """.format(version)
 
-    rule_table_parser = _generate_subparser(subparsers, 'rule-staging', usage, description)
+    rule_staging_parser = _generate_subparser(subparsers, 'rule-staging', usage, description)
 
-    rule_table_subparsers = rule_table_parser.add_subparsers()
+    rule_staging_subparsers = rule_staging_parser.add_subparsers()
 
-    _add_rule_table_enable_subparser(rule_table_subparsers)
-    _add_rule_table_status_subparser(rule_table_subparsers)
-    _add_rule_table_stage_subparser(rule_table_subparsers)
-    _add_rule_table_unstage_subparser(rule_table_subparsers)
+    _add_rule_staging_enable_subparser(rule_staging_subparsers)
+    _add_rule_staging_status_subparser(rule_staging_subparsers)
+    _add_rule_staging_stage_subparser(rule_staging_subparsers)
+    _add_rule_staging_unstage_subparser(rule_staging_subparsers)
 
-def _add_rule_table_enable_subparser(subparsers):
+def _add_rule_staging_enable_subparser(subparsers):
     """Add the rule staging enable subparser: manage.py rule-staging enable"""
     usage = 'manage.py rule-staging enable'
     description = """
@@ -1528,16 +1528,17 @@ Optional Arguments:
 
 """.format(version)
 
-    rule_table_enable_parser = _generate_subparser(subparsers, 'enable', usage, description, True)
+    rule_staging_enable_parser = _generate_subparser(subparsers, 'enable', usage, description, True)
 
-    toggle_group = rule_table_enable_parser.add_mutually_exclusive_group(required=True)
+    toggle_group = rule_staging_enable_parser.add_mutually_exclusive_group(required=True)
     toggle_group.add_argument('--true', '-t', dest='enable', action='store_true')
     toggle_group.add_argument('--false', '-f', dest='enable', action='store_false')
 
-    rule_table_enable_parser.add_argument('--verbose', action='store_true', help=ARGPARSE_SUPPRESS)
+    rule_staging_enable_parser.add_argument(
+        '--verbose', action='store_true', help=ARGPARSE_SUPPRESS)
 
 
-def _add_rule_table_status_subparser(subparsers):
+def _add_rule_staging_status_subparser(subparsers):
     """Add the rule staging status subparser: manage.py rule-staging status"""
     usage = 'manage.py rule-staging status'
     description = """
@@ -1555,12 +1556,13 @@ Optional Arguments:
 
 """.format(version)
 
-    rule_table_status_parser = _generate_subparser(subparsers, 'status', usage, description, True)
+    rule_staging_status_parser = _generate_subparser(subparsers, 'status', usage, description, True)
 
-    rule_table_status_parser.add_argument('--verbose', action='store_true', help=ARGPARSE_SUPPRESS)
+    rule_staging_status_parser.add_argument(
+        '--verbose', action='store_true', help=ARGPARSE_SUPPRESS)
 
 
-def _add_rule_table_stage_subparser(subparsers):
+def _add_rule_staging_stage_subparser(subparsers):
     """Add the rule staging stage subparser: manage.py rule-staging stage"""
     usage = 'manage.py rule-staging stage'
     description = """
@@ -1577,12 +1579,12 @@ Optional Arguments:
 
 """.format(version)
 
-    rule_table_stage_parser = _generate_subparser(subparsers, 'stage', usage, description, True)
+    rule_staging_stage_parser = _generate_subparser(subparsers, 'stage', usage, description, True)
 
-    _add_default_rule_table_staging_args(rule_table_stage_parser)
+    _add_default_rule_staging_args(rule_staging_stage_parser)
 
 
-def _add_rule_table_unstage_subparser(subparsers):
+def _add_rule_staging_unstage_subparser(subparsers):
     """Add the rule staging unstage subparser: manage.py rule-staging unstage"""
     usage = 'manage.py rule-staging unstage'
     description = """
@@ -1599,14 +1601,14 @@ Optional Arguments:
 
 """.format(version)
 
-    rule_table_unstage_parser = _generate_subparser(
+    rule_staging_unstage_parser = _generate_subparser(
         subparsers, 'unstage', usage, description, True)
 
-    _add_default_rule_table_staging_args(rule_table_unstage_parser)
+    _add_default_rule_staging_args(rule_staging_unstage_parser)
 
 
-def _add_default_rule_table_staging_args(subparser):
-    """Add the default arguments to the rule table staging parsers"""
+def _add_default_rule_staging_args(subparser):
+    """Add the default arguments to the rule staging parsers"""
     subparser.add_argument(
         'rules',
         action=UniqueSetAction,
@@ -1671,7 +1673,7 @@ For additional details on the available commands, try:
     _add_kinesis_subparser(subparsers)
     _add_threat_intel_subparser(subparsers)
     _add_threat_intel_downloader_subparser(subparsers)
-    _add_rule_table_subparser(subparsers)
+    _add_rule_staging_subparser(subparsers)
 
     return parser
 

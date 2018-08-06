@@ -6,8 +6,8 @@ Staged rules will only send alerts for historical retention, and the alerts will
 user-defined outputs, such as Slack, PagerDuty, etc.
 
 To ensure that new rules do not flood alerting outputs with a ton of potential false positives,
-rules can be staged. After an initial 'baking' period, where in a noisy rule is tuned to limit
-the amount of false positives, staged rules can be promoted.
+rules can be staged. After the initial staging period, wherein a noisy rule is tuned to limit
+extra noise or false positives, staged rules can be promoted.
 
 When Rule Staging is enabled, new rules will, by default, be *staged* upon a deploy of the
 Rule Processor Lambda function.
