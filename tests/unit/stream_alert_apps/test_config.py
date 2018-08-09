@@ -195,6 +195,23 @@ class TestAppConfig(object):
         self._config.last_timestamp = 1234567890
         save_mock.assert_not_called()
 
+    @patch('stream_alert.apps.config.AppConfig._save_state')
+    def test_set_context_new(self, save_mock):
+        """AppConfig - Set Context, New Value"""
+        self._config.context = {"key": "value"}
+        save_mock.assert_called_once()
+
+    @patch('stream_alert.apps.config.AppConfig._save_state')
+    def test_set_context_same(self, save_mock):
+        """AppConfig - Set Context, Same Value"""
+        self._config.context = None
+        save_mock.assert_not_called()
+
+    @raises(AppStateError)
+    def test_set_context_not_serializable(self):
+        """AppConfig - Set Context, Not Serializable Value"""
+        self._config.context = { "Hello": set([1,2,3]) }
+
     def test_is_failing(self):
         """AppConfig - Check If Failing"""
         assert_false(self._config.is_failing)

@@ -151,7 +151,13 @@ class GSuiteReportsApp(AppIntegration):
         # once during the first poll
         if not self._next_page_token:
             self._last_timestamp = activities[0]['id']['time']
+            self._context = [
+                activity['id']['uniqueQualifier']
+                for activity in activities
+                if activity['id']['time'] == self._last_timestamp
+            ]
             LOGGER.debug('Caching last timestamp: %s', self._last_timestamp)
+            LOGGER.debug('Caching last event ids: %s', self._context)
 
         self._next_page_token = results.get('nextPageToken')
         self._more_to_poll = bool(self._next_page_token)
