@@ -1692,6 +1692,7 @@
     "parser": "json",
     "configuration": {
       "optional_top_level_keys": [
+        "apiVersion",
         "errorCode",
         "errorMessage",
         "acsRegion",
