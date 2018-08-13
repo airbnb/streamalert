@@ -62,7 +62,7 @@ class AppConfig(object):
         self._auth_config = auth_config
         self._current_state = state_config.get(self._STATE_KEY)
         self._last_timestamp = state_config.get(self._TIME_KEY)
-        self._context = state_config.get(self._CONTEXT_KEY)
+        self._context = state_config.get(self._CONTEXT_KEY, {})
         self._event = event
         self.function_name = func_name
         self.function_version = func_version
@@ -399,16 +399,19 @@ class AppConfig(object):
 
     @property
     def context(self):
-        """Get an additional context specific to each app"""
+        """Get an additional context dictionary specific to each app"""
         LOGGER.debug('Getting context: %s', self._context)
         return self._context
 
     @context.setter
     def context(self, context):
-        """Set an additional context specific to each app"""
+        """Set an additional context dictionary specific to each app"""
         if self._context == context:
             LOGGER.debug('App context is unchanged and will not be saved: %s', context)
             return
+
+        if not isinstance(context, dict):
+            raise AppStateError('Unable to set context: %s. Must be a dictionary', context)
 
         LOGGER.debug('Setting context to: %s', context)
 

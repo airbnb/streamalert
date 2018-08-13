@@ -81,7 +81,7 @@ class AppIntegration(object):
         self._more_to_poll = False
         self._poll_count = 0
         self._last_timestamp = 0
-        self._context = None
+        self._context = {}
 
     def __str__(self):
         return self.type()

@@ -35,6 +35,11 @@ class GSuiteReportsApp(AppIntegration):
     _GOOGLE_API_EXCEPTIONS = (apiclient.errors.Error, client.Error, socket.timeout,
                               ssl.SSLError)
 
+    # The maximum number of unique event ids to store that occur on the most
+    # recent timestamp. These are used to de-duplicate events in the next poll.
+    # This is limited by AWS SSM parameter store maximum of 4096 characters.
+    _MAX_EVENT_IDS = 50
+
     def __init__(self, event, context):
         super(GSuiteReportsApp, self).__init__(event, context)
         self._activities_service = None
@@ -52,7 +57,7 @@ class GSuiteReportsApp(AppIntegration):
     @classmethod
     def date_formatter(cls):
         """Return a format string for a date, ie: 2010-10-28T10:26:35.000Z"""
-        return '%Y-%m-%dT%H:%M:%SZ'
+        return '%Y-%m-%dT%H:%M:%S.%fZ'
 
     @classmethod
     def _load_credentials(cls, keydata):
@@ -141,7 +146,12 @@ class GSuiteReportsApp(AppIntegration):
             LOGGER.error('[%s] No results received from the G Suite API request', self)
             return False
 
-        activities = results.get('items', [])
+        # Remove duplicate events present in the last time period.
+        last_event_ids = set(self._context.get("last_event_ids", []))
+        activities = [
+            activity for activity in results.get('items', [])
+            if activity['id']['uniqueQualifier'] not in last_event_ids
+        ]
         if not activities:
             LOGGER.info('[%s] No logs in response from G Suite API request', self)
             return False
@@ -151,16 +161,23 @@ class GSuiteReportsApp(AppIntegration):
         # once during the first poll
         if not self._next_page_token:
             self._last_timestamp = activities[0]['id']['time']
-            self._context = [
+            LOGGER.debug('[%s] Caching last timestamp: %s', self, self._last_timestamp)
+            # Store the event ids with the most recent timestamp to de-duplicate them next time
+            next_event_ids = [
                 activity['id']['uniqueQualifier']
                 for activity in activities
                 if activity['id']['time'] == self._last_timestamp
             ]
-            LOGGER.debug('Caching last timestamp: %s', self._last_timestamp)
-            LOGGER.debug('Caching last event ids: %s', self._context)
+            self._context['next_event_ids'] = next_event_ids[:self._MAX_EVENT_IDS]
+            if len(next_event_ids) > self._MAX_EVENT_IDS:
+                LOGGER.warning('[%s] More than %d next_event_ids. Unable to de-duplicate: %s',
+                               self, self._MAX_EVENT_IDS, next_event_ids[self._MAX_EVENT_IDS:])
 
         self._next_page_token = results.get('nextPageToken')
         self._more_to_poll = bool(self._next_page_token)
+
+        if not self._more_to_poll:
+            self._context['last_event_ids'] = self._context.get('next_event_ids', [])
 
         return activities
 
