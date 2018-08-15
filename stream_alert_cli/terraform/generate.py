@@ -47,7 +47,7 @@ from stream_alert_cli.terraform.s3_events import generate_s3_events
 from stream_alert_cli.terraform.threat_intel_downloader import generate_threat_intel_downloader
 
 RESTRICTED_CLUSTER_NAMES = ('main', 'athena')
-TERRAFORM_VERSIONS = {'application': '~> 0.11.7', 'provider': {'aws': '~> 1.17.0'}}
+TERRAFORM_VERSIONS = {'application': '~> 0.11.7', 'provider': {'aws': '~> 1.26.0'}}
 
 
 def generate_s3_bucket(bucket, logging, **kwargs):
