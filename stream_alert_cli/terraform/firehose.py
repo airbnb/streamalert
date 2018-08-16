@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from stream_alert.rule_processor.firehose import StreamAlertFirehose
+from stream_alert.rule_processor.firehose import FirehoseClient
 
 def generate_firehose(config, main_dict, logging_bucket):
     """Generate the Firehose Terraform modules
@@ -25,10 +25,6 @@ def generate_firehose(config, main_dict, logging_bucket):
     """
     if not config['global']['infrastructure'].get('firehose', {}).get('enabled'):
         return
-
-    sa_firehose = StreamAlertFirehose(config['global']['account']['region'],
-                                      config['global']['infrastructure']['firehose'],
-                                      config['logs'])
 
     firehose_config = config['global']['infrastructure']['firehose']
     firehose_s3_bucket_suffix = firehose_config.get('s3_bucket_suffix', 'streamalert.data')
@@ -45,6 +41,12 @@ def generate_firehose(config, main_dict, logging_bucket):
         's3_bucket_name': firehose_s3_bucket_name,
         'kms_key_id': '${aws_kms_key.server_side_encryption.key_id}'
     }
+
+    enabled_logs = FirehoseClient.load_enabled_log_sources(
+        config['global']['infrastructure']['firehose'],
+        config['logs'],
+        force_load=True
+    )
 
     # Add the Delivery Streams individually
     for enabled_log in sa_firehose.enabled_logs:

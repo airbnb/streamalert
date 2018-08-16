@@ -19,7 +19,7 @@ import json
 from stream_alert.rule_processor import FUNCTION_NAME, LOGGER
 from stream_alert.rule_processor.alert_forward import AlertForwarder
 from stream_alert.rule_processor.classifier import StreamClassifier
-from stream_alert.rule_processor.firehose import StreamAlertFirehose
+from stream_alert.rule_processor.firehose import FirehoseClient
 from stream_alert.rule_processor.payload import load_stream_payload
 from stream_alert.rule_processor.rules_engine import RulesEngine
 from stream_alert.shared import config, stats
@@ -88,9 +88,11 @@ class StreamAlert(object):
 
         firehose_config = self.config['global'].get('infrastructure', {}).get('firehose', {})
         if firehose_config.get('enabled'):
-            self._firehose_client = StreamAlertFirehose(self.env['region'],
-                                                        firehose_config,
-                                                        self.config['logs'])
+            self._firehose_client = FirehoseClient(
+                self.env['region'],
+                firehose_config=firehose_config,
+                log_sources=self.config['logs']
+            )
 
         payload_with_normalized_records = []
         for raw_record in records:
