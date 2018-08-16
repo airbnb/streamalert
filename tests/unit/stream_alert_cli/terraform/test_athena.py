@@ -55,7 +55,6 @@ def test_generate_athena():
                 ],
                 'prefix': 'unit-testing',
                 'account_id': '12345678910',
-                'schedule_expression': 'rate(10 minutes)',
                 'concurrency_limit': 10
             },
             'athena_monitoring': {

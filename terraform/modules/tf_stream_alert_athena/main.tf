@@ -102,23 +102,6 @@ resource "aws_lambda_event_source_mapping" "streamalert_athena_sqs_event_source"
   function_name    = "${aws_lambda_function.athena_partition_refresh.arn}"
 }
 
-// Cloudwatch Event Rule: Invoke the Athena function refresh every minute
-resource "aws_cloudwatch_event_rule" "invoke_athena_refresh" {
-  name        = "${var.prefix}_streamalert_invoke_athena_refresh"
-  description = "Invoke the Athena Refresh Lambda function every minute"
-
-  # https://amzn.to/2u5t0hS
-  schedule_expression = "${var.schedule_expression}"
-}
-
-// Cloudwatch Event Target: Point the Athena refresh rule to the Lambda function
-resource "aws_cloudwatch_event_target" "athena_lambda_function" {
-  rule = "${aws_cloudwatch_event_rule.invoke_athena_refresh.name}"
-  arn  = "${aws_lambda_function.athena_partition_refresh.arn}:production"
-
-  depends_on = ["aws_lambda_alias.athena_partition_refresh_production"]
-}
-
 // S3 Bucekt Notificaiton: Configure S3 to notify Lambda
 resource "aws_s3_bucket_notification" "bucket_notification" {
   count  = "${length(var.athena_data_buckets)}"
