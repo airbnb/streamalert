@@ -12,6 +12,9 @@ resource "aws_lambda_function" "athena_partition_refresh" {
   source_code_hash = "${base64sha256(file(var.filename))}"
   publish          = true
 
+  // Maximum number of concurrent executions allowed
+  reserved_concurrent_executions = "${var.concurrency_limit}"
+
   environment {
     variables = {
       LOGGER_LEVEL   = "${var.lambda_log_level}"

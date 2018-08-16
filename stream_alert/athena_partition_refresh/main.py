@@ -162,7 +162,12 @@ class AthenaRefresher(object):
         return True
 
     def run(self, event):
-        """Poll the SQS queue for messages and create partitions for new data"""
+        """Take the messages from the SQS queue and create partitions for new data in S3
+
+        Args:
+            event (dict): Lambda input event containing SQS messages. Each SQS message
+                should contain one (or maybe more) S3 bucket notification message.
+        """
         # Check that the database being used exists before running queries
         if not self._athena_client.check_database_exists():
             raise AthenaRefreshError(
@@ -188,7 +193,7 @@ class AthenaRefresher(object):
 
                 # Account for special characters in the S3 object key
                 # Example: Usage of '=' in the key name
-                object_key = urllib.unquote(s3_rec['s3']['object']['key']).decode('utf8')
+                object_key = urllib.unquote_plus(s3_rec['s3']['object']['key']).decode('utf8')
 
                 LOGGER.debug('Received notification for object \'%s\' in bucket \'%s\'',
                              object_key,

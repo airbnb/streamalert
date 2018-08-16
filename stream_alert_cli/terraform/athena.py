@@ -59,6 +59,7 @@ def generate_athena(config):
         'athena_data_buckets': data_buckets,
         'schedule_expression': athena_config.get('schedule_expression', 'rate(10 minutes)'),
         'enable_metrics': athena_config.get('enable_metrics', False),
+        'concurrency_limit': athena_config.get('concurrency_limit', 10),
         'account_id': config['global']['account']['aws_account_id'],
         'prefix': prefix
     }
