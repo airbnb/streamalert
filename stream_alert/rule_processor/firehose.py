@@ -63,7 +63,7 @@ class FirehoseClient(object):
         # Create a dictionary to hold parsed payloads by log type.
         # Firehose needs this information to send to its corresponding
         # delivery stream.
-        self.categorized_payloads = defaultdict(list)
+        self._categorized_payloads = defaultdict(list)
 
         self.load_enabled_log_sources(firehose_config, log_sources, force_load=True)
 
@@ -320,6 +320,19 @@ class FirehoseClient(object):
 
         return cls._ENABLED_LOGS
 
+    def add_payload_records(self, log_source, records):
+        """Add the records to the proper list of cached records, based on log source
+
+        Args:
+            log_source (str): Type of log to be sent to Firehose
+            records (list): Logs being sent to Firehose
+        """
+        # Only send payloads with enabled log sources
+        if not self.enabled_log_source(log_source):
+            return
+
+        self._categorized_payloads[log_source].extend(records)
+
     def send(self):
         """Send all classified records to a respective Firehose Delivery Stream"""
         delivery_stream_name_pattern = 'streamalert_data_{}'
@@ -327,7 +340,7 @@ class FirehoseClient(object):
         # Iterate through each set of categorized payloads.
         # Each batch will be processed to their specific Firehose, which lands the data
         # in a specific prefix in S3.
-        for log_type, records in self.categorized_payloads.iteritems():
+        for log_type, records in self._categorized_payloads.iteritems():
             # This same substitution method is used when naming the Delivery Streams
             formatted_log_type = self.firehose_log_name(log_type)
 

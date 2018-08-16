@@ -211,10 +211,7 @@ class StreamAlert(object):
 
             # Add all parsed records to the categorized payload dict only if Firehose is enabled
             if self._firehose_client:
-                # Only send payloads with enabled log sources
-                if self._firehose_client.enabled_log_source(payload.log_source):
-                    self._firehose_client.categorized_payloads[payload.log_source].extend(
-                        payload.records)
+                self._firehose_client.add_payload_records(payload.log_source, payload.records)
 
             if not record_alerts:
                 continue
