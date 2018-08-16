@@ -12,6 +12,9 @@ resource "aws_lambda_function" "athena_partition_refresh" {
   source_code_hash = "${base64sha256(file(var.filename))}"
   publish          = true
 
+  // Maximum number of concurrent executions allowed
+  reserved_concurrent_executions = "${var.concurrency_limit}"
+
   environment {
     variables = {
       LOGGER_LEVEL   = "${var.lambda_log_level}"
@@ -94,16 +97,9 @@ resource "aws_sqs_queue_policy" "streamalert_athena_data_bucket_notifications" {
   policy    = "${data.aws_iam_policy_document.athena_data_bucket_sqs_sendmessage.json}"
 }
 
-// Lambda Permission: Allow Cloudwatch Scheduled Events to invoke Lambda
-resource "aws_lambda_permission" "allow_cloudwatch_events_invocation" {
-  statement_id  = "CloudwatchEventsInvokeAthenaRefresh"
-  action        = "lambda:InvokeFunction"
-  function_name = "${aws_lambda_function.athena_partition_refresh.function_name}"
-  principal     = "events.amazonaws.com"
-  source_arn    = "${aws_cloudwatch_event_rule.invoke_athena_refresh.arn}"
-  qualifier     = "production"
-
-  depends_on = ["aws_lambda_alias.athena_partition_refresh_production"]
+resource "aws_lambda_event_source_mapping" "streamalert_athena_sqs_event_source" {
+  event_source_arn = "${aws_sqs_queue.streamalert_athena_data_bucket_notifications.arn}"
+  function_name    = "${aws_lambda_function.athena_partition_refresh.arn}"
 }
 
 // Cloudwatch Event Rule: Invoke the Athena function refresh every minute

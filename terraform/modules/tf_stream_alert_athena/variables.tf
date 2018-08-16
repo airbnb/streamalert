@@ -74,3 +74,7 @@ variable "namespace" {
   type    = "string"
   default = "StreamAlert"
 }
+
+variable "concurrency_limit" {
+  default = 10
+}
