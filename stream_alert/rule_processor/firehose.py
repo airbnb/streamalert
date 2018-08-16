@@ -31,7 +31,7 @@ from stream_alert.shared.backoff_handlers import (
     giveup_handler
 )
 
-class StreamAlertFirehose(object):
+class FirehoseClient(object):
     """Handles preparing and sending data from the Rule Processor to Kinesis Firehose"""
     # Used to detect special characters in payload keys.
     # This is necessary for sanitization of data prior to searching in Athena.
@@ -50,30 +50,25 @@ class StreamAlertFirehose(object):
     # send to firehose. This will effectively cause retries to happen quicker
     BOTO_TIMEOUT = 5
 
-    def __init__(self, region, firehose_config, log_sources):
+    # Set of enabled log types for firehose, loaded from configs
+    _ENABLED_LOGS = dict()
+
+    def __init__(self, region, firehose_config=None, log_sources=None):
         boto_config = client.Config(
             connect_timeout=self.BOTO_TIMEOUT,
             read_timeout=self.BOTO_TIMEOUT,
             region_name=region
         )
         self._client = boto3.client('firehose', config=boto_config)
-        # Expand enabled logs into specific subtypes
-        self._enabled_logs = self._load_enabled_log_sources(firehose_config, log_sources)
-
         # Create a dictionary to hold parsed payloads by log type.
         # Firehose needs this information to send to its corresponding
         # delivery stream.
         self.categorized_payloads = defaultdict(list)
 
-    @property
-    def enabled_logs(self):
-        """Enabled Logs Property
+        self.load_enabled_log_sources(firehose_config, log_sources, force_load=True)
 
-        Returns:
-            list: casts the set of enabled logs into a list for JSON serialization"""
-        return list(self._enabled_logs)
-
-    def _segment_records_by_size(self, record_batch):
+    @classmethod
+    def _segment_records_by_size(cls, record_batch):
         """Segment record groups by size
 
         Args:
@@ -89,13 +84,13 @@ class StreamAlertFirehose(object):
         # Generally, it's very rare for a group of records to have
         # drastically different sizes in a single Lambda invocation.
         while len(json.dumps(record_batch[:len_batch / split_factor],
-                             separators=(",", ":"))) > self.MAX_BATCH_SIZE:
+                             separators=(",", ":"))) > cls.MAX_BATCH_SIZE:
             split_factor += 1
 
-        return self._segment_records_by_count(record_batch, len_batch / split_factor)
+        return cls._segment_records_by_count(record_batch, len_batch / split_factor)
 
-    @staticmethod
-    def _segment_records_by_count(record_list, max_count):
+    @classmethod
+    def _segment_records_by_count(cls, record_list, max_count):
         """Segment records by length
 
         Args:
@@ -254,7 +249,8 @@ class StreamAlertFirehose(object):
                         stream_name,
                         resp.get('ResponseMetadata', {}).get('RequestId', ''))
 
-    def firehose_log_name(self, log_name):
+    @classmethod
+    def firehose_log_name(cls, log_name):
         """Convert conventional log names into Firehose delievery stream names
 
         Args:
@@ -263,9 +259,10 @@ class StreamAlertFirehose(object):
         Returns
             str: Converted name which corresponds to a Firehose Delievery Stream
         """
-        return re.sub(self.SPECIAL_CHAR_REGEX, '_', log_name)
+        return re.sub(cls.SPECIAL_CHAR_REGEX, '_', log_name)
 
-    def enabled_log_source(self, log_source_name):
+    @classmethod
+    def enabled_log_source(cls, log_source_name):
         """Check that the incoming record is an enabled log source for Firehose
 
         Args:
@@ -274,9 +271,14 @@ class StreamAlertFirehose(object):
         Returns:
             bool: Whether or not the log source is enabled to send to Firehose
         """
-        return self.firehose_log_name(log_source_name) in self.enabled_logs
+        if not cls._ENABLED_LOGS:
+            LOGGER.error('Enabled logs not loaded')
+            return False
 
-    def _load_enabled_log_sources(self, firehose_config, log_sources):
+        return cls.firehose_log_name(log_source_name) in cls._ENABLED_LOGS
+
+    @classmethod
+    def load_enabled_log_sources(cls, firehose_config, log_sources, force_load=False):
         """Load and expand all declared and enabled Firehose log sources
 
         Args:
@@ -284,31 +286,39 @@ class StreamAlertFirehose(object):
             log_sources (dict): Loaded logs.json file
 
         Returns:
-            set: Disabled logs
+            set: Enabled logs
         """
-        enabled_logs = set()
-        for enabled_log in firehose_config.get('enabled_logs', []):
+        # Do not reload the logs if they are already cached
+        if cls._ENABLED_LOGS and not force_load:
+            return cls._ENABLED_LOGS
+
+        # Nothing to load if no configs passed
+        if not (firehose_config and log_sources):
+            return cls._ENABLED_LOGS
+
+        # Expand enabled logs into specific subtypes
+        for enabled_log in firehose_config.get('enabled_logs', {}):
             enabled_log_parts = enabled_log.split(':')
 
             # Expand to all subtypes
             if len(enabled_log_parts) == 1:
-                expanded_logs = [self.firehose_log_name(log_name) for log_name
-                                 in log_sources
-                                 if log_name.split(':')[0] == enabled_log_parts[0]]
-                # If the list comprehension is Falsey, it means no matching logs
-                # were found while doing the expansion.
+                expanded_logs = {cls.firehose_log_name(log_name): enabled_log
+                                 for log_name in log_sources
+                                 if log_name.split(':')[0] == enabled_log_parts[0]}
+
                 if not expanded_logs:
                     LOGGER.error('Enabled Firehose log %s not declared in logs.json', enabled_log)
 
-                enabled_logs.update(expanded_logs)
+                cls._ENABLED_LOGS.update(expanded_logs)
 
             elif len(enabled_log_parts) == 2:
                 if enabled_log not in log_sources:
                     LOGGER.error('Enabled Firehose log %s not declared in logs.json', enabled_log)
+                    continue
 
-                enabled_logs.add(self.firehose_log_name('_'.join(enabled_log_parts)))
+                cls._ENABLED_LOGS[cls.firehose_log_name('_'.join(enabled_log_parts))] = enabled_log
 
-        return enabled_logs
+        return cls._ENABLED_LOGS
 
     def send(self):
         """Send all classified records to a respective Firehose Delivery Stream"""
