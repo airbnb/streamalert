@@ -14,6 +14,13 @@
       "read_capacity": 5,
       "write_capacity": 5
     },
+    "firehose": {
+      "buffer_interval": 900,
+      "buffer_size": 128,
+      "compression_format": "GZIP",
+      "enabled": true,
+      "enabled_logs": {}
+    },
     "lookup_tables": {
       "buckets": {
         "bucket_name": [

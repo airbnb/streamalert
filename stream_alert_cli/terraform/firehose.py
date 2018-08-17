@@ -13,9 +13,10 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from stream_alert.rule_processor.firehose import StreamAlertFirehose
+from stream_alert.rule_processor.firehose import FirehoseClient
+from stream_alert_cli.terraform.common import monitoring_topic_arn
 
-def generate_firehose(config, main_dict, logging_bucket):
+def generate_firehose(logging_bucket, main_dict, config):
     """Generate the Firehose Terraform modules
 
     Args:
@@ -25,10 +26,6 @@ def generate_firehose(config, main_dict, logging_bucket):
     """
     if not config['global']['infrastructure'].get('firehose', {}).get('enabled'):
         return
-
-    sa_firehose = StreamAlertFirehose(config['global']['account']['region'],
-                                      config['global']['infrastructure']['firehose'],
-                                      config['logs'])
 
     firehose_config = config['global']['infrastructure']['firehose']
     firehose_s3_bucket_suffix = firehose_config.get('s3_bucket_suffix', 'streamalert.data')
@@ -46,18 +43,56 @@ def generate_firehose(config, main_dict, logging_bucket):
         'kms_key_id': '${aws_kms_key.server_side_encryption.key_id}'
     }
 
+    enabled_logs = FirehoseClient.load_enabled_log_sources(
+        config['global']['infrastructure']['firehose'],
+        config['logs'],
+        force_load=True
+    )
+
+    log_alarms_config = config['global']['infrastructure']['firehose'].get('enabled_logs', {})
+
     # Add the Delivery Streams individually
-    for enabled_log in sa_firehose.enabled_logs:
-        main_dict['module']['kinesis_firehose_{}'.format(enabled_log)] = {
+    for log_stream_name, log_type_name in enabled_logs.iteritems():
+        module_dict = {
             'source': 'modules/tf_stream_alert_kinesis_firehose_delivery_stream',
             'buffer_size': config['global']['infrastructure']
                            ['firehose'].get('buffer_size', 64),
             'buffer_interval': config['global']['infrastructure']
-                               ['firehose'].get('buffer_interval', 300),\
+                               ['firehose'].get('buffer_interval', 300),
             'compression_format': config['global']['infrastructure']
                                   ['firehose'].get('compression_format', 'GZIP'),
-            'log_name': enabled_log,
+            'log_name': log_stream_name,
             'role_arn': '${module.kinesis_firehose_setup.firehose_role_arn}',
             's3_bucket_name': firehose_s3_bucket_name,
             'kms_key_arn': '${aws_kms_key.server_side_encryption.arn}'
         }
+
+        # Try to get alarm info for this specific log type
+        alarm_info = log_alarms_config.get(log_type_name)
+        if not alarm_info and ':' in log_type_name:
+            # Fallback on looking for alarm info for the parent log type
+            alarm_info = log_alarms_config.get(log_type_name.split(':')[0])
+
+        if alarm_info and alarm_info.get('enable_alarm'):
+            module_dict['enable_alarm'] = True
+
+            # There are defaults of these defined in the terraform module, so do
+            # not set the variable values unless explicitly specified
+            if alarm_info.get('log_min_count_threshold'):
+                module_dict['alarm_threshold'] = alarm_info.get('log_min_count_threshold')
+
+            if alarm_info.get('evaluation_periods'):
+                module_dict['evaluation_periods'] = alarm_info.get('evaluation_periods')
+
+            if alarm_info.get('period_seconds'):
+                module_dict['period_seconds'] = alarm_info.get('period_seconds')
+
+            if alarm_info.get('alarm_actions'):
+                if not isinstance(alarm_info.get('alarm_actions'), list):
+                    module_dict['alarm_actions'] = [alarm_info.get('alarm_actions')]
+                else:
+                    module_dict['alarm_actions'] = alarm_info.get('alarm_actions')
+            else:
+                module_dict['alarm_actions'] = [monitoring_topic_arn(config)]
+
+        main_dict['module']['kinesis_firehose_{}'.format(log_stream_name)] = module_dict

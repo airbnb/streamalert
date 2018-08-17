@@ -233,9 +233,11 @@ class TestTerraformGenerate(object):
             's3_bucket_suffix': 'my-data',
             'buffer_size': 10,
             'buffer_interval': 650,
-            'enabled_logs': [
-                'cloudwatch'
-            ]
+            'enabled_logs': {
+                'cloudwatch': {
+                    'enable_alarm': False
+                }
+            }
         }
         tf_main = generate.generate_main(config=self.config, init=False)
 

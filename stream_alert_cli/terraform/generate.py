@@ -174,7 +174,7 @@ def generate_main(config, init=False):
         )
 
     # Setup Firehose Delivery Streams
-    generate_firehose(config, main_dict, logging_bucket)
+    generate_firehose(logging_bucket, main_dict, config)
 
     # Configure global resources like Firehose alert delivery and alerts table
     global_module = {

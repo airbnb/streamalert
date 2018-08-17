@@ -32,7 +32,7 @@ from moto import (mock_cloudwatch, mock_dynamodb2, mock_kinesis, mock_kms, mock_
                   mock_sns, mock_sqs)
 
 from stream_alert_cli.logger import LOGGER_CLI
-from stream_alert.rule_processor.firehose import StreamAlertFirehose
+from stream_alert.rule_processor.firehose import FirehoseClient
 
 
 SCHEMA_TYPE_LOOKUP = {
@@ -496,13 +496,12 @@ def setup_mock_firehose_delivery_streams(config):
     if not firehose_config:
         return
 
-    region = config['global']['account']['region']
-    sa_firehose = StreamAlertFirehose(region, firehose_config, config['logs'])
+    enabled_logs = FirehoseClient.load_enabled_log_sources(firehose_config, config['logs'])
 
-    for log_type in sa_firehose.enabled_logs:
+    for log_type in enabled_logs:
         stream_name = 'streamalert_data_{}'.format(log_type)
         prefix = '{}/'.format(log_type)
-        create_delivery_stream(region, stream_name, prefix)
+        create_delivery_stream(config['global']['account']['region'], stream_name, prefix)
 
 
 def setup_mock_dynamodb_rules_table(config):
