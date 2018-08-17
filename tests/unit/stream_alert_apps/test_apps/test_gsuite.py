@@ -160,7 +160,7 @@ class TestGSuiteReportsApp(object):
 
             assert_equal(len(self._app._gather_logs()), 10)
             assert_equal(self._app._last_timestamp, '2011-06-17T15:39:18.460000Z')
-            assert_equal(self._app._context['next_event_ids'], [-12345678901234567890])
+            assert_equal(self._app._context['last_event_ids'], [-12345678901234567890])
 
     @patch('stream_alert.apps._apps.gsuite.GSuiteReportsApp._create_service',
            Mock(return_value=True))
@@ -244,64 +244,33 @@ class TestGSuiteReportsApp(object):
                 '[%s] No logs in response from G Suite API request', self._app
             )
 
-    def test_gather_logs_duplicate_events_more_to_poll(self):
-        """GSuiteReportsApp - Gather Logs, Duplicate Event Ids"""
+    def test_gather_logs_remove_duplicate_events(self):
+        """GSuiteReportsApp - Gather Logs, Remove duplicate events"""
         with patch.object(self._app, '_activities_service') as service_mock:
-            payload_1 = {
-                'kind': 'reports#auditActivities',
-                'nextPageToken': 'the next page\'s token',
-                'items': self._get_sample_logs(10)
-            }
-            payload_2 = {
+            payload = {
                 'kind': 'reports#auditActivities',
                 'nextPageToken': None,
-                'items': self._get_sample_logs(1)
+                'items': self._get_sample_logs(10)
             }
-            service_mock.list.return_value.execute.return_value = payload_1
+            service_mock.list.return_value.execute.return_value = payload
+            self._app._last_run_event_ids = {
+                -12345678901234567890 + 9,
+                -12345678901234567890 + 8
+            }
 
-            assert_equal(len(self._app._gather_logs()), 10)
-            assert_equal(self._app._last_timestamp, '2011-06-17T15:39:18.460000Z')
-            assert_equal(self._app._more_to_poll, True)
-            assert_equal(self._app._context['next_event_ids'], [-12345678901234567890])
-
-            service_mock.list.return_value.execute.return_value = payload_2
-
-            assert_equal(len(self._app._gather_logs()), 1)
+            assert_equal(len(self._app._gather_logs()), 8)
             assert_equal(self._app._last_timestamp, '2011-06-17T15:39:18.460000Z')
             assert_equal(self._app._more_to_poll, False)
-            assert_equal(self._app._context['next_event_ids'], [-12345678901234567890])
             assert_equal(self._app._context['last_event_ids'], [-12345678901234567890])
 
-    def test_gather_logs_duplicate_events_next_poll(self):
-        """GSuiteReportsApp - Gather Logs, Success"""
-        with patch.object(self._app, '_activities_service') as service_mock:
-            payload_1 = {
-                'kind': 'reports#auditActivities',
-                'nextPageToken': None,
-                'items': self._get_sample_logs(10)
-            }
-            payload_2 = {
-                'kind': 'reports#auditActivities',
-                'nextPageToken': None,
-                'items': self._get_sample_logs(1)
-            }
-            service_mock.list.return_value.execute.return_value = payload_1
-
-            assert_equal(len(self._app._gather_logs()), 10)
-            assert_equal(self._app._last_timestamp, '2011-06-17T15:39:18.460000Z')
-            assert_equal(self._app._more_to_poll, False)
-            assert_equal(self._app._context['next_event_ids'], [-12345678901234567890])
-
-            service_mock.list.return_value.execute.return_value = payload_2
-            assert_equal(self._app._gather_logs(), False)
 
     @staticmethod
     def _get_sample_logs(count):
         """Helper function for returning sample gsuite (admin) logs"""
 
-        def _get_timestamp(start_timestamp, increment_seconds):
+        def _get_timestamp(start_timestamp, subtract_seconds):
             timestamp = datetime.strptime(start_timestamp, GSuiteReportsApp.date_formatter())
-            timestamp -= timedelta(seconds=increment_seconds)
+            timestamp -= timedelta(seconds=subtract_seconds)
             return timestamp.strftime(GSuiteReportsApp.date_formatter())
 
         return [{

@@ -278,7 +278,7 @@ class AppConfig(object):
         """Save the current state in the aws ssm paramater store
 
         Raises:
-            AppStateError: If the parameter is unabled to be saved
+            AppStateError: If the parameter is not able to be saved
         """
         try:
             param_value = json.dumps({
@@ -287,7 +287,7 @@ class AppConfig(object):
                 self._CONTEXT_KEY: self.context,
             })
         except TypeError as err:
-            raise AppStateError('Could not serialise state for name \'{}\'. Error: '
+            raise AppStateError('Could not serialize state for name \'{}\'. Error: '
                                 '{}'.format(self._state_name, err.message))
         @backoff.on_exception(backoff.expo,
                               ClientError,
