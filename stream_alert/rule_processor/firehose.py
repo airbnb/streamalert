@@ -284,9 +284,11 @@ class FirehoseClient(object):
         Args:
             firehose_config (dict): Loaded Firehose config from global.json
             log_sources (dict): Loaded logs.json file
+            force_load (bool=False): Set to True if the log sources should be reloaded
+                even if there is cached values
 
         Returns:
-            set: Enabled logs
+            dict: Enabled logs, key: sanitized table name, value: log type value
         """
         # Do not reload the logs if they are already cached
         if cls._ENABLED_LOGS and not force_load:
