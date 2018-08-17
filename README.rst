@@ -8,24 +8,32 @@ StreamAlert - Serverless, Realtime Data Analysis Framework
   :target: https://coveralls.io/github/airbnb/streamalert?branch=master
 
 .. image:: docs/images/sa-banner.png
+  :align: center
+  :alt: StreamAlert
 
-StreamAlert is a serverless, realtime data analysis framework which empowers you to ingest, analyze, and alert on data from any environment, using datasources and alerting logic you define.
+StreamAlert is a serverless, real-time data analysis framework which empowers you to ingest, analyze,
+and alert on data from any environment, using data sources and alerting logic you define. Computer
+security teams use StreamAlert to scan terabytes of log data every day for incident detection and
+response.
 
-High-level
-~~~~~~~~~~
+Features
+--------
 
+* Rules are written in Python; they can utilize any Python libraries or functions
+* Ingested logs and generated alerts can be retroactively searched for compliance and research
+* Serverless design is cheaper, easier to maintain, and scales to terabytes per day
 * Deployment is automated: simple, safe and repeatable for any AWS account
-* Easily scalable from megabytes to terabytes per day
-* Infrastructure maintenance is minimal, no devops expertise required
-* Infrastructure security is a default, no security expertise required
-* Supports data from different environments (ex: IT, PCI, Engineering)
-* Supports data from different environment types (ex: Cloud, Datacenter, Office)
-* Supports different types of data (ex: JSON, CSV, Key-Value, or Syslog)
-* Supports different use-cases like security, infrastructure, compliance and more
+* Secure by design: least-privilege execution, containerized analysis, and encrypted data storage
+* Merge similar alerts and automatically promote new rules if they are not too noisy
+* Built-in support for dozens of log types and schemas
+* Built-in collection of broadly applicable community rules
+* Fully open source and customizable: add your own log schemas, rules, and alert outputs
 
-Links
-~~~~~
+Ready? Let's `get started! <https://streamalert.readthedocs.io/getting-started.html>`_
 
-* `Announcement Post <https://medium.com/@airbnbeng/e8619e3e5043>`_
+Resources
+-----------
+
+* `Blog Post <https://medium.com/@airbnbeng/e8619e3e5043>`_
 * `User Guide <https://streamalert.readthedocs.io/>`_
-* `Slack <https://streamalert.herokuapp.com/>`_ (unofficial)
+* `Slack <https://streamalert.herokuapp.com>`_ (unofficial)
