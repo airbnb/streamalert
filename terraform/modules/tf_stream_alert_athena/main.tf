@@ -99,7 +99,7 @@ resource "aws_sqs_queue_policy" "streamalert_athena_data_bucket_notifications" {
 
 resource "aws_lambda_event_source_mapping" "streamalert_athena_sqs_event_source" {
   event_source_arn = "${aws_sqs_queue.streamalert_athena_data_bucket_notifications.arn}"
-  function_name    = "${aws_lambda_function.athena_partition_refresh.arn}"
+  function_name    = "${aws_lambda_function.athena_partition_refresh.arn}:${aws_lambda_alias.athena_partition_refresh_production.name}"
 }
 
 // S3 Bucekt Notificaiton: Configure S3 to notify Lambda

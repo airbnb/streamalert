@@ -175,7 +175,7 @@ class AthenaRefresher(object):
             )
 
         for sqs_rec in event['Records']:
-            LOGGER.debug('Processing event with message ID \'%s\' and SentTimestamp %d',
+            LOGGER.debug('Processing event with message ID \'%s\' and SentTimestamp %s',
                          sqs_rec['messageId'],
                          sqs_rec['attributes']['SentTimestamp'])
 
