@@ -14,10 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from __future__ import absolute_import  # Suppresses RuntimeWarning import error in Lambda
+import json
 
+from stream_alert.rule_processor import LOGGER
 from stream_alert.rule_processor.handler import StreamAlert
 
 
 def handler(event, context):
     """Main Lambda handler function"""
-    StreamAlert(context).run(event)
+    try:
+        StreamAlert(context).run(event)
+    except Exception:
+        LOGGER.error('Invocation event: %s', json.dumps(event))
+        raise
