@@ -333,7 +333,8 @@ class SnsPayload(StreamPayload):
             self.raw_record['EventSubscriptionArn'])
 
         # check if SNS message is an Amazon S3 Notification type
-        if 'Subject' in self.raw_record['Sns'] and self.raw_record['Sns']['Subject'] == "Amazon S3 Notification":
+        if 'Subject' in self.raw_record['Sns'] and \
+            self.raw_record['Sns']['Subject'] == "Amazon S3 Notification":
             LOGGER.debug('Amazon S3 notification detected.. parsing message')
 
             message = json.loads(self.raw_record['Sns']['Message'])['Records'][0]
