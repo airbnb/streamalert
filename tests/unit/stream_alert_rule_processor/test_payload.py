@@ -162,7 +162,9 @@ def test_pre_parse_sns_s3_notification(s3_mock, *_):
     records = ['{"record01": "value01"}', '{"record02": "value02"}']
     s3_mock.side_effect = [((0, records[0]), (1, records[1]))]
 
-    raw_record = make_sns_s3_notification_raw_record('unit_topic', 'unit_bucket_name', 'unit_key_name')
+    raw_record = make_sns_s3_notification_raw_record('unit_topic',
+                                                     'unit_bucket_name',
+                                                     'unit_key_name')
     sns_payload = load_stream_payload('sns', 'entity', raw_record)
 
     for index, record in enumerate(sns_payload.pre_parse()):
