@@ -37,7 +37,8 @@ from stream_alert.rule_processor.payload import load_stream_payload, S3ObjectSiz
 from tests.unit.stream_alert_rule_processor.test_helpers import (
     make_kinesis_raw_record,
     make_s3_raw_record,
-    make_sns_raw_record
+    make_sns_raw_record,
+    make_sns_s3_notification_raw_record
 )
 
 
@@ -151,6 +152,21 @@ def test_pre_parse_sns(log_mock):
                                 'MessageId: %s, EventSubscriptionArn: %s',
                                 'unit test message id',
                                 'arn:aws:sns:us-east-1:123456789012:unit_topic')
+
+
+@patch('logging.Logger.debug')
+@patch('stream_alert.rule_processor.payload.S3Payload._get_object')
+@patch('stream_alert.rule_processor.payload.S3Payload._read_downloaded_s3_object')
+def test_pre_parse_sns_s3_notification(s3_mock, *_):
+    """SNSPayload that is an Amazon S3 Notification - Pre Parse"""
+    records = ['{"record01": "value01"}', '{"record02": "value02"}']
+    s3_mock.side_effect = [((0, records[0]), (1, records[1]))]
+
+    raw_record = make_sns_s3_notification_raw_record('unit_topic', 'unit_bucket_name', 'unit_key_name')
+    sns_payload = load_stream_payload('sns', 'entity', raw_record)
+
+    for index, record in enumerate(sns_payload.pre_parse()):
+        assert_equal(record.pre_parsed_record, records[index])
 
 
 @patch('stream_alert.rule_processor.payload.S3Payload._get_object')
