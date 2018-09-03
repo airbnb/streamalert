@@ -23,6 +23,7 @@ import tempfile
 import subprocess
 import time
 import zlib
+import json
 
 import boto3
 
@@ -331,7 +332,18 @@ class SnsPayload(StreamPayload):
             self.raw_record['Sns']['MessageId'],
             self.raw_record['EventSubscriptionArn'])
 
-        self.pre_parsed_record = self.raw_record['Sns']['Message']
+        # check if SNS message is an Amazon S3 Notification type
+        if 'Subject' in self.raw_record['Sns'] and self.raw_record['Sns']['Subject'] == "Amazon S3 Notification":
+            LOGGER.debug('Amazon S3 notification detected.. parsing message')
+
+            message = json.loads(self.raw_record['Sns']['Message'])['Records'][0]
+            # encapsulate in s3 stream payload
+            s3_payload = load_stream_payload('s3', 'sns-passthrough', message)
+            s3_payload = s3_payload.pre_parse().next()
+
+            self.pre_parsed_record = s3_payload.pre_parsed_record
+        else:
+            self.pre_parsed_record = self.raw_record['Sns']['Message']
 
         yield self
 
