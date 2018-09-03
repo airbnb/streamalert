@@ -142,6 +142,25 @@ def make_sns_raw_record(topic_name, sns_data):
     return raw_record
 
 
+def make_sns_s3_notification_raw_record(topic_name, bucket, key, size=100):
+    """Helper for creating the sns s3 notification raw record"""
+    s3_raw_record = make_s3_raw_record(bucket, key, size)
+    s3_encapsulated_record = {
+        'Records': [s3_raw_record]
+    }
+    s3_string_record = json.dumps(s3_encapsulated_record)
+
+    raw_record = {
+        'EventSource': 'aws:kinesis',
+        'EventSubscriptionArn': 'arn:aws:sns:us-east-1:123456789012:{}'.format(topic_name),
+        'Sns': {
+            'Subject': 'Amazon S3 Notification',
+            'MessageId': 'unit test message id',
+            'Message': s3_string_record}
+    }
+    return raw_record
+
+
 def make_s3_raw_record(bucket, key, size=100):
     """Helper for creating the s3 raw record"""
     return {
