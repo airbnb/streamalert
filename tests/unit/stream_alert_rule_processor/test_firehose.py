@@ -13,25 +13,26 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-# pylint: disable=protected-access,no-self-use
 from mock import patch
 from moto import mock_kinesis
 from nose.tools import assert_equal, assert_false, assert_true
 
-from stream_alert.rule_processor.firehose import StreamAlertFirehose
+from stream_alert.rule_processor.firehose import FirehoseClient
 from stream_alert.shared.config import load_config
 
 
-@patch('stream_alert.rule_processor.firehose.StreamAlertFirehose.MAX_BACKOFF_ATTEMPTS', 1)
-class TestStreamAlertFirehose(object):
-    """Test class for StreamAlertFirehose"""
+@patch('stream_alert.rule_processor.firehose.FirehoseClient.MAX_BACKOFF_ATTEMPTS', 1)
+class TestFirehoseClient(object):
+    """Test class for FirehoseClient"""
+    # pylint: disable=protected-access,no-self-use,attribute-defined-outside-init
 
-    def __init__(self):
-        self.__sa_firehose = None
+    def setup(self):
+        """Setup before each method"""
+        self.sa_firehose = FirehoseClient(region='us-east-1')
 
     def teardown(self):
-        """Setup before each method"""
-        self.__sa_firehose = None
+        """Teardown after each method"""
+        FirehoseClient._ENABLED_LOGS.clear()
 
     @staticmethod
     def _sample_categorized_payloads():
@@ -57,7 +58,7 @@ class TestStreamAlertFirehose(object):
     def _mock_delivery_streams(self, delivery_stream_names):
         """Mock Kinesis Delivery Streams for tests"""
         for delivery_stream in delivery_stream_names:
-            self.__sa_firehose._client.create_delivery_stream(
+            self.sa_firehose._client.create_delivery_stream(
                 DeliveryStreamName=delivery_stream,
                 S3DestinationConfiguration={
                     'RoleARN': 'arn:aws:iam::123456789012:role/firehose_delivery_role',
@@ -73,19 +74,16 @@ class TestStreamAlertFirehose(object):
     @patch('stream_alert.rule_processor.firehose.LOGGER')
     @mock_kinesis
     def test_record_delivery_failed_put_count(self, mock_logging):
-        """StreamAlertFirehose - Record Delivery - Failed Put Count"""
-        self.__sa_firehose = StreamAlertFirehose(
-            region='us-east-1', firehose_config={}, log_sources={})
-
+        """FirehoseClient - Record Delivery - Failed Put Count"""
         # Add sample categorized payloads
         for payload_type, logs in self._sample_categorized_payloads().iteritems():
-            self.__sa_firehose.categorized_payloads[payload_type].extend(logs)
+            self.sa_firehose._categorized_payloads[payload_type].extend(logs)
 
         # Setup mocked Delivery Streams
         self._mock_delivery_streams(
             ['streamalert_data_test_log_type_json_nested', 'streamalert_data_unit_test_simple_log'])
 
-        with patch.object(self.__sa_firehose._client, 'put_record_batch') as firehose_mock:
+        with patch.object(self.sa_firehose._client, 'put_record_batch') as firehose_mock:
             firehose_mock.side_effect = [{
                 'FailedPutCount':
                 3,
@@ -129,7 +127,7 @@ class TestStreamAlertFirehose(object):
                     "ErrorMessage": "None"
                 }]
             }]
-            self.__sa_firehose.send()
+            self.sa_firehose.send()
 
             firehose_mock.assert_called()
             assert_true(mock_logging.info.called)
@@ -137,22 +135,19 @@ class TestStreamAlertFirehose(object):
     @patch('stream_alert.rule_processor.firehose.LOGGER')
     @mock_kinesis
     def test_record_delivery(self, mock_logging):
-        """StreamAlertFirehose - Record Delivery"""
-        self.__sa_firehose = StreamAlertFirehose(
-            region='us-east-1', firehose_config={}, log_sources={})
-
+        """FirehoseClient - Record Delivery"""
         # Add sample categorized payloads
         for payload_type, logs in self._sample_categorized_payloads().iteritems():
-            self.__sa_firehose.categorized_payloads[payload_type].extend(logs)
+            self.sa_firehose._categorized_payloads[payload_type].extend(logs)
 
         # Setup mocked Delivery Streams
         self._mock_delivery_streams(
             ['streamalert_data_test_log_type_json_nested', 'streamalert_data_unit_test_simple_log'])
 
         # Send the records
-        with patch.object(self.__sa_firehose._client, 'put_record_batch') as firehose_mock:
+        with patch.object(self.sa_firehose._client, 'put_record_batch') as firehose_mock:
             firehose_mock.return_value = {'FailedPutCount': 0}
-            self.__sa_firehose.send()
+            self.sa_firehose.send()
 
             firehose_mock.assert_called()
             assert_true(mock_logging.info.called)
@@ -160,20 +155,17 @@ class TestStreamAlertFirehose(object):
     @patch('stream_alert.rule_processor.firehose.LOGGER')
     @mock_kinesis
     def test_record_delivery_failure(self, mock_logging):
-        """StreamAlertFirehose - Record Delivery - Failed PutRecord"""
-        self.__sa_firehose = StreamAlertFirehose(
-            region='us-east-1', firehose_config={}, log_sources={})
-
+        """FirehoseClient - Record Delivery - Failed PutRecord"""
         # Add sample categorized payloads
         for payload_type, logs in self._sample_categorized_payloads().iteritems():
-            self.__sa_firehose.categorized_payloads[payload_type].extend(logs)
+            self.sa_firehose._categorized_payloads[payload_type].extend(logs)
 
         # Setup mocked Delivery Streams
         self._mock_delivery_streams(
             ['streamalert_data_test_log_type_json_nested', 'streamalert_data_unit_test_simple_log'])
 
         # Send the records
-        with patch.object(self.__sa_firehose._client, 'put_record_batch') as firehose_mock:
+        with patch.object(self.sa_firehose._client, 'put_record_batch') as firehose_mock:
             firehose_mock.return_value = {
                 'FailedPutCount':
                 3,
@@ -185,7 +177,7 @@ class TestStreamAlertFirehose(object):
                     },
                 ]
             }
-            self.__sa_firehose.send()
+            self.sa_firehose.send()
 
             firehose_mock.assert_called()
             assert_true(mock_logging.error.called)
@@ -193,9 +185,7 @@ class TestStreamAlertFirehose(object):
     @patch('stream_alert.rule_processor.firehose.LOGGER')
     @mock_kinesis
     def test_record_delivery_client_error(self, mock_logging):
-        """StreamAlertFirehose - Record Delivery - Client Error"""
-        sa_firehose = StreamAlertFirehose(region='us-east-1', firehose_config={}, log_sources={})
-
+        """FirehoseClient - Record Delivery - Client Error"""
         test_events = [
             # unit_test_simple_log
             {
@@ -204,7 +194,7 @@ class TestStreamAlertFirehose(object):
             } for _ in range(10)
         ]
 
-        sa_firehose._firehose_request_helper('invalid_stream', test_events)
+        self.sa_firehose._firehose_request_helper('invalid_stream', test_events)
 
         missing_stream_message = 'Client Error ... An error occurred ' \
             '(ResourceNotFoundException) when calling the PutRecordBatch ' \
@@ -213,35 +203,36 @@ class TestStreamAlertFirehose(object):
 
     @mock_kinesis
     def test_load_enabled_sources(self):
-        """StreamAlertFirehose - Load Enabled Sources"""
+        """FirehoseClient - Load Enabled Sources"""
         config = load_config('tests/unit/conf')
         firehose_config = {
             'enabled_logs': ['json:regex_key_with_envelope', 'test_cloudtrail', 'cloudwatch']
         }  # expands to 2 logs
 
-        sa_firehose = StreamAlertFirehose(
-            region='us-east-1', firehose_config=firehose_config, log_sources=config['logs'])
+        enabled_logs = FirehoseClient.load_enabled_log_sources(firehose_config, config['logs'])
 
-        assert_equal(len(sa_firehose._enabled_logs), 4)
+        assert_equal(len(enabled_logs), 4)
         # Make sure the subtitution works properly
-        assert_true(all([':' not in log for log in sa_firehose.enabled_logs]))
-        assert_false(sa_firehose.enabled_log_source('test_inspec'))
+        assert_true(all([':' not in log for log in enabled_logs]))
+        assert_false(FirehoseClient.enabled_log_source('test_inspec'))
 
-    @patch('stream_alert.rule_processor.firehose.LOGGER')
+    @patch('stream_alert.rule_processor.firehose.LOGGER.error')
     @mock_kinesis
     def test_load_enabled_sources_invalid_log(self, mock_logging):
-        """StreamAlertFirehose - Load Enabled Sources - Invalid Log"""
+        """FirehoseClient - Load Enabled Sources - Invalid Log"""
         config = load_config('tests/unit/conf')
         firehose_config = {'enabled_logs': ['log-that-doesnt-exist']}
 
-        sa_firehose = StreamAlertFirehose(
+        sa_firehose = FirehoseClient(
             region='us-east-1', firehose_config=firehose_config, log_sources=config['logs'])
 
-        assert_equal(len(sa_firehose._enabled_logs), 0)
-        assert_true(mock_logging.error.called)
+        assert_equal(len(sa_firehose._ENABLED_LOGS), 0)
+        mock_logging.assert_called_with(
+            'Enabled Firehose log %s not declared in logs.json', 'log-that-doesnt-exist'
+        )
 
     def test_strip_successful_records(self):
-        """StreamAlertFirehose - Strip Successful Records"""
+        """FirehoseClient - Strip Successful Records"""
         batch = [{'test': 'success'}, {'test': 'data'}, {'other': 'failure'}, {'other': 'info'}]
         response = {
             'FailedPutCount': 1,
@@ -254,14 +245,12 @@ class TestStreamAlertFirehose(object):
         }
 
         expected_batch = [{'other': 'failure'}]
-        StreamAlertFirehose._strip_successful_records(batch, response)
+        FirehoseClient._strip_successful_records(batch, response)
 
         assert_equal(batch, expected_batch)
 
     def test_segment_records_by_size(self):
-        """StreamAlertFirehose - Segment Large Records"""
-        sa_firehose = StreamAlertFirehose(region='us-east-1', firehose_config={}, log_sources={})
-
+        """FirehoseClient - Segment Large Records"""
         record_batch = [
             # unit_test_simple_log
             {
@@ -272,7 +261,7 @@ class TestStreamAlertFirehose(object):
 
         sized_batches = []
 
-        for sized_batch in sa_firehose._segment_records_by_size(record_batch):
+        for sized_batch in FirehoseClient._segment_records_by_size(record_batch):
             sized_batches.append(sized_batch)
 
         assert_true(len(str(sized_batches[0])) < 4000000)
@@ -280,7 +269,7 @@ class TestStreamAlertFirehose(object):
         assert_true(isinstance(sized_batches[3][0], dict))
 
     def test_sanitize_keys(self):
-        """StreamAlertFirehose - Sanitize Keys"""
+        """FirehoseClient - Sanitize Keys"""
         # test_log_type_json_nested
         test_event = {
             'date': 'January 01, 3005',
@@ -308,12 +297,12 @@ class TestStreamAlertFirehose(object):
             }
         }
 
-        sanitized_event = StreamAlertFirehose.sanitize_keys(test_event)
+        sanitized_event = FirehoseClient.sanitize_keys(test_event)
         assert_equal(sanitized_event, expected_sanitized_event)
 
     @patch('stream_alert.rule_processor.firehose.LOGGER')
     def test_limit_record_size(self, mock_logging):
-        """StreamAlertFirehose - Record Size Check"""
+        """FirehoseClient - Record Size Check"""
         test_events = [
             # unit_test_simple_log
             {
@@ -343,7 +332,7 @@ class TestStreamAlertFirehose(object):
             }
         ]
 
-        StreamAlertFirehose._limit_record_size(test_events)
+        FirehoseClient._limit_record_size(test_events)
 
         assert_true(len(test_events), 3)
         assert_true(mock_logging.error.called)

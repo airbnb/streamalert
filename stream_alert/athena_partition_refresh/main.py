@@ -18,8 +18,7 @@ from collections import defaultdict
 import json
 import posixpath
 import re
-
-from stream_alert.athena_partition_refresh.clients import StreamAlertSQSClient
+import urllib
 
 from stream_alert.athena_partition_refresh import LOGGER
 from stream_alert.shared.athena import AthenaClient
@@ -70,20 +69,30 @@ class AthenaRefresher(object):
             self.ATHENA_S3_PREFIX
         )
 
-        # Initialize the SQS client and recieve messages
-        self._sqs_client = StreamAlertSQSClient(config)
+        self._s3_buckets_and_keys = defaultdict(set)
 
-    def _get_partitions_from_keys(self, s3_buckets_and_keys):
+    def _get_partitions_from_keys(self):
+        """Get the partitions that need to be added for the Athena tables
+
+        Returns:
+            (dict): representation of tables, partitions and locations to be added
+                Example:
+                    {
+                        'alerts': {
+                            '(dt = \'2018-08-01-01\')': 's3://streamalert.alerts/2018/08/01/01'
+                        }
+                    }
+        """
         partitions = defaultdict(dict)
 
         LOGGER.info('Processing new Hive partitions...')
-        for bucket, keys in s3_buckets_and_keys.iteritems():
+        for bucket, keys in self._s3_buckets_and_keys.iteritems():
             athena_table = self._athena_buckets.get(bucket)
             if not athena_table:
                 # TODO(jacknagz): Add this as a metric
-                LOGGER.error('%s not found in \'buckets\' config. Please add this '
+                LOGGER.error('\'%s\' not found in \'buckets\' config. Please add this '
                              'bucket to enable additions of Hive partitions.',
-                             athena_table)
+                             bucket)
                 continue
 
             # Iterate over each key
@@ -122,16 +131,13 @@ class AthenaRefresher(object):
 
         return partitions
 
-    def _add_partition(self, s3_buckets_and_keys):
-        """Execute a Hive Add Partition command on a given Athena table
-
-        Args:
-            s3_buckets_and_keys (dict): Buckets and unique keys to add partitions
+    def _add_partitions(self):
+        """Execute a Hive Add Partition command for the given Athena tables and partitions
 
         Returns:
             (bool): If the repair was successful for not
         """
-        partitions = self._get_partitions_from_keys(s3_buckets_and_keys)
+        partitions = self._get_partitions_from_keys()
         if not partitions:
             LOGGER.error('No partitons to add')
             return False
@@ -152,44 +158,55 @@ class AthenaRefresher(object):
                 )
 
             LOGGER.info('Successfully added the following partitions:\n%s',
-                        json.dumps({athena_table: partitions[athena_table]}, indent=4))
+                        json.dumps({athena_table: partitions[athena_table]}))
         return True
 
-    def run(self):
-        """Poll the SQS queue for messages and create partitions for new data"""
+    def run(self, event):
+        """Take the messages from the SQS queue and create partitions for new data in S3
+
+        Args:
+            event (dict): Lambda input event containing SQS messages. Each SQS message
+                should contain one (or maybe more) S3 bucket notification message.
+        """
         # Check that the database being used exists before running queries
         if not self._athena_client.check_database_exists():
             raise AthenaRefreshError(
                 'The \'{}\' database does not exist'.format(self._athena_client.database)
             )
 
-        # Get the first batch of messages from SQS.  If there are no
-        # messages, this will exit early.
-        self._sqs_client.get_messages(max_tries=2)
+        for sqs_rec in event['Records']:
+            LOGGER.debug('Processing event with message ID \'%s\' and SentTimestamp %s',
+                         sqs_rec['messageId'],
+                         sqs_rec['attributes']['SentTimestamp'])
 
-        if not self._sqs_client.received_messages:
-            LOGGER.info('No SQS messages recieved, exiting')
-            return
+            body = json.loads(sqs_rec['body'])
+            if body.get('Event') == 's3:TestEvent':
+                LOGGER.debug('Skipping S3 bucket notification test event')
+                continue
 
-        # If the max amount of messages was initially returned,
-        # then get the next batch of messages.  The max is determined based
-        # on (number of tries) * (number of possible max messages returned)
-        if len(self._sqs_client.received_messages) == 20:
-            self._sqs_client.get_messages(max_tries=8)
+            for s3_rec in body['Records']:
+                if 's3' not in s3_rec:
+                    LOGGER.info('Skipping non-s3 bucket notification message: %s', s3_rec)
+                    continue
 
-        s3_buckets_and_keys = self._sqs_client.unique_s3_buckets_and_keys()
-        if not s3_buckets_and_keys:
-            LOGGER.error('No new Athena partitions to add, exiting')
-            return
+                bucket_name = s3_rec['s3']['bucket']['name']
 
-        if not self._add_partition(s3_buckets_and_keys):
-            LOGGER.error('Failed to add hive partition(s)')
-            return
+                # Account for special characters in the S3 object key
+                # Example: Usage of '=' in the key name
+                object_key = urllib.unquote_plus(s3_rec['s3']['object']['key']).decode('utf8')
 
-        self._sqs_client.delete_messages()
-        LOGGER.info('Deleted %d messages from SQS', self._sqs_client.deleted_message_count)
+                LOGGER.debug('Received notification for object \'%s\' in bucket \'%s\'',
+                             object_key,
+                             bucket_name)
+
+                self._s3_buckets_and_keys[bucket_name].add(object_key)
+
+        if not self._add_partitions():
+            raise AthenaRefreshError(
+                'Failed to add partitions: {}'.format(dict(self._s3_buckets_and_keys))
+            )
 
 
-def handler(*_):
+def handler(event, _):
     """Athena Partition Refresher Handler Function"""
-    AthenaRefresher().run()
+    AthenaRefresher().run(event)

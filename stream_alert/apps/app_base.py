@@ -379,7 +379,8 @@ class AppIntegration(object):
         try:
             # Add a 50% buffer to the time it took to account for some unforeseen delay and to give
             # this function enough time to spawn a new invocation if there are more logs to poll
-            while (self._gather() * self._POLL_BUFFER_MULTIPLIER) < self._remaining_seconds:
+            while (((self._gather() * self._POLL_BUFFER_MULTIPLIER) + self._sleep_seconds()) <
+                   self._remaining_seconds):
                 LOGGER.debug('[%s] More logs to poll: %s', self, self._more_to_poll)
                 self._config.report_remaining_seconds()
                 if not self._more_to_poll:

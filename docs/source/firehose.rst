@@ -94,11 +94,18 @@ The following Firehose configuration settings are defined in ``global.json``:
     "infrastructure": {
       "firehose": {
         "enabled": true,
-        "enabled_logs": [
-          "osquery",
-          "cloudwatch",
-          "ghe"
-        ],
+        "enabled_logs": {
+          "osquery": {
+            "enable_alarm": true
+          },
+          "cloudwatch": {},
+          "ghe": {
+            "enable_alarm": true,
+            "evaluation_periods": 10,
+            "period_seconds": 3600,
+            "log_min_count_threshold": 100000
+          }
+        },
         "s3_bucket_suffix": "streamalert.data",
         "buffer_size": 64,
         "buffer_interval": 300,
@@ -120,6 +127,27 @@ Key                      Required  Default               Description
 ``buffer_interval``      ``No``    ``300 (seconds)``     The frequency of data delivery to Amazon S3
 ``compression_format``   ``No``    ``GZIP``              The compression algorithm to use on data stored in S3
 ======================   ========  ====================  ===========
+
+Throughput Alarms
+-----------------
+
+Additionlly, each Firehose that is created can be configured with an alarm that fires when
+incoming logs drops below a specified threshold. This is disabled by default, and enabled by
+setting ``enable_alarm`` to ``true`` within the configuration for the log ype. See the config
+example above for how this should be performed.
+
+Alarms Options
+~~~~~~~~~~~~~~
+
+============================  =======================================  ===========
+Key                           Default                                  Description
+----------------------------  ---------------------------------------  -----------
+``enable_alarm``              ``false``                                If set to ``true``, a CloudWatch Metric Alarm will be created for this log type
+``evaluation_periods``        ``1``                                    Consecutive periods the records count threshold must be breached before triggering an alarm
+``period_seconds``            ``86400``                                Period over which to count the IncomingRecords (default: 86400 seconds [1 day])
+``log_min_count_threshold``   ``1000``                                 Alarm if IncomingRecords count drops below this value in the specified period(s)
+``alarm_actions``             ``stream_alert_monitoring SNS topic``    Optional list of CloudWatch alarm actions (e.g. SNS topic ARNs)
+============================  =======================================  ===========
 
 Deploying
 ---------

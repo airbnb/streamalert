@@ -324,9 +324,14 @@ class JSONParser(ParserBase):
             for record in extracted_records:
                 try:
                     record = json.loads(record)
-                except ValueError:
+                except (ValueError, TypeError):
                     LOGGER.debug('Embedded json is invalid')
                     continue
+
+                if not isinstance(record, dict):
+                    LOGGER.warning('Record is not a dict: %s', record)
+                    continue
+
                 json_records.append(record)
             return json_records
 
@@ -368,7 +373,7 @@ class JSONParser(ParserBase):
         if isinstance(data, (unicode, str)):
             try:
                 loaded_data = json.loads(data)
-            except ValueError as err:
+            except (ValueError, TypeError) as err:
                 LOGGER.debug('JSON parse failed: %s', str(err))
                 LOGGER.debug('JSON parse could not load data: %s', str(data))
                 return False

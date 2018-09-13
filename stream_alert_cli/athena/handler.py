@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from stream_alert.athena_partition_refresh.main import AthenaRefresher
-from stream_alert.rule_processor.firehose import StreamAlertFirehose
+from stream_alert.rule_processor.firehose import FirehoseClient
 from stream_alert.shared.alert import Alert
 from stream_alert.shared.athena import AthenaClient
 from stream_alert_cli.athena import helpers
@@ -73,13 +73,9 @@ def rebuild_partitions(table, bucket, config):
             Types of 'data' and 'alert' are accepted, but only 'data' is implemented
         config (CLIConfig): Loaded StreamAlert CLI
     """
+    sanitized_table_name = FirehoseClient.firehose_log_name(table)
+
     athena_client = get_athena_client(config)
-
-    sa_firehose = StreamAlertFirehose(config['global']['account']['region'],
-                                      config['global']['infrastructure']['firehose'],
-                                      config['logs'])
-
-    sanitized_table_name = sa_firehose.firehose_log_name(table)
 
     # Get the current set of partitions
     partitions = athena_client.get_table_partitions(sanitized_table_name)
@@ -182,20 +178,21 @@ def create_table(table, bucket, config, schema_override=None):
         schema_override (set): An optional set of key=value pairs to be used for
             overriding the configured column_name=value_type.
     """
-    athena_client = get_athena_client(config)
-
-    sa_firehose = StreamAlertFirehose(config['global']['account']['region'],
-                                      config['global']['infrastructure']['firehose'],
-                                      config['logs'])
+    enabled_logs = FirehoseClient.load_enabled_log_sources(
+        config['global']['infrastructure']['firehose'],
+        config['logs']
+    )
 
     # Convert special characters in schema name to underscores
-    sanitized_table_name = sa_firehose.firehose_log_name(table)
+    sanitized_table_name = FirehoseClient.firehose_log_name(table)
 
     # Check that the log type is enabled via Firehose
-    if sanitized_table_name != 'alerts' and sanitized_table_name not in sa_firehose.enabled_logs:
+    if sanitized_table_name != 'alerts' and sanitized_table_name not in enabled_logs:
         LOGGER_CLI.error('Table name %s missing from configuration or '
                          'is not enabled.', sanitized_table_name)
         return
+
+    athena_client = get_athena_client(config)
 
     # Check if the table exists
     if athena_client.check_table_exists(sanitized_table_name):
@@ -217,7 +214,7 @@ def create_table(table, bucket, config, schema_override=None):
         log_info = config['logs'][table.replace('_', ':', 1)]
 
         schema = dict(log_info['schema'])
-        sanitized_schema = StreamAlertFirehose.sanitize_keys(schema)
+        sanitized_schema = FirehoseClient.sanitize_keys(schema)
 
         athena_schema = helpers.logs_schema_to_athena_schema(sanitized_schema)
 
@@ -226,7 +223,7 @@ def create_table(table, bucket, config, schema_override=None):
         if configuration_options:
             envelope_keys = configuration_options.get('envelope_keys')
             if envelope_keys:
-                sanitized_envelope_key_schema = StreamAlertFirehose.sanitize_keys(envelope_keys)
+                sanitized_envelope_key_schema = FirehoseClient.sanitize_keys(envelope_keys)
                 # Note: this key is wrapped in backticks to be Hive compliant
                 athena_schema['`streamalert:envelope_keys`'] = helpers.logs_schema_to_athena_schema(
                     sanitized_envelope_key_schema)

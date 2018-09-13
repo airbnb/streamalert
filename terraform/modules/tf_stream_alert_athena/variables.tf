@@ -56,11 +56,6 @@ variable "queue_name" {
   type = "string"
 }
 
-variable "schedule_expression" {
-  type    = "string"
-  default = "rate(10 minutes)"
-}
-
 variable "enable_metrics" {
   default = false
 }
@@ -73,4 +68,8 @@ variable "athena_metric_filters" {
 variable "namespace" {
   type    = "string"
   default = "StreamAlert"
+}
+
+variable "concurrency_limit" {
+  default = 10
 }
