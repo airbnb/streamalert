@@ -427,6 +427,29 @@
       }
     }
   },
+  "carbonblack:feed.ingress.hit.host": {
+    "schema": {
+      "cb_server": "string",
+      "cb_version": "string",
+      "computer_name": "string",
+      "feed_id": "integer",
+      "feed_name": "string",
+      "from_feed_search": "boolean",
+      "group": "string",
+      "hostname": "string",
+      "ioc_attr": {},
+      "ioc_type": "string",
+      "ioc_value": "string",
+      "os_type": "string",
+      "report_id": "string",
+      "report_score": "integer",
+      "sensor_id": "integer",
+      "server_name": "string",
+      "timestamp": "float",
+      "type": "string"
+    },
+    "parser": "json"
+  },
   "carbonblack:feed.query.hit.binary": {
     "schema": {
       "cb_version": "integer",
@@ -465,6 +488,8 @@
     "parser": "json",
     "configuration": {
       "envelope_keys": {
+        "cb_server": "string",
+        "computer_name": "string",
         "feed_id": "integer",
         "feed_name": "string",
         "group": "string",
@@ -481,7 +506,10 @@
         "timestamp": "float",
         "type": "string"
       },
-      "json_path": "docs[*]"
+      "json_path": "docs[*]",
+      "optional_top_level_keys": [
+        "event_partition_id"
+      ]
     }
   },
   "carbonblack:feed.query.hit.process": {
@@ -535,11 +563,13 @@
       "parent_segment_id": "integer",
       "parent_unique_id": "string",
       "path": "string",
+      "process_guid": "string",
       "process_md5": "string",
       "process_name": "string",
       "process_pid": "integer",
       "processblock_count": "integer",
       "regmod_count": "integer",
+      "segment_id": "string",
       "start": "string",
       "unique_id": "string",
       "username": "string"
@@ -598,7 +628,9 @@
         "alliance_updated_srstrust",
         "alliance_updated_virustotal",
         "alliance_updated_virustotalconnector",
-        "interface_ip"
+        "interface_ip",
+        "process_guid",
+        "segment_id"
       ]
     }
   },
@@ -682,6 +714,163 @@
     },
     "parser": "json"
   },
+  "carbonblack:ingress.event.childproc": {
+    "schema": {
+      "cb_server": "string",
+      "child_command_line": "string",
+      "child_pid": "integer",
+      "child_process_guid": "string",
+      "child_username": "string",
+      "child_suppressed": "boolean",
+      "childproc_type": "string",
+      "computer_name": "string",
+      "created": "boolean",
+      "event_type": "string",
+      "md5": "string",
+      "parent_guid": "string",
+      "path": "string",
+      "pid": "integer",
+      "process_guid": "string",
+      "sensor_id": "integer",
+      "sha256": "string",
+      "tamper": "boolean",
+      "tamper_sent": "boolean",
+      "timestamp": "float",
+      "type": "string"
+    },
+    "configuration": {
+      "optional_top_level_keys": [
+        "child_command_line",
+        "child_username"
+      ]
+    },
+    "parser": "json"
+  },
+  "carbonblack:ingress.event.crossprocopen": {
+    "schema": {
+      "cb_server": "string",
+      "computer_name": "string",
+      "cross_process_type": "string",
+      "event_type": "string",
+      "is_target": "boolean",
+      "md5": "string",
+      "pid": "integer",
+      "process_guid": "string",
+      "process_path": "string",
+      "requested_access": "integer",
+      "sensor_id": "integer",
+      "sha256": "string",
+      "target_create_time": "string",
+      "target_md5": "string",
+      "target_path": "string",
+      "target_pid": "integer",
+      "target_process_guid": "string",
+      "target_sha256": "string",
+      "timestamp": "float",
+      "type": "string"
+    },
+    "parser": "json",
+    "configuration": {
+      "optional_top_level_keys": [
+        "process_path"
+      ]
+    }
+  },
+  "carbonblack:ingress.event.filemod": {
+    "schema": {
+      "action": "string",
+      "actiontype": "integer",
+      "cb_server": "string",
+      "computer_name": "string",
+      "event_type": "string",
+      "file_md5": "string",
+      "file_sha256": "string",
+      "filetype": "integer",
+      "filetype_name": "string",
+      "fork_pid": "integer",
+      "md5": "string",
+      "path": "string",
+      "pid": "integer",
+      "process_guid": "string",
+      "process_path": "string",
+      "sensor_id": "integer",
+      "sha256": "string",
+      "tamper": "boolean",
+      "tamper_sent": "boolean",
+      "timestamp": "float",
+      "type": "string"
+    },
+    "parser": "json",
+    "configuration": {
+      "optional_top_level_keys": [
+        "file_md5",
+        "file_sha256",
+        "fork_pid",
+        "process_path"
+      ]
+    }
+  },
+  "carbonblack:ingress.event.module": {
+    "schema": {
+      "cb_server": "string",
+      "computer_name": "string",
+      "digsig": {},
+      "event_type": "string",
+      "icon": "string",
+      "image_file_header": "string",
+      "md5": "string",
+      "sensor_id": "integer",
+      "sha256": "string",
+      "size": "integer",
+      "timestamp": "float",
+      "type": "string",
+      "utf8_comments": "string",
+      "utf8_company_name": "string",
+      "utf8_copied_module_length": "integer",
+      "utf8_file_description": "string",
+      "utf8_file_version": "string",
+      "utf8_internal_name": "string",
+      "utf8_legal_copyright": "string",
+      "utf8_legal_trademark": "string",
+      "utf8_on_disk_filename": "string",
+      "utf8_original_file_name": "string",
+      "utf8_private_build": "string",
+      "utf8_product_description": "string",
+      "utf8_product_name": "string",
+      "utf8_product_version": "string",
+      "utf8_special_build": "string"
+    },
+    "parser": "json"
+  },
+  "carbonblack:ingress.event.moduleload": {
+    "schema": {
+      "cb_server": "string",
+      "computer_name": "string",
+      "event_type": "string",
+      "fork_pid": "integer",
+      "md5": "string",
+      "path": "string",
+      "pid": "integer",
+      "process_guid": "string",
+      "process_path": "string",
+      "sensor_id": "integer",
+      "sha256": "string",
+      "timestamp": "float",
+      "type": "string"
+    },
+    "parser": "json",
+    "configuration": {
+      "log_patterns": {
+        "type": [
+          "ingress.event.moduleload"
+        ]
+      },
+      "optional_top_level_keys": [
+        "fork_pid",
+        "process_path"
+      ]
+    }
+  },
   "carbonblack:ingress.event.netconn": {
     "schema": {
       "cb_server": "string",
@@ -689,6 +878,7 @@
       "direction": "string",
       "domain": "string",
       "event_type": "string",
+      "fork_pid": "integer",
       "ipv4": "string",
       "local_ip": "string",
       "local_port": "string",
@@ -698,6 +888,10 @@
       "process_guid": "string",
       "process_path": "string",
       "protocol": "string",
+      "proxy": "boolean",
+      "proxy_domain": "string",
+      "proxy_ip": "string",
+      "proxy_port": "string",
       "remote_ip": "string",
       "remote_port": "string",
       "sensor_id": "string",
@@ -708,27 +902,38 @@
     "parser": "json",
     "configuration": {
       "optional_top_level_keys": [
+        "ipv4",
+        "fork_pid",
         "local_ip",
         "local_port",
         "process_path",
+        "port",
+        "proxy",
+        "proxy_domain",
+        "proxy_ip",
+        "proxy_port",
         "remote_ip",
         "remote_port",
         "sha256"
       ]
     }
   },
-  "carbonblack:ingress.event.procstart": {
+  "carbonblack:ingress.event.procend": {
     "schema": {
       "cb_server": "string",
       "command_line": "string",
       "computer_name": "string",
       "event_type": "string",
       "expect_followon_w_md5": "boolean",
+      "filtering_known_dlls": "boolean",
       "md5": "string",
       "parent_create_time": "integer",
+      "parent_guid": "integer",
       "parent_md5": "string",
       "parent_path": "string",
+      "parent_pid": "integer",
       "parent_process_guid": "string",
+      "parent_sha256": "string",
       "path": "string",
       "pid": "integer",
       "process_guid": "string",
@@ -742,13 +947,179 @@
     },
     "parser": "json",
     "configuration": {
+      "log_patterns": {
+        "type": [
+          "ingress.event.procend"
+        ]
+      },
       "optional_top_level_keys": [
+        "filtering_known_dlls",
         "parent_md5",
+        "parent_guid",
+        "parent_pid",
+        "parent_sha256",
+        "process_path",
+        "sha256",
+        "uid",
+        "username"
+      ]
+    }
+  },
+  "carbonblack:ingress.event.processblock": {
+    "schema": {
+      "blocked_event": "string",
+      "blocked_reason": "string",
+      "blocked_result": "string",
+      "cb_server": "string",
+      "command_line": "string",
+      "computer_name": "string",
+      "event_type": "string",
+      "md5": "string",
+      "path": "string",
+      "pid": "integer",
+      "process_create_time": "integer",
+      "process_guid": "string",
+      "sensor_id": "integer",
+      "timestamp": "float",
+      "type": "string",
+      "uid": "string",
+      "username": "string"
+    },
+    "parser": "json",
+    "configuration": {
+      "log_patterns": {
+        "type": [
+          "ingress.event.processblock"
+        ]
+      },
+      "optional_top_level_keys": [
+        "pid",
+        "process_create_time",
+        "process_guid",
+        "uid",
+        "username"
+      ]
+    }
+  },
+  "carbonblack:ingress.event.procstart": {
+    "schema": {
+      "cb_server": "string",
+      "command_line": "string",
+      "computer_name": "string",
+      "event_type": "string",
+      "expect_followon_w_md5": "boolean",
+      "filtering_known_dlls": "boolean",
+      "md5": "string",
+      "parent_create_time": "integer",
+      "parent_guid": "integer",
+      "parent_md5": "string",
+      "parent_path": "string",
+      "parent_pid": "integer",
+      "parent_process_guid": "string",
+      "parent_sha256": "string",
+      "path": "string",
+      "pid": "integer",
+      "process_guid": "string",
+      "process_path": "string",
+      "sensor_id": "integer",
+      "sha256": "string",
+      "timestamp": "integer",
+      "type": "string",
+      "uid": "string",
+      "username": "string"
+    },
+    "parser": "json",
+    "configuration": {
+      "log_patterns": {
+        "type": [
+          "ingress.event.procstart"
+        ]
+      },
+      "optional_top_level_keys": [
+        "filtering_known_dlls",
+        "parent_md5",
+        "parent_guid",
+        "parent_pid",
+        "parent_sha256",
         "process_path",
         "uid",
         "username",
         "sha256"
       ]
+    }
+  },
+  "carbonblack:ingress.event.regmod": {
+    "schema": {
+      "action": "string",
+      "actiontype": "integer",
+      "cb_server": "string",
+      "computer_name": "string",
+      "event_type": "string",
+      "md5": "string",
+      "path": "string",
+      "pid": "integer",
+      "process_guid": "string",
+      "process_path": "string",
+      "sensor_id": "integer",
+      "sha256": "string",
+      "tamper": "boolean",
+      "tamper_sent": "boolean",
+      "timestamp": "float",
+      "type": "string"
+    },
+    "parser": "json",
+    "configuration": {
+      "optional_top_level_keys": [
+        "process_path"
+      ]
+    }
+  },
+  "carbonblack:ingress.event.remotethread": {
+    "schema": {
+      "cb_server": "string",
+      "computer_name": "string",
+      "cross_process_type": "string",
+      "event_type": "string",
+      "is_target": "boolean",
+      "md5": "string",
+      "pid": "integer",
+      "process_guid": "string",
+      "process_path": "string",
+      "sensor_id": "integer",
+      "sha256": "string",
+      "target_create_time": "integer",
+      "target_md5": "string",
+      "target_path": "string",
+      "target_pid": "integer",
+      "target_process_guid": "string",
+      "target_sha256": "string",
+      "timestamp": "float",
+      "type": "string"
+    },
+    "parser": "json",
+    "configuration": {
+      "optional_top_level_keys": [
+        "process_path"
+      ]
+    }
+  },
+  "carbonblack:ingress.event.tamper": {
+    "schema": {
+      "cb_server": "string",
+      "computer_name": "string",
+      "event_type": "string",
+      "sensor_id": "integer",
+      "tamper_type": "string",
+      "timestamp": "float",
+      "type": "string"
+    },
+    "parser": "json",
+    "configuration": {
+      "log_patterns": {
+        "type": [
+          "ingress.event.tamper"
+        ]
+      }
     }
   },
   "carbonblack:watchlist.hit.binary": {
@@ -787,8 +1158,10 @@
       "copied_mod_len": "integer",
       "digsig_issuer": "string",
       "digsig_prog_name": "string",
-      "digsig_result": "string",
+      "digsig_publisher": "string",
       "digsig_result_code": "string",
+      "digsig_result": "string",
+      "digsig_sign_time": "string",
       "digsig_subject": "string",
       "endpoint": [],
       "event_partition_id": [],
@@ -859,6 +1232,8 @@
         "comments",
         "digsig_issuer",
         "digsig_prog_name",
+        "digsig_publisher",
+        "digsig_sign_time",
         "digsig_subject",
         "legal_copyright",
         "watchlists"
@@ -960,6 +1335,7 @@
       "parent_segment_id": "integer",
       "parent_unique_id": "string",
       "path": "string",
+      "process_guid": "string",
       "process_md5": "string",
       "process_name": "string",
       "process_pid": "integer",
@@ -1012,7 +1388,8 @@
         "alliance_updated_srsthreat",
         "alliance_updated_srstrust",
         "alliance_updated_virustotal",
-        "alliance_updated_virustotalconnector"
+        "alliance_updated_virustotalconnector",
+        "process_guid"
       ]
     }
   },
@@ -1692,6 +2069,7 @@
     "parser": "json",
     "configuration": {
       "optional_top_level_keys": [
+        "apiVersion",
         "errorCode",
         "errorMessage",
         "acsRegion",

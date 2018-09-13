@@ -54,6 +54,7 @@
     "buckets": {
       "PREFIX_GOES_HERE.streamalerts": "alerts"
     },
+    "concurrency_limit": 10,
     "enable_metrics": false,
     "log_level": "info"
   },

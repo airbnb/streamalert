@@ -23,7 +23,7 @@
       "buffer_size": 128,
       "compression_format": "GZIP",
       "enabled": false,
-      "enabled_logs": []
+      "enabled_logs": {}
     },
     "monitoring": {
       "create_sns_topic": true

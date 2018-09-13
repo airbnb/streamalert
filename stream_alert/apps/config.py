@@ -43,6 +43,7 @@ class AppConfig(object):
 
     _STATE_KEY = 'current_state'
     _TIME_KEY = 'last_timestamp'
+    _CONTEXT_KEY = 'context'
     _STATE_DESCRIPTION = 'State information for the \'{}\' app for use in the \'{}\' function'
 
     class States(object):
@@ -61,6 +62,7 @@ class AppConfig(object):
         self._auth_config = auth_config
         self._current_state = state_config.get(self._STATE_KEY)
         self._last_timestamp = state_config.get(self._TIME_KEY)
+        self._context = state_config.get(self._CONTEXT_KEY, {})
         self._event = event
         self.function_name = func_name
         self.function_version = func_version
@@ -273,9 +275,20 @@ class AppConfig(object):
         return self.last_timestamp
 
     def _save_state(self):
-        param_value = json.dumps(
-            {self._TIME_KEY: self.last_timestamp, self._STATE_KEY: self.current_state}
-        )
+        """Save the current state in the aws ssm paramater store
+
+        Raises:
+            AppStateError: If the parameter is not able to be saved
+        """
+        try:
+            param_value = json.dumps({
+                self._TIME_KEY: self.last_timestamp,
+                self._STATE_KEY: self.current_state,
+                self._CONTEXT_KEY: self.context,
+            })
+        except TypeError as err:
+            raise AppStateError('Could not serialize state for name \'{}\'. Error: '
+                                '{}'.format(self._state_name, err.message))
         @backoff.on_exception(backoff.expo,
                               ClientError,
                               max_tries=self.MAX_STATE_SAVE_TRIES,
@@ -382,6 +395,27 @@ class AppConfig(object):
         LOGGER.debug('Setting last timestamp to: %s', timestamp)
 
         self._last_timestamp = timestamp
+        self._save_state()
+
+    @property
+    def context(self):
+        """Get an additional context dictionary specific to each app"""
+        LOGGER.debug('Getting context: %s', self._context)
+        return self._context
+
+    @context.setter
+    def context(self, context):
+        """Set an additional context dictionary specific to each app"""
+        if self._context == context:
+            LOGGER.debug('App context is unchanged and will not be saved: %s', context)
+            return
+
+        if not isinstance(context, dict):
+            raise AppStateError('Unable to set context: %s. Must be a dictionary', context)
+
+        LOGGER.debug('Setting context to: %s', context)
+
+        self._context = context
         self._save_state()
 
     @property
