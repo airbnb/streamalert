@@ -17,6 +17,7 @@ import json
 import os
 import socket
 import ssl
+from datetime import datetime, timedelta
 
 import apiclient
 import oauth2client
@@ -158,7 +159,8 @@ class TestGSuiteReportsApp(object):
             service_mock.list.return_value.execute.return_value = payload
 
             assert_equal(len(self._app._gather_logs()), 10)
-            assert_equal(self._app._last_timestamp, '2011-06-17T15:39:18.460Z')
+            assert_equal(self._app._last_timestamp, '2011-06-17T15:39:18.460000Z')
+            assert_equal(self._app._context['last_event_ids'], [-12345678901234567890])
 
     @patch('stream_alert.apps._apps.gsuite.GSuiteReportsApp._create_service',
            Mock(return_value=True))
@@ -242,14 +244,40 @@ class TestGSuiteReportsApp(object):
                 '[%s] No logs in response from G Suite API request', self._app
             )
 
+    def test_gather_logs_remove_duplicate_events(self):
+        """GSuiteReportsApp - Gather Logs, Remove duplicate events"""
+        with patch.object(self._app, '_activities_service') as service_mock:
+            payload = {
+                'kind': 'reports#auditActivities',
+                'nextPageToken': None,
+                'items': self._get_sample_logs(10)
+            }
+            service_mock.list.return_value.execute.return_value = payload
+            self._app._last_run_event_ids = {
+                -12345678901234567890 + 9,
+                -12345678901234567890 + 8
+            }
+
+            assert_equal(len(self._app._gather_logs()), 8)
+            assert_equal(self._app._last_timestamp, '2011-06-17T15:39:18.460000Z')
+            assert_equal(self._app._more_to_poll, False)
+            assert_equal(self._app._context['last_event_ids'], [-12345678901234567890])
+
+
     @staticmethod
     def _get_sample_logs(count):
         """Helper function for returning sample gsuite (admin) logs"""
+
+        def _get_timestamp(start_timestamp, subtract_seconds):
+            timestamp = datetime.strptime(start_timestamp, GSuiteReportsApp.date_formatter())
+            timestamp -= timedelta(seconds=subtract_seconds)
+            return timestamp.strftime(GSuiteReportsApp.date_formatter())
+
         return [{
             'kind': 'audit#activity',
             'id': {
-                'time': '2011-06-17T15:39:18.460Z',
-                'uniqueQualifier': 'report\'s unique ID',
+                'time': _get_timestamp('2011-06-17T15:39:18.460000Z', index),
+                'uniqueQualifier': -12345678901234567890L + index,
                 'applicationName': 'admin',
                 'customerId': 'C03az79cb'
             },
@@ -275,7 +303,7 @@ class TestGSuiteReportsApp(object):
                     ]
                 }
             ]
-        } for _ in range(count)]
+        } for index in range(count)]
 
 
 @raises(NotImplementedError)
