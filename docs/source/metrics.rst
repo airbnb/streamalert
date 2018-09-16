@@ -27,6 +27,7 @@ All of CloudWatch's features are at your disposal: graphing, dashboards, alertin
 
 These metrics are useful for debugging, alerting on infrastructure metrics you care about, or for just getting a sense of the scale at which you're analyzing and alerting on data.
 
+.. _custom_metrics:
 
 Custom Metrics
 --------------

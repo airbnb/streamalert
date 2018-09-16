@@ -30,14 +30,67 @@ Configuration options are divided into different modules, each of which is discu
 
 .. _main_cluster_module:
 
-Main Module: ``stream_alert``
------------------------------
-The main module for StreamAlert.
+Rule Processor
+--------------
+``stream_alert`` is the only required module because it configures the cluster's rule processor.
 
-It creates both AWS Lambda functions, aliases, an SNS topic, IAM permissions, and more.
+This module is implemented by `terraform/modules/tf_stream_alert <https://github.com/airbnb/streamalert/tree/stable/terraform/modules/tf_stream_alert>`_.
 
-See `Lambda Settings <lambda.html>`_ for all customization options.
+Example: Minimal Cluster
+~~~~~~~~~~~~~~~~~~~~~~~~
 
+.. code-block:: json
+
+  {
+    "id": "minimal-cluster",
+    "modules": {
+      "stream_alert": {
+        "rule_processor": {
+          "memory": 128,
+          "timeout": 10
+        }
+      }
+    },
+    "region": "us-east-1"
+  }
+
+Example: Rule Processor with SNS Inputs
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: json
+
+  {
+    "id": "sns-inputs",
+    "modules": {
+      "stream_alert": {
+        "rule_processor": {
+          "enable_metrics": true,
+          "inputs": {
+            "aws-sns": [
+              "arn:aws:sns:REGION:ACCOUNT:TOPIC_NAME"
+            ]
+          },
+          "log_level": "info",
+          "memory": 128,
+          "timeout": 10
+        }
+      }
+    },
+    "region": "us-east-1"
+  }
+
+Configuration Options
+~~~~~~~~~~~~~~~~~~~~~
+=======================  ===========  ===============
+**Key**                  **Default**  **Description**
+-----------------------  -----------  ---------------
+``enable_metrics``       ``true``     Enable :ref:`custom metrics <custom_metrics>` for the cluster
+``enable_threat_intel``  ``false``    Toggle threat intel integration (beta)
+``inputs``               ``{}``       SNS topics which can invoke the rule processor (see example)
+``log_level``            ``"info"``   Lambda CloudWatch logging level
+``memory``               ---          Lambda function memory (MB)
+``timeout``              ---          Lambda function timeout (seconds)
+=======================  ===========  ===============
 
 .. _cloudtrail:
 

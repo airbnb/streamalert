@@ -74,7 +74,6 @@ Table of Contents
    :caption: Infrastructure Config
 
    account
-   lambda
 
 .. _user_guide:
 
