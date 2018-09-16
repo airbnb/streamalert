@@ -74,7 +74,6 @@ Table of Contents
    :caption: User Guide
 
    deployment
-   deploy-rollback
    rules
    rule-testing
    outputs
