@@ -67,14 +67,6 @@ Table of Contents
    conf-schemas
    conf-schemas-examples
 
-.. _infra_configuration:
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Infrastructure Config
-
-   account
-
 .. _user_guide:
 
 .. toctree::
