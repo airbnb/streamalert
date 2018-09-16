@@ -17,13 +17,10 @@ limitations under the License.
 import json
 import os
 
-import boto3
 from mock import call, Mock, patch
-from moto import mock_sqs
-from nose.tools import assert_equal, assert_true
+from nose.tools import assert_equal, assert_raises, assert_true, raises
 
-from stream_alert.athena_partition_refresh.clients import StreamAlertSQSClient
-from stream_alert.athena_partition_refresh.main import AthenaRefresher
+from stream_alert.athena_partition_refresh.main import AthenaRefresher, AthenaRefreshError
 from stream_alert.shared.config import load_config
 
 from tests.unit.helpers.aws_mocks import MockAthenaClient
@@ -64,21 +61,12 @@ class TestAthenaRefresher(object):
     @patch('stream_alert.shared.athena.boto3')
     def setup(self, boto_patch):
         """Setup the AthenaRefresher tests"""
-        self.mock_sqs = mock_sqs()
-        self.mock_sqs.start()
         boto_patch.client.return_value = MockAthenaClient()
-        sqs = boto3.resource('sqs')
-        name = StreamAlertSQSClient.DEFAULT_QUEUE_NAME.format('unit-testing')
-        self.queue = sqs.create_queue(QueueName=name)
         self._refresher = AthenaRefresher()
-
-    def teardown(self):
-        """Teardown the AthenaRefresher tests"""
-        self.mock_sqs.stop()
 
     def test_add_partitions(self):
         """AthenaRefresher - Add Partitions"""
-        result = self._refresher._add_partition({
+        self._refresher._s3_buckets_and_keys = {
             'unit-testing.streamalerts': {
                 'alerts/dt=2017-08-26-14/rule_name_alerts-1304134918401.json',
                 'alerts/dt=2017-08-27-14/rule_name_alerts-1304134918401.json'
@@ -96,14 +84,15 @@ class TestAthenaRefresher(object):
                 '2017/08/28/14/rule_name_alerts-1304134918401.json',
                 '2017/07/30/14/rule_name_alerts-1304134918401.json'
             }
-        })
+        }
+        result = self._refresher._add_partitions()
 
         assert_true(result)
 
     @patch('logging.Logger.error')
     def test_add_partitions_none(self, log_mock):
         """AthenaRefresher - Add Partitions, None to Add"""
-        result = self._refresher._add_partition({})
+        result = self._refresher._add_partitions()
         log_mock.assert_called_with('No partitons to add')
         assert_equal(result, False)
 
@@ -136,7 +125,7 @@ class TestAthenaRefresher(object):
             }
         }
 
-        result = self._refresher._get_partitions_from_keys({
+        self._refresher._s3_buckets_and_keys = {
             'unit-testing.streamalerts': {
                 'alerts/dt=2017-08-26-14/rule_name_alerts-1304134918401.json',
                 'alerts/dt=2017-08-27-14/rule_name_alerts-1304134918401.json',
@@ -154,7 +143,9 @@ class TestAthenaRefresher(object):
                 '2017/08/26/14/rule_name_alerts-1304134918401.json',
                 '2017/07/30/14/rule_name_alerts-1304134918401.json'
             }
-        })
+        }
+
+        result = self._refresher._get_partitions_from_keys()
 
         assert_equal(result, expected_result)
 
@@ -162,20 +153,19 @@ class TestAthenaRefresher(object):
     def test_get_partitions_from_keys_error(self, log_mock):
         """AthenaRefresher - Get Partitions From Keys, Bad Key"""
         bad_key = 'bad_match_string'
-        result = self._refresher._get_partitions_from_keys({
+        self._refresher._s3_buckets_and_keys = {
             'unit-testing.streamalerts': {
                 bad_key
             }
-        })
+        }
+
+        result = self._refresher._get_partitions_from_keys()
 
         log_mock.assert_called_with('The key %s does not match any regex, skipping', bad_key)
         assert_equal(result, dict())
 
-
     @staticmethod
-    def _create_test_message(count=2):
-        """Helper function for creating an sqs messsage body"""
-        count = min(count, 30)
+    def _s3_record(count):
         return {
             'Records': [
                 {
@@ -184,47 +174,53 @@ class TestAthenaRefresher(object):
                             'name': 'unit-testing.streamalerts'
                         },
                         'object': {
-                            'key': 'alerts/dt=2017/08/{:02d}/14/02/test.json'.format(val+1)
+                            'key': ('alerts/dt=2017/08/{:02d}/'
+                                    '14/02/test.json'.format(val+1))
                         }
                     }
                 } for val in range(count)
             ]
         }
 
-    @patch('logging.Logger.info')
-    def test_run(self, log_mock):
-        """AthenaRefresher - Run"""
-        self.queue.send_message(MessageBody=json.dumps(self._create_test_message(1)))
-        self._refresher.run()
-        log_mock.assert_called_with('Deleted %d messages from SQS', 1)
+    @staticmethod
+    def _create_test_message(count=2):
+        """Helper function for creating an sqs messsage body"""
+        count = min(count, 30)
+        return {
+            'Records': [
+                {
+                    'body': json.dumps(TestAthenaRefresher._s3_record(count)),
+                    'messageId': "40d4fac0-64a1-4a20-8be4-893c51aebca1",
+                    "attributes": {
+                        "SentTimestamp": "1534284301036"
+                    }
+                }
+            ]
+        }
 
-    @patch('logging.Logger.info')
-    def test_run_no_messages(self, log_mock):
+    @patch('logging.Logger.debug')
+    @patch('stream_alert.athena_partition_refresh.main.AthenaRefresher._add_partitions')
+    def test_run(self, add_mock, log_mock):
+        """AthenaRefresher - Run"""
+        add_mock.return_value = True
+        self._refresher.run(self._create_test_message(1))
+        log_mock.assert_called_with(
+            'Received notification for object \'%s\' in bucket \'%s\'',
+            'alerts/dt=2017/08/01/14/02/test.json',
+            'unit-testing.streamalerts'
+        )
+
+    @raises(AthenaRefreshError)
+    def test_run_no_messages(self):
         """AthenaRefresher - Run, No Messages"""
-        self._refresher.run()
-        log_mock.assert_called_with('No SQS messages recieved, exiting')
+        self._refresher.run(self._create_test_message(0))
 
     @patch('logging.Logger.error')
     def test_run_invalid_bucket(self, log_mock):
         """AthenaRefresher - Run, Bad Bucket Name"""
-        message = self._create_test_message(1)
-        message['Records'][0]['s3']['bucket']['name'] = 'bad.bucket.name'
-        self.queue.send_message(MessageBody=json.dumps(message))
-        self._refresher.run()
-        log_mock.assert_called_with('Failed to add hive partition(s)')
-
-    @patch('logging.Logger.error')
-    def test_run_invalid_no_records(self, log_mock):
-        """AthenaRefresher - Run, No Records"""
-        message = self._create_test_message(0)
-        self.queue.send_message(MessageBody=json.dumps(message))
-        self._refresher.run()
-        log_mock.assert_called_with('No new Athena partitions to add, exiting')
-
-    def test_run_multiple_batches(self):
-        """AthenaRefresher - Run, > 20 Records"""
-        message = json.dumps(self._create_test_message(1))
-        for _ in range(24):
-            self.queue.send_message(MessageBody=message)
-        self._refresher.run()
-        assert_equal(len(self._refresher._sqs_client.received_messages), 24)
+        event = self._create_test_message(0)
+        s3_record = self._s3_record(1)
+        s3_record['Records'][0]['s3']['bucket']['name'] = 'bad.bucket.name'
+        event['Records'][0]['body'] = json.dumps(s3_record)
+        assert_raises(AthenaRefreshError, self._refresher.run, event)
+        log_mock.assert_called_with('No partitons to add')

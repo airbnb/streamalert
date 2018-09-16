@@ -133,5 +133,51 @@
     "trigger_rules":[
       "cloudtrail_mfa_policy_abuse_attempt"
     ]
+  },
+  {
+    "data":{
+      "Records":[
+        {
+          "awsRegion":"us-west-2",
+          "eventID":"123aaac1-123d-456a-1k29a4dd2kea",
+          "eventName":"CreateVirtualMFADevice",
+          "eventSource":"iam.amazonaws.com",
+          "eventTime":"2017-01-01T00:20:50Z",
+          "eventType":"AwsApiCall",
+          "eventVersion":"1.05",
+          "recipientAccountId":"123456789123",
+          "requestID":"...",
+          "requestParameters": {
+            "virtualMFADeviceName": "...",
+            "path": "..."
+          },
+          "responseElements": {
+            "virtualMFADevice": {
+              "serialNumber": "..."
+            }
+          },
+          "sourceIPAddress":"...",
+          "userAgent":"...",
+          "userIdentity":{
+            "accessKeyId":"...",
+            "accountId":"12345",
+            "arn":"...",
+            "principalId":"12345",
+            "sessionContext":{
+              "attributes":{
+                "creationDate":"...",
+                "mfaAuthenticated":"false"
+              }
+            },
+            "type":"..."
+          }
+        }
+      ]
+    },
+    "description":"Successfully creating an MFA device, while the user is not MFA'd should not create an alert.",
+    "log":"cloudtrail:events",
+    "service":"s3",
+    "source":"prefix.cluster.sample.bucket",
+    "trigger_rules":[]
   }
 ]

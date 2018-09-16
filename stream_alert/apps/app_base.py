@@ -81,6 +81,7 @@ class AppIntegration(object):
         self._more_to_poll = False
         self._poll_count = 0
         self._last_timestamp = 0
+        self._context = {}
 
     def __str__(self):
         return self.type()
@@ -216,6 +217,7 @@ class AppIntegration(object):
         self._config.set_starting_timestamp(self.date_formatter())
 
         self._last_timestamp = self._config.last_timestamp
+        self._context = self._config.context
 
         # Mark this app as running, which updates the parameter store
         self._config.mark_running()
@@ -240,6 +242,7 @@ class AppIntegration(object):
                     self, self._gathered_log_count, self._poll_count)
 
         self._config.last_timestamp = self._last_timestamp
+        self._config.context = self._context
 
         # If there are more logs to poll, invoke this app function again and mark
         # the config as 'partial'. Marking the state as 'partial' prevents
@@ -376,7 +379,8 @@ class AppIntegration(object):
         try:
             # Add a 50% buffer to the time it took to account for some unforeseen delay and to give
             # this function enough time to spawn a new invocation if there are more logs to poll
-            while (self._gather() * self._POLL_BUFFER_MULTIPLIER) < self._remaining_seconds:
+            while (((self._gather() * self._POLL_BUFFER_MULTIPLIER) + self._sleep_seconds()) <
+                   self._remaining_seconds):
                 LOGGER.debug('[%s] More logs to poll: %s', self, self._more_to_poll)
                 self._config.report_remaining_seconds()
                 if not self._more_to_poll:

@@ -31,7 +31,7 @@ from tests.unit.stream_alert_apps.test_helpers import get_event, get_mock_contex
 @patch.object(AppConfig, 'MAX_STATE_SAVE_TRIES', 1)
 class TestAppConfig(object):
     """Test class for AppConfig"""
-    # pylint: disable=protected-access,no-self-use
+    # pylint: disable=protected-access,no-self-use,too-many-public-methods
 
     @patch.dict(os.environ, {'AWS_DEFAULT_REGION': 'us-east-1'})
     def setup(self):
@@ -194,6 +194,28 @@ class TestAppConfig(object):
         """AppConfig - Set Last Timestamp, Same Value"""
         self._config.last_timestamp = 1234567890
         save_mock.assert_not_called()
+
+    @patch('stream_alert.apps.config.AppConfig._save_state')
+    def test_set_context_new(self, save_mock):
+        """AppConfig - Set Context, New Value"""
+        self._config.context = {"key": "value"}
+        save_mock.assert_called_once()
+
+    @patch('stream_alert.apps.config.AppConfig._save_state')
+    def test_set_context_same(self, save_mock):
+        """AppConfig - Set Context, Same Value"""
+        self._config.context = {}
+        save_mock.assert_not_called()
+
+    @raises(AppStateError)
+    def test_set_context_not_a_dictionary(self):
+        """AppConfig - Context not a Dictionary"""
+        self._config.context = [1, 2, 3]
+
+    @raises(AppStateError)
+    def test_set_context_not_serializable(self):
+        """AppConfig - Context not Serializable"""
+        self._config.context = {"key": object()}
 
     def test_is_failing(self):
         """AppConfig - Check If Failing"""

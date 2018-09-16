@@ -105,6 +105,15 @@ Table of Contents
   athena-user-guide
   firehose
 
+.. _rule_staging_and_promotion:
+
+.. toctree::
+  :maxdepth: 2
+  :caption: Rule Staging and Promotion
+
+  rule-staging
+  rule-promotion
+
 .. toctree::
   :maxdepth: 2
   :caption: StreamAlert Apps

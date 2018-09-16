@@ -18,3 +18,22 @@ resource "aws_kinesis_firehose_delivery_stream" "stream_alert_data" {
     kms_key_arn        = "${var.kms_key_arn}"
   }
 }
+
+// AWS CloudWatch Metric Alarm for this Firehose
+resource "aws_cloudwatch_metric_alarm" "firehose_records_alarm" {
+  count               = "${var.enable_alarm ? 1 : 0}"
+  alarm_name          = "streamalert_data_${var.log_name}_record_count"
+  namespace           = "AWS/Firehose"
+  metric_name         = "IncomingRecords"
+  statistic           = "Sum"
+  comparison_operator = "LessThanThreshold"
+  threshold           = "${var.alarm_threshold}"
+  evaluation_periods  = "${var.evaluation_periods}"
+  period              = "${var.period_seconds}"
+  alarm_description   = "StreamAlert Firehose record count less than expected threshold: ${var.log_name}"
+  alarm_actions       = "${var.alarm_actions}"
+
+  dimensions {
+    DeliveryStreamName = "${aws_kinesis_firehose_delivery_stream.stream_alert_data.name}"
+  }
+}

@@ -388,7 +388,8 @@ class RulesEngine(object):
             merge_window=timedelta(minutes=rule.merge_window_mins),
             rule_description=rule.description,
             source_entity=payload.entity,
-            source_service=payload.service()
+            source_service=payload.service(),
+            staged=rule.is_staged(self._RULE_TABLE)
         )
 
         LOGGER.info('Rule [%s] triggered alert [%s] on log type [%s] from entity \'%s\' '
