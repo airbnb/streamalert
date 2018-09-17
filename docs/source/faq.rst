@@ -3,10 +3,6 @@ FAQ
 
 Frequently Asked Questions
 
-**What is StreamAlert?**
-
-* See `Overview <overview.html>`_
-
 **What language is StreamAlert written in?**
 
 * The application and rules are written in Python, the infrastructure is written with Terraform
@@ -20,23 +16,9 @@ Frequently Asked Questions
 
 * StreamAlert is open source (free)
 
-**What environments does StreamAlert support?**
-
-* See `Requirements <requirements.html>`_
-
-**How can I send data to StreamAlert?**
+**What/How can I send data to StreamAlert?**
 
 * See `Datasources <datasources.html>`_
-
-**What can I send to StreamAlert?**
-
-* See `Datasources <datasources.html>`_
-
-**Why support Kinesis Streams & S3?**
-
-* Some logs go directly to S3 (CloudTrail, S3 Server access logs, AWS Config, ...)
-* Some SaaS products provide you access/audit logs in an S3 bucket
-* Many companies send logs to S3 or Glacier for long-term retention
 
 **What scale does StreamAlert operate at?**
 
@@ -54,7 +36,7 @@ Frequently Asked Questions
 
 * StreamAlert is intended for asynchronous decision making.
 
-**What about historical searching and alerting?**
-
-* This is on our `Roadmap <roadmap.html#historical-search>`_ . StreamAlert will utilize AWS Athena, a serverless, interactive query service that uses Presto. This will allow you to analyze your data using SQL for both ad-hoc and scheduled queries.
-
+Contact Us
+----------
+Don't see your question answered here?
+Feel free to `open an issue <https://github.com/airbnb/streamalert/issues/new>`_, submit a PR, and/or reach out to us on `Slack <https://streamalert.herokuapp.com/>`_

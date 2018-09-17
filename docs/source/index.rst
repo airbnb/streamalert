@@ -79,8 +79,6 @@ Table of Contents
    outputs
    metrics
    troubleshooting
-   report-bugs-features
-   questions
    faq
    alternatives
 
