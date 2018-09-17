@@ -8,16 +8,19 @@ StreamAlert comes with a flexible alerting framework that can integrate with new
 
 Out of the box, StreamAlert supports:
 
+* **AWS CloudWatch Logs**
+* **AWS Kinesis Firehose**
 * **AWS Lambda**
 * **AWS S3**
 * **AWS SNS**
 * **AWS SQS**
+* **CarbonBlack**
+* **GitHub**
+* **Jira**
 * **Komand**
 * **PagerDuty**
 * **Phantom**
 * **Slack**
-* **Jira**
-* **Github**
 
 StreamAlert can be extended to support any API. Creating a new output to send alerts to is easily accomplished through inheritance from the ``StreamOutputBase`` class. More on that in the `Adding Support for New Services`_ section below.
 
