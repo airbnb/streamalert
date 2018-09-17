@@ -100,7 +100,7 @@ We can generalize the rule to alleviate these issues:
       )
 
   @rule(
-      logs=['cloudtrail:api_events', 'cloudwatch:events'],  # Rule applies to these 2 schemas
+      logs=['cloudtrail:events', 'cloudwatch:events'],  # Rule applies to these 2 schemas
       matchers=['prod_account'],  # Must be satisfied before rule is evaluated
       merge_by_keys=['useragent'],  # Merge alerts with the same 'useragent' key-value pair
       merge_window_mins=5,  # Merge alerts every 5 minutes

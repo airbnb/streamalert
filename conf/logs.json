@@ -1509,47 +1509,6 @@
       ]
     }
   },
-  "cloudtrail:api_events": {
-    "schema": {
-      "additionalEventData": {},
-      "apiVersion": "string",
-      "awsRegion": "string",
-      "errorCode": "string",
-      "errorMessage": "string",
-      "eventID": "string",
-      "eventName": "string",
-      "eventSource": "string",
-      "eventTime": "string",
-      "eventType": "string",
-      "eventVersion": "string",
-      "readOnly": "boolean",
-      "recipientAccountId": "string",
-      "requestID": "string",
-      "requestParameters": {},
-      "responseElements": {},
-      "resources": [],
-      "sharedEventID": "string",
-      "sourceIPAddress": "string",
-      "userAgent": "string",
-      "userIdentity": {},
-      "vpcEndpointId": "string"
-    },
-    "parser": "json",
-    "configuration": {
-      "json_path": "Records[*]",
-      "optional_top_level_keys": [
-        "additionalEventData",
-        "apiVersion",
-        "errorCode",
-        "errorMessage",
-        "readOnly",
-        "resources",
-        "requestID",
-        "sharedEventID",
-        "vpcEndpointId"
-      ]
-    }
-  },
   "cloudtrail:events": {
     "schema": {
       "additionalEventData": {},
