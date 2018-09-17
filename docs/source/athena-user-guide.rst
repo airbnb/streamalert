@@ -1,3 +1,5 @@
+.. _athena_user_guide:
+
 Athena User Guide
 =================
 

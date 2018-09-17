@@ -30,225 +30,261 @@ You may create any folder structure desired, as all rules folders are imported r
 
 Overview
 --------
+A StreamAlert rule is a Python method that takes a parsed log record (dictionary) and returns True or False.
+A return value of ``True`` means an alert will be generated.
 
-Each Rule file must contain the following at the top:
+Example: The Basics
+~~~~~~~~~~~~~~~~~~~
+The simplest possible rule looks like this:
 
 .. code-block:: python
 
   from stream_alert.shared.rule import rule
 
-All rules take this structure:
+  @rule(logs=['cloudwatch:events'])
+  def all_cloudwatch_events(record):
+      """Minimal StreamAlert rule: alert on all CloudWatch events"""
+      return True
+
+This rule will be evaluated against all inbound logs that match the ``cloudwatch:events`` schema defined in ``conf/logs.json``.
+In this case, *all* CloudWatch events will generate an alert, which will be sent to the :ref:`alerts Athena table <athena_user_guide>`.
+
+Example: Logic & Outputs
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Let's modify the rule to page the security team if anyone ever uses AWS root credentials:
 
 .. code-block:: python
 
-    @rule(logs=[...],
-          matchers=[...],
-          outputs=[...])
-    def example(record):          # the rule name will be 'example'
-        # code                    # analyze the incoming record w/ your logic
-        return True               # return True if an alert should be sent
+  from stream_alert.shared.rule import rule
 
-You define a list of ``logs`` that the rule is applicable to.
+  @rule(logs=['cloudwatch:events'], outputs=['pagerduty:csirt', 'slack:security'])
+  def cloudtrail_root_account_usage(record):
+      """Page security team for any usage of AWS root account"""
+        return (record['detail']['userIdentity']['type'] == 'Root'
+                and record['detail']['userIdentity'].get('invokedBy') is None
+                and record['detail']['eventType'] != 'AwsServiceEvent')
 
-Rules will only be evaluated against incoming records that match the declared log types found in ``conf/logs.json``.
+Now, any AWS root account usage is reported to PagerDuty, Slack, and the aforementioned Athena table.
+In order for this to work, your `datasources <conf-datasources.html>`_ and `outputs <outputs.html>`_ must be configured so that:
 
+* CloudTrail logs are being sent to StreamAlert via CloudWatch events
+* The ``pagerduty:csirt`` and ``slack:security`` outputs have the proper credentials
 
-Example
--------
+.. _advanced_example:
 
-Here’s an example rule that alerts on the use of sudo in a PCI environment:
+Example: More Rule Options
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The previous example suffers from the following problems:
+
+* It only works for CloudTrail data sent via CloudWatch
+* A single legitimate root login may generate hundreds of alerts in the span of a few minutes
+* There is no distinction between different AWS account IDs
+
+We can generalize the rule to alleviate these issues:
 
 .. code-block:: python
 
-    from fnmatch import fnmatch
+  from helpers.base import get_first_key  # Find first key recursively in record
+  from stream_alert.shared.rule import matcher, rule
 
-    @rule(logs=['osquery:differential'],              # applicable datasource(s)
-          matchers=['pci'],                           # matcher(s) to evaluate
-          outputs=['pagerduty:cirt', 'slack:cirt'])   # where to send alerts
-    def production_sudo(record):                      # incoming record/log
-        table_name = record['name']
-        tag = record['columns']['tag']
+  # This could alternatively be defined in matchers/matchers.py to be more shareable
+  _PROD_ACCOUNTS = {'111111111111', '222222222222'}
+  @matcher
+  def prod_account(record):
+      """Match logs for one of the production AWS accounts"""
+      return (
+          rec.get('account') in _PROD_ACCOUNTS or
+          get_first_key(rec, 'userIdentity', {}).get('accountId') in _PROD_ACCOUNTS
+      )
 
-        return (
-          table_name == 'linux_syslog_auth' and
-          fnmatch(tag, 'sudo*')
-        )
+  @rule(
+      logs=['cloudtrail:api_events', 'cloudwatch:events'],  # Rule applies to these 2 schemas
+      matchers=['prod_account'],  # Must be satisfied before rule is evaluated
+      merge_by_keys=['useragent'],  # Merge alerts with the same 'useragent' key-value pair
+      merge_window_mins=5,  # Merge alerts every 5 minutes
+      outputs=['pagerduty:csirt', 'slack:security']  # Send alerts to these 2 outputs
+  )
+  def cloudtrail_root_account_usage(record):
+      """Page security team for any usage of AWS root account"""
+      return (
+          get_first_key(record, 'userIdentity', {}).get('type') == 'Root' and
+          not get_first_key(record, 'invokedBy') and
+          get_first_key(record, 'eventType') != 'AwsServiceEvent'
+      )
 
-You have the flexibility to perform simple or complex data analysis
+To simplify rule logic, you can extract common routines into custom helper methods.
+These helpers are defined in ``helpers/base.py`` and can be called from within a matcher or rule (as shown here).
+
+Since rules are written in Python, you can make them as sophisticated as you want!
+
+Rule Options
+------------
+The following table provides an overview of each rule option, with more details below:
+
+=====================  ========================  ===============
+**@rule kwarg**        **Type**                  **Description**
+---------------------  ------------------------  ---------------
+``context``            ``Dict[str, Any]``        Dynamically configurable context passed to the alert processor
+``datatypes``          ``List[str]``             List of normalized type names the rule applies to
+``logs``               ``List[str]``             List of log schemas the rule applies to
+``matchers``           ``List[str]``             Matcher pre-conditions which must be met before rule logic runs
+``merge_by_keys``      ``List[str]``             List of key names that must match in value before merging alerts
+``merge_window_mins``  ``int``                   Merge related alerts at this interval rather than sending immediately
+``outputs``            ``List[str]``             List of alert outputs
+``req_subkeys``        ``Dict[str, List[str]]``  Subkeys which must be present in the record
+=====================  ========================  ===============
+
+context
+~~~~~~~
+
+``context`` can pass extra instructions to the alert processor for more precise routing:
+
+.. code-block:: python
+
+  # Context provided to the pagerduty-incident output with
+  # instructions to assign the incident to a user.
+
+  @rule(logs=['osquery:differential'],
+        outputs=['pagerduty:csirt'],
+        context={'pagerduty-incident': {'assigned_user': 'valid_user'}})
+  def my_rule(record, context):
+      context['pagerduty-incident']['assigned_user'] = record['username']
+      return True
+
+datatypes
+~~~~~~~~~
+
+``conf/types.json`` defines data normalization, whereby you can write rules against a common type instead of a specific field or schema:
+
+.. code-block:: python
+
+  """These rules apply to several different log types, defined in conf/types.json"""
+  from helpers.base import fetch_values_by_datatype
+  from stream_alert.shared.rule import rule
+
+  @rule(datatypes=['sourceAddress:ioc_ip'], outputs=['aws-sns:my-topic'])
+  def ip_watchlist_hit(record):
+      """Source IP address matches watchlist."""
+      return '127.0.0.1' in fetch_values_by_datatype(record, 'sourceAddress:ioc_ip')
 
 
-Parameter Details
------------------
+  @rule(datatypes=['command'], outputs=['aws-sns:my-topic'])
+  def command_etc_shadow(record):
+      """Command line arguments include /etc/shadow"""
+      return any(
+          '/etc/shadow' in cmd.lower()
+          for cmd in fetch_values_by_datatype(record, 'command')
+      )
 
 logs
 ~~~~
 
-``logs`` define the log sources the rule supports; The ``def`` function block is not run unless this condition is satisfied. Your rule(s) must define at least one log source.
+``logs`` define the log schema(s) supported by the rule.
 
-A rule can be run against multiple log sources if desired.
+Log `sources <conf-datasources.html>`_ are defined in ``conf/sources.json`` and their `schemas <conf-schemas.html>`_ are defined in ``conf/logs.json``
 
-Log sources are defined in ``conf/sources.json`` and subsequent schemas are defined in ``conf/logs.json``
-
-For more details on how to setup a datasource, please see `Datasources <conf-datasources.html>`_
+.. note:: Either ``logs`` or ``datasources`` must be specified for each rule
 
 matchers
 ~~~~~~~~
 
-``matchers`` is an optional field; It defines conditions that must be satisfied in order for the rule to be evaluated.  This serves two purposes:
+``matchers`` define pre-conditions that must be satisfied in order for the rule to be evaluated.
+Matchers are defined in ``matchers/matchers.py`` but can also be defined in the rules file (see :ref:`example above <advanced_example>`).
 
-* To extract common logic from rules, which improves readability and writability
-* To ensure necessary conditions are met before full analysis of an incoming record
+All matchers are evaluated on each incoming log record before running any rules,
+so they can improve the efficiency of complex rules with shared logic.
 
-Matchers are normally defined in ``rules/matchers.py``. If desired, matchers can also be defined in rule files if the following line is added to the top:
+merge_by_keys / merge_window_mins
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. code-block:: python
+.. note:: Specify neither or both of these fields, not one of them in isolation
 
-  from stream_alert.shared.rule import matcher
-
-In the above example, we are evaluating the ``pci`` matcher.  As you can likely deduce, this ensures alerts are only triggered if the incoming record is from the ``pci`` environment.
-
-This is achieved by looking for a particular field in the log. The code:
+For a better alert triage experience, you can merge alerts whose records share one or more fields in common:
 
 .. code-block:: python
 
-    @matcher
-    def pci(record):
-        return record['decorations']['envIdentifier'] == 'pci'
+  @rule(logs=['your-schema'],
+        merge_by_keys=['alpha', 'beta', 'gamma'],
+        merge_window_mins=5):
+  def merged_rule(record):
+      return True
 
+The alert merger Lambda function will buffer all of these alerts until 5 minutes have elapsed,
+at which point
+
+.. code-block:: json
+
+  {
+    "alpha": "A",
+    "nested": {
+      "beta": "B"
+    },
+    "gamma": [1, 2, 3],
+    "timestamp": 123
+  }
+
+would be automatically merged with
+
+.. code-block:: json
+
+  {
+    "alpha": "A",
+    "nested": {
+      "beta": "B",
+      "extra": "field"
+    },
+    "gamma": [1, 2, 3],
+    "timestamp": 456
+  }
+
+A single consolidated alert will be sent showing the common keys and the record differences.
+*All* of the specified merge keys must have the same value in order for two records to be merged,
+but those keys can be nested anywhere in the record structure.
+
+.. note:: The original (unmerged) alert will always be sent to :ref:`Athena <athena_user_guide>`
 
 outputs
 ~~~~~~~
 
-``outputs`` define where the alert should be sent to if the return value of a rule is ``True``. Your rule(s) must define at least one output.
-
-StreamAlert supports sending alerts to PagerDuty, Slack, Amazon S3, Komand and Phantom.
-
-An alert can be sent to multiple destinations.
+Defines the alert destination if the return value of a rule is ``True``.
+Alerts are always sent to an :ref:`Athena table <athena_user_guide>` which is easy to query.
+Any number of additional `outputs <outputs.html>`_ can be specified.
 
 req_subkeys
 ~~~~~~~~~~~
 
-``req_subkeys`` is an optional argument which defines sub-keys that must exist in the incoming record in order for it to be evaluated.
+``req_subkeys`` defines sub-keys that must exist in the incoming record (with a non-zero value) in order for it to be evaluated.
 
-Each defined sub-key must have a non zero value as well in order for the rule to evaluate the log.
-
-This feature should be used if you have logs with a loose schema defined in order to avoid ``KeyError`` in rules.
-
-Examples:
+This feature should be used if you have logs with a loose schema defined in order to avoid raising a ``KeyError`` in rules.
 
 .. code-block:: python
 
-  # The 'columns' key must contain
-  # sub-keys of 'address' and 'hostnames'
+  # The 'columns' key must contain sub-keys of 'address' and 'hostnames'
 
   @rule(logs=['osquery:differential'],
-        outputs=['pagerduty', 'aws-s3'],
+        outputs=['aws-lambda:my-function'],
         req_subkeys={'columns':['address', 'hostnames']})
-        def osquery_host_check(rec):
-          # If all logs did not have the 'address' sub-key, this rule would
-          # throw a KeyError.  Using req_subkeys avoids this.
-          return rec['columns']['address'] == '127.0.0.1'
-
-
-context
-~~~~~~~~~~~
-
-``context`` is an optional field to pass extra instructions to the alert processor on how to route the alert. It can be particulary helpful to pass data to an output.
-
-Example:
-
-.. code-block:: python
-
-  # Context provided to the pagerduty-incident output
-  # with instructions to assign the incident to a user.
-
-  @rule(logs=['osquery:differential'],
-        outputs=['pagerduty', 'aws-s3'],
-        context={'pagerduty-incident':{'assigned_user': 'valid_user'}})
-        ...
-
-
-Helpers
--------
-To improve readability and writability of rules, you can extract commonly used ``Python`` logic into custom helper methods.
-
-These helpers are defined in ``helpers/base.py`` and can be called from within a matcher or rule.
-
-Example function:
-
-.. code-block:: python
-
-    # helpers/base.py
-
-    def in_set(data, whitelist):
-        """Checks if some data exists in any elements of a whitelist.
-
-        Args:
-            data: element in list
-            whitelist: list/set to search in
-
-        Returns:
-            True/False
-        """
-        return any(fnmatch(data, x) for x in whitelist)
-
-Example usage of the function above in a rule:
-
-.. code-block:: python
-
-    # rules/default/prod.py
-
-    from helpers.base import in_set
-
-    @rule(logs=['example'],
-          outputs=['slack'])
-    def example_rule(record):
-        user = record['user']
-        user_whitelist = {
-          'mike',
-          'jin',
-          'jack',
-          'mary'
-        }
-
-        return in_set(user, user_whitelist)
-
+  def osquery_host_check(rec):
+      # If all logs did not have the 'address' sub-key, this rule would
+      # throw a KeyError.  Using req_subkeys avoids this.
+      return rec['columns']['address'] == '127.0.0.1'
 
 Disabling Rules
 ---------------
 
-In the event that a rule must be temporarily disabled, due to either poor fidelity or any other reason, the ``@disable`` decorator can be used.
-
-This allows you to keep the rule definition and tests in place, instead of having to remove them entirely.
-
-In the following example, ``@disable`` prevents the first rule from analyzing incoming records:
+In the event that a rule must be temporarily disabled, the ``@disable`` decorator can be used.
+This allows you to keep the rule definition and tests in place instead of having to remove them entirely:
 
 .. code-block:: python
 
-  # the decorator must be imported, similar to @rule and @matcher
-  from stream_alert.shared.rule import disable
+  from stream_alert.shared.rule import disable, rule
 
-  @disable
-  @rule(logs=['example'],
-        outputs=['slack'])
+  @disable  # TODO: this rule is too noisy!
+  @rule(logs=['example'], outputs=['slack'])
   def example_rule(record):
-      host = record['host']
-
-    return host == 'jump-server-1.network.com'
-
-
-  @rule(logs=['example'],
-        outputs=['slack'])
-  def example_rule(record):
-      user = record['user']
-      user_whitelist = {
-        'mike',
-        'jin',
-        'jack',
-        'mary'
-      }
-
-      return in_set(user, user_whitelist)
+      return True
 
 
 Testing
