@@ -1,6 +1,5 @@
 """Standalone utility functions used by the StreamAlert core."""
 from collections import deque
-import logging
 
 from netaddr import IPAddress, IPNetwork
 from netaddr.core import AddrFormatError
