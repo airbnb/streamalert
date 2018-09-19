@@ -17,5 +17,6 @@ from __future__ import absolute_import
 
 from stream_alert.rule_promotion.promoter import RulePromoter
 
+
 def handler(event, _):
     RulePromoter().run(event.get('send_digest', False))

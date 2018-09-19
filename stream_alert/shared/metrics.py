@@ -19,10 +19,12 @@ from stream_alert.shared import (
     ALERT_MERGER_NAME,
     ALERT_PROCESSOR_NAME,
     ATHENA_PARTITION_REFRESH_NAME,
-    LOGGER,
     RULE_PROCESSOR_NAME
 )
+from stream_alert.shared.logger import get_logger
 
+
+LOGGER = get_logger(__name__)
 CLUSTER = os.environ.get('CLUSTER', 'unknown_cluster')
 
 # The FUNC_PREFIXES dict acts as a simple map to a human-readable name

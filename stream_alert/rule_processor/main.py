@@ -16,8 +16,11 @@ limitations under the License.
 from __future__ import absolute_import  # Suppresses RuntimeWarning import error in Lambda
 import json
 
-from stream_alert.rule_processor import LOGGER
 from stream_alert.rule_processor.handler import StreamAlert
+from stream_alert.shared.logger import get_logger
+
+
+LOGGER = get_logger(__name__)
 
 
 def handler(event, context):

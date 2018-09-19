@@ -16,15 +16,18 @@ limitations under the License.
 from __future__ import absolute_import  # Suppresses RuntimeWarning import error in Lambda
 import os
 
-from stream_alert.alert_processor import LOGGER
 from stream_alert.alert_processor.outputs.output_base import StreamAlertOutput
 from stream_alert.shared import backoff_handlers, NORMALIZATION_KEY, resources
 from stream_alert.shared.alert import Alert, AlertCreationError
 from stream_alert.shared.alert_table import AlertTable
 from stream_alert.shared.config import load_config
+from stream_alert.shared.logger import get_logger
 
 import backoff
 from botocore.exceptions import ClientError
+
+
+LOGGER = get_logger(__name__)
 
 
 class AlertProcessor(object):

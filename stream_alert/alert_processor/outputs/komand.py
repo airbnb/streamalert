@@ -15,12 +15,15 @@ limitations under the License.
 """
 from collections import OrderedDict
 
-from stream_alert.alert_processor import LOGGER
 from stream_alert.alert_processor.outputs.output_base import (
     OutputDispatcher,
     OutputProperty,
     StreamAlertOutput
 )
+from stream_alert.shared.logger import get_logger
+
+
+LOGGER = get_logger(__name__)
 
 
 @StreamAlertOutput

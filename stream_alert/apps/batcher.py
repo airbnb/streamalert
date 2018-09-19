@@ -19,7 +19,10 @@ import math
 import boto3
 from botocore.exceptions import ClientError
 
-from stream_alert.apps import LOGGER
+from stream_alert.shared.logger import get_logger
+
+
+LOGGER = get_logger(__name__)
 
 
 class Batcher(object):

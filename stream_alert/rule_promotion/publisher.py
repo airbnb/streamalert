@@ -15,7 +15,10 @@ limitations under the License.
 """
 import boto3
 
-from stream_alert.rule_promotion import LOGGER
+from stream_alert.shared.logger import get_logger
+
+
+LOGGER = get_logger(__name__)
 
 
 class StatsPublisher(object):

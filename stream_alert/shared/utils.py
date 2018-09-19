@@ -6,9 +6,10 @@ from netaddr import IPAddress, IPNetwork
 from netaddr.core import AddrFormatError
 
 from stream_alert.shared import NORMALIZATION_KEY
+from stream_alert.shared.logger import get_logger
 
-logging.basicConfig()
-LOGGER = logging.getLogger('StreamAlert')
+
+LOGGER = get_logger(__name__)
 
 
 def valid_ip(ip_address):

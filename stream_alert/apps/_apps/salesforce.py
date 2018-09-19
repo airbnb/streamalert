@@ -21,11 +21,15 @@ import time
 import backoff
 import requests
 
-from . import AppIntegration, LOGGER, StreamAlertApp
+from . import AppIntegration, StreamAlertApp, get_logger
+
+
+LOGGER = get_logger(__name__)
 
 
 class SalesforceAppError(Exception):
     """Salesforce App Error class"""
+
 
 class SalesforceApp(AppIntegration):
     """Salesforce StreamAlert Base App

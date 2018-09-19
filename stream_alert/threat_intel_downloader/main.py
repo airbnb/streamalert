@@ -28,13 +28,15 @@ from stream_alert.shared.backoff_handlers import (
     giveup_handler
 )
 from stream_alert.shared.config import load_config, parse_lambda_arn
-
-from stream_alert.threat_intel_downloader import LOGGER
+from stream_alert.shared.logger import get_logger
 from stream_alert.threat_intel_downloader.exceptions import (
     ThreatStreamCredsError,
     ThreatStreamLambdaInvokeError,
     ThreatStreamRequestsError
 )
+
+
+LOGGER = get_logger(__name__)
 
 
 class ThreatStream(object):
