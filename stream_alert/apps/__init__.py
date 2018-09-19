@@ -6,23 +6,6 @@ import os
 from stream_alert.apps.exceptions import AppException
 
 
-# Create a package level logger to import
-LEVEL = os.environ.get('LOGGER_LEVEL', 'INFO').upper()
-
-# Cast integer levels to avoid a ValueError
-if LEVEL.isdigit():
-    LEVEL = int(LEVEL)
-
-logging.basicConfig(format='%(name)s [%(levelname)s]: [%(module)s.%(funcName)s] %(message)s')
-
-LOGGER = logging.getLogger('StreamAlertApp')
-try:
-    LOGGER.setLevel(LEVEL)
-except (TypeError, ValueError) as err:
-    LOGGER.setLevel('INFO')
-    LOGGER.error('Defaulting to INFO logging: %s', err)
-
-
 class StreamAlertApp(object):
     """Class to be used as a decorator to register all AppIntegration subclasses"""
     _apps = {}

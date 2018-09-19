@@ -18,16 +18,21 @@ from collections import OrderedDict
 import csv
 from fnmatch import fnmatch
 import json
+import logging
 import re
 import StringIO
 
 import jsonpath_rw
 
-from stream_alert.rule_processor import LOGGER, LOGGER_DEBUG_ENABLED
+from stream_alert.shared.logger import get_logger
 from stream_alert.shared.stats import time_me
 
+
+LOGGER = get_logger(__name__)
+LOGGER_DEBUG_ENABLED = LOGGER.isEnabledFor(logging.DEBUG)
 PARSERS = {}
 ENVELOPE_KEY = 'streamalert:envelope_keys'
+
 
 def parser(cls):
     """Class decorator to register parsers"""

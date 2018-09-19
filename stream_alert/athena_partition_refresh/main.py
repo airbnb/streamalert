@@ -20,9 +20,12 @@ import posixpath
 import re
 import urllib
 
-from stream_alert.athena_partition_refresh import LOGGER
 from stream_alert.shared.athena import AthenaClient
 from stream_alert.shared.config import load_config
+from stream_alert.shared.logger import get_logger
+
+
+LOGGER = get_logger(__name__)
 
 
 class AthenaRefreshError(Exception):

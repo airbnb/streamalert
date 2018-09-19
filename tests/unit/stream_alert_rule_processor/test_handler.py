@@ -16,7 +16,6 @@ limitations under the License.
 # pylint: disable=protected-access,attribute-defined-outside-init
 import base64
 import json
-import logging
 import os
 
 from mock import ANY, call, Mock, patch
@@ -29,8 +28,7 @@ from nose.tools import (
 )
 import boto3
 
-from stream_alert.rule_processor import LOGGER
-from stream_alert.rule_processor.handler import StreamAlert
+import stream_alert.rule_processor.handler as handler
 from stream_alert.rule_processor.threat_intel import StreamThreatIntel
 from stream_alert.shared.alert import Alert
 from stream_alert.shared.config import load_config
@@ -55,7 +53,7 @@ class TestStreamAlert(object):
                              'AWS_DEFAULT_REGION': 'us-east-1'})
     def setup(self):
         """Setup before each method"""
-        self.__sa_handler = StreamAlert(get_mock_context())
+        self.__sa_handler = handler.StreamAlert(get_mock_context())
 
     def test_run_no_records(self):
         """StreamAlert Class - Run, No Records"""
@@ -200,18 +198,9 @@ class TestStreamAlert(object):
         rules_mock.return_value = ([Alert('rule_name', {}, {'output'})], ['normalized_records'])
         alerts_mock.return_value = []
 
-        # Cache the logger level
-        log_level = LOGGER.getEffectiveLevel()
-
-        # Increase the logger level to debug
-        LOGGER.setLevel(logging.DEBUG)
-
-        self.__sa_handler.run(get_valid_event())
-
-        # Reset the logger level
-        LOGGER.setLevel(log_level)
-
-        log_mock.assert_called_with('Alerts:\n%s', ANY)
+        with patch.object(handler, 'LOGGER_DEBUG_ENABLED', True):
+            self.__sa_handler.run(get_valid_event())
+            log_mock.assert_called_with('Alerts:\n%s', ANY)
 
     @patch('stream_alert.rule_processor.handler.load_stream_payload')
     @patch('stream_alert.rule_processor.handler.StreamClassifier.load_sources')
@@ -285,7 +274,7 @@ class TestStreamAlert(object):
                                                            region='us-east-1')
         mock_query.return_value = ([], [])
 
-        sa_handler = StreamAlert(get_mock_context())
+        sa_handler = handler.StreamAlert(get_mock_context())
         event = {
             'account': 123456,
             'region': '123456123456',
@@ -327,7 +316,7 @@ class TestStreamAlert(object):
                                                            region='us-east-1')
         mock_query.return_value = ([], [])
 
-        sa_handler = StreamAlert(get_mock_context())
+        sa_handler = handler.StreamAlert(get_mock_context())
         event = {
             'account': 123456,
             'region': '123456123456',

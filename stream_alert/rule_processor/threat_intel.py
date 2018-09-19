@@ -26,14 +26,18 @@ from stream_alert.shared.backoff_handlers import (
     success_handler,
     giveup_handler
 )
-from stream_alert.rule_processor import LOGGER
+from stream_alert.shared.logger import get_logger
 from stream_alert.shared.utils import in_network, valid_ip
+
+
+LOGGER = get_logger(__name__)
 
 # DynamoDB Table settings
 MAX_QUERY_CNT = 100
 PRIMARY_KEY = 'ioc_value'
 SUB_TYPE_KEY = 'sub_type'
 PROJECTION_EXPRESSION = '{},{}'.format(PRIMARY_KEY, SUB_TYPE_KEY)
+
 
 class StreamIoc(object):
     """Class to store IOC info"""

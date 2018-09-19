@@ -16,7 +16,6 @@ limitations under the License.
 # pylint: disable=protected-access
 import json
 import gzip
-import logging
 import os
 import tempfile
 
@@ -32,7 +31,7 @@ from nose.tools import (
 )
 from pyfakefs import fake_filesystem_unittest
 
-from stream_alert.rule_processor import LOGGER
+import stream_alert.rule_processor.payload as payload
 from stream_alert.rule_processor.payload import load_stream_payload, S3ObjectSizeError, S3Payload
 from tests.unit.stream_alert_rule_processor.test_helpers import (
     make_kinesis_raw_record,
@@ -48,9 +47,9 @@ def teardown_s3():
 
 def test_load_payload_valid():
     """StreamPayload - Loading Stream Payload, Valid"""
-    payload = load_stream_payload('s3', 'entity', 'record')
+    s3_payload = load_stream_payload('s3', 'entity', 'record')
 
-    assert_is_instance(payload, S3Payload)
+    assert_is_instance(s3_payload, S3Payload)
 
 
 @patch('logging.Logger.error')
@@ -173,36 +172,29 @@ def test_pre_parse_s3(s3_mock, *_):
 @patch('stream_alert.rule_processor.payload.S3Payload._read_downloaded_s3_object')
 def test_pre_parse_s3_debug(s3_mock, log_mock, _):
     """S3Payload - Pre Parse, Debug On"""
-    # Cache the logger level
-    log_level = LOGGER.getEffectiveLevel()
+    with patch.object(payload, 'LOGGER_DEBUG_ENABLED', True):
 
-    # Increase the logger level to debug
-    LOGGER.setLevel(logging.DEBUG)
+        records = ['_first_line_test_' * 10,
+                   '_second_line_test_' * 10]
 
-    records = ['_first_line_test_' * 10,
-               '_second_line_test_' * 10]
+        s3_mock.side_effect = [((100, records[0]), (200, records[1]))]
 
-    s3_mock.side_effect = [((100, records[0]), (200, records[1]))]
+        raw_record = make_s3_raw_record('unit_bucket_name', 'unit_key_name')
+        s3_payload = load_stream_payload('s3', 'unit_key_name', raw_record)
+        S3Payload.s3_object_size = 350
 
-    raw_record = make_s3_raw_record('unit_bucket_name', 'unit_key_name')
-    s3_payload = load_stream_payload('s3', 'unit_key_name', raw_record)
-    S3Payload.s3_object_size = 350
+        _ = [_ for _ in s3_payload.pre_parse()]
 
-    _ = [_ for _ in s3_payload.pre_parse()]
+        calls = [
+            call('Processed %s S3 records out of an approximate total of %s '
+                 '(average record size: %s bytes, total size: %s bytes)',
+                 100, 350, 1, 350),
+            call('Processed %s S3 records out of an approximate total of %s '
+                 '(average record size: %s bytes, total size: %s bytes)',
+                 200, 350, 1, 350)
+        ]
 
-    calls = [
-        call('Processed %s S3 records out of an approximate total of %s '
-             '(average record size: %s bytes, total size: %s bytes)',
-             100, 350, 1, 350),
-        call('Processed %s S3 records out of an approximate total of %s '
-             '(average record size: %s bytes, total size: %s bytes)',
-             200, 350, 1, 350)
-    ]
-
-    log_mock.assert_has_calls(calls)
-
-    # Reset the logger level and stop the patchers
-    LOGGER.setLevel(log_level)
+        log_mock.assert_has_calls(calls)
 
 
 @with_setup(setup=None, teardown=teardown_s3)

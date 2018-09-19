@@ -26,12 +26,16 @@ import backoff
 import boto3
 from botocore.exceptions import ClientError
 
-from stream_alert.alert_processor import LOGGER
 from stream_alert.shared.backoff_handlers import (
     backoff_handler,
     success_handler,
     giveup_handler
 )
+from stream_alert.shared.logger import get_logger
+
+
+LOGGER = get_logger(__name__)
+
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 OutputProperty = namedtuple('OutputProperty',

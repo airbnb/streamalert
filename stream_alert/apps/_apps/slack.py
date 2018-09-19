@@ -16,7 +16,10 @@ limitations under the License.
 import re
 import time
 
-from . import AppIntegration, LOGGER, StreamAlertApp
+from . import AppIntegration, StreamAlertApp, get_logger
+
+
+LOGGER = get_logger(__name__)
 
 
 class SlackApp(AppIntegration):

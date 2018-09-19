@@ -17,7 +17,6 @@ from collections import OrderedDict
 import os
 import backoff
 
-from stream_alert.alert_processor import LOGGER
 from stream_alert.alert_processor.outputs.output_base import (
     OutputDispatcher,
     OutputProperty,
@@ -29,6 +28,10 @@ from stream_alert.shared.backoff_handlers import (
     success_handler,
     giveup_handler
 )
+from stream_alert.shared.logger import get_logger
+
+
+LOGGER = get_logger(__name__)
 
 
 def events_v2_data(alert, routing_key, with_record=True):

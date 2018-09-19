@@ -15,12 +15,15 @@ limitations under the License.
 """
 from datetime import datetime
 
-from stream_alert.rule_promotion import LOGGER
 from stream_alert.rule_promotion.publisher import StatsPublisher
 from stream_alert.rule_promotion.statistic import StagingStatistic
 from stream_alert.shared.athena import AthenaClient
 from stream_alert.shared.config import load_config
+from stream_alert.shared.logger import get_logger
 from stream_alert.shared.rule_table import RuleTable
+
+
+LOGGER = get_logger(__name__)
 
 
 class RulePromoter(object):

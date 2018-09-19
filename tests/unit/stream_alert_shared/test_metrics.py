@@ -16,7 +16,7 @@ limitations under the License.
 # pylint: disable=no-self-use,protected-access
 import os
 
-from mock import call, patch
+from mock import patch
 from nose.tools import assert_equal
 
 from stream_alert import shared
@@ -69,24 +69,3 @@ class TestMetrics(object):
                                         'expected 0 or 1: %s',
                                         'invalid literal for int() with '
                                         'base 10: \'bad\'')
-
-    @patch('logging.Logger.error')
-    def test_init_logging_bad(self, log_mock):
-        """Shared Init - Logging, Bad Level"""
-        with patch.dict('os.environ', {'LOGGER_LEVEL': 'IFNO'}):
-            # Force reload the shared package to trigger the init
-            reload(shared)
-
-            message = str(call('Defaulting to INFO logging: %s',
-                               ValueError('Unknown level: \'IFNO\'',)))
-
-            assert_equal(str(log_mock.call_args_list[0]), message)
-
-    @patch('logging.Logger.setLevel')
-    def test_init_logging_int_level(self, log_mock):
-        """Shared Init - Logging, Integer Level"""
-        with patch.dict('os.environ', {'LOGGER_LEVEL': '10'}):
-            # Force reload the shared package to trigger the init
-            reload(shared)
-
-            log_mock.assert_called_with(10)

@@ -17,10 +17,12 @@ from collections import defaultdict
 
 import time
 
-from stream_alert.shared import LOGGER
+from stream_alert.shared.logger import get_logger
 
 
+LOGGER = get_logger(__name__)
 RULE_STATS = defaultdict(lambda: RuleStatistic(0.0))
+
 
 class RuleStatistic(object):
     """Simple class for tracking rule times and call count"""

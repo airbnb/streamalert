@@ -23,7 +23,6 @@ import backoff
 from botocore.exceptions import ClientError
 import boto3
 
-from stream_alert.alert_processor import LOGGER
 from stream_alert.alert_processor.helpers import elide_string_middle
 from stream_alert.alert_processor.outputs.output_base import (
     OutputDispatcher,
@@ -35,6 +34,10 @@ from stream_alert.shared.backoff_handlers import (
     success_handler,
     giveup_handler
 )
+from stream_alert.shared.logger import get_logger
+
+
+LOGGER = get_logger(__name__)
 
 
 class AWSOutput(OutputDispatcher):

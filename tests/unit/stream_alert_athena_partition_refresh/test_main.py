@@ -17,36 +17,13 @@ limitations under the License.
 import json
 import os
 
-from mock import call, Mock, patch
+from mock import Mock, patch
 from nose.tools import assert_equal, assert_raises, assert_true, raises
 
 from stream_alert.athena_partition_refresh.main import AthenaRefresher, AthenaRefreshError
 from stream_alert.shared.config import load_config
 
 from tests.unit.helpers.aws_mocks import MockAthenaClient
-
-
-@patch('logging.Logger.error')
-def test_init_logging_bad(log_mock):
-    """Athena Parition Refresh Init - Logging, Bad Level"""
-    level = 'IFNO'
-    with patch.dict(os.environ, {'LOGGER_LEVEL': level}):
-        import stream_alert.athena_partition_refresh
-        reload(stream_alert.athena_partition_refresh)
-
-        message = str(call('Defaulting to INFO logging: %s',
-                           ValueError('Unknown level: \'IFNO\'',)))
-
-        assert_equal(str(log_mock.call_args_list[0]), message)
-
-
-@patch('stream_alert.athena_partition_refresh.LOGGER.setLevel')
-def test_init_logging_int_level(log_mock):
-    """Athena Parition Refresh Init - Logging, Integer Level"""
-    with patch.dict(os.environ, {'LOGGER_LEVEL': '10'}):
-        import stream_alert.athena_partition_refresh
-        reload(stream_alert.athena_partition_refresh)
-        log_mock.assert_called_with(10)
 
 
 # Without this time.sleep patch, backoff performs sleep

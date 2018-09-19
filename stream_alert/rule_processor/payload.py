@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from abc import ABCMeta, abstractmethod, abstractproperty
-from logging import DEBUG as LOG_LEVEL_DEBUG
+import logging
 from urllib import unquote
 import base64
 import gzip
@@ -26,8 +26,13 @@ import zlib
 
 import boto3
 
-from stream_alert.rule_processor import FUNCTION_NAME, LOGGER
+from stream_alert.rule_processor import FUNCTION_NAME
+from stream_alert.shared.logger import get_logger
 from stream_alert.shared.metrics import MetricLogger
+
+
+LOGGER = get_logger(__name__)
+LOGGER_DEBUG_ENABLED = LOGGER.isEnabledFor(logging.DEBUG)
 
 
 def load_stream_payload(service, entity, raw_record):
@@ -164,7 +169,7 @@ class S3Payload(StreamPayload):
             yield self
 
             # Only do the extra calculations below if debug logging is enabled
-            if not LOGGER.isEnabledFor(LOG_LEVEL_DEBUG):
+            if not LOGGER_DEBUG_ENABLED:
                 continue
 
             # Add the current data to the total processed size

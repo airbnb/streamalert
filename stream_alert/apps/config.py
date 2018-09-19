@@ -24,9 +24,11 @@ import boto3
 from botocore import client
 from botocore.exceptions import ClientError
 
-from stream_alert.apps import LOGGER
 from stream_alert.apps.exceptions import AppAuthError, AppConfigError, AppStateError
+from stream_alert.shared.logger import get_logger
 
+
+LOGGER = get_logger(__name__)
 AWS_RATE_RE = re.compile(r'^rate\(((1) (minute|hour|day)|'
                          r'([2-9]+|[1-9]\d+) (minutes|hours|days))\)$')
 AWS_RATE_HELPER = 'http://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html'
