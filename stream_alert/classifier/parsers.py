@@ -82,6 +82,8 @@ class ParserBase:
             options (dict): Parser options - delimiter, separator, or log_patterns
         """
         self._options = options or {}
+        self._valid_parses = []
+        self._invalid_parses = []
         self._failed = False
 
     @classmethod
@@ -121,6 +123,25 @@ class ParserBase:
     def optional_envelope_keys(self):
         return self.configuration.get('optional_envelope_keys')
 
+    @property
+    def valid(self):
+        return len(self._valid_parses) != 0
+
+    @property
+    def invalid_parses(self):
+        return self._invalid_parses
+
+    @property
+    def parses(self):
+        return self._valid_parses
+
+    def _add_parse_result(self, result, valid):
+        if not valid:
+            self._invalid_parses.append(result)
+            return
+
+        self._valid_parses.append(result)
+
     def _merge_schema_envelope(self):
         if self.envelope_schema and self.ENVELOPE_KEY not in self.schema:
             self.schema.update({self.ENVELOPE_KEY: self.envelope_schema})
@@ -130,6 +151,29 @@ class ParserBase:
             return
 
         record.update({self.ENVELOPE_KEY: envelope})
+
+    def _add_optional_keys(self, data, schema, optional_keys):
+        """Add optional keys to a raw record
+
+        Args:
+            data (dict): JSONPath extracted JSON records
+            schema (dict): The log type schema
+            optional_keys (dict): The optional keys in the schema
+        """
+        if not (schema and optional_keys):
+            return  # Nothing to do
+
+        for key_name in optional_keys:
+            # Instead of doing a schema.update() here with a default value type,
+            # we should enforce having any optional keys declared within the schema
+            # and log an error if that is not the case
+            if key_name not in schema:
+                LOGGER.error('Optional top level key \'%s\' '
+                             'not found in declared log schema', key_name)
+                continue
+
+            # Add the optional key if it does not exist in the parsed json payload
+            data[key_name] = data.get(key_name, self.default_optional_values(schema[key_name]))
 
     def _extract_envelope(self, json_payload):
         """Extract envelope key/values from the original payload
@@ -291,16 +335,37 @@ class ParserBase:
         Yields:
             PayloadRecord: Represention of parsed records.
         """
-        # Copy the data since the parse(s) can highly mutate the input
-        data_copy = deepcopy(data)
+        data_copy = None
+        # If the data is a mutable object, copy it since
+        # the parse(s) can highly mutate the input
+        if isinstance(data, dict):
+            data_copy = deepcopy(data)
+
+        # If the data is a string, attempt to load it to json,
+        # falling back on a string type on error
+        elif isinstance(data, basestring):
+            try:
+                data_copy = json.loads(data_copy)
+            except (ValueError, TypeError) as err:
+                LOGGER.debug('Data is not valid json: %s', err.message)
+                data_copy = data
+
+        # Add optional envelope keys to the record, if defined - no-op otherwise
+        self._add_optional_keys(data_copy, self.envelope_schema, self.optional_envelope_keys)
+
+        # Note: no configuration essentially means data is by default valid
+        # Also, ensure all of the required envelope keys exist if defined
+        if not all(key in data_copy for key in self.envelope_schema):
+            return False
 
         envelope = self._extract_envelope(data)
 
         for record, valid in self._parse(data_copy):
             valid = valid and self.matched_log_pattern(record)
             self._apply_envelope(envelope, record)
-            valid = valid and self._convert_type(record)
-            yield ParseResult(record=record, valid=valid)
+            self._add_parse_result(record, valid and self._convert_type(record))
+
+        return self.valid
 
     @abstractmethod
     def _parse(self, data):
@@ -364,32 +429,6 @@ class JSONParser(ParserBase):
 
         return match
 
-    def _add_optional_keys(self, json_record, schema, optional_keys):
-        """Add optional keys to a parsed JSON record.
-
-        Args:
-            json_records (list): JSONPath extracted JSON records
-            schema (dict): The log type schema
-            optional_keys (dict): The optional keys in the schema
-        """
-        if not (schema and optional_keys):
-            return  # Nothing to do
-
-        for key_name in optional_keys:
-            # Instead of doing a schema.update() here with a default value type,
-            # we should enforce having any optional keys declared within the schema
-            # and log an error if that is not the case
-            if key_name not in schema:
-                LOGGER.error('Optional top level key \'%s\' '
-                             'not found in declared log schema', key_name)
-                continue
-
-            # Add the optional key if it does not exist in the parsed json payload
-            json_record[key_name] = json_record.get(
-                key_name,
-                self.default_optional_values(schema[key_name])
-            )
-
     @time_me
     def _extract_records(self, json_raw_record):
         """Identify and extract nested payloads from parsed JSON records.
@@ -402,7 +441,7 @@ class JSONParser(ParserBase):
         Args:
             json_raw_record (dict): The raw json data loaded as a dictionary
 
-        Yields:
+        Returns:
             tuple: Records and their parsing status ie: (record, parsing_status)
         """
         if self.json_path:
@@ -485,20 +524,6 @@ class JSONParser(ParserBase):
             list: A list of dictionaries representing parsed records OR
             False if the data is not JSON or the data does not follow the schema.
         """
-        if isinstance(data, basestring):
-            try:
-                data = json.loads(data)
-            except (ValueError, TypeError) as err:
-                LOGGER.debug('JSON parse failed: %s\n%s', str(err), str(data))
-                self._failed = True
-                return
-
-        # Add optional envelope keys to the record, if defined - no-op otherwise
-        self._add_optional_keys(data, self.envelope_schema, self.optional_envelope_keys)
-
-        # Note: no configuration essentially means data is by default valid
-        # Also, ensure all of the required envelope keys exist if defined
-        valid = all(key in data for key in self.envelope_schema)
 
         if valid and (self.json_path or self.json_regex_key):
             records = self._extract_records(data)
@@ -577,14 +602,7 @@ class CSVParser(ParserBase):
 
         records = records or [data]
 
-        # Since CSV parsing relies on number of keys, ensure the
-        # ENVELOPE_KEY is not present for parsing only
-        schema = self.schema
-        if self.envelope_schema:
-            schema = schema.copy()
-            del schema[self.ENVELOPE_KEY]
-
-        return self._extract_records(records, schema)
+        return self._extract_records(records, self.schema)
 
     def _extract_records(self, records, schema):
         csv_payloads = []
@@ -661,6 +679,11 @@ class KVParser(ParserBase):
             list: A list of dictionaries representing parsed records OR
             False if the columns do not match.
         """
+        record = self._extract_record(data)
+        return [(record, True)] if record else [(data, False)]
+
+    def _extract_record(self, data):
+
         kv_payload = {}
         try:
             # remove any blank strings that may exist in our list
@@ -669,24 +692,26 @@ class KVParser(ParserBase):
             if len(fields) != len(self.schema):
                 return False
 
-            regex = re.compile('.+{}.+'.format(self.separator))
             for index, field in enumerate(fields):
-                # verify our fields match the kv regex
-                if regex.match(field):
-                    key, value = field.split(self.separator)
-                    # handle duplicate keys
-                    if key in kv_payload:
-                        # load key from our configuration
-                        kv_payload[self.schema.keys()[index]] = value
-                    else:
-                        # load key from data
-                        kv_payload[key] = value
-                else:
-                    LOGGER.error('key/value regex failure for %s', field)
+                # verify our fields contains the separator
+                if self.separator not in field:
+                    LOGGER.error('separator \'%s\' not found in field: %s', self.separator, field)
+                    continue
 
-            return [kv_payload]
+                # only take data preceeding the first occurence of the field as the key
+                key, value = field.split(self.separator, 1)
+                # handle duplicate keys
+                if key in kv_payload:
+                    # load key from our configuration
+                    kv_payload[self.schema.keys()[index]] = value
+                else:
+                    # add the data value
+                    kv_payload[key] = value
+
         except UnicodeDecodeError:
             return False
+
+        return kv_payload
 
 
 @parser
