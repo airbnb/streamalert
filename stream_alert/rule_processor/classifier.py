@@ -15,11 +15,16 @@ limitations under the License.
 """
 from collections import namedtuple, OrderedDict
 import json
+import logging
 
-from stream_alert.rule_processor import LOGGER, LOGGER_DEBUG_ENABLED
 from stream_alert.rule_processor.parsers import get_parser
 from stream_alert.rule_processor.threat_intel import StreamThreatIntel
+from stream_alert.shared.logger import get_logger
 from stream_alert.shared.stats import time_me
+
+
+LOGGER = get_logger(__name__)
+LOGGER_DEBUG_ENABLED = LOGGER.isEnabledFor(logging.DEBUG)
 
 # Set the below to True when we want to support matching on multiple schemas
 # and then log_patterns will be used as a fall back for key/value matching

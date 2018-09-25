@@ -17,9 +17,12 @@ from datetime import datetime, timedelta
 
 import boto3
 
-from stream_alert.shared import LOGGER
 from stream_alert.shared.helpers.dynamodb import ignore_conditional_failure
+from stream_alert.shared.logger import get_logger
 from stream_alert.shared.rule import import_folders, Rule
+
+
+LOGGER = get_logger(__name__)
 
 
 class RuleTable(object):

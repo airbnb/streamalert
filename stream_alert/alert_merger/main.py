@@ -18,12 +18,15 @@ from datetime import datetime
 import json
 import os
 
-from stream_alert.alert_merger import LOGGER
+import boto3
+
 from stream_alert.shared.alert import Alert, AlertCreationError
 from stream_alert.shared.alert_table import AlertTable
+from stream_alert.shared.logger import get_logger
 from stream_alert.shared.metrics import ALERT_MERGER_NAME, MetricLogger
 
-import boto3
+
+LOGGER = get_logger(__name__)
 
 
 class AlertMergeGroup(object):

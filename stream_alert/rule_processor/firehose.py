@@ -23,13 +23,17 @@ from botocore import client
 from botocore.exceptions import ClientError
 from botocore.vendored.requests.exceptions import ConnectionError, Timeout
 
-from stream_alert.rule_processor import FUNCTION_NAME, LOGGER
+from stream_alert.rule_processor import FUNCTION_NAME
+from stream_alert.shared.logger import get_logger
 from stream_alert.shared.metrics import MetricLogger
 from stream_alert.shared.backoff_handlers import (
     backoff_handler,
     success_handler,
     giveup_handler
 )
+
+LOGGER = get_logger(__name__)
+
 
 class FirehoseClient(object):
     """Handles preparing and sending data from the Rule Processor to Kinesis Firehose"""

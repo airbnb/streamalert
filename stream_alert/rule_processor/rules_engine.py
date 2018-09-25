@@ -17,14 +17,16 @@ from copy import copy
 from datetime import datetime, timedelta
 import os
 
-from stream_alert.rule_processor import LOGGER
 from stream_alert.rule_processor.threat_intel import StreamThreatIntel
 from stream_alert.shared import NORMALIZATION_KEY, resources
 from stream_alert.shared.alert import Alert
 from stream_alert.shared.rule import import_folders, Rule
+from stream_alert.shared.logger import get_logger
 from stream_alert.shared.lookup_tables import LookupTables
 from stream_alert.shared.rule_table import RuleTable
 
+
+LOGGER = get_logger(__name__)
 _IGNORE_KEYS = {StreamThreatIntel.IOC_KEY, NORMALIZATION_KEY}
 
 

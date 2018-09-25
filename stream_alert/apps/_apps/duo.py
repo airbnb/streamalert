@@ -22,7 +22,10 @@ import urllib
 
 import requests
 
-from . import AppIntegration, LOGGER, StreamAlertApp
+from . import AppIntegration, StreamAlertApp, get_logger
+
+
+LOGGER = get_logger(__name__)
 
 
 class DuoApp(AppIntegration):

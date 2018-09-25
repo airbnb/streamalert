@@ -17,9 +17,13 @@ import os
 
 from botocore.exceptions import ClientError
 
+from stream_alert.rule_processor import FUNCTION_NAME
 from stream_alert.shared.alert_table import AlertTable
+from stream_alert.shared.logger import get_logger
 from stream_alert.shared.metrics import MetricLogger
-from stream_alert.rule_processor import FUNCTION_NAME, LOGGER
+
+
+LOGGER = get_logger(__name__)
 
 
 class AlertForwarder(object):

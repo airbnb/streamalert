@@ -13,17 +13,21 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from logging import DEBUG as LOG_LEVEL_DEBUG
+import logging
 import json
 
-from stream_alert.rule_processor import FUNCTION_NAME, LOGGER
+from stream_alert.rule_processor import FUNCTION_NAME
 from stream_alert.rule_processor.alert_forward import AlertForwarder
 from stream_alert.rule_processor.classifier import StreamClassifier
 from stream_alert.rule_processor.firehose import FirehoseClient
 from stream_alert.rule_processor.payload import load_stream_payload
 from stream_alert.rule_processor.rules_engine import RulesEngine
-from stream_alert.shared import config, stats
+from stream_alert.shared import config, logger, stats
 from stream_alert.shared.metrics import MetricLogger
+
+
+LOGGER = logger.get_logger(__name__)
+LOGGER_DEBUG_ENABLED = LOGGER.isEnabledFor(logging.DEBUG)
 
 
 class StreamAlert(object):
@@ -152,7 +156,7 @@ class StreamAlert(object):
 
         # Check if debugging logging is on before json dumping alerts since
         # this can be time consuming if there are a lot of alerts
-        if self._alerts and LOGGER.isEnabledFor(LOG_LEVEL_DEBUG):
+        if self._alerts and LOGGER_DEBUG_ENABLED:
             LOGGER.debug(
                 'Alerts:\n%s', json.dumps([alert.output_dict() for alert in self._alerts],
                                           indent=2, sort_keys=True))

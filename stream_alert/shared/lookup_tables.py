@@ -25,7 +25,11 @@ from botocore.exceptions import ClientError
 from botocore.vendored.requests.exceptions import Timeout
 from botocore.vendored.requests.packages.urllib3.exceptions import TimeoutError
 
-from stream_alert.shared import LOGGER
+from stream_alert.shared.logger import get_logger
+
+
+LOGGER = get_logger(__name__)
+
 
 class LookupTables(object):
     """Lookup Tables to useful information which can be referenced from rules"""

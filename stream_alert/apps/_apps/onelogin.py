@@ -15,7 +15,10 @@ limitations under the License.
 """
 import re
 
-from . import AppIntegration, LOGGER, StreamAlertApp
+from . import AppIntegration, StreamAlertApp, get_logger
+
+
+LOGGER = get_logger(__name__)
 
 
 @StreamAlertApp

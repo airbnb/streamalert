@@ -20,8 +20,11 @@ import importlib
 import inspect
 import os
 
-from stream_alert.shared import LOGGER
+from stream_alert.shared.logger import get_logger
 from stream_alert.shared.stats import time_rule
+
+
+LOGGER = get_logger(__name__)
 
 
 def _python_file_paths(*paths):

@@ -20,11 +20,14 @@ import backoff
 import boto3
 from botocore.exceptions import ClientError
 
-from stream_alert.shared import LOGGER
 from stream_alert.shared.backoff_handlers import (
     backoff_handler,
     success_handler
 )
+from stream_alert.shared.logger import get_logger
+
+
+LOGGER = get_logger(__name__)
 
 
 class AthenaQueryExecutionError(Exception):
