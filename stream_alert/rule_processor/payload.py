@@ -338,7 +338,7 @@ class SnsPayload(StreamPayload):
 
             message = json.loads(self.raw_record['Sns']['Message'])['Records'][0]
             # encapsulate in s3 stream payload
-            s3_payload = load_stream_payload('s3', 'sns-passthrough', message)
+            s3_payload = load_stream_payload('s3', self.entity, message)
             s3_payload = s3_payload.pre_parse().next()
 
             self.pre_parsed_record = s3_payload.pre_parsed_record
