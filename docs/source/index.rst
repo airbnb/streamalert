@@ -67,16 +67,6 @@ Table of Contents
    conf-schemas
    conf-schemas-examples
 
-.. _infra_configuration:
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Infrastructure Config
-
-   account
-   kinesis
-   lambda
-
 .. _user_guide:
 
 .. toctree::
@@ -84,14 +74,11 @@ Table of Contents
    :caption: User Guide
 
    deployment
-   deploy-rollback
    rules
    rule-testing
    outputs
    metrics
    troubleshooting
-   report-bugs-features
-   questions
    faq
    alternatives
 
