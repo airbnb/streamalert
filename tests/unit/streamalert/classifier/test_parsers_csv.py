@@ -18,23 +18,19 @@ import json
 
 from nose.tools import assert_equal
 
-from stream_alert.classifier.parsers import CSVParser, ParseResult
-from stream_alert.shared.config import load_config
+from stream_alert.classifier.parsers import CSVParser
 
 
 class TestCSVParser(object):
     """Test class for CSVParser"""
-    # pylint: disable=attribute-defined-outside-init,no-self-use
-
-    def setup(self):
-        self.config = load_config('tests/unit/conf')
+    # pylint: disable=attribute-defined-outside-init,no-self-use,protected-access
 
     @classmethod
     def _default_schema(cls):
         return OrderedDict([('host', 'string'), ('date', 'string'), ('message', 'string')])
 
     def test_basic_parsing(self):
-        """CSV Parser - Basic CSV data"""
+        """CSVParser - Basic CSV data"""
         options = {
             'schema': self._default_schema(),
             'configuration': {
@@ -57,9 +53,8 @@ class TestCSVParser(object):
         ]
         assert_equal(parser.parses, expected_result)
 
-
     def test_csv_parsing_space_delimited(self):
-        """CSV Parser - Space separated data"""
+        """CSVParser - Space separated data"""
         options = {
             'schema': self._default_schema(),
             'configuration': {
@@ -83,7 +78,7 @@ class TestCSVParser(object):
         assert_equal(parser.parses, expected_result)
 
     def test_csv_parsing_alt_quoted(self):
-        """CSV Parser - Single Quoted Field"""
+        """CSVParser - Single Quoted Field"""
         options = {
             'schema': self._default_schema(),
             'configuration': {
@@ -109,7 +104,7 @@ class TestCSVParser(object):
         assert_equal(parser.parses, expected_result)
 
     def test_csv_parsing_from_json(self):
-        """CSV Parser - CSV within JSON"""
+        """CSVParser - CSV within JSON"""
         options = {
             'schema': self._default_schema(),
             'configuration': {
@@ -163,3 +158,73 @@ class TestCSVParser(object):
         ]
 
         assert_equal(parser.parses, expected_result)
+
+    def test_nested_csv(self):
+        """CSVParser - Nested CSV"""
+        options = {
+            'schema': OrderedDict([
+                ('date', 'string'),
+                ('time', 'integer'),
+                ('host', 'string'),
+                ('env', 'string'),
+                ('message', OrderedDict([
+                    ('application', 'string'),
+                    ('role', 'string'),
+                    ('cluster_host', 'string'),
+                    ('cluster_size', 'string'),
+                    ('result', 'string')
+                ]))
+            ])
+        }
+        data = ('"Jan 10, 2017","1485739910","host1.prod.test","Corp",'
+                '"chef,web-server,1,100,fail"')
+
+        # get parsed data
+        parser = CSVParser(options)
+        result = parser.parse(data)
+        assert_equal(result, True)
+
+        expected_result = [
+            {
+                'date': 'Jan 10, 2017',
+                'time': 1485739910,
+                'host': 'host1.prod.test',
+                'env': 'Corp',
+                'message': {
+                    'application': 'chef',
+                    'role': 'web-server',
+                    'cluster_host': '1',
+                    'cluster_size': '100',
+                    'result': 'fail'
+                }
+            }
+        ]
+
+        assert_equal(parser.parses, expected_result)
+
+    def test_nested_csv_invalid(self):
+        """CSVParser - Nested CSV, Invalid"""
+        options = {
+            'schema': OrderedDict([
+                ('date', 'string'),
+                ('message', OrderedDict([
+                    ('application', 'string'),
+                    ('role', 'string')
+                ]))
+            ])
+        }
+        data = '"Jan 10, 2017","chef,web-server,1"'
+
+        # get parsed data
+        parser = CSVParser(options)
+        result = parser.parse(data)
+        assert_equal(result, False)
+
+        expected_result = [
+            [
+                'Jan 10, 2017',
+                'chef,web-server,1'
+            ]
+        ]
+
+        assert_equal(parser.invalid_parses, expected_result)

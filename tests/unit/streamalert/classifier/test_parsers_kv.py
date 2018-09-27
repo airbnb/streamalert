@@ -13,6 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from collections import OrderedDict
+
 from nose.tools import assert_equal
 
 from stream_alert.classifier.parsers import KVParser
@@ -20,7 +22,7 @@ from stream_alert.classifier.parsers import KVParser
 
 class TestKVParser(object):
     """Test class for KVParser"""
-    # pylint: disable=no-self-use
+    # pylint: disable=no-self-use,protected-access
 
     def test_parse(self):
         """KV Parser - Parse"""
@@ -49,3 +51,36 @@ class TestKVParser(object):
         ]
 
         assert_equal(parser.parses, expected_result)
+
+    def test_extract_record_invalid_field_count(self):
+        """KV Parser - Extract Record, Invalid Field Count"""
+        options = {
+            'schema': {
+                'name': 'string',
+                'result': 'string'
+            }
+        }
+        data = 'name=foo'
+
+        # get parsed data
+        parser = KVParser(options)
+        assert_equal(parser._extract_record(data), False)
+
+    def test_extract_record_duplicate_fields(self):
+        """KV Parser - Extract Record, Duplicate Fields"""
+        options = {
+            'schema': OrderedDict([('name', 'string'), ('result', 'string'), ('test', 'string')])
+        }
+        data = 'name=foo result=bar name=baz'
+
+        # get parsed data
+        parser = KVParser(options)
+        result = parser._extract_record(data)
+
+        expected_result = {
+            'name': 'foo',
+            'result': 'bar',
+            'test': 'baz'
+        }
+
+        assert_equal(result, expected_result)

@@ -14,7 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from abc import ABCMeta, abstractmethod
-from collections import namedtuple
 from copy import deepcopy
 import csv
 from fnmatch import fnmatch
@@ -26,16 +25,11 @@ import StringIO
 import jmespath
 
 from stream_alert.shared.logger import get_logger
-from stream_alert.shared.stats import time_me
 
 
 LOGGER = get_logger(__name__)
 LOGGER_DEBUG_ENABLED = LOGGER.isEnabledFor(logging.DEBUG)
 PARSERS = {}
-
-
-# Simple ParseResult for storing the result of parsed records
-ParseResult = namedtuple('ParseResult', ['record', 'valid'])
 
 
 def parser(cls):
@@ -75,16 +69,16 @@ class ParserBase:
         'boolean': bool
     }
 
-    def __init__(self, options):
+    def __init__(self, options, log_type=None):
         """Setup required parser properties
 
         Args:
             options (dict): Parser options - delimiter, separator, or log_patterns
         """
         self._options = options or {}
+        self._schema_type = log_type
         self._valid_parses = []
         self._invalid_parses = []
-        self._failed = False
 
     @classmethod
     def type(cls):
@@ -92,12 +86,12 @@ class ParserBase:
         return cls._type
 
     @property
-    def failed(self):
-        return self._failed
+    def log_schema_type(self):
+        return self._schema_type
 
     @property
     def schema(self):
-        return self._options['schema']
+        return self._options.get('schema', {})
 
     @property
     def configuration(self):
@@ -105,7 +99,7 @@ class ParserBase:
 
     @property
     def optional_top_level_keys(self):
-        return self.configuration.get('optional_top_level_keys')
+        return set(self.configuration.get('optional_top_level_keys', {}))
 
     @property
     def log_patterns(self):
@@ -121,7 +115,7 @@ class ParserBase:
 
     @property
     def optional_envelope_keys(self):
-        return self.configuration.get('optional_envelope_keys')
+        return set(self.configuration.get('optional_envelope_keys', {}))
 
     @property
     def valid(self):
@@ -135,24 +129,21 @@ class ParserBase:
     def parses(self):
         return self._valid_parses
 
-    def _add_parse_result(self, result, valid):
-        if not valid:
-            self._invalid_parses.append(result)
-            return
+    @classmethod
+    def default_optional_values(cls, key):
+        """Return a default value for a given schema type"""
+        # Return instances of types that are defined, or of the type being passed in
+        return cls._TYPE_MAP[key]() if isinstance(key, basestring) else type(key)()
 
-        self._valid_parses.append(result)
-
-    def _merge_schema_envelope(self):
-        if self.envelope_schema and self.ENVELOPE_KEY not in self.schema:
-            self.schema.update({self.ENVELOPE_KEY: self.envelope_schema})
-
-    def _apply_envelope(self, envelope, record):
+    @classmethod
+    def _apply_envelope(cls, record, envelope):
         if not envelope:
             return
 
-        record.update({self.ENVELOPE_KEY: envelope})
+        record.update({cls.ENVELOPE_KEY: envelope})
 
-    def _add_optional_keys(self, data, schema, optional_keys):
+    @classmethod
+    def _add_optional_keys(cls, data, schema, optional_keys):
         """Add optional keys to a raw record
 
         Args:
@@ -164,59 +155,99 @@ class ParserBase:
             return  # Nothing to do
 
         for key_name in optional_keys:
-            # Instead of doing a schema.update() here with a default value type,
-            # we should enforce having any optional keys declared within the schema
-            # and log an error if that is not the case
-            if key_name not in schema:
-                LOGGER.error('Optional top level key \'%s\' '
-                             'not found in declared log schema', key_name)
+            # Add the optional key if it does not exist in the parsed json payload
+            data[key_name] = data.get(key_name, cls.default_optional_values(schema[key_name]))
+
+    @classmethod
+    def _matches_log_patterns(cls, record, log_patterns):
+        """Return True if all log patterns of this record match"""
+        # Return True immediately if there are no log patterns
+        if not log_patterns:
+            return True
+
+        result = True
+        for field, patterns in log_patterns.iteritems():
+            # handle nested log_patterns
+            if isinstance(patterns, dict):
+                return cls._matches_log_patterns(record[field], patterns)
+
+            # Transform a flat pattern into a list
+            if isinstance(patterns, basestring):
+                LOGGER.debug('Transforming flat pattern \'%s\' into list', patterns)
+                patterns = [patterns]
+
+            # Ensure the pattern key is in the record
+            # TODO (ryandeivert): consider failing hard and returning False here
+            if field not in record:
+                LOGGER.error(
+                    'Declared log pattern key [%s] does exist in record:\n%s',
+                    field,
+                    record
+                )
                 continue
 
-            # Add the optional key if it does not exist in the parsed json payload
-            data[key_name] = data.get(key_name, self.default_optional_values(schema[key_name]))
+            value = record.get(field)
 
-    def _extract_envelope(self, json_payload):
-        """Extract envelope key/values from the original payload
+            # Ensure at least one of the log_patterns matches
+            result = result and any(fnmatch(value, pattern) for pattern in patterns)
 
-        Args:
-            envelope_schema (dict): Envelope keys to be extracted
-            json_payload (dict): The parsed json data
+        LOGGER.debug('%s log pattern match result: %s', cls.type(), result)
 
-        Returns:
-            dict: Key/values extracted from the log to be used as the envelope
-        """
-        if not self.envelope_schema:
-            return
+        # If all pattern match results are True
+        return result
 
-        if not isinstance(json_payload, dict):
-            json_payload = json.loads(json_payload)
-
-        LOGGER.debug('Extracting envelope keys')
-        return {
-            key: json_payload[key]
-            for key in self.envelope_schema
-        }
-
-    def _extract_json_path(self, json_payload):
-        """Extract records from the original json payload using a provided JSON path
+    @classmethod
+    def _key_check(cls, record, schema, optionals=None, is_envelope=False):
+        """Verify the declared schema matches the record
 
         Args:
-            json_payload (dict): The parsed json data
+            json_record (dict): A single dictionary representing a JSON payload
 
         Returns:
-            list: A list of JSON records extracted via JSON path or regex
+            bool: True if the log matches the schema, False if not
         """
-        # If the csv parser is extracting csv from json, the payload is likely
-        # a string and needs to be loaded to a dict
-        if not isinstance(json_payload, dict):
-            json_payload = json.loads(json_payload)
+        # Nothing to do for empty schema. This happens in the case of nested schema validation
+        if not schema:
+            return True
 
-        # Handle jsonpath extraction of records
-        LOGGER.debug('Parsing records with JSONPath')
+        schema_keys = set(schema)
 
-        return jmespath.search(self.json_path, json_payload)
+        keys = set(record) if not optionals else set(record).union(optionals)
 
-    def _convert_type(self, record, schema=None):
+        if is_envelope and not schema_keys.issubset(keys):
+            LOGGER.debug('Missing keys in record envelope: %s', schema_keys - keys)
+            return False
+
+        if not is_envelope and keys != schema_keys:
+            LOGGER.debug(
+                'Missing required keys in record: %s vs %s',
+                schema_keys - keys,
+                keys - schema_keys,
+            )
+            return False
+
+        # Nested key check
+        match = True
+        for key, key_type in schema.iteritems():
+            # Skip any value that is not a dictionary
+            if not isinstance(key_type, dict):
+                continue
+
+            # Nested key check, these cannot support optionals currently
+            # Use a default dict value in case this key is optional
+            match = match and cls._key_check(record.get(key, {}), key_type)
+
+        if not match and LOGGER_DEBUG_ENABLED:
+            LOGGER.debug(
+                'Nested key check failure. Schema:\n%s\nRecord:\n%s',
+                json.dumps(schema, indent=2, sort_keys=True),
+                json.dumps(record, indent=2, sort_keys=True)
+            )
+
+        return match
+
+    @classmethod
+    def _convert_type(cls, record, schema, optionals=None):
         """Convert a parsed payload's values into their declared types.
 
         If the schema is incorrectly defined for a particular field,
@@ -230,13 +261,17 @@ class ParserBase:
         Returns:
             dict: parsed dict payload with typed values
         """
-        schema = schema or self.schema
-
         for key, value in schema.iteritems():
             key = str(key)
 
-            # Allow for null/NoneType values
+            # No need to type an optional key if it's value is not in the
+            # record since this is a value we will insert
+            if optionals and key in optionals and key not in record:
+                LOGGER.debug('Skipping optional key not found in record: %s', key)
+                continue
+
             if record[key] is None:
+                LOGGER.debug('Skipping NoneType value in record for key: %s', key)
                 continue
 
             # if the schema value is declared as string
@@ -267,64 +302,86 @@ class ParserBase:
                 record[key] = str(record[key]).lower() == 'true'
 
             elif isinstance(value, dict):
-                if not value:
-                    continue  # allow empty maps (dict)
+                # Convert nested types
+                return cls._convert_type(record[key], value)
 
-                # Skip the values for the 'streamalert:envelope_keys' key that we've
-                # added during parsing if the do not conform to being a dict
-                if key == self.ENVELOPE_KEY and not isinstance(record[key], dict):
-                    continue
-
-                return self._convert_type(record[key], schema[key])
-
-            elif isinstance(value, list):
-                pass
+            # Ensure a list is actually a list, but do not check list value types
+            # since we do not currently support type checking list elements
+            elif isinstance(value, list) and not isinstance(record[key], list):
+                LOGGER.error('Invalid schema. Value for key [%s] is not a list: %s',
+                             key, record[key])
+                return False
 
             else:
-                LOGGER.error('Unsupported schema type: %s', value)
+                LOGGER.error('Unsupported value type in schema: %s', value)
                 return False
 
         return True
 
-    def matched_log_pattern(self, record, patterns=None):
-        """Return True if all log patterns of this record match"""
-        # Return True immediately if there are no log patterns
-        # or if the data being tested is not a dict
-        patterns = patterns or self.log_patterns
-        if not patterns:
-            return True
+    def _validate_schema(self):
+        """Ensure the schema, including optional keys, etc, is defined properly
 
-        pattern_result = []
-        for field, pattern_list in patterns.iteritems():
-            # handle nested log_patterns
-            if isinstance(pattern_list, dict):
-                return self.matched_log_pattern(record[field], pattern_list)
+        All optional top level keys should also be defined within the schema itself,
+        and just included in the optional top level keys list. The same applies to
+        optional envelope keys and the envelope keys/schema.
 
-            if not isinstance(pattern_list, list):
-                LOGGER.debug('Configured \'log_patterns\' should be a \'list\'')
-                continue
+        In the future, this function can be added to so that it also performs validation
+        of types defined for values and so forth.
 
-            # The pattern field value in the record
-            try:
-                value = record[field]
-            except (KeyError, TypeError):
-                LOGGER.debug('Declared log pattern field [%s] is not a valid type '
-                             'for this record: %s', field, record)
-                continue
-            # Append the result of any of the log_patterns being True
-            pattern_result.append(any(fnmatch(value, pattern) for pattern in pattern_list))
+        Returns:
+            bool: True if this schema is valid, False otherwise
+        """
+        # TODO (ryandeivert): check the value of types defined in the schema to ensure
+        # they are valid before erroring out at the _convert_type stage
+        values = [
+            (self.schema, self.optional_top_level_keys),
+            (self.envelope_schema, self.optional_envelope_keys)
+        ]
 
-        all_patterns_result = all(pattern_result)
-        LOGGER.debug('%s log pattern match result: %s', self.type(), all_patterns_result)
+        return all(optionals.issubset(schema) for schema, optionals in values)
 
-        # if all pattern group results are True
-        return all_patterns_result
+    def _add_parse_result(self, record, valid, envelope):
+        if not valid:
+            self._invalid_parses.append(record)
+            return
 
-    @classmethod
-    def default_optional_values(cls, key):
-        """Return a default value for a given schema type"""
-        # Return instances of types that are defined, or of the type being passed in
-        return cls._TYPE_MAP[key]() if isinstance(key, basestring) else type(key)()
+        self._apply_envelope(record, envelope)
+        self._add_optional_keys(record, self.schema, self.optional_top_level_keys)
+
+        self._valid_parses.append(record)
+
+    def _extract_envelope(self, payload):
+        """Extract envelope key/values from the original payload
+
+        Args:
+            payload (dict): The parsed json data
+
+        Returns:
+            dict: Key/values extracted from the log to be used as the envelope
+        """
+        if not self.envelope_schema:
+            return
+
+        LOGGER.debug('Extracting envelope keys')
+        return {
+            key: payload[key]
+            for key in self.envelope_schema
+            if key in payload  # This is fine since some of these may be optional
+        }
+
+    def _json_path_records(self, payload):
+        """Extract records from the original json payload using a provided JSON path
+
+        Args:
+            payload (dict): The parsed json data
+
+        Returns:
+            list: A list of JSON records extracted via JSON path or regex
+        """
+        # Handle jsonpath extraction of records
+        LOGGER.debug('Parsing records with JSONPath: %s', self.json_path)
+
+        return jmespath.search(self.json_path, payload)
 
     def parse(self, data):
         """Main parser method to be overridden by all Parser classes
@@ -335,6 +392,12 @@ class ParserBase:
         Yields:
             PayloadRecord: Represention of parsed records.
         """
+        # Ensure the schema is defined properly. Invalid schemas will not be used
+        if not self._validate_schema():
+            LOGGER.error(
+                'Schema definition is not valid (%s):\n%s', self._schema_type, self.schema)
+            return False
+
         data_copy = None
         # If the data is a mutable object, copy it since
         # the parse(s) can highly mutate the input
@@ -345,25 +408,28 @@ class ParserBase:
         # falling back on a string type on error
         elif isinstance(data, basestring):
             try:
-                data_copy = json.loads(data_copy)
+                data_copy = json.loads(data)
             except (ValueError, TypeError) as err:
                 LOGGER.debug('Data is not valid json: %s', err.message)
                 data_copy = data
 
-        # Add optional envelope keys to the record, if defined - no-op otherwise
-        self._add_optional_keys(data_copy, self.envelope_schema, self.optional_envelope_keys)
-
-        # Note: no configuration essentially means data is by default valid
-        # Also, ensure all of the required envelope keys exist if defined
-        if not all(key in data_copy for key in self.envelope_schema):
+        # Check to make sure any non-optional envelope keys exist before proceeding
+        if not self._key_check(data_copy, self.envelope_schema, self.optional_envelope_keys, True):
             return False
 
-        envelope = self._extract_envelope(data)
+        # Get the envelope and try to convert the value to the proper type(s)
+        envelope = self._extract_envelope(data_copy)
+        if not self._convert_type(envelope, self.envelope_schema, self.optional_envelope_keys):
+            return False
+
+        # Add the optional envelope keys to record once at the beginning
+        self._add_optional_keys(envelope, self.envelope_schema, self.optional_envelope_keys)
 
         for record, valid in self._parse(data_copy):
-            valid = valid and self.matched_log_pattern(record)
-            self._apply_envelope(envelope, record)
-            self._add_parse_result(record, valid and self._convert_type(record))
+            valid = valid and self._key_check(record, self.schema, self.optional_top_level_keys)
+            valid = valid and self._convert_type(record, self.schema, self.optional_top_level_keys)
+            valid = valid and self._matches_log_patterns(record, self.log_patterns)
+            self._add_parse_result(record, valid, envelope)
 
         return self.valid
 
@@ -374,20 +440,17 @@ class ParserBase:
         Args:
             data (str|dict): Data to be parsed.
 
-        Yields:
-            PayloadRecord: Represention of parsed records.
+        Returns:
+            list<tuple>: List of tuples with records and their parsing status
+                Examples: [({'key': 'value'}, True)]
         """
 
 
 @parser
 class JSONParser(ParserBase):
-    """JSON record parser."""
+    """JSON record parser"""
     _type = 'json'
     _regex = re.compile(r'(?P<json_blob>{.+[:,].+}|\[.+[,:].+\])')
-
-    def __init__(self, *args, **kwargs):
-        super(JSONParser, self).__init__(*args, **kwargs)
-        self._merge_schema_envelope()
 
     @property
     def embedded_json(self):
@@ -396,61 +459,6 @@ class JSONParser(ParserBase):
     @property
     def json_regex_key(self):
         return self.configuration.get('json_regex_key')
-
-    def _key_check(self, json_record, schema=None):
-        """Verify the declared schema matches the json payload
-
-        Args:
-            json_record (dict): A single dictionary representing a JSON payload
-
-        Returns:
-            bool: True if the log matches the schema, False if not
-        """
-        schema = schema or self.schema
-        schema_keys = set(schema)
-
-        json_keys = set(json_record)
-        if json_keys != schema_keys:
-            LOGGER.debug('Missing keys in record: %s', json_keys ^ schema_keys)
-            return False
-
-        match = True
-        for key, key_type in schema.iteritems():
-            # Skip the envelope key dictionary or any non dict sub type
-            if key == self.ENVELOPE_KEY or not (key_type and isinstance(key_type, dict)):
-                continue
-
-            # Nested key check
-            match = match and self._key_check(json_record[key], schema[key])
-
-        if not match and LOGGER_DEBUG_ENABLED:
-            LOGGER.debug('Schema: \n%s', json.dumps(schema, indent=2))
-            LOGGER.debug('Key check failure: \n%s', json.dumps(json_record, indent=2))
-
-        return match
-
-    @time_me
-    def _extract_records(self, json_raw_record):
-        """Identify and extract nested payloads from parsed JSON records.
-
-        Nested payloads can be detected with log_patterns (`records` should be a
-        JSONpath selector that yields the desired nested records). If desired,
-        fields present on the root record can be merged into child events
-        using the `envelope_keys` option.
-
-        Args:
-            json_raw_record (dict): The raw json data loaded as a dictionary
-
-        Returns:
-            tuple: Records and their parsing status ie: (record, parsing_status)
-        """
-        if self.json_path:
-            return self._extract_via_json_path(json_raw_record)
-
-        if self.json_regex_key:
-            return self._extract_via_json_regex_key(json_raw_record)
-
-        return False
 
     def _extract_via_json_path(self, json_payload):
         """Extract records from the original json payload using the JSON configuration
@@ -461,12 +469,12 @@ class JSONParser(ParserBase):
         Returns:
             list: A list of one or more JSON records extracted via JSON path or regex
         """
-        extracted_records = self._extract_json_path(json_payload)
+        extracted_records = self._json_path_records(json_payload)
         if not extracted_records:
             return False
 
         if not self.embedded_json:
-            return extracted_records
+            return [(rec, True) for rec in extracted_records]
 
         embedded_records = []
         for record in extracted_records:
@@ -477,10 +485,10 @@ class JSONParser(ParserBase):
                     # purposely raising here to be caught below & handled
                     raise TypeError('record data is not a dictionary')
             except (ValueError, TypeError) as err:
-                LOGGER.debug('Embedded json is invalid: %s', err.message)
+                LOGGER.error('Embedded json is invalid: %s', err.message)
                 valid = False
 
-            embedded_records.append(record, valid)
+            embedded_records.append((record, valid))
 
         return embedded_records
 
@@ -515,37 +523,38 @@ class JSONParser(ParserBase):
         return [(record, True)]
 
     def _parse(self, data):
-        """Parse a string into a list of JSON payloads.
+        """Identify and extract nested payloads from parsed JSON records.
+
+        Nested payloads can be detected with 'json_path' or 'json_regex_key' option.
+        The value of these should be a JMESpath (http://jmespath.org/) compliant search
+        expression that returns the desired nested records.
+
+        If desired, fields present on the root of the record can be merged into child
+        events using the 'envelope_keys' option.
 
         Args:
-            data (str|dict): Data to be parsed
+            data (dict): The raw json data loaded as a dictionary
 
         Returns:
-            list: A list of dictionaries representing parsed records OR
-            False if the data is not JSON or the data does not follow the schema.
+            list<tuple>: List of tuples with records and their parsing status
+                Examples: [({'key': 'value'}, True)]
         """
+        # TODO (ryandeivert): migrate all of this to the base class and do away with JSONParser
+        if not (self.json_path or self.json_regex_key):
+            return [(data, True)]  # Nothing special to be done
 
-        if valid and (self.json_path or self.json_regex_key):
-            records = self._extract_records(data)
-            valid = valid and bool(records)
-            if valid:
-                for record, valid in records:
-                    if not valid:
-                        print 'This was a failed parse of a sub record'  # TODO: remove me
+        records = []
+        if self.json_path:
+            records = self._extract_via_json_path(data)
+        elif self.json_regex_key:
+            records = self._extract_via_json_regex_key(data)
 
-                    self._add_optional_keys(record, self.schema, self.optional_top_level_keys)
-
-                    # Yield the record and the result of key checking
-                    yield record, valid and self._key_check(record)
-                return
-
-        # Just yield what we have if we get to this point
-        yield data, valid
+        return records if records else [(data, False)]
 
 
 @parser
 class CSVParser(ParserBase):
-    """CSV record parser."""
+    """CSV record parser"""
     _type = 'csv'
 
     @property
@@ -589,17 +598,17 @@ class CSVParser(ParserBase):
             data (str): Data to be parsed.
 
         Returns:
-            list: A list of dictionaries representing parsed records OR
-            False if the data is not CSV or the columns do not match.
+            list<tuple>: List of tuples with records and their parsing status
+                Examples: [({'key': 'value'}, True)]
         """
         records = []
         if self.json_path:
             # Support extraction of csv data within json
-            records = self._extract_json_path(data)
+            records = self._json_path_records(data)
             if not records:
-                self._failed = True
-                return
+                return [(data, False)]
 
+        # Fall back on the data as default if
         records = records or [data]
 
         return self._extract_records(records, self.schema)
@@ -620,7 +629,6 @@ class CSVParser(ParserBase):
                     csv_payloads.append((result, result is parsed_payload))
             except csv.Error:
                 csv_payloads.append((item, False))
-                return False
 
         return csv_payloads
 
@@ -643,10 +651,12 @@ class CSVParser(ParserBase):
             # if the value for this key in the schema is a dict, this must be a nested
             # value, so we should try to parse it as one and use the result
             if isinstance(schema[key], dict):
-                parsed_data = self._extract_records(row[index], schema[key])
+                parsed_data = self._extract_records([row[index]], schema[key])
                 if parsed_data and parsed_data[0][1] is True:
                     parsed_payload[key] = parsed_data[0][0]
                     continue
+                else:
+                    return False  # break the loop if the nested data was invalid
 
             # extract the keys from the row via the index
             parsed_payload[key] = row[index]
@@ -656,7 +666,7 @@ class CSVParser(ParserBase):
 
 @parser
 class KVParser(ParserBase):
-    """Parser for key-value type records."""
+    """Key/value record parser"""
     _type = 'kv'
 
     @property
@@ -667,17 +677,17 @@ class KVParser(ParserBase):
     @property
     def separator(self):
         # default separator = '='
-        return str(self.configuration.get('separator', '"'))
+        return str(self.configuration.get('separator', '='))
 
     def _parse(self, data):
-        """Parse a key value string into a dictionary.
+        """Parse a key/value string into a dictionary
 
         Args:
-            data (str): Data to be parsed.
+            data (str): Data to be parsed
 
         Returns:
-            list: A list of dictionaries representing parsed records OR
-            False if the columns do not match.
+            list<tuple>: List of tuples with records and their parsing status
+                Example: [({'key': 'value'}, True)]
         """
         record = self._extract_record(data)
         return [(record, True)] if record else [(data, False)]
@@ -716,7 +726,7 @@ class KVParser(ParserBase):
 
 @parser
 class SyslogParser(ParserBase):
-    """Parser for syslog records."""
+    """Syslog record parser"""
     _type = 'syslog'
     _regex = re.compile(r'(?P<timestamp>^\w{3}\s\d{2}\s(\d{2}:?)+)\s'
                         r'(?P<host>(\w[-]*)+)\s'
@@ -736,12 +746,11 @@ class SyslogParser(ParserBase):
             data (str): Data to be parsed
 
         Returns:
-            list: A list of syslog records OR False if the data does not match the syslog regex.
+            list<tuple>: List of tuples with records and their parsing status
+                Examples: [({'key': 'value'}, True)]
         """
         match = self._regex.search(data)
         if not match:
             return [(data, False)]
 
-        record = match.groupdict()
-
-        return [(record, set(record) == set(self.schema))]
+        return [(match.groupdict(), True)]

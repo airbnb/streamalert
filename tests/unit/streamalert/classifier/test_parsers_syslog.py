@@ -20,7 +20,7 @@ from stream_alert.classifier.parsers import SyslogParser
 
 class TestSyslogParser(object):
     """Test class for SyslogParser"""
-    # pylint: disable=no-self-use
+    # pylint: disable=no-self-use,protected-access
 
     def test_parse(self):
         """Syslog Parser - Parse"""
@@ -38,18 +38,32 @@ class TestSyslogParser(object):
             'session opened for user root by (uid=0)'
         )
 
+        expected_record = {
+            'timestamp': 'Jan 26 19:35:33',
+            'host': 'vagrant-ubuntu-trusty-64',
+            'application': 'sudo',
+            'message': 'pam_unix(sudo:session): session opened for user root by (uid=0)'
+        }
+
         # get parsed data
         parser = SyslogParser(options)
-        result = parser.parse(data)
-        assert_equal(result, True)
+        result = parser._parse(data)
+        assert_equal(result, [(expected_record, True)])
 
-        expected_result = [
-            {
-                'timestamp': 'Jan 26 19:35:33',
-                'host': 'vagrant-ubuntu-trusty-64',
-                'application': 'sudo',
-                'message': 'pam_unix(sudo:session): session opened for user root by (uid=0)'
+    def test_parse_invalid_data(self):
+        """Syslog Parser - Parse, Invalid"""
+        options = {
+            'schema': {
+                'timestamp': 'string',
+                'host': 'string',
+                'application': 'string',
+                'message': 'string'
             }
-        ]
+        }
+        # Invalid data for syslog record
+        data = 'Jan 26 19:35:33 vagrant-ubuntu-trusty-64'
 
-        assert_equal(parser.parses, expected_result)
+        # get parsed data
+        parser = SyslogParser(options)
+        result = parser._parse(data)
+        assert_equal(result, [(data, False)])
