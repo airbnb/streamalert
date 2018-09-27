@@ -13,6 +13,11 @@ resource "aws_lambda_function" "streamalert_rule_processor" {
   source_code_hash = "${base64sha256(file(var.filename))}"
   publish          = true
 
+  vpc_config {
+    subnet_ids      = ["${var.vpc_subnets}"]
+    security_groups = ["${var.vpc_security_groups}"]
+  }
+
   environment {
     variables = {
       ALERTS_TABLE   = "${var.prefix}_streamalert_alerts"

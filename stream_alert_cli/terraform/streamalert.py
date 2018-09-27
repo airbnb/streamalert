@@ -44,6 +44,8 @@ def generate_stream_alert(cluster_name, cluster_dict, config):
     """
     account = config['global']['account']
     modules = config['clusters'][cluster_name]['modules']
+    vpc_subnets = config['clusters'][cluster_name].get("vpc_subnets", "")
+    vpc_security_groups = config['clusters'][cluster_name].get("vpc_security_groups", "")
 
     cluster_dict['module']['stream_alert_{}'.format(cluster_name)] = {
         'source': 'modules/tf_stream_alert',
@@ -59,6 +61,8 @@ def generate_stream_alert(cluster_name, cluster_dict, config):
         'rule_processor_memory': modules['stream_alert']['rule_processor']['memory'],
         'rule_processor_timeout': modules['stream_alert']['rule_processor']['timeout'],
         'rules_table_arn': '${module.globals.rules_table_arn}',
+        'vpc_subnets': vpc_subnets,
+        'vpc_security_groups': vpc_security_groups,
     }
 
     if (config['global'].get('threat_intel')

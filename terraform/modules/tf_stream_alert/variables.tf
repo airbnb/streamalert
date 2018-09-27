@@ -68,3 +68,11 @@ variable "threat_intel_enabled" {
 variable "dynamodb_ioc_table" {
   default = "streamalert_threat_intel_ioc_table"
 }
+
+variable "vpc_subnets" {
+  type = "list"
+}
+
+variable "vpc_security_groups" {
+  type = "list"
+}
