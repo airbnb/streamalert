@@ -25,6 +25,7 @@ LOGGER_DEBUG_ENABLED = LOGGER.isEnabledFor(logging.DEBUG)
 
 
 class PayloadRecord(object):
+    """PayloadRecord for extracted records from within a payload"""
 
     def __init__(self, record_data):
         self._record_data = record_data
@@ -93,7 +94,7 @@ class RegisterInput(object):
         try:
             return cls._payload_classes[service]
         except KeyError:
-            LOGGER.error('Designated payload service [%s] does not exist', service)
+            LOGGER.error('Requested payload service [%s] does not exist', service)
 
 
 class StreamPayload(object):
@@ -154,30 +155,8 @@ class StreamPayload(object):
         return self.log_source.split(':')[-1]
 
     @classmethod
-    @abstractproperty
-    def service(cls):
-        """Read only service property enforced on subclasses.
-
-        Returns:
-            str: The service name for this payload type.
-        """
-
-    @abstractmethod
-    def pre_parse(self):
-        """Pre-parsing method that should be implemented by all subclasses.
-        This establishes the `pre_parsed_record` property to allow for parsing.
-
-        Yields:
-            Instances of `self` back to the caller with the
-                proper `pre_parsed_record` set. Conforming to the interface of
-                returning a generator provides the ability to support multi-record
-                payloads, such as those similar to S3.
-        """
-
-    @classmethod
     def load_from_raw_record(cls, raw_record):
-        """Extract the originating AWS service and corresponding resource
-        from a raw record.
+        """Extract the originating AWS service and resource from a raw record
 
         Each raw record contains a set of keys that represent its source.
         A Kinesis record will contain a `kinesis` key while a
@@ -199,10 +178,12 @@ class StreamPayload(object):
 
         service, resource = None, None
         # check raw record for either kinesis, s3, or apps keys
-        for service, map_function in resource_mapper.iteritems():
-            if service in raw_record:
+        for svc, map_function in resource_mapper.iteritems():
+            if svc in raw_record:
                 # map the resource name from a record
                 resource = map_function(raw_record)
+                service = svc
+                break
 
         # Sns is capitalized below because this is how AWS stores it within the Record
         # Other services above, like s3, are not stored like this. Do not alter it!
@@ -223,3 +204,24 @@ class StreamPayload(object):
             return False
 
         return RegisterInput.load_for_service(service, resource, raw_record)
+
+    @classmethod
+    @abstractproperty
+    def service(cls):
+        """Read only service property enforced on subclasses.
+
+        Returns:
+            str: The service name for this payload type.
+        """
+
+    @abstractmethod
+    def pre_parse(self):
+        """Pre-parsing method that should be implemented by all subclasses.
+        This establishes the `pre_parsed_record` property to allow for parsing.
+
+        Yields:
+            Instances of `self` back to the caller with the
+                proper `pre_parsed_record` set. Conforming to the interface of
+                returning a generator provides the ability to support multi-record
+                payloads, such as those similar to S3.
+        """
