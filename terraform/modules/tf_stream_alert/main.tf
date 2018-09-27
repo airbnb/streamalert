@@ -14,8 +14,8 @@ resource "aws_lambda_function" "streamalert_rule_processor" {
   publish          = true
 
   vpc_config {
-    subnet_ids      = ["${var.vpc_subnets}"]
-    security_groups = ["${var.vpc_security_groups}"]
+    subnet_ids      = "${var.vpc_subnets}"
+    security_groups = "${var.vpc_security_groups}"
   }
 
   environment {
