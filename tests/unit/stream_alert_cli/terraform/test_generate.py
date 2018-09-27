@@ -283,8 +283,8 @@ class TestTerraformGenerate(object):
                     'rule_processor_memory': 128,
                     'rule_processor_timeout': 25,
                     'rules_table_arn': '${module.globals.rules_table_arn}',
-                    'vpc_subnets': "",
-                    'vpc_security_groups': "",
+                    'vpc_subnets': '[]',
+                    'vpc_security_groups': '[]',
                 }
             }
         }
@@ -317,8 +317,8 @@ class TestTerraformGenerate(object):
                     'rule_processor_timeout': 25,
                     'rules_table_arn': '${module.globals.rules_table_arn}',
                     'input_sns_topics': ['my-sns-topic-name'],
-                    'vpc_subnets': "",
-                    'vpc_security_groups': "",
+                    'vpc_subnets': '[]',
+                    'vpc_security_groups': '[]',
                 }
             }
         }
