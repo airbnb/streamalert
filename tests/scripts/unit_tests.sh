@@ -1,7 +1,4 @@
-#! /bin/bash
-if [ -f .coverage ]; then
-  rm .coverage
-fi
+#!/bin/bash
 nosetests tests/unit \
 --with-coverage \
 --cover-package=stream_alert \
