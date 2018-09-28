@@ -172,7 +172,7 @@ class TestKVParser(TestParser):
         return 'kv'
 
     def test_kv_parsing(self):
-        """KV Parser - Basic key value pairs"""
+        """KV Parser - Comma delimited, colon separated"""
         # setup
         schema = {
             'name': 'string',
@@ -189,6 +189,50 @@ class TestKVParser(TestParser):
 
         assert_equal(len(parsed_data), 1)
         assert_equal(parsed_data[0]['name'], 'joe bob')
+
+    def test_kv_parsing_2(self):
+        """KV Parser - Space delimited, equal sign separated"""
+        # setup
+        schema = {
+            'name': 'string',
+            'result': 'string',
+            'time': 'string',
+            'count': 'integer'
+        }
+        options = {
+            'separator': '=',
+            'delimiter': ' ',
+        }
+        data = 'name=test result=OK time=2:15PM count=5'
+
+        # get parsed data
+        parsed_data = self.parser_helper(data=data, schema=schema, options=options)
+
+        assert_equal(len(parsed_data), 1)
+        assert_equal(parsed_data[0]['name'], 'test')
+        assert_equal(parsed_data[0]['count'], '5')
+
+    def test_kv_parsing_3(self):
+        """KV Parser - Space delimited, equal sign separated with spaces in values"""
+        # setup
+        schema = {
+            'name': 'string',
+            'result': 'string',
+            'date': 'string',
+            'count': 'integer'
+        }
+        options = {
+            'separator': '=',
+            'delimiter': ' ',
+        }
+        data = 'name=test result=OK date="Friday, January 01, 2018" count=5'
+
+        # get parsed data
+        parsed_data = self.parser_helper(data=data, schema=schema, options=options)
+
+        assert_equal(len(parsed_data), 1)
+        assert_equal(parsed_data[0]['result'], 'OK')
+        assert_equal(parsed_data[0]['date'], 'Friday, January 01, 2018')
 
 
 class TestJSONParser(TestParser):

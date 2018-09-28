@@ -450,7 +450,7 @@ class TestRulesEngine(object):
         def auditd_bin_cat(rec):  # pylint: disable=unused-variable
             return (
                 rec['type'] == 'SYSCALL' and
-                rec['exe'] == '"/bin/cat"'
+                rec['exe'] == '/bin/cat'
             )
 
         @rule(logs=['test_log_type_kv_auditd'],
