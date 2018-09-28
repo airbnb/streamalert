@@ -166,7 +166,7 @@ Here is a sample command showing how to run tests against two rules included as 
 
 .. code-block:: bash
 
-  $ python manage.py lambda test --processor rule --rules cloudtrail_put_bucket_acl cloudtrail_root_account_usage
+  $ python manage.py lambda test --processor rule --test-rules cloudtrail_put_bucket_acl cloudtrail_root_account_usage
 
 This will produce output similar to the following::
 
