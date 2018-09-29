@@ -74,6 +74,9 @@ class RegisterInput(object):
             service (str): service name to load class for
             resource (str): resource for this service
             raw_record (str): record raw payload data
+
+        Returns:
+            StreamPayload: Loaded subclass of StreamPayload for the proper payload type
         """
         payload = cls._get_payload_class(service)
         if not payload:
@@ -83,13 +86,13 @@ class RegisterInput(object):
 
     @classmethod
     def _get_payload_class(cls, service):
-        """Returns the subclass that should handle this particular service
+        """Returns the subclass that should handle this particular service's records
 
         Args:
-            service (str): The service identifier for this output
+            service (str): The service identifier for this payload
 
         Returns:
-            OutputDispatcher: Subclass of OutputDispatcher to use for sending alerts
+            StreamPayload: Subclass of StreamPayload to use for processing incoming records
         """
         try:
             return cls._payload_classes[service]
@@ -98,22 +101,18 @@ class RegisterInput(object):
 
 
 class StreamPayload(object):
-    """Container class for the StreamAlert payload object.
+    """StreamAlert payload object for incoming records
 
     Attributes:
         resource (str): The name of the resource from which this log originated.
             Can be a kinesis stream name, SNS topic, or S3 bucket name.
-
         raw_record: The record from the AWS Lambda Records dictionary.
-
         log_source (str): The name of the logging application which the data
             originated from.  This could be osquery, auditd, etc.
-
-        records (list): A list of parsed and typed record(s).
-
+        records (list): A list of parsed and typed PayloadRecord(s).
         data_type (str): The data type of the record - json, csv, syslog, etc.
-
-        classified (bool): Whether the record has been successfully classified.
+        fully_classified (bool): Whether the payload has been successfully
+            and completely classified.
     """
     __metaclass__ = ABCMeta
 
@@ -159,16 +158,16 @@ class StreamPayload(object):
         """Extract the originating AWS service and resource from a raw record
 
         Each raw record contains a set of keys that represent its source.
-        A Kinesis record will contain a `kinesis` key while a
-        S3 record contains `s3` and an SNS record contains an `Sns` key
+        A Kinesis record will contain a 'kinesis' key, while a S3 record
+        contains 's3', and an SNS record contains an 'Sns' key, and so on
+
+        This method also supports loading an S3 event notification that is received via SNS.
 
         Args:
-            raw_record (dict): A raw payload as a dictionary
+            raw_record (dict): A raw record as a dictionary
 
         Returns:
-            dict: The raw record, potentially a mutated version of the original passed in
-            str: The AWS service which sent the record
-            str: The specific instance of a service which sent the record
+            StreamPayload: Loaded subclass of StreamPayload for the proper payload type
         """
         resource_mapper = {
             'kinesis': lambda r: r['eventSourceARN'].split('/')[-1],
@@ -216,12 +215,8 @@ class StreamPayload(object):
 
     @abstractmethod
     def pre_parse(self):
-        """Pre-parsing method that should be implemented by all subclasses.
-        This establishes the `pre_parsed_record` property to allow for parsing.
+        """Pre-parsing method that should be implemented by all subclasses
 
         Yields:
-            Instances of `self` back to the caller with the
-                proper `pre_parsed_record` set. Conforming to the interface of
-                returning a generator provides the ability to support multi-record
-                payloads, such as those similar to S3.
+            Instances of PayloadRecord back to the caller containing the current log data
         """

@@ -36,11 +36,12 @@ class SnsPayload(StreamPayload):
         return 'sns'
 
     def pre_parse(self):
-        """Pre-parsing method for SNS records. Extracts the SNS payload from the
-        record itself and sets it as the `pre_parsed_record` property.
+        """Pre-parsing method for SNS records
+
+        Extracts the SNS message payload from the record.
 
         Yields:
-            This object with the pre_parsed_record now set
+            Instances of PayloadRecord back to the caller containing the current log data
         """
         LOGGER.debug(
             'Pre-parsing record from SNS. MessageId: %s, EventSubscriptionArn: %s',

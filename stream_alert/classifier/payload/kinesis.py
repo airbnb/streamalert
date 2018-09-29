@@ -38,12 +38,13 @@ class KinesisPayload(StreamPayload):
         return 'kinesis'
 
     def pre_parse(self):
-        """Pre-parsing method for Kinesis records. Extracts the base64 encoded
-        payload from the record itself, decodes it and sets it as the
-        `pre_parsed_record` property.
+        """Pre-parsing method for Kinesis records
+
+        Decodes the base64 payload from within the record, and attempts to decompress
+        the data. If the data is not compressed, this falls back on the original content.
 
         Yields:
-            This object with the pre_parsed_record now set
+            Instances of PayloadRecord back to the caller containing the current log data
         """
         LOGGER.debug('Pre-parsing record from Kinesis. eventID: %s, eventSourceARN: %s',
                      self.raw_record['eventID'], self.raw_record['eventSourceARN'])

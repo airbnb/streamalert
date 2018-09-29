@@ -131,12 +131,18 @@ class ParserBase:
 
     @classmethod
     def default_optional_values(cls, key):
-        """Return a default value for a given schema type"""
+        """Return a default value for a given supported schema type"""
         # Return instances of types that are defined, or of the type being passed in
         return cls._TYPE_MAP[key]() if isinstance(key, basestring) else type(key)()
 
     @classmethod
     def _apply_envelope(cls, record, envelope):
+        """Apply the envelope extracted from the orignal record to the parsed record
+
+        Args:
+            record (dict): Value of the successfully parsed record
+            envelope (dict): Extracted envelope to be added to the parsed record
+        """
         if not envelope:
             return
 
@@ -147,9 +153,9 @@ class ParserBase:
         """Add optional keys to a raw record
 
         Args:
-            data (dict): JSONPath extracted JSON records
-            schema (dict): The log type schema
-            optional_keys (dict): The optional keys in the schema
+            data (dict): Parsed record value
+            schema (dict): Schema for the data being parsed
+            optional_keys (set): The optional keys in the schema
         """
         if not (schema and optional_keys):
             return  # Nothing to do
@@ -160,7 +166,17 @@ class ParserBase:
 
     @classmethod
     def _matches_log_patterns(cls, record, log_patterns):
-        """Return True if all log patterns of this record match"""
+        """Check if all log patterns specified for this record match
+
+        Args:
+            record (dict): Parsed record value
+            log_patterns (dict): Log patterns that should be enforced for the data
+            being parsed. This could be checking a nested value, so it should be
+            passed in as an argument.
+
+        Returns:
+            bool: True if all specified log patterns match, False otherwise
+        """
         # Return True immediately if there are no log patterns
         if not log_patterns:
             return True
@@ -201,7 +217,14 @@ class ParserBase:
         """Verify the declared schema matches the record
 
         Args:
-            json_record (dict): A single dictionary representing a JSON payload
+            record (dict): Parsed record value
+            schema (dict): Schema for the data being parsed. This could be parsing
+                a nested value, so it should be passed in as an argument.
+            optionals (set=None): Set of optional keys in the passed in schema that
+                should be excluded from the key checking.
+            is_envelope (bool=False): Set to True if this is validating the envelope
+                keys and not the parsed record keys. Envelope keys only have to be a
+                subset of the entire envelope, so simply check for that.
 
         Returns:
             bool: True if the log matches the schema, False if not
@@ -255,11 +278,14 @@ class ParserBase:
         invalid.
 
         Args:
-            payload (dict): Parsed payload dict
-            schema (dict): data schema for a specific log source
+            record (dict): Parsed record value
+            schema (dict): Schema for the data being parsed. This could be parsing
+                a nested value, so it should be passed in as an argument.
+            optionals (set=None): Set of optional keys in the passed in schema that
+                should be excluded from type conversion if not present in the record.
 
         Returns:
-            dict: parsed dict payload with typed values
+            bool: True if type conversion was successful, False otherwise
         """
         for key, value in schema.iteritems():
             key = str(key)
@@ -341,6 +367,13 @@ class ParserBase:
         return all(optionals.issubset(schema) for schema, optionals in values)
 
     def _add_parse_result(self, record, valid, envelope):
+        """Add the result of parsing to the proper array, updating the envelope in the process
+
+        Args:
+            record (dict): Value of the parsed (or unparsed, if failed) record
+            valid (bool): True if the parsing was successful, False otherwise
+            envelope (dict): Extracted envelope to be added to the parsed record
+        """
         if not valid:
             self._invalid_parses.append(record)
             return
@@ -354,7 +387,7 @@ class ParserBase:
         """Extract envelope key/values from the original payload
 
         Args:
-            payload (dict): The parsed json data
+            payload (dict): The original record to pull envelope keys from
 
         Returns:
             dict: Key/values extracted from the log to be used as the envelope
@@ -376,7 +409,7 @@ class ParserBase:
             payload (dict): The parsed json data
 
         Returns:
-            list: A list of JSON records extracted via JSON path or regex
+            list: A list of JSON records extracted via JSON path
         """
         # Handle jsonpath extraction of records
         LOGGER.debug('Parsing records with JSONPath: %s', self.json_path)
@@ -384,13 +417,13 @@ class ParserBase:
         return jmespath.search(self.json_path, payload)
 
     def parse(self, data):
-        """Main parser method to be overridden by all Parser classes
+        """Main parser method to be handle parsing of the passed data
 
         Args:
             data (str|dict): Data to be parsed.
 
-        Yields:
-            PayloadRecord: Represention of parsed records.
+        Returns:
+            bool: True if any records were parsed using this schema, False otherwise
         """
         # Ensure the schema is defined properly. Invalid schemas will not be used
         if not self._validate_schema():
@@ -463,11 +496,14 @@ class JSONParser(ParserBase):
     def _extract_via_json_path(self, json_payload):
         """Extract records from the original json payload using the JSON configuration
 
+        If the embedded_json flag is set, this will additionally attempt to load the
+        extracted data as json into another dictionary object.
+
         Args:
             json_payload (dict): The parsed json data
 
         Returns:
-            list: A list of one or more JSON records extracted via JSON path or regex
+            list: A list of one or more JSON records extracted via JSON path
         """
         extracted_records = self._json_path_records(json_payload)
         if not extracted_records:
@@ -575,11 +611,10 @@ class CSVParser(ParserBase):
                 if 'escapechar' in self.configuration else None)
 
     def _get_reader(self, data):
-        """Return the CSV reader for the given payload source
+        """Return the CSV reader for the data using the configured delimiter, etc
 
         Returns:
-            StringIO: CSV reader object if the parse was successful OR
-            False if parse was unsuccessful
+            StringIO: Open CSV reader object or False upon error
         """
         try:
             return csv.reader(
@@ -592,7 +627,7 @@ class CSVParser(ParserBase):
             return False
 
     def _parse(self, data):
-        """Parse a string into a comma separated value reader object.
+        """Parse a string into a comma separated value reader object
 
         Args:
             data (str): Data to be parsed.
@@ -601,21 +636,31 @@ class CSVParser(ParserBase):
             list<tuple>: List of tuples with records and their parsing status
                 Examples: [({'key': 'value'}, True)]
         """
-        records = []
+        extracted_data = []
         if self.json_path:
             # Support extraction of csv data within json
-            records = self._json_path_records(data)
-            if not records:
+            extracted_data = self._json_path_records(data)
+            if not extracted_data:
                 return [(data, False)]
 
-        # Fall back on the data as default if
-        records = records or [data]
+        # Fall back on the data as default if extraction failed
+        data = extracted_data or [data]
 
-        return self._extract_records(records, self.schema)
+        return self._extract_records(data, self.schema)
 
-    def _extract_records(self, records, schema):
+    def _extract_records(self, data, schema):
+        """Extract record(s) from the csv data using the specified schema
+
+        Args:
+            data (str): String representing a csv row.
+            schema (dict): Schema to be used for parsing.
+
+        Returns:
+            list<tuple>: List of tuples with records and their parsing status
+                Examples: [({'key': 'value'}, True)]
+        """
         csv_payloads = []
-        for item in records:
+        for item in data:
             reader = self._get_reader(item)
             if not reader:
                 csv_payloads.append((item, False))
@@ -633,7 +678,7 @@ class CSVParser(ParserBase):
         return csv_payloads
 
     def _parse_row(self, row, schema):
-        """Parse a single csv row and return the result
+        """Parse a single csv row using the specified schema
 
         Args:
             row (list): A list of strings representing a csv row
@@ -693,7 +738,14 @@ class KVParser(ParserBase):
         return [(record, True)] if record else [(data, False)]
 
     def _extract_record(self, data):
+        """Extract the key/value record from the string of data
 
+        Args:
+            data (str): String of data from which to extract key/value information
+
+        Returns:
+            dict: Parsed keys and values from the string data, False upon failure
+        """
         kv_payload = {}
         try:
             # remove any blank strings that may exist in our list

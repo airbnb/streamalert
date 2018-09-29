@@ -31,14 +31,12 @@ class AppPayload(StreamPayload):
         return 'stream_alert_app'
 
     def pre_parse(self):
-        """Pre-parsing method for incoming app records that iterates over all the
-        incoming logs in the 'logs' list.
+        """Pre-parsing method for incoming app records
+
+        This iterates over all the incoming logs in the 'logs' list.
 
         Yields:
-            Instances of `self` back to the caller with the proper
-                `pre_parsed_record` set to the current log data. This conforms
-                to the interface of returning a generator, providing the ability
-                to support multiple records like this.
+            Instances of PayloadRecord back to the caller containing the current log data
         """
         for data in self.raw_record['logs']:
             yield PayloadRecord(data)

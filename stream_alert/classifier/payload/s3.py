@@ -196,16 +196,14 @@ class S3Payload(StreamPayload):
             download.truncate()
 
     def pre_parse(self):
-        """Pre-parsing method for S3 objects that will download the s3 object,
-        open it for reading and iterate over lines (records) in the file.
-        This yields back references of this S3Payload instance to the caller
-        with a propertly set `pre_parsed_record` for this record.
+        """Pre-parsing method for S3 objects
+
+        Downloads the s3 object into the system's temp directory for reading. The
+        file is kept open as a tempfile.TemporaryFile to ensure proper cleanup
+        when reading finishes.
 
         Yields:
-            Instances of `self` back to the caller with the
-                proper `pre_parsed_record` set. Conforms to the interface of
-                returning a generator, providing the ability to support
-                multi-record like this (s3).
+            Instances of PayloadRecord back to the caller containing the current log data
         """
         self._check_size()
 

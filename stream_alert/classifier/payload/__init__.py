@@ -2,7 +2,7 @@
 import importlib
 import os
 
-# Import all files containing subclasses of OutputDispatcher, skipping the common base class
+# Import all files containing subclasses of StreamPayload, skipping the common base class
 for input_file in os.listdir(os.path.dirname(__file__)):
     # Skip the common base file and any non-py files
     if input_file.startswith(('__init__', 'payload_base')) or not input_file.endswith('.py'):
