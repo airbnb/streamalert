@@ -11,6 +11,8 @@ coverage
 coveralls
 cryptography
 google-api-python-client==1.6.4
+jmespath
+jsonlines
 jsonpath_rw
 mock
 moto==1.3.3
