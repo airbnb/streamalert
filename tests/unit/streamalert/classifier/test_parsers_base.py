@@ -13,7 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-# pylint: disable=abstract-class-instantiated
 import json
 
 from mock import patch
@@ -25,11 +24,12 @@ from stream_alert.classifier.parsers import ParserBase
 
 class TestParserBaseConfiguration(object):
     """Test class for ParserBase properties"""
-    # pylint: disable=protected-access,attribute-defined-outside-init,no-self-use
+    # pylint: disable=protected-access,no-self-use
 
     @patch.object(ParserBase, '__abstractmethods__', frozenset())
     def setup(self):
         """Setup before each method"""
+        # pylint: disable=abstract-class-instantiated,attribute-defined-outside-init
         options = {
             'schema': {
                 'timestamp': 'string',
@@ -492,7 +492,7 @@ class TestParserBaseClassMethods(object):
 @patch.object(ParserBase, '__abstractmethods__', frozenset())
 class TestParserBaseMethods(object):
     """Test class for ParserBase"""
-    # pylint: disable=protected-access,no-self-use
+    # pylint: disable=protected-access,no-self-use,abstract-class-instantiated
 
     def test_log_schema_type_property(self):
         """ParserBase - Log Schema Type Property"""
