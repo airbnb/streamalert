@@ -516,7 +516,7 @@ class TestParserBaseMethods(object):
         item = 'foobar'
         parser = ParserBase(None)
         parser._valid_parses.append(item)
-        assert_equal(parser.parses, [item])
+        assert_equal(parser.parsed_records, [item])
 
     def test_invalid_parses_property(self):
         """ParserBase - Invalid Parses Property"""

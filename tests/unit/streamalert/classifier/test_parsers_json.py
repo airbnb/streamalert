@@ -85,7 +85,7 @@ class TestJSONParser(object):
         expected_result = [
             record_data
         ]
-        assert_equal(parser.parses, expected_result)
+        assert_equal(parser.parsed_records, expected_result)
 
     def test_invalid_json_path(self):
         """JSONParser - Invalid JSON Path"""
@@ -159,7 +159,7 @@ class TestJSONParser(object):
                 }
             }
         ]
-        assert_equal(parser.parses, expected_result)
+        assert_equal(parser.parsed_records, expected_result)
 
     def test_regex_key_invalid_json(self):
         """JSONParser - Regex Key with Invalid JSON Object"""
@@ -305,7 +305,7 @@ class TestJSONParser(object):
         expected_result = [
             expected_record
         ]
-        assert_equal(parser.parses, expected_result)
+        assert_equal(parser.parsed_records, expected_result)
 
     def test_json_regex_key_with_envelope(self):
         """JSONParser - Regex key with envelope"""
@@ -336,7 +336,7 @@ class TestJSONParser(object):
                 }
             }
         ]
-        assert_equal(parser.parses, expected_result)
+        assert_equal(parser.parsed_records, expected_result)
 
     def test_json_regex_key(self):
         """JSONParser - Regex key"""
@@ -370,7 +370,7 @@ class TestJSONParser(object):
             }
         ]
 
-        assert_equal(parser.parses, expected_result)
+        assert_equal(parser.parsed_records, expected_result)
 
     def test_embedded_json(self):
         """JSONParser - Embedded JSON"""
@@ -418,7 +418,7 @@ class TestJSONParser(object):
             }
         ]
 
-        assert_equal(parser.parses, expected_result)
+        assert_equal(parser.parsed_records, expected_result)
 
     def test_embedded_json_invalid(self):
         """JSONParser - Embedded JSON, Invalid"""
@@ -484,7 +484,7 @@ class TestJSONParser(object):
             data
         ]
 
-        assert_equal(parser.parses, expected_result)
+        assert_equal(parser.parsed_records, expected_result)
 
     def test_optional_keys_json(self):
         """JSONParser - Optional top level keys"""
@@ -535,7 +535,7 @@ class TestJSONParser(object):
             }
         ]
 
-        assert_equal(parser.parses, expected_result)
+        assert_equal(parser.parsed_records, expected_result)
 
     def test_nested_records_with_missing_keys(self):
         """JSONParser - Nested records with missing keys"""
@@ -587,7 +587,7 @@ class TestJSONParser(object):
             }
         ]
 
-        assert_equal(parser.parses, expected_valid_result)
+        assert_equal(parser.parsed_records, expected_valid_result)
         assert_equal(parser.invalid_parses, expected_invalid_result)
 
     def test_optional_keys_with_json_path(self):
@@ -648,7 +648,7 @@ class TestJSONParser(object):
             }
         ]
 
-        assert_equal(parser.parses, expected_result)
+        assert_equal(parser.parsed_records, expected_result)
 
     def test_cloudtrail(self):
         """JSONParser - Cloudtrail JSON"""
@@ -738,7 +738,7 @@ class TestJSONParser(object):
         expected_result = [
             rec for rec in data['Records']
         ]
-        assert_equal(parser.parses, expected_result)
+        assert_equal(parser.parsed_records, expected_result)
 
     def test_cloudwatch(self):
         """JSONParser - CloudWatch JSON with envelope keys"""
@@ -873,7 +873,7 @@ class TestJSONParser(object):
                 }
             }
         ]
-        assert_equal(parser.parses, expected_result)
+        assert_equal(parser.parsed_records, expected_result)
 
     def test_inspec(self):
         """JSONParser - Inspec JSON"""
@@ -972,7 +972,7 @@ class TestJSONParser(object):
             control for prof in data['profiles'] for control in prof['controls']
         ]
 
-        assert_equal(parser.parses, expected_result)
+        assert_equal(parser.parsed_records, expected_result)
 
     def test_parse_record_copy(self):
         """JSONParser - Parse, Ensure Copy"""
@@ -987,7 +987,7 @@ class TestJSONParser(object):
 
         parser = JSONParser(options)
         assert_equal(parser.parse(record_data), True)
-        assert_equal(id(parser.parses[0]) == id(record_data), False)
+        assert_equal(id(parser.parsed_records[0]) == id(record_data), False)
 
     @patch('logging.Logger.error')
     def test_extract_via_json_path_bad_json(self, log_mock):

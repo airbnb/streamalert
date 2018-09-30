@@ -80,6 +80,9 @@ class ParserBase:
         self._valid_parses = []
         self._invalid_parses = []
 
+    def __len__(self):
+        return len(self._valid_parses)
+
     @classmethod
     def type(cls):
         """Returns the type of parser"""
@@ -126,7 +129,7 @@ class ParserBase:
         return self._invalid_parses
 
     @property
-    def parses(self):
+    def parsed_records(self):
         return self._valid_parses
 
     @classmethod
