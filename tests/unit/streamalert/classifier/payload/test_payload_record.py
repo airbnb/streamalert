@@ -33,9 +33,9 @@ class TestPayloadRecord(object):
     def _mock_parser(cls, records=None, invalid_records=None):
         return Mock(
             parsed_records=records if records else [],
-            invalid_records=invalid_records if invalid_records else [],
+            invalid_parses=invalid_records if invalid_records else [],
             log_schema_type='foo:bar',
-            __nonzero__=Mock(return_value=records is not None)
+            __nonzero__=lambda: records is not None
         )
 
     def test_non_zero_false(self):
@@ -58,15 +58,27 @@ class TestPayloadRecord(object):
 
     def test_repr(self):
         """PayloadRecord - Repr"""
-        self._payload_record._parser = self._mock_parser(records=['foobarbaz'])
+        self._payload_record._parser = self._mock_parser(records=[self._record])
         expected_result = (
-            '<PayloadRecord valid:True; log type:foo:bar; parsed records:1; invalid records:0;>'
+            '<PayloadRecord valid:True; log type:foo:bar; parsed records:1;>'
         )
         assert_equal(repr(self._payload_record), expected_result)
 
     def test_repr_invalid(self):
         """PayloadRecord - Repr, Invalid"""
         expected_result = '<PayloadRecord valid:False; raw record:{\'key\': \'value\'};>'
+        assert_equal(repr(self._payload_record), expected_result)
+
+    def test_repr_invalid_records(self):
+        """PayloadRecord - Repr, Invalid Records"""
+        self._payload_record._parser = self._mock_parser(
+            records=[self._record],
+            invalid_records=[self._record]
+        )
+        expected_result = (
+            '<PayloadRecord valid:True; log type:foo:bar; parsed records:1; invalid records:1 '
+            '([{\'key\': \'value\'}]); raw record:{\'key\': \'value\'};>'
+        )
         assert_equal(repr(self._payload_record), expected_result)
 
     def test_data_property(self):
