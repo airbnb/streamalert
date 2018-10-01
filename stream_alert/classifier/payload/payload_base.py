@@ -46,7 +46,7 @@ class PayloadRecord(object):
 
         ParserBase implements __nonzero__ as well, so return the result of it
         """
-        return bool(self._parser)
+        return self._parser is not None
 
     # For forward compatibility to Python3
     __bool__ = __nonzero__
@@ -59,19 +59,32 @@ class PayloadRecord(object):
         )
 
     def __repr__(self):
-        if self:
-            return '<{} valid:{}; log type:{}; parsed records:{}; invalid records:{};>'.format(
+        if not self:
+            return '<{} valid:{}; raw record:{};>'.format(
+                self.__class__.__name__,
+                bool(self),
+                self._record_data
+            )
+
+        if self.invalid_records:
+            return (
+                '<{} valid:{}; log type:{}; parsed records:{}; invalid records:{} ({}); '
+                'raw record:{};>'
+            ).format(
                 self.__class__.__name__,
                 bool(self),
                 self.log_schema_type,
                 len(self.parsed_records),
-                len(self.invalid_records)
+                len(self.invalid_records),
+                self.invalid_records,
+                self._record_data
             )
 
-        return '<{} valid:{}; raw record:{};>'.format(
+        return '<{} valid:{}; log type:{}; parsed records:{};>'.format(
             self.__class__.__name__,
             bool(self),
-            self._record_data
+            self.log_schema_type,
+            len(self.parsed_records)
         )
 
     @property
@@ -92,7 +105,7 @@ class PayloadRecord(object):
 
     @property
     def invalid_records(self):
-        return self.parser.invalid_records if self else []
+        return self.parser.invalid_parses if self else []
 
     @property
     def log_schema_type(self):

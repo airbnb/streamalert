@@ -89,11 +89,13 @@ class Classifier(object):
 
         Args:
             payload_record: A PayloadRecord object
+            logs_config: Subset of entire logs.json schemas to use for processing
 
         Returns:
-            list: Contains any schemas that matched this log format
-                Each list entry contains the namedtuple of 'SchemaMatch' with
-                values of log_name, root_schema, parser, and parsed_data
+            bool: True if the payload's data was successfully parsed, False otherwise
+
+        Sets:
+            PayloadRecord.parser: Assigns a parser to the PayloadRecord for the data
         """
         # Loop over all logs schemas declared for this source
         for log_type, options in logs_config.iteritems():
@@ -112,40 +114,7 @@ class Classifier(object):
 
             return True
 
-        return False  #  unable to parse this record
-
-    def run(self, records):
-        """Run classificaiton of the records in the Lambda input
-
-        Args:
-            records (list): An list of records received by Lambda
-        """
-        LOGGER.debug('Number of incoming records: %d', len(records))
-        if not records:
-            return False
-
-        for input_record in records:
-            # Get the service and entity from the payload
-            payload = StreamPayload.load_from_raw_record(input_record)
-            if not payload:
-                continue
-
-            self._classify_payload(payload)
-
-        self._log_metrics()
-
-        # Only log rule info here if this is not running tests
-        # During testing, this gets logged at the end and printing here could be confusing
-        # since stress testing calls this method multiple times
-        if self._verbose:
-            print_rule_stats(True)
-
-    def _log_bad_records(self, payload_record, records):
-        for record in records:
-            LOGGER.error(
-                'Record does not match any defined schemas: %s\n%s', payload_record, record
-            )
-            self._failed_record_count += 1
+        return False  # unable to parse this record
 
     def _classify_payload(self, payload):
         """Run the record through the rules, saving any alerts and forwarding them to Dynamo.
@@ -174,30 +143,44 @@ class Classifier(object):
 
             payload.fully_classified = payload.fully_classified and record
             if not record:
-                self._log_bad_records(record, [record.data])
+                self._log_bad_records(record, 1)
                 continue
 
             LOGGER.debug(
                 'Classified %d record(s) with schema: %s',
                 len(record.parsed_records),
-                record.log_type
+                record.log_schema_type
             )
 
             # Even if the parser was successful, there's a chance it
             # could not parse all records, so log them here as invalid
-            self._log_bad_records(record, record.invalid_parses)
+            self._log_bad_records(record, len(record.invalid_records))
 
             for parsed_rec in record.parsed_records:
                 Normalizer.normalize(parsed_rec, record.log_type)
 
             self._payloads.append(record)
 
+    def _log_bad_records(self, payload_record, invalid_record_count):
+        """Log the contents of bad records to output so they can be handled
+
+        Args:
+            payload_record (PayloadRecord): PayloadRecord instance that, when logged to output,
+                prints some information that will be helpful for debugging bad data
+        """
+        if not invalid_record_count:
+            return  # don't log anything if the count of invalid records is not > 0
+
+        LOGGER.error('Record does not match any defined schemas: %s', payload_record)
+
+        self._failed_record_count += invalid_record_count
+
     def _log_metrics(self):
         """Perform some metric logging before exiting"""
         MetricLogger.log_metric(
             FUNCTION_NAME,
             MetricLogger.TOTAL_RECORDS,
-            sum(len(payload.parsed_records for payload in self._payloads))
+            sum(len(payload.parsed_records) for payload in self._payloads)
         )
 
         MetricLogger.log_metric(
@@ -208,3 +191,29 @@ class Classifier(object):
         MetricLogger.log_metric(
             FUNCTION_NAME, MetricLogger.FAILED_PARSES, self._failed_record_count
         )
+
+    def run(self, records):
+        """Run classificaiton of the records in the Lambda input
+
+        Args:
+            records (list): An list of records received by Lambda
+        """
+        LOGGER.debug('Number of incoming records: %d', len(records))
+        if not records:
+            return
+
+        for input_record in records:
+            # Get the service and entity from the payload
+            payload = StreamPayload.load_from_raw_record(input_record)
+            if not payload:
+                continue
+
+            self._classify_payload(payload)
+
+        self._log_metrics()
+
+        # Only log rule info here if this is not running tests
+        # During testing, this gets logged at the end and printing here could be confusing
+        # since stress testing calls this method multiple times
+        if self._verbose:
+            print_rule_stats(True)
