@@ -1,0 +1,392 @@
+{
+  "box": {
+    "sourceAddress": {
+      "ioc_type": "ip", 
+      "keys": [
+        "ip_address"
+      ]
+    }
+  }, 
+  "carbonblack": {
+    "command": {
+      "keys": [
+        "cmdline", 
+        "command_line"
+      ]
+    }, 
+    "destinationAddress": {
+      "ioc_type": "ip", 
+      "keys": [
+        "remote_ip"
+      ]
+    }, 
+    "destinationDomain": {
+      "ioc_type": "domain", 
+      "keys": [
+        "domain"
+      ]
+    }, 
+    "destinationPort": {
+      "keys": [
+        "remote_port"
+      ]
+    }, 
+    "deviceAddress": {
+      "ioc_type": "ip", 
+      "keys": [
+        "interface_ip", 
+        "comms_ip"
+      ]
+    }, 
+    "fileHash": {
+      "ioc_type": "md5", 
+      "keys": [
+        "process_md5", 
+        "parent_md5", 
+        "expect_followon_w_md5", 
+        "md5"
+      ]
+    }, 
+    "fileName": {
+      "keys": [
+        "observed_filename", 
+        "file_path"
+      ]
+    }, 
+    "filePath": {
+      "keys": [
+        "path"
+      ]
+    }, 
+    "processName": {
+      "keys": [
+        "parent_name", 
+        "process_name"
+      ]
+    }, 
+    "processPath": {
+      "keys": [
+        "parent_path", 
+        "process_path", 
+        "path"
+      ]
+    }, 
+    "sourceAddress": {
+      "ioc_type": "ip", 
+      "keys": [
+        "ipv4", 
+        "local_ip"
+      ]
+    }, 
+    "sourcePort": {
+      "keys": [
+        "port", 
+        "local_port"
+      ]
+    }, 
+    "transportProtocol": {
+      "keys": [
+        "protocol"
+      ]
+    }, 
+    "userName": {
+      "keys": [
+        "username"
+      ]
+    }
+  }, 
+  "cloudtrail": {
+    "destinationAccount": {
+      "keys": [
+        "recipientAccountId"
+      ]
+    }, 
+    "eventName": {
+      "keys": [
+        "eventName"
+      ]
+    }, 
+    "eventType": {
+      "keys": [
+        "eventType"
+      ]
+    }, 
+    "region": {
+      "keys": [
+        "region", 
+        "awsRegion"
+      ]
+    }, 
+    "sourceAccount": {
+      "keys": [
+        "account", 
+        "accountId"
+      ]
+    }, 
+    "sourceAddress": {
+      "ioc_type": "ip", 
+      "keys": [
+        "sourceIPAddress"
+      ]
+    }, 
+    "userAgent": {
+      "keys": [
+        "userAgent"
+      ]
+    }
+  }, 
+  "cloudwatch": {
+    "destinationAccount": {
+      "keys": [
+        "recipientAccountId"
+      ]
+    }, 
+    "destinationAddress": {
+      "ioc_type": "ip", 
+      "keys": [
+        "destination"
+      ]
+    }, 
+    "destinationPort": {
+      "keys": [
+        "destport"
+      ]
+    }, 
+    "eventName": {
+      "keys": [
+        "eventName"
+      ]
+    }, 
+    "eventType": {
+      "keys": [
+        "eventType"
+      ]
+    }, 
+    "region": {
+      "keys": [
+        "region"
+      ]
+    }, 
+    "sourceAccount": {
+      "keys": [
+        "account"
+      ]
+    }, 
+    "sourceAddress": {
+      "ioc_type": "ip", 
+      "keys": [
+        "source", 
+        "sourceIPAddress"
+      ]
+    }, 
+    "sourcePort": {
+      "keys": [
+        "srcport"
+      ]
+    }, 
+    "transportProtocol": {
+      "keys": [
+        "protocol"
+      ]
+    }, 
+    "userAgent": {
+      "keys": [
+        "userAgent"
+      ]
+    }, 
+    "userName": {
+      "keys": [
+        "userName", 
+        "owner", 
+        "invokedBy"
+      ]
+    }
+  }, 
+  "duo": {
+    "sourceAddress": {
+      "ioc_type": "ip", 
+      "keys": [
+        "ip"
+      ]
+    }, 
+    "userName": {
+      "keys": [
+        "username"
+      ]
+    }
+  }, 
+  "ghe": {
+    "destinationAddress": {
+      "ioc_type": "ip", 
+      "keys": [
+        "remote_address"
+      ]
+    }, 
+    "sourceAddress": {
+      "ioc_type": "ip", 
+      "keys": [
+        "actor_ip"
+      ]
+    }, 
+    "sourcePort": {
+      "keys": [
+        "port"
+      ]
+    }, 
+    "userName": {
+      "keys": [
+        "actor", 
+        "current_user", 
+        "user"
+      ]
+    }
+  }, 
+  "gsuite": {
+    "sourceAddress": {
+      "ioc_type": "ip", 
+      "keys": [
+        "ipAddress"
+      ]
+    }
+  }, 
+  "onelogin": {
+    "sourceAddress": {
+      "ioc_type": "ip", 
+      "keys": [
+        "ipaddr", 
+        "proxy_ip"
+      ]
+    }, 
+    "userName": {
+      "keys": [
+        "actor_user_name", 
+        "user_name"
+      ]
+    }
+  }, 
+  "osquery": {
+    "command": {
+      "keys": [
+        "cmdline", 
+        "command"
+      ]
+    }, 
+    "destinationAddress": {
+      "ioc_type": "ip", 
+      "keys": [
+        "destination", 
+        "remote_address", 
+        "gateway"
+      ]
+    }, 
+    "destinationPort": {
+      "keys": [
+        "remote_port"
+      ]
+    }, 
+    "fileHash": {
+      "ioc_type": "md5", 
+      "keys": [
+        "md5", 
+        "sha1", 
+        "sha256"
+      ]
+    }, 
+    "filePath": {
+      "keys": [
+        "path", 
+        "directory"
+      ]
+    }, 
+    "fileSize": {
+      "keys": [
+        "size"
+      ]
+    }, 
+    "message": {
+      "keys": [
+        "message"
+      ]
+    }, 
+    "receiptTime": {
+      "keys": [
+        "unixTime"
+      ]
+    }, 
+    "severity": {
+      "keys": [
+        "severity"
+      ]
+    }, 
+    "sourceAddress": {
+      "ioc_type": "ip", 
+      "keys": [
+        "host", 
+        "source", 
+        "local_address", 
+        "address"
+      ]
+    }, 
+    "sourcePort": {
+      "keys": [
+        "local_port", 
+        "port"
+      ]
+    }, 
+    "sourceUserId": {
+      "keys": [
+        "uid"
+      ]
+    }, 
+    "transportProtocol": {
+      "keys": [
+        "protocol"
+      ]
+    }, 
+    "userName": {
+      "keys": [
+        "username", 
+        "user"
+      ]
+    }
+  }, 
+  "pan": {
+    "destinationAddress": {
+      "ioc_type": "ip", 
+      "keys": [
+        "dst", 
+        "natdst"
+      ]
+    }, 
+    "destinationPort": {
+      "keys": [
+        "dport", 
+        "natdport"
+      ]
+    }, 
+    "sourceAddress": {
+      "ioc_type": "ip", 
+      "keys": [
+        "src", 
+        "natsrc"
+      ]
+    }, 
+    "sourcePort": {
+      "keys": [
+        "sport", 
+        "natsport"
+      ]
+    }, 
+    "transportProtocol": {
+      "keys": [
+        "proto"
+      ]
+    }, 
+    "userName": {
+      "keys": [
+        "srcuser", 
+        "dstuser"
+      ]
+    }
+  }
+}
