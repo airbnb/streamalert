@@ -23,7 +23,7 @@ from stream_alert.classifier.parsers import CSVParser
 
 class TestCSVParser(object):
     """Test class for CSVParser"""
-    # pylint: disable=attribute-defined-outside-init,no-self-use,protected-access
+    # pylint: disable=no-self-use,protected-access
 
     @classmethod
     def _default_schema(cls):
