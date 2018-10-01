@@ -56,7 +56,7 @@ class Normalizer(object):
             }
         """
         return {
-            key: list(cls._extract_paths(record, set(values)))
+            key: list(cls._extract_paths(record, values))
             for key, values in normalized_types.iteritems()
         }
 
@@ -95,13 +95,8 @@ class Normalizer(object):
             LOGGER.debug('No normalized types defined for log type: %s', log_type)
             return
 
-        found_types = cls.match_types(record, log_normalized_types)
-        if not found_types:
-            LOGGER.error('No normalized values found in record: %s', log_normalized_types)
-            return
-
         # Add normalized keys to the record
-        record.update({NORMALIZATION_KEY: found_types})
+        record.update({NORMALIZATION_KEY: cls.match_types(record, log_normalized_types)})
 
     @classmethod
     def load_from_config(cls, config):
@@ -121,7 +116,7 @@ class Normalizer(object):
 
         cls._types_config = {
             log_source: {
-                normalized_type: metadata['keys']
+                normalized_type: set(metadata['keys'])
                 for normalized_type, metadata in key_mapping.iteritems()
             } for log_source, key_mapping in config['types_new'].iteritems()
         }
