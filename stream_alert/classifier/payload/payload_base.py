@@ -68,7 +68,7 @@ class PayloadRecord(object):
                 len(self.invalid_records)
             )
 
-        return '<{} valid:{} raw record:{}>'.format(
+        return '<{} valid:{}; raw record:{};>'.format(
             self.__class__.__name__,
             bool(self),
             self._record_data
