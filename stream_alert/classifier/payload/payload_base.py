@@ -25,37 +25,86 @@ LOGGER_DEBUG_ENABLED = LOGGER.isEnabledFor(logging.DEBUG)
 
 
 class PayloadRecord(object):
-    """PayloadRecord for extracted records from within a payload"""
+    """PayloadRecord for extracted records from within a payload
 
+    Attributes:
+        data (str|dict): Raw payload record data being parsed
+        parser: Instance of classifier.parsers.ParserBase used to properly parse the data
+        log_schema_type (str): Fully qualified log type (ie: osquery:diff)
+        log_type (str): Top-level log type (ie: 'osquery' in osquery:diff)
+        log_subtype (str): Log sub-type, if defined (ie: 'diff' in osquery:diff)
+        parsed_records (list): List of successfully parsed records from this payload record
+        invalid_records (list): If some records from this payload record parsed successfully,
+            but others failed, this contains the list of failed records
+    """
     def __init__(self, record_data):
         self._record_data = record_data
-        self.log_name = None
-        self.schema = None
-        self.data_type = None
-        self.classified = False
-        self._parsed_data = None
+        self._parser = None
+
+    def __nonzero__(self):
+        """Valid if there is a parser, and the parser itself is valid
+
+        ParserBase implements __nonzero__ as well, so return the result of it
+        """
+        return bool(self._parser)
+
+    # For forward compatibility to Python3
+    __bool__ = __nonzero__
+
+    def __len__(self):
+        return (
+            len(json.dumps(self._record_data, separators=(',', ':')))
+            if isinstance(self._record_data, dict)
+            else len(self._record_data)
+        )
+
+    def __repr__(self):
+        if self:
+            return '<{} valid:{}; log type:{}; parsed records:{}; invalid records:{};>'.format(
+                self.__class__.__name__,
+                bool(self),
+                self.log_schema_type,
+                len(self.parsed_records),
+                len(self.invalid_records)
+            )
+
+        return '<{} valid:{} raw record:{}>'.format(
+            self.__class__.__name__,
+            bool(self),
+            self._record_data
+        )
 
     @property
     def data(self):
         return self._record_data
 
     @property
-    def parsed_data(self):
-        return self._parsed_data
+    def parser(self):
+        return self._parser
 
-    @parsed_data.setter
-    def parsed_data(self, data):
-        self._parsed_data = data
+    @parser.setter
+    def parser(self, parser):
+        self._parser = parser
 
-    def new_sub_record(self):
-        """Return a new sub record that is a child of this same raw record data"""
-        # Do NOT copy/deep copy the original record
-        # Each record should just reference the same original record, and
-        # copying would result in memory exhaustion. The original record
-        # is never altered after instantiation, so just reference it here
-        record = type(self)(self._record_data)
-        record.data_type = self.data_type
-        return record
+    @property
+    def parsed_records(self):
+        return self.parser.parsed_records if self else []
+
+    @property
+    def invalid_records(self):
+        return self.parser.invalid_records if self else []
+
+    @property
+    def log_schema_type(self):
+        return self.parser.log_schema_type if self else None
+
+    @property
+    def log_type(self):
+        return self.parser.log_schema_type.split(':')[0] if self else None
+
+    @property
+    def log_subtype(self):
+        return self.parser.log_schema_type.split(':')[-1] if self else None
 
 
 class RegisterInput(object):
@@ -107,10 +156,6 @@ class StreamPayload(object):
         resource (str): The name of the resource from which this log originated.
             Can be a kinesis stream name, SNS topic, or S3 bucket name.
         raw_record: The record from the AWS Lambda Records dictionary.
-        log_source (str): The name of the logging application which the data
-            originated from.  This could be osquery, auditd, etc.
-        records (list): A list of parsed and typed PayloadRecord(s).
-        data_type (str): The data type of the record - json, csv, syslog, etc.
         fully_classified (bool): Whether the payload has been successfully
             and completely classified.
     """
@@ -119,35 +164,28 @@ class StreamPayload(object):
     def __init__(self, resource, raw_record):
         self.raw_record = raw_record
         self.resource = resource
-        self.log_source = None
-        self.records = None
-        self.data_type = None
         self.fully_classified = True
 
     def __nonzero__(self):
-        return all([self.resource, self.data_type, self.log_source,
-                    self.records, self.fully_classified])
+        return self.fully_classified
 
     # For forward compatibility to Python3
     __bool__ = __nonzero__
 
     def __repr__(self):
-        return '<{} valid:{} log_source:{} resource:{} type:{} record:{}>'.format(
+        if self:
+            return '<{} valid:{}; resource:{};>'.format(
+                self.__class__.__name__,
+                bool(self),
+                self.resource
+            )
+
+        return '<{} valid:{}; resource:{}; raw record:{};>'.format(
             self.__class__.__name__,
             bool(self),
-            self.log_source,
             self.resource,
-            self.data_type,
-            self.records
+            self.raw_record
         )
-
-    @property
-    def log_type(self):
-        return self.log_source.split(':')[0]
-
-    @property
-    def log_subtype(self):
-        return self.log_source.split(':')[-1]
 
     @classmethod
     def load_from_raw_record(cls, raw_record):
