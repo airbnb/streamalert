@@ -80,6 +80,12 @@ class ParserBase:
         self._valid_parses = []
         self._invalid_parses = []
 
+    def __nonzero__(self):
+        return self.valid
+
+    # For forward compatibility to Python3
+    __bool__ = __nonzero__
+
     def __len__(self):
         return len(self._valid_parses)
 
