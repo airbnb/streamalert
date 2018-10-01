@@ -61,12 +61,12 @@ class TestParserBaseConfiguration(object):
             'timestamp': 'string',
             'host': 'string'
         }
-        assert_equal(self._parser.schema, expected_result)
+        assert_equal(self._parser._schema, expected_result)
 
     def test_optional_top_level_keys_property(self):
         """ParserBase - Optional Top Level Keys Property"""
         expected_result = {'host'}
-        assert_equal(self._parser.optional_top_level_keys, expected_result)
+        assert_equal(self._parser._optional_top_level_keys, expected_result)
 
     def test_log_patterns_property(self):
         """ParserBase - Log Patterns Property"""
@@ -75,23 +75,23 @@ class TestParserBaseConfiguration(object):
                 'foo*'
             ]
         }
-        assert_equal(self._parser.log_patterns, expected_result)
+        assert_equal(self._parser._log_patterns, expected_result)
 
     def test_json_path_property(self):
         """ParserBase - JSON Path Property"""
-        assert_equal(self._parser.json_path, 'logEvents[].message')
+        assert_equal(self._parser._json_path, 'logEvents[].message')
 
     def test_envelope_schema_property(self):
         """ParserBase - Envelope Schema Property"""
         expected_result = {
             'env_key_01': 'string'
         }
-        assert_equal(self._parser.envelope_schema, expected_result)
+        assert_equal(self._parser._envelope_schema, expected_result)
 
     def test_optional_envelope_keys_property(self):
         """ParserBase - Optional Envelope Keys Property"""
         expected_result = {'env_key_01'}
-        assert_equal(self._parser.optional_envelope_keys, expected_result)
+        assert_equal(self._parser._optional_envelope_keys, expected_result)
 
 
 class TestParserBaseClassMethods(object):
