@@ -435,8 +435,8 @@ class ParserBase:
         """
         # Ensure the schema is defined properly. Invalid schemas will not be used
         if not self._validate_schema():
-            LOGGER.error(
-                'Schema definition is not valid (%s):\n%s', self._schema_type, self._schema)
+            LOGGER.error('Schema definition is not valid (%s):\n%s',
+                         self._schema_type, self._schema)
             return False
 
         data_copy = None
@@ -455,9 +455,8 @@ class ParserBase:
                 data_copy = data
 
         # Check to make sure any non-optional envelope keys exist before proceeding
-        if not self._key_check(
-                data_copy, self._envelope_schema, self._optional_envelope_keys, True
-            ):
+        if not self._key_check(data_copy, self._envelope_schema,
+                               self._optional_envelope_keys, True):
             return False
 
         # Get the envelope and try to convert the value to the proper type(s)
