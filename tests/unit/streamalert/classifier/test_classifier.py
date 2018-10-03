@@ -232,21 +232,22 @@ class TestClassifier(object):
     @patch.object(Classifier, '_process_log_schemas')
     def test_classify_payload(self, process_mock):
         """Classifier - Classify Payload"""
-        with patch.object(classifier_module, 'Normalizer') as normalizer_mock:
-            with patch.object(Classifier, '_log_bad_records') as log_mock:
-                payload_record = self._mock_payload_record()
-                self._classifier._classify_payload(self._mock_payload([payload_record]))
-                process_mock.assert_called_with(
-                    payload_record,
-                    OrderedDict([
-                        ('log_type_01:sub_type', self._mock_logs()['log_type_01:sub_type'])
-                    ])
-                )
-                normalizer_mock.normalize.assert_called_with(
-                    payload_record.parsed_records[-1], 'foo'
-                )
-                assert_equal(self._classifier._payloads, [payload_record])
-                log_mock.assert_called_with(payload_record, 1)
+        with patch.object(classifier_module, 'Normalizer') as normalizer_mock, \
+             patch.object(Classifier, '_log_bad_records') as log_mock:
+
+            payload_record = self._mock_payload_record()
+            self._classifier._classify_payload(self._mock_payload([payload_record]))
+            process_mock.assert_called_with(
+                payload_record,
+                OrderedDict([
+                    ('log_type_01:sub_type', self._mock_logs()['log_type_01:sub_type'])
+                ])
+            )
+            normalizer_mock.normalize.assert_called_with(
+                payload_record.parsed_records[-1], 'foo'
+            )
+            assert_equal(self._classifier._payloads, [payload_record])
+            log_mock.assert_called_with(payload_record, 1)
 
     @patch('logging.Logger.error')
     def test_classify_payload_no_logs(self, log_mock):
@@ -264,12 +265,13 @@ class TestClassifier(object):
 
     def test_classify_payload_bad_record(self):
         """Classifier - Classify Payload, Bad Record"""
-        with patch.object(Classifier, '_process_log_schemas'):
-            with patch.object(Classifier, '_log_bad_records') as log_mock:
-                payload_record = self._mock_payload_record()
-                payload_record.__nonzero__ = lambda s: False
-                self._classifier._classify_payload(self._mock_payload([payload_record]))
-                log_mock.assert_called_with(payload_record, 1)
+        with patch.object(Classifier, '_process_log_schemas'), \
+             patch.object(Classifier, '_log_bad_records') as log_mock:
+
+            payload_record = self._mock_payload_record()
+            payload_record.__nonzero__ = lambda s: False
+            self._classifier._classify_payload(self._mock_payload([payload_record]))
+            log_mock.assert_called_with(payload_record, 1)
 
     def test_log_bad_records(self):
         """Classifier - Log Bad Records"""
