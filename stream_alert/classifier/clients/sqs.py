@@ -50,12 +50,22 @@ class SQSClient(object):
     MAX_BATCH_COUNT = 10
     MAX_BATCH_SIZE = 256 * 1024  # 256 KB
 
+    _queue = None
+
     def __init__(self):
         queue_url = os.environ.get('SQS_QUEUE_URL', '')
         if not queue_url:
             raise SQSClientError('No queue URL found in environment variables')
 
-        self._queue = boto3.resource('sqs', config=boto.default_config()).Queue(queue_url)
+        # Only recreate the queue resource if it's not already cached
+        SQSClient._queue = (
+            SQSClient._queue or
+            boto3.resource('sqs', config=boto.default_config()).Queue(queue_url)
+        )
+
+    @property
+    def queue(self):
+        return SQSClient._queue
 
     @classmethod
     def _log_failed(cls, count):
@@ -145,7 +155,7 @@ class SQSClient(object):
 
         MetricLogger.log_metric(FUNCTION_NAME, MetricLogger.SQS_RECORDS_SENT, successful_records)
         LOGGER.info('Successfully sent %d messages to SQS Queue: %s',
-                    successful_records, self._queue.url)
+                    successful_records, self.queue.url)
 
     @staticmethod
     def _strip_successful_records(messages, response):
@@ -186,14 +196,11 @@ class SQSClient(object):
             return 0  # nothing to do here
 
         LOGGER.error('The following records failed to put to the SQS Queue: %s',
-                     self._queue.url)
+                     self.queue.url)
 
         for failure in response['Failed']:
             record = batch[int(failure['Id'])] if batch else None
-            LOGGER.error(self._format_failure_message(
-                failure,
-                record=record
-            ))
+            LOGGER.error(self._format_failure_message(failure, record=record))
 
         failed = len(response.get('Failed', []))
         self._log_failed(failed)
@@ -231,9 +238,9 @@ class SQSClient(object):
             Args:
                 entries (list<dict>): List of SQS SendMessageBatchRequestEntry items
             """
-            LOGGER.info('Sending %d messages to %s', len(entries), self._queue.url)
+            LOGGER.info('Sending %d messages to %s', len(entries), self.queue.url)
 
-            response = self._queue.send_messages(Entries=entries)
+            response = self.queue.send_messages(Entries=entries)
 
             LOGGER.info('Response from SQS: \n%s', response)
 
@@ -252,15 +259,32 @@ class SQSClient(object):
 
         _send_messages_helper(message_entries)
 
-    def send(self, records):
+    @staticmethod
+    def _payload_messages(payloads):
+        """Prepare a list of all records from the payload to send to SQS
+
+        Args:
+            payloads (list): List of PayloadRecord items that include parsed records
+
+        Returns:
+            list<dict>: All messages formatted for ingestion by the Rules Engine function
+        """
+        return [
+            message for message in payload.sqs_messages
+            for payload in payloads
+        ]
+
+    def send(self, payloads):
         """Send a list of records to SQS, batching as necessary
 
         Args:
             records (list): Records to be sent to SQS for consumption by the rules engine
 
-        Returns:
-            bool: True is request was successful, False otherwise
+        Raises:
+            SQSClientError: Exception if something went wrong during sending messages to SQS
         """
+        records = self._payload_messages(payloads)
+
         # SQS only supports up to 10 messages so do the send in batches
         for message_batch in self._message_batches(records):
             response = self._send_messages(message_batch)
