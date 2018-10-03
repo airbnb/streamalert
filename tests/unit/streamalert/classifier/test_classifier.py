@@ -36,7 +36,8 @@ class TestClassifier(object):
     def _mock_conf(cls):
         return {
             'logs': cls._mock_logs(),
-            'sources': cls._mock_sources()
+            'sources': cls._mock_sources(),
+            'global': cls._mock_sources()
         }
 
     @classmethod
@@ -71,6 +72,19 @@ class TestClassifier(object):
                 ]))
             ]))
         ])
+
+    @classmethod
+    def _mock_global(cls):
+        return {
+            'infrastructure': {
+                'firehose': {
+                    'enabled': True,
+                    'enabled_logs': {
+                        'log_type_01': None
+                    }
+                }
+            }
+        }
 
     @classmethod
     def _mock_payload(cls, records):
@@ -111,6 +125,18 @@ class TestClassifier(object):
     def test_config_property(self):
         """Classifier - Config Property"""
         assert_equal(self._classifier._config, self._mock_conf())
+
+    def test_classified_payloads(self):
+        """Classifier - Classified Payloads Property"""
+        assert_equal(self._classifier.classified_payloads, [])
+
+    def test_firehose(self):
+        """Classifier - Firehose Property"""
+        assert_equal(self._classifier.firehose, None)
+
+    def test_data_retention_enabled(self):
+        """Classifier - Data Retention Enabled Property"""
+        assert_equal(self._classifier.data_retention_enabled, False)
 
     def test_load_logs_for_resource(self):
         """Classifier - Load Logs for Resource"""
