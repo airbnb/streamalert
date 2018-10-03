@@ -155,6 +155,7 @@ class TestStreamPayload(object):
             'Sns': {
                 'Type': 'Notification',
                 'Subject': 'Amazon S3 Notification',
+                'TopicArn': 'arn:aws:sns:us-east-1:123456789012:test_topic_arn',
                 'Message': json.dumps(
                     {
                         'Records': [

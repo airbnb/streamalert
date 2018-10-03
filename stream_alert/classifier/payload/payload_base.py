@@ -169,9 +169,12 @@ class StreamPayload(object):
         Returns:
             StreamPayload: Loaded subclass of StreamPayload for the proper payload type
         """
+        # Sns is capitalized below because this is how AWS stores it within the Record
+        # Other services above, like s3, are not stored like this. Do not alter it!
         resource_mapper = {
             'kinesis': lambda r: r['eventSourceARN'].split('/')[-1],
             's3': lambda r: r['s3']['bucket']['name'],
+            'Sns': lambda r: r['Sns']['TopicArn'].split(':')[-1],
             'stream_alert_app': lambda r: r['stream_alert_app']
         }
 
@@ -184,25 +187,23 @@ class StreamPayload(object):
                 service = svc
                 break
 
-        # Sns is capitalized below because this is how AWS stores it within the Record
-        # Other services above, like s3, are not stored like this. Do not alter it!
-        if 'Sns' in raw_record:
-            # If this is an s3 event notification via SNS, extract the bucket from the record
-            if (raw_record['Sns'].get('Type') == 'Notification' and
-                    raw_record['Sns'].get('Subject') == 'Amazon S3 Notification'):
-                service = 's3'
-                raw_record = json.loads(raw_record['Sns']['Message'])['Records'][0]
-                resource = resource_mapper[service](raw_record)
-            else:
-                service = 'sns'
-                resource = raw_record['Sns']['TopicArn'].split(':')[-1]
+        # If this is an s3 event notification via SNS, extract the bucket from the record
+        if ('Sns' in raw_record and
+                raw_record['Sns'].get('Type') == 'Notification' and
+                raw_record['Sns'].get('Subject') == 'Amazon S3 Notification'):
+
+            service = 's3'
+
+            # Assign the s3 event notification data to the raw_record and extract the resource
+            raw_record = json.loads(raw_record['Sns']['Message'])['Records'][0]
+            resource = resource_mapper[service](raw_record)
 
         if not (service and resource):
             LOGGER.error('No valid service (%s) or resource (%s) found in payload\'s raw '
                          'record, skipping: %s', service, resource, raw_record)
             return False
 
-        return RegisterInput.load_for_service(service, resource, raw_record)
+        return RegisterInput.load_for_service(service.lower(), resource, raw_record)
 
     @classmethod
     @abstractproperty
