@@ -35,7 +35,7 @@ class SnsPayload(StreamPayload):
     def service(cls):
         return 'sns'
 
-    def pre_parse(self):
+    def _pre_parse(self):
         """Pre-parsing method for SNS records
 
         Extracts the SNS message payload from the record.

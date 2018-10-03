@@ -16,6 +16,7 @@ limitations under the License.
 from abc import ABCMeta, abstractmethod, abstractproperty
 import json
 import logging
+import os
 
 from stream_alert.shared.logger import get_logger
 
@@ -40,6 +41,8 @@ class PayloadRecord(object):
     def __init__(self, record_data):
         self._record_data = record_data
         self._parser = None
+        self.service = None
+        self.resource = None
 
     def __nonzero__(self):
         """Valid if there is a parser, and the parser itself is valid
@@ -118,6 +121,24 @@ class PayloadRecord(object):
     @property
     def log_subtype(self):
         return self.parser.log_schema_type.split(':')[-1] if self else None
+
+    @property
+    def data_type(self):
+        return self.parser.type() if self else None
+
+    @property
+    def sqs_messages(self):
+        """Return a dictionary for the SQS message. JSON serialization should be done by caller"""
+        return [
+            {   # TODO: consider adding a record UUID to this payload
+                'cluster': os.environ['CLUSTER'],
+                'log_schema_type': self.log_schema_type,
+                'record': record,
+                'service': self.service,
+                'resource': self.resource,
+                'data_type': self.data_type,
+            } for record in self.parsed_records
+        ]
 
 
 class RegisterInput(object):
@@ -266,9 +287,22 @@ class StreamPayload(object):
         """
 
     @abstractmethod
-    def pre_parse(self):
+    def _pre_parse(self):
         """Pre-parsing method that should be implemented by all subclasses
 
         Yields:
             Instances of PayloadRecord back to the caller containing the current log data
         """
+
+    def pre_parse(self):
+        """Public pre-parsing method that wraps the subclass _pre_parse method
+
+        This adds to the values returned by the subclass methods
+
+        Yields:
+            Instances of PayloadRecord back to the caller containing the current log data
+        """
+        for payload in self._pre_parse():
+            payload.service = self.service()
+            payload.resource = self.resource
+            yield payload

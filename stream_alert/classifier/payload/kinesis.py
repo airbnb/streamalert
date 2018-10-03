@@ -37,7 +37,7 @@ class KinesisPayload(StreamPayload):
     def service(cls):
         return 'kinesis'
 
-    def pre_parse(self):
+    def _pre_parse(self):
         """Pre-parsing method for Kinesis records
 
         Decodes the base64 payload from within the record, and attempts to decompress

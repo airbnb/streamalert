@@ -17,7 +17,7 @@ from collections import OrderedDict
 import logging
 from os import environ as env
 
-from stream_alert.classifier.clients import FirehoseClient
+from stream_alert.classifier.clients import FirehoseClient, SQSClient
 from stream_alert.classifier.normalize import Normalizer
 from stream_alert.classifier.parsers import get_parser
 from stream_alert.classifier.payload.payload_base import StreamPayload
@@ -36,6 +36,7 @@ class Classifier(object):
 
     _config = None
     _firehose_client = None
+    _sqs_client = None
 
     def __init__(self, verbose=False):
         # Create some objects to be cached if they have not already been created
@@ -46,6 +47,7 @@ class Classifier(object):
                 log_sources=self.config['logs']
             )
         )
+        Classifier._sqs_client = Classifier._sqs_client or SQSClient()
 
         # Setup the normalization logic
         Normalizer.load_from_config(self.config)
@@ -71,6 +73,10 @@ class Classifier(object):
     @property
     def data_retention_enabled(self):
         return Classifier._firehose_client is not None
+
+    @property
+    def sqs(self):
+        return Classifier._sqs_client
 
     def _load_logs_for_resource(self, service, resource):
         """Load the log types for this service type and resource value
@@ -232,9 +238,12 @@ class Classifier(object):
 
         self._log_metrics()
 
+        # Send records to SQS before sending to Firehose
+        self.sqs.send(self._payloads)
+
         # Send the data to firehose for historical retention
         if self.data_retention_enabled:
-            self._firehose_client.send(self._payloads)
+            self.firehose.send(self._payloads)
 
         # Only log rule info here if this is not running tests
         # During testing, this gets logged at the end and printing here could be confusing
