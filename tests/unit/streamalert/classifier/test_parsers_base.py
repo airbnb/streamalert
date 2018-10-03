@@ -236,7 +236,7 @@ class TestParserBaseClassMethods(object):
         patterns = {
             'not_key': '*pattern'
         }
-        assert_equal(ParserBase._matches_log_patterns(record, patterns), True)
+        assert_equal(ParserBase._matches_log_patterns(record, patterns), False)
         log_mock.assert_any_call(
             'Declared log pattern key [%s] does exist in record:\n%s', 'not_key', record)
 

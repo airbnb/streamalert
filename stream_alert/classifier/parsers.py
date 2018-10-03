@@ -193,14 +193,13 @@ class ParserBase:
                 patterns = [patterns]
 
             # Ensure the pattern key is in the record
-            # TODO (ryandeivert): consider failing hard and returning False here
             if field not in record:
                 LOGGER.error(
                     'Declared log pattern key [%s] does exist in record:\n%s',
                     field,
                     record
                 )
-                continue
+                return False
 
             value = record.get(field)
 
