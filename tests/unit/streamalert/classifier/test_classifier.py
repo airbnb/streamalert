@@ -117,10 +117,12 @@ class TestClassifier(object):
 
     def setup(self):
         """Classifier - Setup"""
-        with patch('stream_alert.classifier.classifier.config.load_config',
+        with patch.object(classifier_module, 'Normalizer'), \
+             patch.object(classifier_module, 'SQSClient'), \
+             patch('stream_alert.classifier.classifier.config.load_config',
                    Mock(return_value=self._mock_conf())):
-            with patch.object(classifier_module, 'Normalizer'):
-                self._classifier = Classifier()
+
+            self._classifier = Classifier()
 
     def test_config_property(self):
         """Classifier - Config Property"""
