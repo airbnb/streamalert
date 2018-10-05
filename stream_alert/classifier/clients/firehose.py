@@ -289,7 +289,6 @@ class FirehoseClient(object):
             # Use the current length of the records_data in case some records were
             # successful but others were not
             self._log_failed(len(records_data))
-            return
 
     @classmethod
     def firehose_log_name(cls, log_name):

@@ -157,8 +157,8 @@ class SQSClient(object):
         LOGGER.info('Successfully sent %d messages to SQS Queue: %s',
                     successful_records, self.queue.url)
 
-    @staticmethod
-    def _strip_successful_records(messages, response):
+    @classmethod
+    def _strip_successful_records(cls, messages, response):
         """Inspect the response and remove any records records that have successfully to sent
 
         For each record, the index of the response element is the same as the index
@@ -171,14 +171,33 @@ class SQSClient(object):
             response (dict): Response object from the boto3.resource.send_messages call
                 that contains metadata on the success status of the call
         """
-        success_indices = [
-            int(item['Id']) for item in response['Successful']
-        ]
+        success_ids = {
+            item['Id'] for item in response['Successful']
+        }
 
-        LOGGER.info('Removing sucessful message indices from batch: %s', success_indices)
+        LOGGER.info('Removing sucessful message indices from batch: %s', success_ids)
 
-        for idx in sorted(success_indices, reverse=True):
-            del messages[idx]
+        for success_id in success_ids:
+            # Get the successful message by ID and remove it
+            message = cls._extract_message_by_id(messages, success_id)
+            if not message:
+                continue
+            messages.remove(message)
+
+    @classmethod
+    def _extract_message_by_id(cls, batch, identifier):
+        """Extract a message from the batch given the # IDEA:
+
+        Args:
+            batch (list): Batch of messages from which to extract the message
+            identifier (str): Id for the message to be extracted
+        """
+        for message in batch:
+            if message['Id'] == identifier:
+                return message
+
+        # Log an error if a message with this ID was not found in the batch
+        LOGGER.error('SQS message with ID \'%s\' not found in batch', identifier)
 
     def _check_failures(self, response, batch=None):
         """Inspect the response to see if the failure was our fault (the Sender)
@@ -199,7 +218,8 @@ class SQSClient(object):
                      self.queue.url)
 
         for failure in response['Failed']:
-            record = batch[int(failure['Id'])] if batch else None
+            # Pull out the record that matches this ID
+            record = self._extract_message_by_id(batch, failure['Id']) if batch else None
             LOGGER.error(self._format_failure_message(failure, record=record))
 
         failed = len(response.get('Failed', []))
@@ -257,7 +277,15 @@ class SQSClient(object):
             } for idx, message in enumerate(batched_messages)
         ]
 
-        _send_messages_helper(message_entries)
+        # The try/except here is to catch any raised errors at the end of the backoff
+        try:
+            return _send_messages_helper(message_entries)
+        except self.EXCEPTIONS_TO_BACKOFF:
+            LOGGER.exception('SQS request failed')
+            # Use the current length of the message_entries in case some records were
+            # successful but others were not
+            self._log_failed(len(message_entries))
+            return
 
     @staticmethod
     def _payload_messages(payloads):
@@ -270,8 +298,8 @@ class SQSClient(object):
             list<dict>: All messages formatted for ingestion by the Rules Engine function
         """
         return [
-            message for message in payload.sqs_messages
-            for payload in payloads
+            message for payload in payloads
+            for message in payload.sqs_messages
         ]
 
     def send(self, payloads):
