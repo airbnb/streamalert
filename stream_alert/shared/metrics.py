@@ -33,6 +33,7 @@ CLUSTER = os.environ.get('CLUSTER', 'unknown_cluster')
 # below when metrics are supported there
 FUNC_PREFIXES = {
     ALERT_MERGER_NAME: 'AlertMerger',
+    CLASSIFIER_FUNCTION_NAME: 'Classifier',
     RULE_PROCESSOR_NAME: 'RuleProcessor'
 }
 

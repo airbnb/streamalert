@@ -87,10 +87,10 @@ class TestCLIConfig(object):
         """CLI - Adding CloudWatch metric alarm, cluster"""
         alarm_info = {
             'metric_target': 'cluster',
-            'metric_name': 'TotalRecords',
+            'metric_name': 'SQSRecordsSent',
             'evaluation_periods': 1,
             'alarm_description': '',
-            'alarm_name': 'Prod Unit Testing Total Records Alarm',
+            'alarm_name': 'Classifier Prod Unit Testing SQS Records Sent',
             'period': 300,
             'threshold': 100.0,
             'statistic': 'Sum',
@@ -99,10 +99,11 @@ class TestCLIConfig(object):
         }
 
         self.config.add_metric_alarm(alarm_info)
-        log_mock.assert_called_with('Successfully added \'%s\' metric alarm for the '
-                                    '\'%s\' function to \'conf/clusters/%s.json\'.',
-                                    'Prod Unit Testing Total Records Alarm', 'rule_processor',
-                                    'prod')
+        log_mock.assert_any_call('Successfully added \'%s\' metric alarm for the '
+                                 '\'%s\' function to \'conf/clusters/%s.json\'.',
+                                 'Classifier Prod Unit Testing SQS Records Sent',
+                                 'classifier',
+                                 'prod')
 
     @patch('stream_alert_cli.config.CLIConfig.write', Mock())
     @patch('logging.Logger.info')
