@@ -191,7 +191,7 @@ def basic_streamalert_config():
                                     'alarm_description': '',
                                     'comparison_operator': 'GreaterThanOrEqualToThreshold',
                                     'evaluation_periods': 1,
-                                    'metric_name': 'RuleProcessor-FailedParses-PROD',
+                                    'metric_name': 'Classifier-FailedParses-PROD',
                                     'period': 300,
                                     'statistic': 'Sum',
                                     'threshold': 1.0
