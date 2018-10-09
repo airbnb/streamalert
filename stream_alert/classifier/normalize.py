@@ -56,30 +56,32 @@ class Normalizer(object):
             }
         """
         return {
-            key: list(cls._extract_paths(record, values))
-            for key, values in normalized_types.iteritems()
+            key: list(cls._extract_paths(record, keys_to_normalize))
+            for key, keys_to_normalize in normalized_types.iteritems()
         }
 
     @classmethod
-    def _extract_paths(cls, record, normalized_keys, path=None):
+    def _extract_paths(cls, record, keys_to_normalize, path=None):
         """Recursively extract lists of path parts from a dictionary
 
         Args:
             record (dict): Parsed payload of log
-            normalized_keys (set): Normalized keys for which to extract paths
+            keys_to_normalize (set): Normalized keys for which to extract paths
             path (list=None): Parts of current path for which keys are being extracted
 
         Yields:
             list: Parts of path in dictionary that contain normalized keys
         """
+        # Cast the JSON array to a set for quicker lookups
+        keys_to_normalize = set(keys_to_normalize)
         path = path or []
         for key, value in record.iteritems():
             temp_path = [item for item in path]
             temp_path.append(key)
-            if key in normalized_keys:
+            if key in keys_to_normalize:
                 yield temp_path
             if isinstance(value, dict):
-                for nested_path in cls._extract_paths(value, normalized_keys, temp_path):
+                for nested_path in cls._extract_paths(value, keys_to_normalize, temp_path):
                     yield nested_path
 
     @classmethod
@@ -87,7 +89,7 @@ class Normalizer(object):
         """Apply data normalization to a record
 
         Args:
-            record (dict): The parsed log w/wo data normalization
+            record (dict): The parsed log without data normalization
             log_type (str): Type of log for which to apply normalizaiton
         """
         log_normalized_types = cls._types_config.get(log_type)
@@ -111,14 +113,9 @@ class Normalizer(object):
         if cls._types_config:
             return cls  # config is already populated
 
-        if 'types_new' not in config:  # TODO: change this and below to types
+        if 'normalized_types' not in config:
             return cls  # nothing to do
 
-        cls._types_config = {
-            log_source: {
-                normalized_type: set(metadata['keys'])
-                for normalized_type, metadata in key_mapping.iteritems()
-            } for log_source, key_mapping in config['types_new'].iteritems()
-        }
+        cls._types_config = config['normalized_types']
 
         return cls  # there are no instance methods, so just return the class

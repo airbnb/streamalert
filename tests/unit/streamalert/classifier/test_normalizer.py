@@ -161,34 +161,30 @@ class TestNormalizer(object):
     def test_load_from_config(self):
         """Normalizer - Load From Config"""
         config = {
-            'types_new': {
+            'normalized_types': {
                 'cloudtrail': {
-                    'region': {
-                        'keys': [
-                            'region',
-                            'awsRegion'
-                        ]
-                    },
-                    'sourceAccount': {
-                        'keys': [
-                            'account',
-                            'accountId'
-                        ]
-                    }
+                    'region': [
+                        'region',
+                        'awsRegion'
+                    ],
+                    'sourceAccount': [
+                        'account',
+                        'accountId'
+                    ]
                 }
             }
         }
         normalizer = Normalizer.load_from_config(config)
         expected_config = {
             'cloudtrail': {
-                'region': {
+                'region': [
                     'region',
                     'awsRegion'
-                },
-                'sourceAccount': {
+                ],
+                'sourceAccount': [
                     'account',
                     'accountId'
-                }
+                ]
             }
         }
         assert_equal(normalizer, Normalizer)
