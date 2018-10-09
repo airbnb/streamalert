@@ -53,7 +53,7 @@ def parse_lambda_arn(function_arn):
     }
 
 
-def load_config(conf_dir='conf/', exclude=None, include=None, validate=False):
+def load_config(conf_dir='conf/', exclude=None, include=None, validate=True):
     """Load the configuration for StreamAlert.
 
     All configuration files live in the `conf` directory in JSON format.
@@ -188,3 +188,20 @@ def _validate_config(config):
 
                 if not entity_attrs['logs']:
                     raise ConfigError('List of \'logs\' is empty for entity: {}'.format(entity))
+
+    if 'ioc_types' in config:
+        if not 'normalized_types' in config:
+            raise ConfigError('Normalized types must also be loaded with IOC types')
+
+        for ioc_type, normalized_keys in config['ioc_types'].iteritems():
+            for normalized_key in normalized_keys:
+                if not any(normalized_key in set(log_keys)
+                           for log_keys in config['normalized_types'].values()):
+                    raise ConfigError(
+                        'IOC key \'{}\' within IOC type \'{}\' must be defined for at least '
+                        'one log type in normalized types'.format(normalized_key, ioc_type)
+                    )
+
+    if 'normalized_types' in config:
+        if not 'ioc_types' in config:
+            raise ConfigError('IOC types must also be loaded with normalized types')
