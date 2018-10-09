@@ -38,7 +38,7 @@ class Classifier(object):
     _firehose_client = None
     _sqs_client = None
 
-    def __init__(self, verbose=False):
+    def __init__(self):
         # Create some objects to be cached if they have not already been created
         Classifier._config = Classifier._config or config.load_config(validate=True)
         Classifier._firehose_client = (
@@ -52,8 +52,7 @@ class Classifier(object):
         # Setup the normalization logic
         Normalizer.load_from_config(self.config)
 
-        self._verbose = verbose
-        self._aws_region = env.get('AWS_REGION') or env.get('AWS_DEFAULT_REGION') or 'us-east-1'
+        self._in_lambda = 'LAMBDA_RUNTIME_DIR' in env
         self._payloads = []
         self._failed_record_count = 0
         self._processed_size = 0
@@ -245,8 +244,8 @@ class Classifier(object):
         if self.data_retention_enabled:
             self.firehose.send(self._payloads)
 
-        # Only log rule info here if this is not running tests
+        # Only log rule info here if this is deployed in Lambda
         # During testing, this gets logged at the end and printing here could be confusing
         # since stress testing calls this method multiple times
-        if self._verbose:
+        if self._in_lambda:
             print_rule_stats(True)
