@@ -1,6 +1,7 @@
 #!/bin/bash
 nosetests tests/unit \
 --with-coverage \
+--cover-erase \
 --cover-package=stream_alert \
 --cover-package=stream_alert_cli \
 --cover-min-percentage=80 \
