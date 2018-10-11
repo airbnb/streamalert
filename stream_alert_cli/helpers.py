@@ -655,7 +655,7 @@ def setup_mock_rules_table(table_name):
     )
 
 
-def put_mock_s3_object(bucket, key, data, region):
+def put_mock_s3_object(bucket, key, data, region='us-east-1'):
     """Create a mock AWS S3 object for testing
 
     Args:
