@@ -66,6 +66,7 @@ class PayloadRecord(object):
                 self._record_data
             )
 
+        # If there are invalid records, log the count and the raw data to output
         if self.invalid_records:
             return (
                 '<{} valid:{}; log type:{}; parsed records:{}; invalid records:{} ({}); '
