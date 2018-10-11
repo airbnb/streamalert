@@ -50,7 +50,7 @@ class TestKVParser(object):
             }
         ]
 
-        assert_equal(parser.parses, expected_result)
+        assert_equal(parser.parsed_records, expected_result)
 
     def test_extract_record_invalid_field_count(self):
         """KV Parser - Extract Record, Invalid Field Count"""
