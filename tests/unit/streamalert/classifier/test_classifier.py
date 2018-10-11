@@ -29,8 +29,18 @@ class TestClassifier(object):
     _service_name = 'service_name'
     _resource_name = 'resource_name'
 
+    def setup(self):
+        """Classifier - Setup"""
+        with patch.object(classifier_module, 'Normalizer'), \
+             patch.object(classifier_module, 'FirehoseClient'), \
+             patch('stream_alert.classifier.classifier.config.load_config',
+                   Mock(return_value=self._mock_conf())):
+            self._classifier = Classifier()
+
     def teardown(self):
+        """Classifier - Teardown"""
         Classifier._config = None
+        Classifier._firehose_client = None
 
     @classmethod
     def _mock_conf(cls):
@@ -115,13 +125,6 @@ class TestClassifier(object):
             )
         )
 
-    def setup(self):
-        """Classifier - Setup"""
-        with patch('stream_alert.classifier.classifier.config.load_config',
-                   Mock(return_value=self._mock_conf())):
-            with patch.object(classifier_module, 'Normalizer'):
-                self._classifier = Classifier()
-
     def test_config_property(self):
         """Classifier - Config Property"""
         assert_equal(self._classifier._config, self._mock_conf())
@@ -130,13 +133,9 @@ class TestClassifier(object):
         """Classifier - Classified Payloads Property"""
         assert_equal(self._classifier.classified_payloads, [])
 
-    def test_firehose(self):
-        """Classifier - Firehose Property"""
-        assert_equal(self._classifier.firehose, None)
-
     def test_data_retention_enabled(self):
         """Classifier - Data Retention Enabled Property"""
-        assert_equal(self._classifier.data_retention_enabled, False)
+        assert_equal(self._classifier.data_retention_enabled, True)
 
     def test_load_logs_for_resource(self):
         """Classifier - Load Logs for Resource"""
