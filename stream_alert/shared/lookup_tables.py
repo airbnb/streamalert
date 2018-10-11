@@ -78,12 +78,12 @@ class LookupTables(object):
                 except ClientError as err:
                     LOGGER.error('Encounterred error while downloading %s from %s, %s',
                                  json_file, bucket, err.response['Error']['Message'])
-                    return
+                    continue
                 except(Timeout, TimeoutError):
                     # Catching TimeoutError will catch both `ReadTimeoutError` and
                     # `ConnectionTimeoutError`.
                     LOGGER.error('Reading %s from S3 is timed out.', json_file)
-                    return
+                    continue
 
                 # The lookup data can optionally be compressed, so try to decompress
                 # This will fall back and use the original data if decompression fails
