@@ -23,7 +23,7 @@ from stream_alert.classifier.parsers import CSVParser
 
 class TestCSVParser(object):
     """Test class for CSVParser"""
-    # pylint: disable=attribute-defined-outside-init,no-self-use,protected-access
+    # pylint: disable=no-self-use,protected-access
 
     @classmethod
     def _default_schema(cls):
@@ -51,7 +51,7 @@ class TestCSVParser(object):
                 'message': 'test message!!!!'
             }
         ]
-        assert_equal(parser.parses, expected_result)
+        assert_equal(parser.parsed_records, expected_result)
 
     def test_csv_parsing_space_delimited(self):
         """CSVParser - Space separated data"""
@@ -75,7 +75,7 @@ class TestCSVParser(object):
                 'message': 'test message!!!!'
             }
         ]
-        assert_equal(parser.parses, expected_result)
+        assert_equal(parser.parsed_records, expected_result)
 
     def test_csv_parsing_alt_quoted(self):
         """CSVParser - Single Quoted Field"""
@@ -101,7 +101,7 @@ class TestCSVParser(object):
             }
         ]
 
-        assert_equal(parser.parses, expected_result)
+        assert_equal(parser.parsed_records, expected_result)
 
     def test_csv_parsing_from_json(self):
         """CSVParser - CSV within JSON"""
@@ -157,7 +157,7 @@ class TestCSVParser(object):
             }
         ]
 
-        assert_equal(parser.parses, expected_result)
+        assert_equal(parser.parsed_records, expected_result)
 
     def test_nested_csv(self):
         """CSVParser - Nested CSV"""
@@ -200,7 +200,7 @@ class TestCSVParser(object):
             }
         ]
 
-        assert_equal(parser.parses, expected_result)
+        assert_equal(parser.parsed_records, expected_result)
 
     def test_nested_csv_invalid(self):
         """CSVParser - Nested CSV, Invalid"""

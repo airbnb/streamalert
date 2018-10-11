@@ -79,36 +79,25 @@ class TestStreamPayload(object):
 
     def test_non_zero_false(self):
         """StreamPayload - Non Zero/Bool, False"""
+        self._payload.fully_classified = False
         assert_equal(bool(self._payload), False)
 
     def test_non_zero_true(self):
         """StreamPayload - Non Zero/Bool, True"""
-        self._payload.data_type = 'type'
-        self._payload.log_source = 'source'
-        self._payload.records = ['records']
         assert_equal(bool(self._payload), True)
 
     def test_repr(self):
         """StreamPayload - Repr"""
-        self._payload.data_type = 'type'
-        self._payload.log_source = 'source'
-        self._payload.records = ['records']
-        self._payload.fully_classified = False
-        expected_result = (
-            '<StreamPayload valid:False log_source:source resource:foobar '
-            'type:type record:[\'records\']>'
-        )
+        expected_result = '<StreamPayload valid:True; resource:foobar;>'
         assert_equal(repr(self._payload), expected_result)
 
-    def test_log_type_property(self):
-        """StreamPayload - Log Type"""
-        self._payload.log_source = 'source:log_type'
-        assert_equal(self._payload.log_type, 'source')
-
-    def test_log_sub_type_property(self):
-        """StreamPayload - Log Sub Type"""
-        self._payload.log_source = 'source:log_type'
-        assert_equal(self._payload.log_subtype, 'log_type')
+    def test_repr_invalid(self):
+        """StreamPayload - Repr, Invalid"""
+        self._payload.fully_classified = False
+        expected_result = (
+            '<StreamPayload valid:False; resource:foobar; raw record:{\'key\': \'value\'};>'
+        )
+        assert_equal(repr(self._payload), expected_result)
 
     def test_load_from_raw_record_kinesis(self):
         """StreamPayload - Load from Raw Record, Kinesis"""

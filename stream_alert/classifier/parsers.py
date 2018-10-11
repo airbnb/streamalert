@@ -81,53 +81,62 @@ class ParserBase:
         self._valid_parses = []
         self._invalid_parses = []
 
+    def __nonzero__(self):
+        return self.valid
+
+    # For forward compatibility to Python3
+    __bool__ = __nonzero__
+
+    def __len__(self):
+        return len(self._valid_parses)
+
     @classmethod
     def type(cls):
         """Returns the type of parser"""
         return cls._type
 
     @property
-    def log_schema_type(self):
-        return self._schema_type
-
-    @property
-    def schema(self):
+    def _schema(self):
         return self._options.get('schema', {})
 
     @property
-    def configuration(self):
+    def _configuration(self):
         return self._options.get('configuration', {})
 
     @property
-    def optional_top_level_keys(self):
-        return set(self.configuration.get('optional_top_level_keys', {}))
+    def _optional_top_level_keys(self):
+        return set(self._configuration.get('optional_top_level_keys', {}))
 
     @property
-    def log_patterns(self):
-        return self.configuration.get('log_patterns')
+    def _log_patterns(self):
+        return self._configuration.get('log_patterns')
 
     @property
-    def json_path(self):
-        return self.configuration.get('json_path')
+    def _json_path(self):
+        return self._configuration.get('json_path')
 
     @property
-    def envelope_schema(self):
-        return self.configuration.get('envelope_keys', {})
+    def _envelope_schema(self):
+        return self._configuration.get('envelope_keys', {})
 
     @property
-    def optional_envelope_keys(self):
-        return set(self.configuration.get('optional_envelope_keys', {}))
+    def _optional_envelope_keys(self):
+        return set(self._configuration.get('optional_envelope_keys', {}))
 
     @property
     def valid(self):
         return len(self._valid_parses) != 0
 
     @property
+    def log_schema_type(self):
+        return self._schema_type
+
+    @property
     def invalid_parses(self):
         return self._invalid_parses
 
     @property
-    def parses(self):
+    def parsed_records(self):
         return self._valid_parses
 
     @classmethod
@@ -360,8 +369,8 @@ class ParserBase:
         # TODO (ryandeivert): check the value of types defined in the schema to ensure
         # they are valid before erroring out at the _convert_type stage
         values = [
-            (self.schema, self.optional_top_level_keys),
-            (self.envelope_schema, self.optional_envelope_keys)
+            (self._schema, self._optional_top_level_keys),
+            (self._envelope_schema, self._optional_envelope_keys)
         ]
 
         return all(optionals.issubset(schema) for schema, optionals in values)
@@ -379,7 +388,7 @@ class ParserBase:
             return
 
         self._apply_envelope(record, envelope)
-        self._add_optional_keys(record, self.schema, self.optional_top_level_keys)
+        self._add_optional_keys(record, self._schema, self._optional_top_level_keys)
 
         self._valid_parses.append(record)
 
@@ -392,13 +401,13 @@ class ParserBase:
         Returns:
             dict: Key/values extracted from the log to be used as the envelope
         """
-        if not self.envelope_schema:
+        if not self._envelope_schema:
             return
 
         LOGGER.debug('Extracting envelope keys')
         return {
             key: payload[key]
-            for key in self.envelope_schema
+            for key in self._envelope_schema
             if key in payload  # This is fine since some of these may be optional
         }
 
@@ -412,9 +421,9 @@ class ParserBase:
             list: A list of JSON records extracted via JSON path
         """
         # Handle jsonpath extraction of records
-        LOGGER.debug('Parsing records with JSONPath: %s', self.json_path)
+        LOGGER.debug('Parsing records with JSONPath: %s', self._json_path)
 
-        return jmespath.search(self.json_path, payload)
+        return jmespath.search(self._json_path, payload)
 
     def parse(self, data):
         """Main parser method to be handle parsing of the passed data
@@ -428,7 +437,7 @@ class ParserBase:
         # Ensure the schema is defined properly. Invalid schemas will not be used
         if not self._validate_schema():
             LOGGER.error(
-                'Schema definition is not valid (%s):\n%s', self._schema_type, self.schema)
+                'Schema definition is not valid (%s):\n%s', self._schema_type, self._schema)
             return False
 
         data_copy = None
@@ -447,21 +456,25 @@ class ParserBase:
                 data_copy = data
 
         # Check to make sure any non-optional envelope keys exist before proceeding
-        if not self._key_check(data_copy, self.envelope_schema, self.optional_envelope_keys, True):
+        if not self._key_check(
+                data_copy, self._envelope_schema, self._optional_envelope_keys, True
+            ):
             return False
 
         # Get the envelope and try to convert the value to the proper type(s)
         envelope = self._extract_envelope(data_copy)
-        if not self._convert_type(envelope, self.envelope_schema, self.optional_envelope_keys):
+        if not self._convert_type(envelope, self._envelope_schema, self._optional_envelope_keys):
             return False
 
         # Add the optional envelope keys to record once at the beginning
-        self._add_optional_keys(envelope, self.envelope_schema, self.optional_envelope_keys)
+        self._add_optional_keys(envelope, self._envelope_schema, self._optional_envelope_keys)
 
         for record, valid in self._parse(data_copy):
-            valid = valid and self._key_check(record, self.schema, self.optional_top_level_keys)
-            valid = valid and self._convert_type(record, self.schema, self.optional_top_level_keys)
-            valid = valid and self._matches_log_patterns(record, self.log_patterns)
+            valid = valid and self._key_check(record, self._schema, self._optional_top_level_keys)
+            valid = valid and self._convert_type(
+                record, self._schema, self._optional_top_level_keys
+            )
+            valid = valid and self._matches_log_patterns(record, self._log_patterns)
             self._add_parse_result(record, valid, envelope)
 
         return self.valid
@@ -487,11 +500,11 @@ class JSONParser(ParserBase):
 
     @property
     def embedded_json(self):
-        return self.configuration.get('embedded_json', False)
+        return self._configuration.get('embedded_json', False)
 
     @property
     def json_regex_key(self):
-        return self.configuration.get('json_regex_key')
+        return self._configuration.get('json_regex_key')
 
     def _extract_via_json_path(self, json_payload):
         """Extract records from the original json payload using the JSON configuration
@@ -576,11 +589,11 @@ class JSONParser(ParserBase):
                 Examples: [({'key': 'value'}, True)]
         """
         # TODO (ryandeivert): migrate all of this to the base class and do away with JSONParser
-        if not (self.json_path or self.json_regex_key):
+        if not (self._json_path or self.json_regex_key):
             return [(data, True)]  # Nothing special to be done
 
         records = []
-        if self.json_path:
+        if self._json_path:
             records = self._extract_via_json_path(data)
         elif self.json_regex_key:
             records = self._extract_via_json_regex_key(data)
@@ -596,19 +609,19 @@ class CSVParser(ParserBase):
     @property
     def delimiter(self):
         # default delimiter = ','
-        return str(self.configuration.get('delimiter', ','))
+        return str(self._configuration.get('delimiter', ','))
 
     @property
     def quotechar(self):
         # default quotechar = '"'
-        return str(self.configuration.get('quotechar', '"'))
+        return str(self._configuration.get('quotechar', '"'))
 
     @property
     def escapechar(self):
         # default escapechar = None
         # only cast to string if it exists since casting NoneType to string will result in 'None'
-        return (str(self.configuration['escapechar'])
-                if 'escapechar' in self.configuration else None)
+        return (str(self._configuration['escapechar'])
+                if 'escapechar' in self._configuration else None)
 
     def _get_reader(self, data):
         """Return the CSV reader for the data using the configured delimiter, etc
@@ -637,7 +650,7 @@ class CSVParser(ParserBase):
                 Examples: [({'key': 'value'}, True)]
         """
         extracted_data = []
-        if self.json_path:
+        if self._json_path:
             # Support extraction of csv data within json
             extracted_data = self._json_path_records(data)
             if not extracted_data:
@@ -646,7 +659,7 @@ class CSVParser(ParserBase):
         # Fall back on the data as default if extraction failed
         data = extracted_data or [data]
 
-        return self._extract_records(data, self.schema)
+        return self._extract_records(data, self._schema)
 
     def _extract_records(self, data, schema):
         """Extract record(s) from the csv data using the specified schema
@@ -717,12 +730,12 @@ class KVParser(ParserBase):
     @property
     def delimiter(self):
         # default delimiter = ' '
-        return str(self.configuration.get('delimiter', ' '))
+        return str(self._configuration.get('delimiter', ' '))
 
     @property
     def separator(self):
         # default separator = '='
-        return str(self.configuration.get('separator', '='))
+        return str(self._configuration.get('separator', '='))
 
     def _parse(self, data):
         """Parse a key/value string into a dictionary
@@ -751,7 +764,7 @@ class KVParser(ParserBase):
             # remove any blank strings that may exist in our list
             fields = [field for field in data.split(self.delimiter) if field]
             # first check the field length matches our # of keys
-            if len(fields) != len(self.schema):
+            if len(fields) != len(self._schema):
                 return False
 
             for index, field in enumerate(fields):
@@ -765,7 +778,7 @@ class KVParser(ParserBase):
                 # handle duplicate keys
                 if key in kv_payload:
                     # load key from our configuration
-                    kv_payload[self.schema.keys()[index]] = value
+                    kv_payload[self._schema.keys()[index]] = value
                 else:
                     # add the data value
                     kv_payload[key] = value
