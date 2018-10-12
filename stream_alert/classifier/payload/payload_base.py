@@ -196,10 +196,6 @@ class StreamPayload(object):
     __metaclass__ = ABCMeta
 
     def __init__(self, resource, raw_record):
-        """
-        Keyword Args:
-            raw_record (dict): The record to be parsed - in AWS event format
-        """
         self.raw_record = raw_record
         self.resource = resource
         self.fully_classified = True

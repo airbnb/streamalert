@@ -34,6 +34,7 @@ PARSERS = {}
 
 def parser(cls):
     """Class decorator to register parsers"""
+    # Currently supported parsers are json, csv, kv, and syslog
     parser_type = cls.type()
     if not parser_type:
         raise NotImplementedError(
@@ -44,16 +45,16 @@ def parser(cls):
     return cls
 
 
-def get_parser(parserid):
+def get_parser(parser_type):
     """Helper method to fetch parser classes
 
     Args:
-        parserid (string): the name of the parser class to get
+        parser_type (string): the name of the parser class to get
 
     Returns:
         A Parser class
     """
-    return PARSERS[parserid]
+    return PARSERS[parser_type]
 
 
 class ParserBase:
@@ -663,7 +664,7 @@ class CSVParser(ParserBase):
         """Extract record(s) from the csv data using the specified schema
 
         Args:
-            data (str): String representing a csv row.
+            data (list<str>): List of strings representing a csv row.
             schema (dict): Schema to be used for parsing.
 
         Returns:

@@ -24,14 +24,14 @@ from botocore.exceptions import ClientError
 from botocore.vendored.requests.exceptions import ConnectionError, Timeout
 import jsonlines
 
-from stream_alert.shared import RULE_PROCESSOR_NAME as FUNCTION_NAME
+from stream_alert.shared import CLASSIFIER_FUNCTION_NAME as FUNCTION_NAME
 from stream_alert.shared.helpers import boto
 from stream_alert.shared.logger import get_logger
 from stream_alert.shared.metrics import MetricLogger
 from stream_alert.shared.backoff_handlers import (
     backoff_handler,
-    success_handler,
-    giveup_handler
+    giveup_handler,
+    success_handler
 )
 
 LOGGER = get_logger(__name__)
@@ -122,7 +122,7 @@ class FirehoseClient(object):
                 del current_batch[:]
 
             if line_len > cls.MAX_RECORD_SIZE:
-                LOGGER.error('Record too large to send to Firehose:\n%s', record)
+                LOGGER.error('Record too large (%d) to send to Firehose:\n%s', line_len, record)
                 cls._log_failed(1)
                 continue
 
@@ -169,7 +169,7 @@ class FirehoseClient(object):
         Args:
             batch (list): List of dicts with JSON dumped records that are being
                 sent to Firehose. Format is:
-                [{'Data': <json-dumped-rec}, {'Data': <json-dumped-rec}]
+                [{'Data': <json-dumped-rec>}, {'Data': <json-dumped-rec>}]
             response (dict): Response object from the boto3.client.put_record_batch call
                 that contains metadata on the success status of the call
         """

@@ -112,15 +112,15 @@ class Classifier(object):
     def _process_log_schemas(cls, payload_record, logs_config):
         """Get any log schemas that matched this log format
 
+        If successful, this method sets the PayloadRecord.parser attribute to the parser
+        that was used to parse the data.
+
         Args:
             payload_record: A PayloadRecord object
             logs_config: Subset of entire logs.json schemas to use for processing
 
         Returns:
             bool: True if the payload's data was successfully parsed, False otherwise
-
-        Sets:
-            PayloadRecord.parser: Assigns a parser to the PayloadRecord for the data
         """
         # Loop over all logs schemas declared for this source
         for log_type, options in logs_config.iteritems():
@@ -142,7 +142,7 @@ class Classifier(object):
         return False  # unable to parse this record
 
     def _classify_payload(self, payload):
-        """Run the record through the rules, saving any alerts and forwarding them to Dynamo.
+        """Run the payload through the classification logic to determine the data type
 
         Args:
             payload (StreamPayload): StreamAlert payload object being processed
@@ -192,6 +192,7 @@ class Classifier(object):
         Args:
             payload_record (PayloadRecord): PayloadRecord instance that, when logged to output,
                 prints some information that will be helpful for debugging bad data
+            invalid_record_count (int): Number of invalid records to increment the count by
         """
         if not invalid_record_count:
             return  # don't log anything if the count of invalid records is not > 0
