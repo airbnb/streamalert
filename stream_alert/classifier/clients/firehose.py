@@ -14,7 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from collections import defaultdict
-import io
 import json
 import re
 
@@ -22,10 +21,9 @@ import backoff
 import boto3
 from botocore.exceptions import ClientError
 from botocore.vendored.requests.exceptions import ConnectionError, Timeout
-import jsonlines
 
 from stream_alert.shared import CLASSIFIER_FUNCTION_NAME as FUNCTION_NAME
-from stream_alert.shared.helpers import boto
+import stream_alert.shared.helpers.boto as boto_helpers
 from stream_alert.shared.logger import get_logger
 from stream_alert.shared.metrics import MetricLogger
 from stream_alert.shared.backoff_handlers import (
@@ -63,7 +61,7 @@ class FirehoseClient(object):
     _ENABLED_LOGS = dict()
 
     def __init__(self, firehose_config=None, log_sources=None):
-        self._client = boto3.client('firehose', config=boto.default_config())
+        self._client = boto3.client('firehose', config=boto_helpers.default_config())
         # Create a dictionary to hold parsed payloads by log type.
         # Firehose needs this information to send to its corresponding
         # delivery stream.
@@ -72,7 +70,7 @@ class FirehoseClient(object):
         self.load_enabled_log_sources(firehose_config, log_sources, force_load=True)
 
     @classmethod
-    def _records_json_lines(cls, records):
+    def _records_to_json_list(cls, records):
         """Write the dictionary records to json lines and return the list of lines
 
         Args:
@@ -82,18 +80,9 @@ class FirehoseClient(object):
             list: JSON serialized records
         """
         # Write the json lines to the object in minimal form
-        json_lines = io.StringIO()
-        with jsonlines.Writer(json_lines, compact=True) as writer:
-            writer.write_all(records)
-
-        # Get the result of the written lines
-        # Keep line endings to make math easier and retain record validity
-        records_json = json_lines.getvalue().splitlines(True)
-
-        # Close the writer since we've read the data back
-        json_lines.close()
-
-        return records_json
+        return [
+            json.dumps(record, separators=(',', ':')) + '\n' for record in records
+        ]
 
     @classmethod
     def _record_batches(cls, records):
@@ -107,7 +96,7 @@ class FirehoseClient(object):
         Yields:
             list: Batches of JSON serialized records that conform to Firehose restrictions
         """
-        records_json = cls._records_json_lines(records)
+        records_json = cls._records_to_json_list(records)
 
         current_batch_size = 0
         current_batch = []

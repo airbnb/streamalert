@@ -71,7 +71,7 @@ class TestFirehoseClient(object):
             for i in range(count)
         ]
 
-    def test_records_json_lines(self):
+    def test_records_to_json_list(self):
         """FirehoseClient - Records JSON Lines"""
         records = self._sample_raw_records()
 
@@ -80,7 +80,7 @@ class TestFirehoseClient(object):
             '{"key_1":"value_1"}\n'
         ]
 
-        result = FirehoseClient._records_json_lines(records)
+        result = FirehoseClient._records_to_json_list(records)
         assert_equal(result, expected_result)
 
     def test_record_batches(self):
