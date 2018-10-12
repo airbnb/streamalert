@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from datetime import datetime, timedelta
+from os import environ as env
 
 from stream_alert.rules_engine.alerter import AlertForwarder
 from stream_alert.rules_engine.threat_intel import ThreatIntel
@@ -41,8 +42,6 @@ class RulesEngine(object):
     _alert_forwarder = None
 
     def __init__(self, *rule_paths):
-        """Initialize a RulesEngine instance to cache a StreamThreatIntel instance."""
-
         RulesEngine._config = RulesEngine._config or load_config()
         RulesEngine._threat_intel = (
             RulesEngine._threat_intel or ThreatIntel.load_from_config(self.config)
@@ -120,23 +119,20 @@ class RulesEngine(object):
         LOGGER.info('Refreshing rule table (last refresh time: %s; current time: %s)',
                     cls._RULE_TABLE_LAST_REFRESH, now)
 
-        table_name = '{}_streamalert_rules'.format(config['global']['account']['prefix'])
+        table_name = '{}_streamalert_rules'.format(env['STREAMALERT_PREFIX'])
         cls._rule_table = RuleTable(table_name)
         cls._RULE_TABLE_LAST_REFRESH = now
 
     @staticmethod
-    def process_subkeys(record, rule):
-        """Check payload record contains all subkeys needed for rules
+    def _process_subkeys(record, rule):
+        """Determine if record contains all subkeys needed for rules
 
-        Because each log is processed by every rule for a given log type,
-        it's possible that a rule references a subkey that doesn't exist in
-        that specific log. This method verifies that the declared subkeys
-        in a rule are contained in the JSON payload prior to rule processing.
+        This method verifies that the declared subkeys in a rule are contained
+        in the dictionary prior to further rule processing.
 
         Args:
-            record: Payload record to process
-            payload_type (str): type of the record
-            rule: Rule attributes
+            record (dict): Record to perform subkey checking against
+            rule (rule.Rule): Rule class with necessary attributes
 
         Returns:
             bool: result of subkey check.
@@ -149,12 +145,12 @@ class RulesEngine(object):
             # verifying a subkey exists in a record with a null value.
             # In the case of CloudTrail, a top level key has been
             # observed as either a map with subkeys, or null.
-            if not record.get(key):
+            if key not in record:
                 LOGGER.debug(
                     'The required subkey %s is not found when trying to process %s: \n%s',
                     key, rule.name, record)
                 return False
-            if not isinstance(record.get(key), dict):
+            if not isinstance(record[key], dict):
                 LOGGER.debug(
                     'The required subkey %s is not a dictionary when trying to process %s: \n%s',
                     key, rule.name, record)
@@ -164,60 +160,11 @@ class RulesEngine(object):
 
         return True
 
-    def run(self, records):
-        """Run rules against the records sent from the Classifier function
-
-        Args:
-            records (list): Dictionaries of records sent from the classifier function
-                Record Format:
-                    {
-                        'cluster': 'prod',
-                        'log_schema_type': 'cloudwatch:cloudtrail',
-                        'record': {
-                            'key': 'value'
-                        },
-                        'service': 'kinesis',
-                        'resource': 'kinesis_stream_name'
-                        'data_type': 'json'
-                    }
-        """
-        # Extract any threat intelligence matches from the records
-        self._extract_threat_intel(records)
-
-        alerts = []
-        for record in records:
-            rules = Rule.rules_for_log_type(record['log_schema_type'])
-            if not rules:
-                LOGGER.debug('No rules to process for %s', record)
-                continue
-
-            for rule in rules:
-                # subkey check
-                if not self.process_subkeys(record, rule):
-                    continue
-
-                # matcher check
-                if not rule.check_matchers(record):
-                    continue
-
-                alert = self._rule_analysis(record['record'], rule)
-                if alert:
-                    alerts.append(alert)
-
-        self._alert_forwarder.send_alerts(alerts)
-
     def _extract_threat_intel(self, records):
-        """Apply Threat Intelligence on normalized records
+        """Extract threat intelligence from records
 
         Args:
-            payload_with_normalized_records (list): A list of payload instances.
-                And it pre_parsed_record is replaced by normalized record. The
-                reason to pass a copy of payload into Threat Intelligence is because
-                alerts require to include payload metadata (payload.log_source,
-                payload.type, payload.service and payload.entity).
-
-        Returns:
-            list: A list of Alerts triggered by Threat Intelligence.
+            records (list<dict>): A list of records for which to extract threat intel information
         """
         if not self._threat_intel:
             return
@@ -225,11 +172,11 @@ class RulesEngine(object):
         self._threat_intel.threat_detection(records)
 
     def _rule_analysis(self, record, rule):
-        """Analyze a rule against the record, adding a new alert if applicable.
+        """Analyze a record with the rule, adding a new alert if applicable
 
         Args:
-            record (dict): A parsed log with data.
-            rule (Rule): Attributes for the rule which triggered the alert.
+            record (dict): Record to perform rule analysis against
+            rule (rule.Rule): Attributes for the rule which triggered the alert
         """
         rule_result = rule.process(record)
         if not rule_result:
@@ -260,3 +207,45 @@ class RulesEngine(object):
                     record['resource'], record['service'])
 
         return alert
+
+    def run(self, records):
+        """Run rules against the records sent from the Classifier function
+
+        Args:
+            records (list): Dictionaries of records sent from the classifier function
+                Record Format:
+                    {
+                        'cluster': 'prod',
+                        'log_schema_type': 'cloudwatch:cloudtrail',
+                        'record': {
+                            'key': 'value'
+                        },
+                        'service': 'kinesis',
+                        'resource': 'kinesis_stream_name'
+                        'data_type': 'json'
+                    }
+        """
+        # Extract any threat intelligence matches from the records
+        self._extract_threat_intel(records)
+
+        alerts = []
+        for record in records:
+            rules = Rule.rules_for_log_type(record['log_schema_type'])
+            if not rules:
+                LOGGER.debug('No rules to process for %s', record)
+                continue
+
+            for rule in rules:
+                # subkey check
+                if not self._process_subkeys(record, rule):
+                    continue
+
+                # matcher check
+                if not rule.check_matchers(record):
+                    continue
+
+                alert = self._rule_analysis(record['record'], rule)
+                if alert:
+                    alerts.append(alert)
+
+        self._alert_forwarder.send_alerts(alerts)
