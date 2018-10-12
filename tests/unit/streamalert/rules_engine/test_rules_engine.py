@@ -96,10 +96,13 @@ class TestRulesEngine(object):
 
         RulesEngine._RULE_TABLE_LAST_REFRESH = fake_date_now - timedelta(minutes=6)
         RulesEngine._rule_table = 'table'
-        with patch('stream_alert.rules_engine.rules_engine.datetime') as date_mock:
+        with patch('stream_alert.rules_engine.rules_engine.datetime') as date_mock, \
+             patch.object(rules_engine_module, 'RuleTable') as rule_table_mock:
+
+            rule_table_mock.return_value = 'new_table'
             date_mock.utcnow.return_value = fake_date_now
             self._rules_engine._load_rule_table(config)
-            assert_equal(self._rules_engine._rule_table != 'table', True)
+            assert_equal(self._rules_engine._rule_table == 'new_table', True)
             assert_equal(self._rules_engine._RULE_TABLE_LAST_REFRESH, fake_date_now)
             log_mock.assert_called()
 

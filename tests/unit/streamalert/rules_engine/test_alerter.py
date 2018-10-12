@@ -16,7 +16,7 @@ limitations under the License.
 import os
 
 from botocore.exceptions import ClientError
-from mock import MagicMock, patch
+from mock import Mock, patch
 
 from stream_alert.rules_engine.alerter import AlertForwarder
 
@@ -27,22 +27,22 @@ class TestAlertForwarder(object):
     """Test class for AlertForwarder"""
     # pylint: disable=attribute-defined-outside-init,protected-access
 
-    @patch('stream_alert.rule_processor.alert_forward.AlertTable', MagicMock())
+    @patch('stream_alert.rules_engine.alerter.AlertTable', Mock())
     @patch.dict(os.environ, {'ALERTS_TABLE': _ALERTS_TABLE})
     def setup(self):
         self.forwarder = AlertForwarder()
 
-    @patch('stream_alert.rule_processor.alert_forward.LOGGER')
+    @patch('logging.Logger.info')
     def test_send_alerts(self, mock_logger):
         """AlertForwarder - Send Alerts"""
         self.forwarder.send_alerts([1, 2, 3])
         self.forwarder._table.add_alerts.assert_called_once_with(  # pylint: disable=no-member
             [1, 2, 3])
-        mock_logger.info.assert_called_once()
+        mock_logger.assert_called_once()
 
-    @patch('stream_alert.rule_processor.alert_forward.LOGGER')
+    @patch('logging.Logger.exception')
     def test_send_alerts_dynamo_exception(self, mock_logger):
         """AlertForwarder - ClientError When Sending Alerts"""
         self.forwarder._table.add_alerts.side_effect = ClientError({}, 'batch_write')
         self.forwarder.send_alerts([])
-        mock_logger.exception.assert_called_once()
+        mock_logger.assert_called_once()
