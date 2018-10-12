@@ -29,14 +29,25 @@ class TestClassifier(object):
     _service_name = 'service_name'
     _resource_name = 'resource_name'
 
+    def setup(self):
+        """Classifier - Setup"""
+        with patch.object(classifier_module, 'Normalizer'), \
+             patch.object(classifier_module, 'FirehoseClient'), \
+             patch('stream_alert.classifier.classifier.config.load_config',
+                   Mock(return_value=self._mock_conf())):
+            self._classifier = Classifier()
+
     def teardown(self):
+        """Classifier - Teardown"""
         Classifier._config = None
+        Classifier._firehose_client = None
 
     @classmethod
     def _mock_conf(cls):
         return {
             'logs': cls._mock_logs(),
-            'sources': cls._mock_sources()
+            'sources': cls._mock_sources(),
+            'global': cls._mock_sources()
         }
 
     @classmethod
@@ -73,6 +84,19 @@ class TestClassifier(object):
         ])
 
     @classmethod
+    def _mock_global(cls):
+        return {
+            'infrastructure': {
+                'firehose': {
+                    'enabled': True,
+                    'enabled_logs': {
+                        'log_type_01': None
+                    }
+                }
+            }
+        }
+
+    @classmethod
     def _mock_payload(cls, records):
         return Mock(
             service=lambda: cls._service_name,
@@ -101,16 +125,17 @@ class TestClassifier(object):
             )
         )
 
-    def setup(self):
-        """Classifier - Setup"""
-        with patch('stream_alert.classifier.classifier.config.load_config',
-                   Mock(return_value=self._mock_conf())):
-            with patch.object(classifier_module, 'Normalizer'):
-                self._classifier = Classifier()
-
     def test_config_property(self):
         """Classifier - Config Property"""
         assert_equal(self._classifier._config, self._mock_conf())
+
+    def test_classified_payloads(self):
+        """Classifier - Classified Payloads Property"""
+        assert_equal(self._classifier.classified_payloads, [])
+
+    def test_data_retention_enabled(self):
+        """Classifier - Data Retention Enabled Property"""
+        assert_equal(self._classifier.data_retention_enabled, True)
 
     def test_load_logs_for_resource(self):
         """Classifier - Load Logs for Resource"""
@@ -206,21 +231,22 @@ class TestClassifier(object):
     @patch.object(Classifier, '_process_log_schemas')
     def test_classify_payload(self, process_mock):
         """Classifier - Classify Payload"""
-        with patch.object(classifier_module, 'Normalizer') as normalizer_mock:
-            with patch.object(Classifier, '_log_bad_records') as log_mock:
-                payload_record = self._mock_payload_record()
-                self._classifier._classify_payload(self._mock_payload([payload_record]))
-                process_mock.assert_called_with(
-                    payload_record,
-                    OrderedDict([
-                        ('log_type_01:sub_type', self._mock_logs()['log_type_01:sub_type'])
-                    ])
-                )
-                normalizer_mock.normalize.assert_called_with(
-                    payload_record.parsed_records[-1], 'foo'
-                )
-                assert_equal(self._classifier._payloads, [payload_record])
-                log_mock.assert_called_with(payload_record, 1)
+        with patch.object(classifier_module, 'Normalizer') as normalizer_mock, \
+             patch.object(Classifier, '_log_bad_records') as log_mock:
+
+            payload_record = self._mock_payload_record()
+            self._classifier._classify_payload(self._mock_payload([payload_record]))
+            process_mock.assert_called_with(
+                payload_record,
+                OrderedDict([
+                    ('log_type_01:sub_type', self._mock_logs()['log_type_01:sub_type'])
+                ])
+            )
+            normalizer_mock.normalize.assert_called_with(
+                payload_record.parsed_records[-1], 'foo'
+            )
+            assert_equal(self._classifier._payloads, [payload_record])
+            log_mock.assert_called_with(payload_record, 1)
 
     @patch('logging.Logger.error')
     def test_classify_payload_no_logs(self, log_mock):
@@ -238,12 +264,13 @@ class TestClassifier(object):
 
     def test_classify_payload_bad_record(self):
         """Classifier - Classify Payload, Bad Record"""
-        with patch.object(Classifier, '_process_log_schemas'):
-            with patch.object(Classifier, '_log_bad_records') as log_mock:
-                payload_record = self._mock_payload_record()
-                payload_record.__nonzero__ = lambda s: False
-                self._classifier._classify_payload(self._mock_payload([payload_record]))
-                log_mock.assert_called_with(payload_record, 1)
+        with patch.object(Classifier, '_process_log_schemas'), \
+             patch.object(Classifier, '_log_bad_records') as log_mock:
+
+            payload_record = self._mock_payload_record()
+            payload_record.__nonzero__ = lambda s: False
+            self._classifier._classify_payload(self._mock_payload([payload_record]))
+            log_mock.assert_called_with(payload_record, 1)
 
     def test_log_bad_records(self):
         """Classifier - Log Bad Records"""
