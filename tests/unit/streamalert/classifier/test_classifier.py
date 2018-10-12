@@ -33,6 +33,7 @@ class TestClassifier(object):
         """Classifier - Setup"""
         with patch.object(classifier_module, 'Normalizer'), \
              patch.object(classifier_module, 'FirehoseClient'), \
+             patch.object(classifier_module, 'SQSClient'), \
              patch('stream_alert.classifier.classifier.config.load_config',
                    Mock(return_value=self._mock_conf())):
             self._classifier = Classifier()
