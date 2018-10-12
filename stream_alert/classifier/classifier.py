@@ -17,6 +17,7 @@ from collections import OrderedDict
 import logging
 from os import environ as env
 
+from stream_alert.classifier.clients import FirehoseClient
 from stream_alert.classifier.normalize import Normalizer
 from stream_alert.classifier.parsers import get_parser
 from stream_alert.classifier.payload.payload_base import StreamPayload
@@ -34,10 +35,17 @@ class Classifier(object):
     """Classify, map source, and parse a raw record into its declared type."""
 
     _config = None
+    _firehose_client = None
 
     def __init__(self, verbose=False):
         # Create some objects to be cached if they have not already been created
         Classifier._config = Classifier._config or config.load_config(validate=True)
+        Classifier._firehose_client = (
+            Classifier._firehose_client or FirehoseClient.load_from_config(
+                firehose_config=self.config['global'].get('infrastructure', {}).get('firehose', {}),
+                log_sources=self.config['logs']
+            )
+        )
 
         # Setup the normalization logic
         Normalizer.load_from_config(self.config)
@@ -51,6 +59,18 @@ class Classifier(object):
     @property
     def config(self):
         return Classifier._config
+
+    @property
+    def classified_payloads(self):
+        return self._payloads
+
+    @property
+    def firehose(self):
+        return Classifier._firehose_client
+
+    @property
+    def data_retention_enabled(self):
+        return Classifier._firehose_client is not None
 
     def _load_logs_for_resource(self, service, resource):
         """Load the log types for this service type and resource value
@@ -212,6 +232,10 @@ class Classifier(object):
             self._classify_payload(payload)
 
         self._log_metrics()
+
+        # Send the data to firehose for historical retention
+        if self.data_retention_enabled:
+            self._firehose_client.send(self._payloads)
 
         # Only log rule info here if this is not running tests
         # During testing, this gets logged at the end and printing here could be confusing
