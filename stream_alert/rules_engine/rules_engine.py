@@ -25,6 +25,7 @@ from stream_alert.shared.rule import import_folders, Rule
 from stream_alert.shared.logger import get_logger
 from stream_alert.shared.lookup_tables import LookupTables
 from stream_alert.shared.rule_table import RuleTable
+from stream_alert.shared.stats import print_rule_stats
 
 
 LOGGER = get_logger(__name__)
@@ -59,6 +60,7 @@ class RulesEngine(object):
 
         import_folders(*rule_paths)
 
+        self._in_lambda = 'LAMBDA_RUNTIME_DIR' in env
         self._required_outputs_set = resources.get_required_outputs()
         self._load_rule_table(self.config)
 
@@ -249,3 +251,9 @@ class RulesEngine(object):
                     alerts.append(alert)
 
         self._alert_forwarder.send_alerts(alerts)
+
+        # Only log rule info here if this is deployed in Lambda
+        # During testing, this gets logged at the end and printing here could be confusing
+        # since stress testing calls this method multiple times
+        if self._in_lambda:
+            print_rule_stats(True)
