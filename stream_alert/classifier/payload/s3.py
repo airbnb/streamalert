@@ -195,7 +195,7 @@ class S3Payload(StreamPayload):
             download.seek(0)
             download.truncate()
 
-    def pre_parse(self):
+    def _pre_parse(self):
         """Pre-parsing method for S3 objects
 
         Downloads the s3 object into the system's temp directory for reading. The

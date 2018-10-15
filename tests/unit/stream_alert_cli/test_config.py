@@ -86,6 +86,7 @@ class TestCLIConfig(object):
     def test_cluster_alarm_creation(self, log_mock):
         """CLI - Adding CloudWatch metric alarm, cluster"""
         alarm_info = {
+            'function': 'rule_processor',
             'metric_target': 'cluster',
             'metric_name': 'TotalRecords',
             'evaluation_periods': 1,
@@ -99,16 +100,17 @@ class TestCLIConfig(object):
         }
 
         self.config.add_metric_alarm(alarm_info)
-        log_mock.assert_called_with('Successfully added \'%s\' metric alarm for the '
-                                    '\'%s\' function to \'conf/clusters/%s.json\'.',
-                                    'Prod Unit Testing Total Records Alarm', 'rule_processor',
-                                    'prod')
+        log_mock.assert_any_call('Successfully added \'%s\' metric alarm for the '
+                                 '\'%s\' function to \'conf/clusters/%s.json\'.',
+                                 'Prod Unit Testing Total Records Alarm', 'rule_processor',
+                                 'prod')
 
     @patch('stream_alert_cli.config.CLIConfig.write', Mock())
     @patch('logging.Logger.info')
     def test_aggregate_alarm_creation(self, log_mock):
         """CLI - Adding CloudWatch metric alarm, aggregate"""
         alarm_info = {
+            'function': 'classifier',
             'metric_target': 'aggregate',
             'metric_name': 'TotalRecords',
             'evaluation_periods': 1,
