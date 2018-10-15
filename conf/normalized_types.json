@@ -1,0 +1,247 @@
+{
+  "box": {
+    "sourceAddress": [
+      "ip_address"
+    ]
+  },
+  "carbonblack": {
+    "command": [
+      "cmdline",
+      "command_line"
+    ],
+    "destinationAddress": [
+      "remote_ip"
+    ],
+    "destinationDomain": [
+      "domain"
+    ],
+    "destinationPort": [
+      "remote_port"
+    ],
+    "deviceAddress": [
+      "interface_ip",
+      "comms_ip"
+    ],
+    "fileHash": [
+      "process_md5",
+      "parent_md5",
+      "expect_followon_w_md5",
+      "md5"
+    ],
+    "fileName": [
+      "observed_filename",
+      "file_path"
+    ],
+    "filePath": [
+      "path"
+    ],
+    "processName": [
+      "parent_name",
+      "process_name"
+    ],
+    "processPath": [
+      "parent_path",
+      "process_path",
+      "path"
+    ],
+    "sourceAddress": [
+      "ipv4",
+      "local_ip"
+    ],
+    "sourcePort": [
+      "port",
+      "local_port"
+    ],
+    "transportProtocol": [
+      "protocol"
+    ],
+    "userName": [
+      "username"
+    ]
+  },
+  "cloudtrail": {
+    "destinationAccount": [
+      "recipientAccountId"
+    ],
+    "eventName": [
+      "eventName"
+    ],
+    "eventType": [
+      "eventType"
+    ],
+    "region": [
+      "region",
+      "awsRegion"
+    ],
+    "sourceAccount": [
+      "account",
+      "accountId"
+    ],
+    "sourceAddress": [
+      "sourceIPAddress"
+    ],
+    "userAgent": [
+      "userAgent"
+    ]
+  },
+  "cloudwatch": {
+    "destinationAccount": [
+      "recipientAccountId"
+    ],
+    "destinationAddress": [
+      "destination"
+    ],
+    "destinationPort": [
+      "destport"
+    ],
+    "eventName": [
+      "eventName"
+    ],
+    "eventType": [
+      "eventType"
+    ],
+    "region": [
+      "region"
+    ],
+    "sourceAccount": [
+      "account"
+    ],
+    "sourceAddress": [
+      "source",
+      "sourceIPAddress"
+    ],
+    "sourcePort": [
+      "srcport"
+    ],
+    "transportProtocol": [
+      "protocol"
+    ],
+    "userAgent": [
+      "userAgent"
+    ],
+    "userName": [
+      "userName",
+      "owner",
+      "invokedBy"
+    ]
+  },
+  "duo": {
+    "sourceAddress": [
+      "ip"
+    ],
+    "userName": [
+      "username"
+    ]
+  },
+  "ghe": {
+    "destinationAddress": [
+      "remote_address"
+    ],
+    "sourceAddress": [
+      "actor_ip"
+    ],
+    "sourcePort": [
+      "port"
+    ],
+    "userName": [
+      "actor",
+      "current_user",
+      "user"
+    ]
+  },
+  "gsuite": {
+    "sourceAddress": [
+      "ipAddress"
+    ]
+  },
+  "onelogin": {
+    "sourceAddress": [
+      "ipaddr",
+      "proxy_ip"
+    ],
+    "userName": [
+      "actor_user_name",
+      "user_name"
+    ]
+  },
+  "osquery": {
+    "command": [
+      "cmdline",
+      "command"
+    ],
+    "destinationAddress": [
+      "destination",
+      "remote_address",
+      "gateway"
+    ],
+    "destinationPort": [
+      "remote_port"
+    ],
+    "fileHash": [
+      "md5",
+      "sha1",
+      "sha256"
+    ],
+    "filePath": [
+      "path",
+      "directory"
+    ],
+    "fileSize": [
+      "size"
+    ],
+    "message": [
+      "message"
+    ],
+    "receiptTime": [
+      "unixTime"
+    ],
+    "severity": [
+      "severity"
+    ],
+    "sourceAddress": [
+      "host",
+      "source",
+      "local_address",
+      "address"
+    ],
+    "sourcePort": [
+      "local_port",
+      "port"
+    ],
+    "sourceUserId": [
+      "uid"
+    ],
+    "transportProtocol": [
+      "protocol"
+    ],
+    "userName": [
+      "username",
+      "user"
+    ]
+  },
+  "pan": {
+    "destinationAddress": [
+      "dst",
+      "natdst"
+    ],
+    "destinationPort": [
+      "dport",
+      "natdport"
+    ],
+    "sourceAddress": [
+      "src",
+      "natsrc"
+    ],
+    "sourcePort": [
+      "sport",
+      "natsport"
+    ],
+    "transportProtocol": [
+      "proto"
+    ],
+    "userName": [
+      "srcuser",
+      "dstuser"
+    ]
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "ip": [
+    "sourceAddress",
+    "destinationAddress",
+    "deviceAddress"
+  ],
+  "domain": [
+    "destinationDomain"
+  ],
+  "md5": [
+    "fileHash"
+  ]
+}

@@ -529,6 +529,8 @@ def _add_metric_alarm_subparser(subparsers):
     all_metrics = [metric for func in available_metrics for metric in available_metrics[func]]
     metric_choices_block = '\n'.join('{:>35}{}'.format('', metric) for metric in all_metrics)
     cluster_choices_block = '\n'.join('{:>37}{}'.format('', cluster) for cluster in CLUSTERS)
+    available_functions = [func for func, value in available_metrics.iteritems() if value]
+    functions_block = '\n'.join('{:>35}{}'.format('', func) for func in available_functions)
 
     description = """
 StreamAlertCLI v{}
@@ -537,6 +539,8 @@ Terraform is used to create the alarms.
 
 Required Arguments:
 
+    -f/--function                The Lambda function for which to apply this alarm. Choices are:
+{}
     -m/--metric                  The predefined metric to assign this alarm to. Choices are:
 {}
     -mt/--metric-target          The target of this metric alarm, meaning either the cluster metric
@@ -601,7 +605,7 @@ Resources:
     AWS:        https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_PutMetricAlarm.html
     Terraform:  https://www.terraform.io/docs/providers/aws/r/cloudwatch_metric_alarm.html
 
-""".format(version, metric_choices_block, cluster_choices_block)
+""".format(version, functions_block, metric_choices_block, cluster_choices_block)
 
     metric_alarm_parser = _generate_subparser(subparsers, 'create-alarm', usage, description)
 
@@ -620,6 +624,14 @@ Resources:
         '-mt',
         '--metric-target',
         choices=['cluster', 'aggregate', 'all'],
+        help=ARGPARSE_SUPPRESS,
+        required=True)
+
+    # Get the function to apply this alarm to
+    metric_alarm_parser.add_argument(
+        '-f',
+        '--function',
+        choices=available_functions,
         help=ARGPARSE_SUPPRESS,
         required=True)
 

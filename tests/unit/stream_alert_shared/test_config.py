@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from nose.tools import assert_equal, assert_items_equal, raises
+from nose.tools import assert_equal, assert_items_equal, assert_raises
 from pyfakefs import fake_filesystem_unittest
 
 from stream_alert.shared.config import (
@@ -42,17 +42,15 @@ class TestConfigLoading(fake_filesystem_unittest.TestCase):
         self.fs.create_file('conf/sources.json', contents='{}')
         self.fs.create_file('conf/types.json', contents='{}')
 
-    @raises(ConfigError)
     def test_load_invalid_file(self):
         """Shared - Config Loading - Bad JSON"""
         self.fs.create_file('conf/clusters/bad.json', contents='test string')
-        load_config()
+        assert_raises(ConfigError, load_config)
 
     @staticmethod
-    @raises(ConfigError)
     def test_load_invalid_path():
         """Shared - Config Loading - Bad JSON"""
-        load_config(include={'foobar.json'})
+        assert_raises(ConfigError, load_config, include={'foobar.json'})
 
     @staticmethod
     def test_load_all():
@@ -85,74 +83,91 @@ class TestConfigLoading(fake_filesystem_unittest.TestCase):
         assert_items_equal(config['clusters'].keys(), expected_clusters_keys)
 
 
-@raises(ConfigError)
-def test_config_no_schema():
-    """Shared - Config Validator - No Schema in Log"""
-    # Load a valid config
-    config = get_valid_config()
+class TestConfigValidation(object):
+    """Test config validation"""
+    # pylint: disable=no-self-use
 
-    # Remove the 'schema' keys from the config
-    config['logs']['json_log'].pop('schema')
-    config['logs']['csv_log'].pop('schema')
+    def test_config_no_schema(self):
+        """Shared - Config Validator - No Schema in Log"""
+        # Load a valid config
+        config = get_valid_config()
 
-    _validate_config(config)
+        # Remove the 'schema' keys from the config
+        config['logs']['json_log'].pop('schema')
+        config['logs']['csv_log'].pop('schema')
 
+        assert_raises(ConfigError, _validate_config, config)
 
-@raises(ConfigError)
-def test_config_no_parsers():
-    """Shared - Config Validator - No Parser in Log"""
-    # Load a valid config
-    config = get_valid_config()
+    def test_config_no_parsers(self):
+        """Shared - Config Validator - No Parser in Log"""
+        # Load a valid config
+        config = get_valid_config()
 
-    # Remove the 'parser' keys from the config
-    config['logs']['json_log'].pop('parser')
-    config['logs']['csv_log'].pop('parser')
+        # Remove the 'parser' keys from the config
+        config['logs']['json_log'].pop('parser')
+        config['logs']['csv_log'].pop('parser')
 
-    _validate_config(config)
+        assert_raises(ConfigError, _validate_config, config)
 
+    def test_config_no_logs_key(self):
+        """Shared - Config Validator - No Logs Key in Source"""
+        # Load a valid config
+        config = get_valid_config()
 
-@raises(ConfigError)
-def test_config_no_logs_key():
-    """Shared - Config Validator - No Logs Key in Source"""
-    # Load a valid config
-    config = get_valid_config()
+        # Remove everything from the sources entry
+        config['sources']['kinesis']['stream_1'] = {}
 
-    # Remove everything from the sources entry
-    config['sources']['kinesis']['stream_1'] = {}
+        assert_raises(ConfigError, _validate_config, config)
 
-    _validate_config(config)
+    def test_config_empty_logs_list(self):
+        """Shared - Config Validator - Empty Logs List in Source"""
+        # Load a valid config
+        config = get_valid_config()
 
+        # Set the logs key to an empty list
+        config['sources']['kinesis']['stream_1']['logs'] = []
 
-@raises(ConfigError)
-def test_config_empty_logs_list():
-    """Shared - Config Validator - Empty Logs List in Source"""
-    # Load a valid config
-    config = get_valid_config()
+        assert_raises(ConfigError, _validate_config, config)
 
-    # Set the logs key to an empty list
-    config['sources']['kinesis']['stream_1']['logs'] = []
+    def test_config_invalid_datasources(self):
+        """Shared - Config Validator - Invalid Datasources"""
+        # Load a valid config
+        config = get_valid_config()
 
-    _validate_config(config)
+        # Set the sources value to contain an invalid data source ('sqs')
+        config['sources'] = {'sqs': {'queue_1': {}}}
 
+        assert_raises(ConfigError, _validate_config, config)
 
-@raises(ConfigError)
-def test_config_invalid_datasources():
-    """Shared - Config Validator - Invalid Datasources"""
-    # Load a valid config
-    config = get_valid_config()
+    def test_parse_lambda_arn(self):
+        """Shared - Config - Parse Lambda ARN"""
+        context = get_mock_context()
 
-    # Set the sources value to contain an invalid data source ('sqs')
-    config['sources'] = {'sqs': {'queue_1': {}}}
+        env = parse_lambda_arn(context.invoked_function_arn)
+        assert_equal(env['region'], 'us-east-1')
+        assert_equal(env['account_id'], '123456789012')
+        assert_equal(env['function_name'], 'corp-prefix_prod_streamalert_rule_processor')
+        assert_equal(env['qualifier'], 'development')
 
-    _validate_config(config)
+    def test_config_invalid_ioc_types(self):
+        """Shared - Config Validator - IOC Types, Invalid"""
+        # Load a valid config
+        config = get_valid_config()
 
+        # Set the sources value to contain an invalid data source ('sqs')
+        config['ioc_types'] = {'ip': ['foobar']}
+        config['normalized_types'] = {'log_type': {'sourceAddress': ['ip_address']}}
 
-def test_parse_lambda_arn():
-    """Shared - Config - Parse Lambda ARN"""
-    context = get_mock_context()
+        assert_raises(ConfigError, _validate_config, config)
 
-    env = parse_lambda_arn(context.invoked_function_arn)
-    assert_equal(env['region'], 'us-east-1')
-    assert_equal(env['account_id'], '123456789012')
-    assert_equal(env['function_name'], 'corp-prefix_prod_streamalert_rule_processor')
-    assert_equal(env['qualifier'], 'development')
+    def test_config_ioc_types_no_normalized_types(self):
+        """Shared - Config Validator - IOC Types, Without Normalized Types"""
+        # Load a valid config
+        config = get_valid_config()
+
+        # Set the sources value to contain an invalid data source ('sqs')
+        config['ioc_types'] = {'ip': ['foobar']}
+        if 'normalized_types' in config:
+            del config['normalized_types']
+
+        assert_raises(ConfigError, _validate_config, config)
