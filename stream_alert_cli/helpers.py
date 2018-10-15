@@ -26,7 +26,7 @@ import zipfile
 import zlib
 
 import boto3
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, NoCredentialsError
 from cbapi.response import BannedHash, Binary
 from moto import (mock_cloudwatch, mock_dynamodb2, mock_kinesis, mock_kms, mock_lambda, mock_s3,
                   mock_sns, mock_sqs)
@@ -225,16 +225,19 @@ def check_credentials():
     Returns:
         bool: True any of the AWS env variables exist
     """
-    aws_env_variables = [
-        'AWS_PROFILE', 'AWS_SHARED_CREDENTIALS_FILE', 'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY'
-    ]
-    env_vars_exist = any([env_var in os.environ for env_var in aws_env_variables])
-
-    if not env_vars_exist:
+    try:
+        response = boto3.client('sts').get_caller_identity()
+    except NoCredentialsError:
         LOGGER_CLI.error('No valid AWS Credentials found in your environment!')
         LOGGER_CLI.error('Please follow the setup instructions here: '
-                         'https://www.streamalert.io/account.html')
+                         'https://www.streamalert.io/getting-started.html'
+                         '#configure-aws-credentials')
         return False
+
+    LOGGER_CLI.debug(
+        'Using credentials for user \'%s\' with user ID \'%s\' in account '
+        '\'%s\'', response['Arn'], response['UserId'], response['Account']
+    )
 
     return True
 
