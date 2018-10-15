@@ -18,6 +18,18 @@ import json
 import os
 
 
+class TopLevelConfigKeys(object):
+    """Define the available top level keys in the loaded config"""
+    CLUSTERS = 'clusters'
+    GLOBAL = 'global'
+    IOC_TYPES = 'ioc_types'
+    LAMBDA = 'lambda'
+    LOGS = 'logs'
+    NORMALIZED_TYPES = 'normalized_types'
+    OUTPUTS = 'outputs'
+    SOURCES = 'sources'
+
+
 class ConfigError(Exception):
     """Exception class for config file errors"""
 
@@ -49,11 +61,11 @@ def parse_lambda_arn(function_arn):
         'region': split_arn[3],
         'account_id': split_arn[4],
         'function_name': split_arn[6],
-        'qualifier': split_arn[7] if len(split_arn) == 8 else None # optional qualifier
+        'qualifier': split_arn[7] if len(split_arn) == 8 else None  # optional qualifier
     }
 
 
-def load_config(conf_dir='conf/', exclude=None, include=None, validate=False):
+def load_config(conf_dir='conf/', exclude=None, include=None, validate=True):
     """Load the configuration for StreamAlert.
 
     All configuration files live in the `conf` directory in JSON format.
@@ -90,7 +102,7 @@ def load_config(conf_dir='conf/', exclude=None, include=None, validate=False):
     """
     default_files = {file for file in os.listdir(conf_dir) if file.endswith('.json')}
     conf_files = (include or default_files).copy()
-    include_clusters = 'clusters' in conf_files
+    include_clusters = TopLevelConfigKeys.CLUSTERS in conf_files
 
     conf_files.intersection_update(default_files)
     exclusions = exclude or set()
@@ -109,17 +121,20 @@ def load_config(conf_dir='conf/', exclude=None, include=None, validate=False):
         config[os.path.splitext(name)[0]] = _load_json_file(path, name == 'logs.json')
 
     # Load the configs for clusters if it is not excluded
-    if 'clusters' not in exclusions and not include or include_clusters:
+    if TopLevelConfigKeys.CLUSTERS not in exclusions and not include or include_clusters:
         clusters = {file for file in os.listdir(os.path.join(conf_dir, 'clusters'))
                     if file.endswith('.json')}
         for cluster in clusters:
-            cluster_path = os.path.join(conf_dir, 'clusters', cluster)
-            config['clusters'][os.path.splitext(cluster)[0]] = _load_json_file(cluster_path)
+            cluster_path = os.path.join(conf_dir, TopLevelConfigKeys.CLUSTERS, cluster)
+            config[TopLevelConfigKeys.CLUSTERS][os.path.splitext(cluster)[0]] = (
+                _load_json_file(cluster_path)
+            )
 
     if validate:
         _validate_config(config)
 
     return config
+
 
 def _load_json_file(path, ordered=False):
     """Helper to return the loaded json from a given path
@@ -159,8 +174,8 @@ def _validate_config(config):
         ConfigError: Raised if any config validation errors occur
     """
     # Check the log declarations
-    if 'logs' in config:
-        for log, attrs in config['logs'].iteritems():
+    if TopLevelConfigKeys.LOGS in config:
+        for log, attrs in config[TopLevelConfigKeys.LOGS].iteritems():
             if 'schema' not in attrs:
                 raise ConfigError('The \'schema\' is missing for {}'.format(log))
 
@@ -168,10 +183,10 @@ def _validate_config(config):
                 raise ConfigError('The \'parser\' is missing for {}'.format(log))
 
     # Check if the defined sources are supported and report any invalid entries
-    if 'sources' in config:
+    if TopLevelConfigKeys.SOURCES in config:
         supported_sources = {'kinesis', 's3', 'sns', 'stream_alert_app'}
-        if not set(config['sources']).issubset(supported_sources):
-            missing_sources = supported_sources - set(config['sources'])
+        if not set(config[TopLevelConfigKeys.SOURCES]).issubset(supported_sources):
+            missing_sources = supported_sources - set(config[TopLevelConfigKeys.SOURCES])
             raise ConfigError(
                 'The \'sources.json\' file contains invalid source entries: {}. '
                 'The following sources are supported: {}'.format(
@@ -181,10 +196,27 @@ def _validate_config(config):
             )
 
         # Iterate over each defined source and make sure the required subkeys exist
-        for attrs in config['sources'].values():
+        for attrs in config[TopLevelConfigKeys.SOURCES].values():
             for entity, entity_attrs in attrs.iteritems():
-                if 'logs' not in entity_attrs:
+                if TopLevelConfigKeys.LOGS not in entity_attrs:
                     raise ConfigError('Missing \'logs\' key for entity: {}'.format(entity))
 
-                if not entity_attrs['logs']:
+                if not entity_attrs[TopLevelConfigKeys.LOGS]:
                     raise ConfigError('List of \'logs\' is empty for entity: {}'.format(entity))
+
+    if TopLevelConfigKeys.IOC_TYPES in config:
+        if TopLevelConfigKeys.NORMALIZED_TYPES not in config:
+            raise ConfigError('Normalized types must also be loaded with IOC types')
+
+        for ioc_type, normalized_keys in config[TopLevelConfigKeys.IOC_TYPES].iteritems():
+            for normalized_key in normalized_keys:
+                if not any(normalized_key in set(log_keys)
+                           for log_keys in config[TopLevelConfigKeys.NORMALIZED_TYPES].values()):
+                    raise ConfigError(
+                        'IOC key \'{}\' within IOC type \'{}\' must be defined for at least '
+                        'one log type in normalized types'.format(normalized_key, ioc_type)
+                    )
+
+    if TopLevelConfigKeys.NORMALIZED_TYPES in config:
+        if TopLevelConfigKeys.IOC_TYPES not in config:
+            raise ConfigError('IOC types must also be loaded with normalized types')

@@ -7,6 +7,12 @@
       "lambda_alarms_enabled": true
     },
     "stream_alert": {
+      "classifier": {
+        "enable_metrics": true,
+        "log_level": "info",
+        "memory": 128,
+        "timeout": 10
+      },
       "rule_processor": {
         "enable_metrics": true,
         "log_level": "info",

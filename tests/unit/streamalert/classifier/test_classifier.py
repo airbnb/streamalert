@@ -33,6 +33,7 @@ class TestClassifier(object):
         """Classifier - Setup"""
         with patch.object(classifier_module, 'Normalizer'), \
              patch.object(classifier_module, 'FirehoseClient'), \
+             patch.object(classifier_module, 'SQSClient'), \
              patch('stream_alert.classifier.classifier.config.load_config',
                    Mock(return_value=self._mock_conf())):
             self._classifier = Classifier()
@@ -319,12 +320,3 @@ class TestClassifier(object):
             load_mock.return_value = False
             self._classifier.run([Mock()])
             classifiy_mock.assert_not_called()
-
-    @patch.object(classifier_module, 'print_rule_stats')
-    def test_run_log_stats(self, stats_mock):
-        """Classifier - Run, Log Stats"""
-        self._classifier._verbose = True
-        with patch.object(classifier_module.StreamPayload, 'load_from_raw_record') as load_mock:
-            load_mock.return_value = False
-            self._classifier.run([Mock()])
-            stats_mock.assert_called_with(True)

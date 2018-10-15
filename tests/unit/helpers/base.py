@@ -182,6 +182,23 @@ def basic_streamalert_config():
                         'enabled': True
                     },
                     'stream_alert': {
+                        'classifier': {
+                            'enable_metrics': True,
+                            'log_level': 'info',
+                            'memory': 128,
+                            'metric_alarms': {
+                                'Prod Unit Testing Failed Parses Alarm': {
+                                    'alarm_description': '',
+                                    'comparison_operator': 'GreaterThanOrEqualToThreshold',
+                                    'evaluation_periods': 1,
+                                    'metric_name': 'Classifier-FailedParses-PROD',
+                                    'period': 300,
+                                    'statistic': 'Sum',
+                                    'threshold': 1.0
+                                }
+                            },
+                            'timeout': 10
+                        },
                         'rule_processor': {
                             "enable_metrics": True,
                             'memory': 128,
