@@ -15,7 +15,6 @@ limitations under the License.
 """
 from collections import OrderedDict
 import logging
-from os import environ as env
 
 from stream_alert.classifier.clients import FirehoseClient, SQSClient
 from stream_alert.classifier.normalize import Normalizer
@@ -24,7 +23,6 @@ from stream_alert.classifier.payload.payload_base import StreamPayload
 from stream_alert.shared import config, CLASSIFIER_FUNCTION_NAME as FUNCTION_NAME
 from stream_alert.shared.logger import get_logger
 from stream_alert.shared.metrics import MetricLogger
-from stream_alert.shared.stats import print_rule_stats
 
 
 LOGGER = get_logger(__name__)
@@ -52,7 +50,6 @@ class Classifier(object):
         # Setup the normalization logic
         Normalizer.load_from_config(self.config)
 
-        self._in_lambda = 'LAMBDA_RUNTIME_DIR' in env
         self._payloads = []
         self._failed_record_count = 0
         self._processed_size = 0
@@ -244,9 +241,3 @@ class Classifier(object):
         # Send the data to firehose for historical retention
         if self.data_retention_enabled:
             self.firehose.send(self._payloads)
-
-        # Only log rule info here if this is deployed in Lambda
-        # During testing, this gets logged at the end and printing here could be confusing
-        # since stress testing calls this method multiple times
-        if self._in_lambda:
-            print_rule_stats(True)

@@ -165,7 +165,7 @@ class SQSClient(object):
         used in the request array.
 
         Args:
-            batch (list): List of dicts with JSON dumped records as MessageBody that are being
+            messages (list): List of dicts with JSON dumped records as MessageBody that are being
                 sent to SQS. Format is:
                 [{'Id': '...', 'MessageBody': '...'}, {'Id': '...', 'MessageBody': '...'}]
             response (dict): Response object from the boto3.resource.send_messages call
@@ -243,7 +243,6 @@ class SQSClient(object):
                               lambda resp: len(resp.get('Failed', [])) > 0,
                               max_tries=self.MAX_BACKOFF_ATTEMPTS,
                               max_value=self.MAX_BACKOFF_FIBO_VALUE,
-                              jitter=backoff.full_jitter,
                               on_backoff=backoff_handler(debug_only=False),
                               on_success=success_handler(),
                               on_giveup=giveup_handler())

@@ -16,6 +16,7 @@ limitations under the License.
 import logging
 
 from stream_alert.shared import NORMALIZATION_KEY
+from stream_alert.shared.config import TopLevelConfigKeys
 from stream_alert.shared.logger import get_logger
 
 
@@ -113,9 +114,9 @@ class Normalizer(object):
         if cls._types_config:
             return cls  # config is already populated
 
-        if 'normalized_types' not in config:
+        if TopLevelConfigKeys.NORMALIZED_TYPES not in config:
             return cls  # nothing to do
 
-        cls._types_config = config['normalized_types']
+        cls._types_config = config[TopLevelConfigKeys.NORMALIZED_TYPES]
 
         return cls  # there are no instance methods, so just return the class

@@ -320,14 +320,3 @@ class TestClassifier(object):
             load_mock.return_value = False
             self._classifier.run([Mock()])
             classifiy_mock.assert_not_called()
-
-    @patch.object(classifier_module, 'print_rule_stats')
-    def test_run_log_stats(self, stats_mock):
-        """Classifier - Run, Log Stats"""
-        with patch.dict('os.environ', {'LAMBDA_RUNTIME_DIR': '/var/runtime'}), \
-             patch.object(classifier_module.StreamPayload, 'load_from_raw_record') as load_mock:
-
-            load_mock.return_value = False
-            classifier = Classifier()
-            classifier.run([Mock()])
-            stats_mock.assert_called_with(True)

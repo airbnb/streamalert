@@ -237,14 +237,12 @@ class FirehoseClient(object):
                               lambda resp: resp['FailedPutCount'] > 0,
                               max_tries=self.MAX_BACKOFF_ATTEMPTS,
                               max_value=self.MAX_BACKOFF_FIBO_VALUE,
-                              jitter=backoff.full_jitter,
                               on_backoff=backoff_handler(debug_only=False),
                               on_success=success_handler(),
                               on_giveup=giveup_handler())
         @backoff.on_exception(backoff.fibo,
                               self.EXCEPTIONS_TO_BACKOFF,
                               max_tries=self.MAX_BACKOFF_ATTEMPTS,
-                              jitter=backoff.full_jitter,
                               on_backoff=backoff_handler(debug_only=False),
                               on_success=success_handler(),
                               on_giveup=giveup_handler())
