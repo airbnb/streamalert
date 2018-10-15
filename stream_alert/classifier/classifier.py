@@ -15,16 +15,14 @@ limitations under the License.
 """
 from collections import OrderedDict
 import logging
-from os import environ as env
 
-from stream_alert.classifier.clients import FirehoseClient
+from stream_alert.classifier.clients import FirehoseClient, SQSClient
 from stream_alert.classifier.normalize import Normalizer
 from stream_alert.classifier.parsers import get_parser
 from stream_alert.classifier.payload.payload_base import StreamPayload
 from stream_alert.shared import config, CLASSIFIER_FUNCTION_NAME as FUNCTION_NAME
 from stream_alert.shared.logger import get_logger
 from stream_alert.shared.metrics import MetricLogger
-from stream_alert.shared.stats import print_rule_stats
 
 
 LOGGER = get_logger(__name__)
@@ -36,8 +34,9 @@ class Classifier(object):
 
     _config = None
     _firehose_client = None
+    _sqs_client = None
 
-    def __init__(self, verbose=False):
+    def __init__(self):
         # Create some objects to be cached if they have not already been created
         Classifier._config = Classifier._config or config.load_config(validate=True)
         Classifier._firehose_client = (
@@ -46,12 +45,11 @@ class Classifier(object):
                 log_sources=self.config['logs']
             )
         )
+        Classifier._sqs_client = Classifier._sqs_client or SQSClient()
 
         # Setup the normalization logic
         Normalizer.load_from_config(self.config)
 
-        self._verbose = verbose
-        self._aws_region = env.get('AWS_REGION') or env.get('AWS_DEFAULT_REGION') or 'us-east-1'
         self._payloads = []
         self._failed_record_count = 0
         self._processed_size = 0
@@ -71,6 +69,10 @@ class Classifier(object):
     @property
     def data_retention_enabled(self):
         return Classifier._firehose_client is not None
+
+    @property
+    def sqs(self):
+        return Classifier._sqs_client
 
     def _load_logs_for_resource(self, service, resource):
         """Load the log types for this service type and resource value
@@ -233,12 +235,9 @@ class Classifier(object):
 
         self._log_metrics()
 
+        # Send records to SQS before sending to Firehose
+        self.sqs.send(self._payloads)
+
         # Send the data to firehose for historical retention
         if self.data_retention_enabled:
-            self._firehose_client.send(self._payloads)
-
-        # Only log rule info here if this is not running tests
-        # During testing, this gets logged at the end and printing here could be confusing
-        # since stress testing calls this method multiple times
-        if self._verbose:
-            print_rule_stats(True)
+            self.firehose.send(self._payloads)

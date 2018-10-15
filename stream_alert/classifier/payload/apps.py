@@ -30,7 +30,7 @@ class AppPayload(StreamPayload):
     def service(cls):
         return 'stream_alert_app'
 
-    def pre_parse(self):
+    def _pre_parse(self):
         """Pre-parsing method for incoming app records
 
         This iterates over all the incoming logs in the 'logs' list.
