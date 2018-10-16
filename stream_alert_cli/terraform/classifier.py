@@ -19,7 +19,7 @@ from stream_alert_cli.terraform.lambda_module import generate_lambda
 
 
 def generate_classifier(cluster_name, cluster_dict, config):
-    """Add the StreamAlert module to the Terraform cluster dict.
+    """Add this cluster's classifier module to the Terraform cluster dict.
 
     Args:
         cluster_name (str): The name of the currently generating cluster
@@ -54,9 +54,6 @@ def generate_classifier(cluster_name, cluster_dict, config):
             }
           }
         }
-
-    Returns:
-        bool: Result of applying the stream_alert module
     """
     classifier_config = (
         config['clusters'][cluster_name]['modules']['stream_alert']['classifier_config']
