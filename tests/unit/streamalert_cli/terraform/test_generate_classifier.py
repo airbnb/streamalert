@@ -77,7 +77,7 @@ class TestTerraformGenerateClassifier(object):
         }
 
     def test_generate_classifier(self):
-        """CLI - Terraform Generate StreamAlert - Test Cluster"""
+        """CLI - Terraform Generate, Classifier"""
         cluster_dict = common.infinitedict()
         classifier.generate_classifier(
             'test',
@@ -95,6 +95,7 @@ class TestTerraformGenerateClassifier(object):
                     'function_role_id': '${module.classifier_test_lambda.role_id}',
                     'function_alias_arn': '${module.classifier_test_lambda.function_alias_arn}',
                     'function_name': '${module.classifier_test_lambda.function_name}',
+                    'classifier_sqs_queue_arn': '${module.globals.classifier_sqs_queue_arn}',
                     'input_sns_topics': [
                         'arn:aws:sns:us-east-1:123456789012:foo_bar'
                     ]
@@ -103,7 +104,7 @@ class TestTerraformGenerateClassifier(object):
                     'alarm_actions': ['arn:aws:sns:us-east-1:123456789012:test_topic'],
                     'description': 'Unit-Test Streamalert Classifier Test',
                     'environment_variables': {
-                        'SQS_QUEUE_URL': '${module.classifier_test_iam.sqs_queue_url}',
+                        'SQS_QUEUE_URL': '${module.globals.classifier_sqs_queue_url}',
                         'LOGGER_LEVEL': 'info',
                         'ENABLE_METRICS': '0'
                     },

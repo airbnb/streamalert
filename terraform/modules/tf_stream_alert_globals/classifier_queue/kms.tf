@@ -1,5 +1,5 @@
 // KMS key: Server-Side Encryption for Classifier SQS
-resource "aws_kms_key" "sse" {
+resource "aws_kms_key" "sqs_sse" {
   description         = "Classifier SQS server-side encryption"
   enable_key_rotation = true
 
@@ -10,7 +10,7 @@ resource "aws_kms_key" "sse" {
   }
 }
 
-resource "aws_kms_alias" "sse" {
-  name          = "alias/classifier_sqs_sse"
-  target_key_id = "${aws_kms_key.sse.key_id}"
+resource "aws_kms_alias" "sqs_sse" {
+  name          = "alias/${var.prefix}_streamalert_classifier_sqs_sse"
+  target_key_id = "${aws_kms_key.sqs_sse.key_id}"
 }

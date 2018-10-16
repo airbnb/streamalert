@@ -23,3 +23,7 @@ variable "input_sns_topics" {
   type        = "list"
   default     = []
 }
+
+variable "classifier_sqs_queue_arn" {
+  description = "ARN of the SQS queue to which classified logs should be sent"
+}
