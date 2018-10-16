@@ -63,6 +63,7 @@
       "pathlib2"
     ]
   },
+  "classifier_config": {},
   "rule_promotion_config": {
     "enabled": false,
     "log_level": "info",
