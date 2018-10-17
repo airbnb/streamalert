@@ -18,7 +18,7 @@ import os
 import re
 
 from stream_alert.apps import StreamAlertApp
-from stream_alert.shared import config, metrics
+from stream_alert.shared import CLUSTERED_FUNCTIONS, config, metrics
 from stream_alert_cli.helpers import continue_prompt
 from stream_alert_cli.logger import LOGGER_CLI
 from stream_alert_cli.apps import save_app_auth_info
@@ -134,7 +134,7 @@ class CLIConfig(object):
         self.config['global']['infrastructure']['rule_staging']['enabled'] = enabled
         self.write()
 
-    def toggle_metrics(self, enabled, clusters, lambda_functions):
+    def toggle_metrics(self, *lambda_functions, **kwargs):
         """Toggle CloudWatch metric logging and filter creation
 
         Args:
@@ -143,22 +143,17 @@ class CLIConfig(object):
             lambda_functions (list): Which lambda functions to enable or disable
                 metrics on (rule, alert, or athena)
         """
+        enabled = kwargs.get('enabled', False)
+        clusters = kwargs.get('clusters', [])
         for function in lambda_functions:
-            if function == metrics.ALERT_PROCESSOR_NAME:
-                self.config['lambda']['alert_processor_config']['enable_metrics'] = enabled
-
-            elif function == metrics.ATHENA_PARTITION_REFRESH_NAME:
-                if 'athena_partition_refresh_config' in self.config['lambda']:
-                    self.config['lambda']['athena_partition_refresh_config'] \
-                        ['enable_metrics'] = enabled
-                else:
-                    LOGGER_CLI.error('No Athena configuration found; please initialize first.')
-
+            function_config = '{}_config'.format(function)
+            if function not in CLUSTERED_FUNCTIONS:
+                self.config['lambda'][function_config]['enable_custom_metrics'] = enabled
             else:
-                # Rule processor - toggle for each cluster
+                # Classifier - toggle for each cluster
                 for cluster in clusters:
                     self.config['clusters'][cluster]['modules']['stream_alert'] \
-                        [function]['enable_metrics'] = enabled
+                        [function_config]['enable_custom_metrics'] = enabled
 
         self.write()
 
@@ -184,55 +179,6 @@ class CLIConfig(object):
 
         return current_alarms
 
-    def _add_metric_alarm_per_cluster(self, alarm_info, function_name):
-        """Add a metric alarm for individual clusters. This is for non-aggregate
-        CloudWatch metric alarms.
-
-        Args:
-            alarm_info (dict): All the necessary values needed to add a CloudWatch
-                metric alarm.
-            function_name (str): The name of the lambda function this metric is
-                related to.
-        """
-        # If no clusters have been specified by the user, we can assume this alarm
-        # should be created for all available clusters, so fall back to that
-        clusters = (alarm_info['clusters']
-                    if alarm_info['clusters'] else list(self.config['clusters']))
-
-        # Go over each of the clusters and see if enable_metrics == True and prompt
-        # the user to toggle metrics on if this is False
-        for cluster in clusters:
-            function_config = (
-                self.config['clusters'][cluster]['modules']['stream_alert'][function_name])
-
-            if not function_config.get('enable_metrics'):
-                prompt = ('Metrics are not currently enabled for the \'{}\' function '
-                          'within the \'{}\' cluster. Would you like to enable metrics '
-                          'for this cluster?'.format(function_name, cluster))
-
-                if continue_prompt(message=prompt):
-                    self.toggle_metrics(True, [cluster], [function_name])
-
-                elif not continue_prompt(message='Would you still like to add this alarm '
-                                         'even though metrics are disabled?'):
-                    continue
-
-            metric_alarms = function_config.get('metric_alarms', {})
-
-            # Format the metric name for the cluster based metric
-            # Prepend a prefix for this function and append the cluster name
-            alarm_settings = alarm_info.copy()
-            alarm_settings['metric_name'] = '{}-{}-{}'.format(metrics.FUNC_PREFIXES[function_name],
-                                                              alarm_settings['metric_name'],
-                                                              cluster.upper())
-
-            new_alarms = self._add_metric_alarm_config(alarm_settings, metric_alarms)
-            if new_alarms is not False:
-                function_config['metric_alarms'] = new_alarms
-                LOGGER_CLI.info('Successfully added \'%s\' metric alarm for the \'%s\' '
-                                'function to \'conf/clusters/%s.json\'.',
-                                alarm_settings['alarm_name'], function_name, cluster)
-
     def _alarm_exists(self, alarm_name):
         """Check if this alarm name is already used somewhere. CloudWatch alarm
         names must be unique to an AWS account
@@ -246,37 +192,142 @@ class CLIConfig(object):
         message = ('CloudWatch metric alarm names must be unique '
                    'within each AWS account. Please remove this alarm '
                    'so it can be updated or choose another name.')
-        funcs = {metrics.RULE_PROCESSOR_NAME}
+        funcs = {metrics.CLASSIFIER_FUNCTION_NAME}
         for func in funcs:
-            for cluster in self.config['clusters']:
-                func_alarms = (
-                    self.config['clusters'][cluster]['modules']['stream_alert'][func].get(
-                        'metric_alarms', {}))
+            func_config = '{}_config'.format(func)
+            for cluster, cluster_config in self.config['clusters'].iteritems():
+                func_alarms = cluster_config['modules']['stream_alert'][func_config].get(
+                    'custom_metric_alarms', {}
+                )
                 if alarm_name in func_alarms:
                     LOGGER_CLI.error('An alarm with name \'%s\' already exists in the '
                                      '\'conf/clusters/%s.json\' cluster. %s', alarm_name, cluster,
                                      message)
                     return True
 
-        global_config = self.config['global']['infrastructure'].get('monitoring')
-        if not global_config:
-            return False
-
-        metric_alarms = global_config.get('metric_alarms')
-        if not metric_alarms:
-            return False
-
-        # Check for functions saved in the global config.
-        funcs.update({metrics.ALERT_PROCESSOR_NAME, metrics.ATHENA_PARTITION_REFRESH_NAME})
-
-        for func in funcs:
-            global_func_alarms = global_config['metric_alarms'].get(func, {})
-            if alarm_name in global_func_alarms:
+        for func, global_lambda_config in self.config['lambda'].iteritems():
+            if alarm_name in global_lambda_config.get('custom_metric_alarms', {}):
                 LOGGER_CLI.error('An alarm with name \'%s\' already exists in the '
-                                 '\'conf/globals.json\'. %s', alarm_name, message)
+                                 '\'conf/lambda.json\' in function config \'%s\'. %s',
+                                 alarm_name, func, message)
                 return True
 
         return False
+
+    def _clusters_with_metrics_enabled(self, function):
+        function_config = '{}_config'.format(function)
+        return {
+            cluster
+            for cluster, cluster_config in self.config['clusters'].iteritems()
+            if (self.config['clusters'][cluster]['modules']['stream_alert']
+                [function_config].get('enable_custom_metrics'))
+        }
+
+    def _add_cluster_metric_alarm(self, alarm_info):
+        """Add a metric alarm that corresponds to a predefined metrics for clusters
+
+        Args:
+            alarm_info (dict): All the necessary values needed to add a CloudWatch
+                metric alarm.
+        """
+        function_name = alarm_info['function']
+
+        # Go over each of the clusters and see if enable_metrics == True and prompt
+        # the user to toggle metrics on if this is False
+        config_name = '{}_config'.format(function_name)
+        for cluster in alarm_info['clusters']:
+            function_config = (
+                self.config['clusters'][cluster]['modules']['stream_alert'][config_name])
+
+            if not function_config.get('enable_custom_metrics'):
+                prompt = ('Metrics are not currently enabled for the \'{}\' function '
+                          'within the \'{}\' cluster. Would you like to enable metrics '
+                          'for this cluster?'.format(function_name, cluster))
+
+                if continue_prompt(message=prompt):
+                    self.toggle_metrics(function_name, enabled=True, clusters=[cluster])
+
+                elif not continue_prompt(message='Would you still like to add this alarm '
+                                         'even though metrics are disabled?'):
+                    continue
+
+            metric_alarms = function_config.get('custom_metric_alarms', {})
+
+            # Format the metric name for the cluster based metric
+            # Prepend a prefix for this function and append the cluster name
+            alarm_settings = alarm_info.copy()
+            alarm_settings['metric_name'] = '{}-{}-{}'.format(
+                metrics.FUNC_PREFIXES[function_name],
+                alarm_settings['metric_name'],
+                cluster.upper()
+            )
+
+            function_config['custom_metric_alarms'] = self._add_metric_alarm_config(
+                alarm_settings,
+                metric_alarms
+            )
+            LOGGER_CLI.info('Successfully added \'%s\' metric alarm for the \'%s\' '
+                            'function to \'conf/clusters/%s.json\'.',
+                            alarm_settings['alarm_name'], function_name, cluster)
+
+
+    def _add_global_metric_alarm(self, alarm_info):
+        """Add a metric alarm that corresponds to a predefined metrics globally
+
+        Args:
+            alarm_info (dict): All the necessary values needed to add a CloudWatch
+                metric alarm
+        """
+        function_name = alarm_info['function']
+
+        func_config_name = '{}_config'.format(function_name)
+
+        if function_name in CLUSTERED_FUNCTIONS:
+            if not self._clusters_with_metrics_enabled(function_name):
+                prompt = (
+                    'Metrics are not currently enabled for the \'{}\' function '
+                    'within any cluster. Creating an alarm will have no effect '
+                    'until metrics are enabled for this function in at least one '
+                    'cluster. Would you still like to continue?'.format(function_name)
+                )
+                if not continue_prompt(message=prompt):
+                    return
+
+        if func_config_name not in self.config['lambda']:
+            LOGGER_CLI.error('No configuration found for the \'%s\' function in conf/lambda.json',
+                             function_name)
+            return
+
+        # Check if metrics are not enabled, and ask the user if they would like to enable them
+        function_config = self.config['lambda'][func_config_name]
+        if not function_config.get('enable_custom_metrics'):
+            prompt = (
+                'Metrics are not currently enabled for the \'{}\' function. '
+                'Would you like to enable metrics for this function?'
+            ).format(function_name)
+
+            if continue_prompt(message=prompt):
+                self.toggle_metrics(function_name, enabled=True)
+
+            elif not continue_prompt(message='Would you still like to add this alarm '
+                                     'even though metrics are disabled?'):
+                return
+
+        metric_alarms = function_config.get('custom_metric_alarms', {})
+
+        # Format the metric name for the aggregate metric
+        alarm_settings = alarm_info.copy()
+        alarm_settings['metric_name'] = '{}-{}'.format(
+            metrics.FUNC_PREFIXES[function_name],
+            alarm_settings['metric_name']
+        )
+
+        function_config['custom_metric_alarms'] = self._add_metric_alarm_config(
+            alarm_settings,
+            metric_alarms
+        )
+        LOGGER_CLI.info('Successfully added \'%s\' metric alarm to '
+                        '\'conf/global.json\'.', alarm_settings['alarm_name'])
 
     def add_metric_alarm(self, alarm_info):
         """Add a metric alarm that corresponds to a predefined metrics
@@ -300,80 +351,11 @@ class CLIConfig(object):
             )
             return
 
-        # Do not continue if the user is trying to apply a metric alarm for an athena
-        # metric to a specific cluster (since the athena function operates on all clusters)
-        if (alarm_info['metric_target'] != 'aggregate' and alarm_info['function'] in {
-                metrics.ALERT_PROCESSOR_NAME, metrics.ATHENA_PARTITION_REFRESH_NAME}):
-            LOGGER_CLI.error('Metrics for the athena and alert functions can only be applied '
-                             'to an aggregate metric target, not on a per-cluster basis.')
-            return
-
-        # If the metric is related to the rule processor, we should
-        # check to see if any cluster has metrics enabled for that function before continuing
-        if (alarm_info['function'] == metrics.RULE_PROCESSOR_NAME and
-                not any(self.config['clusters'][cluster]['modules']['stream_alert']
-                        [alarm_info['function']].get('enable_metrics')
-                        for cluster in self.config['clusters'])):
-            prompt = ('Metrics are not currently enabled for the \'{}\' function '
-                      'within any cluster. Creating an alarm will have no effect '
-                      'until metrics are enabled for this function in at least one '
-                      'cluster. Would you still like to continue?'.format(alarm_info['function']))
-            if not continue_prompt(message=prompt):
-                return
-
-        elif alarm_info['function'] == metrics.ATHENA_PARTITION_REFRESH_NAME:
-            # If the user is attempting to add a metric for athena, make sure the athena
-            # function is initialized first
-            if 'athena_partition_refresh_config' not in self.config['lambda']:
-                LOGGER_CLI.error('No configuration found for Athena Partition Refresh. '
-                                 'Please run: `$ python manage.py athena init` first.')
-                return
-
-            # If the athena function is initialized, but metrics are not enabled, ask
-            # the user if they would like to enable them now
-            athena_config = self.config['lambda']['athena_partition_refresh_config']
-            if not athena_config.get('enable_metrics'):
-                prompt = ('Metrics are not currently enabled for the \'athena\' function. '
-                          'Would you like to enable metrics for athena?')
-
-                if continue_prompt(message=prompt):
-                    self.toggle_metrics(True, None, [alarm_info['function']])
-
-                elif not continue_prompt(message='Would you still like to add this alarm '
-                                         'even though metrics are disabled?'):
-                    return
-
-        # Add metric alarms for the aggregate metrics - these are added to the global config
-        if (alarm_info['metric_target'] == 'aggregate' or alarm_info['function'] in {
-                metrics.ALERT_PROCESSOR_NAME, metrics.ATHENA_PARTITION_REFRESH_NAME}):
-            global_config = self.config['global']['infrastructure']['monitoring']
-
-            metric_alarms = global_config.get('metric_alarms', {})
-            if not metric_alarms:
-                global_config['metric_alarms'] = {}
-
-            metric_alarms = global_config['metric_alarms'].get(alarm_info['function'], {})
-            if not metric_alarms:
-                global_config['metric_alarms'][alarm_info['function']] = {}
-
-            # Format the metric name for the aggregate metric
-            alarm_settings = alarm_info.copy()
-            alarm_settings['metric_name'] = '{}-{}'.format(
-                metrics.FUNC_PREFIXES[alarm_info['function']],
-                alarm_info['metric_name']
-            )
-
-            new_alarms = self._add_metric_alarm_config(alarm_settings, metric_alarms)
-            if new_alarms is not False:
-                global_config['metric_alarms'][alarm_info['function']] = new_alarms
-                LOGGER_CLI.info('Successfully added \'%s\' metric alarm to '
-                                '\'conf/global.json\'.', alarm_settings['alarm_name'])
-
+        if 'clusters' in alarm_info:
+            self._add_cluster_metric_alarm(alarm_info)
         else:
-            # Add metric alarms on a per-cluster basis - these are added to the cluster config
-            self._add_metric_alarm_per_cluster(alarm_info, alarm_info['function'])
+            self._add_global_metric_alarm(alarm_info)
 
-        # Save all of the alarm updates to disk
         self.write()
 
     def add_app(self, app_info):
