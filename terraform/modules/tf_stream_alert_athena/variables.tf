@@ -56,10 +56,6 @@ variable "queue_name" {
   type = "string"
 }
 
-variable "enable_metrics" {
-  default = false
-}
-
 variable "athena_metric_filters" {
   type    = "list"
   default = []

@@ -170,7 +170,7 @@ def _toggle_metrics(options):
     """
     CONFIG.toggle_metrics(
         *options.functions,
-        enabled=options.enable_metrics,
+        enabled=options.enable_custom_metrics,
         clusters=options.clusters
     )
 

@@ -34,8 +34,8 @@
           "subnet_ids": []
         }
       },
-      "rule_processor": {
-        "enable_metrics": true,
+      "rule_processor_config": {
+        "enable_custom_metrics": false,
         "log_level": "info",
         "memory": 128,
         "timeout": 10

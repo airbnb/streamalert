@@ -151,7 +151,7 @@ Open ``conf/clusters/prod.json`` and change the ``stream_alert`` module to look 
   {
     "stream_alert": {
       "rule_processor": {
-        "enable_metrics": true,
+        "enable_custom_metrics": true,
         "inputs": {
           "aws-sns": [
             "arn:aws:sns:REGION:ACCOUNTID:streamalert-test-data"

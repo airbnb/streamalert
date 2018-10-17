@@ -1,7 +1,7 @@
 {
   "alert_merger_config": {
     "concurrency_limit": 1,
-    "enable_metrics": true,
+    "enable_custom_metrics": true,
     "log_level": "info",
     "log_retention_days": 14,
     "memory": 128,

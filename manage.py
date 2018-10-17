@@ -437,8 +437,8 @@ def _add_default_app_args(app_parser, clusters):
 
 
 def _add_metrics_subparser(subparsers):
-    """Add the metrics subparser: manage.py metrics [options]"""
-    usage = 'manage.py metrics [options]'
+    """Add the metrics subparser: manage.py custom-metrics [options]"""
+    usage = 'manage.py custom-metrics [options]'
 
     cluster_choices_block = '\n'.join('{:>28}{}'.format('', cluster) for cluster in CLUSTERS)
 
@@ -467,7 +467,7 @@ Optional Arguemnts:
 {}
 Examples:
 
-    manage.py metrics --enable --functions rule
+    manage.py custom-metrics --enable --functions rule
 
 """.format(version, functions_block, cluster_choices_block)
 
@@ -485,9 +485,19 @@ Examples:
     # get the metric toggle value
     toggle_group = metrics_parser.add_mutually_exclusive_group(required=True)
 
-    toggle_group.add_argument('-e', '--enable', dest='enable_metrics', action='store_true')
+    toggle_group.add_argument(
+        '-e',
+        '--enable',
+        dest='enable_custom_metrics',
+        action='store_true'
+    )
 
-    toggle_group.add_argument('-d', '--disable', dest='enable_metrics', action='store_false')
+    toggle_group.add_argument(
+        '-d',
+        '--disable',
+        dest='enable_custom_metrics',
+        action='store_false'
+    )
 
     # allow the user to select 0 or more clusters to enable metrics for
     metrics_parser.add_argument(
@@ -1711,11 +1721,12 @@ Available Commands:
     manage.py app                        Create, list, or update a StreamAlert app integration function
     manage.py athena                     Configure Athena for StreamAlert
     manage.py configure                  Configure Global StreamAlert settings
-    manage.py create-alarm               Add a CloudWatch alarm for predefined metrics
+    manage.py create-alarm               Add a global CloudWatch alarm for predefined metrics
+    manage.py create-cluster-alarm       Add a cluster based CloudWatch alarm for predefined metrics
     manage.py kinesis                    Configure Kinesis for StreamAlert
     manage.py lambda                     Deploy, test, and rollback StreamAlert AWS Lambda functions
     manage.py live-test                  Send alerts to configured outputs
-    manage.py metrics                    Enable or disable metrics for all lambda functions
+    manage.py custom-metrics             Enable or disable metrics for all lambda functions
     manage.py output                     Configure new StreamAlert outputs
     manage.py rule-staging               Get the status of or update rules in the rules database
     manage.py terraform                  Manage StreamAlert infrastructure
