@@ -13,7 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from stream_alert.shared import CLASSIFIER_FUNCTION_NAME
 from stream_alert_cli.manage_lambda.package import ClassifierPackage
 from stream_alert_cli.terraform.lambda_module import generate_lambda
 
@@ -94,6 +93,5 @@ def generate_classifier(cluster_name, cluster_dict, config):
         config,
         environment={
             'SQS_QUEUE_URL': '${module.globals.classifier_sqs_queue_url}',
-        },
-        metrics_lookup=CLASSIFIER_FUNCTION_NAME
+        }
     )
