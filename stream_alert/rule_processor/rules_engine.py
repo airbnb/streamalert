@@ -34,7 +34,7 @@ class RulesEngine(object):
     """Class to act as a rules engine that processes rules"""
     _RULE_TABLE_LAST_REFRESH = datetime(year=1970, month=1, day=1)
     _RULE_TABLE_DEFAULT_REFRESH_MIN = 10
-    _LOOKUP_TABLES = {}
+    _LOOKUP_TABLES = None
     _RULE_TABLE = None
 
     def __init__(self, config, *rule_paths):
@@ -44,9 +44,7 @@ class RulesEngine(object):
         self._required_outputs_set = resources.get_required_outputs()
         import_folders(*rule_paths)
         self._load_rule_table(config)
-        lookup_tables = LookupTables.load_lookup_tables(config)
-        if lookup_tables:
-            RulesEngine._LOOKUP_TABLES = lookup_tables.download_s3_objects()
+        RulesEngine._LOOKUP_TABLES = LookupTables.load_lookup_tables(config)
 
     @classmethod
     def get_lookup_table(cls, table_name):
@@ -65,7 +63,7 @@ class RulesEngine(object):
         Returns:
             dict: A dictionary contains lookup table information.
         """
-        return cls._LOOKUP_TABLES.get(table_name)
+        return cls._LOOKUP_TABLES.tables().get(table_name) if cls._LOOKUP_TABLES else None
 
     @classmethod
     def _load_rule_table(cls, config):
