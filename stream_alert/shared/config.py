@@ -22,12 +22,12 @@ class TopLevelConfigKeys(object):
     """Define the available top level keys in the loaded config"""
     CLUSTERS = 'clusters'
     GLOBAL = 'global'
-    IOC_TYPES = 'ioc_types'
     LAMBDA = 'lambda'
     LOGS = 'logs'
     NORMALIZED_TYPES = 'normalized_types'
     OUTPUTS = 'outputs'
     SOURCES = 'sources'
+    THREAT_INTEL = 'threat_intel'
 
 
 class ConfigError(Exception):
@@ -204,11 +204,16 @@ def _validate_config(config):
                 if not entity_attrs[TopLevelConfigKeys.LOGS]:
                     raise ConfigError('List of \'logs\' is empty for entity: {}'.format(entity))
 
-    if TopLevelConfigKeys.IOC_TYPES in config:
+    if TopLevelConfigKeys.THREAT_INTEL in config:
         if TopLevelConfigKeys.NORMALIZED_TYPES not in config:
             raise ConfigError('Normalized types must also be loaded with IOC types')
 
-        for ioc_type, normalized_keys in config[TopLevelConfigKeys.IOC_TYPES].iteritems():
+        if 'normalized_ioc_types' not in config[TopLevelConfigKeys.THREAT_INTEL]:
+            raise ConfigError('Normalized IOC types must be defined for threat intelligence')
+
+        normalized_ioc_types = config[TopLevelConfigKeys.THREAT_INTEL]['normalized_ioc_types']
+
+        for ioc_type, normalized_keys in normalized_ioc_types.iteritems():
             for normalized_key in normalized_keys:
                 if not any(normalized_key in set(log_keys)
                            for log_keys in config[TopLevelConfigKeys.NORMALIZED_TYPES].values()):
@@ -216,7 +221,3 @@ def _validate_config(config):
                         'IOC key \'{}\' within IOC type \'{}\' must be defined for at least '
                         'one log type in normalized types'.format(normalized_key, ioc_type)
                     )
-
-    if TopLevelConfigKeys.NORMALIZED_TYPES in config:
-        if TopLevelConfigKeys.IOC_TYPES not in config:
-            raise ConfigError('IOC types must also be loaded with normalized types')

@@ -20,11 +20,11 @@ import time
 import zlib
 
 import boto3
-from botocore import client
 from botocore.exceptions import ClientError
 from botocore.vendored.requests.exceptions import Timeout
 from botocore.vendored.requests.packages.urllib3.exceptions import TimeoutError
 
+import stream_alert.shared.helpers.boto as boto_helpers
 from stream_alert.shared.logger import get_logger
 
 
@@ -35,9 +35,6 @@ class LookupTables(object):
     """Lookup Tables to useful information which can be referenced from rules"""
 
     _LOOKUP_TABLES_LAST_REFRESH = datetime(year=1970, month=1, day=1)
-
-    # Explicitly set timeout for S3 connection. The default timeout is 60 seconds.
-    BOTO_TIMEOUT = 10
 
     _tables = {}
 
@@ -57,10 +54,8 @@ class LookupTables(object):
         if not buckets_info:
             return  # Nothing to do
 
-        boto_config = client.Config(
-            connect_timeout=cls.BOTO_TIMEOUT,
-            read_timeout=cls.BOTO_TIMEOUT
-        )
+        # Explicitly set timeout for S3 connection. The boto default timeout is 60 seconds.
+        boto_config = boto_helpers.default_config(timeout=10)
         s3_client = boto3.resource('s3', config=boto_config)
 
         for bucket, files in buckets_info.iteritems():

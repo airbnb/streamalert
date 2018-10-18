@@ -1386,25 +1386,30 @@ Enable, configure StreamAlert Threat Intelligence feature.
 
 Available Subcommands:
 
-    manage.py threat-intel enable        Enable the Threat Intelligence feature in Rule Processor
+    manage.py threat-intel --enable      Enable the Threat Intelligence feature in Rule Processor
 
     Optional Arguments:
         --dynamodb-table   The DynamoDB table name which stores IOC(s).
 
 Examples:
 
-    manage.py threat-intel enable
-    manage.py threat-intel enable --dynamodb-table my_ioc_table
+    manage.py threat-intel --enable
+    manage.py threat-intel --disable
+    manage.py threat-intel --enable --dynamodb-table my_ioc_table
 """.format(version)
 
     threat_intel_parser = _generate_subparser(subparsers, 'threat-intel', usage, description)
 
-    threat_intel_parser.add_argument(
-        'subcommand', choices=['enable'], help=ARGPARSE_SUPPRESS
-    )
+    # get the enable toggle value
+    toggle_group = threat_intel_parser.add_mutually_exclusive_group(required=True)
+
+    toggle_group.add_argument('-e', '--enable', dest='enable', action='store_true')
+
+    toggle_group.add_argument('-d', '--disable', dest='enable', action='store_false')
 
     threat_intel_parser.add_argument(
         '--dynamodb-table',
+        dest='dynamodb_table_name',
         help=ARGPARSE_SUPPRESS
     )
 
