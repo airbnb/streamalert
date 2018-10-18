@@ -179,7 +179,6 @@ class ThreatIntel(object):
         @backoff.on_predicate(backoff.fibo,
                               lambda resp: bool(resp['UnprocessedKeys']),  # retry if this is true
                               max_tries=2,  # only retry unprocessed key 2 times max
-                              jitter=backoff.full_jitter,
                               on_backoff=backoff_handler(),
                               on_success=success_handler(),
                               on_giveup=giveup_handler())

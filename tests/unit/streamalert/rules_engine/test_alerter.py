@@ -18,7 +18,7 @@ import os
 from botocore.exceptions import ClientError
 from mock import Mock, patch
 
-from stream_alert.rules_engine.alerter import AlertForwarder
+from stream_alert.rules_engine.alert_forwarder import AlertForwarder
 
 _ALERTS_TABLE = 'corp-prefix_streamalert_alerts'
 
@@ -27,7 +27,7 @@ class TestAlertForwarder(object):
     """Test class for AlertForwarder"""
     # pylint: disable=attribute-defined-outside-init,protected-access
 
-    @patch('stream_alert.rules_engine.alerter.AlertTable', Mock())
+    @patch('stream_alert.rules_engine.alert_forwarder.AlertTable', Mock())
     @patch.dict(os.environ, {'ALERTS_TABLE': _ALERTS_TABLE})
     def setup(self):
         self.forwarder = AlertForwarder()

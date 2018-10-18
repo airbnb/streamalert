@@ -27,7 +27,7 @@ LOGGER = get_logger(__name__)
 
 
 class AlertForwarder(object):
-    """Sends alerts to the Alert Processor and the alerts Dynamo table."""
+    """Sends alerts to the Alert Processor and the alerts DynamoDB table."""
 
     def __init__(self):
         """Initialize the Forwarder with the boto3 clients and resource names."""
@@ -45,5 +45,5 @@ class AlertForwarder(object):
         except ClientError:
             # add_alerts() automatically retries transient errors - any raised ClientError
             # is likely unrecoverable. Log an exception and metric
-            LOGGER.exception('Error saving alerts to Dynamo')
+            LOGGER.exception('An error occurred when sending alerts to DynamoBD')
             MetricLogger.log_metric(FUNCTION_NAME, MetricLogger.FAILED_DYNAMO_WRITES, 1)
