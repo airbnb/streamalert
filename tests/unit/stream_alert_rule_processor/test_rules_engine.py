@@ -1041,7 +1041,7 @@ class TestRulesEngine(object):
         """Rules Engine - Load lookup tables with missing config"""
         self.config['global']['infrastructure'].pop('lookup_tables')
         _ = RulesEngine(self.config)
-        assert_equal(RulesEngine._LOOKUP_TABLES, {})
+        assert_equal(RulesEngine._LOOKUP_TABLES, False)
         assert_equal(LookupTables._LOOKUP_TABLES_LAST_REFRESH,
                      datetime(year=1970, month=1, day=1))
         assert_equal(RulesEngine.get_lookup_table('table_name'), None)
