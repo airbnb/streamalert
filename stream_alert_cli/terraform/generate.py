@@ -16,15 +16,12 @@ limitations under the License.
 from fnmatch import fnmatch
 import json
 import os
-import string
 
-from stream_alert.shared.metrics import FUNC_PREFIXES
 from stream_alert_cli.logger import LOGGER_CLI
 from stream_alert_cli.terraform.common import (
     DEFAULT_SNS_MONITORING_TOPIC,
     InvalidClusterName,
-    infinitedict,
-    monitoring_topic_arn
+    infinitedict
 )
 from stream_alert_cli.terraform.alert_merger import generate_alert_merger
 from stream_alert_cli.terraform.alert_processor import generate_alert_processor

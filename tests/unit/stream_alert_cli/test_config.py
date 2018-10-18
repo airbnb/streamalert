@@ -16,7 +16,7 @@ limitations under the License.
 # pylint: disable=protected-access
 import json
 
-from mock import Mock, patch
+from mock import patch
 from nose.tools import assert_equal, assert_true, assert_false
 from pyfakefs import fake_filesystem_unittest
 
