@@ -45,6 +45,8 @@ def generate_stream_alert(cluster_name, cluster_dict, config):
     account = config['global']['account']
     modules = config['clusters'][cluster_name]['modules']
 
+    function_config = modules['stream_alert']['rule_processor_config']
+
     cluster_dict['module']['stream_alert_{}'.format(cluster_name)] = {
         'source': 'modules/tf_stream_alert',
         'account_id': account['aws_account_id'],
@@ -52,12 +54,10 @@ def generate_stream_alert(cluster_name, cluster_dict, config):
         'prefix': account['prefix'],
         'cluster': cluster_name,
         'lambda_handler': RuleProcessorPackage.lambda_handler,
-        'rule_processor_enable_metrics': modules['stream_alert'] \
-            ['rule_processor'].get('enable_metrics', True),
-        'rule_processor_log_level': modules['stream_alert'] \
-            ['rule_processor'].get('log_level', 'info'),
-        'rule_processor_memory': modules['stream_alert']['rule_processor']['memory'],
-        'rule_processor_timeout': modules['stream_alert']['rule_processor']['timeout'],
+        'rule_processor_enable_metrics': function_config.get('enable_custom_metrics', True),
+        'rule_processor_log_level': function_config.get('log_level', 'info'),
+        'rule_processor_memory': function_config['memory'],
+        'rule_processor_timeout': function_config['timeout'],
         'rules_table_arn': '${module.globals.rules_table_arn}',
     }
 
@@ -69,7 +69,7 @@ def generate_stream_alert(cluster_name, cluster_dict, config):
             ['threat_intel_enabled'] = config['global']['threat_intel']['enabled']
 
     # Add Rule Processor input config from the loaded cluster file
-    input_config = modules['stream_alert']['rule_processor'].get('inputs')
+    input_config = function_config.get('inputs')
     if input_config:
         input_mapping = {
             'input_sns_topics': 'aws-sns'

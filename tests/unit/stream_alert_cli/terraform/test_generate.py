@@ -458,6 +458,8 @@ class TestTerraformGenerate(object):
         cluster_keys = {'module', 'output'}
 
         test_modules = {
+            'classifier_test_lambda',
+            'classifier_test_iam',
             'stream_alert_test',
             'cloudwatch_monitoring_test',
             'kinesis_test',
@@ -482,6 +484,8 @@ class TestTerraformGenerate(object):
         }
 
         advanced_modules = {
+            'classifier_advanced_lambda',
+            'classifier_advanced_iam',
             'stream_alert_advanced',
             'cloudwatch_advanced_eu-west-1',
             'cloudwatch_advanced_eu-west-2',

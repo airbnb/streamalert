@@ -57,19 +57,19 @@ class TestCLIConfig(object):
         """CLI - Load config"""
         assert_equal(self.config['global']['account']['prefix'], 'unit-testing')
 
-    @patch('logging.Logger.error')
-    @patch('stream_alert_cli.config.CLIConfig.write')
-    def test_toggle_metric(self, write_mock, log_mock):
+    def test_toggle_metric(self):
         """CLI - Metric toggling"""
-        self.config.toggle_metrics(True, [], ['athena_partition_refresh'])
-        write_mock.assert_called()
+        self.config.toggle_metrics('athena_partition_refresh', enabled=True)
+        assert_equal(
+            self.config['lambda']['athena_partition_refresh_config']['enable_custom_metrics'],
+            True
+        )
 
-        del self.config.config['lambda']['athena_partition_refresh_config']
-        self.config.toggle_metrics(True, [], ['athena_partition_refresh'])
-        log_mock.assert_called_with('No Athena configuration found; please initialize first.')
-
-        self.config.toggle_metrics(True, ['prod'], ['alert_processor'])
-        write_mock.assert_called()
+        self.config.toggle_metrics('alert_processor', enabled=False)
+        assert_equal(
+            self.config['lambda']['alert_processor_config']['enable_custom_metrics'],
+            False
+        )
 
     def test_aggregate_alarm_exists(self):
         """CLI - Aggregate alarm check"""
@@ -77,17 +77,14 @@ class TestCLIConfig(object):
         assert_true(result)
 
     def test_cluster_alarm_exists(self):
-        """CLI - Aggregate alarm check"""
+        """CLI - Cluster alarm check"""
         result = self.config._alarm_exists('Prod Unit Testing Failed Parses Alarm')
         assert_true(result)
 
-    @patch('stream_alert_cli.config.CLIConfig.write', Mock())
-    @patch('logging.Logger.info')
-    def test_cluster_alarm_creation(self, log_mock):
+    def test_cluster_alarm_creation(self):
         """CLI - Adding CloudWatch metric alarm, cluster"""
         alarm_info = {
             'function': 'rule_processor',
-            'metric_target': 'cluster',
             'metric_name': 'TotalRecords',
             'evaluation_periods': 1,
             'alarm_description': '',
@@ -95,23 +92,43 @@ class TestCLIConfig(object):
             'period': 300,
             'threshold': 100.0,
             'statistic': 'Sum',
-            'clusters': set(['prod']),
+            'clusters': {'prod'},
             'comparison_operator': 'LessThanThreshold'
         }
 
-        self.config.add_metric_alarm(alarm_info)
-        log_mock.assert_any_call('Successfully added \'%s\' metric alarm for the '
-                                 '\'%s\' function to \'conf/clusters/%s.json\'.',
-                                 'Prod Unit Testing Total Records Alarm', 'rule_processor',
-                                 'prod')
+        expected_result = {
+            'Prod Unit Testing Total Records Alarm': {
+                'metric_name': 'RuleProcessor-TotalRecords-PROD',
+                'evaluation_periods': 1,
+                'alarm_description': '',
+                'period': 300,
+                'threshold': 100.0,
+                'statistic': 'Sum',
+                'comparison_operator': 'LessThanThreshold'
+            },
+            'Prod Unit Testing Failed Parses Alarm': {
+                'alarm_description': '',
+                'comparison_operator': 'GreaterThanOrEqualToThreshold',
+                'evaluation_periods': 1,
+                'metric_name': 'RuleProcessor-FailedParses-PROD',
+                'period': 300,
+                'statistic': 'Sum',
+                'threshold': 1.0
+            }
+        }
 
-    @patch('stream_alert_cli.config.CLIConfig.write', Mock())
-    @patch('logging.Logger.info')
-    def test_aggregate_alarm_creation(self, log_mock):
+        self.config.add_metric_alarm(alarm_info)
+        result = (
+            self.config['clusters']['prod']['modules']['stream_alert']
+            ['rule_processor_config']['custom_metric_alarms']
+        )
+
+        assert_equal(result, expected_result)
+
+    def test_aggregate_alarm_creation(self):
         """CLI - Adding CloudWatch metric alarm, aggregate"""
         alarm_info = {
             'function': 'classifier',
-            'metric_target': 'aggregate',
             'metric_name': 'TotalRecords',
             'evaluation_periods': 1,
             'alarm_description': '',
@@ -119,14 +136,25 @@ class TestCLIConfig(object):
             'period': 300,
             'threshold': 100.0,
             'statistic': 'Sum',
-            'clusters': {},
             'comparison_operator': 'LessThanThreshold'
         }
 
+        expected_result = {
+            'Aggregate Unit Testing Total Records Alarm': {
+                'metric_name': 'Classifier-TotalRecords',
+                'evaluation_periods': 1,
+                'alarm_description': '',
+                'period': 300,
+                'threshold': 100.0,
+                'statistic': 'Sum',
+                'comparison_operator': 'LessThanThreshold'
+            }
+        }
+
         self.config.add_metric_alarm(alarm_info)
-        log_mock.assert_called_with('Successfully added \'%s\' metric alarm to '
-                                    '\'conf/global.json\'.',
-                                    'Aggregate Unit Testing Total Records Alarm')
+        result = self.config['lambda']['classifier_config']['custom_metric_alarms']
+
+        assert_equal(result, expected_result)
 
     @patch('logging.Logger.info')
     @patch('stream_alert_cli.config.CLIConfig.write')

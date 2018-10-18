@@ -148,6 +148,8 @@ class CLIConfig(object):
         for function in lambda_functions:
             function_config = '{}_config'.format(function)
             if function not in CLUSTERED_FUNCTIONS:
+                if function_config not in self.config['lambda']:
+                    self.config['lambda'][function_config] = {}
                 self.config['lambda'][function_config]['enable_custom_metrics'] = enabled
             else:
                 # Classifier - toggle for each cluster
@@ -170,7 +172,7 @@ class CLIConfig(object):
             dict: The new metric alarms dictionary with the added metric alarm
         """
         # Some keys that come from the argparse options can be omitted
-        omitted_keys = {'debug', 'alarm_name', 'command', 'clusters', 'metric_target'}
+        omitted_keys = {'debug', 'alarm_name', 'command', 'clusters', 'function'}
 
         current_alarms[alarm_info['alarm_name']] = {
             key: value
@@ -282,6 +284,12 @@ class CLIConfig(object):
 
         func_config_name = '{}_config'.format(function_name)
 
+        # Check if metrics are not enabled, and ask the user if they would like to enable them
+        if func_config_name not in self.config['lambda']:
+            self.config['lambda'][func_config_name] = {}
+
+        function_config = self.config['lambda'][func_config_name]
+
         if function_name in CLUSTERED_FUNCTIONS:
             if not self._clusters_with_metrics_enabled(function_name):
                 prompt = (
@@ -293,25 +301,19 @@ class CLIConfig(object):
                 if not continue_prompt(message=prompt):
                     return
 
-        if func_config_name not in self.config['lambda']:
-            LOGGER_CLI.error('No configuration found for the \'%s\' function in conf/lambda.json',
-                             function_name)
-            return
+        else:
+            if not function_config.get('enable_custom_metrics'):
+                prompt = (
+                    'Metrics are not currently enabled for the \'{}\' function. '
+                    'Would you like to enable metrics for this function?'
+                ).format(function_name)
 
-        # Check if metrics are not enabled, and ask the user if they would like to enable them
-        function_config = self.config['lambda'][func_config_name]
-        if not function_config.get('enable_custom_metrics'):
-            prompt = (
-                'Metrics are not currently enabled for the \'{}\' function. '
-                'Would you like to enable metrics for this function?'
-            ).format(function_name)
+                if continue_prompt(message=prompt):
+                    self.toggle_metrics(function_name, enabled=True)
 
-            if continue_prompt(message=prompt):
-                self.toggle_metrics(function_name, enabled=True)
-
-            elif not continue_prompt(message='Would you still like to add this alarm '
-                                     'even though metrics are disabled?'):
-                return
+                elif not continue_prompt(message='Would you still like to add this alarm '
+                                         'even though metrics are disabled?'):
+                    return
 
         metric_alarms = function_config.get('custom_metric_alarms', {})
 
@@ -327,7 +329,7 @@ class CLIConfig(object):
             metric_alarms
         )
         LOGGER_CLI.info('Successfully added \'%s\' metric alarm to '
-                        '\'conf/global.json\'.', alarm_settings['alarm_name'])
+                        '\'conf/lambda.json\'.', alarm_settings['alarm_name'])
 
     def add_metric_alarm(self, alarm_info):
         """Add a metric alarm that corresponds to a predefined metrics

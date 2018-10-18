@@ -199,7 +199,7 @@ class StreamThreatIntel(object):
         # disabled in cluster config located in conf/clusters/ directory
         cluster = os.environ.get('CLUSTER', '')
         if cluster and not (config['clusters'][cluster]['modules']['stream_alert']
-                            ['rule_processor'].get('enable_threat_intel', True)):
+                            ['rule_processor_config'].get('enable_threat_intel', True)):
             return False
         global_config = config.get('global', {})
         intel_config = global_config.get('threat_intel')
