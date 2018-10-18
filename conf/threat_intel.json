@@ -1,0 +1,24 @@
+{
+  "dynamodb_table_name": "table_name",
+  "enabled": false,
+  "excluded_iocs": {
+    "ip": {
+      "10.0.0.0/8": {
+        "comment": "RFC1918"
+      }
+    }
+  },
+  "normalized_ioc_types": {
+    "domain": [
+      "destinationDomain"
+    ],
+    "ip": [
+      "sourceAddress",
+      "destinationAddress",
+      "deviceAddress"
+    ],
+    "md5": [
+      "fileHash"
+    ]
+  }
+}
