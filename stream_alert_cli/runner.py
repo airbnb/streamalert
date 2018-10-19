@@ -73,7 +73,7 @@ def cli_runner(options):
     elif options.command == 'metrics':
         _toggle_metrics(options)
 
-    elif options.command == 'create-alarm':
+    elif options.command in {'create-alarm', 'create-cluster-alarm'}:
         _create_alarm(options)
 
     elif options.command == 'app':
@@ -168,7 +168,11 @@ def _toggle_metrics(options):
     Args:
         options (argparser): Contains boolean necessary for toggling metrics
     """
-    CONFIG.toggle_metrics(options.enable_metrics, options.clusters, options.functions)
+    CONFIG.toggle_metrics(
+        *options.functions,
+        enabled=options.enable_custom_metrics,
+        clusters=options.clusters
+    )
 
 
 def _create_alarm(options):
@@ -186,14 +190,6 @@ def _create_alarm(options):
                          'value for evaluation periods cannot exceed 86,400. 86,400 '
                          'is the number of seconds in one day and an alarm\'s total '
                          'current evaluation period can be no longer than one day.')
-        return
-
-    # Check to see if the user is specifying clusters when trying to create an
-    # alarm on an aggregate metric. Aggregate metrics encompass all clusters so
-    # specification of clusters doesn't have any real effect
-    if options.metric_target == 'aggregate' and options.clusters:
-        LOGGER_CLI.error('Specifying clusters when creating an alarm on an aggregate '
-                         'metric has no effect. Please remove the -c/--clusters flag.')
         return
 
     CONFIG.add_metric_alarm(vars(options))

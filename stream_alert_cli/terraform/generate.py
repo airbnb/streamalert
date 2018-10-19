@@ -16,15 +16,12 @@ limitations under the License.
 from fnmatch import fnmatch
 import json
 import os
-import string
 
-from stream_alert.shared.metrics import FUNC_PREFIXES
 from stream_alert_cli.logger import LOGGER_CLI
 from stream_alert_cli.terraform.common import (
     DEFAULT_SNS_MONITORING_TOPIC,
     InvalidClusterName,
-    infinitedict,
-    monitoring_topic_arn
+    infinitedict
 )
 from stream_alert_cli.terraform.alert_merger import generate_alert_merger
 from stream_alert_cli.terraform.alert_processor import generate_alert_processor
@@ -37,11 +34,14 @@ from stream_alert_cli.terraform.flow_logs import generate_flow_logs
 from stream_alert_cli.terraform.kinesis_events import generate_kinesis_events
 from stream_alert_cli.terraform.kinesis_streams import generate_kinesis_streams
 from stream_alert_cli.terraform.metrics import (
-    generate_cloudwatch_metric_filters,
-    generate_cloudwatch_metric_alarms
+    generate_aggregate_cloudwatch_metric_alarms,
+    generate_aggregate_cloudwatch_metric_filters,
+    generate_cluster_cloudwatch_metric_filters,
+    generate_cluster_cloudwatch_metric_alarms
 )
 from stream_alert_cli.terraform.monitoring import generate_monitoring
 from stream_alert_cli.terraform.rule_promotion import generate_rule_promotion
+from stream_alert_cli.terraform.classifier import generate_classifier
 from stream_alert_cli.terraform.streamalert import generate_stream_alert
 from stream_alert_cli.terraform.s3_events import generate_s3_events
 from stream_alert_cli.terraform.threat_intel_downloader import generate_threat_intel_downloader
@@ -253,35 +253,13 @@ def generate_main(config, init=False):
                 'name': DEFAULT_SNS_MONITORING_TOPIC
             }
 
-    # Add any global cloudwatch alarms to the main.tf
-    monitoring_config = config['global']['infrastructure'].get('monitoring')
-    if not monitoring_config:
-        return main_dict
+    metrics_info = generate_aggregate_cloudwatch_metric_filters(config)
+    if metrics_info:
+        main_dict['module'].update(metrics_info)
 
-    global_metrics = monitoring_config.get('metric_alarms')
-    if not global_metrics:
-        return main_dict
-
-    sns_topic_arn = monitoring_topic_arn(config)
-
-    formatted_alarms = {}
-    # Add global metric alarms for the rule and alert processors
-    for func in FUNC_PREFIXES:
-        if func not in global_metrics:
-            continue
-
-        for name, settings in global_metrics[func].iteritems():
-            alarm_info = settings.copy()
-            alarm_info['alarm_name'] = name
-            alarm_info['namespace'] = 'StreamAlert'
-            alarm_info['alarm_actions'] = [sns_topic_arn]
-            # Terraform only allows certain characters in resource names
-            acceptable_chars = ''.join([string.digits, string.letters, '_-'])
-            name = filter(acceptable_chars.__contains__, name)
-            formatted_alarms['metric_alarm_{}'.format(name)] = alarm_info
-
-    if formatted_alarms:
-        main_dict['resource']['aws_cloudwatch_metric_alarm'] = formatted_alarms
+    metric_alarms = generate_aggregate_cloudwatch_metric_alarms(config)
+    if metric_alarms:
+        main_dict['module'].update(metric_alarms)
 
     return main_dict
 
@@ -321,12 +299,13 @@ def generate_cluster(config, cluster_name):
     modules = config['clusters'][cluster_name]['modules']
     cluster_dict = infinitedict()
 
-    if not generate_stream_alert(cluster_name, cluster_dict, config):
-        return
+    generate_classifier(cluster_name, cluster_dict, config)
 
-    generate_cloudwatch_metric_filters(cluster_name, cluster_dict, config)
+    generate_stream_alert(cluster_name, cluster_dict, config)
 
-    generate_cloudwatch_metric_alarms(cluster_name, cluster_dict, config)
+    generate_cluster_cloudwatch_metric_filters(cluster_name, cluster_dict, config)
+
+    generate_cluster_cloudwatch_metric_alarms(cluster_name, cluster_dict, config)
 
     if modules.get('cloudwatch_monitoring', {}).get('enabled'):
         if not generate_monitoring(cluster_name, cluster_dict, config):
@@ -495,6 +474,7 @@ def generate_global_lambda_settings(config, config_name, generate_func, tf_tmp_f
                 json.dump(generated_config, tf_file, indent=2, sort_keys=True)
     else:
         remove_temp_terraform_file(tf_tmp_file, message)
+
 
 def remove_temp_terraform_file(tf_tmp_file, message):
     """Remove temporal terraform file

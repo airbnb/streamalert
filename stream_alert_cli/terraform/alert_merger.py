@@ -47,8 +47,7 @@ def generate_alert_merger(config):
             'ALERTS_TABLE': '{}_streamalert_alerts'.format(prefix),
             'ALERT_PROCESSOR': '{}_streamalert_alert_processor'.format(prefix),
             'ALERT_PROCESSOR_TIMEOUT_SEC': config['lambda']['alert_processor_config']['timeout'],
-        },
-        metrics_lookup=ALERT_MERGER_NAME
+        }
     )
 
     return result
