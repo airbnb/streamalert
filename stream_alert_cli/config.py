@@ -67,7 +67,7 @@ class CLIConfig(object):
         prefix = self.config['global']['account']['prefix']
 
         athena_config_template = {
-            'enable_metrics': False,
+            'enable_custom_metrics': False,
             'buckets': {
                 '{}.streamalerts'.format(prefix): 'alert'
             },

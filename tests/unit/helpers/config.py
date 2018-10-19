@@ -40,19 +40,6 @@ def basic_streamalert_config():
             'infrastructure': {
                 'monitoring': {
                     'create_sns_topic': True,
-                    'metric_alarms': {
-                        'rule_processor': {
-                            'Aggregate Unit Testing Failed Parses Alarm': {
-                                'alarm_description': '',
-                                'comparison_operator': 'GreaterThanOrEqualToThreshold',
-                                'evaluation_periods': 1,
-                                'metric_name': 'RuleProcessor-FailedParses',
-                                'period': 300,
-                                'statistic': 'Sum',
-                                'threshold': 1.0
-                            }
-                        }
-                    }
                 }
             },
             's3_access_logging': {
@@ -123,7 +110,7 @@ def basic_streamalert_config():
                 'timeout': 10
             },
             'athena_partition_refresh_config': {
-                'enable_metrics': False,
+                'enable_custom_metrics': False,
                 'memory': 128,
                 'partitioning': {
                     'firehose': {},
@@ -134,6 +121,17 @@ def basic_streamalert_config():
                 'timeout': 60
             },
             'rule_processor_config': {
+                'custom_metric_alarms': {
+                    'Aggregate Unit Testing Failed Parses Alarm': {
+                        'alarm_description': '',
+                        'comparison_operator': 'GreaterThanOrEqualToThreshold',
+                        'evaluation_periods': 1,
+                        'metric_name': 'RuleProcessor-FailedParses',
+                        'period': 300,
+                        'statistic': 'Sum',
+                        'threshold': 1.0
+                    }
+                },
                 'third_party_libraries': [
                     'jsonpath_rw',
                     'netaddr'
@@ -177,11 +175,11 @@ def basic_streamalert_config():
                         'enabled': True
                     },
                     'stream_alert': {
-                        'classifier': {
-                            'enable_metrics': True,
+                        'classifier_config': {
+                            'enable_custom_metrics': True,
                             'log_level': 'info',
                             'memory': 128,
-                            'metric_alarms': {
+                            'custom_metric_alarms': {
                                 'Prod Unit Testing Failed Parses Alarm': {
                                     'alarm_description': '',
                                     'comparison_operator': 'GreaterThanOrEqualToThreshold',
@@ -194,10 +192,10 @@ def basic_streamalert_config():
                             },
                             'timeout': 10
                         },
-                        'rule_processor': {
-                            'enable_metrics': True,
+                        'rule_processor_config': {
+                            'enable_custom_metrics': True,
                             'memory': 128,
-                            'metric_alarms': {
+                            'custom_metric_alarms': {
                                 'Prod Unit Testing Failed Parses Alarm': {
                                     'alarm_description': '',
                                     'comparison_operator': 'GreaterThanOrEqualToThreshold',
@@ -225,7 +223,7 @@ def basic_streamalert_config():
                 'id': 'corp',
                 'modules': {
                     'stream_alert': {
-                        'rule_processor': {
+                        'rule_processor_config': {
                             'memory': 128,
                             'timeout': 10
                         }

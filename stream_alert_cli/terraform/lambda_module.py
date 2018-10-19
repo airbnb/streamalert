@@ -102,7 +102,7 @@ def generate_lambda(function_name, zip_file, handler, lambda_config, config,
     # Add logger level to any custom environment variables
     environment_variables = {
         # Convert True/False to "1" or "0", respectively
-        'ENABLE_METRICS': str(int(lambda_config.get('enable_metrics', False))),
+        'ENABLE_METRICS': str(int(lambda_config.get('enable_custom_metrics', False))),
         'LOGGER_LEVEL': lambda_config.get('log_level', 'info')
     }
 
