@@ -67,7 +67,7 @@ class CLIConfig(object):
         prefix = self.config['global']['account']['prefix']
 
         athena_config_template = {
-            'enable_metrics': False,
+            'enable_custom_metrics': False,
             'buckets': {
                 '{}.streamalerts'.format(prefix): 'alert'
             },
@@ -437,7 +437,6 @@ class CLIConfig(object):
         app_sources[app_info['function_name']] = {'logs': [app.service()]}
         self.config['sources']['stream_alert_app'] = app_sources
 
-
         LOGGER_CLI.info('Successfully added \'%s\' app integration to \'conf/clusters/%s.json\' '
                         'for service \'%s\'.', app_info['app_name'], app_info['cluster'],
                         app_info['type'])
@@ -450,26 +449,21 @@ class CLIConfig(object):
         Args:
             threat_intel_info (dict): Settings to enable Threat Intel from commandline.
         """
-        if not threat_intel_info:
-            return
-
         prefix = self.config['global']['account']['prefix']
-        default_config = {
-            'enabled': True,
-            'dynamodb_table': '{}_streamalert_threat_intel_downloader'.format(prefix)
-        }
 
-        if 'threat_intel' not in self.config['global']:
-            self.config['global']['threat_intel'] = default_config
+        if 'threat_intel' not in self.config:
+            self.config['threat_intel'] = {}
 
-        # set default dynamodb table name
-        if not threat_intel_info.get('dynamodb_table'):
-            self.config['global']['threat_intel']['dynamodb_table'] = \
-                '{}_streamalert_threat_intel_downloader'\
-                    .format(self.config['global']['account']['prefix'])
-        else:
-            self.config['global']['threat_intel']['dynamodb_table'] = \
-                threat_intel_info['dynamodb_table']
+        self.config['threat_intel']['enabled'] = threat_intel_info['enable']
+
+        table_name = threat_intel_info.get('dynamodb_table_name')
+        if table_name:
+            self.config['threat_intel']['dynamodb_table_name'] = table_name
+        elif not self.config['threat_intel'].get('dynamodb_table_name'):
+            # set default dynamodb table name if one does not exist
+            self.config['threat_intel']['dynamodb_table_name'] = (
+                '{}_streamalert_threat_intel_downloader'.format(prefix)
+            )
 
         self.write()
 
@@ -540,5 +534,5 @@ class CLIConfig(object):
                     parts = path_parts + [cluster_key]
                     self._config_writer(format_path(parts), self.config['clusters'][cluster_key])
             else:
-                sort = config_key != 'logs' # logs.json should not be sorted
+                sort = config_key != 'logs'  # logs.json should not be sorted
                 self._config_writer(format_path(path_parts), self.config[config_key], sort)
