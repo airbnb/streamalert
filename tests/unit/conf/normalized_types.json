@@ -1,0 +1,12 @@
+{
+  "test_cloudtrail": {
+    "sourceAddress": [
+      "sourceIPAddress"
+    ]
+  },
+  "test_cloudwatch": {
+    "destinationAddress": [
+      "destination"
+    ]
+  }
+}

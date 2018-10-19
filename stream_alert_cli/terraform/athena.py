@@ -57,7 +57,7 @@ def generate_athena(config):
         'lambda_timeout': athena_config.get('timeout', '60'),
         'lambda_log_level': athena_config.get('log_level', 'info'),
         'athena_data_buckets': data_buckets,
-        'enable_metrics': athena_config.get('enable_metrics', False),
+        'enable_metrics': athena_config.get('enable_custom_metrics', False),
         'concurrency_limit': athena_config.get('concurrency_limit', 10),
         'account_id': config['global']['account']['aws_account_id'],
         'prefix': prefix
@@ -79,7 +79,7 @@ def generate_athena(config):
     }
 
     # Metrics setup
-    if not athena_config.get('enable_metrics', False):
+    if not athena_config.get('enable_custom_metrics', False):
         return athena_dict
 
     # Check to see if there are any metrics configured for the athena function

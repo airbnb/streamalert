@@ -82,7 +82,7 @@ def cli_runner(options):
     elif options.command == 'kinesis':
         kinesis_handler(options, CONFIG)
 
-    elif options.command == 'threat_intel':
+    elif options.command == 'threat-intel':
         _threat_intel_handler(options, CONFIG)
 
     elif options.command == 'threat_intel_downloader':
@@ -276,8 +276,4 @@ def _threat_intel_handler(options, config):
         options (namedtuple): The parsed args passed from the CLI
         config (CLIConfig): Loaded StreamAlert CLI
     """
-    if not options:
-        return
-
-    if options.subcommand == 'enable':
-        config.add_threat_intel(vars(options))
+    config.add_threat_intel(vars(options))
