@@ -12,7 +12,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from stream_alert.shared import metrics
 from stream_alert_cli.terraform.common import monitoring_topic_arn
 
 
@@ -37,22 +36,6 @@ def _tf_metric_alarms(lambda_config, sns_arn):
     return result
 
 
-def _tf_metric_filters(lambda_config, metrics_lookup):
-    """Compute metric filter Terraform configuration from the Lambda config."""
-    if not lambda_config.get('enable_metrics') or not metrics_lookup:
-        return {}
-
-    # Create a metric filter for each custom metric associated with this function.
-    metric_filters = []
-    function_metrics = metrics.MetricLogger.get_available_metrics()[metrics_lookup]
-    for metric, settings in function_metrics.items():
-        metric_name = '{}-{}'.format(metrics.FUNC_PREFIXES[metrics_lookup], metric)
-        filter_pattern, filter_value = settings
-        metric_filters.append('{},{},{}'.format(metric_name, filter_pattern, filter_value))
-
-    return {'log_metric_filters': metric_filters}
-
-
 def _tf_vpc_config(lambda_config):
     """Compute VPC configuration from the Lambda config."""
     result = {}
@@ -69,7 +52,7 @@ def _tf_vpc_config(lambda_config):
 
 
 def generate_lambda(function_name, zip_file, handler, lambda_config, config,
-                    environment=None, metrics_lookup=None, input_event=None):
+                    environment=None, input_event=None):
     """Generate an instance of the Lambda Terraform module.
 
     Args:
@@ -80,7 +63,6 @@ def generate_lambda(function_name, zip_file, handler, lambda_config, config,
         config (dict): Parsed config from conf/
         environment (dict): Optional environment variables to specify.
             ENABLE_METRICS and LOGGER_LEVEL are included automatically.
-        metrics_lookup (str): Canonical name of this function (used to lookup custom metrics)
 
     Example Lambda config:
         {
@@ -149,7 +131,6 @@ def generate_lambda(function_name, zip_file, handler, lambda_config, config,
 
     # Add metric alarms and filters to the Lambda module definition
     lambda_module.update(_tf_metric_alarms(lambda_config, monitoring_topic_arn(config)))
-    lambda_module.update(_tf_metric_filters(lambda_config, metrics_lookup))
 
     # Add VPC config to the Lambda module definition
     lambda_module.update(_tf_vpc_config(lambda_config))
