@@ -33,7 +33,6 @@
       "unit-testing.streamalert.data": "data",
       "unit-testing.streamalerts": "alerts"
     },
-    "enable_metrics": false,
     "memory": "128",
     "timeout": "60"
   },

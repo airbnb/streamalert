@@ -28,13 +28,13 @@ def generate_aggregate_cloudwatch_metric_filters(config):
         cluster: [
             func.replace('_config', '')
             for func, func_config in cluster_config['modules']['stream_alert'].iteritems()
-            if func_config.get('enable_metrics')
+            if func_config.get('enable_custom_metrics')
         ] for cluster, cluster_config in config['clusters'].iteritems()
     }
 
     functions['global'] = {
         func.replace('_config', '') for func, func_config in config['lambda'].iteritems()
-        if func_config.get('enable_metrics')
+        if func_config.get('enable_custom_metrics')
     }
 
     if not any(funcs for funcs in functions.values()):
@@ -125,7 +125,7 @@ def generate_cluster_cloudwatch_metric_filters(cluster_name, cluster_dict, confi
         if func not in stream_alert_config:
             continue
 
-        if not stream_alert_config[func].get('enable_metrics'):
+        if not stream_alert_config[func].get('enable_custom_metrics'):
             continue
 
         log_group_name = '${{module.{}_{}_lambda.log_group_name}}'.format(func, cluster_name)
