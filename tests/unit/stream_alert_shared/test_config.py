@@ -13,6 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+import json
+
 from nose.tools import assert_equal, assert_items_equal, assert_raises
 from pyfakefs import fake_filesystem_unittest
 
@@ -23,7 +25,9 @@ from stream_alert.shared.config import (
     ConfigError,
 )
 
-from tests.unit.stream_alert_rule_processor.test_helpers import get_mock_context, get_valid_config
+from tests.unit.helpers.config import basic_streamalert_config
+from tests.unit.stream_alert_rule_processor.test_helpers import get_mock_context
+
 
 class TestConfigLoading(fake_filesystem_unittest.TestCase):
     """Test config loading logic with a mocked filesystem."""
@@ -31,6 +35,8 @@ class TestConfigLoading(fake_filesystem_unittest.TestCase):
 
     def setUp(self):
         self.setUpPyfakefs()
+
+        config_data = basic_streamalert_config()
 
         # Add config files which should be loaded
         self.fs.create_file('conf/clusters/prod.json', contents='{}')
@@ -41,6 +47,14 @@ class TestConfigLoading(fake_filesystem_unittest.TestCase):
         self.fs.create_file('conf/outputs.json', contents='{}')
         self.fs.create_file('conf/sources.json', contents='{}')
         self.fs.create_file('conf/types.json', contents='{}')
+        self.fs.create_file(
+            'conf/threat_intel.json',
+            contents=json.dumps(config_data['threat_intel'])
+        )
+        self.fs.create_file(
+            'conf/normalized_types.json',
+            contents=json.dumps(config_data['normalized_types'])
+        )
 
     def test_load_invalid_file(self):
         """Shared - Config Loading - Bad JSON"""
@@ -56,22 +70,49 @@ class TestConfigLoading(fake_filesystem_unittest.TestCase):
     def test_load_all():
         """Shared - Config Loading - All"""
         config = load_config()
-        expected_keys = ['clusters', 'global', 'lambda', 'logs', 'outputs', 'sources', 'types']
-        assert_items_equal(config.keys(), expected_keys)
+        expected_keys = [
+            'clusters',
+            'global',
+            'lambda',
+            'logs',
+            'outputs',
+            'sources',
+            'types',
+            'threat_intel',
+            'normalized_types'
+        ]
+        assert_equal(sorted(config.keys()), sorted(expected_keys))
 
     @staticmethod
     def test_load_exclude():
         """Shared - Config Loading - Exclude"""
         config = load_config(exclude={'global.json', 'logs.json'})
-        expected_keys = ['clusters', 'lambda', 'outputs', 'sources', 'types']
-        assert_items_equal(config.keys(), expected_keys)
+        expected_keys = [
+            'clusters',
+            'lambda',
+            'outputs',
+            'sources',
+            'types',
+            'threat_intel',
+            'normalized_types'
+        ]
+        assert_equal(sorted(config.keys()), sorted(expected_keys))
 
     @staticmethod
     def test_load_exclude_clusters():
         """Shared - Config Loading - Exclude Clusters"""
         config = load_config(exclude={'clusters'})
-        expected_keys = ['global', 'lambda', 'logs', 'outputs', 'sources', 'types']
-        assert_items_equal(config.keys(), expected_keys)
+        expected_keys = [
+            'global',
+            'lambda',
+            'logs',
+            'outputs',
+            'sources',
+            'types',
+            'threat_intel',
+            'normalized_types'
+        ]
+        assert_equal(sorted(config.keys()), sorted(expected_keys))
 
     @staticmethod
     def test_load_include():
@@ -90,7 +131,7 @@ class TestConfigValidation(object):
     def test_config_no_schema(self):
         """Shared - Config Validator - No Schema in Log"""
         # Load a valid config
-        config = get_valid_config()
+        config = basic_streamalert_config()
 
         # Remove the 'schema' keys from the config
         config['logs']['json_log'].pop('schema')
@@ -101,7 +142,7 @@ class TestConfigValidation(object):
     def test_config_no_parsers(self):
         """Shared - Config Validator - No Parser in Log"""
         # Load a valid config
-        config = get_valid_config()
+        config = basic_streamalert_config()
 
         # Remove the 'parser' keys from the config
         config['logs']['json_log'].pop('parser')
@@ -112,7 +153,7 @@ class TestConfigValidation(object):
     def test_config_no_logs_key(self):
         """Shared - Config Validator - No Logs Key in Source"""
         # Load a valid config
-        config = get_valid_config()
+        config = basic_streamalert_config()
 
         # Remove everything from the sources entry
         config['sources']['kinesis']['stream_1'] = {}
@@ -122,7 +163,7 @@ class TestConfigValidation(object):
     def test_config_empty_logs_list(self):
         """Shared - Config Validator - Empty Logs List in Source"""
         # Load a valid config
-        config = get_valid_config()
+        config = basic_streamalert_config()
 
         # Set the logs key to an empty list
         config['sources']['kinesis']['stream_1']['logs'] = []
@@ -132,7 +173,7 @@ class TestConfigValidation(object):
     def test_config_invalid_datasources(self):
         """Shared - Config Validator - Invalid Datasources"""
         # Load a valid config
-        config = get_valid_config()
+        config = basic_streamalert_config()
 
         # Set the sources value to contain an invalid data source ('sqs')
         config['sources'] = {'sqs': {'queue_1': {}}}
@@ -152,10 +193,13 @@ class TestConfigValidation(object):
     def test_config_invalid_ioc_types(self):
         """Shared - Config Validator - IOC Types, Invalid"""
         # Load a valid config
-        config = get_valid_config()
+        config = basic_streamalert_config()
 
         # Set the sources value to contain an invalid data source ('sqs')
-        config['ioc_types'] = {'ip': ['foobar']}
+        config['threat_intel'] = {
+            'normalized_ioc_types': {'ip': ['foobar']}
+        }
+
         config['normalized_types'] = {'log_type': {'sourceAddress': ['ip_address']}}
 
         assert_raises(ConfigError, _validate_config, config)
@@ -163,10 +207,12 @@ class TestConfigValidation(object):
     def test_config_ioc_types_no_normalized_types(self):
         """Shared - Config Validator - IOC Types, Without Normalized Types"""
         # Load a valid config
-        config = get_valid_config()
+        config = basic_streamalert_config()
 
         # Set the sources value to contain an invalid data source ('sqs')
-        config['ioc_types'] = {'ip': ['foobar']}
+        config['threat_intel'] = {
+            'normalized_ioc_types': {'ip': ['foobar']}
+        }
         if 'normalized_types' in config:
             del config['normalized_types']
 
