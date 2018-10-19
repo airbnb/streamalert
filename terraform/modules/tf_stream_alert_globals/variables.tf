@@ -21,3 +21,7 @@ variable "rules_table_read_capacity" {
 variable "rules_table_write_capacity" {
   default = 5
 }
+
+variable "rules_engine_timeout" {
+  default = 300
+}
