@@ -64,7 +64,7 @@ Example: Rule Processor with SNS Inputs
     "modules": {
       "stream_alert": {
         "rule_processor": {
-          "enable_metrics": true,
+          "enable_custom_metrics": true,
           "inputs": {
             "aws-sns": [
               "arn:aws:sns:REGION:ACCOUNT:TOPIC_NAME"
@@ -81,16 +81,16 @@ Example: Rule Processor with SNS Inputs
 
 Configuration Options
 ~~~~~~~~~~~~~~~~~~~~~
-=======================  ===========  ===============
-**Key**                  **Default**  **Description**
------------------------  -----------  ---------------
-``enable_metrics``       ``true``     Enable :ref:`custom metrics <custom_metrics>` for the cluster
-``enable_threat_intel``  ``false``    Toggle threat intel integration (beta)
-``inputs``               ``{}``       SNS topics which can invoke the rule processor (see example)
-``log_level``            ``"info"``   Lambda CloudWatch logging level
-``memory``               ---          Lambda function memory (MB)
-``timeout``              ---          Lambda function timeout (seconds)
-=======================  ===========  ===============
+==========================  ===========  ===============
+**Key**                     **Default**  **Description**
+--------------------------  -----------  ---------------
+``enable_custom_metrics``   ``true``     Enable :ref:`custom metrics <custom_metrics>` for the cluster
+``enable_threat_intel``     ``false``    Toggle threat intel integration (beta)
+``inputs``                  ``{}``       SNS topics which can invoke the rule processor (see example)
+``log_level``               ``"info"``   Lambda CloudWatch logging level
+``memory``                  ---          Lambda function memory (MB)
+``timeout``                 ---          Lambda function timeout (seconds)
+==========================  ===========  ===============
 
 .. _cloudtrail:
 
