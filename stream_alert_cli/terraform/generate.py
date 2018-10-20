@@ -42,6 +42,7 @@ from stream_alert_cli.terraform.metrics import (
 from stream_alert_cli.terraform.monitoring import generate_monitoring
 from stream_alert_cli.terraform.rule_promotion import generate_rule_promotion
 from stream_alert_cli.terraform.classifier import generate_classifier
+from stream_alert_cli.terraform.rules_engine import generate_rules_engine
 from stream_alert_cli.terraform.streamalert import generate_stream_alert
 from stream_alert_cli.terraform.s3_events import generate_s3_events
 from stream_alert_cli.terraform.threat_intel_downloader import generate_threat_intel_downloader
@@ -186,7 +187,8 @@ def generate_main(config, init=False):
         'alerts_table_read_capacity': (
             config['global']['infrastructure']['alerts_table']['read_capacity']),
         'alerts_table_write_capacity': (
-            config['global']['infrastructure']['alerts_table']['write_capacity'])
+            config['global']['infrastructure']['alerts_table']['write_capacity']),
+        'rules_engine_timeout': config['lambda']['rules_engine_config']['timeout']
     }
 
     if config['global']['infrastructure']['rule_staging'].get('enabled'):
@@ -429,6 +431,15 @@ def terraform_generate(config, init=False):
         generate_func=generate_rule_promotion,
         tf_tmp_file='terraform/rule_promotion.tf.json',
         message='Removing old Rule Promotion Terraform file'
+    )
+
+    # Setup Rules Engine
+    generate_global_lambda_settings(
+        config,
+        config_name='rules_engine_config',
+        generate_func=generate_rules_engine,
+        tf_tmp_file='terraform/rules_engine.tf.json',
+        message='Removing old Rules Engine Terraform file'
     )
 
     # Setup Alert Processor
