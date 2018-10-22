@@ -181,6 +181,23 @@ class RuleProcessorPackage(LambdaPackage):
     third_party_libs = {'backoff', 'netaddr', 'jsonpath_rw'}
 
 
+class RulesEnginePackage(LambdaPackage):
+    """Deployment package class for the StreamAlert Rules Engine function"""
+    config_key = 'rules_engine_config'
+    lambda_handler = 'stream_alert.rules_engine.main.handler'
+    package_files = {
+        'conf',
+        'helpers',
+        'matchers',
+        'rules',
+        'stream_alert/__init__.py',
+        'stream_alert/rules_engine',
+        'stream_alert/shared',
+    }
+    package_name = 'rules_engine'
+    third_party_libs = {'backoff', 'netaddr'}
+
+
 class AlertProcessorPackage(LambdaPackage):
     """Deployment package class for the StreamAlert Alert Processor function"""
     config_key = 'alert_processor_config'

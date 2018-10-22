@@ -57,11 +57,6 @@
     "concurrency_limit": 10,
     "log_level": "info"
   },
-  "rule_processor_config": {
-    "third_party_libraries": [
-      "pathlib2"
-    ]
-  },
   "classifier_config": {},
   "rule_promotion_config": {
     "enabled": false,
@@ -85,5 +80,32 @@
     "schedule_expression": "rate(10 minutes)",
     "send_digest_schedule_expression": "cron(30 13 * * ? *)",
     "timeout": 120
+  },
+  "rules_engine_config": {
+    "log_level": "info",
+    "log_retention_days": 14,
+    "memory": 128,
+    "metric_alarms": {
+      "errors": {
+        "enabled": true,
+        "evaluation_periods": 1,
+        "period_secs": 120,
+        "threshold": 0
+      },
+      "throttles": {
+        "enabled": true,
+        "evaluation_periods": 1,
+        "period_secs": 120,
+        "threshold": 0
+      }
+    },
+    "third_party_libraries": [
+      "pathlib2"
+    ],
+    "timeout": 60,
+    "vpc_config": {
+      "security_group_ids": [],
+      "subnet_ids": []
+    }
   }
 }
