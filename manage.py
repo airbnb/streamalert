@@ -24,9 +24,10 @@ To run terraform by hand, change to the terraform directory and run:
 terraform <cmd>
 """
 # pylint: disable=too-many-lines
-from argparse import Action, ArgumentParser, RawTextHelpFormatter, SUPPRESS as ARGPARSE_SUPPRESS
+from argparse import Action, ArgumentParser, RawDescriptionHelpFormatter
 import os
 import string
+import textwrap
 
 
 from stream_alert import __version__ as version
@@ -34,13 +35,17 @@ from stream_alert.alert_processor.outputs.output_base import StreamAlertOutput
 from stream_alert.apps import StreamAlertApp
 from stream_alert.apps.config import AWS_RATE_RE, AWS_RATE_HELPER
 from stream_alert.shared import CLUSTERED_FUNCTIONS, metrics
-from stream_alert_cli.logger import LOGGER_CLI
 from stream_alert_cli.runner import cli_runner
 
 CLUSTERS = [
     os.path.splitext(cluster)[0] for _, _, files in os.walk('conf/clusters')
     for cluster in files
 ]
+
+TF_MODULE_TARGETS = sorted([
+    'athena', 'cloudwatch_monitoring', 'cloudtrail', 'flow_logs', 'kinesis',
+    'kinesis_events', 'stream_alert', 's3_events', 'threat_intel_downloader'
+])
 
 
 class UniqueSetAction(Action):
@@ -71,18 +76,130 @@ class MutuallyExclusiveStagingAction(Action):
         setattr(namespace, self.dest, unique_items)
 
 
-def _generate_subparser(parser, name, usage, description, subcommand=False):
+def add_timeout_arg(parser):
+    """Add the timeout argument to a parser"""
+    def _validator(val):
+        """Validate acceptable inputs for the timeout of the function"""
+        error = 'Value for \'timeout\' must be an integer between 10 and 900'
+        try:
+            timeout = int(val)
+        except ValueError:
+            raise parser.error(error)
+
+        if not 10 <= timeout <= 900:
+            raise parser.error(error)
+
+        return timeout
+
+    parser.add_argument(
+        '-t',
+        '--timeout',
+        required=True,
+        help=(
+            'The AWS Lambda function timeout value, in seconds. '
+            'This should be an integer between 10 and 900.'
+        ),
+        type=_validator
+    )
+
+
+def add_memory_arg(parser):
+    """Add the memory argument to a parser"""
+    def _validator(val):
+        """Validate the memory value to ensure it is between 128 and 3008 and a multiple of 64"""
+        error = (
+            'Value for \'memory\' must be an integer between 128 and 3008, and be a multiple of 64'
+        )
+        try:
+            memory = int(val)
+        except ValueError:
+            raise parser.error(error)
+
+        if not 128 <= memory <= 3008:
+            raise parser.error(error)
+
+        if memory % 64 != 0:
+            raise parser.error(error)
+
+        return memory
+
+    parser.add_argument(
+        '-m',
+        '--memory',
+        required=True,
+        help=(
+            'The AWS Lambda function max memory value, in megabytes. '
+            'This should be an integer between 128 and 3008, and be a multiple of 64.'
+        ),
+        type=_validator
+    )
+
+
+def add_schedule_expression_arg(parser):
+    """Add the schedule expression argument to a parser"""
+    def _validator(val):
+        """Validate the schedule expression rate value for acceptable input"""
+        rate_match = AWS_RATE_RE.match(val)
+        if rate_match:
+            return val
+
+        if val.startswith('rate('):
+            err = ('Invalid rate expression \'{}\'. For help see {}'
+                   .format(val, '{}#RateExpressions'.format(AWS_RATE_HELPER)))
+            raise parser.error(err)
+
+        raise parser.error('Invalid expression \'{}\'. For help '
+                           'see {}'.format(val, AWS_RATE_HELPER))
+
+    schedule_help = (
+        'The interval, defined using a \'rate\' expression, at which this function should '
+        'execute. Examples of acceptable input are: \'rate(1 hour)\', \'rate(2 days)\', and '
+        '\'rate(20 minutes)\'. For more information, see: {}'
+    ).format(AWS_RATE_HELPER)
+
+    parser.add_argument(
+        '-s',
+        '--schedule-expression',
+        required=True,
+        help=schedule_help,
+        type=_validator
+    )
+
+
+def add_clusters_arg(parser, required=False):
+    """Add ability to select 0 or more clusters to act against"""
+    kwargs = {
+        'choices': CLUSTERS,
+        'help': (
+            'One or more clusters to target. '
+            'If omitted, this action will be performed against all clusters.'
+        ) if not required else 'One or more clusters to target',
+        'nargs': '+',
+        'action': UniqueSetAction,
+        'required': required
+    }
+
+    if not required:
+        kwargs['default'] = CLUSTERS
+
+    parser.add_argument(
+        '-c',
+        '--clusters',
+        **kwargs
+    )
+
+def _set_parser_epilog(parser, epilog):
+    """Set the epilog on the given parser. This will typically be an 'Example' block"""
+    parser.epilog = textwrap.dedent(epilog) if epilog else None
+
+
+def _generate_subparser(parser, name, description=None, subcommand=False):
     """Helper function to return a subparser with the given options"""
     subparser = parser.add_parser(
         name,
         description=description,
-        formatter_class=RawTextHelpFormatter,
-        help=ARGPARSE_SUPPRESS,
-        usage=usage,
+        formatter_class=RawDescriptionHelpFormatter
     )
-
-    # allow verbose output with the --debug option
-    subparser.add_argument('--debug', action='store_true', help=ARGPARSE_SUPPRESS)
 
     if subcommand:
         subparser.set_defaults(subcommand=name)
@@ -92,334 +209,124 @@ def _generate_subparser(parser, name, usage, description, subcommand=False):
     return subparser
 
 
-def _add_output_subparser(subparsers):
-    """Add the output subparser: manage.py output [subcommand] [options]"""
-    usage = 'manage.py output [subcommand] [options]'
+def _setup_output_subparser(subparser):
+    """Add the output subparser: manage.py output SERVICE"""
     outputs = sorted(StreamAlertOutput.get_all_outputs().keys())
-    description = """
-StreamAlertCLI v{}
-Define new StreamAlert outputs to send alerts to
-
-Available Subcommands:
-
-    manage.py output new [options]    Create a new StreamAlert output
-
-Examples:
-
-    manage.py output new --service aws-s3
-    manage.py output new --service pagerduty
-    manage.py output new --service slack
-
-The following outputs are supported:
-
-{}
-""".format(version, '\n'.join('{:>4}{}'.format('', output) for output in outputs))
-
-    output_parser = _generate_subparser(subparsers, 'output', usage, description)
 
     # Output parser arguments
-    # The CLI library handles all configuration logic
-    output_parser.add_argument('subcommand', choices=['new'], help=ARGPARSE_SUPPRESS)
-    # Output service options
-    output_parser.add_argument(
-        '--service',
+    subparser.add_argument(
+        'service',
         choices=outputs,
-        required=True,
-        help=ARGPARSE_SUPPRESS)
-
-
-def _add_live_test_subparser(subparsers):
-    """Add the live-test subparser: manage.py live-test [options]"""
-    usage = 'manage.py live-test [options]'
-    description = """
-StreamAlertCLI v{}
-Run end-to-end tests that will attempt to send alerts
-
-Required Arguments:
-
-    --cluster               The cluster name to use for live testing
-
-Optional Arguments:
-
-    --rules                 Name of rules to test, separated by spaces
-    --debug                 Enable debug logger output
-
-Examples:
-
-    manage.py live-test --cluster prod
-    manage.py live-test --rules
-
-""".format(version)
-
-    live_test_parser = _generate_subparser(subparsers, 'live-test', usage, description)
-
-    # add clusters for user to pick from
-    live_test_parser.add_argument(
-        '-c', '--cluster', choices=CLUSTERS, help=ARGPARSE_SUPPRESS, required=True)
-
-    # add the optional ability to test against a rule/set of rules
-    live_test_parser.add_argument(
-        '-r', '--rules', nargs='+', help=ARGPARSE_SUPPRESS, action=UniqueSetAction, default=set())
-
-
-def _add_validate_schema_subparser(subparsers):
-    """Add the validate-schemas subparser: manage.py validate-schemas [options]"""
-    usage = 'manage.py validate-schemas [options]'
-    description = """
-StreamAlertCLI v{}
-Run validation of schemas in logs.json using configured integration test files. Validation
-does not actually run the rules engine on test events.
-
-Available Options:
-
-    --test-files         Name(s) of test files to validate, separated by spaces (not full path).
-                           These files should be located within 'tests/integration/rules/'. The
-                           contents should be json, in the form of:
-                             `{{"records": [ <records as maps> ]}}`.
-
-                           See the sample test files in 'tests/integration/rules/' for an example.
-                           This flag supports the full file name, with extension, or the base file
-                           name, without extension (ie: test_file_name.json or test_file_name)
-
-Optional Arguments:
-
-    --debug              Enable debug logger output
-
-Examples:
-
-    manage.py validate-schemas --test-files <test_file_name_01.json> <test_file_name_02.json>
-
-""".format(version)
-
-    schema_validation_parser = _generate_subparser(
-        subparsers, 'validate-schemas', usage, description)
-
-    # add the optional ability to test against specific files
-    schema_validation_parser.add_argument(
-        '-f',
-        '--test-files',
-        dest='files',
-        nargs='+',
-        help=ARGPARSE_SUPPRESS,
-        action=UniqueSetAction,
-        default=set())
-
-
-def _add_app_subparser(subparsers):
-    """Add the app integration subparser: manage.py app [subcommand] [options]"""
-    usage = 'manage.py app [subcommand] [options]'
-    description = """
-StreamAlertCLI v{}
-Create, list, or update a StreamAlert app integration function to poll logs from various services
-
-Available Subcommands:
-
-    manage.py app new                 Configure a new app integration for collecting logs
-    manage.py app update-auth         Update the authentication information for an
-                                        existing app integration
-
-""".format(version)
-
-    app_parser = _generate_subparser(subparsers, 'app', usage, description)
-
-    app_subparsers = app_parser.add_subparsers()
-
-    _add_app_list_subparser(app_subparsers)
-    _add_app_new_subparser(
-        app_subparsers,
-        sorted(StreamAlertApp.get_all_apps()),
-        CLUSTERS
+        metavar='SERVICE',
+        help='Create a new StreamAlert output for one of the available services: {}'.format(
+            ', '.join(outputs)
+        )
     )
-    _add_app_update_auth_subparser(app_subparsers, CLUSTERS)
 
 
-def _add_app_list_subparser(subparsers):
+def _setup_app_subparser(subparser):
+    """Add the app integration subparser: manage.py app [subcommand] [options]"""
+    app_subparsers = subparser.add_subparsers()
+
+    _setup_app_list_subparser(app_subparsers)
+    _setup_app_new_subparser(app_subparsers)
+    _setup_app_update_auth_subparser(app_subparsers)
+
+
+def _setup_app_list_subparser(subparsers):
     """Add the app list subparser: manage.py app list"""
-    usage = 'manage.py app list'
-    description = """
-StreamAlertCLI v{}
-List all configured StreamAlert app integration functions, grouped by cluster
-
-Command:
-
-    manage.py app list             List all configured app functions, grouped by cluster
-
-Optional Arguments:
-
-    --debug                        Enable debug logger output
-
-""".format(version)
-
-    _generate_subparser(subparsers, 'list', usage, description, True)
+    _generate_subparser(
+        subparsers,
+        'list',
+        description='List all configured app functions, grouped by cluster',
+        subcommand=True
+    )
 
 
-def _add_app_new_subparser(subparsers, types, clusters):
+def _setup_app_new_subparser(subparsers):
     """Add the app new subparser: manage.py app new [options]"""
-    usage = 'manage.py app new [options]'
+    app_new_parser = _generate_subparser(
+        subparsers,
+        'new',
+        description='Create a new StreamAlert app to poll logs from various services',
+        subcommand=True
+    )
 
-    types_block = '\n'.join('{:>26}{}'.format('', app_type) for app_type in types)
-    cluster_choices_block = '\n'.join('{:>28}{}'.format('', cluster) for cluster in clusters)
+    _set_parser_epilog(
+        app_new_parser,
+        epilog=(
+            '''\
+            Example:
 
-    description = """
-StreamAlertCLI v{}
-Create a new StreamAlert app integration function to poll logs from various services
+                manage.py app new \\
+                  duo_auth \\
+                  --cluster prod \\
+                  --name duo_prod_collector \\
+                  --schedule-expression 'rate(2 hours)' \\
+                  --timeout 60 \\
+                  --memory 256
+            '''
+        )
+    )
 
-Command:
+    _add_default_app_args(app_new_parser)
 
-    manage.py app new [options]      Configure a new app for collecting logs
-
-Required Arguments:
-
-    --type              Type of app integration function being configured. Choices are:
-{}
-    --cluster           Applicable cluster this function should be configured against.
-                          Choices are:
-{}
-    --name              Unique name to be assigned to the App. This is useful when
-                          configuring multiple accounts per service.
-    --timeout           The AWS Lambda function timeout value, in seconds. This should
-                          be an integer between 10 and 300.
-    --memory            The AWS Lambda function max memory value, in megabytes. This should
-                          be an integer between 128 and 1536.
-    --interval          The interval, defined using a 'rate' expression, at
-                          which this app integration function should execute. Examples of
-                          acceptable input are:
-                            'rate(1 hour)'          # Every hour (note the singular 'hour')
-                            'rate(2 days)'          # Every 2 days
-                            'rate(20 minutes)'      # Every 20 minutes
-
-                          See the link in the Resources section below for more information.
-
-Optional Arguments:
-
-    --debug             Enable debug logger output
-
-Examples:
-
-    manage.py app new \\
-      --type duo_auth \\
-      --cluster prod \\
-      --name duo_prod_collector \\
-      --interval 'rate(2 hours)' \\
-      --timeout 60 \\
-      --memory 256
-
-Resources:
-
-    AWS: {}
-
-""".format(version, types_block, cluster_choices_block, AWS_RATE_HELPER)
-
-    app_new_parser = _generate_subparser(subparsers, 'new', usage, description, True)
-
-    _add_default_app_args(app_new_parser, clusters)
+    app_types = sorted(StreamAlertApp.get_all_apps())
 
     # App type options
-    app_new_parser.add_argument('--type', choices=types, required=True, help=ARGPARSE_SUPPRESS)
-
-    # Validate the rate at which this should run
-    def _validate_scheduled_interval(val):
-        """Validate acceptable inputs for the schedule expression
-        These follow the format 'rate(5 minutes)'
-        """
-        rate_match = AWS_RATE_RE.match(val)
-        if rate_match:
-            return val
-
-        if val.startswith('rate('):
-            err = ('Invalid rate expression \'{}\'. For help see {}'
-                   .format(val, '{}#RateExpressions'.format(AWS_RATE_HELPER)))
-            raise app_new_parser.error(err)
-
-        raise app_new_parser.error('Invalid expression \'{}\'. For help '
-                                   'see {}'.format(val, AWS_RATE_HELPER))
-
-    # App integration schedule expression (rate)
     app_new_parser.add_argument(
-        '--interval', dest='schedule_expression',
-        required=True, help=ARGPARSE_SUPPRESS, type=_validate_scheduled_interval)
+        'type',
+        choices=app_types,
+        metavar='APP_TYPE',
+        help='Type of app being configured: {}'.format(', '.join(app_types))
+    )
 
-    # Validate the timeout value to make sure it is between 10 and 300
-    def _validate_timeout(val):
-        """Validate acceptable inputs for the timeout of the function"""
-        error = 'The \'timeout\' value must be an integer between 10 and 300'
-        try:
-            timeout = int(val)
-        except ValueError:
-            raise app_new_parser.error(error)
+    # Function schedule expression (rate) arg
+    add_schedule_expression_arg(app_new_parser)
 
-        if not 10 <= timeout <= 300:
-            raise app_new_parser.error(error)
+    # Function timeout arg
+    add_timeout_arg(app_new_parser)
 
-        return timeout
+    # Function memory arg
+    add_memory_arg(app_new_parser)
 
-    # App integration function timeout
-    app_new_parser.add_argument(
-        '--timeout', required=True, help=ARGPARSE_SUPPRESS, type=_validate_timeout)
 
-    # Validate the memory value to make sure it is between 128 and 1536
-    def _validate_memory(val):
-        """Validate acceptable inputs for the memory of the function"""
-        error = 'The \'memory\' value must be an integer between 128 and 1536'
-        try:
-            memory = int(val)
-        except ValueError:
-            raise app_new_parser.error(error)
-
-        if not 128 <= memory <= 1536:
-            raise app_new_parser.error(error)
-
-        return memory
-
-    # App integration function max memory
-    app_new_parser.add_argument(
-        '--memory', required=True, help=ARGPARSE_SUPPRESS, type=_validate_memory)
-
-def _add_app_update_auth_subparser(subparsers, clusters):
+def _setup_app_update_auth_subparser(subparsers):
     """Add the app update-auth subparser: manage.py app update-auth [options]"""
-    usage = 'manage.py app update-auth [options]'
+    app_update_parser = _generate_subparser(
+        subparsers,
+        'update-auth',
+        description='Update the authentication information for an existing app',
+        subcommand=True
+    )
 
-    cluster_choices_block = '\n'.join('{:>28}{}'.format('', cluster) for cluster in clusters)
+    _set_parser_epilog(
+        app_update_parser,
+        epilog=(
+            '''\
+            Example:
 
-    description = """
-StreamAlertCLI v{}
-Update a StreamAlert app integration function's authentication information in Parameter Store
+                manage.py app update-auth \\
+                  --cluster prod \\
+                  --name duo_prod_collector
+            '''
+        )
+    )
 
-Command:
-
-    manage.py app update-auth [options]      Update the authentication information for an
-                                               existing app integration within Parameter Store
-
-Required Arguments:
-
-    --cluster           Applicable cluster this function should be configured against.
-                          Choices are:
-{}
-    --name              Unique name to be assigned to the App. This is useful when
-                          configuring multiple accounts per service.
-
-Optional Arguments:
-
-    --debug             Enable debug logger output
-
-Examples:
-
-    manage.py app update-auth \\
-      --cluster prod \\
-      --name duo_prod_collector
-
-""".format(version, cluster_choices_block)
-
-    app_update_parser = _generate_subparser(subparsers, 'update-auth', usage, description, True)
-
-    _add_default_app_args(app_update_parser, clusters)
+    _add_default_app_args(app_update_parser)
 
 
-def _add_default_app_args(app_parser, clusters):
+def _add_default_app_args(app_parser):
     """Add the default arguments to the app integration parsers"""
 
     # App integration cluster options
-    app_parser.add_argument('--cluster', choices=clusters, required=True, help=ARGPARSE_SUPPRESS)
+    app_parser.add_argument(
+        '-c',
+        '--cluster',
+        choices=CLUSTERS,
+        required=True,
+        help='Cluster to perform this action against'
+    )
 
     # Validate the name being used to make sure it does not contain specific characters
     def _validate_name(val):
@@ -433,62 +340,52 @@ def _add_default_app_args(app_parser, clusters):
 
     # App integration name to be used for this instance that must be unique per cluster
     app_parser.add_argument(
-        '--name', dest='app_name', required=True, help=ARGPARSE_SUPPRESS, type=_validate_name)
+        '-n',
+        '--name',
+        dest='app_name',
+        required=True,
+        help='Unique name for this app',
+        type=_validate_name
+    )
 
 
-def _add_metrics_subparser(subparsers):
+def _setup_custom_metrics_subparser(subparser):
     """Add the metrics subparser: manage.py custom-metrics [options]"""
-    usage = 'manage.py custom-metrics [options]'
+    _set_parser_epilog(
+        subparser,
+        epilog=(
+            '''\
+            Example:
 
-    cluster_choices_block = '\n'.join('{:>28}{}'.format('', cluster) for cluster in CLUSTERS)
+                manage.py custom-metrics --enable --functions rule
+            '''
+        )
+    )
 
     available_metrics = metrics.MetricLogger.get_available_metrics()
     available_functions = [func for func, value in available_metrics.iteritems() if value]
 
-    functions_block = '\n'.join('{:>28}{}'.format('', func) for func in available_functions)
-
-    description = """
-StreamAlertCLI v{}
-Enable or disable metrics for all lambda functions. This toggles the creation of metric filters.
-
-Available Options:
-
-    -e/--enable         Enable CloudWatch metrics through logging and metric filters
-    -d/--disable        Disable CloudWatch metrics through logging and metric filters
-    -f/--functions      Space delimited list of functions to enable metrics for
-                          Choices are:
-{}
-    --debug             Enable debug logger output
-
-Optional Arguemnts:
-
-    -c/--clusters       Space delimited list of clusters to enable metrics for. If
-                          omitted, this will enable metrics for all clusters. Choices are:
-{}
-Examples:
-
-    manage.py custom-metrics --enable --functions rule
-
-""".format(version, functions_block, cluster_choices_block)
-
-    metrics_parser = _generate_subparser(subparsers, 'metrics', usage, description)
-
     # allow the user to select 1 or more functions to enable metrics for
-    metrics_parser.add_argument(
+    subparser.add_argument(
         '-f',
         '--functions',
         choices=available_functions,
-        help=ARGPARSE_SUPPRESS,
+        metavar='FUNCTION',
+        help='One or more of the following functions for which to enable metrics: {}'.format(
+            ', '.join(available_functions)
+        ),
         nargs='+',
-        required=True)
+        required=True
+    )
 
     # get the metric toggle value
-    toggle_group = metrics_parser.add_mutually_exclusive_group(required=True)
+    toggle_group = subparser.add_mutually_exclusive_group(required=True)
 
     toggle_group.add_argument(
         '-e',
         '--enable',
         dest='enable_custom_metrics',
+        help='Enable custom CloudWatch metrics',
         action='store_true'
     )
 
@@ -496,41 +393,83 @@ Examples:
         '-d',
         '--disable',
         dest='enable_custom_metrics',
+        help='Disable custom CloudWatch metrics',
         action='store_false'
     )
 
-    # allow the user to select 0 or more clusters to enable metrics for
-    metrics_parser.add_argument(
-        '-c',
-        '--clusters',
-        choices=CLUSTERS,
-        help=ARGPARSE_SUPPRESS,
-        nargs='+',
-        action=UniqueSetAction,
-        default=CLUSTERS)
+    # Add the option to specify cluster(s)
+    add_clusters_arg(subparser)
 
 
-def _add_default_metric_alarms_args(alarm_parser):
+def _add_default_metric_alarms_args(alarm_parser, clustered=False):
     """Add the default arguments to the metric alarm parsers"""
-    # get the comparison type for this metric
-    alarm_parser.add_argument(
-        '-co',
-        '--comparison-operator',
-        choices=[
-            'GreaterThanOrEqualToThreshold', 'GreaterThanThreshold', 'LessThanThreshold',
-            'LessThanOrEqualToThreshold'
-        ],
-        help=ARGPARSE_SUPPRESS,
-        required=True)
-
-    # get the name of the alarm
+    # Name for this alarm
     def _alarm_name_validator(val):
         if not 1 <= len(val) <= 255:
             raise alarm_parser.error('alarm name length must be between 1 and 255')
         return val
 
     alarm_parser.add_argument(
-        '-an', '--alarm-name', help=ARGPARSE_SUPPRESS, required=True, type=_alarm_name_validator)
+        'alarm_name',
+        help='Name for the alarm. Each alarm name must be unique within the AWS account.',
+        type=_alarm_name_validator
+    )
+
+    # get the available metrics to be used
+    available_metrics = metrics.MetricLogger.get_available_metrics()
+
+    if clustered:
+        available_functions = [
+            func for func, value in available_metrics.iteritems()
+            if func in CLUSTERED_FUNCTIONS and value
+        ]
+    else:
+        available_functions = [func for func, value in available_metrics.iteritems() if value]
+
+    all_metrics = [metric for func in available_functions for metric in available_metrics[func]]
+
+    # add metrics for user to pick from. Will be mapped to 'metric_name' in terraform
+    alarm_parser.add_argument(
+        '-m',
+        '--metric',
+        choices=all_metrics,
+        dest='metric_name',
+        metavar='METRIC_NAME',
+        help=(
+            'One of the following predefined metrics to assign this alarm to for a '
+            'given function: {}'
+        ).format(', '.join(all_metrics)),
+        required=True
+    )
+
+    # Get the function to apply this alarm to
+    alarm_parser.add_argument(
+        '-f',
+        '--function',
+        metavar='FUNCTION',
+        choices=available_functions,
+        help=(
+            'One of the following Lambda functions to which to apply this alarm: {}'
+        ).format(', '.join(sorted(available_functions))),
+        required=True
+    )
+
+    operators = sorted([
+        'GreaterThanOrEqualToThreshold', 'GreaterThanThreshold', 'LessThanThreshold',
+        'LessThanOrEqualToThreshold'
+    ])
+
+    # get the comparison type for this metric
+    alarm_parser.add_argument(
+        '-co',
+        '--comparison-operator',
+        metavar='OPERATOR',
+        choices=operators,
+        help=(
+            'One of the following comparison operator to use for this metric: {}'
+        ).format(', '.join(operators)),
+        required=True
+    )
 
     # get the evaluation period for this alarm
     def _alarm_eval_periods_validator(val):
@@ -545,11 +484,16 @@ def _add_default_metric_alarms_args(alarm_parser):
         return period
 
     alarm_parser.add_argument(
-        '-ep',
+        '-e',
         '--evaluation-periods',
-        help=ARGPARSE_SUPPRESS,
+        help=(
+            'The number of periods over which data is compared to the specified threshold. '
+            'The minimum value for this is 1. See the \'Other Constraints\' section below for '
+            'more information'
+        ),
         required=True,
-        type=_alarm_eval_periods_validator)
+        type=_alarm_eval_periods_validator
+    )
 
     # get the period for this alarm
     def _alarm_period_validator(val):
@@ -565,11 +509,28 @@ def _add_default_metric_alarms_args(alarm_parser):
         return period
 
     alarm_parser.add_argument(
-        '-p', '--period', help=ARGPARSE_SUPPRESS, required=True, type=_alarm_period_validator)
+        '-p',
+        '--period',
+        help=(
+            'The period, in seconds, over which the specified statistic is applied. '
+            'Valid values are any multiple of 60. See the \'Other Constraints\' section below for '
+            'more information'
+        ),
+        required=True,
+        type=_alarm_period_validator
+    )
 
     # get the threshold for this alarm
     alarm_parser.add_argument(
-        '-t', '--threshold', help=ARGPARSE_SUPPRESS, required=True, type=float)
+        '-t',
+        '--threshold',
+        help=(
+            'The value against which the specified statistic is compared. '
+            'This value should be a double/float.'
+        ),
+        required=True,
+        type=float
+    )
 
     # all other optional flags
     # get the optional alarm description
@@ -579,426 +540,189 @@ def _add_default_metric_alarms_args(alarm_parser):
         return val
 
     alarm_parser.add_argument(
-        '-ad',
+        '-d',
         '--alarm-description',
-        help=ARGPARSE_SUPPRESS,
+        help='A description for the alarm',
         type=_alarm_description_validator,
-        default='')
+        default=''
+    )
+
+    statistics = sorted(['SampleCount', 'Average', 'Sum', 'Minimum', 'Maximum'])
 
     alarm_parser.add_argument(
         '-s',
         '--statistic',
-        choices=['SampleCount', 'Average', 'Sum', 'Minimum', 'Maximum'],
-        help=ARGPARSE_SUPPRESS,
-        default='Sum')
+        metavar='STATISTIC',
+        choices=statistics,
+        help=(
+            'One of the following statistics to use for the metric associated with the alarm: {}'
+        ).format(', '.join(statistics)),
+        default='Sum'
+    )
 
 
-def _add_cluster_metric_alarm_subparser(subparsers):
+def _setup_cluster_metric_alarm_subparser(subparser):
     """Add the create-cluster-alarm subparser: manage.py create-cluster-alarm [options]"""
-    usage = 'manage.py create-cluster-alarm [options]'
+    _set_parser_epilog(
+        subparser,
+        epilog=(
+            '''\
+            Other Constraints:
 
-    # get the available metrics to be used
-    available_metrics = metrics.MetricLogger.get_available_metrics()
-    metric_choices_lines = []
-    for func, func_metrics in available_metrics.iteritems():
-        if func not in CLUSTERED_FUNCTIONS:
-            continue
+                The product of the value for period multiplied by the value for evaluation
+                periods cannot exceed 86,400. 86,400 is the number of seconds in one day and
+                an alarm's total current evaluation period can be no longer than one day.
 
-        metric_choices_lines.append('{:>35}Choices for {}:'.format('', func))
-        metric_choices_lines.extend([
-            '{:>37}{}'.format('', metric) for metric in sorted(func_metrics)
-        ])
+            Example:
 
-    metric_choices_block = '\n'.join(metric_choices_lines)
-    all_metrics = [metric for func in CLUSTERED_FUNCTIONS for metric in available_metrics[func]]
-    cluster_choices_block = '\n'.join('{:>37}{}'.format('', cluster) for cluster in CLUSTERS)
+                manage.py create-cluster-alarm \\
+                  FailedParsesAlarm
+                  --metric FailedParses \\
+                  --comparison-operator GreaterThanOrEqualToThreshold \\
+                  --evaluation-periods 1 \\
+                  --period 300 \\
+                  --threshold 1.0 \\
+                  --clusters prod \\
+                  --statistic Sum \\
+                  --alarm-description 'Alarm for any failed parses that occur \
+within a 5 minute period in the prod cluster'
 
-    functions_block = '\n'.join('{:>35}{}'.format('', func)
-                                for func in sorted(CLUSTERED_FUNCTIONS))
+            Resources:
 
-    description = """
-StreamAlertCLI v{}
-Add a CloudWatch alarm for predefined metrics for a given cluster. These are saved in the config
-and used by Terraform create the alarms.
+                AWS:        https://docs.aws.amazon.com/AmazonCloudWatch/\
+latest/APIReference/API_PutMetricAlarm.html
+                Terraform:  https://www.terraform.io/docs/providers/aws/r/\
+cloudwatch_metric_alarm.html
+            '''
+        )
+    )
 
-Required Arguments:
+    _add_default_metric_alarms_args(subparser, clustered=True)
 
-    -f/--function                The Lambda function for which to apply this alarm. Choices are:
-{}
-    -m/--metric                  The predefined metric to assign this alarm to for a given function.
-{}
-    -co/--comparison-operator    Comparison operator to use for this metric. Choices are:
-                                   GreaterThanOrEqualToThreshold
-                                   GreaterThanThreshold
-                                   LessThanThreshold
-                                   LessThanOrEqualToThreshold
-    -an/--alarm-name             The name for the alarm. This name must be unique within the AWS
-                                   account
-    -ep/--evaluation-periods     The number of periods over which data is compared to the specified
-                                   threshold. The minimum value for this is 1. Also see the 'Other
-                                   Constraints' section below
-    -p/--period                  The period, in seconds, over which the specified statistic is
-                                   applied. Valid values are any multiple of 60. Also see the
-                                   'Other Constraints' section below
-    -t/--threshold               The value against which the specified statistic is compared. This
-                                   value should be a double.
-    -c/--clusters                Space delimited list of clusters to which this alarm should be applied.
-                                   Choices are:
-{}
-
-Optional Arguments:
-
-    -ad/--alarm-description      The description for the alarm
-    -s/--statistic               The statistic for the metric associated with the alarm.
-                                   Choices are:
-                                     SampleCount
-                                     Average
-                                     Sum
-                                     Minimum
-                                     Maximum
-                                   Default: Sum
-    --debug                      Enable debug logger output
-
-Other Constraints:
-
-    The product of the value for period multiplied by the value for evaluation periods cannot
-    exceed 86,400. 86,400 is the number of seconds in one day and an alarm's total current
-    evaluation period can be no longer than one day.
-
-Examples:
-
-    manage.py create-cluster-alarm \\
-      --metric FailedParses \\
-      --comparison-operator GreaterThanOrEqualToThreshold \\
-      --alarm-name FailedParsesAlarm \\
-      --evaluation-periods 1 \\
-      --period 300 \\
-      --threshold 1.0 \\
-      --clusters prod \\
-      --statistic Sum \\
-      --alarm-description 'Alarm for any failed parses that occur within a 5 minute period in the prod cluster'
-
-Resources:
-
-    AWS:        https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_PutMetricAlarm.html
-    Terraform:  https://www.terraform.io/docs/providers/aws/r/cloudwatch_metric_alarm.html
-
-""".format(version, functions_block, metric_choices_block, cluster_choices_block)
-
-    metric_alarm_parser = _generate_subparser(
-        subparsers, 'create-cluster-alarm', usage, description)
-
-    _add_default_metric_alarms_args(metric_alarm_parser)
-
-    # add all the required parameters
-    # add metrics for user to pick from. Will be mapped to 'metric_name' in terraform
-    metric_alarm_parser.add_argument(
-        '-m',
-        '--metric',
-        choices=all_metrics,
-        dest='metric_name',
-        help=ARGPARSE_SUPPRESS,
-        required=True)
-
-    # Get the function to apply this alarm to
-    metric_alarm_parser.add_argument(
-        '-f',
-        '--function',
-        choices=sorted(CLUSTERED_FUNCTIONS),
-        help=ARGPARSE_SUPPRESS,
-        required=True)
-
-    # allow the user to select 0 or more clusters to apply this alarm to
-    metric_alarm_parser.add_argument(
-        '-c',
-        '--clusters',
-        choices=CLUSTERS,
-        help=ARGPARSE_SUPPRESS,
-        nargs='+',
-        action=UniqueSetAction,
-        required=True)
+    # Add the option to specify cluster(s)
+    add_clusters_arg(subparser, required=True)
 
 
-def _add_metric_alarm_subparser(subparsers):
+def _setup_metric_alarm_subparser(subparser):
     """Add the create-alarm subparser: manage.py create-alarm [options]"""
-    usage = 'manage.py create-alarm [options]'
+    _set_parser_epilog(
+        subparser,
+        epilog=(
+            '''\
+            Other Constraints:
 
-    # get the available metrics to be used
-    available_metrics = metrics.MetricLogger.get_available_metrics()
-    available_functions = [func for func, value in available_metrics.iteritems() if value]
-    metric_choices_lines = []
-    for func in available_functions:
-        metric_choices_lines.append('{:>35}Choices for {}:'.format('', func))
-        metric_choices_lines.extend([
-            '{:>37}{}'.format('', metric) for metric in sorted(available_metrics[func])
-        ])
+                The product of the value for period multiplied by the value for evaluation
+                periods cannot exceed 86,400. 86,400 is the number of seconds in one day and
+                an alarm's total current evaluation period can be no longer than one day.
 
-    metric_choices_block = '\n'.join(metric_choices_lines)
-    all_metrics = [metric for func in available_metrics for metric in available_metrics[func]]
+            Example:
 
-    functions_block = '\n'.join('{:>35}{}'.format('', func) for func in available_functions)
+                manage.py create-alarm \\
+                  FailedParsesAlarm
+                  --metric FailedParses \\
+                  --comparison-operator GreaterThanOrEqualToThreshold \\
+                  --evaluation-periods 1 \\
+                  --period 300 \\
+                  --threshold 1.0 \\
+                  --statistic Sum \\
+                  --alarm-description 'Global alarm for any failed parses that occur \
+within a 5 minute period in the classifier'
 
-    description = """
-StreamAlertCLI v{}
-Add a CloudWatch alarm for predefined metrics. These are saved in the config and
-used by Terraform to create the alarms.
+            Resources:
 
-Required Arguments:
+                AWS:        https://docs.aws.amazon.com/AmazonCloudWatch/\
+latest/APIReference/API_PutMetricAlarm.html
+                Terraform:  https://www.terraform.io/docs/providers/aws/r/\
+cloudwatch_metric_alarm.html
+            '''
+        )
+    )
 
-    -f/--function                The Lambda function for which to apply this alarm. Choices are:
-{}
-    -m/--metric                  The predefined metric to assign this alarm to for a given function.
-{}
-    -co/--comparison-operator    Comparison operator to use for this metric. Choices are:
-                                   GreaterThanOrEqualToThreshold
-                                   GreaterThanThreshold
-                                   LessThanThreshold
-                                   LessThanOrEqualToThreshold
-    -an/--alarm-name             The name for the alarm. This name must be unique within the AWS
-                                   account
-    -ep/--evaluation-periods     The number of periods over which data is compared to the specified
-                                   threshold. The minimum value for this is 1. Also see the 'Other
-                                   Constraints' section below
-    -p/--period                  The period, in seconds, over which the specified statistic is
-                                   applied. Valid values are any multiple of 60. Also see the
-                                   'Other Constraints' section below
-    -t/--threshold               The value against which the specified statistic is compared. This
-                                   value should be a double.
-
-Optional Arguments:
-
-    -ad/--alarm-description      The description for the alarm
-    -s/--statistic               The statistic for the metric associated with the alarm.
-                                   Choices are:
-                                     SampleCount
-                                     Average
-                                     Sum
-                                     Minimum
-                                     Maximum
-                                   Default: Sum
-    --debug                      Enable debug logger output
-
-Other Constraints:
-
-    The product of the value for period multiplied by the value for evaluation periods cannot
-    exceed 86,400. 86,400 is the number of seconds in one day and an alarm's total current
-    evaluation period can be no longer than one day.
-
-Examples:
-
-    manage.py create-alarm \\
-      --function alert_merger \\
-      --metric FailedParses \\
-      --comparison-operator GreaterThanOrEqualToThreshold \\
-      --alarm-name FailedParsesAlarm \\
-      --evaluation-periods 1 \\
-      --period 300 \\
-      --threshold 1.0 \\
-      --statistic Sum \\
-      --alarm-description 'Global alarm for any failed parses that occur within a 5 minute period in the classifier'
+    _add_default_metric_alarms_args(subparser)
 
 
-Resources:
+def _setup_deploy_subparser(subparser):
+    """Add the deploy subparser: manage.py deploy [options]"""
+    _set_parser_epilog(
+        subparser,
+        epilog=(
+            '''\
+            Example:
 
-    AWS:        https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_PutMetricAlarm.html
-    Terraform:  https://www.terraform.io/docs/providers/aws/r/cloudwatch_metric_alarm.html
-
-""".format(version, functions_block, metric_choices_block)
-
-    metric_alarm_parser = _generate_subparser(subparsers, 'create-alarm', usage, description)
-
-    _add_default_metric_alarms_args(metric_alarm_parser)
-
-    # add all the required parameters
-    # add metrics for user to pick from. Will be mapped to 'metric_name' in terraform
-    metric_alarm_parser.add_argument(
-        '-m',
-        '--metric',
-        choices=all_metrics,
-        dest='metric_name',
-        help=ARGPARSE_SUPPRESS,
-        required=True)
-
-    # Get the function to apply this alarm to
-    metric_alarm_parser.add_argument(
-        '-f',
-        '--function',
-        choices=available_functions,
-        help=ARGPARSE_SUPPRESS,
-        required=True)
-
-
-def _add_lambda_subparser(subparsers):
-    """Add the Lambda subparser: manage.py lambda [subcommand] [options]"""
-    usage = 'manage.py lambda [subcommand] [options]'
-    description = """
-StreamAlertCLI v{}
-Deploy, Rollback, and Test StreamAlert Lambda functions
-
-Available Subcommands:
-
-    manage.py lambda deploy            Deploy Lambda functions
-    manage.py lambda rollback          Rollback Lambda functions
-    manage.py lambda test              Run rule tests
-
-""".format(version)
-
-    lambda_parser = _generate_subparser(subparsers, 'lambda', usage, description)
-
-    lambda_subparsers = lambda_parser.add_subparsers()
-
-    _add_lambda_deploy_subparser(lambda_subparsers)
-    _add_lambda_rollback_subparser(lambda_subparsers)
-    _add_lambda_test_subparser(lambda_subparsers)
-
-
-def _add_lambda_deploy_subparser(subparsers):
-    """Add the lambda deploy subparser: manage.py lambda deploy"""
-    usage = 'manage.py lambda deploy'
-    description = """
-StreamAlertCLI v{}
-Deploy Lambda functions
-
-Command:
-
-    manage.py lambda deploy            Deploy Lambda functions
-
-Required Arguments:
-
-    -p/--processor                     A list of the Lambda functions to deploy.
-                                         Valid options include: rule, alert, athena, apps,
-                                         rule_promo, threat_intel_downloader, all,
-                                         or any combination of these.
-
-Optional Arguments:
-
-    --skip-rule-staging                Skip staging of new rules so they go directly into
-                                         production.
-    --stage-rules                      Stage the rules provided in a space-separated list
-    --unstage-rules                    Unstage the rules provided in a space-separated list
-    --debug                            Enable debug logger output
-
-Examples:
-
-    manage.py lambda deploy --processor rule alert
-
-""".format(version)
-
-    lambda_deploy_parser = _generate_subparser(subparsers, 'deploy', usage, description, True)
+                manage.py deploy --function rule alert
+            '''
+        )
+    )
 
     # Flag to manually bypass rule staging for new rules upon deploy
     # This only has an effect if rule staging is enabled
-    lambda_deploy_parser.add_argument(
+    subparser.add_argument(
         '--skip-rule-staging',
         action='store_true',
-        help=ARGPARSE_SUPPRESS
+        help='Skip staging of new rules so they go directly into production'
     )
 
     # flag to manually demote specific rules to staging during deploy
-    lambda_deploy_parser.add_argument(
+    subparser.add_argument(
         '--stage-rules',
         action=MutuallyExclusiveStagingAction,
         default=set(),
-        help=ARGPARSE_SUPPRESS,
+        help='Stage the rules provided in a space-separated list',
         nargs='+'
     )
 
     # flag to manually bypass rule staging for specific rules during deploy
-    lambda_deploy_parser.add_argument(
+    subparser.add_argument(
         '--unstage-rules',
         action=MutuallyExclusiveStagingAction,
         default=set(),
-        help=ARGPARSE_SUPPRESS,
+        help='Unstage the rules provided in a space-separated list',
         nargs='+'
     )
 
-    _add_default_lambda_args(lambda_deploy_parser)
+    _add_default_lambda_args(subparser)
 
 
-def _add_lambda_rollback_subparser(subparsers):
-    """Add the lambda rollback subparser: manage.py lambda rollback"""
-    usage = 'manage.py lambda rollback'
-    description = """
-StreamAlertCLI v{}
-Rollback Lambda functions
+def _setup_rollback_subparser(subparser):
+    """Add the rollback subparser: manage.py rollback [options]"""
+    _set_parser_epilog(
+        subparser,
+        epilog=(
+            '''\
+            Example:
 
-Command:
+                manage.py rollback --function rule
+            '''
+        )
+    )
 
-    manage.py lambda rollback          Rollback Lambda functions
-
-Required Arguments:
-
-    -p/--processor                     A list of the Lambda functions to rollback.
-                                         Valid options include: rule, alert, athena, apps,
-                                         all, or any combination of these.
-
-Optional Arguments:
-
-    --debug                            Enable debug logger output
-
-Examples:
-
-    manage.py lambda rollback --processor rule alert
-
-""".format(version)
-
-    lambda_rollback_parser = _generate_subparser(subparsers, 'rollback', usage, description, True)
-
-    _add_default_lambda_args(lambda_rollback_parser)
+    _add_default_lambda_args(subparser)
 
 
-def _add_lambda_test_subparser(subparsers):
-    """Add the lambda test subparser: manage.py lambda test"""
-    usage = 'manage.py lambda test'
-    description = """
-StreamAlertCLI v{}
-Run rule tests
+def _setup_test_subparser(subparser):
+    """Add the test subparser: manage.py test"""
+    test_subparsers = subparser.add_subparsers()
 
-Command:
+    _setup_test_rules_subparser(test_subparsers)
+    _setup_test_validation_subparser(test_subparsers)
+    _setup_test_live_subparser(test_subparsers)
 
-    manage.py lambda test              Run rule tests
 
-Required Arguments:
+def _setup_test_rules_subparser(subparsers):
+    """Add the test rules subparser: manage.py test rules [options]"""
+    test_rules_parser = _generate_subparser(
+        subparsers,
+        'rules',
+        description='Test rules using integration test files',
+        subcommand=True
+    )
 
-    -p/--processor                     A list of the Lambda functions to test.
-                                         Valid options include: rule, alert, all, or
-                                         any combination of these.
-    -r/--test-rules                    List of rules to test, separated by spaces.
-                                         Cannot be used in conjunction with `--test-files`
-    -f/--test-files                    List of files to test, separated by spaces.
-                                         Cannot be used in conjunction with `--test-rules`
-                                         This flag supports the full file name, with extension,
-                                         or the base file name, without extension
-                                         (ie: test_file_name.json or test_file_name).
-
-Optional Arguments:
-
-    --debug                            Enable debug logger output
-
-Example:
-
-    manage.py lambda test --processor rule --test-rules lateral_movement root_logins
-
-""".format(version)
-
-    lambda_test_parser = _generate_subparser(subparsers, 'test', usage, description, True)
-
-    # require the name of the processor being tested
-    lambda_test_parser.add_argument(
-        '-p',
-        '--processor',
-        choices=['alert', 'all', 'rule'],
-        help=ARGPARSE_SUPPRESS,
-        nargs='+',
-        action=UniqueSetAction,
-        required=True)
-
-    # flag to run additional stats during testing
-    lambda_test_parser.add_argument(
+    # Flag to run additional stats during testing
+    test_rules_parser.add_argument(
         '-s',
         '--stats',
         action='store_true',
-        help=ARGPARSE_SUPPRESS
+        help='Enable outputing of statistical information on rules that run'
     )
 
     # Validate the provided repitition value
@@ -1009,33 +733,64 @@ Example:
         try:
             count = int(val)
         except TypeError:
-            raise lambda_test_parser.error(err)
+            raise test_rules_parser.error(err)
 
         if not 1 <= count <= 1000:
-            raise lambda_test_parser.error(err)
+            raise test_rules_parser.error(err)
 
         return count
 
     # flag to run these tests a given number of times
-    lambda_test_parser.add_argument(
+    test_rules_parser.add_argument(
         '-n',
         '--repeat',
         default=1,
         type=_validate_repitition,
-        help=ARGPARSE_SUPPRESS
+        help='Number of times to repeat the tests, to be used as a form performance testing'
     )
 
-    test_filter_group = lambda_test_parser.add_mutually_exclusive_group(required=False)
+    _add_default_test_args(test_rules_parser)
+
+
+def _setup_test_validation_subparser(subparsers):
+    """Add the test validation subparser: manage.py test validate [options]"""
+    test_validate_parser = _generate_subparser(
+        subparsers,
+        'validate',
+        description='Validate defined log schemas using integration test files',
+        subcommand=True
+    )
+
+    _add_default_test_args(test_validate_parser)
+
+
+def _setup_test_live_subparser(subparsers):
+    """Add the test live subparser: manage.py test live [options]"""
+    test_live_parser = _generate_subparser(
+        subparsers,
+        'live',
+        description='Run end-to-end tests that will attempt to send alerts to active outputs',
+        subcommand=True
+    )
+
+    _add_default_test_args(test_live_parser)
+
+
+def _add_default_test_args(test_parser):
+    """Add the default arguments to the test parsers"""
+    test_filter_group = test_parser.add_mutually_exclusive_group(required=False)
 
     # add the optional ability to test against a rule/set of rules
     test_filter_group.add_argument(
         '-f',
         '--test-files',
         dest='files',
+        metavar='FILENAMES',
         nargs='+',
-        help=ARGPARSE_SUPPRESS,
+        help='One or more file to test, separated by spaces',
         action=UniqueSetAction,
-        default=set())
+        default=set()
+    )
 
     # add the optional ability to test against a rule/set of rules
     test_filter_group.add_argument(
@@ -1043,247 +798,186 @@ Example:
         '--test-rules',
         dest='rules',
         nargs='+',
-        help=ARGPARSE_SUPPRESS,
+        help='One or more rule to test, separated by spaces',
         action=UniqueSetAction,
-        default=set())
+        default=set()
+    )
 
 
 def _add_default_lambda_args(lambda_parser):
-    """Add the default arguments to the lambda parsers"""
+    """Add the default arguments to the deploy and rollback parsers"""
 
+    functions = sorted([
+        'alert', 'alert_merger', 'apps', 'athena', 'classifier',
+        'rule', 'rule_promo', 'threat_intel_downloader'
+    ])
     # require the name of the processor being deployed/rolled back
     lambda_parser.add_argument(
-        '-p', '--processor',
-        choices=['all', 'alert', 'alert_merger', 'apps', 'athena', 'rule',
-                 'rule_promo', 'threat_intel_downloader'],
-        help=ARGPARSE_SUPPRESS,
+        '-f', '--function',
+        choices=functions + ['all'],
+        metavar='FUNCTION',
+        help=(
+            'One or more of the following functions to perform this action against: {}. '
+            'Use \'all\' to act against all functions.'
+        ).format(', '.join(functions)),
         nargs='+',
         action=UniqueSetAction,
-        required=True)
+        required=True
+    )
 
-    lambda_parser.add_argument(
-        '--clusters',
-        help=ARGPARSE_SUPPRESS,
-        nargs='+')
+    # Add the option to specify cluster(s)
+    add_clusters_arg(lambda_parser)
 
 
-def _add_terraform_subparser(subparsers):
-    """Add Terraform subparser: manage.py terraform [subcommand] [options]"""
-    usage = 'manage.py terraform [subcommand] [options]'
-    description = """
-StreamAlertCLI v{}
-Plan and Apply StreamAlert Infrastructure with Terraform
+def _setup_init_subparser(subparser):
+    """Add init subparser: manage.py init [options]"""
+    subparser.add_argument(
+        '-b',
+        '--backend',
+        action='store_true',
+        help=(
+            'Initialize the Terraform backend (S3). '
+            'Useful for refreshing a pre-existing deployment'
+        )
+    )
 
-Available Subcommands:
 
-    manage.py terraform init                   Initialize StreamAlert infrastructure
-    manage.py terraform init-backend           Initialize the Terraform backend
-    manage.py terraform build [options]        Run Terraform on all StreamAlert modules
-    manage.py terraform clean                  Remove Terraform files (only use this when destroying all infrastructure)
-    manage.py terraform destroy [options]      Destroy StreamAlert infrastructure
-    manage.py terraform generate               Generate Terraform files from JSON cluster files
-    manage.py terraform status                 Show cluster health, and other currently configured infrastructure information
-
-Available Options:
-
-    --target                                   The Terraform module name to apply.
-                                               Valid options: stream_alert, kinesis, kinesis_events,
-                                               cloudtrail, monitoring, and s3_events.
-    --clusters                                  The StreamAlert cluster(s) to apply to.
-
-Examples:
-
-    manage.py terraform init
-    manage.py terraform init-backend
-    manage.py terraform generate
-
-    manage.py terraform build
-    manage.py terraform build --target kinesis
-    manage.py terraform build --target stream_alert
-
-    manage.py terraform destroy
-    manage.py terraform destroy -target cloudtrail
-
-""".format(version)
-
-    tf_parser = _generate_subparser(subparsers, 'terraform', usage, description)
-
-    # add subcommand options for the terraform sub-parser
+def _add_default_tf_args(tf_parser):
+    """Add the default terraform parser options"""
     tf_parser.add_argument(
-        'subcommand',
-        choices=['build', 'clean', 'destroy', 'init', 'init-backend', 'generate', 'status'],
-        help=ARGPARSE_SUPPRESS)
-
-    tf_parser.add_argument(
+        '-t',
         '--target',
-        choices=[
-            'athena', 'cloudwatch_monitoring', 'cloudtrail', 'flow_logs', 'kinesis',
-            'kinesis_events', 'stream_alert', 's3_events', 'threat_intel_downloader'
-        ],
-        help=ARGPARSE_SUPPRESS,
-        nargs='+')
+        metavar='TARGET',
+        choices=TF_MODULE_TARGETS,
+        help=(
+            'One or more of the following terraform module names to target: {}'
+        ).format(', '.join(TF_MODULE_TARGETS)),
+        nargs='+'
+    )
 
-    tf_parser.add_argument(
-        '--clusters',
-        action=UniqueSetAction,
-        default=set(),
-        help=ARGPARSE_SUPPRESS,
-        nargs='+')
+    # Add the option to specify cluster(s)
+    add_clusters_arg(tf_parser)
 
 
-def _add_kinesis_subparser(subparsers):
-    """Add kinesis subparser"""
-    usage = 'manage.py kinesis [disable-events]'
-    description = """
-StreamAlertCLI v{}
-Kinesis StreamAlert options
+def _setup_build_subparser(subparser):
+    """Add build subparser: manage.py build [options]"""
+    _set_parser_epilog(
+        subparser,
+        epilog=(
+            '''\
+            Example:
 
-Update Kinesis settings and then runs Terraform
+                manage.py build --target kinesis_events
+            '''
+        )
+    )
 
-Available Commands:
-
-    disable-events             Disable Kinesis Events
-    enable-events              Enable Kinesis Events
-
-Optional Arguments:
-
-    --clusters                Space delimited set of clusters to modify, defaults to all
-    --debug                   Enable debug logger output
-    --skip-terraform          Only set the config, do not run Terraform after
-
-Examples:
-
-    manage.py kinesis disable-events --clusters corp prod
-
-""".format(version)
-
-    kinesis_parser = _generate_subparser(subparsers, 'kinesis', usage, description)
-
-    kinesis_parser.add_argument(
-        'subcommand',
-        choices=['disable-events', 'enable-events'],
-        help=ARGPARSE_SUPPRESS)
-
-    kinesis_parser.add_argument(
-        '-c',
-        '--clusters',
-        choices=CLUSTERS,
-        help=ARGPARSE_SUPPRESS,
-        nargs='+',
-        action=UniqueSetAction,
-        default=set())
-
-    kinesis_parser.add_argument('--skip-terraform', action='store_true', help=ARGPARSE_SUPPRESS)
+    _add_default_tf_args(subparser)
 
 
-def _add_configure_subparser(subparsers):
-    """Add configure subparser: manage.py configure [config_key] [config_value]"""
-    usage = 'manage.py configure [config_key] [config_value]'
-    description = """
-StreamAlertCLI v{}
-Configure StreamAlert options
+def _setup_destroy_subparser(subparser):
+    """Add destroy subparser: manage.py destroy [options]"""
+    _set_parser_epilog(
+        subparser,
+        epilog=(
+            '''\
+            Example:
 
-Available Keys:
+                manage.py destroy --target s3_events
+            '''
+        )
+    )
 
-    prefix                     Resource prefix
-    aws_account_id             AWS account number
-
-Examples:
-
-    manage.py configure prefix my-organization
-
-""".format(version)
-
-    configure_parser = _generate_subparser(subparsers, 'configure', usage, description)
-
-    configure_parser.add_argument(
-        'config_key', choices=['prefix', 'aws_account_id'], help=ARGPARSE_SUPPRESS)
-
-    configure_parser.add_argument('config_value', help=ARGPARSE_SUPPRESS)
+    _add_default_tf_args(subparser)
 
 
-def _add_athena_subparser(subparsers):
+def _setup_kinesis_subparser(subparser):
+    """Add kinesis subparser: manage.py kinesis [options]"""
+    _set_parser_epilog(
+        subparser,
+        epilog=(
+            '''\
+            Example:
+
+                manage.py kinesis disable-events --clusters corp prod
+            '''
+        )
+    )
+
+    actions = ['disable-events', 'enable-events']
+    subparser.add_argument(
+        'action',
+        metavar='ACTION',
+        choices=actions,
+        help='One of the following actions to be performed: {}'.format(', '.join(actions))
+    )
+
+    # Add the option to specify cluster(s)
+    add_clusters_arg(subparser)
+
+    subparser.add_argument(
+        '-s',
+        '--skip-terraform',
+        action='store_true',
+        help='Only update the config options and do not run Terraform'
+    )
+
+
+def _setup_configure_subparser(subparser):
+    """Add configure subparser: manage.py configure key value"""
+    _set_parser_epilog(
+        subparser,
+        epilog=(
+            '''\
+            Example:
+
+                manage.py configure prefix orgname
+            '''
+        )
+    )
+
+    subparser.add_argument(
+        'config_key',
+        choices=['prefix', 'aws_account_id'],
+        help='Value of key being configured'
+    )
+
+    subparser.add_argument(
+        'value',
+        help='Value to assign to key being configured'
+    )
+
+
+def _setup_athena_subparser(subparser):
     """Add athena subparser: manage.py athena [subcommand]"""
-    usage = 'manage.py athena [subcommand]'
-    description = """
-StreamAlertCLI v{}
-Athena StreamAlert options
+    athena_subparsers = subparser.add_subparsers()
 
-Available Subcommands:
-
-    manage.py athena init                     Initialize the Athena base config (for legacy support)
-    manage.py athena create-table             Create an Athena table
-    manage.py athena rebuild-partitions       Rebuild the partitions for an Athena table
-    manage.py athena drop-all-tables          Drop all of the tables from the database
-
-""".format(version)
-
-    athena_parser = _generate_subparser(subparsers, 'athena', usage, description)
-
-    athena_subparsers = athena_parser.add_subparsers()
-
-    _add_athena_init_subparser(athena_subparsers)
-    _add_athena_create_table_subparser(athena_subparsers)
-    _add_athena_rebuild_subparser(athena_subparsers)
-    _add_athena_drop_all_subparser(athena_subparsers)
+    _setup_athena_create_table_subparser(athena_subparsers)
+    _setup_athena_rebuild_subparser(athena_subparsers)
+    _setup_athena_drop_all_subparser(athena_subparsers)
 
 
-def _add_athena_init_subparser(subparsers):
-    """Add the athena init subparser: manage.py athena init"""
-    usage = 'manage.py athena init'
-    description = """
-StreamAlertCLI v{}
-Initialize the Athena base config
-
-Command:
-
-    manage.py athena init                Initialize the Athena base config that gets written
-                                           to 'conf/lambda.json'.
-
-Optional Arguments:
-
-    --debug                              Enable debug logger output
-
-""".format(version)
-
-    _generate_subparser(subparsers, 'init', usage, description, True)
-
-
-def _add_athena_create_table_subparser(subparsers):
-    """Add the athena create-table subparser: manage.py athena create-table"""
-    usage = 'manage.py athena create-table'
-    description = """
-StreamAlertCLI v{}
-Create an Athena table
-
-Command:
-
-    manage.py athena create-table      Create an Athena table
-
-Required Arguments:
-
-    -b/--bucket                        The name of the S3 bucket to be used for Athena
-                                         query results.
-    -n/--table-name                    The name of the Athena table to create. This must be a
-                                         type of log defined in logs.json
-
-Optional Arguments:
-
-    -s/--schema-override               List of value types to override in the schema
-                                         The provided input should be space separated
-                                         directives like "column_name=value_type"
-    --debug                            Enable debug logger output
-
-Examples:
-
-    manage.py athena create-table \\
-      --bucket s3.bucket.name \\
-      --table-name my_athena_table
-
-""".format(version)
-
+def _setup_athena_create_table_subparser(subparsers):
+    """Add the athena create-table subparser: manage.py athena create-table [options]"""
     athena_create_table_parser = _generate_subparser(
-        subparsers, 'create-table', usage, description, True)
+        subparsers,
+        'create-table',
+        description='Create an Athena table',
+        subcommand=True
+    )
+
+    _set_parser_epilog(
+        athena_create_table_parser,
+        epilog=(
+            '''\
+            Examples:
+
+                manage.py athena create-table \\
+                  --bucket s3.bucket.name \\
+                  --table-name my_athena_table
+            '''
+        )
+    )
 
     _add_default_athena_args(athena_create_table_parser)
 
@@ -1301,404 +995,315 @@ Examples:
     athena_create_table_parser.add_argument(
         '--schema-override',
         nargs='+',
-        help=ARGPARSE_SUPPRESS,
+        help=(
+            'Value types to override with new types in the log schema. '
+            'The provided input should be space-separated '
+            'directives like "column_name=value_type"'
+        ),
         action=UniqueSetAction,
         default=set(),
-        type=_validate_override)
+        type=_validate_override
+    )
 
 
-def _add_athena_rebuild_subparser(subparsers):
-    """Add the athena rebuild-partitions subparser: manage.py athena rebuild-partitions"""
-    usage = 'manage.py athena rebuild-partitions'
-    description = """
-StreamAlertCLI v{}
-Rebuild the partitions for an Athena table
-
-Command:
-
-    manage.py athena rebuild-partitions      Rebuilds the partitions for an Athena table
-
-Required Arguments:
-
-    -b/--bucket                        The name of the S3 bucket to be used for Athena
-                                         query results.
-    -n/--table-name                    The name of the Athena table to create. This must be
-                                         either a type of log defined in logs.json or 'alerts'
-
-Optional Arguments:
-
-    --debug                            Enable debug logger output
-
-Examples:
-
-    manage.py athena rebuild-partitions \\
-      --bucket s3.bucket.name \\
-      --table-name my_athena_table
-
-""".format(version)
-
+def _setup_athena_rebuild_subparser(subparsers):
+    """Add the athena rebuild-partitions subparser: manage.py athena rebuild-partitions [options]"""
     athena_rebuild_parser = _generate_subparser(
-        subparsers, 'rebuild-partitions', usage, description, True)
+        subparsers,
+        'rebuild-partitions',
+        description='Rebuild the partitions for an Athena table',
+        subcommand=True
+    )
+
+    _set_parser_epilog(
+        athena_rebuild_parser,
+        epilog=(
+            '''\
+            Examples:
+
+                manage.py athena rebuild-partitions \\
+                  --bucket s3.bucket.name \\
+                  --table-name my_athena_table
+            '''
+        )
+    )
 
     _add_default_athena_args(athena_rebuild_parser)
 
 
-def _add_athena_drop_all_subparser(subparsers):
+def _setup_athena_drop_all_subparser(subparsers):
     """Add the athena drop-all-tables subparser: manage.py athena drop-all-tables"""
-    usage = 'manage.py athena drop-all-tables'
-    description = """
-StreamAlertCLI v{}
-Drop all tables from an Athena database
-
-Command:
-
-    manage.py athena drop-all-tables     Drop all of the tables from the database
-
-Optional Arguments:
-
-    --debug                              Enable debug logger output
-
-""".format(version)
-
-    _generate_subparser(subparsers, 'drop-all-tables', usage, description, True)
+    _generate_subparser(
+        subparsers,
+        'drop-all-tables',
+        description='Drop all tables from an Athena database',
+        subcommand=True
+    )
 
 
 def _add_default_athena_args(athena_parser):
     """Adds the default required arguments for athena subcommands (bucket and table)"""
-
     athena_parser.add_argument(
         '-b', '--bucket',
-        help=ARGPARSE_SUPPRESS,
-        required=True)
+        help='Name of the S3 bucket where log data is located',
+        required=True
+    )
 
     athena_parser.add_argument(
-        '-n', '--table-name',
-        help=ARGPARSE_SUPPRESS,
-        required=True)
+        '-t', '--table-name',
+        help='Name of the Athena table to create. This must be a type of log defined in logs.json',
+        required=True
+    )
 
 
-def _add_threat_intel_subparser(subparsers):
-    """Add Threat Intel subparser: manage.py threat-intel [subcommand]"""
-    usage = 'manage.py threat-intel [subcommand]'
-    description = """
-StreamAlertCLI v{}
-Enable, configure StreamAlert Threat Intelligence feature.
+def _setup_threat_intel_subparser(subparser):
+    """Add threat intel subparser: manage.py threat-intel [action]"""
+    _set_parser_epilog(
+        subparser,
+        epilog=(
+            '''\
+            Examples:
 
-Available Subcommands:
+                manage.py threat-intel \\
+                  enable \\
+                  --dynamodb-table my_ioc_table
+            '''
+        )
+    )
 
-    manage.py threat-intel --enable      Enable the Threat Intelligence feature in Rule Processor
+    actions = ['disable', 'enable']
+    subparser.add_argument(
+        'action',
+        metavar='ACTION',
+        choices=actions,
+        help='One of the following actions to be performed: {}'.format(', '.join(actions))
+    )
 
-    Optional Arguments:
-        --dynamodb-table   The DynamoDB table name which stores IOC(s).
-
-Examples:
-
-    manage.py threat-intel --enable
-    manage.py threat-intel --disable
-    manage.py threat-intel --enable --dynamodb-table my_ioc_table
-""".format(version)
-
-    threat_intel_parser = _generate_subparser(subparsers, 'threat-intel', usage, description)
-
-    # get the enable toggle value
-    toggle_group = threat_intel_parser.add_mutually_exclusive_group(required=True)
-
-    toggle_group.add_argument('-e', '--enable', dest='enable', action='store_true')
-
-    toggle_group.add_argument('-d', '--disable', dest='enable', action='store_false')
-
-    threat_intel_parser.add_argument(
+    subparser.add_argument(
         '--dynamodb-table',
         dest='dynamodb_table_name',
-        help=ARGPARSE_SUPPRESS
+        help='DynamoDB table name where IOC information is stored'
     )
 
 
-def _add_threat_intel_downloader_subparser(subparsers):
-    """Add threat intel downloader subparser: manage.py threat-intel-downloader [subcommand]"""
-    usage = 'manage.py threat-intel-downloader [subcommand]'
-    description = """
-StreamAlertCLI v{}
-Lambda function to retrieve IOC(s) from 3rd party threat feed vendor.
+def _setup_threat_intel_configure_subparser(subparsers):
+    """Add threat intel downloader configure subparser
 
-Available Subcommands:
-
-    manage.py threat-intel-downloader enable        Enable the Threat Intel Downloader Lambda function
-
-    Required Arguments:
-
-        --timeout           The AWS Lambda function timeout value, in seconds. This should
-                              be an integer between 10 and 300.
-        --memory            The AWS Lambda function max memory value, in megabytes. This should
-                              be an integer between 128 and 1536.
-        --interval          The interval, defined using a 'rate' expression, at
-                              which this app integration function should execute. Examples of
-                              acceptable input are:
-                                'rate(1 hour)'          # Every hour (note the singular 'hour')
-                                'rate(1 day)'           # Every day
-                                'rate(2 days)'          # Every 2 days
-
-                              See the link in the Resources section below for more information.
-    Optional Arguments:
-        --table_rcu          The DynamoDB table Read Capacity Unit. Default is 10.
-        --table_wcu          The DynamoDB table Write Capacity Unit. Default is 10.
-        --ioc_keys           The keys (list) of IOC stored in DynamoDB table.
-        --ioc_filters        Filters (list) applied while retrieving IOCs from Threat Feed.
-        --ioc_types          IOC types (list) are defined by the Threat Feed. IOC types can be
-                             different from different Threat Feeds.
-        --excluded_sub_types Sub ioc types want to excluded. Default it will exclude 'bot_ip', 'brute_ip', 'scan_ip', 'spam_ip', 'tor_ip'.
-        --min_read_capacity  Maximal read capacity when autoscale enabled, default is 5.
-        --max_read_capacity  Mimimal read capacity when autoscale enabled, default is 5.
-        --target_utilization Utilization remains at or near the setting level when autoscale enabled.
-
-    manage.py threat-intel-downloader update-auth   Update API credentials to parameter store.
-
-Examples:
-
-    manage.py threat-intel-downloader enable \\
-    --interval 'rate(1 day)' \\
-    --timeout 120 \\
-    --memory 128
-""".format(version)
-
-    ti_downloader_parser = _generate_subparser(
-        subparsers, 'threat-intel-downloader', usage, description)
-
-    ti_downloader_parser.add_argument(
-        'subcommand', choices=['enable', 'update-auth'], help=ARGPARSE_SUPPRESS
+    manage.py threat-intel-downloader configure [options]
+    """
+    ti_downloader_configure_parser = _generate_subparser(
+        subparsers,
+        'configure',
+        description='Enable, disable, or configure the threat intel downloader function',
+        subcommand=True
     )
 
-    # Validate the rate at which this should run
-    def _validate_scheduled_interval(val):
-        """Validate acceptable inputs for the schedule expression
-        These follow the format 'rate(5 minutes)'
-        """
-        rate_match = AWS_RATE_RE.match(val)
-        if rate_match:
-            return val
+    # Enable/Disable toggle group
+    toggle_group = ti_downloader_configure_parser.add_mutually_exclusive_group(required=False)
 
-        if val.startswith('rate('):
-            err = ('Invalid rate expression \'{}\'. For help see {}'
-                   .format(val, '{}#RateExpressions'.format(AWS_RATE_HELPER)))
-            raise ti_downloader_parser.error(err)
-
-        raise ti_downloader_parser.error('Invalid expression \'{}\'. For help '
-                                         'see {}'.format(val, AWS_RATE_HELPER))
-
-    ti_downloader_parser.add_argument(
-        '--interval', help=ARGPARSE_SUPPRESS, type=_validate_scheduled_interval
+    toggle_group.add_argument(
+        '-e',
+        '--enable',
+        dest='enable_threat_intel_downloader',
+        help='Enable the threat intel downloader function',
+        action='store_true'
     )
 
-    # Validate the timeout value to make sure it is between 10 and 300
-    def _validate_timeout(val):
-        """Validate acceptable inputs for the timeout of the function"""
-        error = 'The \'timeout\' value must be an integer between 10 and 300'
-        try:
-            timeout = int(val)
-        except ValueError:
-            raise ti_downloader_parser.error(error)
-
-        if not 10 <= timeout <= 300:
-            raise ti_downloader_parser.error(error)
-
-        return timeout
-
-    ti_downloader_parser.add_argument(
-        '--timeout', help=ARGPARSE_SUPPRESS, type=_validate_timeout
+    toggle_group.add_argument(
+        '-d',
+        '--disable',
+        dest='enable_threat_intel_downloader',
+        help='Disable the threat intel downloader function',
+        action='store_false'
     )
 
-    # Validate the memory value to make sure it is between 128 and 1536
-    def _validate_memory(val):
-        """Validate acceptable inputs for the memory of the function"""
-        error = 'The \'memory\' value must be an integer between 128 and 1536'
-        try:
-            memory = int(val)
-        except ValueError:
-            raise ti_downloader_parser.error(error)
+    # Function schedule expression (rate) arg
+    add_schedule_expression_arg(ti_downloader_configure_parser)
 
-        if not 128 <= memory <= 1536:
-            raise ti_downloader_parser.error(error)
+    # Function timeout arg
+    add_timeout_arg(ti_downloader_configure_parser)
 
-        return memory
+    # Function memory arg
+    add_memory_arg(ti_downloader_configure_parser)
 
-    ti_downloader_parser.add_argument(
-        '--memory', help=ARGPARSE_SUPPRESS, type=_validate_memory
+    ti_downloader_configure_parser.add_argument(
+        '-r',
+        '--table-rcu',
+        help='Read capacity units to use for the DynamoDB table',
+        type=int,
+        default=10
     )
 
-    ti_downloader_parser.add_argument(
-        '--table_rcu', help=ARGPARSE_SUPPRESS, default=10
+    ti_downloader_configure_parser.add_argument(
+        '-w',
+        '--table-wcu',
+        help='Write capacity units to use for the DynamoDB table',
+        type=int,
+        default=10
     )
 
-    ti_downloader_parser.add_argument(
-        '--table_wcu', help=ARGPARSE_SUPPRESS, default=10
-    )
-
-    ti_downloader_parser.add_argument(
-        '--ioc_keys',
-        help=ARGPARSE_SUPPRESS,
+    ti_downloader_configure_parser.add_argument(
+        '-k',
+        '--ioc-keys',
+        help='One or more IOC keys to store in DynamoDB table',
+        nargs='+',
+        action=UniqueSetAction,
         default=['expiration_ts', 'itype', 'source', 'type', 'value']
     )
 
-    ti_downloader_parser.add_argument(
-        '--ioc_filters',
-        help=ARGPARSE_SUPPRESS,
+    ti_downloader_configure_parser.add_argument(
+        '-f',
+        '--ioc-filters',
+        help='One or more filters to apply when retrieving IOCs from Threat Feed',
+        nargs='+',
+        action=UniqueSetAction,
         default=['crowdstrike', '@airbnb.com']
     )
 
-    ti_downloader_parser.add_argument(
-        '--ioc_types',
-        help=ARGPARSE_SUPPRESS,
+    ti_downloader_configure_parser.add_argument(
+        '-i',
+        '--ioc-types',
+        help='One or more IOC type defined by the Threat Feed. IOC types can vary by feed',
+        nargs='+',
+        action=UniqueSetAction,
         default=['domain', 'ip', 'md5']
     )
 
-    ti_downloader_parser.add_argument(
-        '--excluded_sub_types',
-        help=ARGPARSE_SUPPRESS,
+    ti_downloader_configure_parser.add_argument(
+        '-x',
+        '--excluded-sub-types',
+        help='IOC subtypes to be excluded',
+        action=UniqueSetAction,
         default=['bot_ip', 'brute_ip', 'scan_ip', 'spam_ip', 'tor_ip']
     )
 
-    ti_downloader_parser.add_argument(
+    ti_downloader_configure_parser.add_argument(
+        '-a',
         '--autoscale',
-        help=ARGPARSE_SUPPRESS,
+        help='Enable auto scaling for the threat intel DynamoDB table',
         default=False,
         action='store_true'
     )
 
-    ti_downloader_parser.add_argument(
-        '--max_read_capacity', help=ARGPARSE_SUPPRESS, default=5
+    ti_downloader_configure_parser.add_argument(
+        '--max-read-capacity',
+        help='Maximum read capacity to use when auto scaling is enabled',
+        type=int,
+        default=5
     )
 
-    ti_downloader_parser.add_argument(
-        '--min_read_capacity', help=ARGPARSE_SUPPRESS, default=5
+    ti_downloader_configure_parser.add_argument(
+        '--min-read-capacity',
+        help='Minimum read capacity to use when auto scaling is enabled',
+        type=int,
+        default=5
     )
 
-    ti_downloader_parser.add_argument(
-        '--target_utilization', help=ARGPARSE_SUPPRESS, default=70
+    ti_downloader_configure_parser.add_argument(
+        '-u',
+        '--target-utilization',
+        help=(
+            'Target percentage of consumed provisioned throughput at a point in time '
+            'to use for auto-scaling the read capacity units'
+        ),
+        type=int,
+        default=70
     )
 
 
-def _add_rule_staging_subparser(subparsers):
-    """Add the rule database helper subparser: manage.py rule-staging [subcommand] [options]"""
-    usage = 'manage.py rule-staging [subcommand] [options]'
-    description = """
-StreamAlertCLI v{}
-Print the status of or update remote StreamAlert rule information within the rule database
+def _setup_threat_intel_auth_subparser(subparsers):
+    """Add threat intel downloader update-auth subparser
 
-Available Subcommands:
+    manage.py threat-intel-downloader update-auth
+    """
+    _generate_subparser(
+        subparsers,
+        'update-auth',
+        description='Enable, disable, or configure the threat intel downloader function',
+        subcommand=True
+    )
 
-    manage.py rule-staging enable          Enable or disable the rule staging feature
-    manage.py rule-staging status          List the current staging status from the rules databse
-    manage.py rule-staging stage           Stage the rules provided in a space-separated list
-    manage.py rule-staging unstage         Unstage the rules provided in a space-separated list
 
-""".format(version)
+def _setup_threat_intel_downloader_subparser(subparser):
+    """Add threat intel downloader subparser: manage.py threat-intel-downloader [subcommand]"""
+    ti_subparsers = subparser.add_subparsers()
 
-    rule_staging_parser = _generate_subparser(subparsers, 'rule-staging', usage, description)
+    _setup_threat_intel_configure_subparser(ti_subparsers)
+    _setup_threat_intel_auth_subparser(ti_subparsers)
 
-    rule_staging_subparsers = rule_staging_parser.add_subparsers()
 
-    _add_rule_staging_enable_subparser(rule_staging_subparsers)
-    _add_rule_staging_status_subparser(rule_staging_subparsers)
-    _add_rule_staging_stage_subparser(rule_staging_subparsers)
-    _add_rule_staging_unstage_subparser(rule_staging_subparsers)
+def _setup_rule_staging_subparser(subparser):
+    """Add the rule staging subparser: manage.py rule-staging [subcommand] [options]"""
+    rule_staging_subparsers = subparser.add_subparsers()
 
-def _add_rule_staging_enable_subparser(subparsers):
+    _setup_rule_staging_enable_subparser(rule_staging_subparsers)
+    _setup_rule_staging_status_subparser(rule_staging_subparsers)
+    _setup_rule_staging_stage_subparser(rule_staging_subparsers)
+    _setup_rule_staging_unstage_subparser(rule_staging_subparsers)
+
+def _setup_rule_staging_enable_subparser(subparsers):
     """Add the rule staging enable subparser: manage.py rule-staging enable"""
-    usage = 'manage.py rule-staging enable'
-    description = """
-StreamAlertCLI v{}
-Enable or disable the rule staging feature
-
-Command:
-
-    manage.py rule-staging enabled       Enable or disable the rule staging feature
-
-Required Arguments:
-
-    --true/--false                       Boolean flag for rule staging enabling or disabling
-
-Optional Arguments:
-
-    --verbose           Output additional information for rules in the database
-    --debug             Enable debug logger output
-
-""".format(version)
-
-    rule_staging_enable_parser = _generate_subparser(subparsers, 'enable', usage, description, True)
+    rule_staging_enable_parser = _generate_subparser(
+        subparsers,
+        'enable',
+        description='Enable or disable the rule staging feature',
+        subcommand=True
+    )
 
     toggle_group = rule_staging_enable_parser.add_mutually_exclusive_group(required=True)
-    toggle_group.add_argument('--true', '-t', dest='enable', action='store_true')
-    toggle_group.add_argument('--false', '-f', dest='enable', action='store_false')
+    toggle_group.add_argument(
+        '-t',
+        '--true',
+        dest='enable',
+        help='Enable the rule staging feature',
+        action='store_true'
+    )
+    toggle_group.add_argument(
+        '-f',
+        '--false',
+        dest='enable',
+        help='Disable the rule staging feature',
+        action='store_false'
+    )
 
-    rule_staging_enable_parser.add_argument(
-        '--verbose', action='store_true', help=ARGPARSE_SUPPRESS)
 
-
-def _add_rule_staging_status_subparser(subparsers):
+def _setup_rule_staging_status_subparser(subparsers):
     """Add the rule staging status subparser: manage.py rule-staging status"""
-    usage = 'manage.py rule-staging status'
-    description = """
-StreamAlertCLI v{}
-List all rules within the rule database and their staging status
-
-Command:
-
-    manage.py rule-staging status       List rules in the rule database with their staging status
-
-Optional Arguments:
-
-    --verbose           Output additional information for rules in the database
-    --debug             Enable debug logger output
-
-""".format(version)
-
-    rule_staging_status_parser = _generate_subparser(subparsers, 'status', usage, description, True)
+    rule_staging_status_parser = _generate_subparser(
+        subparsers,
+        'status',
+        description='List all rules within the rule database and their staging status',
+        subcommand=True
+    )
 
     rule_staging_status_parser.add_argument(
-        '--verbose', action='store_true', help=ARGPARSE_SUPPRESS)
+        '-v',
+        '--verbose',
+        action='store_true',
+        help='Output additional information for rules in the database'
+    )
 
 
-def _add_rule_staging_stage_subparser(subparsers):
+def _setup_rule_staging_stage_subparser(subparsers):
     """Add the rule staging stage subparser: manage.py rule-staging stage"""
-    usage = 'manage.py rule-staging stage'
-    description = """
-StreamAlertCLI v{}
-Stage rules given their name as a space-separated list
-
-Command:
-
-    manage.py rule-staging stage         Stage the rules provided in a space-separated list
-
-Optional Arguments:
-
-    --debug                            Enable debug logger output
-
-""".format(version)
-
-    rule_staging_stage_parser = _generate_subparser(subparsers, 'stage', usage, description, True)
+    rule_staging_stage_parser = _generate_subparser(
+        subparsers,
+        'stage',
+        description='Stage the provided rules',
+        subcommand=True
+    )
 
     _add_default_rule_staging_args(rule_staging_stage_parser)
 
 
-def _add_rule_staging_unstage_subparser(subparsers):
+def _setup_rule_staging_unstage_subparser(subparsers):
     """Add the rule staging unstage subparser: manage.py rule-staging unstage"""
-    usage = 'manage.py rule-staging unstage'
-    description = """
-StreamAlertCLI v{}
-Unstage rules given their name as a space-separated list
-
-Command:
-
-    manage.py rule-staging unstage       Unstage the rules provided in a space-separated list
-
-Optional Arguments:
-
-    --debug                            Enable debug logger output
-
-""".format(version)
-
     rule_staging_unstage_parser = _generate_subparser(
-        subparsers, 'unstage', usage, description, True)
+        subparsers,
+        'unstage',
+        description='Unstage the provided rules',
+        subcommand=True
+    )
 
     _add_default_rule_staging_args(rule_staging_unstage_parser)
 
@@ -1709,69 +1314,157 @@ def _add_default_rule_staging_args(subparser):
         'rules',
         action=UniqueSetAction,
         default=set(),
-        help=ARGPARSE_SUPPRESS,
+        help='One or more rule to perform this action against, seperated by spaces',
         nargs='+'
     )
 
 
 def build_parser():
     """Build the argument parser."""
-    usage = '%(prog)s [command] [subcommand] [options]'
-    description = """
-StreamAlertCLI v{}
-Build, Deploy, Configure, and Test StreamAlert Infrastructure
+
+    # Map of top-level commands and their setup functions/description
+    # New top-level commands should be added to this dictionary
+    commands = {
+        'app': (
+            _setup_app_subparser,
+            'Create, list, or update a StreamAlert app to poll logs from various services'
+        ),
+        'athena': (
+            _setup_athena_subparser,
+            'Perform actions related to Athena'
+        ),
+        'build': (
+            _setup_build_subparser,
+            'Run terraform against StreamAlert modules, optionally targeting specific modules'
+        ),
+        'clean': (
+            None,
+            'Remove current Terraform files'
+        ),
+        'configure': (
+            _setup_configure_subparser,
+            'Configure global StreamAlert settings'
+        ),
+        'create-alarm': (
+            _setup_metric_alarm_subparser,
+            'Add a global CloudWatch alarm for predefined metrics for a given function'
+        ),
+        'create-cluster-alarm': (
+            _setup_cluster_metric_alarm_subparser,
+            'Add a CloudWatch alarm for predefined metrics for a given cluster/function'
+        ),
+        'custom-metrics': (
+            _setup_custom_metrics_subparser,
+            'Enable or disable custom metrics for the lambda functions'
+        ),
+        'deploy': (
+            _setup_deploy_subparser,
+            'Deploy the specified AWS Lambda function(s)'
+        ),
+        'destroy': (
+            _setup_destroy_subparser,
+            'Destroy StreamAlert infrastructure, optionally targeting specific modules',
+        ),
+        'generate': (
+            None,
+            'Generate Terraform files from JSON cluster files'
+        ),
+        'init': (
+            _setup_init_subparser,
+            'Initialize StreamAlert infrastructure'
+        ),
+        'kinesis': (
+            _setup_kinesis_subparser,
+            'Update AWS Kinesis settings and run Terraform to apply changes'
+        ),
+        'output': (
+            _setup_output_subparser,
+            'Create a new StreamAlert output'
+        ),
+        'rollback': (
+            _setup_rollback_subparser,
+            'Rollback the specified AWS Lambda function(s)'
+        ),
+        'rule-staging': (
+            _setup_rule_staging_subparser,
+            'Perform actions related to rule staging'
+        ),
+        'status': (
+            None,
+            'Output information on currently configured infrastructure'
+        ),
+        'test': (
+            _setup_test_subparser,
+            'Perform various integration/functional tests'
+        ),
+        'threat-intel': (
+            _setup_threat_intel_subparser,
+            'Enable/disable and configure the StreamAlert Threat Intelligence feature'
+        ),
+        'threat-intel-downloader': (
+            _setup_threat_intel_downloader_subparser,
+            'Configure and update the threat intel downloader'
+        )
+    }
+
+    description_template = """
+StreamAlert v{}
+
+Configure, test, build, and deploy StreamAlert
 
 Available Commands:
 
-    manage.py app                        Create, list, or update a StreamAlert app integration function
-    manage.py athena                     Configure Athena for StreamAlert
-    manage.py configure                  Configure Global StreamAlert settings
-    manage.py create-alarm               Add a global CloudWatch alarm for predefined metrics
-    manage.py create-cluster-alarm       Add a cluster based CloudWatch alarm for predefined metrics
-    manage.py kinesis                    Configure Kinesis for StreamAlert
-    manage.py lambda                     Deploy, test, and rollback StreamAlert AWS Lambda functions
-    manage.py live-test                  Send alerts to configured outputs
-    manage.py custom-metrics             Enable or disable metrics for all lambda functions
-    manage.py output                     Configure new StreamAlert outputs
-    manage.py rule-staging               Get the status of or update rules in the rules database
-    manage.py terraform                  Manage StreamAlert infrastructure
-    manage.py threat-intel               Enable, configure StreamAlert Threat Intelligence feature.
-    manage.py threat-intel-downloader    Lambda function to retrieve IOC(s).
-    manage.py validate-schemas           Run validation of schemas
+{}
 
-For additional details on the available commands, try:
+For additional help with any command above, try:
 
-    manage.py [command] --help
-
-""".format(version)
+        {} [command] --help
+"""
 
     parser = ArgumentParser(
-        description=description,
-        prog='manage.py',
-        usage=usage,
-        formatter_class=RawTextHelpFormatter)
+        formatter_class=RawDescriptionHelpFormatter,
+        prog=__file__
+    )
 
     parser.add_argument(
         '-v', '--version',
         action='version',
-        version='StreamAlert v{}'.format(version)
+        version=version
     )
+
+    parser.add_argument(
+        '--debug',
+        action='store_true'
+    )
+
+    # Dynamically generate subparsers, and create a 'commands' block for the prog description
+    command_block = []
     subparsers = parser.add_subparsers()
-    _add_output_subparser(subparsers)
-    _add_live_test_subparser(subparsers)
-    _add_validate_schema_subparser(subparsers)
-    _add_metrics_subparser(subparsers)
-    _add_cluster_metric_alarm_subparser(subparsers)
-    _add_metric_alarm_subparser(subparsers)
-    _add_lambda_subparser(subparsers)
-    _add_terraform_subparser(subparsers)
-    _add_configure_subparser(subparsers)
-    _add_athena_subparser(subparsers)
-    _add_app_subparser(subparsers)
-    _add_kinesis_subparser(subparsers)
-    _add_threat_intel_subparser(subparsers)
-    _add_threat_intel_downloader_subparser(subparsers)
-    _add_rule_staging_subparser(subparsers)
+    command_col_size = max([len(command) for command in commands]) + 10
+    for command in sorted(commands):
+        setup_subparser_func, description = commands[command]
+        subparser = _generate_subparser(subparsers, command, description=description)
+
+        # If there are additional arguments to set for this command, call its setup function
+        if setup_subparser_func:
+            setup_subparser_func(subparser)
+
+        command_block.append(
+            '\t{command: <{pad}}{description}'.format(
+                command=command,
+                pad=command_col_size,
+                description=description
+            )
+        )
+
+    # Update the description on the top level parser
+    parser.description = description_template.format(
+        version,
+        '\n'.join(command_block),
+        __file__
+    )
+
+    parser.epilog = 'Issues? Please report here: https://github.com/airbnb/streamalert/issues'
 
     return parser
 
@@ -1781,7 +1474,6 @@ def main():
     parser = build_parser()
     options = parser.parse_args()
     cli_runner(options)
-    LOGGER_CLI.info('Completed')
 
 
 if __name__ == "__main__":
