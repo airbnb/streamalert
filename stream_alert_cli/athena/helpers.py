@@ -35,6 +35,17 @@ SCHEMA_TYPE_MAPPING = {
 }
 
 
+SCHEMA_TYPE_LOOKUP = {
+    bool: 'boolean',
+    float: 'float',
+    int: 'integer',
+    str: 'string',
+    dict: dict(),
+    list: list()
+}
+
+
+
 def add_partition_statement(partitions, bucket, table_name):
     """Generate ALTER TABLE commands from existing partitions.
 
@@ -109,3 +120,30 @@ def unique_values_from_query(query_result):
         for row in query_result['ResultSet']['Rows'] for result in row['Data']
         for value in result.values()
     }
+
+
+def record_to_schema(record, recursive=False):
+    """Take a record and return a schema that corresponds to it's keys/value types
+
+    This generates a log schema that is compatible with schemas in conf/logs.json
+
+    Args:
+        record (dict): The record to generate a schema for
+        recursive (bool): True if sub-dictionaries should be recursed
+
+    Returns:
+        dict: A new record that reflects the original keys with values that reflect
+            the types of the original values
+    """
+    if not isinstance(record, dict):
+        return
+
+    result = {}
+    for key, value in record.iteritems():
+        # only worry about recursion for dicts, not lists
+        if recursive and isinstance(value, dict):
+            result[key] = record_to_schema(value, recursive)
+        else:
+            result[key] = SCHEMA_TYPE_LOOKUP.get(type(value), 'string')
+
+    return result

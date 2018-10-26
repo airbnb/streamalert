@@ -18,7 +18,7 @@ from stream_alert.rule_processor.firehose import FirehoseClient
 from stream_alert.shared.alert import Alert
 from stream_alert.shared.athena import AthenaClient
 from stream_alert_cli.athena import helpers
-from stream_alert_cli.helpers import continue_prompt, record_to_schema
+from stream_alert_cli.helpers import continue_prompt
 from stream_alert_cli.logger import LOGGER_CLI
 
 
@@ -29,6 +29,30 @@ CREATE_TABLE_STATEMENT = ('CREATE EXTERNAL TABLE {table_name} ({schema}) '
                           'LOCATION \'s3://{bucket}/{table_name}/\'')
 
 MAX_QUERY_LENGTH = 262144
+
+
+def athena_handler(options, config):
+    """Main Athena handler
+
+    Args:
+        options (namedtuple): The parsed args passed from the CLI
+        config (CLIConfig): Loaded StreamAlert CLI
+    """
+    if options.subcommand == 'rebuild-partitions':
+        rebuild_partitions(
+            options.table_name,
+            options.bucket,
+            config)
+
+    elif options.subcommand == 'drop-all-tables':
+        drop_all_tables(config)
+
+    elif options.subcommand == 'create-table':
+        create_table(
+            options.table_name,
+            options.bucket,
+            config,
+            options.schema_override)
 
 
 def get_athena_client(config):
@@ -203,7 +227,7 @@ def create_table(table, bucket, config, schema_override=None):
         # get a fake alert so we can get the keys needed and their types
         alert = Alert('temp_rule_name', {}, {})
         output = alert.output_dict()
-        schema = record_to_schema(output)
+        schema = helpers.record_to_schema(output)
         athena_schema = helpers.logs_schema_to_athena_schema(schema)
 
         query = _construct_create_table_statement(
@@ -262,30 +286,3 @@ def create_table(table, bucket, config, schema_override=None):
         config.write()
 
     LOGGER_CLI.info('The %s table was successfully created!', sanitized_table_name)
-
-
-def athena_handler(options, config):
-    """Main Athena handler
-
-    Args:
-        options (namedtuple): The parsed args passed from the CLI
-        config (CLIConfig): Loaded StreamAlert CLI
-    """
-    if options.subcommand == 'init':
-        config.generate_athena()
-
-    elif options.subcommand == 'rebuild-partitions':
-        rebuild_partitions(
-            options.table_name,
-            options.bucket,
-            config)
-
-    elif options.subcommand == 'drop-all-tables':
-        drop_all_tables(config)
-
-    elif options.subcommand == 'create-table':
-        create_table(
-            options.table_name,
-            options.bucket,
-            config,
-            options.schema_override)
