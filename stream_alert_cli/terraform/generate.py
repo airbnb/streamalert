@@ -17,6 +17,7 @@ from fnmatch import fnmatch
 import json
 import os
 
+from stream_alert_cli.helpers import check_credentials
 from stream_alert_cli.logger import LOGGER_CLI
 from stream_alert_cli.terraform.common import (
     DEFAULT_SNS_MONITORING_TOPIC,
@@ -31,6 +32,7 @@ from stream_alert_cli.terraform.cloudtrail import generate_cloudtrail
 from stream_alert_cli.terraform.cloudwatch import generate_cloudwatch
 from stream_alert_cli.terraform.firehose import generate_firehose
 from stream_alert_cli.terraform.flow_logs import generate_flow_logs
+from stream_alert_cli.terraform.helpers import terraform_check
 from stream_alert_cli.terraform.kinesis_events import generate_kinesis_events
 from stream_alert_cli.terraform.kinesis_streams import generate_kinesis_streams
 from stream_alert_cli.terraform.metrics import (
@@ -359,7 +361,7 @@ def cleanup_old_tf_files(config):
                 os.remove(os.path.join('terraform', terraform_file))
 
 
-def terraform_generate(config, init=False):
+def terraform_generate_handler(config, init=False, check_tf=True, check_creds=True):
     """Generate all Terraform plans for the configured clusters.
 
     Keyword Args:
@@ -369,6 +371,14 @@ def terraform_generate(config, init=False):
     Returns:
         bool: Result of cluster generating
     """
+    # Check for valid credentials
+    if check_creds and not check_credentials():
+        return
+
+    # Verify terraform is installed
+    if check_tf and not terraform_check():
+        return
+
     cleanup_old_tf_files(config)
 
     # Setup the main.tf.json file
