@@ -21,7 +21,7 @@ from stream_alert.apps import StreamAlertApp
 from stream_alert.shared import CLUSTERED_FUNCTIONS, config, metrics
 from stream_alert_cli.helpers import continue_prompt
 from stream_alert_cli.logger import LOGGER_CLI
-from stream_alert_cli.apps import save_app_auth_info
+from stream_alert_cli.apps.helpers import save_app_auth_info
 
 
 class CLIConfigError(Exception):

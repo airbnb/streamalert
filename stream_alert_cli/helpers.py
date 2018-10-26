@@ -13,26 +13,20 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-import base64
 from collections import namedtuple
 from getpass import getpass
 import json
 import os
-import random
 import re
 from StringIO import StringIO
 import subprocess
 import zipfile
-import zlib
 
 import boto3
 from botocore.exceptions import ClientError
 from cbapi.response import BannedHash, Binary
-from moto import (mock_cloudwatch, mock_dynamodb2, mock_kinesis, mock_kms, mock_lambda, mock_s3,
-                  mock_sns, mock_sqs)
 
 from stream_alert_cli.logger import LOGGER_CLI
-from stream_alert.rule_processor.firehose import FirehoseClient
 
 
 class MockCBAPI(object):
@@ -202,178 +196,6 @@ def check_credentials():
     return True
 
 
-def _get_record_template(service):
-    """Provides a pre-configured template that reflects incoming payload from a service
-
-    Args:
-        service (str): The service for the payload template
-
-    Returns:
-        dict: Template of the payload for the given service
-    """
-    if service == 's3':
-        return {
-            'eventVersion': '2.0',
-            'eventTime': '1970-01-01T00:00:00.000Z',
-            'requestParameters': {
-                'sourceIPAddress': '127.0.0.1'
-            },
-            's3': {
-                'configurationId': 'testConfigRule',
-                'object': {
-                    'eTag': '0123456789abcdef0123456789abcdef',
-                    'sequencer': '0A1B2C3D4E5F678901',
-                    'key': '<TO_BE_REPLACED>',
-                    'size': '<TO_BE_REPLACED>'
-                },
-                'bucket': {
-                    'arn': '<TO_BE_REPLACED>',
-                    'name': '<TO_BE_REPLACED>',
-                    'ownerIdentity': {
-                        'principalId': 'EXAMPLE'
-                    }
-                },
-                's3SchemaVersion': '1.0'
-            },
-            'responseElements': {
-                'x-amz-id-2': 'EXAMPLE123/5678abcdefghijklambdaisawesome/mnopqrstuvwxyzABCDEFGH',
-                'x-amz-request-id': 'EXAMPLE123456789'
-            },
-            'awsRegion': 'us-east-1',
-            'eventName': 'ObjectCreated:Put',
-            'userIdentity': {
-                'principalId': 'EXAMPLE'
-            },
-            'eventSource': 'aws:s3'
-        }
-
-    elif service == 'kinesis':
-        return {
-            'eventID': 'shardId-000000000000:49545115243490985018280067714973144180062593244200961',
-            'eventVersion': '1.0',
-            'kinesis': {
-                'approximateArrivalTimestamp': 1428537600,
-                'partitionKey': 'partitionKey-3',
-                'data': '<TO_BE_REPLACED>',
-                'kinesisSchemaVersion': '1.0',
-                'sequenceNumber': '49545115243490985018280067714973144582180062593244200961'
-            },
-            'invokeIdentityArn': 'arn:aws:iam::EXAMPLE',
-            'eventName': 'aws:kinesis:record',
-            'eventSourceARN': '<TO_BE_REPLACED>',
-            'eventSource': 'aws:kinesis',
-            'awsRegion': 'us-east-1'
-        }
-
-    elif service == 'sns':
-        return {
-            'EventVersion': '1.0',
-            'EventSubscriptionArn': '<TO_BE_REPLACED>',
-            'EventSource': 'aws:sns',
-            'Sns': {
-                'SignatureVersion': '1',
-                'Timestamp': '1970-01-01T00:00:00.000Z',
-                'Signature': 'EXAMPLE',
-                'SigningCertUrl': 'EXAMPLE',
-                'MessageId': '95df01b4-ee98-5cb9-9903-4c221d41eb5e',
-                'Message': '<TO_BE_REPLACED>',
-                'MessageAttributes': {
-                    'Test': {
-                        'Type': 'String',
-                        'Value': 'TestString'
-                    },
-                    'TestBinary': {
-                        'Type': 'Binary',
-                        'Value': 'TestBinary'
-                    }
-                },
-                'Type': 'Notification',
-                'UnsubscribeUrl': 'EXAMPLE',
-                'TopicArn': 'arn:aws:sns:EXAMPLE',
-                'Subject': 'TestInvoke'
-            }
-        }
-
-    elif service == 'stream_alert_app':
-        return {'stream_alert_app': '<TO_BE_REPLACED>', 'logs': ['<TO_BE_REPLACED>']}
-
-    else:
-        LOGGER_CLI.error('Unsupported service: %s', service)
-
-
-def format_lambda_test_record(test_record):
-    """Create a properly formatted Kinesis, S3, or SNS record.
-
-    Supports a dictionary or string based data record.  Reads in
-    event templates from the tests/integration/templates folder.
-
-    Args:
-        test_record (dict): Test record metadata dict with the following structure:
-            data - string or dict of the raw data
-            description - a string describing the test that is being performed
-            trigger - bool of if the record should produce an alert
-            source - which stream/s3 bucket originated the data
-            service - which aws service originated the data
-            compress (optional) - if the payload needs to be gzip compressed or not
-
-    Returns:
-        dict: in the format of the specific service
-    """
-    service = test_record['service']
-    source = test_record['source']
-    compress = test_record.get('compress')
-
-    data_type = type(test_record['data'])
-    if data_type == dict:
-        data = json.dumps(test_record['data'])
-    elif data_type in (unicode, str):
-        data = test_record['data']
-    else:
-        LOGGER_CLI.info('Invalid data type: %s', data_type)
-        return
-
-    # Get the template file for this particular service
-    record_template = _get_record_template(service)
-    if not record_template:
-        return
-
-    if service == 's3':
-        # Set the S3 object key to a random value for testing
-        # (Bandit warns about use of insecure random generator: ignore with #nosec)
-        test_record['key'] = ('{:032X}'.format(random.randrange(16**32)))  # nosec
-        record_template['s3']['object']['key'] = test_record['key']
-        record_template['s3']['object']['size'] = len(data)
-        record_template['s3']['bucket']['arn'] = 'arn:aws:s3:::{}'.format(source)
-        record_template['s3']['bucket']['name'] = source
-
-        # Create the mocked s3 object in the designated bucket with the random key
-        put_mock_s3_object(source, test_record['key'], data, 'us-east-1')
-
-    elif service == 'kinesis':
-        if compress:
-            kinesis_data = base64.b64encode(zlib.compress(data))
-        else:
-            kinesis_data = base64.b64encode(data)
-
-        record_template['kinesis']['data'] = kinesis_data
-        record_template['eventSourceARN'] = ('arn:aws:kinesis:us-east-1:111222333:'
-                                             'stream/{}'.format(source))
-
-    elif service == 'sns':
-        record_template['Sns']['Message'] = data
-        record_template['EventSubscriptionArn'] = 'arn:aws:sns:us-east-1:111222333:{}'.format(
-            source)
-
-    elif service == 'stream_alert_app':
-        record_template['stream_alert_app'] = source
-        record_template['logs'] = [data]
-
-    else:
-        LOGGER_CLI.info('Invalid service %s', service)
-
-    return record_template
-
-
 def create_lambda_function(function_name, region):
     """Helper function to create mock lambda function"""
     if function_name.find(':') != -1:
@@ -394,14 +216,6 @@ def create_lambda_function(function_name, region):
             })
 
 
-def encrypt_with_kms(data, region, alias):
-    """Encrypt the given data with KMS."""
-    kms_client = boto3.client('kms', region_name=region)
-    response = kms_client.encrypt(KeyId=alias, Plaintext=data)
-
-    return response['CiphertextBlob']
-
-
 def _make_lambda_package():
     """Helper function to create mock lambda package"""
     mock_lambda_function = """
@@ -416,319 +230,6 @@ return event
 
     return package_output.read()
 
-
-def put_mock_creds(output_name, creds, bucket, region, alias):
-    """Helper function to mock encrypt creds and put on s3"""
-    creds_string = json.dumps(creds)
-
-    enc_creds = encrypt_with_kms(creds_string, region, alias)
-
-    put_mock_s3_object(bucket, output_name, enc_creds, region)
-
-
-def create_delivery_stream(region, stream_name, prefix=''):
-    """Create a mock AWS Kinesis Firehose stream
-
-    Args:
-        region (str): The AWS region for the boto3 client
-    """
-    firehose_client = boto3.client('firehose', region_name=region)
-
-    firehose_client.create_delivery_stream(
-        DeliveryStreamName=stream_name,
-        S3DestinationConfiguration={
-            'RoleARN': 'arn:aws:iam::123456789012:role/firehose_delivery_role',
-            'BucketARN': 'arn:aws:s3:::kinesis-test',
-            'Prefix': prefix,
-            'BufferingHints': {
-                'SizeInMBs': 123,
-                'IntervalInSeconds': 124
-            },
-            'CompressionFormat': 'Snappy',
-        })
-
-
-@mock_kinesis
-def setup_mock_firehose_delivery_streams(config):
-    """Mock Kinesis Firehose Streams for rule testing
-
-    Args:
-        config (CLIConfig): The StreamAlert config
-    """
-    firehose_config = config['global']['infrastructure'].get('firehose')
-    if not firehose_config:
-        return
-
-    enabled_logs = FirehoseClient.load_enabled_log_sources(firehose_config, config['logs'])
-
-    for log_type in enabled_logs:
-        stream_name = 'streamalert_data_{}'.format(log_type)
-        prefix = '{}/'.format(log_type)
-        create_delivery_stream(config['global']['account']['region'], stream_name, prefix)
-
-
-def setup_mock_dynamodb_rules_table(config):
-    """Mock DynamoDB Rules table for rule testing
-    Args:
-        config (CLIConfig): The StreamAlert config
-    """
-    if not config['global']['infrastructure'].get('rule_staging', {}).get('enabled'):
-        return False
-
-    prefix = config['global']['account']['prefix']
-    table_name = '{}_streamalert_rules'.format(prefix)
-
-    setup_mock_rules_table(table_name)
-
-
-def setup_mock_dynamodb_ioc_table(config):
-    """Mock DynamoDB IOC table for rule testing
-
-    Args:
-        config (CLIConfig): The StreamAlert config
-    """
-    region = config['global']['account']['region']
-    dynamodb_client = boto3.client('dynamodb', region_name=region)
-    table_name = 'test_table_name'
-    if (config['global'].get('threat_intel')
-            and config['global']['threat_intel'].get('dynamodb_table')):
-        table_name = config['global']['threat_intel']['dynamodb_table']
-
-    dynamodb_client.create_table(
-        AttributeDefinitions=[{
-            'AttributeName': 'ioc_value',
-            'AttributeType': 'S',
-        }],
-        KeySchema=[{
-            'AttributeName': 'ioc_value',
-            'KeyType': 'HASH',
-        }],
-        ProvisionedThroughput={
-            'ReadCapacityUnits': 10,
-            'WriteCapacityUnits': 10,
-        },
-        TableName=table_name,
-    )
-
-    dynamodb_client.put_item(
-        Item={'ioc_value': {
-            'S': '1.1.1.2'
-        },
-              'ioc_type': {
-                  'S': 'ip'
-              },
-              'sub_type': {
-                  'S': 'mal_ip'
-              }},
-        TableName=table_name)
-
-    dynamodb_client.put_item(
-        Item={
-            'ioc_value': {
-                'S': '0123456789abcdef0123456789abcdef'
-            },
-            'ioc_type': {
-                'S': 'md5'
-            },
-            'sub_type': {
-                'S': 'mal_md5'
-            }
-        },
-        TableName=table_name)
-
-    dynamodb_client.put_item(
-        Item={
-            'ioc_value': {
-                'S': 'evil.com'
-            },
-            'ioc_type': {
-                'S': 'domain'
-            },
-            'sub_type': {
-                'S': 'c2_domain'
-            }
-        },
-        TableName=table_name)
-
-    dynamodb_client.put_item(
-        Item={
-            'ioc_value': {
-                'S': 'false.positive'
-            },
-            'ioc_type': {
-                'S': 'domain'
-            },
-            'sub_type': {
-                'S': 'c2_domain'
-            }
-        },
-        TableName=table_name)
-
-def setup_mock_alerts_table(table_name):
-    """Create a mock DynamoDB alerts table used by rule processor, alert processor, alert merger"""
-    boto3.client('dynamodb').create_table(
-        AttributeDefinitions=[
-            {
-                'AttributeName': 'RuleName',
-                'AttributeType': 'S'
-            },
-            {
-                'AttributeName': 'AlertID',
-                'AttributeType': 'S'
-            }
-        ],
-        KeySchema=[
-            {
-                'AttributeName': 'RuleName',
-                'KeyType': 'HASH'
-            },
-            {
-                'AttributeName': 'AlertID',
-                'KeyType': 'RANGE'
-            }
-        ],
-        ProvisionedThroughput={
-            'ReadCapacityUnits': 5,
-            'WriteCapacityUnits': 5
-        },
-        TableName=table_name
-    )
-
-
-def setup_mock_rules_table(table_name):
-    """Create a mock DynamoDB rules table used by the CLI, rule processor, and rule promoter"""
-    boto3.client('dynamodb').create_table(
-        AttributeDefinitions=[
-            {
-                'AttributeName': 'RuleName',
-                'AttributeType': 'S'
-            }
-        ],
-        KeySchema=[
-            {
-                'AttributeName': 'RuleName',
-                'KeyType': 'HASH'
-            }
-        ],
-        ProvisionedThroughput={
-            'ReadCapacityUnits': 5,
-            'WriteCapacityUnits': 5
-        },
-        TableName=table_name
-    )
-
-
-def put_mock_s3_object(bucket, key, data, region='us-east-1'):
-    """Create a mock AWS S3 object for testing
-
-    Args:
-        bucket (str): the bucket in which to place the object
-        key (str): the key to use for the S3 object
-        data (str): the actual value to use for the object
-        region (str): the aws region to use for this boto3 client
-    """
-    s3_client = boto3.client('s3', region_name=region)
-    try:
-        # Check if the bucket exists before creating it
-        s3_client.head_bucket(Bucket=bucket)
-    except ClientError:
-        s3_client.create_bucket(Bucket=bucket)
-
-    s3_client.put_object(Body=data, Bucket=bucket, Key=key, ServerSideEncryption='AES256')
-
-def mock_s3_bucket(config):
-    """Mock S3 bucket for lookup tables testing"""
-    region = config['global']['account']['region']
-    lookup_tables_config = config['global']['infrastructure'].get('lookup_tables')
-    if lookup_tables_config:
-        buckets_info = lookup_tables_config.get(
-            'buckets', {'test_buckets': ['foo.json', 'bar.json']}
-        )
-    else:
-        buckets_info = {'test_buckets': ['foo.json', 'bar.json']}
-
-    for bucket, files in buckets_info.iteritems():
-        for json_file in files:
-            test_json_file = os.path.join('tests/integration/fixtures', json_file)
-            if os.path.isfile(test_json_file):
-                data = open(test_json_file, 'r')
-            else:
-                data = json.dumps({'key': 'value'})
-            put_mock_s3_object(bucket, json_file, data, region)
-
-            if isinstance(data, file):
-                data.close()
-
-
-def mock_me(context):
-    """Decorator function for wrapping framework in mock calls
-    for running local tests, and omitting mocks if testing live
-
-    Args:
-        context (namedtuple): A constructed aws context object
-    """
-
-    def wrap(func):
-        """Wrap the returned function with or without mocks"""
-        if context.mocked:
-
-            @mock_cloudwatch
-            @mock_dynamodb2
-            @mock_kinesis
-            @mock_kms
-            @mock_lambda
-            @mock_s3
-            @mock_sns
-            @mock_sqs
-            def mocked(options, context):
-                """This function is now mocked using moto mock decorators to
-                override any boto3 calls. Wrapping this function here allows
-                us to mock out all calls that happen below this scope."""
-                return func(options, context)
-
-            return mocked
-
-        def unmocked(options, context):
-            """This function will remain unmocked and operate normally"""
-            return func(options, context)
-
-        return unmocked
-
-    return wrap
-
-
-def get_context_from_config(cluster, config):
-    """Return a constructed context to be used for testing
-
-    Args:
-        cluster (str): Name of the cluster to be used for live testing
-        config (CLIConfig): Configuration for this StreamAlert setup that
-            includes cluster info, etc that can be used for constructing
-            an aws context object
-    """
-    context = namedtuple('aws_context', ['invoked_function_arn', 'function_name' 'mocked'])
-
-    # Return a mocked context if the cluster is not provided
-    # Otherwise construct the context from the config using the cluster
-    if not cluster:
-        region = config['global']['account']['region']
-        context.invoked_function_arn = (
-            'arn:aws:lambda:{}:123456789012:'
-            'function:test_streamalert_processor:development').format(region)
-        context.function_name = 'test_streamalert_alert_processor'
-        context.mocked = True
-    else:
-        prefix = config['global']['account']['prefix']
-        account = config['global']['account']['aws_account_id']
-        region = config['global']['account']['region']
-        function_name = '{}_streamalert_alert_processor'.format(prefix)
-        arn = 'arn:aws:lambda:{}:{}:function:{}:testing'.format(region, account, function_name)
-
-        context.invoked_function_arn = arn
-        context.function_name = function_name
-        context.mocked = False
-
-    return context
 
 
 def user_input(requested_info, mask, input_restrictions):
@@ -781,90 +282,49 @@ def user_input(requested_info, mask, input_restrictions):
     return response
 
 
-def load_test_file(path):
-    """Helper to json load the contents of a file with some error handling
-
-    Test files can be either formatted as:
-
-    {
-        "records": [
-            {"data": {}, "description": "", ...}
-        ]
-    }
-
-    or
-
-    [
-        {"data": {}, "description": "", ...}
-    ]
+def save_parameter(region, name, value, description, force_overwrite=False):
+    """Function to save the designated value to parameter store
 
     Args:
-        path (str): Relative path to file on disk
-
-    Returns:
-        list: Loaded JSON from test event file
+        name (str): Name of the parameter being saved
+        value (str): Value to be saved to the parameter store
     """
-    message_template = 'Improperly formatted file ({}): {}'
-    with open(path, 'r') as test_event_file:
-        try:
-            contents = json.load(test_event_file)
-        except (ValueError, TypeError) as err:
-            message = message_template.format(path, err.message)
-            return [], message
-        else:
-            # Check for legacy format, return a list
-            # TOOD: Remove legacy format support
-            if 'records' in contents and isinstance(contents['records'], list):
-                LOGGER_CLI.warning('Legacy testing format detected, '
-                                   'test events should be a JSON list: [%s]',
-                                   os.path.basename(path))
-                return contents['records'], None
-            # Expect that the test event is a JSON list
-            elif isinstance(contents, list):
-                return contents, None
+    ssm_client = boto3.client('ssm', region_name=region)
 
-        message = message_template.format(
-            path, 'Test file must contain either a list of maps, or a list of '
-            'maps preceeded with a `records` key')
-        return [], message
+    param_value = json.dumps(value)
+    # The name of the parameter should follow the format of:
+    # <function_name>_<type> where <type> is one of {'auth', 'config', 'state'}
+    # and <function_name> follows the the format:
+    # '<prefix>_<cluster>_<service>_<app_name>_app'
+    # Example: prefix_prod_duo_auth_production_collector_app_config
+    def save(overwrite=False):
 
+        ssm_client.put_parameter(
+            Name=name,
+            Description=description,
+            Value=param_value,
+            Type='SecureString',
+            Overwrite=overwrite
+        )
 
-def get_rules_from_test_events(test_files_dir):
-    """Helper to return all of the rules being tested with test events
+    try:
+        save(overwrite=force_overwrite)
+    except ClientError as err:
+        if err.response['Error']['Code'] == 'ExpiredTokenException':
+            # Log an error if this response was due to no credentials being found
+            LOGGER_CLI.error('Could not save \'%s\' to parameter store because no '
+                             'valid credentials were loaded.', name)
 
-    Args:
-        test_files_dir (str): Path indicating where test files reside
+        if err.response['Error']['Code'] != 'ParameterAlreadyExists':
+            raise
 
-    Returns:
-        set: A collection of all of the rules being tested
-    """
-    test_file_info = get_rule_test_files(test_files_dir)
-    all_rules = set()
-    for path in test_file_info.values():
-        events, _ = load_test_file(path)
-        if not events:
-            continue
+        prompt = ('A parameter already exists with name \'{}\'. Would you like '
+                  'to overwrite the existing value?'.format(name))
 
-        for test_event in events:
-            if 'trigger_rules' not in test_event:
-                continue
+        # Ask to overwrite
+        if not continue_prompt(message=prompt):
+            return False
 
-            all_rules.update(test_event['trigger_rules'])
+        save(overwrite=True)
 
-    return all_rules
-
-
-def get_rule_test_files(test_files_dir):
-    """Helper to get rule files to be tested
-
-    Args:
-        test_files_dir (str): Path indicating where test files reside
-
-    Returns:
-        dict:  Information about test files on disk, where the key is the
-            base name of the file and the value is the relative path to the file
-    """
-    return {
-        os.path.splitext(event_file)[0]: os.path.join(root, event_file)
-        for root, _, test_event_files in os.walk(test_files_dir) for event_file in test_event_files
-    }
+    return True

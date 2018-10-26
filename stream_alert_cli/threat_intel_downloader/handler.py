@@ -16,12 +16,11 @@ limitations under the License.
 import re
 
 from stream_alert.threat_intel_downloader.main import ThreatStream
-from stream_alert_cli.apps import save_parameter
-from stream_alert_cli.helpers import user_input
+from stream_alert_cli.helpers import user_input, save_parameter
 from stream_alert_cli.logger import LOGGER_CLI
 
 
-def handler(options, config):
+def threat_intel_downloader_handler(options, config):
     """Configure Threat Intel Downloader from command line
 
     Args:
