@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from stream_alert_cli.logger import LOGGER_CLI
+from stream_alert_cli.terraform.generate import terraform_generate_handler
 
 import boto3
 from botocore.exceptions import ClientError
@@ -44,13 +45,19 @@ def _rollback_production(lambda_client, function_name):
         LOGGER_CLI.exception('version not updated')
 
 
-def rollback(options, config):
+def rollback_handler(options, config):
     """Rollback the current production Lambda version(s) by 1.
 
     Args:
         options: Argparse parsed options
         config (dict): Parsed configuration from conf/
     """
+    # Make sure the Terraform code is up to date
+    if not terraform_generate_handler(config=config):
+        return
+
+    LOGGER_CLI.info('Rolling back: %s', ' '.join(options.processor))
+
     rollback_all = 'all' in options.processor
     prefix = config['global']['account']['prefix']
     clusters = sorted(options.clusters or config.clusters())
@@ -71,9 +78,12 @@ def rollback(options, config):
     if rollback_all or 'athena' in options.processor:
         _rollback_production(client, '{}_streamalert_athena_partition_refresh'.format(prefix))
 
-    if rollback_all or 'rule' in options.processor:
+    if rollback_all or 'classifier' in options.processor:
         for cluster in clusters:
-            _rollback_production(client, '{}_{}_streamalert_rule_processor'.format(prefix, cluster))
+            _rollback_production(client, '{}_{}_streamalert_classifier'.format(prefix, cluster))
+
+    if rollback_all or 'rule' in options.processor:
+        _rollback_production(client, '{}_streamalert_rules_engine'.format(prefix))
 
     if rollback_all or 'threat_intel_downloader' in options.processor:
         _rollback_production(client, '{}_streamalert_threat_intel_downloader'.format(prefix))
