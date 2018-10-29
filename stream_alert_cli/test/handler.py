@@ -34,7 +34,7 @@ from stream_alert.shared import rule
 from stream_alert.shared.logger import get_logger
 from stream_alert_cli.helpers import check_credentials
 from stream_alert_cli.test.format import format_green, format_red, format_underline, format_yellow
-from stream_alert_cli.test.mocks import mock_threat_intel_query_results
+from stream_alert_cli.test.mocks import mock_lookup_table_results, mock_threat_intel_query_results
 from stream_alert_cli.test.results import TestEventFile, TestResult
 
 LOGGER = get_logger(__name__)
@@ -65,6 +65,7 @@ class TestRunner(object):
         self._errors = defaultdict(list)  # cache errors to be logged at the endpoint
         self._tested_rules = set()
         self._threat_intel_mock = mock_threat_intel_query_results()
+        self._lookup_tables_mock = mock_lookup_table_results()
         self._passed = 0
         self._failed = 0
         prefix = self._config['global']['account']['prefix']
@@ -89,11 +90,16 @@ class TestRunner(object):
     def _run_rules_engine(self, record):
         """Create a fresh rules engine and process the record, returning the result"""
         with patch.object(rules_engine.ThreatIntel, '_query') as ti_mock, \
+             patch.object(rules_engine.LookupTables, 'load_lookup_tables') as lt_mock, \
              patch.object(rules_engine, 'AlertForwarder'), \
              patch.object(rules_engine, 'RuleTable'), \
              patch('helpers.base.random_bool', return_value=True):
 
             ti_mock.side_effect = self._threat_intel_mock
+
+            # pylint: disable=protected-access
+            rules_engine.LookupTables._tables = self._lookup_tables_mock
+            lt_mock.return_value = rules_engine.LookupTables
             _rules_engine = rules_engine.RulesEngine()
 
             return _rules_engine.run(records=record)

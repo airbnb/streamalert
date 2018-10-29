@@ -31,3 +31,14 @@ def mock_threat_intel_query_results():
         return list(set(values).intersection(mock_ioc_values))
 
     return _query
+
+
+def mock_lookup_table_results():
+    """Load test fixtures for Lookup Tables to use with rule testing"""
+    mock_lookup_tables = dict()
+    for root, _, fixture_files in os.walk('tests/integration/fixtures/lookup_tables/'):
+        for fixture_file in fixture_files:
+            with open(os.path.join(root, fixture_file), 'r') as json_file:
+                mock_lookup_tables[os.path.splitext(fixture_file)[0]] = json.load(json_file)
+
+    return mock_lookup_tables
