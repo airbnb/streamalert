@@ -28,25 +28,28 @@ from stream_alert.shared import NORMALIZATION_KEY
 from stream_alert.shared.alert import Alert
 from stream_alert.shared.config import load_config
 from tests.unit.stream_alert_alert_processor import (
-    ACCOUNT_ID, ALERTS_TABLE, FUNCTION_NAME, PREFIX, REGION)
+    ALERTS_TABLE,
+    MOCK_ENV
+)
 
-_ARN = 'arn:aws:lambda:{}:{}:function:{}:production'.format(REGION, ACCOUNT_ID, FUNCTION_NAME)
+MOCK_ENV.update({
+    'ALERTS_TABLE': ALERTS_TABLE
+})
 
 
-@patch.dict(os.environ, {'AWS_DEFAULT_REGION': 'us-east-1'})
 class TestAlertProcessor(object):
     """Tests for alert_processor/main.py"""
     # pylint: disable=no-member,no-self-use,protected-access
 
     @patch('stream_alert.alert_processor.main.load_config',
            Mock(return_value=load_config('tests/unit/conf/', validate=True)))
-    @patch.dict(os.environ, {'ALERTS_TABLE': ALERTS_TABLE})
+    @patch.dict(os.environ, MOCK_ENV)
     @patch.object(AlertProcessor, 'BACKOFF_MAX_TRIES', 1)
     @patch('stream_alert.alert_processor.main.AlertTable', MagicMock())
     def setup(self):
         """Alert Processor - Test Setup"""
         # pylint: disable=attribute-defined-outside-init
-        self.processor = AlertProcessor(_ARN)
+        self.processor = AlertProcessor()
         self.alert = Alert(
             'hello_world',
             {'abc': 123, NORMALIZATION_KEY: {}},
@@ -56,9 +59,6 @@ class TestAlertProcessor(object):
     def test_init(self):
         """Alert Processor - Initialization"""
         assert_is_instance(self.processor.config, dict)
-        assert_equal(self.processor.region, REGION)
-        assert_equal(self.processor.account_id, ACCOUNT_ID)
-        assert_equal(self.processor.prefix, PREFIX)
 
     @patch('stream_alert.alert_processor.main.LOGGER')
     def test_create_dispatcher_invalid(self, mock_logger):
@@ -73,6 +73,7 @@ class TestAlertProcessor(object):
         mock_logger.error.called_once_with(
             'The output \'%s\' does not exist!', 'slack:no-such-channel')
 
+    @patch.dict(os.environ, MOCK_ENV)
     def test_create_dispatcher(self):
         """Alert Processor - Create Dispatcher - Success"""
         dispatcher = self.processor._create_dispatcher('aws-s3:unit_test_bucket')
@@ -164,13 +165,11 @@ class TestAlertProcessor(object):
         mock_logger.error.assert_called_once_with(
             '%s does not exist in the alerts table', self.alert.dynamo_key)
 
-    @patch.dict(os.environ, {'ALERTS_TABLE': ALERTS_TABLE})
+    @patch.dict(os.environ, MOCK_ENV)
     @patch.object(AlertProcessor, 'run', return_value={'output': True})
     def test_handler(self, mock_run):
         """Alert Processor - Lambda Handler"""
-        context = MagicMock()
-        context.invoked_function_arn = _ARN
         event = {'AlertID': 'abc', 'RuleName': 'hello_world'}
-        result = handler(event, context)
+        result = handler(event, None)
         assert_equal({'output': True}, result)
         mock_run.assert_called_once_with(event)

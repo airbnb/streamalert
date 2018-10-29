@@ -22,16 +22,16 @@ from nose.tools import assert_false, assert_is_instance, assert_true
 
 from stream_alert.alert_processor.outputs import carbonblack
 from stream_alert.alert_processor.outputs.carbonblack import CarbonBlackOutput
-from stream_alert_cli.helpers import MockCBAPI, put_mock_creds
+from stream_alert_cli.helpers import MockCBAPI
 from tests.unit.stream_alert_alert_processor import (
-    ACCOUNT_ID,
     CONFIG,
-    FUNCTION_NAME,
     KMS_ALIAS,
+    MOCK_ENV,
     REGION
 )
 from tests.unit.stream_alert_alert_processor.helpers import (
     get_alert,
+    put_mock_creds,
     remove_temp_secrets
 )
 
@@ -46,13 +46,14 @@ class TestCarbonBlackOutput(object):
              'ssl_verify': 'Y',
              'token': '1234567890127a3d7f37f4153270bff41b105899'}
 
+    @patch.dict('os.environ', MOCK_ENV)
     def setup(self):
         """Setup before each method"""
         self._mock_s3 = mock_s3()
         self._mock_s3.start()
         self._mock_kms = mock_kms()
         self._mock_kms.start()
-        self._dispatcher = CarbonBlackOutput(REGION, ACCOUNT_ID, FUNCTION_NAME, CONFIG)
+        self._dispatcher = CarbonBlackOutput(CONFIG)
         remove_temp_secrets()
         output_name = self._dispatcher.output_cred_name(self.DESCRIPTOR)
         put_mock_creds(output_name, self.CREDS, self._dispatcher.secrets_bucket, REGION, KMS_ALIAS)

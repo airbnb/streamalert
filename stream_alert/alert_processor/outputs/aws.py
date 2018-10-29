@@ -125,8 +125,10 @@ class KinesisFirehoseOutput(AWSOutput):
                 dict: Firehose response in the format below
                     {'RecordId': 'string'}
             """
-            self.__aws_client__.put_record(DeliveryStreamName=delivery_stream,
-                                           Record={'Data': json_alert})
+            self.__aws_client__.put_record(
+                DeliveryStreamName=delivery_stream,
+                Record={'Data': json_alert}
+            )
 
         if self.__aws_client__ is None:
             self.__aws_client__ = boto3.client('firehose', region_name=self.region)

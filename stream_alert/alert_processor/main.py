@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from __future__ import absolute_import  # Suppresses RuntimeWarning import error in Lambda
-import os
+from os import environ as env
 
 from stream_alert.alert_processor.outputs.output_base import StreamAlertOutput
 from stream_alert.shared import backoff_handlers, NORMALIZATION_KEY, resources
@@ -36,30 +36,19 @@ class AlertProcessor(object):
     BACKOFF_MAX_TRIES = 5
 
     @classmethod
-    def get_instance(cls, invoked_function_arn):
+    def get_instance(cls):
         """Get an instance of the AlertProcessor, using a cached version if possible."""
         if not cls.ALERT_PROCESSOR:
-            cls.ALERT_PROCESSOR = AlertProcessor(invoked_function_arn)
+            cls.ALERT_PROCESSOR = AlertProcessor()
         return cls.ALERT_PROCESSOR
 
-    def __init__(self, invoked_function_arn):
-        """Initialization logic that can be cached across invocations.
-
-        Args:
-            invoked_function_arn (str): The ARN of the alert processor when it was invoked.
-                This is used to calculate region, account, and prefix.
-        """
-        # arn:aws:lambda:REGION:ACCOUNT:function:PREFIX_streamalert_alert_processor:production
-        split_arn = invoked_function_arn.split(':')
-        self.region = split_arn[3]
-        self.account_id = split_arn[4]
-        self.prefix = split_arn[6].split('_')[0]
-
+    def __init__(self):
+        """Initialization logic that can be cached across invocations"""
         # Merge user-specified output configuration with the required output configuration
         output_config = load_config(include={'outputs.json'})['outputs']
-        self.config = resources.merge_required_outputs(output_config, self.prefix)
+        self.config = resources.merge_required_outputs(output_config, env['STREAMALERT_PREFIX'])
 
-        self.alerts_table = AlertTable(os.environ['ALERTS_TABLE'])
+        self.alerts_table = AlertTable(env['ALERTS_TABLE'])
 
     def _create_dispatcher(self, output):
         """Create a dispatcher for the given output.
@@ -83,8 +72,7 @@ class AlertProcessor(object):
             LOGGER.error('The output \'%s\' does not exist!', output)
             return None
 
-        return StreamAlertOutput.create_dispatcher(
-            service, self.region, self.account_id, self.prefix, self.config)
+        return StreamAlertOutput.create_dispatcher(service, self.config)
 
     def _send_to_outputs(self, alert):
         """Send an alert to each remaining output.
@@ -164,7 +152,7 @@ class AlertProcessor(object):
         return result
 
 
-def handler(event, context):
+def handler(event, _):
     """StreamAlert Alert Processor - entry point
 
     Args:
@@ -182,4 +170,4 @@ def handler(event, context):
         dict: Maps output (str) to whether it sent successfully (bool).
             An empty dict is returned if the alert was improperly formatted.
     """
-    return AlertProcessor.get_instance(context.invoked_function_arn).run(event)
+    return AlertProcessor.get_instance().run(event)

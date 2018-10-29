@@ -14,9 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import os
+import json
 import random
 import shutil
 import tempfile
+
+import boto3
+from botocore.exceptions import ClientError
 
 from stream_alert.shared.alert import Alert
 
@@ -84,3 +88,39 @@ def remove_temp_secrets():
     # Check if the folder exists, and remove it if it does
     if os.path.isdir(secrets_dirtemp_dir):
         shutil.rmtree(secrets_dirtemp_dir)
+
+
+def encrypt_with_kms(data, region, alias):
+    """Encrypt the given data with KMS."""
+    kms_client = boto3.client('kms', region_name=region)
+    response = kms_client.encrypt(KeyId=alias, Plaintext=data)
+
+    return response['CiphertextBlob']
+
+
+def put_mock_creds(output_name, creds, bucket, region, alias):
+    """Helper function to mock encrypt creds and put on s3"""
+    creds_string = json.dumps(creds)
+
+    enc_creds = encrypt_with_kms(creds_string, region, alias)
+
+    put_mock_s3_object(bucket, output_name, enc_creds, region)
+
+
+def put_mock_s3_object(bucket, key, data, region='us-east-1'):
+    """Create a mock AWS S3 object for testing
+
+    Args:
+        bucket (str): the bucket in which to place the object
+        key (str): the key to use for the S3 object
+        data (str): the actual value to use for the object
+        region (str): the aws region to use for this boto3 client
+    """
+    s3_client = boto3.client('s3', region_name=region)
+    try:
+        # Check if the bucket exists before creating it
+        s3_client.head_bucket(Bucket=bucket)
+    except ClientError:
+        s3_client.create_bucket(Bucket=bucket)
+
+    s3_client.put_object(Body=data, Bucket=bucket, Key=key, ServerSideEncryption='AES256')
