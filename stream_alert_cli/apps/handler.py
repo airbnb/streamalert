@@ -14,8 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from stream_alert.apps import StreamAlertApp
+from stream_alert.shared.logger import get_logger
 from stream_alert_cli.apps.helpers import save_app_auth_info
-from stream_alert_cli.logger import LOGGER_CLI
+
+LOGGER = get_logger(__name__)
 
 
 def app_handler(options, config):
@@ -50,8 +52,8 @@ def app_handler(options, config):
     if options.subcommand == 'update-auth':
         cluster_config = config['clusters'][app_info['cluster']]
         if not app_info['app_name'] in cluster_config['modules'].get('stream_alert_apps', {}):
-            LOGGER_CLI.error('App integration with name \'%s\' does not exist for cluster \'%s\'',
-                             app_info['app_name'], app_info['cluster'])
+            LOGGER.error('App integration with name \'%s\' does not exist for cluster \'%s\'',
+                         app_info['app_name'], app_info['cluster'])
             return
 
         # Get the type for this app integration from the current

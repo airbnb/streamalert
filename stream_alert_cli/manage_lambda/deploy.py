@@ -17,10 +17,12 @@ from collections import namedtuple
 import sys
 
 from stream_alert.shared import rule_table
+from stream_alert.shared.logger import get_logger
 from stream_alert_cli import helpers
-from stream_alert_cli.logger import LOGGER_CLI
 from stream_alert_cli.manage_lambda import package as stream_alert_packages
 from stream_alert_cli.terraform.generate import terraform_generate_handler
+
+LOGGER = get_logger(__name__)
 
 PackageMap = namedtuple('package_attrs', ['package_class', 'targets', 'enabled'])
 
@@ -61,7 +63,7 @@ def deploy_handler(options, config):
 def deploy(processors, config, clusters=None):
     """Deploy """
 
-    LOGGER_CLI.info('Deploying: %s', ' '.join(sorted(processors)))
+    LOGGER.info('Deploying: %s', ' '.join(sorted(processors)))
 
     # Terraform apply only to the module which contains our lambda functions
     deploy_targets = set()

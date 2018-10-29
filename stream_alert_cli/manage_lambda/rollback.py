@@ -13,11 +13,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from stream_alert_cli.logger import LOGGER_CLI
+from stream_alert.shared.logger import get_logger
 from stream_alert_cli.terraform.generate import terraform_generate_handler
 
 import boto3
 from botocore.exceptions import ClientError
+
+LOGGER = get_logger(__name__)
 
 
 def _rollback_production(lambda_client, function_name):
@@ -27,22 +29,22 @@ def _rollback_production(lambda_client, function_name):
 
     if version == '$LATEST':
         # This won't happen with Terraform, but the alias could have been manually changed.
-        LOGGER_CLI.error('%s:production is pointing to $LATEST instead of a published version',
-                         function_name)
+        LOGGER.error('%s:production is pointing to $LATEST instead of a published version',
+                     function_name)
         return
 
     current_version = int(version)
     if current_version == 1:
-        LOGGER_CLI.warn('%s:production is already at version 1', function_name)
+        LOGGER.warn('%s:production is already at version 1', function_name)
         return
 
-    LOGGER_CLI.info('Rolling back %s:production from version %d => %d',
-                    function_name, current_version, current_version - 1)
+    LOGGER.info('Rolling back %s:production from version %d => %d',
+                function_name, current_version, current_version - 1)
     try:
         lambda_client.update_alias(
             FunctionName=function_name, Name='production', FunctionVersion=str(current_version - 1))
     except ClientError:
-        LOGGER_CLI.exception('version not updated')
+        LOGGER.exception('version not updated')
 
 
 def rollback_handler(options, config):
@@ -56,7 +58,7 @@ def rollback_handler(options, config):
     if not terraform_generate_handler(config=config):
         return
 
-    LOGGER_CLI.info('Rolling back: %s', ' '.join(options.processor))
+    LOGGER.info('Rolling back: %s', ' '.join(options.processor))
 
     rollback_all = 'all' in options.processor
     prefix = config['global']['account']['prefix']

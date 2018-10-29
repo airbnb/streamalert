@@ -18,12 +18,13 @@ import shutil
 import tempfile
 import zipfile
 
+from stream_alert.shared.logger import get_logger
 from stream_alert_cli.helpers import run_command
-from stream_alert_cli.logger import LOGGER_CLI
 
 # Build .zip files in the top-level of the terraform directory
 THIS_DIRECTORY = os.path.dirname(os.path.realpath(__file__))
 BUILD_DIRECTORY = os.path.join(THIS_DIRECTORY, '..', '..', 'terraform')
+LOGGER = get_logger(__name__)
 
 
 class LambdaPackage(object):
@@ -40,7 +41,7 @@ class LambdaPackage(object):
 
     def create(self):
         """Create a Lambda deployment package .zip file."""
-        LOGGER_CLI.info('Creating package for %s', self.package_name)
+        LOGGER.info('Creating package for %s', self.package_name)
 
         temp_package_path = os.path.join(tempfile.gettempdir(), self.package_name)
         if os.path.exists(temp_package_path):
@@ -49,18 +50,18 @@ class LambdaPackage(object):
         self._copy_files(temp_package_path)
 
         if not self._resolve_third_party(temp_package_path):
-            LOGGER_CLI.exception('Failed to install necessary third-party libraries')
+            LOGGER.exception('Failed to install necessary third-party libraries')
             exit(1)
 
         # Extract any precompiled third-party libs for this package
         if self.precompiled_libs and not self._extract_precompiled_libs(temp_package_path):
-            LOGGER_CLI.exception('Failed to extract precompiled third-party libraries')
+            LOGGER.exception('Failed to extract precompiled third-party libraries')
             exit(1)
 
         # Zip up files
         result = shutil.make_archive(
             os.path.join(BUILD_DIRECTORY, self.package_name), 'zip', temp_package_path)
-        LOGGER_CLI.info('Successfully created %s', os.path.basename(result))
+        LOGGER.info('Successfully created %s', os.path.basename(result))
 
         # Remove temp files
         shutil.rmtree(temp_package_path)
@@ -109,7 +110,7 @@ class LambdaPackage(object):
         for lib in self.precompiled_libs:
             libs_name = '_'.join([lib, 'dependencies.zip'])
             if libs_name not in dependency_files:
-                LOGGER_CLI.error('Missing precompiled libs for package: %s', libs_name)
+                LOGGER.error('Missing precompiled libs for package: %s', libs_name)
                 return False
 
             # Copy the contents of the dependency zip to the package directory
@@ -137,10 +138,10 @@ class LambdaPackage(object):
 
         # Return a default of True here if no libraries to install
         if not third_party_libs:
-            LOGGER_CLI.info('No third-party libraries to install.')
+            LOGGER.info('No third-party libraries to install.')
             return True
 
-        LOGGER_CLI.info('Installing third-party libraries: %s', ', '.join(third_party_libs))
+        LOGGER.info('Installing third-party libraries: %s', ', '.join(third_party_libs))
         pip_command = ['pip', 'install']
         pip_command.extend(third_party_libs)
         pip_command.extend(['--upgrade', '--target', temp_package_path])

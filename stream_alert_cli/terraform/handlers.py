@@ -17,12 +17,14 @@ import os
 import shutil
 import sys
 
+from stream_alert.shared.logger import get_logger
 from stream_alert_cli.athena.handler import create_table
-from stream_alert_cli.logger import LOGGER_CLI
 from stream_alert_cli.helpers import check_credentials, continue_prompt, run_command, tf_runner
 from stream_alert_cli.manage_lambda.deploy import deploy
 from stream_alert_cli.terraform.generate import terraform_generate_handler
 from stream_alert_cli.terraform.helpers import terraform_check
+
+LOGGER = get_logger(__name__)
 
 
 def _terraform_init_backend():
@@ -35,7 +37,7 @@ def _terraform_init_backend():
     if not terraform_check():
         return False
 
-    LOGGER_CLI.info('Initializing StreamAlert backend')
+    LOGGER.info('Initializing StreamAlert backend')
     return run_command(['terraform', 'init'])
 
 
@@ -51,18 +53,18 @@ def terraform_init(options, config):
             sys.exit(1)
         return
 
-    LOGGER_CLI.info('Initializing StreamAlert')
+    LOGGER.info('Initializing StreamAlert')
 
     # generate init Terraform files
     if not terraform_generate_handler(config=config, init=True):
         return
 
-    LOGGER_CLI.info('Initializing Terraform')
+    LOGGER.info('Initializing Terraform')
     if not run_command(['terraform', 'init']):
         sys.exit(1)
 
     # build init infrastructure
-    LOGGER_CLI.info('Building Initial Infrastructure')
+    LOGGER.info('Building Initial Infrastructure')
     init_targets = [
         'aws_s3_bucket.lambda_source', 'aws_s3_bucket.logging_bucket',
         'aws_s3_bucket.stream_alert_secrets', 'aws_s3_bucket.terraform_remote_state',
@@ -71,18 +73,18 @@ def terraform_init(options, config):
         'aws_kms_key.stream_alert_secrets', 'aws_kms_alias.stream_alert_secrets'
     ]
     if not tf_runner(targets=init_targets):
-        LOGGER_CLI.error('An error occurred while running StreamAlert init')
+        LOGGER.error('An error occurred while running StreamAlert init')
         sys.exit(1)
 
     # generate the main.tf with remote state enabled
-    LOGGER_CLI.info('Configuring Terraform Remote State')
+    LOGGER.info('Configuring Terraform Remote State')
     if not terraform_generate_handler(config=config, check_tf=False, check_creds=False):
         return
 
     if not run_command(['terraform', 'init']):
         return
 
-    LOGGER_CLI.info('Deploying Lambda Functions')
+    LOGGER.info('Deploying Lambda Functions')
 
     processors = ['rule', 'alert', 'alert_merger', 'athena', 'classifier']
 
@@ -93,7 +95,7 @@ def terraform_init(options, config):
     alerts_bucket = '{}.streamalerts'.format(config['global']['account']['prefix'])
     create_table('alerts', alerts_bucket, config)
 
-    LOGGER_CLI.info('Building remainding infrastructure')
+    LOGGER.info('Building remainding infrastructure')
     tf_runner(refresh=False)
 
 
@@ -191,7 +193,7 @@ def terraform_clean_handler(config, prompt=True):
     if prompt and not continue_prompt(message='Are you sure you want to remove Terraform files?'):
         sys.exit(1)
 
-    LOGGER_CLI.info('Cleaning Terraform files')
+    LOGGER.info('Cleaning Terraform files')
 
     cleanup_files = ['{}.tf.json'.format(cluster) for cluster in config.clusters()]
     cleanup_files.extend(

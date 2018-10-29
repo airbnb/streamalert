@@ -13,9 +13,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from stream_alert.shared.logger import get_logger
 from stream_alert_cli.helpers import tf_runner
-from stream_alert_cli.logger import LOGGER_CLI
 from stream_alert_cli.terraform.generate import terraform_generate_handler
+
+LOGGER = get_logger(__name__)
 
 
 def kinesis_handler(options, config):
@@ -26,7 +28,7 @@ def kinesis_handler(options, config):
         config (CLIConfig): Loaded StreamAlert config
     """
     enable = options.action == 'enable-events'
-    LOGGER_CLI.info('%s Kinesis Events', 'Enabling' if enable else 'Disabling')
+    LOGGER.info('%s Kinesis Events', 'Enabling' if enable else 'Disabling')
 
     for cluster in options.clusters or config.clusters():
         if 'kinesis_events' in config['clusters'][cluster]['modules']:

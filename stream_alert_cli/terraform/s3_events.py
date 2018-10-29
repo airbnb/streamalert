@@ -13,7 +13,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from stream_alert_cli.logger import LOGGER_CLI
+from stream_alert.shared.logger import get_logger
+
+LOGGER = get_logger(__name__)
 
 
 def generate_s3_events(cluster_name, cluster_dict, config):
@@ -36,13 +38,13 @@ def generate_s3_events(cluster_name, cluster_dict, config):
         del config['clusters'][cluster_name]['modules']['s3_events']
         s3_event_buckets = [{'bucket_id': s3_event_buckets['s3_bucket_id']}]
         config['clusters'][cluster_name]['modules']['s3_events'] = s3_event_buckets
-        LOGGER_CLI.info('Converting legacy S3 Events config')
+        LOGGER.info('Converting legacy S3 Events config')
         config.write()
 
     # Add each configured S3 bucket module
     for index, bucket_info in enumerate(s3_event_buckets):
         if 'bucket_id' not in bucket_info:
-            LOGGER_CLI.error('Config Error: Missing bucket_id key from s3_event configuration')
+            LOGGER.error('Config Error: Missing bucket_id key from s3_event configuration')
             return False
 
         cluster_dict['module']['s3_events_{}_{}_{}'.format(prefix, cluster_name, index)] = {

@@ -13,9 +13,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from stream_alert.shared.logger import get_logger
 from stream_alert.apps.config import AppConfig
 from stream_alert_cli.helpers import user_input, save_parameter
-from stream_alert_cli.logger import LOGGER_CLI
+
+LOGGER = get_logger(__name__)
 
 
 def save_app_auth_info(app, info, overwrite=False):
@@ -36,8 +38,8 @@ def save_app_auth_info(app, info, overwrite=False):
     param_name = '{}_{}'.format(info['function_name'], AppConfig.AUTH_CONFIG_SUFFIX)
     saved = save_parameter(info['region'], param_name, auth_dict, description, overwrite)
     if saved:
-        LOGGER_CLI.info('App authentication info successfully saved to parameter store.')
+        LOGGER.info('App authentication info successfully saved to parameter store.')
     else:
-        LOGGER_CLI.error('App authentication info was not saved to parameter store.')
+        LOGGER.error('App authentication info was not saved to parameter store.')
 
     return saved

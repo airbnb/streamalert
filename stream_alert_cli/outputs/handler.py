@@ -13,10 +13,12 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from stream_alert.shared.logger import get_logger
 from stream_alert.alert_processor.outputs.output_base import StreamAlertOutput
 from stream_alert_cli.helpers import user_input
-from stream_alert_cli.logger import LOGGER_CLI
 from stream_alert_cli.outputs.helpers import encrypt_and_push_creds_to_s3, output_exists
+
+LOGGER = get_logger(__name__)
 
 
 def output_handler(options, config):
@@ -67,9 +69,9 @@ def output_handler(options, config):
         output_config[service] = updated_config
         config.write()
 
-        LOGGER_CLI.info('Successfully saved \'%s\' output configuration for service \'%s\'',
-                        props['descriptor'].value, options.service)
+        LOGGER.info('Successfully saved \'%s\' output configuration for service \'%s\'',
+                    props['descriptor'].value, options.service)
     else:
-        LOGGER_CLI.error('An error occurred while saving \'%s\' '
-                         'output configuration for service \'%s\'', props['descriptor'].value,
-                         options.service)
+        LOGGER.error('An error occurred while saving \'%s\' '
+                     'output configuration for service \'%s\'', props['descriptor'].value,
+                     options.service)

@@ -18,7 +18,9 @@ import json
 import boto3
 from botocore.exceptions import ClientError
 
-from stream_alert_cli.logger import LOGGER_CLI
+from stream_alert.shared.logger import get_logger
+
+LOGGER = get_logger(__name__)
 
 
 def encrypt_and_push_creds_to_s3(region, bucket, key, props, kms_key_alias):
@@ -61,7 +63,7 @@ def kms_encrypt(region, data, kms_key_alias):
                                   Plaintext=data)
         return response['CiphertextBlob']
     except ClientError:
-        LOGGER_CLI.error('An error occurred during credential encryption')
+        LOGGER.error('An error occurred during credential encryption')
         raise
 
 def send_creds_to_s3(region, bucket, key, blob_data):
@@ -79,7 +81,7 @@ def send_creds_to_s3(region, bucket, key, blob_data):
 
         return True
     except ClientError as err:
-        LOGGER_CLI.error(
+        LOGGER.error(
             'An error occurred while sending credentials to S3 for key \'%s\' '
             'in bucket \'%s\': %s',
             key,
@@ -100,8 +102,8 @@ def output_exists(config, props, service):
         [boolean] True if the service/destination exists already
     """
     if service in config and props['descriptor'].value in config[service]:
-        LOGGER_CLI.error('This descriptor is already configured for %s. '
-                         'Please select a new and unique descriptor', service)
+        LOGGER.error('This descriptor is already configured for %s. '
+                     'Please select a new and unique descriptor', service)
         return True
 
     return False

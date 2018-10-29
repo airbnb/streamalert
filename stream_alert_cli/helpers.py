@@ -13,72 +13,27 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from collections import namedtuple
 from getpass import getpass
 import json
 import os
 import re
-from StringIO import StringIO
 import subprocess
-import zipfile
 
 import boto3
 from botocore.exceptions import ClientError
-from cbapi.response import BannedHash, Binary
 
-from stream_alert_cli.logger import LOGGER_CLI
+from stream_alert.shared.logger import get_logger
 
+LOGGER = get_logger(__name__)
 
-class MockCBAPI(object):
-    """Mock for CbResponseAPI"""
-
-    class MockBannedHash(object):
-        """Mock for cbapi.response.BannedHash"""
-
-        def __init__(self):
-            self.enabled = True
-            self.md5hash = None
-            self.text = ''
-
-        @staticmethod
-        def save():
-            return True
-
-
-    class MockBinary(object):
-        """Mock for cbapi.response.Binary"""
-
-        def __init__(self, banned, enabled, md5):
-            self._banned = banned
-            self._enabled = enabled
-            self.md5 = md5
-
-        @property
-        def banned(self):
-            """Indicates whether binary is banned"""
-            if self._banned:
-                return namedtuple('MockBanned', ['enabled'])(self._enabled)
-            return False
-
-    def __init__(self, **kwargs):
-        pass
-
-    @staticmethod
-    def create(model):
-        """Create banned hash"""
-        if model == BannedHash:
-            return MockCBAPI.MockBannedHash()
-
-    @staticmethod
-    def select(model, file_hash):
-        if model == Binary:
-            if file_hash == 'BANNED_ENABLED_HASH':
-                return MockCBAPI.MockBinary(banned=True, enabled=True, md5=file_hash)
-            elif file_hash == 'BANNED_DISABLED_HASH':
-                return MockCBAPI.MockBinary(banned=True, enabled=False, md5=file_hash)
-            return MockCBAPI.MockBinary(banned=False, enabled=False, md5=file_hash)
-        elif model == BannedHash:
-            return MockCBAPI.MockBannedHash()
+SCHEMA_TYPE_LOOKUP = {
+    bool: 'boolean',
+    float: 'float',
+    int: 'integer',
+    str: 'string',
+    dict: dict(),
+    list: list()
+}
 
 
 def run_command(runner_args, **kwargs):
@@ -110,10 +65,10 @@ def run_command(runner_args, **kwargs):
     try:
         subprocess.check_call(runner_args, stdout=stdout_option, cwd=cwd)  # nosec
     except subprocess.CalledProcessError as err:
-        LOGGER_CLI.error('%s\n%s', error_message, err.cmd)
+        LOGGER.error('%s\n%s', error_message, err.cmd)
         return False
     except OSError as err:
-        LOGGER_CLI.error('%s\n%s (%s)', error_message, err.strerror, runner_args[0])
+        LOGGER.error('%s\n%s (%s)', error_message, err.strerror, runner_args[0])
         return False
 
     return True
@@ -156,7 +111,7 @@ def tf_runner(action='apply', refresh=True, auto_approve=False, targets=None):
     Returns:
         bool: True if the terraform command was successful
     """
-    LOGGER_CLI.debug('Resolving Terraform modules')
+    LOGGER.debug('Resolving Terraform modules')
     if not run_command(['terraform', 'get'], quiet=True):
         return False
 
@@ -164,10 +119,10 @@ def tf_runner(action='apply', refresh=True, auto_approve=False, targets=None):
 
     if action == 'destroy':
         # Terraform destroy has a '-force' flag instead of '-auto-approve'
-        LOGGER_CLI.info('Destroying infrastructure')
+        LOGGER.info('Destroying infrastructure')
         tf_command.append('-force={}'.format(str(auto_approve).lower()))
     else:
-        LOGGER_CLI.info('%s changes', 'Applying' if auto_approve else 'Planning')
+        LOGGER.info('%s changes', 'Applying' if auto_approve else 'Planning')
         tf_command.append('-auto-approve={}'.format(str(auto_approve).lower()))
 
     if targets:
@@ -188,48 +143,12 @@ def check_credentials():
     env_vars_exist = any([env_var in os.environ for env_var in aws_env_variables])
 
     if not env_vars_exist:
-        LOGGER_CLI.error('No valid AWS Credentials found in your environment!')
-        LOGGER_CLI.error('Please follow the setup instructions here: '
-                         'https://www.streamalert.io/account.html')
+        LOGGER.error('No valid AWS Credentials found in your environment!')
+        LOGGER.error('Please follow the setup instructions here: '
+                     'https://www.streamalert.io/account.html')
         return False
 
     return True
-
-
-def create_lambda_function(function_name, region):
-    """Helper function to create mock lambda function"""
-    if function_name.find(':') != -1:
-        function_name = function_name.split(':')[0]
-
-    boto3.client(
-        'lambda', region_name=region).create_function(
-            FunctionName=function_name,
-            Runtime='python2.7',
-            Role='test-iam-role',
-            Handler='function.handler',
-            Description='test lambda function',
-            Timeout=3,
-            MemorySize=128,
-            Publish=True,
-            Code={
-                'ZipFile': _make_lambda_package()
-            })
-
-
-def _make_lambda_package():
-    """Helper function to create mock lambda package"""
-    mock_lambda_function = """
-def handler(event, context):
-return event
-"""
-    package_output = StringIO()
-    package = zipfile.ZipFile(package_output, 'w', zipfile.ZIP_DEFLATED)
-    package.writestr('function.zip', mock_lambda_function)
-    package.close()
-    package_output.seek(0)
-
-    return package_output.read()
-
 
 
 def user_input(requested_info, mask, input_restrictions):
@@ -255,23 +174,23 @@ def user_input(requested_info, mask, input_restrictions):
         if isinstance(input_restrictions, re._pattern_type):
             valid_response = input_restrictions.match(response)
             if not valid_response:
-                LOGGER_CLI.error('The supplied input should match the following '
-                                 'regular expression: %s', input_restrictions.pattern)
+                LOGGER.error('The supplied input should match the following '
+                             'regular expression: %s', input_restrictions.pattern)
         elif callable(input_restrictions):
             # Functions can be passed here to perform complex validation of input
             # Transform the response with the validating function
             response = input_restrictions(response)
             valid_response = response is not None and response is not False
             if not valid_response:
-                LOGGER_CLI.error('The supplied input failed to pass the validation '
-                                 'function: %s', input_restrictions.__doc__)
+                LOGGER.error('The supplied input failed to pass the validation '
+                             'function: %s', input_restrictions.__doc__)
         else:
             valid_response = not any(x in input_restrictions for x in response)
             if not valid_response:
                 restrictions = ', '.join(
                     '\'{}\''.format(restriction) for restriction in input_restrictions)
-                LOGGER_CLI.error('The supplied input should not contain any of the following: %s',
-                                 restrictions)
+                LOGGER.error('The supplied input should not contain any of the following: %s',
+                             restrictions)
 
         if not valid_response:
             return user_input(requested_info, mask, input_restrictions)
@@ -292,6 +211,7 @@ def save_parameter(region, name, value, description, force_overwrite=False):
     ssm_client = boto3.client('ssm', region_name=region)
 
     param_value = json.dumps(value)
+
     # The name of the parameter should follow the format of:
     # <function_name>_<type> where <type> is one of {'auth', 'config', 'state'}
     # and <function_name> follows the the format:
@@ -312,8 +232,8 @@ def save_parameter(region, name, value, description, force_overwrite=False):
     except ClientError as err:
         if err.response['Error']['Code'] == 'ExpiredTokenException':
             # Log an error if this response was due to no credentials being found
-            LOGGER_CLI.error('Could not save \'%s\' to parameter store because no '
-                             'valid credentials were loaded.', name)
+            LOGGER.error('Could not save \'%s\' to parameter store because no '
+                         'valid credentials were loaded.', name)
 
         if err.response['Error']['Code'] != 'ParameterAlreadyExists':
             raise
@@ -328,3 +248,30 @@ def save_parameter(region, name, value, description, force_overwrite=False):
         save(overwrite=True)
 
     return True
+
+
+def record_to_schema(record, recursive=False):
+    """Take a record and return a schema that corresponds to it's keys/value types
+
+    This generates a log schema that is compatible with schemas in conf/logs.json
+
+    Args:
+        record (dict): The record to generate a schema for
+        recursive (bool): True if sub-dictionaries should be recursed
+
+    Returns:
+        dict: A new record that reflects the original keys with values that reflect
+            the types of the original values
+    """
+    if not isinstance(record, dict):
+        return
+
+    result = {}
+    for key, value in record.iteritems():
+        # only worry about recursion for dicts, not lists
+        if recursive and isinstance(value, dict):
+            result[key] = record_to_schema(value, recursive)
+        else:
+            result[key] = SCHEMA_TYPE_LOOKUP.get(type(value), 'string')
+
+    return result

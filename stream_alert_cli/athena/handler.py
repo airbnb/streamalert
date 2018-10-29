@@ -17,10 +17,11 @@ from stream_alert.athena_partition_refresh.main import AthenaRefresher
 from stream_alert.rule_processor.firehose import FirehoseClient
 from stream_alert.shared.alert import Alert
 from stream_alert.shared.athena import AthenaClient
+from stream_alert.shared.logger import get_logger
 from stream_alert_cli.athena import helpers
 from stream_alert_cli.helpers import continue_prompt
-from stream_alert_cli.logger import LOGGER_CLI
 
+LOGGER = get_logger(__name__)
 
 CREATE_TABLE_STATEMENT = ('CREATE EXTERNAL TABLE {table_name} ({schema}) '
                           'PARTITIONED BY (dt string) '
@@ -104,16 +105,16 @@ def rebuild_partitions(table, bucket, config):
     # Get the current set of partitions
     partitions = athena_client.get_table_partitions(sanitized_table_name)
     if not partitions:
-        LOGGER_CLI.info('No partitions to rebuild for %s, nothing to do', sanitized_table_name)
+        LOGGER.info('No partitions to rebuild for %s, nothing to do', sanitized_table_name)
         return
 
     # Drop the table
-    LOGGER_CLI.info('Dropping table %s', sanitized_table_name)
+    LOGGER.info('Dropping table %s', sanitized_table_name)
     success = athena_client.drop_table(sanitized_table_name)
     if not success:
         return
 
-    LOGGER_CLI.info('Creating table %s', sanitized_table_name)
+    LOGGER.info('Creating table %s', sanitized_table_name)
 
     # Re-create the table with previous partitions
     create_table(table, bucket, config)
@@ -123,20 +124,19 @@ def rebuild_partitions(table, bucket, config):
 
     # Make sure our new alter table statement is within the query API limits
     if len(new_partitions_statement) > MAX_QUERY_LENGTH:
-        LOGGER_CLI.error('Partition statement too large, writing to local file')
+        LOGGER.error('Partition statement too large, writing to local file')
         with open('partitions_{}.txt'.format(sanitized_table_name), 'w') as partition_file:
             partition_file.write(new_partitions_statement)
         return
 
-    LOGGER_CLI.info('Creating %d new partitions for %s',
-                    len(partitions), sanitized_table_name)
+    LOGGER.info('Creating %d new partitions for %s', len(partitions), sanitized_table_name)
 
     success = athena_client.run_query(query=new_partitions_statement)
     if not success:
-        LOGGER_CLI.error('Error re-creating new partitions for %s', sanitized_table_name)
+        LOGGER.error('Error re-creating new partitions for %s', sanitized_table_name)
         return
 
-    LOGGER_CLI.info('Successfully rebuilt partitions for %s', sanitized_table_name)
+    LOGGER.info('Successfully rebuilt partitions for %s', sanitized_table_name)
 
 
 def drop_all_tables(config):
@@ -153,11 +153,9 @@ def drop_all_tables(config):
     athena_client = get_athena_client(config)
 
     if not athena_client.drop_all_tables():
-        LOGGER_CLI.error('Failed to drop one or more tables from database: %s',
-                         athena_client.database)
+        LOGGER.error('Failed to drop one or more tables from database: %s', athena_client.database)
     else:
-        LOGGER_CLI.info('Successfully dropped all tables from database: %s',
-                        athena_client.database)
+        LOGGER.info('Successfully dropped all tables from database: %s', athena_client.database)
 
 
 def _construct_create_table_statement(schema, table_name, bucket):
@@ -212,15 +210,15 @@ def create_table(table, bucket, config, schema_override=None):
 
     # Check that the log type is enabled via Firehose
     if sanitized_table_name != 'alerts' and sanitized_table_name not in enabled_logs:
-        LOGGER_CLI.error('Table name %s missing from configuration or '
-                         'is not enabled.', sanitized_table_name)
+        LOGGER.error('Table name %s missing from configuration or '
+                     'is not enabled.', sanitized_table_name)
         return
 
     athena_client = get_athena_client(config)
 
     # Check if the table exists
     if athena_client.check_table_exists(sanitized_table_name):
-        LOGGER_CLI.info('The \'%s\' table already exists.', sanitized_table_name)
+        LOGGER.info('The \'%s\' table already exists.', sanitized_table_name)
         return
 
     if table == 'alerts':
@@ -258,25 +256,26 @@ def create_table(table, bucket, config, schema_override=None):
             for override in schema_override:
                 column_name, column_type = override.split('=')
                 if not all([column_name, column_type]):
-                    LOGGER_CLI.error('Invalid schema override [%s], use column_name=type format',
-                                     override)
+                    LOGGER.error('Invalid schema override [%s], use column_name=type format',
+                                 override)
 
                 # Columns are escaped to avoid Hive issues with special characters
                 column_name = '`{}`'.format(column_name)
                 if column_name in athena_schema:
                     athena_schema[column_name] = column_type
-                    LOGGER_CLI.info('Applied schema override: %s:%s', column_name, column_type)
+                    LOGGER.info('Applied schema override: %s:%s', column_name, column_type)
                 else:
-                    LOGGER_CLI.error(
+                    LOGGER.error(
                         'Schema override column %s not found in Athena Schema, skipping',
-                        column_name)
+                        column_name
+                    )
 
         query = _construct_create_table_statement(
             schema=athena_schema, table_name=sanitized_table_name, bucket=bucket)
 
     success = athena_client.run_query(query=query)
     if not success:
-        LOGGER_CLI.error('The %s table could not be created', sanitized_table_name)
+        LOGGER.error('The %s table could not be created', sanitized_table_name)
         return
 
     # Update the CLI config
@@ -285,4 +284,4 @@ def create_table(table, bucket, config, schema_override=None):
         config['lambda']['athena_partition_refresh_config']['buckets'][bucket] = 'data'
         config.write()
 
-    LOGGER_CLI.info('The %s table was successfully created!', sanitized_table_name)
+    LOGGER.info('The %s table was successfully created!', sanitized_table_name)
