@@ -20,6 +20,7 @@ from collections import defaultdict
 import json
 import os
 import re
+import sys
 import time
 import zlib
 
@@ -38,7 +39,7 @@ LOGGER = get_logger(__name__)
 
 
 def test_handler(options, config):
-    TestRunner(options, config).run()
+    sys.exit(TestRunner(options, config).run())
 
 
 class TestRunner(object):
@@ -168,6 +169,8 @@ class TestRunner(object):
             print(test_event)
 
         self._finalize()
+
+        return self._failed != 0
 
     def _get_test_files(self):
         """Helper to get rule files to be tested
