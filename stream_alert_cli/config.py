@@ -115,13 +115,13 @@ class CLIConfig(object):
 
         LOGGER.info('Prefix successfully configured')
 
-    def set_aws_account_id(self, key, value):
+    def set_aws_account_id(self, aws_account_id):
         """Set the AWS Account ID in Global settings"""
-        if key == 'aws_account_id' and not not re.search(r'\A\d{12}\Z', value):
+        if not re.search(r'\A\d{12}\Z', aws_account_id):
             LOGGER.error('Invalid AWS Account ID, must be 12 digits long')
             return
 
-        self.config['global']['account'][key] = value
+        self.config['global']['account']['aws_account_id'] = aws_account_id
         self.write()
 
         LOGGER.info('AWS Account ID successfully configured')

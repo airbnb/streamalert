@@ -1,334 +1,334 @@
 [
   {
-    "data":{
-      "account":12345,
-      "detail":{
-        "additionalEventData":{
-          "x_amz_id_2":"..."
+    "data": {
+      "account": 12345,
+      "detail": {
+        "additionalEventData": {
+          "x_amz_id_2": "..."
         },
-        "awsRegion":"...",
-        "eventID":"...",
-        "eventName":"PutObjectAcl",
-        "eventSource":"...",
-        "eventTime":"...",
-        "eventType":"AwsApiCall",
-        "eventVersion":"...",
-        "readOnly":false,
-        "recipientAccountId":"12345",
-        "requestID":"...",
-        "requestParameters":{
-          "AccessControlPolicy":{
-            "AccessControlList":{
-              "Grant":{
-                "Grantee":{
-                  "ID":"...",
-                  "xmlns_xsi":"http://www.w3.org/2001/XMLSchema-instance",
-                  "xsi_type":"CanonicalUser"
+        "awsRegion": "...",
+        "eventID": "...",
+        "eventName": "PutObjectAcl",
+        "eventSource": "...",
+        "eventTime": "...",
+        "eventType": "AwsApiCall",
+        "eventVersion": "...",
+        "readOnly": false,
+        "recipientAccountId": "12345",
+        "requestID": "...",
+        "requestParameters": {
+          "AccessControlPolicy": {
+            "AccessControlList": {
+              "Grant": {
+                "Grantee": {
+                  "ID": "...",
+                  "xmlns_xsi": "http://www.w3.org/2001/XMLSchema-instance",
+                  "xsi_type": "CanonicalUser"
                 },
-                "Permission":"FULL_CONTROL"
+                "Permission": "FULL_CONTROL"
               }
             },
-            "Owner":{
-              "ID":"..."
+            "Owner": {
+              "ID": "..."
             },
-            "xmlns":"http://s3.amazonaws.com/doc/2006-03-01/"
+            "xmlns": "http://s3.amazonaws.com/doc/2006-03-01/"
           },
-          "acl":"",
-          "bucketName":"an-example-bucket-name",
-          "key":"..."
+          "acl": "",
+          "bucketName": "an-example-bucket-name",
+          "key": "..."
         },
-        "resources":[
+        "resources": [
           {
-            "ARN":"...",
-            "type":"..."
+            "ARN": "...",
+            "type": "..."
           },
           {
-            "ARN":"...",
-            "accountId":"12345",
-            "type":"..."
+            "ARN": "...",
+            "accountId": "12345",
+            "type": "..."
           }
         ],
-        "responseElements":{},
-        "sourceIPAddress":"...",
-        "userAgent":"...",
-        "userIdentity":{
-          "accessKeyId":"...",
-          "accountId":"12345",
-          "arn":"...",
-          "principalId":"...",
-          "sessionContext":{
-            "attributes":{
-              "creationDate":"...",
-              "mfaAuthenticated":"..."
+        "responseElements": {},
+        "sourceIPAddress": "...",
+        "userAgent": "...",
+        "userIdentity": {
+          "accessKeyId": "...",
+          "accountId": "12345",
+          "arn": "...",
+          "principalId": "...",
+          "sessionContext": {
+            "attributes": {
+              "creationDate": "...",
+              "mfaAuthenticated": "..."
             },
-            "sessionIssuer":{
-              "accountId":"12345",
-              "arn":"...",
-              "principalId":"...",
-              "type":"Role",
-              "userName":"roleName"
+            "sessionIssuer": {
+              "accountId": "12345",
+              "arn": "...",
+              "principalId": "...",
+              "type": "Role",
+              "userName": "roleName"
             }
           },
-          "type":"..."
+          "type": "..."
         }
       },
-      "detail-type":"...",
-      "id":"123",
-      "region":"...",
-      "resources":[],
-      "source":"...",
-      "time":"...",
-      "version":"0"
+      "detail-type": "...",
+      "id": "123",
+      "region": "...",
+      "resources": [],
+      "source": "...",
+      "time": "...",
+      "version": "0"
     },
-    "description":"A PutObjectAcl call without use of AllUsers or AuthenticatedUsers should not create an alert.",
-    "log":"cloudwatch:events",
-    "service":"kinesis",
-    "source":"prefix_cluster1_stream_alert_kinesis",
-    "trigger_rules":[]
+    "description": "A PutObjectAcl call without use of AllUsers or AuthenticatedUsers should not create an alert.",
+    "log": "cloudwatch:events",
+    "service": "kinesis",
+    "source": "prefix_cluster1_stream_alert_kinesis",
+    "trigger_rules": []
   },
   {
-    "data":{
-      "account":12345,
-      "detail":{
-        "additionalEventData":{
-          "x_amz_id_2":"..."
+    "data": {
+      "account": 12345,
+      "detail": {
+        "additionalEventData": {
+          "x_amz_id_2": "..."
         },
-        "awsRegion":"...",
-        "eventID":"...",
-        "eventName":"PutObjectAcl",
-        "eventSource":"...",
-        "eventTime":"...",
-        "eventType":"...",
-        "eventVersion":"...",
-        "readOnly":false,
-        "recipientAccountId":"12345",
-        "requestID":"...",
-        "requestParameters":{
-          "AccessControlPolicy":{
-            "AccessControlList":{
-              "Grant":[
+        "awsRegion": "...",
+        "eventID": "...",
+        "eventName": "PutObjectAcl",
+        "eventSource": "...",
+        "eventTime": "...",
+        "eventType": "...",
+        "eventVersion": "...",
+        "readOnly": false,
+        "recipientAccountId": "12345",
+        "requestID": "...",
+        "requestParameters": {
+          "AccessControlPolicy": {
+            "AccessControlList": {
+              "Grant": [
                 {
-                  "Grantee":{
-                    "URI":"http://acs.amazonaws.com/groups/global/AllUsers",
-                    "xmlns:xsi":"http://www.w3.org/2001/XMLSchema-instance",
-                    "xsi:type":"Group"
+                  "Grantee": {
+                    "URI": "http://acs.amazonaws.com/groups/global/AllUsers",
+                    "xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
+                    "xsi:type": "Group"
                   },
-                  "permission":"READ"
+                  "permission": "READ"
                 }
               ]
             },
-            "Owner":{
-              "ID":"..."
+            "Owner": {
+              "ID": "..."
             },
-            "xmlns":"http://s3.amazonaws.com/doc/2006-03-01/"
+            "xmlns": "http://s3.amazonaws.com/doc/2006-03-01/"
           },
-          "acl":"",
-          "bucketName":"...",
-          "key":"..."
+          "acl": "",
+          "bucketName": "...",
+          "key": "..."
         },
-        "resources":[
+        "resources": [
           {
-            "ARN":"...",
-            "type":"..."
+            "ARN": "...",
+            "type": "..."
           },
           {
-            "ARN":"...",
-            "accountId":"12345",
-            "type":"..."
+            "ARN": "...",
+            "accountId": "12345",
+            "type": "..."
           }
         ],
-        "responseElements":{},
-        "sourceIPAddress":"...",
-        "userAgent":"...",
-        "userIdentity":{
-          "accessKeyId":"...",
-          "accountId":"12345",
-          "arn":"...",
-          "principalId":"...:...",
-          "sessionContext":{
-            "attributes":{
-              "creationDate":"...",
-              "mfaAuthenticated":"..."
+        "responseElements": {},
+        "sourceIPAddress": "...",
+        "userAgent": "...",
+        "userIdentity": {
+          "accessKeyId": "...",
+          "accountId": "12345",
+          "arn": "...",
+          "principalId": "...:...",
+          "sessionContext": {
+            "attributes": {
+              "creationDate": "...",
+              "mfaAuthenticated": "..."
             },
-            "sessionIssuer":{
-              "accountId":"12345",
-              "arn":"...",
-              "principalId":"...",
-              "type":"...",
-              "userName":"..."
+            "sessionIssuer": {
+              "accountId": "12345",
+              "arn": "...",
+              "principalId": "...",
+              "type": "...",
+              "userName": "..."
             }
           },
-          "type":"..."
+          "type": "..."
         }
       },
-      "detail-type":"...",
-      "id":"123",
-      "region":"...",
-      "resources":[],
-      "source":"...",
-      "time":"...",
-      "version":"0"
+      "detail-type": "...",
+      "id": "123",
+      "region": "...",
+      "resources": [],
+      "source": "...",
+      "time": "...",
+      "version": "0"
     },
-    "description":"A PutObjectAcl call from the AWS Console with AllUsers or AuthenticatedUsers should create an alert.",
-    "log":"cloudwatch:events",
-    "service":"kinesis",
-    "source":"prefix_cluster1_stream_alert_kinesis",
-    "trigger_rules":[
+    "description": "A PutObjectAcl call from the AWS Console with AllUsers or AuthenticatedUsers should create an alert.",
+    "log": "cloudwatch:events",
+    "service": "kinesis",
+    "source": "prefix_cluster1_stream_alert_kinesis",
+    "trigger_rules": [
       "cloudtrail_put_object_acl_public"
     ]
   },
   {
-    "data":{
-      "account":12345,
-      "detail":{
-        "additionalEventData":{
-          "x_amz_id_2":"..."
+    "data": {
+      "account": 12345,
+      "detail": {
+        "additionalEventData": {
+          "x_amz_id_2": "..."
         },
-        "awsRegion":"...",
-        "eventId":"...",
-        "eventName":"PutObjectAcl",
-        "eventSource":"...",
-        "eventTime":"...",
-        "eventType":"...",
-        "eventVersion":"...",
-        "readOnly":false,
-        "recipientAccountId":"12345",
-        "requestID":"...",
-        "requestParameters":{
-          "AccessControlList":{
-            "x_amz_grant_read":"uri=http://acs.amazonaws.com/groups/global/AllUsers"
+        "awsRegion": "...",
+        "eventId": "...",
+        "eventName": "PutObjectAcl",
+        "eventSource": "...",
+        "eventTime": "...",
+        "eventType": "...",
+        "eventVersion": "...",
+        "readOnly": false,
+        "recipientAccountId": "12345",
+        "requestID": "...",
+        "requestParameters": {
+          "AccessControlList": {
+            "x_amz_grant_read": "uri=http://acs.amazonaws.com/groups/global/AllUsers"
           },
-          "acl":"",
-          "bucketName":"...",
-          "key":"..."
+          "acl": "",
+          "bucketName": "...",
+          "key": "..."
         },
-        "resources":[
+        "resources": [
           {
-            "ARN":"...",
-            "type":"..."
+            "ARN": "...",
+            "type": "..."
           },
           {
-            "ARN":"...",
-            "accountId":"12345",
-            "type":"..."
+            "ARN": "...",
+            "accountId": "12345",
+            "type": "..."
           }
         ],
-        "responseElements":{},
-        "sourceIPAddress":"...",
-        "userAgent":[
+        "responseElements": {},
+        "sourceIPAddress": "...",
+        "userAgent": [
           "..."
         ],
-        "userIdentity":{
-          "accessKeyId":"...",
-          "accountId":"12345",
-          "arn":"...",
-          "principalId":"...",
-          "sessionContext":{
-            "attributes":{
-              "creationDate":"...",
-              "mfaAuthenticated":"..."
+        "userIdentity": {
+          "accessKeyId": "...",
+          "accountId": "12345",
+          "arn": "...",
+          "principalId": "...",
+          "sessionContext": {
+            "attributes": {
+              "creationDate": "...",
+              "mfaAuthenticated": "..."
             },
-            "sessionIssuer":{
-              "accountId":"12345",
-              "arn":"...",
-              "principalId":"...",
-              "type":"...",
-              "username":"..."
+            "sessionIssuer": {
+              "accountId": "12345",
+              "arn": "...",
+              "principalId": "...",
+              "type": "...",
+              "username": "..."
             }
           },
-          "type":"..."
+          "type": "..."
         }
       },
-      "detail-type":"...",
-      "id":"123",
-      "region":"...",
-      "resources":[],
-      "source":"...",
-      "time":"...",
-      "version":"0"
+      "detail-type": "...",
+      "id": "123",
+      "region": "...",
+      "resources": [],
+      "source": "...",
+      "time": "...",
+      "version": "0"
     },
-    "description":"A PutObjectAcl call via the S3 API with AllUsers or AuthenticatedUsers should create an alert.",
-    "log":"cloudwatch:events",
-    "service":"kinesis",
-    "source":"prefix_cluster1_stream_alert_kinesis",
-    "trigger_rules":[
+    "description": "A PutObjectAcl call via the S3 API with AllUsers or AuthenticatedUsers should create an alert.",
+    "log": "cloudwatch:events",
+    "service": "kinesis",
+    "source": "prefix_cluster1_stream_alert_kinesis",
+    "trigger_rules": [
       "cloudtrail_put_object_acl_public"
     ]
   },
   {
-    "data":{
-      "account":12345,
-      "detail":{
-        "additionalEventData":{
-          "x_amz_id_2":"..."
+    "data": {
+      "account": 12345,
+      "detail": {
+        "additionalEventData": {
+          "x_amz_id_2": "..."
         },
-        "awsRegion":"...",
-        "eventId":"...",
-        "eventName":"PutObjectAcl",
-        "eventSource":"...",
-        "eventTime":"...",
-        "eventType":"...",
-        "eventVersion":"...",
-        "readOnly":false,
-        "recipientAccountId":"12345",
-        "requestID":"...",
-        "requestParameters":{
-          "AccessControlList":{
-            "x_amz_grant_read":"uri=http://acs.amazonaws.com/groups/global/AllUsers"
+        "awsRegion": "...",
+        "eventId": "...",
+        "eventName": "PutObjectAcl",
+        "eventSource": "...",
+        "eventTime": "...",
+        "eventType": "...",
+        "eventVersion": "...",
+        "readOnly": false,
+        "recipientAccountId": "12345",
+        "requestID": "...",
+        "requestParameters": {
+          "AccessControlList": {
+            "x_amz_grant_read": "uri=http://acs.amazonaws.com/groups/global/AllUsers"
           },
-          "acl":"",
-          "bucketName":"example-bucket-to-ignore",
-          "key":"..."
+          "acl": "",
+          "bucketName": "example-bucket-to-ignore",
+          "key": "..."
         },
-        "resources":[
+        "resources": [
           {
-            "ARN":"...",
-            "type":"..."
+            "ARN": "...",
+            "type": "..."
           },
           {
-            "ARN":"...",
-            "accountId":"12345",
-            "type":"..."
+            "ARN": "...",
+            "accountId": "12345",
+            "type": "..."
           }
         ],
-        "responseElements":{},
-        "sourceIPAddress":"...",
-        "userAgent":[
+        "responseElements": {},
+        "sourceIPAddress": "...",
+        "userAgent": [
           "..."
         ],
-        "userIdentity":{
-          "accessKeyId":"...",
-          "accountId":"12345",
-          "arn":"...",
-          "principalId":"...",
-          "sessionContext":{
-            "attributes":{
-              "creationDate":"...",
-              "mfaAuthenticated":"..."
+        "userIdentity": {
+          "accessKeyId": "...",
+          "accountId": "12345",
+          "arn": "...",
+          "principalId": "...",
+          "sessionContext": {
+            "attributes": {
+              "creationDate": "...",
+              "mfaAuthenticated": "..."
             },
-            "sessionIssuer":{
-              "accountId":"12345",
-              "arn":"...",
-              "principalId":"...",
-              "type":"...",
-              "username":"..."
+            "sessionIssuer": {
+              "accountId": "12345",
+              "arn": "...",
+              "principalId": "...",
+              "type": "...",
+              "username": "..."
             }
           },
-          "type":"..."
+          "type": "..."
         }
       },
-      "detail-type":"...",
-      "id":"123",
-      "region":"...",
-      "resources":[],
-      "source":"...",
-      "time":"...",
-      "version":"0"
+      "detail-type": "...",
+      "id": "123",
+      "region": "...",
+      "resources": [],
+      "source": "...",
+      "time": "...",
+      "version": "0"
     },
-    "description":"A PutObjectAcl call via the S3 API with AllUsers or AuthenticatedUsers for a whitelisted bucket should not create an alert.",
-    "log":"cloudwatch:events",
-    "service":"kinesis",
-    "source":"prefix_cluster1_stream_alert_kinesis",
-    "trigger_rules":[]
+    "description": "A PutObjectAcl call via the S3 API with AllUsers or AuthenticatedUsers for a whitelisted bucket should not create an alert.",
+    "log": "cloudwatch:events",
+    "service": "kinesis",
+    "source": "prefix_cluster1_stream_alert_kinesis",
+    "trigger_rules": []
   }
 ]

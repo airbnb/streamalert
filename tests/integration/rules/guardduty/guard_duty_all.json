@@ -1,21 +1,21 @@
 [
   {
-    "data":{
-      "account":"111111111111",
-      "detail":{},
-      "detail-type":"GuardDuty Finding",
-      "id":"00000000-0000-0000-0000-000000000000",
-      "region":"us-east-1",
-      "resources":[],
-      "source":"aws.guardduty",
-      "time":"2018-02-13T18:25:01Z",
-      "version":"0"
+    "data": {
+      "account": "111111111111",
+      "detail": {},
+      "detail-type": "GuardDuty Finding",
+      "id": "00000000-0000-0000-0000-000000000000",
+      "region": "us-east-1",
+      "resources": [],
+      "source": "aws.guardduty",
+      "time": "2018-02-13T18:25:01Z",
+      "version": "0"
     },
-    "description":"GuardDuty",
-    "log":"cloudwatch:events",
-    "service":"kinesis",
-    "source":"prefix_cluster1_stream_alert_kinesis",
-    "trigger_rules":[
+    "description": "GuardDuty",
+    "log": "cloudwatch:events",
+    "service": "kinesis",
+    "source": "prefix_cluster1_stream_alert_kinesis",
+    "trigger_rules": [
       "guard_duty_all"
     ]
   }

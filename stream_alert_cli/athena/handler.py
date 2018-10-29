@@ -19,7 +19,7 @@ from stream_alert.shared.alert import Alert
 from stream_alert.shared.athena import AthenaClient
 from stream_alert.shared.logger import get_logger
 from stream_alert_cli.athena import helpers
-from stream_alert_cli.helpers import continue_prompt
+from stream_alert_cli.helpers import continue_prompt, record_to_schema
 
 LOGGER = get_logger(__name__)
 
@@ -225,7 +225,7 @@ def create_table(table, bucket, config, schema_override=None):
         # get a fake alert so we can get the keys needed and their types
         alert = Alert('temp_rule_name', {}, {})
         output = alert.output_dict()
-        schema = helpers.record_to_schema(output)
+        schema = record_to_schema(output)
         athena_schema = helpers.logs_schema_to_athena_schema(schema)
 
         query = _construct_create_table_statement(
