@@ -20,9 +20,9 @@ import shutil
 import tempfile
 
 import boto3
-from botocore.exceptions import ClientError
 
 from stream_alert.shared.alert import Alert
+from tests.unit.helpers.aws_mocks import put_mock_s3_object
 
 
 def get_random_alert(key_count, rule_name, omit_rule_desc=False):
@@ -105,22 +105,3 @@ def put_mock_creds(output_name, creds, bucket, region, alias):
     enc_creds = encrypt_with_kms(creds_string, region, alias)
 
     put_mock_s3_object(bucket, output_name, enc_creds, region)
-
-
-def put_mock_s3_object(bucket, key, data, region='us-east-1'):
-    """Create a mock AWS S3 object for testing
-
-    Args:
-        bucket (str): the bucket in which to place the object
-        key (str): the key to use for the S3 object
-        data (str): the actual value to use for the object
-        region (str): the aws region to use for this boto3 client
-    """
-    s3_client = boto3.client('s3', region_name=region)
-    try:
-        # Check if the bucket exists before creating it
-        s3_client.head_bucket(Bucket=bucket)
-    except ClientError:
-        s3_client.create_bucket(Bucket=bucket)
-
-    s3_client.put_object(Body=data, Bucket=bucket, Key=key, ServerSideEncryption='AES256')

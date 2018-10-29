@@ -40,10 +40,10 @@ from tests.unit.stream_alert_alert_processor import (
     MOCK_ENV,
     REGION
 )
+from tests.unit.helpers.aws_mocks import put_mock_s3_object
 from tests.unit.stream_alert_alert_processor.helpers import (
     encrypt_with_kms,
     put_mock_creds,
-    put_mock_s3_object,
     remove_temp_secrets
 )
 

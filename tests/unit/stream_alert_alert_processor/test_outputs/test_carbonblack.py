@@ -22,13 +22,13 @@ from nose.tools import assert_false, assert_is_instance, assert_true
 
 from stream_alert.alert_processor.outputs import carbonblack
 from stream_alert.alert_processor.outputs.carbonblack import CarbonBlackOutput
-from stream_alert_cli.helpers import MockCBAPI
 from tests.unit.stream_alert_alert_processor import (
     CONFIG,
     KMS_ALIAS,
     MOCK_ENV,
     REGION
 )
+from tests.unit.helpers.mocks import MockCBAPI
 from tests.unit.stream_alert_alert_processor.helpers import (
     get_alert,
     put_mock_creds,
