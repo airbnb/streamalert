@@ -25,3 +25,7 @@ def format_red(value):
 
 def format_underline(value):
     return '\033[4m{value}\033[0m'.format(value=value)
+
+
+def format_yellow(value):
+    return '\033[0;33;1m{value}\033[0m'.format(value=value)

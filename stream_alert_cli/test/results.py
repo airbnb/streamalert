@@ -27,6 +27,12 @@ class TestEventFile(object):
         self._rel_path = rel_path
         self._results = []
 
+    def __nonzero__(self):
+        return bool(self._results)
+
+    # For forward compatibility to Python3
+    __bool__ = __nonzero__
+
     @property
     def passed(self):
         return sum(1 for result in self._results if result.passed)
@@ -131,11 +137,11 @@ class TestResult(object):
             template += self._RULES_TEMPLATE
             fmt['triggered_rules'] = self._format_rules(
                 self._triggered_rules,
-                self._expected_rules
+                self.expected_rules
             )
 
             fmt['expected_rules'] = self._format_rules(
-                self._expected_rules,
+                self.expected_rules,
                 self._triggered_rules
             )
 
@@ -164,15 +170,15 @@ class TestResult(object):
 
     @property
     def _untriggered_rules(self):
-        return sorted(self._expected_rules.difference(self._triggered_rules))
+        return sorted(self.expected_rules.difference(self._triggered_rules))
 
     @property
-    def _expected_rules(self):
+    def expected_rules(self):
         return set(self._test_event.get('trigger_rules', [])) - rule.Rule.disabled_rules()
 
     @property
     def _unexpected_rules(self):
-        return sorted(self._triggered_rules.difference(self._expected_rules))
+        return sorted(self._triggered_rules.difference(self.expected_rules))
 
     @property
     def _classified(self):
@@ -185,8 +191,13 @@ class TestResult(object):
         if not items:
             return self._NONE_STRING
 
+        all_rules = set(rule.Rule.rule_names())
+
         result = []
         for value in sorted(items):
+            if value not in all_rules:
+                value = '{} (does not exist)'.format(value)
+
             result.append(format_red(value) if value not in compare_set else value)
         return ', '.join(result)
 
@@ -243,7 +254,7 @@ class TestResult(object):
         if not self._with_rules:
             return True
 
-        if not self._triggered_rules == self._expected_rules:
+        if not self._triggered_rules == self.expected_rules:
             return False
 
         for result in self._live_test_results.itervalues():

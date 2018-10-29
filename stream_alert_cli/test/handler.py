@@ -30,9 +30,10 @@ from stream_alert.alert_processor import main as alert_processor
 from stream_alert.classifier import classifier
 from stream_alert.classifier.parsers import ParserBase
 from stream_alert.rules_engine import rules_engine
+from stream_alert.shared import rule
 from stream_alert.shared.logger import get_logger
 from stream_alert_cli.helpers import check_credentials
-from stream_alert_cli.test.format import format_green, format_red, format_underline
+from stream_alert_cli.test.format import format_green, format_red, format_underline, format_yellow
 from stream_alert_cli.test.results import TestEventFile, TestResult
 
 LOGGER = get_logger(__name__)
@@ -61,6 +62,7 @@ class TestRunner(object):
         self._verbose = options.verbose
         self._s3_mocker = patch('stream_alert.classifier.payload.s3.boto3.resource').start()
         self._errors = defaultdict(list)  # cache errors to be logged at the endpoint
+        self._tested_rules = set()
         self._passed = 0
         self._failed = 0
         prefix = self._config['global']['account']['prefix']
@@ -122,6 +124,31 @@ class TestRunner(object):
                 message = '({}) {}'.format(path, error) if path != 'error' else error
                 LOGGER.error(message)
 
+        # If rule are being tested and no filtering is being performed, log any untested rules
+        if self._testing_rules and not self._is_filtered:
+            all_rules = set(rule.Rule.rule_names()) - rule.Rule.disabled_rules()
+            untested_rules = sorted(all_rules.difference(self._tested_rules))
+            if not untested_rules:
+                return
+            print(format_yellow('No test events configured for the following rules:'))
+            for rule_name in untested_rules:
+                print(format_yellow(rule_name))
+
+    @property
+    def _is_filtered(self):
+        return bool(self._files or self._rules)
+
+    @property
+    def _testing_rules(self):
+        return self._type in {self.Types.RULES, self.Types.LIVE}
+
+    def _contains_filtered_rules(self, event):
+        if not self._rules:
+            return True
+
+        expected_rules = set(event.get('trigger_rules', [])) - rule.Rule.disabled_rules()
+        return bool(expected_rules.intersection(self._rules))
+
     def run(self):
         """Run the tests"""
         if not self._check_prereqs():
@@ -136,17 +163,22 @@ class TestRunner(object):
                 if not event:
                     continue
 
+                if not self._contains_filtered_rules(original_event):
+                    continue
+
                 classifier_result = self._run_classification(event)
 
                 test_result = TestResult(
                     idx,
                     original_event,
                     classifier_result[0] if classifier_result else False,
-                    with_rules=self._type in {self.Types.RULES, self.Types.LIVE},
+                    with_rules=self._testing_rules,
                     verbose=self._verbose
                 )
 
                 test_event.add_result(test_result)
+
+                self._tested_rules.update(test_result.expected_rules)
 
                 if not test_result:
                     continue
@@ -166,7 +198,9 @@ class TestRunner(object):
             self._passed += test_event.passed
             self._failed += test_event.failed
 
-            print(test_event)
+            # It is possible for a test_event to have no results, so only print it if it does
+            if test_event:
+                print(test_event)
 
         self._finalize()
 
