@@ -1444,13 +1444,16 @@ For additional help with any command above, try:
     )
 
     parser.add_argument(
-        '-v', '--version',
+        '-v',
+        '--version',
         action='version',
         version=version
     )
 
     parser.add_argument(
+        '-d',
         '--debug',
+        help='enable debugging logger output for all of the StreamAlert loggers',
         action='store_true'
     )
 
