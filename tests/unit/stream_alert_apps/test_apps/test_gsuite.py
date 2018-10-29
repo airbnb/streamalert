@@ -253,10 +253,10 @@ class TestGSuiteReportsApp(object):
                 'items': self._get_sample_logs(10)
             }
             service_mock.list.return_value.execute.return_value = payload
-            self._app._last_run_event_ids = {
+            self._app._context['last_event_ids'] = [
                 -12345678901234567890 + 9,
                 -12345678901234567890 + 8
-            }
+            ]
 
             assert_equal(len(self._app._gather_logs()), 8)
             assert_equal(self._app._last_timestamp, '2011-06-17T15:39:18.460000Z')

@@ -49,7 +49,7 @@ class GSuiteReportsApp(AppIntegration):
         self._activities_service = None
         self._last_event_timestamp = None
         self._next_page_token = None
-        self._last_run_event_ids = set(self._context.get('last_event_ids', []))
+        self._last_run_event_ids = []
 
     @classmethod
     def _type(cls):
@@ -130,9 +130,11 @@ class GSuiteReportsApp(AppIntegration):
         # Cache the last event timestamp so it can be used for future requests
         if not self._next_page_token:
             self._last_event_timestamp = self._last_timestamp
+            self._last_run_event_ids = self._context.get('last_event_ids', [])
 
         LOGGER.debug('[%s] Querying activities since %s', self, self._last_event_timestamp)
         LOGGER.debug('[%s] Using next page token: %s', self, self._next_page_token)
+        LOGGER.debug('[%s] Last run event ids: %s', self, self._last_run_event_ids)
 
         activities_list = self._activities_service.list(
             userKey='all',
@@ -154,7 +156,7 @@ class GSuiteReportsApp(AppIntegration):
         # Remove duplicate events present in the last time period.
         activities = [
             activity for activity in results.get('items', [])
-            if activity['id']['uniqueQualifier'] not in self._last_run_event_ids
+            if activity['id']['uniqueQualifier'] not in set(self._last_run_event_ids)
         ]
         if not activities:
             LOGGER.info('[%s] No logs in response from G Suite API request', self)
