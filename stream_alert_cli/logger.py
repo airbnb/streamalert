@@ -70,14 +70,12 @@ for logger in logging.Logger.manager.loggerDict:
     logging.getLogger(logger).setLevel(logging.CRITICAL)
 
 
-def set_logger_levels(level):
-    """Set all of the loggers that could be used to the provided logger level
+def set_logger_levels(debug=False):
+    """Set all of the logger levels
 
     Args:
-        level (str): The level at which the log verbosity should be set
+        debug (bool): True to enable debug logging, False otherwise
     """
-    for sa_logger in ALL_LOGGERS:
-        sa_logger.setLevel(level)
 
 
 def get_log_memory_handler():
@@ -98,3 +96,13 @@ def get_log_memory_handler():
     logging.getLogger().addHandler(log_mem_handler)
 
     return log_mem_handler
+    for name, logger in logging.Logger.manager.loggerDict.iteritems():
+        if isinstance(logger, logging.PlaceHolder):
+            continue
+
+        if debug and name.startswith('stream_alert'):
+            logger.setLevel(logging.DEBUG if debug else logging.INFO)
+        elif name.startswith(__package__):
+            logger.setLevel(logging.INFO)
+        else:
+            logger.disabled = True  # disable this logger if it's not one of ours

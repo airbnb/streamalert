@@ -13,11 +13,12 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from stream_alert.shared.logger import get_logger
 from stream_alert_cli.apps.handler import app_handler
 from stream_alert_cli.athena.handler import athena_handler
 from stream_alert_cli.config import CLIConfig
 from stream_alert_cli.kinesis.handler import kinesis_handler
-from stream_alert_cli.logger import LOGGER_CLI, set_logger_levels
+from stream_alert_cli.logger import set_logger_levels
 from stream_alert_cli.manage_lambda.deploy import deploy_handler
 from stream_alert_cli.manage_lambda.rollback import rollback_handler
 from stream_alert_cli.outputs.handler import output_handler
@@ -32,6 +33,8 @@ from stream_alert_cli.terraform.handlers import (
 from stream_alert_cli.test.handler import test_handler
 from stream_alert_cli.threat_intel_downloader.handler import threat_intel_downloader_handler
 
+LOGGER = get_logger(__name__)
+
 
 def cli_runner(args):
     """Main StreamAlert CLI handler
@@ -45,11 +48,9 @@ def cli_runner(args):
     """
     config = CLIConfig()
 
-    cli_load_message = 'Issues? Report here: https://github.com/airbnb/streamalert/issues'
-    LOGGER_CLI.info(cli_load_message)
+    set_logger_levels(args.debug)
 
-    if args.debug:
-        set_logger_levels('DEBUG')
+    LOGGER.info('Issues? Report here: https://github.com/airbnb/streamalert/issues')
 
     cmds = {
         'app': lambda opts: app_handler(opts, config),
@@ -75,7 +76,7 @@ def cli_runner(args):
     }
 
     cmds[args.command](args)
-    LOGGER_CLI.info('Completed')
+    LOGGER.info('Completed')
 
 
 def configure_handler(options, config):
@@ -137,10 +138,10 @@ def _create_alarm_handler(options, config):
     # be performed by argparse so must be performed now.
     seconds_in_day = 86400
     if options.period * options.evaluation_periods > seconds_in_day:
-        LOGGER_CLI.error('The product of the value for period multiplied by the '
-                         'value for evaluation periods cannot exceed 86,400. 86,400 '
-                         'is the number of seconds in one day and an alarm\'s total '
-                         'current evaluation period can be no longer than one day.')
+        LOGGER.error('The product of the value for period multiplied by the '
+                     'value for evaluation periods cannot exceed 86,400. 86,400 '
+                     'is the number of seconds in one day and an alarm\'s total '
+                     'current evaluation period can be no longer than one day.')
         return
 
     config.add_metric_alarm(vars(options))
