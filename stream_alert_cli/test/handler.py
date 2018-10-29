@@ -34,6 +34,7 @@ from stream_alert.shared import rule
 from stream_alert.shared.logger import get_logger
 from stream_alert_cli.helpers import check_credentials
 from stream_alert_cli.test.format import format_green, format_red, format_underline, format_yellow
+from stream_alert_cli.test.mocks import mock_threat_intel_query_results
 from stream_alert_cli.test.results import TestEventFile, TestResult
 
 LOGGER = get_logger(__name__)
@@ -63,6 +64,7 @@ class TestRunner(object):
         self._s3_mocker = patch('stream_alert.classifier.payload.s3.boto3.resource').start()
         self._errors = defaultdict(list)  # cache errors to be logged at the endpoint
         self._tested_rules = set()
+        self._threat_intel_mock = mock_threat_intel_query_results()
         self._passed = 0
         self._failed = 0
         prefix = self._config['global']['account']['prefix']
@@ -84,13 +86,14 @@ class TestRunner(object):
             _classifier = classifier.Classifier()
             return _classifier.run(records=[record])
 
-    @staticmethod
-    def _run_rules_engine(record):
+    def _run_rules_engine(self, record):
         """Create a fresh rules engine and process the record, returning the result"""
-        with patch.object(rules_engine, 'ThreatIntel'), \
+        with patch.object(rules_engine.ThreatIntel, '_query') as ti_mock, \
              patch.object(rules_engine, 'AlertForwarder'), \
              patch.object(rules_engine, 'RuleTable'), \
              patch('helpers.base.random_bool', return_value=True):
+
+            ti_mock.side_effect = self._threat_intel_mock
             _rules_engine = rules_engine.RulesEngine()
 
             return _rules_engine.run(records=record)

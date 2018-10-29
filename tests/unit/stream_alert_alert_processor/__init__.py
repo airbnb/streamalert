@@ -28,5 +28,6 @@ KMS_ALIAS = 'alias/stream_alert_secrets_test'
 
 MOCK_ENV = {
     'AWS_ACCOUNT_ID': ACCOUNT_ID,
-    'STREAMALERT_PREFIX': PREFIX
+    'STREAMALERT_PREFIX': PREFIX,
+    'AWS_DEFAULT_REGION': REGION
 }
