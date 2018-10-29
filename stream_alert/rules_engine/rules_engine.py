@@ -173,14 +173,14 @@ class RulesEngine(object):
 
         self._threat_intel.threat_detection(records)
 
-    def _rule_analysis(self, record, rule):
+    def _rule_analysis(self, payload, rule):
         """Analyze a record with the rule, adding a new alert if applicable
 
         Args:
             record (dict): Record to perform rule analysis against
             rule (rule.Rule): Attributes for the rule which triggered the alert
         """
-        rule_result = rule.process(record)
+        rule_result = rule.process(payload['record'])
         if not rule_result:
             return
 
@@ -191,22 +191,22 @@ class RulesEngine(object):
             all_outputs = self._required_outputs_set.union(rule.outputs_set)
 
         alert = Alert(
-            rule.name, record, all_outputs,
-            cluster=record['cluster'],
+            rule.name, payload['record'], all_outputs,
+            cluster=payload['cluster'],
             context=rule.context,
-            log_source=record['log_schema_type'],
-            log_type=record['data_type'],
+            log_source=payload['log_schema_type'],
+            log_type=payload['data_type'],
             merge_by_keys=rule.merge_by_keys,
             merge_window=timedelta(minutes=rule.merge_window_mins),
             rule_description=rule.description,
-            source_entity=record['resource'],
-            source_service=record['service'],
+            source_entity=payload['resource'],
+            source_service=payload['service'],
             staged=rule.is_staged(self._rule_table)
         )
 
         LOGGER.info('Rule [%s] triggered alert [%s] on log type [%s] from resource \'%s\' '
-                    'in service \'%s\'', rule.name, alert.alert_id, record['log_schema_type'],
-                    record['resource'], record['service'])
+                    'in service \'%s\'', rule.name, alert.alert_id, payload['log_schema_type'],
+                    payload['resource'], payload['service'])
 
         return alert
 
@@ -226,27 +226,30 @@ class RulesEngine(object):
                         'resource': 'kinesis_stream_name'
                         'data_type': 'json'
                     }
+
+        Returns:
+            list: Alerts that have been triggered by this data
         """
         # Extract any threat intelligence matches from the records
         self._extract_threat_intel(records)
 
         alerts = []
-        for record in records:
-            rules = Rule.rules_for_log_type(record['log_schema_type'])
+        for payload in records:
+            rules = Rule.rules_for_log_type(payload['log_schema_type'])
             if not rules:
-                LOGGER.debug('No rules to process for %s', record)
+                LOGGER.debug('No rules to process for %s', payload)
                 continue
 
             for rule in rules:
                 # subkey check
-                if not self._process_subkeys(record, rule):
+                if not self._process_subkeys(payload['record'], rule):
                     continue
 
                 # matcher check
-                if not rule.check_matchers(record):
+                if not rule.check_matchers(payload['record']):
                     continue
 
-                alert = self._rule_analysis(record['record'], rule)
+                alert = self._rule_analysis(payload, rule)
                 if alert:
                     alerts.append(alert)
 
@@ -257,3 +260,5 @@ class RulesEngine(object):
         # since stress testing calls this method multiple times
         if self._in_lambda:
             print_rule_stats(True)
+
+        return alerts
