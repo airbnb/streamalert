@@ -35,6 +35,7 @@ from stream_alert.alert_processor.outputs.output_base import StreamAlertOutput
 from stream_alert.apps import StreamAlertApp
 from stream_alert.apps.config import AWS_RATE_RE, AWS_RATE_HELPER
 from stream_alert.shared import CLUSTERED_FUNCTIONS, metrics
+from stream_alert_cli.test import DEFAULT_TEST_FILES_DIRECTORY
 from stream_alert_cli.runner import cli_runner
 
 CLUSTERS = [
@@ -703,9 +704,21 @@ def _setup_test_subparser(subparser):
     """Add the test subparser: manage.py test"""
     test_subparsers = subparser.add_subparsers()
 
+    _setup_test_classifier_subparser(test_subparsers)
     _setup_test_rules_subparser(test_subparsers)
-    _setup_test_validation_subparser(test_subparsers)
     _setup_test_live_subparser(test_subparsers)
+
+
+def _setup_test_classifier_subparser(subparsers):
+    """Add the test validation subparser: manage.py test validate [options]"""
+    test_validate_parser = _generate_subparser(
+        subparsers,
+        'classifier',
+        description='Validate defined log schemas using integration test files',
+        subcommand=True
+    )
+
+    _add_default_test_args(test_validate_parser)
 
 
 def _setup_test_rules_subparser(subparsers):
@@ -752,18 +765,6 @@ def _setup_test_rules_subparser(subparsers):
     _add_default_test_args(test_rules_parser)
 
 
-def _setup_test_validation_subparser(subparsers):
-    """Add the test validation subparser: manage.py test validate [options]"""
-    test_validate_parser = _generate_subparser(
-        subparsers,
-        'validate',
-        description='Validate defined log schemas using integration test files',
-        subcommand=True
-    )
-
-    _add_default_test_args(test_validate_parser)
-
-
 def _setup_test_live_subparser(subparsers):
     """Add the test live subparser: manage.py test live [options]"""
     test_live_parser = _generate_subparser(
@@ -801,6 +802,22 @@ def _add_default_test_args(test_parser):
         help='One or more rule to test, separated by spaces',
         action=UniqueSetAction,
         default=set()
+    )
+
+    # add the optional ability to change the test files directory
+    test_parser.add_argument(
+        '-d',
+        '--files-dir',
+        help='Path to directory containing test files',
+        default=DEFAULT_TEST_FILES_DIRECTORY
+    )
+
+    # add the optional ability to change the test files directory
+    test_parser.add_argument(
+        '-v',
+        '--verbose',
+        action='store_true',
+        help='Output additional information during testing'
     )
 
 
