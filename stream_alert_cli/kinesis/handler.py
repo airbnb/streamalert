@@ -24,8 +24,11 @@ def kinesis_handler(options, config):
     """Main handler for the Kinesis parser
 
     Args:
-        options (namedtuple): Parsed arguments
+        options (argparse.Namespace): Parsed arguments
         config (CLIConfig): Loaded StreamAlert config
+
+    Returns:
+        bool: False if errors occurred, True otherwise
     """
     enable = options.action == 'enable-events'
     LOGGER.info('%s Kinesis Events', 'Enabling' if enable else 'Disabling')
@@ -37,10 +40,12 @@ def kinesis_handler(options, config):
     config.write()
 
     if options.skip_terraform:
-        return
+        return True  # not an error
 
-    terraform_generate_handler(config)
-    tf_runner(
+    if not terraform_generate_handler(config):
+        return False
+
+    return tf_runner(
         action='apply',
         targets=[
             'module.{}_{}'.format('kinesis_events', cluster) for cluster in config.clusters()

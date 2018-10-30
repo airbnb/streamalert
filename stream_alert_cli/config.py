@@ -88,11 +88,11 @@ class CLIConfig(object):
         """Set the Org Prefix in Global settings"""
         if not isinstance(prefix, (unicode, str)):
             LOGGER.error('Invalid prefix type, must be string')
-            return
+            return False
 
         if '_' in prefix:
             LOGGER.error('Prefix cannot contain underscores')
-            return
+            return False
 
         self.config['global']['account']['prefix'] = prefix
         self.config['global']['account']['kms_key_alias'] = '{}_streamalert_secrets'.format(prefix)
@@ -115,16 +115,19 @@ class CLIConfig(object):
 
         LOGGER.info('Prefix successfully configured')
 
+        return True
+
     def set_aws_account_id(self, aws_account_id):
         """Set the AWS Account ID in Global settings"""
         if not re.search(r'\A\d{12}\Z', aws_account_id):
             LOGGER.error('Invalid AWS Account ID, must be 12 digits long')
-            return
+            return False
 
         self.config['global']['account']['aws_account_id'] = aws_account_id
         self.write()
 
         LOGGER.info('AWS Account ID successfully configured')
+        return True
 
     def toggle_rule_staging(self, enabled):
         """Toggle rule staging on or off
@@ -274,6 +277,7 @@ class CLIConfig(object):
                         'function to \'conf/clusters/%s.json\'.',
                         alarm_settings['alarm_name'], function_name, cluster)
 
+        return True
 
     def _add_global_metric_alarm(self, alarm_info):
         """Add a metric alarm that corresponds to a predefined metrics globally
@@ -301,7 +305,7 @@ class CLIConfig(object):
                     'cluster. Would you still like to continue?'.format(function_name)
                 )
                 if not continue_prompt(message=prompt):
-                    return
+                    return False
 
         else:
             if not function_config.get('enable_custom_metrics'):
@@ -315,7 +319,7 @@ class CLIConfig(object):
 
                 elif not continue_prompt(message='Would you still like to add this alarm '
                                          'even though metrics are disabled?'):
-                    return
+                    return False
 
         metric_alarms = function_config.get('custom_metric_alarms', {})
 
@@ -333,6 +337,8 @@ class CLIConfig(object):
         LOGGER.info('Successfully added \'%s\' metric alarm to '
                     '\'conf/lambda.json\'.', alarm_settings['alarm_name'])
 
+        return True
+
     def add_metric_alarm(self, alarm_info):
         """Add a metric alarm that corresponds to a predefined metrics
 
@@ -342,7 +348,7 @@ class CLIConfig(object):
         """
         # Check to see if an alarm with this name already exists
         if self._alarm_exists(alarm_info['alarm_name']):
-            return
+            return False
 
         # Get the current metrics for each function
         current_metrics = metrics.MetricLogger.get_available_metrics()[alarm_info['function']]
@@ -353,14 +359,17 @@ class CLIConfig(object):
                 alarm_info['metric_name'],
                 alarm_info['function']
             )
-            return
+            return False
 
         if 'clusters' in alarm_info:
             self._add_cluster_metric_alarm(alarm_info)
         else:
-            self._add_global_metric_alarm(alarm_info)
+            if not self._add_global_metric_alarm(alarm_info):
+                return False
 
         self.write()
+
+        return True
 
     def add_app(self, app_info):
         """Add a configuration for a new streamalert app integration function
@@ -368,6 +377,9 @@ class CLIConfig(object):
         Args:
             app_info (dict): The necessary values needed to begin configuring
                 a new app integration
+
+        Returns:
+            bool: False if errors occurred, True otherwise
         """
         exists, prompt_for_auth, overwrite = False, True, False
         app = StreamAlertApp.get_app(app_info['type'])
@@ -397,7 +409,7 @@ class CLIConfig(object):
             prompt_for_auth = overwrite = continue_prompt(message=prompt)
 
         if prompt_for_auth and not save_app_auth_info(app, app_info, overwrite):
-            return
+            return False
 
         apps_config = cluster_config['modules'].get('stream_alert_apps', {})
         if not exists:
@@ -444,6 +456,8 @@ class CLIConfig(object):
                     app_info['type'])
 
         self.write()
+
+        return True
 
     def add_threat_intel(self, threat_intel_info):
         """Add Threat Intel configure to config

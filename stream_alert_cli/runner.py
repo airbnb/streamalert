@@ -45,6 +45,8 @@ def cli_runner(args):
                 (command, subcommand, target)
             Contains the following keys for lambda commands:
                 (command, subcommand, env, func, source)
+    Returns:
+        bool: False if errors occurred, True otherwise
     """
     config = CLIConfig()
 
@@ -75,21 +77,25 @@ def cli_runner(args):
         'threat-intel-downloader': lambda opts: threat_intel_downloader_handler(opts, config),
     }
 
-    cmds[args.command](args)
+    result = cmds[args.command](args)
     LOGGER.info('Completed')
+    return result
 
 
 def configure_handler(options, config):
     """Configure StreamAlert main settings
 
     Args:
-        options (namedtuple): ArgParse command result
+        options (argparse.Namespace): ArgParse command result
+
+    Returns:
+        bool: False if errors occurred, True otherwise
     """
     if options.config_key == 'prefix':
-        config.set_prefix(options.config_value)
+        return config.set_prefix(options.config_value)
 
     elif options.config_key == 'aws_account_id':
-        config.set_aws_account_id(options.config_value)
+        return config.set_aws_account_id(options.config_value)
 
 
 def _custom_metrics_handler(options, config):
@@ -97,6 +103,9 @@ def _custom_metrics_handler(options, config):
 
     Args:
         options (argparse.Namespace): Contains boolean necessary for toggling metrics
+
+    Returns:
+        bool: False if errors occurred, True otherwise
     """
     config.toggle_metrics(
         *options.functions,
@@ -104,11 +113,17 @@ def _custom_metrics_handler(options, config):
         clusters=options.clusters
     )
 
+    return True
+
+
 def _status_handler(config):
     """Display current AWS infrastructure built by Terraform
 
     Args:
-        config (CLIConfig): Loaded StreamAlert CLI
+        config (CLIConfig): Loaded StreamAlert config
+
+    Returns:
+        bool: False if errors occurred, True otherwise
     """
     # TODO: this is severely broken/outdated. fix up
     for cluster, region in config['clusters'].items():
@@ -126,6 +141,8 @@ def _status_handler(config):
             config['kinesis_streams_config'][cluster][0],
             config['kinesis_streams_config'][cluster][1])
 
+    return True
+
 
 def _create_alarm_handler(options, config):
     """Create a new CloudWatch alarm for the given metric
@@ -133,6 +150,9 @@ def _create_alarm_handler(options, config):
     Args:
         options (argparse.Namespace): Contains all of the necessary info for configuring
             a CloudWatch alarm
+
+    Returns:
+        bool: False if errors occurred, True otherwise
     """
     # Perform safety check for max total evaluation period. This logic cannot
     # be performed by argparse so must be performed now.
@@ -142,16 +162,20 @@ def _create_alarm_handler(options, config):
                      'value for evaluation periods cannot exceed 86,400. 86,400 '
                      'is the number of seconds in one day and an alarm\'s total '
                      'current evaluation period can be no longer than one day.')
-        return
+        return False
 
-    config.add_metric_alarm(vars(options))
+    return config.add_metric_alarm(vars(options))
 
 
 def _threat_intel_handler(options, config):
     """Configure Threat Intel from command line
 
     Args:
-        options (namedtuple): The parsed args passed from the CLI
-        config (CLIConfig): Loaded StreamAlert CLI
+        options (argparse.Namespace): The parsed args passed from the CLI
+        config (CLIConfig): Loaded StreamAlert config
+
+    Returns:
+        bool: False if errors occurred, True otherwise
     """
     config.add_threat_intel(vars(options))
+    return True
