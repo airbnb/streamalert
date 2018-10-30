@@ -20,7 +20,7 @@ from stream_alert.shared import (
     ALERT_PROCESSOR_NAME,
     ATHENA_PARTITION_REFRESH_NAME,
     CLASSIFIER_FUNCTION_NAME,
-    RULE_PROCESSOR_NAME
+    RULES_ENGINE_FUNCTION_NAME
 )
 from stream_alert.shared.logger import get_logger
 
@@ -34,7 +34,7 @@ CLUSTER = os.environ.get('CLUSTER', 'unknown_cluster')
 FUNC_PREFIXES = {
     ALERT_MERGER_NAME: 'AlertMerger',
     CLASSIFIER_FUNCTION_NAME: 'Classifier',
-    RULE_PROCESSOR_NAME: 'RuleProcessor'
+    RULES_ENGINE_FUNCTION_NAME: 'RulesEngine'
 }
 
 try:
@@ -95,6 +95,8 @@ class MetricLogger(object):
                                       _default_value_lookup),
             FIREHOSE_RECORDS_SENT: (_default_filter.format(FIREHOSE_RECORDS_SENT),
                                     _default_value_lookup),
+            NORMALIZED_RECORDS: (_default_filter.format(NORMALIZED_RECORDS),
+                                 _default_value_lookup),
             S3_DOWNLOAD_TIME: (_default_filter.format(S3_DOWNLOAD_TIME),
                                _default_value_lookup),
             SQS_FAILED_RECORDS: (_default_filter.format(SQS_FAILED_RECORDS),
@@ -110,29 +112,11 @@ class MetricLogger(object):
             TOTAL_STREAM_ALERT_APP_RECORDS:
                 (_default_filter.format(TOTAL_STREAM_ALERT_APP_RECORDS), _default_value_lookup)
         },
-        RULE_PROCESSOR_NAME: {
-            NORMALIZED_RECORDS: (_default_filter.format(NORMALIZED_RECORDS),
-                                 _default_value_lookup),
-            FAILED_PARSES: (_default_filter.format(FAILED_PARSES),
-                            _default_value_lookup),
-            S3_DOWNLOAD_TIME: (_default_filter.format(S3_DOWNLOAD_TIME),
-                               _default_value_lookup),
-            TOTAL_PROCESSED_SIZE: (_default_filter.format(TOTAL_PROCESSED_SIZE),
-                                   _default_value_lookup),
-            TOTAL_RECORDS: (_default_filter.format(TOTAL_RECORDS),
-                            _default_value_lookup),
-            TOTAL_S3_RECORDS: (_default_filter.format(TOTAL_S3_RECORDS),
-                               _default_value_lookup),
-            TRIGGERED_ALERTS: (_default_filter.format(TRIGGERED_ALERTS),
-                               _default_value_lookup),
+        RULES_ENGINE_FUNCTION_NAME: {
             FAILED_DYNAMO_WRITES: (_default_filter.format(FAILED_DYNAMO_WRITES),
                                    _default_value_lookup),
-            FIREHOSE_RECORDS_SENT: (_default_filter.format(FIREHOSE_RECORDS_SENT),
-                                    _default_value_lookup),
-            FIREHOSE_FAILED_RECORDS: (_default_filter.format(FIREHOSE_FAILED_RECORDS),
-                                      _default_value_lookup),
-            TOTAL_STREAM_ALERT_APP_RECORDS:
-                (_default_filter.format(TOTAL_STREAM_ALERT_APP_RECORDS), _default_value_lookup)
+            TRIGGERED_ALERTS: (_default_filter.format(TRIGGERED_ALERTS),
+                               _default_value_lookup)
         }
     }
 
