@@ -188,9 +188,7 @@ def _create(function_name, config, clusters=None):
         return False, False
 
     package = package_mapping[function_name].package_class(config=config)
-    success = package.create()
-
-    if not success:
-        sys.exit(1)
+    if not package.create():
+        return sys.exit(1)
 
     return package, package_mapping[function_name].targets

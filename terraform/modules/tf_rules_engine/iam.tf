@@ -1,13 +1,13 @@
-// IAM Role Policy: Allow Rule Processor to read DynamoDB table (Threat Intel)
-resource "aws_iam_role_policy" "streamalert_rule_processor_dynamodb" {
+// IAM Role Policy: Allow Rules Engine to read DynamoDB table (Threat Intel)
+resource "aws_iam_role_policy" "read_threat_intel_table" {
   count  = "${var.threat_intel_enabled ? 1 : 0}"
   name   = "ReadDynamodb"
-  role   = "${aws_iam_role.streamalert_rule_processor_role.id}"
-  policy = "${data.aws_iam_policy_document.streamalert_rule_processor_read_dynamodb.json}"
+  role   = "${var.function_role_id}"
+  policy = "${data.aws_iam_policy_document.read_threat_intel_table.json}"
 }
 
 // IAM Policy Doc: Allow lambda function to read/write data from DynamoDB
-data "aws_iam_policy_document" "streamalert_rule_processor_read_dynamodb" {
+data "aws_iam_policy_document" "read_threat_intel_table" {
   statement {
     effect = "Allow"
 
@@ -22,11 +22,11 @@ data "aws_iam_policy_document" "streamalert_rule_processor_read_dynamodb" {
   }
 }
 
-// Allow the Rule Processor to read the rules table
+// Allow the Rules Engine to read the rules table
 resource "aws_iam_role_policy" "read_rules_table" {
   count  = "${var.rules_table_arn == "" ? 0 : 1}"
   name   = "ReadRulesTable"
-  role   = "${aws_iam_role.streamalert_rule_processor_role.id}"
+  role   = "${var.function_role_id}"
   policy = "${data.aws_iam_policy_document.read_rules_table.json}"
 }
 
