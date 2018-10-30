@@ -23,6 +23,9 @@ def rule_staging_handler(options, config):
         options (argparse.Namespace): Various options needed by subcommand
             handlers
         config (CLIConfig): Loaded configuration from 'conf/' directory
+
+    Returns:
+        bool: False if errors occurred, True otherwise
     """
     if options.subcommand == 'enable':
         config.toggle_rule_staging(options.enable)
@@ -36,3 +39,5 @@ def rule_staging_handler(options, config):
         table = RuleTable(table_name)
         for rule in options.rules:
             table.toggle_staged_state(rule, stage)
+
+    return True

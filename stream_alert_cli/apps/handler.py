@@ -24,52 +24,15 @@ def app_handler(options, config):
     """Perform app related functions
 
     Args:
-        options (argparse.Namespace): Contains all of the necessary info for configuring
-            a new app integration or updating an existing one
+        options (argparse.Namespace): Parsed arguments with info to configure a new app
+            or update an existing one
+        config (CLIConfig): Loaded StreamAlert config
+
+    Returns:
+        bool: False if errors occurred, True otherwise
     """
     if not options:
-        return
-
-    # Convert the options to a dict
-    app_info = vars(options)
-
-    # Add the region and prefix for this StreamAlert instance to the app info
-    app_info['region'] = str(config['global']['account']['region'])
-    app_info['prefix'] = str(config['global']['account']['prefix'])
-
-    # Function name follows the format: '<prefix>_<cluster>_<service>_<app_name>_app
-    func_parts = ['prefix', 'cluster', 'type', 'app_name']
-
-    # Create a new app integration function
-    if options.subcommand == 'new':
-        app_info['function_name'] = '_'.join([app_info.get(value)
-                                              for value in func_parts] + ['app'])
-
-        config.add_app(app_info)
-        return
-
-    # Update the auth information for an existing app integration function
-    if options.subcommand == 'update-auth':
-        cluster_config = config['clusters'][app_info['cluster']]
-        if not app_info['app_name'] in cluster_config['modules'].get('stream_alert_apps', {}):
-            LOGGER.error('App integration with name \'%s\' does not exist for cluster \'%s\'',
-                         app_info['app_name'], app_info['cluster'])
-            return
-
-        # Get the type for this app integration from the current
-        # config so we can update it properly
-        app_info['type'] = cluster_config['modules']['stream_alert_apps'] \
-                                         [app_info['app_name']]['type']
-
-        app_info['function_name'] = '_'.join([app_info.get(value)
-                                              for value in func_parts] + ['app'])
-
-        app = StreamAlertApp.get_app(app_info['type'])
-
-        if not save_app_auth_info(app, app_info, True):
-            return
-
-        return
+        return False
 
     # List all of the available app integrations, broken down by cluster
     if options.subcommand == 'list':
@@ -93,3 +56,40 @@ def app_handler(options, config):
                         padding_count=30 - (len(key_name)),
                         value=value) for key_name, value in details.iteritems()
                 ] + ['\n'])
+        return True
+
+    # Convert the options to a dict
+    app_info = vars(options)
+
+    # Function name follows the format: '<prefix>_<cluster>_<service>_<app_name>_app
+    func_parts = ['prefix', 'cluster', 'type', 'app_name']
+
+    # Add the region and prefix for this StreamAlert instance to the app info
+    app_info['region'] = str(config['global']['account']['region'])
+    app_info['prefix'] = str(config['global']['account']['prefix'])
+    app_info['function_name'] = '_'.join([app_info.get(value) for value in func_parts] + ['app'])
+
+    # Create a new app integration function
+    if options.subcommand == 'new':
+        return config.add_app(app_info)
+
+    # Update the auth information for an existing app integration function
+    if options.subcommand == 'update-auth':
+        cluster_config = config['clusters'][app_info['cluster']]
+        if not app_info['app_name'] in cluster_config['modules'].get('stream_alert_apps', {}):
+            LOGGER.error('App integration with name \'%s\' does not exist for cluster \'%s\'',
+                         app_info['app_name'], app_info['cluster'])
+            return False
+
+        # Get the type for this app integration from the current
+        # config so we can update it properly
+        app_info['type'] = (
+            cluster_config['modules']['stream_alert_apps'][app_info['app_name']]['type']
+        )
+
+        app = StreamAlertApp.get_app(app_info['type'])
+
+        if not save_app_auth_info(app, app_info, True):
+            return False
+
+        return True

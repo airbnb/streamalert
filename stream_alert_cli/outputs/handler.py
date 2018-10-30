@@ -26,6 +26,9 @@ def output_handler(options, config):
 
     Args:
         options (argparse.Namespace): Basically a namedtuple with the service setting
+
+    Returns:
+        bool: False if errors occurred, True otherwise
     """
     account_config = config['global']['account']
     region = account_config['region']
@@ -42,7 +45,7 @@ def output_handler(options, config):
     # If an output for this service has not been defined, the error is logged
     # prior to this
     if not output:
-        return
+        return False
 
     # get dictionary of OutputProperty items to be used for user prompting
     props = output.get_user_defined_properties()
@@ -64,14 +67,16 @@ def output_handler(options, config):
 
     # Encrypt the creds and push them to S3
     # then update the local output configuration with properties
-    if encrypt_and_push_creds_to_s3(region, secrets_bucket, secrets_key, props, kms_key_alias):
-        updated_config = output.format_output_config(output_config, props)
-        output_config[service] = updated_config
-        config.write()
-
-        LOGGER.info('Successfully saved \'%s\' output configuration for service \'%s\'',
-                    props['descriptor'].value, options.service)
-    else:
+    if not encrypt_and_push_creds_to_s3(region, secrets_bucket, secrets_key, props, kms_key_alias):
         LOGGER.error('An error occurred while saving \'%s\' '
                      'output configuration for service \'%s\'', props['descriptor'].value,
                      options.service)
+        return False
+
+    updated_config = output.format_output_config(output_config, props)
+    output_config[service] = updated_config
+    config.write()
+
+    LOGGER.info('Successfully saved \'%s\' output configuration for service \'%s\'',
+                props['descriptor'].value, options.service)
+    return True

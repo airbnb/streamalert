@@ -27,6 +27,7 @@ terraform <cmd>
 from argparse import Action, ArgumentParser, RawDescriptionHelpFormatter
 import os
 import string
+import sys
 import textwrap
 
 
@@ -1003,7 +1004,7 @@ def _setup_athena_create_table_subparser(subparsers):
         """Make sure the input is in the format column_name=type"""
         err = ('Invalid override expression [{}]. The proper format is '
                '"column_name=value_type"').format(val)
-        if not '=' in val:
+        if '=' not in val:
             raise athena_create_table_parser.error(err)
 
         if len(val.split('=')) != 2:
@@ -1493,7 +1494,9 @@ def main():
     """Entry point for the CLI."""
     parser = build_parser()
     options = parser.parse_args()
-    cli_runner(options)
+
+    # Exit with the result, which will be False if an error occurs, or True otherwise
+    sys.exit(not cli_runner(options))
 
 
 if __name__ == "__main__":

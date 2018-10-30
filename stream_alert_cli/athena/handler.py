@@ -36,20 +36,20 @@ def athena_handler(options, config):
     """Main Athena handler
 
     Args:
-        options (namedtuple): The parsed args passed from the CLI
+        options (argparse.Namespace): The parsed args passed from the CLI
         config (CLIConfig): Loaded StreamAlert CLI
     """
     if options.subcommand == 'rebuild-partitions':
-        rebuild_partitions(
+        return rebuild_partitions(
             options.table_name,
             options.bucket,
             config)
 
     elif options.subcommand == 'drop-all-tables':
-        drop_all_tables(config)
+        return drop_all_tables(config)
 
     elif options.subcommand == 'create-table':
-        create_table(
+        return create_table(
             options.table_name,
             options.bucket,
             config,
@@ -97,6 +97,9 @@ def rebuild_partitions(table, bucket, config):
         table_type (str): The type of table being refreshed
             Types of 'data' and 'alert' are accepted, but only 'data' is implemented
         config (CLIConfig): Loaded StreamAlert CLI
+
+    Returns:
+        bool: False if errors occurred, True otherwise
     """
     sanitized_table_name = FirehoseClient.firehose_log_name(table)
 
@@ -106,37 +109,42 @@ def rebuild_partitions(table, bucket, config):
     partitions = athena_client.get_table_partitions(sanitized_table_name)
     if not partitions:
         LOGGER.info('No partitions to rebuild for %s, nothing to do', sanitized_table_name)
-        return
+        return False
 
     # Drop the table
     LOGGER.info('Dropping table %s', sanitized_table_name)
-    success = athena_client.drop_table(sanitized_table_name)
-    if not success:
-        return
+    if not athena_client.drop_table(sanitized_table_name):
+        return False
 
     LOGGER.info('Creating table %s', sanitized_table_name)
 
     # Re-create the table with previous partitions
-    create_table(table, bucket, config)
+    if not create_table(table, bucket, config):
+        return False
 
     new_partitions_statement = helpers.add_partition_statement(
         partitions, bucket, sanitized_table_name)
 
     # Make sure our new alter table statement is within the query API limits
     if len(new_partitions_statement) > MAX_QUERY_LENGTH:
-        LOGGER.error('Partition statement too large, writing to local file')
-        with open('partitions_{}.txt'.format(sanitized_table_name), 'w') as partition_file:
+        file_name = 'partitions_{}.txt'.format(sanitized_table_name)
+        LOGGER.error(
+            'Partition statement too large, writing to local file with name %s',
+            file_name
+        )
+        with open(file_name, 'w') as partition_file:
             partition_file.write(new_partitions_statement)
-        return
+        return False
 
     LOGGER.info('Creating %d new partitions for %s', len(partitions), sanitized_table_name)
 
     success = athena_client.run_query(query=new_partitions_statement)
     if not success:
         LOGGER.error('Error re-creating new partitions for %s', sanitized_table_name)
-        return
+        return False
 
     LOGGER.info('Successfully rebuilt partitions for %s', sanitized_table_name)
+    return True
 
 
 def drop_all_tables(config):
@@ -146,16 +154,21 @@ def drop_all_tables(config):
 
     Args:
         config (CLIConfig): Loaded StreamAlert CLI
+
+    Returns:
+        bool: False if errors occurred, True otherwise
     """
     if not continue_prompt(message='Are you sure you want to drop all Athena tables?'):
-        return
+        return False
 
     athena_client = get_athena_client(config)
 
     if not athena_client.drop_all_tables():
         LOGGER.error('Failed to drop one or more tables from database: %s', athena_client.database)
-    else:
-        LOGGER.info('Successfully dropped all tables from database: %s', athena_client.database)
+        return False
+
+    LOGGER.info('Successfully dropped all tables from database: %s', athena_client.database)
+    return True
 
 
 def _construct_create_table_statement(schema, table_name, bucket):
@@ -199,6 +212,9 @@ def create_table(table, bucket, config, schema_override=None):
         config (CLIConfig): Loaded StreamAlert CLI
         schema_override (set): An optional set of key=value pairs to be used for
             overriding the configured column_name=value_type.
+
+    Returns:
+        bool: False if errors occurred, True otherwise
     """
     enabled_logs = FirehoseClient.load_enabled_log_sources(
         config['global']['infrastructure']['firehose'],
@@ -212,14 +228,14 @@ def create_table(table, bucket, config, schema_override=None):
     if sanitized_table_name != 'alerts' and sanitized_table_name not in enabled_logs:
         LOGGER.error('Table name %s missing from configuration or '
                      'is not enabled.', sanitized_table_name)
-        return
+        return False
 
     athena_client = get_athena_client(config)
 
     # Check if the table exists
     if athena_client.check_table_exists(sanitized_table_name):
         LOGGER.info('The \'%s\' table already exists.', sanitized_table_name)
-        return
+        return False
 
     if table == 'alerts':
         # get a fake alert so we can get the keys needed and their types
@@ -231,7 +247,7 @@ def create_table(table, bucket, config, schema_override=None):
         query = _construct_create_table_statement(
             schema=athena_schema, table_name=table, bucket=bucket)
 
-    else: # all other tables are log types
+    else:  # all other tables are log types
 
         log_info = config['logs'][table.replace('_', ':', 1)]
 
@@ -255,10 +271,6 @@ def create_table(table, bucket, config, schema_override=None):
         if schema_override:
             for override in schema_override:
                 column_name, column_type = override.split('=')
-                if not all([column_name, column_type]):
-                    LOGGER.error('Invalid schema override [%s], use column_name=type format',
-                                 override)
-
                 # Columns are escaped to avoid Hive issues with special characters
                 column_name = '`{}`'.format(column_name)
                 if column_name in athena_schema:
@@ -276,7 +288,7 @@ def create_table(table, bucket, config, schema_override=None):
     success = athena_client.run_query(query=query)
     if not success:
         LOGGER.error('The %s table could not be created', sanitized_table_name)
-        return
+        return False
 
     # Update the CLI config
     if (table != 'alerts' and
@@ -285,3 +297,5 @@ def create_table(table, bucket, config, schema_override=None):
         config.write()
 
     LOGGER.info('The %s table was successfully created!', sanitized_table_name)
+
+    return True

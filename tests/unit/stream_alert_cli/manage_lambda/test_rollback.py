@@ -4,6 +4,7 @@ import unittest
 
 from botocore.exceptions import ClientError
 import mock
+from nose.tools import assert_equal
 
 from stream_alert_cli.manage_lambda import rollback
 from tests.unit.helpers.config import basic_streamalert_config, MockCLIConfig
@@ -62,9 +63,13 @@ class RollbackTest(unittest.TestCase):
     @mock.patch.object(rollback, '_rollback_production')
     def test_rollback_all(self, mock_helper):
         """CLI - Lambda rollback all"""
-        rollback.rollback_handler(
-            MockOptions(None, ['all']),
-            MockCLIConfig(config=basic_streamalert_config())
+        mock_helper.return_value = True
+        assert_equal(
+            rollback.rollback_handler(
+                MockOptions(None, ['all']),
+                MockCLIConfig(config=basic_streamalert_config())
+            ),
+            True
         )
         mock_helper.assert_has_calls([
             mock.call(mock.ANY, 'unit-testing_streamalert_alert_processor'),
@@ -82,9 +87,13 @@ class RollbackTest(unittest.TestCase):
     @mock.patch.object(rollback, '_rollback_production')
     def test_rollback_subset(self, mock_helper):
         """CLI - Lambda rollback apps and rule"""
-        rollback.rollback_handler(
-            MockOptions(None, ['apps', 'rule']),
-            MockCLIConfig(config=basic_streamalert_config())
+        mock_helper.return_value = True
+        assert_equal(
+            rollback.rollback_handler(
+                MockOptions(None, ['apps', 'rule']),
+                MockCLIConfig(config=basic_streamalert_config())
+            ),
+            True
         )
         mock_helper.assert_has_calls([
             mock.call(mock.ANY, 'unit-testing_corp_box_admin_events_box_collector_app'),
