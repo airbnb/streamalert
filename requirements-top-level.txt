@@ -4,7 +4,7 @@ autoflake
 autopep8
 backoff
 bandit
-boto3
+boto3==1.7.84  # this is pinned because moto is buggy with new versions of boto3
 boxsdk[jwt]==2.0.0a11
 cbapi
 coverage
@@ -13,7 +13,6 @@ cryptography
 google-api-python-client==1.6.4
 jmespath
 jsonlines
-jsonpath_rw
 mock
 moto==1.3.3
 netaddr
