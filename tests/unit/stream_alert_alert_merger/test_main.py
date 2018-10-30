@@ -23,7 +23,7 @@ from nose.tools import assert_equal, assert_false, assert_true
 
 from stream_alert.alert_merger import main
 from stream_alert.shared.alert import Alert
-from stream_alert_cli.helpers import create_lambda_function, setup_mock_alerts_table
+from tests.unit.helpers.aws_mocks import create_lambda_function, setup_mock_alerts_table
 
 _ALERTS_TABLE = 'PREFIX_streamalert_alerts'
 _ALERT_PROCESSOR = 'PREFIX_streamalert_alert_processor'

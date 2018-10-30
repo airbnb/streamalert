@@ -17,7 +17,8 @@ from fnmatch import fnmatch
 import json
 import os
 
-from stream_alert_cli.logger import LOGGER_CLI
+from stream_alert.shared.logger import get_logger
+from stream_alert_cli.helpers import check_credentials
 from stream_alert_cli.terraform.common import (
     DEFAULT_SNS_MONITORING_TOPIC,
     InvalidClusterName,
@@ -31,6 +32,7 @@ from stream_alert_cli.terraform.cloudtrail import generate_cloudtrail
 from stream_alert_cli.terraform.cloudwatch import generate_cloudwatch
 from stream_alert_cli.terraform.firehose import generate_firehose
 from stream_alert_cli.terraform.flow_logs import generate_flow_logs
+from stream_alert_cli.terraform.helpers import terraform_check
 from stream_alert_cli.terraform.kinesis_events import generate_kinesis_events
 from stream_alert_cli.terraform.kinesis_streams import generate_kinesis_streams
 from stream_alert_cli.terraform.metrics import (
@@ -49,6 +51,7 @@ from stream_alert_cli.terraform.threat_intel_downloader import generate_threat_i
 
 RESTRICTED_CLUSTER_NAMES = ('main', 'athena')
 TERRAFORM_VERSIONS = {'application': '~> 0.11.7', 'provider': {'aws': '~> 1.26.0'}}
+LOGGER = get_logger(__name__)
 
 
 def generate_s3_bucket(bucket, logging, **kwargs):
@@ -359,7 +362,7 @@ def cleanup_old_tf_files(config):
                 os.remove(os.path.join('terraform', terraform_file))
 
 
-def terraform_generate(config, init=False):
+def terraform_generate_handler(config, init=False, check_tf=True, check_creds=True):
     """Generate all Terraform plans for the configured clusters.
 
     Keyword Args:
@@ -369,10 +372,18 @@ def terraform_generate(config, init=False):
     Returns:
         bool: Result of cluster generating
     """
+    # Check for valid credentials
+    if check_creds and not check_credentials():
+        return
+
+    # Verify terraform is installed
+    if check_tf and not terraform_check():
+        return
+
     cleanup_old_tf_files(config)
 
     # Setup the main.tf.json file
-    LOGGER_CLI.debug('Generating cluster file: main.tf.json')
+    LOGGER.debug('Generating cluster file: main.tf.json')
     with open('terraform/main.tf.json', 'w') as tf_file:
         json.dump(
             generate_main(config, init=init),
@@ -391,10 +402,10 @@ def terraform_generate(config, init=False):
             raise InvalidClusterName(
                 'Rename cluster "main" or "athena" to something else!')
 
-        LOGGER_CLI.debug('Generating cluster file: %s.tf.json', cluster)
+        LOGGER.debug('Generating cluster file: %s.tf.json', cluster)
         cluster_dict = generate_cluster(config=config, cluster_name=cluster)
         if not cluster_dict:
-            LOGGER_CLI.error(
+            LOGGER.error(
                 'An error was generated while creating the %s cluster', cluster)
             return False
 
@@ -474,7 +485,7 @@ def generate_global_lambda_settings(config, config_name, generate_func, tf_tmp_f
         message (str): Message will be logged by LOGGER.
     """
     if not config['lambda'].get(config_name):
-        LOGGER_CLI.warning('Config for \'%s\' not in lambda.json', config_name)
+        LOGGER.warning('Config for \'%s\' not in lambda.json', config_name)
         remove_temp_terraform_file(tf_tmp_file, message)
         return
 
@@ -495,5 +506,5 @@ def remove_temp_terraform_file(tf_tmp_file, message):
         message (str): Message will be logged by LOGGER.
     """
     if os.path.isfile(tf_tmp_file):
-        LOGGER_CLI.info(message)
+        LOGGER.info(message)
         os.remove(tf_tmp_file)

@@ -1,128 +1,124 @@
 [
   {
-    "data":{
-      "account":12345,
-      "detail":{
-        "awsRegion":"...",
-        "eventID":"...",
-        "eventName":"CreateNetworkAclEntry",
-        "eventSource":"...",
-        "eventTime":"...",
-        "eventType":"AwsApiCall",
-        "eventVersion":"1.05",
-        "recipientAccountId":"12345",
-        "requestID":"...",
-        "requestParameters":{
-          "aclProtocol":"-1",
-          "cidrBlock":"0.0.0.0/0",
-          "egress":false,
-          "icmpTypeCode":{},
-          "networkAclId":"...",
-          "portRange":{
-            "from":-1,
-            "to":-1
+    "data": {
+      "account": 12345,
+      "detail": {
+        "awsRegion": "...",
+        "eventID": "...",
+        "eventName": "CreateNetworkAclEntry",
+        "eventSource": "...",
+        "eventTime": "...",
+        "eventType": "AwsApiCall",
+        "eventVersion": "1.05",
+        "recipientAccountId": "12345",
+        "requestID": "...",
+        "requestParameters": {
+          "aclProtocol": "-1",
+          "cidrBlock": "0.0.0.0/0",
+          "egress": false,
+          "icmpTypeCode": {},
+          "networkAclId": "...",
+          "portRange": {
+            "from": -1,
+            "to": -1
           },
-          "ruleAction":"allow",
-          "ruleNumber":100
+          "ruleAction": "allow",
+          "ruleNumber": 100
         },
-        "responseElements":{
-          "_return":true
+        "responseElements": {
+          "_return": true
         },
-        "sourceIPAddress":"...",
-        "userAgent":"...",
-        "userIdentity":{
-          "accessKeyId":"...",
-          "accountId":"12345",
-          "arn":"...",
-          "principalId":"...",
-          "sessionContext":{
-            "attributes":{
-              "creationDate":"...",
-              "mfaAuthenticated":"..."
+        "sourceIPAddress": "...",
+        "userAgent": "...",
+        "userIdentity": {
+          "accessKeyId": "...",
+          "accountId": "12345",
+          "arn": "...",
+          "principalId": "...",
+          "sessionContext": {
+            "attributes": {
+              "creationDate": "...",
+              "mfaAuthenticated": "..."
             }
           },
-          "type":"IAMUser",
-          "userName":"..."
+          "type": "IAMUser",
+          "userName": "..."
         }
       },
-      "detail-type":"...",
-      "id":"12345",
-      "region":"123456123456",
-      "resources":{
-        "test":"..."
-      },
-      "source":"1.1.1.2",
-      "time":"...",
-      "version":"1.05"
+      "detail-type": "...",
+      "id": "12345",
+      "region": "123456123456",
+      "resources": [],
+      "source": "1.1.1.2",
+      "time": "...",
+      "version": "1.05"
     },
-    "description":"A Network ACL that allows ingress from anywhere should create an alert.",
-    "log":"cloudwatch:events",
-    "service":"kinesis",
-    "source":"prefix_cluster1_stream_alert_kinesis",
-    "trigger_rules":[
+    "description": "A Network ACL that allows ingress from anywhere should create an alert.",
+    "log": "cloudwatch:events",
+    "service": "kinesis",
+    "source": "prefix_cluster1_stream_alert_kinesis",
+    "trigger_rules": [
       "cloudtrail_network_acl_ingress_anywhere"
     ]
   },
   {
-    "data":{
-      "account":12345,
-      "detail":{
-        "awsRegion":"...",
-        "eventID":"...",
-        "eventName":"CreateNetworkAclEntry",
-        "eventSource":"...",
-        "eventTime":"...",
-        "eventType":"AwsApiCall",
-        "eventVersion":"1.05",
-        "recipientAccountId":"12345",
-        "requestID":"...",
-        "requestParameters":{
-          "aclProtocol":"-1",
-          "cidrBlock":"0.0.0.0/0",
-          "egress":false,
-          "icmpTypeCode":{},
-          "networkAclId":"...",
-          "portRange":{
-            "from":-1,
-            "to":-1
+    "data": {
+      "account": 12345,
+      "detail": {
+        "awsRegion": "...",
+        "eventID": "...",
+        "eventName": "CreateNetworkAclEntry",
+        "eventSource": "...",
+        "eventTime": "...",
+        "eventType": "AwsApiCall",
+        "eventVersion": "1.05",
+        "recipientAccountId": "12345",
+        "requestID": "...",
+        "requestParameters": {
+          "aclProtocol": "-1",
+          "cidrBlock": "0.0.0.0/0",
+          "egress": false,
+          "icmpTypeCode": {},
+          "networkAclId": "...",
+          "portRange": {
+            "from": -1,
+            "to": -1
           },
-          "ruleAction":"deny",
-          "ruleNumber":100
+          "ruleAction": "deny",
+          "ruleNumber": 100
         },
-        "responseElements":{
-          "_return":true
+        "responseElements": {
+          "_return": true
         },
-        "sourceIPAddress":"...",
-        "userAgent":"...",
-        "userIdentity":{
-          "accessKeyId":"...",
-          "accountId":"12345",
-          "arn":"...",
-          "principalId":"...",
-          "sessionContext":{
-            "attributes":{
-              "creationDate":"...",
-              "mfaAuthenticated":"..."
+        "sourceIPAddress": "...",
+        "userAgent": "...",
+        "userIdentity": {
+          "accessKeyId": "...",
+          "accountId": "12345",
+          "arn": "...",
+          "principalId": "...",
+          "sessionContext": {
+            "attributes": {
+              "creationDate": "...",
+              "mfaAuthenticated": "..."
             }
           },
-          "type":"IAMUser",
-          "userName":"..."
+          "type": "IAMUser",
+          "userName": "..."
         }
       },
-      "detail-type":"...",
-      "id":"12345",
-      "region":"123456123456",
-      "resources":{
-        "test":"..."
-      },
-      "source":"...",
-      "time":"...",
-      "version":"1.05"
+      "detail-type": "...",
+      "id": "12345",
+      "region": "123456123456",
+      "resources": [],
+      "source": "...",
+      "time": "...",
+      "version": "1.05"
     },
-    "description":"A Network ACL that denies internet ingress should not create an alert.",
-    "log":"cloudwatch:events",
-    "service":"kinesis",
-    "source":"prefix_cluster1_stream_alert_kinesis",
-    "trigger_rules":[]
+    "description": "A Network ACL that denies internet ingress should not create an alert.",
+    "log": "cloudwatch:events",
+    "service": "kinesis",
+    "source": "prefix_cluster1_stream_alert_kinesis",
+    "trigger_rules": []
   }
 ]

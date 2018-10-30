@@ -28,7 +28,6 @@ from nose.tools import (
     assert_true,
 )
 
-from stream_alert_cli.helpers import put_mock_s3_object
 from stream_alert.rule_processor.parsers import get_parser
 from stream_alert.rule_processor.rules_engine import RulesEngine
 from stream_alert.shared import NORMALIZATION_KEY
@@ -37,6 +36,7 @@ from stream_alert.shared.rule import disable, matcher, Matcher, rule, Rule
 from stream_alert.shared.rule_table import RuleTable
 from stream_alert.shared.lookup_tables import LookupTables
 
+from tests.unit.helpers.aws_mocks import put_mock_s3_object
 from tests.unit.stream_alert_rule_processor.test_helpers import (
     load_and_classify_payload,
     make_kinesis_raw_record,

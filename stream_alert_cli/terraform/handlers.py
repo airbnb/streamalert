@@ -13,90 +13,58 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from collections import namedtuple
 import os
 import shutil
 import sys
 
+from stream_alert.shared.logger import get_logger
 from stream_alert_cli.athena.handler import create_table
-from stream_alert_cli.logger import LOGGER_CLI
 from stream_alert_cli.helpers import check_credentials, continue_prompt, run_command, tf_runner
 from stream_alert_cli.manage_lambda.deploy import deploy
-from stream_alert_cli.terraform.generate import terraform_generate
+from stream_alert_cli.terraform.generate import terraform_generate_handler
+from stream_alert_cli.terraform.helpers import terraform_check
+
+LOGGER = get_logger(__name__)
 
 
-def terraform_check():
-    """Verify that Terraform is configured correctly
-
-    Returns:
-        bool: Success or failure of the command ran"""
-    prereqs_message = ('Terraform not found! Please install and add to '
-                       'your $PATH:\n'
-                       '\t$ export PATH=$PATH:/usr/local/terraform/bin')
-    return run_command(['terraform', 'version'], error_message=prereqs_message, quiet=True)
-
-
-def terraform_handler(options, config):
-    """Handle all Terraform CLI operations
-
-    Args:
-        options (namedtuple): Parsed arguments from manage.py
-        config (CLIConfig): Loaded StreamAlert CLI
-    """
+def _terraform_init_backend():
+    """Initialize the infrastructure backend (S3) using Terraform"""
     # Check for valid credentials
     if not check_credentials():
-        return
+        return False
 
     # Verify terraform is installed
     if not terraform_check():
-        return
+        return False
 
-    # Plan and Apply our streamalert infrastructure
-    if options.subcommand == 'build':
-        _terraform_build(options, config)
+    LOGGER.info('Initializing StreamAlert backend')
+    return run_command(['terraform', 'init'])
 
-    # generate terraform files
-    elif options.subcommand == 'generate':
-        if not terraform_generate(config=config):
-            return
 
-    elif options.subcommand == 'init-backend':
-        run_command(['terraform', 'init'])
-
-    # initialize streamalert infrastructure from a blank state
-    elif options.subcommand == 'init':
-        _terraform_init(config)
-
-    elif options.subcommand == 'clean':
-        if not continue_prompt(message='Are you sure you want to clean all Terraform files?'):
-            sys.exit(1)
-        _terraform_clean(config)
-
-    elif options.subcommand == 'destroy':
-        _terraform_destroy(options, config)
-
-    # get a quick status on our declared infrastructure
-    elif options.subcommand == 'status':
-        terraform_status(config)
-
-def _terraform_init(config):
+def terraform_init(options, config):
     """Initialize infrastructure using Terraform
 
     Args:
         config (CLIConfig): Loaded StreamAlert CLI
     """
-    LOGGER_CLI.info('Initializing StreamAlert')
-
-    # generate init Terraform files
-    if not terraform_generate(config=config, init=True):
+    # Stop here if only initializing the backend
+    if options.backend:
+        if not _terraform_init_backend():
+            sys.exit(1)
         return
 
-    LOGGER_CLI.info('Initializing Terraform')
+    LOGGER.info('Initializing StreamAlert')
+
+    # generate init Terraform files
+    if not terraform_generate_handler(config=config, init=True):
+        return
+
+    LOGGER.info('Initializing Terraform')
     if not run_command(['terraform', 'init']):
         sys.exit(1)
 
     # build init infrastructure
-    LOGGER_CLI.info('Building Initial Infrastructure')
+    LOGGER.info('Building Initial Infrastructure')
     init_targets = [
         'aws_s3_bucket.lambda_source', 'aws_s3_bucket.logging_bucket',
         'aws_s3_bucket.stream_alert_secrets', 'aws_s3_bucket.terraform_remote_state',
@@ -105,41 +73,40 @@ def _terraform_init(config):
         'aws_kms_key.stream_alert_secrets', 'aws_kms_alias.stream_alert_secrets'
     ]
     if not tf_runner(targets=init_targets):
-        LOGGER_CLI.error('An error occurred while running StreamAlert init')
+        LOGGER.error('An error occurred while running StreamAlert init')
         sys.exit(1)
 
     # generate the main.tf with remote state enabled
-    LOGGER_CLI.info('Configuring Terraform Remote State')
-    if not terraform_generate(config=config):
+    LOGGER.info('Configuring Terraform Remote State')
+    if not terraform_generate_handler(config=config, check_tf=False, check_creds=False):
         return
 
     if not run_command(['terraform', 'init']):
         return
 
-    # Use a named tuple to match the 'processor' attribute in the argparse options
-    deploy_opts = namedtuple('DeployOptions', ['processor', 'clusters'])
+    LOGGER.info('Deploying Lambda Functions')
 
-    LOGGER_CLI.info('Deploying Lambda Functions')
+    processors = ['rule', 'alert', 'alert_merger', 'athena', 'classifier']
 
-    deploy(deploy_opts(['rule', 'alert', 'alert_merger', 'athena'], []), config)
+    deploy(processors, config)
 
     # we need to manually create the streamalerts table since terraform does not support this
     # See: https://github.com/terraform-providers/terraform-provider-aws/issues/1486
     alerts_bucket = '{}.streamalerts'.format(config['global']['account']['prefix'])
     create_table('alerts', alerts_bucket, config)
 
-    LOGGER_CLI.info('Building Remainder Infrastructure')
+    LOGGER.info('Building remainding infrastructure')
     tf_runner(refresh=False)
 
 
-def _terraform_build(options, config):
+def terraform_build_handler(options, config):
     """Run Terraform with an optional set of targets and clusters
 
     Args:
-        options (namedtuple): Parsed arguments from manage.py
+        options (argparse.Namespace): Parsed arguments from manage.py
         config (CLIConfig): Loaded StreamAlert CLI
     """
-    if not terraform_generate(config=config):
+    if not terraform_generate_handler(config=config):
         return
 
     # Define the set of custom targets to apply
@@ -164,13 +131,21 @@ def _terraform_build(options, config):
     tf_runner(targets=tf_runner_targets)
 
 
-def _terraform_destroy(options, config):
+def terraform_destroy_handler(options, config):
     """Use Terraform to destroy any existing infrastructure
 
     Args:
-        options (namedtuple): Parsed arguments from manage.py
+        options (argparse.Namespace): Parsed arguments from manage.py
         config (CLIConfig): Loaded StreamAlert CLI
     """
+    # Check for valid credentials
+    if not check_credentials():
+        return
+
+    # Verify terraform is installed
+    if not terraform_check():
+        return
+
     # Ask for approval here since multiple Terraform commands may be necessary
     if not continue_prompt(message='Are you sure you want to destroy?'):
         sys.exit(1)
@@ -194,7 +169,8 @@ def _terraform_destroy(options, config):
 
     # Migrate back to local state so Terraform can successfully
     # destroy the S3 bucket used by the backend.
-    if not terraform_generate(config=config, init=True):
+    # Do not check for terraform or aws creds again since these were checked above
+    if not terraform_generate_handler(config=config, init=True, check_tf=False, check_creds=False):
         return
 
     if not run_command(['terraform', 'init']):
@@ -205,16 +181,16 @@ def _terraform_destroy(options, config):
         return
 
     # Remove old Terraform files
-    _terraform_clean(config)
+    terraform_clean_handler(config)
 
 
-def _terraform_clean(config):
+def terraform_clean_handler(config):
     """Remove leftover Terraform statefiles and main/cluster files
 
     Args:
         config (CLIConfig): Loaded StreamAlert CLI
     """
-    LOGGER_CLI.info('Cleaning Terraform files')
+    LOGGER.info('Cleaning Terraform files')
 
     cleanup_files = ['{}.tf.json'.format(cluster) for cluster in config.clusters()]
     cleanup_files.extend(
@@ -228,25 +204,3 @@ def _terraform_clean(config):
     # Finally, delete the Terraform directory
     if os.path.isdir('terraform/.terraform/'):
         shutil.rmtree('terraform/.terraform/')
-
-
-def terraform_status(config):
-    """Display current AWS infrastructure built by Terraform
-
-    Args:
-        config (CLIConfig): Loaded StreamAlert CLI
-    """
-    for cluster, region in config['clusters'].items():
-        print '\n======== {} ========'.format(cluster)
-        print 'Region: {}'.format(region)
-        print('Alert Processor Lambda Settings: \n\tTimeout: {}\n\tMemory: {}'
-              '\n\tProd Version: {}').format(config['alert_processor_lambda_config'][cluster][0],
-                                             config['alert_processor_lambda_config'][cluster][1],
-                                             config['alert_processor_versions'][cluster])
-        print('Rule Processor Lambda Settings: \n\tTimeout: {}\n\tMemory: {}'
-              '\n\tProd Version: {}').format(config['rule_processor_lambda_config'][cluster][0],
-                                             config['rule_processor_lambda_config'][cluster][1],
-                                             config['rule_processor_versions'][cluster])
-        print 'Kinesis settings: \n\tShards: {}\n\tRetention: {}'.format(
-            config['kinesis_streams_config'][cluster][0],
-            config['kinesis_streams_config'][cluster][1])

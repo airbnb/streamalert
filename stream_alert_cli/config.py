@@ -19,9 +19,11 @@ import re
 
 from stream_alert.apps import StreamAlertApp
 from stream_alert.shared import CLUSTERED_FUNCTIONS, config, metrics
+from stream_alert.shared.logger import get_logger
 from stream_alert_cli.helpers import continue_prompt
-from stream_alert_cli.logger import LOGGER_CLI
-from stream_alert_cli.apps import save_app_auth_info
+from stream_alert_cli.apps.helpers import save_app_auth_info
+
+LOGGER = get_logger(__name__)
 
 
 class CLIConfigError(Exception):
@@ -61,7 +63,7 @@ class CLIConfig(object):
     def generate_athena(self):
         """Generate a base Athena config"""
         if 'athena_partition_refresh_config' in self.config['lambda']:
-            LOGGER_CLI.warn('The Athena configuration already exists, skipping.')
+            LOGGER.warn('The Athena configuration already exists, skipping.')
             return
 
         prefix = self.config['global']['account']['prefix']
@@ -80,16 +82,16 @@ class CLIConfig(object):
         self.config['lambda']['athena_partition_refresh_config'] = athena_config_template
         self.write()
 
-        LOGGER_CLI.info('Athena configuration successfully created')
+        LOGGER.info('Athena configuration successfully created')
 
     def set_prefix(self, prefix):
         """Set the Org Prefix in Global settings"""
         if not isinstance(prefix, (unicode, str)):
-            LOGGER_CLI.error('Invalid prefix type, must be string')
+            LOGGER.error('Invalid prefix type, must be string')
             return
 
         if '_' in prefix:
-            LOGGER_CLI.error('Prefix cannot contain underscores')
+            LOGGER.error('Prefix cannot contain underscores')
             return
 
         self.config['global']['account']['prefix'] = prefix
@@ -111,18 +113,18 @@ class CLIConfig(object):
 
         self.write()
 
-        LOGGER_CLI.info('Prefix successfully configured')
+        LOGGER.info('Prefix successfully configured')
 
     def set_aws_account_id(self, aws_account_id):
         """Set the AWS Account ID in Global settings"""
         if not re.search(r'\A\d{12}\Z', aws_account_id):
-            LOGGER_CLI.error('Invalid AWS Account ID, must be 12 digits long')
+            LOGGER.error('Invalid AWS Account ID, must be 12 digits long')
             return
 
         self.config['global']['account']['aws_account_id'] = aws_account_id
         self.write()
 
-        LOGGER_CLI.info('AWS Account ID successfully configured')
+        LOGGER.info('AWS Account ID successfully configured')
 
     def toggle_rule_staging(self, enabled):
         """Toggle rule staging on or off
@@ -202,16 +204,16 @@ class CLIConfig(object):
                     'custom_metric_alarms', {}
                 )
                 if alarm_name in func_alarms:
-                    LOGGER_CLI.error('An alarm with name \'%s\' already exists in the '
-                                     '\'conf/clusters/%s.json\' cluster. %s', alarm_name, cluster,
-                                     message)
+                    LOGGER.error('An alarm with name \'%s\' already exists in the '
+                                 '\'conf/clusters/%s.json\' cluster. %s', alarm_name, cluster,
+                                 message)
                     return True
 
         for func, global_lambda_config in self.config['lambda'].iteritems():
             if alarm_name in global_lambda_config.get('custom_metric_alarms', {}):
-                LOGGER_CLI.error('An alarm with name \'%s\' already exists in the '
-                                 '\'conf/lambda.json\' in function config \'%s\'. %s',
-                                 alarm_name, func, message)
+                LOGGER.error('An alarm with name \'%s\' already exists in the '
+                             '\'conf/lambda.json\' in function config \'%s\'. %s',
+                             alarm_name, func, message)
                 return True
 
         return False
@@ -268,9 +270,9 @@ class CLIConfig(object):
                 alarm_settings,
                 metric_alarms
             )
-            LOGGER_CLI.info('Successfully added \'%s\' metric alarm for the \'%s\' '
-                            'function to \'conf/clusters/%s.json\'.',
-                            alarm_settings['alarm_name'], function_name, cluster)
+            LOGGER.info('Successfully added \'%s\' metric alarm for the \'%s\' '
+                        'function to \'conf/clusters/%s.json\'.',
+                        alarm_settings['alarm_name'], function_name, cluster)
 
 
     def _add_global_metric_alarm(self, alarm_info):
@@ -328,8 +330,8 @@ class CLIConfig(object):
             alarm_settings,
             metric_alarms
         )
-        LOGGER_CLI.info('Successfully added \'%s\' metric alarm to '
-                        '\'conf/lambda.json\'.', alarm_settings['alarm_name'])
+        LOGGER.info('Successfully added \'%s\' metric alarm to '
+                    '\'conf/lambda.json\'.', alarm_settings['alarm_name'])
 
     def add_metric_alarm(self, alarm_info):
         """Add a metric alarm that corresponds to a predefined metrics
@@ -346,7 +348,7 @@ class CLIConfig(object):
         current_metrics = metrics.MetricLogger.get_available_metrics()[alarm_info['function']]
 
         if not alarm_info['metric_name'] in current_metrics:
-            LOGGER_CLI.error(
+            LOGGER.error(
                 'Metric name \'%s\' not defined for function \'%s\'',
                 alarm_info['metric_name'],
                 alarm_info['function']
@@ -437,9 +439,9 @@ class CLIConfig(object):
         app_sources[app_info['function_name']] = {'logs': [app.service()]}
         self.config['sources']['stream_alert_app'] = app_sources
 
-        LOGGER_CLI.info('Successfully added \'%s\' app integration to \'conf/clusters/%s.json\' '
-                        'for service \'%s\'.', app_info['app_name'], app_info['cluster'],
-                        app_info['type'])
+        LOGGER.info('Successfully added \'%s\' app integration to \'conf/clusters/%s.json\' '
+                    'for service \'%s\'.', app_info['app_name'], app_info['cluster'],
+                    app_info['type'])
 
         self.write()
 
@@ -467,7 +469,7 @@ class CLIConfig(object):
 
         self.write()
 
-        LOGGER_CLI.info('Threat Intel configuration successfully created')
+        LOGGER.info('Threat Intel configuration successfully created')
 
     def add_threat_intel_downloader(self, ti_downloader_info):
         """Add Threat Intel Downloader configure to config
@@ -500,9 +502,9 @@ class CLIConfig(object):
         }
 
         if 'threat_intel_downloader_config' in self.config['lambda']:
-            LOGGER_CLI.info('Threat Intel Downloader has been enabled. '
-                            'Please edit config/lambda.json if you want to '
-                            'change lambda function settings.')
+            LOGGER.info('Threat Intel Downloader has been enabled. '
+                        'Please edit config/lambda.json if you want to '
+                        'change lambda function settings.')
             return False
 
         self.config['lambda']['threat_intel_downloader_config'] = default_config

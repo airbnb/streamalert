@@ -24,9 +24,9 @@ from mock import patch
 from moto import mock_s3
 from nose.tools import assert_equal
 
-from stream_alert_cli.helpers import put_mock_s3_object
 from stream_alert.shared.config import load_config
 from stream_alert.shared.lookup_tables import LookupTables
+from tests.unit.helpers.aws_mocks import put_mock_s3_object
 
 
 class TestLookupTables(object):

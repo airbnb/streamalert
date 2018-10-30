@@ -308,17 +308,21 @@ class ThreatIntel(object):
 
         return values
 
-    def _extract_ioc_values(self, records):
+    def _extract_ioc_values(self, payloads):
         """Instance method to extract IOC info from the record based on normalized keys
 
         Args:
-          records (list<dict>): A list of dictionary records with normalized records.
+          payloads (list<dict>): A list of dictionary payloads with records containing
+            normalized data
 
         Returns:
           list: Return a list of RecordIOC instances.
         """
         ioc_values = defaultdict(list)
-        for record in records:
+        for payload in payloads:
+            record = payload['record']
+            if NORMALIZATION_KEY not in record:
+                continue
             for normalized_key, original_key_values in record[NORMALIZATION_KEY].iteritems():
                 # Lookup mapped IOC type based on normalized CEF type
                 ioc_type = self._ioc_config.get(normalized_key)
@@ -369,7 +373,7 @@ class ThreatIntel(object):
         # Threat Intel can be disabled for any given cluster
         enabled_clusters = {
             cluster for cluster, values in config['clusters'].iteritems()
-            if values['modules']['stream_alert']['rules_engine'].get('enable_threat_intel', True)
+            if values['modules']['stream_alert'].get('enable_threat_intel', False)
         }
 
         if not enabled_clusters:

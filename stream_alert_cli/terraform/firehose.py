@@ -16,6 +16,7 @@ limitations under the License.
 from stream_alert.rule_processor.firehose import FirehoseClient
 from stream_alert_cli.terraform.common import monitoring_topic_arn
 
+
 def generate_firehose(logging_bucket, main_dict, config):
     """Generate the Firehose Terraform modules
 

@@ -1,32 +1,32 @@
 [
   {
-    "data":{
-      "action":"bypass_create",
-      "description":"{\"bypass\": \"\", \"count\": 1, \"auto_generated\": true, \"valid_secs\": 10, \"remaining_uses\": null, \"user_id\": \"...\"}",
-      "object":"...",
-      "timestamp":"1234567890",
-      "username":"..."
+    "data": {
+      "action": "bypass_create",
+      "description": "{\"bypass\": \"\", \"count\": 1, \"auto_generated\": true, \"valid_secs\": 10, \"remaining_uses\": null, \"user_id\": \"...\"}",
+      "object": "...",
+      "timestamp": "1234567890",
+      "username": "..."
     },
-    "description":"A DUO bypass code that has unlimited use should create an alert.",
-    "log":"duo:administrator",
-    "service":"stream_alert_app",
-    "source":"prefix_cluster_duo_admin_sm-app-name_app",
-    "trigger_rules":[
+    "description": "A DUO bypass code that has unlimited use should create an alert.",
+    "log": "duo:administrator",
+    "service": "stream_alert_app",
+    "source": "prefix_cluster_duo_admin_sm-app-name_app",
+    "trigger_rules": [
       "duo_bypass_code_create_unlimited_use"
     ]
   },
   {
-    "data":{
-      "action":"bypass_create",
-      "description":"{\"bypass\": \"\", \"count\": 1, \"auto_generated\": true, \"valid_secs\": 60, \"remaining_uses\": 1, \"user_id\": \"...\"}",
-      "object":"...",
-      "timestamp":"1234567890",
-      "username":"..."
+    "data": {
+      "action": "bypass_create",
+      "description": "{\"bypass\": \"\", \"count\": 1, \"auto_generated\": true, \"valid_secs\": 60, \"remaining_uses\": 1, \"user_id\": \"...\"}",
+      "object": "...",
+      "timestamp": "1234567890",
+      "username": "..."
     },
-    "description":"A DUO bypass code that has finite remaining uses should not create an alert.",
-    "log":"duo:administrator",
-    "service":"stream_alert_app",
-    "source":"prefix_cluster_duo_admin_sm-app-name_app",
-    "trigger_rules":[]
+    "description": "A DUO bypass code that has finite remaining uses should not create an alert.",
+    "log": "duo:administrator",
+    "service": "stream_alert_app",
+    "source": "prefix_cluster_duo_admin_sm-app-name_app",
+    "trigger_rules": []
   }
 ]

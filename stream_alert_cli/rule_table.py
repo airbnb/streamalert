@@ -16,11 +16,11 @@ limitations under the License.
 from stream_alert.shared.rule_table import RuleTable
 
 
-def rule_table_handler(options, config):
+def rule_staging_handler(options, config):
     """Handle operations related to the rule table (listing, updating, etc)
 
     Args:
-        options (argparser.Namespace): Various options needed by subcommand
+        options (argparse.Namespace): Various options needed by subcommand
             handlers
         config (CLIConfig): Loaded configuration from 'conf/' directory
     """

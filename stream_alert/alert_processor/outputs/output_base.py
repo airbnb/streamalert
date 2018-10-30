@@ -31,6 +31,7 @@ from stream_alert.shared.backoff_handlers import (
     success_handler,
     giveup_handler
 )
+from stream_alert.shared.helpers.boto import REGION
 from stream_alert.shared.logger import get_logger
 
 
@@ -73,14 +74,11 @@ class StreamAlertOutput(object):
         return output
 
     @classmethod
-    def create_dispatcher(cls, service, region, account_id, prefix, config):
+    def create_dispatcher(cls, service, config):
         """Returns the subclass that should handle this particular service
 
         Args:
             service (str): The service identifier for this output
-            region (str): The AWS region to use for some output types
-            account_id (str): The AWS account ID for computing AWS output ARNs
-            prefix (str): The resource prefix
             config (dict): The loaded output configuration dict
 
         Returns:
@@ -90,7 +88,7 @@ class StreamAlertOutput(object):
         if not dispatcher:
             return False
 
-        return dispatcher(region, account_id, prefix, config)
+        return dispatcher(config)
 
     @classmethod
     def get_dispatcher(cls, service):
@@ -146,10 +144,10 @@ class OutputDispatcher(object):
     # out for both get and post requests. This applies to both connection and read timeouts
     _DEFAULT_REQUEST_TIMEOUT = 3.05
 
-    def __init__(self, region, account_id, prefix, config):
-        self.region = region
-        self.account_id = account_id
-        self.secrets_bucket = '{}.streamalert.secrets'.format(prefix)
+    def __init__(self, config):
+        self.account_id = os.environ['AWS_ACCOUNT_ID']
+        self.region = REGION
+        self.secrets_bucket = '{}.streamalert.secrets'.format(os.environ['STREAMALERT_PREFIX'])
         self.config = config
 
     @staticmethod

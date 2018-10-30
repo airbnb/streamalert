@@ -28,7 +28,7 @@ class Normalizer(object):
     """Normalizer class to handle log key normalization in payloads"""
 
     # Store the normalized CEF types mapping to original keys from the records
-    _types_config = None
+    _types_config = dict()
 
     @classmethod
     def match_types(cls, record, normalized_types):

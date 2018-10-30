@@ -21,16 +21,15 @@ from moto import mock_s3, mock_kms
 from nose.tools import assert_equal, assert_false, assert_true, assert_set_equal
 
 from stream_alert.alert_processor.outputs.slack import SlackOutput
-from stream_alert_cli.helpers import put_mock_creds
 from tests.unit.stream_alert_alert_processor import (
-    ACCOUNT_ID,
-    FUNCTION_NAME,
     KMS_ALIAS,
+    MOCK_ENV,
     REGION
 )
 from tests.unit.stream_alert_alert_processor.helpers import (
     get_random_alert,
     get_alert,
+    put_mock_creds,
     remove_temp_secrets
 )
 
@@ -43,13 +42,14 @@ class TestSlackOutput(object):
     OUTPUT = ':'.join([SERVICE, DESCRIPTOR])
     CREDS = {'url': 'https://api.slack.com/web-hook-key'}
 
+    @patch.dict('os.environ', MOCK_ENV)
     def setup(self):
         """Setup before each method"""
         self._mock_s3 = mock_s3()
         self._mock_s3.start()
         self._mock_kms = mock_kms()
         self._mock_kms.start()
-        self._dispatcher = SlackOutput(REGION, ACCOUNT_ID, FUNCTION_NAME, None)
+        self._dispatcher = SlackOutput(None)
         remove_temp_secrets()
         output_name = self._dispatcher.output_cred_name(self.DESCRIPTOR)
         put_mock_creds(output_name, self.CREDS, self._dispatcher.secrets_bucket, REGION, KMS_ALIAS)

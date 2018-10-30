@@ -13,9 +13,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from stream_alert.shared.logger import get_logger
 from stream_alert_cli.helpers import tf_runner
-from stream_alert_cli.logger import LOGGER_CLI
-from stream_alert_cli.terraform.generate import terraform_generate
+from stream_alert_cli.terraform.generate import terraform_generate_handler
+
+LOGGER = get_logger(__name__)
 
 
 def kinesis_handler(options, config):
@@ -25,32 +27,22 @@ def kinesis_handler(options, config):
         options (namedtuple): Parsed arguments
         config (CLIConfig): Loaded StreamAlert config
     """
-    if options.subcommand == 'disable-events':
-        LOGGER_CLI.info('Disabling Kinesis Events')
-        set_kinesis_events(options, config, False)
-    elif options.subcommand == 'enable-events':
-        LOGGER_CLI.info('Enabling Kinesis Events')
-        set_kinesis_events(options, config, True)
+    enable = options.action == 'enable-events'
+    LOGGER.info('%s Kinesis Events', 'Enabling' if enable else 'Disabling')
 
-
-def set_kinesis_events(options, config, enable=True):
-    """Enable or disable Kinesis events for given clusters
-
-    Args:
-        options (namedtuple): Parsed arguments
-        config (CLIConfig): Loaded StreamAlert config
-        enable (bool): Enable/Disable switch
-    """
     for cluster in options.clusters or config.clusters():
         if 'kinesis_events' in config['clusters'][cluster]['modules']:
             config['clusters'][cluster]['modules']['kinesis_events']['enabled'] = enable
 
     config.write()
 
-    if not options.skip_terraform:
-        terraform_generate(config)
-        tf_runner(
-            action='apply',
-            targets=[
-                'module.{}_{}'.format('kinesis_events', cluster) for cluster in config.clusters()
-            ])
+    if options.skip_terraform:
+        return
+
+    terraform_generate_handler(config)
+    tf_runner(
+        action='apply',
+        targets=[
+            'module.{}_{}'.format('kinesis_events', cluster) for cluster in config.clusters()
+        ]
+    )
