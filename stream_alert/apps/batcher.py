@@ -39,7 +39,7 @@ class Batcher(object):
             Batcher.LAMBDA_CLIENT = boto3.client('lambda')
         self._source_function = source_func
         # The rule processor function name will look like:
-        # <prefix>_<cluster>_streamalert_rule_processor
+        # <prefix>_<cluster>_streamalert_classifier
         self._destination_function = destination_func
 
     def send_logs(self, logs):

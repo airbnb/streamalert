@@ -165,23 +165,6 @@ class ClassifierPackage(LambdaPackage):
     third_party_libs = {'backoff', 'jmespath', 'jsonlines'}
 
 
-class RuleProcessorPackage(LambdaPackage):
-    """Deployment package class for the StreamAlert Rule Processor function"""
-    config_key = 'rule_processor_config'
-    lambda_handler = 'stream_alert.rule_processor.main.handler'
-    package_files = {
-        'conf',
-        'helpers',
-        'matchers',
-        'rules',
-        'stream_alert/__init__.py',
-        'stream_alert/rule_processor',
-        'stream_alert/shared',
-    }
-    package_name = 'rule_processor'
-    third_party_libs = {'backoff', 'netaddr', 'jsonpath_rw'}
-
-
 class RulesEnginePackage(LambdaPackage):
     """Deployment package class for the StreamAlert Rules Engine function"""
     config_key = 'rules_engine_config'

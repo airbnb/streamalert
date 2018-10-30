@@ -79,15 +79,7 @@
           "subnet_ids": []
         }
       },
-      "rule_processor_config": {
-        "inputs": {
-          "aws-sns": [
-            "my-sns-topic-name"
-          ]
-        },
-        "memory": 128,
-        "timeout": 25
-      }
+      "enable_threat_intel": false
     }
   },
   "outputs": {

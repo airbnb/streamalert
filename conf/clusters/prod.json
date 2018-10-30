@@ -34,12 +34,7 @@
           "subnet_ids": []
         }
       },
-      "rule_processor_config": {
-        "enable_custom_metrics": false,
-        "log_level": "info",
-        "memory": 128,
-        "timeout": 10
-      }
+      "enable_threat_intel": false
     }
   },
   "region": "us-east-1"

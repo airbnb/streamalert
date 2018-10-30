@@ -19,11 +19,8 @@ from mock import patch
 from moto import mock_ssm
 
 from stream_alert.apps.main import handler
-from tests.unit.stream_alert_apps.test_helpers import (
-    get_event,
-    get_mock_context,
-    put_mock_params
-)
+from tests.unit.stream_alert_apps.test_helpers import get_event, put_mock_params
+from tests.unit.stream_alert_shared.test_config import get_mock_lambda_context
 
 
 @mock_ssm
@@ -34,5 +31,5 @@ def test_handler(gather_mock):
     app_type = 'duo_auth'
     event = get_event(app_type)
     put_mock_params(app_type)
-    handler(event, get_mock_context(app_type))
+    handler(event, get_mock_lambda_context(app_type))
     gather_mock.assert_called_once()

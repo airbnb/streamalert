@@ -157,17 +157,6 @@ class MockLambdaClient(object):
         return {'ResponseMetadata': {'RequestId': '9af88643-7b3c-43cd-baae-addb73bb4d27'}}
 
 
-def get_mock_context(func_name):
-    """Helper function to create a fake context object using Mock"""
-    arn = 'arn:aws:lambda:us-east-1:123456789012:function:{}:development'
-    context = Mock(invoked_function_arn=(arn.format(func_name)),
-                   function_name=func_name,
-                   function_version='production',
-                   get_remaining_time_in_millis=Mock(return_value=1000))
-
-    return context
-
-
 def _get_formatted_timestamp(app_type):
     """Different services required different date formats - return the proper format here"""
     if app_type.startswith('duo'):
@@ -192,7 +181,7 @@ def get_event(app_type):
         'app_type': app_type,
         'schedule_expression': 'rate(10 minutes)',
         'destination_function_name':
-            'unit_test_prefix_unit_test_cluster_streamalert_rule_processor'
+            'unit_test_prefix_unit_test_cluster_streamalert_classifier'
     }
 
 

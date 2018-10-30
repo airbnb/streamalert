@@ -32,11 +32,8 @@ from stream_alert.apps import StreamAlertApp
 from stream_alert.apps.app_base import AppIntegration, safe_timeout, _report_time
 from stream_alert.apps._apps.duo import DuoAuthApp
 from stream_alert.apps.exceptions import AppException
-from tests.unit.stream_alert_apps.test_helpers import (
-    get_event,
-    get_mock_context,
-    put_mock_params
-)
+from tests.unit.stream_alert_apps.test_helpers import get_event, put_mock_params
+from tests.unit.stream_alert_shared.test_config import get_mock_lambda_context
 
 
 class TestStreamAlertApp(object):
@@ -99,7 +96,7 @@ class TestAppIntegration(object):
         self._test_app_name = 'test_app'
         put_mock_params(self._test_app_name)
         self._event = get_event(self._test_app_name)
-        self._context = get_mock_context(self._test_app_name)
+        self._context = get_mock_lambda_context(self._test_app_name)
         self._app = AppIntegration(self._event, self._context)
 
     @patch('logging.Logger.debug')

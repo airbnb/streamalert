@@ -45,7 +45,6 @@ from stream_alert_cli.terraform.monitoring import generate_monitoring
 from stream_alert_cli.terraform.rule_promotion import generate_rule_promotion
 from stream_alert_cli.terraform.classifier import generate_classifier
 from stream_alert_cli.terraform.rules_engine import generate_rules_engine
-from stream_alert_cli.terraform.streamalert import generate_stream_alert
 from stream_alert_cli.terraform.s3_events import generate_s3_events
 from stream_alert_cli.terraform.threat_intel_downloader import generate_threat_intel_downloader
 
@@ -305,8 +304,6 @@ def generate_cluster(config, cluster_name):
     cluster_dict = infinitedict()
 
     generate_classifier(cluster_name, cluster_dict, config)
-
-    generate_stream_alert(cluster_name, cluster_dict, config)
 
     generate_cluster_cloudwatch_metric_filters(cluster_name, cluster_dict, config)
 

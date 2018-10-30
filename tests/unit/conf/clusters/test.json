@@ -50,11 +50,7 @@
           "subnet_ids": []
         }
       },
-      "rule_processor_config": {
-        "enable_threat_intel": false,
-        "memory": 128,
-        "timeout": 25
-      }
+      "enable_threat_intel": false
     }
   },
   "outputs": {

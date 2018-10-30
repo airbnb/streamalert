@@ -22,11 +22,8 @@ import requests
 
 from stream_alert.apps._apps.duo import DuoAdminApp, DuoApp, DuoAuthApp
 
-from tests.unit.stream_alert_apps.test_helpers import (
-    get_event,
-    get_mock_context,
-    put_mock_params
-)
+from tests.unit.stream_alert_apps.test_helpers import get_event, put_mock_params
+from tests.unit.stream_alert_shared.test_config import get_mock_lambda_context
 
 
 @mock_ssm
@@ -43,7 +40,7 @@ class TestDuoApp(object):
         self._test_app_name = 'duo'
         put_mock_params(self._test_app_name)
         self._event = get_event(self._test_app_name)
-        self._context = get_mock_context(self._test_app_name)
+        self._context = get_mock_lambda_context(self._test_app_name)
         self._app = DuoApp(self._event, self._context)
 
     @patch('logging.Logger.exception')

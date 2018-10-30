@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from stream_alert.shared import metrics
+from stream_alert.shared import CLUSTERED_FUNCTIONS
 from stream_alert.shared.logger import get_logger
 from stream_alert_cli.terraform.common import monitoring_topic_arn
 
@@ -29,8 +30,10 @@ def generate_aggregate_cloudwatch_metric_filters(config):
     functions = {
         cluster: [
             func.replace('_config', '')
-            for func, func_config in cluster_config['modules']['stream_alert'].iteritems()
-            if func_config.get('enable_custom_metrics')
+            for func in CLUSTERED_FUNCTIONS
+            if cluster_config['modules']['stream_alert']['{}_config'.format(func)].get(
+                'enable_custom_metrics'
+            )
         ] for cluster, cluster_config in config['clusters'].iteritems()
     }
 
@@ -170,8 +173,11 @@ def generate_cluster_cloudwatch_metric_alarms(cluster_name, cluster_dict, config
 
     # Add cluster metric alarms for the rule and alert processors
     metric_alarms = [
-        metric_alarm for func_config in stream_alert_config.values()
-        for metric_alarm in func_config.get('custom_metric_alarms', [])
+        metric_alarm
+        for func in CLUSTERED_FUNCTIONS
+        for metric_alarm in stream_alert_config['{}_config'.format(func)].get(
+            'custom_metric_alarms', []
+        )
     ]
 
     for idx, metric_alarm in enumerate(metric_alarms):

@@ -36,7 +36,7 @@ def generate_apps(cluster_name, cluster_dict, config):
 
         tf_module_prefix = 'app_{}_{}'.format(app_info['app_name'], cluster_name)
 
-        destination_func = '{}_{}_streamalert_rule_processor'.format(prefix, cluster_name)
+        destination_func = '{}_{}_streamalert_classifier'.format(prefix, cluster_name)
 
         app_config = {
             'app_type': app_info['type'],
