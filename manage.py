@@ -770,7 +770,7 @@ def _setup_test_live_subparser(subparsers):
     test_live_parser = _generate_subparser(
         subparsers,
         'live',
-        description='Run end-to-end tests that will attempt to send alerts to active outputs',
+        description='Run end-to-end tests that will attempt to send alerts to each rule\'s outputs',
         subcommand=True
     )
 

@@ -181,18 +181,15 @@ def terraform_destroy_handler(options, config):
         return
 
     # Remove old Terraform files
-    terraform_clean_handler(config, prompt=False)
+    terraform_clean_handler(config)
 
 
-def terraform_clean_handler(config, prompt=True):
+def terraform_clean_handler(config):
     """Remove leftover Terraform statefiles and main/cluster files
 
     Args:
         config (CLIConfig): Loaded StreamAlert CLI
     """
-    if prompt and not continue_prompt(message='Are you sure you want to remove Terraform files?'):
-        sys.exit(1)
-
     LOGGER.info('Cleaning Terraform files')
 
     cleanup_files = ['{}.tf.json'.format(cluster) for cluster in config.clusters()]
