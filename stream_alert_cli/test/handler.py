@@ -41,7 +41,17 @@ LOGGER = get_logger(__name__)
 
 
 def test_handler(options, config):
-    sys.exit(TestRunner(options, config).run())
+    """Handler for starting the test framework
+
+    Args:
+        options (argparse.Namespace): Parsed arguments
+        config (CLIConfig): Loaded StreamAlert config
+
+    Returns:
+        bool: False if errors occurred, True otherwise
+    """
+
+    return TestRunner(options, config).run()
 
 
 class TestRunner(object):
@@ -213,7 +223,7 @@ class TestRunner(object):
 
         self._finalize()
 
-        return self._failed != 0
+        return self._failed == 0
 
     def _get_test_files(self):
         """Helper to get rule files to be tested

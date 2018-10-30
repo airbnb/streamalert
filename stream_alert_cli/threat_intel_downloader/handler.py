@@ -26,8 +26,11 @@ def threat_intel_downloader_handler(options, config):
     """Configure Threat Intel Downloader from command line
 
     Args:
-        options (namedtuple): The parsed args passed from the CLI
-        config (CLIConfig): Loaded StreamAlert CLI
+        options (argparse.Namespace): Parsed arguments
+        config (CLIConfig): Loaded StreamAlert config
+
+    Returns:
+        bool: False if errors occurred, True otherwise
     """
     def _validate_options(options):
         if not options.interval:
@@ -45,15 +48,15 @@ def threat_intel_downloader_handler(options, config):
         return True
 
     if not options:
-        return
+        return False
 
     if options.subcommand == 'enable':
         if not _validate_options(options):
-            return
+            return False
         if config.add_threat_intel_downloader(vars(options)):
-            save_api_creds_info(config['global']['account']['region'])
+            return save_api_creds_info(config['global']['account']['region'])
     elif options.subcommand == 'update-auth':
-        save_api_creds_info(config['global']['account']['region'], overwrite=True)
+        return save_api_creds_info(config['global']['account']['region'], overwrite=True)
 
 def save_api_creds_info(region, overwrite=False):
     """Function to add API creds information to parameter store

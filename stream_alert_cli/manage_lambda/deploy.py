@@ -33,15 +33,18 @@ def deploy_handler(options, config):
     Args:
         options (argparse.Namespace): Parsed argparse namespace from the CLI
         config (CLIConfig): Loaded StreamAlert config
+
+    Returns:
+        bool: False if errors occurred, True otherwise
     """
     # Make sure the Terraform code is up to date
     if not terraform_generate_handler(config=config):
-        return
+        return False
 
-    processors = options.processor
+    functions = options.processor
 
     if 'all' in options.processor:
-        processors = {
+        functions = {
             'alert',
             'alert_merger',
             'apps',
@@ -49,28 +52,39 @@ def deploy_handler(options, config):
             'classifier',
             'rule',
             'rule_promo',
-            'rules_engine',
             'threat_intel_downloader'
         }
 
-    deploy(processors, config, options.clusters)
+    if not deploy(functions, config, options.clusters):
+        return False
 
-    # Update the rule table now if the rule processor is being deployed
-    if 'rule' in processors:
+    # Update the rule table now if the rules engine is being deployed
+    if 'rule' in functions:
         _update_rule_table(options, config)
 
+    return True
 
-def deploy(processors, config, clusters=None):
-    """Deploy """
 
-    LOGGER.info('Deploying: %s', ' '.join(sorted(processors)))
+def deploy(functions, config, clusters=None):
+    """Deploy the functions
+
+    Args:
+        functions (set): Set of functions being deployed
+        config (CLIConfig): Loaded StreamAlert config
+        clusters (set=None): Optional clusters to target for this deploy
+
+    Returns:
+        bool: False if errors occurred, True otherwise
+    """
+
+    LOGGER.info('Deploying: %s', ' '.join(sorted(functions)))
 
     # Terraform apply only to the module which contains our lambda functions
     deploy_targets = set()
     packages = []
 
-    for processor in processors:
-        package, targets = _create(processor, config, clusters)
+    for function in functions:
+        package, targets = _create(function, config, clusters)
         # Continue if the package isn't enabled
         if not all([package, targets]):
             continue
@@ -79,7 +93,7 @@ def deploy(processors, config, clusters=None):
         deploy_targets.update(targets)
 
     # Terraform applies the new package and publishes a new version
-    helpers.tf_runner(targets=deploy_targets)
+    return helpers.tf_runner(targets=deploy_targets)
 
 
 def _update_rule_table(options, config):

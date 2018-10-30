@@ -374,11 +374,11 @@ def terraform_generate_handler(config, init=False, check_tf=True, check_creds=Tr
     """
     # Check for valid credentials
     if check_creds and not check_credentials():
-        return
+        return False
 
     # Verify terraform is installed
     if check_tf and not terraform_check():
-        return
+        return False
 
     cleanup_old_tf_files(config)
 
