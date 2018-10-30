@@ -41,9 +41,9 @@ def deploy_handler(options, config):
     if not terraform_generate_handler(config=config):
         return False
 
-    functions = options.processor
+    functions = options.function
 
-    if 'all' in options.processor:
+    if 'all' in options.function:
         functions = {
             'alert',
             'alert_merger',

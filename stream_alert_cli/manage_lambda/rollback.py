@@ -72,52 +72,52 @@ def rollback_handler(options, config):
     if not terraform_generate_handler(config=config):
         return False
 
-    LOGGER.info('Rolling back: %s', ' '.join(options.processor))
+    LOGGER.info('Rolling back: %s', ' '.join(options.function))
 
-    rollback_all = 'all' in options.processor
+    rollback_all = 'all' in options.function
     prefix = config['global']['account']['prefix']
     clusters = sorted(options.clusters or config.clusters())
     client = boto3.client('lambda')
 
     # Track the success of rolling back the functions
     success = True
-    if rollback_all or 'alert' in options.processor:
+    if rollback_all or 'alert' in options.function:
         success = success and _rollback_production(
             client,
             '{}_streamalert_alert_processor'.format(prefix)
         )
 
-    if rollback_all or 'alert_merger' in options.processor:
+    if rollback_all or 'alert_merger' in options.function:
         success = success and _rollback_production(
             client,
             '{}_streamalert_alert_merger'.format(prefix)
         )
 
-    if rollback_all or 'apps' in options.processor:
+    if rollback_all or 'apps' in options.function:
         for cluster in clusters:
             apps_config = config['clusters'][cluster]['modules'].get('stream_alert_apps', {})
             for lambda_name in sorted(apps_config):
                 success = success and _rollback_production(client, lambda_name)
 
-    if rollback_all or 'athena' in options.processor:
+    if rollback_all or 'athena' in options.function:
         success = success and _rollback_production(
             client,
             '{}_streamalert_athena_partition_refresh'.format(prefix)
         )
 
-    if rollback_all or 'classifier' in options.processor:
+    if rollback_all or 'classifier' in options.function:
         for cluster in clusters:
             success = success and _rollback_production(
                 client,
                 '{}_{}_streamalert_classifier'.format(prefix, cluster)
             )
 
-    if rollback_all or 'rule' in options.processor:
+    if rollback_all or 'rule' in options.function:
         success = success and _rollback_production(
             client, '{}_streamalert_rules_engine'.format(prefix)
         )
 
-    if rollback_all or 'threat_intel_downloader' in options.processor:
+    if rollback_all or 'threat_intel_downloader' in options.function:
         success = success and _rollback_production(
             client,
             '{}_streamalert_threat_intel_downloader'.format(prefix)

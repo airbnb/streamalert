@@ -18,7 +18,6 @@ import json
 import boto3
 
 from botocore.exceptions import ClientError, ParamValidationError
-from mock import Mock
 
 
 def put_mock_params(app_type):
@@ -74,7 +73,7 @@ def _get_auth_info(app_type):
         }
     elif app_type.startswith('box'):
         return {
-            'keyfile' : {
+            'keyfile': {
                 'boxAppSettings': {
                     'clientID': 'sc0ikmesi43elk4rxus11sbee1najitr',
                     'clientSecret': '9ccOBWPh8ab5wHN2uGy0nFOrUtY82xcZ',
@@ -91,9 +90,9 @@ def _get_auth_info(app_type):
         }
     elif app_type == 'aliyun':
         return {
-            'access_key_id':'ACCESS_KEY_ID',
-            'access_key_secret':'ACCESS_KEY_SECRET',
-            'region_id':'REGION_ID'
+            'access_key_id': 'ACCESS_KEY_ID',
+            'access_key_secret': 'ACCESS_KEY_SECRET',
+            'region_id': 'REGION_ID'
         }
     elif app_type == 'salesforce':
         return {
@@ -204,6 +203,7 @@ def list_salesforce_api_versions():
             "url": "/services/data/v26.0"
         }
     ]
+
 
 def get_salesforce_log_files():
     """Helper function to get a list available log files"""
