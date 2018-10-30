@@ -227,6 +227,12 @@ class Rule(object):
         return set(self.outputs or [])
 
     @classmethod
+    def disabled_rules(cls):
+        return {
+            name for name in cls._rules if cls._rules[name].disabled
+        }
+
+    @classmethod
     def disable(cls, name):
         cls._rules[name].disabled = True
 

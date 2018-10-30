@@ -175,7 +175,7 @@ class ParserBase:
             data[key_name] = data.get(key_name, cls.default_optional_values(schema[key_name]))
 
     @classmethod
-    def _matches_log_patterns(cls, record, log_patterns):
+    def _matches_log_patterns(cls, record, log_patterns, envelope=None):
         """Check if all log patterns specified for this record match
 
         Args:
@@ -193,6 +193,9 @@ class ParserBase:
 
         result = True
         for field, patterns in log_patterns.iteritems():
+            if field == cls.ENVELOPE_KEY:
+                return cls._matches_log_patterns(envelope, patterns)
+
             # handle nested log_patterns
             if isinstance(patterns, dict):
                 return cls._matches_log_patterns(record[field], patterns)
@@ -338,17 +341,19 @@ class ParserBase:
 
             elif isinstance(value, dict):
                 # Convert nested types
-                return cls._convert_type(record[key], value)
+                if not cls._convert_type(record[key], value):
+                    return False
 
-            # Ensure a list is actually a list, but do not check list value types
-            # since we do not currently support type checking list elements
-            elif isinstance(value, list) and not isinstance(record[key], list):
-                LOGGER.error('Invalid schema. Value for key [%s] is not a list: %s',
-                             key, record[key])
-                return False
+            elif isinstance(value, list):
+                # Ensure a list is actually a list, but do not check list value types
+                # since we do not currently support type checking list elements
+                if not isinstance(record[key], list):
+                    LOGGER.error('Invalid schema. Value for key [%s] is not a list: %s',
+                                 key, record[key])
+                    return False
 
             else:
-                LOGGER.error('Unsupported value type in schema: %s', value)
+                LOGGER.error('Unsupported value type in schema for key \'%s\': %s', key, value)
                 return False
 
         return True
@@ -473,7 +478,7 @@ class ParserBase:
             valid = valid and self._convert_type(
                 record, self._schema, self._optional_top_level_keys
             )
-            valid = valid and self._matches_log_patterns(record, self._log_patterns)
+            valid = valid and self._matches_log_patterns(record, self._log_patterns, envelope)
             self._add_parse_result(record, valid, envelope)
 
         return self.valid

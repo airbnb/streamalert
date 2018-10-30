@@ -882,12 +882,12 @@ class TestJSONParser(object):
                 'title': 'string',
                 'desc': 'string',
                 'impact': 'float',
-                'refs': 'string',
-                'tags': 'string',
+                'refs': [],
+                'tags': {},
                 'code': 'string',
                 'id': 'string',
                 'source_location': {},
-                'results': {}
+                'results': []
             },
             'configuration': {
                 'json_path': 'profiles[].controls[]'

@@ -406,7 +406,7 @@ class TestTerraformGenerate(object):
                              ' "detail": {"state": ["running"]}}'
         })
 
-    @patch('stream_alert_cli.terraform.cloudtrail.LOGGER_CLI')
+    @patch('stream_alert_cli.terraform.cloudtrail.LOGGER')
     def test_generate_cloudtrail_invalid_event_pattern(self, mock_logging):
         """CLI - Terraform Generate Cloudtrail Module - Invalid Event Pattern"""
         cluster_name = 'advanced'

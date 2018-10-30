@@ -17,17 +17,76 @@ from collections import namedtuple
 import sys
 
 from stream_alert.shared import rule_table
+from stream_alert.shared.logger import get_logger
 from stream_alert_cli import helpers
 from stream_alert_cli.manage_lambda import package as stream_alert_packages
+from stream_alert_cli.terraform.generate import terraform_generate_handler
+
+LOGGER = get_logger(__name__)
 
 PackageMap = namedtuple('package_attrs', ['package_class', 'targets', 'enabled'])
+
+
+def deploy_handler(options, config):
+    """CLI handler for deploying new versions of Lambda functions
+
+    Args:
+        options (argparse.Namespace): Parsed argparse namespace from the CLI
+        config (CLIConfig): Loaded StreamAlert config
+    """
+    # Make sure the Terraform code is up to date
+    if not terraform_generate_handler(config=config):
+        return
+
+    processors = options.processor
+
+    if 'all' in options.processor:
+        processors = {
+            'alert',
+            'alert_merger',
+            'apps',
+            'athena',
+            'classifier',
+            'rule',
+            'rule_promo',
+            'rules_engine',
+            'threat_intel_downloader'
+        }
+
+    deploy(processors, config, options.clusters)
+
+    # Update the rule table now if the rule processor is being deployed
+    if 'rule' in processors:
+        _update_rule_table(options, config)
+
+
+def deploy(processors, config, clusters=None):
+    """Deploy """
+
+    LOGGER.info('Deploying: %s', ' '.join(sorted(processors)))
+
+    # Terraform apply only to the module which contains our lambda functions
+    deploy_targets = set()
+    packages = []
+
+    for processor in processors:
+        package, targets = _create(processor, config, clusters)
+        # Continue if the package isn't enabled
+        if not all([package, targets]):
+            continue
+
+        packages.append(package)
+        deploy_targets.update(targets)
+
+    # Terraform applies the new package and publishes a new version
+    helpers.tf_runner(targets=deploy_targets)
 
 
 def _update_rule_table(options, config):
     """Update the rule table with any staging information
 
     Args:
-        options (argparser.Namespace): Various options from the CLI needed for actions
+        options (argparse.Namespace): Various options from the CLI needed for actions
         config (CLIConfig): The loaded StreamAlert config
     """
     # If rule staging is disabled, do not update the rules table
@@ -49,7 +108,7 @@ def _update_rule_table(options, config):
             table.toggle_staged_state(rule, stage)
 
 
-def _create(function_name, config, cluster=None):
+def _create(function_name, config, clusters=None):
     """
     Args:
         function_name: The name of the function to create and upload
@@ -59,7 +118,7 @@ def _create(function_name, config, cluster=None):
     Returns:
         tuple (LambdaPackage, set): The created Lambda package and the set of Terraform targets
     """
-    clusters = cluster or config.clusters()
+    clusters = clusters or config.clusters()
 
     package_mapping = {
         'alert': PackageMap(
@@ -87,9 +146,16 @@ def _create(function_name, config, cluster=None):
             {'module.stream_alert_athena'},
             True
         ),
+        'classifier': PackageMap(
+            stream_alert_packages.ClassifierPackage,
+            {'module.classifier_{}_{}'.format(cluster, suffix)
+             for suffix in {'lambda', 'iam'}
+             for cluster in clusters},
+            True
+        ),
         'rule': PackageMap(
-            stream_alert_packages.RuleProcessorPackage,
-            {'module.stream_alert_{}'.format(cluster) for cluster in clusters},
+            stream_alert_packages.RulesEnginePackage,
+            {'module.rules_engine_iam', 'module.rules_engine_lambda'},
             True
         ),
         'rule_promo': PackageMap(
@@ -114,52 +180,3 @@ def _create(function_name, config, cluster=None):
         sys.exit(1)
 
     return package, package_mapping[function_name].targets
-
-
-def deploy(options, config):
-    """Deploy new versions of all Lambda functions
-
-    Args:
-        options (namedtuple): ArgParsed command from the CLI
-        config (CLIConfig): Loaded StreamAlert config
-
-    Steps:
-        Build AWS Lambda deployment package
-        Upload to S3
-        Update lambda.json with uploaded package checksum and S3 key
-        Publish new version
-        Update each cluster's Lambda configuration with latest published version
-        Run Terraform Apply
-    """
-    # Terraform apply only to the module which contains our lambda functions
-    deploy_targets = set()
-    packages = []
-
-    if 'all' in options.processor:
-        processors = {
-            'alert',
-            'alert_merger',
-            'apps',
-            'athena',
-            'rule',
-            'rule_promo',
-            'threat_intel_downloader'
-        }
-    else:
-        processors = options.processor
-
-    for processor in processors:
-        package, targets = _create(processor, config, options.clusters)
-        # Continue if the package isn't enabled
-        if not all([package, targets]):
-            continue
-
-        packages.append(package)
-        deploy_targets.update(targets)
-
-    # Update the rule table now if the rule processor is being deployed
-    if 'rule' in processors:
-        _update_rule_table(options, config)
-
-    # Terraform applies the new package and publishes a new version
-    helpers.tf_runner(targets=deploy_targets)

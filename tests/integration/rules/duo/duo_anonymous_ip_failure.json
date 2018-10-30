@@ -29,7 +29,9 @@
     "log": "duo:authentication",
     "service": "stream_alert_app",
     "source": "prefix_cluster_duo_auth_sm-app-name_app",
-    "trigger_rules": ["duo_anonymous_ip_failure"]
+    "trigger_rules": [
+      "duo_anonymous_ip_failure"
+    ]
   },
   {
     "override_record": {

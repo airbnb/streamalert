@@ -13,261 +13,139 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from stream_alert.apps import StreamAlertApp
-from stream_alert.alert_processor.outputs.output_base import StreamAlertOutput
-from stream_alert_cli.apps import save_app_auth_info
+from stream_alert.shared.logger import get_logger
+from stream_alert_cli.apps.handler import app_handler
 from stream_alert_cli.athena.handler import athena_handler
 from stream_alert_cli.config import CLIConfig
-from stream_alert_cli.helpers import user_input
 from stream_alert_cli.kinesis.handler import kinesis_handler
-from stream_alert_cli.logger import LOGGER_CLI, set_logger_levels
-from stream_alert_cli.manage_lambda.handler import lambda_handler
-from stream_alert_cli.rule_table import rule_table_handler
-from stream_alert_cli.terraform.handler import terraform_handler
-from stream_alert_cli.test import stream_alert_test
-from stream_alert_cli.threat_intel_downloader.handler import (
-    handler as threat_intel_downloader_handler
+from stream_alert_cli.logger import set_logger_levels
+from stream_alert_cli.manage_lambda.deploy import deploy_handler
+from stream_alert_cli.manage_lambda.rollback import rollback_handler
+from stream_alert_cli.outputs.handler import output_handler
+from stream_alert_cli.rule_table import rule_staging_handler
+from stream_alert_cli.terraform.generate import terraform_generate_handler
+from stream_alert_cli.terraform.handlers import (
+    terraform_build_handler,
+    terraform_clean_handler,
+    terraform_destroy_handler,
+    terraform_init,
 )
-import stream_alert_cli.outputs as config_outputs
+from stream_alert_cli.test.handler import test_handler
+from stream_alert_cli.threat_intel_downloader.handler import threat_intel_downloader_handler
 
-CONFIG = CLIConfig()
+LOGGER = get_logger(__name__)
 
 
-def cli_runner(options):
-    """Main Stream Alert CLI handler
+def cli_runner(args):
+    """Main StreamAlert CLI handler
 
     Args:
-        options (dict): command line arguments passed from the argparser.
+        options (argparse.Namespace): command line arguments passed from the argparser.
             Contains the following keys for terraform commands:
                 (command, subcommand, target)
             Contains the following keys for lambda commands:
                 (command, subcommand, env, func, source)
     """
-    cli_load_message = 'Issues? Report here: https://github.com/airbnb/streamalert/issues'
-    LOGGER_CLI.info(cli_load_message)
+    config = CLIConfig()
 
-    if options.debug:
-        set_logger_levels('DEBUG')
+    set_logger_levels(args.debug)
 
-    if options.command == 'output':
-        configure_output(options)
+    LOGGER.info('Issues? Report here: https://github.com/airbnb/streamalert/issues')
 
-    elif options.command == 'lambda':
-        lambda_handler(options, CONFIG)
+    cmds = {
+        'app': lambda opts: app_handler(opts, config),
+        'athena': lambda opts: athena_handler(opts, config),
+        'build': lambda opts: terraform_build_handler(opts, config),
+        'clean': lambda opts: terraform_clean_handler(config),
+        'configure': lambda opts: configure_handler(opts, config),
+        'create-alarm': lambda opts: _create_alarm_handler(opts, config),
+        'create-cluster-alarm': lambda opts: _create_alarm_handler(opts, config),
+        'custom-metrics': lambda opts: _custom_metrics_handler(opts, config),
+        'deploy': lambda opts: deploy_handler(opts, config),
+        'destroy': lambda opts: terraform_destroy_handler(opts, config),
+        'generate': lambda opts: terraform_generate_handler(config),
+        'init': lambda opts: terraform_init(opts, config),
+        'kinesis': lambda opts: kinesis_handler(opts, config),
+        'output': lambda opts: output_handler(opts, config),
+        'rollback': lambda opts: rollback_handler(opts, config),
+        'rule-staging': lambda opts: rule_staging_handler(opts, config),
+        'status': lambda opts: _status_handler(config),
+        'test': lambda opts: test_handler(opts, config),
+        'threat-intel': lambda opts: _threat_intel_handler(opts, config),
+        'threat-intel-downloader': lambda opts: threat_intel_downloader_handler(opts, config),
+    }
 
-    elif options.command == 'live-test':
-        stream_alert_test(options, CONFIG)
-
-    elif options.command == 'validate-schemas':
-        stream_alert_test(options, CONFIG)
-
-    elif options.command == 'terraform':
-        terraform_handler(options, CONFIG)
-
-    elif options.command == 'configure':
-        configure_handler(options)
-
-    elif options.command == 'athena':
-        athena_handler(options, CONFIG)
-
-    elif options.command == 'metrics':
-        _toggle_metrics(options)
-
-    elif options.command in {'create-alarm', 'create-cluster-alarm'}:
-        _create_alarm(options)
-
-    elif options.command == 'app':
-        _app_handler(options)
-
-    elif options.command == 'kinesis':
-        kinesis_handler(options, CONFIG)
-
-    elif options.command == 'threat-intel':
-        _threat_intel_handler(options, CONFIG)
-
-    elif options.command == 'threat_intel_downloader':
-        threat_intel_downloader_handler(options, CONFIG)
-
-    elif options.command == 'rule-staging':
-        rule_table_handler(options, CONFIG)
+    cmds[args.command](args)
+    LOGGER.info('Completed')
 
 
-def configure_handler(options):
+def configure_handler(options, config):
     """Configure StreamAlert main settings
 
     Args:
         options (namedtuple): ArgParse command result
     """
     if options.config_key == 'prefix':
-        CONFIG.set_prefix(options.config_value)
+        config.set_prefix(options.config_value)
 
     elif options.config_key == 'aws_account_id':
-        CONFIG.set_aws_account_id(options.config_value)
+        config.set_aws_account_id(options.config_value)
 
 
-def configure_output(options):
-    """Configure a new output for this service
-
-    Args:
-        options (argparser): Basically a namedtuple with the service setting
-    """
-    account_config = CONFIG['global']['account']
-    region = account_config['region']
-    prefix = account_config['prefix']
-    kms_key_alias = account_config['kms_key_alias']
-    # Verify that the word alias is not in the config.
-    # It is interpolated when the API call is made.
-    if 'alias/' in kms_key_alias:
-        kms_key_alias = kms_key_alias.split('/')[1]
-
-    # Retrieve the proper service class to handle dispatching the alerts of this services
-    output = StreamAlertOutput.get_dispatcher(options.service)
-
-    # If an output for this service has not been defined, the error is logged
-    # prior to this
-    if not output:
-        return
-
-    # get dictionary of OutputProperty items to be used for user prompting
-    props = output.get_user_defined_properties()
-
-    for name, prop in props.iteritems():
-        # pylint: disable=protected-access
-        props[name] = prop._replace(
-            value=user_input(prop.description, prop.mask_input, prop.input_restrictions))
-
-    output_config = CONFIG['outputs']
-    service = output.__service__
-
-    # If it exists already, ask for user input again for a unique configuration
-    if config_outputs.output_exists(output_config, props, service):
-        return configure_output(options)
-
-    secrets_bucket = '{}.streamalert.secrets'.format(prefix)
-    secrets_key = output.output_cred_name(props['descriptor'].value)
-
-    # Encrypt the creds and push them to S3
-    # then update the local output configuration with properties
-    if config_outputs.encrypt_and_push_creds_to_s3(region, secrets_bucket, secrets_key, props,
-                                                   kms_key_alias):
-        updated_config = output.format_output_config(output_config, props)
-        output_config[service] = updated_config
-        CONFIG.write()
-
-        LOGGER_CLI.info('Successfully saved \'%s\' output configuration for service \'%s\'',
-                        props['descriptor'].value, options.service)
-    else:
-        LOGGER_CLI.error('An error occurred while saving \'%s\' '
-                         'output configuration for service \'%s\'', props['descriptor'].value,
-                         options.service)
-
-
-def _toggle_metrics(options):
+def _custom_metrics_handler(options, config):
     """Enable or disable logging CloudWatch metrics
 
     Args:
-        options (argparser): Contains boolean necessary for toggling metrics
+        options (argparse.Namespace): Contains boolean necessary for toggling metrics
     """
-    CONFIG.toggle_metrics(
+    config.toggle_metrics(
         *options.functions,
         enabled=options.enable_custom_metrics,
         clusters=options.clusters
     )
 
+def _status_handler(config):
+    """Display current AWS infrastructure built by Terraform
 
-def _create_alarm(options):
+    Args:
+        config (CLIConfig): Loaded StreamAlert CLI
+    """
+    # TODO: this is severely broken/outdated. fix up
+    for cluster, region in config['clusters'].items():
+        print '\n======== {} ========'.format(cluster)
+        print 'Region: {}'.format(region)
+        print('Alert Processor Lambda Settings: \n\tTimeout: {}\n\tMemory: {}'
+              '\n\tProd Version: {}').format(config['alert_processor_lambda_config'][cluster][0],
+                                             config['alert_processor_lambda_config'][cluster][1],
+                                             config['alert_processor_versions'][cluster])
+        print('Rule Processor Lambda Settings: \n\tTimeout: {}\n\tMemory: {}'
+              '\n\tProd Version: {}').format(config['rule_processor_lambda_config'][cluster][0],
+                                             config['rule_processor_lambda_config'][cluster][1],
+                                             config['rule_processor_versions'][cluster])
+        print 'Kinesis settings: \n\tShards: {}\n\tRetention: {}'.format(
+            config['kinesis_streams_config'][cluster][0],
+            config['kinesis_streams_config'][cluster][1])
+
+
+def _create_alarm_handler(options, config):
     """Create a new CloudWatch alarm for the given metric
 
     Args:
-        options (argparser): Contains all of the necessary info for configuring
+        options (argparse.Namespace): Contains all of the necessary info for configuring
             a CloudWatch alarm
     """
     # Perform safety check for max total evaluation period. This logic cannot
     # be performed by argparse so must be performed now.
     seconds_in_day = 86400
     if options.period * options.evaluation_periods > seconds_in_day:
-        LOGGER_CLI.error('The product of the value for period multiplied by the '
-                         'value for evaluation periods cannot exceed 86,400. 86,400 '
-                         'is the number of seconds in one day and an alarm\'s total '
-                         'current evaluation period can be no longer than one day.')
+        LOGGER.error('The product of the value for period multiplied by the '
+                     'value for evaluation periods cannot exceed 86,400. 86,400 '
+                     'is the number of seconds in one day and an alarm\'s total '
+                     'current evaluation period can be no longer than one day.')
         return
 
-    CONFIG.add_metric_alarm(vars(options))
+    config.add_metric_alarm(vars(options))
 
-
-def _app_handler(options):
-    """Perform app related functions
-
-    Args:
-        options (argparser): Contains all of the necessary info for configuring
-            a new app integration or updating an existing one
-    """
-    if not options:
-        return
-
-    # Convert the options to a dict
-    app_info = vars(options)
-
-    # Add the region and prefix for this StreamAlert instance to the app info
-    app_info['region'] = str(CONFIG['global']['account']['region'])
-    app_info['prefix'] = str(CONFIG['global']['account']['prefix'])
-
-    # Function name follows the format: '<prefix>_<cluster>_<service>_<app_name>_app
-    func_parts = ['prefix', 'cluster', 'type', 'app_name']
-
-    # Create a new app integration function
-    if options.subcommand == 'new':
-        app_info['function_name'] = '_'.join([app_info.get(value)
-                                              for value in func_parts] + ['app'])
-
-        CONFIG.add_app(app_info)
-        return
-
-    # Update the auth information for an existing app integration function
-    if options.subcommand == 'update-auth':
-        cluster_config = CONFIG['clusters'][app_info['cluster']]
-        if not app_info['app_name'] in cluster_config['modules'].get('stream_alert_apps', {}):
-            LOGGER_CLI.error('App integration with name \'%s\' does not exist for cluster \'%s\'',
-                             app_info['app_name'], app_info['cluster'])
-            return
-
-        # Get the type for this app integration from the current
-        # config so we can update it properly
-        app_info['type'] = cluster_config['modules']['stream_alert_apps'] \
-                                         [app_info['app_name']]['type']
-
-        app_info['function_name'] = '_'.join([app_info.get(value)
-                                              for value in func_parts] + ['app'])
-
-        app = StreamAlertApp.get_app(app_info['type'])
-
-        if not save_app_auth_info(app, app_info, True):
-            return
-
-        return
-
-    # List all of the available app integrations, broken down by cluster
-    if options.subcommand == 'list':
-        all_info = {
-            cluster: cluster_config['modules'].get('stream_alert_apps')
-            for cluster, cluster_config in CONFIG['clusters'].iteritems()
-        }
-
-        for cluster, info in all_info.iteritems():
-            print '\nCluster: {}\n'.format(cluster)
-            if not info:
-                print '\tNo Apps configured\n'
-                continue
-
-            for name, details in info.iteritems():
-                print '\tName: {}'.format(name)
-                print '\n'.join([
-                    '\t\t{key}:{padding_char:<{padding_count}}{value}'.format(
-                        key=key_name,
-                        padding_char=' ',
-                        padding_count=30 - (len(key_name)),
-                        value=value) for key_name, value in details.iteritems()
-                ] + ['\n'])
 
 def _threat_intel_handler(options, config):
     """Configure Threat Intel from command line

@@ -15,7 +15,6 @@ limitations under the License.
 """
 import re
 
-
 PARTITION_PARTS = re.compile(
     r'dt=(?P<year>\d{4})\-(?P<month>\d{2})\-(?P<day>\d{2})\-(?P<hour>\d{2})')
 

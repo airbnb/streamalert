@@ -1,6 +1,6 @@
 [
   {
-    "data":{
+    "data": {
       "eventId": "3AD717A2-DC29-4C03-9F0E-2E9C8271D477",
       "eventVersion": "1",
       "acsRegion": "cn-hangzhou",
@@ -13,8 +13,12 @@
         "AkProxySuffix": "ram"
       },
       "referencedResources": {
-        "Policy": ["AdministratorAccess"],
-        "User": ["tob_actiontrail"]
+        "Policy": [
+          "AdministratorAccess"
+        ],
+        "User": [
+          "tob_actiontrail"
+        ]
       },
       "eventType": "ApiCall",
       "eventTime": "2018-07-19T16:47:23Z",
@@ -37,11 +41,11 @@
       "serviceName": "Ram",
       "sourceIpAddress": "65.205.72.122"
     },
-    "description":"schema validation check for aliyun:actiontrail with ApiCall call event",
-    "log":"aliyun:actiontrail",
-    "service":"stream_alert_app",
-    "source":"prefix_cluster_aliyun_actiontrail_sm-app-name_app",
-    "trigger_rules":[]
+    "description": "schema validation check for aliyun:actiontrail with ApiCall call event",
+    "log": "aliyun:actiontrail",
+    "service": "stream_alert_app",
+    "source": "prefix_cluster_aliyun_actiontrail_sm-app-name_app",
+    "trigger_rules": []
   },
   {
     "data": {
@@ -54,30 +58,30 @@
       "eventVersion": "1",
       "requestId": "0D690264-0D51-4B4F-8AEE-CDEB3ABD1929",
       "requestParameters": {
-          "CreateNewBucket": "false",
-          "Name": "default",
-          "OssBucketName": "trail",
-          "OssKeyPrefix": "",
-          "Region": "cn-hangzhou",
-          "RoleName": "aliyunactiontraildefaultrole",
-          "StartLogging": "false"
+        "CreateNewBucket": "false",
+        "Name": "default",
+        "OssBucketName": "trail",
+        "OssKeyPrefix": "",
+        "Region": "cn-hangzhou",
+        "RoleName": "aliyunactiontraildefaultrole",
+        "StartLogging": "false"
       },
       "serviceName": "Actiontrail",
       "sourceIpAddress": "42.120.74.96",
       "userAgent": "aliyuncli/2.0.6",
       "userIdentity": {
-          "type": "ram-user",
-          "principalId": "274180646548292385",
-          "accountId": "43274",
-          "accessKeyId": "f6IzzFZMmzNwEI4d",
-          "userName": "Alice"
+        "type": "ram-user",
+        "principalId": "274180646548292385",
+        "accountId": "43274",
+        "accessKeyId": "f6IzzFZMmzNwEI4d",
+        "userName": "Alice"
       }
     },
-    "description":"schema validation check for aliyun:actiontrail with example ApiCall event data",
-    "log":"aliyun:actiontrail",
-    "service":"stream_alert_app",
-    "source":"prefix_cluster_aliyun_actiontrail_sm-app-name_app",
-    "trigger_rules":[]
+    "description": "schema validation check for aliyun:actiontrail with example ApiCall event data",
+    "log": "aliyun:actiontrail",
+    "service": "stream_alert_app",
+    "source": "prefix_cluster_aliyun_actiontrail_sm-app-name_app",
+    "trigger_rules": []
   },
   {
     "data": {
@@ -110,11 +114,11 @@
         }
       }
     },
-    "description":"schema validation check for aliyun:actiontrail with example StopInstance console event data",
-    "log":"aliyun:actiontrail",
-    "service":"stream_alert_app",
-    "source":"prefix_cluster_aliyun_actiontrail_sm-app-name_app",
-    "trigger_rules":[]
+    "description": "schema validation check for aliyun:actiontrail with example StopInstance console event data",
+    "log": "aliyun:actiontrail",
+    "service": "stream_alert_app",
+    "source": "prefix_cluster_aliyun_actiontrail_sm-app-name_app",
+    "trigger_rules": []
   },
   {
     "data": {
@@ -147,10 +151,10 @@
         }
       }
     },
-    "description":"schema validation check for aliyun:actiontrail with example AssumeRole event data",
-    "log":"aliyun:actiontrail",
-    "service":"stream_alert_app",
-    "source":"prefix_cluster_aliyun_actiontrail_sm-app-name_app",
-    "trigger_rules":[]
+    "description": "schema validation check for aliyun:actiontrail with example AssumeRole event data",
+    "log": "aliyun:actiontrail",
+    "service": "stream_alert_app",
+    "source": "prefix_cluster_aliyun_actiontrail_sm-app-name_app",
+    "trigger_rules": []
   }
 ]

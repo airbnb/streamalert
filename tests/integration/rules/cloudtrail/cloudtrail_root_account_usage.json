@@ -1,98 +1,94 @@
 [
   {
-    "data":{
-      "account":12345,
-      "detail":{
-        "additionalEventData":{
-          "LoginTo":"...",
-          "MFAUsed":"Yes",
-          "MobileVersion":"No"
+    "data": {
+      "account": 12345,
+      "detail": {
+        "additionalEventData": {
+          "LoginTo": "...",
+          "MFAUsed": "Yes",
+          "MobileVersion": "No"
         },
-        "awsRegion":"...",
-        "eventID":"...",
-        "eventName":"ConsoleLogin",
-        "eventSource":"...",
-        "eventTime":"...",
-        "eventType":"AwsConsoleSignIn",
-        "eventVersion":"...",
-        "recipientAccountId":"12345",
-        "requestParameters":null,
-        "responseElements":{
-          "ConsoleLogin":"..."
+        "awsRegion": "...",
+        "eventID": "...",
+        "eventName": "ConsoleLogin",
+        "eventSource": "...",
+        "eventTime": "...",
+        "eventType": "AwsConsoleSignIn",
+        "eventVersion": "...",
+        "recipientAccountId": "12345",
+        "requestParameters": null,
+        "responseElements": {
+          "ConsoleLogin": "..."
         },
-        "sourceIPAddress":"...",
-        "userAgent":"...",
-        "userIdentity":{
-          "accountId":"12345",
-          "arn":"arn:aws:iam::12345:root",
-          "principalId":"12345",
-          "type":"Root"
+        "sourceIPAddress": "...",
+        "userAgent": "...",
+        "userIdentity": {
+          "accountId": "12345",
+          "arn": "arn:aws:iam::12345:root",
+          "principalId": "12345",
+          "type": "Root"
         }
       },
-      "detail-type":"...",
-      "id":"12345",
-      "region":"123456123456",
-      "resources":{
-        "test":"..."
-      },
-      "source":"1.1.1.2",
-      "time":"...",
-      "version":"1.05"
+      "detail-type": "...",
+      "id": "12345",
+      "region": "123456123456",
+      "resources": [],
+      "source": "1.1.1.2",
+      "time": "...",
+      "version": "1.05"
     },
-    "description":"Use of the AWS 'Root' account will create an alert.",
-    "log":"cloudwatch:events",
-    "service":"kinesis",
-    "source":"prefix_cluster1_stream_alert_kinesis",
-    "trigger_rules":[
+    "description": "Use of the AWS 'Root' account will create an alert.",
+    "log": "cloudwatch:events",
+    "service": "kinesis",
+    "source": "prefix_cluster1_stream_alert_kinesis",
+    "trigger_rules": [
       "cloudtrail_root_account_usage"
     ]
   },
   {
-    "data":{
-      "account":12345,
-      "detail":{
-        "awsRegion":"...",
-        "eventID":"...",
-        "eventName":"...",
-        "eventSource":"...",
-        "eventTime":"...",
-        "eventType":"AwsApiCall",
-        "eventVersion":"...",
-        "recipientAccountId":"12345",
-        "requestID":"...",
-        "requestParameters":{},
-        "responseElements":null,
-        "sourceIPAddress":"AWS Internal",
-        "userAgent":"...",
-        "userIdentity":{
-          "accountId":"12345",
-          "arn":"...",
-          "invokedBy":"signin.amazonaws.com",
-          "principalId":"...",
-          "sessionContext":{
-            "attributes":{
-              "creationDate":"...",
-              "mfaAuthenticated":"true"
+    "data": {
+      "account": 12345,
+      "detail": {
+        "awsRegion": "...",
+        "eventID": "...",
+        "eventName": "...",
+        "eventSource": "...",
+        "eventTime": "...",
+        "eventType": "AwsApiCall",
+        "eventVersion": "...",
+        "recipientAccountId": "12345",
+        "requestID": "...",
+        "requestParameters": {},
+        "responseElements": null,
+        "sourceIPAddress": "AWS Internal",
+        "userAgent": "...",
+        "userIdentity": {
+          "accountId": "12345",
+          "arn": "...",
+          "invokedBy": "signin.amazonaws.com",
+          "principalId": "...",
+          "sessionContext": {
+            "attributes": {
+              "creationDate": "...",
+              "mfaAuthenticated": "true"
             }
           },
-          "type":"Root",
-          "userName":"..."
+          "type": "Root",
+          "userName": "..."
         }
       },
-      "detail-type":"...",
-      "id":"12345",
-      "region":"123456123456",
-      "resources":{
-        "test":"..."
-      },
-      "source":"...",
-      "time":"...",
-      "version":"1.05"
+      "detail-type": "...",
+      "id": "12345",
+      "region": "123456123456",
+      "resources": [],
+      "source": "...",
+      "time": "...",
+      "version": "1.05"
     },
-    "description":"AWS 'Root' account activity initiated automatically by an AWS service on your behalf will not create an alert.",
-    "log":"cloudwatch:events",
-    "service":"kinesis",
-    "source":"prefix_cluster1_stream_alert_kinesis",
-    "trigger_rules":[]
+    "description": "AWS 'Root' account activity initiated automatically by an AWS service on your behalf will not create an alert.",
+    "log": "cloudwatch:events",
+    "service": "kinesis",
+    "source": "prefix_cluster1_stream_alert_kinesis",
+    "trigger_rules": []
   }
 ]

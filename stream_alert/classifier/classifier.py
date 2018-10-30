@@ -229,6 +229,7 @@ class Classifier(object):
             # Get the service and entity from the payload
             payload = StreamPayload.load_from_raw_record(input_record)
             if not payload:
+                self._log_bad_records(input_record, 1)
                 continue
 
             self._classify_payload(payload)
@@ -241,3 +242,5 @@ class Classifier(object):
         # Send the data to firehose for historical retention
         if self.data_retention_enabled:
             self.firehose.send(self._payloads)
+
+        return self._payloads

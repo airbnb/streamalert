@@ -55,6 +55,8 @@ class TestAlertProcessor(unittest.TestCase):
                     'description': 'Unit-Testing Streamalert Alert Processor',
                     'environment_variables': {
                         'ALERTS_TABLE': 'unit-testing_streamalert_alerts',
+                        'STREAMALERT_PREFIX': 'unit-testing',
+                        'AWS_ACCOUNT_ID': '12345678910',
                         'ENABLE_METRICS': '0',
                         'LOGGER_LEVEL': 'info'
                     },
@@ -110,6 +112,8 @@ class TestAlertProcessor(unittest.TestCase):
                     'description': 'Unit-Testing Streamalert Alert Processor',
                     'environment_variables': {
                         'ALERTS_TABLE': 'unit-testing_streamalert_alerts',
+                        'STREAMALERT_PREFIX': 'unit-testing',
+                        'AWS_ACCOUNT_ID': '12345678910',
                         'ENABLE_METRICS': '0',
                         'LOGGER_LEVEL': 'info'
                     },
