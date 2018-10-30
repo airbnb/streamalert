@@ -440,7 +440,9 @@ class TestParserBaseClassMethods(object):
         }
         assert_equal(ParserBase._convert_type(record, schema), False)
         assert_equal(record, {'key': 'foobarbaz'})
-        log_mock.assert_called_with('Unsupported value type in schema: %s', 'foobar')
+        log_mock.assert_called_with(
+            'Unsupported value type in schema for key \'%s\': %s', 'key', 'foobar'
+        )
 
     @patch('logging.Logger.debug')
     def test_convert_type_optionals(self, log_mock):

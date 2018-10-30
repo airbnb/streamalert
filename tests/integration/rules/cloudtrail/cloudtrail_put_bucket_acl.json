@@ -91,9 +91,7 @@
       "detail-type":"...",
       "id":"12345",
       "region":"us-east-1",
-      "resources":{
-        "test":"..."
-      },
+      "resources": [],
       "source":"...",
       "time":"...",
       "version":"..."
@@ -198,9 +196,7 @@
       "detail-type":"...",
       "id":"12345",
       "region":"us-east-1",
-      "resources":{
-        "test":"..."
-      },
+      "resources": [],
       "source":"...",
       "time":"...",
       "version":"..."

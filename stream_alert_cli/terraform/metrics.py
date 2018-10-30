@@ -14,8 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from stream_alert.shared import metrics
-from stream_alert_cli.logger import LOGGER_CLI
+from stream_alert.shared.logger import get_logger
 from stream_alert_cli.terraform.common import monitoring_topic_arn
+
+LOGGER = get_logger(__name__)
 
 
 def generate_aggregate_cloudwatch_metric_filters(config):
@@ -158,7 +160,7 @@ def generate_cluster_cloudwatch_metric_alarms(cluster_name, cluster_dict, config
     infrastructure_config = config['global'].get('infrastructure')
 
     if not (infrastructure_config and 'monitoring' in infrastructure_config):
-        LOGGER_CLI.error(
+        LOGGER.error(
             'Invalid config: Make sure you declare global infrastructure options!')
         return
 

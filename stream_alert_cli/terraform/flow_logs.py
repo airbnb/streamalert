@@ -13,7 +13,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from stream_alert_cli.logger import LOGGER_CLI
+from stream_alert.shared.logger import get_logger
+
+LOGGER = get_logger(__name__)
 
 
 def generate_flow_logs(cluster_name, cluster_dict, config):
@@ -54,5 +56,5 @@ def generate_flow_logs(cluster_name, cluster_dict, config):
 
         return True
 
-    LOGGER_CLI.info('Flow logs disabled, nothing to do')
+    LOGGER.info('Flow logs disabled, nothing to do')
     return False

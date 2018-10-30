@@ -71,7 +71,7 @@ def test_generate_s3_events():
     assert_equal(cluster_dict, expected_config)
 
 
-@patch('stream_alert_cli.terraform.s3_events.LOGGER_CLI')
+@patch('stream_alert_cli.terraform.s3_events.LOGGER')
 def test_generate_s3_events_invalid_bucket(mock_logging):
     """CLI - Terraform - S3 Events with Missing Bucket Key"""
     cluster_dict = common.infinitedict()

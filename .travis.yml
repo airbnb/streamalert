@@ -10,7 +10,7 @@ install:
   - pip install -r requirements.txt
 script:
   - ./tests/scripts/unit_tests.sh
-  - ./manage.py lambda test --processor all
+  - ./manage.py test rules
   - sphinx-build -W docs/source docs/build
   - ./tests/scripts/pylint.sh
   - bandit --ini setup.cfg -r .

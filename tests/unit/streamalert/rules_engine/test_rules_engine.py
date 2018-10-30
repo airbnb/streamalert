@@ -191,16 +191,18 @@ class TestRulesEngine(object):
 
         # Override the Mock name attribute
         type(rule).name = PropertyMock(return_value='test_rule')
-        record = {
+        record = {'foo': 'bar'}
+        payload = {
             'cluster': 'prod',
             'log_schema_type': 'log_type',
             'data_type': 'json',
             'resource': 'test_stream',
-            'service': 'kinesis'
+            'service': 'kinesis',
+            'record': record
         }
 
         with patch.object(rules_engine_module, 'Alert') as alert_mock:
-            result = self._rules_engine._rule_analysis(record, rule)
+            result = self._rules_engine._rule_analysis(payload, rule)
             alert_mock.assert_called_with(
                 'test_rule', record, {'aws-firehose:alerts', 'slack:test'},
                 cluster='prod',
@@ -231,16 +233,18 @@ class TestRulesEngine(object):
 
         # Override the Mock name attribute
         type(rule).name = PropertyMock(return_value='test_rule')
-        record = {
+        record = {'foo': 'bar'}
+        payload = {
             'cluster': 'prod',
             'log_schema_type': 'log_type',
             'data_type': 'json',
             'resource': 'test_stream',
-            'service': 'kinesis'
+            'service': 'kinesis',
+            'record': record
         }
 
         with patch.object(rules_engine_module, 'Alert') as alert_mock:
-            result = self._rules_engine._rule_analysis(record, rule)
+            result = self._rules_engine._rule_analysis(payload, rule)
             alert_mock.assert_called_with(
                 'test_rule', record, {'aws-firehose:alerts'},
                 cluster='prod',
@@ -262,7 +266,7 @@ class TestRulesEngine(object):
         rule = Mock(
             process=Mock(return_value=False),
         )
-        result = self._rules_engine._rule_analysis({}, rule)
+        result = self._rules_engine._rule_analysis({'record': {'foo': 'bar'}}, rule)
         assert_equal(result is None, True)
 
     def test_run_subkey_failure(self):

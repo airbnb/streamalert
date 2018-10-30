@@ -21,11 +21,10 @@ from mock import Mock, patch, PropertyMock
 from moto import mock_dynamodb2
 from nose.tools import assert_equal
 
-from stream_alert_cli.helpers import setup_mock_rules_table
 from stream_alert.rule_promotion.promoter import RulePromoter
 from stream_alert.rule_promotion.statistic import StagingStatistic
 from stream_alert.shared import config, rule as rule_module
-from tests.unit.helpers.aws_mocks import MockAthenaClient
+from tests.unit.helpers.aws_mocks import MockAthenaClient, setup_mock_rules_table
 
 _RULES_TABLE = 'unit-testing_streamalert_rules'
 

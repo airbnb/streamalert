@@ -12,7 +12,7 @@
         {
           "id": "44056647182143267075860006634052172261824828947338793472",
           "timestamp": 1526951139360,
-          "message": "{\"eventVersion\": \"foo\", \"eventID\": \"bar\", \"eventTime\": \"foo\", \"sharedEventID\": \"bar\", \"additionalEventData\": {}, \"requestParameters\": {}, \"eventType\": \"foo\", \"responseElements\": {}, \"awsRegion\": \"foo\", \"eventName\": \"bar\", \"readOnly\": true, \"userIdentity\": {}, \"eventSource\": \"foo\", \"requestID\": \"bar\", \"userAgent\": \"foo\", \"sourceIPAddress\": \"bar\", \"resources\": \"foo\", \"recipientAccountId\": \"bar\"}"
+          "message": "{\"eventVersion\": \"foo\", \"eventID\": \"bar\", \"eventTime\": \"foo\", \"sharedEventID\": \"bar\", \"additionalEventData\": {}, \"requestParameters\": {}, \"eventType\": \"foo\", \"responseElements\": {}, \"awsRegion\": \"foo\", \"eventName\": \"bar\", \"readOnly\": true, \"userIdentity\": {}, \"eventSource\": \"foo\", \"requestID\": \"bar\", \"userAgent\": \"foo\", \"sourceIPAddress\": \"bar\", \"resources\": [], \"recipientAccountId\": \"bar\"}"
         }
       ]
     },

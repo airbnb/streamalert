@@ -1,48 +1,48 @@
 [
   {
-    "data":{
-      "FileInfo":{
-        "MD5":"...",
-        "S3LastModified":"...",
-        "S3Location":"...",
-        "S3Metadata":{},
-        "SHA256":"..."
+    "data": {
+      "FileInfo": {
+        "MD5": "...",
+        "S3LastModified": "...",
+        "S3Location": "...",
+        "S3Metadata": {},
+        "SHA256": "..."
       },
-      "MatchedRules":{
-        "Rule1":{
-          "MatchedStrings":[
+      "MatchedRules": {
+        "Rule1": {
+          "MatchedStrings": [
             "$eicar_regex"
           ],
-          "Meta":{
-            "author":"Austin Byers (Airbnb CSIRT)",
-            "description":"This is a standard AV test, intended to check whether BinaryAlert is working correctly.",
-            "reference":"http://www.eicar.org/86-0-Intended-use.html"
+          "Meta": {
+            "author": "Austin Byers (Airbnb CSIRT)",
+            "description": "This is a standard AV test, intended to check whether BinaryAlert is working correctly.",
+            "reference": "http://www.eicar.org/86-0-Intended-use.html"
           },
-          "RuleFile":"eicar.yar",
-          "RuleName":"eicar_av_test",
-          "RuleTags":[]
+          "RuleFile": "eicar.yar",
+          "RuleName": "eicar_av_test",
+          "RuleTags": []
         }
       },
-      "NumMatchedRules":"1"
+      "NumMatchedRules": "1"
     },
-    "description":"All YARA matches from BinaryAlert trigger an alert",
-    "log":"binaryalert",
-    "service":"sns",
-    "source":"prefix_cluster_sample_topic",
-    "trigger_rules":[
+    "description": "All YARA matches from BinaryAlert trigger an alert",
+    "log": "binaryalert",
+    "service": "sns",
+    "source": "prefix_cluster_sample_topic",
+    "trigger_rules": [
       "binaryalert_yara_match"
     ]
   },
   {
-    "data":{
-      "FileInfo":{},
-      "MatchedRules":{},
-      "NumMatchedRules":"0"
+    "data": {
+      "FileInfo": {},
+      "MatchedRules": {},
+      "NumMatchedRules": "0"
     },
-    "description":"No alerts triggered if no YARA rules were matched",
-    "log":"binaryalert",
-    "service":"sns",
-    "source":"prefix_cluster_sample_topic",
-    "trigger_rules":[]
+    "description": "No alerts triggered if no YARA rules were matched",
+    "log": "binaryalert",
+    "service": "sns",
+    "source": "prefix_cluster_sample_topic",
+    "trigger_rules": []
   }
 ]

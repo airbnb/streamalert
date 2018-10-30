@@ -36,10 +36,8 @@ from stream_alert.alert_processor.outputs.aws import (
     CloudwatchLogOutput
 )
 from tests.unit.stream_alert_alert_processor import (
-    ACCOUNT_ID,
     CONFIG,
-    FUNCTION_NAME,
-    PREFIX,
+    MOCK_ENV,
     REGION
 )
 from tests.unit.stream_alert_alert_processor.helpers import get_alert
@@ -73,9 +71,10 @@ class TestFirehoseOutput(object):
     SERVICE = 'aws-firehose'
     OUTPUT = ':'.join([SERVICE, DESCRIPTOR])
 
+    @patch.dict('os.environ', MOCK_ENV)
     def setup(self):
         """Setup before each method"""
-        self._dispatcher = KinesisFirehoseOutput(REGION, ACCOUNT_ID, PREFIX, CONFIG)
+        self._dispatcher = KinesisFirehoseOutput(CONFIG)
         delivery_stream = CONFIG[self.SERVICE][self.DESCRIPTOR]
         boto3.client('firehose', region_name=REGION).create_delivery_stream(
             DeliveryStreamName=delivery_stream,
@@ -118,9 +117,10 @@ class TestLambdaOutput(object):
     SERVICE = 'aws-lambda'
     OUTPUT = ':'.join([SERVICE, DESCRIPTOR])
 
+    @patch.dict('os.environ', MOCK_ENV)
     def setup(self):
         """Setup before each method"""
-        self._dispatcher = LambdaOutput(REGION, ACCOUNT_ID, FUNCTION_NAME, CONFIG)
+        self._dispatcher = LambdaOutput(CONFIG)
 
     def test_locals(self):
         """LambdaOutput local variables"""
@@ -154,9 +154,10 @@ class TestS3Output(object):
     SERVICE = 'aws-s3'
     OUTPUT = ':'.join([SERVICE, DESCRIPTOR])
 
+    @patch.dict('os.environ', MOCK_ENV)
     def setup(self):
         """Setup before each method"""
-        self._dispatcher = S3Output(REGION, ACCOUNT_ID, FUNCTION_NAME, CONFIG)
+        self._dispatcher = S3Output(CONFIG)
         bucket = CONFIG[self.SERVICE][self.DESCRIPTOR]
         boto3.client('s3', region_name=REGION).create_bucket(Bucket=bucket)
 
@@ -181,9 +182,10 @@ class TestSNSOutput(object):
     SERVICE = 'aws-sns'
     OUTPUT = ':'.join([SERVICE, DESCRIPTOR])
 
+    @patch.dict('os.environ', MOCK_ENV)
     def setup(self):
         """Create the dispatcher and the mock SNS topic."""
-        self._dispatcher = SNSOutput(REGION, ACCOUNT_ID, FUNCTION_NAME, CONFIG)
+        self._dispatcher = SNSOutput(CONFIG)
         topic_name = CONFIG[self.SERVICE][self.DESCRIPTOR]
         boto3.client('sns', region_name=REGION).create_topic(Name=topic_name)
 
@@ -203,9 +205,10 @@ class TestSQSOutput(object):
     SERVICE = 'aws-sqs'
     OUTPUT = ':'.join([SERVICE, DESCRIPTOR])
 
+    @patch.dict('os.environ', MOCK_ENV)
     def setup(self):
         """Create the dispatcher and the mock SQS queue."""
-        self._dispatcher = SQSOutput(REGION, ACCOUNT_ID, FUNCTION_NAME, CONFIG)
+        self._dispatcher = SQSOutput(CONFIG)
         queue_name = CONFIG[self.SERVICE][self.DESCRIPTOR]
         boto3.client('sqs', region_name=REGION).create_queue(QueueName=queue_name)
 
@@ -224,9 +227,10 @@ class TestCloudwatchLogOutput(object):
     SERVICE = 'aws-cloudwatch-log'
     OUTPUT = ':'.join([SERVICE, DESCRIPTOR])
 
+    @patch.dict('os.environ', MOCK_ENV)
     def setup(self):
         """Create the Cloudwatch dispatcher"""
-        self._dispatcher = CloudwatchLogOutput(REGION, ACCOUNT_ID, FUNCTION_NAME, CONFIG)
+        self._dispatcher = CloudwatchLogOutput(CONFIG)
 
     @patch('logging.Logger.info')
     def test_dispatch(self, log_mock):

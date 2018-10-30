@@ -19,14 +19,16 @@ from moto import mock_s3, mock_kms
 from nose.tools import assert_equal, assert_false, assert_true
 
 from stream_alert.alert_processor.outputs.jira import JiraOutput
-from stream_alert_cli.helpers import put_mock_creds
 from tests.unit.stream_alert_alert_processor import (
-    ACCOUNT_ID,
-    FUNCTION_NAME,
     KMS_ALIAS,
+    MOCK_ENV,
     REGION
 )
-from tests.unit.stream_alert_alert_processor.helpers import get_alert, remove_temp_secrets
+from tests.unit.stream_alert_alert_processor.helpers import (
+    get_alert,
+    put_mock_creds,
+    remove_temp_secrets
+)
 
 
 @patch('stream_alert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS', 1)
@@ -42,13 +44,14 @@ class TestJiraOutput(object):
              'issue_type': 'Task',
              'aggregate': 'yes'}
 
+    @patch.dict('os.environ', MOCK_ENV)
     def setup(self):
         """Setup before each method"""
         self._mock_s3 = mock_s3()
         self._mock_s3.start()
         self._mock_kms = mock_kms()
         self._mock_kms.start()
-        self._dispatcher = JiraOutput(REGION, ACCOUNT_ID, FUNCTION_NAME, None)
+        self._dispatcher = JiraOutput(None)
         self._dispatcher._base_url = self.CREDS['url']
         remove_temp_secrets()
         output_name = self._dispatcher.output_cred_name(self.DESCRIPTOR)
@@ -250,7 +253,6 @@ class TestJiraOutput(object):
 
         log_mock.assert_called_with('Encountered an error when adding alert to existing Jira '
                                     'issue %s. Attempting to create new Jira issue.', 5000)
-
 
     @patch('logging.Logger.error')
     def test_dispatch_bad_descriptor(self, log_error_mock):

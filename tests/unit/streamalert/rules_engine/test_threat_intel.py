@@ -66,9 +66,7 @@ class TestThreatIntel(object):
                 'prod': {
                     'modules': {
                         'stream_alert': {
-                            'rules_engine': {
-                                'enable_threat_intel': True
-                            }
+                            'enable_threat_intel': True
                         }
                     }
                 }
@@ -76,23 +74,25 @@ class TestThreatIntel(object):
         }
 
     @property
-    def _sample_record(self):
+    def _sample_payload(self):
         return {
-            'account': 12345,
-            'region': 'us-east-1',
-            'detail': {
-                'eventName': 'ConsoleLogin',
-                'userIdentity': {
-                    'userName': 'alice',
-                    'accountId': '12345'
+            'record': {
+                'account': 12345,
+                'region': 'us-east-1',
+                'detail': {
+                    'eventName': 'ConsoleLogin',
+                    'userIdentity': {
+                        'userName': 'alice',
+                        'accountId': '12345'
+                    },
+                    'sourceIPAddress': '1.1.1.2',
+                    'recipientAccountId': '12345'
                 },
-                'sourceIPAddress': '1.1.1.2',
-                'recipientAccountId': '12345'
-            },
-            'source': '1.1.1.2',
-            'streamalert:normalization': {
-                'sourceAddress': [['detail', 'sourceIPAddress'], ['source']],
-                'userName': [['detail', 'userIdentity', 'userName']]
+                'source': '1.1.1.2',
+                'streamalert:normalization': {
+                    'sourceAddress': [['detail', 'sourceIPAddress'], ['source']],
+                    'userName': [['detail', 'userIdentity', 'userName']]
+                }
             }
         }
 
@@ -107,9 +107,9 @@ class TestThreatIntel(object):
 
     def test_threat_detection(self):
         """ThreatIntel - Threat Detection"""
-        records = [self._sample_record]
+        payloads = [self._sample_payload]
 
-        expected_result = [{
+        expected_result = {
             'account': 12345,
             'region': 'us-east-1',
             'detail': {
@@ -129,12 +129,12 @@ class TestThreatIntel(object):
             'streamalert:ioc': {
                 'ip': {'1.1.1.2'}
             }
-        }]
+        }
 
         with patch.object(self._threat_intel, '_process_ioc_values') as process_mock:
             process_mock.side_effect = [['1.1.1.2']]
-            self._threat_intel.threat_detection(records)
-            assert_equal(records, expected_result)
+            self._threat_intel.threat_detection(payloads)
+            assert_equal(payloads[0]['record'], expected_result)
 
     def test_insert_ioc_info(self):
         """ThreatIntel - Insert IOC Info"""
@@ -190,7 +190,7 @@ class TestThreatIntel(object):
             assert_equal(result, expected_result)
 
     @patch('logging.Logger.exception')
-    def test_process_ioc_values_client_error(self, log_mock):
+    def testg_client_error(self, log_mock):
         """ThreatIntel - Process IOC Values, ClientError"""
         potential_iocs = ['1.1.1.1', '2.2.2.2']
         with patch.object(self._threat_intel, '_query') as query_mock:
@@ -432,25 +432,25 @@ class TestThreatIntel(object):
 
     def test_extract_ioc_values(self):
         """ThreatIntel - Extract IOC Values"""
-        records = [self._sample_record]
+        payloads = [self._sample_payload]
         expected_result = {
             '1.1.1.2': [
                 (
                     'ip',
-                    records[0]
+                    payloads[0]['record']
                 )
             ]
         }
-        result = self._threat_intel._extract_ioc_values(records)
+        result = self._threat_intel._extract_ioc_values(payloads)
         assert_equal(result, expected_result)
 
     def test_extract_ioc_values_excluded(self):
         """ThreatIntel - Extract IOC Values, With Excluded"""
-        record = self._sample_record
+        payload = self._sample_payload
         self._threat_intel._excluded_iocs['ip'] = {
             IPNetwork('1.1.1.2')
         }
-        result = self._threat_intel._extract_ioc_values([record])
+        result = self._threat_intel._extract_ioc_values([payload])
         assert_equal(result, {})
 
     def test_setup_excluded_iocs(self):
@@ -518,9 +518,7 @@ class TestThreatIntel(object):
                 'prod': {
                     'modules': {
                         'stream_alert': {
-                            'rules_engine': {
-                                'enable_threat_intel': False
-                            }
+                            'enable_threat_intel': False
                         }
                     }
                 }
