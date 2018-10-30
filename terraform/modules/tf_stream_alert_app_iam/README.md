@@ -14,7 +14,7 @@ module "stream_alert_app" {
   region                       = "us-east-1"
   function_name                = "testprefix_prod_duo_auth_duo_auth_app"
   function_role_id             = "testprefix_prod_duo_auth_duo_auth_app_role_id"
-  destination_function_name    = "testprefix_prod_streamalert_rule_processor"
+  destination_function_name    = "testprefix_prod_streamalert_classifier
   source                       = "../modules/tf_stream_alert_app_iam"
 }
 ```
