@@ -30,7 +30,7 @@ def _rollback_production(lambda_client, function_name):
         function_name (str): Name of function to be rolled back
 
     Returns:
-        bool: True if no errors occurred, False otherwise
+        bool: False if errors occurred, True otherwise
     """
     version = lambda_client.get_alias(
         FunctionName=function_name, Name='production')['FunctionVersion']
@@ -66,7 +66,7 @@ def rollback_handler(options, config):
         config (dict): Parsed configuration from conf/
 
     Returns:
-        bool: True if no errors occurred, False otherwise
+        bool: False if errors occurred, True otherwise
     """
     # Make sure the Terraform code is up to date
     if not terraform_generate_handler(config=config):
