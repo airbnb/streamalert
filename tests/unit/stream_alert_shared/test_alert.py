@@ -17,10 +17,16 @@ import copy
 from datetime import datetime, timedelta
 import json
 
-from stream_alert.shared.alert import Alert, AlertCreationError
-
 from nose.tools import (
-    assert_equal, assert_false, assert_is_instance, assert_not_in, assert_raises, assert_true)
+    assert_equal,
+    assert_false,
+    assert_is_instance,
+    assert_not_in,
+    assert_raises,
+    assert_true
+)
+
+from stream_alert.shared.alert import Alert, AlertCreationError
 
 
 class TestAlert(object):

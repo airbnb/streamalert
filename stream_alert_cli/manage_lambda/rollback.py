@@ -13,11 +13,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from stream_alert.shared.logger import get_logger
-from stream_alert_cli.terraform.generate import terraform_generate_handler
-
 import boto3
 from botocore.exceptions import ClientError
+
+from stream_alert.shared.logger import get_logger
+from stream_alert_cli.terraform.generate import terraform_generate_handler
 
 LOGGER = get_logger(__name__)
 

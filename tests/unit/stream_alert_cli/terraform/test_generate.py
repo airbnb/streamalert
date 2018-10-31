@@ -13,6 +13,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from mock import ANY, patch
+from nose.tools import assert_equal, assert_false, assert_true
+
 from stream_alert_cli.config import CLIConfig
 from stream_alert_cli.terraform import (
     common,
@@ -21,9 +24,6 @@ from stream_alert_cli.terraform import (
     flow_logs,
     generate
 )
-
-from mock import ANY, patch
-from nose.tools import assert_equal, assert_false, assert_true
 
 
 class TestTerraformGenerate(object):
