@@ -63,7 +63,7 @@ def generate_aggregate_cloudwatch_metric_filters(config):
 
             log_group_name = (
                 '${{module.{}_{}_lambda.log_group_name}}'.format(function, cluster)
-                if is_global else '${{module.{}_lambda.log_group_name}}'.format(function)
+                if not is_global else '${{module.{}_lambda.log_group_name}}'.format(function)
             )
 
             # Add filters for the cluster and aggregate

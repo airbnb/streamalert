@@ -4,24 +4,22 @@ autoflake
 autopep8
 backoff
 bandit
-boto3==1.7.84  # this is pinned because moto is buggy with new versions of boto3
+boto3<1.8,>=1.6.16  # to be compatible with moto
 boxsdk[jwt]==2.0.0a11
 cbapi
 coverage
 coveralls
-cryptography
 google-api-python-client==1.6.4
 jmespath
 jsonlines
 mock
-moto==1.3.3
+moto
 netaddr
 nose
-nose-timer==0.7.1
+nose-timer
 pathlib2
 pyfakefs
-pylint==1.7.4
-python-dateutil==2.6.1  # this is pinned to avoid conflicts between boto3, moto and others
+pylint
 requests
 Sphinx
 sphinx-rtd-theme

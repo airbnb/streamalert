@@ -954,7 +954,7 @@ def _setup_configure_subparser(subparser):
     )
 
     subparser.add_argument(
-        'config_key',
+        'key',
         choices=['prefix', 'aws_account_id'],
         help='Value of key being configured'
     )

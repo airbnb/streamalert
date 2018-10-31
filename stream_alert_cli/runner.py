@@ -93,11 +93,11 @@ def configure_handler(options, config):
     Returns:
         bool: False if errors occurred, True otherwise
     """
-    if options.config_key == 'prefix':
-        return config.set_prefix(options.config_value)
+    if options.key == 'prefix':
+        return config.set_prefix(options.value)
 
-    elif options.config_key == 'aws_account_id':
-        return config.set_aws_account_id(options.config_value)
+    elif options.key == 'aws_account_id':
+        return config.set_aws_account_id(options.value)
 
 
 def _custom_metrics_handler(options, config):
