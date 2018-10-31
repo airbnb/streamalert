@@ -30,7 +30,6 @@ import string
 import sys
 import textwrap
 
-
 from stream_alert import __version__ as version
 from stream_alert.alert_processor.outputs.output_base import StreamAlertOutput
 from stream_alert.apps import StreamAlertApp
