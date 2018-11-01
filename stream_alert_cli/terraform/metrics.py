@@ -122,16 +122,19 @@ def generate_cluster_cloudwatch_metric_filters(cluster_name, cluster_dict, confi
 
     current_metrics = metrics.MetricLogger.get_available_metrics()
 
-    # Add metric filters for the rule and alert processor
-    for func, metric_prefix in metrics.FUNC_PREFIXES.iteritems():
+    # Add custom metric filters for clustered function
+    for func in CLUSTERED_FUNCTIONS:
         if func not in current_metrics:
             continue
 
-        if func not in stream_alert_config:
+        func_config_name = '{}_config'.format(func)
+        if func_config_name not in stream_alert_config:
             continue
 
-        if not stream_alert_config[func].get('enable_custom_metrics'):
+        if not stream_alert_config[func_config_name].get('enable_custom_metrics'):
             continue
+
+        metric_prefix = metrics.FUNC_PREFIXES[func]
 
         log_group_name = '${{module.{}_{}_lambda.log_group_name}}'.format(func, cluster_name)
 
