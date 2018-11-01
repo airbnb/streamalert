@@ -91,7 +91,6 @@ class TestTerraformGenerateClassifier(object):
                     'source': 'modules/tf_classifier',
                     'account_id': '123456789012',
                     'region': 'us-east-1',
-                    'prefix': 'unit-test',
                     'function_role_id': '${module.classifier_test_lambda.role_id}',
                     'function_alias_arn': '${module.classifier_test_lambda.function_alias_arn}',
                     'function_name': '${module.classifier_test_lambda.function_name}',

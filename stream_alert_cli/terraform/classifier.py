@@ -59,17 +59,18 @@ def generate_classifier(cluster_name, cluster_dict, config):
     )
 
     tf_module_prefix = 'classifier_{}'.format(cluster_name)
+    iam_module = '{}_iam'.format(tf_module_prefix)
 
     # Set variables for the alert merger's IAM permissions
-    cluster_dict['module']['{}_iam'.format(tf_module_prefix)] = {
+    cluster_dict['module'][iam_module] = {
         'source': 'modules/tf_classifier',
         'account_id': config['global']['account']['aws_account_id'],
         'region': config['global']['account']['region'],
-        'prefix': config['global']['account']['prefix'],
         'function_role_id': '${{module.{}_lambda.role_id}}'.format(tf_module_prefix),
         'function_alias_arn': '${{module.{}_lambda.function_alias_arn}}'.format(tf_module_prefix),
         'function_name': '${{module.{}_lambda.function_name}}'.format(tf_module_prefix),
         'classifier_sqs_queue_arn': '${module.globals.classifier_sqs_queue_arn}',
+        'classifier_sqs_queue_url': '${module.globals.classifier_sqs_queue_url}'
     }
 
     # Add Classifier input config from the loaded cluster file
@@ -80,9 +81,7 @@ def generate_classifier(cluster_name, cluster_dict, config):
         }
         for tf_key, input_key in input_mapping.items():
             if input_key in input_config:
-                cluster_dict['module']['{}_iam'.format(tf_module_prefix)].update({
-                    tf_key: input_config[input_key]
-                })
+                cluster_dict['module'][iam_module][tf_key] = input_config[input_key]
 
     # Set variables for the Lambda module
     cluster_dict['module']['{}_lambda'.format(tf_module_prefix)] = generate_lambda(

@@ -16,7 +16,7 @@ limitations under the License.
 from stream_alert.shared import metrics
 from stream_alert.shared import CLUSTERED_FUNCTIONS
 from stream_alert.shared.logger import get_logger
-from stream_alert_cli.terraform.common import monitoring_topic_arn
+from stream_alert_cli.terraform.common import infinitedict, monitoring_topic_arn
 
 LOGGER = get_logger(__name__)
 
@@ -45,7 +45,7 @@ def generate_aggregate_cloudwatch_metric_filters(config):
     if not any(funcs for funcs in functions.values()):
         return  # Nothing to add if no funcs have metrics enabled
 
-    metrics_config = dict()
+    result = infinitedict()
 
     current_metrics = metrics.MetricLogger.get_available_metrics()
 
@@ -72,7 +72,7 @@ def generate_aggregate_cloudwatch_metric_filters(config):
                     'metric_filters_{}_{}_{}'.format(metric_prefix, metric, cluster)
                     if is_global else 'metric_filters_{}_{}'.format(metric_prefix, metric)
                 )
-                metrics_config[module_name] = {
+                result['module'][module_name] = {
                     'source': 'modules/tf_metric_filters',
                     'log_group_name': log_group_name,
                     'metric_name': '{}-{}'.format(metric_prefix, metric),
@@ -80,7 +80,7 @@ def generate_aggregate_cloudwatch_metric_filters(config):
                     'metric_value': filter_settings[1],
                 }
 
-    return metrics_config
+    return result
 
 
 def generate_aggregate_cloudwatch_metric_alarms(config):
@@ -89,7 +89,7 @@ def generate_aggregate_cloudwatch_metric_alarms(config):
     Args:
         config (dict): The loaded config from the 'conf/' directory
     """
-    alarms_configs = dict()
+    result = infinitedict()
 
     sns_topic_arn = monitoring_topic_arn(config)
 
@@ -105,9 +105,9 @@ def generate_aggregate_cloudwatch_metric_alarms(config):
             alarm_settings['source'] = 'modules/tf_metric_alarms',
             alarm_settings['sns_topic_arn'] = sns_topic_arn
             alarm_settings['alarm_name'] = name
-            alarms_configs['metric_alarm_{}_{}'.format(func, idx)] = alarm_settings
+            result['module']['metric_alarm_{}_{}'.format(func, idx)] = alarm_settings
 
-    return alarms_configs
+    return result
 
 
 def generate_cluster_cloudwatch_metric_filters(cluster_name, cluster_dict, config):

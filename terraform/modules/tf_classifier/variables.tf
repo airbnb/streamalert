@@ -27,3 +27,7 @@ variable "input_sns_topics" {
 variable "classifier_sqs_queue_arn" {
   description = "ARN of the SQS queue to which classified logs should be sent"
 }
+
+variable "classifier_sqs_queue_url" {
+  description = "URL of the SQS queue to which classified logs should be sent"
+}

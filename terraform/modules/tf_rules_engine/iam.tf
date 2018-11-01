@@ -49,20 +49,14 @@ data "aws_iam_policy_document" "read_rules_table" {
 // Policy for Rules Engine
 data "aws_iam_policy_document" "rules_engine_policy" {
   statement {
-    sid    = "AllowSSE"
-    effect = "Allow"
-
-    principals {
-      type        = "Service"
-      identifiers = ["lambda.amazonaws.com"]
-    }
+    sid = "AllowSSE"
 
     actions = [
       "kms:Decrypt",
       "kms:GenerateDataKey",
     ]
 
-    resources = ["${var.sqs_sse_kms_key_arn}"]
+    resources = ["${var.classifier_sqs_sse_kms_key_arn}"]
   }
 
   statement {

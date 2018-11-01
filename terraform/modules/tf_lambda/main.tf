@@ -100,3 +100,14 @@ resource "aws_lambda_permission" "allow_cloudwatch_invocation" {
   // The alias must be created before we can grant permission to invoke it
   depends_on = ["aws_lambda_alias.alias_vpc", "aws_lambda_alias.alias_no_vpc"]
 }
+
+// Lambda Permission: Allow SNS to invoke this function
+resource "aws_lambda_permission" "sns_inputs" {
+  count         = "${length(var.input_sns_topics)}"
+  statement_id  = "AllowExecutionFromSNS${count.index}"
+  action        = "lambda:InvokeFunction"
+  function_name = "${var.function_name}"
+  principal     = "sns.amazonaws.com"
+  source_arn    = "${element(var.input_sns_topics, count.index)}"
+  depends_on    = ["aws_lambda_alias.alias_vpc", "aws_lambda_alias.alias_no_vpc"]
+}

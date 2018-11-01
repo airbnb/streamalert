@@ -9,3 +9,7 @@ output "classifier_sqs_queue_url" {
 output "classifier_sqs_queue_arn" {
   value = "${module.classifier_queue.sqs_queue_arn}"
 }
+
+output "classifier_sqs_sse_kms_key_arn" {
+  value = "${module.classifier_queue.sqs_sse_kms_key_arn}"
+}

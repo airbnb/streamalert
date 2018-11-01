@@ -28,5 +28,5 @@ output "function_alias_arn" {
 
 // Log group name for this Lambda function to enable applying metrics filters
 output "log_group_name" {
-  value = "${element(concat(aws_cloudwatch_log_group.lambda_log_group.*.arn, list("")), 0)}"
+  value = "${element(concat(aws_cloudwatch_log_group.lambda_log_group.*.name, list("")), 0)}"
 }

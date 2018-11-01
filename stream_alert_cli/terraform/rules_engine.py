@@ -43,6 +43,7 @@ def generate_rules_engine(config):
         'dynamodb_table_name': config.get('threat_intel', {}).get('dynamodb_table_name'),
         'rules_table_arn': '${module.globals.rules_table_arn}',
         'classifier_sqs_queue_arn': '${module.globals.classifier_sqs_queue_arn}',
+        'classifier_sqs_sse_kms_key_arn': '${module.globals.classifier_sqs_sse_kms_key_arn}',
         'sqs_record_batch_size': min(config.get('sqs_record_batch_size', 10), 10)
     }
 

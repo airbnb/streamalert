@@ -257,14 +257,6 @@ def generate_main(config, init=False):
                 'name': DEFAULT_SNS_MONITORING_TOPIC
             }
 
-    metrics_info = generate_aggregate_cloudwatch_metric_filters(config)
-    if metrics_info:
-        main_dict['module'].update(metrics_info)
-
-    metric_alarms = generate_aggregate_cloudwatch_metric_alarms(config)
-    if metric_alarms:
-        main_dict['module'].update(metric_alarms)
-
     return main_dict
 
 
@@ -413,6 +405,16 @@ def terraform_generate_handler(config, init=False, check_tf=True, check_creds=Tr
                 indent=2,
                 sort_keys=True
             )
+
+    metric_filters = generate_aggregate_cloudwatch_metric_filters(config)
+    if metric_filters:
+        with open('terraform/metric_filters.tf.json', 'w') as tf_file:
+            json.dump(metric_filters, tf_file, indent=2, sort_keys=True)
+
+    metric_alarms = generate_aggregate_cloudwatch_metric_alarms(config)
+    if metric_alarms:
+        with open('terraform/metric_alarms.tf.json', 'w') as tf_file:
+            json.dump(metric_filters, tf_file, indent=2, sort_keys=True)
 
     # Setup Athena
     generate_global_lambda_settings(

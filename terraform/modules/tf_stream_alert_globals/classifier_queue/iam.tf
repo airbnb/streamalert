@@ -12,21 +12,4 @@ data "aws_iam_policy_document" "kms_sse_allow" {
     actions   = ["kms:*"]
     resources = ["*"]
   }
-
-  statement {
-    sid    = "AllowS3ToUseKey"
-    effect = "Allow"
-
-    principals {
-      type        = "Service"
-      identifiers = ["s3.amazonaws.com"]
-    }
-
-    actions = [
-      "kms:Decrypt",
-      "kms:GenerateDataKey",
-    ]
-
-    resources = ["*"]
-  }
 }
