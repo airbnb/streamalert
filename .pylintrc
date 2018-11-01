@@ -50,7 +50,9 @@ confidence=
 # --enable=similarities". If you want to run only the classes checker, but have
 # no Warning level messages displayed, use"--disable=all --enable=classes
 # --disable=W"
-disable=similarities,fixme,I0011,E1102
+# TODO: remove R1710 (inconsistent-return-statements)
+# TODO: remove C0111 (missing-docstring)
+disable=similarities,fixme,I0011,E1102,R1710,C0111
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option

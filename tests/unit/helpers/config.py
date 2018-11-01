@@ -134,13 +134,13 @@ def basic_streamalert_config():
                 },
                 'timeout': 60
             },
-            'rule_processor_config': {
+            'rules_engine_config': {
                 'custom_metric_alarms': {
                     'Aggregate Unit Testing Failed Parses Alarm': {
                         'alarm_description': '',
                         'comparison_operator': 'GreaterThanOrEqualToThreshold',
                         'evaluation_periods': 1,
-                        'metric_name': 'RuleProcessor-FailedParses',
+                        'metric_name': 'RulesEngine-FailedParses',
                         'period': 300,
                         'statistic': 'Sum',
                         'threshold': 1.0
@@ -205,22 +205,6 @@ def basic_streamalert_config():
                                 }
                             },
                             'timeout': 10
-                        },
-                        'rule_processor_config': {
-                            'enable_custom_metrics': True,
-                            'memory': 128,
-                            'custom_metric_alarms': {
-                                'Prod Unit Testing Failed Parses Alarm': {
-                                    'alarm_description': '',
-                                    'comparison_operator': 'GreaterThanOrEqualToThreshold',
-                                    'evaluation_periods': 1,
-                                    'metric_name': 'RuleProcessor-FailedParses-PROD',
-                                    'period': 300,
-                                    'statistic': 'Sum',
-                                    'threshold': 1.0
-                                }
-                            },
-                            'timeout': 10
                         }
                     }
                 },
@@ -237,8 +221,21 @@ def basic_streamalert_config():
                 'id': 'corp',
                 'modules': {
                     'stream_alert': {
-                        'rule_processor_config': {
+                        'classifier_config': {
+                            'enable_custom_metrics': True,
+                            'log_level': 'info',
                             'memory': 128,
+                            'custom_metric_alarms': {
+                                'Prod Unit Testing Failed Parses Alarm': {
+                                    'alarm_description': '',
+                                    'comparison_operator': 'GreaterThanOrEqualToThreshold',
+                                    'evaluation_periods': 1,
+                                    'metric_name': 'Classifier-FailedParses-PROD',
+                                    'period': 300,
+                                    'statistic': 'Sum',
+                                    'threshold': 1.0
+                                }
+                            },
                             'timeout': 10
                         }
                     },

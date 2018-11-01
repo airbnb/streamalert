@@ -154,8 +154,11 @@ class SQSClient(object):
         successful_records = len(batch) - failed
 
         MetricLogger.log_metric(FUNCTION_NAME, MetricLogger.SQS_RECORDS_SENT, successful_records)
-        LOGGER.info('Successfully sent %d messages to SQS Queue: %s',
-                    successful_records, self.queue.url)
+        LOGGER.info(
+            'Successfully sent %d message(s) to queue %s',
+            successful_records,
+            self.queue.url
+        )
 
     @classmethod
     def _strip_successful_records(cls, messages, response):
@@ -214,8 +217,7 @@ class SQSClient(object):
         if not response.get('Failed'):
             return 0  # nothing to do here
 
-        LOGGER.error('The following records failed to put to the SQS Queue: %s',
-                     self.queue.url)
+        LOGGER.error('The following records failed to put to queue %s', self.queue.url)
 
         for failure in response['Failed']:
             # Pull out the record that matches this ID
@@ -257,11 +259,20 @@ class SQSClient(object):
             Args:
                 entries (list<dict>): List of SQS SendMessageBatchRequestEntry items
             """
-            LOGGER.info('Sending %d messages to %s', len(entries), self.queue.url)
+            LOGGER.info('Sending %d message(s) to %s', len(entries), self.queue.url)
 
             response = self.queue.send_messages(Entries=entries)
 
-            LOGGER.info('Response from SQS: \n%s', response)
+            if response.get('Successful'):
+                LOGGER.info(
+                    'Successfully sent %d message(s) to %s with MessageIds %s',
+                    len(response['Successful']),
+                    self.queue.url,
+                    ', '.join(
+                        '\'{}\''.format(resp['MessageId'])
+                        for resp in response['Successful']
+                    )
+                )
 
             if response.get('Failed'):
                 self._check_failures(response)  # Raise an exception if this is our fault

@@ -1,13 +1,13 @@
-// IAM Role Policy: Allow Rule Processor to read DynamoDB table (Threat Intel)
-resource "aws_iam_role_policy" "streamalert_rule_processor_dynamodb" {
+// IAM Role Policy: Allow Rules Engine to read DynamoDB table (Threat Intel)
+resource "aws_iam_role_policy" "read_threat_intel_table" {
   count  = "${var.threat_intel_enabled ? 1 : 0}"
   name   = "ReadDynamodb"
-  role   = "${aws_iam_role.streamalert_rule_processor_role.id}"
-  policy = "${data.aws_iam_policy_document.streamalert_rule_processor_read_dynamodb.json}"
+  role   = "${var.function_role_id}"
+  policy = "${data.aws_iam_policy_document.read_threat_intel_table.json}"
 }
 
 // IAM Policy Doc: Allow lambda function to read/write data from DynamoDB
-data "aws_iam_policy_document" "streamalert_rule_processor_read_dynamodb" {
+data "aws_iam_policy_document" "read_threat_intel_table" {
   statement {
     effect = "Allow"
 
@@ -22,11 +22,11 @@ data "aws_iam_policy_document" "streamalert_rule_processor_read_dynamodb" {
   }
 }
 
-// Allow the Rule Processor to read the rules table
+// Allow the Rules Engine to read the rules table
 resource "aws_iam_role_policy" "read_rules_table" {
   count  = "${var.rules_table_arn == "" ? 0 : 1}"
   name   = "ReadRulesTable"
-  role   = "${aws_iam_role.streamalert_rule_processor_role.id}"
+  role   = "${var.function_role_id}"
   policy = "${data.aws_iam_policy_document.read_rules_table.json}"
 }
 
@@ -49,20 +49,14 @@ data "aws_iam_policy_document" "read_rules_table" {
 // Policy for Rules Engine
 data "aws_iam_policy_document" "rules_engine_policy" {
   statement {
-    sid    = "AllowSSE"
-    effect = "Allow"
-
-    principals {
-      type        = "Service"
-      identifiers = ["lambda.amazonaws.com"]
-    }
+    sid = "AllowSSE"
 
     actions = [
       "kms:Decrypt",
       "kms:GenerateDataKey",
     ]
 
-    resources = ["${var.sqs_sse_kms_key_arn}"]
+    resources = ["${var.classifier_sqs_sse_kms_key_arn}"]
   }
 
   statement {
@@ -83,4 +77,19 @@ resource "aws_iam_role_policy" "rules_engine_policy" {
   name   = "${var.prefix}_streamalert_rules_engine_policy"
   role   = "${var.function_role_id}"
   policy = "${data.aws_iam_policy_document.rules_engine_policy.json}"
+}
+
+// IAM Role Policy: Allow the Rules Engine to save alerts to dynamo.
+resource "aws_iam_role_policy" "save_alerts_to_dynamo" {
+  name   = "SaveAlertsToDynamo"
+  role   = "${var.function_role_id}"
+  policy = "${data.aws_iam_policy_document.save_alerts_to_dynamo.json}"
+}
+
+data "aws_iam_policy_document" "save_alerts_to_dynamo" {
+  statement {
+    effect    = "Allow"
+    actions   = ["dynamodb:BatchWriteItem"]
+    resources = ["arn:aws:dynamodb:${var.region}:${var.account_id}:table/${var.prefix}_streamalert_alerts"]
+  }
 }

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from stream_alert.athena_partition_refresh.main import AthenaRefresher
-from stream_alert.rule_processor.firehose import FirehoseClient
+from stream_alert.classifier.clients import FirehoseClient
 from stream_alert.shared.alert import Alert
 from stream_alert.shared.athena import AthenaClient
 from stream_alert.shared.logger import get_logger
@@ -37,7 +37,10 @@ def athena_handler(options, config):
 
     Args:
         options (argparse.Namespace): The parsed args passed from the CLI
-        config (CLIConfig): Loaded StreamAlert CLI
+        config (CLIConfig): Loaded StreamAlert config
+
+    Returns:
+        bool: False if errors occurred, True otherwise
     """
     if options.subcommand == 'rebuild-partitions':
         return rebuild_partitions(
@@ -60,7 +63,7 @@ def get_athena_client(config):
     """Get an athena client using the current config settings
 
     Args:
-        config (CLIConfig): Loaded StreamAlert CLI
+        config (CLIConfig): Loaded StreamAlert config
 
     Returns:
         AthenaClient: instantiated client for performing athena actions
@@ -96,7 +99,7 @@ def rebuild_partitions(table, bucket, config):
         bucket (str): The s3 bucket to be used as the location for Athena data
         table_type (str): The type of table being refreshed
             Types of 'data' and 'alert' are accepted, but only 'data' is implemented
-        config (CLIConfig): Loaded StreamAlert CLI
+        config (CLIConfig): Loaded StreamAlert config
 
     Returns:
         bool: False if errors occurred, True otherwise
@@ -153,7 +156,7 @@ def drop_all_tables(config):
     Used when cleaning up an existing deployment
 
     Args:
-        config (CLIConfig): Loaded StreamAlert CLI
+        config (CLIConfig): Loaded StreamAlert config
 
     Returns:
         bool: False if errors occurred, True otherwise
@@ -209,7 +212,7 @@ def create_table(table, bucket, config, schema_override=None):
         table (str): The name of the table being rebuilt
         bucket (str): The s3 bucket to be used as the location for Athena data
         table_type (str): The type of table being refreshed
-        config (CLIConfig): Loaded StreamAlert CLI
+        config (CLIConfig): Loaded StreamAlert config
         schema_override (set): An optional set of key=value pairs to be used for
             overriding the configured column_name=value_type.
 

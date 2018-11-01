@@ -10,7 +10,7 @@ resource "aws_sqs_queue" "classifier_queue" {
   visibility_timeout_seconds = "${var.rules_engine_timeout}"
 
   # Enable queue encryption of messages in the queue
-  kms_master_key_id = "${aws_kms_key.classifier_sqs_queue.arn}"
+  kms_master_key_id = "${aws_kms_key.sqs_sse.arn}"
 
   tags {
     Name = "StreamAlert"

@@ -45,7 +45,6 @@ from stream_alert_cli.terraform.monitoring import generate_monitoring
 from stream_alert_cli.terraform.rule_promotion import generate_rule_promotion
 from stream_alert_cli.terraform.classifier import generate_classifier
 from stream_alert_cli.terraform.rules_engine import generate_rules_engine
-from stream_alert_cli.terraform.streamalert import generate_stream_alert
 from stream_alert_cli.terraform.s3_events import generate_s3_events
 from stream_alert_cli.terraform.threat_intel_downloader import generate_threat_intel_downloader
 
@@ -258,14 +257,6 @@ def generate_main(config, init=False):
                 'name': DEFAULT_SNS_MONITORING_TOPIC
             }
 
-    metrics_info = generate_aggregate_cloudwatch_metric_filters(config)
-    if metrics_info:
-        main_dict['module'].update(metrics_info)
-
-    metric_alarms = generate_aggregate_cloudwatch_metric_alarms(config)
-    if metric_alarms:
-        main_dict['module'].update(metric_alarms)
-
     return main_dict
 
 
@@ -305,8 +296,6 @@ def generate_cluster(config, cluster_name):
     cluster_dict = infinitedict()
 
     generate_classifier(cluster_name, cluster_dict, config)
-
-    generate_stream_alert(cluster_name, cluster_dict, config)
 
     generate_cluster_cloudwatch_metric_filters(cluster_name, cluster_dict, config)
 
@@ -416,6 +405,16 @@ def terraform_generate_handler(config, init=False, check_tf=True, check_creds=Tr
                 indent=2,
                 sort_keys=True
             )
+
+    metric_filters = generate_aggregate_cloudwatch_metric_filters(config)
+    if metric_filters:
+        with open('terraform/metric_filters.tf.json', 'w') as tf_file:
+            json.dump(metric_filters, tf_file, indent=2, sort_keys=True)
+
+    metric_alarms = generate_aggregate_cloudwatch_metric_alarms(config)
+    if metric_alarms:
+        with open('terraform/metric_alarms.tf.json', 'w') as tf_file:
+            json.dump(metric_filters, tf_file, indent=2, sort_keys=True)
 
     # Setup Athena
     generate_global_lambda_settings(

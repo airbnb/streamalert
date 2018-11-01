@@ -15,6 +15,8 @@ limitations under the License.
 """
 from __future__ import absolute_import  # Suppresses RuntimeWarning import error in Lambda
 
+import json
+
 from stream_alert.rules_engine import RulesEngine
 from stream_alert.shared import logger
 
@@ -22,8 +24,8 @@ from stream_alert.shared import logger
 def handler(event, _):
     """Main Lambda handler function"""
     try:
-        RulesEngine().run(event.get('Records', []))
+        records = [json.loads(record['body']) for record in event.get('Records', [])]
+        RulesEngine().run(records)
     except Exception:
-        import json
         logger.get_logger(__name__).error('Invocation event: %s', json.dumps(event))
         raise

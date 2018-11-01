@@ -38,7 +38,7 @@ def get_random_alert(key_count, rule_name, omit_rule_desc=False):
         Anything over 4000 characters will result in multi-part slack messages:
         55*160 = 8800 & 8800/4000 = ceil(2.2) = 3 messages needed
     """
-    # This default value is set in the rule processor's rules_engine.py
+    # This default value is set in the rules engine
     rule_description = 'No rule description provided' if omit_rule_desc else 'rule test description'
 
     return Alert(

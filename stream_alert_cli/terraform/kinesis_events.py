@@ -36,8 +36,10 @@ def generate_kinesis_events(cluster_name, cluster_dict, config):
         'source': 'modules/tf_stream_alert_kinesis_events',
         'batch_size': batch_size,
         'lambda_production_enabled': kinesis_events_enabled,
-        'lambda_role_id': '${{module.stream_alert_{}.lambda_role_id}}'.format(cluster_name),
-        'lambda_function_arn': '${{module.stream_alert_{}.lambda_arn}}'.format(cluster_name),
+        'lambda_role_id': '${{module.classifier_{}_lambda.role_id}}'.format(cluster_name),
+        'lambda_function_alias_arn': '${{module.classifier_{}_lambda.function_alias_arn}}'.format(
+            cluster_name
+        ),
         'kinesis_stream_arn': '${{module.kinesis_{}.arn}}'.format(cluster_name),
         'role_policy_prefix': cluster_name
     }

@@ -18,12 +18,13 @@ from os import environ as env
 
 from stream_alert.rules_engine.alert_forwarder import AlertForwarder
 from stream_alert.rules_engine.threat_intel import ThreatIntel
-from stream_alert.shared import resources
+from stream_alert.shared import resources, RULES_ENGINE_FUNCTION_NAME as FUNCTION_NAME
 from stream_alert.shared.alert import Alert
 from stream_alert.shared.config import load_config
 from stream_alert.shared.rule import import_folders, Rule
 from stream_alert.shared.logger import get_logger
 from stream_alert.shared.lookup_tables import LookupTables
+from stream_alert.shared.metrics import MetricLogger
 from stream_alert.shared.rule_table import RuleTable
 from stream_alert.shared.stats import print_rule_stats
 
@@ -72,7 +73,7 @@ class RulesEngine(object):
     def get_lookup_table(cls, table_name):
         """Return lookup table by table name
 
-        Rule Processor supports to load arbitrary json files from S3 buckets into
+        The rules engine supports to load arbitrary json files from S3 buckets into
         memory for quick reference while writing rules. This information is stored
         in class variable `_LOOKUP_TABLES` which is a dictionary. Json file name
         without extension will the key name(a.k.a table_name), and json content
@@ -230,6 +231,8 @@ class RulesEngine(object):
         Returns:
             list: Alerts that have been triggered by this data
         """
+        LOGGER.info('Processing %d records', len(records))
+
         # Extract any threat intelligence matches from the records
         self._extract_threat_intel(records)
 
@@ -260,5 +263,7 @@ class RulesEngine(object):
         # since stress testing calls this method multiple times
         if self._in_lambda:
             print_rule_stats(True)
+
+        MetricLogger.log_metric(FUNCTION_NAME, MetricLogger.TRIGGERED_ALERTS, len(alerts))
 
         return alerts

@@ -8,6 +8,7 @@ module "alerts_firehose" {
 
 module "classifier_queue" {
   source               = "classifier_queue"
+  account_id           = "${var.account_id}"
   prefix               = "${var.prefix}"
   rules_engine_timeout = "${var.rules_engine_timeout}"
 }

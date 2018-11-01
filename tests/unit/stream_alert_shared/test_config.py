@@ -15,6 +15,7 @@ limitations under the License.
 """
 import json
 
+from mock import Mock
 from nose.tools import assert_equal, assert_items_equal, assert_raises
 from pyfakefs import fake_filesystem_unittest
 
@@ -26,7 +27,19 @@ from stream_alert.shared.config import (
 )
 
 from tests.unit.helpers.config import basic_streamalert_config
-from tests.unit.stream_alert_rule_processor.test_helpers import get_mock_context
+
+
+def get_mock_lambda_context(func_name, milliseconds=100):
+    """Helper function to create a fake context object using Mock"""
+    arn = 'arn:aws:lambda:us-east-1:123456789012:function:{}:development'
+    context = Mock(
+        invoked_function_arn=(arn.format(func_name)),
+        function_name=func_name,
+        function_version='production',
+        get_remaining_time_in_millis=Mock(return_value=milliseconds)
+    )
+
+    return context
 
 
 class TestConfigLoading(fake_filesystem_unittest.TestCase):
@@ -182,12 +195,13 @@ class TestConfigValidation(object):
 
     def test_parse_lambda_arn(self):
         """Shared - Config - Parse Lambda ARN"""
-        context = get_mock_context()
+        func_name = 'corp-prefix_prod_streamalert_classifer'
+        context = get_mock_lambda_context(func_name)
 
         env = parse_lambda_arn(context.invoked_function_arn)
         assert_equal(env['region'], 'us-east-1')
         assert_equal(env['account_id'], '123456789012')
-        assert_equal(env['function_name'], 'corp-prefix_prod_streamalert_rule_processor')
+        assert_equal(env['function_name'], func_name)
         assert_equal(env['qualifier'], 'development')
 
     def test_config_invalid_ioc_types(self):

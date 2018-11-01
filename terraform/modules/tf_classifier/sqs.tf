@@ -1,6 +1,6 @@
 // SQS Queue Policy: Allow the Classifier to send messages to SQS
 resource "aws_sqs_queue_policy" "classifier_queue" {
-  queue_url = "${aws_sqs_queue.classifier_queue.id}"
+  queue_url = "${var.classifier_sqs_queue_url}"
   policy    = "${data.aws_iam_policy_document.classifier_queue.json}"
 }
 
@@ -14,7 +14,7 @@ data "aws_iam_policy_document" "classifier_queue" {
       identifiers = ["*"]
     }
 
-    actions   = ["sqs:SendMessage*"]
+    actions   = ["sqs:SendMessage"]
     resources = ["${var.classifier_sqs_queue_arn}"]
 
     condition {

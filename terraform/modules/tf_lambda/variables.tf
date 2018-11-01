@@ -166,3 +166,9 @@ variable "iterator_age_alarm_period_secs" {
   default     = 120
   description = "Period over which to evaluate the maximum IteratorAge"
 }
+
+variable "input_sns_topics" {
+  description = "SNS topics that are allowed to invoke this Lambda function"
+  type        = "list"
+  default     = []
+}

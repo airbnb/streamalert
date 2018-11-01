@@ -48,9 +48,9 @@ class CLIConfig(object):
         self.config.__setitem__(key, new_value)
         self.write()
 
-    def get(self, key):
+    def get(self, key, default=None):
         """Lookup a value based on its key"""
-        return self.config.get(key)
+        return self.config.get(key, default)
 
     def keys(self):
         """Config keys"""

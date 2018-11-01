@@ -243,7 +243,7 @@ class TestFirehoseClient(object):
 
         FirehoseClient._finalize(response, stream_name, count)
         log_mock.assert_called_with(
-            '[Firehose] Successfully sent %d messages to %s with RequestId [%s]',
+            'Successfully sent %d message(s) to firehose %s with RequestId \'%s\'',
             count,
             stream_name,
             request_id
