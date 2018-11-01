@@ -14,8 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from stream_alert.shared import metrics
+from stream_alert.shared import CLUSTERED_FUNCTIONS
 from stream_alert.shared.logger import get_logger
-from stream_alert_cli.terraform.common import monitoring_topic_arn
+from stream_alert_cli.terraform.common import infinitedict, monitoring_topic_arn
 
 LOGGER = get_logger(__name__)
 
@@ -29,8 +30,10 @@ def generate_aggregate_cloudwatch_metric_filters(config):
     functions = {
         cluster: [
             func.replace('_config', '')
-            for func, func_config in cluster_config['modules']['stream_alert'].iteritems()
-            if func_config.get('enable_custom_metrics')
+            for func in CLUSTERED_FUNCTIONS
+            if cluster_config['modules']['stream_alert']['{}_config'.format(func)].get(
+                'enable_custom_metrics'
+            )
         ] for cluster, cluster_config in config['clusters'].iteritems()
     }
 
@@ -42,7 +45,7 @@ def generate_aggregate_cloudwatch_metric_filters(config):
     if not any(funcs for funcs in functions.values()):
         return  # Nothing to add if no funcs have metrics enabled
 
-    metrics_config = dict()
+    result = infinitedict()
 
     current_metrics = metrics.MetricLogger.get_available_metrics()
 
@@ -60,7 +63,7 @@ def generate_aggregate_cloudwatch_metric_filters(config):
 
             log_group_name = (
                 '${{module.{}_{}_lambda.log_group_name}}'.format(function, cluster)
-                if is_global else '${{module.{}_lambda.log_group_name}}'.format(function)
+                if not is_global else '${{module.{}_lambda.log_group_name}}'.format(function)
             )
 
             # Add filters for the cluster and aggregate
@@ -69,7 +72,7 @@ def generate_aggregate_cloudwatch_metric_filters(config):
                     'metric_filters_{}_{}_{}'.format(metric_prefix, metric, cluster)
                     if is_global else 'metric_filters_{}_{}'.format(metric_prefix, metric)
                 )
-                metrics_config[module_name] = {
+                result['module'][module_name] = {
                     'source': 'modules/tf_metric_filters',
                     'log_group_name': log_group_name,
                     'metric_name': '{}-{}'.format(metric_prefix, metric),
@@ -77,7 +80,7 @@ def generate_aggregate_cloudwatch_metric_filters(config):
                     'metric_value': filter_settings[1],
                 }
 
-    return metrics_config
+    return result
 
 
 def generate_aggregate_cloudwatch_metric_alarms(config):
@@ -86,7 +89,7 @@ def generate_aggregate_cloudwatch_metric_alarms(config):
     Args:
         config (dict): The loaded config from the 'conf/' directory
     """
-    alarms_configs = dict()
+    result = infinitedict()
 
     sns_topic_arn = monitoring_topic_arn(config)
 
@@ -102,9 +105,9 @@ def generate_aggregate_cloudwatch_metric_alarms(config):
             alarm_settings['source'] = 'modules/tf_metric_alarms',
             alarm_settings['sns_topic_arn'] = sns_topic_arn
             alarm_settings['alarm_name'] = name
-            alarms_configs['metric_alarm_{}_{}'.format(func, idx)] = alarm_settings
+            result['module']['metric_alarm_{}_{}'.format(func, idx)] = alarm_settings
 
-    return alarms_configs
+    return result
 
 
 def generate_cluster_cloudwatch_metric_filters(cluster_name, cluster_dict, config):
@@ -119,16 +122,19 @@ def generate_cluster_cloudwatch_metric_filters(cluster_name, cluster_dict, confi
 
     current_metrics = metrics.MetricLogger.get_available_metrics()
 
-    # Add metric filters for the rule and alert processor
-    for func, metric_prefix in metrics.FUNC_PREFIXES.iteritems():
+    # Add custom metric filters for clustered function
+    for func in CLUSTERED_FUNCTIONS:
         if func not in current_metrics:
             continue
 
-        if func not in stream_alert_config:
+        func_config_name = '{}_config'.format(func)
+        if func_config_name not in stream_alert_config:
             continue
 
-        if not stream_alert_config[func].get('enable_custom_metrics'):
+        if not stream_alert_config[func_config_name].get('enable_custom_metrics'):
             continue
+
+        metric_prefix = metrics.FUNC_PREFIXES[func]
 
         log_group_name = '${{module.{}_{}_lambda.log_group_name}}'.format(func, cluster_name)
 
@@ -170,8 +176,11 @@ def generate_cluster_cloudwatch_metric_alarms(cluster_name, cluster_dict, config
 
     # Add cluster metric alarms for the rule and alert processors
     metric_alarms = [
-        metric_alarm for func_config in stream_alert_config.values()
-        for metric_alarm in func_config.get('custom_metric_alarms', [])
+        metric_alarm
+        for func in CLUSTERED_FUNCTIONS
+        for metric_alarm in stream_alert_config['{}_config'.format(func)].get(
+            'custom_metric_alarms', []
+        )
     ]
 
     for idx, metric_alarm in enumerate(metric_alarms):

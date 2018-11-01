@@ -17,7 +17,7 @@ from collections import OrderedDict
 import logging
 
 from stream_alert.classifier.clients import FirehoseClient, SQSClient
-from stream_alert.classifier.normalize import Normalizer
+from stream_alert.classifier.normalize import NORMALIZATION_KEY, Normalizer
 from stream_alert.classifier.parsers import get_parser
 from stream_alert.classifier.payload.payload_base import StreamPayload
 from stream_alert.shared import config, CLASSIFIER_FUNCTION_NAME as FUNCTION_NAME
@@ -131,6 +131,8 @@ class Classifier(object):
                 LOGGER.debug('Failed to classify data with schema: %s', log_type)
                 continue
 
+            LOGGER.debug('Log classified with schema: %s', log_type)
+
             # Set the parser on successful parse
             payload_record.parser = parser
 
@@ -205,7 +207,14 @@ class Classifier(object):
             MetricLogger.TOTAL_RECORDS,
             sum(len(payload.parsed_records) for payload in self._payloads)
         )
-
+        MetricLogger.log_metric(
+            FUNCTION_NAME,
+            MetricLogger.NORMALIZED_RECORDS,
+            sum(
+                1 for payload in self._payloads
+                for log in payload.parsed_records if log.get(NORMALIZATION_KEY)
+            )
+        )
         MetricLogger.log_metric(
             FUNCTION_NAME, MetricLogger.TOTAL_PROCESSED_SIZE, self._processed_size
         )

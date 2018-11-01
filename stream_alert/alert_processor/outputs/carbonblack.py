@@ -77,7 +77,7 @@ class CarbonBlackOutput(OutputDispatcher):
 
         client = CbResponseAPI(**creds)
 
-        # Get md5 hash 'value' from streamalert's rule processor
+        # Get md5 hash 'value' passed from the rules engine function
         action = alert.context.get('carbonblack', {}).get('action')
         if action == 'ban':
             binary_hash = alert.context.get('carbonblack', {}).get('value')

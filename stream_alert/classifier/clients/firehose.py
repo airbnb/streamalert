@@ -36,7 +36,7 @@ LOGGER = get_logger(__name__)
 
 
 class FirehoseClient(object):
-    """Handles preparing and sending data from the Rule Processor to Kinesis Firehose"""
+    """Handles preparing and sending data from the classifier function to Kinesis Firehose"""
     # Used to detect special characters in payload keys.
     # This is necessary for sanitization of data prior to searching in Athena.
     SPECIAL_CHAR_REGEX = re.compile(r'\W')
@@ -204,18 +204,19 @@ class FirehoseClient(object):
 
             # Only print the first 100 failed records to Cloudwatch logs
             LOGGER.error(
-                '[Firehose] The following records failed to put to the Delivery Stream %s: %s',
+                'Failed to put the following records to firehose %s: %s',
                 stream_name,
-                json.dumps(failed_records[:100], indent=2)
+                json.dumps(failed_records[:1024], indent=2)
             )
-        else:
-            MetricLogger.log_metric(FUNCTION_NAME, MetricLogger.FIREHOSE_RECORDS_SENT, size)
-            LOGGER.info(
-                '[Firehose] Successfully sent %d messages to %s with RequestId [%s]',
-                size,
-                stream_name,
-                response.get('ResponseMetadata', {}).get('RequestId', '')
-            )
+            return
+
+        MetricLogger.log_metric(FUNCTION_NAME, MetricLogger.FIREHOSE_RECORDS_SENT, size)
+        LOGGER.info(
+            'Successfully sent %d message(s) to firehose %s with RequestId \'%s\'',
+            size,
+            stream_name,
+            response.get('ResponseMetadata', {}).get('RequestId', '')
+        )
 
     @classmethod
     def _log_failed(cls, count):
@@ -249,13 +250,13 @@ class FirehoseClient(object):
         def _firehose_request_helper(data):
             """Firehose request wrapper to use with backoff"""
             # Use the current length of data here so we can track failed records that are retried
-            LOGGER.info('[Firehose] Sending %d records to %s', len(data), stream_name)
+            LOGGER.debug('Sending %d records to firehose %s', len(data), stream_name)
 
             response = self._client.put_record_batch(DeliveryStreamName=stream_name, Records=data)
 
             # Log this as an error for now so it can be picked up in logs
             if response['FailedPutCount'] > 0:
-                LOGGER.error('Received non-zero FailedPutCount: %d', response['FailedPutCount'])
+                LOGGER.warning('Received non-zero FailedPutCount: %d', response['FailedPutCount'])
                 # Strip out the successful records so only the failed ones are retried. This happens
                 # to the list of dictionary objects, so the called function sees the updated list
                 self._strip_successful_records(data, response)

@@ -44,5 +44,5 @@ class TestAlertForwarder(object):
     def test_send_alerts_dynamo_exception(self, mock_logger):
         """AlertForwarder - ClientError When Sending Alerts"""
         self.forwarder._table.add_alerts.side_effect = ClientError({}, 'batch_write')
-        self.forwarder.send_alerts([])
+        self.forwarder.send_alerts([1])
         mock_logger.assert_called_once()

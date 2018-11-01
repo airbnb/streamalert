@@ -12,11 +12,7 @@ variable "filter_suffix" {
   default = ""
 }
 
-variable "lambda_function_arn" {}
-
-variable "lambda_function_alias" {
-  default = "production"
-}
+variable "lambda_function_alias_arn" {}
 
 variable "lambda_role_id" {}
 

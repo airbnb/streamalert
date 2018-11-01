@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from __future__ import print_function
 import os
 import shutil
 
@@ -68,7 +69,7 @@ def terraform_init(options, config):
         return False
 
     # build init infrastructure
-    LOGGER.info('Building Initial Infrastructure')
+    LOGGER.info('Building initial infrastructure')
     init_targets = [
         'aws_s3_bucket.lambda_source', 'aws_s3_bucket.logging_bucket',
         'aws_s3_bucket.stream_alert_secrets', 'aws_s3_bucket.terraform_remote_state',
@@ -90,9 +91,9 @@ def terraform_init(options, config):
 
     LOGGER.info('Deploying Lambda Functions')
 
-    processors = ['rule', 'alert', 'alert_merger', 'athena', 'classifier']
+    functions = ['rule', 'alert', 'alert_merger', 'athena', 'classifier']
 
-    deploy(processors, config)
+    deploy(functions, config)
 
     # we need to manually create the streamalerts table since terraform does not support this
     # See: https://github.com/terraform-providers/terraform-provider-aws/issues/1486
@@ -190,10 +191,10 @@ def terraform_destroy_handler(options, config):
         return False
 
     # Remove old Terraform files
-    return terraform_clean_handler(config)
+    return terraform_clean_handler()
 
 
-def terraform_clean_handler(config):
+def terraform_clean_handler():
     """Remove leftover Terraform statefiles and main/cluster files
 
     Args:
@@ -204,14 +205,21 @@ def terraform_clean_handler(config):
     """
     LOGGER.info('Cleaning Terraform files')
 
-    cleanup_files = ['{}.tf.json'.format(cluster) for cluster in config.clusters()]
-    cleanup_files.extend(
-        ['athena.tf.json', 'main.tf.json', 'terraform.tfstate', 'terraform.tfstate.backup'])
-    for tf_file in cleanup_files:
-        file_to_remove = 'terraform/{}'.format(tf_file)
-        if not os.path.isfile(file_to_remove):
-            continue
-        os.remove(file_to_remove)
+    def _rm_file(path):
+        if not os.path.isfile(path):
+            return
+        print('Removing terraform file: {}'.format(path))
+        os.remove(path)
+
+    for root, _, files in os.walk('terraform'):
+        for file_name in files:
+            path = os.path.join(root, file_name)
+            if path.endswith('.tf.json'):
+                _rm_file(path)
+
+    for tf_file in ['terraform.tfstate', 'terraform.tfstate.backup']:
+        path = 'terraform/{}'.format(tf_file)
+        _rm_file(path)
 
     # Finally, delete the Terraform directory
     if os.path.isdir('terraform/.terraform/'):

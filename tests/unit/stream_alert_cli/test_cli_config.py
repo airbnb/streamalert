@@ -88,7 +88,7 @@ class TestCLIConfig(object):
     def test_cluster_alarm_creation(self):
         """CLI - Adding CloudWatch metric alarm, cluster"""
         alarm_info = {
-            'function': 'rule_processor',
+            'function': 'classifier',
             'metric_name': 'TotalRecords',
             'evaluation_periods': 1,
             'alarm_description': '',
@@ -102,7 +102,7 @@ class TestCLIConfig(object):
 
         expected_result = {
             'Prod Unit Testing Total Records Alarm': {
-                'metric_name': 'RuleProcessor-TotalRecords-PROD',
+                'metric_name': 'Classifier-TotalRecords-PROD',
                 'evaluation_periods': 1,
                 'alarm_description': '',
                 'period': 300,
@@ -114,7 +114,7 @@ class TestCLIConfig(object):
                 'alarm_description': '',
                 'comparison_operator': 'GreaterThanOrEqualToThreshold',
                 'evaluation_periods': 1,
-                'metric_name': 'RuleProcessor-FailedParses-PROD',
+                'metric_name': 'Classifier-FailedParses-PROD',
                 'period': 300,
                 'statistic': 'Sum',
                 'threshold': 1.0
@@ -124,7 +124,7 @@ class TestCLIConfig(object):
         self.config.add_metric_alarm(alarm_info)
         result = (
             self.config['clusters']['prod']['modules']['stream_alert']
-            ['rule_processor_config']['custom_metric_alarms']
+            ['classifier_config']['custom_metric_alarms']
         )
 
         assert_equal(result, expected_result)

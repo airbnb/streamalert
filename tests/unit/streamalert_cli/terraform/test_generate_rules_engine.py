@@ -13,9 +13,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from stream_alert_cli.terraform import rules_engine
-
 from nose.tools import assert_equal
+
+from stream_alert_cli.terraform import rules_engine
 
 
 class TestTerraformGenerateRuleEngine(object):
@@ -86,7 +86,11 @@ class TestTerraformGenerateRuleEngine(object):
                     'threat_intel_enabled': self.config['threat_intel']['enabled'],
                     'dynamodb_table_name': self.config['threat_intel']['dynamodb_table_name'],
                     'rules_table_arn': '${module.globals.rules_table_arn}',
-                    'classifier_sqs_queue_arn': '${module.globals.classifier_sqs_queue_arn}'
+                    'classifier_sqs_queue_arn': '${module.globals.classifier_sqs_queue_arn}',
+                    'classifier_sqs_sse_kms_key_arn': (
+                        '${module.globals.classifier_sqs_sse_kms_key_arn}'
+                    ),
+                    'sqs_record_batch_size': 10
                 },
                 'rules_engine_lambda': {
                     'alarm_actions': ['arn:aws:sns:us-east-1:123456789012:test_topic'],

@@ -23,11 +23,8 @@ from aliyunsdkcore.acs_exception.exceptions import ServerException
 
 from stream_alert.apps._apps.aliyun import AliyunApp
 
-from tests.unit.stream_alert_apps.test_helpers import (
-    get_event,
-    get_mock_context,
-    put_mock_params
-)
+from tests.unit.stream_alert_apps.test_helpers import get_event, put_mock_params
+from tests.unit.stream_alert_shared.test_config import get_mock_lambda_context
 
 
 @mock_ssm
@@ -42,7 +39,7 @@ class TestAliyunApp(object):
         self._test_app_name = 'aliyun'
         put_mock_params(self._test_app_name)
         self._event = get_event(self._test_app_name)
-        self._context = get_mock_context(self._test_app_name)
+        self._context = get_mock_lambda_context(self._test_app_name)
         self._app = AliyunApp(self._event, self._context)
 
     def test_sleep_seconds(self):

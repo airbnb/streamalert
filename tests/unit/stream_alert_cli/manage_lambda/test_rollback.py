@@ -13,9 +13,9 @@ from tests.unit.helpers.config import basic_streamalert_config, MockCLIConfig
 class MockOptions(object):
     """Simple mock for the options parsed from the command line arguments."""
 
-    def __init__(self, clusters, processor):
+    def __init__(self, clusters, function):
         self.clusters = clusters
-        self.processor = processor
+        self.function = function
 
 
 @mock.patch.object(rollback, 'boto3', mock.MagicMock())

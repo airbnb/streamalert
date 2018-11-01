@@ -13,6 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from __future__ import print_function
+from stream_alert.shared import CLUSTERED_FUNCTIONS
 from stream_alert.shared.logger import get_logger
 from stream_alert_cli.apps.handler import app_handler
 from stream_alert_cli.athena.handler import athena_handler
@@ -58,7 +60,7 @@ def cli_runner(args):
         'app': lambda opts: app_handler(opts, config),
         'athena': lambda opts: athena_handler(opts, config),
         'build': lambda opts: terraform_build_handler(opts, config),
-        'clean': lambda opts: terraform_clean_handler(config),
+        'clean': lambda opts: terraform_clean_handler(),
         'configure': lambda opts: configure_handler(opts, config),
         'create-alarm': lambda opts: _create_alarm_handler(opts, config),
         'create-cluster-alarm': lambda opts: _create_alarm_handler(opts, config),
@@ -91,11 +93,11 @@ def configure_handler(options, config):
     Returns:
         bool: False if errors occurred, True otherwise
     """
-    if options.config_key == 'prefix':
-        return config.set_prefix(options.config_value)
+    if options.key == 'prefix':
+        return config.set_prefix(options.value)
 
-    elif options.config_key == 'aws_account_id':
-        return config.set_aws_account_id(options.config_value)
+    elif options.key == 'aws_account_id':
+        return config.set_aws_account_id(options.value)
 
 
 def _custom_metrics_handler(options, config):
@@ -125,21 +127,56 @@ def _status_handler(config):
     Returns:
         bool: False if errors occurred, True otherwise
     """
-    # TODO: this is severely broken/outdated. fix up
-    for cluster, region in config['clusters'].items():
-        print '\n======== {} ========'.format(cluster)
-        print 'Region: {}'.format(region)
-        print('Alert Processor Lambda Settings: \n\tTimeout: {}\n\tMemory: {}'
-              '\n\tProd Version: {}').format(config['alert_processor_lambda_config'][cluster][0],
-                                             config['alert_processor_lambda_config'][cluster][1],
-                                             config['alert_processor_versions'][cluster])
-        print('Rule Processor Lambda Settings: \n\tTimeout: {}\n\tMemory: {}'
-              '\n\tProd Version: {}').format(config['rule_processor_lambda_config'][cluster][0],
-                                             config['rule_processor_lambda_config'][cluster][1],
-                                             config['rule_processor_versions'][cluster])
-        print 'Kinesis settings: \n\tShards: {}\n\tRetention: {}'.format(
-            config['kinesis_streams_config'][cluster][0],
-            config['kinesis_streams_config'][cluster][1])
+    def _format_key(key):
+        return key.replace('_', ' ').title()
+
+    def _format_header(value, section_header=False):
+        char = '=' if section_header else '+'
+        value = value if section_header else _format_key(value)
+        return '\n{value:{char}^60}'.format(char=char, value='  {}  '.format(value))
+
+    def _print_row(key, value):
+        key = _format_key(key)
+        print('{}: {}'.format(key, value))
+
+    print(_format_header('Global Account Settings', True))
+    for key in sorted(['aws_account_id', 'prefix', 'region']):
+        value = config['global']['account'][key]
+        _print_row(key, value)
+
+    lambda_keys = sorted([
+        'concurrency_limit',
+        'enable_custom_metrics',
+        'log_level',
+        'log_retention_days',
+        'memory',
+        'timeout',
+        'schedule_expression'
+    ])
+    for name in set((config['lambda'])):
+        config_value = config['lambda'][name]
+        name = name.replace('_config', '')
+        if name in CLUSTERED_FUNCTIONS:
+            continue
+
+        print(_format_header(name))
+        for key in lambda_keys:
+            _print_row(key, config_value.get(key))
+
+    cluster_non_func_keys = sorted(['enable_threat_intel'])
+    for cluster in sorted(config['clusters']):
+        sa_config = config['clusters'][cluster]['modules']['stream_alert']
+
+        print(_format_header('Cluster: {}'.format(cluster), True))
+        for key in cluster_non_func_keys:
+            _print_row(key, sa_config.get(key))
+
+        for function in CLUSTERED_FUNCTIONS:
+            config_value = sa_config['{}_config'.format(function)]
+
+            print(_format_header(function))
+            for key in lambda_keys:
+                _print_row(key, config_value.get(key))
 
     return True
 

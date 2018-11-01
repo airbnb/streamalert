@@ -110,7 +110,7 @@ class Alert(object):
 
     def __repr__(self):
         """Complete representation (for debugging) is an indented JSON string with all fields."""
-        return json.dumps(self.dynamo_record(), cls=self.AlertEncoder, indent=4, sort_keys=True)
+        return json.dumps(self.dynamo_record(), cls=self.AlertEncoder, indent=2, sort_keys=True)
 
     def __str__(self):
         """Simple string representation includes alert ID and triggered rule."""

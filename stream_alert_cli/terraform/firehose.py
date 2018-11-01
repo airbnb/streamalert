@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from stream_alert.rule_processor.firehose import FirehoseClient
+from stream_alert.classifier.clients import FirehoseClient
 from stream_alert_cli.terraform.common import monitoring_topic_arn
 
 
@@ -56,12 +56,15 @@ def generate_firehose(logging_bucket, main_dict, config):
     for log_stream_name, log_type_name in enabled_logs.iteritems():
         module_dict = {
             'source': 'modules/tf_stream_alert_kinesis_firehose_delivery_stream',
-            'buffer_size': config['global']['infrastructure']
-                           ['firehose'].get('buffer_size', 64),
-            'buffer_interval': config['global']['infrastructure']
-                               ['firehose'].get('buffer_interval', 300),
-            'compression_format': config['global']['infrastructure']
-                                  ['firehose'].get('compression_format', 'GZIP'),
+            'buffer_size': (
+                config['global']['infrastructure']['firehose'].get('buffer_size', 64)
+            ),
+            'buffer_interval': (
+                config['global']['infrastructure']['firehose'].get('buffer_interval', 300)
+            ),
+            'compression_format': (
+                config['global']['infrastructure']['firehose'].get('compression_format', 'GZIP')
+            ),
             'log_name': log_stream_name,
             'role_arn': '${module.kinesis_firehose_setup.firehose_role_arn}',
             's3_bucket_name': firehose_s3_bucket_name,

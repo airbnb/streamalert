@@ -120,6 +120,16 @@ def generate_lambda(function_name, zip_file, handler, lambda_config, config,
         'environment_variables': environment_variables
     }
 
+    # Add Classifier input config from the loaded cluster file
+    input_config = lambda_config.get('inputs')
+    if input_config:
+        input_mapping = {
+            'input_sns_topics': 'aws-sns'
+        }
+        for tf_key, input_key in input_mapping.iteritems():
+            if input_key in input_config:
+                lambda_module[tf_key] = input_config[input_key]
+
     # If the Lambda is being invoke on a schedule, an optional input event can be passed in
     if input_event:
         lambda_module['lambda_input_event'] = input_event

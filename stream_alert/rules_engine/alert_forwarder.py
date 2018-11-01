@@ -39,11 +39,16 @@ class AlertForwarder(object):
         Args:
             alerts (list): A list of Alert instances to save to Dynamo.
         """
+        if not alerts:
+            return  # nothing to do
+
         try:
             self._table.add_alerts(alerts)
-            LOGGER.info('Successfully sent %d alert(s) to dynamo:%s', len(alerts), self._table.name)
         except ClientError:
             # add_alerts() automatically retries transient errors - any raised ClientError
             # is likely unrecoverable. Log an exception and metric
             LOGGER.exception('An error occurred when sending alerts to DynamoBD')
             MetricLogger.log_metric(FUNCTION_NAME, MetricLogger.FAILED_DYNAMO_WRITES, 1)
+            return
+
+        LOGGER.info('Successfully sent %d alert(s) to dynamo:%s', len(alerts), self._table.name)

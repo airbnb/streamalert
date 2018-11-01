@@ -30,7 +30,6 @@ import string
 import sys
 import textwrap
 
-
 from stream_alert import __version__ as version
 from stream_alert.alert_processor.outputs.output_base import StreamAlertOutput
 from stream_alert.apps import StreamAlertApp
@@ -829,7 +828,7 @@ def _add_default_lambda_args(lambda_parser):
         'alert', 'alert_merger', 'apps', 'athena', 'classifier',
         'rule', 'rule_promo', 'threat_intel_downloader'
     ])
-    # require the name of the processor being deployed/rolled back
+    # require the name of the function being deployed/rolled back
     lambda_parser.add_argument(
         '-f', '--function',
         choices=functions + ['all'],
@@ -955,7 +954,7 @@ def _setup_configure_subparser(subparser):
     )
 
     subparser.add_argument(
-        'config_key',
+        'key',
         choices=['prefix', 'aws_account_id'],
         help='Value of key being configured'
     )

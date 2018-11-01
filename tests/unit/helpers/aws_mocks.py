@@ -167,7 +167,7 @@ def create_lambda_function(function_name, region):
 
 
 def setup_mock_alerts_table(table_name):
-    """Create a mock DynamoDB alerts table used by rule processor, alert processor, alert merger"""
+    """Create a mock DynamoDB alerts table used by rules engine, alert processor, alert merger"""
     boto3.client('dynamodb').create_table(
         AttributeDefinitions=[
             {
@@ -198,7 +198,7 @@ def setup_mock_alerts_table(table_name):
 
 
 def setup_mock_rules_table(table_name):
-    """Create a mock DynamoDB rules table used by the CLI, rule processor, and rule promoter"""
+    """Create a mock DynamoDB rules table used by the CLI, rules engine, and rule promoter"""
     boto3.client('dynamodb').create_table(
         AttributeDefinitions=[
             {
