@@ -828,7 +828,7 @@ def _add_default_lambda_args(lambda_parser):
         'alert', 'alert_merger', 'apps', 'athena', 'classifier',
         'rule', 'rule_promo', 'threat_intel_downloader'
     ])
-    # require the name of the processor being deployed/rolled back
+    # require the name of the function being deployed/rolled back
     lambda_parser.add_argument(
         '-f', '--function',
         choices=functions + ['all'],

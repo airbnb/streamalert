@@ -73,7 +73,7 @@ class RulesEngine(object):
     def get_lookup_table(cls, table_name):
         """Return lookup table by table name
 
-        Rule Processor supports to load arbitrary json files from S3 buckets into
+        The rules engine supports to load arbitrary json files from S3 buckets into
         memory for quick reference while writing rules. This information is stored
         in class variable `_LOOKUP_TABLES` which is a dictionary. Json file name
         without extension will the key name(a.k.a table_name), and json content

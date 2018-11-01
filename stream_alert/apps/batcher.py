@@ -26,9 +26,7 @@ LOGGER = get_logger(__name__)
 
 
 class Batcher(object):
-    """Batcher class to handle segmenting large messages going to the
-    rule processor lambda function
-    """
+    """Batcher class to handle segmenting large messages going to the classifier lambda function"""
     # Max lambda input payload size is 128K for the 'event' invocation type
     MAX_LAMBDA_PAYLOAD_SIZE = 128 * 1000
     LAMBDA_CLIENT = None
@@ -38,18 +36,18 @@ class Batcher(object):
         if Batcher.LAMBDA_CLIENT is None:
             Batcher.LAMBDA_CLIENT = boto3.client('lambda')
         self._source_function = source_func
-        # The rule processor function name will look like:
+        # The classifier function name will look like:
         # <prefix>_<cluster>_streamalert_classifier
         self._destination_function = destination_func
 
     def send_logs(self, logs):
-        """Public method to send the logs to the rule processor
+        """Public method to send the logs to the classifier function
 
         Args:
             source_function (str): The app function name from which the logs came
             logs (list): List of the logs that have been gathered
         """
-        LOGGER.info('Starting batch send of %d logs to the rule processor', len(logs))
+        LOGGER.info('Starting batch send of %d logs to the classifier function', len(logs))
 
         # Try to send all of the logs in one fell swoop
         if self._send_logs_to_lambda(logs):
@@ -59,7 +57,7 @@ class Batcher(object):
         # if they could not be sent at once
         self._segment_and_send(logs)
 
-        LOGGER.info('Finished batch send of %d logs to the rule processor', len(logs))
+        LOGGER.info('Finished batch send of %d logs to the classifier function', len(logs))
 
     def _segment_and_send(self, logs):
         """Protected method for segmenting a list of logs into smaller lists
@@ -75,7 +73,7 @@ class Batcher(object):
         segment_size = int(math.ceil(log_count / 2.0))
         for index in range(0, log_count, segment_size):
             subset = logs[index:segment_size + index]
-            # Try to send this current subset to the rule processor
+            # Try to send this current subset to the classifier function
             # and segment again if they are too large to be sent at once
             if not self._send_logs_to_lambda(subset):
                 self._segment_and_send(subset)
@@ -83,14 +81,14 @@ class Batcher(object):
         return True
 
     def _send_logs_to_lambda(self, logs):
-        """Protected method for sending logs to the rule processor lambda
+        """Protected method for sending logs to the classifier lambda
         function for processing. This performs some size checks before sending.
 
         Args:
             source_function (str): The app function name from which the logs came
             logs (list): List of the logs that have been gathered
         """
-        # Create a payload to be sent to the rule processor that contains the
+        # Create a payload to be sent to the classifier function that contains the
         # service these logs were collected from and the list of logs
         payload = {'Records': [{'stream_alert_app': self._source_function, 'logs': logs}]}
         payload_json = json.dumps(payload, separators=(',', ':'))
@@ -106,7 +104,7 @@ class Batcher(object):
                          self.MAX_LAMBDA_PAYLOAD_SIZE)
             return False
 
-        LOGGER.debug('Sending %d logs to rule processor with payload size %d',
+        LOGGER.debug('Sending %d logs to classifier function with payload size %d',
                      len(logs), len(payload_json))
 
         try:

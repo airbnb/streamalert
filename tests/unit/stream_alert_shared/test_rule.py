@@ -27,6 +27,7 @@ from stream_alert.shared import rule, rule_table
 def _test_checksum(_):
     return False
 
+
 # Rule with docstring to be used for checksum testing
 def _test_checksum_doc(_):
     """This has a docstring but should match the checksum of the above function"""
@@ -61,7 +62,7 @@ def {}(_):
     return False
 """.format(rule_name)
 
-        exec custom_rule_code #pylint: disable=exec-used
+        exec custom_rule_code  # pylint: disable=exec-used
 
     def test_rule_valid(self):
         """Rule - Create Valid Rule"""
@@ -85,7 +86,7 @@ def {}(_):
         """Rule - Disabled Rule"""
         @rule.disable
         @rule.rule(logs=['log_type'])
-        def test_rule_disabled(_): #pylint: disable=unused-variable
+        def test_rule_disabled(_):  # pylint: disable=unused-variable
             return False
 
         assert_equal(rule.Rule._rules['test_rule_disabled'].disabled, True)
@@ -119,7 +120,7 @@ def {}(_):
 
     def test_rule_process_with_context(self):
         """Rule - Process, With Context"""
-        def test_rule(rec, context): #pylint: disable=missing-docstring
+        def test_rule(rec, context):  # pylint: disable=missing-docstring
             context['relevant'] = 'data'
             # Update the context with the entire record so we can check for validity
             context.update(rec)
@@ -274,7 +275,7 @@ def {}(_):
     return False
 """.format(matcher_name)
 
-        exec custom_matcher_code #pylint: disable=exec-used
+        exec custom_matcher_code  # pylint: disable=exec-used
 
     @raises(rule.MatcherCreationError)
     def test_matcher_exists(self):
@@ -293,7 +294,7 @@ def {}(_):
     def test_matcher_exception(self, log_mock):
         """Matcher - Process Matcher, Exception"""
         # Create a matcher function that will raise an exception
-        def matcher_exception(_): #pylint: disable=unused-variable
+        def matcher_exception(_):  # pylint: disable=unused-variable
             raise ValueError('this is a bad matcher')
 
         matcher = rule.Matcher(matcher_exception)
@@ -322,7 +323,7 @@ class RuleImportTest(fake_filesystem_unittest.TestCase):
 
     @staticmethod
     def test_python_rule_paths():
-        """Rule Processor Main - Find rule paths"""
+        """Rule - Python File Paths"""
         result = set(rule._python_file_paths('rules', 'matchers'))
         expected = {
             'matchers/matchers.py',
@@ -333,13 +334,13 @@ class RuleImportTest(fake_filesystem_unittest.TestCase):
 
     @staticmethod
     def test_path_to_module():
-        """Rule Processor Main - Convert rule path to module name"""
+        """Rule - Path to Module"""
         assert_equal('name', rule._path_to_module('name.py'))
         assert_equal('a.b.c.name', rule._path_to_module('a/b/c/name.py'))
 
     @staticmethod
     def test_path_to_module_invalid():
-        """Rule Processor Main - Raise NameError for invalid Python filename."""
+        """Rule - Path to Module, Raises Exception"""
         with assert_raises(NameError):
             rule._path_to_module('a.b.py')
 
@@ -349,7 +350,7 @@ class RuleImportTest(fake_filesystem_unittest.TestCase):
     @staticmethod
     @patch('importlib.import_module')
     def test_import_rules(mock_import):
-        """Rule Processor Main - Import all rule modules."""
+        """Rule - Import Folders"""
         rule.import_folders('rules', 'matchers')
         mock_import.assert_has_calls([
             call('matchers.matchers'),

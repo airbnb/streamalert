@@ -3,7 +3,7 @@ This Terraform module creates the necessary IAM Permissions to coincide with the
 
 ## Components
 * IAM Role, Role Policy, and Policy Document to allow for function
-  * Invocation of StreamAlert Rule Processor
+  * Invocation of StreamAlert Classifier function
   * Getting the authentication and state parameters from SSM Parameter Store
   * Updating the state parameter in SSM Parameter Store
 
@@ -53,7 +53,7 @@ module "stream_alert_app" {
   </tr>
   <tr>
     <td>destination_function_name</td>
-    <td>The name of the Lambda function where App logs should be sent, typically the Rule Processor function</td>
+    <td>The name of the Lambda function where App logs should be sent, typically the Classifier function</td>
     <td>None</td>
     <td>True</td>
   </tr>

@@ -55,20 +55,22 @@ class MetricLogger(object):
     accessing properties and avoids doing dict lookups a ton.
     """
 
-    # Rule Processor metric names
+    # Classifier metric names
     FAILED_PARSES = 'FailedParses'
     S3_DOWNLOAD_TIME = 'S3DownloadTime'
     TOTAL_PROCESSED_SIZE = 'TotalProcessedSize'
     TOTAL_RECORDS = 'TotalRecords'
     TOTAL_S3_RECORDS = 'TotalS3Records'
     TOTAL_STREAM_ALERT_APP_RECORDS = 'TotalStreamAlertAppRecords'
-    TRIGGERED_ALERTS = 'TriggeredAlerts'
-    FAILED_DYNAMO_WRITES = 'FailedDynamoWrites'
     FIREHOSE_RECORDS_SENT = 'FirehoseRecordsSent'
     FIREHOSE_FAILED_RECORDS = 'FirehoseFailedRecords'
     SQS_FAILED_RECORDS = 'SQSFailedRecords'
     SQS_RECORDS_SENT = 'SQSRecordsSent'
     NORMALIZED_RECORDS = 'NormalizedRecords'
+
+    # Rules Engine metric names
+    TRIGGERED_ALERTS = 'TriggeredAlerts'
+    FAILED_DYNAMO_WRITES = 'FailedDynamoWrites'
 
     # Alert Merger metric names
     ALERT_ATTEMPTS = 'AlertAttempts'

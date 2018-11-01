@@ -1,11 +1,11 @@
-// IAM Role Policy: Allow the StreamAlert App function to invoke the Rule Processor
+// IAM Role Policy: Allow the StreamAlert App function to invoke the Classifier function
 resource "aws_iam_role_policy" "invoke_destination_function" {
   name   = "InvokeDestinationFunction"
   role   = "${var.function_role_id}"
   policy = "${data.aws_iam_policy_document.invoke_destination_function.json}"
 }
 
-// IAM Policy Doc: Allow the StreamAlert App function to invoke the Rule Processor
+// IAM Policy Doc: Allow the StreamAlert App function to invoke the Classifier function
 data "aws_iam_policy_document" "invoke_destination_function" {
   statement {
     effect = "Allow"

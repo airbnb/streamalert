@@ -8,7 +8,7 @@ resource "aws_lambda_permission" "allow_bucket" {
   qualifier     = "${var.lambda_function_alias}"
 }
 
-// S3 Bucket Notification: Invoke the StreamAlert Rule Processor
+// S3 Bucket Notification: Invoke the StreamAlert Classifier
 resource "aws_s3_bucket_notification" "bucket_notification" {
   count  = "${var.enable_events ? 1 : 0}"
   bucket = "${var.bucket_id}"

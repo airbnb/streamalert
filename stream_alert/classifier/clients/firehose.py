@@ -36,7 +36,7 @@ LOGGER = get_logger(__name__)
 
 
 class FirehoseClient(object):
-    """Handles preparing and sending data from the Rule Processor to Kinesis Firehose"""
+    """Handles preparing and sending data from the classifier function to Kinesis Firehose"""
     # Used to detect special characters in payload keys.
     # This is necessary for sanitization of data prior to searching in Athena.
     SPECIAL_CHAR_REGEX = re.compile(r'\W')
