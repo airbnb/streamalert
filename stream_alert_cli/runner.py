@@ -60,7 +60,7 @@ def cli_runner(args):
         'app': lambda opts: app_handler(opts, config),
         'athena': lambda opts: athena_handler(opts, config),
         'build': lambda opts: terraform_build_handler(opts, config),
-        'clean': lambda opts: terraform_clean_handler(config),
+        'clean': lambda opts: terraform_clean_handler(),
         'configure': lambda opts: configure_handler(opts, config),
         'create-alarm': lambda opts: _create_alarm_handler(opts, config),
         'create-cluster-alarm': lambda opts: _create_alarm_handler(opts, config),
