@@ -3,7 +3,7 @@ resource "aws_kms_key" "sqs_sse" {
   description         = "Classifier SQS server-side encryption"
   enable_key_rotation = true
 
-  policy = "${data.aws_iam_policy_document.kms_sse_allow_lambda.json}"
+  policy = "${data.aws_iam_policy_document.kms_sse_allow.json}"
 
   tags {
     Name = "StreamAlert"
