@@ -8,6 +8,7 @@
     },
     "stream_alert": {
       "classifier_config": {
+        "enable_custom_metrics": true,
         "inputs": {
           "aws-sns": []
         },

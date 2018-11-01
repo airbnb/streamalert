@@ -82,6 +82,7 @@
     "timeout": 120
   },
   "rules_engine_config": {
+    "enable_custom_metrics": true,
     "log_level": "info",
     "log_retention_days": 14,
     "memory": 128,
