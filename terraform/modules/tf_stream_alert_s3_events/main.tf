@@ -18,7 +18,7 @@ resource "aws_s3_bucket_notification" "bucket_notification" {
     filter_prefix       = "${var.filter_prefix}"
     filter_suffix       = "${var.filter_suffix}"
     id                  = "notify_${var.notification_id}"
-    lambda_function_arn = "${var.lambda_function_arn}:${var.lambda_function_alias}"
+    lambda_function_arn = "${var.lambda_function_alias_arn}"
   }
 }
 

@@ -37,6 +37,6 @@ resource "aws_lambda_event_source_mapping" "stream_alert_kinesis_production_even
   enabled           = "${var.lambda_production_enabled}"
   batch_size        = "${var.batch_size}"
   event_source_arn  = "${var.kinesis_stream_arn}"
-  function_name     = "${var.lambda_function_arn}:production"
+  function_name     = "${var.lambda_function_arn}"
   starting_position = "TRIM_HORIZON"
 }
