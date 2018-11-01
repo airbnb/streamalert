@@ -231,6 +231,8 @@ class RulesEngine(object):
         Returns:
             list: Alerts that have been triggered by this data
         """
+        LOGGER.info('Processing %d records', len(records))
+
         # Extract any threat intelligence matches from the records
         self._extract_threat_intel(records)
 
