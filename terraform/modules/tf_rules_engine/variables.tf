@@ -25,3 +25,7 @@ variable "rules_table_arn" {
 variable "classifier_sqs_queue_arn" {
   description = "ARN of the SQS queue to which classified logs should be sent"
 }
+
+variable "sqs_record_batch_size" {
+  description = "Number of records the Lambda function should read from the SQS queue each time (max=10)"
+}

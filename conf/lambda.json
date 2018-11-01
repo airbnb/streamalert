@@ -99,6 +99,7 @@
         "threshold": 0
       }
     },
+    "sqs_record_batch_size": 10,
     "third_party_libraries": [
       "pathlib2"
     ],
