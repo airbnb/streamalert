@@ -399,5 +399,5 @@ class CloudwatchLogOutput(AWSOutput):
             alert (Alert): Alert instance which triggered a rule
             descriptor (str): Output descriptor
         """
-        LOGGER.info('New Alert:\n%s', json.dumps(alert.output_dict(), indent=4))
+        LOGGER.info('New Alert:\n%s', json.dumps(alert.output_dict(), indent=2))
         return True

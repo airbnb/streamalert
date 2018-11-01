@@ -191,7 +191,7 @@ class TestSQSClient(object):
         self._client._finalize(response, batch)  # None, None to represent 2 records
 
         failure_mock.assert_called_with(1)
-        log_mock.assert_called_with('Successfully sent %d messages to SQS Queue: %s', 1, url)
+        log_mock.assert_called_with('Successfully sent %d message(s) to queue %s', 1, url)
 
     @patch('logging.Logger.info')
     def test_finalize_success(self, log_mock):
@@ -209,7 +209,7 @@ class TestSQSClient(object):
         SQSClient._queue.url = url
         self._client._finalize(response, batch)
 
-        log_mock.assert_called_with('Successfully sent %d messages to SQS Queue: %s', 1, url)
+        log_mock.assert_called_with('Successfully sent %d message(s) to queue %s', 1, url)
 
     def test_strip_successful_records(self):
         """SQSClient - Strip Successful Records"""
@@ -334,8 +334,8 @@ class TestSQSClient(object):
         SQSClient._queue.send_messages.side_effect = [
             {
                 'Successful': [
-                    {'Id': '0'},
-                    {'Id': '2'}
+                    {'Id': '0', 'MessageId': '34f89f00-1b9f-4a06-b4e7-f0dfa85ad547'},
+                    {'Id': '2', 'MessageId': '1b9f34f8-4a06-9f00-b4e7-f0dfa85ad547'}
                 ],
                 'Failed': [
                     {

@@ -131,6 +131,8 @@ class Classifier(object):
                 LOGGER.debug('Failed to classify data with schema: %s', log_type)
                 continue
 
+            LOGGER.debug('Log classified with schema: %s', log_type)
+
             # Set the parser on successful parse
             payload_record.parser = parser
 
