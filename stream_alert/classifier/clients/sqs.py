@@ -257,7 +257,7 @@ class SQSClient(object):
             Args:
                 entries (list<dict>): List of SQS SendMessageBatchRequestEntry items
             """
-            LOGGER.info('Sending %d messages to %s', len(entries), self.queue.url)
+            LOGGER.info('Sending %d message(s) to %s', len(entries), self.queue.url)
 
             response = self.queue.send_messages(Entries=entries)
 

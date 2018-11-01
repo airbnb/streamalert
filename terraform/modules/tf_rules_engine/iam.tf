@@ -78,3 +78,18 @@ resource "aws_iam_role_policy" "rules_engine_policy" {
   role   = "${var.function_role_id}"
   policy = "${data.aws_iam_policy_document.rules_engine_policy.json}"
 }
+
+// IAM Role Policy: Allow the Rules Engine to save alerts to dynamo.
+resource "aws_iam_role_policy" "save_alerts_to_dynamo" {
+  name   = "SaveAlertsToDynamo"
+  role   = "${var.function_role_id}"
+  policy = "${data.aws_iam_policy_document.save_alerts_to_dynamo.json}"
+}
+
+data "aws_iam_policy_document" "save_alerts_to_dynamo" {
+  statement {
+    effect    = "Allow"
+    actions   = ["dynamodb:BatchWriteItem"]
+    resources = ["arn:aws:dynamodb:${var.region}:${var.account_id}:table/${var.prefix}_streamalert_alerts"]
+  }
+}

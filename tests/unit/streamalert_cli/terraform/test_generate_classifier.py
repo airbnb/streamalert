@@ -95,6 +95,10 @@ class TestTerraformGenerateClassifier(object):
                     'function_alias_arn': '${module.classifier_test_lambda.function_alias_arn}',
                     'function_name': '${module.classifier_test_lambda.function_name}',
                     'classifier_sqs_queue_arn': '${module.globals.classifier_sqs_queue_arn}',
+                    'classifier_sqs_queue_url': '${module.globals.classifier_sqs_queue_url}',
+                    'classifier_sqs_sse_kms_key_arn': (
+                        '${module.globals.classifier_sqs_sse_kms_key_arn}'
+                    ),
                     'input_sns_topics': [
                         'arn:aws:sns:us-east-1:123456789012:foo_bar'
                     ]
@@ -103,6 +107,7 @@ class TestTerraformGenerateClassifier(object):
                     'alarm_actions': ['arn:aws:sns:us-east-1:123456789012:test_topic'],
                     'description': 'Unit-Test Streamalert Classifier Test',
                     'environment_variables': {
+                        'CLUSTER': 'test',
                         'SQS_QUEUE_URL': '${module.globals.classifier_sqs_queue_url}',
                         'LOGGER_LEVEL': 'info',
                         'ENABLE_METRICS': '0'
@@ -123,7 +128,10 @@ class TestTerraformGenerateClassifier(object):
                     'throttles_alarm_threshold': 0,
                     'timeout_sec': 60,
                     'vpc_security_group_ids': [],
-                    'vpc_subnet_ids': []
+                    'vpc_subnet_ids': [],
+                    'input_sns_topics': [
+                        'arn:aws:sns:us-east-1:123456789012:foo_bar'
+                    ]
                 }
             }
         }

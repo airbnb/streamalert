@@ -109,5 +109,6 @@ resource "aws_lambda_permission" "sns_inputs" {
   function_name = "${var.function_name}"
   principal     = "sns.amazonaws.com"
   source_arn    = "${element(var.input_sns_topics, count.index)}"
+  qualifier     = "production"
   depends_on    = ["aws_lambda_alias.alias_vpc", "aws_lambda_alias.alias_no_vpc"]
 }
