@@ -77,9 +77,9 @@ If any of the settings above are changed from the initialized defaults, the Lamb
 
 .. code-block:: bash
 
-  $ python manage.py lambda deploy --processor athena
+  $ python manage.py deploy --function athena
 
-Going forward, if the deploy flag ``--processor all`` is used, it will redeploy this function along with the ``rule`` function and ``alert`` function.
+Going forward, if the deploy flag ``--function all`` is used, it will redeploy this function along with the ``rule`` function and ``alert`` function.
 
 Monitoring
 ~~~~~~~~~~

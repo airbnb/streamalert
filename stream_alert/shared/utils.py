@@ -132,7 +132,7 @@ def get_keys(data, search_key, max_matches=-1):
                 # We need to exclude normalization information from the data, otherwise this
                 # helper may fetch info from normalization if there are keyname conflict.
                 # For example, Key name 'userName' is both existed as a normalized key defined
-                # in conf/types.json and cloudtrail record schemas.
+                # in conf/normalized_types.json and cloudtrail record schemas.
                 if key == NORMALIZATION_KEY:
                     continue
                 if val and isinstance(val, _CONTAINER_TYPES):

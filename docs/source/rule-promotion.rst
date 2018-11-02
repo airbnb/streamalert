@@ -72,7 +72,7 @@ function code.
 
 .. code-block:: bash
 
-  python manage.py lambda deploy -p rule_promo
+  python manage.py deploy --function rule_promo
 
 .. note::
 

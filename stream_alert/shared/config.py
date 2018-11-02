@@ -96,8 +96,7 @@ def load_config(conf_dir='conf/', exclude=None, include=None, validate=True):
                 'lambda': <lambda.json contents>,
                 'logs': <logs.json contents>,
                 'outputs': <outputs.json contents>,
-                'sources': <sources.json contents>,
-                'types': <types.json contents>,
+                'sources': <sources.json contents>
             }
     """
     default_files = {file for file in os.listdir(conf_dir) if file.endswith('.json')}
