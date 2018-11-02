@@ -85,25 +85,6 @@ Example Log:
                 "code_desc": "File /var/osquery/osquery.conf should be file",
                 "run_time": 0.001332,
                 "start_time": "2017-01-01 00:00:00 -0700"
-              },
-              {
-                "status": "passed",
-                "code_desc": "File /var/osquery/osquery.conf should be owned by \"root\"",
-                "run_time": 0.02764,
-                "start_time": "2017-01-01 00:00:00 -0700"
-              },
-              {
-                "status": "passed",
-                "code_desc": "File /var/osquery/osquery.conf should be grouped into \"wheel\"",
-                "run_time": 0.000425,
-                "start_time": "2017-01-01 00:00:00 -0700"
-              },
-              {
-                "status": "failed",
-                "code_desc": "File /var/osquery/osquery.conf mode should cmp == \"0400\"",
-                "run_time": 0.010417,
-                "start_time": "2017-01-01 00:00:00 -0700",
-                "message": "\nexpected: \"0400\"\n     got: \"0640\"\n\n(compared using `cmp` matcher)\n"
               }
             ]
           }

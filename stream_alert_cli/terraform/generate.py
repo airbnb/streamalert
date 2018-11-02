@@ -356,7 +356,7 @@ def terraform_generate_handler(config, init=False, check_tf=True, check_creds=Tr
 
     Keyword Args:
         config (dict): The loaded config from the 'conf/' directory
-        init (bool): Indicates if main.tf.json is generated for `terraform init`
+        init (bool): Indicates if main.tf.json is generated for `init`
 
     Returns:
         bool: Result of cluster generating

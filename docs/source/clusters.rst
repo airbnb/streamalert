@@ -22,8 +22,8 @@ Changes to cluster configuration can be applied with one of the following:
 
 .. code-block:: bash
 
-  ./manage.py terraform build  # Apply all changes
-  ./manage.py terraform build --target cloudtrail  # Apply changes to CloudTrail module only
+  ./manage.py build  # Apply all changes
+  ./manage.py build --target cloudtrail  # Apply changes to CloudTrail module only
 
 Configuration options are divided into different modules, each of which is discussed below.
 
@@ -475,11 +475,11 @@ Note: It can take several minutes to create the new shards.
 
 Then, update each respective cluster configuration file with the updated shard count.
 
-Finally, Run Terraform to ensure a consistent state.
+Finally, apply the Terraform changes to ensure a consistent state.
 
 .. code-block:: bash
 
-  $ python manage.py terraform build --target kinesis
+  $ python manage.py build --target kinesis
 
 
 .. _kinesis_events:

@@ -75,7 +75,7 @@ Table of Contents
 
    deployment
    rules
-   rule-testing
+   testing
    outputs
    metrics
    troubleshooting
