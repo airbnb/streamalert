@@ -59,7 +59,6 @@ class TestConfigLoading(fake_filesystem_unittest.TestCase):
         self.fs.create_file('conf/logs.json', contents='{}')
         self.fs.create_file('conf/outputs.json', contents='{}')
         self.fs.create_file('conf/sources.json', contents='{}')
-        self.fs.create_file('conf/types.json', contents='{}')
         self.fs.create_file(
             'conf/threat_intel.json',
             contents=json.dumps(config_data['threat_intel'])
@@ -83,49 +82,46 @@ class TestConfigLoading(fake_filesystem_unittest.TestCase):
     def test_load_all():
         """Shared - Config Loading - All"""
         config = load_config()
-        expected_keys = [
+        expected_keys = {
             'clusters',
             'global',
             'lambda',
             'logs',
             'outputs',
             'sources',
-            'types',
             'threat_intel',
             'normalized_types'
-        ]
-        assert_equal(sorted(config.keys()), sorted(expected_keys))
+        }
+        assert_equal(set(config), expected_keys)
 
     @staticmethod
     def test_load_exclude():
         """Shared - Config Loading - Exclude"""
         config = load_config(exclude={'global.json', 'logs.json'})
-        expected_keys = [
+        expected_keys = {
             'clusters',
             'lambda',
             'outputs',
             'sources',
-            'types',
             'threat_intel',
             'normalized_types'
-        ]
-        assert_equal(sorted(config.keys()), sorted(expected_keys))
+        }
+        assert_equal(set(config), expected_keys)
 
     @staticmethod
     def test_load_exclude_clusters():
         """Shared - Config Loading - Exclude Clusters"""
         config = load_config(exclude={'clusters'})
-        expected_keys = [
+        expected_keys = {
             'global',
             'lambda',
             'logs',
             'outputs',
             'sources',
-            'types',
             'threat_intel',
             'normalized_types'
-        ]
-        assert_equal(sorted(config.keys()), sorted(expected_keys))
+        }
+        assert_equal(set(config), expected_keys)
 
     @staticmethod
     def test_load_include():
