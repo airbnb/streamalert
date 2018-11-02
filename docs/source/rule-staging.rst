@@ -107,7 +107,7 @@ staged during a deploy. To allow for this, the Rule Processor can be deployed wi
 
 .. code-block:: bash
 
-  python manage.py lambda deploy -p rule --skip-rule-staging
+  python manage.py deploy --function rule --skip-rule-staging
 
 This will force all new rules to send to user-defined outputs immediately upon deploy, bypassing
 the default staging period. Alternatively, the ``--stage-rules`` and ``--unstage-rules`` flags

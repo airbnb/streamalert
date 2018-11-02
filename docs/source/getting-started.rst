@@ -97,11 +97,11 @@ Deploy
 
 .. code-block:: bash
 
-  ./manage.py terraform init
+  ./manage.py init
 
 There will be multiple Terraform prompts, type "yes" at each one to continue.
 
-.. note:: You only need to ``./manage.py terraform init`` once for any given StreamAlert deployment,
+.. note:: You only need to ``./manage.py init`` once for any given StreamAlert deployment,
    although it is safe to run again if necessary.
 
 3. At this point, StreamAlert is up and running! You can, for example, see the S3 buckets
@@ -183,7 +183,7 @@ Open ``conf/sources.json`` and change the ``sns`` section to look like this:
 
 .. code-block:: bash
 
-  $ ./manage.py output new --service aws-sns
+  $ ./manage.py output aws-sns
 
   Please supply a short and unique descriptor for this SNS topic: test-email
 
@@ -209,12 +209,12 @@ alerts on any usage of the root AWS account. Change the rule decorator to:
 .. code-block:: bash
 
   # Hook the streamalert-test-data SNS topic up to the StreamAlert rule processor
-  ./manage.py terraform build
+  ./manage.py build
 
   # Deploy a new version of all of the Lambda functions with the updated rule and config files
-  ./manage.py lambda deploy -p all
+  ./manage.py deploy --function all
 
-.. note:: Use ``terraform build`` and ``lambda deploy`` to apply any changes to StreamAlert's
+.. note:: Use ``build`` and ``deploy`` to apply any changes to StreamAlert's
    configuration or Lambda functions, respectively. Some changes (like this example) require both.
 
 9. Time to test! Create a file named ``cloudtrail-root.json`` with the following contents:

@@ -156,5 +156,5 @@ Once the options above are set, deploy the infrastructure with the following com
 
 .. code-block:: bash
 
-  $ python manage.py terraform build
-  $ python manage.py lambda deploy --processor rule
+  $ python manage.py build
+  $ python manage.py deploy --function classifier

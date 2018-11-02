@@ -290,4 +290,4 @@ This allows you to keep the rule definition and tests in place instead of having
 Testing
 -------
 
-For instructions on how to create and run tests to validate rules, see `Rule Testing <rule-testing.html>`_.
+For instructions on how to create and run tests to validate rules, see `Testing <testing.html>`_.

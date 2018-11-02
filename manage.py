@@ -439,7 +439,7 @@ def _add_default_metric_alarms_args(alarm_parser, clustered=False):
         help=(
             'One of the following predefined metrics to assign this alarm to for a '
             'given function: {}'
-        ).format(', '.join(all_metrics)),
+        ).format(', '.join(sorted(all_metrics))),
         required=True
     )
 
@@ -576,8 +576,7 @@ def _setup_cluster_metric_alarm_subparser(subparser):
 
             Example:
 
-                manage.py create-cluster-alarm \\
-                  FailedParsesAlarm
+                manage.py create-cluster-alarm FailedParsesAlarm \\
                   --metric FailedParses \\
                   --comparison-operator GreaterThanOrEqualToThreshold \\
                   --evaluation-periods 1 \\
@@ -618,8 +617,7 @@ def _setup_metric_alarm_subparser(subparser):
 
             Example:
 
-                manage.py create-alarm \\
-                  FailedParsesAlarm
+                manage.py create-alarm FailedParsesAlarm \\
                   --metric FailedParses \\
                   --comparison-operator GreaterThanOrEqualToThreshold \\
                   --evaluation-periods 1 \\

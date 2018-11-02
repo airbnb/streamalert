@@ -48,17 +48,35 @@ metric across the entire StreamAlert deployment.
 
 Custom metrics are logged to a unique `StreamAlert` namespace within CloudWatch Logs. Navigate to AWS Console -> CloudWatch -> Metrics -> StreamAlert to view these metrics.
 
-Current Custom Metrics (found within ``stream_alert/shared/metrics.py``):
+Custom metrics definitions are found within ``stream_alert/shared/metrics.py``.
+
+Classifier Custom Metrics
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - FailedParses
+- FirehoseFailedRecords
+- FirehoseRecordsSent
+- NormalizedRecords
 - S3DownloadTime
+- SQSFailedRecords
+- SQSRecordsSent
 - TotalProcessedSize
 - TotalRecords
 - TotalS3Records
 - TotalStreamAlertAppRecords
 - TriggeredAlerts
-- FirehoseRecordsSent
-- FirehoseFailedRecords
+
+
+Rules Engine Custom Metrics
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- FailedDynamoWrites
+- TriggeredAlerts
+
+Alert Merger Custom Metrics
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- AlertAttempts
 
 
 Toggling Custom Metrics
@@ -66,49 +84,56 @@ Toggling Custom Metrics
 
 Logging of custom metrics will be enabled by default for the Lambda functions that support this feature.
 
-To globally (for all clusters) disable custom metrics for the Rule Processor:
+To globally (for all clusters) disable custom metrics for the classifier function:
 
 .. code-block:: bash
 
-  $ python manage.py metrics --disable --functions rule
+  $ python manage.py custom-metrics --disable --functions classifier
 
 
-To disable custom metrics for the Rule Processor within specific cluster:
+To disable custom metrics for the classifier function within specific cluster:
 
 .. code-block:: bash
 
-  $ python manage.py metrics --disable --functions rule --clusters <CLUSTER>
+  $ python manage.py custom-metrics --disable --functions classifier --clusters <CLUSTER>
 
 
 Swap the ``--disable`` flag for ``--enable`` in the above commands to have the inverse affect.
 
 
-
 Alarms for Custom Metrics
 -------------------------
 
-With the addition of custom metrics comes the added bonus of CloudWatch alarms for custom metrics. StreamAlert's CLI can be used to add alarms on custom metrics as you see fit.
+With the addition of custom metrics comes the added bonus of CloudWatch alarms for custom metrics.
+StreamAlert's CLI can be used to add alarms on custom metrics as you see fit. Custom metric alarms
+can be applied to both **aggregate** metrics (across all clusters), or one or more **cluster**.
 
-To get an up-to-date list of metrics alarms can be assign to, run:
+To get an up-to-date list of metrics to which alarms can be assigned on a cluster basis, run:
+
+.. code-block:: bash
+
+  $ python manage.py create-cluster-alarm --help
+
+To get an up-to-date list of metrics to which alarms can be assigned on an aggregate/global level, run:
 
 .. code-block:: bash
 
   $ python manage.py create-alarm --help
 
 
-The required arguments for the ``create-alarm`` subcommand mimic what is required by AWS CloudWatch's `PutMetricAlarm API <http://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_PutMetricAlarm.html>`_.
+The required arguments for the ``create-alarm`` and ``create-cluster-alarm`` commands mimic what is
+required by AWS CloudWatch's `PutMetricAlarm API <http://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_PutMetricAlarm.html>`_.
 
 
-Example Alarm (FailedParses)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Example: FailedParses Alarm at the ``prod`` Cluster Level
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: bash
 
-  $ manage.py create-alarm \
+  $ manage.py create-cluster-alarm FailedParsesAlarm \
   --metric FailedParses \
   --metric-target cluster \
   --comparison-operator GreaterThanOrEqualToThreshold \
-  --alarm-name FailedParsesAlarm \
   --evaluation-periods 1 \
   --period 600 \
   --threshold 5.0 \
@@ -117,16 +142,15 @@ Example Alarm (FailedParses)
   --statistic Sum
 
 
-Example Alarm (TotalRecords)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Example: TotalRecords Alarm on a Global Level
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: bash
 
-  $ manage.py create-alarm \
+  $ manage.py create-alarm MinimumTotalRecordsAlarm \
   --metric TotalRecords \
   --metric-target aggregate \
   --comparison-operator LessThanThreshold \
-  --alarm-name MinimumTotalRecordsAlarm \
   --evaluation-periods 3 \
   --period 600 \
   --threshold 200000 \
