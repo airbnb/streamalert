@@ -121,7 +121,7 @@ Options
 Key                      Required  Default               Description
 ----------------------   --------  --------------------  -----------
 ``enabled``              ``Yes``   ``None``              If set to ``false``, will not create a Kinesis Firehose
-``enabled_logs``         ``Yes``   ``[]``                The set of classified logs to send to Kinesis Firehose from the Rule Processor
+``enabled_logs``         ``Yes``   ``[]``                The set of classified logs to send to Kinesis Firehose from the Classifier function
 ``s3_bucket_suffix``     ``No``    ``streamalert.data``  The suffix of the S3 bucket used for Kinesis Firehose data. The naming scheme is: ``prefix.suffix``
 ``buffer_size``          ``No``    ``64 (MB)``           The amount of buffered incoming data before delivering it to Amazon S3
 ``buffer_interval``      ``No``    ``300 (seconds)``     The frequency of data delivery to Amazon S3
