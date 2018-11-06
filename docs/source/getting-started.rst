@@ -150,7 +150,7 @@ Open ``conf/clusters/prod.json`` and change the ``stream_alert`` module to look 
 
   {
     "stream_alert": {
-      "rule_processor": {
+      "classifier_config": {
         "enable_custom_metrics": true,
         "inputs": {
           "aws-sns": [
@@ -158,8 +158,9 @@ Open ``conf/clusters/prod.json`` and change the ``stream_alert`` module to look 
           ]
         },
         "log_level": "info",
+        "log_retention_days": 14,
         "memory": 128,
-        "timeout": 10
+        "timeout": 60
       }
     }
   }
@@ -208,7 +209,7 @@ alerts on any usage of the root AWS account. Change the rule decorator to:
 
 .. code-block:: bash
 
-  # Hook the streamalert-test-data SNS topic up to the StreamAlert rule processor
+  # Hook the streamalert-test-data SNS topic up to the StreamAlert Classifier function
   ./manage.py build
 
   # Deploy a new version of all of the Lambda functions with the updated rule and config files

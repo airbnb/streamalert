@@ -31,6 +31,7 @@ from stream_alert_cli.terraform.handlers import (
     terraform_clean_handler,
     terraform_destroy_handler,
     terraform_init,
+    terraform_list_targets
 )
 from stream_alert_cli.test.handler import test_handler
 from stream_alert_cli.threat_intel_downloader.handler import threat_intel_downloader_handler
@@ -70,6 +71,7 @@ def cli_runner(args):
         'generate': lambda opts: terraform_generate_handler(config),
         'init': lambda opts: terraform_init(opts, config),
         'kinesis': lambda opts: kinesis_handler(opts, config),
+        'list-targets': lambda opts: terraform_list_targets(config),
         'output': lambda opts: output_handler(opts, config),
         'rollback': lambda opts: rollback_handler(opts, config),
         'rule-staging': lambda opts: rule_staging_handler(opts, config),

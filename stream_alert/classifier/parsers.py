@@ -254,11 +254,13 @@ class ParserBase:
             return False
 
         if not is_envelope and keys != schema_keys:
-            LOGGER.debug(
-                'Missing required keys in record: %s vs %s',
-                schema_keys - keys,
-                keys - schema_keys,
-            )
+            expected = schema_keys - keys
+            if expected:
+                LOGGER.debug('Expected keys not found in record: %s', ', '.join(sorted(expected)))
+
+            found = keys - schema_keys
+            if found:
+                LOGGER.debug('Found keys not expected in record: %s', ', '.join(sorted(found)))
             return False
 
         # Nested key check
