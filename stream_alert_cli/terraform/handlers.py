@@ -14,6 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from __future__ import print_function
+from fnmatch import fnmatch
+import json
 import os
 import shutil
 
@@ -117,26 +119,11 @@ def terraform_build_handler(options, config):
     if not terraform_generate_handler(config=config):
         return False
 
-    # Define the set of custom targets to apply
-    tf_runner_targets = set()
-    # If resource are not clustered, it is most likely required to
-    # fall in the custom mapping below:
-    custom_module_mapping = {
-        'athena': 'module.stream_alert_athena',
-        'threat_intel_downloader': 'module.threat_intel_downloader'
-    }
-    clusters = set(options.clusters or config.clusters())
+    target_modules, valid = _get_valid_tf_targets(config, options.target)
+    if not valid:
+        return False
 
-    if options.target:
-        tf_runner_targets.update({
-            'module.{}_{}'.format(target, cluster)
-            for cluster in clusters for target in options.target
-        })
-        for name in custom_module_mapping:
-            if name in options.target:
-                tf_runner_targets.add(custom_module_mapping[name])
-
-    return tf_runner(targets=tf_runner_targets)
+    return tf_runner(targets=target_modules if target_modules else None)
 
 
 def terraform_destroy_handler(options, config):
@@ -162,20 +149,15 @@ def terraform_destroy_handler(options, config):
         return False
 
     if options.target:
-        targets = []
-        # Iterate over any targets to destroy. Global modules, like athena
-        # are prefixed with `stream_alert_` while cluster based modules
-        # are a combination of the target and cluster name
-        for target in options.target:
-            if target == 'athena':
-                targets.append('module.stream_alert_{}'.format(target))
-            elif target == 'threat_intel_downloader':
-                targets.append('module.threat_intel_downloader')
-            else:
-                targets.extend(
-                    ['module.{}_{}'.format(target, cluster) for cluster in config.clusters()])
+        target_modules, valid = _get_valid_tf_targets(config, options.target)
+        if not valid:
+            return False
 
-        return tf_runner(action='destroy', auto_approve=True, targets=targets)
+        return tf_runner(
+            action='destroy',
+            auto_approve=True,
+            targets=target_modules if target_modules else None
+        )
 
     # Migrate back to local state so Terraform can successfully
     # destroy the S3 bucket used by the backend.
@@ -224,5 +206,86 @@ def terraform_clean_handler():
     # Finally, delete the Terraform directory
     if os.path.isdir('terraform/.terraform/'):
         shutil.rmtree('terraform/.terraform/')
+
+    return True
+
+
+def _get_valid_tf_targets(config, targets):
+    all_matches = set()
+    if not targets:
+        return all_matches, True  # Empty targets is acceptable
+
+    modules = get_tf_modules(config)
+    if not modules:
+        return all_matches, False
+
+    for target in targets:
+        matches = {
+            '{}.{}'.format(value_type, value)
+            for value_type, values in modules.iteritems()
+            for value in values
+            if fnmatch(value, target)
+        }
+        if not matches:
+            LOGGER.error('Invalid terraform target supplied: %s', target)
+            continue
+        all_matches.update(matches)
+
+    if not all_matches:
+        LOGGER.error(
+            'No terraform targets found matching supplied target(s): %s',
+            ', '.join(sorted(targets))
+        )
+        return all_matches, False
+
+    return all_matches, True
+
+
+def get_tf_modules(config, generate=False):
+    if generate:
+        if not terraform_generate_handler(config=config):
+            return False
+
+    modules = set()
+    resources = set()
+    for root, _, files in os.walk('terraform'):
+        for file_name in files:
+            path = os.path.join(root, file_name)
+            if path.endswith('.tf.json'):
+                with open(path, 'r') as tf_file:
+                    tf_data = json.load(tf_file)
+                    modules.update(set((tf_data['module'])))
+                    resources.update(
+                        '{}.{}'.format(resource, value)
+                        for resource, values in tf_data.get('resource', {}).iteritems()
+                        for value in values
+                    )
+
+    return {'module': modules, 'resource': resources}
+
+
+def terraform_list_targets(config):
+    """Print the available terraform targets
+
+    Args:
+        config (CLIConfig): Loaded StreamAlert config
+
+    Returns:
+        bool: False if errors occurred, True otherwise
+    """
+    modules = get_tf_modules(config, True)
+    if not modules:
+        return False
+
+    max_resource_len = max(len(value) for values in modules.itervalues() for value in values) + 8
+
+    row_format_str = '{prefix:<{pad}}{value}'
+
+    header = row_format_str.format(prefix='Target', pad=max_resource_len, value='Type')
+    print(header)
+    print('-' * (len(header) + 4))
+    for value_type in sorted(modules):
+        for item in sorted(modules[value_type]):
+            print(row_format_str.format(prefix=item, pad=max_resource_len, value=value_type))
 
     return True

@@ -10,7 +10,7 @@ rules can be staged. After the initial staging period, wherein a noisy rule is t
 extra noise or false positives, staged rules can be promoted.
 
 When Rule Staging is enabled, new rules will, by default, be *staged* upon a deploy of the
-Rule Processor Lambda function.
+Rules Engine Lambda function.
 See the `Skip Staging During Deploy`_ section
 for more information.
 
@@ -49,7 +49,7 @@ A few configuration options are available to customize the feature to your needs
 ===========================  =======  ===========
 Key                          Default  Description
 ---------------------------  -------  -----------
-``cache_refresh_minutes``    ``10``   Maximum amount of time (in minutes) the Rule Processor
+``cache_refresh_minutes``    ``10``   Maximum amount of time (in minutes) the Rules Engine function
                                       should wait to force refresh the rule staging information.
 ``table.read_capacity``      ``20``   DynamoDB read capacity to allocate to the table that stores staging
                                       information. The default setting should be sufficient in most use cases.
@@ -101,9 +101,9 @@ with the following command:
 Skip Staging During Deploy
 ++++++++++++++++++++++++++
 
-As noted above, all new rules will be *staged* by default during a Rule Processor deploy when the
+As noted above, all new rules will be *staged* by default during a Rules Engine deploy when the
 Rule Staging feature is enabled. There may, however, be occasions when all new rules should not be
-staged during a deploy. To allow for this, the Rule Processor can be deployed with the following command:
+staged during a deploy. To allow for this, the Rules Engine can be deployed with the following command:
 
 .. code-block:: bash
 

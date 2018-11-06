@@ -174,7 +174,7 @@ def generate_cluster_cloudwatch_metric_alarms(cluster_name, cluster_dict, config
 
     stream_alert_config = config['clusters'][cluster_name]['modules']['stream_alert']
 
-    # Add cluster metric alarms for the rule and alert processors
+    # Add cluster metric alarms for the clustered function(s). ie: classifier
     metric_alarms = [
         metric_alarm
         for func in CLUSTERED_FUNCTIONS

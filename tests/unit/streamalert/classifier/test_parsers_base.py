@@ -266,8 +266,7 @@ class TestParserBaseClassMethods(object):
             'not_key': 'test'
         }
         assert_equal(ParserBase._key_check(record, schema), False)
-        log_mock.assert_called_with(
-            'Missing required keys in record: %s vs %s', {'key'}, {'not_key'})
+        log_mock.assert_called_with('Found keys not expected in record: %s', 'not_key')
 
     def test_key_check_nested(self):
         """ParserBase - Key Check, Nested"""
@@ -301,8 +300,7 @@ class TestParserBaseClassMethods(object):
             }
         }
         assert_equal(ParserBase._key_check(record, schema), False)
-        log_mock.assert_any_call(
-            'Missing required keys in record: %s vs %s', {'key_02'}, {'key_01'})
+        log_mock.assert_any_call('Expected keys not found in record: %s', 'key_02')
 
     def test_key_check_nested_loose(self):
         """ParserBase - Key Check, Loose Nested Schema"""

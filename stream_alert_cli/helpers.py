@@ -74,7 +74,7 @@ def run_command(runner_args, **kwargs):
     return True
 
 
-def continue_prompt(message=''):
+def continue_prompt(message=None):
     """Continue prompt to verify that a user wants to continue or not.
 
     This prompt's purpose is to prevent accidental changes

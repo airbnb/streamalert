@@ -43,11 +43,6 @@ CLUSTERS = [
     for cluster in files
 ]
 
-TF_MODULE_TARGETS = sorted([
-    'athena', 'cloudwatch_monitoring', 'cloudtrail', 'flow_logs', 'kinesis',
-    'kinesis_events', 'stream_alert', 's3_events', 'threat_intel_downloader'
-])
-
 
 class UniqueSetAction(Action):
     """Subclass of argparse.Action to avoid multiple of the same choice from a list"""
@@ -863,10 +858,12 @@ def _add_default_tf_args(tf_parser):
         '-t',
         '--target',
         metavar='TARGET',
-        choices=TF_MODULE_TARGETS,
         help=(
-            'One or more of the following terraform module names to target: {}'
-        ).format(', '.join(TF_MODULE_TARGETS)),
+            'One or more Terraform module name to target. Use `list-targets` for a list '
+            'of available targets'
+        ),
+        action=UniqueSetAction,
+        default=set(),
         nargs='+'
     )
 
@@ -882,7 +879,7 @@ def _setup_build_subparser(subparser):
             '''\
             Example:
 
-                manage.py build --target kinesis_events
+                manage.py build --target alert_processor_lambda
             '''
         )
     )
@@ -898,7 +895,7 @@ def _setup_destroy_subparser(subparser):
             '''\
             Example:
 
-                manage.py destroy --target s3_events
+                manage.py destroy --target aws_s3_bucket.streamalerts
             '''
         )
     )
@@ -1391,6 +1388,10 @@ def build_parser():
         'kinesis': (
             _setup_kinesis_subparser,
             'Update AWS Kinesis settings and run Terraform to apply changes'
+        ),
+        'list-targets': (
+            None,
+            'List available Terraform modules to be used for targeted builds'
         ),
         'output': (
             _setup_output_subparser,
