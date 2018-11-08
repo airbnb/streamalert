@@ -70,6 +70,7 @@ class TestRunner(object):
         self._rules = options.rules
         self._files_dir = os.path.join(options.files_dir, '')  # ensure theres a trailing slash
         self._verbose = options.verbose
+        self._quiet = options.quiet
         self._s3_mocker = patch('stream_alert.classifier.payload.s3.boto3.resource').start()
         self._errors = defaultdict(list)  # cache errors to be logged at the endpoint
         self._tested_rules = set()
@@ -216,8 +217,10 @@ class TestRunner(object):
             self._passed += test_event.passed
             self._failed += test_event.failed
 
-            # It is possible for a test_event to have no results, so only print it if it does
-            if test_event:
+            # It is possible for a test_event to have no results,
+            # so only print it if it does and if quiet mode is no being used
+            # Quite mode is overridden if not all of the events passed
+            if test_event and not (self._quiet and test_event.all_passed):
                 print(test_event)
 
         self._finalize()

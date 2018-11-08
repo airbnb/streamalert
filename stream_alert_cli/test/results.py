@@ -34,6 +34,10 @@ class TestEventFile(object):
     __bool__ = __nonzero__
 
     @property
+    def all_passed(self):
+        return self.passed == len(self._results)
+
+    @property
     def passed(self):
         return sum(1 for result in self._results if result.passed)
 
