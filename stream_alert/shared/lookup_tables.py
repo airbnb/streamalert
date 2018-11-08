@@ -39,8 +39,8 @@ class LookupTables(object):
     _tables = {}
 
     @classmethod
-    def tables(cls):
-        return LookupTables._tables
+    def table(cls, name):
+        return LookupTables._tables.get(name, {})
 
     @classmethod
     def _download_s3_objects(cls, buckets_info):

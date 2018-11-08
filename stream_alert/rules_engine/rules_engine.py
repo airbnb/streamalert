@@ -86,7 +86,7 @@ class RulesEngine(object):
         Returns:
             dict: A dictionary contains lookup table information.
         """
-        return cls._lookup_tables.tables().get(table_name) if cls._lookup_tables else None
+        return cls._lookup_tables.table(table_name) if cls._lookup_tables else dict()
 
     @classmethod
     def _load_rule_table(cls, config):
