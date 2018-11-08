@@ -61,12 +61,11 @@ class TestLookupTables(object):
     def test_download_s3_object(self):
         """LookupTables - Download S3 Object"""
         LookupTables._download_s3_objects(self.buckets_info)
-        result = LookupTables.tables()
         expected_result = {
             'foo': {'bucket_name_key': 'foo_value'},
             'bar': {'bucket_name_key': 'bar_value'}
         }
-        assert_equal(result, expected_result)
+        assert_equal(LookupTables._tables, expected_result)
 
     @patch('logging.Logger.debug')
     def test_download_s3_object_compressed(self, mock_logger):
@@ -83,9 +82,8 @@ class TestLookupTables(object):
         }
 
         LookupTables._download_s3_objects(self.buckets_info)
-        result = LookupTables.tables()
 
-        assert_equal(result, expected_result)
+        assert_equal(LookupTables._tables, expected_result)
         mock_logger.assert_any_call('Data in \'%s\' is not compressed', 'foo.json')
 
     @patch('logging.Logger.error')
@@ -108,8 +106,7 @@ class TestLookupTables(object):
         )
         self.buckets_info['bucket_name'].pop()
         LookupTables._download_s3_objects(self.buckets_info)
-        result = LookupTables.tables()
-        assert_equal(result, {})
+        assert_equal(LookupTables._tables, {})
         mock_logger.assert_called_with('Reading %s from S3 is timed out.', 'foo.json')
 
     def test_load_lookup_tables_missing_config(self):

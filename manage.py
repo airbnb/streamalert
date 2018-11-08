@@ -805,12 +805,21 @@ def _add_default_test_args(test_parser):
         default=DEFAULT_TEST_FILES_DIRECTORY
     )
 
-    # add the optional ability to change the test files directory
-    test_parser.add_argument(
+    # Add the optional ability to log verbosely or use quite logging for tests
+    verbose_group = test_parser.add_mutually_exclusive_group(required=False)
+
+    verbose_group.add_argument(
         '-v',
         '--verbose',
         action='store_true',
         help='Output additional information during testing'
+    )
+
+    verbose_group.add_argument(
+        '-q',
+        '--quiet',
+        action='store_true',
+        help='Suppress output for passing tests, only logging if there is a failure'
     )
 
 
