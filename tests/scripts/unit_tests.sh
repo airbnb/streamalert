@@ -1,4 +1,6 @@
 #!/bin/bash
+AWS_ACCESS_KEY_ID=test_key \
+AWS_SECRET_ACCESS_KEY=test_secret \
 nosetests tests/unit \
 --with-coverage \
 --cover-package=stream_alert \
