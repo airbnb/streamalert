@@ -20,8 +20,7 @@ import re
 import backoff
 import boto3
 from botocore import client
-from botocore.exceptions import ClientError
-from botocore.vendored.requests.exceptions import ConnectionError, Timeout
+from botocore.exceptions import ClientError, ConnectionError, ReadTimeoutError, ConnectTimeoutError
 
 from stream_alert.rule_processor import FUNCTION_NAME
 from stream_alert.shared.logger import get_logger
@@ -174,7 +173,8 @@ class FirehoseClient(object):
             stream_name (str): The name of the Delivery Stream to send to
             record_batch (list): The records to send
         """
-        exceptions_to_backoff = (ClientError, ConnectionError, Timeout)
+        exceptions_to_backoff = (ClientError, ConnectionError,
+                                 ReadTimeoutError, ConnectTimeoutError)
 
         @backoff.on_predicate(backoff.fibo,
                               lambda resp: resp['FailedPutCount'] > 0,
