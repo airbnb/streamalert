@@ -92,8 +92,7 @@ class TestRunner(object):
     @staticmethod
     def _run_classification(record):
         """Create a fresh classifier and classify the record, returning the result"""
-        with patch.object(classifier, 'SQSClient'), patch.object(classifier, 'FirehoseClient'), \
-             patch('stream_alert.classifier.payload.s3.S3Payload._shred_temp_directory'):
+        with patch.object(classifier, 'SQSClient'), patch.object(classifier, 'FirehoseClient'):
             _classifier = classifier.Classifier()
             return _classifier.run(records=[record])
 

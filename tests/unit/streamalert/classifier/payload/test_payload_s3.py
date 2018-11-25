@@ -163,19 +163,17 @@ class TestS3Payload(object):
             Body=value
         )
 
-        with patch.object(S3Payload, '_shred_temp_directory'):
-            payload = S3Payload(None, self._record)
-            read_lines = list(payload._read_file())
-            assert_equal(read_lines, [(1, value)])
+        payload = S3Payload(None, self._record)
+        read_lines = list(payload._read_file())
+        assert_equal(read_lines, [(1, value)])
 
     @mock_s3
     @patch('logging.Logger.exception')
     def test_read_file_error(self, log_mock):
         """S3Payload - Read File, Exception"""
         boto3.resource('s3').Bucket(self._bucket).create()
-        with patch.object(S3Payload, '_shred_temp_directory'):
-            list(S3Payload(None, self._record)._read_file())
-            log_mock.assert_called_with('Failed to download object from S3')
+        list(S3Payload(None, self._record)._read_file())
+        log_mock.assert_called_with('Failed to download object from S3')
 
     def test_pre_parse(self):
         """S3Payload - Pre Parse"""
@@ -197,8 +195,8 @@ class TestS3Payload(object):
             assert_equal(result, expected_result)
 
 
-class TestShredTemp(fake_filesystem_unittest.TestCase):
-    """Test shredding of the tmp directory"""
+class TestCleanup(fake_filesystem_unittest.TestCase):
+    """Test cleanup, including shredding of the tmp directory"""
     # pylint: disable=protected-access
 
     def setUp(self):
@@ -213,10 +211,12 @@ class TestShredTemp(fake_filesystem_unittest.TestCase):
 
     @patch('os.rmdir')
     @patch('subprocess.check_call')
-    def test_remove_files(self, subproc_mock, os_mock):
-        """S3Payload - Shred Temp Directory"""
-        S3Payload._shred_temp_directory()
-        subproc_mock.assert_called_with(['shred', '--force', '--iterations=1', '--remove',
-                                         self.temp_file])
+    def test_cleanup(self, subproc_mock, os_mock):
+        """S3Payload - Cleanup"""
+        with patch.dict(os.environ, {'LAMBDA_RUNTIME_DIR': '/var/runtime'}):
+            S3Payload._cleanup()
+            subproc_mock.assert_called_with(
+                ['shred', '--force', '--iterations=1', '--remove', self.temp_file]
+            )
 
         os_mock.assert_called_with(self.temp_dir)

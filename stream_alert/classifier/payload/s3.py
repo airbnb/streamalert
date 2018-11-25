@@ -93,8 +93,12 @@ class S3Payload(StreamPayload):
                                  'from S3: {}'.format(self.bucket, self.key, self.display_size))
 
     @staticmethod
-    def _shred_temp_directory():
-        """Delete all objects in the container's temp directory"""
+    def _cleanup():
+        """Cleanup method to remove all objects in the Lambda container's temp directory"""
+        # Do nothing if this is not running in AWS Lambda
+        if 'LAMBDA_RUNTIME_DIR' not in os.environ:
+            return
+
         LOGGER.debug('Shredding temp directory')
 
         for root, dirs, files in os.walk(tempfile.gettempdir(), topdown=False):
@@ -164,8 +168,6 @@ class S3Payload(StreamPayload):
         Yields:
             tuple: line number, contents of the line being read
         """
-        # Shred the temp dir before downloading
-        self._shred_temp_directory()
         bucket = self._unquote(self.bucket)
         key = self._unquote(self.key)
 

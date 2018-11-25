@@ -290,6 +290,10 @@ class StreamPayload(object):
             Instances of PayloadRecord back to the caller containing the current log data
         """
 
+    @staticmethod
+    def _cleanup():
+        """Cleanup method to be implemented if any post-parsing operations should be performed"""
+
     def pre_parse(self):
         """Public pre-parsing method that wraps the subclass _pre_parse method
 
@@ -302,3 +306,5 @@ class StreamPayload(object):
             payload.service = self.service()
             payload.resource = self.resource
             yield payload
+
+        self._cleanup()
