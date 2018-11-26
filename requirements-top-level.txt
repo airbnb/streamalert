@@ -4,7 +4,7 @@ autoflake
 autopep8
 backoff
 bandit
-boto3<1.8,>=1.6.16  # to be compatible with moto
+boto3
 boxsdk[jwt]==2.0.0a11
 cbapi
 coverage
