@@ -18,7 +18,7 @@ import json
 import os
 import zlib
 
-from botocore.vendored.requests.packages.urllib3.exceptions import ReadTimeoutError
+from botocore.exceptions import ReadTimeoutError
 
 from mock import patch
 from moto import mock_s3
@@ -98,16 +98,16 @@ class TestLookupTables(object):
         )
 
     @patch('botocore.response.StreamingBody.read')
-    @patch('logging.Logger.error')
+    @patch('logging.Logger.exception')
     def test_download_s3_object_bucket_timeout(self, mock_logger, mock_s3_conn):
         """LookupTables - Download S3 Object, ReadTimeoutError"""
         mock_s3_conn.side_effect = ReadTimeoutError(
-            'TestPool', 'Test url', 'Test Read timed out.'
+            'TestPool', 'Test Read timed out.', endpoint_url='test/url'
         )
         self.buckets_info['bucket_name'].pop()
         LookupTables._download_s3_objects(self.buckets_info)
         assert_equal(LookupTables._tables, {})
-        mock_logger.assert_called_with('Reading %s from S3 is timed out.', 'foo.json')
+        mock_logger.assert_called_with('Reading %s from S3 timed out', 'foo.json')
 
     def test_load_lookup_tables_missing_config(self):
         """LookupTables - Load Lookup Tables, Missing Config"""

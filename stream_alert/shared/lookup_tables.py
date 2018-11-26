@@ -20,9 +20,7 @@ import time
 import zlib
 
 import boto3
-from botocore.exceptions import ClientError
-from botocore.vendored.requests.exceptions import Timeout
-from botocore.vendored.requests.packages.urllib3.exceptions import TimeoutError
+from botocore.exceptions import ClientError, ConnectTimeoutError, ReadTimeoutError
 
 import stream_alert.shared.helpers.boto as boto_helpers
 from stream_alert.shared.logger import get_logger
@@ -74,10 +72,9 @@ class LookupTables(object):
                     LOGGER.error('Encounterred error while downloading %s from %s, %s',
                                  json_file, bucket, err.response['Error']['Message'])
                     continue
-                except(Timeout, TimeoutError):
-                    # Catching TimeoutError will catch both `ReadTimeoutError` and
-                    # `ConnectionTimeoutError`.
-                    LOGGER.error('Reading %s from S3 is timed out.', json_file)
+                except (ConnectTimeoutError, ReadTimeoutError):
+                    # Catching ConnectTimeoutError and ReadTimeoutError from botocore
+                    LOGGER.exception('Reading %s from S3 timed out', json_file)
                     continue
 
                 # The lookup data can optionally be compressed, so try to decompress

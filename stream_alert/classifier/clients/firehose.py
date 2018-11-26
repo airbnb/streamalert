@@ -19,8 +19,7 @@ import re
 
 import backoff
 import boto3
-from botocore.exceptions import ClientError
-from botocore.vendored.requests.exceptions import ConnectionError, Timeout
+from botocore.exceptions import ClientError, ConnectTimeoutError, ReadTimeoutError
 
 from stream_alert.shared import CLASSIFIER_FUNCTION_NAME as FUNCTION_NAME
 import stream_alert.shared.helpers.boto as boto_helpers
@@ -55,7 +54,7 @@ class FirehoseClient(object):
     DEFAULT_FIREHOSE_PREFIX = 'streamalert_data_{}'
 
     # Exception for which backoff operations should be performed
-    EXCEPTIONS_TO_BACKOFF = (ClientError, ConnectionError, Timeout)
+    EXCEPTIONS_TO_BACKOFF = (ClientError, ConnectTimeoutError, ReadTimeoutError)
 
     # Set of enabled log types for firehose, loaded from configs
     _ENABLED_LOGS = dict()
@@ -391,7 +390,3 @@ class FirehoseClient(object):
                 batch_size = len(record_batch)
                 response = self._send_batch(stream_name, record_batch)
                 self._finalize(response, stream_name, batch_size)
-
-        # explicitly close firehose client to resolve connection reset issue, suggested
-        # by AWS support team.
-        self._client._endpoint.http_session.close()  # pylint: disable=protected-access
