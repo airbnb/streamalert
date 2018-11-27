@@ -1,11 +1,14 @@
+# Using a list concat since terraform destroy throws errors if this does not exist
 output "sqs_queue_url" {
-  value = "${aws_sqs_queue.classifier_queue.id}"
+  value = "${element(concat(aws_sqs_queue.classifier_queue.*.id, list("")), 0)}"
 }
 
+# Using a list concat since terraform destroy throws errors if this does not exist
 output "sqs_queue_arn" {
-  value = "${aws_sqs_queue.classifier_queue.arn}"
+  value = "${element(concat(aws_sqs_queue.classifier_queue.*.arn, list("")), 0)}"
 }
 
+# Using a list concat since terraform destroy throws errors if this does not exist
 output "sqs_sse_kms_key_arn" {
-  value = "${aws_kms_key.sqs_sse.arn}"
+  value = "${element(concat(aws_kms_key.sqs_sse.*.arn, list("")), 0)}"
 }
