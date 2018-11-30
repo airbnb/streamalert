@@ -205,7 +205,7 @@ class RulesEngine(object):
             staged=rule.is_staged(self._rule_table)
         )
 
-        LOGGER.info('Rule [%s] triggered alert [%s] on log type [%s] from resource \'%s\' '
+        LOGGER.info('Rule \'%s\' triggered alert \'%s\' on log type \'%s\' from resource \'%s\' '
                     'in service \'%s\'', rule.name, alert.alert_id, payload['log_schema_type'],
                     payload['resource'], payload['service'])
 

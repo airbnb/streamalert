@@ -46,6 +46,7 @@ class LambdaPackage(object):
         'backoff': 'backoff==1.7.0',
         'boto3': 'boto3==1.9.50',
         'boxsdk[jwt]': 'boxsdk[jwt]==2.0.0a11',
+        'cbapi': 'cbapi==1.3.6',
         'google-api-python-client': 'google-api-python-client==1.6.4',
         'jmespath': 'jmespath==0.9.3',
         'jsonlines': 'jsonlines==1.2.0',
