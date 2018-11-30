@@ -13,7 +13,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from stream_alert_cli.logger import LOGGER_CLI
+from stream_alert.shared.logger import get_logger
+
+LOGGER = get_logger(__name__)
 
 
 def generate_cloudwatch(cluster_name, cluster_dict, config):
@@ -31,14 +33,14 @@ def generate_cloudwatch(cluster_name, cluster_dict, config):
     cloudwatch_module = config['clusters'][cluster_name]['modules']['cloudwatch']
 
     if not cloudwatch_module.get('enabled', True):
-        LOGGER_CLI.info('The \'cloudwatch\' module is not enabled, nothing to do.')
+        LOGGER.info('The \'cloudwatch\' module is not enabled, nothing to do.')
         return True
 
     # Ensure that the kinesis module is enabled for this cluster since the
     # cloudwatch module will utilize the created stream for sending data
     if not config['clusters'][cluster_name]['modules'].get('kinesis'):
-        LOGGER_CLI.error('The \'kinesis\' module must be enabled to enable the '
-                         '\'cloudwatch\' module.')
+        LOGGER.error('The \'kinesis\' module must be enabled to enable the '
+                     '\'cloudwatch\' module.')
         return False
 
     account_id = config['global']['account']['aws_account_id']

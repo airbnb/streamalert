@@ -20,28 +20,31 @@ from moto import mock_kms, mock_s3
 from nose.tools import assert_true, raises
 
 from stream_alert.alert_processor.outputs.output_base import OutputProperty
-from stream_alert_cli.outputs import encrypt_and_push_creds_to_s3
+from stream_alert_cli.outputs.helpers import encrypt_and_push_creds_to_s3
 
 
-@patch('stream_alert_cli.outputs.encrypt_and_push_creds_to_s3')
 @mock_kms
 @mock_s3
-def test_encrypt_and_push_creds_to_s3(cli_mock):
+@patch('stream_alert_cli.outputs.helpers.send_creds_to_s3')
+def test_encrypt_and_push_creds_to_s3(send_mock):
     """CLI - Outputs - Encrypt and push creds to s3"""
     props = {
         'non-secret': OutputProperty(
             description='short description of info needed',
-            value='http://this.url.value')}
+            value='http://this.url.value'
+        )
+    }
 
     return_value = encrypt_and_push_creds_to_s3('us-east-1', 'bucket', 'key', props, 'test_alias')
 
     assert_true(return_value)
-    cli_mock.assert_not_called()
+    send_mock.assert_not_called()
 
     props['secret'] = OutputProperty(
         description='short description of secret needed',
         value='1908AGSG98A8908AG',
-        cred_requirement=True)
+        cred_requirement=True
+    )
 
     # Create the bucket to hold the mock object being put
     boto3.client('s3', region_name='us-east-1').create_bucket(Bucket='bucket')
@@ -49,6 +52,7 @@ def test_encrypt_and_push_creds_to_s3(cli_mock):
     return_value = encrypt_and_push_creds_to_s3('us-east-1', 'bucket', 'key', props, 'test_alias')
 
     assert_true(return_value)
+    send_mock.assert_called()
 
 
 @raises(ClientError)

@@ -6,6 +6,13 @@ module "alerts_firehose" {
   kms_key_arn = "${var.kms_key_arn}"
 }
 
+module "classifier_queue" {
+  source               = "classifier_queue"
+  account_id           = "${var.account_id}"
+  prefix               = "${var.prefix}"
+  rules_engine_timeout = "${var.rules_engine_timeout}"
+}
+
 // TODO: Autoscaling
 resource "aws_dynamodb_table" "alerts_table" {
   name           = "${var.prefix}_streamalert_alerts"

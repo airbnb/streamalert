@@ -25,3 +25,9 @@ CONFIG = resources.merge_required_outputs(base_config, PREFIX)
 
 ALERTS_TABLE = '{}_streamalert_alerts'.format(PREFIX)
 KMS_ALIAS = 'alias/stream_alert_secrets_test'
+
+MOCK_ENV = {
+    'AWS_ACCOUNT_ID': ACCOUNT_ID,
+    'STREAMALERT_PREFIX': PREFIX,
+    'AWS_DEFAULT_REGION': REGION
+}

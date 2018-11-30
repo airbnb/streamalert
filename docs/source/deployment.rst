@@ -10,7 +10,7 @@ To initialize StreamAlert:
 
 .. code-block:: bash
 
-  $ python manage.py terraform init
+  $ python manage.py init
 
 This will perform the following:
 
@@ -26,33 +26,33 @@ Continuous Deployment
 
 As new rules, sources, or outputs are added to StreamAlert, new versions of the AWS Lambda functions must be deployed for changes to become effective.
 
-To accomplish this, ``manage.py`` contains a ``lambda deploy`` command.
+To accomplish this, ``manage.py`` contains a ``deploy`` command.
 
 To deploy new changes for all AWS Lambda functions:
 
 .. code-block:: bash
 
-  $ python manage.py lambda deploy --processor all
+  $ python manage.py deploy --function all
 
 Optionally, to deploy changes for only a specific AWS Lambda function:
 
 .. code-block:: bash
 
-  $ python manage.py lambda deploy --processor rule
-  $ python manage.py lambda deploy --processor alert
+  $ python manage.py deploy --function rule
+  $ python manage.py deploy --function alert
 
 To apply infrastructure level changes (additional Kinesis Shards, new CloudTrails, etc), run:
 
 .. code-block:: bash
 
-  $ python manage.py terraform build
+  $ python manage.py build
 
 To speed up the Terraform run, the module name may be specified with the ``target`` parameter:
 
 .. code-block:: bash
 
-  $ python manage.py terraform build --target kinesis       # tf_stream_alert_kinesis module
-  $ python manage.py terraform build --target stream_alert  # tf_stream_alert module
+  $ python manage.py build --target kinesis       # tf_stream_alert_kinesis module
+  $ python manage.py build --target stream_alert  # tf_stream_alert module
 
 Monitoring Functions
 --------------------
@@ -68,8 +68,8 @@ to point to the previous version:
 
 .. code-block:: bash
 
-  $ ./manage.py lambda rollback --processor rule
-  $ ./manage.py lambda rollback --processor alert
-  $ ./manage.py lambda rollback --processor all
+  $ ./manage.py rollback --function rule
+  $ ./manage.py rollback --function alert
+  $ ./manage.py rollback --function all
 
 This is helpful to quickly revert changes to Lambda functions, e.g. if a bad rule was deployed.

@@ -68,7 +68,7 @@ Deploying an App only takes 3 steps:
 
 1. Configure the App through the CLI (via ``python manage.py app new``).
 2. Enter the required authentication information.
-3. Deploy the new App and the Rule Processor.
+3. Deploy the new App and the Classifier.
 
 To get help configuring a new App, use:
 
@@ -133,14 +133,14 @@ Once the above is completed, a logger statement similar to the following will co
 
 Your configuration files (``conf/clusters/<cluster>.json`` and ``conf/sources.json``) have now been updated and are ready to be deployed.
 
-3. Deploy the new App and the Rule Processor
+3. Deploy the new App and the Classifier
 ````````````````````````````````````````````
 
-The recommended process is to deploy both the `apps` function and the `rule` processor function with:
+The recommended process is to deploy both the `apps` function and the `classifier` processor function with:
 
 .. code-block:: bash
 
-  $ python manage.py lambda deploy --processor rule apps
+  $ python manage.py deploy --function classifier apps
 
 Authorizing the Slack App
 -------------------------
@@ -163,4 +163,3 @@ The Aliyun API requires an access key and access key secret for an authorized us
 To obtain the access key and access key secret, an authorized user of the Aliyun account should follow their directions to `Create an Access Key <https://www.alibabacloud.com/help/doc-detail/53045.htm>`_.
 
 Additionly, the user for whom the access key was created must have sufficient privileges to make use of ActionTrail; follow the directions on the `Grant ActionTrail permissions to RAM users <https://www.alibabacloud.com/help/doc-detail/28818.htm>`_ page.
-

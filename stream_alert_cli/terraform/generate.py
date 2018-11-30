@@ -16,15 +16,13 @@ limitations under the License.
 from fnmatch import fnmatch
 import json
 import os
-import string
 
-from stream_alert.shared.metrics import FUNC_PREFIXES
-from stream_alert_cli.logger import LOGGER_CLI
+from stream_alert.shared.logger import get_logger
+from stream_alert_cli.helpers import check_credentials
 from stream_alert_cli.terraform.common import (
     DEFAULT_SNS_MONITORING_TOPIC,
     InvalidClusterName,
-    infinitedict,
-    monitoring_topic_arn
+    infinitedict
 )
 from stream_alert_cli.terraform.alert_merger import generate_alert_merger
 from stream_alert_cli.terraform.alert_processor import generate_alert_processor
@@ -34,20 +32,25 @@ from stream_alert_cli.terraform.cloudtrail import generate_cloudtrail
 from stream_alert_cli.terraform.cloudwatch import generate_cloudwatch
 from stream_alert_cli.terraform.firehose import generate_firehose
 from stream_alert_cli.terraform.flow_logs import generate_flow_logs
+from stream_alert_cli.terraform.helpers import terraform_check
 from stream_alert_cli.terraform.kinesis_events import generate_kinesis_events
 from stream_alert_cli.terraform.kinesis_streams import generate_kinesis_streams
 from stream_alert_cli.terraform.metrics import (
-    generate_cloudwatch_metric_filters,
-    generate_cloudwatch_metric_alarms
+    generate_aggregate_cloudwatch_metric_alarms,
+    generate_aggregate_cloudwatch_metric_filters,
+    generate_cluster_cloudwatch_metric_filters,
+    generate_cluster_cloudwatch_metric_alarms
 )
 from stream_alert_cli.terraform.monitoring import generate_monitoring
 from stream_alert_cli.terraform.rule_promotion import generate_rule_promotion
-from stream_alert_cli.terraform.streamalert import generate_stream_alert
+from stream_alert_cli.terraform.classifier import generate_classifier
+from stream_alert_cli.terraform.rules_engine import generate_rules_engine
 from stream_alert_cli.terraform.s3_events import generate_s3_events
 from stream_alert_cli.terraform.threat_intel_downloader import generate_threat_intel_downloader
 
 RESTRICTED_CLUSTER_NAMES = ('main', 'athena')
 TERRAFORM_VERSIONS = {'application': '~> 0.11.7', 'provider': {'aws': '~> 1.26.0'}}
+LOGGER = get_logger(__name__)
 
 
 def generate_s3_bucket(bucket, logging, **kwargs):
@@ -186,7 +189,8 @@ def generate_main(config, init=False):
         'alerts_table_read_capacity': (
             config['global']['infrastructure']['alerts_table']['read_capacity']),
         'alerts_table_write_capacity': (
-            config['global']['infrastructure']['alerts_table']['write_capacity'])
+            config['global']['infrastructure']['alerts_table']['write_capacity']),
+        'rules_engine_timeout': config['lambda']['rules_engine_config']['timeout']
     }
 
     if config['global']['infrastructure']['rule_staging'].get('enabled'):
@@ -253,36 +257,6 @@ def generate_main(config, init=False):
                 'name': DEFAULT_SNS_MONITORING_TOPIC
             }
 
-    # Add any global cloudwatch alarms to the main.tf
-    monitoring_config = config['global']['infrastructure'].get('monitoring')
-    if not monitoring_config:
-        return main_dict
-
-    global_metrics = monitoring_config.get('metric_alarms')
-    if not global_metrics:
-        return main_dict
-
-    sns_topic_arn = monitoring_topic_arn(config)
-
-    formatted_alarms = {}
-    # Add global metric alarms for the rule and alert processors
-    for func in FUNC_PREFIXES:
-        if func not in global_metrics:
-            continue
-
-        for name, settings in global_metrics[func].iteritems():
-            alarm_info = settings.copy()
-            alarm_info['alarm_name'] = name
-            alarm_info['namespace'] = 'StreamAlert'
-            alarm_info['alarm_actions'] = [sns_topic_arn]
-            # Terraform only allows certain characters in resource names
-            acceptable_chars = ''.join([string.digits, string.letters, '_-'])
-            name = filter(acceptable_chars.__contains__, name)
-            formatted_alarms['metric_alarm_{}'.format(name)] = alarm_info
-
-    if formatted_alarms:
-        main_dict['resource']['aws_cloudwatch_metric_alarm'] = formatted_alarms
-
     return main_dict
 
 
@@ -321,12 +295,11 @@ def generate_cluster(config, cluster_name):
     modules = config['clusters'][cluster_name]['modules']
     cluster_dict = infinitedict()
 
-    if not generate_stream_alert(cluster_name, cluster_dict, config):
-        return
+    generate_classifier(cluster_name, cluster_dict, config)
 
-    generate_cloudwatch_metric_filters(cluster_name, cluster_dict, config)
+    generate_cluster_cloudwatch_metric_filters(cluster_name, cluster_dict, config)
 
-    generate_cloudwatch_metric_alarms(cluster_name, cluster_dict, config)
+    generate_cluster_cloudwatch_metric_alarms(cluster_name, cluster_dict, config)
 
     if modules.get('cloudwatch_monitoring', {}).get('enabled'):
         if not generate_monitoring(cluster_name, cluster_dict, config):
@@ -378,20 +351,28 @@ def cleanup_old_tf_files(config):
                 os.remove(os.path.join('terraform', terraform_file))
 
 
-def terraform_generate(config, init=False):
+def terraform_generate_handler(config, init=False, check_tf=True, check_creds=True):
     """Generate all Terraform plans for the configured clusters.
 
     Keyword Args:
         config (dict): The loaded config from the 'conf/' directory
-        init (bool): Indicates if main.tf.json is generated for `terraform init`
+        init (bool): Indicates if main.tf.json is generated for `init`
 
     Returns:
         bool: Result of cluster generating
     """
+    # Check for valid credentials
+    if check_creds and not check_credentials():
+        return False
+
+    # Verify terraform is installed
+    if check_tf and not terraform_check():
+        return False
+
     cleanup_old_tf_files(config)
 
     # Setup the main.tf.json file
-    LOGGER_CLI.debug('Generating cluster file: main.tf.json')
+    LOGGER.debug('Generating cluster file: main.tf.json')
     with open('terraform/main.tf.json', 'w') as tf_file:
         json.dump(
             generate_main(config, init=init),
@@ -410,10 +391,10 @@ def terraform_generate(config, init=False):
             raise InvalidClusterName(
                 'Rename cluster "main" or "athena" to something else!')
 
-        LOGGER_CLI.debug('Generating cluster file: %s.tf.json', cluster)
+        LOGGER.debug('Generating cluster file: %s.tf.json', cluster)
         cluster_dict = generate_cluster(config=config, cluster_name=cluster)
         if not cluster_dict:
-            LOGGER_CLI.error(
+            LOGGER.error(
                 'An error was generated while creating the %s cluster', cluster)
             return False
 
@@ -424,6 +405,16 @@ def terraform_generate(config, init=False):
                 indent=2,
                 sort_keys=True
             )
+
+    metric_filters = generate_aggregate_cloudwatch_metric_filters(config)
+    if metric_filters:
+        with open('terraform/metric_filters.tf.json', 'w') as tf_file:
+            json.dump(metric_filters, tf_file, indent=2, sort_keys=True)
+
+    metric_alarms = generate_aggregate_cloudwatch_metric_alarms(config)
+    if metric_alarms:
+        with open('terraform/metric_alarms.tf.json', 'w') as tf_file:
+            json.dump(metric_filters, tf_file, indent=2, sort_keys=True)
 
     # Setup Athena
     generate_global_lambda_settings(
@@ -450,6 +441,15 @@ def terraform_generate(config, init=False):
         generate_func=generate_rule_promotion,
         tf_tmp_file='terraform/rule_promotion.tf.json',
         message='Removing old Rule Promotion Terraform file'
+    )
+
+    # Setup Rules Engine
+    generate_global_lambda_settings(
+        config,
+        config_name='rules_engine_config',
+        generate_func=generate_rules_engine,
+        tf_tmp_file='terraform/rules_engine.tf.json',
+        message='Removing old Rules Engine Terraform file'
     )
 
     # Setup Alert Processor
@@ -484,7 +484,7 @@ def generate_global_lambda_settings(config, config_name, generate_func, tf_tmp_f
         message (str): Message will be logged by LOGGER.
     """
     if not config['lambda'].get(config_name):
-        LOGGER_CLI.warning('Config for \'%s\' not in lambda.json', config_name)
+        LOGGER.warning('Config for \'%s\' not in lambda.json', config_name)
         remove_temp_terraform_file(tf_tmp_file, message)
         return
 
@@ -496,6 +496,7 @@ def generate_global_lambda_settings(config, config_name, generate_func, tf_tmp_f
     else:
         remove_temp_terraform_file(tf_tmp_file, message)
 
+
 def remove_temp_terraform_file(tf_tmp_file, message):
     """Remove temporal terraform file
 
@@ -504,5 +505,5 @@ def remove_temp_terraform_file(tf_tmp_file, message):
         message (str): Message will be logged by LOGGER.
     """
     if os.path.isfile(tf_tmp_file):
-        LOGGER_CLI.info(message)
+        LOGGER.info(message)
         os.remove(tf_tmp_file)

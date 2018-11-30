@@ -17,8 +17,7 @@ resource "aws_lambda_function" "athena_partition_refresh" {
 
   environment {
     variables = {
-      LOGGER_LEVEL   = "${var.lambda_log_level}"
-      ENABLE_METRICS = "${var.enable_metrics}"
+      LOGGER_LEVEL = "${var.lambda_log_level}"
     }
   }
 
@@ -62,7 +61,7 @@ resource "aws_athena_database" "streamalert" {
   bucket = "${aws_s3_bucket.athena_results_bucket.bucket}"
 }
 
-// Lambda Alias: Rule Processor Production
+// Lambda Alias: Athena Function Production Alias
 resource "aws_lambda_alias" "athena_partition_refresh_production" {
   name             = "production"
   description      = "Production StreamAlert Athena Parition Refresh Alias"

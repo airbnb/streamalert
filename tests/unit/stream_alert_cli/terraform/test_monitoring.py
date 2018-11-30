@@ -31,7 +31,7 @@ def test_generate_cloudwatch_monitoring():
     expected_cloudwatch_tf = {
         'source': 'modules/tf_stream_alert_monitoring',
         'sns_topic_arn': 'arn:aws:sns:us-west-1:12345678910:stream_alert_monitoring',
-        'lambda_functions': ['unit-testing_test_streamalert_rule_processor'],
+        'lambda_functions': ['unit-testing_test_streamalert_classifier'],
         'kinesis_stream': 'unit-testing_test_stream_alert_kinesis',
         'lambda_alarms_enabled': True,
         'kinesis_alarms_enabled': True
@@ -52,7 +52,7 @@ def test_generate_cloudwatch_monitoring_with_settings():
     expected_cloudwatch_tf = {
         'source': 'modules/tf_stream_alert_monitoring',
         'sns_topic_arn': 'arn:aws:sns:us-west-1:12345678910:stream_alert_monitoring',
-        'lambda_functions': ['unit-testing_advanced_streamalert_rule_processor'],
+        'lambda_functions': ['unit-testing_advanced_streamalert_classifier'],
         'kinesis_stream': 'unit-testing_advanced_stream_alert_kinesis',
         'lambda_alarms_enabled': True,
         'kinesis_alarms_enabled': True,
@@ -86,7 +86,7 @@ def test_generate_cloudwatch_monitoring_no_kinesis():
     expected_cloudwatch_tf = {
         'source': 'modules/tf_stream_alert_monitoring',
         'sns_topic_arn': 'arn:aws:sns:us-west-1:12345678910:stream_alert_monitoring',
-        'lambda_functions': ['unit-testing_test_streamalert_rule_processor'],
+        'lambda_functions': ['unit-testing_test_streamalert_classifier'],
         'lambda_alarms_enabled': True,
         'kinesis_alarms_enabled': False
     }
@@ -133,7 +133,7 @@ def test_generate_cloudwatch_monitoring_custom_sns():
     expected_cloudwatch_tf_custom = {
         'source': 'modules/tf_stream_alert_monitoring',
         'sns_topic_arn': 'arn:aws:sns:us-west-1:12345678910:unit_test_monitoring',
-        'lambda_functions': ['unit-testing_test_streamalert_rule_processor'],
+        'lambda_functions': ['unit-testing_test_streamalert_classifier'],
         'kinesis_stream': 'unit-testing_test_stream_alert_kinesis',
         'lambda_alarms_enabled': True,
         'kinesis_alarms_enabled': True
@@ -145,7 +145,7 @@ def test_generate_cloudwatch_monitoring_custom_sns():
         expected_cloudwatch_tf_custom)
 
 
-@patch('stream_alert_cli.terraform.monitoring.LOGGER_CLI')
+@patch('stream_alert_cli.terraform.monitoring.LOGGER')
 def test_generate_cloudwatch_monitoring_invalid_config(mock_logging):
     """CLI - Terraform Generate Cloudwatch Monitoring with Invalid Config"""
     CONFIG['global']['infrastructure'] = {}

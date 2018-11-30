@@ -99,17 +99,6 @@ variable "log_retention_days" {
   description = "CloudWatch logs for the Lambda function will be retained for this many days"
 }
 
-variable "log_metric_filter_namespace" {
-  default     = "StreamAlert"
-  description = "Namespace for metrics generated from metric filters"
-}
-
-variable "log_metric_filters" {
-  type        = "list"
-  default     = []
-  description = "Metric filters applied to the log group. Each filter should be in the format \"filter_name,filter_pattern,value\""
-}
-
 // ***** CloudWatch metric alarms *****
 
 variable "alarm_actions" {
@@ -176,4 +165,10 @@ variable "iterator_age_alarm_evaluation_periods" {
 variable "iterator_age_alarm_period_secs" {
   default     = 120
   description = "Period over which to evaluate the maximum IteratorAge"
+}
+
+variable "input_sns_topics" {
+  description = "SNS topics that are allowed to invoke this Lambda function"
+  type        = "list"
+  default     = []
 }

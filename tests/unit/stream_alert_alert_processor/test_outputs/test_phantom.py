@@ -19,15 +19,17 @@ from moto import mock_s3, mock_kms
 from nose.tools import assert_false, assert_true
 
 from stream_alert.alert_processor.outputs.phantom import PhantomOutput
-from stream_alert_cli.helpers import put_mock_creds
 from tests.unit.stream_alert_alert_processor import (
-    ACCOUNT_ID,
-    FUNCTION_NAME,
     KMS_ALIAS,
+    MOCK_ENV,
     REGION
 )
 
-from tests.unit.stream_alert_alert_processor.helpers import get_alert, remove_temp_secrets
+from tests.unit.stream_alert_alert_processor.helpers import (
+    get_alert,
+    put_mock_creds,
+    remove_temp_secrets
+)
 
 
 @patch('stream_alert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS', 1)
@@ -39,13 +41,14 @@ class TestPhantomOutput(object):
     CREDS = {'url': 'http://phantom.foo.bar',
              'ph_auth_token': 'mocked_auth_token'}
 
+    @patch.dict('os.environ', MOCK_ENV)
     def setup(self):
         """Setup before each method"""
         self._mock_s3 = mock_s3()
         self._mock_s3.start()
         self._mock_kms = mock_kms()
         self._mock_kms.start()
-        self._dispatcher = PhantomOutput(REGION, ACCOUNT_ID, FUNCTION_NAME, None)
+        self._dispatcher = PhantomOutput(None)
         remove_temp_secrets()
         output_name = self._dispatcher.output_cred_name(self.DESCRIPTOR)
         put_mock_creds(output_name, self.CREDS, self._dispatcher.secrets_bucket, REGION, KMS_ALIAS)

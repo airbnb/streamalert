@@ -27,11 +27,9 @@ from nose.tools import assert_equal, assert_false, assert_items_equal, assert_tr
 
 from stream_alert.apps._apps.gsuite import GSuiteReportsApp
 
-from tests.unit.stream_alert_apps.test_helpers import (
-    get_event,
-    get_mock_context,
-    put_mock_params
-)
+from tests.unit.stream_alert_apps.test_helpers import get_event, put_mock_params
+from tests.unit.stream_alert_shared.test_config import get_mock_lambda_context
+
 
 @mock_ssm
 @patch.object(GSuiteReportsApp, '_type', Mock(return_value='admin'))
@@ -47,7 +45,7 @@ class TestGSuiteReportsApp(object):
         self._test_app_name = 'gsuite_admin'
         put_mock_params(self._test_app_name)
         self._event = get_event(self._test_app_name)
-        self._context = get_mock_context(self._test_app_name)
+        self._context = get_mock_lambda_context(self._test_app_name)
         self._app = GSuiteReportsApp(self._event, self._context)
 
     def test_sleep(self):

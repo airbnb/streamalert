@@ -15,7 +15,9 @@ limitations under the License.
 """
 import json
 
-from stream_alert_cli.logger import LOGGER_CLI
+from stream_alert.shared.logger import get_logger
+
+LOGGER = get_logger(__name__)
 
 
 def generate_cloudtrail(cluster_name, cluster_dict, config):
@@ -48,7 +50,7 @@ def generate_cloudtrail(cluster_name, cluster_dict, config):
         del config['clusters'][cluster_name]['modules']['cloudtrail']['enabled']
         config['clusters'][cluster_name]['modules']['cloudtrail']['enable_logging'] = True
         config['clusters'][cluster_name]['modules']['cloudtrail']['enable_kinesis'] = True
-        LOGGER_CLI.info('Converting legacy CloudTrail config')
+        LOGGER.info('Converting legacy CloudTrail config')
         config.write()
         kinesis_enabled = True
         cloudtrail_enabled = True
@@ -65,7 +67,7 @@ def generate_cloudtrail(cluster_name, cluster_dict, config):
         'version', 'id', 'detail-type', 'source', 'account', 'time', 'region', 'resources', 'detail'
     }
     if not set(event_pattern.keys()).issubset(valid_event_pattern_keys):
-        LOGGER_CLI.error('Config Error: Invalid CloudWatch Event Pattern!')
+        LOGGER.error('Config Error: Invalid CloudWatch Event Pattern!')
         return False
 
     module_info = {

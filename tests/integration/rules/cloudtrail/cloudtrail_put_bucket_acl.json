@@ -1,214 +1,210 @@
 [
   {
-    "data":{
-      "account":12345,
-      "detail":{
-        "awsRegion":"us-east-1",
-        "eventID":"...",
-        "eventName":"PutBucketAcl",
-        "eventSource":"s3.amazonaws.com",
-        "eventTime":"...",
-        "eventType":"...",
-        "eventVersion":"...",
-        "recipientAccountId":"12345",
-        "requestID":"...",
-        "requestParameters":{
-          "AccessControlPolicy":{
-            "AccessControlList":{
-              "Grant":[
+    "data": {
+      "account": 12345,
+      "detail": {
+        "awsRegion": "us-east-1",
+        "eventID": "...",
+        "eventName": "PutBucketAcl",
+        "eventSource": "s3.amazonaws.com",
+        "eventTime": "...",
+        "eventType": "...",
+        "eventVersion": "...",
+        "recipientAccountId": "12345",
+        "requestID": "...",
+        "requestParameters": {
+          "AccessControlPolicy": {
+            "AccessControlList": {
+              "Grant": [
                 {
-                  "Grantee":{
-                    "DisplayName":"...",
-                    "ID":"...",
-                    "xmlns:xsi":"http://www.w3.org/2001/XMLSchema-instance",
-                    "xsi:type":"CanonicalUser"
+                  "Grantee": {
+                    "DisplayName": "...",
+                    "ID": "...",
+                    "xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
+                    "xsi:type": "CanonicalUser"
                   },
-                  "Permission":"FULL_CONTROL"
+                  "Permission": "FULL_CONTROL"
                 },
                 {
-                  "Grantee":{
-                    "URI":"http://acs.amazonaws.com/groups/global/AuthenticatedUsers",
-                    "xmlns:xsi":"http://www.w3.org/2001/XMLSchema-instance",
-                    "xsi:type":"Group"
+                  "Grantee": {
+                    "URI": "http://acs.amazonaws.com/groups/global/AuthenticatedUsers",
+                    "xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
+                    "xsi:type": "Group"
                   },
-                  "Permission":"READ"
+                  "Permission": "READ"
                 },
                 {
-                  "Grantee":{
-                    "URI":"http://acs.amazonaws.com/groups/global/AuthenticatedUsers",
-                    "xmlns:xsi":"http://www.w3.org/2001/XMLSchema-instance",
-                    "xsi:type":"Group"
+                  "Grantee": {
+                    "URI": "http://acs.amazonaws.com/groups/global/AuthenticatedUsers",
+                    "xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
+                    "xsi:type": "Group"
                   },
-                  "Permission":"READ_ACP"
+                  "Permission": "READ_ACP"
                 },
                 {
-                  "Grantee":{
-                    "URI":"http://acs.amazonaws.com/groups/global/AllUsers",
-                    "xmlns:xsi":"http://www.w3.org/2001/XMLSchema-instance",
-                    "xsi:type":"Group"
+                  "Grantee": {
+                    "URI": "http://acs.amazonaws.com/groups/global/AllUsers",
+                    "xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
+                    "xsi:type": "Group"
                   },
-                  "Permission":"READ"
+                  "Permission": "READ"
                 },
                 {
-                  "Grantee":{
-                    "URI":"http://acs.amazonaws.com/groups/global/AllUsers",
-                    "xmlns:xsi":"http://www.w3.org/2001/XMLSchema-instance",
-                    "xsi:type":"Group"
+                  "Grantee": {
+                    "URI": "http://acs.amazonaws.com/groups/global/AllUsers",
+                    "xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
+                    "xsi:type": "Group"
                   },
-                  "Permission":"READ_ACP"
+                  "Permission": "READ_ACP"
                 }
               ]
             },
-            "Owner":{
-              "DisplayName":"...",
-              "ID":"..."
+            "Owner": {
+              "DisplayName": "...",
+              "ID": "..."
             },
-            "xmlns":"http://s3.amazonaws.com/doc/2006-03-01/"
+            "xmlns": "http://s3.amazonaws.com/doc/2006-03-01/"
           },
-          "acl":[
+          "acl": [
             ""
           ],
-          "bucketName":"..."
+          "bucketName": "..."
         },
-        "responseElements":null,
-        "sourceIPAddress":"...",
-        "userAgent":"...",
-        "userIdentity":{
-          "accountId":"12345",
-          "arn":"...",
-          "invokedBy":"...",
-          "principalId":"...",
-          "sessionContext":{
-            "attributes":{
-              "creationDate":"...",
-              "mfaAuthenticated":"true"
+        "responseElements": null,
+        "sourceIPAddress": "...",
+        "userAgent": "...",
+        "userIdentity": {
+          "accountId": "12345",
+          "arn": "...",
+          "invokedBy": "...",
+          "principalId": "...",
+          "sessionContext": {
+            "attributes": {
+              "creationDate": "...",
+              "mfaAuthenticated": "true"
             }
           },
-          "type":"IAMUser",
-          "userName":"..."
+          "type": "IAMUser",
+          "userName": "..."
         }
       },
-      "detail-type":"...",
-      "id":"12345",
-      "region":"us-east-1",
-      "resources":{
-        "test":"..."
-      },
-      "source":"...",
-      "time":"...",
-      "version":"..."
+      "detail-type": "...",
+      "id": "12345",
+      "region": "us-east-1",
+      "resources": [],
+      "source": "...",
+      "time": "...",
+      "version": "..."
     },
-    "description":"Modifying an S3 bucket to have a bucket ACL of AllUsers or AuthenticatedUsers should create an alert.",
-    "log":"cloudwatch:events",
-    "service":"kinesis",
-    "source":"prefix_cluster1_stream_alert_kinesis",
-    "trigger_rules":[
+    "description": "Modifying an S3 bucket to have a bucket ACL of AllUsers or AuthenticatedUsers should create an alert.",
+    "log": "cloudwatch:events",
+    "service": "kinesis",
+    "source": "prefix_cluster1_stream_alert_kinesis",
+    "trigger_rules": [
       "cloudtrail_put_bucket_acl"
     ]
   },
   {
-    "data":{
-      "account":12345,
-      "detail":{
-        "awsRegion":"us-east-1",
-        "eventID":"...",
-        "eventName":"PutBucketAcl",
-        "eventSource":"...",
-        "eventTime":"...",
-        "eventType":"...",
-        "eventVersion":"...",
-        "recipientAccountId":"12345",
-        "requestID":"...",
-        "requestParameters":{
-          "AccessControlPolicy":{
-            "AccessControlList":{
-              "Grant":[
+    "data": {
+      "account": 12345,
+      "detail": {
+        "awsRegion": "us-east-1",
+        "eventID": "...",
+        "eventName": "PutBucketAcl",
+        "eventSource": "...",
+        "eventTime": "...",
+        "eventType": "...",
+        "eventVersion": "...",
+        "recipientAccountId": "12345",
+        "requestID": "...",
+        "requestParameters": {
+          "AccessControlPolicy": {
+            "AccessControlList": {
+              "Grant": [
                 {
-                  "Grantee":{
-                    "DisplayName":"...",
-                    "ID":"...",
-                    "xmlns:xsi":"http://www.w3.org/2001/XMLSchema-instance",
-                    "xsi:type":"CanonicalUser"
+                  "Grantee": {
+                    "DisplayName": "...",
+                    "ID": "...",
+                    "xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
+                    "xsi:type": "CanonicalUser"
                   },
-                  "Permission":"FULL_CONTROL"
+                  "Permission": "FULL_CONTROL"
                 },
                 {
-                  "Grantee":{
-                    "URI":"http://acs.amazonaws.com/groups/s3/LogDelivery",
-                    "xmlns:xsi":"http://www.w3.org/2001/XMLSchema-instance",
-                    "xsi:type":"Group"
+                  "Grantee": {
+                    "URI": "http://acs.amazonaws.com/groups/s3/LogDelivery",
+                    "xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
+                    "xsi:type": "Group"
                   },
-                  "Permission":"READ"
+                  "Permission": "READ"
                 },
                 {
-                  "Grantee":{
-                    "URI":"http://acs.amazonaws.com/groups/s3/LogDelivery",
-                    "xmlns:xsi":"http://www.w3.org/2001/XMLSchema-instance",
-                    "xsi:type":"Group"
+                  "Grantee": {
+                    "URI": "http://acs.amazonaws.com/groups/s3/LogDelivery",
+                    "xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
+                    "xsi:type": "Group"
                   },
-                  "Permission":"READ_ACP"
+                  "Permission": "READ_ACP"
                 },
                 {
-                  "Grantee":{
-                    "URI":"http://acs.amazonaws.com/groups/s3/LogDelivery",
-                    "xmlns:xsi":"http://www.w3.org/2001/XMLSchema-instance",
-                    "xsi:type":"Group"
+                  "Grantee": {
+                    "URI": "http://acs.amazonaws.com/groups/s3/LogDelivery",
+                    "xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
+                    "xsi:type": "Group"
                   },
-                  "Permission":"READ"
+                  "Permission": "READ"
                 },
                 {
-                  "Grantee":{
-                    "URI":"http://acs.amazonaws.com/groups/s3/LogDelivery",
-                    "xmlns:xsi":"http://www.w3.org/2001/XMLSchema-instance",
-                    "xsi:type":"Group"
+                  "Grantee": {
+                    "URI": "http://acs.amazonaws.com/groups/s3/LogDelivery",
+                    "xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
+                    "xsi:type": "Group"
                   },
-                  "Permission":"READ_ACP"
+                  "Permission": "READ_ACP"
                 }
               ]
             },
-            "Owner":{
-              "DisplayName":"...",
-              "ID":"..."
+            "Owner": {
+              "DisplayName": "...",
+              "ID": "..."
             },
-            "xmlns":"http://s3.amazonaws.com/doc/2006-03-01/"
+            "xmlns": "http://s3.amazonaws.com/doc/2006-03-01/"
           },
-          "acl":[
+          "acl": [
             ""
           ],
-          "bucketName":"..."
+          "bucketName": "..."
         },
-        "responseElements":null,
-        "sourceIPAddress":"...",
-        "userAgent":"...",
-        "userIdentity":{
-          "accountId":"12345",
-          "arn":"...",
-          "invokedBy":"...",
-          "principalId":"...",
-          "sessionContext":{
-            "attributes":{
-              "creationDate":"...",
-              "mfaAuthenticated":"true"
+        "responseElements": null,
+        "sourceIPAddress": "...",
+        "userAgent": "...",
+        "userIdentity": {
+          "accountId": "12345",
+          "arn": "...",
+          "invokedBy": "...",
+          "principalId": "...",
+          "sessionContext": {
+            "attributes": {
+              "creationDate": "...",
+              "mfaAuthenticated": "true"
             }
           },
-          "type":"IAMUser",
-          "userName":"..."
+          "type": "IAMUser",
+          "userName": "..."
         }
       },
-      "detail-type":"...",
-      "id":"12345",
-      "region":"us-east-1",
-      "resources":{
-        "test":"..."
-      },
-      "source":"...",
-      "time":"...",
-      "version":"..."
+      "detail-type": "...",
+      "id": "12345",
+      "region": "us-east-1",
+      "resources": [],
+      "source": "...",
+      "time": "...",
+      "version": "..."
     },
-    "description":"Modifying an S3 bucket ACL without use of AllUsers or AuthenticatedUsers should not create an alert.",
-    "log":"cloudwatch:events",
-    "service":"kinesis",
-    "source":"prefix_cluster1_stream_alert_kinesis",
-    "trigger_rules":[]
+    "description": "Modifying an S3 bucket ACL without use of AllUsers or AuthenticatedUsers should not create an alert.",
+    "log": "cloudwatch:events",
+    "service": "kinesis",
+    "source": "prefix_cluster1_stream_alert_kinesis",
+    "trigger_rules": []
   }
 ]

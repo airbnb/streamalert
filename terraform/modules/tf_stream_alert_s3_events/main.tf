@@ -2,13 +2,13 @@
 resource "aws_lambda_permission" "allow_bucket" {
   statement_id  = "InvokeFromS3Bucket_${var.notification_id}"
   action        = "lambda:InvokeFunction"
-  function_name = "${var.lambda_function_arn}"
+  function_name = "${var.lambda_function_alias_arn}"
   principal     = "s3.amazonaws.com"
   source_arn    = "arn:aws:s3:::${var.bucket_id}"
   qualifier     = "${var.lambda_function_alias}"
 }
 
-// S3 Bucket Notification: Invoke the StreamAlert Rule Processor
+// S3 Bucket Notification: Invoke the StreamAlert Classifier
 resource "aws_s3_bucket_notification" "bucket_notification" {
   count  = "${var.enable_events ? 1 : 0}"
   bucket = "${var.bucket_id}"
@@ -18,7 +18,7 @@ resource "aws_s3_bucket_notification" "bucket_notification" {
     filter_prefix       = "${var.filter_prefix}"
     filter_suffix       = "${var.filter_suffix}"
     id                  = "notify_${var.notification_id}"
-    lambda_function_arn = "${var.lambda_function_arn}:${var.lambda_function_alias}"
+    lambda_function_arn = "${var.lambda_function_alias_arn}"
   }
 }
 

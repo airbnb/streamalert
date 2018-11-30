@@ -22,7 +22,7 @@ from moto import mock_dynamodb2
 from nose.tools import assert_equal, assert_raises
 
 from stream_alert.shared import alert as alert_module, alert_table
-from stream_alert_cli.helpers import setup_mock_alerts_table
+from tests.unit.helpers.aws_mocks import setup_mock_alerts_table
 
 _ALERTS_TABLE = 'PREFIX_streamalert_alerts'
 _ALERT_PROCESSOR_TIMEOUT_SEC = 60

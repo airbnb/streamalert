@@ -15,7 +15,10 @@ limitations under the License.
 """
 from datetime import datetime
 import uuid
+from StringIO import StringIO
+import zipfile
 
+import boto3
 from botocore.exceptions import ClientError
 
 
@@ -126,3 +129,111 @@ class MockAthenaClient(object):
         """Return a MockAthenaPaginator to yield results"""
         attr = getattr(self, func_name)
         return MockAthenaClient.MockAthenaPaginator(attr, 4)
+
+
+def _make_lambda_package():
+    """Helper function to create mock lambda package"""
+    mock_lambda_function = """
+def handler(event, context):
+    return event
+"""
+    package_output = StringIO()
+    package = zipfile.ZipFile(package_output, 'w', zipfile.ZIP_DEFLATED)
+    package.writestr('function.zip', mock_lambda_function)
+    package.close()
+    package_output.seek(0)
+
+    return package_output.read()
+
+
+def create_lambda_function(function_name, region):
+    """Helper function to create mock lambda function"""
+    if function_name.find(':') != -1:
+        function_name = function_name.split(':')[0]
+
+    boto3.client('lambda', region_name=region).create_function(
+        FunctionName=function_name,
+        Runtime='python2.7',
+        Role='test-iam-role',
+        Handler='function.handler',
+        Description='test lambda function',
+        Timeout=3,
+        MemorySize=128,
+        Publish=True,
+        Code={
+            'ZipFile': _make_lambda_package()
+        }
+    )
+
+
+def setup_mock_alerts_table(table_name):
+    """Create a mock DynamoDB alerts table used by rules engine, alert processor, alert merger"""
+    boto3.client('dynamodb').create_table(
+        AttributeDefinitions=[
+            {
+                'AttributeName': 'RuleName',
+                'AttributeType': 'S'
+            },
+            {
+                'AttributeName': 'AlertID',
+                'AttributeType': 'S'
+            }
+        ],
+        KeySchema=[
+            {
+                'AttributeName': 'RuleName',
+                'KeyType': 'HASH'
+            },
+            {
+                'AttributeName': 'AlertID',
+                'KeyType': 'RANGE'
+            }
+        ],
+        ProvisionedThroughput={
+            'ReadCapacityUnits': 5,
+            'WriteCapacityUnits': 5
+        },
+        TableName=table_name
+    )
+
+
+def setup_mock_rules_table(table_name):
+    """Create a mock DynamoDB rules table used by the CLI, rules engine, and rule promoter"""
+    boto3.client('dynamodb').create_table(
+        AttributeDefinitions=[
+            {
+                'AttributeName': 'RuleName',
+                'AttributeType': 'S'
+            }
+        ],
+        KeySchema=[
+            {
+                'AttributeName': 'RuleName',
+                'KeyType': 'HASH'
+            }
+        ],
+        ProvisionedThroughput={
+            'ReadCapacityUnits': 5,
+            'WriteCapacityUnits': 5
+        },
+        TableName=table_name
+    )
+
+
+def put_mock_s3_object(bucket, key, data, region='us-east-1'):
+    """Create a mock AWS S3 object for testing
+
+    Args:
+        bucket (str): the bucket in which to place the object
+        key (str): the key to use for the S3 object
+        data (str): the actual value to use for the object
+        region (str): the aws region to use for this boto3 client
+    """
+    s3_client = boto3.client('s3', region_name=region)
+    try:
+        # Check if the bucket exists before creating it
+        s3_client.head_bucket(Bucket=bucket)
+    except ClientError:
+        s3_client.create_bucket(Bucket=bucket)
+
+    s3_client.put_object(Body=data, Bucket=bucket, Key=key, ServerSideEncryption='AES256')

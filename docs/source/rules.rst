@@ -156,18 +156,18 @@ context
 datatypes
 ~~~~~~~~~
 
-``conf/types.json`` defines data normalization, whereby you can write rules against a common type instead of a specific field or schema:
+``conf/normalized_types.json`` defines data normalization, whereby you can write rules against a common type instead of a specific field or schema:
 
 .. code-block:: python
 
-  """These rules apply to several different log types, defined in conf/types.json"""
+  """These rules apply to several different log types, defined in conf/normalized_types.json"""
   from helpers.base import fetch_values_by_datatype
   from stream_alert.shared.rule import rule
 
-  @rule(datatypes=['sourceAddress:ioc_ip'], outputs=['aws-sns:my-topic'])
+  @rule(datatypes=['sourceAddress'], outputs=['aws-sns:my-topic'])
   def ip_watchlist_hit(record):
       """Source IP address matches watchlist."""
-      return '127.0.0.1' in fetch_values_by_datatype(record, 'sourceAddress:ioc_ip')
+      return '127.0.0.1' in fetch_values_by_datatype(record, 'sourceAddress')
 
 
   @rule(datatypes=['command'], outputs=['aws-sns:my-topic'])
@@ -290,4 +290,4 @@ This allows you to keep the rule definition and tests in place instead of having
 Testing
 -------
 
-For instructions on how to create and run tests to validate rules, see `Rule Testing <rule-testing.html>`_.
+For instructions on how to create and run tests to validate rules, see `Testing <testing.html>`_.

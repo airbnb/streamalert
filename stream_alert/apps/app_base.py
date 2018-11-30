@@ -364,7 +364,7 @@ class AppIntegration(object):
         # Increment the count of logs gathered
         self._gathered_log_count += len(logs)
 
-        # Utilize the batcher to send logs to the rule processor
+        # Utilize the batcher to send logs to the classifier function
         self._batcher.send_logs(logs)
 
         LOGGER.debug('Updating config last timestamp from %s to %s',

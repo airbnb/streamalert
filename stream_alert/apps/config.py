@@ -291,6 +291,7 @@ class AppConfig(object):
         except TypeError as err:
             raise AppStateError('Could not serialize state for name \'{}\'. Error: '
                                 '{}'.format(self._state_name, err.message))
+
         @backoff.on_exception(backoff.expo,
                               ClientError,
                               max_tries=self.MAX_STATE_SAVE_TRIES,
@@ -413,7 +414,7 @@ class AppConfig(object):
             return
 
         if not isinstance(context, dict):
-            raise AppStateError('Unable to set context: %s. Must be a dictionary', context)
+            raise AppStateError('Unable to set context, must be a dict: {}'.format(context))
 
         LOGGER.debug('Setting context to: %s', context)
 

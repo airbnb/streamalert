@@ -34,20 +34,21 @@ class TestMetrics(object):
     @patch('logging.Logger.error')
     def test_invalid_metric_name(self, log_mock):
         """Metrics - Invalid Metric Name"""
-        shared.metrics.MetricLogger.log_metric('rule_processor', 'FailedParsed', '')
+        shared.metrics.MetricLogger.log_metric('classifier', 'FailedParsed', '')
 
         assert_equal(log_mock.call_args[0][0], 'Metric name (\'%s\') not defined for '
                                                '\'%s\' function. Options are: %s')
         assert_equal(log_mock.call_args[0][1], 'FailedParsed')
-        assert_equal(log_mock.call_args[0][2], 'rule_processor')
+        assert_equal(log_mock.call_args[0][2], 'classifier')
 
     @patch('logging.Logger.info')
     def test_valid_metric(self, log_mock):
         """Metrics - Valid Metric"""
-        shared.metrics.MetricLogger.log_metric('rule_processor', 'FailedParses', 100)
+        shared.metrics.MetricLogger.log_metric('classifier', 'FailedParses', 100)
 
-        log_mock.assert_called_with('{"metric_name": "%s", "metric_value": %s}',
-                                    'FailedParses', 100)
+        log_mock.assert_called_with(
+            '{"metric_name": "%s", "metric_value": %s}', 'FailedParses', 100
+        )
 
     @patch('logging.Logger.debug')
     def test_disabled_metrics(self, log_mock):
