@@ -117,7 +117,10 @@ def generate_main(config, init=False):
     main_dict = infinitedict()
 
     # Configure provider along with the minimum version
-    main_dict['provider']['aws'] = {'version': TERRAFORM_VERSIONS['provider']['aws']}
+    main_dict['provider']['aws'] = {
+        'version': TERRAFORM_VERSIONS['provider']['aws'],
+        'region': config['global']['account']['region']
+    }
 
     # Configure Terraform version requirement
     main_dict['terraform']['required_version'] = TERRAFORM_VERSIONS['application']

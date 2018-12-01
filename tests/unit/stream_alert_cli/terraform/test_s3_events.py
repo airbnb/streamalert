@@ -46,8 +46,14 @@ def test_generate_s3_events():
         'module': {
             's3_events_unit-testing_advanced_0': {
                 'source': 'modules/tf_stream_alert_s3_events',
+                'lambda_function_alias': (
+                    '${module.classifier_advanced_lambda.function_alias}'
+                ),
                 'lambda_function_alias_arn': (
                     '${module.classifier_advanced_lambda.function_alias_arn}'
+                ),
+                'lambda_function_name': (
+                    '${module.classifier_advanced_lambda.function_name}'
                 ),
                 'bucket_id': 'unit-test-bucket.data',
                 'notification_id': 'advanced_0',
@@ -58,8 +64,14 @@ def test_generate_s3_events():
             },
             's3_events_unit-testing_advanced_1': {
                 'source': 'modules/tf_stream_alert_s3_events',
+                'lambda_function_alias': (
+                    '${module.classifier_advanced_lambda.function_alias}'
+                ),
                 'lambda_function_alias_arn': (
                     '${module.classifier_advanced_lambda.function_alias_arn}'
+                ),
+                'lambda_function_name': (
+                    '${module.classifier_advanced_lambda.function_name}'
                 ),
                 'bucket_id': 'unit-test.cloudtrail.data',
                 'enable_events': False,
