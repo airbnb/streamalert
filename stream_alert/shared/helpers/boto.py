@@ -29,5 +29,5 @@ def default_config(timeout=BOTO_TIMEOUT, region=REGION):
     return client.Config(
         connect_timeout=timeout,
         read_timeout=timeout,
-        region_name=region
+        region_name=region if region else REGION  # Ensure region is never empty
     )
