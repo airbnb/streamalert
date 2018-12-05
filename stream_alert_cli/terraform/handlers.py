@@ -20,7 +20,7 @@ import os
 import shutil
 
 from stream_alert.shared.logger import get_logger
-from stream_alert_cli.athena.handler import create_table
+from stream_alert_cli.athena.handler import create_table, create_log_tables
 from stream_alert_cli.helpers import check_credentials, continue_prompt, run_command, tf_runner
 from stream_alert_cli.manage_lambda.deploy import deploy
 from stream_alert_cli.terraform.generate import terraform_generate_handler
@@ -75,9 +75,9 @@ def terraform_init(options, config):
     init_targets = [
         'aws_s3_bucket.lambda_source', 'aws_s3_bucket.logging_bucket',
         'aws_s3_bucket.stream_alert_secrets', 'aws_s3_bucket.terraform_remote_state',
-        'aws_s3_bucket.streamalerts',
+        'aws_s3_bucket.streamalerts', 'aws_s3_bucket.stream_alert_data',
         'aws_kms_key.server_side_encryption', 'aws_kms_alias.server_side_encryption',
-        'aws_kms_key.stream_alert_secrets', 'aws_kms_alias.stream_alert_secrets'
+        'aws_kms_key.stream_alert_secrets', 'aws_kms_alias.stream_alert_secrets',
     ]
     if not tf_runner(targets=init_targets):
         LOGGER.error('An error occurred while running StreamAlert init')
@@ -102,6 +102,10 @@ def terraform_init(options, config):
     alerts_bucket = '{}.streamalerts'.format(config['global']['account']['prefix'])
     create_table('alerts', alerts_bucket, config)
 
+    # Create the glue catalog tables for the enabled logs
+    if not create_log_tables(config=config):
+        return
+
     LOGGER.info('Building remainding infrastructure')
     return tf_runner(refresh=False)
 
@@ -118,6 +122,11 @@ def terraform_build_handler(options, config):
     """
     if not terraform_generate_handler(config=config):
         return False
+
+    # TODO(GarretReece): consider whether this call is needed -- currently cargo-cult included during manual rebase 12/05/18
+    # Create the glue catalog tables for the enabled logs
+    if not create_log_tables(config=config):
+        return
 
     target_modules, valid = _get_valid_tf_targets(config, options.target)
     if not valid:
