@@ -12,12 +12,12 @@ variable "cloudwatch_log_retention" {
   default = 14
 }
 
-variable "compression_format" {
-  default = "GZIP"
-}
-
 variable "kms_key_arn" {}
 
 variable "prefix" {}
 
 variable "region" {}
+
+variable "alerts_db_name" {
+  type = "string"
+}
