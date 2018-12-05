@@ -132,7 +132,7 @@ class TestThreatIntel(object):
         }
 
         with patch.object(self._threat_intel, '_process_ioc_values') as process_mock:
-            process_mock.side_effect = [['1.1.1.2']]
+            process_mock.return_value = [{'ioc_value': '1.1.1.2', 'sub_type': 'mal_ip'}]
             self._threat_intel.threat_detection(payloads)
             assert_equal(payloads[0]['record'], expected_result)
 
