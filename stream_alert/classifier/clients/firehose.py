@@ -162,7 +162,7 @@ class FirehoseClient(object):
         for idx in sorted(success_indices, reverse=True):
             del batch[idx]
 
-    def _add_payload_records(self, payloads):
+    def _categorize_records(self, payloads):
         """Add the records to the proper list of cached records, based on log type
 
         Args:
@@ -377,7 +377,7 @@ class FirehoseClient(object):
         Args:
             payloads (list): List of PayloadRecord items that include parsed records
         """
-        records = self._add_payload_records(payloads)
+        records = self._categorize_records(payloads)
 
         # Iterate through each set of categorized payloads.
         # Each batch will be processed to their specific Firehose, which lands the data
