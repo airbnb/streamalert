@@ -73,7 +73,9 @@ class TestFirehoseGenerate(object):
                     'log_name': 'json_embedded',
                     'role_arn': '${module.kinesis_firehose_setup.firehose_role_arn}',
                     's3_bucket_name': 'unit-testing.streamalert.data',
-                    'kms_key_arn': '${aws_kms_key.server_side_encryption.arn}'
+                    'kms_key_arn': '${aws_kms_key.server_side_encryption.arn}',
+                    'glue_catalog_db_name': 'unit-testing_streamalert',
+                    'glue_catalog_table_name': 'json_embedded'
                 }
             }
         }
@@ -106,7 +108,9 @@ class TestFirehoseGenerate(object):
                     's3_bucket_name': 'unit-testing.streamalert.data',
                     'kms_key_arn': '${aws_kms_key.server_side_encryption.arn}',
                     'enable_alarm': True,
-                    'alarm_actions': ['arn:aws:sns:us-west-1:12345678910:stream_alert_monitoring']
+                    'alarm_actions': ['arn:aws:sns:us-west-1:12345678910:stream_alert_monitoring'],
+                    'glue_catalog_db_name': 'unit-testing_streamalert',
+                    'glue_catalog_table_name': 'json_embedded'
                 }
             }
         }
@@ -145,7 +149,9 @@ class TestFirehoseGenerate(object):
                     'evaluation_periods': 10,
                     'period_seconds': 3600,
                     'alarm_threshold': 100000,
-                    'alarm_actions': ['arn:aws:sns:us-west-1:12345678910:stream_alert_monitoring']
+                    'alarm_actions': ['arn:aws:sns:us-west-1:12345678910:stream_alert_monitoring'],
+                    'glue_catalog_db_name': 'unit-testing_streamalert',
+                    'glue_catalog_table_name': 'json_embedded'
                 }
             }
         }
@@ -179,7 +185,9 @@ class TestFirehoseGenerate(object):
                     's3_bucket_name': 'unit-testing.streamalert.data',
                     'kms_key_arn': '${aws_kms_key.server_side_encryption.arn}',
                     'enable_alarm': True,
-                    'alarm_actions': ['do something crazy']
+                    'alarm_actions': ['do something crazy'],
+                    'glue_catalog_db_name': 'unit-testing_streamalert',
+                    'glue_catalog_table_name': 'json_embedded'
                 }
             }
         }
