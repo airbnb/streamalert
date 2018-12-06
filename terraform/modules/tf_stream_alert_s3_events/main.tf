@@ -2,7 +2,7 @@
 resource "aws_lambda_permission" "allow_bucket" {
   statement_id  = "InvokeFromS3Bucket_${var.notification_id}"
   action        = "lambda:InvokeFunction"
-  function_name = "${var.lambda_function_alias_arn}"
+  function_name = "${var.lambda_function_name}"
   principal     = "s3.amazonaws.com"
   source_arn    = "arn:aws:s3:::${var.bucket_id}"
   qualifier     = "${var.lambda_function_alias}"

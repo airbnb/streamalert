@@ -31,6 +31,7 @@ from stream_alert.classifier.parsers import ParserBase
 from stream_alert.rules_engine import rules_engine
 from stream_alert.shared import rule
 from stream_alert.shared.logger import get_logger
+from stream_alert.shared.stats import get_rule_stats
 from stream_alert_cli.helpers import check_credentials
 from stream_alert_cli.test.format import format_green, format_red, format_underline, format_yellow
 from stream_alert_cli.test.mocks import mock_lookup_table_results, mock_threat_intel_query_results
@@ -49,8 +50,15 @@ def test_handler(options, config):
     Returns:
         bool: False if errors occurred, True otherwise
     """
+    result = True
+    for i in range(options.repeat):
+        if options.repeat != 1:
+            print('\nRepetition #', i+1)
+        result = result and TestRunner(options, config).run()
 
-    return TestRunner(options, config).run()
+    if options.stats:
+        print(get_rule_stats())
+    return result
 
 
 class TestRunner(object):

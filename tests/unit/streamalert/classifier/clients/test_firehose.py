@@ -177,8 +177,8 @@ class TestFirehoseClient(object):
 
         assert_equal(batch, expected_batch)
 
-    def test_add_payload_records(self):
-        """FirehoseClient - Add Payload Records"""
+    def test_categorize_records(self):
+        """FirehoseClient - Categorize Records"""
         FirehoseClient._ENABLED_LOGS = {
             'log_type_01_sub_type_01': 'log_type_01:sub_type_01',
             'log_type_02_sub_type_01': 'log_type_02:sub_type_01'
@@ -186,33 +186,33 @@ class TestFirehoseClient(object):
 
         payloads = self._sample_payloads
 
-        self._client._add_payload_records(payloads)
+        result = self._client._categorize_records(payloads)
         expected_result = {
             'log_type_01_sub_type_01': payloads[0].parsed_records,
             'log_type_02_sub_type_01': payloads[1].parsed_records
         }
-        assert_equal(dict(self._client._categorized_records), expected_result)
+        assert_equal(dict(result), expected_result)
 
-    def test_add_payload_records_none_enabled(self):
-        """FirehoseClient - Add Payload Records, None Enabled"""
+    def test_categorize_records_none_enabled(self):
+        """FirehoseClient - Categorize Records, None Enabled"""
         payloads = self._sample_payloads
-        self._client._add_payload_records(payloads)
+        result = self._client._categorize_records(payloads)
 
-        assert_equal(dict(self._client._categorized_records), dict())
+        assert_equal(dict(result), dict())
 
-    def test_add_payload_records_subset_enabled(self):
-        """FirehoseClient - Add Payload Records, Subset Enabled"""
+    def test_categorize_records_subset_enabled(self):
+        """FirehoseClient - Categorize Records, Subset Enabled"""
         FirehoseClient._ENABLED_LOGS = {
             'log_type_01_sub_type_01': 'log_type_01:sub_type_01'
         }
 
         payloads = self._sample_payloads
 
-        self._client._add_payload_records(payloads)
+        result = self._client._categorize_records(payloads)
         expected_result = {
             'log_type_01_sub_type_01': payloads[0].parsed_records
         }
-        assert_equal(dict(self._client._categorized_records), expected_result)
+        assert_equal(dict(result), expected_result)
 
     @patch.object(FirehoseClient, '_log_failed')
     def test_finalize_failures(self, failure_mock):

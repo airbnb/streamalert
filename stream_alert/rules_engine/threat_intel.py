@@ -93,9 +93,10 @@ class ThreatIntel(object):
 
         # Query DynamoDB IOC type to verify if the extracted info are malicious IOC(s)
         for valid_ioc in self._process_ioc_values(list(potential_iocs)):
-            for ioc_type, record in potential_iocs[valid_ioc]:
+            value = valid_ioc['ioc_value']
+            for ioc_type, record in potential_iocs[value]:
                 # Inserted the IOC info into the record
-                self._insert_ioc_info(record, ioc_type, valid_ioc)
+                self._insert_ioc_info(record, ioc_type, value)
 
     @classmethod
     def _insert_ioc_info(cls, rec, ioc_type, ioc_value):

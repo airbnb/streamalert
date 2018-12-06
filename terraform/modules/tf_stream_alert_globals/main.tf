@@ -10,6 +10,7 @@ module "classifier_queue" {
   source               = "classifier_queue"
   account_id           = "${var.account_id}"
   prefix               = "${var.prefix}"
+  region               = "${var.region}"
   rules_engine_timeout = "${var.rules_engine_timeout}"
 }
 

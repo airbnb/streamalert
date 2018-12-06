@@ -26,7 +26,7 @@ from stream_alert.shared.logger import get_logger
 from stream_alert.shared.lookup_tables import LookupTables
 from stream_alert.shared.metrics import MetricLogger
 from stream_alert.shared.rule_table import RuleTable
-from stream_alert.shared.stats import print_rule_stats
+from stream_alert.shared.stats import get_rule_stats
 
 
 LOGGER = get_logger(__name__)
@@ -262,7 +262,7 @@ class RulesEngine(object):
         # During testing, this gets logged at the end and printing here could be confusing
         # since stress testing calls this method multiple times
         if self._in_lambda:
-            print_rule_stats(True)
+            LOGGER.info(get_rule_stats(True))
 
         MetricLogger.log_metric(FUNCTION_NAME, MetricLogger.TRIGGERED_ALERTS, len(alerts))
 
