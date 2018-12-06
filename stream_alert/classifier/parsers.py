@@ -310,7 +310,7 @@ class ParserBase:
                 LOGGER.debug('Skipping optional key not found in record: %s', key)
                 continue
 
-            if record[key] is None:
+            if not record[key]:
                 LOGGER.debug('Skipping NoneType value in record for key: %s', key)
                 continue
 

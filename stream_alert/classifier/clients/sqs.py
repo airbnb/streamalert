@@ -175,7 +175,7 @@ class SQSClient(object):
                 that contains metadata on the success status of the call
         """
         success_ids = {
-            item['Id'] for item in response['Successful']
+            item['Id'] for item in response.get('Successful', [])
         }
 
         LOGGER.info('Removing sucessful message indices from batch: %s', success_ids)
