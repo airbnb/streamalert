@@ -17,12 +17,12 @@ from collections import OrderedDict
 import logging
 
 from stream_alert.classifier.clients import FirehoseClient, SQSClient
-from stream_alert.classifier.normalize import NORMALIZATION_KEY, Normalizer
 from stream_alert.classifier.parsers import get_parser
 from stream_alert.classifier.payload.payload_base import StreamPayload
 from stream_alert.shared import config, CLASSIFIER_FUNCTION_NAME as FUNCTION_NAME
 from stream_alert.shared.logger import get_logger
 from stream_alert.shared.metrics import MetricLogger
+from stream_alert.shared.normalize import Normalizer
 
 
 LOGGER = get_logger(__name__)
@@ -212,7 +212,7 @@ class Classifier(object):
             MetricLogger.NORMALIZED_RECORDS,
             sum(
                 1 for payload in self._payloads
-                for log in payload.parsed_records if log.get(NORMALIZATION_KEY)
+                for log in payload.parsed_records if log.get(Normalizer.NORMALIZATION_KEY)
             )
         )
         MetricLogger.log_metric(
