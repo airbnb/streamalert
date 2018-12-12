@@ -161,21 +161,20 @@ datatypes
 .. code-block:: python
 
   """These rules apply to several different log types, defined in conf/normalized_types.json"""
-  from rules.helpers.base import fetch_values_by_datatype
   from stream_alert.shared.rule import rule
+  from stream_alert.shared.normalize import Normalizer
 
   @rule(datatypes=['sourceAddress'], outputs=['aws-sns:my-topic'])
   def ip_watchlist_hit(record):
       """Source IP address matches watchlist."""
-      return '127.0.0.1' in fetch_values_by_datatype(record, 'sourceAddress')
-
+      return '127.0.0.1' in Normalizer.get_values_for_normalized_type(record, 'sourceAddress')
 
   @rule(datatypes=['command'], outputs=['aws-sns:my-topic'])
   def command_etc_shadow(record):
       """Command line arguments include /etc/shadow"""
       return any(
           '/etc/shadow' in cmd.lower()
-          for cmd in fetch_values_by_datatype(record, 'command')
+          for cmd in Normalizer.get_values_for_normalized_type(record, 'command')
       )
 
 logs
