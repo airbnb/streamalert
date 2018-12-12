@@ -15,7 +15,6 @@ limitations under the License.
 """
 import logging
 
-from stream_alert.shared import NORMALIZATION_KEY
 from stream_alert.shared.config import TopLevelConfigKeys
 from stream_alert.shared.logger import get_logger
 
@@ -26,6 +25,8 @@ LOGGER_DEBUG_ENABLED = LOGGER.isEnabledFor(logging.DEBUG)
 
 class Normalizer(object):
     """Normalizer class to handle log key normalization in payloads"""
+
+    NORMALIZATION_KEY = 'streamalert:normalization'
 
     # Store the normalized CEF types mapping to original keys from the records
     _types_config = dict()
@@ -39,13 +40,13 @@ class Normalizer(object):
             normalized_types (dict): Normalized types mapping
 
         Returns:
-            dict: A dict of normalized_types with original key names
+            dict: A dict of normalized keys with a list of values
 
         Example:
             record={
-                'region': 'region_name',
+                'region': 'us-east-1',
                 'detail': {
-                    'awsRegion': 'region_name'
+                    'awsRegion': 'us-west-2'
                 }
             }
             normalized_types={
@@ -53,16 +54,16 @@ class Normalizer(object):
             }
 
             return={
-                'region': [['region'], ['detail', 'awsRegion']]
+                'region': ['us-east-1', 'us-west-2']
             }
         """
         return {
-            key: list(cls._extract_paths(record, keys_to_normalize))
+            key: set(cls._extract_values(record, set(keys_to_normalize)))
             for key, keys_to_normalize in normalized_types.iteritems()
         }
 
     @classmethod
-    def _extract_paths(cls, record, keys_to_normalize, path=None):
+    def _extract_values(cls, record, keys_to_normalize):
         """Recursively extract lists of path parts from a dictionary
 
         Args:
@@ -73,17 +74,19 @@ class Normalizer(object):
         Yields:
             list: Parts of path in dictionary that contain normalized keys
         """
-        # Cast the JSON array to a set for quicker lookups
-        keys_to_normalize = set(keys_to_normalize)
-        path = path or []
         for key, value in record.iteritems():
-            temp_path = [item for item in path]
-            temp_path.append(key)
-            if key in keys_to_normalize:
-                yield temp_path
-            if isinstance(value, dict):
-                for nested_path in cls._extract_paths(value, keys_to_normalize, temp_path):
-                    yield nested_path
+            if isinstance(value, dict):  # If this is a dict, look for nested
+                for nested_value in cls._extract_values(value, keys_to_normalize):
+                    yield nested_value
+
+            if key not in keys_to_normalize:
+                continue
+
+            if isinstance(value, list):  # If this is a list of values, return all of them
+                for item in value:
+                    yield item
+            else:
+                yield value
 
     @classmethod
     def normalize(cls, record, log_type):
@@ -99,7 +102,20 @@ class Normalizer(object):
             return
 
         # Add normalized keys to the record
-        record.update({NORMALIZATION_KEY: cls.match_types(record, log_normalized_types)})
+        record.update({cls.NORMALIZATION_KEY: cls.match_types(record, log_normalized_types)})
+
+    @classmethod
+    def get_values_for_normalized_type(cls, record, datatype):
+        """Fetch values by normalized_type.
+
+        Args:
+            record (dict): parsed payload of any log
+            datatype (str): normalized type being found
+
+        Returns:
+            set: The values for the normalized type specified
+        """
+        return set(record.get(cls.NORMALIZATION_KEY, {}).get(datatype, set()))
 
     @classmethod
     def load_from_config(cls, config):
