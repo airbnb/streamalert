@@ -310,7 +310,7 @@ class ParserBase:
                 LOGGER.debug('Skipping optional key not found in record: %s', key)
                 continue
 
-            if record[key] is None:
+            if not record[key]:
                 LOGGER.debug('Skipping NoneType value in record for key: %s', key)
                 continue
 
@@ -540,7 +540,7 @@ class JSONParser(ParserBase):
                     # purposely raising here to be caught below & handled
                     raise TypeError('record data is not a dictionary')
             except (ValueError, TypeError) as err:
-                LOGGER.error('Embedded json is invalid: %s', err.message)
+                LOGGER.debug('Embedded json is invalid: %s', err.message)
                 valid = False
 
             embedded_records.append((record, valid))

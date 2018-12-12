@@ -37,7 +37,7 @@ class TestAthenaClient(object):
     """Test class for AthenaClient"""
 
     @patch.dict(os.environ, {'AWS_DEFAULT_REGION': 'us-west-1'})
-    @patch('boto3.client', Mock(side_effect=lambda c: MockAthenaClient()))
+    @patch('boto3.client', Mock(side_effect=lambda c, config=None: MockAthenaClient()))
     def setup(self):
         """Setup the AthenaClient tests"""
 

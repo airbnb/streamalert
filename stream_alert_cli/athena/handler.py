@@ -82,7 +82,12 @@ def get_athena_client(config):
         's3://{}.streamalert.athena-results'.format(prefix)
     )
 
-    return AthenaClient(db_name, results_bucket, 'stream_alert_cli')
+    return AthenaClient(
+        db_name,
+        results_bucket,
+        'stream_alert_cli',
+        region=config['global']['account']['region']
+    )
 
 
 def rebuild_partitions(table, bucket, config):

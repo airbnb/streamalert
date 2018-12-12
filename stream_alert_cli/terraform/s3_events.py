@@ -50,8 +50,14 @@ def generate_s3_events(cluster_name, cluster_dict, config):
         cluster_dict['module']['s3_events_{}_{}_{}'.format(prefix, cluster_name, index)] = {
             'source': 'modules/tf_stream_alert_s3_events',
             'lambda_role_id': '${{module.classifier_{}_lambda.role_id}}'.format(cluster_name),
+            'lambda_function_alias': (
+                '${{module.classifier_{}_lambda.function_alias}}'.format(cluster_name)
+            ),
             'lambda_function_alias_arn': (
                 '${{module.classifier_{}_lambda.function_alias_arn}}'.format(cluster_name)
+            ),
+            'lambda_function_name': (
+                '${{module.classifier_{}_lambda.function_name}}'.format(cluster_name)
             ),
             'bucket_id': bucket_info['bucket_id'],
             'notification_id': '{}_{}'.format(cluster_name, index),

@@ -989,7 +989,7 @@ class TestJSONParser(object):
         assert_equal(parser.parse(record_data), True)
         assert_equal(id(parser.parsed_records[0]) == id(record_data), False)
 
-    @patch('logging.Logger.error')
+    @patch('logging.Logger.debug')
     def test_extract_via_json_path_bad_json(self, log_mock):
         """JSONParser - Extract via JSON Path, Bad JSON"""
         options = {
@@ -1014,7 +1014,7 @@ class TestJSONParser(object):
         assert_equal(result, [('not json', False)])
         log_mock.assert_any_call('Embedded json is invalid: %s', 'No JSON object could be decoded')
 
-    @patch('logging.Logger.error')
+    @patch('logging.Logger.debug')
     def test_extract_via_json_path_not_dict(self, log_mock):
         """JSONParser - Extract via JSON Path, Not Dictionary"""
         options = {

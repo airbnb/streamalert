@@ -68,7 +68,7 @@ def cli_runner(args):
         'custom-metrics': lambda opts: _custom_metrics_handler(opts, config),
         'deploy': lambda opts: deploy_handler(opts, config),
         'destroy': lambda opts: terraform_destroy_handler(opts, config),
-        'generate': lambda opts: terraform_generate_handler(config),
+        'generate': lambda opts: terraform_generate_handler(config, check_creds=False),
         'init': lambda opts: terraform_init(opts, config),
         'kinesis': lambda opts: kinesis_handler(opts, config),
         'list-targets': lambda opts: terraform_list_targets(config),

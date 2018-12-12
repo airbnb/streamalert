@@ -1,5 +1,5 @@
 """Identifies new S3 object ACLs that grant access to the public."""
-from helpers.base import data_has_value_from_substring_list
+from rules.helpers.base import data_has_value_from_substring_list
 from stream_alert.shared.rule import rule
 
 

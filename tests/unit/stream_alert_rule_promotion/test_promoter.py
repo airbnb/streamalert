@@ -29,12 +29,12 @@ from tests.unit.helpers.aws_mocks import MockAthenaClient, setup_mock_rules_tabl
 _RULES_TABLE = 'unit-testing_streamalert_rules'
 
 
-def _mock_boto(name):
+def _mock_boto(name, **kwargs):
     """Hack to allow mocking boto3.client with moto and our own class"""
     if name == 'athena':
         return MockAthenaClient()
 
-    return client(name)
+    return client(name, **kwargs)
 
 
 class TestRulePromoter(object):

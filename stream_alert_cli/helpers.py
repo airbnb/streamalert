@@ -41,11 +41,11 @@ def run_command(runner_args, **kwargs):
 
     Args:
         runner_args (list): Commands to run via subprocess
-        kwargs:
-            cwd (str): A path to execute commands from
-            error_message (str): Message to show if command fails
-            quiet (bool): Whether to show command output or hide it
 
+    Keyword Args:
+        cwd (str): A path from which to execute commands
+        error_message (str): Message to output if command fails
+        quiet (bool): Set to True to suppress command output
     """
     default_error_message = "An error occurred while running: {}".format(' '.join(runner_args))
     error_message = kwargs.get('error_message', default_error_message)

@@ -61,11 +61,6 @@ class FirehoseClient(object):
 
     def __init__(self, firehose_config=None, log_sources=None):
         self._client = boto3.client('firehose', config=boto_helpers.default_config())
-        # Create a dictionary to hold parsed payloads by log type.
-        # Firehose needs this information to send to its corresponding
-        # delivery stream.
-        self._categorized_records = defaultdict(list)
-
         self.load_enabled_log_sources(firehose_config, log_sources, force_load=True)
 
     @classmethod
@@ -167,19 +162,26 @@ class FirehoseClient(object):
         for idx in sorted(success_indices, reverse=True):
             del batch[idx]
 
-    def _add_payload_records(self, payloads):
+    def _categorize_records(self, payloads):
         """Add the records to the proper list of cached records, based on log type
 
         Args:
             payloads (list): List of PayloadRecord items that include parsed records
         """
+        # Create a dictionary to hold parsed payloads by log type.
+        # Firehose needs this information to send to its corresponding
+        # delivery stream.
+        categorized_records = defaultdict(list)
+
         for payload in payloads:
             # Only send payloads with enabled log sources
             if not self.enabled_log_source(payload.log_schema_type):
                 continue
 
             # Add the records to the dictionary of categorized records
-            self._categorized_records[payload.log_schema_type].extend(payload.parsed_records)
+            categorized_records[payload.log_schema_type].extend(payload.parsed_records)
+
+        return categorized_records
 
     @classmethod
     def _finalize(cls, response, stream_name, size):
@@ -375,12 +377,12 @@ class FirehoseClient(object):
         Args:
             payloads (list): List of PayloadRecord items that include parsed records
         """
-        self._add_payload_records(payloads)
+        records = self._categorize_records(payloads)
 
         # Iterate through each set of categorized payloads.
         # Each batch will be processed to their specific Firehose, which lands the data
         # in a specific prefix in S3.
-        for log_type, records in self._categorized_records.iteritems():
+        for log_type, records in records.iteritems():
             # This same substitution method is used when naming the Delivery Streams
             formatted_log_type = self.firehose_log_name(log_type)
             stream_name = self.DEFAULT_FIREHOSE_PREFIX.format(formatted_log_type)

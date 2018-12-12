@@ -1,5 +1,5 @@
 """Detection of the right to left override unicode character U+202E in filename or process name."""
-from helpers.base import fetch_values_by_datatype
+from rules.helpers.base import fetch_values_by_datatype
 from stream_alert.shared.rule import rule
 
 

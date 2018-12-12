@@ -83,7 +83,8 @@ class TestTerraformGenerate(object):
         tf_main_expected = {
             'provider': {
                 'aws': {
-                    'version': generate.TERRAFORM_VERSIONS['provider']['aws']
+                    'version': generate.TERRAFORM_VERSIONS['provider']['aws'],
+                    'region': 'us-west-1'
                 }
             },
             'terraform': {

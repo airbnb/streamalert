@@ -145,7 +145,25 @@ class Rule(object):
         if not self.matchers:
             return True
 
-        return all(Matcher.process(matcher_name, record) for matcher_name in self.matchers)
+        return all(self._run_matcher(func, record) for func in self.matchers)
+
+    @classmethod
+    def _run_matcher(cls, func, record):
+        """Process will ensure this record is valid for this matcher
+
+        Args:
+            func (function): Matcher function supplied in the rule decorator
+            record (dict): Record that the matcher should be applied against
+
+        Returns:
+            bool: True if the matcher applied to this record, False otherwise
+        """
+        try:
+            return func(record)
+        except Exception:  # pylint: disable=broad-except
+            LOGGER.exception('Encountered error with matcher: %s', func.__name__)
+
+        return False
 
     def is_staged(self, rule_table):
         """Run any rule matchers against the record
@@ -253,57 +271,3 @@ class Rule(object):
     def rules_for_log_type(cls, log_type):
         return [item for item in Rule._rules.values()
                 if (item.logs is None or log_type in item.logs) and not item.disabled]
-
-
-class MatcherCreationError(Exception):
-    """Exception to raise for any errors with invalid matchers"""
-
-
-def matcher(matcher_func):
-    """Decorator to be used to register a matcher for use with rules
-
-    Matchers extract common logic into helper functions. Each rule
-    can contain multiple matchers.
-    """
-    Matcher(matcher_func)
-    return matcher_func
-
-
-class Matcher(object):
-    """Matcher class to handle matcher logic"""
-    _matchers = {}
-    def __init__(self, func):
-        if func.__name__ in Matcher._matchers:
-            raise MatcherCreationError('matcher already defined: {}'.format(func.__name__))
-
-        # Register the matcher
-        Matcher._matchers[func.__name__] = func
-
-    @classmethod
-    def process(cls, matcher_from_rule, record):
-        """Process will ensure this record is valid for this matcher
-
-        Args:
-            matcher_from_rule (str): Name of matcher supplied in the rule decorator
-            record (dict): Record that the matcher should be applied against
-
-        Returns:
-            bool: True if the matcher applied to this record, False otherwise
-        """
-        func = Matcher._matchers.get(matcher_from_rule)
-        if not func:
-            # TODO: previously, if a matcher used in a rule did not exist,
-            #  we would log an error but not return False. Should an invalid
-            #  matcher in a rule throw and error or be ignored? See here:
-            # https://github.com/airbnb/streamalert/blob/c33709129ee2bd9cd38f50f3e95fc7d01518e539/stream_alert/rule_processor/rules_engine.py#L162-L163
-            # TODO: is there any reason we shouldn't just import thee matcher into
-            #  the rule file, instead of referring to it by the function's name?
-            LOGGER.error('The matcher [%s] does not exist!', matcher_from_rule)
-            return False
-
-        try:
-            return func(record)
-        except Exception:  # pylint: disable=broad-except
-            LOGGER.exception('Encountered error with matcher: %s', func.__name__)
-
-        return False
