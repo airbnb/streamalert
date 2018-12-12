@@ -99,6 +99,48 @@ def {}(_):
         assert_equal(str(test_rule), '<Rule: test_rule; outputs: [\'foo\']; disabled: False>')
         assert_equal(repr(test_rule), '<Rule: test_rule; outputs: [\'foo\']; disabled: False>')
 
+    def test_check_matchers(self):
+        """Rule - Check Matchers, True"""
+        def test_matcher(rec):
+            return rec['value'] == 100
+
+        def test_rule(_):
+            return False
+
+        test_rule = rule.Rule(test_rule, logs=['bar'], matchers=[test_matcher])
+
+        test_record = {'value': 100}
+
+        assert_equal(test_rule.check_matchers(test_record), True)
+
+    def test_check_matchers_false(self):
+        """Rule - Check Matchers, False"""
+        def test_matcher(rec):
+            return rec['value'] == 100
+
+        def test_rule(_):
+            return True
+
+        test_rule = rule.Rule(test_rule, logs=['bar'], matchers=[test_matcher])
+
+        test_record = {'value': 200}
+
+        assert_equal(test_rule.check_matchers(test_record), False)
+
+    @patch('logging.Logger.exception')
+    def test_check_matchers_exception(self, log_mock):
+        """Rule - Check Matchers, Exception"""
+        def test_matcher(_):
+            raise ValueError('this is a bad matcher')
+
+        def test_rule(_):
+            return True
+
+        test_rule = rule.Rule(test_rule, logs=['bar'], matchers=[test_matcher])
+
+        assert_equal(test_rule.check_matchers(None), False)
+        log_mock.assert_called_with('Encountered error with matcher: %s', 'test_matcher')
+
     @patch('logging.Logger.exception')
     def test_rule_process_exception(self, log_mock):
         """Rule - Process, Exception"""
@@ -251,58 +293,6 @@ def {}(_):
         assert_equal(result[0].name, 'rule_04')
 
 
-class TestMatcher(object):
-    """TestMatcher class"""
-
-    def setup(self):
-        rule.Matcher._matchers.clear()
-
-    def teardown(self):
-        rule.Matcher._matchers.clear()
-
-    @staticmethod
-    def _create_matcher_helper(matcher_name):
-        """Simple helper to create a matcher from a code block
-
-        This injects matcher name in to the code block and executes it
-
-        Args:
-            matcher_name (str): Name of matcher to use for matcher function
-        """
-        custom_matcher_code = """
-@rule.matcher
-def {}(_):
-    return False
-""".format(matcher_name)
-
-        exec custom_matcher_code  # pylint: disable=exec-used
-
-    @raises(rule.MatcherCreationError)
-    def test_matcher_exists(self):
-        """Matcher - Create Matcher, Matcher Already Exists"""
-        self._create_matcher_helper('test_matcher')
-        self._create_matcher_helper('test_matcher')
-
-    @patch('logging.Logger.error')
-    def test_matcher_does_not_exit(self, log_mock):
-        """Matcher - Process Matcher, Does Not Exists"""
-        result = rule.Matcher.process('fake_matcher', None)
-        assert_equal(result, False)
-        log_mock.assert_called_with('The matcher [%s] does not exist!', 'fake_matcher')
-
-    @patch('logging.Logger.exception')
-    def test_matcher_exception(self, log_mock):
-        """Matcher - Process Matcher, Exception"""
-        # Create a matcher function that will raise an exception
-        def matcher_exception(_):  # pylint: disable=unused-variable
-            raise ValueError('this is a bad matcher')
-
-        matcher = rule.Matcher(matcher_exception)
-        result = matcher.process('matcher_exception', None)
-        assert_equal(result, False)
-        log_mock.assert_called_with('Encountered error with matcher: %s', 'matcher_exception')
-
-
 class RuleImportTest(fake_filesystem_unittest.TestCase):
     """Test rule import logic with a mocked filesystem."""
     # pylint: disable=protected-access
@@ -311,12 +301,12 @@ class RuleImportTest(fake_filesystem_unittest.TestCase):
         self.setUpPyfakefs()
 
         # Add rules files which should be imported.
-        self.fs.create_file('matchers/matchers.py')
+        self.fs.create_file('rules/matchers/matchers.py')
         self.fs.create_file('rules/example.py')
         self.fs.create_file('rules/community/cloudtrail/critical_api.py')
 
         # Add other files which should NOT be imported.
-        self.fs.create_file('matchers/README')
+        self.fs.create_file('rules/matchers/README.md')
         self.fs.create_file('rules/__init__.py')
         self.fs.create_file('rules/example.pyc')
         self.fs.create_file('rules/community/REVIEWERS')
@@ -324,9 +314,9 @@ class RuleImportTest(fake_filesystem_unittest.TestCase):
     @staticmethod
     def test_python_rule_paths():
         """Rule - Python File Paths"""
-        result = set(rule._python_file_paths('rules', 'matchers'))
+        result = set(rule._python_file_paths('rules'))
         expected = {
-            'matchers/matchers.py',
+            'rules/matchers/matchers.py',
             'rules/example.py',
             'rules/community/cloudtrail/critical_api.py'
         }
@@ -351,9 +341,9 @@ class RuleImportTest(fake_filesystem_unittest.TestCase):
     @patch('importlib.import_module')
     def test_import_rules(mock_import):
         """Rule - Import Folders"""
-        rule.import_folders('rules', 'matchers')
+        rule.import_folders('rules')
         mock_import.assert_has_calls([
-            call('matchers.matchers'),
+            call('rules.matchers.matchers'),
             call('rules.example'),
             call('rules.community.cloudtrail.critical_api')
         ], any_order=True)

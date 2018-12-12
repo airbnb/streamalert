@@ -1,5 +1,5 @@
 """Alert when a DUO bypass code is created that has unlimited use."""
-from helpers.base import safe_json_loads
+from rules.helpers.base import safe_json_loads
 from stream_alert.shared.rule import rule
 
 

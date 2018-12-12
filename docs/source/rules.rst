@@ -86,22 +86,22 @@ We can generalize the rule to alleviate these issues:
 
 .. code-block:: python
 
-  from helpers.base import get_first_key  # Find first key recursively in record
-  from stream_alert.shared.rule import matcher, rule
+  from rules.helpers.base import get_first_key  # Find first key recursively in record
+  from stream_alert.shared.rule import rule
 
-  # This could alternatively be defined in matchers/matchers.py to be more shareable
+  # This could alternatively be defined in rules/matchers/matchers.py to be shareable
   _PROD_ACCOUNTS = {'111111111111', '222222222222'}
-  @matcher
+
   def prod_account(record):
       """Match logs for one of the production AWS accounts"""
       return (
-          rec.get('account') in _PROD_ACCOUNTS or
-          get_first_key(rec, 'userIdentity', {}).get('accountId') in _PROD_ACCOUNTS
+          record.get('account') in _PROD_ACCOUNTS or
+          get_first_key(record, 'userIdentity', {}).get('accountId') in _PROD_ACCOUNTS
       )
 
   @rule(
       logs=['cloudtrail:events', 'cloudwatch:events'],  # Rule applies to these 2 schemas
-      matchers=['prod_account'],  # Must be satisfied before rule is evaluated
+      matchers=[prod_account],  # Must be satisfied before rule is evaluated
       merge_by_keys=['useragent'],  # Merge alerts with the same 'useragent' key-value pair
       merge_window_mins=5,  # Merge alerts every 5 minutes
       outputs=['pagerduty:csirt', 'slack:security']  # Send alerts to these 2 outputs
@@ -115,7 +115,7 @@ We can generalize the rule to alleviate these issues:
       )
 
 To simplify rule logic, you can extract common routines into custom helper methods.
-These helpers are defined in ``helpers/base.py`` and can be called from within a matcher or rule (as shown here).
+These helpers are defined in ``rules/helpers/base.py`` and can be called from within a matcher or rule (as shown here).
 
 Since rules are written in Python, you can make them as sophisticated as you want!
 
@@ -161,7 +161,7 @@ datatypes
 .. code-block:: python
 
   """These rules apply to several different log types, defined in conf/normalized_types.json"""
-  from helpers.base import fetch_values_by_datatype
+  from rules.helpers.base import fetch_values_by_datatype
   from stream_alert.shared.rule import rule
 
   @rule(datatypes=['sourceAddress'], outputs=['aws-sns:my-topic'])
@@ -190,11 +190,15 @@ Log `sources <conf-datasources.html>`_ are defined in ``conf/sources.json`` and 
 matchers
 ~~~~~~~~
 
-``matchers`` define pre-conditions that must be satisfied in order for the rule to be evaluated.
-Matchers are defined in ``matchers/matchers.py`` but can also be defined in the rules file (see :ref:`example above <advanced_example>`).
+``matchers`` define conditions that must be satisfied in order for the rule to be evaluated.
+Default matchers are defined in ``rules/matchers/matchers.py`` but can also be defined
+in the rules file (see :ref:`example above <advanced_example>`).
 
-All matchers are evaluated on each incoming log record before running any rules,
-so they can improve the efficiency of complex rules with shared logic.
+A matcher function should accept a single argument, just like rules. That argument will be the
+record that is being evaluated by the rule.
+
+Rules can utilize matchers to reduce redundancy of code, allowing you to define the logic once
+and easily use it across multiple rules.
 
 merge_by_keys / merge_window_mins
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

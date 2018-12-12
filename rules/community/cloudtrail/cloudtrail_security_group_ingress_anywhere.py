@@ -1,5 +1,5 @@
 """Alert on AWS Security Groups that allow ingress from anywhere."""
-from helpers.base import get_keys
+from rules.helpers.base import get_keys
 from stream_alert.shared.rule import rule
 
 

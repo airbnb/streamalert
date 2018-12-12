@@ -110,7 +110,7 @@ class TestRunner(object):
              patch.object(rules_engine.LookupTables, 'load_lookup_tables') as lt_mock, \
              patch.object(rules_engine, 'AlertForwarder'), \
              patch.object(rules_engine, 'RuleTable'), \
-             patch('helpers.base.random_bool', return_value=True):
+             patch('rules.helpers.base.random_bool', return_value=True):
 
             ti_mock.side_effect = self._threat_intel_mock
 

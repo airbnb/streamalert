@@ -274,14 +274,7 @@ class TestRulesEngine(object):
         self._rules_engine._threat_intel = None
         with patch.object(self._rules_engine, '_process_subkeys') as subkey_mock, \
              patch.object(self._rules_engine, '_alert_forwarder'), \
-             patch.object(self._rules_engine, '_rule_analysis') as analysis_mock, \
-             patch.object(rules_engine_module, 'Rule') as rule_mock:
-
-            rule_mock.rules_for_log_type.return_value = [
-                Mock(
-                    check_matchers=Mock(return_value=True)
-                )
-            ]
+             patch.object(self._rules_engine, '_rule_analysis') as analysis_mock:
 
             subkey_mock.return_value = False
 
@@ -302,14 +295,7 @@ class TestRulesEngine(object):
         self._rules_engine._threat_intel = None
         with patch.object(self._rules_engine, '_process_subkeys'), \
              patch.object(self._rules_engine, '_alert_forwarder'), \
-             patch.object(self._rules_engine, '_rule_analysis') as analysis_mock, \
-             patch.object(rules_engine_module, 'Rule') as rule_mock:
-
-            rule_mock.rules_for_log_type.return_value = [
-                Mock(
-                    check_matchers=Mock(return_value=False)
-                )
-            ]
+             patch.object(self._rules_engine, '_rule_analysis') as analysis_mock:
 
             records = [
                 {
