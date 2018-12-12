@@ -90,8 +90,8 @@ class TestThreatIntel(object):
                 },
                 'source': '1.1.1.2',
                 'streamalert:normalization': {
-                    'sourceAddress': [['detail', 'sourceIPAddress'], ['source']],
-                    'userName': [['detail', 'userIdentity', 'userName']]
+                    'sourceAddress': {'1.1.1.2'},
+                    'userName': {'alice'}
                 }
             }
         }
@@ -123,8 +123,8 @@ class TestThreatIntel(object):
             },
             'source': '1.1.1.2',
             'streamalert:normalization': {
-                'sourceAddress': [['detail', 'sourceIPAddress'], ['source']],
-                'userName': [['detail', 'userIdentity', 'userName']]
+                'sourceAddress': {'1.1.1.2'},
+                'userName': {'alice'}
             },
             'streamalert:ioc': {
                 'ip': {'1.1.1.2'}
@@ -409,26 +409,6 @@ class TestThreatIntel(object):
         }
         assert_equal(self._threat_intel._is_excluded_ioc('ip', '1.2.3.20'), False)
         assert_equal(self._threat_intel._is_excluded_ioc('ip', '1.2.3.15'), True)
-
-    def test_extract_values_by_keys(self):
-        """ThreatIntel - Extract Values By Keys"""
-        record = {
-            'region': 'us-east-1',
-            'detail': {
-                'eventName': 'ConsoleLogin',
-                'sourceIPAddress': None
-            },
-            'source': '1.1.1.2'
-        }
-
-        keys = [['detail', 'sourceIPAddress'], ['source']]
-
-        expected_result = [
-            '1.1.1.2'
-        ]
-
-        result = list(ThreatIntel._extract_values_by_keys(record, keys))
-        assert_equal(result, expected_result)
 
     def test_extract_ioc_values(self):
         """ThreatIntel - Extract IOC Values"""

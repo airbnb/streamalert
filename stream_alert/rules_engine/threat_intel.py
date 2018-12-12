@@ -21,13 +21,13 @@ import boto3
 from boto3.dynamodb.types import TypeDeserializer
 from botocore.exceptions import ClientError, ParamValidationError
 from netaddr import IPNetwork
-from stream_alert.shared import NORMALIZATION_KEY
 from stream_alert.shared.backoff_handlers import (
     backoff_handler,
     success_handler,
     giveup_handler
 )
 from stream_alert.shared.logger import get_logger
+from stream_alert.shared.normalize import Normalizer
 from stream_alert.shared.utils import in_network, valid_ip
 
 
@@ -288,27 +288,6 @@ class ThreatIntel(object):
 
         return ioc_value in exclusions
 
-    @classmethod
-    def _extract_values_by_keys(cls, record, key_values):
-        """Return a value from the record given its path of Keys
-
-        Args:
-            record (dict): Record from which to extract values
-            key_values (list<list>): List of lists with keys in path to values
-        """
-        values = set()
-        for original_keys in key_values:
-            value = record
-            for original_key in original_keys:
-                value = value[original_key]
-
-            if not value:  # ensure the value is not falsy/empty
-                continue
-
-            values.add(str(value).lower())
-
-        return values
-
     def _extract_ioc_values(self, payloads):
         """Instance method to extract IOC info from the record based on normalized keys
 
@@ -317,22 +296,23 @@ class ThreatIntel(object):
             normalized data
 
         Returns:
-          list: Return a list of RecordIOC instances.
+          dict: Map of ioc values to the source record and type of ioc
         """
         ioc_values = defaultdict(list)
         for payload in payloads:
             record = payload['record']
-            if NORMALIZATION_KEY not in record:
+            if Normalizer.NORMALIZATION_KEY not in record:
                 continue
-            for normalized_key, original_key_values in record[NORMALIZATION_KEY].iteritems():
-                # Lookup mapped IOC type based on normalized CEF type
+            normalized_values = record[Normalizer.NORMALIZATION_KEY]
+            for normalized_key, values in normalized_values.iteritems():
+                # Look up mapped IOC type based on normalized CEF type
                 ioc_type = self._ioc_config.get(normalized_key)
                 if not ioc_type:
                     LOGGER.debug('Skipping undefined IOC type for normalized key: %s',
                                  normalized_key)
                     continue
 
-                for value in self._extract_values_by_keys(record, original_key_values):
+                for value in values:
                     # Skip excluded IOCs
                     if self._is_excluded_ioc(ioc_type, value):
                         continue
