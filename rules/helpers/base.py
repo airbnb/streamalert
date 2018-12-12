@@ -20,7 +20,6 @@ import random
 import time
 import pathlib2
 
-from stream_alert.shared import NORMALIZATION_KEY
 from stream_alert.shared.utils import (  # pylint: disable=unused-import
     # Import some utility functions which are useful for rules as well
     get_first_key,
@@ -140,33 +139,6 @@ def last_hour(unixtime, hours=1):
     seconds = hours * 3600
     # sometimes bash histories do not contain the `time` column
     return int(time.time()) - int(unixtime) <= seconds if unixtime else False
-
-
-def fetch_values_by_datatype(rec, datatype):
-    """Fetch values of normalized_type.
-
-    Args:
-        rec (dict): parsed payload of any log
-        datatype (str): normalized type user interested
-
-    Returns:
-        (list) The values of normalized types
-    """
-    results = []
-    if not rec.get(NORMALIZATION_KEY):
-        return results
-
-    if datatype not in rec[NORMALIZATION_KEY]:
-        return results
-
-    for original_keys in rec[NORMALIZATION_KEY][datatype]:
-        result = rec
-        if isinstance(original_keys, list):
-            for original_key in original_keys:
-                result = result[original_key]
-        results.append(result)
-
-    return results
 
 
 def data_has_value(data, search_value):
