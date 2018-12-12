@@ -149,8 +149,10 @@ def _create(function_name, config, clusters=None):
             stream_alert_packages.AppPackage,
             {'module.app_{}_{}_{}'.format(app_info['app_name'], cluster, suffix)
              for suffix in {'lambda', 'iam'}
-             for cluster, info in config['clusters'].iteritems()
-             for app_info in info['modules'].get('stream_alert_apps', {}).values()
+             for cluster in clusters
+             for app_info in config['clusters'][cluster]['modules'].get(
+                 'stream_alert_apps', {}
+             ).itervalues()
              if 'app_name' in app_info},
             True if any(info['modules'].get('stream_alert_apps')
                         for info in config['clusters'].itervalues()) else False
