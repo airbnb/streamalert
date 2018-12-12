@@ -109,7 +109,7 @@ def rollback_handler(options, config):
         for cluster in clusters:
             success = success and _rollback_production(
                 client,
-                '{}_{}_streamalert_classifier'.format(prefix, cluster)
+                '{}_streamalert_classifier_{}'.format(prefix, cluster)
             )
 
     if rollback_all or 'rule' in options.function:
