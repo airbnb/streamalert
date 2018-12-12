@@ -14,11 +14,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import os
+import json
 import random
 import shutil
 import tempfile
 
+import boto3
+
 from stream_alert.shared.alert import Alert
+from tests.unit.helpers.aws_mocks import put_mock_s3_object
 
 
 def get_random_alert(key_count, rule_name, omit_rule_desc=False):
@@ -34,7 +38,7 @@ def get_random_alert(key_count, rule_name, omit_rule_desc=False):
         Anything over 4000 characters will result in multi-part slack messages:
         55*160 = 8800 & 8800/4000 = ceil(2.2) = 3 messages needed
     """
-    # This default value is set in the rule processor's rules_engine.py
+    # This default value is set in the rules engine
     rule_description = 'No rule description provided' if omit_rule_desc else 'rule test description'
 
     return Alert(
@@ -84,3 +88,20 @@ def remove_temp_secrets():
     # Check if the folder exists, and remove it if it does
     if os.path.isdir(secrets_dirtemp_dir):
         shutil.rmtree(secrets_dirtemp_dir)
+
+
+def encrypt_with_kms(data, region, alias):
+    """Encrypt the given data with KMS."""
+    kms_client = boto3.client('kms', region_name=region)
+    response = kms_client.encrypt(KeyId=alias, Plaintext=data)
+
+    return response['CiphertextBlob']
+
+
+def put_mock_creds(output_name, creds, bucket, region, alias):
+    """Helper function to mock encrypt creds and put on s3"""
+    creds_string = json.dumps(creds)
+
+    enc_creds = encrypt_with_kms(creds_string, region, alias)
+
+    put_mock_s3_object(bucket, output_name, enc_creds, region)

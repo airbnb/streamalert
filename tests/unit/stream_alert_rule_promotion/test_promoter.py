@@ -21,21 +21,20 @@ from mock import Mock, patch, PropertyMock
 from moto import mock_dynamodb2
 from nose.tools import assert_equal
 
-from stream_alert_cli.helpers import setup_mock_rules_table
 from stream_alert.rule_promotion.promoter import RulePromoter
 from stream_alert.rule_promotion.statistic import StagingStatistic
 from stream_alert.shared import config, rule as rule_module
-from tests.unit.helpers.aws_mocks import MockAthenaClient
+from tests.unit.helpers.aws_mocks import MockAthenaClient, setup_mock_rules_table
 
 _RULES_TABLE = 'unit-testing_streamalert_rules'
 
 
-def _mock_boto(name):
+def _mock_boto(name, **kwargs):
     """Hack to allow mocking boto3.client with moto and our own class"""
     if name == 'athena':
         return MockAthenaClient()
 
-    return client(name)
+    return client(name, **kwargs)
 
 
 class TestRulePromoter(object):

@@ -1,8 +1,8 @@
 Clusters
 ========
 
-Inbound data is directed to one of your StreamAlert *clusters*, each with its own data sources
-and rule processor. For many applications, one cluster may be enough. However, adding
+Inbound data is directed to one of StreamAlert's *clusters*, each with its own data sources
+and classifier function. For many applications, one cluster may be enough. However, adding
 additional clusters can potentially improve performance and provide isolated analysis pipelines. For
 example, you could have:
 
@@ -16,25 +16,23 @@ example, you could have:
 Each cluster is defined by its own JSON file in the
 `conf/clusters <https://github.com/airbnb/streamalert/tree/stable/conf/clusters>`_ directory.
 To add a new cluster, simply create a new JSON file with the cluster name and fill in your desired
-configuration (described below).
+configuration, described below.
 
 Changes to cluster configuration can be applied with one of the following:
 
 .. code-block:: bash
 
-  ./manage.py terraform build  # Apply all changes
-  ./manage.py terraform build --target cloudtrail  # Apply changes to CloudTrail module only
+  ./manage.py build  # Apply all changes
+  ./manage.py build --target cloudwatch_monitoring_*  # Only apply changes to CloudWatch module for all clusters
 
 Configuration options are divided into different modules, each of which is discussed below.
 
 
 .. _main_cluster_module:
 
-Rule Processor
---------------
-``stream_alert`` is the only required module because it configures the cluster's rule processor.
-
-This module is implemented by `terraform/modules/tf_stream_alert <https://github.com/airbnb/streamalert/tree/stable/terraform/modules/tf_stream_alert>`_.
+Classifier Function
+-------------------
+``stream_alert`` is the only required module because it configures the cluster's classifier.
 
 Example: Minimal Cluster
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -45,17 +43,20 @@ Example: Minimal Cluster
     "id": "minimal-cluster",
     "modules": {
       "stream_alert": {
-        "rule_processor": {
+        "classifier_config": {
+          "enable_custom_metrics": true,
+          "log_level": "info",
+          "log_retention_days": 14,
           "memory": 128,
-          "timeout": 10
+          "timeout": 60
         }
       }
     },
     "region": "us-east-1"
   }
 
-Example: Rule Processor with SNS Inputs
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Example: Classifier with SNS Inputs
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: json
 
@@ -63,34 +64,35 @@ Example: Rule Processor with SNS Inputs
     "id": "sns-inputs",
     "modules": {
       "stream_alert": {
-        "rule_processor": {
-          "enable_metrics": true,
+        "classifier_config": {
+          "enable_custom_metrics": true,
           "inputs": {
             "aws-sns": [
               "arn:aws:sns:REGION:ACCOUNT:TOPIC_NAME"
             ]
           },
           "log_level": "info",
+          "log_retention_days": 14,
           "memory": 128,
-          "timeout": 10
+          "timeout": 60
         }
       }
     },
     "region": "us-east-1"
   }
 
-Configuration Options
-~~~~~~~~~~~~~~~~~~~~~
-=======================  ===========  ===============
-**Key**                  **Default**  **Description**
------------------------  -----------  ---------------
-``enable_metrics``       ``true``     Enable :ref:`custom metrics <custom_metrics>` for the cluster
-``enable_threat_intel``  ``false``    Toggle threat intel integration (beta)
-``inputs``               ``{}``       SNS topics which can invoke the rule processor (see example)
-``log_level``            ``"info"``   Lambda CloudWatch logging level
-``memory``               ---          Lambda function memory (MB)
-``timeout``              ---          Lambda function timeout (seconds)
-=======================  ===========  ===============
+Classifier Configuration Options
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+==========================  ===========  ===============
+**Key**                     **Default**  **Description**
+--------------------------  -----------  ---------------
+``enable_custom_metrics``   ``true``     Enable :ref:`custom metrics <custom_metrics>` for the cluster
+``enable_threat_intel``     ``false``    Toggle threat intel integration (beta)
+``inputs``                  ``{}``       SNS topics which can invoke the classifier function (see example)
+``log_level``               ``"info"``   Lambda CloudWatch logging level
+``memory``                  ---          Lambda function memory (MB)
+``timeout``                 ---          Lambda function timeout (seconds)
+==========================  ===========  ===============
 
 .. _cloudtrail:
 
@@ -118,9 +120,12 @@ Example: CloudTrail via S3 Events
         }
       ],
       "stream_alert": {
-        "rule_processor": {
+        "classifier_config": {
+          "enable_custom_metrics": true,
+          "log_level": "info",
+          "log_retention_days": 14,
           "memory": 128,
-          "timeout": 10
+          "timeout": 60
         }
       }
     },
@@ -128,7 +133,7 @@ Example: CloudTrail via S3 Events
   }
 
 This creates a new CloudTrail and an S3 bucket for the resulting logs. Each new object in the bucket
-invokes the StreamAlert rule processor via :ref:`S3 events <s3_events>`. For this data, rules should
+invokes the StreamAlert classifier function via :ref:`S3 events <s3_events>`. For this data, rules should
 be written against the ``cloudtrail:events`` log type.
 
 Example: CloudTrail via CloudWatch Logs
@@ -157,9 +162,12 @@ Example: CloudTrail via CloudWatch Logs
           "enabled": true
         },
         "stream_alert": {
-          "rule_processor": {
+          "classifier_config": {
+            "enable_custom_metrics": true,
+            "log_level": "info",
+            "log_retention_days": 14,
             "memory": 128,
-            "timeout": 10
+            "timeout": 60
           }
         }
       },
@@ -167,7 +175,7 @@ Example: CloudTrail via CloudWatch Logs
     }
 
 This also creates the CloudTrail and S3 bucket, but now the CloudTrail logs are also delivered to
-CloudWatch Logs and then to a Kinesis subscription which feeds the rule processor. This can scale to
+CloudWatch Logs and then to a Kinesis subscription which feeds the classifier function. This can scale to
 higher throughput, since StreamAlert does not have to download potentially very large files from
 S3. In this case, rules should be written against the ``cloudwatch:events`` log type.
 
@@ -232,9 +240,12 @@ Example: CloudWatch Logs Cluster
         "enabled": true
       },
       "stream_alert": {
-        "rule_processor": {
+        "classifier_config": {
+          "enable_custom_metrics": true,
+          "log_level": "info",
+          "log_retention_days": 14,
           "memory": 128,
-          "timeout": 10
+          "timeout": 60
         }
       }
     },
@@ -268,7 +279,7 @@ CloudWatch Monitoring
 ---------------------
 To ensure data collection is running smoothly, we recommend enabling
 `CloudWatch metric alarms <https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/cloudwatch_concepts.html#CloudWatchAlarms>`_
-to monitor the health of your rule processor Lambda function and (if applicable) your Kinesis stream.
+to monitor the health the classifier Lambda function(s) and, if applicable, the respective Kinesis stream.
 
 This module is implemented by `terraform/modules/tf_stream_alert_monitoring <https://github.com/airbnb/streamalert/tree/stable/terraform/modules/tf_stream_alert_monitoring>`_.
 
@@ -292,9 +303,12 @@ Example: Enable CloudWatch Monitoring
         }
       },
       "stream_alert": {
-        "rule_processor": {
+        "classifier_config": {
+          "enable_custom_metrics": true,
+          "log_level": "info",
+          "log_retention_days": 14,
           "memory": 128,
-          "timeout": 10
+          "timeout": 60
         }
       }
     },
@@ -304,9 +318,9 @@ Example: Enable CloudWatch Monitoring
 This enables both the Kinesis and Lambda alarms and illustrates how the alarm thresholds can be tuned.
 A total of 5 alarms will be created:
 
-* Rule processor Lambda invocation errors
-* Rule processor Lambda throttles
-* Rule processor Lambda iterator age (applicable only for Kinesis invocations)
+* Classifier Lambda function invocation errors
+* Classifier Lambda function throttles
+* Classifier Lambda function iterator age, applicable only for Kinesis invocations
 * Kinesis iterator age
 * Kinesis write exceeded
 
@@ -364,7 +378,7 @@ as follows:
       "...": "...",
 
       "monitoring": {
-        "sns_topic_name": "your-existing-topic-name"
+        "sns_topic_name": "existing-topic-name"
       },
 
       "...": "..."
@@ -380,12 +394,12 @@ Kinesis Data Streams
 
 This module creates a
 `Kinesis Data Stream <https://docs.aws.amazon.com/streams/latest/dev/key-concepts.html>`_
-in your cluster, which is the most common approach for StreamAlert data ingestion.
+in the cluster, which is the most common approach for StreamAlert data ingestion.
 In fact, the :ref:`CloudTrail <cloudtrail>`, :ref:`CloudWatch Logs <cloudwatch_logs>`,
 and :ref:`VPC Flow Logs<flow_logs>` cluster modules all rely on Kinesis streams for data delivery.
 
 Each Kinesis stream is a set of *shards*, which in aggregate determine the total data capacity of
-your stream. Indeed, this is the primary motivation for StreamAlert's cluster design - each cluster
+the stream. Indeed, this is the primary motivation for StreamAlert's cluster design - each cluster
 can have its own data stream whose shard counts can be configured individually.
 
 This module is implemented by `terraform/modules/tf_stream_alert_kinesis_streams <https://github.com/airbnb/streamalert/tree/stable/terraform/modules/tf_stream_alert_kinesis_streams>`_.
@@ -417,9 +431,12 @@ Example: Kinesis Cluster
         "enabled": true
       },
       "stream_alert": {
-        "rule_processor": {
+        "classifier_config": {
+          "enable_custom_metrics": true,
+          "log_level": "info",
+          "log_retention_days": 14,
           "memory": 128,
-          "timeout": 10
+          "timeout": 60
         }
       }
     },
@@ -434,7 +451,7 @@ Example: Kinesis Cluster
   }
 
 This creates a Kinesis stream and an associated IAM user and hooks up stream events to the
-StreamAlert rule processor in this cluster. The ``outputs`` instruct Terraform to print the IAM
+StreamAlert classifier function in this cluster. The ``outputs`` instruct Terraform to print the IAM
 username and access keypair for the newly created user.
 
 Configuration Options
@@ -475,11 +492,11 @@ Note: It can take several minutes to create the new shards.
 
 Then, update each respective cluster configuration file with the updated shard count.
 
-Finally, Run Terraform to ensure a consistent state.
+Finally, apply the Terraform changes to ensure a consistent state.
 
 .. code-block:: bash
 
-  $ python manage.py terraform build --target kinesis
+  $ python manage.py build --target kinesis
 
 
 .. _kinesis_events:
@@ -487,7 +504,7 @@ Finally, Run Terraform to ensure a consistent state.
 Kinesis Events
 --------------
 
-The Kinesis Events module connects a Kinesis Stream to the rule processor Lambda function.
+The Kinesis Events module connects a Kinesis Stream to the classifier Lambda function.
 
 .. note:: The :ref:`Kinesis module <kinesis_module>` must also be enabled.
 
@@ -499,7 +516,7 @@ Configuration Options
 ===============  ============  ===============
 **Key**          **Default**   **Description**
 ---------------  ------------  ---------------
-``batch_size``   ``100``       Max records the rule processor can receive per invocation
+``batch_size``   ``100``       Max records the classifier function can receive per invocation
 ``enabled``      ``false``     Toggle the kinesis events on and off
 ===============  ============  ===============
 
@@ -510,7 +527,7 @@ VPC Flow Logs
 -------------
 
 `VPC Flow Logs <https://docs.aws.amazon.com/AmazonVPC/latest/UserGuide/flow-logs.html>`_
-capture information about the IP traffic going to and from your AWS VPC.
+capture information about the IP traffic going to and from an AWS VPC.
 
 When writing rules for this data, use the ``cloudwatch:flow_logs`` log source.
 
@@ -551,9 +568,12 @@ Example: Flow Logs Cluster
           "enabled": true
         },
         "stream_alert": {
-          "rule_processor": {
+          "classifier_config": {
+            "enable_custom_metrics": true,
+            "log_level": "info",
+            "log_retention_days": 14,
             "memory": 128,
-            "timeout": 10
+            "timeout": 60
           }
         }
       },
@@ -585,9 +605,9 @@ S3 Events
 ---------
 
 You can enable `S3 event notifications <https://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html>`_
-on any of your S3 buckets to invoke the StreamAlert rule processor. When the StreamAlert rule
-processor receives this notification, it downloads the object from S3 and runs each record
-through the rules engine.
+on any of your S3 buckets to invoke the StreamAlert classifier function. When the StreamAlert classifier
+function receives this notification, it downloads the object from S3 and runs each record
+through the classification logic.
 
 This module is implemented by `terraform/modules/tf_stream_alert_s3_events <https://github.com/airbnb/streamalert/tree/stable/terraform/modules/tf_stream_alert_s3_events>`_.
 
@@ -601,26 +621,29 @@ Example: S3 Events Cluster
       "modules": {
         "s3_events": [
           {
-            "bucket_id": "your-bucket-1",
+            "bucket_id": "bucket-1",
             "enable_events": true
           },
           {
-            "bucket_id": "your-bucket-2",
+            "bucket_id": "bucket-2",
             "enable_events": true
           }
         ],
         "stream_alert": {
-          "rule_processor": {
+          "classifier_config": {
+            "enable_custom_metrics": true,
+            "log_level": "info",
+            "log_retention_days": 14,
             "memory": 128,
-            "timeout": 10
+            "timeout": 60
           }
         }
       },
       "region": "us-east-1"
     }
 
-This configures 2 buckets to notify the rule processor in this cluster, and authorizes StreamAlert
-to download objects from either bucket.
+This configures the two buckets to notify the classifier function in this cluster when new objects
+arrive in the bucket, and authorizes the classifier to download objects from either bucket.
 
 Configuration Options
 ~~~~~~~~~~~~~~~~~~~~~

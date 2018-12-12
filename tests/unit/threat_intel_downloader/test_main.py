@@ -33,7 +33,8 @@ from stream_alert.threat_intel_downloader.exceptions import (
 )
 from stream_alert.threat_intel_downloader.main import ThreatStream
 from tests.unit.stream_alert_apps.test_helpers import MockLambdaClient
-from tests.unit.threat_intel_downloader.test_helpers import get_mock_context, put_mock_params
+from tests.unit.stream_alert_shared.test_config import get_mock_lambda_context
+from tests.unit.threat_intel_downloader.test_helpers import put_mock_params
 
 
 @patch('time.sleep', Mock())
@@ -46,9 +47,11 @@ class TestThreatStream(object):
     def setup(self):
         """Setup TestThreatStream"""
         # pylint: disable=attribute-defined-outside-init
-        context = get_mock_context(100000)
-        self.threatstream = ThreatStream(context.invoked_function_arn,
-                                         context.get_remaining_time_in_millis)
+        context = get_mock_lambda_context('prefix_threat_intel_downloader', 100000)
+        self.threatstream = ThreatStream(
+            context.invoked_function_arn,
+            context.get_remaining_time_in_millis
+        )
 
     @staticmethod
     def _get_fake_intel(value, source):

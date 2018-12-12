@@ -46,21 +46,37 @@ def test_generate_s3_events():
         'module': {
             's3_events_unit-testing_advanced_0': {
                 'source': 'modules/tf_stream_alert_s3_events',
-                'lambda_function_arn': '${module.stream_alert_advanced.lambda_arn}',
+                'lambda_function_alias': (
+                    '${module.classifier_advanced_lambda.function_alias}'
+                ),
+                'lambda_function_alias_arn': (
+                    '${module.classifier_advanced_lambda.function_alias_arn}'
+                ),
+                'lambda_function_name': (
+                    '${module.classifier_advanced_lambda.function_name}'
+                ),
                 'bucket_id': 'unit-test-bucket.data',
                 'notification_id': 'advanced_0',
                 'enable_events': True,
-                'lambda_role_id': '${module.stream_alert_advanced.lambda_role_id}',
+                'lambda_role_id': '${module.classifier_advanced_lambda.role_id}',
                 'filter_suffix': '.log',
                 'filter_prefix': 'AWSLogs/123456789/CloudTrail/us-east-1/'
             },
             's3_events_unit-testing_advanced_1': {
                 'source': 'modules/tf_stream_alert_s3_events',
-                'lambda_function_arn': '${module.stream_alert_advanced.lambda_arn}',
+                'lambda_function_alias': (
+                    '${module.classifier_advanced_lambda.function_alias}'
+                ),
+                'lambda_function_alias_arn': (
+                    '${module.classifier_advanced_lambda.function_alias_arn}'
+                ),
+                'lambda_function_name': (
+                    '${module.classifier_advanced_lambda.function_name}'
+                ),
                 'bucket_id': 'unit-test.cloudtrail.data',
                 'enable_events': False,
                 'notification_id': 'advanced_1',
-                'lambda_role_id': '${module.stream_alert_advanced.lambda_role_id}',
+                'lambda_role_id': '${module.classifier_advanced_lambda.role_id}',
                 'filter_suffix': '',
                 'filter_prefix': ''
             }
@@ -71,7 +87,7 @@ def test_generate_s3_events():
     assert_equal(cluster_dict, expected_config)
 
 
-@patch('stream_alert_cli.terraform.s3_events.LOGGER_CLI')
+@patch('stream_alert_cli.terraform.s3_events.LOGGER')
 def test_generate_s3_events_invalid_bucket(mock_logging):
     """CLI - Terraform - S3 Events with Missing Bucket Key"""
     cluster_dict = common.infinitedict()

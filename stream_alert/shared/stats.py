@@ -81,26 +81,26 @@ def time_rule(rule_func):
     return timed
 
 
-def print_rule_stats(reset=False):
+def get_rule_stats(reset=False):
     """Print some additional rule stats
 
     Args:
         reset (bool): Optional flag to reset the tracking statistics after printing
     """
     if not RULE_STATS:
-        LOGGER.error('No rule statistics to print')
+        LOGGER.error('No rule statistics to return')
         return
 
-    max_rule_name_len = max([len(rule) for rule in RULE_STATS.keys()])
+    max_rule_name_len = max([len(rule) for rule in RULE_STATS])
 
     stat_lines = []
     for rule, stat in sorted(RULE_STATS.iteritems(), key=lambda (k, v): (v, k)):
         stat_lines.append(
             '{rule: <{pad}}{stat}'.format(rule=rule, pad=max_rule_name_len+4, stat=stat))
 
-    LOGGER.info('Rule statistics:\n%s', '\n'.join(stat_lines))
-
     # Clear the dictionary that is storing statistics
     # This allows for resetting when cumulative stats are not wanted
     if reset:
         RULE_STATS.clear()
+
+    return 'Rule statistics:\n\n{}'.format('\n'.join(stat_lines))

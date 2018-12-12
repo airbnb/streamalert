@@ -27,7 +27,7 @@ class AlertCreationError(Exception):
 class Alert(object):
     """Encapsulates a single alert and handles serializing to Dynamo and merging."""
 
-    class AlertEncoder(json.JSONEncoder):
+    class Encoder(json.JSONEncoder):
         """Custom JSON encoder which handles sets."""
         def default(self, obj):  # pylint: disable=arguments-differ,method-hidden
             if isinstance(obj, set):
@@ -110,7 +110,7 @@ class Alert(object):
 
     def __repr__(self):
         """Complete representation (for debugging) is an indented JSON string with all fields."""
-        return json.dumps(self.dynamo_record(), cls=self.AlertEncoder, indent=4, sort_keys=True)
+        return json.dumps(self.dynamo_record(), cls=self.Encoder, indent=2, sort_keys=True)
 
     def __str__(self):
         """Simple string representation includes alert ID and triggered rule."""
@@ -158,7 +158,7 @@ class Alert(object):
             'OutputsSent': self.outputs_sent or None,  # Empty sets not allowed by Dynamo
             # Compact JSON encoding (no spaces). We have to JSON-encode here
             # (instead of just passing the dict) because Dynamo does not allow empty string values.
-            'Record': json.dumps(self.record, separators=(',', ':')),
+            'Record': json.dumps(self.record, separators=(',', ':'), cls=self.Encoder),
             'RuleDescription': self.rule_description,
             'SourceEntity': self.source_entity,
             'SourceService': self.source_service,

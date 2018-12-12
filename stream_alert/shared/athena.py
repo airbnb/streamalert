@@ -24,6 +24,7 @@ from stream_alert.shared.backoff_handlers import (
     backoff_handler,
     success_handler
 )
+import stream_alert.shared.helpers.boto as boto_helpers
 from stream_alert.shared.logger import get_logger
 
 
@@ -41,7 +42,7 @@ class AthenaClient(object):
         database: Athena database name where tables will be queried
     """
 
-    def __init__(self, database_name, results_bucket, results_prefix):
+    def __init__(self, database_name, results_bucket, results_prefix, region=None):
         """Initialize the Boto3 Athena Client, and S3 results bucket/key
 
         Args:
@@ -49,7 +50,7 @@ class AthenaClient(object):
             results_bucket (str): S3 bucket in which to store Athena results
             results_prefix (str): S3 key prefix to prepend too results in the bucket
         """
-        self._client = boto3.client('athena')
+        self._client = boto3.client('athena', config=boto_helpers.default_config(region=region))
         self.database = database_name.strip()
 
         results_bucket = results_bucket.strip()

@@ -18,29 +18,53 @@ import shutil
 import tempfile
 import zipfile
 
+from stream_alert.shared.logger import get_logger
 from stream_alert_cli.helpers import run_command
-from stream_alert_cli.logger import LOGGER_CLI
 
 # Build .zip files in the top-level of the terraform directory
 THIS_DIRECTORY = os.path.dirname(os.path.realpath(__file__))
 BUILD_DIRECTORY = os.path.join(THIS_DIRECTORY, '..', '..', 'terraform')
+LOGGER = get_logger(__name__)
 
 
 class LambdaPackage(object):
     """Build a deployment package for a StreamAlert Lambda function."""
-    config_key = None         # Configuration key to access conf/lambda.json
-    lambda_handler = None     # Entry point for the Lambda function
-    package_files = set()     # The folders and files to zip into the Lambda package
-    package_name = None       # The name of the generated .zip file
-    precompiled_libs = set()  # Precompiled dependent libraries
-    third_party_libs = set()  # Pip libraries to install into each package
+    config_key = None                  # Configuration key to access conf/lambda.json
+    lambda_handler = None              # Entry point for the Lambda function
+    package_files = set()              # The folders and files to zip into the Lambda package
+    package_name = None                # The name of the generated .zip file
+    precompiled_libs = set()           # Precompiled dependent libraries
+    default_required_libs = {          # Default libraries to install into each package
+        'backoff',
+        'boto3',
+    }
+    package_libs = set()               # Libraries specifically needed for individual package(s)
+
+    # Define a package dict to support pinning versions across all subclasses
+    PACKAGE_LIBS = {
+        'aliyun-python-sdk-actiontrail': 'aliyun-python-sdk-actiontrail==2.0.0',
+        'backoff': 'backoff==1.7.0',
+        'boto3': 'boto3==1.9.50',
+        'boxsdk[jwt]': 'boxsdk[jwt]==2.0.0a11',
+        'cbapi': 'cbapi==1.3.6',
+        'google-api-python-client': 'google-api-python-client==1.6.4',
+        'jmespath': 'jmespath==0.9.3',
+        'jsonlines': 'jsonlines==1.2.0',
+        'netaddr': 'netaddr==0.7.19',
+        'oauth2client': 'oauth2client==4.1.3',
+        'requests': 'requests==2.20.1',
+    }
 
     def __init__(self, config):
         self.config = config
 
+    @property
+    def _required_libs(self):
+        return self.default_required_libs.union(self.package_libs)
+
     def create(self):
         """Create a Lambda deployment package .zip file."""
-        LOGGER_CLI.info('Creating package for %s', self.package_name)
+        LOGGER.info('Creating package for %s', self.package_name)
 
         temp_package_path = os.path.join(tempfile.gettempdir(), self.package_name)
         if os.path.exists(temp_package_path):
@@ -48,19 +72,19 @@ class LambdaPackage(object):
 
         self._copy_files(temp_package_path)
 
-        if not self._resolve_third_party(temp_package_path):
-            LOGGER_CLI.exception('Failed to install necessary third-party libraries')
+        if not self._resolve_libraries(temp_package_path):
+            LOGGER.exception('Failed to install necessary libraries')
             exit(1)
 
-        # Extract any precompiled third-party libs for this package
+        # Extract any precompiled libs for this package
         if self.precompiled_libs and not self._extract_precompiled_libs(temp_package_path):
-            LOGGER_CLI.exception('Failed to extract precompiled third-party libraries')
+            LOGGER.exception('Failed to extract precompiled libraries')
             exit(1)
 
         # Zip up files
         result = shutil.make_archive(
             os.path.join(BUILD_DIRECTORY, self.package_name), 'zip', temp_package_path)
-        LOGGER_CLI.info('Successfully created %s', os.path.basename(result))
+        LOGGER.info('Successfully created %s', os.path.basename(result))
 
         # Remove temp files
         shutil.rmtree(temp_package_path)
@@ -85,7 +109,7 @@ class LambdaPackage(object):
                 shutil.copy(path, copy_to_full_path)
 
     def _extract_precompiled_libs(self, temp_package_path):
-        """Extract any precompiled third-party packages into the deployment package folder
+        """Extract any precompiled libraries into the deployment package folder
 
         Args:
             temp_package_path (str): Full path to temp package path
@@ -107,9 +131,9 @@ class LambdaPackage(object):
                     })
 
         for lib in self.precompiled_libs:
-            libs_name = '_'.join([lib, 'dependencies.zip'])
+            libs_name = '_'.join([self.PACKAGE_LIBS[lib], 'dependencies.zip'])
             if libs_name not in dependency_files:
-                LOGGER_CLI.error('Missing precompiled libs for package: %s', libs_name)
+                LOGGER.error('Missing precompiled libs for package: %s', libs_name)
                 return False
 
             # Copy the contents of the dependency zip to the package directory
@@ -118,8 +142,8 @@ class LambdaPackage(object):
 
         return True
 
-    def _resolve_third_party(self, temp_package_path):
-        """Install all third-party packages into the deployment package folder
+    def _resolve_libraries(self, temp_package_path):
+        """Install all libraries into the deployment package folder
 
         Args:
             temp_package_path (str): Full path to temp package path
@@ -128,42 +152,66 @@ class LambdaPackage(object):
             bool: False if the pip command failed to install requirements, True otherwise
         """
         # Install all required core libs that were not precompiled for this package
-        third_party_libs = self.third_party_libs.difference(self.precompiled_libs)
+        package_libs = self._required_libs.difference(self.precompiled_libs)
+
+        libs_to_install = set()
+        for item in package_libs:
+            if item not in self.PACKAGE_LIBS:
+                LOGGER.error(
+                    'Please ensure a pinned version of package \'%s\' is included in PACKAGE_LIBS',
+                    item
+                )
+                return False
+            libs_to_install.add(self.PACKAGE_LIBS[item])
 
         # Add any custom libs needed by rules, etc
         if self.config_key in self.config['lambda']:
-            third_party_libs.update(
+            libs_to_install.update(
                 set(self.config['lambda'][self.config_key].get('third_party_libraries', [])))
 
         # Return a default of True here if no libraries to install
-        if not third_party_libs:
-            LOGGER_CLI.info('No third-party libraries to install.')
+        if not libs_to_install:
+            LOGGER.info('No libraries to install')
             return True
 
-        LOGGER_CLI.info('Installing third-party libraries: %s', ', '.join(third_party_libs))
+        LOGGER.info('Installing libraries: %s', ', '.join(libs_to_install))
         pip_command = ['pip', 'install']
-        pip_command.extend(third_party_libs)
+        pip_command.extend(libs_to_install)
         pip_command.extend(['--upgrade', '--target', temp_package_path])
 
         # Return True if the pip command is successfully run
         return run_command(pip_command, cwd=temp_package_path, quiet=True)
 
 
-class RuleProcessorPackage(LambdaPackage):
-    """Deployment package class for the StreamAlert Rule Processor function"""
-    config_key = 'rule_processor_config'
-    lambda_handler = 'stream_alert.rule_processor.main.handler'
+class ClassifierPackage(LambdaPackage):
+    """Deployment package class for the StreamAlert Classifier function"""
+    config_key = 'classifier_config'
+    lambda_handler = 'stream_alert.classifier.main.handler'
+    package_files = {
+        'conf',
+        'stream_alert/__init__.py',
+        'stream_alert/classifier',
+        'stream_alert/shared',
+    }
+    package_name = 'classifier'
+    package_libs = {'jmespath', 'jsonlines'}
+
+
+class RulesEnginePackage(LambdaPackage):
+    """Deployment package class for the StreamAlert Rules Engine function"""
+    config_key = 'rules_engine_config'
+    lambda_handler = 'stream_alert.rules_engine.main.handler'
     package_files = {
         'conf',
         'helpers',
         'matchers',
         'rules',
         'stream_alert/__init__.py',
-        'stream_alert/rule_processor',
+        'stream_alert/rules_engine',
         'stream_alert/shared',
     }
-    package_name = 'rule_processor'
-    third_party_libs = {'backoff', 'netaddr', 'jsonpath_rw'}
+    package_name = 'rules_engine'
+    package_libs = {'netaddr'}
 
 
 class AlertProcessorPackage(LambdaPackage):
@@ -178,7 +226,7 @@ class AlertProcessorPackage(LambdaPackage):
         'stream_alert/shared'
     }
     package_name = 'alert_processor'
-    third_party_libs = {'backoff', 'cbapi', 'netaddr', 'requests'}
+    package_libs = {'cbapi', 'netaddr', 'requests'}
 
 
 class AlertMergerPackage(LambdaPackage):
@@ -193,7 +241,7 @@ class AlertMergerPackage(LambdaPackage):
         'stream_alert/shared'
     }
     package_name = 'alert_merger'
-    third_party_libs = {'backoff', 'netaddr'}
+    package_libs = {'netaddr'}
 
 
 class AppPackage(LambdaPackage):
@@ -206,12 +254,12 @@ class AppPackage(LambdaPackage):
         'stream_alert/shared'
     }
     package_name = 'stream_alert_app'
-    precompiled_libs = {'boxsdk[jwt]==2.0.0a11', 'aliyun-python-sdk-actiontrail==2.0.0'}
-    third_party_libs = {
-        'aliyun-python-sdk-actiontrail==2.0.0',
+    precompiled_libs = {'boxsdk[jwt]', 'aliyun-python-sdk-actiontrail'}
+    package_libs = {
+        'aliyun-python-sdk-actiontrail',
         'backoff',
-        'boxsdk[jwt]==2.0.0a11',
-        'google-api-python-client==1.6.4',
+        'boxsdk[jwt]',
+        'google-api-python-client',
         'oauth2client',
         'requests'
     }
@@ -228,7 +276,6 @@ class AthenaPackage(LambdaPackage):
         'stream_alert/shared'
     }
     package_name = 'athena_partition_refresh'
-    third_party_libs = {'backoff'}
 
 
 class ThreatIntelDownloaderPackage(LambdaPackage):
@@ -242,7 +289,7 @@ class ThreatIntelDownloaderPackage(LambdaPackage):
         'stream_alert/threat_intel_downloader'
     }
     package_name = 'threat_intel_downloader'
-    third_party_libs = {'backoff', 'requests'}
+    package_libs = {'requests'}
 
 
 class RulePromotionPackage(LambdaPackage):
@@ -256,4 +303,3 @@ class RulePromotionPackage(LambdaPackage):
         'stream_alert/shared'
     }
     package_name = 'rule_promotion'
-    third_party_libs = {'backoff'}

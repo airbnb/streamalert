@@ -13,8 +13,10 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from stream_alert_cli.logger import LOGGER_CLI
+from stream_alert.shared.logger import get_logger
 from stream_alert_cli.terraform.common import monitoring_topic_arn
+
+LOGGER = get_logger(__name__)
 
 
 def generate_monitoring(cluster_name, cluster_dict, config):
@@ -46,11 +48,11 @@ def generate_monitoring(cluster_name, cluster_dict, config):
     monitoring_config = config['clusters'][cluster_name]['modules']['cloudwatch_monitoring']
 
     if not (infrastructure_config and 'monitoring' in infrastructure_config):
-        LOGGER_CLI.error('Invalid config: Make sure you declare global infrastructure options!')
+        LOGGER.error('Invalid config: Make sure you declare global infrastructure options!')
         return False
 
     if not monitoring_config.get('enabled', False):
-        LOGGER_CLI.info('CloudWatch Monitoring not enabled, skipping...')
+        LOGGER.info('CloudWatch Monitoring not enabled, skipping...')
         return True
 
     sns_topic_arn = monitoring_topic_arn(config)
@@ -64,7 +66,7 @@ def generate_monitoring(cluster_name, cluster_dict, config):
 
     if monitoring_config.get('lambda_alarms_enabled', True):
         cluster_dict['module']['cloudwatch_monitoring_{}'.format(cluster_name)].update({
-            'lambda_functions': ['{}_{}_streamalert_rule_processor'.format(prefix, cluster_name)],
+            'lambda_functions': ['{}_streamalert_classifier_{}'.format(prefix, cluster_name)],
             'lambda_alarms_enabled': True
         })
 

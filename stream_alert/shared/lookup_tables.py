@@ -20,11 +20,9 @@ import time
 import zlib
 
 import boto3
-from botocore import client
-from botocore.exceptions import ClientError
-from botocore.vendored.requests.exceptions import Timeout
-from botocore.vendored.requests.packages.urllib3.exceptions import TimeoutError
+from botocore.exceptions import ClientError, ConnectTimeoutError, ReadTimeoutError
 
+import stream_alert.shared.helpers.boto as boto_helpers
 from stream_alert.shared.logger import get_logger
 
 
@@ -36,32 +34,33 @@ class LookupTables(object):
 
     _LOOKUP_TABLES_LAST_REFRESH = datetime(year=1970, month=1, day=1)
 
-    # Explicitly set timeout for S3 connection. The default timeout is 60 seconds.
-    BOTO_TIMEOUT = 10
+    _tables = {}
 
-    def __init__(self, buckets_info):
-        boto_config = client.Config(
-            connect_timeout=self.BOTO_TIMEOUT,
-            read_timeout=self.BOTO_TIMEOUT
-        )
-        self._s3_client = boto3.resource('s3', config=boto_config)
-        self._buckets_info = buckets_info
+    @classmethod
+    def table(cls, name):
+        return LookupTables._tables.get(name, {})
 
-    def download_s3_objects(self):
+    @classmethod
+    def _download_s3_objects(cls, buckets_info):
         """Download S3 files (json format) from S3 buckets into memory.
 
         Returns:
             dict: A dictionary contains information loaded from S3. The file name
                 will be the key, and value is file content in json format.
         """
+        # The buckets info only gets passed if the table need refreshed
+        if not buckets_info:
+            return  # Nothing to do
 
-        _lookup_tables = {}
+        # Explicitly set timeout for S3 connection. The boto default timeout is 60 seconds.
+        boto_config = boto_helpers.default_config(timeout=10)
+        s3_client = boto3.resource('s3', config=boto_config)
 
-        for bucket, files in self._buckets_info.iteritems():
+        for bucket, files in buckets_info.iteritems():
             for json_file in files:
                 try:
                     start_time = time.time()
-                    s3_object = self._s3_client.Object(bucket, json_file).get()
+                    s3_object = s3_client.Object(bucket, json_file).get()
                     size_kb = round(s3_object.get('ContentLength') / 1024.0, 2)
                     size_mb = round(size_kb / 1024.0, 2)
                     display_size = '{}MB'.format(size_mb) if size_mb else '{}KB'.format(size_kb)
@@ -72,27 +71,24 @@ class LookupTables(object):
                 except ClientError as err:
                     LOGGER.error('Encounterred error while downloading %s from %s, %s',
                                  json_file, bucket, err.response['Error']['Message'])
-                    return _lookup_tables
-                except(Timeout, TimeoutError):
-                    # Catching TimeoutError will catch both `ReadTimeoutError` and
-                    # `ConnectionTimeoutError`.
-                    LOGGER.error('Reading %s from S3 is timed out.', json_file)
-                    return _lookup_tables
+                    continue
+                except (ConnectTimeoutError, ReadTimeoutError):
+                    # Catching ConnectTimeoutError and ReadTimeoutError from botocore
+                    LOGGER.exception('Reading %s from S3 timed out', json_file)
+                    continue
 
-                 # The lookup data can optionally be compressed, so try to decompress
-                 # This will fall back and use the original data if decompression fails
+                # The lookup data can optionally be compressed, so try to decompress
+                # This will fall back and use the original data if decompression fails
                 try:
                     data = zlib.decompress(data, 47)
                 except zlib.error:
                     LOGGER.debug('Data in \'%s\' is not compressed', json_file)
 
                 table_name = os.path.splitext(json_file)[0]
-                _lookup_tables[table_name] = json.loads(data)
+                cls._tables[table_name] = json.loads(data)
 
                 total_time = time.time() - start_time
                 LOGGER.info('Downloaded S3 file %s seconds', round(total_time, 2))
-
-        return _lookup_tables
 
     @classmethod
     def load_lookup_tables(cls, config):
@@ -124,11 +120,14 @@ class LookupTables(object):
         if not needs_refresh:
             LOGGER.debug('lookup tables do not need refresh (last refresh time: %s; '
                          'current time: %s)', cls._LOOKUP_TABLES_LAST_REFRESH, now)
-            return False
+            return cls  # no instance methods/properties so do not instantiate
 
         LOGGER.info('Refreshing lookup tables (last refresh time: %s; current time: %s)',
                     cls._LOOKUP_TABLES_LAST_REFRESH, now)
 
         cls._LOOKUP_TABLES_LAST_REFRESH = now
 
-        return cls(buckets_info)
+        # Download the objects and return the class
+        cls._download_s3_objects(buckets_info)
+
+        return cls  # no instance methods/properties so do not instantiate

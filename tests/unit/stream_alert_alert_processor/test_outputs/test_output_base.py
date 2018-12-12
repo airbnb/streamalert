@@ -34,15 +34,18 @@ from stream_alert.alert_processor.outputs.output_base import (
     StreamAlertOutput
 )
 from stream_alert.alert_processor.outputs.aws import S3Output
-from stream_alert_cli.helpers import encrypt_with_kms, put_mock_creds, put_mock_s3_object
 from tests.unit.stream_alert_alert_processor import (
-    ACCOUNT_ID,
     CONFIG,
-    FUNCTION_NAME,
     KMS_ALIAS,
+    MOCK_ENV,
     REGION
 )
-from tests.unit.stream_alert_alert_processor.helpers import remove_temp_secrets
+from tests.unit.helpers.aws_mocks import put_mock_s3_object
+from tests.unit.stream_alert_alert_processor.helpers import (
+    encrypt_with_kms,
+    put_mock_creds,
+    remove_temp_secrets
+)
 
 
 def test_output_property_default():
@@ -70,15 +73,10 @@ def test_get_dispatcher_bad(log_mock):
     log_mock.assert_called_with('Designated output service [%s] does not exist', 'aws-s4')
 
 
+@patch.dict('os.environ', MOCK_ENV)
 def test_create_dispatcher():
     """StreamAlertOutput - Create Dispatcher"""
-    dispatcher = StreamAlertOutput.create_dispatcher(
-        'aws-s3',
-        REGION,
-        ACCOUNT_ID,
-        FUNCTION_NAME,
-        CONFIG
-    )
+    dispatcher = StreamAlertOutput.create_dispatcher('aws-s3', CONFIG)
     assert_is_instance(dispatcher, S3Output)
 
 
@@ -119,9 +117,10 @@ class TestOutputDispatcher(object):
     """Test class for OutputDispatcher"""
 
     @patch.object(OutputDispatcher, '__abstractmethods__', frozenset())
+    @patch.dict('os.environ', MOCK_ENV)
     def setup(self):
         """Setup before each method"""
-        self._dispatcher = OutputDispatcher(REGION, ACCOUNT_ID, FUNCTION_NAME, CONFIG)
+        self._dispatcher = OutputDispatcher(CONFIG)
         self._descriptor = 'desc_test'
 
     def test_local_temp_dir(self):

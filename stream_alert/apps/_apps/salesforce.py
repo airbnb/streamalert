@@ -375,7 +375,7 @@ class SalesforceApp(AppIntegration):
             LOGGER.error('Failed to get event logs')
             return
 
-        # skip header line before passing to rule processor
+        # skip header line before passing to the classifier function
         return resp.splitlines()[1:]
 
     def _gather_logs(self):

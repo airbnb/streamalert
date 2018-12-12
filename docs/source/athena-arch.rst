@@ -45,7 +45,7 @@ Open ``conf/lambda.json``, and fill in the following options:
 Key                                  Required  Default                Description
 -----------------------------------  --------  --------------------   -----------
 ``enabled``                          ``Yes``   ``true``               Enables/Disables the Athena Partition Refresh Lambda function
-``enable_metrics``                   ``No``    ``false``              Enables/Disables logging of metrics for the Athena Partition Refresh Lambda function
+``enable_custom_metrics``            ``No``    ``false``              Enables/Disables logging of metrics for the Athena Partition Refresh Lambda function
 ``log_level``                        ``No``    ``info``               The log level for the Lambda function, can be either ``info`` or ``debug``.  Debug will help with diagnosing errors with polling SQS or sending Athena queries.
 ``memory``                           ``No``    ``128``                The amount of memory (in MB) allocated to the Lambda function
 ``timeout``                          ``No``    ``60``                 The maximum duration of the Lambda function (in seconds)
@@ -59,7 +59,6 @@ Key                                  Required  Default                Descriptio
 
   {
     "athena_partition_refresh_config": {
-      "enable_metrics": false,
       "log_level": "info",
       "memory": 128,
       "buckets": {
@@ -78,9 +77,9 @@ If any of the settings above are changed from the initialized defaults, the Lamb
 
 .. code-block:: bash
 
-  $ python manage.py lambda deploy --processor athena
+  $ python manage.py deploy --function athena
 
-Going forward, if the deploy flag ``--processor all`` is used, it will redeploy this function along with the ``rule`` function and ``alert`` function.
+Going forward, if the deploy flag ``--function all`` is used, it will redeploy this function along with the ``rule`` function and ``alert`` function.
 
 Monitoring
 ~~~~~~~~~~

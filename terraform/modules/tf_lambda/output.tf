@@ -16,6 +16,11 @@ output "role_id" {
   value = "${aws_iam_role.role.0.id}"
 }
 
+// Combine the two mutually exclusive lists and export the first element as the function alias
+output "function_alias" {
+  value = "${element(concat(aws_lambda_alias.alias_vpc.*.name, aws_lambda_alias.alias_no_vpc.*.name), 0)}"
+}
+
 // Combine the two mutually exclusive lists and export the first element as the function name
 output "function_name" {
   value = "${element(concat(aws_lambda_function.function_vpc.*.function_name, aws_lambda_function.function_no_vpc.*.function_name), 0)}"
@@ -24,4 +29,9 @@ output "function_name" {
 // Combine the two mutually exclusive lists and export the first element as the function alias arn
 output "function_alias_arn" {
   value = "${element(concat(aws_lambda_alias.alias_vpc.*.arn, aws_lambda_alias.alias_no_vpc.*.arn), 0)}"
+}
+
+// Log group name for this Lambda function to enable applying metrics filters
+output "log_group_name" {
+  value = "${element(concat(aws_cloudwatch_log_group.lambda_log_group.*.name, list("")), 0)}"
 }

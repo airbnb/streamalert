@@ -20,6 +20,7 @@ from stream_alert_cli.terraform import common, kinesis_events
 
 CONFIG = CLIConfig(config_path='tests/unit/conf')
 
+
 def test_kinesis_events():
     """CLI - Terraform Generate Kinesis Events"""
     cluster_dict = common.infinitedict()
@@ -31,8 +32,10 @@ def test_kinesis_events():
                 'source': 'modules/tf_stream_alert_kinesis_events',
                 'batch_size': 100,
                 'lambda_production_enabled': True,
-                'lambda_role_id': '${module.stream_alert_advanced.lambda_role_id}',
-                'lambda_function_arn': '${module.stream_alert_advanced.lambda_arn}',
+                'lambda_role_id': '${module.classifier_advanced_lambda.role_id}',
+                'lambda_function_alias_arn': (
+                    '${module.classifier_advanced_lambda.function_alias_arn}'
+                ),
                 'kinesis_stream_arn': '${module.kinesis_advanced.arn}',
                 'role_policy_prefix': 'advanced'
             }

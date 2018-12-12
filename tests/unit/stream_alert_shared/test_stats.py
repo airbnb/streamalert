@@ -62,7 +62,6 @@ class TestRuleStats(object):
         assert_equal(stat_01 < stat_02, True)
         assert_equal(stat_01 > stat_02, False)
 
-
     def test_rule_stats_string(self):
         """Stats - Rule Statistics, To String"""
         stat = stats.RuleStatistic(10.0)
@@ -71,24 +70,23 @@ class TestRuleStats(object):
         assert_equal(str(stat), '   10.00000000 ms       1 calls     10.00000000 avg')
 
     @patch('logging.Logger.error')
-    def test_print_rule_stats_empty(self, log_mock):
-        """Stats - Print Rule Stats, None"""
-        stats.print_rule_stats()
-        log_mock.assert_called_with('No rule statistics to print')
+    def test_get_rule_stats_empty(self, log_mock):
+        """Stats - Get Rule Stats, None"""
+        stats.get_rule_stats()
+        log_mock.assert_called_with('No rule statistics to return')
 
     @patch('time.time', Mock(side_effect=[0.01, 0.02]))
-    @patch('logging.Logger.info')
-    def test_print_rule_stats(self, log_mock):
-        """Stats - Print Rule Stats"""
+    def test_get_rule_stats(self):
+        """Stats - Get Rule Stats"""
         self._timed_func_helper()
-        stats.print_rule_stats()
-        log_mock.assert_called_with(
-            'Rule statistics:\n%s',
-            'test_rule       10.00000000 ms       1 calls     10.00000000 avg'
+        result = stats.get_rule_stats()
+        assert_equal(
+            result,
+            'Rule statistics:\n\ntest_rule       10.00000000 ms       1 calls     10.00000000 avg'
         )
 
-    def test_print_rule_stats_reset(self,):
-        """Stats - Print Rule Stats, Reset"""
+    def test_get_rule_stats_reset(self,):
+        """Stats - Get Rule Stats, Reset"""
         self._timed_func_helper()
-        stats.print_rule_stats(True)
+        _ = stats.get_rule_stats(True)
         assert_equal(len(stats.RULE_STATS), 0)

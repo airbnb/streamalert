@@ -58,7 +58,9 @@ def generate_alert_processor(config):
         config['lambda']['alert_processor_config'],
         config,
         environment={
-            'ALERTS_TABLE': '{}_streamalert_alerts'.format(prefix)
+            'ALERTS_TABLE': '{}_streamalert_alerts'.format(prefix),
+            'AWS_ACCOUNT_ID': config['global']['account']['aws_account_id'],
+            'STREAMALERT_PREFIX': prefix
         }
     )
 

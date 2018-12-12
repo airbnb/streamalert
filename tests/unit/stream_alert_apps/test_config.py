@@ -24,7 +24,8 @@ from nose.tools import assert_equal, assert_false, assert_true, raises
 
 from stream_alert.apps.config import AppConfig
 from stream_alert.apps.exceptions import AppAuthError, AppConfigError, AppStateError
-from tests.unit.stream_alert_apps.test_helpers import get_event, get_mock_context, put_mock_params
+from tests.unit.stream_alert_apps.test_helpers import get_event, put_mock_params
+from tests.unit.stream_alert_shared.test_config import get_mock_lambda_context
 
 
 @mock_ssm
@@ -40,7 +41,7 @@ class TestAppConfig(object):
         self._test_app_name = 'test_app'
         put_mock_params(self._test_app_name)
         self._event = get_event(self._test_app_name)
-        self._context = get_mock_context(self._test_app_name)
+        self._context = get_mock_lambda_context(self._test_app_name)
         self._config = AppConfig.load_config(self._event, self._context)
 
     @raises(AppConfigError)
@@ -49,7 +50,7 @@ class TestAppConfig(object):
         # Remove one of the required keys from the state
         event = get_event(self._test_app_name)
         del event['destination_function_name']
-        AppConfig.load_config(event, get_mock_context(self._test_app_name))
+        AppConfig.load_config(event, get_mock_lambda_context(self._test_app_name))
 
     @raises(AppConfigError)
     def test_evaluate_interval_invalid(self):
@@ -79,7 +80,7 @@ class TestAppConfig(object):
             'app_type': 'test_app',
             'schedule_expression': 'rate(10 minutes)',
             'destination_function_name':
-                'unit_test_prefix_unit_test_cluster_streamalert_rule_processor',
+                'unit_test_prefix_unit_test_cluster_streamalert_classifier',
             'invocation_type': 'successive'
         })
         assert_equal(event, expected_event)
@@ -187,7 +188,7 @@ class TestAppConfig(object):
     def test_report_remaining_seconds(self, log_mock):
         """AppConfig - Report Remaining Seconds"""
         self._config.report_remaining_seconds()
-        log_mock.assert_called_with('Lambda remaining seconds: %.2f', 1.00)
+        log_mock.assert_called_with('Lambda remaining seconds: %.2f', 0.1)
 
     @patch('stream_alert.apps.config.AppConfig._save_state')
     def test_set_last_timestamp_same(self, save_mock):

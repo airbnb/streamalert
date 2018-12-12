@@ -13,18 +13,17 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from mock import ANY, patch
+from nose.tools import assert_equal, assert_false, assert_true
+
 from stream_alert_cli.config import CLIConfig
 from stream_alert_cli.terraform import (
     common,
     cloudtrail,
     cloudwatch,
     flow_logs,
-    generate,
-    streamalert
+    generate
 )
-
-from mock import ANY, patch
-from nose.tools import assert_equal, assert_false, assert_true
 
 
 class TestTerraformGenerate(object):
@@ -84,7 +83,8 @@ class TestTerraformGenerate(object):
         tf_main_expected = {
             'provider': {
                 'aws': {
-                    'version': generate.TERRAFORM_VERSIONS['provider']['aws']
+                    'version': generate.TERRAFORM_VERSIONS['provider']['aws'],
+                    'region': 'us-west-1'
                 }
             },
             'terraform': {
@@ -248,79 +248,25 @@ class TestTerraformGenerate(object):
             'kinesis_firehose_cloudwatch_test_match_types_2'
         }
 
-        assert_true(all([expected_module in generated_modules
-                         for expected_module
-                         in expected_kinesis_modules]))
-
-        assert_equal(generated_modules['kinesis_firehose_cloudwatch_test_match_types']\
-                                      ['s3_bucket_name'], 'unit-testing.my-data')
-        assert_equal(generated_modules['kinesis_firehose_cloudwatch_test_match_types']\
-                                      ['buffer_size'], 10)
-        assert_equal(generated_modules['kinesis_firehose_cloudwatch_test_match_types']\
-                                      ['buffer_interval'], 650)
-
-    def test_generate_stream_alert_test(self):
-        """CLI - Terraform Generate StreamAlert - Test Cluster"""
-        streamalert.generate_stream_alert(
-            'test',
-            self.cluster_dict,
-            self.config
+        assert_true(
+            all([
+                expected_module in generated_modules
+                for expected_module in expected_kinesis_modules
+            ])
         )
 
-        expected_test_cluster = {
-            'module': {
-                'stream_alert_test': {
-                    'source': 'modules/tf_stream_alert',
-                    'account_id': '12345678910',
-                    'region': 'us-west-1',
-                    'prefix': 'unit-testing',
-                    'cluster': 'test',
-                    'dynamodb_ioc_table': 'test_table_name',
-                    'lambda_handler': 'stream_alert.rule_processor.main.handler',
-                    'threat_intel_enabled': False,
-                    'rule_processor_enable_metrics': True,
-                    'rule_processor_log_level': 'info',
-                    'rule_processor_memory': 128,
-                    'rule_processor_timeout': 25,
-                    'rules_table_arn': '${module.globals.rules_table_arn}',
-                }
-            }
-        }
-
-        assert_equal(self.cluster_dict['module']['stream_alert_test'],
-                     expected_test_cluster['module']['stream_alert_test'])
-
-    def test_generate_stream_alert_advanced(self):
-        """CLI - Terraform Generate StreamAlert - Advanced Cluster"""
-        streamalert.generate_stream_alert(
-            'advanced',
-            self.cluster_dict,
-            self.config
+        assert_equal(
+            generated_modules['kinesis_firehose_cloudwatch_test_match_types']['s3_bucket_name'],
+            'unit-testing.my-data'
         )
-
-        expected_advanced_cluster = {
-            'module': {
-                'stream_alert_advanced': {
-                    'source': 'modules/tf_stream_alert',
-                    'account_id': '12345678910',
-                    'region': 'us-west-1',
-                    'prefix': 'unit-testing',
-                    'cluster': 'advanced',
-                    'dynamodb_ioc_table': 'test_table_name',
-                    'lambda_handler': 'stream_alert.rule_processor.main.handler',
-                    'threat_intel_enabled': False,
-                    'rule_processor_enable_metrics': True,
-                    'rule_processor_log_level': 'info',
-                    'rule_processor_memory': 128,
-                    'rule_processor_timeout': 25,
-                    'rules_table_arn': '${module.globals.rules_table_arn}',
-                    'input_sns_topics': ['my-sns-topic-name'],
-                }
-            }
-        }
-
-        assert_equal(self.cluster_dict['module']['stream_alert_advanced'],
-                     expected_advanced_cluster['module']['stream_alert_advanced'])
+        assert_equal(
+            generated_modules['kinesis_firehose_cloudwatch_test_match_types']['buffer_size'],
+            10
+        )
+        assert_equal(
+            generated_modules['kinesis_firehose_cloudwatch_test_match_types']['buffer_interval'],
+            650
+        )
 
     def test_generate_flow_logs(self):
         """CLI - Terraform Generate Flow Logs"""
@@ -406,7 +352,7 @@ class TestTerraformGenerate(object):
                              ' "detail": {"state": ["running"]}}'
         })
 
-    @patch('stream_alert_cli.terraform.cloudtrail.LOGGER_CLI')
+    @patch('stream_alert_cli.terraform.cloudtrail.LOGGER')
     def test_generate_cloudtrail_invalid_event_pattern(self, mock_logging):
         """CLI - Terraform Generate Cloudtrail Module - Invalid Event Pattern"""
         cluster_name = 'advanced'
@@ -458,15 +404,16 @@ class TestTerraformGenerate(object):
         cluster_keys = {'module', 'output'}
 
         test_modules = {
-            'stream_alert_test',
+            'classifier_test_lambda',
+            'classifier_test_iam',
             'cloudwatch_monitoring_test',
             'kinesis_test',
             'kinesis_events_test',
             's3_events_unit-testing_test_0'
         }
 
-        assert_equal(set(tf_cluster['module'].keys()), test_modules)
-        assert_equal(set(tf_cluster.keys()), cluster_keys)
+        assert_equal(set(tf_cluster['module']), test_modules)
+        assert_equal(set(tf_cluster), cluster_keys)
 
     def test_generate_cluster_advanced(self):
         """CLI - Terraform Generate Advanced Cluster"""
@@ -482,7 +429,8 @@ class TestTerraformGenerate(object):
         }
 
         advanced_modules = {
-            'stream_alert_advanced',
+            'classifier_advanced_lambda',
+            'classifier_advanced_iam',
             'cloudwatch_advanced_eu-west-1',
             'cloudwatch_advanced_eu-west-2',
             'cloudwatch_advanced_eu-west-3',

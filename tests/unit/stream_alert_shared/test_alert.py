@@ -17,10 +17,16 @@ import copy
 from datetime import datetime, timedelta
 import json
 
-from stream_alert.shared.alert import Alert, AlertCreationError
-
 from nose.tools import (
-    assert_equal, assert_false, assert_is_instance, assert_not_in, assert_raises, assert_true)
+    assert_equal,
+    assert_false,
+    assert_is_instance,
+    assert_not_in,
+    assert_raises,
+    assert_true
+)
+
+from stream_alert.shared.alert import Alert, AlertCreationError
 
 
 class TestAlert(object):
@@ -56,7 +62,7 @@ class TestAlert(object):
 
     def test_alert_encoder_invalid_json(self):
         """Alert Class - Alert Encoder - Invalid JSON raises parent exception"""
-        assert_raises(TypeError, json.dumps, RuntimeWarning, cls=Alert.AlertEncoder)
+        assert_raises(TypeError, json.dumps, RuntimeWarning, cls=Alert.Encoder)
 
     def test_init_invalid_kwargs(self):
         """Alert Class - Init With Invalid Kwargs"""

@@ -15,44 +15,48 @@ limitations under the License.
 """
 import re
 
+from stream_alert.shared.logger import get_logger
 from stream_alert.threat_intel_downloader.main import ThreatStream
-from stream_alert_cli.apps import save_parameter
-from stream_alert_cli.helpers import user_input
-from stream_alert_cli.logger import LOGGER_CLI
+from stream_alert_cli.helpers import user_input, save_parameter
+
+LOGGER = get_logger(__name__)
 
 
-def handler(options, config):
+def threat_intel_downloader_handler(options, config):
     """Configure Threat Intel Downloader from command line
 
     Args:
-        options (namedtuple): The parsed args passed from the CLI
-        config (CLIConfig): Loaded StreamAlert CLI
+        options (argparse.Namespace): Parsed arguments
+        config (CLIConfig): Loaded StreamAlert config
+
+    Returns:
+        bool: False if errors occurred, True otherwise
     """
     def _validate_options(options):
         if not options.interval:
-            LOGGER_CLI.error('Missing command line argument --interval')
+            LOGGER.error('Missing command line argument --interval')
             return False
 
         if not options.timeout:
-            LOGGER_CLI.error('Missing command line argument --timeout')
+            LOGGER.error('Missing command line argument --timeout')
             return False
 
         if not options.memory:
-            LOGGER_CLI.error('Missing command line argument --memory')
+            LOGGER.error('Missing command line argument --memory')
             return False
 
         return True
 
     if not options:
-        return
+        return False
 
     if options.subcommand == 'enable':
         if not _validate_options(options):
-            return
+            return False
         if config.add_threat_intel_downloader(vars(options)):
-            save_api_creds_info(config['global']['account']['region'])
+            return save_api_creds_info(config['global']['account']['region'])
     elif options.subcommand == 'update-auth':
-        save_api_creds_info(config['global']['account']['region'], overwrite=True)
+        return save_api_creds_info(config['global']['account']['region'], overwrite=True)
 
 def save_api_creds_info(region, overwrite=False):
     """Function to add API creds information to parameter store
@@ -84,10 +88,10 @@ def save_api_creds_info(region, overwrite=False):
     saved = save_parameter(region, ThreatStream.CRED_PARAMETER_NAME,
                            creds_dict, description, overwrite)
     if saved:
-        LOGGER_CLI.info('Threat Intel Downloader credentials were successfully '
-                        'saved to parameter store.')
+        LOGGER.info('Threat Intel Downloader credentials were successfully '
+                    'saved to parameter store.')
     else:
-        LOGGER_CLI.error('Threat Intel Downloader credentials were not saved to '
-                         'parameter store.')
+        LOGGER.error('Threat Intel Downloader credentials were not saved to '
+                     'parameter store.')
 
     return saved

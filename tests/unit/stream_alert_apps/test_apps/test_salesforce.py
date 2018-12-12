@@ -27,14 +27,13 @@ from nose.tools import (
 from requests.exceptions import Timeout
 
 from stream_alert.apps._apps.salesforce import SalesforceApp, SalesforceAppError
-
 from tests.unit.stream_alert_apps.test_helpers import (
     get_event,
-    get_mock_context,
     get_salesforce_log_files,
     list_salesforce_api_versions,
     put_mock_params
 )
+from tests.unit.stream_alert_shared.test_config import get_mock_lambda_context
 
 
 @mock_ssm
@@ -52,7 +51,7 @@ class TestSalesforceApp(object):
         self._test_app_name = 'salesforce'
         put_mock_params(self._test_app_name)
         self._event = get_event(self._test_app_name)
-        self._context = get_mock_context(self._test_app_name)
+        self._context = get_mock_lambda_context(self._test_app_name)
         self._app = SalesforceApp(self._event, self._context)
 
     def set_config_values(self, client_id, client_secret, username, password, security_token):
