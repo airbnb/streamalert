@@ -24,7 +24,13 @@ from stream_alert.shared import logger
 def handler(event, _):
     """Main Lambda handler function"""
     try:
-        records = [json.loads(record['body']) for record in event.get('Records', [])]
+        records = []
+        for record in event.get('Records', []):
+            body = json.loads(record['body'])
+            if isinstance(body, list):
+                records.extend(body)
+            else:
+                records.append(body)
         RulesEngine().run(records)
     except Exception:
         logger.get_logger(__name__).error('Invocation event: %s', json.dumps(event))
