@@ -44,11 +44,9 @@ class SQSClient(object):
 
     # Maximum amount of times to retry with backoff
     MAX_BACKOFF_ATTEMPTS = 5
-    MAX_BACKOFF_FIBO_VALUE = 8
 
     # SQS limitations
-    MAX_BATCH_COUNT = 10
-    MAX_BATCH_SIZE = 256 * 1024  # 256 KB
+    MAX_SIZE = 256 * 1024  # 256 KB
 
     _queue = None
 
@@ -68,234 +66,89 @@ class SQSClient(object):
         return SQSClient._queue
 
     @classmethod
-    def _log_failed(cls, count):
-        """Helper to log the failed SQS records metric
+    def _segment_records(cls, records):
 
-        Args:
-            count (int): Number of failed records
-        """
-        MetricLogger.log_metric(FUNCTION_NAME, MetricLogger.SQS_FAILED_RECORDS, count)
-
-    @classmethod
-    def _message_batches(cls, records):
-        """Segment the records into batches that conform to SQS restrictions
-
-        This will log any single record that is too large to send, and skip it.
-
-        Args:
-            records (list): The original records list to be segmented
-
-        Yields:
-            list: Batches of JSON serialized records that conform to SQS restrictions
-        """
-        # Dump the records to a list of minimal json
-        records_json = [
-            json.dumps(record, separators=(',', ':')) for record in records
-        ]
-
-        current_batch_size = 0
-        current_batch = []
-        for record in records_json:
-            line_len = len(record)
-            # Check if the max size of the batch has been reached or if the current
-            # record will exceed the max batch size and start a new batch
-            if ((len(current_batch) == cls.MAX_BATCH_COUNT) or
-                    (current_batch_size + line_len > cls.MAX_BATCH_SIZE)):
-                yield current_batch[:]
-                current_batch_size = 0
-                del current_batch[:]
-
-            if line_len > cls.MAX_BATCH_SIZE:
-                LOGGER.error('Record too large (%d) to send to SQS:\n%s', line_len, record)
-                cls._log_failed(1)
+        batch_size = 2  # for [] chars on array
+        batch = []
+        record_count = len(records)
+        for idx, record in enumerate(records, start=1):
+            # for , between records
+            size = len(record) + (1 if idx != record_count and batch else 0)
+            if size + 2 > cls.MAX_SIZE:
+                LOGGER.error('Record is too large to send to SQS:\n%s', record)
                 continue
 
-            # Add the record to the batch
-            current_batch_size += line_len
-            current_batch.append(record)
+            if idx == record_count or size + batch_size >= cls.MAX_SIZE:
+                if size + batch_size >= cls.MAX_SIZE:
+                    yield batch[:], len(batch)
 
-        # yield the result of the last batch (no need to copy via slicing)
-        if current_batch:
-            yield current_batch
+                if idx == record_count:  # the end of the records
+                    if size + batch_size < cls.MAX_SIZE:  # this record fits on current batch
+                        batch.append(record)
+                        yield batch[:], len(batch)
+                    else:
+                        yield [record], 1
+                    return
 
-    @classmethod
-    def _format_failure_message(cls, failure, record=None):
-        message = (
-            'Record failed to send to SQS. ID: {Id}, SenderFault: {SenderFault}, '
-            'Code: {Code}, Error: {Message}'.format(
-                **failure
-            )
-        )
+                del batch[:]
+                batch_size = 2
 
-        if record:
-            message = '{base_message}, Record:\n{record}'.format(
-                base_message=message,
-                record=record
-            )
+            batch.append(record)
+            batch_size += size
 
-        return message
-
-    def _finalize(self, response, batch):
+    def _finalize(self, response, count):
         """Perform any final operations for this response, such as metric logging, etc
 
         Args:
-            batch (list): List of JSON records that are being sent to SQS
-            response (dict): boto3 client response object
-            size (int): The original size of the batch being sent
+            response (string|bool): MessageId or False if this request failed
+            count (int): The size of the batch being sent to be logged as successful or failed
         """
-        if not response:
-            return  # Could happen in the case of backoff failing enitrely
+        if not response:  # Could happen in the case of backoff failing enitrely
+            MetricLogger.log_metric(FUNCTION_NAME, MetricLogger.SQS_FAILED_RECORDS, count)
+            return
 
-        # Check for failures that occurred in PutRecordBatch after several backoff attempts
-        # And log the actual record from the batch
-        failed = self._check_failures(response, batch=batch)
+        MetricLogger.log_metric(FUNCTION_NAME, MetricLogger.SQS_RECORDS_SENT, count)
 
-        # Remove the failed messages in this batch for an accurate metric
-        successful_records = len(batch) - failed
-
-        MetricLogger.log_metric(FUNCTION_NAME, MetricLogger.SQS_RECORDS_SENT, successful_records)
-        LOGGER.info(
-            'Successfully sent %d message(s) to queue %s',
-            successful_records,
-            self.queue.url
+        LOGGER.debug(
+            'Successfully sent message with %d records to %s with MessageId %s',
+            count,
+            self.queue.url,
+            response
         )
 
-    @classmethod
-    def _strip_successful_records(cls, messages, response):
-        """Inspect the response and remove any records records that have successfully to sent
-
-        For each record, the index of the response element is the same as the index
-        used in the request array.
-
+    def _send_message(self, records):
+        """Send a single message with a blob of records to CSIRT SQS
         Args:
-            messages (list): List of dicts with JSON dumped records as MessageBody that are being
-                sent to SQS. Format is:
-                [{'Id': '...', 'MessageBody': '...'}, {'Id': '...', 'MessageBody': '...'}]
-            response (dict): Response object from the boto3.resource.send_messages call
-                that contains metadata on the success status of the call
-        """
-        success_ids = {
-            item['Id'] for item in response.get('Successful', [])
-        }
+            message (string): A message that is serialized to json to be sent to
+                the Rules Engine function
 
-        LOGGER.info('Removing sucessful message indices from batch: %s', success_ids)
-
-        for success_id in success_ids:
-            # Get the successful message by ID and remove it
-            message = cls._extract_message_by_id(messages, success_id)
-            if not message:
-                continue
-            messages.remove(message)
-
-    @classmethod
-    def _extract_message_by_id(cls, batch, identifier):
-        """Extract a message from the batch given the # IDEA:
-
-        Args:
-            batch (list): Batch of messages from which to extract the message
-            identifier (str): Id for the message to be extracted
-        """
-        for message in batch:
-            if message['Id'] == identifier:
-                return message
-
-        # Log an error if a message with this ID was not found in the batch
-        LOGGER.error('SQS message with ID \'%s\' not found in batch', identifier)
-
-    def _check_failures(self, response, batch=None):
-        """Inspect the response to see if the failure was our fault (the Sender)
-
-        Args:
-            response (dict): Response object from the boto3.resource.send_messages call
-                that contains metadata on the success status of the call
-            batch (list): List of dicts with JSON dumped records as MessageBody that are being
-                sent to SQS. Format is:
-                [{'Id': '...', 'MessageBody': '...'}, {'Id': '...', 'MessageBody': '...'}]
-        Raises:
-            SQSClientError: Indication that there is something wrong with the sender configuration
-        """
-        if not response.get('Failed'):
-            return 0  # nothing to do here
-
-        LOGGER.error('The following records failed to put to queue %s', self.queue.url)
-
-        for failure in response['Failed']:
-            # Pull out the record that matches this ID
-            record = self._extract_message_by_id(batch, failure['Id']) if batch else None
-            LOGGER.error(self._format_failure_message(failure, record=record))
-
-        failed = len(response.get('Failed', []))
-        self._log_failed(failed)
-
-        # Raise an exception if this is the fault of the sender (us)
-        if any(result['SenderFault'] for result in response['Failed']):
-            raise SQSClientError('Failed to send records to SQS:\n{}'.format(response))
-
-        return failed
-
-    def _send_messages(self, batched_messages):
-        """Send new formatted messages to CSIRT SQS
-        Args:
-            batched_messages (list): A list of messages that are already serialized to json
-                to be sent to the Rules Engine function
         Returns:
-            bool: True if the request was successful, False otherwise
+            string|bool: The MessageId if the request was successful, False otherwise
         """
-        @backoff.on_predicate(backoff.fibo,
-                              lambda resp: len(resp.get('Failed', [])) > 0,
-                              max_tries=self.MAX_BACKOFF_ATTEMPTS,
-                              max_value=self.MAX_BACKOFF_FIBO_VALUE,
-                              on_backoff=backoff_handler(debug_only=False),
-                              on_success=success_handler(),
-                              on_giveup=giveup_handler())
-        @backoff.on_exception(backoff.expo, self.EXCEPTIONS_TO_BACKOFF,
+        @backoff.on_exception(backoff.expo,
+                              self.EXCEPTIONS_TO_BACKOFF,
                               max_tries=self.MAX_BACKOFF_ATTEMPTS,
                               on_backoff=backoff_handler(debug_only=False),
                               on_success=success_handler(),
                               on_giveup=giveup_handler())
-        def _send_messages_helper(entries):
-            """Inner helper function for sending messages with backoff_handler
+        def _send_message_helper(request):
+            """Inner helper function for sending a single message with backoff
 
             Args:
                 entries (list<dict>): List of SQS SendMessageBatchRequestEntry items
             """
-            LOGGER.info('Sending %d message(s) to %s', len(entries), self.queue.url)
+            return self.queue.send_message(**request)
 
-            response = self.queue.send_messages(Entries=entries)
-
-            if response.get('Successful'):
-                LOGGER.info(
-                    'Successfully sent %d message(s) to %s with MessageIds %s',
-                    len(response['Successful']),
-                    self.queue.url,
-                    ', '.join(
-                        '\'{}\''.format(resp['MessageId'])
-                        for resp in response['Successful']
-                    )
-                )
-
-            if response.get('Failed'):
-                self._check_failures(response)  # Raise an exception if this is our fault
-                self._strip_successful_records(entries, response)
-
-            return response
-
-        message_entries = [
-            {
-                'Id': str(idx),
-                'MessageBody': message
-            } for idx, message in enumerate(batched_messages)
-        ]
+        # Prepare the request now to save time during retries
+        request = {'MessageBody': '[{}]'.format(','.join(records))}
 
         # The try/except here is to catch any raised errors at the end of the backoff
         try:
-            return _send_messages_helper(message_entries)
+            response = _send_message_helper(request)
+            return response['MessageId']
         except self.EXCEPTIONS_TO_BACKOFF:
             LOGGER.exception('SQS request failed')
-            # Use the current length of the message_entries in case some records were
-            # successful but others were not
-            self._log_failed(len(message_entries))
-            return
+            return False
 
     @staticmethod
     def _payload_messages(payloads):
@@ -308,22 +161,22 @@ class SQSClient(object):
             list<dict>: All messages formatted for ingestion by the Rules Engine function
         """
         return [
-            message for payload in payloads
+            json.dumps(message, separators=(',', ':')) for payload in payloads
             for message in payload.sqs_messages
         ]
 
     def send(self, payloads):
-        """Send a list of records to SQS, batching as necessary
+        """Send a list of records from payloads to SQS, segmenting as necessary
 
         Args:
-            records (list): Records to be sent to SQS for consumption by the rules engine
+            payloads (list): Payloads containing records to be sent to SQS for
+                consumption by the rules engine
 
         Raises:
             SQSClientError: Exception if something went wrong during sending messages to SQS
         """
         records = self._payload_messages(payloads)
-
-        # SQS only supports up to 10 messages so do the send in batches
-        for message_batch in self._message_batches(records):
-            response = self._send_messages(message_batch)
-            self._finalize(response, message_batch)
+        for records, count in self._segment_records(records):
+            LOGGER.info('Sending %d record(s) to %s', count, self.queue.url)
+            response = self._send_message(records)
+            self._finalize(response, count)

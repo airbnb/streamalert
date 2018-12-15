@@ -51,12 +51,14 @@ def test_handler(options, config):
         bool: False if errors occurred, True otherwise
     """
     result = True
-    for i in range(options.repeat):
-        if options.repeat != 1:
+    opts = vars(options)
+    repeat = opts.get('repeat', 1)
+    for i in range(repeat):
+        if repeat != 1:
             print('\nRepetition #', i+1)
         result = result and TestRunner(options, config).run()
 
-    if options.stats:
+    if opts.get('stats'):
         print(get_rule_stats())
     return result
 
