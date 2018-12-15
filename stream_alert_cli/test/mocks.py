@@ -18,17 +18,31 @@ import os
 
 
 def mock_threat_intel_query_results():
-    """Load test fixtures for Threat Intel to use with rule testing"""
-    mock_ioc_values = set()
+    """Load test fixtures for Threat Intel to use with rule testing
+
+    Fixture files should be in the following JSON format:
+        [
+          {
+            "ioc_value": "1.1.1.2",
+            "ioc_type": "ip",
+            "sub_type": "mal_ip"
+          }
+        ]
+    """
+    mock_ioc_values = dict()
     for root, _, fixture_files in os.walk('tests/integration/fixtures/threat_intel/'):
         for fixture_file in fixture_files:
             with open(os.path.join(root, fixture_file), 'r') as json_file:
-                mock_ioc_values.update(value['ioc_value'] for value in json.load(json_file))
+                mock_ioc_values.update(
+                    {value['ioc_value']: value for value in json.load(json_file)}
+                )
 
     # Return the function to mock out ThreatIntel._query
     # This simply returns values from the log that are in the mock_ioc_values
     def _query(values):
-        return list(set(values).intersection(mock_ioc_values))
+        return [
+            mock_ioc_values[value] for value in values if value in mock_ioc_values
+        ]
 
     return _query
 
