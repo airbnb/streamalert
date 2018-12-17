@@ -203,8 +203,6 @@ class RulesEnginePackage(LambdaPackage):
     lambda_handler = 'stream_alert.rules_engine.main.handler'
     package_files = {
         'conf',
-        'helpers',
-        'matchers',
         'rules',
         'stream_alert/__init__.py',
         'stream_alert/rules_engine',
