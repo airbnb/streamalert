@@ -231,7 +231,6 @@ class AlertMergerPackage(LambdaPackage):
     config_key = 'alert_merger_config'
     lambda_handler = 'stream_alert.alert_merger.main.handler'
     package_files = {
-        'conf',
         'stream_alert/__init__.py',
         'stream_alert/alert_merger',
         'stream_alert/shared'
