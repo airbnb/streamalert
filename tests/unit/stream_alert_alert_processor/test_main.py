@@ -24,9 +24,9 @@ from nose.tools import (
 
 from stream_alert.alert_processor.main import AlertProcessor, handler
 from stream_alert.alert_processor.outputs.output_base import OutputDispatcher
-from stream_alert.shared import NORMALIZATION_KEY
 from stream_alert.shared.alert import Alert
 from stream_alert.shared.config import load_config
+from stream_alert.shared.normalize import Normalizer
 from tests.unit.stream_alert_alert_processor import (
     ALERTS_TABLE,
     MOCK_ENV
@@ -52,7 +52,7 @@ class TestAlertProcessor(object):
         self.processor = AlertProcessor()
         self.alert = Alert(
             'hello_world',
-            {'abc': 123, NORMALIZATION_KEY: {}},
+            {'abc': 123, Normalizer.NORMALIZATION_KEY: {}},
             {'slack:unit-test-channel'}
         )
 

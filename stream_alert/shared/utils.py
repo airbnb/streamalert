@@ -4,8 +4,8 @@ from collections import deque
 from netaddr import IPAddress, IPNetwork
 from netaddr.core import AddrFormatError
 
-from stream_alert.shared import NORMALIZATION_KEY
 from stream_alert.shared.logger import get_logger
+from stream_alert.shared.normalize import Normalizer
 
 
 LOGGER = get_logger(__name__)
@@ -133,7 +133,7 @@ def get_keys(data, search_key, max_matches=-1):
                 # helper may fetch info from normalization if there are keyname conflict.
                 # For example, Key name 'userName' is both existed as a normalized key defined
                 # in conf/normalized_types.json and cloudtrail record schemas.
-                if key == NORMALIZATION_KEY:
+                if key == Normalizer.NORMALIZATION_KEY:
                     continue
                 if val and isinstance(val, _CONTAINER_TYPES):
                     containers.append(val)

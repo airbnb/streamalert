@@ -16,7 +16,7 @@ limitations under the License.
 from mock import patch
 from nose.tools import assert_equal
 
-from stream_alert.classifier.normalize import Normalizer
+from stream_alert.shared.normalize import Normalizer
 
 
 class TestNormalizer(object):
@@ -35,11 +35,11 @@ class TestNormalizer(object):
                 'awsRegion': 'region_name',
                 'source': '1.1.1.2',
                 'userIdentity': {
-                    "userName": "Alice",
-                    "invokedBy": "signin.amazonaws.com"
+                    'userName': 'Alice',
+                    'invokedBy': 'signin.amazonaws.com'
                 }
             },
-            'sourceIPAddress': '1.1.1.2'
+            'sourceIPAddress': '1.1.1.3'
         }
 
     def test_match_types(self):
@@ -50,9 +50,9 @@ class TestNormalizer(object):
             'ipv4': ['destination', 'source', 'sourceIPAddress']
         }
         expected_results = {
-            'sourceAccount': [['account']],
-            'ipv4': [['sourceIPAddress'], ['detail', 'source']],
-            'region': [['region'], ['detail', 'awsRegion']]
+            'sourceAccount': {123456},
+            'ipv4': {'1.1.1.2', '1.1.1.3'},
+            'region': {'region_name'}
         }
 
         results = Normalizer.match_types(self._test_record(), normalized_types)
@@ -67,16 +67,30 @@ class TestNormalizer(object):
             'userName': ['userName', 'owner', 'invokedBy']
         }
         expected_results = {
-            'account': [['account']],
-            'ipv4': [['sourceIPAddress'], ['detail', 'source']],
-            'region': [['region'], ['detail', 'awsRegion']],
-            'userName': [
-                ['detail', 'userIdentity', 'userName'],
-                ['detail', 'userIdentity', 'invokedBy']
-            ]
+            'account': {123456},
+            'ipv4': {'1.1.1.2', '1.1.1.3'},
+            'region': {'region_name'},
+            'userName': {'Alice', 'signin.amazonaws.com'}
         }
 
         results = Normalizer.match_types(self._test_record(), normalized_types)
+        assert_equal(results, expected_results)
+
+    def test_match_types_list(self):
+        """Normalizer - Match Types, List of Values"""
+        normalized_types = {
+            'ipv4': ['sourceIPAddress'],
+        }
+        expected_results = {
+            'ipv4': {'1.1.1.2', '1.1.1.3'}
+        }
+
+        test_record = {
+            'account': 123456,
+            'sourceIPAddress': ['1.1.1.2', '1.1.1.3']
+        }
+
+        results = Normalizer.match_types(test_record, normalized_types)
         assert_equal(results, expected_results)
 
     def test_normalize(self):
@@ -108,10 +122,10 @@ class TestNormalizer(object):
                     "invokedBy": "signin.amazonaws.com"
                 }
             },
-            'sourceIPAddress': '1.1.1.2',
+            'sourceIPAddress': '1.1.1.3',
             'streamalert:normalization': {
-                'region': [['region'], ['detail', 'awsRegion']],
-                'sourceAccount': [['account']]
+                'region': {'region_name'},
+                'sourceAccount': {123456}
             }
         }
 
@@ -148,15 +162,36 @@ class TestNormalizer(object):
                     "invokedBy": "signin.amazonaws.com"
                 }
             },
-            'sourceIPAddress': '1.1.1.2',
+            'sourceIPAddress': '1.1.1.3',
             'streamalert:normalization': {
-                'bad_type': [],
+                'bad_type': set(),
             }
         }
 
         record = self._test_record()
         Normalizer.normalize(record, log_type)
         assert_equal(record, expected_record)
+
+    def test_get_values_for_normalized_type(self):
+        """Normalizer - Get Values for Normalized Type"""
+        expected_result = {'1.1.1.3'}
+        record = {
+            'sourceIPAddress': '1.1.1.3',
+            'streamalert:normalization': {
+                'ip_v4': expected_result,
+            }
+        }
+
+        assert_equal(Normalizer.get_values_for_normalized_type(record, 'ip_v4'), expected_result)
+
+    def test_get_values_for_normalized_type_none(self):
+        """Normalizer - Get Values for Normalized Type, None"""
+        record = {
+            'sourceIPAddress': '1.1.1.3',
+            'streamalert:normalization': {}
+        }
+
+        assert_equal(Normalizer.get_values_for_normalized_type(record, 'ip_v4'), set())
 
     def test_load_from_config(self):
         """Normalizer - Load From Config"""

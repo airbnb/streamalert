@@ -1,6 +1,6 @@
 """Detection of the right to left override unicode character U+202E in filename or process name."""
-from rules.helpers.base import fetch_values_by_datatype
 from stream_alert.shared.rule import rule
+from stream_alert.shared.normalize import Normalizer
 
 
 @rule(datatypes=['command', 'filePath', 'processPath', 'fileName'])
@@ -22,22 +22,22 @@ def right_to_left_character(rec):
     # Unicode character U+202E, right-to-left-override (RLO)
     rlo = u'\u202e'
 
-    commands = fetch_values_by_datatype(rec, 'command')
+    commands = Normalizer.get_values_for_normalized_type(rec, 'command')
     for command in commands:
         if isinstance(command, unicode) and rlo in command:
             return True
 
-    file_paths = fetch_values_by_datatype(rec, 'filePath')
+    file_paths = Normalizer.get_values_for_normalized_type(rec, 'filePath')
     for file_path in file_paths:
         if isinstance(file_path, unicode) and rlo in file_path:
             return True
 
-    process_paths = fetch_values_by_datatype(rec, 'processPath')
+    process_paths = Normalizer.get_values_for_normalized_type(rec, 'processPath')
     for process_path in process_paths:
         if isinstance(process_path, unicode) and rlo in process_path:
             return True
 
-    file_names = fetch_values_by_datatype(rec, 'fileName')
+    file_names = Normalizer.get_values_for_normalized_type(rec, 'fileName')
     for file_name in file_names:
         if isinstance(file_name, unicode) and rlo in file_name:
             return True

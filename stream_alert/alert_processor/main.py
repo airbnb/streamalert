@@ -20,11 +20,12 @@ import backoff
 from botocore.exceptions import ClientError
 
 from stream_alert.alert_processor.outputs.output_base import StreamAlertOutput
-from stream_alert.shared import backoff_handlers, NORMALIZATION_KEY, resources
+from stream_alert.shared import backoff_handlers, resources
 from stream_alert.shared.alert import Alert, AlertCreationError
 from stream_alert.shared.alert_table import AlertTable
 from stream_alert.shared.config import load_config
 from stream_alert.shared.logger import get_logger
+from stream_alert.shared.normalize import Normalizer
 
 LOGGER = get_logger(__name__)
 
@@ -143,8 +144,8 @@ class AlertProcessor(object):
 
         # Remove normalization key from the record.
         # TODO: Consider including this in at least some outputs, e.g. default Athena firehose
-        if NORMALIZATION_KEY in alert.record:
-            del alert.record[NORMALIZATION_KEY]
+        if Normalizer.NORMALIZATION_KEY in alert.record:
+            del alert.record[Normalizer.NORMALIZATION_KEY]
 
         result = self._send_to_outputs(alert)
         self._update_table(alert, result)
