@@ -1,11 +1,11 @@
-to: @airbnb/streamalert-maintainers
-cc: <optional-cc-to-specific-users>
-size: small|medium|large
-resolves #<related-issue-goes-here>
+to:
+cc: @airbnb/streamalert-maintainers
+related to:
+resolves:
 
 ## Background
 
-Context for the change
+Reason for the change
 
 ## Changes
 
