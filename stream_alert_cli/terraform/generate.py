@@ -417,7 +417,7 @@ def terraform_generate_handler(config, init=False, check_tf=True, check_creds=Tr
     metric_alarms = generate_aggregate_cloudwatch_metric_alarms(config)
     if metric_alarms:
         with open('terraform/metric_alarms.tf.json', 'w') as tf_file:
-            json.dump(metric_filters, tf_file, indent=2, sort_keys=True)
+            json.dump(metric_alarms, tf_file, indent=2, sort_keys=True)
 
     # Setup Athena
     generate_global_lambda_settings(

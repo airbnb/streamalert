@@ -66,12 +66,13 @@ def generate_aggregate_cloudwatch_metric_filters(config):
                 if not is_global else '${{module.{}_lambda.log_group_name}}'.format(function)
             )
 
+            cluster = cluster.upper()
+            if not is_global:
+                cluster = '{}_AGGREGATE'.format(cluster)
+
             # Add filters for the cluster and aggregate
             for metric, filter_settings in current_metrics[function].iteritems():
-                module_name = (
-                    'metric_filters_{}_{}_{}'.format(metric_prefix, metric, cluster)
-                    if is_global else 'metric_filters_{}_{}'.format(metric_prefix, metric)
-                )
+                module_name = 'metric_filters_{}_{}_{}'.format(metric_prefix, metric, cluster)
                 result['module'][module_name] = {
                     'source': 'modules/tf_metric_filters',
                     'log_group_name': log_group_name,
@@ -102,7 +103,7 @@ def generate_aggregate_cloudwatch_metric_alarms(config):
 
         for idx, name in enumerate(metric_alarms):
             alarm_settings = metric_alarms[name]
-            alarm_settings['source'] = 'modules/tf_metric_alarms',
+            alarm_settings['source'] = 'modules/tf_metric_alarms'
             alarm_settings['sns_topic_arn'] = sns_topic_arn
             alarm_settings['alarm_name'] = name
             result['module']['metric_alarm_{}_{}'.format(func, idx)] = alarm_settings
@@ -184,6 +185,6 @@ def generate_cluster_cloudwatch_metric_alarms(cluster_name, cluster_dict, config
     ]
 
     for idx, metric_alarm in enumerate(metric_alarms):
-        metric_alarm['source'] = 'modules/tf_metric_alarms',
+        metric_alarm['source'] = 'modules/tf_metric_alarms'
         metric_alarm['sns_topic_arn'] = sns_topic_arn
         cluster_dict['module']['metric_alarm_{}_{}'.format(cluster_name, idx)] = metric_alarm
