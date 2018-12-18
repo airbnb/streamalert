@@ -102,7 +102,7 @@ def generate_aggregate_cloudwatch_metric_alarms(config):
 
         for idx, name in enumerate(metric_alarms):
             alarm_settings = metric_alarms[name]
-            alarm_settings['source'] = 'modules/tf_metric_alarms',
+            alarm_settings['source'] = 'modules/tf_metric_alarms'
             alarm_settings['sns_topic_arn'] = sns_topic_arn
             alarm_settings['alarm_name'] = name
             result['module']['metric_alarm_{}_{}'.format(func, idx)] = alarm_settings
@@ -184,6 +184,6 @@ def generate_cluster_cloudwatch_metric_alarms(cluster_name, cluster_dict, config
     ]
 
     for idx, metric_alarm in enumerate(metric_alarms):
-        metric_alarm['source'] = 'modules/tf_metric_alarms',
+        metric_alarm['source'] = 'modules/tf_metric_alarms'
         metric_alarm['sns_topic_arn'] = sns_topic_arn
         cluster_dict['module']['metric_alarm_{}_{}'.format(cluster_name, idx)] = metric_alarm
