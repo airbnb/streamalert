@@ -242,7 +242,6 @@ class TestCLIConfig(object):
             'excluded_sub_types': [],
             'log_level': 'info',
             'memory': '128',
-            'third_party_libraries': ['requests'],
             'table_rcu': 10,
             'table_wcu': 25,
             'timeout': '240',

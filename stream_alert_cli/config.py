@@ -502,7 +502,6 @@ class CLIConfig(object):
             'interval': 'rate(1 day)',
             'log_level': 'info',
             'memory': '128',
-            'third_party_libraries': ['requests'],
             'timeout': '120',
             'table_rcu': 10,
             'table_wcu': 10,
