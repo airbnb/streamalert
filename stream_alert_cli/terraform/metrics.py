@@ -66,12 +66,13 @@ def generate_aggregate_cloudwatch_metric_filters(config):
                 if not is_global else '${{module.{}_lambda.log_group_name}}'.format(function)
             )
 
+            cluster = cluster.upper()
+            if not is_global:
+                cluster = '{}_AGGREGATE'.format(cluster)
+
             # Add filters for the cluster and aggregate
             for metric, filter_settings in current_metrics[function].iteritems():
-                module_name = (
-                    'metric_filters_{}_{}_{}'.format(metric_prefix, metric, cluster)
-                    if is_global else 'metric_filters_{}_{}'.format(metric_prefix, metric)
-                )
+                module_name = 'metric_filters_{}_{}_{}'.format(metric_prefix, metric, cluster)
                 result['module'][module_name] = {
                     'source': 'modules/tf_metric_filters',
                     'log_group_name': log_group_name,
