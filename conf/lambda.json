@@ -50,13 +50,6 @@
       "subnet_ids": []
     }
   },
-  "athena_partition_refresh_config": {
-    "buckets": {
-      "PREFIX_GOES_HERE.streamalerts": "alerts"
-    },
-    "concurrency_limit": 10,
-    "log_level": "info"
-  },
   "classifier_config": {},
   "rule_promotion_config": {
     "enabled": false,

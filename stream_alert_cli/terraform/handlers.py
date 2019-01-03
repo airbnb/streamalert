@@ -83,7 +83,7 @@ def terraform_init(options, config):
     # this bucket must exist before the log tables can be created, but
     # shouldn't be created unless the firehose is enabled
     if config['global']['infrastructure'].get('firehose', {}).get('enabled'):
-        init_target.append('aws_s3_bucket.stream_alert_data')
+        init_targets.append('aws_s3_bucket.stream_alert_data')
 
     if not tf_runner(targets=init_targets):
         LOGGER.error('An error occurred while running StreamAlert init')

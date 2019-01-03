@@ -157,11 +157,6 @@ def _create(function_name, config, clusters=None):
             True if any(info['modules'].get('stream_alert_apps')
                         for info in config['clusters'].itervalues()) else False
         ),
-        'athena': PackageMap(
-            stream_alert_packages.AthenaPackage,
-            {'module.stream_alert_athena'},
-            True
-        ),
         'classifier': PackageMap(
             stream_alert_packages.ClassifierPackage,
             {'module.classifier_{}_{}'.format(cluster, suffix)

@@ -25,6 +25,11 @@
       "enabled": false,
       "enabled_logs": {}
     },
+    "athena": {
+      "buckets": {
+        "tobstream.streamalerts": "alerts"
+      }
+    },
     "monitoring": {
       "create_sns_topic": true
     },

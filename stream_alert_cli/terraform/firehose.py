@@ -15,7 +15,7 @@ limitations under the License.
 """
 from stream_alert.classifier.clients import FirehoseClient
 from stream_alert_cli.terraform.common import monitoring_topic_arn
-from stream_alert.athena_partition_refresh.main import AthenaRefresher
+from stream_alert_cli.athena.handler import get_athena_database_name
 
 
 def generate_firehose(logging_bucket, main_dict, config):
@@ -33,14 +33,6 @@ def generate_firehose(logging_bucket, main_dict, config):
     firehose_s3_bucket_suffix = firehose_config.get('s3_bucket_suffix', 'streamalert.data')
     firehose_s3_bucket_name = '{}.{}'.format(config['global']['account']['prefix'],
                                              firehose_s3_bucket_suffix)
-
-    prefix = config['global']['account']['prefix']
-    athena_config = config['lambda']['athena_partition_refresh_config']
-
-    db_name = athena_config.get(
-        'database_name',
-        AthenaRefresher.STREAMALERT_DATABASE.format(prefix)
-    )
 
     # Firehose Setup module
     main_dict['module']['kinesis_firehose_setup'] = {
@@ -60,6 +52,8 @@ def generate_firehose(logging_bucket, main_dict, config):
     )
 
     log_alarms_config = config['global']['infrastructure']['firehose'].get('enabled_logs', {})
+
+    db_name = get_athena_database_name(config)
 
     # Add the Delivery Streams individually
     for log_stream_name, log_type_name in enabled_logs.iteritems():

@@ -260,19 +260,6 @@ class AppPackage(LambdaPackage):
     }
 
 
-class AthenaPackage(LambdaPackage):
-    """Create the Athena Partition Refresh Lambda function package"""
-    config_key = 'athena_partition_refresh_config'
-    lambda_handler = 'stream_alert.athena_partition_refresh.main.handler'
-    package_files = {
-        'conf',
-        'stream_alert/__init__.py',
-        'stream_alert/athena_partition_refresh',
-        'stream_alert/shared'
-    }
-    package_name = 'athena_partition_refresh'
-
-
 class ThreatIntelDownloaderPackage(LambdaPackage):
     """Create the Threat Intel Downloader Lambda function package"""
     config_key = 'threat_intel_downloader_config'

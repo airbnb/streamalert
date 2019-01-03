@@ -13,7 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from stream_alert.athena_partition_refresh.main import AthenaRefresher
 from stream_alert.classifier.clients import FirehoseClient
 from stream_alert.shared.alert import Alert
 from stream_alert.shared.athena import AthenaClient
@@ -29,6 +28,9 @@ CREATE_TABLE_STATEMENT = ('CREATE EXTERNAL TABLE {table_name} ({schema}) '
                           'LOCATION \'s3://{bucket}/{table_name}/\'')
 
 MAX_QUERY_LENGTH = 262144
+
+
+_STREAMALERT_DATABASE = '{}_streamalert'
 
 
 def athena_handler(options, config):
@@ -58,6 +60,26 @@ def athena_handler(options, config):
             options.schema_override)
 
 
+def get_athena_database_name(config):
+    """Get the name of the athena database using the current config settings
+
+    Args:
+        config (CLIConfig): Loaded StreamAlert config
+
+    Returns:
+        str: The name of the athena database
+    """
+    prefix = config['global']['account']['prefix']
+    athena_config = config['global']['infrastructure'].get('athena')
+    if athena_config:
+        return athena_config.get(
+            'database_name',
+            _STREAMALERT_DATABASE.format(prefix)
+        )
+
+    return _STREAMALERT_DATABASE.format(prefix)
+
+
 def get_athena_client(config):
     """Get an athena client using the current config settings
 
@@ -68,12 +90,9 @@ def get_athena_client(config):
         AthenaClient: instantiated client for performing athena actions
     """
     prefix = config['global']['account']['prefix']
-    athena_config = config['lambda']['athena_partition_refresh_config']
+    athena_config = config['global']['infrastructure']['athena']
 
-    db_name = athena_config.get(
-        'database_name',
-        AthenaRefresher.STREAMALERT_DATABASE.format(prefix)
-    )
+    db_name = get_athena_database_name(config)
 
     # Get the S3 bucket to store Athena query results
     results_bucket = athena_config.get(
