@@ -34,9 +34,6 @@ def generate_firehose(logging_bucket, main_dict, config):
     firehose_s3_bucket_name = '{}.{}'.format(config['global']['account']['prefix'],
                                              firehose_s3_bucket_suffix)
 
-    prefix = config['global']['account']['prefix']
-    athena_config = config['lambda']['athena_partition_refresh_config']
-
     # Firehose Setup module
     main_dict['module']['kinesis_firehose_setup'] = {
         'source': 'modules/tf_stream_alert_kinesis_firehose_setup',

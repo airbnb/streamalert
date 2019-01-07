@@ -44,7 +44,6 @@ def test_generate_athena():
                 'results_bucket': '{}.streamalert.athena-results'.format(prefix),
                 'kms_key_id': '${aws_kms_key.server_side_encryption.key_id}',
                 'prefix': 'unit-testing',
-                'account_id': '12345678910',
             },
         }
     }

@@ -130,7 +130,6 @@ def terraform_build_handler(options, config):
     if not terraform_generate_handler(config=config):
         return False
 
-    # TODO(GarretReece): consider whether this call is needed -- currently cargo-cult included during manual rebase 12/05/18
     # Create the glue catalog tables for the enabled logs
     if not create_log_tables(config=config):
         return
