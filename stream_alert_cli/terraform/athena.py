@@ -42,7 +42,6 @@ def generate_athena(config):
         'database_name': database,
         'results_bucket': results_bucket_name,
         'kms_key_id': '${aws_kms_key.server_side_encryption.key_id}',
-        'account_id': config['global']['account']['aws_account_id'],
         'prefix': prefix
     }
 

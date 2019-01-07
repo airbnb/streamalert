@@ -78,6 +78,7 @@ def terraform_init(options, config):
         'aws_s3_bucket.streamalerts',
         'aws_kms_key.server_side_encryption', 'aws_kms_alias.server_side_encryption',
         'aws_kms_key.stream_alert_secrets', 'aws_kms_alias.stream_alert_secrets',
+        'aws_athena_database.streamalert' #required for the alerts table
     ]
 
     # this bucket must exist before the log tables can be created, but
@@ -99,7 +100,7 @@ def terraform_init(options, config):
 
     LOGGER.info('Deploying Lambda Functions')
 
-    functions = ['rule', 'alert', 'alert_merger', 'athena', 'classifier']
+    functions = ['rule', 'alert', 'alert_merger', 'classifier']
 
     deploy(functions, config)
 

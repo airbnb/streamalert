@@ -48,7 +48,6 @@ def deploy_handler(options, config):
             'alert',
             'alert_merger',
             'apps',
-            'athena',
             'classifier',
             'rule',
             'rule_promo',

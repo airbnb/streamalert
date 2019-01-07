@@ -389,6 +389,15 @@ def terraform_generate_handler(config, init=False, check_tf=True, check_creds=Tr
             sort_keys=True
         )
 
+    # Setup Athena
+    generate_athena_settings(
+        config,
+        config_name='athena',
+        generate_func=generate_athena,
+        tf_tmp_file='terraform/athena.tf.json',
+        message='Removing old Athena Terraform file'
+    )
+
     # Return early during the init process, clusters are not needed yet
     if init:
         return True
@@ -423,15 +432,6 @@ def terraform_generate_handler(config, init=False, check_tf=True, check_creds=Tr
     if metric_alarms:
         with open('terraform/metric_alarms.tf.json', 'w') as tf_file:
             json.dump(metric_alarms, tf_file, indent=2, sort_keys=True)
-
-    # Setup Athena
-    generate_athena_settings(
-        config,
-        config_name='athena',
-        generate_func=generate_athena,
-        tf_tmp_file='terraform/athena.tf.json',
-        message='Removing old Athena Terraform file'
-    )
 
     # Setup Threat Intel Downloader Lambda function if it is enabled
     generate_global_lambda_settings(
