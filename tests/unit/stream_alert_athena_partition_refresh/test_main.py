@@ -70,7 +70,7 @@ class TestAthenaRefresher(object):
     def test_add_partitions_none(self, log_mock):
         """AthenaRefresher - Add Partitions, None to Add"""
         result = self._refresher._add_partitions()
-        log_mock.assert_called_with('No partitons to add')
+        log_mock.assert_called_with('No partitions to add')
         assert_equal(result, False)
 
     def test_get_partitions_from_keys(self):
@@ -200,4 +200,4 @@ class TestAthenaRefresher(object):
         s3_record['Records'][0]['s3']['bucket']['name'] = 'bad.bucket.name'
         event['Records'][0]['body'] = json.dumps(s3_record)
         assert_raises(AthenaRefreshError, self._refresher.run, event)
-        log_mock.assert_called_with('No partitons to add')
+        log_mock.assert_called_with('No partitions to add')

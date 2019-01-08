@@ -47,7 +47,7 @@ class AlertForwarder(object):
         except ClientError:
             # add_alerts() automatically retries transient errors - any raised ClientError
             # is likely unrecoverable. Log an exception and metric
-            LOGGER.exception('An error occurred when sending alerts to DynamoBD')
+            LOGGER.exception('An error occurred when sending alerts to DynamoDB')
             MetricLogger.log_metric(FUNCTION_NAME, MetricLogger.FAILED_DYNAMO_WRITES, 1)
             return
 
