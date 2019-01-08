@@ -161,7 +161,7 @@ class SQSClient(object):
             list<dict>: All messages formatted for ingestion by the Rules Engine function
         """
         return [
-            json.dumps(message, separators=(',', ':'), default=list) for payload in payloads
+            json.dumps(message, separators=(',', ':')) for payload in payloads
             for message in payload.sqs_messages
         ]
 
