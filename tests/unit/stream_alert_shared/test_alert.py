@@ -62,7 +62,7 @@ class TestAlert(object):
 
     def test_alert_encoder_invalid_json(self):
         """Alert Class - Alert Encoder - Invalid JSON raises parent exception"""
-        assert_raises(TypeError, json.dumps, RuntimeWarning, cls=Alert.Encoder)
+        assert_raises(TypeError, json.dumps, RuntimeWarning, default=list)
 
     def test_init_invalid_kwargs(self):
         """Alert Class - Init With Invalid Kwargs"""

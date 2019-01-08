@@ -58,7 +58,7 @@ class Normalizer(object):
             }
         """
         return {
-            key: set(cls._extract_values(record, set(keys_to_normalize)))
+            key: sorted(set(cls._extract_values(record, set(keys_to_normalize))))
             for key, keys_to_normalize in normalized_types.iteritems()
         }
 
