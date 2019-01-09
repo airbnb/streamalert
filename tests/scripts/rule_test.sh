@@ -1,2 +1,2 @@
 #! /bin/bash
-./manage.py test rules
+./manage.py test rules $@

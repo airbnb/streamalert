@@ -151,7 +151,7 @@ class AthenaRefresher(object):
         """
         partitions = self._get_partitions_from_keys()
         if not partitions:
-            LOGGER.error('No partitons to add')
+            LOGGER.error('No partitions to add')
             return False
 
         for athena_table in partitions:
