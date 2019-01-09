@@ -27,13 +27,6 @@ class AlertCreationError(Exception):
 class Alert(object):
     """Encapsulates a single alert and handles serializing to Dynamo and merging."""
 
-    class Encoder(json.JSONEncoder):
-        """Custom JSON encoder which handles sets."""
-        def default(self, obj):  # pylint: disable=arguments-differ,method-hidden
-            if isinstance(obj, set):
-                return list(obj)
-            return json.JSONEncoder.default(self, obj)
-
     _EXPECTED_INIT_KWARGS = {
         'alert_id', 'attempts', 'cluster', 'context', 'created', 'dispatched', 'log_source',
         'log_type', 'merge_by_keys', 'merge_window', 'outputs_sent', 'rule_description',
@@ -110,7 +103,7 @@ class Alert(object):
 
     def __repr__(self):
         """Complete representation (for debugging) is an indented JSON string with all fields."""
-        return json.dumps(self.dynamo_record(), cls=self.Encoder, indent=2, sort_keys=True)
+        return json.dumps(self.dynamo_record(), default=list, indent=2, sort_keys=True)
 
     def __str__(self):
         """Simple string representation includes alert ID and triggered rule."""
@@ -158,7 +151,7 @@ class Alert(object):
             'OutputsSent': self.outputs_sent or None,  # Empty sets not allowed by Dynamo
             # Compact JSON encoding (no spaces). We have to JSON-encode here
             # (instead of just passing the dict) because Dynamo does not allow empty string values.
-            'Record': json.dumps(self.record, separators=(',', ':'), cls=self.Encoder),
+            'Record': json.dumps(self.record, separators=(',', ':'), default=list),
             'RuleDescription': self.rule_description,
             'SourceEntity': self.source_entity,
             'SourceService': self.source_service,

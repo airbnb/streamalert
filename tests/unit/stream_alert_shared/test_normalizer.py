@@ -50,9 +50,9 @@ class TestNormalizer(object):
             'ipv4': ['destination', 'source', 'sourceIPAddress']
         }
         expected_results = {
-            'sourceAccount': {123456},
-            'ipv4': {'1.1.1.2', '1.1.1.3'},
-            'region': {'region_name'}
+            'sourceAccount': [123456],
+            'ipv4': ['1.1.1.2', '1.1.1.3'],
+            'region': ['region_name']
         }
 
         results = Normalizer.match_types(self._test_record(), normalized_types)
@@ -67,10 +67,10 @@ class TestNormalizer(object):
             'userName': ['userName', 'owner', 'invokedBy']
         }
         expected_results = {
-            'account': {123456},
-            'ipv4': {'1.1.1.2', '1.1.1.3'},
-            'region': {'region_name'},
-            'userName': {'Alice', 'signin.amazonaws.com'}
+            'account': [123456],
+            'ipv4': ['1.1.1.2', '1.1.1.3'],
+            'region': ['region_name'],
+            'userName': ['Alice', 'signin.amazonaws.com']
         }
 
         results = Normalizer.match_types(self._test_record(), normalized_types)
@@ -82,7 +82,7 @@ class TestNormalizer(object):
             'ipv4': ['sourceIPAddress'],
         }
         expected_results = {
-            'ipv4': {'1.1.1.2', '1.1.1.3'}
+            'ipv4': ['1.1.1.2', '1.1.1.3']
         }
 
         test_record = {
@@ -124,8 +124,8 @@ class TestNormalizer(object):
             },
             'sourceIPAddress': '1.1.1.3',
             'streamalert:normalization': {
-                'region': {'region_name'},
-                'sourceAccount': {123456}
+                'region': ['region_name'],
+                'sourceAccount': [123456]
             }
         }
 
@@ -164,7 +164,7 @@ class TestNormalizer(object):
             },
             'sourceIPAddress': '1.1.1.3',
             'streamalert:normalization': {
-                'bad_type': set(),
+                'bad_type': list(),
             }
         }
 

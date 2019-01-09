@@ -120,8 +120,8 @@ class AlertMerger(object):
         LOGGER.info('Dispatching %s to %s (attempt %d)', alert, self.alert_proc, alert.attempts)
         MetricLogger.log_metric(ALERT_MERGER_NAME, MetricLogger.ALERT_ATTEMPTS, alert.attempts)
 
-        record_payload = json.dumps(
-            alert.dynamo_record(), cls=Alert.Encoder, separators=(',', ':'))
+        record_payload = json.dumps(alert.dynamo_record(), default=list, separators=(',', ':'))
+
         if len(record_payload) <= self.MAX_LAMBDA_PAYLOAD_SIZE:
             # The entire alert fits in the Lambda payload - send it all
             payload = record_payload
