@@ -328,8 +328,16 @@ def create_table(table, bucket, config, schema_override=None):
 
 
 def create_log_tables(config):
+    """Create all tables needed for historical search
+
+    Args:
+        config (CLIConfig): Loaded StreamAlert config
+
+    Returns:
+        bool: False if errors occurred, True otherwise
+    """
     if not config['global']['infrastructure'].get('firehose', {}).get('enabled'):
-        return
+        return True
 
     firehose_config = config['global']['infrastructure']['firehose']
     firehose_s3_bucket_suffix = firehose_config.get('s3_bucket_suffix', 'streamalert.data')
@@ -342,6 +350,7 @@ def create_log_tables(config):
     )
 
     for log_stream_name, _ in enabled_logs.iteritems():
-        create_table(log_stream_name, firehose_s3_bucket_name, config)
+        if not create_table(log_stream_name, firehose_s3_bucket_name, config):
+            return False
 
     return True
