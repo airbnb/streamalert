@@ -361,7 +361,7 @@ class OutputDispatcher(object):
     @classmethod
     @abstractmethod
     def get_user_defined_properties(cls):
-        """Base method for retrieving properties that must be asssigned by the user when
+        """Base method for retrieving properties that must be assigned by the user when
         configuring a new output for this service. This should include any information that
         is sensitive or use-case specific. For intance, if the url needed for this integration
         is unique to your situation, it should be supplied here.

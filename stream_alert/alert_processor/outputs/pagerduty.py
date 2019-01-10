@@ -82,7 +82,7 @@ class PagerDutyOutput(OutputDispatcher):
 
     @classmethod
     def get_user_defined_properties(cls):
-        """Get properties that must be asssigned by the user when configuring a new PagerDuty
+        """Get properties that must be assigned by the user when configuring a new PagerDuty
         output.  This should be sensitive or unique information for this use-case that needs
         to come from the user.
         Every output should return a dict that contains a 'descriptor' with a description of the
@@ -155,7 +155,7 @@ class PagerDutyOutputV2(OutputDispatcher):
 
     @classmethod
     def get_user_defined_properties(cls):
-        """Get properties that must be asssigned by the user when configuring a new PagerDuty
+        """Get properties that must be assigned by the user when configuring a new PagerDuty
         event output. This should be sensitive or unique information for this use-case that
         needs to come from the user.
 
@@ -237,7 +237,7 @@ class PagerDutyIncidentOutput(OutputDispatcher):
 
     @classmethod
     def get_user_defined_properties(cls):
-        """Get properties that must be asssigned by the user when configuring a new PagerDuty
+        """Get properties that must be assigned by the user when configuring a new PagerDuty
         event output. This should be sensitive or unique information for this use-case that
         needs to come from the user.
 
