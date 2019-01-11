@@ -27,7 +27,7 @@
     },
     "athena": {
       "buckets": {
-        "tobstream.streamalerts": "alerts"
+        "PREFIX_GOES_HERE.streamalerts": "alerts"
       }
     },
     "monitoring": {
