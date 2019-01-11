@@ -23,7 +23,6 @@ from stream_alert_cli.helpers import continue_prompt, record_to_schema
 LOGGER = get_logger(__name__)
 
 CREATE_TABLE_STATEMENT = ('CREATE EXTERNAL TABLE {table_name} ({schema}) '
-                          'PARTITIONED BY (dt string) '
                           'STORED AS PARQUET '
                           'LOCATION \'s3://{bucket}/{table_name}/\'')
 
@@ -261,7 +260,7 @@ def create_table(table, bucket, config, schema_override=None):
     # Check if the table exists
     if athena_client.check_table_exists(sanitized_table_name):
         LOGGER.info('The \'%s\' table already exists.', sanitized_table_name)
-        return False
+        return True
 
     if table == 'alerts':
         # get a fake alert so we can get the keys needed and their types
@@ -318,8 +317,8 @@ def create_table(table, bucket, config, schema_override=None):
 
     # Update the CLI config
     if (table != 'alerts' and
-            bucket not in config['lambda']['athena_partition_refresh_config']['buckets']):
-        config['lambda']['athena_partition_refresh_config']['buckets'][bucket] = 'data'
+            bucket not in config['global']['infrastructure']['athena']['buckets']):
+        config['global']['infrastructure']['athena']['buckets'][bucket] = 'data'
         config.write()
 
     LOGGER.info('The %s table was successfully created!', sanitized_table_name)
