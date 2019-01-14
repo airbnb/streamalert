@@ -206,8 +206,10 @@ class TestOutputDispatcher(object):
 
         put_mock_s3_object(bucket_name, key, test_data, REGION)
 
-        self._dispatcher._credentials_provider.load_encrypted_credentials_from_s3(local_cred_location,
-                                                                                  self._descriptor)
+        self._dispatcher._credentials_provider.load_encrypted_credentials_from_s3(
+            local_cred_location,
+            self._descriptor
+        )
 
         with open(local_cred_location) as creds:
             line = creds.readline()
