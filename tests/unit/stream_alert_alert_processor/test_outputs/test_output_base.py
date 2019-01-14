@@ -116,12 +116,16 @@ def test_output_loading():
 class TestOutputDispatcher(object):
     """Test class for OutputDispatcher"""
 
+    @patch.object(OutputDispatcher, '__service__', 'test_service')
     @patch.object(OutputDispatcher, '__abstractmethods__', frozenset())
     @patch.dict('os.environ', MOCK_ENV)
     def setup(self):
         """Setup before each method"""
         self._dispatcher = OutputDispatcher(CONFIG)
         self._descriptor = 'desc_test'
+
+    def test_credentials_provider(self):
+        assert_equal(self._dispatcher._credentials_provider._service_name, 'test_service')
 
     def test_local_temp_dir(self):
         """OutputDispatcher - Local Temp Dir"""
@@ -145,7 +149,8 @@ class TestOutputDispatcher(object):
 
         put_mock_s3_object(bucket_name, key, test_data, REGION)
 
-        self._dispatcher._get_creds_from_s3(local_cred_location, self._descriptor)
+        self._dispatcher._credentials_provider.load_credentials_from_s3(local_cred_location,
+                                                                        self._descriptor)
 
         with open(local_cred_location) as creds:
             line = creds.readline()
@@ -157,7 +162,7 @@ class TestOutputDispatcher(object):
         """OutputDispatcher - KMS Decrypt"""
         test_data = 'data to encrypt'
         encrypted = encrypt_with_kms(test_data, REGION, KMS_ALIAS)
-        decrypted = self._dispatcher._kms_decrypt(encrypted)
+        decrypted = self._dispatcher._credentials_provider.kms_decrypt(encrypted)
 
         assert_equal(decrypted, test_data)
 

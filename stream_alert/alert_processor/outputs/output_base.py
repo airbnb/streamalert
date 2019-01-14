@@ -116,6 +116,149 @@ class StreamAlertOutput(object):
         return cls._outputs.copy()
 
 
+class OutputCredentialsProvider(object):
+    """OutputCredentialsProvider is a service to OutputDispatcher that helps it load
+       credentials that are housed on AWS S3, or cached locally
+
+    Public methods:
+        load_credentials: Returns a dict of the credentials requested
+    """
+
+    def __init__(self, config, defaults, service_name):
+        self._config = config
+        self._region = REGION
+        self._defaults = defaults
+        self._service_name = service_name
+
+        # Dependency on os
+        self._account_id = os.environ['AWS_ACCOUNT_ID']
+        self._secrets_bucket = '{}.streamalert.secrets'.format(os.environ['STREAMALERT_PREFIX'])
+
+    def load_credentials(self, descriptor):
+        """First try to load the credentials from /tmp and then resort to pulling
+                the credentials from S3 if they are not cached locally
+
+                Args:
+                    descriptor (str): unique identifier used to look up these credentials
+
+                Returns:
+                    dict: the loaded credential info needed for sending alerts to this service
+                        or None if nothing gets loaded
+                """
+        local_cred_location = os.path.join(self.get_local_credentials_temp_dir(),
+                                           self.get_formatted_output_credentials_name(self._service_name,
+                                                                                      descriptor))
+
+        # Creds are not cached locally, so get the encrypted blob from s3
+        if not os.path.exists(local_cred_location):
+            if not self.load_credentials_from_s3(local_cred_location, descriptor):
+                return
+
+        # Open encrypted credential file
+        with open(local_cred_location, 'rb') as cred_file:
+            enc_creds = cred_file.read()
+
+        # Get the decrypted credential json from kms and load into dict
+        # This could be None if the kms decryption fails, so check it
+        decrypted_creds = self.kms_decrypt(enc_creds)
+        if not decrypted_creds:
+            return
+
+        creds_dict = json.loads(decrypted_creds)
+
+        # Add any of the hard-coded default output props to this dict (ie: url)
+        defaults = self._defaults
+        if defaults:
+            creds_dict.update(defaults)
+
+        return creds_dict
+
+    @staticmethod
+    def get_local_credentials_temp_dir():
+        """Get the local tmp directory for caching the encrypted service credentials
+
+        Returns:
+            str: local path for stream_alert_secrets tmp directory
+        """
+        temp_dir = os.path.join(tempfile.gettempdir(), "stream_alert_secrets")
+
+        # Check if this item exists as a file, and remove it if it does
+        if os.path.isfile(temp_dir):
+            os.remove(temp_dir)
+
+        # Create the folder on disk to store the credentials temporarily
+        if not os.path.exists(temp_dir):
+            os.makedirs(temp_dir)
+
+        return temp_dir
+
+    def load_credentials_from_s3(self, cred_location, descriptor):
+        """Pull the encrypted credential blob for this service and destination from s3
+
+        Args:
+            cred_location (str): The tmp path on disk to to store the encrypted blob
+            descriptor (str): Service destination (ie: slack channel, pd integration)
+
+        Returns:
+            bool: True if download of creds from s3 was a success
+        """
+        try:
+            if not os.path.exists(os.path.dirname(cred_location)):
+                os.makedirs(os.path.dirname(cred_location))
+
+            client = boto3.client('s3', region_name=self._region)
+            with open(cred_location, 'wb') as cred_output:
+                client.download_fileobj(
+                    self._secrets_bucket,
+                    self.get_formatted_output_credentials_name(self._service_name, descriptor),
+                    cred_output
+                )
+
+            return True
+        except ClientError as err:
+            LOGGER.exception('credentials for \'%s\' could not be downloaded '
+                             'from S3: %s',
+                             self.get_formatted_output_credentials_name(self._service_name,
+                                                                        descriptor),
+                             err.response)
+
+    def kms_decrypt(self, data):
+        """Decrypt data with AWS KMS.
+
+        Args:
+            data (str): An encrypted ciphertext data blob
+
+        Returns:
+            str: Decrypted json string
+        """
+        try:
+            client = boto3.client('kms', region_name=self._region)
+            response = client.decrypt(CiphertextBlob=data)
+            return response['Plaintext']
+        except ClientError as err:
+            LOGGER.error('an error occurred during credentials decryption: %s', err.response)
+
+    @staticmethod
+    def get_formatted_output_credentials_name(service_name, descriptor):
+        """Formats the output name for this credential by combining the service
+        and the descriptor.
+
+        Args:
+            service_name (str): Service name on output class (i.e. "pagerduty", "demisto")
+            descriptor (str): Service destination (ie: slack channel, pd integration)
+
+        Returns:
+            str: Formatted credential name (ie: slack_ryandchannel)
+        """
+        cred_name = str(service_name)
+
+        # should descriptor be enforced in all rules?
+        if descriptor:
+            cred_name = '{}/{}'.format(cred_name, descriptor)
+
+        return cred_name
+
+
 class OutputDispatcher(object):
     """OutputDispatcher is the base class to handle routing alerts to outputs
 
@@ -145,29 +288,19 @@ class OutputDispatcher(object):
     _DEFAULT_REQUEST_TIMEOUT = 3.05
 
     def __init__(self, config):
-        self.account_id = os.environ['AWS_ACCOUNT_ID']
         self.region = REGION
-        self.secrets_bucket = '{}.streamalert.secrets'.format(os.environ['STREAMALERT_PREFIX'])
         self.config = config
+
+        self._credentials_provider = OutputCredentialsProvider(config,
+                                                               self._get_default_properties(),
+                                                               self.__service__)
+
+        self.account_id = self._credentials_provider._account_id
+        self.secrets_bucket = self._credentials_provider._secrets_bucket
 
     @staticmethod
     def _local_temp_dir():
-        """Get the local tmp directory for caching the encrypted service credentials
-
-        Returns:
-            str: local path for stream_alert_secrets tmp directory
-        """
-        temp_dir = os.path.join(tempfile.gettempdir(), "stream_alert_secrets")
-
-        # Check if this item exists as a file, and remove it if it does
-        if os.path.isfile(temp_dir):
-            os.remove(temp_dir)
-
-        # Create the folder on disk to store the credentials temporarily
-        if not os.path.exists(temp_dir):
-            os.makedirs(temp_dir)
-
-        return temp_dir
+        return OutputCredentialsProvider.get_local_credentials_temp_dir()
 
     def _load_creds(self, descriptor):
         """First try to load the credentials from /tmp and then resort to pulling
@@ -180,74 +313,7 @@ class OutputDispatcher(object):
             dict: the loaded credential info needed for sending alerts to this service
                 or None if nothing gets loaded
         """
-        local_cred_location = os.path.join(self._local_temp_dir(),
-                                           self.output_cred_name(descriptor))
-
-        # Creds are not cached locally, so get the encrypted blob from s3
-        if not os.path.exists(local_cred_location):
-            if not self._get_creds_from_s3(local_cred_location, descriptor):
-                return
-
-        # Open encrypted credential file
-        with open(local_cred_location, 'rb') as cred_file:
-            enc_creds = cred_file.read()
-
-        # Get the decrypted credential json from kms and load into dict
-        # This could be None if the kms decryption fails, so check it
-        decrypted_creds = self._kms_decrypt(enc_creds)
-        if not decrypted_creds:
-            return
-
-        creds_dict = json.loads(decrypted_creds)
-
-        # Add any of the hard-coded default output props to this dict (ie: url)
-        defaults = self._get_default_properties()
-        if defaults:
-            creds_dict.update(defaults)
-
-        return creds_dict
-
-    def _get_creds_from_s3(self, cred_location, descriptor):
-        """Pull the encrypted credential blob for this service and destination from s3
-
-        Args:
-            cred_location (str): The tmp path on disk to to store the encrypted blob
-            descriptor (str): Service destination (ie: slack channel, pd integration)
-
-        Returns:
-            bool: True if download of creds from s3 was a success
-        """
-        try:
-            if not os.path.exists(os.path.dirname(cred_location)):
-                os.makedirs(os.path.dirname(cred_location))
-
-            client = boto3.client('s3', region_name=self.region)
-            with open(cred_location, 'wb') as cred_output:
-                client.download_fileobj(self.secrets_bucket,
-                                        self.output_cred_name(descriptor),
-                                        cred_output)
-
-            return True
-        except ClientError as err:
-            LOGGER.exception('credentials for \'%s\' could not be downloaded '
-                             'from S3: %s', self.output_cred_name(descriptor),
-                             err.response)
-
-    def _kms_decrypt(self, data):
-        """Decrypt data with AWS KMS.
-
-        Args:
-            data (str): An encrypted ciphertext data blob
-
-        Returns:
-            str: Decrypted json string
-        """
-        try:
-            client = boto3.client('kms', region_name=self.region)
-            response = client.decrypt(CiphertextBlob=data)
-            return response['Plaintext']
-        except ClientError as err:
-            LOGGER.error('an error occurred during credentials decryption: %s', err.response)
+        return self._credentials_provider.load_credentials(descriptor)
 
     @classmethod
     def _log_status(cls, success, descriptor):
@@ -449,13 +515,8 @@ class OutputDispatcher(object):
         Returns:
             str: Formatted credential name (ie: slack_ryandchannel)
         """
-        cred_name = str(cls.__service__)
-
-        # should descriptor be enforced in all rules?
-        if descriptor:
-            cred_name = '{}/{}'.format(cred_name, descriptor)
-
-        return cred_name
+        return OutputCredentialsProvider.get_formatted_output_credentials_name(cls.__service__,
+                                                                               descriptor)
 
     @classmethod
     def format_output_config(cls, service_config, values):
