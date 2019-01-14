@@ -118,7 +118,7 @@ class StreamAlertOutput(object):
 
 class OutputCredentialsProvider(object):
     """OutputCredentialsProvider is a service to OutputDispatcher that helps it load
-       credentials that are housed on AWS S3, or cached locally
+       credentials that are housed on AWS S3, or cached locally.
 
     Public methods:
         load_credentials: Returns a dict of the credentials requested
@@ -136,15 +136,15 @@ class OutputCredentialsProvider(object):
 
     def load_credentials(self, descriptor):
         """First try to load the credentials from /tmp and then resort to pulling
-                the credentials from S3 if they are not cached locally
+           the credentials from S3 if they are not cached locally
 
-                Args:
-                    descriptor (str): unique identifier used to look up these credentials
+        Args:
+            descriptor (str): unique identifier used to look up these credentials
 
-                Returns:
-                    dict: the loaded credential info needed for sending alerts to this service
-                        or None if nothing gets loaded
-                """
+        Returns:
+            dict: the loaded credential info needed for sending alerts to this service
+                or None if nothing gets loaded
+        """
         local_cred_location = os.path.join(self.get_local_credentials_temp_dir(),
                                            self.get_formatted_output_credentials_name(self._service_name,
                                                                                       descriptor))
@@ -303,8 +303,7 @@ class OutputDispatcher(object):
         return OutputCredentialsProvider.get_local_credentials_temp_dir()
 
     def _load_creds(self, descriptor):
-        """First try to load the credentials from /tmp and then resort to pulling
-        the credentials from S3 if they are not cached locally
+        """Loads a dict of credentials relevant to this output descriptor
 
         Args:
             descriptor (str): unique identifier used to look up these credentials

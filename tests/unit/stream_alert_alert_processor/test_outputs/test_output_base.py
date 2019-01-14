@@ -29,6 +29,7 @@ from requests.exceptions import Timeout as ReqTimeout
 
 from stream_alert.alert_processor.outputs.output_base import (
     OutputDispatcher,
+    OutputCredentialsProvider,
     OutputProperty,
     OutputRequestFailure,
     StreamAlertOutput
@@ -110,6 +111,64 @@ def test_output_loading():
         'slack'
     }
     assert_items_equal(loaded_outputs, expected_outputs)
+
+
+class TestOutputCredentialsProvider(object):
+
+    @patch.dict('os.environ', MOCK_ENV)
+    def setup(self):
+        self._provider = OutputCredentialsProvider(CONFIG, {}, 'test_service_name')
+
+    def test_get_load_credentials_temp_dir(self):
+        """OutputCredentialsProvider - Get Load Credentials Temp Dir"""
+        temp_dir = OutputCredentialsProvider.get_local_credentials_temp_dir()
+        assert_equal(temp_dir.split('/')[-1], 'stream_alert_secrets')
+
+    def test_get_formatted_output_credentials_name(self):
+        """OutputCredentialsProvider - Get Formatted Output Credentials Name"""
+        name = OutputCredentialsProvider.get_formatted_output_credentials_name(
+            'test_service_name',
+            'test_descriptor'
+        )
+        assert_equal(name, 'test_service_name/test_descriptor')
+
+    def test_get_formatted_output_credentials_name_no_descriptor(self):
+        """OutputCredentialsProvider - Get Formatted Output Credentials Name - No Descriptor"""
+        name = OutputCredentialsProvider.get_formatted_output_credentials_name(
+            'test_service_name',
+            ''
+        )
+        assert_equal(name, 'test_service_name')
+
+    @mock_s3
+    def test_load_credentials_from_s3(self):
+        """OutputCredentialsProvider - Load Credentials from S3"""
+        test_data = 'credential test string'
+        descriptor = 'test_descriptor'
+
+        bucket_name = self._provider._secrets_bucket
+        key = self._provider.get_formatted_output_credentials_name('test_service_name',
+                                                                   descriptor)
+
+        local_cred_location = os.path.join(self._provider.get_local_credentials_temp_dir(), key)
+
+        put_mock_s3_object(bucket_name, key, test_data, REGION)
+
+        self._provider.load_credentials_from_s3(local_cred_location, descriptor)
+
+        with open(local_cred_location) as creds:
+            line = creds.readline()
+
+        assert_equal(line, test_data)
+
+    @mock_kms
+    def test_kms_decrypt(self):
+        """OutputCredentialsProvider - KMS Decrypt"""
+        test_data = 'data to encrypt'
+        encrypted = encrypt_with_kms(test_data, REGION, KMS_ALIAS)
+        decrypted = self._provider.kms_decrypt(encrypted)
+
+        assert_equal(decrypted, test_data)
 
 
 @patch.object(OutputDispatcher, '__service__', 'test_service')
