@@ -35,7 +35,7 @@ class DemistoOutput(OutputDispatcher):
 
     @classmethod
     def get_user_defined_properties(cls):
-        """Get properties that must be assigned by the user when configuring a new CarbonBlack
+        """Get properties that must be assigned by the user when configuring a new Demisto
         output.  This should be sensitive or unique information for this use-case that needs
         to come from the user.
 
@@ -45,7 +45,7 @@ class DemistoOutput(OutputDispatcher):
         return OrderedDict([
             ('descriptor',
              OutputProperty(description='a short and unique descriptor for this'
-                                        ' carbonblack output')),
+                                        ' demisto output')),
             ('url',
              OutputProperty(description='URL to the CB Response server [https://hostname]',
                             mask_input=False,
@@ -58,7 +58,7 @@ class DemistoOutput(OutputDispatcher):
         ])
 
     def _dispatch(self, alert, descriptor):
-        """Send ban hash command to CarbonBlack
+        """Send a new Incident to Demisto
 
         Args:
             alert (Alert): Alert instance which triggered a rule
@@ -75,31 +75,61 @@ class DemistoOutput(OutputDispatcher):
         if not creds:
             return False
 
+        # descriptor
+        #
+        # The rule output should look something like:
+        # - demisto:[Some Incident Type]
+        # - demisto:[Some Incident Type]-[Severity]
+        #
+        # FIXME (derek.wang) remember to configure a full list over in outputs.json....
+        #
+        # "severity" is optional. If it's present and valid, we'll try to map it to a severity.
+        # Otherwise we default to 0, which is "unknown".
+
         client = DemistoClient(creds['token'], creds['url'])
 
-        LOGGER.error('vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv')
+        incident_name = 'StreamAlert Rule Triggered - {}'.format(alert.rule_name)
+        incident_type = descriptor
+        severity = 0  # FIXME (derek.wang) Look above
+        severity = 'Informational'
 
-        LOGGER.error('TK: {}, URL: {}'.format(creds['token'], creds['url']))
+        # The Owner appears verbatim on the Incident list, regardless of whether the owner
+        # exists or not
+        owner = 'Derek Wang'  # FIXME (derek.wang) Hardcoded here for testing purposes
 
-        LOGGER.error(client.SearchIncidents(0, 100, ''))
-        LOGGER.error('^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^')
+        # Seems like a pretty reasonable place to put it, instead of in the tags which is pretty bad
+        details = alert.rule_description
 
-        # client.CreateIncident(
-        #     'incident-name',
-        #     'incident-type',
-        #     0,
-        #     'owner',
-        #     [
-        #         {
-        #             "type": "label",
-        #             "value": "demisto"
-        #         },
-        #     ],
-        #     'details',
-        #     {
-        #         "alertsource": "demisto"
-        #     },
-        #     createInvestigation=True
-        # )
+
+        client.CreateIncident(
+            incident_name,
+            # We directly map the descriptor over to the incident type. If the descriptor is
+            # unrecognized on the Demisto server, it will simply default to "Unknown"
+            incident_type,
+            # Always use 0 - "unknown"
+            # 0.5 - "Informational
+            # 1 - "Low"
+            # 2 - "Medium"
+            # 3 - "High"
+            #
+            severity,
+            owner,
+            # This is where we put all of our garbage
+            [
+                # {
+                #     "type": "description",
+                #     "value": alert.rule_description,
+                # },
+                {
+                    "type": "record",
+                    "value": alert.record,
+                },
+            ],
+            details,
+            {
+                "alertsource": "demisto"
+            },
+            createInvestigation=False
+        )
 
         return False

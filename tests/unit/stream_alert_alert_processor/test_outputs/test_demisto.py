@@ -28,7 +28,6 @@ from tests.unit.stream_alert_alert_processor import (
     MOCK_ENV,
     REGION
 )
-from tests.unit.helpers.mocks import MockCBAPI
 from tests.unit.stream_alert_alert_processor.helpers import (
     get_alert,
     put_mock_creds,
@@ -57,7 +56,7 @@ class TestDemistoIntegrationTestSuite(object):
         output_name = self._dispatcher.output_cred_name(self.DESCRIPTOR)
         put_mock_creds(output_name, self.CREDS, self._dispatcher.secrets_bucket, REGION, KMS_ALIAS)
 
-    def teaerdown(self):
+    def teardown(self):
         self._mock_s3.stop()
         self._mock_s3 = None
         self._mock_kms.stop()
