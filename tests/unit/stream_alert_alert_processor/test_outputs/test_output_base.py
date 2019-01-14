@@ -121,12 +121,12 @@ class TestOutputCredentialsProvider(object):
 
     def test_get_load_credentials_temp_dir(self):
         """OutputCredentialsProvider - Get Load Credentials Temp Dir"""
-        temp_dir = OutputCredentialsProvider.get_local_credentials_temp_dir()
+        temp_dir = self._provider.get_local_credentials_temp_dir()
         assert_equal(temp_dir.split('/')[-1], 'stream_alert_secrets')
 
     def test_get_formatted_output_credentials_name(self):
         """OutputCredentialsProvider - Get Formatted Output Credentials Name"""
-        name = OutputCredentialsProvider.get_formatted_output_credentials_name(
+        name = self._provider.get_formatted_output_credentials_name(
             'test_service_name',
             'test_descriptor'
         )
@@ -134,7 +134,7 @@ class TestOutputCredentialsProvider(object):
 
     def test_get_formatted_output_credentials_name_no_descriptor(self): #pylint: disable=invalid-name
         """OutputCredentialsProvider - Get Formatted Output Credentials Name - No Descriptor"""
-        name = OutputCredentialsProvider.get_formatted_output_credentials_name(
+        name = self._provider.get_formatted_output_credentials_name(
             'test_service_name',
             ''
         )
