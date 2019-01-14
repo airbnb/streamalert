@@ -132,7 +132,7 @@ class TestOutputCredentialsProvider(object):
         )
         assert_equal(name, 'test_service_name/test_descriptor')
 
-    def test_get_formatted_output_credentials_name_no_descriptor(self):
+    def test_get_formatted_output_credentials_name_no_descriptor(self): #pylint: disable=invalid-name
         """OutputCredentialsProvider - Get Formatted Output Credentials Name - No Descriptor"""
         name = OutputCredentialsProvider.get_formatted_output_credentials_name(
             'test_service_name',
@@ -154,7 +154,7 @@ class TestOutputCredentialsProvider(object):
 
         put_mock_s3_object(bucket_name, key, test_data, REGION)
 
-        self._provider.load_credentials_from_s3(local_cred_location, descriptor)
+        self._provider.load_encrypted_credentials_from_s3(local_cred_location, descriptor)
 
         with open(local_cred_location) as creds:
             line = creds.readline()
@@ -186,11 +186,6 @@ class TestOutputDispatcher(object):
     def test_credentials_provider(self):
         assert_equal(self._dispatcher._credentials_provider._service_name, 'test_service')
 
-    def test_local_temp_dir(self):
-        """OutputDispatcher - Local Temp Dir"""
-        temp_dir = self._dispatcher._local_temp_dir()
-        assert_equal(temp_dir.split('/')[-1], 'stream_alert_secrets')
-
     def test_output_cred_name(self):
         """OutputDispatcher - Output Cred Name"""
         output_name = self._dispatcher.output_cred_name('creds')
@@ -204,12 +199,15 @@ class TestOutputDispatcher(object):
         bucket_name = self._dispatcher.secrets_bucket
         key = self._dispatcher.output_cred_name(self._descriptor)
 
-        local_cred_location = os.path.join(self._dispatcher._local_temp_dir(), key)
+        local_cred_location = os.path.join(
+            self._dispatcher._credentials_provider.get_local_credentials_temp_dir(),
+            key
+        )
 
         put_mock_s3_object(bucket_name, key, test_data, REGION)
 
-        self._dispatcher._credentials_provider.load_credentials_from_s3(local_cred_location,
-                                                                        self._descriptor)
+        self._dispatcher._credentials_provider.load_encrypted_credentials_from_s3(local_cred_location,
+                                                                                  self._descriptor)
 
         with open(local_cred_location) as creds:
             line = creds.readline()

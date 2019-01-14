@@ -117,11 +117,20 @@ class StreamAlertOutput(object):
 
 
 class OutputCredentialsProvider(object):
-    """OutputCredentialsProvider is a service to OutputDispatcher that helps it load
+    """OutputCredentialsProvider is a helper service to OutputDispatcher that helps it load
        credentials that are housed on AWS S3, or cached locally.
+
+       OutputDispatcher implementations may require credentials to authenticate with an external
+       gateway. All credentials for OutputDispatchers are to be stored in a single bucket on AWS S3
+       and are encrypted with AWS KMS. When the OutputDispatchers are booted, this these encrypted
+       credentials are downloaded and cached locally on the filesystem. Then, AWS KMS is used to
+       decrypt the credentials when in use.
 
     Public methods:
         load_credentials: Returns a dict of the credentials requested
+        get_local_credentials_temp_dir(): Returns full path to a temporary directory where all
+            encrypted credentials are cached.
+
     """
 
     def __init__(self, config, defaults, service_name):
@@ -145,13 +154,14 @@ class OutputCredentialsProvider(object):
             dict: the loaded credential info needed for sending alerts to this service
                 or None if nothing gets loaded
         """
-        local_cred_location = os.path.join(self.get_local_credentials_temp_dir(),
-                                           self.get_formatted_output_credentials_name(self._service_name,
-                                                                                      descriptor))
+        local_cred_location = os.path.join(
+            self.get_local_credentials_temp_dir(),
+            self.get_formatted_output_credentials_name(self._service_name, descriptor)
+        )
 
         # Creds are not cached locally, so get the encrypted blob from s3
         if not os.path.exists(local_cred_location):
-            if not self.load_credentials_from_s3(local_cred_location, descriptor):
+            if not self.load_encrypted_credentials_from_s3(local_cred_location, descriptor):
                 return
 
         # Open encrypted credential file
@@ -175,7 +185,8 @@ class OutputCredentialsProvider(object):
 
     @staticmethod
     def get_local_credentials_temp_dir():
-        """Get the local tmp directory for caching the encrypted service credentials
+        """Get the local tmp directory for caching the encrypted service credentials.
+           Will automatically create a new directory
 
         Returns:
             str: local path for stream_alert_secrets tmp directory
@@ -192,15 +203,16 @@ class OutputCredentialsProvider(object):
 
         return temp_dir
 
-    def load_credentials_from_s3(self, cred_location, descriptor):
+    def load_encrypted_credentials_from_s3(self, cred_location, descriptor):
         """Pull the encrypted credential blob for this service and destination from s3
+           and save it to a local file.
 
         Args:
             cred_location (str): The tmp path on disk to to store the encrypted blob
             descriptor (str): Service destination (ie: slack channel, pd integration)
 
         Returns:
-            bool: True if download of creds from s3 was a success
+            bool: True if credentials are downloaded from S3 successfully.
         """
         try:
             if not os.path.exists(os.path.dirname(cred_location)):
@@ -304,10 +316,6 @@ class OutputDispatcher(object):
 
         self.account_id = self._credentials_provider.get_aws_account_id()
         self.secrets_bucket = self._credentials_provider.get_secrets_bucket_name()
-
-    @staticmethod
-    def _local_temp_dir():
-        return OutputCredentialsProvider.get_local_credentials_temp_dir()
 
     def _load_creds(self, descriptor):
         """Loads a dict of credentials relevant to this output descriptor
