@@ -130,7 +130,7 @@ class OutputCredentialsProvider(object):
         self._defaults = defaults
         self._service_name = service_name
 
-        # Dependency on os
+        # Dependency on os package
         self._account_id = os.environ['AWS_ACCOUNT_ID']
         self._secrets_bucket = '{}.streamalert.secrets'.format(os.environ['STREAMALERT_PREFIX'])
 
@@ -258,6 +258,13 @@ class OutputCredentialsProvider(object):
 
         return cred_name
 
+    def get_aws_account_id(self):
+        """Returns the AWS account ID"""
+        return self._account_id
+
+    def get_secrets_bucket_name(self):
+        """Returns the bucket name of the S3 bucket to look in for encrypted credentials"""
+        return self._secrets_bucket
 
 class OutputDispatcher(object):
     """OutputDispatcher is the base class to handle routing alerts to outputs
@@ -295,8 +302,8 @@ class OutputDispatcher(object):
                                                                self._get_default_properties(),
                                                                self.__service__)
 
-        self.account_id = self._credentials_provider._account_id
-        self.secrets_bucket = self._credentials_provider._secrets_bucket
+        self.account_id = self._credentials_provider.get_aws_account_id()
+        self.secrets_bucket = self._credentials_provider.get_secrets_bucket_name()
 
     @staticmethod
     def _local_temp_dir():
