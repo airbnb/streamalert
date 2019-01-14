@@ -141,7 +141,9 @@ class OutputCredentialsProvider(object):
 
         # Dependency on os package
         self._account_id = os.environ['AWS_ACCOUNT_ID']
-        self._secrets_bucket = '{}.streamalert.secrets'.format(os.environ['STREAMALERT_PREFIX'])
+        self._secrets_bucket = OutputCredentialsProvider.get_s3_secrets_bucket(
+            os.environ['STREAMALERT_PREFIX']
+        )
 
     def load_credentials(self, descriptor):
         """First try to load the credentials from /tmp and then resort to pulling
@@ -182,6 +184,10 @@ class OutputCredentialsProvider(object):
             creds_dict.update(defaults)
 
         return creds_dict
+
+    @staticmethod
+    def get_s3_secrets_bucket(prefix):
+        return '{}.streamalert.secrets'.format(prefix)
 
     @staticmethod
     def get_local_credentials_temp_dir():

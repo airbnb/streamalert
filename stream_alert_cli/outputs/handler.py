@@ -14,7 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from stream_alert.shared.logger import get_logger
-from stream_alert.alert_processor.outputs.output_base import StreamAlertOutput
+from stream_alert.alert_processor.outputs.output_base import (
+    StreamAlertOutput,
+    OutputCredentialsProvider
+)
 from stream_alert_cli.helpers import user_input
 from stream_alert_cli.outputs.helpers import encrypt_and_push_creds_to_s3, output_exists
 
@@ -62,8 +65,11 @@ def output_handler(options, config):
     if output_exists(output_config, props, service):
         return output_handler(options, config)
 
-    secrets_bucket = '{}.streamalert.secrets'.format(prefix)
-    secrets_key = output.output_cred_name(props['descriptor'].value)
+    secrets_bucket = OutputCredentialsProvider.get_s3_secrets_bucket(prefix)
+    secrets_key = OutputCredentialsProvider.get_formatted_output_credentials_name(
+        service,
+        props['descriptor'].value
+    )
 
     # Encrypt the creds and push them to S3
     # then update the local output configuration with properties
