@@ -25,7 +25,6 @@ from stream_alert.alert_processor.outputs.output_base import (
 )
 from stream_alert.shared.logger import get_logger
 
-
 LOGGER = get_logger(__name__)
 
 
@@ -83,84 +82,132 @@ class DemistoOutput(OutputDispatcher):
         # - demisto:[Some Incident Type]-[Severity]
         #
         # FIXME (derek.wang) remember to configure a full list over in outputs.json....
-        #
-        # "severity" is optional. If it's present and valid, we'll try to map it to a severity.
-        # Otherwise we default to 0, which is "unknown".
+        request = DemistoRequestAssembler.assemble(alert, descriptor)
 
-        client = DemistoClient(creds['token'], creds['url'])
+        integration = DemistoApiIntegration(creds)
 
-        incident_name = 'StreamAlert Rule Triggered - {}'.format(alert.rule_name)
-        incident_type = descriptor
-        severity = 0  # FIXME (derek.wang) Look above
+        return integration.send(request)
+
+
+class DemistoApiIntegration(object):
+    """Bridge pattern to reduce coupling between DemistoOutput and the
+       DemistoClient implementation
+    """
+
+    def __init__(self, creds):
+        self._demisto_api_client = DemistoClient(creds['token'], creds['url'])
+
+    def send(self, request):
+        response = self._demisto_api_client.CreateIncident(
+            request._incident_name,
+            request._incident_type,
+            request._severity,
+            request._owner,
+            request._labels,
+            request._details,
+            request._custom_fields,
+            createInvestigation=request._create_investigation
+        )
+        return 200 <= response.status_code < 300
+
+
+class DemistoCreateIncidentRequest(object):
+    """Encapsulation of a request to Demisto to create an incident."""
+    SEVERITY_UNKNOWN = 0
+    SEVERITY_INFORMATIONAL = 0.5
+    SEVERITY_LOW = 1
+    SEVERITY_MEDIUM = 2
+    SEVERITY_HIGH = 3
+    SEVERITY_CRITICAL = 4
+
+    def __init__(self):
+        # Default request parameters
+        self._incident_name = 'Unnamed StreamAlert Alert'
+
+        # Incident type maps to the Demisto incident "type". It comes from a discrete set that
+        # is defined on the Demisto account configuration. If the provided incident type does not
+        # exactly match one in the configured set, it will appear on the Demisto UI as
+        # "Unclassified".
+        self._incident_type = 'Unclassified'
+
+        # Severity is an integer. Use the constants above.
+        self._severity = self.SEVERITY_INFORMATIONAL
 
         # The Owner appears verbatim on the Incident list, regardless of whether the owner
-        # exists or not
-        owner = 'Derek Wang'  # FIXME (derek.wang) Hardcoded here for testing purposes
+        # exists or not.
+        self._owner = 'StreamAlert'
 
-        # Seems like a pretty reasonable place to put it, instead of in the tags which is pretty bad
-        details = alert.rule_description
+        # An array of Dicts, with keys "type" and "value".
+        self._labels = []
 
-        # Fan out the record structure into individual dot-delimited tags
-        label_fields = {}
-        def enumerate_fields(record, path, fields):
+        # A string that appears in the details section.
+        self._details = 'Details not specified.'
+
+        # FIXME: (!) Demisto currently does not seem to render these fields properly on their UI.
+        self._custom_fields = {}
+
+        # When set to True, the creation of this incident will also trigger the creation of an
+        # investigation. This will cause playbooks to trigger automatically.
+        self._create_investigation = False
+
+    def add_label(self, label, value):
+        self._labels.append({
+            "type": label,
+            "value": value,
+        })
+        self._labels.sort(key=lambda x: x["type"])
+
+
+class DemistoRequestAssembler(object):
+    """Convenience service used solely to construct instances of DemistoCreateIncidentRequest
+       from a given alert and Output descriptor
+    """
+
+    @staticmethod
+    def assemble(alert, descriptor):
+        """
+        Args:
+            alert (Alert): Alert instance which triggered a rule
+            descriptor (str): Output descriptor
+
+        Returns:
+            DemistoCreateIncidentRequest
+        """
+
+        request = DemistoCreateIncidentRequest()
+
+        request._incident_name = 'StreamAlert Rule Triggered - {}'.format(alert.rule_name)
+        request._incident_type = descriptor
+        request._details = alert.rule_description
+        request._owner = 'Derek Wang'  # FIXME (derek.wang) Hardcoded here for testing purposes
+
+        # The alert record/context are nested JSON structure which does not render well on
+        # Demisto's UI; flatten it into a series of discrete key-values.
+        def enumerate_fields(record, path):
             if type(record) is list:
                 for index in range(len(record)):
-                    enumerate_fields(record[index], path + '.[{}]'.format(index), fields)
+                    enumerate_fields(record[index], path + '.[{}]'.format(index))
 
             elif type(record) is dict:
                 for key in record:
-                    enumerate_fields(record[key], path + '.{}'.format(key), fields)
+                    enumerate_fields(record[key], path + '.{}'.format(key))
 
             else:
-                fields[path] = record
+                request.add_label(path, record)
 
-        enumerate_fields(alert.record, 'record', label_fields)
-        enumerate_fields(alert.context, 'context', label_fields)
+        enumerate_fields(alert.record, 'record')
+        enumerate_fields(alert.context, 'context')
 
-        labels = [
-            {
-                "type": "record",
-                "value": json.dumps(alert.record),
-            },
-            {
-                "type": "source",
-                "value": alert.log_source,
-            }
-        ]
-        for key in label_fields:
-            labels.append({
-                "type": key,
-                "value": label_fields[key]
-            })
-        labels.sort(key=lambda x: x["type"])
+        # Add on alert-specific fields
+        request.add_label('alert.record', json.dumps(alert.record))
+        request.add_label('alert.source', alert.log_source)
+        request.add_label('alert.alert_id', alert.alert_id)
+        request.add_label('alert.cluster', alert.cluster)
+        request.add_label('alert.log_type', alert.log_type)
+        request.add_label('alert.source_entity', alert.source_entity)
+        request.add_label('alert.source_service', alert.source_service)
 
-        response = client.CreateIncident(
-            incident_name,
-            # We directly map the descriptor over to the incident type. If the descriptor is
-            # unrecognized on the Demisto server, it will simply default to "Unknown"
-            incident_type,
-            # Always use 0 - "unknown"
-            # 0.5 - "Informational
-            # 1 - "Low"
-            # 2 - "Medium"
-            # 3 - "High"
-            #
-            severity,
-            owner,
-            # This is where we put all of our garbage
-            labels,
-            details,
-            {
-                "alertsource": "demisto",
-                "more_custom_fields": "does this even work?",
-                "hello": "world",
-            },
-            createInvestigation=False
-        )
+        # ///
+        request._create_investigation = True
 
-        if 200 <= response.status_code < 300:
-            return True
-
-        print(response.content)
-
-        return False
+        return request
