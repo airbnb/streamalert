@@ -284,14 +284,13 @@ class OutputCredentialsProvider(object):
         """Returns the bucket name of the S3 bucket to look in for encrypted credentials"""
         return self._secrets_bucket
 
+
 class OutputDispatcher(object):
     """OutputDispatcher is the base class to handle routing alerts to outputs
 
     Public methods:
         get_secrets_bucket_name: returns the name of the s3 bucket for secrets that
             includes a unique prefix
-        output_cred_name: the name that is used to store the credentials both on s3
-            and locally on disk in tmp
         get_config_service: the name of the service used by the config to store any
             configured outputs for this service. implemented by some subclasses, but
             subclass is not required to implement
@@ -523,20 +522,6 @@ class OutputDispatcher(object):
             dict: Contains various default items for this output (ie: url)
         """
         pass
-
-    @classmethod
-    def output_cred_name(cls, descriptor):
-        """Formats the output name for this credential by combining the service
-        and the descriptor.
-
-        Args:
-            descriptor (str): Service destination (ie: slack channel, pd integration)
-
-        Returns:
-            str: Formatted credential name (ie: slack_ryandchannel)
-        """
-        return OutputCredentialsProvider.get_formatted_output_credentials_name(cls.__service__,
-                                                                               descriptor)
 
     @classmethod
     def format_output_config(cls, service_config, values):

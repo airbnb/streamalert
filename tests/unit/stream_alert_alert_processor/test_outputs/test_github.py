@@ -16,21 +16,11 @@ limitations under the License.
 # pylint: disable=protected-access,attribute-defined-outside-init,no-self-use
 import base64
 
-from mock import patch
-from moto import mock_s3, mock_kms
+from mock import patch, Mock, MagicMock
 from nose.tools import assert_false, assert_true, assert_equal, assert_is_not_none
 
 from stream_alert.alert_processor.outputs.github import GithubOutput
-from tests.unit.stream_alert_alert_processor import (
-    KMS_ALIAS,
-    MOCK_ENV,
-    REGION
-)
-from tests.unit.stream_alert_alert_processor.helpers import (
-    get_alert,
-    put_mock_creds,
-    remove_temp_secrets
-)
+from tests.unit.stream_alert_alert_processor.helpers import get_alert
 
 
 @patch('stream_alert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS', 1)
@@ -39,26 +29,23 @@ class TestGithubOutput(object):
     DESCRIPTOR = 'unit_test_repo'
     SERVICE = 'github'
     OUTPUT = ':'.join([SERVICE, DESCRIPTOR])
-    CREDS = {'username': 'unit_test_user', 'access_token':
-             'unit_test_access_token', 'repository': 'unit_test_org/unit_test_repo',
-             'labels': 'label1,label2'}
+    CREDS = {'username': 'unit_test_user',
+             'access_token': 'unit_test_access_token',
+             'repository': 'unit_test_org/unit_test_repo',
+             'labels': 'label1,label2',
+             'api': 'https://api.github.com',
+             }
 
-    @patch.dict('os.environ', MOCK_ENV)
-    def setup(self):
+    @patch('stream_alert.alert_processor.outputs.output_base.OutputCredentialsProvider')
+    def setup(self, provider_constructor):
         """Setup before each method"""
-        self._mock_s3 = mock_s3()
-        self._mock_s3.start()
-        self._mock_kms = mock_kms()
-        self._mock_kms.start()
+        provider = MagicMock()
+        provider_constructor.return_value = provider
+        provider.load_credentials = Mock(
+            side_effect=lambda x: self.CREDS if x == self.DESCRIPTOR else None
+        )
+        self._provider = provider
         self._dispatcher = GithubOutput(None)
-        remove_temp_secrets()
-        output_name = self._dispatcher.output_cred_name(self.DESCRIPTOR)
-        put_mock_creds(output_name, self.CREDS, self._dispatcher.secrets_bucket, REGION, KMS_ALIAS)
-
-    def teardown(self):
-        """Teardown after each method"""
-        self._mock_s3.stop()
-        self._mock_kms.stop()
 
     @patch('logging.Logger.info')
     @patch('requests.post')

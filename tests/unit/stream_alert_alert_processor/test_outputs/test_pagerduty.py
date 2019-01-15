@@ -15,7 +15,6 @@ limitations under the License.
 """
 # pylint: disable=protected-access,attribute-defined-outside-init
 from mock import patch, PropertyMock, Mock, MagicMock
-from moto import mock_s3, mock_kms
 from nose.tools import assert_equal, assert_false, assert_true
 # import cProfile, pstats, StringIO
 
@@ -24,17 +23,7 @@ from stream_alert.alert_processor.outputs.pagerduty import (
     PagerDutyOutputV2,
     PagerDutyIncidentOutput
 )
-from tests.unit.stream_alert_alert_processor import (
-    KMS_ALIAS,
-    MOCK_ENV,
-    REGION
-)
-
-from tests.unit.stream_alert_alert_processor.helpers import (
-    get_alert,
-    put_mock_creds,
-    remove_temp_secrets
-)
+from tests.unit.stream_alert_alert_processor.helpers import get_alert
 
 
 @patch('stream_alert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS', 1)
@@ -46,22 +35,16 @@ class TestPagerDutyOutput(object):
     CREDS = {'url': 'http://pagerduty.foo.bar/create_event.json',
              'service_key': 'mocked_service_key'}
 
-    @patch.dict('os.environ', MOCK_ENV)
-    def setup(self):
+    @patch('stream_alert.alert_processor.outputs.output_base.OutputCredentialsProvider')
+    def setup(self, provider_constructor):
         """Setup before each method"""
-        self._mock_s3 = mock_s3()
-        self._mock_s3.start()
-        self._mock_kms = mock_kms()
-        self._mock_kms.start()
+        provider = MagicMock()
+        provider_constructor.return_value = provider
+        provider.load_credentials = Mock(
+            side_effect=lambda x: self.CREDS if x == self.DESCRIPTOR else None
+        )
+        self._provider = provider
         self._dispatcher = PagerDutyOutput(None)
-        remove_temp_secrets()
-        output_name = self._dispatcher.output_cred_name(self.DESCRIPTOR)
-        put_mock_creds(output_name, self.CREDS, self._dispatcher.secrets_bucket, REGION, KMS_ALIAS)
-
-    def teardown(self):
-        """Teardown after each method"""
-        self._mock_s3.stop()
-        self._mock_kms.stop()
 
     def test_get_default_properties(self):
         """PagerDutyOutput - Get Default Properties"""
@@ -114,8 +97,9 @@ class TestPagerDutyOutputV2(object):
         """Setup before each method"""
         provider = MagicMock()
         provider_constructor.return_value = provider
-        provider.load_credentials = Mock(return_value=self.CREDS)
-
+        provider.load_credentials = Mock(
+            side_effect=lambda x: self.CREDS if x == self.DESCRIPTOR else None
+        )
         self._provider = provider
         self._dispatcher = PagerDutyOutputV2(None)
 
@@ -135,8 +119,6 @@ class TestPagerDutyOutputV2(object):
 
         log_mock.assert_called_with('Successfully sent alert to %s:%s',
                                     self.SERVICE, self.DESCRIPTOR)
-
-        self._provider.load_credentials.assert_called_with(self.DESCRIPTOR)
 
     @patch('logging.Logger.error')
     @patch('requests.post')
@@ -177,23 +159,17 @@ class TestPagerDutyIncidentOutput(object):
              'email_from': 'email@domain.com',
              'integration_key': 'mocked_key'}
 
-    @patch.dict('os.environ', MOCK_ENV)
-    def setup(self):
+    @patch('stream_alert.alert_processor.outputs.output_base.OutputCredentialsProvider')
+    def setup(self, provider_constructor):
         """Setup before each method"""
-        self._mock_s3 = mock_s3()
-        self._mock_s3.start()
-        self._mock_kms = mock_kms()
-        self._mock_kms.start()
+        provider = MagicMock()
+        provider_constructor.return_value = provider
+        provider.load_credentials = Mock(
+            side_effect=lambda x: self.CREDS if x == self.DESCRIPTOR else None
+        )
+        self._provider = provider
         self._dispatcher = PagerDutyIncidentOutput(None)
         self._dispatcher._base_url = self.CREDS['api']
-        remove_temp_secrets()
-        output_name = self._dispatcher.output_cred_name(self.DESCRIPTOR)
-        put_mock_creds(output_name, self.CREDS, self._dispatcher.secrets_bucket, REGION, KMS_ALIAS)
-
-    def teardown(self):
-        """Teardown after each method"""
-        self._mock_s3.stop()
-        self._mock_kms.stop()
 
     def test_get_default_properties(self):
         """PagerDutyIncidentOutput - Get Default Properties"""

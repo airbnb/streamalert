@@ -14,23 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 # pylint: disable=protected-access,attribute-defined-outside-init
-from mock import call, patch, PropertyMock
-from moto import mock_s3, mock_kms
+from mock import call, patch, PropertyMock, Mock, MagicMock
 from nose.tools import assert_false, assert_true
-
 from stream_alert.alert_processor.outputs.phantom import PhantomOutput
-from tests.unit.stream_alert_alert_processor import (
-    KMS_ALIAS,
-    MOCK_ENV,
-    REGION
-)
-
-from tests.unit.stream_alert_alert_processor.helpers import (
-    get_alert,
-    put_mock_creds,
-    remove_temp_secrets
-)
-
+from tests.unit.stream_alert_alert_processor.helpers import get_alert
 
 @patch('stream_alert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS', 1)
 class TestPhantomOutput(object):
@@ -41,22 +28,17 @@ class TestPhantomOutput(object):
     CREDS = {'url': 'http://phantom.foo.bar',
              'ph_auth_token': 'mocked_auth_token'}
 
-    @patch.dict('os.environ', MOCK_ENV)
-    def setup(self):
+    @patch('stream_alert.alert_processor.outputs.output_base.OutputCredentialsProvider')
+    def setup(self, provider_constructor):
         """Setup before each method"""
-        self._mock_s3 = mock_s3()
-        self._mock_s3.start()
-        self._mock_kms = mock_kms()
-        self._mock_kms.start()
-        self._dispatcher = PhantomOutput(None)
-        remove_temp_secrets()
-        output_name = self._dispatcher.output_cred_name(self.DESCRIPTOR)
-        put_mock_creds(output_name, self.CREDS, self._dispatcher.secrets_bucket, REGION, KMS_ALIAS)
+        provider = MagicMock()
+        provider_constructor.return_value = provider
+        provider.load_credentials = Mock(
+            side_effect=lambda x: self.CREDS if x == self.DESCRIPTOR else None
+        )
 
-    def teardown(self):
-        """Teardown after each method"""
-        self._mock_s3.stop()
-        self._mock_kms.stop()
+        self._provider = provider
+        self._dispatcher = PhantomOutput(None)
 
     @patch('logging.Logger.info')
     @patch('requests.get')
