@@ -34,7 +34,7 @@ class TestGithubOutput(object):
              'repository': 'unit_test_org/unit_test_repo',
              'labels': 'label1,label2',
              'api': 'https://api.github.com',
-             }
+            }
 
     @patch('stream_alert.alert_processor.outputs.output_base.OutputCredentialsProvider')
     def setup(self, provider_constructor):
