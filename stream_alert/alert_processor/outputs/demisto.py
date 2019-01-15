@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from collections import OrderedDict
+import json
 
 from .demisto_api_client import DemistoClient
 
@@ -91,7 +92,6 @@ class DemistoOutput(OutputDispatcher):
         incident_name = 'StreamAlert Rule Triggered - {}'.format(alert.rule_name)
         incident_type = descriptor
         severity = 0  # FIXME (derek.wang) Look above
-        severity = 'Informational'
 
         # The Owner appears verbatim on the Incident list, regardless of whether the owner
         # exists or not
@@ -100,8 +100,35 @@ class DemistoOutput(OutputDispatcher):
         # Seems like a pretty reasonable place to put it, instead of in the tags which is pretty bad
         details = alert.rule_description
 
+        # Fan out the record structure into individual dot-delimited tags
+        label_fields = {}
+        def enumerate_fields(record, path, fields):
+            if type(record) is list:
+                for index in range(len(record)):
+                    enumerate_fields(record[index], path + '.[{}]'.format(index), fields)
 
-        client.CreateIncident(
+            elif type(record) is dict:
+                for key in record:
+                    enumerate_fields(record[key], path + '.{}'.format(key), fields)
+
+            else:
+                fields[path] = record
+
+        enumerate_fields(alert.record, 'record', label_fields)
+        enumerate_fields(alert.context, 'context', label_fields)
+
+        labels = []
+        labels.append({
+            "type": "record",
+            "value": json.dumps(alert.record),
+        })
+        for key in label_fields:
+            labels.append({
+                "type": key,
+                "value": label_fields[key]
+            })
+
+        response = client.CreateIncident(
             incident_name,
             # We directly map the descriptor over to the incident type. If the descriptor is
             # unrecognized on the Demisto server, it will simply default to "Unknown"
@@ -115,21 +142,17 @@ class DemistoOutput(OutputDispatcher):
             severity,
             owner,
             # This is where we put all of our garbage
-            [
-                # {
-                #     "type": "description",
-                #     "value": alert.rule_description,
-                # },
-                {
-                    "type": "record",
-                    "value": alert.record,
-                },
-            ],
+            labels,
             details,
             {
                 "alertsource": "demisto"
             },
             createInvestigation=False
         )
+
+        if 200 <= response.status_code < 300:
+            return True
+
+        print(response.content)
 
         return False

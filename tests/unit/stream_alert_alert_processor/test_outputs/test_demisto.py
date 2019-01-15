@@ -16,7 +16,7 @@ limitations under the License.
 # pylint: disable=no-self-use,unused-argument,attribute-defined-outside-init,protected-access
 from collections import OrderedDict
 
-from mock import call, patch
+from mock import call, patch, Mock, MagicMock
 from moto import mock_s3, mock_kms
 from nose.tools import assert_false, assert_is_instance, assert_true
 
@@ -37,7 +37,8 @@ from tests.unit.stream_alert_alert_processor.helpers import (
 # THIS COMMAND WORKS:
 # curl --request POST -v --header "Authorization: MIpC1rrxstLnJqLuz8pxKnJxoIstDFzt" --header "Content-Type: application/json" --header "Accept: application/json" -d '{"filter":{}}' https://demisto.ypy.fyi/incidents/search
 class TestDemistoIntegrationTestSuite(object):
-    DESCRIPTOR = 'integration_test_demisto'
+    """Test class for SlackOutput"""
+    DESCRIPTOR = 'unit_test_demisto'
     SERVICE = 'demisto'
     OUTPUT = ':'.join([SERVICE, DESCRIPTOR])
     CREDS = {
@@ -45,22 +46,17 @@ class TestDemistoIntegrationTestSuite(object):
         'token': 'MIpC1rrxstLnJqLuz8pxKnJxoIstDFzt',
     }
 
-    @patch.dict('os.environ', MOCK_ENV)
-    def setup(self):
-        self._mock_s3 = mock_s3()
-        self._mock_s3.start()
-        self._mock_kms = mock_kms()
-        self._mock_kms.start()
-        self._dispatcher = DemistoOutput(CONFIG)
-        remove_temp_secrets()
-        output_name = self._dispatcher.output_cred_name(self.DESCRIPTOR)
-        put_mock_creds(output_name, self.CREDS, self._dispatcher.secrets_bucket, REGION, KMS_ALIAS)
+    @patch('stream_alert.alert_processor.outputs.output_base.OutputCredentialsProvider')
+    def setup(self, provider_constructor):
+        """Setup before each method"""
+        provider = MagicMock()
+        provider_constructor.return_value = provider
+        provider.load_credentials = Mock(
+            side_effect=lambda x: self.CREDS if x == self.DESCRIPTOR else None
+        )
 
-    def teardown(self):
-        self._mock_s3.stop()
-        self._mock_s3 = None
-        self._mock_kms.stop()
-        self._mock_kms = None
+        self._provider = provider
+        self._dispatcher = DemistoOutput(None)
 
     def test_get_user_defined_properties(self):
         """DemistoOutput - User Defined Properties"""
@@ -75,99 +71,16 @@ class TestDemistoIntegrationTestSuite(object):
         alert_context = {
             'demisto': {
                 'foo': 'bar',
-                'baz': 'buzz'
+                'baz': 'buzz',
+                'deepArray': [
+                    {
+                        "key": "value",
+                    },
+                    {
+                        "key": "value2",
+                    }
+                ]
             }
         }
 
         assert_true(self._dispatcher.dispatch(get_alert(context=alert_context), self.OUTPUT))
-
-
-
-# @patch('stream_alert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS', 1)
-# class NoDoNotRunThis(object):
-#     """Test class for CarbonBlackOutput"""
-#     DESCRIPTOR = 'unit_test_carbonblack'
-#     SERVICE = 'carbonblack'
-#     OUTPUT = ':'.join([SERVICE, DESCRIPTOR])
-#     CREDS = {'url': 'carbon.foo.bar',
-#              'ssl_verify': 'Y',
-#              'token': '1234567890127a3d7f37f4153270bff41b105899'}
-#
-#     @patch.dict('os.environ', MOCK_ENV)
-#     def setup(self):
-#         """Setup before each method"""
-#         self._mock_s3 = mock_s3()
-#         self._mock_s3.start()
-#         self._mock_kms = mock_kms()
-#         self._mock_kms.start()
-#         self._dispatcher = demisto.DemistoOutput(CONFIG)
-#         remove_temp_secrets()
-#         output_name = self._dispatcher.output_cred_name(self.DESCRIPTOR)
-#         put_mock_creds(output_name, self.CREDS, self._dispatcher.secrets_bucket, REGION, KMS_ALIAS)
-#
-#     def teardown(self):
-#         """Teardown after each method"""
-#         self._mock_s3.stop()
-#         self._mock_kms.stop()
-#
-#     def test_get_user_defined_properties(self):
-#         """CarbonBlackOutput - User Defined Properties"""
-#         assert_is_instance(CarbonBlackOutput.get_user_defined_properties(), OrderedDict)
-#
-#     @patch('logging.Logger.error')
-#     def test_dispatch_no_context(self, mock_logger):
-#         """CarbonBlackOutput - Dispatch No Context"""
-#         assert_false(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
-#         mock_logger.assert_has_calls([
-#             call('[%s] Alert must contain context to run actions', 'carbonblack'),
-#             call('Failed to send alert to %s:%s', 'carbonblack', 'unit_test_carbonblack')
-#         ])
-#
-#     @patch.object(carbonblack, 'CbResponseAPI', side_effect=MockCBAPI)
-#     def test_dispatch_already_banned(self, mock_cb):
-#         """CarbonBlackOutput - Dispatch Already Banned"""
-#         alert_context = {
-#             'carbonblack': {
-#                 'action': 'ban',
-#                 'value': 'BANNED_ENABLED_HASH'
-#             }
-#         }
-#         assert_true(self._dispatcher.dispatch(get_alert(context=alert_context), self.OUTPUT))
-#
-#     @patch.object(carbonblack, 'CbResponseAPI', side_effect=MockCBAPI)
-#     def test_dispatch_banned_disabled(self, mock_cb):
-#         """CarbonBlackOutput - Dispatch Banned Disabled"""
-#         alert_context = {
-#             'carbonblack': {
-#                 'action': 'ban',
-#                 'value': 'BANNED_DISABLED_HASH'
-#             }
-#         }
-#         assert_true(self._dispatcher.dispatch(get_alert(context=alert_context), self.OUTPUT))
-#
-#     @patch.object(carbonblack, 'CbResponseAPI', side_effect=MockCBAPI)
-#     def test_dispatch_not_banned(self, mock_cb):
-#         """CarbonBlackOutput - Dispatch Not Banned"""
-#         alert_context = {
-#             'carbonblack': {
-#                 'action': 'ban',
-#                 'value': 'NOT_BANNED_HASH'
-#             }
-#         }
-#         assert_true(self._dispatcher.dispatch(get_alert(context=alert_context), self.OUTPUT))
-#
-#     @patch('logging.Logger.error')
-#     @patch.object(carbonblack, 'CbResponseAPI', side_effect=MockCBAPI)
-#     def test_dispatch_invalid_action(self, mock_cb, mock_logger):
-#         """CarbonBlackOutput - Invalid Action"""
-#         alert_context = {
-#             'carbonblack': {
-#                 'action': 'rickroll',
-#             }
-#         }
-#         assert_false(self._dispatcher.dispatch(get_alert(context=alert_context), self.OUTPUT))
-#
-#         mock_logger.assert_has_calls([
-#             call('[%s] Action not supported: %s', 'carbonblack', 'rickroll'),
-#             call('Failed to send alert to %s:%s', 'carbonblack', 'unit_test_carbonblack')
-#         ])
