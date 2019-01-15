@@ -38,8 +38,14 @@ Optionally, to deploy changes for only a specific AWS Lambda function:
 
 .. code-block:: bash
 
-  $ python manage.py deploy --function rule
   $ python manage.py deploy --function alert
+  $ python manage.py deploy --function alert_merger
+  $ python manage.py deploy --function apps
+  $ python manage.py deploy --function athena
+  $ python manage.py deploy --function classifier
+  $ python manage.py deploy --function rule
+  $ python manage.py deploy --function rule_promo
+  $ python manage.py deploy --function threat_intel_downloader
 
 To apply infrastructure level changes (additional Kinesis Shards, new CloudTrails, etc), run:
 
@@ -53,6 +59,14 @@ To speed up the Terraform run, the module name may be specified with the ``targe
 
   $ python manage.py build --target kinesis       # tf_stream_alert_kinesis module
   $ python manage.py build --target stream_alert  # tf_stream_alert module
+
+To apply specific terraform changes, go to ``terraform`` folder and run ``terraform apply`` with ``-target`` option manually:
+
+.. code-block:: bash
+
+  $ cd terraform
+  $ terraform plan -target=module.RESOURCE.FULL.NAME.FOO -target=module.RESOURCE.FULL.NAME.BAR
+  $ terraform apply -target=module.RESOURCE.FULL.NAME.FOO -target=module.RESOURCE.FULL.NAME.BAR
 
 Monitoring Functions
 --------------------
