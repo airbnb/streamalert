@@ -24,6 +24,7 @@ from stream_alert.alert_processor.outputs.output_base import (
     StreamAlertOutput
 )
 from stream_alert.shared.logger import get_logger
+from requests.exceptions import RequestException
 
 LOGGER = get_logger(__name__)
 
@@ -75,18 +76,15 @@ class DemistoOutput(OutputDispatcher):
         if not creds:
             return False
 
-        # descriptor
-        #
-        # The rule output should look something like:
-        # - demisto:[Some Incident Type]
-        # - demisto:[Some Incident Type]-[Severity]
-        #
-        # FIXME (derek.wang) remember to configure a full list over in outputs.json....
         request = DemistoRequestAssembler.assemble(alert, descriptor)
-
         integration = DemistoApiIntegration(creds)
 
-        return integration.send(request)
+        try:
+            integration.send(request)
+            return True
+        except RequestException as e:
+            LOGGER.error('Failed to create Demisto incident: %s.', e)
+            return False
 
 
 class DemistoApiIntegration(object):
@@ -98,6 +96,14 @@ class DemistoApiIntegration(object):
         self._demisto_api_client = DemistoClient(creds['token'], creds['url'])
 
     def send(self, request):
+        """Sends the given DemistoCreateIncidentRequest with the current integration.
+
+        Returns:
+            void: Returns void if the request is successful. Raises an exception on error.
+
+        Raises:
+            requests.exceptions.RequestException
+        """
         response = self._demisto_api_client.CreateIncident(
             request._incident_name,
             request._incident_type,
@@ -108,7 +114,7 @@ class DemistoApiIntegration(object):
             request._custom_fields,
             createInvestigation=request._create_investigation
         )
-        return 200 <= response.status_code < 300
+        response.raise_for_status()
 
 
 class DemistoCreateIncidentRequest(object):
@@ -179,7 +185,6 @@ class DemistoRequestAssembler(object):
         request._incident_name = 'StreamAlert Rule Triggered - {}'.format(alert.rule_name)
         request._incident_type = descriptor
         request._details = alert.rule_description
-        request._owner = 'Derek Wang'  # FIXME (derek.wang) Hardcoded here for testing purposes
 
         # The alert record/context are nested JSON structure which does not render well on
         # Demisto's UI; flatten it into a series of discrete key-values.
