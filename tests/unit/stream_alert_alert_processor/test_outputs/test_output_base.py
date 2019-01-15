@@ -16,7 +16,7 @@ limitations under the License.
 # pylint: disable=abstract-class-instantiated,protected-access,attribute-defined-outside-init
 import os
 
-from mock import Mock, patch
+from mock import Mock, patch, MagicMock
 from moto import mock_kms, mock_s3
 from nose.tools import (
     assert_equal,
@@ -183,13 +183,18 @@ class TestOutputDispatcher(object):
         self._dispatcher = OutputDispatcher(CONFIG)
         self._descriptor = 'desc_test'
 
-    def test_credentials_provider(self):
-        assert_equal(self._dispatcher._credentials_provider._service_name, 'test_service')
+    @patch.object(OutputDispatcher, '__service__', 'test_service')
+    @patch.object(OutputDispatcher, '__abstractmethods__', frozenset())
+    @patch('stream_alert.alert_processor.outputs.output_base.OutputCredentialsProvider')
+    def test_credentials_provider(self, provider_constructor):
+        """OutputDispatcher - Constructor"""
+        provider = MagicMock()
+        provider_constructor.return_value = provider
 
-    def test_output_cred_name(self):
-        """OutputDispatcher - Output Cred Name"""
-        output_name = self._dispatcher.output_cred_name('creds')
-        assert_equal(output_name, 'test_service/creds')
+        _ = OutputDispatcher(CONFIG)
+
+        provider_constructor.assert_called_with(CONFIG, None, 'test_service')
+        assert_equal(self._dispatcher._credentials_provider._service_name, 'test_service')
 
     @mock_s3
     def test_get_creds_from_s3(self):
@@ -197,7 +202,10 @@ class TestOutputDispatcher(object):
         test_data = 'credential test string'
 
         bucket_name = self._dispatcher.secrets_bucket
-        key = self._dispatcher.output_cred_name(self._descriptor)
+        key = self._dispatcher._credentials_provider.get_formatted_output_credentials_name(
+            'test_service',
+            self._descriptor
+        )
 
         local_cred_location = os.path.join(
             self._dispatcher._credentials_provider.get_local_credentials_temp_dir(),
@@ -257,12 +265,15 @@ class TestOutputDispatcher(object):
     def test_load_creds(self):
         """OutputDispatcher - Load Credentials"""
         remove_temp_secrets()
-        output_name = self._dispatcher.output_cred_name(self._descriptor)
+        key = self._dispatcher._credentials_provider.get_formatted_output_credentials_name(
+            'test_service',
+            self._descriptor
+        )
 
         creds = {'url': 'http://www.foo.bar/test',
                  'token': 'token_to_encrypt'}
 
-        put_mock_creds(output_name, creds, self._dispatcher.secrets_bucket, REGION, KMS_ALIAS)
+        put_mock_creds(key, creds, self._dispatcher.secrets_bucket, REGION, KMS_ALIAS)
 
         loaded_creds = self._dispatcher._load_creds(self._descriptor)
 
