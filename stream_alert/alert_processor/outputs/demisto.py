@@ -48,12 +48,12 @@ class DemistoOutput(OutputDispatcher):
              OutputProperty(description='a short and unique descriptor for this'
                                         ' demisto output')),
             ('url',
-             OutputProperty(description='URL to the CB Response server [https://hostname]',
+             OutputProperty(description='URL to the Demisto server [https://hostname]',
                             mask_input=False,
                             input_restrictions={' '},
                             cred_requirement=True)),
             ('token',
-             OutputProperty(description='API token (if unknown, leave blank)',
+             OutputProperty(description='Demisto API token',
                             mask_input=True,
                             cred_requirement=True)),
         ])
@@ -117,16 +117,22 @@ class DemistoOutput(OutputDispatcher):
         enumerate_fields(alert.record, 'record', label_fields)
         enumerate_fields(alert.context, 'context', label_fields)
 
-        labels = []
-        labels.append({
-            "type": "record",
-            "value": json.dumps(alert.record),
-        })
+        labels = [
+            {
+                "type": "record",
+                "value": json.dumps(alert.record),
+            },
+            {
+                "type": "source",
+                "value": alert.log_source,
+            }
+        ]
         for key in label_fields:
             labels.append({
                 "type": key,
                 "value": label_fields[key]
             })
+        labels.sort(key=lambda x: x["type"])
 
         response = client.CreateIncident(
             incident_name,
@@ -145,7 +151,9 @@ class DemistoOutput(OutputDispatcher):
             labels,
             details,
             {
-                "alertsource": "demisto"
+                "alertsource": "demisto",
+                "more_custom_fields": "does this even work?",
+                "hello": "world",
             },
             createInvestigation=False
         )
