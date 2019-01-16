@@ -22,6 +22,7 @@ import tempfile
 import boto3
 
 from stream_alert.shared.alert import Alert
+from stream_alert.alert_processor.outputs.credentials.provider import LocalFileDriver
 from tests.unit.helpers.aws_mocks import put_mock_s3_object
 
 
@@ -83,7 +84,7 @@ def get_alert(context=None):
 
 def remove_temp_secrets():
     """Remove the local secrets directory that may be left from previous runs"""
-    secrets_dirtemp_dir = os.path.join(tempfile.gettempdir(), 'stream_alert_secrets')
+    secrets_dirtemp_dir = LocalFileDriver.get_local_credentials_temp_dir()
 
     # Check if the folder exists, and remove it if it does
     if os.path.isdir(secrets_dirtemp_dir):

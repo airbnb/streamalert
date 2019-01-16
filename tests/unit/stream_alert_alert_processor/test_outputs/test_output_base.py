@@ -146,7 +146,7 @@ class TestOutputCredentialsProvider(object):
         test_data = 'credential test string'
         descriptor = 'test_descriptor'
 
-        bucket_name = self._provider._secrets_bucket
+        bucket_name = self._provider._core_driver.get_s3_secrets_bucket()
         key = self._provider.get_formatted_output_credentials_name('test_service_name',
                                                                    descriptor)
 

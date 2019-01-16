@@ -1,3 +1,19 @@
+"""
+Copyright 2017-present, Airbnb Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
+
 import json
 import os
 import tempfile
@@ -6,7 +22,8 @@ from abc import abstractmethod
 import boto3
 from botocore.exceptions import ClientError
 
-from stream_alert_cli.outputs.helpers import encrypt_and_push_creds_to_s3
+from stream_alert_cli.outputs.helpers import encrypt_and_push_creds_to_s3, kms_encrypt, \
+    send_creds_to_s3
 
 from stream_alert.shared.helpers.boto import REGION
 from stream_alert.shared.logger import get_logger
@@ -69,7 +86,20 @@ class OutputCredentialsProvider(object):
         self._drivers.append(s3_driver)
 
     def save_credentials(self, descriptor, kms_key_alias, props):
-        credentials = Credentials(props, False, self._region)
+        """
+        Args:
+            descriptor (str):
+            kms_key_alias (str):
+            props (Dict(str, OutputProperty)):
+
+        Returns:
+            bool
+        """
+
+        creds = {name: prop.value
+                 for (name, prop) in props.iteritems() if prop.cred_requirement}
+
+        credentials = Credentials(creds, False, self._region)
         return self._core_driver.save_credentials(descriptor, credentials, kms_key_alias)
 
     def load_credentials(self, descriptor):
@@ -258,7 +288,7 @@ class S3Driver(CredentialsProvidingDriver):
         self._service_name = service_name
         self._region = region
         self._prefix = prefix
-        self._bucket = self.get_s3_secrets_bucket(self._prefix)
+        self._bucket = self.get_s3_secrets_bucket()
 
         self._file_driver = file_driver
 
@@ -270,14 +300,16 @@ class S3Driver(CredentialsProvidingDriver):
             descriptor (str): Service destination (ie: slack channel, pd integration)
 
         Returns:
-            bool: True if credentials are downloaded from S3 successfully.
+            Credentials: The loaded Credentials. None on failure
         """
         try:
             if self._file_driver:
                 fd = None
                 local_cred_location = self._file_driver.get_file_path(descriptor)
             else:
-                fd, local_cred_location = tempfile.mkstemp()  # Use some random temporary file
+                fd, local_cred_location = tempfile.mkstemp(
+                    dir=LocalFileDriver.get_local_credentials_temp_dir()
+                )  # Use some random temporary file
 
             if not os.path.exists(local_cred_location):
                 os.makedirs(os.path.dirname(local_cred_location))
@@ -286,13 +318,14 @@ class S3Driver(CredentialsProvidingDriver):
             with open(local_cred_location, 'wb') as cred_output:
                 client.download_fileobj(
                     self._bucket,
-                    get_formatted_output_credentials_name(self._service_name, descriptor),
+                    self.get_s3_key(descriptor),
                     cred_output
                 )
 
             with open(local_cred_location, 'rb') as cred_file:
                 enc_creds = cred_file.read()
 
+            # Make sure to close the fd opened during mkstemp()
             if fd:
                 os.close(fd)
 
@@ -310,21 +343,26 @@ class S3Driver(CredentialsProvidingDriver):
 
     def save_credentials(self, descriptor, credentials, kms_key_alias):
         if credentials.is_encrypted():
+            # FIXME (derek.wang)
             raise RuntimeError('Dont try save encrypted creds to S3 or you will doubly encrypt')
 
         s3_key = get_formatted_output_credentials_name(self._service_name, descriptor)
 
         # Encrypt the creds and push them to S3
         # then update the local output configuration with properties
-        return encrypt_and_push_creds_to_s3(self._region,
-                                            self._bucket,
-                                            s3_key,
-                                            credentials.data(),
-                                            kms_key_alias)
+        creds = credentials.data()
+        if not creds:
+            return True
 
-    @staticmethod
-    def get_s3_secrets_bucket(prefix):
-        return '{}.streamalert.secrets'.format(prefix)
+        creds_json = json.dumps(creds)
+        enc_creds = kms_encrypt(self._region, creds_json, kms_key_alias)
+        return send_creds_to_s3(self._region, self._bucket, s3_key, enc_creds)
+
+    def get_s3_key(self, descriptor):
+        return get_formatted_output_credentials_name(self._service_name, descriptor)
+
+    def get_s3_secrets_bucket(self):
+        return '{}.streamalert.secrets'.format(self._prefix)
 
 
 class LocalFileDriver(CredentialsProvidingDriver):
@@ -353,23 +391,8 @@ class LocalFileDriver(CredentialsProvidingDriver):
 
     @staticmethod
     def get_formatted_output_credentials_name(service_name, descriptor):
-        """Formats the output name for this credential by combining the service
-        and the descriptor.
-
-        Args:
-            service_name (str): Service name on output class (i.e. "pagerduty", "demisto")
-            descriptor (str): Service destination (ie: slack channel, pd integration)
-
-        Returns:
-            str: Formatted credential name (ie: slack_ryandchannel)
-        """
-        cred_name = str(service_name)
-
-        # should descriptor be enforced in all rules?
-        if descriptor:
-            cred_name = '{}/{}'.format(cred_name, descriptor)
-
-        return cred_name
+        # FIXME (derek.wang) Is this still being used? Deprecated?
+        return get_formatted_output_credentials_name(service_name, descriptor)
 
     @staticmethod
     def get_local_credentials_temp_dir():
