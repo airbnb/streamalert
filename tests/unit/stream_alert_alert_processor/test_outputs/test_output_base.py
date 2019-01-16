@@ -201,7 +201,7 @@ class TestOutputDispatcher(object):
         """OutputDispatcher - Get Creds From S3"""
         test_data = 'credential test string'
 
-        bucket_name = self._dispatcher._credentials_provider._secrets_bucket
+        bucket_name = self._dispatcher._credentials_provider._core_driver._bucket
         key = self._dispatcher._credentials_provider.get_formatted_output_credentials_name(
             'test_service',
             self._descriptor
@@ -274,7 +274,7 @@ class TestOutputDispatcher(object):
                  'token': 'token_to_encrypt'}
 
         put_mock_creds(key, creds,
-                       self._dispatcher._credentials_provider._secrets_bucket,
+                       self._dispatcher._credentials_provider._core_driver._bucket,
                        REGION, KMS_ALIAS)
 
         loaded_creds = self._dispatcher._load_creds(self._descriptor)

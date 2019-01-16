@@ -47,21 +47,30 @@ class OutputCredentialsProvider(object):
 
         self._prefix = prefix
         self._account_id = aws_account_id
-        self._secrets_bucket = OutputCredentialsProvider.get_s3_secrets_bucket(prefix)
 
-    def save_credentials(self, descriptor, kms_key_alias, credentials):
-        secrets_key = OutputCredentialsProvider.get_formatted_output_credentials_name(
-            self._service_name,
-            descriptor
-        )
+        # Drivers are strategies utilized by this class for fetching credentials from various
+        # locations on disk or remotely
+        self._drivers = []  # type: list[CredentialsProvidingDriver]
+        self._core_driver = None  # type: S3Driver
+        self._setup_drivers()
 
-        # Encrypt the creds and push them to S3
-        # then update the local output configuration with properties
-        return encrypt_and_push_creds_to_s3(self._region,
-                                            self._secrets_bucket,
-                                            secrets_key,
-                                            credentials,
-                                            kms_key_alias)
+    def _setup_drivers(self):
+        """Initializes all drivers utilized by this OutputCredentialsProvider
+
+        The Drivers are sequentially checked in the order they are appended to the driver list"""
+
+        # Always check local filesystem to see if credentials are cached in a Temp Directory
+        fs_driver = LocalFileDriver(self._region, self._service_name)
+        self._drivers.append(fs_driver)
+
+        # Fall back onto downloading encrypted credentials from S3
+        s3_driver = S3Driver(self._prefix, self._service_name, self._region, fs_driver)
+        self._core_driver = s3_driver
+        self._drivers.append(s3_driver)
+
+    def save_credentials(self, descriptor, kms_key_alias, props):
+        credentials = Credentials(props, False, self._region)
+        return self._core_driver.save_credentials(descriptor, credentials, kms_key_alias)
 
     def load_credentials(self, descriptor):
         """First try to load the credentials from /tmp and then resort to pulling
@@ -74,40 +83,21 @@ class OutputCredentialsProvider(object):
             dict: the loaded credential info needed for sending alerts to this service
                 or None if nothing gets loaded
         """
-        if False:
-            # Old Driver
-            local_cred_location = os.path.join(
-                self.get_local_credentials_temp_dir(),
-                self.get_formatted_output_credentials_name(self._service_name, descriptor)
-            )
+        credentials = None
+        for driver in self._drivers:
+            if driver.has_credentials(descriptor):
+                credentials = driver.load_credentials(descriptor)
+                break
 
-            # Creds are not cached locally, so get the encrypted blob from s3
-            if not os.path.exists(local_cred_location):
-                if not self.load_encrypted_credentials_from_s3(local_cred_location, descriptor):
-                    return
-
-            # Open encrypted credential file
-            with open(local_cred_location, 'rb') as cred_file:
-                enc_creds = cred_file.read()
-
-            # Get the decrypted credential json from kms and load into dict
-            # This could be None if the kms decryption fails, so check it
-            decrypted_creds = self.kms_decrypt(enc_creds)
-            if not decrypted_creds:
-                return
+        if not credentials:
+            LOGGER.error('All drivers failed to retrieve credentials for [%s.%s]',
+                         self._service_name,
+                         descriptor)
+            decrypted_creds = ''
+        elif credentials.is_encrypted():
+            decrypted_creds = credentials.get_data_kms_decrypted()
         else:
-            # New Driver
-            fs_driver = LocalFileDriver(self._region, self._service_name)
-            if fs_driver.has_credentials(descriptor):
-                credentials = fs_driver.load_credentials(descriptor)
-            else:
-                s3_driver = S3Driver(self._prefix, self._service_name, self._region, fs_driver)
-                credentials = s3_driver.load_credentials(descriptor)
-
-            if credentials.is_encrypted():
-                decrypted_creds = credentials.get_data_kms_decrypted()
-            else:
-                decrypted_creds = credentials.data()
+            decrypted_creds = credentials.data()
 
         creds_dict = json.loads(decrypted_creds)
 
@@ -119,16 +109,8 @@ class OutputCredentialsProvider(object):
         return creds_dict
 
     @staticmethod
-    def get_s3_secrets_bucket(prefix):
-        return '{}.streamalert.secrets'.format(prefix)
-
-    @staticmethod
     def get_local_credentials_temp_dir():
-        """Get the local tmp directory for caching the encrypted service credentials.
-           Will automatically create a new directory
-
-        Returns:
-            str: local path for stream_alert_secrets tmp directory
+        """DEPREACTED - NO LONGER USED
         """
         temp_dir = os.path.join(tempfile.gettempdir(), "stream_alert_secrets")
 
@@ -143,28 +125,13 @@ class OutputCredentialsProvider(object):
         return temp_dir
 
     def load_encrypted_credentials_from_s3(self, cred_location, descriptor):
-        """Pull the encrypted credential blob for this service and destination from s3
-           and save it to a local file.
-
-        Args:
-            cred_location (str): The tmp path on disk to to store the encrypted blob
-            descriptor (str): Service destination (ie: slack channel, pd integration)
-
-        Returns:
-            bool: True if credentials are downloaded from S3 successfully.
+        """DEPRECATED - NO LONGER USED
         """
         try:
-            if not os.path.exists(os.path.dirname(cred_location)):
-                os.makedirs(os.path.dirname(cred_location))
+            fsd = LocalFileDriver(self._service_name, self._service_name)
+            s3d = S3Driver(self._prefix, self._service_name, self._region, fsd)
 
-            client = boto3.client('s3', region_name=self._region)
-            with open(cred_location, 'wb') as cred_output:
-                client.download_fileobj(
-                    self._secrets_bucket,
-                    self.get_formatted_output_credentials_name(self._service_name, descriptor),
-                    cred_output
-                )
-
+            c = s3d.load_credentials(descriptor)
             return True
         except ClientError as err:
             LOGGER.exception('credentials for \'%s\' could not be downloaded '
@@ -174,13 +141,7 @@ class OutputCredentialsProvider(object):
                              err.response)
 
     def kms_decrypt(self, data):
-        """Decrypt data with AWS KMS.
-
-        Args:
-            data (str): An encrypted ciphertext data blob
-
-        Returns:
-            str: Decrypted json string
+        """DEPRECATED - NO LONGER USED
         """
         try:
             client = boto3.client('kms', region_name=self._region)
@@ -215,6 +176,7 @@ class OutputCredentialsProvider(object):
 
 
 class Credentials(object):
+    """Encapsulation for a set of credentials, encrypted or not."""
 
     def __init__(self, data, is_encrypted=False, region=None):
         self._data = data
@@ -240,12 +202,28 @@ class Credentials(object):
 
 
 class CredentialsProvidingDriver(object):
+    """Drivers encapsulate logic for loading credentials"""
+
     @abstractmethod
     def load_credentials(self, descriptor):
+        """
+        Args:
+            descriptor (string): Descriptor for the current output service
+
+        Return:
+            Credentials
+        """
         pass
 
     @abstractmethod
     def has_credentials(self, descriptor):
+        """
+        Args:
+            descriptor (string): Descriptor for the current output service
+
+        Return:
+            bool: True if this driver has the requested Credentials, false otherwise.
+        """
         pass
 
 
@@ -270,31 +248,36 @@ def get_formatted_output_credentials_name(service_name, descriptor):
 
 
 class S3Driver(CredentialsProvidingDriver):
+    """Driver for fetching credentials from AWS S3
+
+    Optionally, the S3 can be supplied with a LocalFileDriver to cache the encrypted credentials
+    payload to the local filesystem.
+    """
+
     def __init__(self, prefix, service_name, region, file_driver=None):
-        self._service_name = service_name  # Specific to output
-        self._region = region  # Important when saving
-        self._prefix = prefix  # Important!
+        self._service_name = service_name
+        self._region = region
+        self._prefix = prefix
         self._bucket = self.get_s3_secrets_bucket(self._prefix)
 
         self._file_driver = file_driver
 
     def load_credentials(self, descriptor):
         """Pull the encrypted credential blob for this service and destination from s3
-                   and save it to a local file.
+           and save it to a local file.
 
-                Args:
-                    cred_location (str): The tmp path on disk to to store the encrypted blob
-                    descriptor (str): Service destination (ie: slack channel, pd integration)
+        Args:
+            descriptor (str): Service destination (ie: slack channel, pd integration)
 
-                Returns:
-                    bool: True if credentials are downloaded from S3 successfully.
-                """
+        Returns:
+            bool: True if credentials are downloaded from S3 successfully.
+        """
         try:
             if self._file_driver:
+                fd = None
                 local_cred_location = self._file_driver.get_file_path(descriptor)
             else:
-                file_driver = LocalFileDriver(self._region, self._service_name)
-                local_cred_location = file_driver.get_file_path(descriptor)
+                fd, local_cred_location = tempfile.mkstemp()  # Use some random temporary file
 
             if not os.path.exists(local_cred_location):
                 os.makedirs(os.path.dirname(local_cred_location))
@@ -310,12 +293,20 @@ class S3Driver(CredentialsProvidingDriver):
             with open(local_cred_location, 'rb') as cred_file:
                 enc_creds = cred_file.read()
 
+            if fd:
+                os.close(fd)
+
             return Credentials(enc_creds, True, self._region)
         except ClientError as err:
             LOGGER.exception('credentials for \'%s\' could not be downloaded '
                              'from S3: %s',
                              get_formatted_output_credentials_name(self._service_name, descriptor),
                              err.response)
+
+    def has_credentials(self, descriptor):
+        """Always returns True, as S3 is the place where all encrypted credentials are
+           guaranteed to be cold-stored."""
+        return True
 
     def save_credentials(self, descriptor, credentials, kms_key_alias):
         if credentials.is_encrypted():
@@ -331,17 +322,13 @@ class S3Driver(CredentialsProvidingDriver):
                                             credentials.data(),
                                             kms_key_alias)
 
-    def has_credentials(self, descriptor):
-        """Always returns True, as S3 is the place where all encrypted credentials are
-           guaranteed to be cold-stored."""
-        return True
-
     @staticmethod
     def get_s3_secrets_bucket(prefix):
         return '{}.streamalert.secrets'.format(prefix)
 
 
 class LocalFileDriver(CredentialsProvidingDriver):
+    """Driver for fetching credentials that are saved locally on the filesystem."""
     def __init__(self, region, service_name):
         self._region = region
         self._service_name = service_name
@@ -406,8 +393,9 @@ class LocalFileDriver(CredentialsProvidingDriver):
 
 
 class SpooledTempfileDriver(CredentialsProvidingDriver):
+    def has_credentials(self, descriptor):
+        pass
+
     def load_credentials(self, descriptor):
         pass
 
-    def save_credentials(self, descriptor, credentials):
-        pass
