@@ -41,6 +41,7 @@ SAMPLE_CONTEXT = {
 EXPECTED_LABELS_FOR_SAMPLE_ALERT = [
     {'type': 'alert.alert_id', 'value': '79192344-4a6d-4850-8d06-9c3fef1060a4'},
     {'type': 'alert.cluster', 'value': None},
+    {'type': 'alert.descriptor', 'value': 'unit_test_demisto'},
     {'type': 'alert.log_type', 'value': 'json'},
     {
         'type': 'alert.record',
@@ -53,6 +54,7 @@ EXPECTED_LABELS_FOR_SAMPLE_ALERT = [
             '"21504"}'
         )
     },
+    {'type': 'alert.rule_name', 'value': 'cb_binarystore_file_added'},
     {'type': 'alert.source', 'value': 'carbonblack:binarystore.file.added'},
     {'type': 'alert.source_entity', 'value': 'corp-prefix.prod.cb.region'},
     {'type': 'alert.source_service', 'value': 's3'},
@@ -114,9 +116,9 @@ class TestDemistoOutput(object):
         assert_true(success)
 
         expected_data = {
-            'name': 'StreamAlert Rule Triggered - cb_binarystore_file_added',
-            'type': 'unit_test_demisto',
-            'severity': 0.5,
+            'name': 'cb_binarystore_file_added',
+            'type': 'Unclassified',
+            'severity': 0,
             'owner': 'StreamAlert',
             'labels': EXPECTED_LABELS_FOR_SAMPLE_ALERT,
             'details': 'Info about this rule and what actions to take',
@@ -159,14 +161,13 @@ class TestDemistoRequestAssembler(object):
     def test_assemble(self):
         """DemistoRequestAssembler - assemble"""
         alert = get_alert(context=SAMPLE_CONTEXT)
-        descriptor = 'Test Descriptor'
+        descriptor = 'unit_test_demisto'
 
         request = DemistoRequestAssembler.assemble(alert, descriptor)
 
-        assert_equal(request._incident_name, ('StreamAlert Rule Triggered - '
-                                              'cb_binarystore_file_added'))
-        assert_equal(request._incident_type, 'Test Descriptor')
-        assert_equal(request._severity, 0.5)
+        assert_equal(request._incident_name, 'cb_binarystore_file_added')
+        assert_equal(request._incident_type, 'Unclassified')
+        assert_equal(request._severity, 0)
         assert_equal(request._owner, 'StreamAlert')
         assert_equal(request._labels, EXPECTED_LABELS_FOR_SAMPLE_ALERT)
         assert_equal(request._details, 'Info about this rule and what actions to take')

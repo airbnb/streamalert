@@ -137,7 +137,7 @@ class DemistoCreateIncidentRequest(object):
         self._incident_type = 'Unclassified'
 
         # Severity is an integer. Use the constants above.
-        self._severity = self.SEVERITY_INFORMATIONAL
+        self._severity = self.SEVERITY_UNKNOWN
 
         # The Owner appears verbatim on the Incident list, regardless of whether the owner
         # exists or not.
@@ -182,8 +182,7 @@ class DemistoRequestAssembler(object):
 
         request = DemistoCreateIncidentRequest()
 
-        request._incident_name = 'StreamAlert Rule Triggered - {}'.format(alert.rule_name)
-        request._incident_type = descriptor
+        request._incident_name = alert.rule_name
         request._details = alert.rule_description
 
         # The alert record/context are nested JSON structure which does not render well on
@@ -211,8 +210,10 @@ class DemistoRequestAssembler(object):
         request.add_label('alert.log_type', alert.log_type)
         request.add_label('alert.source_entity', alert.source_entity)
         request.add_label('alert.source_service', alert.source_service)
+        request.add_label('alert.rule_name', alert.rule_name)
+        request.add_label('alert.descriptor', descriptor)
 
-        # ///
+        # Trigger workbooks automatically
         request._create_investigation = True
 
         return request
