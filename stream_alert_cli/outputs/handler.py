@@ -71,6 +71,12 @@ def output_handler(options, config):
         props['descriptor'].value
     )
 
+    provider = OutputCredentialsProvider(config=output.config,
+                                         defaults=output._get_default_properties(),
+                                         service_name=service,
+                                         prefix=prefix)
+    provider.save_credentials(props['descriptor'].value, kms_key_alias)
+
     # Encrypt the creds and push them to S3
     # then update the local output configuration with properties
     if not encrypt_and_push_creds_to_s3(region, secrets_bucket, secrets_key, props, kms_key_alias):
