@@ -144,16 +144,6 @@ class OutputCredentialsProvider(object):
 
         return creds_dict
 
-    def kms_decrypt(self, data):
-        """DEPRECATED - NO LONGER USED
-        """
-        try:
-            client = boto3.client('kms', region_name=self._region)
-            response = client.decrypt(CiphertextBlob=data)
-            return response['Plaintext']
-        except ClientError as err:
-            LOGGER.error('an error occurred during credentials decryption: %s', err.response)
-
     def get_aws_account_id(self):
         """Returns the AWS account ID"""
         return self._account_id

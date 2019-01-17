@@ -115,22 +115,6 @@ def test_output_loading():
     assert_items_equal(loaded_outputs, expected_outputs)
 
 
-class TestOutputCredentialsProvider(object):
-
-    @patch.dict('os.environ', MOCK_ENV)
-    def setup(self):
-        self._provider = OutputCredentialsProvider(CONFIG, {}, 'test_service_name')
-
-    @mock_kms
-    def test_kms_decrypt(self):
-        """OutputCredentialsProvider - KMS Decrypt"""
-        test_data = 'data to encrypt'
-        encrypted = encrypt_with_kms(test_data, REGION, KMS_ALIAS)
-        decrypted = self._provider.kms_decrypt(encrypted)
-
-        assert_equal(decrypted, test_data)
-
-
 @patch.object(OutputDispatcher, '__service__', 'test_service')
 class TestOutputDispatcher(object):
     """Test class for OutputDispatcher"""
@@ -155,15 +139,6 @@ class TestOutputDispatcher(object):
 
         provider_constructor.assert_called_with(CONFIG, None, 'test_service')
         assert_equal(self._dispatcher._credentials_provider._service_name, 'test_service')
-
-    @mock_kms
-    def test_kms_decrypt(self):
-        """OutputDispatcher - KMS Decrypt"""
-        test_data = 'data to encrypt'
-        encrypted = encrypt_with_kms(test_data, REGION, KMS_ALIAS)
-        decrypted = self._dispatcher._credentials_provider.kms_decrypt(encrypted)
-
-        assert_equal(decrypted, test_data)
 
     @patch('logging.Logger.info')
     def test_log_status_success(self, log_mock):
