@@ -42,8 +42,9 @@ from stream_alert.alert_processor.outputs.credentials.provider import (
     Credentials,
     CredentialsProvidingDriver,
     OutputCredentialsProvider,
-)
+    EphemeralUnencryptedDriver)
 from stream_alert.alert_processor.outputs.aws import S3Output
+from stream_alert_cli.outputs.helpers import kms_encrypt
 from tests.unit.stream_alert_alert_processor import (
     CONFIG,
     KMS_ALIAS,
@@ -294,3 +295,78 @@ class TestOutputCredentialsProvider(object):
             'credential2': 'where am i?',
         }
         assert_equal(creds_dict, expectation)
+
+
+class TestEphemeralUnencryptedDriver(object):
+
+    def setup(self):
+        EphemeralUnencryptedDriver.clear()
+
+    def teardown(self):
+        EphemeralUnencryptedDriver.clear()
+
+    def test_save_and_has_credentials(self):
+        """EphemeralUnencryptedDriver - Save and Has Credentials"""
+        driver = EphemeralUnencryptedDriver('service')
+        assert_false(driver.has_credentials('descriptor'))
+
+        credentials = Credentials('aaaa', False)
+        driver.save_credentials('descriptor', credentials)
+
+        assert_true(driver.has_credentials('descriptor'))
+
+    def test_save_and_load_credentials(self):
+        """EphemeralUnencryptedDriver - Save and Load Credentials"""
+        descriptor = 'descriptor'
+        service_name = 'test_service'
+        driver = EphemeralUnencryptedDriver(service_name)
+
+        credentials = Credentials('aaaa', False)
+        driver.save_credentials(descriptor, credentials)
+
+        loaded_credentials = driver.load_credentials(descriptor)
+
+        assert_is_not_none(loaded_credentials)
+        assert_false(loaded_credentials.is_encrypted())
+        assert_equal(loaded_credentials.data(), 'aaaa')
+
+    def test_save_and_load_credentials_persists_statically(self):
+        """EphemeralUnencryptedDriver - Save and Load Credentials"""
+        descriptor = 'descriptor'
+        service_name = 'test_service'
+        driver = EphemeralUnencryptedDriver(service_name)
+
+        credentials = Credentials('aaaa', False)
+        driver.save_credentials(descriptor, credentials)
+
+        driver2 = EphemeralUnencryptedDriver(service_name)
+        loaded_credentials = driver2.load_credentials(descriptor)
+
+        assert_is_not_none(loaded_credentials)
+        assert_false(loaded_credentials.is_encrypted())
+        assert_equal(loaded_credentials.data(), 'aaaa')
+
+    @mock_kms
+    def test_save_automatically_decrypts(self):
+        """EphemeralUnencryptedDriver - Save Automatically Decrypts"""
+        raw_credentials_dict = {
+            'python': 'is very difficult',
+            'someone': 'save meeeee',
+        }
+        descriptor = 'descriptor5'
+        service_name = 'test_service'
+
+        raw_credentials = json.dumps(raw_credentials_dict)
+        encrypted_raw_credentials = kms_encrypt(REGION, raw_credentials, KMS_ALIAS)
+
+        credentials = Credentials(encrypted_raw_credentials, True, REGION)
+        driver = EphemeralUnencryptedDriver(service_name)
+
+        driver.save_credentials(descriptor, credentials)
+
+        driver2 = EphemeralUnencryptedDriver(service_name)
+        loaded_credentials = driver2.load_credentials(descriptor)
+
+        assert_is_not_none(loaded_credentials)
+        assert_false(loaded_credentials.is_encrypted())
+        assert_equal(json.loads(loaded_credentials.data()), raw_credentials_dict)

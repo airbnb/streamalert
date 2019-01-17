@@ -76,12 +76,15 @@ class OutputCredentialsProvider(object):
 
         The Drivers are sequentially checked in the order they are appended to the driver list"""
 
+        # Ephemeral driver
+        ep_driver = EphemeralUnencryptedDriver(self._service_name)
+
         # Always check local filesystem to see if credentials are cached in a Temp Directory
         fs_driver = LocalFileDriver(self._region, self._service_name)
         self._drivers.append(fs_driver)
 
         # Fall back onto downloading encrypted credentials from S3
-        s3_driver = S3Driver(self._prefix, self._service_name, self._region, fs_driver)
+        s3_driver = S3Driver(self._prefix, self._service_name, self._region, file_driver=fs_driver)
         self._core_driver = s3_driver
         self._drivers.append(s3_driver)
 
@@ -161,7 +164,7 @@ class OutputCredentialsProvider(object):
             fsd = LocalFileDriver(self._service_name, self._service_name)
             s3d = S3Driver(self._prefix, self._service_name, self._region, fsd)
 
-            c = s3d.load_credentials(descriptor)
+            s3d.load_credentials(descriptor)
             return True
         except ClientError as err:
             LOGGER.exception('credentials for \'%s\' could not be downloaded '
@@ -257,6 +260,22 @@ class CredentialsProvidingDriver(object):
         pass
 
 
+class FileDescriptorProvider(object):
+    @abstractmethod
+    def offer_fileobj(self, descriptor):
+        """
+        Returns:
+             file object
+        """
+        pass
+
+
+class CredentialsCachingDriver(object):
+    @abstractmethod
+    def save_credentials(self, descriptor, credentials):
+        pass
+
+
 def get_formatted_output_credentials_name(service_name, descriptor):
     """Formats the output name for this credential by combining the service
     and the descriptor.
@@ -284,13 +303,17 @@ class S3Driver(CredentialsProvidingDriver):
     payload to the local filesystem.
     """
 
-    def __init__(self, prefix, service_name, region, file_driver=None):
+    def __init__(self, prefix, service_name, region, file_driver=None, cache_driver=None):
         self._service_name = service_name
         self._region = region
         self._prefix = prefix
         self._bucket = self.get_s3_secrets_bucket()
 
-        self._file_driver = file_driver
+        self._file_driver = file_driver  # type: FileDescriptorProvider
+        if not self._file_driver:
+            self._file_driver = SpooledTempfileDriver(self._service_name, self._region)
+
+        self._cache_driver = cache_driver  # type: CredentialsCachingDriver
 
     def load_credentials(self, descriptor):
         """Pull the encrypted credential blob for this service and destination from s3
@@ -303,33 +326,22 @@ class S3Driver(CredentialsProvidingDriver):
             Credentials: The loaded Credentials. None on failure
         """
         try:
-            if self._file_driver:
-                fd = None
-                local_cred_location = self._file_driver.get_file_path(descriptor)
-            else:
-                fd, local_cred_location = tempfile.mkstemp(
-                    dir=LocalFileDriver.get_local_credentials_temp_dir()
-                )  # Use some random temporary file
-
-            if not os.path.exists(local_cred_location):
-                os.makedirs(os.path.dirname(local_cred_location))
-
-            client = boto3.client('s3', region_name=self._region)
-            with open(local_cred_location, 'wb') as cred_output:
+            with self._file_driver.offer_fileobj(descriptor) as fd:
+                client = boto3.client('s3', region_name=self._region)
                 client.download_fileobj(
                     self._bucket,
                     self.get_s3_key(descriptor),
-                    cred_output
+                    fd
                 )
 
-            with open(local_cred_location, 'rb') as cred_file:
-                enc_creds = cred_file.read()
+                fd.seek(0)
+                enc_creds = fd.read()
 
-            # Make sure to close the fd opened during mkstemp()
-            if fd:
-                os.close(fd)
+            credentials = Credentials(enc_creds, True, self._region)
+            if self._cache_driver:
+                self._cache_driver.save_credentials(descriptor, credentials)
 
-            return Credentials(enc_creds, True, self._region)
+            return credentials
         except ClientError as err:
             LOGGER.exception('credentials for \'%s\' could not be downloaded '
                              'from S3: %s',
@@ -343,8 +355,9 @@ class S3Driver(CredentialsProvidingDriver):
 
     def save_credentials(self, descriptor, credentials, kms_key_alias):
         if credentials.is_encrypted():
-            # FIXME (derek.wang)
-            raise RuntimeError('Dont try save encrypted creds to S3 or you will doubly encrypt')
+            # Don't try saving encrypted credentials, or you will doubly-encrypt them, since this
+            # method will encrypt the credentials immediately prior to saving into S3.
+            raise RuntimeError('Cannot save encrypted credentials')
 
         s3_key = get_formatted_output_credentials_name(self._service_name, descriptor)
 
@@ -365,8 +378,9 @@ class S3Driver(CredentialsProvidingDriver):
         return '{}.streamalert.secrets'.format(self._prefix)
 
 
-class LocalFileDriver(CredentialsProvidingDriver):
+class LocalFileDriver(CredentialsProvidingDriver, FileDescriptorProvider, CredentialsCachingDriver):
     """Driver for fetching credentials that are saved locally on the filesystem."""
+
     def __init__(self, region, service_name):
         self._region = region
         self._service_name = service_name
@@ -381,6 +395,24 @@ class LocalFileDriver(CredentialsProvidingDriver):
 
     def has_credentials(self, descriptor):
         return os.path.exists(self.get_file_path(descriptor))
+
+    def save_credentials(self, descriptor, credentials):
+        with self.offer_fileobj(descriptor) as fp:
+            fp.write(credentials.data())
+        return True
+
+    def offer_fileobj(self, descriptor):
+        """If you use the return value in a `with` statement block then the file descriptor
+        will auto-close.
+
+        Return:
+            file object
+        """
+        file_path = self.get_file_path(descriptor)
+        if not os.path.exists(file_path):
+            os.makedirs(os.path.dirname(file_path))
+
+        return open(file_path, 'a+b')  # read+write and in binary mode
 
     def get_file_path(self, descriptor):
         local_cred_location = os.path.join(
@@ -415,10 +447,116 @@ class LocalFileDriver(CredentialsProvidingDriver):
         return temp_dir
 
 
-class SpooledTempfileDriver(CredentialsProvidingDriver):
+class SpooledTempfileDriver(CredentialsProvidingDriver, FileDescriptorProvider):
+    SERVICE_SPOOLS = {}
+
+    def __init__(self, service_name, region):
+        self._service_name = service_name
+        self._region = region
+        self._spools = {}
+
     def has_credentials(self, descriptor):
-        pass
+        return bool(SpooledTempfileDriver.SERVICE_SPOOLS[self.get_spool_cache_key(descriptor)])
 
     def load_credentials(self, descriptor):
-        pass
+        spool = SpooledTempfileDriver.SERVICE_SPOOLS[self.get_spool_cache_key(descriptor)]
+        if not spool:
+            LOGGER.error(
+                'SpooledTempfileDriver failed to load_credentials: Spool "%s" does not exist?',
+                self.get_spool_cache_key(descriptor)
+            )
+            return None
+
+        spool.seek(0)
+        raw_data = spool.read()
+
+        # Spooled data is saved unencrypted in memory
+        return Credentials(json.loads(raw_data), True, self._region)
+
+    def save_credentials(self, descriptor, credentials):
+        """
+        Args:
+            descriptor (str):
+            credentials (Credentials):
+
+        Return:
+            bool
+        """
+
+        # Always store unencrypted because it's in memory. Saves calls to KMS and it's safe
+        # because other unrelated processes cannot read this memory (probably..)
+        if not credentials.is_encrypted():
+            raw_creds = credentials.get_data_kms_decrypted()
+        else:
+            raw_creds = credentials.data()
+
+        spool = tempfile.SpooledTemporaryFile()
+        spool.write(raw_creds)
+        SpooledTempfileDriver.SERVICE_SPOOLS[self.get_spool_cache_key(descriptor)] = spool
+
+    @staticmethod
+    def clear():
+        # De-allocating the spools triggers garbage collection, which implicitly closes the
+        # file handles.
+        SpooledTempfileDriver.SERVICE_SPOOLS = {}
+
+    def offer_fileobj(self, descriptor):
+        """If you use the return value in a `with` statement block then the file descriptor
+           auto-close.
+
+           NOTE: (!) This returns a permanently temporary spool. It is not associated with
+                     save_credentials() or load_credentials().
+
+        Returns:
+            file object
+        """
+        return tempfile.SpooledTemporaryFile(0, 'a+b')
+
+    def get_spool_cache_key(self, descriptor):
+        return '{}/{}'.format(self._service_name, descriptor)
+
+
+class EphemeralUnencryptedDriver(CredentialsProvidingDriver, CredentialsCachingDriver):
+    """This driver stores credentials UNENCRYPTED on the Python runtime stack. It is ephemeral
+    and is only readable by the current Python process... hopefully."""
+
+    CREDENTIALS_STORE = {}
+
+    def __init__(self, service_name):
+        self._service_name = service_name
+
+    def has_credentials(self, descriptor):
+        key = self.get_storage_key(descriptor)
+        return key in EphemeralUnencryptedDriver.CREDENTIALS_STORE
+
+    def load_credentials(self, descriptor):
+        key = self.get_storage_key(descriptor)
+        unencrypted_raw_creds = EphemeralUnencryptedDriver.CREDENTIALS_STORE[key]
+
+        return Credentials(unencrypted_raw_creds, False)
+
+    def save_credentials(self, descriptor, credentials):
+        """
+        Args:
+            descriptor (str):
+            credentials (Credentials):
+
+        Return:
+            bool
+        """
+        if credentials.is_encrypted():
+            unencrypted_raw_creds = credentials.get_data_kms_decrypted()
+        else:
+            unencrypted_raw_creds = credentials.data()
+
+        key = self.get_storage_key(descriptor)
+        EphemeralUnencryptedDriver.CREDENTIALS_STORE[key] = unencrypted_raw_creds
+        return True
+
+    @staticmethod
+    def clear():
+        EphemeralUnencryptedDriver.CREDENTIALS_STORE = {}
+
+    def get_storage_key(self, descriptor):
+        return '{}/{}'.format(self._service_name, descriptor)
 
