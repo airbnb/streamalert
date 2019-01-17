@@ -119,11 +119,6 @@ class TestOutputCredentialsProvider(object):
     def setup(self):
         self._provider = OutputCredentialsProvider(CONFIG, {}, 'test_service_name')
 
-    def test_get_load_credentials_temp_dir(self):
-        """OutputCredentialsProvider - Get Load Credentials Temp Dir"""
-        temp_dir = self._provider.get_local_credentials_temp_dir()
-        assert_equal(temp_dir.split('/')[-1], 'stream_alert_secrets')
-
     def test_get_formatted_output_credentials_name(self):
         """OutputCredentialsProvider - Get Formatted Output Credentials Name"""
         name = self._provider.get_formatted_output_credentials_name(

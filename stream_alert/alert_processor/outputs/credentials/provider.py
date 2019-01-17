@@ -144,22 +144,6 @@ class OutputCredentialsProvider(object):
 
         return creds_dict
 
-    @staticmethod
-    def get_local_credentials_temp_dir():
-        """DEPREACTED - NO LONGER USED
-        """
-        temp_dir = os.path.join(tempfile.gettempdir(), "stream_alert_secrets")
-
-        # Check if this item exists as a file, and remove it if it does
-        if os.path.isfile(temp_dir):
-            os.remove(temp_dir)
-
-        # Create the folder on disk to store the credentials temporarily
-        if not os.path.exists(temp_dir):
-            os.makedirs(temp_dir)
-
-        return temp_dir
-
     def kms_decrypt(self, data):
         """DEPRECATED - NO LONGER USED
         """
