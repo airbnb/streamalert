@@ -442,11 +442,6 @@ class LocalFileDriver(CredentialsProvidingDriver, FileDescriptorProvider, Creden
         return local_cred_location
 
     @staticmethod
-    def get_formatted_output_credentials_name(service_name, descriptor):
-        # FIXME (derek.wang) Is this still being used? Deprecated?
-        return get_formatted_output_credentials_name(service_name, descriptor)
-
-    @staticmethod
     def get_local_credentials_temp_dir():
         """Get the local tmp directory for caching the encrypted service credentials.
            Will automatically create a new directory

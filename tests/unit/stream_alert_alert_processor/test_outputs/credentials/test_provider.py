@@ -31,7 +31,7 @@ from stream_alert.alert_processor.outputs.credentials.provider import (
     LocalFileDriver,
     Credentials,
     OutputCredentialsProvider,
-    EphemeralUnencryptedDriver, SpooledTempfileDriver)
+    EphemeralUnencryptedDriver, SpooledTempfileDriver, get_formatted_output_credentials_name)
 from stream_alert_cli.outputs.helpers import kms_encrypt
 from tests.unit.stream_alert_alert_processor import (
     CONFIG,
@@ -338,7 +338,7 @@ class TestLocalFileDriver(object):
 
     def test_get_formatted_output_credentials_name(self):
         """LocalFileDriver - Get Formatted Output Credentials Name"""
-        name = LocalFileDriver.get_formatted_output_credentials_name(
+        name = get_formatted_output_credentials_name(
             'test_service_name',
             'test_descriptor'
         )
@@ -346,7 +346,7 @@ class TestLocalFileDriver(object):
 
     def test_get_formatted_output_credentials_name_no_descriptor(self): #pylint: disable=invalid-name
         """LocalFileDriver - Get Formatted Output Credentials Name - No Descriptor"""
-        name = LocalFileDriver.get_formatted_output_credentials_name(
+        name = get_formatted_output_credentials_name(
             'test_service_name',
             ''
         )
