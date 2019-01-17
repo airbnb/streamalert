@@ -16,6 +16,7 @@ limitations under the License.
 
 import json
 import os
+import shutil
 import tempfile
 from abc import abstractmethod
 
@@ -397,9 +398,22 @@ class LocalFileDriver(CredentialsProvidingDriver, FileDescriptorProvider, Creden
         return os.path.exists(self.get_file_path(descriptor))
 
     def save_credentials(self, descriptor, credentials):
+        if not credentials.is_encrypted():
+            LOGGER.error('Error: Writing unencrypted credentials to disk is disallowed.')
+            return False
+
         with self.offer_fileobj(descriptor) as fp:
             fp.write(credentials.data())
         return True
+
+    @staticmethod
+    def clear():
+        """Remove the local secrets directory that may be left from previous runs"""
+        secrets_dirtemp_dir = LocalFileDriver.get_local_credentials_temp_dir()
+
+        # Check if the folder exists, and remove it if it does
+        if os.path.isdir(secrets_dirtemp_dir):
+            shutil.rmtree(secrets_dirtemp_dir)
 
     def offer_fileobj(self, descriptor):
         """If you use the return value in a `with` statement block then the file descriptor
@@ -448,6 +462,8 @@ class LocalFileDriver(CredentialsProvidingDriver, FileDescriptorProvider, Creden
 
 
 class SpooledTempfileDriver(CredentialsProvidingDriver, FileDescriptorProvider):
+    """Driver for fetching credentials that are stored in memory in file-like objects."""
+
     SERVICE_SPOOLS = {}
 
     def __init__(self, service_name, region):
@@ -456,10 +472,12 @@ class SpooledTempfileDriver(CredentialsProvidingDriver, FileDescriptorProvider):
         self._spools = {}
 
     def has_credentials(self, descriptor):
-        return bool(SpooledTempfileDriver.SERVICE_SPOOLS[self.get_spool_cache_key(descriptor)])
+        key = self.get_spool_cache_key(descriptor)
+        return key in SpooledTempfileDriver.SERVICE_SPOOLS
 
     def load_credentials(self, descriptor):
-        spool = SpooledTempfileDriver.SERVICE_SPOOLS[self.get_spool_cache_key(descriptor)]
+        key = self.get_spool_cache_key(descriptor)
+        spool = SpooledTempfileDriver.SERVICE_SPOOLS[key]
         if not spool:
             LOGGER.error(
                 'SpooledTempfileDriver failed to load_credentials: Spool "%s" does not exist?',
@@ -470,8 +488,7 @@ class SpooledTempfileDriver(CredentialsProvidingDriver, FileDescriptorProvider):
         spool.seek(0)
         raw_data = spool.read()
 
-        # Spooled data is saved unencrypted in memory
-        return Credentials(json.loads(raw_data), True, self._region)
+        return Credentials(raw_data, True, self._region)
 
     def save_credentials(self, descriptor, credentials):
         """
@@ -486,13 +503,18 @@ class SpooledTempfileDriver(CredentialsProvidingDriver, FileDescriptorProvider):
         # Always store unencrypted because it's in memory. Saves calls to KMS and it's safe
         # because other unrelated processes cannot read this memory (probably..)
         if not credentials.is_encrypted():
-            raw_creds = credentials.get_data_kms_decrypted()
-        else:
-            raw_creds = credentials.data()
+            LOGGER.error('Error: Writing unencrypted credentials to disk is disallowed.')
+            return False
+
+        raw_creds = credentials.data()
 
         spool = tempfile.SpooledTemporaryFile()
         spool.write(raw_creds)
-        SpooledTempfileDriver.SERVICE_SPOOLS[self.get_spool_cache_key(descriptor)] = spool
+
+        key = self.get_spool_cache_key(descriptor)
+        SpooledTempfileDriver.SERVICE_SPOOLS[key] = spool
+
+        return True
 
     @staticmethod
     def clear():
@@ -504,8 +526,8 @@ class SpooledTempfileDriver(CredentialsProvidingDriver, FileDescriptorProvider):
         """If you use the return value in a `with` statement block then the file descriptor
            auto-close.
 
-           NOTE: (!) This returns a permanently temporary spool. It is not associated with
-                     save_credentials() or load_credentials().
+           NOTE: (!) This returns an ephemeral spool that is not attached to the caching mechanism
+                 in save_credentials() and load_credentials()
 
         Returns:
             file object

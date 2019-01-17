@@ -84,11 +84,7 @@ def get_alert(context=None):
 
 def remove_temp_secrets():
     """Remove the local secrets directory that may be left from previous runs"""
-    secrets_dirtemp_dir = LocalFileDriver.get_local_credentials_temp_dir()
-
-    # Check if the folder exists, and remove it if it does
-    if os.path.isdir(secrets_dirtemp_dir):
-        shutil.rmtree(secrets_dirtemp_dir)
+    LocalFileDriver.clear()
 
 
 def encrypt_with_kms(data, region, alias):

@@ -42,7 +42,7 @@ from stream_alert.alert_processor.outputs.credentials.provider import (
     Credentials,
     CredentialsProvidingDriver,
     OutputCredentialsProvider,
-    EphemeralUnencryptedDriver)
+    EphemeralUnencryptedDriver, SpooledTempfileDriver)
 from stream_alert.alert_processor.outputs.aws import S3Output
 from stream_alert_cli.outputs.helpers import kms_encrypt
 from tests.unit.stream_alert_alert_processor import (
@@ -58,6 +58,77 @@ from tests.unit.stream_alert_alert_processor.helpers import (
     remove_temp_secrets
 )
 
+
+class TestCredentials(object):
+
+    @mock_kms
+    def test_kms_decrypt(self):
+        """Credentials - KMS Decrypt"""
+        test_data = 'plaintext credentials'
+        encrypted = encrypt_with_kms(test_data, REGION, KMS_ALIAS)
+
+        credentials = Credentials(encrypted, True, REGION)
+
+        assert_true(credentials.is_encrypted())
+
+        decrypted = credentials.get_data_kms_decrypted()
+
+        assert_equal(decrypted, test_data)
+
+
+class TestOutputCredentialsProvider(object):
+
+    @mock_s3
+    @mock_kms
+    def test_save_and_load_credentials(self):
+        """OutputCredentials - Save and Load Credentials"""
+        remove_temp_secrets()
+
+        service_name = 'service'
+        descriptor = 'descriptive'
+        props = OrderedDict([
+            ('property1',
+             OutputProperty(description='This is a property and not a cred so it will not save')),
+            ('property2',
+             OutputProperty(description='Neither will this')),
+            ('credential1',
+             OutputProperty(description='Hello world',
+                            value='this is a super secret secret, shhhh!',
+                            mask_input=True,
+                            cred_requirement=True)),
+            ('credential2',
+             OutputProperty(description='This appears too!',
+                            value='where am i?',
+                            mask_input=True,
+                            cred_requirement=True)),
+        ])
+        defaults = {
+            'property2': 'abcdef'
+        }
+        prefix = 'test_asdf'
+        aws_account_id = '1234567890'
+
+        # Pre-create the bucket so we dont get a "Bucket does not exist" error
+        s3_driver = S3Driver(prefix, service_name, REGION)
+        put_mock_s3_object(s3_driver.get_s3_secrets_bucket(), 'laskdjfaouhvawe', 'lafhawef', REGION)
+
+        # Save credential
+        provider = OutputCredentialsProvider(CONFIG, defaults, service_name, prefix, aws_account_id)
+        provider.save_credentials(descriptor, KMS_ALIAS, props)
+
+        # Pull it out
+        creds_dict = provider.load_credentials(descriptor)
+        expectation = {
+            'property2': 'abcdef',
+            'credential1': 'this is a super secret secret, shhhh!',
+            'credential2': 'where am i?',
+        }
+        assert_equal(creds_dict, expectation)
+
+
+#
+# Tests for DRIVERS
+#
 
 
 class TestS3Driver(object):
@@ -122,7 +193,10 @@ class TestS3Driver(object):
         assert_equal(loaded_creds['token'], u'token_to_encrypt')
 
     def test_has_credentials(self):
-        """S3Driver - Has Credentials"""
+        """S3Driver - Has Credentials
+
+        Not much of a test; we assume that S3 always has the credentials.
+        """
         s3_driver = S3Driver('prefix', 'service_name', 'region')
         assert_true(s3_driver.has_credentials('some_descriptor'))
 
@@ -207,24 +281,14 @@ class TestS3Driver(object):
         remove_temp_secrets()
 
 
-class TestCredentials(object):
-
-    @mock_kms
-    def test_kms_decrypt(self):
-        """Credentials - KMS Decrypt"""
-        test_data = 'plaintext credentials'
-        encrypted = encrypt_with_kms(test_data, REGION, KMS_ALIAS)
-
-        credentials = Credentials(encrypted, True, REGION)
-
-        assert_true(credentials.is_encrypted())
-
-        decrypted = credentials.get_data_kms_decrypted()
-
-        assert_equal(decrypted, test_data)
-
-
 class TestLocalFileDriver(object):
+
+    def setup(self):
+        LocalFileDriver.clear()
+
+    def teardown(self):
+        LocalFileDriver.clear()
+
     def test_get_load_credentials_temp_dir(self):
         """LocalFileDriver - Get Load Credentials Temp Dir"""
         temp_dir = LocalFileDriver.get_local_credentials_temp_dir()
@@ -246,55 +310,177 @@ class TestLocalFileDriver(object):
         )
         assert_equal(name, 'test_service_name')
 
+    def test_save_and_has_credentials(self):
+        """LocalFileDriver - Save and Has Credentials"""
+        driver = LocalFileDriver(REGION, 'service')
+        assert_false(driver.has_credentials('descriptor'))
 
-class TestOutputCredentialsProvider(object):
+        credentials = Credentials('aaaa', True)  # pretend it's encrypted
+        driver.save_credentials('descriptor', credentials)
 
-    @mock_s3
+        assert_true(driver.has_credentials('descriptor'))
+
     @mock_kms
     def test_save_and_load_credentials(self):
-        """OutputCredentials - Save and Load Credentials"""
-        remove_temp_secrets()
+        """LocalFileDriver - Save and Load Credentials"""
+        raw_credentials = 'aaaa'
+        descriptor = 'descriptor'
+        service_name = 'test_service'
+        driver = LocalFileDriver(REGION, service_name)
 
-        service_name = 'service'
-        descriptor = 'descriptive'
-        props = OrderedDict([
-            ('property1',
-             OutputProperty(description='This is a property and not a cred so it will not save')),
-            ('property2',
-             OutputProperty(description='Neither will this')),
-            ('credential1',
-             OutputProperty(description='Hello world',
-                            value='this is a super secret secret, shhhh!',
-                            mask_input=True,
-                            cred_requirement=True)),
-            ('credential2',
-             OutputProperty(description='This appears too!',
-                            value='where am i?',
-                            mask_input=True,
-                            cred_requirement=True)),
-        ])
-        defaults = {
-            'property2': 'abcdef'
+        encrypted_raw_credentials = kms_encrypt(REGION, raw_credentials, KMS_ALIAS)
+
+        credentials = Credentials(encrypted_raw_credentials, True, REGION)
+        assert_true(driver.save_credentials(descriptor, credentials))
+
+        loaded_credentials = driver.load_credentials(descriptor)
+
+        assert_is_not_none(loaded_credentials)
+        assert_true(loaded_credentials.is_encrypted())
+        assert_equal(loaded_credentials.get_data_kms_decrypted(), raw_credentials)
+
+    @mock_kms
+    def test_save_and_load_credentials_persists_statically(self):
+        """LocalFileDriver - Save and Load Credentials"""
+        raw_credentials = 'aaaa'
+        descriptor = 'descriptor'
+        service_name = 'test_service'
+        driver = LocalFileDriver(REGION, service_name)
+
+        encrypted_raw_credentials = kms_encrypt(REGION, raw_credentials, KMS_ALIAS)
+
+        credentials = Credentials(encrypted_raw_credentials, True, REGION)
+        assert_true(driver.save_credentials(descriptor, credentials))
+
+        driver2 = LocalFileDriver(REGION, service_name)
+        loaded_credentials = driver2.load_credentials(descriptor)
+
+        assert_is_not_none(loaded_credentials)
+        assert_true(loaded_credentials.is_encrypted())
+        assert_equal(loaded_credentials.get_data_kms_decrypted(), raw_credentials)
+
+    def test_save_errors_on_unencrypted(self):
+        """LocalFileDriver - Save Errors on Unencrypted Credentials"""
+        raw_credentials_dict = {
+            'python': 'is very difficult',
+            'someone': 'save meeeee',
         }
-        prefix = 'test_asdf'
-        aws_account_id = '1234567890'
+        descriptor = 'descriptor5'
+        service_name = 'test_service'
 
-        # Pre-create the bucket so we dont get a "Bucket does not exist" error
-        s3_driver = S3Driver(prefix, service_name, REGION)
-        put_mock_s3_object(s3_driver.get_s3_secrets_bucket(), 'laskdjfaouhvawe', 'lafhawef', REGION)
+        raw_credentials = json.dumps(raw_credentials_dict)
 
-        # Save credential
-        provider = OutputCredentialsProvider(CONFIG, defaults, service_name, prefix, aws_account_id)
-        provider.save_credentials(descriptor, KMS_ALIAS, props)
+        credentials = Credentials(raw_credentials, False, REGION)
+        driver = LocalFileDriver(REGION, service_name)
 
-        # Pull it out
-        creds_dict = provider.load_credentials(descriptor)
-        expectation = {
-            'property2': 'abcdef',
-            'credential1': 'this is a super secret secret, shhhh!',
-            'credential2': 'where am i?',
+        assert_false(driver.save_credentials(descriptor, credentials))
+        assert_false(driver.has_credentials(descriptor))
+
+    def test_clear(self):
+        """LocalFileDriver - Clear Credentials"""
+        descriptor = 'descriptor'
+        service_name = 'test_service'
+        driver = LocalFileDriver(REGION, service_name)
+
+        credentials = Credentials('aaaa', True, REGION)  # pretend it's encrypted
+        driver.save_credentials(descriptor, credentials)
+
+        driver2 = LocalFileDriver(REGION, service_name)
+        assert_true(driver2.has_credentials(descriptor))
+
+        LocalFileDriver.clear()
+
+        assert_false(driver2.has_credentials(descriptor))
+
+
+class TestSpooledTempfileDriver(object):
+
+    def setup(self):
+        SpooledTempfileDriver.clear()
+
+    def teardown(self):
+        SpooledTempfileDriver.clear()
+
+    def test_save_and_has_credentials(self):
+        """SpooledTempfileDriver - Save and Has Credentials"""
+        driver = SpooledTempfileDriver('service', REGION)
+        assert_false(driver.has_credentials('descriptor'))
+
+        credentials = Credentials('aaaa', True)  # let's pretend they're encrypted
+        assert_true(driver.save_credentials('descriptor', credentials))
+
+        assert_true(driver.has_credentials('descriptor'))
+
+    @mock_kms
+    def test_save_and_load_credentials(self):
+        """SpooledTempfileDriver - Save and Load Credentials"""
+        raw_credentials = 'aaaa'
+        descriptor = 'descriptor'
+        service_name = 'test_service'
+        driver = SpooledTempfileDriver(service_name, REGION)
+
+        encrypted_raw_credentials = kms_encrypt(REGION, raw_credentials, KMS_ALIAS)
+
+        credentials = Credentials(encrypted_raw_credentials, True, REGION)
+        assert_true(driver.save_credentials(descriptor, credentials))
+
+        loaded_credentials = driver.load_credentials(descriptor)
+
+        assert_is_not_none(loaded_credentials)
+        assert_true(loaded_credentials.is_encrypted())
+        assert_equal(loaded_credentials.get_data_kms_decrypted(), raw_credentials)
+
+    @mock_kms
+    def test_save_and_load_credentials_persists_statically(self):
+        """SpooledTempfileDriver - Save and Load Credentials"""
+        raw_credentials_dict = {
+            'python': 'is very difficult',
+            'someone': 'save meeeee',
         }
-        assert_equal(creds_dict, expectation)
+        descriptor = 'descriptor'
+        service_name = 'test_service'
+        driver = SpooledTempfileDriver(service_name, REGION)
+
+        raw_credentials = json.dumps(raw_credentials_dict)
+        encrypted_raw_credentials = kms_encrypt(REGION, raw_credentials, KMS_ALIAS)
+
+        credentials = Credentials(encrypted_raw_credentials, True)
+        assert_true(driver.save_credentials(descriptor, credentials))
+
+        driver2 = SpooledTempfileDriver(service_name, REGION)
+        loaded_credentials = driver2.load_credentials(descriptor)
+
+        assert_is_not_none(loaded_credentials)
+        assert_true(loaded_credentials.is_encrypted())
+        assert_equal(loaded_credentials.get_data_kms_decrypted(), raw_credentials)
+
+    def test_save_errors_on_unencrypted(self):
+        """SpooledTempfileDriver - Save Errors on Unencrypted Credentials"""
+        raw_credentials = 'aaaa'
+        descriptor = 'descriptor5'
+        service_name = 'test_service'
+
+        credentials = Credentials(raw_credentials, False)
+        driver = SpooledTempfileDriver(service_name, REGION)
+
+        assert_false(driver.save_credentials(descriptor, credentials))
+        assert_false(driver.has_credentials(descriptor))
+
+    def test_clear(self):
+        """SpooledTempfileDriver - Clear Credentials"""
+        descriptor = 'descriptor'
+        service_name = 'test_service'
+        driver = SpooledTempfileDriver(service_name, REGION)
+
+        credentials = Credentials('aaaa', True)  # pretend it's encrypted
+        assert_true(driver.save_credentials(descriptor, credentials))
+
+        driver2 = SpooledTempfileDriver(service_name, REGION)
+        assert_true(driver2.has_credentials(descriptor))
+
+        SpooledTempfileDriver.clear()
+
+        assert_false(driver2.has_credentials(descriptor))
 
 
 class TestEphemeralUnencryptedDriver(object):
@@ -311,7 +497,7 @@ class TestEphemeralUnencryptedDriver(object):
         assert_false(driver.has_credentials('descriptor'))
 
         credentials = Credentials('aaaa', False)
-        driver.save_credentials('descriptor', credentials)
+        assert_true(driver.save_credentials('descriptor', credentials))
 
         assert_true(driver.has_credentials('descriptor'))
 
@@ -322,7 +508,7 @@ class TestEphemeralUnencryptedDriver(object):
         driver = EphemeralUnencryptedDriver(service_name)
 
         credentials = Credentials('aaaa', False)
-        driver.save_credentials(descriptor, credentials)
+        assert_true(driver.save_credentials(descriptor, credentials))
 
         loaded_credentials = driver.load_credentials(descriptor)
 
@@ -337,7 +523,7 @@ class TestEphemeralUnencryptedDriver(object):
         driver = EphemeralUnencryptedDriver(service_name)
 
         credentials = Credentials('aaaa', False)
-        driver.save_credentials(descriptor, credentials)
+        assert_true(driver.save_credentials(descriptor, credentials))
 
         driver2 = EphemeralUnencryptedDriver(service_name)
         loaded_credentials = driver2.load_credentials(descriptor)
@@ -362,7 +548,7 @@ class TestEphemeralUnencryptedDriver(object):
         credentials = Credentials(encrypted_raw_credentials, True, REGION)
         driver = EphemeralUnencryptedDriver(service_name)
 
-        driver.save_credentials(descriptor, credentials)
+        assert_true(driver.save_credentials(descriptor, credentials))
 
         driver2 = EphemeralUnencryptedDriver(service_name)
         loaded_credentials = driver2.load_credentials(descriptor)
@@ -370,3 +556,19 @@ class TestEphemeralUnencryptedDriver(object):
         assert_is_not_none(loaded_credentials)
         assert_false(loaded_credentials.is_encrypted())
         assert_equal(json.loads(loaded_credentials.data()), raw_credentials_dict)
+
+    def test_clear(self):
+        """EphemeralUnencryptedDriver - Clear Credentials"""
+        descriptor = 'descriptor'
+        service_name = 'test_service'
+        driver = EphemeralUnencryptedDriver(service_name)
+
+        credentials = Credentials('aaaa', False)
+        driver.save_credentials(descriptor, credentials)
+
+        driver2 = EphemeralUnencryptedDriver(service_name)
+        assert_true(driver2.has_credentials(descriptor))
+
+        EphemeralUnencryptedDriver.clear()
+
+        assert_false(driver2.has_credentials(descriptor))
