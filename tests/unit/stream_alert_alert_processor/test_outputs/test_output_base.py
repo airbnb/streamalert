@@ -140,27 +140,6 @@ class TestOutputCredentialsProvider(object):
         )
         assert_equal(name, 'test_service_name')
 
-    @mock_s3
-    def test_load_credentials_from_s3(self):
-        """OutputCredentialsProvider - Load Credentials from S3"""
-        test_data = 'credential test string'
-        descriptor = 'test_descriptor'
-
-        bucket_name = self._provider._core_driver.get_s3_secrets_bucket()
-        key = self._provider.get_formatted_output_credentials_name('test_service_name',
-                                                                   descriptor)
-
-        local_cred_location = os.path.join(self._provider.get_local_credentials_temp_dir(), key)
-
-        put_mock_s3_object(bucket_name, key, test_data, REGION)
-
-        self._provider.load_encrypted_credentials_from_s3(local_cred_location, descriptor)
-
-        with open(local_cred_location) as creds:
-            line = creds.readline()
-
-        assert_equal(line, test_data)
-
     @mock_kms
     def test_kms_decrypt(self):
         """OutputCredentialsProvider - KMS Decrypt"""
@@ -195,34 +174,6 @@ class TestOutputDispatcher(object):
 
         provider_constructor.assert_called_with(CONFIG, None, 'test_service')
         assert_equal(self._dispatcher._credentials_provider._service_name, 'test_service')
-
-    @mock_s3
-    def test_get_creds_from_s3(self):
-        """OutputDispatcher - Get Creds From S3"""
-        test_data = 'credential test string'
-
-        bucket_name = self._dispatcher._credentials_provider._core_driver._bucket
-        key = self._dispatcher._credentials_provider.get_formatted_output_credentials_name(
-            'test_service',
-            self._descriptor
-        )
-
-        local_cred_location = os.path.join(
-            self._dispatcher._credentials_provider.get_local_credentials_temp_dir(),
-            key
-        )
-
-        put_mock_s3_object(bucket_name, key, test_data, REGION)
-
-        self._dispatcher._credentials_provider.load_encrypted_credentials_from_s3(
-            local_cred_location,
-            self._descriptor
-        )
-
-        with open(local_cred_location) as creds:
-            line = creds.readline()
-
-        assert_equal(line, test_data)
 
     @mock_kms
     def test_kms_decrypt(self):

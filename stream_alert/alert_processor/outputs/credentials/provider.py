@@ -160,22 +160,6 @@ class OutputCredentialsProvider(object):
 
         return temp_dir
 
-    def load_encrypted_credentials_from_s3(self, cred_location, descriptor):
-        """DEPRECATED - NO LONGER USED
-        """
-        try:
-            fsd = LocalFileDriver(self._service_name, self._service_name)
-            s3d = S3Driver(self._prefix, self._service_name, self._region, fsd)
-
-            s3d.load_credentials(descriptor)
-            return True
-        except ClientError as err:
-            LOGGER.exception('credentials for \'%s\' could not be downloaded '
-                             'from S3: %s',
-                             self.get_formatted_output_credentials_name(self._service_name,
-                                                                        descriptor),
-                             err.response)
-
     def kms_decrypt(self, data):
         """DEPRECATED - NO LONGER USED
         """
