@@ -106,7 +106,7 @@ class OutputCredentialsProvider(object):
                  for (name, prop) in props.iteritems() if prop.cred_requirement}
 
         credentials = Credentials(creds, False, self._region)
-        return self._core_driver.save_credentials(descriptor, credentials, kms_key_alias)
+        return self._core_driver.save_credentials_into_s3(descriptor, credentials, kms_key_alias)
 
     def load_credentials(self, descriptor):
         """First try to load the credentials from /tmp and then resort to pulling
@@ -243,39 +243,62 @@ class CredentialsProvidingDriver(object):
     @abstractmethod
     def load_credentials(self, descriptor):
         """
+        Implementation that loads the given credentials into a new Credentials object. The
+        behavior can be nondeterministic if has_credentials() is false.
+
         Args:
             descriptor (string): Descriptor for the current output service
 
         Return:
-            Credentials
+            Credentials|None: Returns None when loading fails.
         """
-        pass
 
     @abstractmethod
     def has_credentials(self, descriptor):
         """
+        Implementation that determines whether the current driver is capable of loading the
+        requested credentials
+
         Args:
             descriptor (string): Descriptor for the current output service
 
         Return:
             bool: True if this driver has the requested Credentials, false otherwise.
         """
-        pass
 
 
 class FileDescriptorProvider(object):
+    """Interface for Drivers capable of offering file-handles to aid in download of credentials."""
+
     @abstractmethod
     def offer_fileobj(self, descriptor):
         """
+        Offers a file-like object. The caller is expected to call this method in a with block,
+        and this file-like object is expected to automatically close.
+
         Returns:
              file object
         """
-        pass
 
 
 class CredentialsCachingDriver(object):
+    """Interface for Drivers capable of being used as a caching layer to accelerate the speed
+    of credential loading."""
+
     @abstractmethod
     def save_credentials(self, descriptor, credentials):
+        """
+        Saves the given credentials, such that on a subsequent call of load_credentials(), the
+        same credentials will be loaded.
+
+        Args:
+            descriptor (str): OutputDispatcher descriptor
+            credentials (Credentials): The credentials object to save. Notably, certain drivers are
+                incapable of (or disallowed from) saving credentials that are unencrypted.
+
+        Return:
+            bool: True if saving succeeds. False otherwise.
+        """
         pass
 
 
@@ -375,7 +398,22 @@ class S3Driver(CredentialsProvidingDriver):
            guaranteed to be cold-stored."""
         return True
 
-    def save_credentials(self, descriptor, credentials, kms_key_alias):
+    def save_credentials_into_s3(self, descriptor, credentials, kms_key_alias):
+        """
+        Takes the given credentials, encrypts them, and saves them into a determined S3 bucket
+        and location.
+
+        Notably, this implementation is NOT for the CredentialsCachingDriver interface, as the
+        S3Driver is not a caching driver.
+
+        Args:
+            descriptor (str):
+            credentials (Credentials):
+            kms_key_alias (str):
+
+        Returns:
+            bool: True on success, False otherwise.
+        """
         if credentials.is_encrypted():
             # Don't try saving encrypted credentials, or you will doubly-encrypt them, since this
             # method will encrypt the credentials immediately prior to saving into S3.
@@ -394,9 +432,24 @@ class S3Driver(CredentialsProvidingDriver):
         return send_creds_to_s3(self._region, self._bucket, s3_key, enc_creds)
 
     def get_s3_key(self, descriptor):
+        """
+        Returns an appropriate S3 bucket key for credentials relevant to this Output
+
+        Args:
+            descriptor (str):
+
+        Returns:
+            string
+        """
         return get_formatted_output_credentials_name(self._service_name, descriptor)
 
     def get_s3_secrets_bucket(self):
+        """
+        Returns an appropriate S3 bucket for all credentials relevant to this driver.
+
+        Returns:
+            string
+        """
         return '{}.streamalert.secrets'.format(self._prefix)
 
 
@@ -602,4 +655,3 @@ class EphemeralUnencryptedDriver(CredentialsProvidingDriver, CredentialsCachingD
 
     def get_storage_key(self, descriptor):
         return '{}/{}'.format(self._service_name, descriptor)
-

@@ -258,7 +258,7 @@ class TestS3Driver(object):
         # We put a random unrelated object into the bucket and this will set up the bucket for us
         put_mock_s3_object(driver.get_s3_secrets_bucket(), 'laskdjfaouhvawe', 'lafhawef', REGION)
 
-        result = driver.save_credentials(descriptor, input_credentials, KMS_ALIAS)
+        result = driver.save_credentials_into_s3(descriptor, input_credentials, KMS_ALIAS)
         assert_true(result)
 
         credentials = driver.load_credentials(descriptor)
@@ -298,7 +298,7 @@ class TestS3Driver(object):
         assert_false(fs_driver.has_credentials(descriptor))
 
         # Save the credentials using S3 driver
-        result = s3_driver.save_credentials(descriptor, input_credentials, KMS_ALIAS)
+        result = s3_driver.save_credentials_into_s3(descriptor, input_credentials, KMS_ALIAS)
         assert_true(result)
 
         # We still don't expect the Local driver to find the credentials
