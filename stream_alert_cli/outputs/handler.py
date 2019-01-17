@@ -66,7 +66,7 @@ def output_handler(options, config):
         return output_handler(options, config)
 
     provider = OutputCredentialsProvider(config=output.config,
-                                         defaults=output._get_default_properties(),
+                                         defaults={},  # defaults are unnecessary for saving
                                          region=region,
                                          service_name=service,
                                          prefix=prefix)
