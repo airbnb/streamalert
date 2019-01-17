@@ -23,8 +23,7 @@ from abc import abstractmethod
 import boto3
 from botocore.exceptions import ClientError
 
-from stream_alert_cli.outputs.helpers import encrypt_and_push_creds_to_s3, kms_encrypt, \
-    send_creds_to_s3
+from stream_alert_cli.outputs.helpers import kms_encrypt, send_creds_to_s3
 
 from stream_alert.shared.helpers.boto import REGION
 from stream_alert.shared.logger import get_logger

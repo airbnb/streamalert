@@ -14,8 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 # pylint: disable=abstract-class-instantiated,protected-access,attribute-defined-outside-init
-import os
-
 from mock import Mock, patch, MagicMock
 from moto import mock_kms, mock_s3
 from nose.tools import (
@@ -31,7 +29,6 @@ from stream_alert.alert_processor.outputs.credentials.provider import \
     get_formatted_output_credentials_name
 from stream_alert.alert_processor.outputs.output_base import (
     OutputDispatcher,
-    OutputCredentialsProvider,
     OutputProperty,
     OutputRequestFailure,
     StreamAlertOutput
@@ -43,9 +40,7 @@ from tests.unit.stream_alert_alert_processor import (
     MOCK_ENV,
     REGION
 )
-from tests.unit.helpers.aws_mocks import put_mock_s3_object
 from tests.unit.stream_alert_alert_processor.helpers import (
-    encrypt_with_kms,
     put_mock_creds,
     remove_temp_secrets
 )
