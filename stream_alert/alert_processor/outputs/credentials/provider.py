@@ -303,16 +303,16 @@ class S3Driver(CredentialsProvidingDriver):
             Credentials: The loaded Credentials. None on failure
         """
         try:
-            with self._file_driver.offer_fileobj(descriptor) as fd:
+            with self._file_driver.offer_fileobj(descriptor) as file:
                 client = boto3.client('s3', region_name=self._region)
                 client.download_fileobj(
                     self._bucket,
                     self.get_s3_key(descriptor),
-                    fd
+                    file
                 )
 
-                fd.seek(0)
-                enc_creds = fd.read()
+                file.seek(0)
+                enc_creds = file.read()
 
             credentials = Credentials(enc_creds, True, self._region)
             if self._cache_driver:
@@ -408,8 +408,8 @@ class LocalFileDriver(CredentialsProvidingDriver, FileDescriptorProvider, Creden
             LOGGER.error('Error: Writing unencrypted credentials to disk is disallowed.')
             return False
 
-        with self.offer_fileobj(descriptor) as fp:
-            fp.write(credentials.data())
+        with self.offer_fileobj(descriptor) as file:
+            file.write(credentials.data())
         return True
 
     @staticmethod
