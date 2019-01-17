@@ -19,7 +19,7 @@ from stream_alert.alert_processor.outputs.output_base import (
     OutputCredentialsProvider
 )
 from stream_alert_cli.helpers import user_input
-from stream_alert_cli.outputs.helpers import encrypt_and_push_creds_to_s3, output_exists
+from stream_alert_cli.outputs.helpers import output_exists
 
 LOGGER = get_logger(__name__)
 
@@ -65,23 +65,9 @@ def output_handler(options, config):
     if output_exists(output_config, props, service):
         return output_handler(options, config)
 
-    # FIXME (derek.wang) This is the old way. Need to write a test
-    # secrets_bucket = OutputCredentialsProvider.get_s3_secrets_bucket(prefix)
-    # secrets_key = OutputCredentialsProvider.get_formatted_output_credentials_name(
-    #     service,
-    #     props['descriptor'].value
-    # )
-    #
-    # Encrypt the creds and push them to S3
-    # then update the local output configuration with properties
-    # if not encrypt_and_push_creds_to_s3(region, secrets_bucket, secrets_key, props, kms_key_alias):
-    #     LOGGER.error('An error occurred while saving \'%s\' '
-    #                  'output configuration for service \'%s\'', props['descriptor'].value,
-    #                  options.service)
-    #     return False
-
     provider = OutputCredentialsProvider(config=output.config,
                                          defaults=output._get_default_properties(),
+                                         region=region,
                                          service_name=service,
                                          prefix=prefix)
     result = provider.save_credentials(props['descriptor'].value, kms_key_alias, props)

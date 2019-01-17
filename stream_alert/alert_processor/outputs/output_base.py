@@ -139,6 +139,7 @@ class OutputDispatcher(object):
 
         self._credentials_provider = OutputCredentialsProvider(config,
                                                                self._get_default_properties(),
+                                                               self.region,
                                                                self.__service__)
 
         self.account_id = self._credentials_provider.get_aws_account_id()

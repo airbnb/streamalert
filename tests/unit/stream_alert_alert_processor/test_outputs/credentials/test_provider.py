@@ -102,7 +102,8 @@ class TestOutputCredentialsProvider(object):
         put_mock_s3_object(s3_driver.get_s3_secrets_bucket(), 'laskdjfaouhvawe', 'lafhawef', REGION)
 
         # Save credential
-        provider = OutputCredentialsProvider(CONFIG, defaults, service_name, prefix, aws_account_id)
+        provider = OutputCredentialsProvider(CONFIG, defaults, REGION,
+                                             service_name, prefix, aws_account_id)
         provider.save_credentials(descriptor, KMS_ALIAS, props)
 
         # Pull it out
@@ -139,7 +140,8 @@ class TestOutputCredentialsProvider(object):
         put_mock_s3_object(s3_driver.get_s3_secrets_bucket(), 'laskdjfaouhvawe', 'lafhawef', REGION)
 
         # Save credential
-        provider = OutputCredentialsProvider(CONFIG, defaults, service_name, prefix, aws_account_id)
+        provider = OutputCredentialsProvider(CONFIG, defaults, REGION,
+                                             service_name, prefix, aws_account_id)
         provider.save_credentials(descriptor, KMS_ALIAS, props)
 
         # Pull it out (Normal expected behavior)

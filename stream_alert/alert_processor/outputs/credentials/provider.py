@@ -25,7 +25,6 @@ from botocore.exceptions import ClientError
 
 from stream_alert_cli.outputs.helpers import kms_encrypt, send_creds_to_s3
 
-from stream_alert.shared.helpers.boto import REGION
 from stream_alert.shared.logger import get_logger
 
 
@@ -49,9 +48,9 @@ class OutputCredentialsProvider(object):
 
     """
 
-    def __init__(self, config, defaults, service_name, prefix=None, aws_account_id=None):
+    def __init__(self, config, defaults, region, service_name, prefix=None, aws_account_id=None):
         self._config = config
-        self._region = REGION
+        self._region = region
         self._defaults = defaults
         self._service_name = service_name
 
@@ -79,10 +78,6 @@ class OutputCredentialsProvider(object):
         # Ephemeral driver
         ep_driver = EphemeralUnencryptedDriver(self._service_name)
         self._drivers.append(ep_driver)
-
-        # # Always check local filesystem to see if credentials are cached in a Temp Directory
-        # fs_driver = LocalFileDriver(self._region, self._service_name)
-        # self._drivers.append(fs_driver)
 
         # Fall back onto downloading encrypted credentials from S3
         s3_driver = S3Driver(self._prefix, self._service_name, self._region, cache_driver=ep_driver)
