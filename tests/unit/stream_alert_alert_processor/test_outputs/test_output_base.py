@@ -27,6 +27,8 @@ from nose.tools import (
 )
 from requests.exceptions import Timeout as ReqTimeout
 
+from stream_alert.alert_processor.outputs.credentials.provider import \
+    get_formatted_output_credentials_name
 from stream_alert.alert_processor.outputs.output_base import (
     OutputDispatcher,
     OutputCredentialsProvider,
@@ -119,22 +121,6 @@ class TestOutputCredentialsProvider(object):
     def setup(self):
         self._provider = OutputCredentialsProvider(CONFIG, {}, 'test_service_name')
 
-    def test_get_formatted_output_credentials_name(self):
-        """OutputCredentialsProvider - Get Formatted Output Credentials Name"""
-        name = self._provider.get_formatted_output_credentials_name(
-            'test_service_name',
-            'test_descriptor'
-        )
-        assert_equal(name, 'test_service_name/test_descriptor')
-
-    def test_get_formatted_output_credentials_name_no_descriptor(self): #pylint: disable=invalid-name
-        """OutputCredentialsProvider - Get Formatted Output Credentials Name - No Descriptor"""
-        name = self._provider.get_formatted_output_credentials_name(
-            'test_service_name',
-            ''
-        )
-        assert_equal(name, 'test_service_name')
-
     @mock_kms
     def test_kms_decrypt(self):
         """OutputCredentialsProvider - KMS Decrypt"""
@@ -211,7 +197,7 @@ class TestOutputDispatcher(object):
     def test_load_creds(self):
         """OutputDispatcher - Load Credentials"""
         remove_temp_secrets()
-        key = self._dispatcher._credentials_provider.get_formatted_output_credentials_name(
+        key = get_formatted_output_credentials_name(
             'test_service',
             self._descriptor
         )

@@ -154,26 +154,6 @@ class OutputCredentialsProvider(object):
         except ClientError as err:
             LOGGER.error('an error occurred during credentials decryption: %s', err.response)
 
-    @staticmethod
-    def get_formatted_output_credentials_name(service_name, descriptor):
-        """Formats the output name for this credential by combining the service
-        and the descriptor.
-
-        Args:
-            service_name (str): Service name on output class (i.e. "pagerduty", "demisto")
-            descriptor (str): Service destination (ie: slack channel, pd integration)
-
-        Returns:
-            str: Formatted credential name (ie: slack_ryandchannel)
-        """
-        cred_name = str(service_name)
-
-        # should descriptor be enforced in all rules?
-        if descriptor:
-            cred_name = '{}/{}'.format(cred_name, descriptor)
-
-        return cred_name
-
     def get_aws_account_id(self):
         """Returns the AWS account ID"""
         return self._account_id
