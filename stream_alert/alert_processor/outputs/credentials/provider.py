@@ -79,25 +79,27 @@ class OutputCredentialsProvider(object):
 
         # Ephemeral driver
         ep_driver = EphemeralUnencryptedDriver(self._service_name)
+        self._drivers.append(ep_driver)
 
-        # Always check local filesystem to see if credentials are cached in a Temp Directory
-        fs_driver = LocalFileDriver(self._region, self._service_name)
-        self._drivers.append(fs_driver)
+        # # Always check local filesystem to see if credentials are cached in a Temp Directory
+        # fs_driver = LocalFileDriver(self._region, self._service_name)
+        # self._drivers.append(fs_driver)
 
         # Fall back onto downloading encrypted credentials from S3
-        s3_driver = S3Driver(self._prefix, self._service_name, self._region, file_driver=fs_driver)
+        s3_driver = S3Driver(self._prefix, self._service_name, self._region, cache_driver=ep_driver)
         self._core_driver = s3_driver
         self._drivers.append(s3_driver)
 
     def save_credentials(self, descriptor, kms_key_alias, props):
         """
         Args:
-            descriptor (str):
-            kms_key_alias (str):
-            props (Dict(str, OutputProperty)):
+            descriptor (str): OutputDispatcher descriptor
+            kms_key_alias (str): KMS Key alias provided by configs
+            props (Dict(str, OutputProperty)): A dict containing strings mapped to OutputProperty
+                objects.
 
         Returns:
-            bool
+            bool: True is credentials successfully saved. False otherwise.
         """
 
         creds = {name: prop.value
@@ -298,13 +300,32 @@ def get_formatted_output_credentials_name(service_name, descriptor):
 
 
 class S3Driver(CredentialsProvidingDriver):
-    """Driver for fetching credentials from AWS S3
-
-    Optionally, the S3 can be supplied with a LocalFileDriver to cache the encrypted credentials
-    payload to the local filesystem.
-    """
+    """Driver for fetching credentials from AWS S3"""
 
     def __init__(self, prefix, service_name, region, file_driver=None, cache_driver=None):
+        """
+        Args:
+            prefix (str): StreamAlert account prefix in configs
+            service_name (str): The service name for the OutputDispatcher using this
+            region (str): AWS Region
+            file_driver (FileDescriptorProvider|None):
+                Optional. When provided, the file_driver will be used to provide a File handle
+                for downloading the S3 credentials into. This can be useful if it is desired to
+                download the S3 credentials into a specific file for examination.
+
+                If omitted, will defaulted to using SpooledTempfileDriver, which downloads
+                the S3 file into memory temporarily, and is cleaned up afterward.
+
+                In all cases, the credentials file is downloaded and stored in the file-like
+                handle in ENCRYPTED FORM.
+
+            cache_driver (CredentialsProvidingDriver|None):
+                Optional. When provided, the downloaded credentials will be cached in the given
+                driver. This is useful for reducing the number of S3/KMS calls and speeding up the
+                system.
+
+                (!) Storage encryption of the credentials is determined by the driver.
+        """
         self._service_name = service_name
         self._region = region
         self._prefix = prefix

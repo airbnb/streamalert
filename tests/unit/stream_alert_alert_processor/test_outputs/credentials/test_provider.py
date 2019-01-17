@@ -15,40 +15,27 @@ limitations under the License.
 """
 # pylint: disable=abstract-class-instantiated,protected-access,attribute-defined-outside-init
 import json
-import os
 from collections import OrderedDict
 
-from mock import Mock, patch, MagicMock
 from moto import mock_kms, mock_s3
 from nose.tools import (
     assert_true,
     assert_equal,
     assert_is_instance,
     assert_is_not_none,
-    assert_is_none,
-    assert_items_equal,
     assert_false)
-from requests.exceptions import Timeout as ReqTimeout
 
-from stream_alert.alert_processor.outputs.output_base import (
-    OutputDispatcher,
-    OutputProperty,
-    OutputRequestFailure,
-    StreamAlertOutput
-)
+from stream_alert.alert_processor.outputs.output_base import OutputProperty
 from stream_alert.alert_processor.outputs.credentials.provider import (
     S3Driver,
     LocalFileDriver,
     Credentials,
-    CredentialsProvidingDriver,
     OutputCredentialsProvider,
     EphemeralUnencryptedDriver, SpooledTempfileDriver)
-from stream_alert.alert_processor.outputs.aws import S3Output
 from stream_alert_cli.outputs.helpers import kms_encrypt
 from tests.unit.stream_alert_alert_processor import (
     CONFIG,
     KMS_ALIAS,
-    MOCK_ENV,
     REGION
 )
 from tests.unit.helpers.aws_mocks import put_mock_s3_object
@@ -81,9 +68,11 @@ class TestOutputCredentialsProvider(object):
     @mock_s3
     @mock_kms
     def test_save_and_load_credentials(self):
-        """OutputCredentials - Save and Load Credentials"""
-        remove_temp_secrets()
+        """OutputCredentials - Save and Load Credentials
 
+        Not only tests how save_credentials() interacts with load_credentials(), but also tests
+        that cred_requirement=False properties are not saved. Also tests that default values
+        are merged into the final credentials dict as appropriate."""
         service_name = 'service'
         descriptor = 'descriptive'
         props = OrderedDict([
@@ -125,6 +114,57 @@ class TestOutputCredentialsProvider(object):
         }
         assert_equal(creds_dict, expectation)
 
+    @mock_s3
+    @mock_kms
+    def test_load_credentials_pulls_from_cache(self):
+        """OutputCredentials - Load Credentials Loads from Cache Driver
+
+        This test ensures that we only hit S3 once during, and that subsequent calls are routed
+        to the Cache driver. Currently the cache driver is configured as Ephemeral."""
+        service_name = 'service'
+        descriptor = 'descriptive'
+        props = OrderedDict([
+            ('credential1',
+             OutputProperty(description='Hello world',
+                            value='there is no cow level',
+                            mask_input=True,
+                            cred_requirement=True)),
+        ])
+        defaults = {}
+        prefix = 'test_asdf'
+        aws_account_id = '1234567890'
+
+        # Pre-create the bucket so we dont get a "Bucket does not exist" error
+        s3_driver = S3Driver(prefix, service_name, REGION)
+        put_mock_s3_object(s3_driver.get_s3_secrets_bucket(), 'laskdjfaouhvawe', 'lafhawef', REGION)
+
+        # Save credential
+        provider = OutputCredentialsProvider(CONFIG, defaults, service_name, prefix, aws_account_id)
+        provider.save_credentials(descriptor, KMS_ALIAS, props)
+
+        # Pull it out (Normal expected behavior)
+        creds_dict = provider.load_credentials(descriptor)
+        expectation = {'credential1': 'there is no cow level'}
+        assert_equal(creds_dict, expectation)
+
+        # Now we yank the S3 driver out of the driver pool
+        # FIXME (derek.wang): Another way to do this is to install a spy on moto and make assertions
+        #                     on the number of times it is called.
+        assert_is_instance(provider._drivers[1], S3Driver)
+        provider._drivers[1] = None
+        provider._core_driver = None
+
+        # Load again and see if it still is able to load without S3
+        assert_equal(provider.load_credentials(descriptor), expectation)
+
+        # Double-check; Examine the Driver guts and make sure that the EphemeralDriver has the
+        # value cached.
+        ep_driver = provider._drivers[0]
+        assert_is_instance(ep_driver, EphemeralUnencryptedDriver)
+
+        assert_true(ep_driver.has_credentials(descriptor))
+        c = ep_driver.load_credentials(descriptor)
+        assert_equal(json.loads(c.data()), expectation)
 
 #
 # Tests for DRIVERS
