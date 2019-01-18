@@ -23,6 +23,7 @@ from abc import abstractmethod
 import boto3
 from botocore.exceptions import ClientError
 
+from stream_alert.shared.helpers.boto import default_config
 from stream_alert_cli.outputs.helpers import kms_encrypt, send_creds_to_s3
 
 from stream_alert.shared.logger import get_logger
@@ -162,7 +163,7 @@ class Credentials(object):
             return None
 
         try:
-            client = boto3.client('kms', region_name=self._region)
+            client = boto3.client('kms', config=default_config(region=self._region))
             response = client.decrypt(CiphertextBlob=self._data)
             return response['Plaintext']
         except ClientError as err:
@@ -304,7 +305,7 @@ class S3Driver(CredentialsProvidingDriver):
         """
         try:
             with self._file_driver.offer_fileobj(descriptor) as file_handle:
-                client = boto3.client('s3', region_name=self._region)
+                client = boto3.client('s3', config=default_config(region=self._region))
                 client.download_fileobj(
                     self._bucket,
                     self.get_s3_key(descriptor),
