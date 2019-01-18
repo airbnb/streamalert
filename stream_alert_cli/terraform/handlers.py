@@ -243,7 +243,7 @@ def _get_valid_tf_targets(config, targets):
 
 def get_tf_modules(config, generate=False):
     if generate:
-        if not terraform_generate_handler(config=config):
+        if not terraform_generate_handler(config=config, check_tf=False, check_creds=False):
             return False
 
     modules = set()
