@@ -132,7 +132,6 @@ class TestCredentials(object):
         assert_equal(credentials.data(), '')
 
 
-
 class TestOutputCredentialsProvider(object):
 
     @patch.dict(os.environ, MOCK_ENV)
