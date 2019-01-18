@@ -38,8 +38,14 @@ Optionally, to deploy changes for only a specific AWS Lambda function:
 
 .. code-block:: bash
 
-  $ python manage.py deploy --function rule
   $ python manage.py deploy --function alert
+  $ python manage.py deploy --function alert_merger
+  $ python manage.py deploy --function apps
+  $ python manage.py deploy --function athena
+  $ python manage.py deploy --function classifier
+  $ python manage.py deploy --function rule
+  $ python manage.py deploy --function rule_promo
+  $ python manage.py deploy --function threat_intel_downloader
 
 To apply infrastructure level changes (additional Kinesis Shards, new CloudTrails, etc), run:
 
@@ -47,12 +53,28 @@ To apply infrastructure level changes (additional Kinesis Shards, new CloudTrail
 
   $ python manage.py build
 
-To speed up the Terraform run, the module name may be specified with the ``target`` parameter:
+To apply specific changes to speed up terraform run, use the ``list-targets`` command and the ``build`` command with the ``--target`` option:
 
 .. code-block:: bash
 
-  $ python manage.py build --target kinesis       # tf_stream_alert_kinesis module
-  $ python manage.py build --target stream_alert  # tf_stream_alert module
+  $ python manage.py list-targets
+
+    Target                                                                                Type
+    ----------------------------------------------------------------------------------------------
+    ...
+    classifier_prod_iam                                                                   module
+    classifier_prod_lambda                                                                module
+    cloudwatch_monitoring_prod                                                            module
+    kinesis_events_prod                                                                   module
+    kinesis_prod                                                                          module
+    metric_filters_Classifier_FailedParses_PROD                                           module
+    metric_filters_Classifier_FirehoseFailedRecords_PROD                                  module
+    metric_filters_Classifier_FirehoseRecordsSent_PROD                                    module
+    ...
+
+  $ python manage.py build --target cloudwatch_monitoring_prod        # apply to single module
+  $ python manage.py build --target kinesis_prod classifier_prod_iam  # apply to two modules
+  $ python manage.py build --target metric_filters_Classifier_*_PROD  # apply to three modules
 
 Monitoring Functions
 --------------------
