@@ -534,7 +534,7 @@ class SpooledTempfileDriver(CredentialsProvidingDriver, FileDescriptorProvider):
         if key not in SpooledTempfileDriver.SERVICE_SPOOLS:
             LOGGER.error(
                 'SpooledTempfileDriver failed to load_credentials: Spool "%s" does not exist?',
-                self.get_spool_cache_key(descriptor)
+                key
             )
             return None
 
@@ -616,6 +616,13 @@ class EphemeralUnencryptedDriver(CredentialsProvidingDriver, CredentialsCachingD
 
     def load_credentials(self, descriptor):
         key = self.get_storage_key(descriptor)
+        if key not in EphemeralUnencryptedDriver.CREDENTIALS_STORE:
+            LOGGER.error(
+                'EphemeralUnencryptedDriver failed to load_credentials: Key "%s" does not exist?',
+                key
+            )
+            return None
+
         unencrypted_raw_creds = EphemeralUnencryptedDriver.CREDENTIALS_STORE[key]
 
         return Credentials(unencrypted_raw_creds, False)
