@@ -145,6 +145,12 @@ def check_credentials():
                      'https://www.streamalert.io/getting-started.html'
                      '#configure-aws-credentials')
         return False
+    except ClientError as err:
+        # Check for an error related to an expired token
+        if err.response['Error']['Code'] == 'ExpiredToken':
+            LOGGER.error('%s. Please refresh your credentials.', err.response['Error']['Message'])
+            return False
+        raise  # Raise the error if it is anything else
 
     LOGGER.debug(
         'Using credentials for user \'%s\' with user ID \'%s\' in account '
