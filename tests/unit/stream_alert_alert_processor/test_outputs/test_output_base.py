@@ -14,8 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 # pylint: disable=abstract-class-instantiated,protected-access,attribute-defined-outside-init
-import os
-
 from mock import Mock, patch, MagicMock
 from moto import mock_kms, mock_s3
 from nose.tools import (
@@ -27,9 +25,10 @@ from nose.tools import (
 )
 from requests.exceptions import Timeout as ReqTimeout
 
+from stream_alert.alert_processor.outputs.credentials.provider import \
+    get_formatted_output_credentials_name
 from stream_alert.alert_processor.outputs.output_base import (
     OutputDispatcher,
-    OutputCredentialsProvider,
     OutputProperty,
     OutputRequestFailure,
     StreamAlertOutput
@@ -41,9 +40,7 @@ from tests.unit.stream_alert_alert_processor import (
     MOCK_ENV,
     REGION
 )
-from tests.unit.helpers.aws_mocks import put_mock_s3_object
 from tests.unit.stream_alert_alert_processor.helpers import (
-    encrypt_with_kms,
     put_mock_creds,
     remove_temp_secrets
 )
@@ -113,64 +110,6 @@ def test_output_loading():
     assert_items_equal(loaded_outputs, expected_outputs)
 
 
-class TestOutputCredentialsProvider(object):
-
-    @patch.dict('os.environ', MOCK_ENV)
-    def setup(self):
-        self._provider = OutputCredentialsProvider(CONFIG, {}, 'test_service_name')
-
-    def test_get_load_credentials_temp_dir(self):
-        """OutputCredentialsProvider - Get Load Credentials Temp Dir"""
-        temp_dir = self._provider.get_local_credentials_temp_dir()
-        assert_equal(temp_dir.split('/')[-1], 'stream_alert_secrets')
-
-    def test_get_formatted_output_credentials_name(self):
-        """OutputCredentialsProvider - Get Formatted Output Credentials Name"""
-        name = self._provider.get_formatted_output_credentials_name(
-            'test_service_name',
-            'test_descriptor'
-        )
-        assert_equal(name, 'test_service_name/test_descriptor')
-
-    def test_get_formatted_output_credentials_name_no_descriptor(self): #pylint: disable=invalid-name
-        """OutputCredentialsProvider - Get Formatted Output Credentials Name - No Descriptor"""
-        name = self._provider.get_formatted_output_credentials_name(
-            'test_service_name',
-            ''
-        )
-        assert_equal(name, 'test_service_name')
-
-    @mock_s3
-    def test_load_credentials_from_s3(self):
-        """OutputCredentialsProvider - Load Credentials from S3"""
-        test_data = 'credential test string'
-        descriptor = 'test_descriptor'
-
-        bucket_name = self._provider._secrets_bucket
-        key = self._provider.get_formatted_output_credentials_name('test_service_name',
-                                                                   descriptor)
-
-        local_cred_location = os.path.join(self._provider.get_local_credentials_temp_dir(), key)
-
-        put_mock_s3_object(bucket_name, key, test_data, REGION)
-
-        self._provider.load_encrypted_credentials_from_s3(local_cred_location, descriptor)
-
-        with open(local_cred_location) as creds:
-            line = creds.readline()
-
-        assert_equal(line, test_data)
-
-    @mock_kms
-    def test_kms_decrypt(self):
-        """OutputCredentialsProvider - KMS Decrypt"""
-        test_data = 'data to encrypt'
-        encrypted = encrypt_with_kms(test_data, REGION, KMS_ALIAS)
-        decrypted = self._provider.kms_decrypt(encrypted)
-
-        assert_equal(decrypted, test_data)
-
-
 @patch.object(OutputDispatcher, '__service__', 'test_service')
 class TestOutputDispatcher(object):
     """Test class for OutputDispatcher"""
@@ -193,45 +132,8 @@ class TestOutputDispatcher(object):
 
         _ = OutputDispatcher(CONFIG)
 
-        provider_constructor.assert_called_with(CONFIG, None, 'test_service')
+        provider_constructor.assert_called_with(CONFIG, None, REGION, 'test_service')
         assert_equal(self._dispatcher._credentials_provider._service_name, 'test_service')
-
-    @mock_s3
-    def test_get_creds_from_s3(self):
-        """OutputDispatcher - Get Creds From S3"""
-        test_data = 'credential test string'
-
-        bucket_name = self._dispatcher.secrets_bucket
-        key = self._dispatcher._credentials_provider.get_formatted_output_credentials_name(
-            'test_service',
-            self._descriptor
-        )
-
-        local_cred_location = os.path.join(
-            self._dispatcher._credentials_provider.get_local_credentials_temp_dir(),
-            key
-        )
-
-        put_mock_s3_object(bucket_name, key, test_data, REGION)
-
-        self._dispatcher._credentials_provider.load_encrypted_credentials_from_s3(
-            local_cred_location,
-            self._descriptor
-        )
-
-        with open(local_cred_location) as creds:
-            line = creds.readline()
-
-        assert_equal(line, test_data)
-
-    @mock_kms
-    def test_kms_decrypt(self):
-        """OutputDispatcher - KMS Decrypt"""
-        test_data = 'data to encrypt'
-        encrypted = encrypt_with_kms(test_data, REGION, KMS_ALIAS)
-        decrypted = self._dispatcher._credentials_provider.kms_decrypt(encrypted)
-
-        assert_equal(decrypted, test_data)
 
     @patch('logging.Logger.info')
     def test_log_status_success(self, log_mock):
@@ -265,7 +167,7 @@ class TestOutputDispatcher(object):
     def test_load_creds(self):
         """OutputDispatcher - Load Credentials"""
         remove_temp_secrets()
-        key = self._dispatcher._credentials_provider.get_formatted_output_credentials_name(
+        key = get_formatted_output_credentials_name(
             'test_service',
             self._descriptor
         )
@@ -273,7 +175,9 @@ class TestOutputDispatcher(object):
         creds = {'url': 'http://www.foo.bar/test',
                  'token': 'token_to_encrypt'}
 
-        put_mock_creds(key, creds, self._dispatcher.secrets_bucket, REGION, KMS_ALIAS)
+        put_mock_creds(key, creds,
+                       self._dispatcher._credentials_provider._core_driver._bucket,
+                       REGION, KMS_ALIAS)
 
         loaded_creds = self._dispatcher._load_creds(self._descriptor)
 

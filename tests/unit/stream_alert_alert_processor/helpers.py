@@ -13,15 +13,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-import os
 import json
 import random
-import shutil
-import tempfile
 
 import boto3
 
 from stream_alert.shared.alert import Alert
+from stream_alert.alert_processor.outputs.credentials.provider import LocalFileDriver
 from tests.unit.helpers.aws_mocks import put_mock_s3_object
 
 
@@ -83,11 +81,7 @@ def get_alert(context=None):
 
 def remove_temp_secrets():
     """Remove the local secrets directory that may be left from previous runs"""
-    secrets_dirtemp_dir = os.path.join(tempfile.gettempdir(), 'stream_alert_secrets')
-
-    # Check if the folder exists, and remove it if it does
-    if os.path.isdir(secrets_dirtemp_dir):
-        shutil.rmtree(secrets_dirtemp_dir)
+    LocalFileDriver.clear()
 
 
 def encrypt_with_kms(data, region, alias):
