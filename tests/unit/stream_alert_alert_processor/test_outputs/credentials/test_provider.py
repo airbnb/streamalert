@@ -15,15 +15,20 @@ limitations under the License.
 """
 # pylint: disable=abstract-class-instantiated,protected-access,attribute-defined-outside-init
 import json
+import os
 from collections import OrderedDict
 
+from botocore.exceptions import ClientError
+from mock import patch, MagicMock
 from moto import mock_kms, mock_s3
 from nose.tools import (
     assert_true,
     assert_equal,
     assert_is_instance,
     assert_is_not_none,
-    assert_false)
+    assert_false,
+    assert_is_none,
+)
 
 from stream_alert.alert_processor.outputs.output_base import OutputProperty
 from stream_alert.alert_processor.outputs.credentials.provider import (
@@ -36,8 +41,8 @@ from stream_alert_cli.outputs.helpers import kms_encrypt
 from tests.unit.stream_alert_alert_processor import (
     CONFIG,
     KMS_ALIAS,
-    REGION
-)
+    REGION,
+    MOCK_ENV)
 from tests.unit.helpers.aws_mocks import put_mock_s3_object
 from tests.unit.stream_alert_alert_processor.helpers import (
     encrypt_with_kms,
@@ -54,7 +59,7 @@ class TestCredentials(object):
         test_data = 'plaintext credentials'
         encrypted = encrypt_with_kms(test_data, REGION, KMS_ALIAS)
 
-        credentials = Credentials(encrypted, True, REGION)
+        credentials = Credentials(encrypted, is_encrypted=True, region=REGION)
 
         assert_true(credentials.is_encrypted())
 
@@ -62,8 +67,83 @@ class TestCredentials(object):
 
         assert_equal(decrypted, test_data)
 
+    @patch('logging.Logger.error')
+    def test_kms_decrypt_fails_if_unencrypted(self, logging_error):
+        """Credentials - KMS Decrypt - Fails if Unencrypted"""
+        test_data = 'plaintext credentials'
+        credentials = Credentials(test_data, False)
+
+        assert_false(credentials.is_encrypted())
+
+        assert_is_none(credentials.get_data_kms_decrypted())
+        logging_error.assert_called_with('Cannot decrypt Credentials as they are already decrypted')
+
+    @patch('boto3.client')
+    @patch('logging.Logger.exception')
+    def test_kms_decrypt_error_on_kms_failure(self, logging_exception, boto3):
+        """Credentials - KMS Decrypt - Fails if KMS Fails to Respond"""
+        encrypted = 'akjhvoiaeurghfvioauhefiauwef'
+        credentials = Credentials(encrypted, is_encrypted=True, region=REGION)
+
+        # We pretend that KMS errors out
+        boto3_client = MagicMock()
+        boto3.return_value = boto3_client
+
+        response = MagicMock()
+        boto3_client.decrypt.side_effect = ClientError(response, 'kms_decrypt')
+
+        assert_is_none(credentials.get_data_kms_decrypted())
+        logging_exception.assert_called_with('an error occurred during credentials decryption: %s',
+                                             response)
+
+    @mock_kms
+    def test_encrypt(self):
+        """Credentials - KMS Encrypt"""
+        test_data = 'plaintext credentials'
+        credentials = Credentials(test_data, is_encrypted=False)
+
+        key_alias = 'asdf'
+        credentials.encrypt(REGION, key_alias)
+
+        assert_true(credentials.is_encrypted())
+        assert_equal(credentials.data(), 'InBsYWludGV4dCBjcmVkZW50aWFscyI=')
+
+    def test_encrypt_does_nothing_when_already_encrypted(self):
+        """Credentials - KMS Encrypt does nothing when already encrypted"""
+        encrypted_credentials = 'OIEFJWOEIFJOPEADKD'
+        credentials = Credentials(encrypted_credentials, is_encrypted=True, region=REGION)
+
+        key_alias = 'asdf'
+        credentials.encrypt(REGION, key_alias)
+
+        assert_true(credentials.is_encrypted())
+        assert_equal(credentials.data(), encrypted_credentials)
+
+    @mock_kms
+    def test_encrypt_does_not_nothing_when_payload_is_empty(self):
+        """Credentials - KMS Encrypt does nothing when payload is empty"""
+        test_data = ''
+        credentials = Credentials(test_data, is_encrypted=False)
+
+        key_alias = 'asdf'
+        credentials.encrypt(REGION, key_alias)
+
+        assert_true(credentials.is_encrypted())
+        assert_equal(credentials.data(), '')
+
+
 
 class TestOutputCredentialsProvider(object):
+
+    @patch.dict(os.environ, MOCK_ENV)
+    def test_constructor_loads_from_os_when_not_provided(self):
+        """OutputCredentials - Constructor
+
+        When not provided, prefix and aws account id are loaded from the OS Environment."""
+
+        provider = OutputCredentialsProvider(CONFIG, {}, REGION, 'that_service_name')
+        assert_equal(provider._prefix, 'prefix')
+        assert_equal(provider.get_aws_account_id(), '123456789012')
 
     @mock_s3
     @mock_kms
@@ -74,7 +154,7 @@ class TestOutputCredentialsProvider(object):
         that cred_requirement=False properties are not saved. Also tests that default values
         are merged into the final credentials dict as appropriate."""
         service_name = 'service'
-        descriptor = 'descriptive'
+        descriptor = 'test_save_and_load_credentials'
         props = OrderedDict([
             ('property1',
              OutputProperty(description='This is a property and not a cred so it will not save')),
@@ -104,7 +184,7 @@ class TestOutputCredentialsProvider(object):
         # Save credential
         provider = OutputCredentialsProvider(CONFIG, defaults, REGION,
                                              service_name, prefix, aws_account_id)
-        provider.save_credentials(descriptor, KMS_ALIAS, props)
+        assert_true(provider.save_credentials(descriptor, KMS_ALIAS, props))
 
         # Pull it out
         creds_dict = provider.load_credentials(descriptor)
@@ -123,7 +203,7 @@ class TestOutputCredentialsProvider(object):
         This test ensures that we only hit S3 once during, and that subsequent calls are routed
         to the Cache driver. Currently the cache driver is configured as Ephemeral."""
         service_name = 'service'
-        descriptor = 'descriptive'
+        descriptor = 'test_load_credentials_pulls_from_cache'
         props = OrderedDict([
             ('credential1',
              OutputProperty(description='Hello world',
@@ -168,6 +248,28 @@ class TestOutputCredentialsProvider(object):
         c = ep_driver.load_credentials(descriptor)
         assert_equal(json.loads(c.data()), expectation)
 
+    @patch('logging.Logger.error')
+    def test_load_credentials_returns_none_on_driver_failure(self, logging_error):
+        """OutputCredentials - Load Credentials Returns None on Driver Failure"""
+        service_name = 'service'
+        descriptor = 'descriptive'
+        defaults = {}
+        prefix = 'test_asdf'
+        aws_account_id = '1234567890'
+
+        provider = OutputCredentialsProvider(CONFIG, defaults, REGION,
+                                             service_name, prefix, aws_account_id)
+
+        # To pretend all drivers fail, we can just remove all of the drivers.
+        provider._drivers = []
+        provider._core_driver = None
+
+        creds_dict = provider.load_credentials(descriptor)
+        assert_is_none(creds_dict)
+        logging_error.assert_called_with('All drivers failed to retrieve credentials for [%s.%s]',
+                                         service_name,
+                                         descriptor)
+
 #
 # Tests for DRIVERS
 #
@@ -175,14 +277,32 @@ class TestOutputCredentialsProvider(object):
 
 class TestS3Driver(object):
 
+    @patch('boto3.client')
+    @patch('logging.Logger.exception')
+    def test_load_credentials_s3_failure(self, logging_exception, boto3):
+        """S3Driver - Load String returns None on S3 Failure"""
+        descriptor = 'test_descriptor'
+        s3_driver = S3Driver('rawr', 'service_name', REGION)
+
+        # Pretend S3 fails to respond
+        boto3_client = MagicMock()
+        boto3.return_value = boto3_client
+        response = MagicMock()
+        boto3_client.download_fileobj.side_effect = ClientError(response, 's3_download_fileobj')
+
+        assert_is_none(s3_driver.load_credentials(descriptor))
+        logging_exception.assert_called_with(
+            "credentials for '%s' could not be downloaded from S3: %s",
+            'service_name/test_descriptor',
+            response
+        )
+
     @mock_s3
     def test_load_credentials_plain_object(self):
         """S3Driver - Load String from S3
 
         In this test we save a simple string, unencrypted, into a mock S3 file. We use the
         driver to pull out this payload verbatim."""
-        remove_temp_secrets()
-
         test_data = 'encrypted credential test string'
         descriptor = 'test_descriptor'
 
@@ -208,10 +328,6 @@ class TestS3Driver(object):
         In this test we save a (more or less) real credentials payload using S3 mocking. We
         use the driver to pull the payload out and ensure the returned Credentials object is
         in a stable state, and that we can retrieve the decrypt credentials from this object."""
-
-        # In this test we use put_mock_creds() to save an encrypted credentials
-        remove_temp_secrets()
-
         descriptor = 'test_descriptor'
         driver = S3Driver('test_prefix', 'test_service', REGION)
 
@@ -221,7 +337,8 @@ class TestS3Driver(object):
         creds = {'url': 'http://www.foo.bar/test',
                  'token': 'token_to_encrypt'}
 
-        put_mock_creds(key, creds, bucket, REGION, KMS_ALIAS)  # This encrypts the contents
+        # Save encrypted credentials
+        put_mock_creds(key, creds, bucket, REGION, KMS_ALIAS)
 
         credentials = driver.load_credentials(descriptor)
 
@@ -244,15 +361,13 @@ class TestS3Driver(object):
 
     @mock_s3
     @mock_kms
-    def test_save_credentials(self):
+    def test_save_credentials_into_s3(self):
         """S3Driver - Save Credentials
 
         We test a full cycle of using save_credentials() then subsequently pulling them out with
         load_credentials()."""
-        remove_temp_secrets()
-
         creds = {'url': 'http://best.website.ever/test'}
-        input_credentials = Credentials(creds, False, REGION)
+        input_credentials = Credentials(creds, is_encrypted=False, region=REGION)
         descriptor = 'test_descriptor'
         driver = S3Driver('test_prefix', 'test_service', REGION)
 
@@ -272,6 +387,19 @@ class TestS3Driver(object):
 
         assert_equal(loaded_creds, creds)
 
+    @patch('logging.Logger.error')
+    def test_save_credentials_into_s3_blank_credentials(self, logging_error):
+        """S3Driver - Save Credentials does nothing when Credentials are Blank"""
+        input_credentials = Credentials('', is_encrypted=False, region=REGION)
+        descriptor = 'test_descriptor22'
+        driver = S3Driver('test_prefix', 'test_service', REGION)
+
+        result = driver.save_credentials_into_s3(descriptor, input_credentials, KMS_ALIAS)
+        assert_true(result)
+
+        assert_is_none(driver.load_credentials(descriptor))
+
+
     def test_get_s3_secrets_bucket(self):
         """S3Driver - Get S3 Secrets Bucket Name"""
         s3_driver = S3Driver('rawr', 'service_name', 'region')
@@ -286,7 +414,7 @@ class TestS3Driver(object):
         remove_temp_secrets()
 
         creds = {'my_secret': 'i ate two portions of biscuits and gravy'}
-        input_credentials = Credentials(creds, False, REGION)
+        input_credentials = Credentials(creds, is_encrypted=False, region=REGION)
         service_name = 'test_service'
         descriptor = 'test_descriptor'
         fs_driver = LocalFileDriver(REGION, service_name)
@@ -507,6 +635,17 @@ class TestSpooledTempfileDriver(object):
 
         assert_false(driver.save_credentials(descriptor, credentials))
         assert_false(driver.has_credentials(descriptor))
+
+    @patch('logging.Logger.error')
+    def test_load_credentials_nonexistent(self, logging_error):
+        """SpooledTempfileDriver - Load Credentials returns None on missing"""
+        driver = SpooledTempfileDriver('service', REGION)
+        assert_false(driver.has_credentials('qwertyuiop'))
+        assert_is_none(driver.load_credentials('qwertyuiop'))
+        logging_error.assert_called_with(
+            'SpooledTempfileDriver failed to load_credentials: Spool "%s" does not exist?',
+            'service/qwertyuiop'
+        )
 
     def test_clear(self):
         """SpooledTempfileDriver - Clear Credentials"""
