@@ -142,8 +142,6 @@ class OutputDispatcher(object):
                                                                self.region,
                                                                self.__service__)
 
-        self.account_id = self._credentials_provider.get_aws_account_id()
-
     def _load_creds(self, descriptor):
         """Loads a dict of credentials relevant to this output descriptor
 
