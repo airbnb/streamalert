@@ -16,15 +16,12 @@ limitations under the License.
 from collections import OrderedDict
 import json
 
-from requests.exceptions import RequestException
-
 from stream_alert.alert_processor.outputs.output_base import (
     OutputDispatcher,
     OutputProperty,
-    StreamAlertOutput
-)
+    StreamAlertOutput,
+    OutputRequestFailure)
 from stream_alert.shared.logger import get_logger
-from .demisto_api_client import DemistoClient
 
 LOGGER = get_logger(__name__)
 
@@ -36,7 +33,9 @@ class DemistoOutput(OutputDispatcher):
 
     @classmethod
     def get_user_defined_properties(cls):
-        """Get properties that must be assigned by the user when configuring a new Demisto
+        """Gets Output configuration properties.
+
+        Get properties that must be assigned by the user when configuring a new Demisto
         output.  This should be sensitive or unique information for this use-case that needs
         to come from the user.
 
@@ -77,23 +76,24 @@ class DemistoOutput(OutputDispatcher):
             return False
 
         request = DemistoRequestAssembler.assemble(alert, descriptor)
-        integration = DemistoApiIntegration(creds)
+        integration = DemistoApiIntegration(creds, self)
+
+        LOGGER.debug('Sending alert to Demisto: %s', creds['url'])
 
         try:
             integration.send(request)
             return True
-        except RequestException as e:
-            LOGGER.error('Failed to create Demisto incident: %s.', e)
+        except OutputRequestFailure as e:
+            LOGGER.exception('Failed to create Demisto incident: %s.', e)
             return False
 
 
 class DemistoApiIntegration(object):
-    """Bridge pattern to reduce coupling between DemistoOutput and the
-       DemistoClient implementation
-    """
+    """Bridge class to reduce coupling between DemistoOutput and whatever client we use."""
 
-    def __init__(self, creds):
-        self._demisto_api_client = DemistoClient(creds['token'], creds['url'])
+    def __init__(self, creds, dispatcher):
+        self._creds = creds
+        self._dispatcher = dispatcher
 
     def send(self, request):
         """Sends the given DemistoCreateIncidentRequest with the current integration.
@@ -104,17 +104,32 @@ class DemistoApiIntegration(object):
         Raises:
             requests.exceptions.RequestException
         """
-        response = self._demisto_api_client.CreateIncident(
-            request.incident_name,
-            request.incident_type,
-            request.severity,
-            request.owner,
-            request.labels,
-            request.details,
-            request.custom_fields,
-            createInvestigation=request.create_investigation
+        request_data = {
+            'type': request.incident_type,
+            'name': request.incident_name,
+            'owner': request.owner,
+            'severity': request.severity,
+            'labels': request.labels,
+            'customFields': request.custom_fields,
+            'details': request.details,
+        }
+        if request.create_investigation:
+            request_data['createInvestigation'] = True
+
+        create_incident_endpoint = '{}/incident'.format(self._creds['url'])
+
+        #pylint: disable=protected-access
+        # This is somewhat of a breach in abstraction, but is acceptable as-is for now.
+        self._dispatcher._post_request_retry(
+            create_incident_endpoint,
+            data=request_data,
+            headers={
+                'Accept': 'application/json',
+                'Content-type': 'application/json',
+                'Authorization': self._creds['token'],
+            },
+            verify=False
         )
-        response.raise_for_status()
 
 
 class DemistoCreateIncidentRequest(object):
@@ -203,9 +218,7 @@ class DemistoCreateIncidentRequest(object):
 
 
 class DemistoRequestAssembler(object):
-    """Convenience service used solely to construct instances of DemistoCreateIncidentRequest
-       from a given alert and Output descriptor
-    """
+    """Factory class for DemistoCreateIncidentRequest objects"""
 
     @staticmethod
     def assemble(alert, descriptor):

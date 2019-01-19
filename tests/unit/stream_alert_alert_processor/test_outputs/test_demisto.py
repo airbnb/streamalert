@@ -16,11 +16,11 @@ limitations under the License.
 # pylint: disable=no-self-use,unused-argument,attribute-defined-outside-init,protected-access
 from collections import OrderedDict
 
-from requests.exceptions import HTTPError
 from mock import patch, Mock, MagicMock
 from nose.tools import assert_is_instance, assert_true, assert_false, assert_equal
 
 from stream_alert.alert_processor.outputs.demisto import DemistoOutput, DemistoRequestAssembler
+from stream_alert.alert_processor.outputs.output_base import OutputRequestFailure
 
 from tests.unit.stream_alert_alert_processor.helpers import get_alert
 
@@ -99,14 +99,9 @@ class TestDemistoOutput(object):
         """DemistoOutput - User Defined Properties"""
         assert_is_instance(DemistoOutput.get_user_defined_properties(), OrderedDict)
 
-
-    @patch('requests.sessions.Session.request')
+    @patch('requests.post')
     def test_dispatch(self, request_mock):
         """DemistoOutput - Dispatch Success, Mocked Request Session"""
-
-        # The current DemistoApiClient integration is built over requests.Session
-        # This test puts a spy on the requests library and ensures that the correct request
-        # parameters are sent, regardless of the integration middleware we use.
         mock_response = MagicMock()
         mock_response.status_code = 201
         request_mock.return_value = mock_response
@@ -126,7 +121,6 @@ class TestDemistoOutput(object):
             'createInvestigation': True,
         }
         request_mock.assert_called_with(
-            'POST',
             'https://demisto.awesome-website.io/incident',
             headers={
                 'Accept': 'application/json',
@@ -134,25 +128,29 @@ class TestDemistoOutput(object):
                 'Authorization': 'aaaabbbbccccddddeeeeffff',
             },
             verify=False,
-            json=expected_data
+            json=expected_data,
+            timeout=3.05
         )
 
-    @patch('logging.Logger.error')
-    @patch('requests.sessions.Session.request')
+    @patch('logging.Logger.exception')
+    @patch('requests.post')
+    @patch('stream_alert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS',
+           1)
     def test_dispatch_fail(self, request_mock, logger_spy):
         """DemistoOutput - Dispatch Success, Response is Failure"""
 
-        e = HTTPError()
         mock_response = MagicMock()
         mock_response.status_code = 400  # bad request
-        mock_response.raise_for_status.side_effect = e
         request_mock.return_value = mock_response
 
         success = self._dispatcher.dispatch(get_alert(context=SAMPLE_CONTEXT), self.OUTPUT)
 
         assert_false(success)
 
-        logger_spy.assert_any_call('Failed to create Demisto incident: %s.', e)
+        class Matcher(object):
+            def __eq__(self, other):
+                return isinstance(other, OutputRequestFailure)
+        logger_spy.assert_called_with('Failed to create Demisto incident: %s.', Matcher())
 
 
 def test_assemble():
