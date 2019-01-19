@@ -120,7 +120,7 @@ Example Prompts for Duo Auth
 
   Please supply the API URL for your duosecurity instance. This should be in a format similar to 'api-abcdef12.duosecurity.com': api-abcdef12.duosecurity.com
 
-  Please supply the secret key for your duosecurity Admin API. This should a string of 40 alphanumeric characters: 123424af2ae101d47d9704b783c940dffa825678
+  Please supply the secret key for your duosecurity Admin API. This should be a string of 40 alphanumeric characters: 123424af2ae101d47d9704b783c940dffa825678
 
   Please supply the integration key for your duosecurity Admin API. This should be in a format similar to 'DIABCDEFGHIJKLMN1234': DIABCDEFGHIJKLMN1234
 
