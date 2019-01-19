@@ -155,21 +155,18 @@ class TestDemistoOutput(object):
         logger_spy.assert_any_call('Failed to create Demisto incident: %s.', e)
 
 
-class TestDemistoRequestAssembler(object):
-    """Test class for DemistoRequestAssembler"""
+def test_assemble():
+    """DemistoRequestAssembler - assemble"""
+    alert = get_alert(context=SAMPLE_CONTEXT)
+    descriptor = 'unit_test_demisto'
 
-    def test_assemble(self):
-        """DemistoRequestAssembler - assemble"""
-        alert = get_alert(context=SAMPLE_CONTEXT)
-        descriptor = 'unit_test_demisto'
+    request = DemistoRequestAssembler.assemble(alert, descriptor)
 
-        request = DemistoRequestAssembler.assemble(alert, descriptor)
-
-        assert_equal(request._incident_name, 'cb_binarystore_file_added')
-        assert_equal(request._incident_type, 'Unclassified')
-        assert_equal(request._severity, 0)
-        assert_equal(request._owner, 'StreamAlert')
-        assert_equal(request._labels, EXPECTED_LABELS_FOR_SAMPLE_ALERT)
-        assert_equal(request._details, 'Info about this rule and what actions to take')
-        assert_equal(request._custom_fields, {})
-        assert_equal(request._create_investigation, True)
+    assert_equal(request.incident_name, 'cb_binarystore_file_added')
+    assert_equal(request.incident_type, 'Unclassified')
+    assert_equal(request.severity, 0)
+    assert_equal(request.owner, 'StreamAlert')
+    assert_equal(request.labels, EXPECTED_LABELS_FOR_SAMPLE_ALERT)
+    assert_equal(request.details, 'Info about this rule and what actions to take')
+    assert_equal(request.custom_fields, {})
+    assert_equal(request.create_investigation, True)
