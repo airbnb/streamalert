@@ -27,7 +27,6 @@ from stream_alert.shared.helpers.boto import default_config
 from stream_alert.shared.logger import get_logger
 from stream_alert_cli.outputs.helpers import kms_encrypt, send_creds_to_s3
 
-
 LOGGER = get_logger(__name__)
 
 
@@ -123,9 +122,11 @@ class OutputCredentialsProvider(object):
                     break
 
         if not credentials:
-            LOGGER.error('All drivers failed to retrieve credentials for [%s.%s]',
-                         self._service_name,
-                         descriptor)
+            LOGGER.error(
+                'All drivers failed to retrieve credentials for [%s.%s]',
+                self._service_name,
+                descriptor
+            )
             return None
         elif credentials.is_encrypted():
             decrypted_creds = credentials.get_data_kms_decrypted()

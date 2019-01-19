@@ -137,10 +137,12 @@ class OutputDispatcher(object):
         self.region = REGION
         self.config = config
 
-        self._credentials_provider = OutputCredentialsProvider(config,
-                                                               self._get_default_properties(),
-                                                               self.region,
-                                                               self.__service__)
+        self._credentials_provider = OutputCredentialsProvider(
+            config,
+            self._get_default_properties(),
+            self.region,
+            self.__service__
+        )
 
     def _load_creds(self, descriptor):
         """Loads a dict of credentials relevant to this output descriptor
