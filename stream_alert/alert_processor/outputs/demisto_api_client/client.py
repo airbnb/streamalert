@@ -7,6 +7,9 @@
 # Author:       Lior
 # Version:      1.1
 #
+
+# pylint: disable=no-self-use,unused-argument,attribute-defined-outside-init,protected-access,invalid-name,import-error,line-too-long,protected-access,len-as-condition,pointless-string-statement,too-many-arguments,old-style-class
+
 from requests import Session
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 from requests.packages.urllib3 import disable_warnings
