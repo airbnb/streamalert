@@ -29,7 +29,7 @@ Features
 * Built-in collection of broadly applicable community rules
 * Fully open source and customizable: add your own log schemas, rules, and alert outputs
 
-Ready? Let's `get started! <https://streamalert.readthedocs.io/getting-started.html>`_
+Ready? Let's `get started! <https://streamalert.readthedocs.io/>`_
 
 Resources
 -----------
