@@ -138,10 +138,10 @@ class OutputDispatcher(object):
         self.config = config
 
         self._credentials_provider = OutputCredentialsProvider(
-            config,
-            self._get_default_properties(),
-            self.region,
-            self.__service__
+            self.__service__,
+            config=config,
+            defaults=self._get_default_properties(),
+            region=self.region
         )
 
     def _load_creds(self, descriptor):

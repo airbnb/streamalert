@@ -65,11 +65,7 @@ def output_handler(options, config):
     if output_exists(output_config, props, service):
         return output_handler(options, config)
 
-    provider = OutputCredentialsProvider(config=output.config,
-                                         defaults={},  # defaults are unnecessary for saving
-                                         region=region,
-                                         service_name=service,
-                                         prefix=prefix)
+    provider = OutputCredentialsProvider(service, config=config, region=region, prefix=prefix)
     result = provider.save_credentials(props['descriptor'].value, kms_key_alias, props)
     if not result:
         LOGGER.error('An error occurred while saving \'%s\' '

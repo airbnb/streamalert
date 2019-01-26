@@ -158,7 +158,7 @@ def test_constructor_loads_from_os_when_not_provided():
 
     When not provided, prefix and aws account id are loaded from the OS Environment."""
 
-    provider = OutputCredentialsProvider(CONFIG, {}, REGION, 'that_service_name')
+    provider = OutputCredentialsProvider('that_service_name', config=CONFIG, region=REGION)
     assert_equal(provider._prefix, 'prefix')
     assert_equal(provider.get_aws_account_id(), '123456789012')
 
@@ -174,12 +174,12 @@ class TestOutputCredentialsProvider(object):
         aws_account_id = '1234567890'
 
         self._provider = OutputCredentialsProvider(
-            CONFIG,
-            defaults,
-            REGION,
             service_name,
-            prefix,
-            aws_account_id
+            config=CONFIG,
+            defaults=defaults,
+            region=REGION,
+            prefix=prefix,
+            aws_account_id=aws_account_id
         )
 
         # Pre-create the bucket so we dont get a "Bucket does not exist" error
@@ -305,9 +305,8 @@ class TestS3Driver(object):
 
         assert_is_none(self._s3_driver.load_credentials(descriptor))
         logging_exception.assert_called_with(
-            "credentials for '%s' could not be downloaded from S3: %s",
-            'service_name/test_descriptor',
-            response
+            "credentials for '%s' could not be downloaded from S3",
+            'service_name/test_descriptor'
         )
 
     @mock_s3

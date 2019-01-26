@@ -132,7 +132,8 @@ class TestOutputDispatcher(object):
 
         _ = OutputDispatcher(CONFIG)
 
-        provider_constructor.assert_called_with(CONFIG, None, REGION, 'test_service')
+        provider_constructor.assert_called_with('test_service',
+                                                config=CONFIG, defaults=None, region=REGION)
         assert_equal(self._dispatcher._credentials_provider._service_name, 'test_service')
 
     @patch('logging.Logger.info')
