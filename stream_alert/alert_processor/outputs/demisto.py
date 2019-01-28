@@ -67,10 +67,6 @@ class DemistoOutput(OutputDispatcher):
         Returns:
             bool: True if alert was sent successfully, False otherwise
         """
-        if not alert.context:
-            LOGGER.error('[%s] Alert must contain context to run actions', self.__service__)
-            return False
-
         creds = self._load_creds(descriptor)
         if not creds:
             return False
