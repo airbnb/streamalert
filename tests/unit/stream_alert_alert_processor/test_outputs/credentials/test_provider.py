@@ -98,8 +98,7 @@ class TestCredentialsEncrypted(object):
         boto3_client.decrypt.side_effect = ClientError(response, 'kms_decrypt')
 
         assert_is_none(self._credentials.get_data_kms_decrypted())
-        logging_exception.assert_called_with('an error occurred during credentials decryption: %s',
-                                             response)
+        logging_exception.assert_called_with('an error occurred during credentials decryption')
 
 
 class TestCredentialsUnencrypted(object):

@@ -19,12 +19,10 @@ import shutil
 import tempfile
 from abc import abstractmethod
 
-import boto3
 from botocore.exceptions import ClientError
 
-from stream_alert.shared.helpers.boto import default_config
 from stream_alert.shared.logger import get_logger
-from stream_alert_cli.outputs.helpers import kms_encrypt, send_creds_to_s3
+from stream_alert.shared.helpers.aws_api_client import AwsKms, AwsS3
 
 LOGGER = get_logger(__name__)
 
@@ -189,7 +187,7 @@ class Credentials(object):
     def __init__(self, data, is_encrypted=False, region=None):
         """
         Args:
-            data (object): A json serializable object, or a string.
+            data (object|string): A json serializable object, or a string.
             is_encrypted (bool): Pass True if the input data is encrypted with KMS. False otherwise.
             region (str): AWS Region. Only required if is_encrypted=True.
         """
@@ -228,11 +226,9 @@ class Credentials(object):
             return None
 
         try:
-            client = boto3.client('kms', config=default_config(region=self._region))
-            response = client.decrypt(CiphertextBlob=self._data)
-            return response['Plaintext']
-        except ClientError as err:
-            LOGGER.exception('an error occurred during credentials decryption: %s', err.response)
+            return AwsKms.decrypt(self._data, region=self._region)
+        except ClientError:
+            LOGGER.exception('an error occurred during credentials decryption')
             return None
 
     def encrypt(self, region, kms_key_alias):
@@ -250,7 +246,7 @@ class Credentials(object):
 
         creds_json = json.dumps(self._data, separators=(',', ':'))
         self._region = region
-        self._data = kms_encrypt(self._region, creds_json, kms_key_alias)
+        self._data = AwsKms.encrypt(creds_json, region=self._region, key_alias=kms_key_alias)
 
 
 class CredentialsProvidingDriver(object):
@@ -384,15 +380,12 @@ class S3Driver(CredentialsProvidingDriver):
         """
         try:
             with self._file_driver.offer_fileobj(descriptor) as file_handle:
-                client = boto3.client('s3', config=default_config(region=self._region))
-                client.download_fileobj(
-                    self._bucket,
-                    self.get_s3_key(descriptor),
-                    file_handle
+                enc_creds = AwsS3.download_fileobj(
+                    file_handle,
+                    bucket=self._bucket,
+                    region=self._region,
+                    key=self.get_s3_key(descriptor)
                 )
-
-                file_handle.seek(0)
-                enc_creds = file_handle.read()
 
             credentials = Credentials(enc_creds, True, self._region)
             if self._cache_driver:
@@ -433,7 +426,20 @@ class S3Driver(CredentialsProvidingDriver):
         if not encrypted_credentials:
             return True
 
-        return send_creds_to_s3(self._region, self._bucket, s3_key, encrypted_credentials)
+        try:
+            return AwsS3.put_object(
+                encrypted_credentials,
+                bucket=self._bucket,
+                key=s3_key,
+                region=self._region
+            )
+        except ClientError:
+            LOGGER.exception(
+                'An error occurred while sending credentials to S3 for key \'%s\' in bucket \'%s\'',
+                s3_key,
+                self._bucket
+            )
+            return False
 
     def get_s3_key(self, descriptor):
         """Returns an appropriate S3 bucket key for credentials relevant to this Output.
