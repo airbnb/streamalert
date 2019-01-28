@@ -15,16 +15,18 @@ limitations under the License.
 """
 import json
 
-import boto3
 from botocore.exceptions import ClientError
 
 from stream_alert.shared.logger import get_logger
+from stream_alert.shared.helpers.aws_api_client import AwsS3, AwsKms
 
 LOGGER = get_logger(__name__)
 
 
 def encrypt_and_push_creds_to_s3(region, bucket, key, props, kms_key_alias):
     """Construct a dictionary of the credentials we want to encrypt and send to s3
+
+    FIXME (derek.wang) This method is deprecated and PROBABLY not being used anywhere anymore.
 
     Args:
         region (str): The aws region to use for boto3 client
@@ -49,6 +51,8 @@ def encrypt_and_push_creds_to_s3(region, bucket, key, props, kms_key_alias):
 def kms_encrypt(region, data, kms_key_alias):
     """Encrypt data with AWS KMS.
 
+    FIXME (derek.wang) This method is deprecated and PROBABLY not being used anywhere anymore.
+
     Args:
         region (str): AWS region to use for boto3 client
         data (str): json string to be encrypted
@@ -58,16 +62,16 @@ def kms_encrypt(region, data, kms_key_alias):
         str: Encrypted ciphertext data blob
     """
     try:
-        client = boto3.client('kms', region_name=region)
-        response = client.encrypt(KeyId='alias/{}'.format(kms_key_alias),
-                                  Plaintext=data)
-        return response['CiphertextBlob']
+        return AwsKms.encrypt(data, region=region, key_alias=kms_key_alias)
     except ClientError:
         LOGGER.error('An error occurred during credential encryption')
         raise
 
+
 def send_creds_to_s3(region, bucket, key, blob_data):
     """Put the encrypted credential blob for this service and destination in s3
+
+    FIXME (derek.wang) This method is deprecated and PROBABLY not being used anywhere anymore.
 
     Args:
         region (str): AWS region to use for boto3 client
@@ -76,10 +80,7 @@ def send_creds_to_s3(region, bucket, key, blob_data):
         blob_data (bytes): Cipher text blob from the kms encryption
     """
     try:
-        client = boto3.client('s3', region_name=region)
-        client.put_object(Body=blob_data, Bucket=bucket, Key=key)
-
-        return True
+        return AwsS3.put_object(blob_data, bucket=bucket, key=key, region=region)
     except ClientError as err:
         LOGGER.error(
             'An error occurred while sending credentials to S3 for key \'%s\' '
