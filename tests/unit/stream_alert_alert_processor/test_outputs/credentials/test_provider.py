@@ -37,7 +37,6 @@ from stream_alert.alert_processor.outputs.credentials.provider import (
     Credentials,
     OutputCredentialsProvider,
     EphemeralUnencryptedDriver, SpooledTempfileDriver, get_formatted_output_credentials_name)
-from stream_alert_cli.outputs.helpers import kms_encrypt
 from tests.unit.stream_alert_alert_processor import (
     CONFIG,
     KMS_ALIAS,
@@ -511,7 +510,7 @@ class TestLocalFileDriver(object):
         raw_credentials = 'aaaa'
         descriptor = 'descriptor'
 
-        encrypted_raw_credentials = kms_encrypt(REGION, raw_credentials, KMS_ALIAS)
+        encrypted_raw_credentials = encrypt_with_kms(raw_credentials, REGION, KMS_ALIAS)
 
         credentials = Credentials(encrypted_raw_credentials, True, REGION)
         assert_true(self._fs_driver.save_credentials(descriptor, credentials))
@@ -528,7 +527,7 @@ class TestLocalFileDriver(object):
         raw_credentials = 'aaaa'
         descriptor = 'descriptor'
 
-        encrypted_raw_credentials = kms_encrypt(REGION, raw_credentials, KMS_ALIAS)
+        encrypted_raw_credentials = encrypt_with_kms(raw_credentials, REGION, KMS_ALIAS)
 
         credentials = Credentials(encrypted_raw_credentials, True, REGION)
         assert_true(self._fs_driver.save_credentials(descriptor, credentials))
@@ -595,7 +594,7 @@ class TestSpooledTempfileDriver(object):
         """SpooledTempfileDriver - Save and Load Credentials"""
         raw_credentials = 'aaaa'
         descriptor = 'descriptor'
-        encrypted_raw_credentials = kms_encrypt(REGION, raw_credentials, KMS_ALIAS)
+        encrypted_raw_credentials = encrypt_with_kms(raw_credentials, REGION, KMS_ALIAS)
 
         credentials = Credentials(encrypted_raw_credentials, True, REGION)
         assert_true(self._sp_driver.save_credentials(descriptor, credentials))
@@ -616,7 +615,7 @@ class TestSpooledTempfileDriver(object):
         descriptor = 'descriptor'
 
         raw_credentials = json.dumps(raw_credentials_dict)
-        encrypted_raw_credentials = kms_encrypt(REGION, raw_credentials, KMS_ALIAS)
+        encrypted_raw_credentials = encrypt_with_kms(raw_credentials, REGION, KMS_ALIAS)
 
         credentials = Credentials(encrypted_raw_credentials, True)
         assert_true(self._sp_driver.save_credentials(descriptor, credentials))
@@ -719,7 +718,7 @@ class TestEphemeralUnencryptedDriver(object):
         descriptor = 'descriptor5'
 
         raw_credentials = json.dumps(raw_credentials_dict)
-        encrypted_raw_credentials = kms_encrypt(REGION, raw_credentials, KMS_ALIAS)
+        encrypted_raw_credentials = encrypt_with_kms(raw_credentials, REGION, KMS_ALIAS)
 
         credentials = Credentials(encrypted_raw_credentials, True, REGION)
 

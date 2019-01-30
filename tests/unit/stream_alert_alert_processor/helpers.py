@@ -16,10 +16,9 @@ limitations under the License.
 import json
 import random
 
-import boto3
-
-from stream_alert.shared.alert import Alert
 from stream_alert.alert_processor.outputs.credentials.provider import LocalFileDriver
+from stream_alert.shared.alert import Alert
+from stream_alert.shared.helpers.aws_api_client import AwsKms
 from tests.unit.helpers.aws_mocks import put_mock_s3_object
 
 
@@ -86,10 +85,7 @@ def remove_temp_secrets():
 
 def encrypt_with_kms(data, region, alias):
     """Encrypt the given data with KMS."""
-    kms_client = boto3.client('kms', region_name=region)
-    response = kms_client.encrypt(KeyId=alias, Plaintext=data)
-
-    return response['CiphertextBlob']
+    return AwsKms.encrypt(data, region=region, key_alias=alias)
 
 
 def put_mock_creds(output_name, creds, bucket, region, alias):

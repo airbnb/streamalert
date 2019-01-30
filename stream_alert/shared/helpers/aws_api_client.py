@@ -17,8 +17,8 @@ import boto3
 
 from botocore.exceptions import ClientError
 
-from stream_alert.shared.logger import get_logger
 from stream_alert.shared.helpers.boto import default_config
+from stream_alert.shared.logger import get_logger
 
 LOGGER = get_logger(__name__)
 
@@ -27,6 +27,9 @@ class AwsKms(object):
     @staticmethod
     def encrypt(plaintext_data, region, key_alias):
         """Encrypts the given plaintext data using AWS KMS
+
+        See:
+          https://docs.aws.amazon.com/kms/latest/APIReference/API_Encrypt.html
 
         Args:
             plaintext_data (str): The raw, unencrypted data to be encrypted
@@ -52,11 +55,14 @@ class AwsKms(object):
     def decrypt(ciphertext, region):
         """Decrypts the given ciphertext using AWS KMS
 
+        See:
+          https://docs.aws.amazon.com/kms/latest/APIReference/API_Decrypt.html
+
         Args:
             ciphertext (str): The raw, encrypted data to be decrypted
             region (str): AWS region
 
-        Return:
+        Returns:
             string: The decrypted plaintext
 
         Raises:
@@ -72,6 +78,55 @@ class AwsKms(object):
 
 
 class AwsS3(object):
+    @staticmethod
+    def head_bucket(bucket, region):
+        """Determines if given bucket exists with correct permissions.
+
+        See:
+            https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketHEAD.html
+
+        Args:
+            bucket (str): AWS S3 bucket name
+            region (str): AWS Region
+
+        Returns:
+            bool: True on success
+
+        Raises:
+            ClientError; Raises when the bucket does not exist or is denying permission to access.
+        """
+        try:
+            client = boto3.client('s3', config=default_config(region=region))
+            client.head_bucket(Bucket=bucket)
+        except ClientError:
+            LOGGER.error('An error occurred during S3 HeadBucket')
+            raise
+
+    @staticmethod
+    def create_bucket(bucket, region):
+        """Creates the given S3 bucket
+
+        See:
+            https://docs.aws.amazon.com/cli/latest/reference/s3api/create-bucket.html
+
+        Args:
+            bucket (str): The string name of the intended S3 bucket
+            region (str): AWS Region
+
+        Returns:
+            bool: True on success
+
+        Raises:
+            ClientError
+        """
+        try:
+            client = boto3.client('s3', config=default_config(region=region))
+            client.create_bucket(Bucket=bucket)
+            return True
+        except ClientError:
+            LOGGER.error('An error occurred during S3 CreateBucket')
+            raise
+
     @staticmethod
     def put_object(object_data, bucket, key, region):
         """Saves the given data into AWS S3

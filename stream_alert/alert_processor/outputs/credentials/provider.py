@@ -21,8 +21,8 @@ from abc import abstractmethod
 
 from botocore.exceptions import ClientError
 
-from stream_alert.shared.logger import get_logger
 from stream_alert.shared.helpers.aws_api_client import AwsKms, AwsS3
+from stream_alert.shared.logger import get_logger
 
 LOGGER = get_logger(__name__)
 

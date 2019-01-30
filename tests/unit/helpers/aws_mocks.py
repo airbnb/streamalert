@@ -21,6 +21,7 @@ import zipfile
 import boto3
 from botocore.exceptions import ClientError
 
+from stream_alert.shared.helpers.aws_api_client import AwsS3
 
 class MockLambdaClient(object):
     """http://boto3.readthedocs.io/en/latest/reference/services/lambda.html"""
@@ -229,11 +230,9 @@ def put_mock_s3_object(bucket, key, data, region='us-east-1'):
         data (str): the actual value to use for the object
         region (str): the aws region to use for this boto3 client
     """
-    s3_client = boto3.client('s3', region_name=region)
     try:
-        # Check if the bucket exists before creating it
-        s3_client.head_bucket(Bucket=bucket)
+        AwsS3.head_bucket(bucket, region=region)
     except ClientError:
-        s3_client.create_bucket(Bucket=bucket)
+        AwsS3.create_bucket(bucket, region=region)
 
-    s3_client.put_object(Body=data, Bucket=bucket, Key=key, ServerSideEncryption='AES256')
+    AwsS3.put_object(data, bucket=bucket, key=key, region=region)
