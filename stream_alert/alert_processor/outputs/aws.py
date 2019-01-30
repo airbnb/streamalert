@@ -338,6 +338,10 @@ class SNSOutput(AWSOutput):
 
         return True
 
+    @property
+    def account_id(self):
+        return self._credentials_provider.get_aws_account_id()
+
 
 @StreamAlertOutput
 class SQSOutput(AWSOutput):

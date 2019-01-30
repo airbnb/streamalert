@@ -14,9 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from stream_alert.shared.logger import get_logger
-from stream_alert.alert_processor.outputs.output_base import StreamAlertOutput
+from stream_alert.alert_processor.outputs.output_base import (
+    StreamAlertOutput,
+    OutputCredentialsProvider
+)
 from stream_alert_cli.helpers import user_input
-from stream_alert_cli.outputs.helpers import encrypt_and_push_creds_to_s3, output_exists
+from stream_alert_cli.outputs.helpers import output_exists
 
 LOGGER = get_logger(__name__)
 
@@ -62,12 +65,9 @@ def output_handler(options, config):
     if output_exists(output_config, props, service):
         return output_handler(options, config)
 
-    secrets_bucket = '{}.streamalert.secrets'.format(prefix)
-    secrets_key = output.output_cred_name(props['descriptor'].value)
-
-    # Encrypt the creds and push them to S3
-    # then update the local output configuration with properties
-    if not encrypt_and_push_creds_to_s3(region, secrets_bucket, secrets_key, props, kms_key_alias):
+    provider = OutputCredentialsProvider(service, config=config, region=region, prefix=prefix)
+    result = provider.save_credentials(props['descriptor'].value, kms_key_alias, props)
+    if not result:
         LOGGER.error('An error occurred while saving \'%s\' '
                      'output configuration for service \'%s\'', props['descriptor'].value,
                      options.service)

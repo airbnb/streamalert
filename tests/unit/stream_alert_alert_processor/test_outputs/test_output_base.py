@@ -14,9 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 # pylint: disable=abstract-class-instantiated,protected-access,attribute-defined-outside-init
-import os
-
-from mock import Mock, patch
+from mock import Mock, patch, MagicMock
 from moto import mock_kms, mock_s3
 from nose.tools import (
     assert_equal,
@@ -27,6 +25,8 @@ from nose.tools import (
 )
 from requests.exceptions import Timeout as ReqTimeout
 
+from stream_alert.alert_processor.outputs.credentials.provider import \
+    get_formatted_output_credentials_name
 from stream_alert.alert_processor.outputs.output_base import (
     OutputDispatcher,
     OutputProperty,
@@ -40,9 +40,7 @@ from tests.unit.stream_alert_alert_processor import (
     MOCK_ENV,
     REGION
 )
-from tests.unit.helpers.aws_mocks import put_mock_s3_object
 from tests.unit.stream_alert_alert_processor.helpers import (
-    encrypt_with_kms,
     put_mock_creds,
     remove_temp_secrets
 )
@@ -116,6 +114,7 @@ def test_output_loading():
 class TestOutputDispatcher(object):
     """Test class for OutputDispatcher"""
 
+    @patch.object(OutputDispatcher, '__service__', 'test_service')
     @patch.object(OutputDispatcher, '__abstractmethods__', frozenset())
     @patch.dict('os.environ', MOCK_ENV)
     def setup(self):
@@ -123,43 +122,19 @@ class TestOutputDispatcher(object):
         self._dispatcher = OutputDispatcher(CONFIG)
         self._descriptor = 'desc_test'
 
-    def test_local_temp_dir(self):
-        """OutputDispatcher - Local Temp Dir"""
-        temp_dir = self._dispatcher._local_temp_dir()
-        assert_equal(temp_dir.split('/')[-1], 'stream_alert_secrets')
+    @patch.object(OutputDispatcher, '__service__', 'test_service')
+    @patch.object(OutputDispatcher, '__abstractmethods__', frozenset())
+    @patch('stream_alert.alert_processor.outputs.output_base.OutputCredentialsProvider')
+    def test_credentials_provider(self, provider_constructor):
+        """OutputDispatcher - Constructor"""
+        provider = MagicMock()
+        provider_constructor.return_value = provider
 
-    def test_output_cred_name(self):
-        """OutputDispatcher - Output Cred Name"""
-        output_name = self._dispatcher.output_cred_name('creds')
-        assert_equal(output_name, 'test_service/creds')
+        _ = OutputDispatcher(CONFIG)
 
-    @mock_s3
-    def test_get_creds_from_s3(self):
-        """OutputDispatcher - Get Creds From S3"""
-        test_data = 'credential test string'
-
-        bucket_name = self._dispatcher.secrets_bucket
-        key = self._dispatcher.output_cred_name(self._descriptor)
-
-        local_cred_location = os.path.join(self._dispatcher._local_temp_dir(), key)
-
-        put_mock_s3_object(bucket_name, key, test_data, REGION)
-
-        self._dispatcher._get_creds_from_s3(local_cred_location, self._descriptor)
-
-        with open(local_cred_location) as creds:
-            line = creds.readline()
-
-        assert_equal(line, test_data)
-
-    @mock_kms
-    def test_kms_decrypt(self):
-        """OutputDispatcher - KMS Decrypt"""
-        test_data = 'data to encrypt'
-        encrypted = encrypt_with_kms(test_data, REGION, KMS_ALIAS)
-        decrypted = self._dispatcher._kms_decrypt(encrypted)
-
-        assert_equal(decrypted, test_data)
+        provider_constructor.assert_called_with('test_service',
+                                                config=CONFIG, defaults=None, region=REGION)
+        assert_equal(self._dispatcher._credentials_provider._service_name, 'test_service')
 
     @patch('logging.Logger.info')
     def test_log_status_success(self, log_mock):
@@ -193,12 +168,17 @@ class TestOutputDispatcher(object):
     def test_load_creds(self):
         """OutputDispatcher - Load Credentials"""
         remove_temp_secrets()
-        output_name = self._dispatcher.output_cred_name(self._descriptor)
+        key = get_formatted_output_credentials_name(
+            'test_service',
+            self._descriptor
+        )
 
         creds = {'url': 'http://www.foo.bar/test',
                  'token': 'token_to_encrypt'}
 
-        put_mock_creds(output_name, creds, self._dispatcher.secrets_bucket, REGION, KMS_ALIAS)
+        put_mock_creds(key, creds,
+                       self._dispatcher._credentials_provider._core_driver._bucket,
+                       REGION, KMS_ALIAS)
 
         loaded_creds = self._dispatcher._load_creds(self._descriptor)
 
