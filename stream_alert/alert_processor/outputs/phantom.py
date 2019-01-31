@@ -37,7 +37,7 @@ class PhantomOutput(OutputDispatcher):
 
     @classmethod
     def get_user_defined_properties(cls):
-        """Get properties that must be asssigned by the user when configuring a new Phantom
+        """Get properties that must be assigned by the user when configuring a new Phantom
         output.  This should be sensitive or unique information for this use-case that needs
         to come from the user.
 

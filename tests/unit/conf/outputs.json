@@ -18,6 +18,9 @@
   "aws-sqs": {
     "unit_test_queue": "unit_test_queue_name"
   },
+  "demisto": [
+    "unit_test_demisto"
+  ],
   "pagerduty": [
     "unit_test_pagerduty"
   ],

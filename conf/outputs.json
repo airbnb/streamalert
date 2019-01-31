@@ -11,6 +11,9 @@
   "aws-sqs": {
     "sample-queue": "sample-queue-name"
   },
+  "demisto": [
+    "sample-integration"
+  ],
   "komand": [
     "sample-integration"
   ],

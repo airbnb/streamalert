@@ -98,6 +98,7 @@ def test_output_loading():
         'aws-sqs',
         'aws-cloudwatch-log',
         'carbonblack',
+        'demisto',
         'github',
         'jira',
         'komand',

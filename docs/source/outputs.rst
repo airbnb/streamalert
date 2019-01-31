@@ -66,9 +66,9 @@ Adding Support for New Services
 
 Adding support for a new service involves five steps:
 
-1. Create a subclass of ``StreamOutputBase`` in the `stream_alert/alert_processor/outputs.py` file.
+1. Create a subclass of ``OutputDispatcher``
 
-   - For reference, ``StreamOutputBase`` is declared in ``stream_alert/alert_processor/output_base.py``
+  - For reference, ``OutputDispatcher`` is declared in ``stream_alert/alert_processor/outputs/output_base.py``
 
 2. Implement the following methods, at a minimum:
 
@@ -128,8 +128,6 @@ Adding support for a new service involves five steps:
    - The ``output_parser`` contains a ``choices`` list for ``--service`` that must include this new service.
 
 6. Extend the ``AlertProcessorTester.setup_outputs`` method in ``stream_alert_cli/test.py`` module to provide mock credentials for your new output.
-
-.. note:: New AWS Service outputs should subclass ``AWSOutput`` instead of ``StreamOutputBase``
 
 Strategy
 --------
