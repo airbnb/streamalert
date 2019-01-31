@@ -238,7 +238,7 @@ class DemistoRequestAssembler(object):
         def enumerate_fields(record, path):
             if isinstance(record, list):
                 for index, item in enumerate(record):
-                    enumerate_fields(item, path + '.[{}]'.format(index))
+                    enumerate_fields(item, path + '[{}]'.format(index))
 
             elif isinstance(record, dict):
                 for key in record:
