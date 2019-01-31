@@ -165,7 +165,7 @@ class DuoApp(AppIntegration):
             'secret_key':
                 {
                     'description': ('the secret key for your duosecurity Admin API. This '
-                                    'should a string of 40 alphanumeric characters'),
+                                    'should be a string of 40 alphanumeric characters'),
                     'format': re.compile(r'^[a-zA-Z0-9]{40}$')
                 }
             }

@@ -20,7 +20,7 @@ from stream_alert_cli.helpers import user_input, save_parameter
 LOGGER = get_logger(__name__)
 
 
-def save_app_auth_info(app, info, overwrite=False):
+def save_app_auth_info(app, info, func_name, overwrite=False):
     """Function to add app auth information to parameter store
 
     Args:
@@ -35,7 +35,7 @@ def save_app_auth_info(app, info, overwrite=False):
                    'use in the \'{}\' app'.format(info['type'], info['app_name']))
 
     # Save these to the parameter store
-    param_name = '{}_{}'.format(info['function_name'], AppConfig.AUTH_CONFIG_SUFFIX)
+    param_name = '{}_{}'.format(func_name, AppConfig.AUTH_CONFIG_SUFFIX)
     saved = save_parameter(info['region'], param_name, auth_dict, description, overwrite)
     if saved:
         LOGGER.info('App authentication info successfully saved to parameter store.')

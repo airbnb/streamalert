@@ -371,7 +371,7 @@ class CLIConfig(object):
 
         return True
 
-    def add_app(self, app_info):
+    def add_app(self, func_name, app_info):
         """Add a configuration for a new streamalert app integration function
 
         Args:
@@ -386,7 +386,6 @@ class CLIConfig(object):
 
         cluster_name = app_info['cluster']
         app_name = app_info['app_name']
-        func_name = app_info['function_name']
 
         # Check to see if there is an existing configuration for this app integration
         cluster_config = self.config['clusters'][cluster_name]
@@ -408,7 +407,7 @@ class CLIConfig(object):
             # If this is true, we shouldn't prompt again to warn about overwriting
             prompt_for_auth = overwrite = continue_prompt(message=prompt)
 
-        if prompt_for_auth and not save_app_auth_info(app, app_info, overwrite):
+        if prompt_for_auth and not save_app_auth_info(app, app_info, func_name, overwrite):
             return False
 
         apps_config = cluster_config['modules'].get('stream_alert_apps', {})
@@ -448,7 +447,7 @@ class CLIConfig(object):
         # Add this service to the sources for this app integration
         # The `stream_alert_app` is purposely singular here
         app_sources = self.config['sources'].get('stream_alert_app', {})
-        app_sources[app_info['function_name']] = {'logs': [app.service()]}
+        app_sources[func_name] = {'logs': [app.service()]}
         self.config['sources']['stream_alert_app'] = app_sources
 
         LOGGER.info('Successfully added \'%s\' app integration to \'conf/clusters/%s.json\' '
