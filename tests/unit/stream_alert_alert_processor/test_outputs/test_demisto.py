@@ -34,13 +34,19 @@ SAMPLE_CONTEXT = {
             },
             {
                 "key": "value2",
-            }
+            },
+            {
+                "integer": 0,
+            },
+            {
+                "bool": True,
+            },
         ]
     }
 }
 EXPECTED_LABELS_FOR_SAMPLE_ALERT = [
     {'type': 'alert.alert_id', 'value': '79192344-4a6d-4850-8d06-9c3fef1060a4'},
-    {'type': 'alert.cluster', 'value': None},
+    {'type': 'alert.cluster', 'value': 'None'},
     {'type': 'alert.descriptor', 'value': 'unit_test_demisto'},
     {'type': 'alert.log_type', 'value': 'json'},
     {
@@ -61,6 +67,8 @@ EXPECTED_LABELS_FOR_SAMPLE_ALERT = [
     {'type': 'context.demisto.baz', 'value': 'buzz'},
     {'type': 'context.demisto.deepArray[0].key', 'value': 'value'},
     {'type': 'context.demisto.deepArray[1].key', 'value': 'value2'},
+    {'type': 'context.demisto.deepArray[2].integer', 'value': '0'},
+    {'type': 'context.demisto.deepArray[3].bool', 'value': 'True'},
     {'type': 'context.demisto.foo', 'value': 'bar'},
     {'type': 'record.cb_server', 'value': 'cbserver'},
     {'type': 'record.compressed_size', 'value': '9982'},

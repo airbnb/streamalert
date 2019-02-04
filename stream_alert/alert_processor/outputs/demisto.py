@@ -145,38 +145,39 @@ class DemistoCreateIncidentRequest(object):
                  details='Details not specified.',
                  create_investigation=False):
         # Default request parameters
-        self._incident_name = incident_name
+        self._incident_name = str(incident_name)
 
         # Incident type maps to the Demisto incident "type". It comes from a discrete set that
         # is defined on the Demisto account configuration. If the provided incident type does not
         # exactly match one in the configured set, it will appear on the Demisto UI as
         # "Unclassified".
-        self._incident_type = incident_type
+        self._incident_type = str(incident_type)
 
         # Severity is an integer. Use the constants above.
         self._severity = severity
 
         # The Owner appears verbatim on the Incident list, regardless of whether the owner
         # exists or not.
-        self._owner = owner
+        self._owner = str(owner)
 
         # An array of Dicts, with keys "type" and "value".
         self._labels = []
 
         # A string that appears in the details section.
-        self._details = details
+        self._details = str(details)
 
         # FIXME: (!) Demisto currently does not seem to render these fields properly on their UI.
         self._custom_fields = {}
 
         # When set to True, the creation of this incident will also trigger the creation of an
         # investigation. This will cause playbooks to trigger automatically.
-        self._create_investigation = create_investigation
+        self._create_investigation = bool(create_investigation)
 
     def add_label(self, label, value):
+        # Demisto rejects non-string values; so type-cast everything to strings first
         self._labels.append({
-            "type": label,
-            "value": value,
+            "type": str(label),
+            "value": str(value),
         })
         self._labels.sort(key=lambda x: x["type"])
 
