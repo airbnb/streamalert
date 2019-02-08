@@ -34,10 +34,12 @@ from stream_alert.shared.logger import get_logger
 LOGGER = get_logger(__name__)
 
 
-def events_v2_data(alert, routing_key, with_record=True):
+def events_v2_data(output_dispatcher, descriptor, alert, routing_key, with_record=True):
     """Helper method to generate the payload to create an event using PagerDuty Events API v2
 
     Args:
+        output_dispatcher (OutputDispatcher): The output sending these data
+        descriptor (str): The descriptor of the output sending these data
         alert (Alert): Alert relevant to the triggered rule
         routing_key (str): Routing key for this PagerDuty integration
         with_record (boolean): Option to add the record data or not
@@ -45,15 +47,17 @@ def events_v2_data(alert, routing_key, with_record=True):
     Returns:
         dict: Contains JSON blob to be used as event
     """
-    summary = 'StreamAlert Rule Triggered - {}'.format(alert.rule_name)
+    publication = alert.publish_for(output_dispatcher, descriptor)
+
+    summary = 'StreamAlert Rule Triggered - {}'.format(publication.get('rule_name', ''))
     details = OrderedDict()
-    details['description'] = alert.rule_description
+    details['description'] = publication.get('rule_description', '')
     if with_record:
-        details['record'] = alert.record
+        details['record'] = publication.get('record', {})
 
     payload = {
         'summary': summary,
-        'source': alert.log_source,
+        'source': publication.get('log_source', ''),
         'severity': 'critical',
         'custom_details': details
     }
@@ -117,10 +121,12 @@ class PagerDutyOutput(OutputDispatcher):
         if not creds:
             return False
 
-        message = 'StreamAlert Rule Triggered - {}'.format(alert.rule_name)
+        publication = alert.publish_for(self, descriptor)
+
+        message = 'StreamAlert Rule Triggered - {}'.format(publication.get('rule_name', ''))
         details = {
-            'description': alert.rule_description,
-            'record': alert.record
+            'description': publication.get('rule_description', ''),
+            'record': publication.get('record', {})
         }
         data = {
             'service_key': creds['service_key'],
@@ -192,7 +198,7 @@ class PagerDutyOutputV2(OutputDispatcher):
         if not creds:
             return False
 
-        data = events_v2_data(alert, creds['routing_key'])
+        data = events_v2_data(self, descriptor, alert, creds['routing_key'])
 
         try:
             self._post_request_retry(creds['url'], data, None, True)
@@ -622,7 +628,9 @@ class PagerDutyIncidentOutput(OutputDispatcher):
         self._escalation_policy_id = creds['escalation_policy_id']
 
         # Extracting context data to assign the incident
-        rule_context = alert.context
+        publication = alert.publish_for(self, descriptor)
+
+        rule_context = publication.get('context', {})
         if rule_context:
             rule_context = rule_context.get(self.__service__, {})
 
@@ -634,10 +642,12 @@ class PagerDutyIncidentOutput(OutputDispatcher):
         assigned_key, assigned_value = self._incident_assignment(rule_context)
 
         # Start preparing the incident JSON blob to be sent to the API
-        incident_title = 'StreamAlert Incident - Rule triggered: {}'.format(alert.rule_name)
+        incident_title = 'StreamAlert Incident - Rule triggered: {}'.format(
+            publication.get('rule_name', '')
+        )
         incident_body = {
             'type': 'incident_body',
-            'details': alert.rule_description
+            'details': publication.get('rule_description', '')
         }
         # Using the service ID for the PagerDuty API
         incident_service = {'id': creds['service_id'], 'type': 'service_reference'}
@@ -672,7 +682,7 @@ class PagerDutyIncidentOutput(OutputDispatcher):
 
         # Create alert to hold all the incident details
         with_record = rule_context.get('with_record', True)
-        event_data = events_v2_data(alert, creds['integration_key'], with_record)
+        event_data = events_v2_data(self, descriptor, alert, creds['integration_key'], with_record)
         event = self._create_event(event_data)
         if not event:
             LOGGER.error('Could not create incident event, %s', self.__service__)
