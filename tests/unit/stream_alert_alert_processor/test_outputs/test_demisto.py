@@ -46,7 +46,7 @@ SAMPLE_CONTEXT = {
 }
 EXPECTED_LABELS_FOR_SAMPLE_ALERT = [
     {'type': 'alert.alert_id', 'value': '79192344-4a6d-4850-8d06-9c3fef1060a4'},
-    {'type': 'alert.cluster', 'value': 'None'},
+    {'type': 'alert.cluster', 'value': ''},
     {'type': 'alert.descriptor', 'value': 'unit_test_demisto'},
     {'type': 'alert.log_type', 'value': 'json'},
     {
@@ -166,7 +166,9 @@ def test_assemble():
     alert = get_alert(context=SAMPLE_CONTEXT)
     descriptor = 'unit_test_demisto'
 
-    request = DemistoRequestAssembler.assemble(alert, descriptor)
+    alert_publication = alert.publish_for(None, None)  # FIXME (derek.wang)
+
+    request = DemistoRequestAssembler.assemble(alert_publication, descriptor)
 
     assert_equal(request.incident_name, 'cb_binarystore_file_added')
     assert_equal(request.incident_type, 'Unclassified')

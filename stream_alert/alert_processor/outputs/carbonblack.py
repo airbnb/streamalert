@@ -67,7 +67,10 @@ class CarbonBlackOutput(OutputDispatcher):
         Returns:
             bool: True if alert was sent successfully, False otherwise
         """
-        if not alert.context:
+        publication = alert.publish_for(self, descriptor)
+
+        context = publication.get('context', False)
+        if not context:
             LOGGER.error('[%s] Alert must contain context to run actions', self.__service__)
             return False
 
@@ -78,9 +81,9 @@ class CarbonBlackOutput(OutputDispatcher):
         client = CbResponseAPI(**creds)
 
         # Get md5 hash 'value' passed from the rules engine function
-        action = alert.context.get('carbonblack', {}).get('action')
+        action = context.get('carbonblack', {}).get('action')
         if action == 'ban':
-            binary_hash = alert.context.get('carbonblack', {}).get('value')
+            binary_hash = context.get('carbonblack', {}).get('value')
             # The binary should already exist in CarbonBlack
             binary = client.select(Binary, binary_hash)
             # Determine if the binary is currenty listed as banned

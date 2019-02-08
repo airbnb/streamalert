@@ -224,6 +224,15 @@ class Alert(object):
         }
 
     def publish_for(self, output_class, descriptor):  # pylint: disable=unused-argument
+        """Presents the current alert as a dict of information for OutputDispatchers to send.
+
+        Args:
+            output_class (OutputDispatcher): The output dispatching service
+            descriptor (string): The output's descriptor
+
+        Returns:
+            dict: A dict of published data
+        """
         # FIXME (derek.wang) Currently, this completely disregards the output_class and descriptor
         # as this Alert entity does not yet have the "publishers" field available to determine
         # how to publish itself.

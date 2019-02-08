@@ -71,7 +71,7 @@ class DemistoOutput(OutputDispatcher):
         if not creds:
             return False
 
-        request = DemistoRequestAssembler.assemble(alert, descriptor)
+        request = DemistoRequestAssembler.assemble(alert.publish_for(self, descriptor), descriptor)
         integration = DemistoApiIntegration(creds, self)
 
         LOGGER.debug('Sending alert to Demisto: %s', creds['url'])
@@ -218,10 +218,10 @@ class DemistoRequestAssembler(object):
     """Factory class for DemistoCreateIncidentRequest objects"""
 
     @staticmethod
-    def assemble(alert, descriptor):
+    def assemble(alert_publication, descriptor):
         """
         Args:
-            alert (Alert): Alert instance which triggered a rule
+            alert_publication (Dict): Published alert data of the alert that triggered a rule
             descriptor (str): Output descriptor
 
         Returns:
@@ -229,8 +229,8 @@ class DemistoRequestAssembler(object):
         """
 
         request = DemistoCreateIncidentRequest(
-            incident_name=alert.rule_name,
-            details=alert.rule_description,
+            incident_name=alert_publication.get('rule_name', 'Unnamed StreamAlert Alert'),
+            details=alert_publication.get('rule_description', 'Details not specified.'),
             create_investigation=True  # Important: Trigger workbooks automatically
         )
 
@@ -248,18 +248,18 @@ class DemistoRequestAssembler(object):
             else:
                 request.add_label(path, record)
 
-        enumerate_fields(alert.record, 'record')
-        enumerate_fields(alert.context, 'context')
+        enumerate_fields(alert_publication.get('record', {}), 'record')
+        enumerate_fields(alert_publication.get('context', {}), 'context')
 
         # Add on alert-specific fields
-        request.add_label('alert.record', json.dumps(alert.record))
-        request.add_label('alert.source', alert.log_source)
-        request.add_label('alert.alert_id', alert.alert_id)
-        request.add_label('alert.cluster', alert.cluster)
-        request.add_label('alert.log_type', alert.log_type)
-        request.add_label('alert.source_entity', alert.source_entity)
-        request.add_label('alert.source_service', alert.source_service)
-        request.add_label('alert.rule_name', alert.rule_name)
+        request.add_label('alert.record', json.dumps(alert_publication.get('record', {})))
+        request.add_label('alert.source', alert_publication.get('log_source', ''))
+        request.add_label('alert.alert_id', alert_publication.get('id', ''))
+        request.add_label('alert.cluster', alert_publication.get('cluster', ''))
+        request.add_label('alert.log_type', alert_publication.get('log_type', ''))
+        request.add_label('alert.source_entity', alert_publication.get('source_entity', ''))
+        request.add_label('alert.source_service', alert_publication.get('source_service', ''))
+        request.add_label('alert.rule_name', alert_publication.get('rule_name', ''))
         request.add_label('alert.descriptor', descriptor)
 
         return request
