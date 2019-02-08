@@ -49,7 +49,8 @@ class TestSlackOutput(object):
         """SlackOutput - Format Single Message - Slack"""
         rule_name = 'test_rule_single'
         alert = get_random_alert(25, rule_name)
-        loaded_message = SlackOutput._format_message(rule_name, alert)
+        alert_publication = alert.publish_for(None, None)  # FIXME (derek.wang)
+        loaded_message = SlackOutput._format_message(rule_name, alert_publication)
 
         # tests
         assert_set_equal(set(loaded_message.keys()), {'text', 'mrkdwn', 'attachments'})
@@ -62,7 +63,8 @@ class TestSlackOutput(object):
         """SlackOutput - Format Multi-Message"""
         rule_name = 'test_rule_multi-part'
         alert = get_random_alert(30, rule_name)
-        loaded_message = SlackOutput._format_message(rule_name, alert)
+        alert_publication = alert.publish_for(None, None)  # FIXME (derek.wang)
+        loaded_message = SlackOutput._format_message(rule_name, alert_publication)
 
         # tests
         assert_set_equal(set(loaded_message.keys()), {'text', 'mrkdwn', 'attachments'})
@@ -74,7 +76,8 @@ class TestSlackOutput(object):
         """SlackOutput - Format Message, Default Rule Description"""
         rule_name = 'test_empty_rule_description'
         alert = get_random_alert(10, rule_name, True)
-        loaded_message = SlackOutput._format_message(rule_name, alert)
+        alert_publication = alert.publish_for(None, None)  # FIXME (derek.wang)
+        loaded_message = SlackOutput._format_message(rule_name, alert_publication)
 
         # tests
         default_rule_description = '*Rule Description:*\nNo rule description provided\n'
@@ -191,8 +194,14 @@ class TestSlackOutput(object):
         """SlackOutput - Max Attachment Reached"""
         alert = get_alert()
         alert.record = {'info': 'test' * 20000}
-        list(SlackOutput._format_attachments(alert, 'foo'))
-        log_mock.assert_called_with('%s: %d-part message truncated to %d parts', alert, 21, 20)
+        alert_publication = alert.publish_for(None, None)  # FIXME (derek.wang)
+        list(SlackOutput._format_attachments(alert_publication, 'foo'))
+        log_mock.assert_called_with(
+            '%s: %d-part message truncated to %d parts',
+            alert_publication,
+            21,
+            20
+        )
 
     @patch('logging.Logger.info')
     @patch('requests.post')

@@ -100,11 +100,11 @@ class SlackOutput(OutputDispatcher):
             alert_text = alert_text[index+1:]
 
     @classmethod
-    def _format_attachments(cls, alert, header_text):
+    def _format_attachments(cls, alert_publication, header_text):
         """Format the message to be sent to slack.
 
         Args:
-            alert (Alert): Alert relevant to the triggered rule
+            alert_publication (dict): Alert relevant to the triggered rule
             header_text (str): A formatted rule header to be included with each
                 attachemnt as fallback text (to be shown on mobile, etc)
 
@@ -112,7 +112,10 @@ class SlackOutput(OutputDispatcher):
             dict: A dictionary with the formatted attachemnt to be sent to Slack
                 as the text
         """
-        messages = list(cls._split_attachment_text(alert.record))
+        record = alert_publication.get('record', {})
+        rule_description = alert_publication.get('rule_description', '')
+
+        messages = list(cls._split_attachment_text(record))
 
         for index, message in enumerate(messages, start=1):
             title = 'Record:'
@@ -121,7 +124,7 @@ class SlackOutput(OutputDispatcher):
             rule_desc = ''
             # Only print the rule description on the first attachment
             if index == 1:
-                rule_desc = alert.rule_description
+                rule_desc = rule_description
                 rule_desc = '*Rule Description:*\n{}\n'.format(rule_desc)
 
             # Yield this attachemnt to be sent with the list of attachments
@@ -136,16 +139,16 @@ class SlackOutput(OutputDispatcher):
 
             if index == cls.MAX_ATTACHMENTS:
                 LOGGER.warning('%s: %d-part message truncated to %d parts',
-                               alert, len(messages), cls.MAX_ATTACHMENTS)
+                               alert_publication, len(messages), cls.MAX_ATTACHMENTS)
                 break
 
     @classmethod
-    def _format_message(cls, rule_name, alert):
+    def _format_message(cls, rule_name, alert_publication):
         """Format the message to be sent to slack.
 
         Args:
             rule_name (str): The name of the rule that triggered the alert
-            alert (Alert): Alert relevant to the triggered rule
+            alert_publication (dict): Alert relevant to the triggered rule
 
         Returns:
             dict: message with attachments to send to Slack.
@@ -158,7 +161,7 @@ class SlackOutput(OutputDispatcher):
                     ...
         """
         header_text = '*StreamAlert Rule Triggered: {}*'.format(rule_name)
-        attachments = list(cls._format_attachments(alert, header_text))
+        attachments = list(cls._format_attachments(alert_publication, header_text))
         full_message = {
             'text': header_text,
             'mrkdwn': True,
@@ -265,7 +268,10 @@ class SlackOutput(OutputDispatcher):
         if not creds:
             return False
 
-        slack_message = self._format_message(alert.rule_name, alert)
+        publication = alert.publish_for(self, descriptor)
+        rule_name = publication.get('rule_name', '')
+
+        slack_message = self._format_message(rule_name, publication)
 
         try:
             self._post_request_retry(creds['url'], slack_message)
