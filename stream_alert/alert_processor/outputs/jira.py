@@ -289,11 +289,12 @@ class JiraOutput(OutputDispatcher):
         if not creds:
             return False
 
+        publication = alert.publish_for(self, descriptor)
+
         issue_id = None
         comment_id = None
-        issue_summary = 'StreamAlert {}'.format(alert.rule_name)
-        alert_body = '{{code:JSON}}{}{{code}}'.format(
-            json.dumps(alert.output_dict(), sort_keys=True))
+        issue_summary = 'StreamAlert {}'.format(publication.get('rule_name', ''))
+        alert_body = '{{code:JSON}}{}{{code}}'.format(json.dumps(publication, sort_keys=True))
         self._base_url = creds['url']
         self._auth_cookie = self._establish_session(creds['username'], creds['password'])
 
