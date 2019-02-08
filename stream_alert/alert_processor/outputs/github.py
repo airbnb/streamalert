@@ -93,10 +93,14 @@ class GithubOutput(OutputDispatcher):
         url = '{}/repos/{}/issues'.format(credentials['api'],
                                           credentials['repository'])
 
-        title = "StreamAlert: {}".format(alert.rule_name)
+        publication = alert.publish_for(self, descriptor)
+        rule_name = publication.get('rule_name', 'Unspecified Rule')
+        rule_description = publication.get('rule_description', 'N/A')
+        record = publication.get('record', {})
+
+        title = "StreamAlert: {}".format(rule_name)
         body_template = "### Description\n{}\n\n### Event data\n\n```\n{}\n```"
-        body = body_template.format(
-            alert.rule_description, json.dumps(alert.record, indent=2, sort_keys=True))
+        body = body_template.format(rule_description, json.dumps(record, indent=2, sort_keys=True))
         issue = {'title': title, 'body': body, 'labels': credentials['labels'].split(',')}
 
         LOGGER.debug('sending alert to Github repository %s', credentials['repository'])
