@@ -14,7 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from collections import OrderedDict
-import json
 
 from stream_alert.alert_processor.outputs.output_base import (
     OutputDispatcher,
