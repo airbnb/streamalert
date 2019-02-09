@@ -49,7 +49,11 @@ def events_v2_data(output_dispatcher, descriptor, alert, routing_key, with_recor
     """
     publication = alert.publish_for(output_dispatcher, descriptor)
 
-    summary = 'StreamAlert Rule Triggered - {}'.format(publication.get('rule_name', ''))
+    # Special field that Publishers can use to customize the header
+    summary = publication.get(
+        'pagerduty_summary',
+        'StreamAlert Rule Triggered - {}'.format(publication.get('rule_name', ''))
+    )
     details = OrderedDict()
     details['description'] = publication.get('rule_description', '')
     if with_record:
