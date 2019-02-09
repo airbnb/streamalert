@@ -15,6 +15,7 @@ limitations under the License.
 """
 # pylint: disable=no-self-use,unused-argument,attribute-defined-outside-init,protected-access
 from collections import OrderedDict
+from datetime import datetime
 
 from mock import patch, Mock, MagicMock
 from nose.tools import assert_is_instance, assert_true, assert_false, assert_equal
@@ -44,32 +45,21 @@ SAMPLE_CONTEXT = {
         ]
     }
 }
+
+# Order matters in this test!
 EXPECTED_LABELS_FOR_SAMPLE_ALERT = [
-    {'type': 'alert.alert_id', 'value': '79192344-4a6d-4850-8d06-9c3fef1060a4'},
-    {'type': 'alert.cluster', 'value': ''},
-    {'type': 'alert.descriptor', 'value': 'unit_test_demisto'},
-    {'type': 'alert.log_type', 'value': 'json'},
-    {
-        'type': 'alert.record',
-        'value': (
-            '{"compressed_size": "9982", "node_id": "1", "cb_server": "cbserver",'
-            ' "timestamp": "1496947381.18", "md5": '
-            '"0F9AA55DA3BDE84B35656AD8911A22E1", "type": '
-            '"binarystore.file.added", "file_path": '
-            '"/tmp/5DA/AD8/0F9AA55DA3BDE84B35656AD8911A22E1.zip", "size": '
-            '"21504"}'
-        )
-    },
-    {'type': 'alert.rule_name', 'value': 'cb_binarystore_file_added'},
-    {'type': 'alert.source', 'value': 'carbonblack:binarystore.file.added'},
-    {'type': 'alert.source_entity', 'value': 'corp-prefix.prod.cb.region'},
-    {'type': 'alert.source_service', 'value': 's3'},
+    {'type': 'cluster', 'value': ''},
     {'type': 'context.demisto.baz', 'value': 'buzz'},
     {'type': 'context.demisto.deepArray[0].key', 'value': 'value'},
     {'type': 'context.demisto.deepArray[1].key', 'value': 'value2'},
     {'type': 'context.demisto.deepArray[2].integer', 'value': '0'},
     {'type': 'context.demisto.deepArray[3].bool', 'value': 'True'},
     {'type': 'context.demisto.foo', 'value': 'bar'},
+    {'type': 'created', 'value': '2019-01-01T00:00:00.000000Z'},
+    {'type': 'id', 'value': '79192344-4a6d-4850-8d06-9c3fef1060a4'},
+    {'type': 'log_source', 'value': 'carbonblack:binarystore.file.added'},
+    {'type': 'log_type', 'value': 'json'},
+    {'type': 'outputs[0]', 'value': 'slack:unit_test_channel'},
     {'type': 'record.cb_server', 'value': 'cbserver'},
     {'type': 'record.compressed_size', 'value': '9982'},
     {'type': 'record.file_path',
@@ -78,7 +68,12 @@ EXPECTED_LABELS_FOR_SAMPLE_ALERT = [
     {'type': 'record.node_id', 'value': '1'},
     {'type': 'record.size', 'value': '21504'},
     {'type': 'record.timestamp', 'value': '1496947381.18'},
-    {'type': 'record.type', 'value': 'binarystore.file.added'}
+    {'type': 'record.type', 'value': 'binarystore.file.added'},
+    {'type': 'rule_description', 'value': 'Info about this rule and what actions to take'},
+    {'type': 'rule_name', 'value': 'cb_binarystore_file_added'},
+    {'type': 'source_entity', 'value': 'corp-prefix.prod.cb.region'},
+    {'type': 'source_service', 'value': 's3'},
+    {'type': 'staged', 'value': 'False'},
 ]
 
 class TestDemistoOutput(object):
@@ -114,20 +109,36 @@ class TestDemistoOutput(object):
         mock_response.status_code = 201
         request_mock.return_value = mock_response
 
-        success = self._dispatcher.dispatch(get_alert(context=SAMPLE_CONTEXT), self.OUTPUT)
+        alert = get_alert(context=SAMPLE_CONTEXT)
+        alert.created = datetime(2019, 1, 1)
+
+        success = self._dispatcher.dispatch(alert, self.OUTPUT)
 
         assert_true(success)
 
         expected_data = {
-            'name': 'cb_binarystore_file_added',
             'type': 'Unclassified',
-            'severity': 0,
+            'name': 'cb_binarystore_file_added',
             'owner': 'StreamAlert',
+            'severity': 0,
             'labels': EXPECTED_LABELS_FOR_SAMPLE_ALERT,
-            'details': 'Info about this rule and what actions to take',
             'customFields': {},
+            'details': 'Info about this rule and what actions to take',
             'createInvestigation': True,
         }
+        class Matcher(object):
+            def __eq__(self, other):
+                if other == expected_data:
+                    return True
+
+                # If you have trouble debugging the differences of the large JSON dicts like I did,
+                # pretty print the result!
+                #
+                # import pprint
+                # pp = pprint.PrettyPrinter(indent=4)
+                # pp.pprint(other)
+                return False
+
         request_mock.assert_called_with(
             'https://demisto.awesome-website.io/incident',
             headers={
@@ -135,8 +146,8 @@ class TestDemistoOutput(object):
                 'Content-type': 'application/json',
                 'Authorization': 'aaaabbbbccccddddeeeeffff',
             },
+            json=Matcher(),
             verify=False,
-            json=expected_data,
             timeout=3.05
         )
 
@@ -151,7 +162,10 @@ class TestDemistoOutput(object):
         mock_response.status_code = 400  # bad request
         request_mock.return_value = mock_response
 
-        success = self._dispatcher.dispatch(get_alert(context=SAMPLE_CONTEXT), self.OUTPUT)
+        alert = get_alert(context=SAMPLE_CONTEXT)
+        alert.created = datetime(2019, 1, 1)
+
+        success = self._dispatcher.dispatch(alert, self.OUTPUT)
 
         assert_false(success)
 
@@ -164,11 +178,11 @@ class TestDemistoOutput(object):
 def test_assemble():
     """DemistoRequestAssembler - assemble"""
     alert = get_alert(context=SAMPLE_CONTEXT)
-    descriptor = 'unit_test_demisto'
+    alert.created = datetime(2019, 1, 1)
 
     alert_publication = alert.publish_for(None, None)  # FIXME (derek.wang)
 
-    request = DemistoRequestAssembler.assemble(alert_publication, descriptor)
+    request = DemistoRequestAssembler.assemble(alert_publication)
 
     assert_equal(request.incident_name, 'cb_binarystore_file_added')
     assert_equal(request.incident_type, 'Unclassified')

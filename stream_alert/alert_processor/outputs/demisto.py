@@ -71,7 +71,7 @@ class DemistoOutput(OutputDispatcher):
         if not creds:
             return False
 
-        request = DemistoRequestAssembler.assemble(alert.publish_for(self, descriptor), descriptor)
+        request = DemistoRequestAssembler.assemble(alert.publish_for(self, descriptor))
         integration = DemistoApiIntegration(creds, self)
 
         LOGGER.debug('Sending alert to Demisto: %s', creds['url'])
@@ -218,7 +218,7 @@ class DemistoRequestAssembler(object):
     """Factory class for DemistoCreateIncidentRequest objects"""
 
     @staticmethod
-    def assemble(alert_publication, descriptor):
+    def assemble(alert_publication):
         """
         Args:
             alert_publication (Dict): Published alert data of the alert that triggered a rule
@@ -228,38 +228,35 @@ class DemistoRequestAssembler(object):
             DemistoCreateIncidentRequest
         """
 
+        # Special key that publishers can use to control the title of the incident.
+        incident_name = alert_publication.get(
+            'demisto_incident_name',
+            alert_publication.get('rule_name', 'Unnamed StreamAlert Alert')
+        )
+
         request = DemistoCreateIncidentRequest(
-            incident_name=alert_publication.get('rule_name', 'Unnamed StreamAlert Alert'),
+            incident_name=incident_name,
             details=alert_publication.get('rule_description', 'Details not specified.'),
             create_investigation=True  # Important: Trigger workbooks automatically
         )
 
         # The alert record/context are nested JSON structure which does not render well on
         # Demisto's UI; flatten it into a series of discrete key-values.
-        def enumerate_fields(record, path):
+        def enumerate_fields(record, path=''):
             if isinstance(record, list):
                 for index, item in enumerate(record):
-                    enumerate_fields(item, path + '[{}]'.format(index))
+                    enumerate_fields(item, '{}[{}]'.format(path, index))
 
             elif isinstance(record, dict):
                 for key in record:
-                    enumerate_fields(record[key], path + '.{}'.format(key))
+                    enumerate_fields(record[key], '{prefix}{key}'.format(
+                        prefix='{}.'.format(path) if path else '',  # Omit first period
+                        key=key
+                    ))
 
             else:
                 request.add_label(path, record)
 
-        enumerate_fields(alert_publication.get('record', {}), 'record')
-        enumerate_fields(alert_publication.get('context', {}), 'context')
-
-        # Add on alert-specific fields
-        request.add_label('alert.record', json.dumps(alert_publication.get('record', {})))
-        request.add_label('alert.source', alert_publication.get('log_source', ''))
-        request.add_label('alert.alert_id', alert_publication.get('id', ''))
-        request.add_label('alert.cluster', alert_publication.get('cluster', ''))
-        request.add_label('alert.log_type', alert_publication.get('log_type', ''))
-        request.add_label('alert.source_entity', alert_publication.get('source_entity', ''))
-        request.add_label('alert.source_service', alert_publication.get('source_service', ''))
-        request.add_label('alert.rule_name', alert_publication.get('rule_name', ''))
-        request.add_label('alert.descriptor', descriptor)
+        enumerate_fields(alert_publication)
 
         return request
