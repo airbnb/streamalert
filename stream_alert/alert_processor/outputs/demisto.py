@@ -218,18 +218,18 @@ class DemistoCreateIncidentRequest(object):
             return cls.SEVERITY_UNKNOWN
 
         lc_severity_string = severity_string.lower()
-        if 'info' == lc_severity_string or 'informational' == lc_severity_string:
+        if lc_severity_string == 'info' or lc_severity_string == 'informational':
             return cls.SEVERITY_INFORMATIONAL
-        elif 'low' == lc_severity_string:
+        elif lc_severity_string == 'low':
             return cls.SEVERITY_LOW
-        elif 'med' == lc_severity_string or 'medium' == lc_severity_string:
+        elif lc_severity_string == 'med' or lc_severity_string == 'medium':
             return cls.SEVERITY_MEDIUM
-        elif 'high' == lc_severity_string:
+        elif lc_severity_string == 'high':
             return cls.SEVERITY_HIGH
-        elif 'critical' == lc_severity_string:
+        elif lc_severity_string == 'critical':
             return cls.SEVERITY_CRITICAL
-        else:
-            return cls.SEVERITY_UNKNOWN
+
+        return cls.SEVERITY_UNKNOWN
 
 
 class DemistoRequestAssembler(object):
