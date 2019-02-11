@@ -49,19 +49,23 @@ def events_v2_data(output_dispatcher, descriptor, alert, routing_key, with_recor
     """
     publication = alert.publish_for(output_dispatcher, descriptor)
 
+    # Presentation defaults
+    default_summary = 'StreamAlert Rule Triggered - {}'.format(alert.rule_name)
+    default_description = alert.rule_description
+    default_record = alert.record
+
     # Special field that Publishers can use to customize the header
-    summary = publication.get(
-        'pagerduty_summary',
-        'StreamAlert Rule Triggered - {}'.format(publication.get('rule_name', ''))
-    )
+    # FIXME (derek.wang) the publication key does not adhere to the convention of __service__
+    # as a prefix, since this method is overloaded between two different outputs
+    summary = publication.get('pagerduty.summary', default_summary)
     details = OrderedDict()
-    details['description'] = publication.get('rule_description', '')
+    details['description'] = publication.get('pagerduty.description', default_description)
     if with_record:
-        details['record'] = publication.get('record', {})
+        details['record'] = publication.get('record', default_record)
 
     payload = {
         'summary': summary,
-        'source': publication.get('log_source', ''),
+        'source': alert.log_source,
         'severity': 'critical',
         'custom_details': details
     }
@@ -634,25 +638,35 @@ class PagerDutyIncidentOutput(OutputDispatcher):
         # Extracting context data to assign the incident
         publication = alert.publish_for(self, descriptor)
 
-        rule_context = publication.get('context', {})
+        rule_context = alert.context
         if rule_context:
             rule_context = rule_context.get(self.__service__, {})
 
+        # Presentation defaults
+        default_incident_title = 'StreamAlert Incident - Rule triggered: {}'.format(
+            alert.rule_name
+        )
+        default_incident_body = {
+            'type': 'incident_body',
+            'details': alert.rule_description,
+        }
+
+        # Override presentation defaults with publisher fields
+        incident_title = publication.get(
+            'pagerduty-incident.incident_title',
+            default_incident_title
+        )
+        incident_body = publication.get('pagerduty-incident.incident_body', default_incident_body)
+
+        # FIXME (derek.wang) use publisher to set priority instead of context
         # Use the priority provided in the context, use it or the incident will be low priority
         incident_priority = self._priority_verify(rule_context)
 
+        # FIXME (derek.wang) use publisher to set priority instead of context
         # Incident assignment goes in this order:
         #  Provided user -> provided policy -> default policy
         assigned_key, assigned_value = self._incident_assignment(rule_context)
 
-        # Start preparing the incident JSON blob to be sent to the API
-        incident_title = 'StreamAlert Incident - Rule triggered: {}'.format(
-            publication.get('rule_name', '')
-        )
-        incident_body = {
-            'type': 'incident_body',
-            'details': publication.get('rule_description', '')
-        }
         # Using the service ID for the PagerDuty API
         incident_service = {'id': creds['service_id'], 'type': 'service_reference'}
         incident_data = {

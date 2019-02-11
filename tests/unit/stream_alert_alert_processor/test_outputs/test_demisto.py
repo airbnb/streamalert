@@ -182,7 +182,7 @@ def test_assemble():
 
     alert_publication = alert.publish_for(None, None)  # FIXME (derek.wang)
 
-    request = DemistoRequestAssembler.assemble(alert_publication)
+    request = DemistoRequestAssembler.assemble(alert, alert_publication)
 
     assert_equal(request.incident_name, 'cb_binarystore_file_added')
     assert_equal(request.incident_type, 'Unclassified')

@@ -281,21 +281,21 @@ class S3Output(AWSOutput):
         """
         bucket = self.config[self.__service__][descriptor]
 
-        publication = alert.publish_for(self, descriptor)
-
         # Prefix with alerts to account for generic non-streamalert buckets
         # Produces the following key format:
         #   alerts/dt=2017-01-25-00/kinesis_my-stream_my-rule_uuid.json
         # Keys need to be unique to avoid object overwriting
         key = 'alerts/dt={}/{}_{}_{}_{}.json'.format(
             datetime.now().strftime('%Y-%m-%d-%H'),
-            publication.get('source_service', ''),
-            publication.get('source_entity', ''),
-            publication.get('rule_name', ''),
+            alert.source_service,
+            alert.source_entity,
+            alert.rule_name,
             uuid.uuid4()
         )
 
         LOGGER.debug('Sending %s to S3 bucket %s with key %s', alert, bucket, key)
+
+        publication = alert.publish_for(self, descriptor)
 
         client = boto3.client('s3', region_name=self.region)
         client.put_object(Body=json.dumps(publication), Bucket=bucket, Key=key)
@@ -337,14 +337,19 @@ class SNSOutput(AWSOutput):
         topic = boto3.resource('sns', region_name=self.region).Topic(topic_arn)
 
         publication = alert.publish_for(self, descriptor)
-        rule_name = publication.get('rule_name', 'Unnamed Rule')
-        alert_id = publication.get('id', '')
+
+        # Presentation defaults
+        default_subject = '{} triggered alert {}'.format(alert.rule_name, alert.alert_id)
+        default_message = json.dumps(publication, indent=2, sort_keys=True)
+
+        # Published presentation fields
+        # Subject must be < 100 characters long;
+        subject = elide_string_middle(publication.get('aws-sns.topic', default_subject), 99)
+        message = publication.get('aws-sns.message', default_message)
 
         topic.publish(
-            Message=json.dumps(publication, indent=2, sort_keys=True),
-            # Subject must be < 100 characters long
-            Subject=elide_string_middle(
-                '{} triggered alert {}'.format(rule_name, alert_id), 99)
+            Message=message,
+            Subject=subject
         )
 
         return True
@@ -387,9 +392,15 @@ class SQSOutput(AWSOutput):
         queue = sqs.get_queue_by_name(QueueName=queue_name)
 
         publication = alert.publish_for(self, descriptor)
-        record = publication.get('record', {})
 
-        queue.send_message(MessageBody=json.dumps(record, separators=(',', ':')))
+        # Presentation defaults
+        record = publication.get('record', {})
+        default_message_body = json.dumps(record, separators=(',', ':'))
+
+        # Presentation values
+        message_body = publication.get('aws-sqs:message_body', default_message_body)
+
+        queue.send_message(MessageBody=message_body)
 
         return True
 

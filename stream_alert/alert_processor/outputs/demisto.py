@@ -70,7 +70,7 @@ class DemistoOutput(OutputDispatcher):
         if not creds:
             return False
 
-        request = DemistoRequestAssembler.assemble(alert.publish_for(self, descriptor))
+        request = DemistoRequestAssembler.assemble(alert, alert.publish_for(self, descriptor))
         integration = DemistoApiIntegration(creds, self)
 
         LOGGER.debug('Sending alert to Demisto: %s', creds['url'])
@@ -212,34 +212,66 @@ class DemistoCreateIncidentRequest(object):
     def create_investigation(self):
         return self._create_investigation
 
+    @classmethod
+    def map_severity_string_to_severity_value(cls, severity_string):
+        if not isinstance(severity_string, basestring):
+            return cls.SEVERITY_UNKNOWN
+
+        lc_severity_string = severity_string.lower()
+        if 'info' == lc_severity_string or 'informational' == lc_severity_string:
+            return cls.SEVERITY_INFORMATIONAL
+        elif 'low' == lc_severity_string:
+            return cls.SEVERITY_LOW
+        elif 'med' == lc_severity_string or 'medium' == lc_severity_string:
+            return cls.SEVERITY_MEDIUM
+        elif 'high' == lc_severity_string:
+            return cls.SEVERITY_HIGH
+        elif 'critical' == lc_severity_string:
+            return cls.SEVERITY_CRITICAL
+        else:
+            return cls.SEVERITY_UNKNOWN
+
 
 class DemistoRequestAssembler(object):
     """Factory class for DemistoCreateIncidentRequest objects"""
 
     @staticmethod
-    def assemble(alert_publication):
+    def assemble(alert, alert_publication):
         """
         Args:
+            alert (Alert): Instance of the alert
             alert_publication (Dict): Published alert data of the alert that triggered a rule
             descriptor (str): Output descriptor
 
         Returns:
             DemistoCreateIncidentRequest
         """
+        # Default presentation values
+        default_incident_name = alert.rule_name
+        default_incident_type = 'Unclassified'
+        default_severity = 'unknown'
+        default_owner = 'StreamAlert'
+        default_details = alert.rule_description
 
-        # Special key that publishers can use to control the title of the incident.
-        incident_name = alert_publication.get(
-            'demisto_incident_name',
-            alert_publication.get('rule_name', 'Unnamed StreamAlert Alert')
+        # Special keys that publishers can use to modify default presentation
+        incident_type = alert_publication.get('demisto.incident_type', default_incident_type)
+        severity = DemistoCreateIncidentRequest.map_severity_string_to_severity_value(
+            alert_publication.get('demisto.severity', default_severity)
         )
+        owner = alert_publication.get('demisto.owner', default_owner)
+        details = alert_publication.get('demisto.details', default_details)
+        incident_name = alert_publication.get('demisto.incident_name', default_incident_name)
 
         request = DemistoCreateIncidentRequest(
             incident_name=incident_name,
-            details=alert_publication.get('rule_description', 'Details not specified.'),
+            incident_type=incident_type,
+            severity=severity,
+            owner=owner,
+            details=details,
             create_investigation=True  # Important: Trigger workbooks automatically
         )
 
-        # The alert record/context are nested JSON structure which does not render well on
+        # The alert is a nested JSON structure which does not render well on
         # Demisto's UI; flatten it into a series of discrete key-values.
         def enumerate_fields(record, path=''):
             if isinstance(record, list):

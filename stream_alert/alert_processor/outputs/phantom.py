@@ -147,12 +147,15 @@ class PhantomOutput(OutputDispatcher):
             return False
 
         publication = alert.publish_for(self, descriptor)
-        rule_name = publication.get('rule_name', '')
-        rule_description = publication.get('rule_description', '')
-        record = publication.get('record', {})
+        record = alert.record
 
         headers = {"ph-auth-token": creds['ph_auth_token']}
-        container_id = self._setup_container(rule_name, rule_description, creds['url'], headers)
+        container_id = self._setup_container(
+            alert.rule_name,
+            alert.rule_description,
+            creds['url'],
+            headers
+        )
 
         LOGGER.debug('sending alert to Phantom container with id %s', container_id)
 
