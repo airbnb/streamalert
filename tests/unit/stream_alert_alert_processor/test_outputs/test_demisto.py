@@ -22,6 +22,7 @@ from nose.tools import assert_is_instance, assert_true, assert_false, assert_equ
 
 from stream_alert.alert_processor.outputs.demisto import DemistoOutput, DemistoRequestAssembler
 from stream_alert.alert_processor.outputs.output_base import OutputRequestFailure
+from stream_alert.alert_processor.publishers import publish_alert
 
 from tests.unit.stream_alert_alert_processor.helpers import get_alert
 
@@ -180,7 +181,7 @@ def test_assemble():
     alert = get_alert(context=SAMPLE_CONTEXT)
     alert.created = datetime(2019, 1, 1)
 
-    alert_publication = alert.publish_for(None, None)  # FIXME (derek.wang)
+    alert_publication = publish_alert(alert, None, None)  # FIXME (derek.wang)
 
     request = DemistoRequestAssembler.assemble(alert, alert_publication)
 

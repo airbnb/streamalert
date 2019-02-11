@@ -184,6 +184,7 @@ class TestRulesEngine(object):
             is_staged=Mock(return_value=False),
             outputs_set={'slack:test'},
             description='rule description',
+            publishers=None,
             context=None,
             merge_by_keys=None,
             merge_window_mins=0
@@ -211,6 +212,7 @@ class TestRulesEngine(object):
                 log_type='json',
                 merge_by_keys=None,
                 merge_window=timedelta(minutes=0),
+                publishers=None,
                 rule_description='rule description',
                 source_entity='test_stream',
                 source_service='kinesis',
@@ -226,6 +228,7 @@ class TestRulesEngine(object):
             is_staged=Mock(return_value=True),
             outputs_set={'slack:test'},
             description='rule description',
+            publishers=None,
             context=None,
             merge_by_keys=None,
             merge_window_mins=0
@@ -253,6 +256,7 @@ class TestRulesEngine(object):
                 log_type='json',
                 merge_by_keys=None,
                 merge_window=timedelta(minutes=0),
+                publishers=None,
                 rule_description='rule description',
                 source_entity='test_stream',
                 source_service='kinesis',

@@ -23,6 +23,7 @@ from stream_alert.alert_processor.outputs.output_base import (
     OutputRequestFailure,
     StreamAlertOutput
 )
+from stream_alert.alert_processor.publishers import publish_alert
 from stream_alert.shared.logger import get_logger
 
 
@@ -289,7 +290,7 @@ class JiraOutput(OutputDispatcher):
         if not creds:
             return False
 
-        publication = alert.publish_for(self, descriptor)
+        publication = publish_alert(alert, self, descriptor)
 
         # Presentation defaults
         default_issue_summary = 'StreamAlert {}'.format(alert.rule_name)

@@ -20,6 +20,7 @@ from stream_alert.alert_processor.outputs.output_base import (
     OutputProperty,
     StreamAlertOutput
 )
+from stream_alert.alert_processor.publishers import publish_alert
 from stream_alert.shared.logger import get_logger
 
 
@@ -77,7 +78,7 @@ class KomandOutput(OutputDispatcher):
 
         LOGGER.debug('sending alert to Komand')
 
-        publication = alert.publish_for(self, descriptor)
+        publication = publish_alert(alert, self, descriptor)
         resp = self._post_request(creds['url'], {'data': publication}, headers, False)
 
         return self._check_http_response(resp)

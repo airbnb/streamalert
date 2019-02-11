@@ -29,6 +29,7 @@ from stream_alert.alert_processor.outputs.output_base import (
     OutputProperty,
     StreamAlertOutput
 )
+from stream_alert.alert_processor.publishers import publish_alert
 from stream_alert.shared.backoff_handlers import (
     backoff_handler,
     success_handler,
@@ -133,7 +134,7 @@ class KinesisFirehoseOutput(AWSOutput):
         if self.__aws_client__ is None:
             self.__aws_client__ = boto3.client('firehose', region_name=self.region)
 
-        publication = alert.publish_for(self, descriptor)
+        publication = publish_alert(alert, self, descriptor)
 
         json_alert = json.dumps(publication, separators=(',', ':')) + '\n'
         if len(json_alert) > self.MAX_RECORD_SIZE:
@@ -194,7 +195,7 @@ class LambdaOutput(AWSOutput):
         Returns:
             bool: True if alert was sent successfully, False otherwise
         """
-        publication = alert.publish_for(self, descriptor)
+        publication = publish_alert(alert, self, descriptor)
         record = publication.get('record', {})
 
         alert_string = json.dumps(record, separators=(',', ':'))
@@ -295,7 +296,7 @@ class S3Output(AWSOutput):
 
         LOGGER.debug('Sending %s to S3 bucket %s with key %s', alert, bucket, key)
 
-        publication = alert.publish_for(self, descriptor)
+        publication = publish_alert(alert, self, descriptor)
 
         client = boto3.client('s3', region_name=self.region)
         client.put_object(Body=json.dumps(publication), Bucket=bucket, Key=key)
@@ -336,7 +337,7 @@ class SNSOutput(AWSOutput):
         topic_arn = 'arn:aws:sns:{}:{}:{}'.format(self.region, self.account_id, topic_name)
         topic = boto3.resource('sns', region_name=self.region).Topic(topic_arn)
 
-        publication = alert.publish_for(self, descriptor)
+        publication = publish_alert(alert, self, descriptor)
 
         # Presentation defaults
         default_subject = '{} triggered alert {}'.format(alert.rule_name, alert.alert_id)
@@ -391,7 +392,7 @@ class SQSOutput(AWSOutput):
         sqs = boto3.resource('sqs', region_name=self.region)
         queue = sqs.get_queue_by_name(QueueName=queue_name)
 
-        publication = alert.publish_for(self, descriptor)
+        publication = publish_alert(alert, self, descriptor)
 
         # Presentation defaults
         record = publication.get('record', {})
@@ -428,7 +429,7 @@ class CloudwatchLogOutput(AWSOutput):
             alert (Alert): Alert instance which triggered a rule
             descriptor (str): Output descriptor
         """
-        publication = alert.publish_for(self, descriptor)
+        publication = publish_alert(alert, self, descriptor)
         LOGGER.info('New Alert:\n%s', json.dumps(publication, indent=2))
 
         return True

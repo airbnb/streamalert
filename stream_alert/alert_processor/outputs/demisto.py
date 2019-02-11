@@ -20,6 +20,7 @@ from stream_alert.alert_processor.outputs.output_base import (
     OutputProperty,
     StreamAlertOutput,
     OutputRequestFailure)
+from stream_alert.alert_processor.publishers import publish_alert
 from stream_alert.shared.logger import get_logger
 
 LOGGER = get_logger(__name__)
@@ -70,7 +71,7 @@ class DemistoOutput(OutputDispatcher):
         if not creds:
             return False
 
-        request = DemistoRequestAssembler.assemble(alert, alert.publish_for(self, descriptor))
+        request = DemistoRequestAssembler.assemble(alert, publish_alert(alert, self, descriptor))
         integration = DemistoApiIntegration(creds, self)
 
         LOGGER.debug('Sending alert to Demisto: %s', creds['url'])
@@ -241,7 +242,6 @@ class DemistoRequestAssembler(object):
         Args:
             alert (Alert): Instance of the alert
             alert_publication (Dict): Published alert data of the alert that triggered a rule
-            descriptor (str): Output descriptor
 
         Returns:
             DemistoCreateIncidentRequest

@@ -22,6 +22,7 @@ from stream_alert.alert_processor.outputs.output_base import (
     OutputRequestFailure,
     StreamAlertOutput
 )
+from stream_alert.alert_processor.publishers import publish_alert
 from stream_alert.shared.logger import get_logger
 
 
@@ -268,7 +269,7 @@ class SlackOutput(OutputDispatcher):
         if not creds:
             return False
 
-        publication = alert.publish_for(self, descriptor)
+        publication = publish_alert(alert, self, descriptor)
         rule_name = publication.get('rule_name', '')
 
         slack_message = self._format_message(rule_name, publication)

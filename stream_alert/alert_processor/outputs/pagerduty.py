@@ -23,6 +23,7 @@ from stream_alert.alert_processor.outputs.output_base import (
     OutputRequestFailure,
     StreamAlertOutput
 )
+from stream_alert.alert_processor.publishers import publish_alert
 from stream_alert.shared.backoff_handlers import (
     backoff_handler,
     success_handler,
@@ -47,7 +48,7 @@ def events_v2_data(output_dispatcher, descriptor, alert, routing_key, with_recor
     Returns:
         dict: Contains JSON blob to be used as event
     """
-    publication = alert.publish_for(output_dispatcher, descriptor)
+    publication = publish_alert(alert, output_dispatcher, descriptor)
 
     # Presentation defaults
     default_summary = 'StreamAlert Rule Triggered - {}'.format(alert.rule_name)
@@ -129,7 +130,7 @@ class PagerDutyOutput(OutputDispatcher):
         if not creds:
             return False
 
-        publication = alert.publish_for(self, descriptor)
+        publication = publish_alert(alert, self, descriptor)
 
         message = 'StreamAlert Rule Triggered - {}'.format(publication.get('rule_name', ''))
         details = {
@@ -636,7 +637,7 @@ class PagerDutyIncidentOutput(OutputDispatcher):
         self._escalation_policy_id = creds['escalation_policy_id']
 
         # Extracting context data to assign the incident
-        publication = alert.publish_for(self, descriptor)
+        publication = publish_alert(alert, self, descriptor)
 
         rule_context = alert.context
         if rule_context:

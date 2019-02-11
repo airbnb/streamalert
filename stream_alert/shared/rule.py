@@ -105,6 +105,7 @@ class Rule(object):
         self.merge_by_keys = kwargs.get('merge_by_keys')
         self.merge_window_mins = kwargs.get('merge_window_mins') or 0
         self.outputs = kwargs.get('outputs')
+        self.publishers = kwargs.get('publishers')
         self.req_subkeys = kwargs.get('req_subkeys')
         self.initial_context = kwargs.get('context')
         self.context = None

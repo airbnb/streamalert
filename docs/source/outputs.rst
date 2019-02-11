@@ -15,6 +15,7 @@ Out of the box, StreamAlert supports:
 * **AWS SNS**
 * **AWS SQS**
 * **CarbonBlack**
+* **Demisto**
 * **GitHub**
 * **Jira**
 * **Komand**
@@ -92,6 +93,23 @@ Adding support for a new service involves five steps:
     """Handles the actual sending of alerts to the configured service.
     Any external API calls for this service should be added here.
     This method should return a boolean where True means the alert was successfully sent.
+
+    In general, use the publish_alert() method defined in stream_alert.alert_processor.publishers
+    when presenting the alert in a generic polymorphic format to be rendered on the chosen output
+    integration. This is so specialized Publishers can modify how the alert is represented on the
+    output.
+
+    In addition, adding output-specific fields can be useful to offer more fine-grained control
+    of the look and feel of an alert. Prefix all such fields with the output's service name and
+    delimit the field with a period.
+
+    For example, an optional field that directly controls a PagerDuty incident's title:
+
+    - 'pagerduty.incident_title'
+
+
+    When referencing an alert's attributes, reference the alert's field directly (e.g.
+    alert.alert_id). Do not rely on the published alert.
     """
     ...
     return True

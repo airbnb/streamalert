@@ -19,6 +19,7 @@ from mock import patch, Mock, MagicMock
 from nose.tools import assert_equal, assert_false, assert_true, assert_set_equal
 
 from stream_alert.alert_processor.outputs.slack import SlackOutput
+from stream_alert.alert_processor.publishers import publish_alert
 from tests.unit.stream_alert_alert_processor.helpers import (
     get_random_alert,
     get_alert,
@@ -49,7 +50,7 @@ class TestSlackOutput(object):
         """SlackOutput - Format Single Message - Slack"""
         rule_name = 'test_rule_single'
         alert = get_random_alert(25, rule_name)
-        alert_publication = alert.publish_for(None, None)  # FIXME (derek.wang)
+        alert_publication = publish_alert(alert, None, None)  # FIXME (derek.wang)
         loaded_message = SlackOutput._format_message(rule_name, alert_publication)
 
         # tests
@@ -63,7 +64,7 @@ class TestSlackOutput(object):
         """SlackOutput - Format Multi-Message"""
         rule_name = 'test_rule_multi-part'
         alert = get_random_alert(30, rule_name)
-        alert_publication = alert.publish_for(None, None)  # FIXME (derek.wang)
+        alert_publication = publish_alert(alert, None, None)  # FIXME (derek.wang)
         loaded_message = SlackOutput._format_message(rule_name, alert_publication)
 
         # tests
@@ -76,7 +77,7 @@ class TestSlackOutput(object):
         """SlackOutput - Format Message, Default Rule Description"""
         rule_name = 'test_empty_rule_description'
         alert = get_random_alert(10, rule_name, True)
-        alert_publication = alert.publish_for(None, None)  # FIXME (derek.wang)
+        alert_publication = publish_alert(alert, None, None)  # FIXME (derek.wang)
         loaded_message = SlackOutput._format_message(rule_name, alert_publication)
 
         # tests
@@ -194,7 +195,7 @@ class TestSlackOutput(object):
         """SlackOutput - Max Attachment Reached"""
         alert = get_alert()
         alert.record = {'info': 'test' * 20000}
-        alert_publication = alert.publish_for(None, None)  # FIXME (derek.wang)
+        alert_publication = publish_alert(alert, None, None)  # FIXME (derek.wang)
         list(SlackOutput._format_attachments(alert_publication, 'foo'))
         log_mock.assert_called_with(
             '%s: %d-part message truncated to %d parts',

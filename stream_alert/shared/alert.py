@@ -29,8 +29,8 @@ class Alert(object):
 
     _EXPECTED_INIT_KWARGS = {
         'alert_id', 'attempts', 'cluster', 'context', 'created', 'dispatched', 'log_source',
-        'log_type', 'merge_by_keys', 'merge_window', 'outputs_sent', 'rule_description',
-        'source_entity', 'source_service', 'staged'
+        'log_type', 'merge_by_keys', 'merge_window', 'outputs_sent', 'publishers',
+        'rule_description', 'source_entity', 'source_service', 'staged'
     }
     DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S.%fZ'
 
@@ -55,6 +55,16 @@ class Alert(object):
                 keys are equal. Keys can be present at any depth in the record.
             merge_window (timedelta): Merged alerts are sent at this interval.
             outputs_sent (set): Subset of outputs which have sent successfully.
+            publishers (str|list|dict): A structure of Strings, representing either fully qualified
+                function names, or publisher classes. Adopts one of the following formats:
+
+                - None, or empty array; DefaultPublisher is run on all outputs.
+                - Single string; One publisher is run on all outputs.
+                - List of strings; All publishers are run on all outputs in order of declaration.
+                - Dict mapping to strings or lists: The dict maps output service keys to a string
+                    or lists of strings. These strings corresponds to all publishers that are run,
+                    in order, for only that specific output service.
+
             rule_description (str): Description associated with the triggering rule.
             source_entity (str): Name of location from which the record originated. E.g. "mychannel"
             source_service (str): Input type from which the record originated. E.g. "slack"
@@ -83,6 +93,7 @@ class Alert(object):
         self.attempts = int(kwargs.get('attempts', 0)) or 0  # Convert possible Decimal to int
         self.cluster = kwargs.get('cluster') or None
         self.context = kwargs.get('context') or {}
+        self.publishers = kwargs.get('publishers') or {}
 
         # datetime.min isn't supported by strftime, so use Unix epoch instead for default value
         self.dispatched = kwargs.get('dispatched') or datetime(year=1970, month=1, day=1)
@@ -149,6 +160,7 @@ class Alert(object):
             'MergeWindowMins': int(self.merge_window.total_seconds() / 60),
             'Outputs': self.outputs,
             'OutputsSent': self.outputs_sent or None,  # Empty sets not allowed by Dynamo
+            'Publishers': self.publishers or None,
             # Compact JSON encoding (no spaces). We have to JSON-encode here
             # (instead of just passing the dict) because Dynamo does not allow empty string values.
             'Record': json.dumps(self.record, separators=(',', ':'), default=list),
@@ -188,6 +200,7 @@ class Alert(object):
                 merge_by_keys=record.get('MergeByKeys'),
                 merge_window=timedelta(minutes=int(record.get('MergeWindowMins', 0))),
                 outputs_sent=set(record.get('OutputsSent') or []),
+                publishers=record.get('Publishers'),
                 rule_description=record.get('RuleDescription'),
                 source_entity=record.get('SourceEntity'),
                 source_service=record.get('SourceService'),
@@ -215,28 +228,14 @@ class Alert(object):
             'log_source': self.log_source or '',
             'log_type': self.log_type or '',
             'outputs': list(sorted(self.outputs)),  # List instead of set for JSON-compatibility
+            'publishers': self.publishers or {},
             'record': self.record,
             'rule_description': self.rule_description or '',
             'rule_name': self.rule_name or '',
             'source_entity': self.source_entity or '',
             'source_service': self.source_service or '',
-            'staged': self.staged
+            'staged': self.staged,
         }
-
-    def publish_for(self, output_class, descriptor):  # pylint: disable=unused-argument
-        """Presents the current alert as a dict of information for OutputDispatchers to send.
-
-        Args:
-            output_class (OutputDispatcher): The output dispatching service
-            descriptor (string): The output's descriptor
-
-        Returns:
-            dict: A dict of published data
-        """
-        # FIXME (derek.wang) Currently, this completely disregards the output_class and descriptor
-        # as this Alert entity does not yet have the "publishers" field available to determine
-        # how to publish itself.
-        return self.output_dict()
 
     # ---------- Alert Merging ----------
 
@@ -422,6 +421,7 @@ class Alert(object):
             context=alerts[0].context,
             log_source=alerts[0].log_source,
             log_type=alerts[0].log_type,
+            publishers=alerts[0].publishers,
             rule_description=alerts[0].rule_description,
             source_entity=alerts[0].source_entity,
             source_service=alerts[0].source_service,
