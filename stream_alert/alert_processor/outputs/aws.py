@@ -133,7 +133,9 @@ class KinesisFirehoseOutput(AWSOutput):
         if self.__aws_client__ is None:
             self.__aws_client__ = boto3.client('firehose', region_name=self.region)
 
-        json_alert = json.dumps(alert.output_dict(), separators=(',', ':')) + '\n'
+        publication = alert.publish_for(self, descriptor)
+
+        json_alert = json.dumps(publication, separators=(',', ':')) + '\n'
         if len(json_alert) > self.MAX_RECORD_SIZE:
             LOGGER.error('Alert too large to send to Firehose: \n%s...', json_alert[0:1000])
             return False
@@ -192,7 +194,10 @@ class LambdaOutput(AWSOutput):
         Returns:
             bool: True if alert was sent successfully, False otherwise
         """
-        alert_string = json.dumps(alert.record, separators=(',', ':'))
+        publication = alert.publish_for(self, descriptor)
+        record = publication.get('record', {})
+
+        alert_string = json.dumps(record, separators=(',', ':'))
         function_name = self.config[self.__service__][descriptor]
 
         # Check to see if there is an optional qualifier included here
@@ -290,8 +295,10 @@ class S3Output(AWSOutput):
 
         LOGGER.debug('Sending %s to S3 bucket %s with key %s', alert, bucket, key)
 
+        publication = alert.publish_for(self, descriptor)
+
         client = boto3.client('s3', region_name=self.region)
-        client.put_object(Body=json.dumps(alert.output_dict()), Bucket=bucket, Key=key)
+        client.put_object(Body=json.dumps(publication), Bucket=bucket, Key=key)
 
         return True
 
@@ -329,11 +336,20 @@ class SNSOutput(AWSOutput):
         topic_arn = 'arn:aws:sns:{}:{}:{}'.format(self.region, self.account_id, topic_name)
         topic = boto3.resource('sns', region_name=self.region).Topic(topic_arn)
 
+        publication = alert.publish_for(self, descriptor)
+
+        # Presentation defaults
+        default_subject = '{} triggered alert {}'.format(alert.rule_name, alert.alert_id)
+        default_message = json.dumps(publication, indent=2, sort_keys=True)
+
+        # Published presentation fields
+        # Subject must be < 100 characters long;
+        subject = elide_string_middle(publication.get('aws-sns.topic', default_subject), 99)
+        message = publication.get('aws-sns.message', default_message)
+
         topic.publish(
-            Message=json.dumps(alert.output_dict(), indent=2, sort_keys=True),
-            # Subject must be < 100 characters long
-            Subject=elide_string_middle(
-                '{} triggered alert {}'.format(alert.rule_name, alert.alert_id), 99)
+            Message=message,
+            Subject=subject
         )
 
         return True
@@ -375,7 +391,16 @@ class SQSOutput(AWSOutput):
         sqs = boto3.resource('sqs', region_name=self.region)
         queue = sqs.get_queue_by_name(QueueName=queue_name)
 
-        queue.send_message(MessageBody=json.dumps(alert.record, separators=(',', ':')))
+        publication = alert.publish_for(self, descriptor)
+
+        # Presentation defaults
+        record = publication.get('record', {})
+        default_message_body = json.dumps(record, separators=(',', ':'))
+
+        # Presentation values
+        message_body = publication.get('aws-sqs:message_body', default_message_body)
+
+        queue.send_message(MessageBody=message_body)
 
         return True
 
@@ -403,5 +428,7 @@ class CloudwatchLogOutput(AWSOutput):
             alert (Alert): Alert instance which triggered a rule
             descriptor (str): Output descriptor
         """
-        LOGGER.info('New Alert:\n%s', json.dumps(alert.output_dict(), indent=2))
+        publication = alert.publish_for(self, descriptor)
+        LOGGER.info('New Alert:\n%s', json.dumps(publication, indent=2))
+
         return True

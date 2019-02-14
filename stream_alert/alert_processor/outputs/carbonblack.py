@@ -76,11 +76,12 @@ class CarbonBlackOutput(OutputDispatcher):
             return False
 
         client = CbResponseAPI(**creds)
+        carbonblack_context = alert.context.get('carbonblack', {})
 
         # Get md5 hash 'value' passed from the rules engine function
-        action = alert.context.get('carbonblack', {}).get('action')
+        action = carbonblack_context.get('action')
         if action == 'ban':
-            binary_hash = alert.context.get('carbonblack', {}).get('value')
+            binary_hash = carbonblack_context.get('value')
             # The binary should already exist in CarbonBlack
             binary = client.select(Binary, binary_hash)
             # Determine if the binary is currenty listed as banned

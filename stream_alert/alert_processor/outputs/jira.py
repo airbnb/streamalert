@@ -205,12 +205,12 @@ class JiraOutput(OutputDispatcher):
 
         return jira_id
 
-    def _create_issue(self, issue_name, project_key, issue_type, description):
+    def _create_issue(self, summary, project_key, issue_type, description):
         """Create a Jira issue to write alerts to. Alert is written to the "description"
         field of an issue.
 
         Args:
-            issue_name (str): The name of the Jira issue
+            summary (str): The name of the Jira issue
             project_key (str): The Jira project key which issues will be associated with
             issue_type (str): The type of issue being created
             description (str): The body of text which describes the issue
@@ -224,7 +224,7 @@ class JiraOutput(OutputDispatcher):
                 'project': {
                     'key': project_key
                 },
-                'summary': issue_name,
+                'summary': summary,
                 'description': description,
                 'issuetype': {
                     'name': issue_type
@@ -289,11 +289,21 @@ class JiraOutput(OutputDispatcher):
         if not creds:
             return False
 
+        publication = alert.publish_for(self, descriptor)
+
+        # Presentation defaults
+        default_issue_summary = 'StreamAlert {}'.format(alert.rule_name)
+        default_alert_body = '{{code:JSON}}{}{{code}}'.format(
+            json.dumps(publication, sort_keys=True)
+        )
+
+        # True Presentation values
+        issue_summary = publication.get('jira.issue_summary', default_issue_summary)
+        description = publication.get('jira.description', default_alert_body)
+
         issue_id = None
         comment_id = None
-        issue_summary = 'StreamAlert {}'.format(alert.rule_name)
-        alert_body = '{{code:JSON}}{}{{code}}'.format(
-            json.dumps(alert.output_dict(), sort_keys=True))
+
         self._base_url = creds['url']
         self._auth_cookie = self._establish_session(creds['username'], creds['password'])
 
@@ -306,7 +316,7 @@ class JiraOutput(OutputDispatcher):
         if creds.get('aggregate', '').lower() == 'yes':
             issue_id = self._get_existing_issue(issue_summary, creds['project_key'])
             if issue_id:
-                comment_id = self._create_comment(issue_id, alert_body)
+                comment_id = self._create_comment(issue_id, description)
                 if comment_id:
                     LOGGER.debug('Sending alert to an existing Jira issue %s with comment %s',
                                  issue_id,
@@ -321,7 +331,7 @@ class JiraOutput(OutputDispatcher):
         issue_id = self._create_issue(issue_summary,
                                       creds['project_key'],
                                       creds['issue_type'],
-                                      alert_body)
+                                      description)
         if issue_id:
             LOGGER.debug('Sending alert to a new Jira issue %s', issue_id)
 

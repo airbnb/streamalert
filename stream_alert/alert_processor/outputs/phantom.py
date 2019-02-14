@@ -146,18 +146,25 @@ class PhantomOutput(OutputDispatcher):
         if not creds:
             return False
 
+        publication = alert.publish_for(self, descriptor)
+        record = alert.record
+
         headers = {"ph-auth-token": creds['ph_auth_token']}
         container_id = self._setup_container(
-            alert.rule_name, alert.rule_description, creds['url'], headers)
+            alert.rule_name,
+            alert.rule_description,
+            creds['url'],
+            headers
+        )
 
         LOGGER.debug('sending alert to Phantom container with id %s', container_id)
 
         if not container_id:
             return False
 
-        artifact = {'cef': alert.record,
+        artifact = {'cef': record,
                     'container_id': container_id,
-                    'data': alert.output_dict(),
+                    'data': publication,
                     'name': 'Phantom Artifact',
                     'label': 'Alert'}
         artifact_url = os.path.join(creds['url'], self.ARTIFACT_ENDPOINT)

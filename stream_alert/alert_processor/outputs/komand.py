@@ -77,5 +77,7 @@ class KomandOutput(OutputDispatcher):
 
         LOGGER.debug('sending alert to Komand')
 
-        resp = self._post_request(creds['url'], {'data': alert.output_dict()}, headers, False)
+        publication = alert.publish_for(self, descriptor)
+        resp = self._post_request(creds['url'], {'data': publication}, headers, False)
+
         return self._check_http_response(resp)
