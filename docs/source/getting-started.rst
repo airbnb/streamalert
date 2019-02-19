@@ -67,7 +67,7 @@ with permissions for at least the following services:
 * Athena
 * CloudTrail
 * CloudWatch Events and Logs
-* DyanmoDB
+* DynamoDB
 * IAM
 * Kinesis Firehose and Streams
 * KMS
