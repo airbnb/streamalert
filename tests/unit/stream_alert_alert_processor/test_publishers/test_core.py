@@ -75,8 +75,8 @@ class TestRegister(object):
     def test_register_works_properly():
         """AlertPublisher - @Register - Works properly"""
         assert_true(AlertPublisherRepository.has_publisher(
-            AlertPublisherRepository.get_publisher_name(SamplePublisher1))
-        )
+            AlertPublisherRepository.get_publisher_name(SamplePublisher1)
+        ))
 
 
 class TestCompositePublisher(object):
@@ -400,5 +400,3 @@ class TestAlertPublisherRepositoryAssemblePublisher(object):
         assert_true(isinstance(publisher._publishers[1], WrappedFunctionPublisher))
         assert_true(isinstance(publisher._publishers[2], SamplePublisher1))
         assert_true(isinstance(publisher._publishers[3], SamplePublisher2))
-
-
