@@ -15,7 +15,6 @@ limitations under the License.
 """
 from datetime import datetime, timedelta
 
-# from botocore.exceptions import ClientError, ParamValidationError
 from mock import Mock, patch, PropertyMock
 from nose.tools import assert_equal
 
@@ -39,9 +38,11 @@ def mock_conf():
         }
     }
 
+
 @AlertPublisher
 def that_publisher(alert, publication):  # pylint: disable=unused-argument
     return {}
+
 
 @AlertPublisher
 class ThisPublisher(BaseAlertPublisher):

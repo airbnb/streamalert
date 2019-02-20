@@ -227,7 +227,8 @@ class RulesEngine(object):
         The @Rule publisher syntax accepts several formats, including a more permissive blanket
         option.
 
-        In this configuration we DELIBERATELY do not include required_outputs.
+        In this configuration we DELIBERATELY do not include required_outputs as required outputs
+        should never have their alerts transformed.
 
         Args:
             rule (Rule):
@@ -236,27 +237,36 @@ class RulesEngine(object):
             dict
         """
         def standardize_publisher_list(list_of_references):
+            """Standardizes a list of requested publishers"""
             publisher_names = map(standardize_publisher_name, list_of_references)
 
             # Filter out None from the array
             return [x for x in publisher_names if x is not None]
 
         def standardize_publisher_name(string_or_reference):
-            if isinstance(string_or_reference, basestring):
-                publisher_name = string_or_reference
-            elif is_valid_publisher_reference(string_or_reference):
-                publisher_name = get_unique_publisher_name(string_or_reference)
-            else:
+            """Standardizes a requested publisher into a string name
+
+            Requested publishers can be either the fully qualified string name, OR it can be a
+            direct reference to the function or class.
+            """
+            if not is_publisher_declaration(string_or_reference):
+                LOGGER.error('Invalid publisher requested: %s', string_or_reference)
                 return None
 
-            if not publisher_name_registered(publisher_name):
-                LOGGER.warning('Requested publisher named (%s) is not registered.', publisher_name)
+            if isinstance(string_or_reference, basestring):
+                publisher_name = string_or_reference
+            else:
+                publisher_name = get_unique_publisher_name(string_or_reference)
 
-            return publisher_name
+            if publisher_name_registered(publisher_name):
+                return publisher_name
+
+            LOGGER.warning('Requested publisher named (%s) is not registered.', publisher_name)
 
         def is_publisher_declaration(string_or_reference):
+            """Returns TRUE if the requested publisher is valid (a string name or reference)"""
             return isinstance(string_or_reference, basestring) \
-                   or is_valid_publisher_reference(string_or_reference)
+                or is_valid_publisher_reference(string_or_reference)
 
         requested_outputs = rule.outputs_set
         requested_publishers = rule.publishers
