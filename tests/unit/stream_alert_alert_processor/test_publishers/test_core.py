@@ -59,14 +59,14 @@ class SamplePublisher3(BaseAlertPublisher):
 
 
 @AlertPublisher
-def sample_publisher_4(alert, publication):
+def sample_publisher_4(alert, publication):  # pylint: disable=unused-argument
     new_publication = publication.copy()
     new_publication['test4'] = True
     return new_publication
 
 
 @AlertPublisher
-def sample_publisher_blank(alert, publication):
+def sample_publisher_blank(alert, publication):  # pylint: disable=unused-argument
     return {}
 
 
