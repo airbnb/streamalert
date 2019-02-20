@@ -31,7 +31,7 @@ class TestPublishersForOutput(object):
         alert = get_alert(context={'context': 'value'})
         alert.created = datetime(2019, 1, 1)
         alert.publishers = {
-            'slack:unit_test_channel': 'publishers.community.generic.DefaultPublisher',
+            'slack:unit_test_channel': 'publishers.core.DefaultPublisher',
             'slack': 'publishers.community.generic.remove_internal_fields',
             'demisto': 'publishers.community.generic.blank',
         }
@@ -67,7 +67,7 @@ class TestPublishersForOutput(object):
 
 
 class TestDefaultPublisher(object):
-    PUBLISHER_NAME = 'publishers.community.generic.DefaultPublisher'
+    PUBLISHER_NAME = 'publishers.core.DefaultPublisher'
 
     def setup(self):
         self._alert = get_alert(context={'context': 'value'})
@@ -78,7 +78,7 @@ class TestDefaultPublisher(object):
         """AlertPublisher - DefaultPublisher - Positive Case"""
         publication = publish_alert(self._alert, None, None)
         expectation = {
-            'publishers': ['publishers.community.generic.DefaultPublisher'],
+            'publishers': ['publishers.core.DefaultPublisher'],
             'source_entity': 'corp-prefix.prod.cb.region',
             'outputs': ['slack:unit_test_channel'],
             'cluster': '',

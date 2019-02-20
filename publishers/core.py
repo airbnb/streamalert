@@ -195,7 +195,33 @@ class AlertPublisherRepository(object):
         if len(publishers) <= 0:
             # If no publishers were given, or if all of the publishers failed to load, then we
             # load a default publisher.
-            default_publisher_name = 'publishers.community.generic.DefaultPublisher'
+            default_publisher_name = cls.get_publisher_name(DefaultPublisher)
             return cls.get_publisher(default_publisher_name)
 
         return CompositePublisher(publishers)
+
+
+@Register
+class DefaultPublisher(AlertPublisher):
+    """The default publisher that is used when no other publishers are provided"""
+
+    DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S.%fZ'
+
+    def publish(self, alert, publication):
+        return {
+            'cluster': alert.cluster or '',
+            'context': alert.context or {},
+            'created': alert.created.strftime(self.DATETIME_FORMAT),
+            'id': alert.alert_id,
+            'log_source': alert.log_source or '',
+            'log_type': alert.log_type or '',
+            'outputs': list(sorted(alert.outputs)),  # List instead of set for JSON-compatibility
+            'publishers': alert.publishers or {},
+            'record': alert.record,
+            'rule_description': alert.rule_description or '',
+            'rule_name': alert.rule_name or '',
+            'source_entity': alert.source_entity or '',
+            'source_service': alert.source_service or '',
+            'staged': alert.staged,
+        }
+

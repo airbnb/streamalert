@@ -293,7 +293,7 @@ class TestRulesEngine(object):
             outputs_set={'slack:test', 'demisto:test'},
             description='rule description',
             publishers={
-                'demisto': 'publishers.community.generic.DefaultPublisher',
+                'demisto': 'publishers.core.DefaultPublisher',
                 'slack': [that_publisher],
                 'slack:test': [ThisPublisher],
             },
@@ -330,7 +330,7 @@ class TestRulesEngine(object):
                         'tests.unit.streamalert.rules_engine.test_rules_engine.that_publisher',
                     ],
                     'demisto:test': [
-                        'publishers.community.generic.DefaultPublisher'
+                        'publishers.core.DefaultPublisher'
                     ],
                 },
                 rule_description='rule description',

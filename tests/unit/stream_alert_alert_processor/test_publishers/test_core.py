@@ -23,10 +23,10 @@ from publishers.core import (
     AlertPublisherRepository,
     AlertPublisher,
     CompositePublisher,
+    DefaultPublisher,
     Register,
     WrappedFunctionPublisher,
 )
-from publishers.community.generic import DefaultPublisher
 from tests.unit.stream_alert_alert_processor.helpers import get_alert
 
 
