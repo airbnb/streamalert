@@ -61,7 +61,7 @@ def _assemble_alert_publisher_for_output(alert, output, descriptor):
         descriptor (str): The descriptor of the Output
 
     Returns:
-        BaseAlertPublisher
+        AlertPublisher
     """
 
     alert_publishers = alert.publishers

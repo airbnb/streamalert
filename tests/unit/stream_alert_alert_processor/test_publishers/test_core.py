@@ -21,18 +21,17 @@ from stream_alert.alert_processor.helpers import _assemble_alert_publisher_for_o
 from stream_alert.alert_processor.outputs.output_base import StreamAlertOutput
 from publishers.core import (
     AlertPublisherRepository,
-    WrappedFunctionPublisher,
-    CompositePublisher,
-    get_unique_publisher_name,
     AlertPublisher,
-    BaseAlertPublisher
+    CompositePublisher,
+    Register,
+    WrappedFunctionPublisher,
 )
 from publishers.community.generic import DefaultPublisher
 from tests.unit.stream_alert_alert_processor.helpers import get_alert
 
 
-@AlertPublisher
-class SamplePublisher1(BaseAlertPublisher):
+@Register
+class SamplePublisher1(AlertPublisher):
 
     def publish(self, alert, publication):
         new_publication = publication.copy()
@@ -40,8 +39,8 @@ class SamplePublisher1(BaseAlertPublisher):
         return new_publication
 
 
-@AlertPublisher
-class SamplePublisher2(BaseAlertPublisher):
+@Register
+class SamplePublisher2(AlertPublisher):
 
     def publish(self, alert, publication):
         new_publication = publication.copy()
@@ -49,8 +48,8 @@ class SamplePublisher2(BaseAlertPublisher):
         return new_publication
 
 
-@AlertPublisher
-class SamplePublisher3(BaseAlertPublisher):
+@Register
+class SamplePublisher3(AlertPublisher):
 
     def publish(self, alert, publication):
         new_publication = publication.copy()
@@ -58,39 +57,40 @@ class SamplePublisher3(BaseAlertPublisher):
         return new_publication
 
 
-@AlertPublisher
+@Register
 def sample_publisher_4(alert, publication):  # pylint: disable=unused-argument
     new_publication = publication.copy()
     new_publication['test4'] = True
     return new_publication
 
 
-@AlertPublisher
+@Register
 def sample_publisher_blank(alert, publication):  # pylint: disable=unused-argument
     return {}
 
 
-def test_get_unique_publisher_name_class():
-    """AlertPublisher - get_unique_publisher_name() - Class"""
-
-    name = get_unique_publisher_name(SamplePublisher1)
-    assert_equal(
-        name,
-        'tests.unit.stream_alert_alert_processor.test_publishers.test_core.SamplePublisher1'
-    )
-
-
-def test_get_unique_publisher_name_function():
-    """AlertPublisher - get_unique_publisher_name() - Function"""
-
-    name = get_unique_publisher_name(sample_publisher_4)
-    assert_equal(
-        name,
-        'tests.unit.stream_alert_alert_processor.test_publishers.test_core.sample_publisher_4'
-    )
-
-
 class TestAlertPublisherRepository(object):
+
+    @staticmethod
+    def test_get_publisher_name_class():
+        """AlertPublisherRepository - get_publisher_name() - Class"""
+
+        name = AlertPublisherRepository.get_publisher_name(SamplePublisher1)
+        assert_equal(
+            name,
+            'tests.unit.stream_alert_alert_processor.test_publishers.test_core.SamplePublisher1'
+        )
+
+    @staticmethod
+    def test_get_publisher_name_function():
+        """AlertPublisherRepository - get_publisher_name() - Function"""
+
+        name = AlertPublisherRepository.get_publisher_name(sample_publisher_4)
+        assert_equal(
+            name,
+            'tests.unit.stream_alert_alert_processor.test_publishers.test_core.sample_publisher_4'
+        )
+
 
     @staticmethod
     def test_registers_default_publishers():

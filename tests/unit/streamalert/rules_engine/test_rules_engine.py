@@ -18,7 +18,7 @@ from datetime import datetime, timedelta
 from mock import Mock, patch, PropertyMock
 from nose.tools import assert_equal
 
-from publishers.core import BaseAlertPublisher, AlertPublisher
+from publishers.core import AlertPublisher, Register
 import stream_alert.rules_engine.rules_engine as rules_engine_module
 from stream_alert.rules_engine.rules_engine import RulesEngine
 
@@ -39,13 +39,13 @@ def mock_conf():
     }
 
 
-@AlertPublisher
+@Register
 def that_publisher(alert, publication):  # pylint: disable=unused-argument
     return {}
 
 
-@AlertPublisher
-class ThisPublisher(BaseAlertPublisher):
+@Register
+class ThisPublisher(AlertPublisher):
     def publish(self, alert, publication):
         return {}
 

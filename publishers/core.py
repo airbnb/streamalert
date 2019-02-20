@@ -9,6 +9,7 @@ LOGGER = get_logger(__name__)
 
 
 class AlertPublisherImporter(object):
+    """A service that loads all publishers in the publishers/ directory."""
     _is_imported = False
 
     @classmethod
@@ -21,40 +22,17 @@ class AlertPublisherImporter(object):
         cls._is_imported = True
 
 
-class AlertPublisher(object):
-    """This is a decorator used to designate functions and classes as Publishers.
-
-    During the annotation process, instances of the publishers will be instantiated and registered
-    into the AlertPublisherRepository for ease of use.
-    """
+class Register(object):
+    """This is a decorator used to register publishers into the AlertPublisherRepository."""
 
     def __new__(cls, class_or_function):
-        # We have to put the isclass() check BEFORE the callable() check because classes are also
-        # callable!
-        if isclass(class_or_function) and issubclass(class_or_function, BaseAlertPublisher):
-            # If the provided publisher is a Class, then we simply need to instantiate an instance
-            # of the class and register it.
-            publisher = class_or_function()
-        elif callable(class_or_function):
-            # If the provided publisher is a function, we wrap it with a WrappedFunctionPublisher
-            # to make them easier to handle.
-            publisher = WrappedFunctionPublisher(class_or_function)
-        else:
-            LOGGER.error(
-                'Could not register publisher %s; Not callable nor subclass of BaseAlertPublisher',
-                class_or_function
-            )
-            publisher = None
-
-        if publisher:
-            name = get_unique_publisher_name(class_or_function)
-            AlertPublisherRepository.register_publisher(name, publisher)
-
+        AlertPublisherRepository.register_publisher(class_or_function)
+        
         return class_or_function  # Return the definition, not the instantiated object
 
 
-class BaseAlertPublisher(object):
-    """Interface for a Publisher"""
+class AlertPublisher(object):
+    """Interface for a Publisher. All class-based publishers must inherit from this class."""
 
     @abstractmethod
     def publish(self, alert, publication):
@@ -81,14 +59,14 @@ class BaseAlertPublisher(object):
         """
 
 
-class CompositePublisher(BaseAlertPublisher):
+class CompositePublisher(AlertPublisher):
     """A publisher class that combines the logic of multiple other publishers together in series"""
 
     def __init__(self, publishers):
         self._publishers = publishers  # Type list(BaseAlertPublisher)
 
         for publisher in self._publishers:
-            if not isinstance(publisher, BaseAlertPublisher):
+            if not isinstance(publisher, AlertPublisher):
                 LOGGER.error('CompositePublisher given invalid publisher')
 
     def publish(self, alert, publication):
@@ -100,33 +78,7 @@ class CompositePublisher(BaseAlertPublisher):
         return new_publication
 
 
-def get_unique_publisher_name(class_or_function):
-    """Given a class or function, will return its fully qualified name.
-
-    This is useful for assigning a unique string name for a publisher."""
-    return '{}.{}'.format(class_or_function.__module__, class_or_function.__name__)
-
-
-def publisher_registered(class_or_function):
-    """Returns if the requested publisher has been registered"""
-    return publisher_name_registered(get_unique_publisher_name(class_or_function))
-
-
-def publisher_name_registered(publisher_name):
-    return AlertPublisherRepository.has_publisher(publisher_name)
-
-
-def is_valid_publisher_reference(class_or_function):
-    """Returns TRUE if the given variable could be a publisher"""
-    if isclass(class_or_function) and issubclass(class_or_function, BaseAlertPublisher):
-        return True
-    elif callable(class_or_function):
-        return True
-
-    return False
-
-
-class WrappedFunctionPublisher(BaseAlertPublisher):
+class WrappedFunctionPublisher(AlertPublisher):
     """A class only used to wrap a function publisher."""
 
     def __init__(self, function):
@@ -140,27 +92,59 @@ class AlertPublisherRepository(object):
     """A repository mapping names -> publishers"""
     _publishers = {}
 
+    @staticmethod
+    def is_valid_publisher(class_or_function):
+        """Returns TRUE if the given reference can be registered as a publisher"""
+        if isclass(class_or_function) and issubclass(class_or_function, AlertPublisher):
+            return True
+        elif callable(class_or_function):
+            return True
+
+        return False
+
+    @staticmethod
+    def get_publisher_name(class_or_function):
+        """Given a class or function, will return its fully qualified name.
+
+            This is useful for assigning a unique string name for a publisher."""
+        return '{}.{}'.format(class_or_function.__module__, class_or_function.__name__)
+
     @classmethod
-    def register_publisher(cls, name, publisher):
+    def register_publisher(cls, publisher):
         """Registers the publisher into the repository.
 
         Args:
              name (str): A unique name for this publisher
-             publisher (BaseAlertPublisher): An instance of a publisher class
+             publisher (callable|AlertPublisher): An instance of a publisher class
 
         Return:
             void
         """
-
-        if not isinstance(publisher, BaseAlertPublisher):
-            LOGGER.error('Registered publisher [%s] is not instance of BaseAlertPublisher.', name)
+        if not AlertPublisherRepository.is_valid_publisher(publisher):
+            LOGGER.error(
+                'Could not register publisher %s; Not callable nor subclass of AlertPublisher',
+                publisher
+            )
             return
+
+        # We have to put the isclass() check BEFORE the callable() check because classes are also
+        # callable!
+        elif isclass(publisher):
+            # If the provided publisher is a Class, then we simply need to instantiate an instance
+            # of the class and register it.
+            publisher_instance = publisher()
+        else:
+            # If the provided publisher is a function, we wrap it with a WrappedFunctionPublisher
+            # to make them easier to handle.
+            publisher_instance = WrappedFunctionPublisher(publisher)
+
+        name = AlertPublisherRepository.get_publisher_name(publisher)
 
         if name in cls._publishers:
             LOGGER.error('Publisher with name [%s] has already been registered.', name)
             return
 
-        cls._publishers[name] = publisher
+        cls._publishers[name] = publisher_instance
 
     @classmethod
     def get_publisher(cls, name):
@@ -170,7 +154,7 @@ class AlertPublisherRepository(object):
             name (str): The name of the publisher.
 
         Returns:
-            BaseAlertPublisher|None
+            AlertPublisher|None
         """
         if cls.has_publisher(name):
             return cls._publishers[name]

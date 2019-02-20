@@ -1,8 +1,8 @@
 from copy import deepcopy
-from publishers.core import BaseAlertPublisher, AlertPublisher
+from publishers.core import AlertPublisher, Register
 
 
-@AlertPublisher
+@Register
 def add_record(alert, publication):
     """Publisher that adds the alert.record to the publication."""
     new_publication = deepcopy(publication)
@@ -12,13 +12,13 @@ def add_record(alert, publication):
     return new_publication
 
 
-@AlertPublisher
+@Register
 def blank(alert, publication):  # pylint: disable=unused-argument
     """Erases all fields on existing publications and returns a blank dict"""
     return {}
 
 
-@AlertPublisher
+@Register
 def remove_internal_fields(alert, publication):  # pylint: disable=unused-argument
     """This publisher removes fields from DefaultPublisher that are only useful internally"""
 
@@ -31,8 +31,8 @@ def remove_internal_fields(alert, publication):  # pylint: disable=unused-argume
     return new_publication
 
 
-@AlertPublisher
-class DefaultPublisher(BaseAlertPublisher):
+@Register
+class DefaultPublisher(AlertPublisher):
     """The default publisher that is used when no other publishers are provided"""
 
     DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S.%fZ'

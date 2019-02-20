@@ -16,11 +16,7 @@ limitations under the License.
 from datetime import datetime, timedelta
 from os import environ as env
 
-from publishers.core import (
-    get_unique_publisher_name,
-    is_valid_publisher_reference,
-    publisher_name_registered
-)
+from publishers.core import AlertPublisherRepository
 from stream_alert.rules_engine.alert_forwarder import AlertForwarder
 from stream_alert.rules_engine.threat_intel import ThreatIntel
 from stream_alert.shared import resources, RULES_ENGINE_FUNCTION_NAME as FUNCTION_NAME
@@ -256,9 +252,11 @@ class RulesEngine(object):
             if isinstance(string_or_reference, basestring):
                 publisher_name = string_or_reference
             else:
-                publisher_name = get_unique_publisher_name(string_or_reference)
+                publisher_name = AlertPublisherRepository.get_publisher_name(
+                    string_or_reference
+                )
 
-            if publisher_name_registered(publisher_name):
+            if AlertPublisherRepository.has_publisher(publisher_name):
                 return publisher_name
 
             LOGGER.warning('Requested publisher named (%s) is not registered.', publisher_name)
@@ -266,7 +264,7 @@ class RulesEngine(object):
         def is_publisher_declaration(string_or_reference):
             """Returns TRUE if the requested publisher is valid (a string name or reference)"""
             return isinstance(string_or_reference, basestring) \
-                or is_valid_publisher_reference(string_or_reference)
+                or AlertPublisherRepository.is_valid_publisher(string_or_reference)
 
         requested_outputs = rule.outputs_set
         requested_publishers = rule.publishers
