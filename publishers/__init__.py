@@ -2,26 +2,24 @@
 import importlib
 import os
 
-
-from stream_alert.alert_processor.publishers.core import (
-    AlertPublisherRepository,
-    CompositePublisher,
-)
+from publishers.core import AlertPublisherRepository
 
 
-for output_file in os.listdir(os.path.dirname(__file__)):
-    # Skip the common base file and any non-py files
-    if output_file.startswith(('__init__', 'core')) or not output_file.endswith('.py'):
-        continue
+def import_publishers():
+    for output_file in os.listdir(os.path.dirname(__file__)):
+        # Skip the common base file and any non-py files
+        if output_file.startswith(('__init__', 'core')) or not output_file.endswith('.py'):
+            continue
 
-    full_import = '.'.join([
-        'stream_alert',
-        'alert_processor',
-        'publishers',
-        os.path.splitext(output_file)[0]
-    ])
+        full_import = '.'.join([
+            'publishers',
+            os.path.splitext(output_file)[0]
+        ])
 
-    importlib.import_module(full_import)
+        importlib.import_module(full_import)
+
+
+import_publishers()
 
 
 def publish_alert(alert, output, descriptor):

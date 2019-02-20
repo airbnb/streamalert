@@ -20,13 +20,14 @@ from mock import patch, MagicMock
 from nose.tools import assert_true, assert_equal
 
 from stream_alert.alert_processor.outputs.output_base import StreamAlertOutput
-from stream_alert.alert_processor.publishers import AlertPublisherRepository, CompositePublisher
-from stream_alert.alert_processor.publishers.core import WrappedFunctionPublisher
-from stream_alert.alert_processor.publishers.default import (
+from publishers import AlertPublisherRepository
+from publishers.core import WrappedFunctionPublisher, CompositePublisher, get_unique_publisher_name
+from publishers.community.generic import (
     DefaultPublisher,
     RemoveInternalFields,
     SamplePublisher1,
-    SamplePublisher2
+    SamplePublisher2,
+    blank,
 )
 from tests.unit.stream_alert_alert_processor.helpers import get_alert
 
@@ -43,7 +44,9 @@ class TestAlertPublisherRepository(object):
     @staticmethod
     def test_get_publisher():
         """AlertPublisher - AlertPublisherRepository - get_publisher()"""
-        publisher = AlertPublisherRepository.get_publisher('default')  # this one is always defined
+        publisher = AlertPublisherRepository.get_publisher(
+            'publishers.community.generic.DefaultPublisher' # this one is always defined
+        )
 
         assert_true(isinstance(publisher, DefaultPublisher))
 
@@ -51,8 +54,8 @@ class TestAlertPublisherRepository(object):
     def test_create_composite_publisher():
         """AlertPublisher - AlertPublisherRepository - create_composite_publisher() - Valid"""
         publisher = AlertPublisherRepository.create_composite_publisher([
-            'stream_alert.alert_processor.publishers.default.blank',
-            'stream_alert.alert_processor.publishers.default.record',
+            'publishers.community.generic.blank',
+            'publishers.community.generic.record',
         ])
 
         assert_true(isinstance(publisher, CompositePublisher))
@@ -75,6 +78,20 @@ class TestAlertPublisherRepository(object):
         error_log.assert_called_with('Designated output service [%s] does not exist', 'no_exist')
 
 
+def test_get_unique_publisher_name_class():
+    """AlertPublisher - get_unique_publisher_name() - Class"""
+
+    name = get_unique_publisher_name(DefaultPublisher)
+    assert_equal(name, 'publishers.community.generic.DefaultPublisher')
+
+
+def test_get_unique_publisher_name_function():
+    """AlertPublisher - get_unique_publisher_name() - Function"""
+
+    name = get_unique_publisher_name(blank)
+    assert_equal(name, 'publishers.community.generic.blank')
+
+
 class TestAlertPublisherRepositoryAssemblePublisher(object):
     def setup(self):
         self._alert = get_alert(context={'this_context': 'that_value'})
@@ -95,7 +112,7 @@ class TestAlertPublisherRepositoryAssemblePublisher(object):
 
     def test_assemble_alert_publisher_for_output_single_string(self):
         """AlertPublisher - AlertPublisherRepository - assemble() - String"""
-        self._alert.publishers = 'stream_alert.alert_processor.publishers.default.blank'
+        self._alert.publishers = 'publishers.community.generic.blank'
 
         publisher = AlertPublisherRepository.assemble_alert_publisher_for_output(
             self._alert,
@@ -109,7 +126,10 @@ class TestAlertPublisherRepositoryAssemblePublisher(object):
 
     def test_assemble_alert_publisher_for_output_list_string(self):
         """AlertPublisher - AlertPublisherRepository - assemble() - List of Strings"""
-        self._alert.publishers = ['default', 'no_internal']
+        self._alert.publishers = [
+            'publishers.community.generic.DefaultPublisher',
+            'publishers.community.generic.RemoveInternalFields',
+        ]
 
         publisher = AlertPublisherRepository.assemble_alert_publisher_for_output(
             self._alert,
@@ -137,7 +157,7 @@ class TestAlertPublisherRepositoryAssemblePublisher(object):
     def test_assemble_alert_publisher_for_output_dict_irrelevant_key(self):
         """AlertPublisher - AlertPublisherRepository - assemble() - Dict with Irrelevant Key"""
         self._alert.publishers = {
-            'pagerduty': ['stream_alert.alert_processor.publishers.default.blank']
+            'pagerduty': ['publishers.community.generic.blank']
         }
 
         publisher = AlertPublisherRepository.assemble_alert_publisher_for_output(
@@ -151,8 +171,8 @@ class TestAlertPublisherRepositoryAssemblePublisher(object):
     def test_assemble_alert_publisher_for_output_dict_key_string(self):
         """AlertPublisher - AlertPublisherRepository - assemble() - Dict with Key -> String"""
         self._alert.publishers = {
-            'demisto': 'stream_alert.alert_processor.publishers.default.blank',
-            'pagerduty': ['stream_alert.alert_processor.publishers.default.blank']
+            'demisto': 'publishers.community.generic.blank',
+            'pagerduty': ['publishers.community.generic.blank']
         }
 
         publisher = AlertPublisherRepository.assemble_alert_publisher_for_output(
@@ -168,8 +188,11 @@ class TestAlertPublisherRepositoryAssemblePublisher(object):
     def test_assemble_alert_publisher_for_output_dict_key_array(self):
         """AlertPublisher - AlertPublisherRepository - assemble() - Dict with Key -> List"""
         self._alert.publishers = {
-            'demisto': ['default', 'no_internal'],
-            'pagerduty': ['stream_alert.alert_processor.publishers.default.blank']
+            'demisto': [
+                'publishers.community.generic.DefaultPublisher',
+                'publishers.community.generic.RemoveInternalFields'
+            ],
+            'pagerduty': ['publishers.community.generic.blank']
         }
 
         publisher = AlertPublisherRepository.assemble_alert_publisher_for_output(
@@ -184,8 +207,8 @@ class TestAlertPublisherRepositoryAssemblePublisher(object):
     def test_assemble_alert_publisher_for_output_dict_key_descriptor_string(self):
         """AlertPublisher - AlertPublisherRepository - assemble() - Dict matches Desc String"""
         self._alert.publishers = {
-            'demisto:some_descriptor': 'no_internal',
-            'pagerduty': ['stream_alert.alert_processor.publishers.default.blank']
+            'demisto:some_descriptor': 'publishers.community.generic.RemoveInternalFields',
+            'pagerduty': ['publishers.community.generic.blank']
         }
 
         publisher = AlertPublisherRepository.assemble_alert_publisher_for_output(
@@ -200,8 +223,11 @@ class TestAlertPublisherRepositoryAssemblePublisher(object):
     def test_assemble_alert_publisher_for_output_dict_key_descriptor_list(self):
         """AlertPublisher - AlertPublisherRepository - assemble() - Dict matches Desc List"""
         self._alert.publishers = {
-            'demisto:some_descriptor': ['default', 'no_internal'],
-            'pagerduty': ['stream_alert.alert_processor.publishers.default.blank']
+            'demisto:some_descriptor': [
+                'publishers.community.generic.DefaultPublisher',
+                'publishers.community.generic.RemoveInternalFields'
+            ],
+            'pagerduty': ['publishers.community.generic.blank']
         }
 
         publisher = AlertPublisherRepository.assemble_alert_publisher_for_output(
@@ -216,9 +242,15 @@ class TestAlertPublisherRepositoryAssemblePublisher(object):
     def test_assemble_alert_publisher_for_output_dict_key_both_descriptor_output_list(self):
         """AlertPublisher - AlertPublisherRepository - assemble() - Dict full match Lists"""
         self._alert.publishers = {
-            'demisto': ['sample_1', 'sample_2'],
-            'demisto:some_descriptor': ['default', 'no_internal'],
-            'pagerduty': ['stream_alert.alert_processor.publishers.default.blank']
+            'demisto': [
+                'publishers.community.generic.SamplePublisher1',
+                'publishers.community.generic.SamplePublisher2',
+            ],
+            'demisto:some_descriptor': [
+                'publishers.community.generic.DefaultPublisher',
+                'publishers.community.generic.RemoveInternalFields',
+            ],
+            'pagerduty': ['publishers.community.generic.blank']
         }
 
         publisher = AlertPublisherRepository.assemble_alert_publisher_for_output(

@@ -18,7 +18,7 @@ from datetime import datetime
 
 from nose.tools import assert_equal
 
-from stream_alert.alert_processor.publishers import AlertPublisherRepository
+from publishers import AlertPublisherRepository
 from tests.unit.stream_alert_alert_processor.helpers import get_alert
 
 
@@ -27,7 +27,9 @@ class TestDefaultPublisher(object):
     def setup(self):
         self._alert = get_alert(context={'context': 'value'})
         self._alert.created = datetime(2019, 1, 1)
-        self._publisher = AlertPublisherRepository.get_publisher('default')
+        self._publisher = AlertPublisherRepository.get_publisher(
+            'publishers.community.generic.DefaultPublisher'
+        )
 
     def test_default_publisher(self):
         """AlertPublisher - DefaultPublisher - Positive Case"""
@@ -73,7 +75,7 @@ class TestRecordPublisher(object):
         self._alert = get_alert(context={'context': 'value'})
         self._alert.created = datetime(2019, 1, 1)
         self._publisher = AlertPublisherRepository.get_publisher(
-            'stream_alert.alert_processor.publishers.default.record'
+            'publishers.community.generic.record'
         )
 
     def test_default_publisher(self):

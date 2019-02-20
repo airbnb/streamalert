@@ -1,9 +1,11 @@
 from copy import deepcopy
-from stream_alert.alert_processor.publishers.core import BaseAlertPublisher, AlertPublisher
+from publishers.core import BaseAlertPublisher, AlertPublisher
 
 
 @AlertPublisher
 class DefaultPublisher(BaseAlertPublisher):
+    """The default publisher that is used when no other publishers are provided"""
+
     DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S.%fZ'
 
     def publish(self, alert, publication):
@@ -24,10 +26,6 @@ class DefaultPublisher(BaseAlertPublisher):
             'staged': alert.staged,
         }
 
-    @classmethod
-    def name(cls):
-        return 'default'
-
 
 @AlertPublisher
 def record(alert, publication):
@@ -40,7 +38,7 @@ def record(alert, publication):
 
 
 @AlertPublisher
-def blank(alert, publication): # pylint: disable=unused-argument
+def blank(alert, publication):  # pylint: disable=unused-argument
     """This publisher simply erases all fields on existing publications and returns a blank dict"""
     return {}
 
@@ -58,10 +56,6 @@ class RemoveInternalFields(BaseAlertPublisher):
 
         return new_publication
 
-    @classmethod
-    def name(cls):
-        return 'no_internal'
-
 
 @AlertPublisher
 class SamplePublisher1(BaseAlertPublisher):
@@ -73,10 +67,6 @@ class SamplePublisher1(BaseAlertPublisher):
 
         return new_publication
 
-    @classmethod
-    def name(cls):
-        return 'sample_1'
-
 
 @AlertPublisher
 class SamplePublisher2(BaseAlertPublisher):
@@ -87,6 +77,3 @@ class SamplePublisher2(BaseAlertPublisher):
 
         return new_publication
 
-    @classmethod
-    def name(cls):
-        return 'sample_2'

@@ -17,13 +17,13 @@ from collections import OrderedDict
 import json
 import os
 
+from publishers import publish_alert
 from stream_alert.alert_processor.outputs.output_base import (
     OutputDispatcher,
     OutputProperty,
     OutputRequestFailure,
     StreamAlertOutput
 )
-from stream_alert.alert_processor.publishers import publish_alert
 from stream_alert.shared.logger import get_logger
 
 

@@ -19,7 +19,7 @@ from mock import patch, Mock, MagicMock
 from nose.tools import assert_equal, assert_false, assert_true, assert_set_equal
 
 from stream_alert.alert_processor.outputs.slack import SlackOutput
-from stream_alert.alert_processor.publishers import publish_alert
+from publishers import publish_alert
 from tests.unit.stream_alert_alert_processor.helpers import (
     get_random_alert,
     get_alert,

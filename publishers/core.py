@@ -35,15 +35,6 @@ class BaseAlertPublisher(object):
             dict: The published alert.
         """
 
-    @classmethod
-    @abstractmethod
-    def name(cls):
-        """Returns a unique name for this publisher.
-
-        Returns:
-            str
-        """
-
 
 class CompositePublisher(BaseAlertPublisher):
     """A publisher class that combines the logic of multiple other publishers together in series"""
@@ -63,23 +54,19 @@ class CompositePublisher(BaseAlertPublisher):
 
         return new_publication
 
-    @classmethod
-    def name(cls):
-        return 'composite_publisher'
+
+def get_unique_publisher_name(class_or_function):
+    return '{}.{}'.format(class_or_function.__module__, class_or_function.__name__)
 
 
 class WrappedFunctionPublisher(BaseAlertPublisher):
     """A class only used to wrap a function publisher."""
 
-    def __init__(self, function, name):
+    def __init__(self, function):
         self._function = function
-        self._name = name
 
     def publish(self, alert, publication):
         return self._function(alert, publication)
-
-    def name(self):
-        return self._name
 
 
 class AlertPublisher(object):
@@ -90,36 +77,25 @@ class AlertPublisher(object):
     """
 
     def __new__(cls, class_or_function):
-        def fully_qualified_function_name(subject):
-            module_name = subject.__module__
-            function_name = subject.__name__
-
-            return '{}.{}'.format(module_name, function_name)
-
         # We have to put the isclass() check BEFORE the callable() check because classes are also
         # callable!
         if isclass(class_or_function) and issubclass(class_or_function, BaseAlertPublisher):
             # If the provided publisher is a Class, then we simply need to instantiate an instance
             # of the class and register it.
             publisher = class_or_function()
-            name = publisher.name()
         elif callable(class_or_function):
             # If the provided publisher is a function, we wrap it with a WrappedFunctionPublisher
             # to make them easier to handle.
-            publisher = WrappedFunctionPublisher(
-                class_or_function,
-                fully_qualified_function_name(class_or_function)
-            )
-            name = publisher.name()
+            publisher = WrappedFunctionPublisher(class_or_function)
         else:
             LOGGER.error(
                 'Could not register publisher %s; Not callable nor subclass of BaseAlertPublisher',
                 class_or_function
             )
             publisher = None
-            name = None
 
-        if name and publisher:
+        if publisher:
+            name = get_unique_publisher_name(class_or_function)
             AlertPublisherRepository.register_publisher(name, publisher)
 
         return class_or_function  # Return the definition, not the instantiated object
@@ -185,17 +161,20 @@ class AlertPublisherRepository(object):
         if len(publishers) <= 0:
             # If no publishers were given, or if all of the publishers failed to load, then we
             # load a default publisher.
-            return cls.get_publisher('default')
+            return cls.get_publisher('publishers.community.generic.DefaultPublisher')  # FIXME (derek.wang)
 
         return CompositePublisher(publishers)
 
     @classmethod
     def assemble_alert_publisher_for_output(cls, alert, output, descriptor):
-        """
+        """Gathers all requested publishers on the alert and returns them as a single Publisher
+
+        Note: When no publishers are requested, or when certain
+
         Args:
-            alert (Alert):
-            output (OutputDispatcher|None):
-            descriptor (str):
+            alert (Alert): The alert that is pulled from DynamoDB
+            output (OutputDispatcher|None): Instance of OutputDispatcher that is sending the alert
+            descriptor (str): The descriptor of the Output
 
         Returns:
             BaseAlertPublisher

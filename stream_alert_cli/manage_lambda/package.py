@@ -203,6 +203,7 @@ class RulesEnginePackage(LambdaPackage):
     lambda_handler = 'stream_alert.rules_engine.main.handler'
     package_files = {
         'conf',
+        'publishers',
         'rules',
         'stream_alert/__init__.py',
         'stream_alert/rules_engine',
@@ -218,6 +219,7 @@ class AlertProcessorPackage(LambdaPackage):
     lambda_handler = 'stream_alert.alert_processor.main.handler'
     package_files = {
         'conf',
+        'publishers',
         'stream_alert/__init__.py',
         'stream_alert/alert_processor',
         'stream_alert/shared'

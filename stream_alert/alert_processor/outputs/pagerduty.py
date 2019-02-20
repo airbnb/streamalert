@@ -17,13 +17,13 @@ from collections import OrderedDict
 import os
 import backoff
 
+from publishers import publish_alert
 from stream_alert.alert_processor.outputs.output_base import (
     OutputDispatcher,
     OutputProperty,
     OutputRequestFailure,
     StreamAlertOutput
 )
-from stream_alert.alert_processor.publishers import publish_alert
 from stream_alert.shared.backoff_handlers import (
     backoff_handler,
     success_handler,
