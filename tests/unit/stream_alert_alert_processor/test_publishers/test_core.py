@@ -15,7 +15,7 @@ limitations under the License.
 """
 # pylint: disable=protected-access,attribute-defined-outside-init,invalid-name
 from mock import patch, MagicMock
-from nose.tools import assert_true, assert_equal
+from nose.tools import assert_true, assert_equal, assert_false
 
 from stream_alert.alert_processor.helpers import _assemble_alert_publisher_for_output
 from stream_alert.alert_processor.outputs.output_base import StreamAlertOutput
@@ -69,7 +69,64 @@ def sample_publisher_blank(alert, publication):  # pylint: disable=unused-argume
     return {}
 
 
+class TestRegister(object):
+
+    @staticmethod
+    def test_register_works_properly():
+        """AlertPublisher - @Register - Works properly"""
+        assert_true(AlertPublisherRepository.has_publisher(
+            AlertPublisherRepository.get_publisher_name(SamplePublisher1))
+        )
+
+
+class TestCompositePublisher(object):
+
+    @staticmethod
+    def test_composite_publisher_ordering():
+        """CompositePublisher - Ensure publishers executed in correct order"""
+        publisher = CompositePublisher([
+            SamplePublisher1(),
+            WrappedFunctionPublisher(sample_publisher_blank),
+            SamplePublisher2(),
+        ])
+
+        alert = get_alert()
+        publication = publisher.publish(alert, {})
+
+        expectation = {'test2': True}
+        assert_equal(publication, expectation)
+
+
+class TestWrappedFunctionPublisher(object):
+
+    @staticmethod
+    def test_wrapped_function_publisher():
+        """WrappedFunctionPublisher - Ensure function is executed properly"""
+        publisher = WrappedFunctionPublisher(sample_publisher_4)
+
+        alert = get_alert()
+        publication = publisher.publish(alert, {})
+
+        expectation = {'test4': True}
+        assert_equal(publication, expectation)
+
+
 class TestAlertPublisherRepository(object):
+
+    @staticmethod
+    def test_is_valid_publisher_class():
+        """AlertPublisherRepository - is_valid_publisher() - Class"""
+        assert_true(AlertPublisherRepository.is_valid_publisher(SamplePublisher1))
+
+    @staticmethod
+    def test_is_valid_publisher_function():
+        """AlertPublisherRepository - is_valid_publisher() - Function"""
+        assert_true(AlertPublisherRepository.is_valid_publisher(sample_publisher_4))
+
+    @staticmethod
+    def test_is_valid_publisher_invalid():
+        """AlertPublisherRepository - is_valid_publisher() - Class"""
+        assert_false(AlertPublisherRepository.is_valid_publisher('aaa'))
 
     @staticmethod
     def test_get_publisher_name_class():
@@ -91,13 +148,19 @@ class TestAlertPublisherRepository(object):
             'tests.unit.stream_alert_alert_processor.test_publishers.test_core.sample_publisher_4'
         )
 
-
     @staticmethod
     def test_registers_default_publishers():
         """AlertPublisher - AlertPublisherRepository - all_publishers()"""
         publishers = AlertPublisherRepository.all_publishers()
 
         assert_true(len(publishers) > 0)
+
+    @staticmethod
+    def test_has_publisher():
+        """AlertPublisher - AlertPublisherRepository - get_publisher() - SamplePublisher1"""
+        assert_true(AlertPublisherRepository.has_publisher(
+            'tests.unit.stream_alert_alert_processor.test_publishers.test_core.SamplePublisher1'
+        ))
 
     @staticmethod
     def test_get_publisher():
@@ -339,19 +402,3 @@ class TestAlertPublisherRepositoryAssemblePublisher(object):
         assert_true(isinstance(publisher._publishers[3], SamplePublisher2))
 
 
-class TestCompositePublisher(object):
-
-    @staticmethod
-    def test_composite_publisher_ordering():
-        """CompositePublisher - Ensure publishers executed in correct order"""
-        publisher = CompositePublisher([
-            SamplePublisher1(),
-            WrappedFunctionPublisher(sample_publisher_blank),
-            SamplePublisher2(),
-        ])
-
-        alert = get_alert()
-        publication = publisher.publish(alert, {})
-
-        expectation = {'test2': True}
-        assert_equal(publication, expectation)

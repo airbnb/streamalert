@@ -16,10 +16,54 @@ limitations under the License.
 # pylint: disable=protected-access,attribute-defined-outside-init
 from datetime import datetime
 
+from mock import MagicMock
 from nose.tools import assert_equal
 
 from stream_alert.alert_processor.helpers import publish_alert
+from stream_alert.alert_processor.outputs.output_base import OutputDispatcher
 from tests.unit.stream_alert_alert_processor.helpers import get_alert
+
+
+class TestPublishersForOutput(object):
+
+    @staticmethod
+    def test_publisher_for_output():
+        alert = get_alert(context={'context': 'value'})
+        alert.created = datetime(2019, 1, 1)
+        alert.publishers = {
+            'slack:unit_test_channel': 'publishers.community.generic.DefaultPublisher',
+            'slack': 'publishers.community.generic.remove_internal_fields',
+            'demisto': 'publishers.community.generic.blank',
+        }
+        output = MagicMock(spec=OutputDispatcher)
+        output.__service__ = 'slack'
+        descriptor = 'unit_test_channel'
+
+        publication = publish_alert(alert, output, descriptor)
+
+        expectation = {
+            'source_entity': 'corp-prefix.prod.cb.region',
+            'rule_name': 'cb_binarystore_file_added',
+            'created': '2019-01-01T00:00:00.000000Z',
+            'log_source': 'carbonblack:binarystore.file.added',
+            'log_type': 'json',
+            'cluster': '',
+            'context': {'context': 'value'},
+            'source_service': 's3',
+            'id': '79192344-4a6d-4850-8d06-9c3fef1060a4',
+            'rule_description': 'Info about this rule and what actions to take',
+            'record': {
+                'compressed_size': '9982',
+                'timestamp': '1496947381.18',
+                'node_id': '1',
+                'cb_server': 'cbserver',
+                'size': '21504',
+                'type': 'binarystore.file.added',
+                'file_path': '/tmp/5DA/AD8/0F9AA55DA3BDE84B35656AD8911A22E1.zip',
+                'md5': '0F9AA55DA3BDE84B35656AD8911A22E1'
+            }
+        }
+        assert_equal(publication, expectation)
 
 
 class TestDefaultPublisher(object):

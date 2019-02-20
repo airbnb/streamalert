@@ -11,14 +11,15 @@ LOGGER = get_logger(__name__)
 class AlertPublisherImporter(object):
     """A service that loads all publishers in the publishers/ directory."""
     _is_imported = False
+    _is_importing = False
 
     @classmethod
     def import_publishers(cls):
-        if cls._is_imported:
+        if cls._is_imported or cls._is_importing:
             return
 
+        cls._is_importing = True
         import_folders('publishers')
-
         cls._is_imported = True
 
 
@@ -27,7 +28,7 @@ class Register(object):
 
     def __new__(cls, class_or_function):
         AlertPublisherRepository.register_publisher(class_or_function)
-        
+
         return class_or_function  # Return the definition, not the instantiated object
 
 
@@ -114,7 +115,6 @@ class AlertPublisherRepository(object):
         """Registers the publisher into the repository.
 
         Args:
-             name (str): A unique name for this publisher
              publisher (callable|AlertPublisher): An instance of a publisher class
 
         Return:

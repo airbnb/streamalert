@@ -16,7 +16,7 @@ limitations under the License.
 import cgi
 from collections import OrderedDict
 
-from stream_alert.alert_processor.helpers import publish_alert
+from stream_alert.alert_processor.helpers import publish_alert, elide_string_middle
 from stream_alert.alert_processor.outputs.output_base import (
     OutputDispatcher,
     OutputProperty,
@@ -271,7 +271,7 @@ class SlackOutput(OutputDispatcher):
                     cls.MAX_MESSAGE_SIZE,
                     attachment['text']
                 )
-                attachment['text'] = attachment['text'][:(cls.MAX_MESSAGE_SIZE-2)] + '..'
+                attachment['text'] = elide_string_middle(attachment['text'], cls.MAX_MESSAGE_SIZE)
 
             attachments.append(attachment)
 
