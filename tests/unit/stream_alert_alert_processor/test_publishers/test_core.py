@@ -135,7 +135,7 @@ class TestAlertPublisherRepository(object):
         publisher = AlertPublisherRepository.create_composite_publisher(['no_exist'])
 
         assert_true(isinstance(publisher, DefaultPublisher))
-        error_log.assert_called_with('Designated output service [%s] does not exist', 'no_exist')
+        error_log.assert_called_with('Publisher [%s] does not exist', 'no_exist')
 
 
 class TestAlertPublisherRepositoryAssemblePublisher(object):
