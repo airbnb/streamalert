@@ -19,8 +19,34 @@ from datetime import datetime, timedelta
 from mock import Mock, patch, PropertyMock
 from nose.tools import assert_equal
 
+from publishers.core import BaseAlertPublisher, AlertPublisher
 import stream_alert.rules_engine.rules_engine as rules_engine_module
 from stream_alert.rules_engine.rules_engine import RulesEngine
+
+
+def mock_conf():
+    return {
+        'global': {
+            'general': {
+                'rule_locations': [],
+                'matcher_locations': []
+            },
+            'infrastructure': {
+                'rule_staging': {
+                    'enabled': True
+                }
+            }
+        }
+    }
+
+@AlertPublisher
+def that_publisher(alert, publication):
+    return {}
+
+@AlertPublisher
+class ThisPublisher(BaseAlertPublisher):
+    def publish(self, alert, publication):
+        return {}
 
 
 # Without this time.sleep patch, backoff performs sleep
@@ -37,7 +63,7 @@ class TestRulesEngine(object):
              patch.object(rules_engine_module, 'ThreatIntel'), \
              patch.dict('os.environ', {'STREAMALERT_PREFIX': 'test_prefix'}), \
              patch('stream_alert.rules_engine.rules_engine.load_config',
-                   Mock(return_value=self._mock_conf())):
+                   Mock(return_value=mock_conf())):
             self._rules_engine = RulesEngine()
 
     def teardown(self):
@@ -49,27 +75,12 @@ class TestRulesEngine(object):
         RulesEngine._alert_forwarder = None
         RulesEngine._RULE_TABLE_LAST_REFRESH = datetime(year=1970, month=1, day=1)
 
-    @classmethod
-    def _mock_conf(cls):
-        return {
-            'global': {
-                'general': {
-                    'rule_locations': [],
-                    'matcher_locations': []
-                },
-                'infrastructure': {
-                    'rule_staging': {
-                        'enabled': True
-                    }
-                }
-            }
-        }
 
     def test_load_rule_table_disabled(self):
         """RulesEngine - Load Rule Table, Disabled"""
         RulesEngine._rule_table = None
         RulesEngine._RULE_TABLE_LAST_REFRESH = datetime(year=1970, month=1, day=1)
-        config = self._mock_conf()
+        config = mock_conf()
         config['global']['infrastructure']['rule_staging']['enabled'] = False
         RulesEngine._load_rule_table(config)
         assert_equal(RulesEngine._rule_table, None)
@@ -78,7 +89,7 @@ class TestRulesEngine(object):
     @patch('logging.Logger.debug')
     def test_load_rule_table_no_refresh(self, log_mock):
         """RulesEngine - Load Rule Table, No Refresh"""
-        config = self._mock_conf()
+        config = mock_conf()
         RulesEngine._RULE_TABLE_LAST_REFRESH = datetime.utcnow()
         RulesEngine._rule_table = 'table'
         self._rules_engine._load_rule_table(config)
@@ -89,7 +100,7 @@ class TestRulesEngine(object):
     @patch('logging.Logger.info')
     def test_load_rule_table_refresh(self, log_mock):
         """RulesEngine - Load Rule Table, Refresh"""
-        config = self._mock_conf()
+        config = mock_conf()
         config['global']['infrastructure']['rule_staging']['cache_refresh_minutes'] = 5
 
         fake_date_now = datetime.utcnow()
@@ -272,6 +283,62 @@ class TestRulesEngine(object):
         )
         result = self._rules_engine._rule_analysis({'record': {'foo': 'bar'}}, rule)
         assert_equal(result is None, True)
+
+    def test_rule_analysis_with_publishers(self):
+        """RulesEngine - Rule Analysis, Publishers"""
+        rule = Mock(
+            process=Mock(return_value=True),
+            is_staged=Mock(return_value=False),
+            outputs_set={'slack:test','demisto:test'},
+            description='rule description',
+            publishers={
+                'demisto': 'publishers.community.generic.DefaultPublisher',
+                'slack': [that_publisher],
+                'slack:test': [ThisPublisher],
+            },
+            context=None,
+            merge_by_keys=None,
+            merge_window_mins=0
+        )
+
+        # Override the Mock name attribute
+        type(rule).name = PropertyMock(return_value='test_rule')
+        record = {'foo': 'bar'}
+        payload = {
+            'cluster': 'prod',
+            'log_schema_type': 'log_type',
+            'data_type': 'json',
+            'resource': 'test_stream',
+            'service': 'kinesis',
+            'record': record
+        }
+
+        with patch.object(rules_engine_module, 'Alert') as alert_mock:
+            result = self._rules_engine._rule_analysis(payload, rule)
+            alert_mock.assert_called_with(
+                'test_rule', record, {'aws-firehose:alerts', 'slack:test', 'demisto:test'},
+                cluster='prod',
+                context=None,
+                log_source='log_type',
+                log_type='json',
+                merge_by_keys=None,
+                merge_window=timedelta(minutes=0),
+                publishers={
+                    'slack:test': [
+                        'tests.unit.streamalert.rules_engine.test_rules_engine.ThisPublisher',
+                        'tests.unit.streamalert.rules_engine.test_rules_engine.that_publisher',
+                    ],
+                    'demisto:test': [
+                        'publishers.community.generic.DefaultPublisher'
+                    ],
+                },
+                rule_description='rule description',
+                source_entity='test_stream',
+                source_service='kinesis',
+                staged=False
+            )
+
+            assert_equal(result is not None, True)
 
     def test_run_subkey_failure(self):
         """RulesEngine - Run, Fail Subkey Check"""

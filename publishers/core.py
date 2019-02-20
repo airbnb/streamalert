@@ -1,10 +1,9 @@
 from abc import abstractmethod
 from copy import deepcopy
 from inspect import isclass
-import importlib
-import os
 
 from stream_alert.shared.logger import get_logger
+from stream_alert.shared.rule import import_folders
 
 LOGGER = get_logger(__name__)
 
@@ -17,22 +16,7 @@ class AlertPublisherImporter(object):
         if cls._is_imported:
             return
 
-        # Other way
-        from stream_alert.shared.rule import import_folders
-
         import_folders('publishers')
-
-        # for output_file in os.listdir(os.path.dirname(__file__)):
-        #     # Skip the common base file and any non-py files
-        #     if output_file.startswith(('__init__', 'core')) or not output_file.endswith('.py'):
-        #         continue
-        #
-        #     full_import = '.'.join([
-        #         'publishers',
-        #         os.path.splitext(output_file)[0]
-        #     ])
-        #
-        #     importlib.import_module(full_import)
 
         cls._is_imported = True
 
@@ -117,7 +101,29 @@ class CompositePublisher(BaseAlertPublisher):
 
 
 def get_unique_publisher_name(class_or_function):
+    """Given a class or function, will return its fully qualified name.
+
+    This is useful for assigning a unique string name for a publisher."""
     return '{}.{}'.format(class_or_function.__module__, class_or_function.__name__)
+
+
+def publisher_registered(class_or_function):
+    """Returns if the requested publisher has been registered"""
+    return publisher_name_registered(get_unique_publisher_name(class_or_function))
+
+
+def publisher_name_registered(publisher_name):
+    return AlertPublisherRepository.has_publisher(publisher_name)
+
+
+def is_valid_publisher_reference(class_or_function):
+    """Returns TRUE if the given variable could be a publisher"""
+    if isclass(class_or_function) and issubclass(class_or_function, BaseAlertPublisher):
+        return True
+    elif callable(class_or_function):
+        return True
+
+    return False
 
 
 class WrappedFunctionPublisher(BaseAlertPublisher):
@@ -136,6 +142,16 @@ class AlertPublisherRepository(object):
 
     @classmethod
     def register_publisher(cls, name, publisher):
+        """Registers the publisher into the repository.
+
+        Args:
+             name (str): A unique name for this publisher
+             publisher (BaseAlertPublisher): An instance of a publisher class
+
+        Return:
+            void
+        """
+
         if not isinstance(publisher, BaseAlertPublisher):
             LOGGER.error('Registered publisher [%s] is not instance of BaseAlertPublisher.', name)
             return
@@ -156,12 +172,15 @@ class AlertPublisherRepository(object):
         Returns:
             BaseAlertPublisher|None
         """
-        AlertPublisherImporter.import_publishers()
-
-        try:
+        if cls.has_publisher(name):
             return cls._publishers[name]
-        except KeyError:
-            LOGGER.error('Designated output service [%s] does not exist', name)
+
+        LOGGER.error('Designated output service [%s] does not exist', name)
+
+    @classmethod
+    def has_publisher(cls, name):
+        AlertPublisherImporter.import_publishers()
+        return name in cls._publishers
 
     @classmethod
     def all_publishers(cls):

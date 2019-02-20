@@ -16,6 +16,11 @@ limitations under the License.
 from datetime import datetime, timedelta
 from os import environ as env
 
+from publishers.core import (
+    get_unique_publisher_name,
+    is_valid_publisher_reference,
+    publisher_name_registered
+)
 from stream_alert.rules_engine.alert_forwarder import AlertForwarder
 from stream_alert.rules_engine.threat_intel import ThreatIntel
 from stream_alert.shared import resources, RULES_ENGINE_FUNCTION_NAME as FUNCTION_NAME
@@ -230,6 +235,29 @@ class RulesEngine(object):
         Returns:
             dict
         """
+        def standardize_publisher_list(list_of_references):
+            publisher_names = map(standardize_publisher_name, list_of_references)
+
+            # Filter out None from the array
+            return [x for x in publisher_names if x is not None]
+
+        def standardize_publisher_name(string_or_reference):
+            if isinstance(string_or_reference, basestring):
+                publisher_name = string_or_reference
+            elif is_valid_publisher_reference(string_or_reference):
+                publisher_name = get_unique_publisher_name(string_or_reference)
+            else:
+                return None
+
+            if not publisher_name_registered(publisher_name):
+                LOGGER.warning('Requested publisher named (%s) is not registered.', publisher_name)
+
+            return publisher_name
+
+        def is_publisher_declaration(string_or_reference):
+            return isinstance(string_or_reference, basestring) \
+                   or is_valid_publisher_reference(string_or_reference)
+
         requested_outputs = rule.outputs_set
         requested_publishers = rule.publishers
         if not requested_publishers:
@@ -242,14 +270,14 @@ class RulesEngine(object):
 
             assigned_publishers = []
 
-            if isinstance(requested_publishers, basestring):
+            if is_publisher_declaration(requested_publishers):
                 # Case 1: The publisher is a single string.
                 #   apply this single publisher to all outputs + descriptors
-                assigned_publishers.append(requested_publishers)
+                assigned_publishers.append(standardize_publisher_name(requested_publishers))
             elif isinstance(requested_publishers, list):
                 # Case 2: The publisher is an array of strings.
                 #   apply all publishers to all outputs + descriptors
-                assigned_publishers += requested_publishers
+                assigned_publishers += standardize_publisher_list(requested_publishers)
             elif isinstance(requested_publishers, dict):
                 # Case 3: The publisher is a dict mapping output strings -> strings or list of
                 #   strings. Apply only publishers under a matching output key.
@@ -262,18 +290,18 @@ class RulesEngine(object):
                 # Order is important here; we load the output+descriptor-specific publishers first
                 if output in requested_publishers:
                     specific_publishers = requested_publishers[output]
-                    if isinstance(specific_publishers, basestring):
-                        assigned_publishers.append(specific_publishers)
+                    if is_publisher_declaration(specific_publishers):
+                        assigned_publishers.append(standardize_publisher_name(specific_publishers))
                     elif isinstance(specific_publishers, list):
-                        assigned_publishers += specific_publishers
+                        assigned_publishers += standardize_publisher_list(specific_publishers)
 
                 # Then load output-specific publishers second
                 if output_service in requested_publishers:
                     specific_publishers = requested_publishers[output_service]
-                    if isinstance(specific_publishers, basestring):
-                        assigned_publishers.append(specific_publishers)
+                    if is_publisher_declaration(specific_publishers):
+                        assigned_publishers.append(standardize_publisher_name(specific_publishers))
                     elif isinstance(specific_publishers, list):
-                        assigned_publishers += specific_publishers
+                        assigned_publishers += standardize_publisher_list(specific_publishers)
 
             configured_publishers[output] = assigned_publishers
 
