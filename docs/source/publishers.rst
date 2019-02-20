@@ -19,17 +19,17 @@ an alert to an output.
 Implementing new Publishers
 ---------------------------
 
-All publishers must be added to the ``stream_alert.alert_processor.publishers`` module. Publishers have two valid syntaxes:
+All publishers must be added to the ``publishers`` directory. Publishers have two valid syntaxes:
 
 
 **Function**
 
 Implement a top-level function with that accepts two arguments: An Alert and a dict. Decorate this function
-with the ``@AlertPublisher`` decorator.
+with the ``@Register`` decorator.
 
 .. code-block:: python
 
-  @AlertPublisher
+  @Register
   def my_publisher(alert: Alert, publication: dict) -> dict:
     # ...
     return {}
@@ -37,21 +37,17 @@ with the ``@AlertPublisher`` decorator.
 
 **Class**
 
-Implement a class that inherits from the ``BaseAlertPublisher`` and fill in the implementations for ``publish()``
-and ``name()``. Decorate the class with the ``@AlertPublisher`` decorator.
+Implement a class that inherits from the ``AlertPublisher`` and fill in the implementations for ``publish()``.
+Decorate the class with the ``@Register`` decorator.
 
 .. code-block:: python
 
-  @AlertPublisher
-  class MyPublisherClass(BaseAlertPublisher):
+  @Register
+  class MyPublisherClass(AlertPublisher):
 
     def publish(alert: Alert, publication: dict) -> dict:
       # ...
       return {}
-
-    @classmethod
-    def name():
-      return 'my_publisher'
 
 
 **Recommended Implementation**
@@ -65,7 +61,7 @@ doing in-place modifications of the publications, and should prefer to copy-and-
 
 .. code-block:: python
 
-  @AlertPublisher
+  @Register
   def sample_publisher(alert, publication):
     new_publication = deepcopy(publication)
 
@@ -73,17 +69,6 @@ doing in-place modifications of the publications, and should prefer to copy-and-
     new_publication.pop('old_field', None)
 
     return new_publication
-
-
-**The Publisher's NAME**
-
-When decorating a publisher, it will automatically be defined with a ``name``. The name of class-based
-Publishers is the return value of the ``name()`` method. The name of function-based Publishers is the
-fully qualified module + function name of the function.
-
-Annotated publishers must all have unique names. Name conflicts will cause errors to be logged.
-
-This name is important to know, as it is used later when **Registering Publishers**.
 
 
 Preparing Outputs
@@ -104,6 +89,8 @@ All data returned by ``publish_alert()`` should be assumed as optional.
 
 .. code-block:: python
 
+  from stream_alert.alert_processor.helpers import publish_alert
+
   def _dispatch(self, alert, descriptor):
     # ...
     publication = publish_alert(alert, self, descriptor)
@@ -119,7 +106,7 @@ should offer a default implementation:
 
   def _dispatch(self, alert, descriptor):
     default_title = 'Incident Title: #{}'.format(alert.alert_id)
-    default_html = '<html><body>Hello world! {}</body></html>'.format(alert.rule_description)
+    default_html = '<html><body>Rule: {}</body></html>'.format(alert.rule_description)
     # ...
 
 
@@ -159,22 +146,24 @@ Register publishers on a rule using the ``publisher`` argument on the ``@Rule`` 
 
 .. code-block:: python
 
+  from publishers import publisher_1, publisher_2
+
   @Rule(
     logs=['stuff'],
     outputs=['pagerduty', 'slack'],
-    publishers=['publisher_1', 'publisher_2']
+    publishers=[publisher_1, publisher_2]
   )
   def my_rule(rec):
     # ...
 
-The ``publishers`` argument is a structure containing **Publisher** names and can follow any of the following
-structures:
+The ``publishers`` argument is a structure containing references to **Publishers** and can follow any of the
+following structures:
 
 **String, Publisher Name**
 
 .. code-block:: python
 
-  publishers='publisher_1'
+  publishers=publisher_1
 
 When using this syntax, the given publisher will be applied to all outputs.
 
@@ -183,7 +172,7 @@ When using this syntax, the given publisher will be applied to all outputs.
 
 .. code-block:: python
 
-  publishers=['publisher_1', 'publisher_2', 'publisher_3']
+  publishers=[publisher_1, publisher_2, publisher_3]
 
 When using this syntax, all given publishers will be applied to all outputs.
 
@@ -193,9 +182,9 @@ When using this syntax, all given publishers will be applied to all outputs.
 .. code-block:: python
 
   publishers={
-    'pagerduty:analyst': ['publisher_1', 'publisher_2'],
-    'pagerduty': ['publisher_3', 'publisher_4'],
-    'demisto': 'other_publisher',
+    'pagerduty:analyst': [publisher_1, publisher_2],
+    'pagerduty': [publisher_3, publisher_4],
+    'demisto': other_publisher,
   }
 
 When using this syntax, publishers under each key will be applied to their matching outputs. Publisher keys
@@ -236,7 +225,7 @@ The publisher can also simplify the PagerDuty title:
 
 .. code-block:: python
 
-  @AlertPublisher
+  @Register
   def simplify_pagerduty_output(alert, publication):
     return {
       'record': {
@@ -252,11 +241,13 @@ integration, leaving the Slack integration the same. Registering the publisher c
 
 .. code-block:: python
 
+  import simply_pagerduty_output
+
   @Rule(
     logs=['ssh'],
     output=['slack:engineering', 'pagerduty:engineering'],
     publishers={
-      'pagerduty:engineering': 'stream_alert.alert_publisher.publisher.simplify_pagerduty_output',
+      'pagerduty:engineering': simplify_pagerduty_output,
     }
   )
   def machine_ssh_login(rec):
