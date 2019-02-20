@@ -40,7 +40,7 @@ def mock_conf():
     }
 
 @AlertPublisher
-def that_publisher(alert, publication):
+def that_publisher(alert, publication):  # pylint: disable=unused-argument
     return {}
 
 @AlertPublisher
@@ -289,7 +289,7 @@ class TestRulesEngine(object):
         rule = Mock(
             process=Mock(return_value=True),
             is_staged=Mock(return_value=False),
-            outputs_set={'slack:test','demisto:test'},
+            outputs_set={'slack:test', 'demisto:test'},
             description='rule description',
             publishers={
                 'demisto': 'publishers.community.generic.DefaultPublisher',
