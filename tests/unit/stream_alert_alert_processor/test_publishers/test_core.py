@@ -14,23 +14,80 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 # pylint: disable=protected-access,attribute-defined-outside-init,invalid-name
-from datetime import datetime
-
 from mock import patch, MagicMock
 from nose.tools import assert_true, assert_equal
 
 from stream_alert.alert_processor.helpers import _assemble_alert_publisher_for_output
 from stream_alert.alert_processor.outputs.output_base import StreamAlertOutput
-from publishers import AlertPublisherRepository
-from publishers.core import WrappedFunctionPublisher, CompositePublisher, get_unique_publisher_name
-from publishers.community.generic import (
-    DefaultPublisher,
-    RemoveInternalFields,
-    SamplePublisher1,
-    SamplePublisher2,
-    blank,
+from publishers.core import (
+    AlertPublisherRepository,
+    WrappedFunctionPublisher,
+    CompositePublisher,
+    get_unique_publisher_name,
+    AlertPublisher,
+    BaseAlertPublisher
 )
+from publishers.community.generic import DefaultPublisher
 from tests.unit.stream_alert_alert_processor.helpers import get_alert
+
+
+@AlertPublisher
+class SamplePublisher1(BaseAlertPublisher):
+
+    def publish(self, alert, publication):
+        new_publication = publication.copy()
+        new_publication['test1'] = True
+        return new_publication
+
+
+@AlertPublisher
+class SamplePublisher2(BaseAlertPublisher):
+
+    def publish(self, alert, publication):
+        new_publication = publication.copy()
+        new_publication['test2'] = True
+        return new_publication
+
+
+@AlertPublisher
+class SamplePublisher3(BaseAlertPublisher):
+
+    def publish(self, alert, publication):
+        new_publication = publication.copy()
+        new_publication['test3'] = True
+        return new_publication
+
+
+@AlertPublisher
+def sample_publisher_4(alert, publication):
+    new_publication = publication.copy()
+    new_publication['test4'] = True
+    return new_publication
+
+
+@AlertPublisher
+def sample_publisher_blank(alert, publication):
+    return {}
+
+
+def test_get_unique_publisher_name_class():
+    """AlertPublisher - get_unique_publisher_name() - Class"""
+
+    name = get_unique_publisher_name(SamplePublisher1)
+    assert_equal(
+        name,
+        'tests.unit.stream_alert_alert_processor.test_publishers.test_core.SamplePublisher1'
+    )
+
+
+def test_get_unique_publisher_name_function():
+    """AlertPublisher - get_unique_publisher_name() - Function"""
+
+    name = get_unique_publisher_name(sample_publisher_4)
+    assert_equal(
+        name,
+        'tests.unit.stream_alert_alert_processor.test_publishers.test_core.sample_publisher_4'
+    )
 
 
 class TestAlertPublisherRepository(object):
@@ -44,23 +101,25 @@ class TestAlertPublisherRepository(object):
 
     @staticmethod
     def test_get_publisher():
-        """AlertPublisher - AlertPublisherRepository - get_publisher()"""
+        """AlertPublisher - AlertPublisherRepository - get_publisher() - SamplePublisher1"""
         publisher = AlertPublisherRepository.get_publisher(
-            'publishers.community.generic.DefaultPublisher' # this one is always defined
+            'tests.unit.stream_alert_alert_processor.test_publishers.test_core.SamplePublisher1'
         )
 
-        assert_true(isinstance(publisher, DefaultPublisher))
+        assert_true(isinstance(publisher, SamplePublisher1))
 
     @staticmethod
     def test_create_composite_publisher():
         """AlertPublisher - AlertPublisherRepository - create_composite_publisher() - Valid"""
         publisher = AlertPublisherRepository.create_composite_publisher([
-            'publishers.community.generic.blank',
-            'publishers.community.generic.record',
+            'tests.unit.stream_alert_alert_processor.test_publishers.test_core.SamplePublisher1',
+            'tests.unit.stream_alert_alert_processor.test_publishers.test_core.SamplePublisher2',
         ])
 
         assert_true(isinstance(publisher, CompositePublisher))
         assert_equal(len(publisher._publishers), 2)
+        assert_true(isinstance(publisher._publishers[0], SamplePublisher1))
+        assert_true(isinstance(publisher._publishers[1], SamplePublisher2))
 
     @staticmethod
     def test_create_composite_publisher_default():
@@ -77,20 +136,6 @@ class TestAlertPublisherRepository(object):
 
         assert_true(isinstance(publisher, DefaultPublisher))
         error_log.assert_called_with('Designated output service [%s] does not exist', 'no_exist')
-
-
-def test_get_unique_publisher_name_class():
-    """AlertPublisher - get_unique_publisher_name() - Class"""
-
-    name = get_unique_publisher_name(DefaultPublisher)
-    assert_equal(name, 'publishers.community.generic.DefaultPublisher')
-
-
-def test_get_unique_publisher_name_function():
-    """AlertPublisher - get_unique_publisher_name() - Function"""
-
-    name = get_unique_publisher_name(blank)
-    assert_equal(name, 'publishers.community.generic.blank')
 
 
 class TestAlertPublisherRepositoryAssemblePublisher(object):
@@ -113,7 +158,8 @@ class TestAlertPublisherRepositoryAssemblePublisher(object):
 
     def test_assemble_alert_publisher_for_output_single_string(self):
         """AlertPublisher - AlertPublisherRepository - assemble() - String"""
-        self._alert.publishers = 'publishers.community.generic.blank'
+        self._alert.publishers = ('tests.unit.stream_alert_alert_processor.test_publishers.'
+                                  'test_core.SamplePublisher1')
 
         publisher = _assemble_alert_publisher_for_output(
             self._alert,
@@ -123,13 +169,13 @@ class TestAlertPublisherRepositoryAssemblePublisher(object):
 
         assert_true(isinstance(publisher, CompositePublisher))
         assert_equal(len(publisher._publishers), 1)
-        assert_true(isinstance(publisher._publishers[0], WrappedFunctionPublisher))
+        assert_true(isinstance(publisher._publishers[0], SamplePublisher1))
 
     def test_assemble_alert_publisher_for_output_list_string(self):
         """AlertPublisher - AlertPublisherRepository - assemble() - List of Strings"""
         self._alert.publishers = [
-            'publishers.community.generic.DefaultPublisher',
-            'publishers.community.generic.RemoveInternalFields',
+            'tests.unit.stream_alert_alert_processor.test_publishers.test_core.SamplePublisher1',
+            'tests.unit.stream_alert_alert_processor.test_publishers.test_core.SamplePublisher2',
         ]
 
         publisher = _assemble_alert_publisher_for_output(
@@ -140,8 +186,8 @@ class TestAlertPublisherRepositoryAssemblePublisher(object):
 
         assert_true(isinstance(publisher, CompositePublisher))
         assert_equal(len(publisher._publishers), 2)
-        assert_true(isinstance(publisher._publishers[0], DefaultPublisher))
-        assert_true(isinstance(publisher._publishers[1], RemoveInternalFields))
+        assert_true(isinstance(publisher._publishers[0], SamplePublisher1))
+        assert_true(isinstance(publisher._publishers[1], SamplePublisher2))
 
     def test_assemble_alert_publisher_for_output_dict_empty(self):
         """AlertPublisher - AlertPublisherRepository - assemble() - Empty Dict"""
@@ -158,7 +204,9 @@ class TestAlertPublisherRepositoryAssemblePublisher(object):
     def test_assemble_alert_publisher_for_output_dict_irrelevant_key(self):
         """AlertPublisher - AlertPublisherRepository - assemble() - Dict with Irrelevant Key"""
         self._alert.publishers = {
-            'pagerduty': ['publishers.community.generic.blank']
+            'pagerduty': [
+                'tests.unit.stream_alert_alert_processor.test_publishers.test_core.SamplePublisher1'
+            ]
         }
 
         publisher = _assemble_alert_publisher_for_output(
@@ -172,8 +220,11 @@ class TestAlertPublisherRepositoryAssemblePublisher(object):
     def test_assemble_alert_publisher_for_output_dict_key_string(self):
         """AlertPublisher - AlertPublisherRepository - assemble() - Dict with Key -> String"""
         self._alert.publishers = {
-            'demisto': 'publishers.community.generic.blank',
-            'pagerduty': ['publishers.community.generic.blank']
+            'demisto': ('tests.unit.stream_alert_alert_processor.test_publishers.'
+                        'test_core.SamplePublisher1'),
+            'pagerduty': [
+                'tests.unit.stream_alert_alert_processor.test_publishers.test_core.SamplePublisher2'
+            ]
         }
 
         publisher = _assemble_alert_publisher_for_output(
@@ -184,16 +235,20 @@ class TestAlertPublisherRepositoryAssemblePublisher(object):
 
         assert_true(isinstance(publisher, CompositePublisher))
         assert_equal(len(publisher._publishers), 1)
-        assert_true(isinstance(publisher._publishers[0], WrappedFunctionPublisher))
+        assert_true(isinstance(publisher._publishers[0], SamplePublisher1))
 
     def test_assemble_alert_publisher_for_output_dict_key_array(self):
         """AlertPublisher - AlertPublisherRepository - assemble() - Dict with Key -> List"""
         self._alert.publishers = {
             'demisto': [
-                'publishers.community.generic.DefaultPublisher',
-                'publishers.community.generic.RemoveInternalFields'
+                ('tests.unit.stream_alert_alert_processor.test_publishers.test_core.'
+                 'SamplePublisher1'),
+                ('tests.unit.stream_alert_alert_processor.test_publishers.test_core.'
+                 'SamplePublisher2'),
             ],
-            'pagerduty': ['publishers.community.generic.blank']
+            'pagerduty': [
+                'tests.unit.stream_alert_alert_processor.test_publishers.test_core.SamplePublisher3'
+            ],
         }
 
         publisher = _assemble_alert_publisher_for_output(
@@ -208,8 +263,11 @@ class TestAlertPublisherRepositoryAssemblePublisher(object):
     def test_assemble_alert_publisher_for_output_dict_key_descriptor_string(self):
         """AlertPublisher - AlertPublisherRepository - assemble() - Dict matches Desc String"""
         self._alert.publishers = {
-            'demisto:some_descriptor': 'publishers.community.generic.RemoveInternalFields',
-            'pagerduty': ['publishers.community.generic.blank']
+            'demisto:some_descriptor': ('tests.unit.stream_alert_alert_processor.test_publishers.'
+                                        'test_core.SamplePublisher1'),
+            'pagerduty': [
+                'tests.unit.stream_alert_alert_processor.test_publishers.test_core.SamplePublisher2'
+            ],
         }
 
         publisher = _assemble_alert_publisher_for_output(
@@ -225,10 +283,14 @@ class TestAlertPublisherRepositoryAssemblePublisher(object):
         """AlertPublisher - AlertPublisherRepository - assemble() - Dict matches Desc List"""
         self._alert.publishers = {
             'demisto:some_descriptor': [
-                'publishers.community.generic.DefaultPublisher',
-                'publishers.community.generic.RemoveInternalFields'
+                ('tests.unit.stream_alert_alert_processor.test_publishers.test_core.'
+                 'SamplePublisher1'),
+                ('tests.unit.stream_alert_alert_processor.test_publishers.test_core.'
+                 'SamplePublisher2'),
             ],
-            'pagerduty': ['publishers.community.generic.blank']
+            'pagerduty': [
+                'tests.unit.stream_alert_alert_processor.test_publishers.test_core.SamplePublisher3'
+            ]
         }
 
         publisher = _assemble_alert_publisher_for_output(
@@ -244,14 +306,21 @@ class TestAlertPublisherRepositoryAssemblePublisher(object):
         """AlertPublisher - AlertPublisherRepository - assemble() - Dict full match Lists"""
         self._alert.publishers = {
             'demisto': [
-                'publishers.community.generic.SamplePublisher1',
-                'publishers.community.generic.SamplePublisher2',
+                ('tests.unit.stream_alert_alert_processor.test_publishers.test_core.'
+                 'SamplePublisher1'),
+                ('tests.unit.stream_alert_alert_processor.test_publishers.test_core.'
+                 'SamplePublisher2'),
             ],
             'demisto:some_descriptor': [
-                'publishers.community.generic.DefaultPublisher',
-                'publishers.community.generic.RemoveInternalFields',
+                ('tests.unit.stream_alert_alert_processor.test_publishers.test_core.'
+                 'SamplePublisher3'),
+                ('tests.unit.stream_alert_alert_processor.test_publishers.test_core.'
+                 'sample_publisher_4'),
             ],
-            'pagerduty': ['publishers.community.generic.blank']
+            'pagerduty': [
+                ('tests.unit.stream_alert_alert_processor.test_publishers.test_core.'
+                 'sample_publisher_5')
+            ]
         }
 
         publisher = _assemble_alert_publisher_for_output(
@@ -264,8 +333,8 @@ class TestAlertPublisherRepositoryAssemblePublisher(object):
         assert_equal(len(publisher._publishers), 4)
 
         # Order is important
-        assert_true(isinstance(publisher._publishers[0], DefaultPublisher))
-        assert_true(isinstance(publisher._publishers[1], RemoveInternalFields))
+        assert_true(isinstance(publisher._publishers[0], SamplePublisher3))
+        assert_true(isinstance(publisher._publishers[1], WrappedFunctionPublisher))
         assert_true(isinstance(publisher._publishers[2], SamplePublisher1))
         assert_true(isinstance(publisher._publishers[3], SamplePublisher2))
 
@@ -274,38 +343,15 @@ class TestCompositePublisher(object):
 
     @staticmethod
     def test_composite_publisher_ordering():
+        """CompositePublisher - Ensure publishers executed in correct order"""
         publisher = CompositePublisher([
-            DefaultPublisher(),
-            RemoveInternalFields(),
             SamplePublisher1(),
+            WrappedFunctionPublisher(sample_publisher_blank),
+            SamplePublisher2(),
         ])
 
         alert = get_alert()
-        alert.created = datetime(2019, 01, 01)
-
         publication = publisher.publish(alert, {})
 
-        expectation = {
-            'source_entity': 'corp-prefix.prod.cb.region',
-            'rule_name': 'cb_binarystore_file_added',
-            'source_service': 's3',
-            'created': '2019-01-01T00:00:00.000000Z',
-            'log_source': 'carbonblack:binarystore.file.added',
-            'sample_1': 'yay, it worked!',
-            'id': '79192344-4a6d-4850-8d06-9c3fef1060a4',
-            'cluster': '',
-            'context': {},
-            'record': {
-                'compressed_size': '9982',
-                'timestamp': '1496947381.18',
-                'node_id': '1',
-                'cb_server': 'cbserver',
-                'md5': '0F9AA55DA3BDE84B35656AD8911A22E1',
-                'type': 'binarystore.file.added',
-                'file_path': '/tmp/5DA/AD8/0F9AA55DA3BDE84B35656AD8911A22E1.zip',
-                'size': '21504'
-            },
-            'log_type': 'json',
-            'rule_description': 'Info about this rule and what actions to take'
-        }
+        expectation = {'test2': True}
         assert_equal(publication, expectation)

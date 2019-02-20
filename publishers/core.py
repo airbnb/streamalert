@@ -1,10 +1,72 @@
 from abc import abstractmethod
 from copy import deepcopy
 from inspect import isclass
+import importlib
+import os
 
 from stream_alert.shared.logger import get_logger
 
 LOGGER = get_logger(__name__)
+
+
+class AlertPublisherImporter(object):
+    _is_imported = False
+
+    @classmethod
+    def import_publishers(cls):
+        if cls._is_imported:
+            return
+
+        # Other way
+        from stream_alert.shared.rule import import_folders
+
+        import_folders('publishers')
+
+        # for output_file in os.listdir(os.path.dirname(__file__)):
+        #     # Skip the common base file and any non-py files
+        #     if output_file.startswith(('__init__', 'core')) or not output_file.endswith('.py'):
+        #         continue
+        #
+        #     full_import = '.'.join([
+        #         'publishers',
+        #         os.path.splitext(output_file)[0]
+        #     ])
+        #
+        #     importlib.import_module(full_import)
+
+        cls._is_imported = True
+
+
+class AlertPublisher(object):
+    """This is a decorator used to designate functions and classes as Publishers.
+
+    During the annotation process, instances of the publishers will be instantiated and registered
+    into the AlertPublisherRepository for ease of use.
+    """
+
+    def __new__(cls, class_or_function):
+        # We have to put the isclass() check BEFORE the callable() check because classes are also
+        # callable!
+        if isclass(class_or_function) and issubclass(class_or_function, BaseAlertPublisher):
+            # If the provided publisher is a Class, then we simply need to instantiate an instance
+            # of the class and register it.
+            publisher = class_or_function()
+        elif callable(class_or_function):
+            # If the provided publisher is a function, we wrap it with a WrappedFunctionPublisher
+            # to make them easier to handle.
+            publisher = WrappedFunctionPublisher(class_or_function)
+        else:
+            LOGGER.error(
+                'Could not register publisher %s; Not callable nor subclass of BaseAlertPublisher',
+                class_or_function
+            )
+            publisher = None
+
+        if publisher:
+            name = get_unique_publisher_name(class_or_function)
+            AlertPublisherRepository.register_publisher(name, publisher)
+
+        return class_or_function  # Return the definition, not the instantiated object
 
 
 class BaseAlertPublisher(object):
@@ -68,38 +130,6 @@ class WrappedFunctionPublisher(BaseAlertPublisher):
         return self._function(alert, publication)
 
 
-class AlertPublisher(object):
-    """This is a decorator used to designate functions and classes as Publishers.
-
-    During the annotation process, instances of the publishers will be instantiated and registered
-    into the AlertPublisherRepository for ease of use.
-    """
-
-    def __new__(cls, class_or_function):
-        # We have to put the isclass() check BEFORE the callable() check because classes are also
-        # callable!
-        if isclass(class_or_function) and issubclass(class_or_function, BaseAlertPublisher):
-            # If the provided publisher is a Class, then we simply need to instantiate an instance
-            # of the class and register it.
-            publisher = class_or_function()
-        elif callable(class_or_function):
-            # If the provided publisher is a function, we wrap it with a WrappedFunctionPublisher
-            # to make them easier to handle.
-            publisher = WrappedFunctionPublisher(class_or_function)
-        else:
-            LOGGER.error(
-                'Could not register publisher %s; Not callable nor subclass of BaseAlertPublisher',
-                class_or_function
-            )
-            publisher = None
-
-        if publisher:
-            name = get_unique_publisher_name(class_or_function)
-            AlertPublisherRepository.register_publisher(name, publisher)
-
-        return class_or_function  # Return the definition, not the instantiated object
-
-
 class AlertPublisherRepository(object):
     """A repository mapping names -> publishers"""
     _publishers = {}
@@ -126,6 +156,8 @@ class AlertPublisherRepository(object):
         Returns:
             BaseAlertPublisher|None
         """
+        AlertPublisherImporter.import_publishers()
+
         try:
             return cls._publishers[name]
         except KeyError:
@@ -160,10 +192,7 @@ class AlertPublisherRepository(object):
         if len(publishers) <= 0:
             # If no publishers were given, or if all of the publishers failed to load, then we
             # load a default publisher.
-            from publishers.community.generic import DefaultPublisher  # FIXME (derek.wang) figure out what to do with this inline import
-            # the reason its here cuz it causes a cyclical module dependency between this core and generic
-
-            default_publisher_name = get_unique_publisher_name(DefaultPublisher)
+            default_publisher_name = 'publishers.community.generic.DefaultPublisher'
             return cls.get_publisher(default_publisher_name)
 
         return CompositePublisher(publishers)
