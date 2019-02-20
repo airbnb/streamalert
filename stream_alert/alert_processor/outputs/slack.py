@@ -68,11 +68,11 @@ class SlackOutput(OutputDispatcher):
         """Yield messages that should be sent to slack.
 
         Args:
-            alert_record (dict): Dictionary represntation of the alert
+            alert_record (dict): Dictionary representation of the alert
                 relevant to the triggered rule
 
         Yields:
-            str: Properly split messages to be sent as attachemnts to slack
+            str: Properly split messages to be sent as attachments to slack
         """
         # Convert the alert we have to a nicely formatted string for slack
         alert_text = '\n'.join(cls._json_to_slack_mrkdwn(alert_record, 0))
@@ -101,23 +101,25 @@ class SlackOutput(OutputDispatcher):
             alert_text = alert_text[index+1:]
 
     @classmethod
-    def _format_attachments(cls, alert_publication, header_text):
+    def _format_default_attachments(cls, alert, alert_publication, fallback_text):
         """Format the message to be sent to slack.
 
         Args:
+            alert (Alert): The alert
             alert_publication (dict): Alert relevant to the triggered rule
-            header_text (str): A formatted rule header to be included with each
-                attachemnt as fallback text (to be shown on mobile, etc)
+            fallback_text (str): A formatted rule header to be included with each
+                attachment as fallback text (to be shown on mobile, etc)
 
-        Yields:
-            dict: A dictionary with the formatted attachemnt to be sent to Slack
+        Returns:
+            list(dict): A list of dictionaries with the formatted attachment to be sent to Slack
                 as the text
         """
-        record = alert_publication.get('record', {})
-        rule_description = alert_publication.get('rule_description', '')
+        record = alert.record
+        rule_description = alert.rule_description
 
         messages = list(cls._split_attachment_text(record))
 
+        attachments = []
         for index, message in enumerate(messages, start=1):
             title = 'Record:'
             if len(messages) > 1:
@@ -128,27 +130,168 @@ class SlackOutput(OutputDispatcher):
                 rule_desc = rule_description
                 rule_desc = '*Rule Description:*\n{}\n'.format(rule_desc)
 
-            # Yield this attachemnt to be sent with the list of attachments
-            yield {
-                'fallback': header_text,
+            # https://api.slack.com/docs/message-attachments#attachment_structure
+            attachments.append({
+                'fallback': fallback_text,
                 'color': '#b22222',
                 'pretext': rule_desc,
                 'title': title,
                 'text': message,
                 'mrkdwn_in': ['text', 'pretext']
-            }
+            })
 
             if index == cls.MAX_ATTACHMENTS:
                 LOGGER.warning('%s: %d-part message truncated to %d parts',
                                alert_publication, len(messages), cls.MAX_ATTACHMENTS)
                 break
 
+        return attachments
+
     @classmethod
-    def _format_message(cls, rule_name, alert_publication):
+    def _standardize_custom_attachments(cls, custom_slack_attachments):
+        """Supplies default fields to given attachments and validates their structure.
+
+        You can test out custom attachments using this tool:
+          https://api.slack.com/docs/messages/builder
+
+        When publishers provider custom slack attachments to the SlackOutput, it offers increased
+        flexibility, but requires more work. Publishers need to pay attention to the following:
+
+        - Slack requires escaping the characters: '&', '>' and '<'
+        - Slack messages have a limit of 4000 characters
+        - Individual slack messages support a maximum of 20 attachments
+
+
+        Args:
+            custom_slack_attachments (list): A list of dicts that is provided by the publisher.
+
+        Returns:
+            list: The value to the "attachments" Slack API argument
+        """
+
+        attachment_skeleton = {
+            # String
+            # Plaintext summary of the attachment; renders in non-markdown compliant clients,
+            # such as push notifications.
+            'fallback': '',
+
+            # String, hex color
+            # Colors the vertical bar to the left of the text.
+            'color': '#36a64f',
+
+            # String
+            # Text that appears above the vertical bar to the left of the attachment.
+            # Supports markdown if it's included in "mrkdwn_in"
+            'pretext': '',
+
+            # String
+            # The attachment's author name.
+            # If this field is omitted, then the entire author row is omitted.
+            'author_name': '',
+
+            # String, URL
+            # Provide a URL; Adds a clickable link to the author name
+            'author_link': '',
+
+            # String, URL of an image
+            # The icon appears to the left of the author name
+            'author_icon': '',
+
+            # String
+            # Appears as bold text above the attachment itself.
+            # If this field is omitted, the entire title row is omitted.
+            'title': '',
+
+            # String, URL
+            # Adds a clickable link to the title
+            'title_link': '',
+
+            # String
+            # Raw text that appears in the attachment, below the title but above the fields
+            # Supports markdown if it's included in "mrkdwn_in".
+            # Use \n for newline characters.
+            # This field has a field limit of cls.MAX_MESSAGE_SIZE
+            'text': '',
+
+            # Array of dicts; Each dict should have keys "title", "value", "short"
+            # An array of fields that appears below the text. These fields are clearly delineated
+            # with title and value.
+            'fields': [
+                # Sample field:
+                # {
+                #     "title": "Priority",
+                #     "value": "High",
+                #     "short": False
+                # }
+            ],
+
+            # String, URL of an image
+            # Large image that appears as an attachment
+            'image_url': '',
+
+            # String, URL of an image
+            # When image_url is omitted, this one renders a smaller image to the right
+            'thumb_url': '',
+
+            # String
+            # Appears at the very bottom
+            # If this field is omitted, also omits the footer icon
+            'footer': '',
+
+            # String, URL
+            # This icon appears to the left of the footer
+            'footer_icon': '',
+
+            # Integer, Unix timestamp
+            # This will show up next to the footer at the bottom.
+            # This timestamp does not change the time the message is actually sent.
+            'ts': '',
+
+            # List of strings
+            # Defines which of the above fields will support Slack's simple markdown (with special
+            # characters like *, ~, _, `, or ```... etc)
+            # By default, we respect markdown in "text" and "pretext"
+            "mrkdwn_in": [
+                'text',
+                'pretext',
+            ],
+        }
+
+        attachments = []
+
+        for custom_slack_attachment in custom_slack_attachments:
+            attachment = attachment_skeleton.copy()
+            attachment.update(custom_slack_attachment)
+
+            # Enforce maximum text length; make sure to check size AFTER escaping in case
+            # extra escape characters pushes it over the limit
+            if len(attachment['text']) > cls.MAX_MESSAGE_SIZE:
+                LOGGER.warning(
+                    'Custom attachment was truncated to length %d. Full message: %s',
+                    cls.MAX_MESSAGE_SIZE,
+                    attachment['text']
+                )
+                attachment['text'] = attachment['text'][:(cls.MAX_MESSAGE_SIZE-2)] + '..'
+
+            attachments.append(attachment)
+
+            # Enforce maximum number of attachments
+            if len(attachments) >= cls.MAX_ATTACHMENTS:
+                LOGGER.warning(
+                    'Message with %d custom attachments was truncated to %d attachments',
+                    len(custom_slack_attachments),
+                    cls.MAX_ATTACHMENTS
+                )
+                break
+
+        return attachments
+
+    @classmethod
+    def _format_message(cls, alert, alert_publication):
         """Format the message to be sent to slack.
 
         Args:
-            rule_name (str): The name of the rule that triggered the alert
+            alert (Alert): The alert
             alert_publication (dict): Alert relevant to the triggered rule
 
         Returns:
@@ -161,8 +304,17 @@ class SlackOutput(OutputDispatcher):
                     Record (Part 1 of 2):
                     ...
         """
-        header_text = '*StreamAlert Rule Triggered: {}*'.format(rule_name)
-        attachments = list(cls._format_attachments(alert_publication, header_text))
+        default_header_text = '*StreamAlert Rule Triggered: {}*'.format(alert.rule_name)
+        header_text = alert_publication.get('slack.text', default_header_text)
+
+        if 'slack.attachments' in alert_publication:
+            attachments = cls._standardize_custom_attachments(
+                alert_publication.get('slack.attachments')
+            )
+        else:
+            # Default attachments
+            attachments = cls._format_default_attachments(alert, alert_publication, header_text)
+
         full_message = {
             'text': header_text,
             'mrkdwn': True,
@@ -270,9 +422,8 @@ class SlackOutput(OutputDispatcher):
             return False
 
         publication = publish_alert(alert, self, descriptor)
-        rule_name = publication.get('rule_name', '')
 
-        slack_message = self._format_message(rule_name, publication)
+        slack_message = self._format_message(alert, publication)
 
         try:
             self._post_request_retry(creds['url'], slack_message)
