@@ -15,6 +15,7 @@ limitations under the License.
 """
 from publishers import AlertPublisherRepository
 
+
 def elide_string_middle(text, max_length):
     """Replace the middle of the text with ellipses to shorten text to the desired length.
 
@@ -82,7 +83,13 @@ def _assemble_alert_publisher_for_output(alert, output, descriptor):
         #   another key that applies publishers only to outputs of the type AND matching
         #   descriptor.
 
-        from stream_alert.alert_processor.outputs.output_base import OutputDispatcher  # FIXME (derek.wang) figure out what to do with this inline
+        # FIXME (derek.wang)
+        # this is here because currently the OutputDispatcher sits in a __init__.py module that
+        # performs on-demand loading of the other output classes. If you load this helper before
+        # the output classes are loaded, it creates a cyclical dependency
+        # helper.py -> output_base.py -> __init__ -> komand.py -> helper.py
+        # This is a temporary workaround
+        from stream_alert.alert_processor.outputs.output_base import OutputDispatcher
 
         if isinstance(output, OutputDispatcher):
             # Order is important here; we load the output+descriptor-specific publishers first
