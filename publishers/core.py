@@ -175,7 +175,7 @@ class AlertPublisherRepository(object):
         if cls.has_publisher(name):
             return cls._publishers[name]
 
-        LOGGER.error('Designated output service [%s] does not exist', name)
+        LOGGER.error('Publisher [%s] does not exist', name)
 
     @classmethod
     def has_publisher(cls, name):

@@ -55,8 +55,6 @@ def publish_alert(alert, output, descriptor):
 def _assemble_alert_publisher_for_output(alert, output, descriptor):
     """Gathers all requested publishers on the alert and returns them as a single Publisher
 
-    Note: When no publishers are requested, or when certain
-
     Args:
         alert (Alert): The alert that is pulled from DynamoDB
         output (OutputDispatcher|None): Instance of OutputDispatcher that is sending the alert
