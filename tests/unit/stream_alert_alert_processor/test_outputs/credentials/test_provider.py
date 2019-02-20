@@ -392,6 +392,7 @@ class TestS3Driver(object):
 
         assert_equal(loaded_creds, creds)
 
+    @mock_s3
     def test_save_credentials_into_s3_blank_credentials(self):
         """S3Driver - Save Credentials does nothing when Credentials are Blank"""
         input_credentials = Credentials('', is_encrypted=False, region=REGION)
