@@ -20,7 +20,7 @@ from datetime import datetime
 from mock import patch, Mock, MagicMock
 from nose.tools import assert_is_instance, assert_true, assert_false, assert_equal
 
-from publishers import publish_alert
+from stream_alert.alert_processor.helpers import publish_alert
 from stream_alert.alert_processor.outputs.demisto import DemistoOutput, DemistoRequestAssembler
 from stream_alert.alert_processor.outputs.output_base import OutputRequestFailure
 

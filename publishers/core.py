@@ -2,7 +2,6 @@ from abc import abstractmethod
 from copy import deepcopy
 from inspect import isclass
 
-from stream_alert.alert_processor.outputs.output_base import OutputDispatcher
 from stream_alert.shared.logger import get_logger
 
 LOGGER = get_logger(__name__)
@@ -161,59 +160,10 @@ class AlertPublisherRepository(object):
         if len(publishers) <= 0:
             # If no publishers were given, or if all of the publishers failed to load, then we
             # load a default publisher.
-            return cls.get_publisher('publishers.community.generic.DefaultPublisher')  # FIXME (derek.wang)
+            from publishers.community.generic import DefaultPublisher  # FIXME (derek.wang) figure out what to do with this inline import
+            # the reason its here cuz it causes a cyclical module dependency between this core and generic
+
+            default_publisher_name = get_unique_publisher_name(DefaultPublisher)
+            return cls.get_publisher(default_publisher_name)
 
         return CompositePublisher(publishers)
-
-    @classmethod
-    def assemble_alert_publisher_for_output(cls, alert, output, descriptor):
-        """Gathers all requested publishers on the alert and returns them as a single Publisher
-
-        Note: When no publishers are requested, or when certain
-
-        Args:
-            alert (Alert): The alert that is pulled from DynamoDB
-            output (OutputDispatcher|None): Instance of OutputDispatcher that is sending the alert
-            descriptor (str): The descriptor of the Output
-
-        Returns:
-            BaseAlertPublisher
-        """
-
-        alert_publishers = alert.publishers
-        publisher_names = []
-        if isinstance(alert_publishers, basestring):
-            # Case 1: The publisher is a single string.
-            #   apply this single publisher to all outputs + descriptors
-            publisher_names.append(alert_publishers)
-        elif isinstance(alert_publishers, list):
-            # Case 2: The publisher is an array of strings.
-            #   apply all publishers to all outputs + descriptors
-            publisher_names += alert_publishers
-        elif isinstance(alert_publishers, dict):
-            # Case 3: The publisher is a dict mapping output strings -> strings or list of strings
-            #   apply only publishers under the correct output key. We look under 2 keys:
-            #   one key that applies publishers to all outputs for a specific output type, and
-            #   another key that applies publishers only to outputs of the type AND matching
-            #   descriptor.
-
-            if isinstance(output, OutputDispatcher):
-                # Order is important here; we load the output+descriptor-specific publishers first
-                output_service_name = output.__service__
-                described_output_name = '{}:{}'.format(output_service_name, descriptor)
-                if described_output_name in alert_publishers:
-                    publisher_name_or_names = alert_publishers[described_output_name]
-                    if isinstance(publisher_name_or_names, list):
-                        publisher_names += publisher_name_or_names
-                    else:
-                        publisher_names.append(publisher_name_or_names)
-
-                # Then load output-specific publishers second
-                if output_service_name and output_service_name in alert_publishers:
-                    publisher_name_or_names = alert_publishers[output_service_name]
-                    if isinstance(publisher_name_or_names, list):
-                        publisher_names = publisher_names + publisher_name_or_names
-                    else:
-                        publisher_names.append(publisher_name_or_names)
-
-        return cls.create_composite_publisher(publisher_names)

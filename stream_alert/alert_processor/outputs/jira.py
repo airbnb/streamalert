@@ -17,7 +17,7 @@ from collections import OrderedDict
 import json
 import os
 
-from publishers import publish_alert
+from stream_alert.alert_processor.helpers import publish_alert
 from stream_alert.alert_processor.outputs.output_base import (
     OutputDispatcher,
     OutputProperty,

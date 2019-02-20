@@ -15,7 +15,7 @@ limitations under the License.
 """
 from collections import OrderedDict
 
-from publishers import publish_alert
+from stream_alert.alert_processor.helpers import publish_alert
 from stream_alert.alert_processor.outputs.output_base import (
     OutputDispatcher,
     OutputProperty,

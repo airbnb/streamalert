@@ -23,8 +23,7 @@ import backoff
 from botocore.exceptions import ClientError
 import boto3
 
-from publishers import publish_alert
-from stream_alert.alert_processor.helpers import elide_string_middle
+from stream_alert.alert_processor.helpers import elide_string_middle, publish_alert
 from stream_alert.alert_processor.outputs.output_base import (
     OutputDispatcher,
     OutputProperty,

@@ -19,6 +19,7 @@ from datetime import datetime
 from mock import patch, MagicMock
 from nose.tools import assert_true, assert_equal
 
+from stream_alert.alert_processor.helpers import _assemble_alert_publisher_for_output
 from stream_alert.alert_processor.outputs.output_base import StreamAlertOutput
 from publishers import AlertPublisherRepository
 from publishers.core import WrappedFunctionPublisher, CompositePublisher, get_unique_publisher_name
@@ -102,7 +103,7 @@ class TestAlertPublisherRepositoryAssemblePublisher(object):
         """AlertPublisher - AlertPublisherRepository - assemble() - String"""
         self._alert.publishers = None
 
-        publisher = AlertPublisherRepository.assemble_alert_publisher_for_output(
+        publisher = _assemble_alert_publisher_for_output(
             self._alert,
             self._output,
             self._descriptor
@@ -114,7 +115,7 @@ class TestAlertPublisherRepositoryAssemblePublisher(object):
         """AlertPublisher - AlertPublisherRepository - assemble() - String"""
         self._alert.publishers = 'publishers.community.generic.blank'
 
-        publisher = AlertPublisherRepository.assemble_alert_publisher_for_output(
+        publisher = _assemble_alert_publisher_for_output(
             self._alert,
             self._output,
             self._descriptor
@@ -131,7 +132,7 @@ class TestAlertPublisherRepositoryAssemblePublisher(object):
             'publishers.community.generic.RemoveInternalFields',
         ]
 
-        publisher = AlertPublisherRepository.assemble_alert_publisher_for_output(
+        publisher = _assemble_alert_publisher_for_output(
             self._alert,
             self._output,
             self._descriptor
@@ -146,7 +147,7 @@ class TestAlertPublisherRepositoryAssemblePublisher(object):
         """AlertPublisher - AlertPublisherRepository - assemble() - Empty Dict"""
         self._alert.publishers = {}
 
-        publisher = AlertPublisherRepository.assemble_alert_publisher_for_output(
+        publisher = _assemble_alert_publisher_for_output(
             self._alert,
             self._output,
             self._descriptor
@@ -160,7 +161,7 @@ class TestAlertPublisherRepositoryAssemblePublisher(object):
             'pagerduty': ['publishers.community.generic.blank']
         }
 
-        publisher = AlertPublisherRepository.assemble_alert_publisher_for_output(
+        publisher = _assemble_alert_publisher_for_output(
             self._alert,
             self._output,
             self._descriptor
@@ -175,7 +176,7 @@ class TestAlertPublisherRepositoryAssemblePublisher(object):
             'pagerduty': ['publishers.community.generic.blank']
         }
 
-        publisher = AlertPublisherRepository.assemble_alert_publisher_for_output(
+        publisher = _assemble_alert_publisher_for_output(
             self._alert,
             self._output,
             self._descriptor
@@ -195,7 +196,7 @@ class TestAlertPublisherRepositoryAssemblePublisher(object):
             'pagerduty': ['publishers.community.generic.blank']
         }
 
-        publisher = AlertPublisherRepository.assemble_alert_publisher_for_output(
+        publisher = _assemble_alert_publisher_for_output(
             self._alert,
             self._output,
             self._descriptor
@@ -211,7 +212,7 @@ class TestAlertPublisherRepositoryAssemblePublisher(object):
             'pagerduty': ['publishers.community.generic.blank']
         }
 
-        publisher = AlertPublisherRepository.assemble_alert_publisher_for_output(
+        publisher = _assemble_alert_publisher_for_output(
             self._alert,
             self._output,
             self._descriptor
@@ -230,7 +231,7 @@ class TestAlertPublisherRepositoryAssemblePublisher(object):
             'pagerduty': ['publishers.community.generic.blank']
         }
 
-        publisher = AlertPublisherRepository.assemble_alert_publisher_for_output(
+        publisher = _assemble_alert_publisher_for_output(
             self._alert,
             self._output,
             self._descriptor
@@ -253,7 +254,7 @@ class TestAlertPublisherRepositoryAssemblePublisher(object):
             'pagerduty': ['publishers.community.generic.blank']
         }
 
-        publisher = AlertPublisherRepository.assemble_alert_publisher_for_output(
+        publisher = _assemble_alert_publisher_for_output(
             self._alert,
             self._output,
             self._descriptor

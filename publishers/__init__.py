@@ -20,22 +20,3 @@ def import_publishers():
 
 
 import_publishers()
-
-
-def publish_alert(alert, output, descriptor):
-    """Presents the alert as a dict for output classes to send to their API integrations.
-
-    Args:
-        alert (Alert): The alert to be dispatched
-        output (OutputDispatcher): Instance of the output class dispatching this alert
-        descriptor (str): The descriptor for the output
-
-    Returns:
-        dict
-    """
-    publisher = AlertPublisherRepository.assemble_alert_publisher_for_output(
-        alert,
-        output,
-        descriptor
-    )
-    return publisher.publish(alert, {})
