@@ -99,7 +99,7 @@ class FirehoseClient(object):
             # Check if the max size of the batch has been reached or if the current
             # record will exceed the max batch size and start a new batch
             if ((len(current_batch) == cls.MAX_BATCH_COUNT) or
-                    (current_batch_size + line_len > cls.MAX_BATCH_SIZE)):
+                    (current_batch_size + line_len > cls.MAX_BATCH_SIZE)) and current_batch:
                 yield current_batch[:]
                 current_batch_size = 0
                 del current_batch[:]
