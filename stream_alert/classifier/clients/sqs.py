@@ -76,6 +76,7 @@ class SQSClient(object):
             size = len(record) + (1 if idx != record_count and batch else 0)
             if size + 2 > cls.MAX_SIZE:
                 LOGGER.error('Record is too large to send to SQS:\n%s', record)
+                MetricLogger.log_metric(FUNCTION_NAME, MetricLogger.SQS_FAILED_RECORDS, 1)
                 continue
 
             if idx == record_count or size + batch_size >= cls.MAX_SIZE:
