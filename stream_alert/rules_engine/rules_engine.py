@@ -227,10 +227,10 @@ class RulesEngine(object):
         should never have their alerts transformed.
 
         Args:
-            rule (Rule):
+            rule (Rule): The rule to create publishers for
 
         Returns:
-            dict
+            dict: Maps string outputs names to lists of strings of their fully qualified publishers
         """
         def standardize_publisher_list(list_of_references):
             """Standardizes a list of requested publishers"""
@@ -281,7 +281,8 @@ class RulesEngine(object):
             if is_publisher_declaration(requested_publishers):
                 # Case 1: The publisher is a single string.
                 #   apply this single publisher to all outputs + descriptors
-                assigned_publishers.append(standardize_publisher_name(requested_publishers))
+                publisher = standardize_publisher_name(requested_publishers)
+                assigned_publishers += [publisher] if publisher is not None else []
             elif isinstance(requested_publishers, list):
                 # Case 2: The publisher is an array of strings.
                 #   apply all publishers to all outputs + descriptors
@@ -299,7 +300,8 @@ class RulesEngine(object):
                 if output in requested_publishers:
                     specific_publishers = requested_publishers[output]
                     if is_publisher_declaration(specific_publishers):
-                        assigned_publishers.append(standardize_publisher_name(specific_publishers))
+                        publisher = standardize_publisher_name(specific_publishers)
+                        assigned_publishers += [publisher] if publisher is not None else []
                     elif isinstance(specific_publishers, list):
                         assigned_publishers += standardize_publisher_list(specific_publishers)
 
@@ -307,9 +309,12 @@ class RulesEngine(object):
                 if output_service in requested_publishers:
                     specific_publishers = requested_publishers[output_service]
                     if is_publisher_declaration(specific_publishers):
-                        assigned_publishers.append(standardize_publisher_name(specific_publishers))
+                        publisher = standardize_publisher_name(specific_publishers)
+                        assigned_publishers += [publisher] if publisher is not None else []
                     elif isinstance(specific_publishers, list):
                         assigned_publishers += standardize_publisher_list(specific_publishers)
+            else:
+                LOGGER.error('Invalid publisher argument: %s', requested_publishers)
 
             configured_publishers[output] = assigned_publishers
 

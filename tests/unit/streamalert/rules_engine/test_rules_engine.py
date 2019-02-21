@@ -13,12 +13,15 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+# pylint: disable=invalid-name
+
 from datetime import datetime, timedelta
 
 from mock import Mock, patch, PropertyMock
 from nose.tools import assert_equal
 
-from publishers.core import AlertPublisher, Register
+from publishers.community.generic import remove_internal_fields
+from publishers.core import AlertPublisher, Register, DefaultPublisher
 import stream_alert.rules_engine.rules_engine as rules_engine_module
 from stream_alert.rules_engine.rules_engine import RulesEngine
 
@@ -189,6 +192,8 @@ class TestRulesEngine(object):
         result = RulesEngine._process_subkeys(record, rule)
         assert_equal(result, True)
 
+    # -- Tests for _rule_analysis()
+
     def test_rule_analysis(self):
         """RulesEngine - Rule Analysis"""
         rule = Mock(
@@ -340,6 +345,143 @@ class TestRulesEngine(object):
             )
 
             assert_equal(result is not None, True)
+
+    # --- Tests for _configure_publishers()
+
+    def test_configure_publishers_empty(self):
+        """RulesEngine - _configure_publishers, Empty"""
+        rule = Mock(
+            outputs_set={'slack:test'},
+            publishers=None,
+        )
+
+        publishers = self._rules_engine._configure_publishers(rule)
+        expectation = None
+
+        assert_equal(publishers, expectation)
+
+    def test_configure_publishers_single_string(self):
+        """RulesEngine - _configure_publishers, Single string"""
+        rule = Mock(
+            outputs_set={'slack:test'},
+            publishers='publishers.core.DefaultPublisher'
+        )
+
+        publishers = self._rules_engine._configure_publishers(rule)
+        expectation = {'slack:test': ['publishers.core.DefaultPublisher']}
+
+        assert_equal(publishers, expectation)
+
+    def test_configure_publishers_single_reference(self):
+        """RulesEngine - _configure_publishers, Single reference"""
+        rule = Mock(
+            outputs_set={'slack:test'},
+            publishers=DefaultPublisher
+        )
+
+        publishers = self._rules_engine._configure_publishers(rule)
+        expectation = {'slack:test': ['publishers.core.DefaultPublisher']}
+
+        assert_equal(publishers, expectation)
+
+    @patch('logging.Logger.warning')
+    def test_configure_publishers_single_invalid_string(self, log_warn):
+        """RulesEngine - _configure_publishers, Invalid string"""
+        rule = Mock(
+            outputs_set={'slack:test'},
+            publishers='blah'
+        )
+
+        publishers = self._rules_engine._configure_publishers(rule)
+        expectation = {'slack:test': []}
+
+        assert_equal(publishers, expectation)
+        log_warn.assert_called_with('Requested publisher named (%s) is not registered.', 'blah')
+
+    @patch('logging.Logger.error')
+    def test_configure_publishers_single_invalid_object(self, log_error):
+        """RulesEngine - _configure_publishers, Invalid object"""
+        rule = Mock(
+            outputs_set={'slack:test'},
+            publishers=self  # just some random object that's not a publisher
+        )
+
+        publishers = self._rules_engine._configure_publishers(rule)
+        expectation = {'slack:test': []}
+
+        assert_equal(publishers, expectation)
+        log_error.assert_called_with('Invalid publisher argument: %s', self)
+
+    def test_configure_publishers_single_applies_to_multiple_outputs(self):
+        """RulesEngine - _configure_publishers, Multiple outputs"""
+        rule = Mock(
+            outputs_set={'slack:test', 'demisto:test', 'pagerduty:test'},
+            publishers=DefaultPublisher
+        )
+
+        publishers = self._rules_engine._configure_publishers(rule)
+        expectation = {
+            'slack:test': ['publishers.core.DefaultPublisher'],
+            'demisto:test': ['publishers.core.DefaultPublisher'],
+            'pagerduty:test': ['publishers.core.DefaultPublisher'],
+        }
+
+        assert_equal(publishers, expectation)
+
+    def test_configure_publishers_list(self):
+        """RulesEngine - _configure_publishers, List"""
+        rule = Mock(
+            outputs_set={'slack:test'},
+            publishers=[DefaultPublisher, remove_internal_fields]
+        )
+
+        publishers = self._rules_engine._configure_publishers(rule)
+        expectation = {'slack:test': [
+            'publishers.core.DefaultPublisher',
+            'publishers.community.generic.remove_internal_fields',
+        ]}
+
+        assert_equal(publishers, expectation)
+
+    def test_configure_publishers_mixed_list(self):
+        """RulesEngine - _configure_publishers, Mixed List"""
+        rule = Mock(
+            outputs_set={'slack:test', 'demisto:test'},
+            publishers={
+                'demisto': 'publishers.core.DefaultPublisher',
+                'slack': [that_publisher],
+                'slack:test': [ThisPublisher],
+            },
+        )
+
+        publishers = self._rules_engine._configure_publishers(rule)
+        expectation = {
+            'slack:test': ['tests.unit.streamalert.rules_engine.test_rules_engine.ThisPublisher',
+                           'tests.unit.streamalert.rules_engine.test_rules_engine.that_publisher'],
+            'demisto:test': ['publishers.core.DefaultPublisher']
+        }
+
+        assert_equal(publishers, expectation)
+
+    def test_configure_publishers_mixed_single(self):
+        """RulesEngine - _configure_publishers, Mixed Single"""
+        rule = Mock(
+            outputs_set={'slack:test', 'demisto:test'},
+            publishers={
+                'demisto': 'publishers.core.DefaultPublisher',
+                'slack': that_publisher,
+                'slack:test': ThisPublisher,
+            },
+        )
+
+        publishers = self._rules_engine._configure_publishers(rule)
+        expectation = {
+            'slack:test': ['tests.unit.streamalert.rules_engine.test_rules_engine.ThisPublisher',
+                           'tests.unit.streamalert.rules_engine.test_rules_engine.that_publisher'],
+            'demisto:test': ['publishers.core.DefaultPublisher']
+        }
+
+        assert_equal(publishers, expectation)
 
     def test_run_subkey_failure(self):
         """RulesEngine - Run, Fail Subkey Check"""
