@@ -183,7 +183,8 @@ def test_assemble():
     alert = get_alert(context=SAMPLE_CONTEXT)
     alert.created = datetime(2019, 1, 1)
 
-    alert_publication = publish_alert(alert, None, None)  # FIXME (derek.wang)
+    output = MagicMock(spec=DemistoOutput)
+    alert_publication = publish_alert(alert, output, 'asdf')
 
     request = DemistoRequestAssembler.assemble(alert, alert_publication)
 

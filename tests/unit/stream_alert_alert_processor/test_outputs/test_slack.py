@@ -50,7 +50,8 @@ class TestSlackOutput(object):
         """SlackOutput - Format Single Message - Slack"""
         rule_name = 'test_rule_single'
         alert = get_random_alert(25, rule_name)
-        alert_publication = publish_alert(alert, None, None)  # FIXME (derek.wang)
+        output = MagicMock(spec=SlackOutput)
+        alert_publication = publish_alert(alert, output, 'asdf')
         loaded_message = SlackOutput._format_message(alert, alert_publication)
 
         # tests
@@ -64,7 +65,8 @@ class TestSlackOutput(object):
         """SlackOutput - Format Single Message - Custom Text"""
         rule_name = 'test_rule_single'
         alert = get_random_alert(25, rule_name)
-        alert_publication = publish_alert(alert, None, None)  # FIXME (derek.wang)
+        output = MagicMock(spec=SlackOutput)
+        alert_publication = publish_alert(alert, output, 'asdf')
         alert_publication['slack.text'] = 'Lorem ipsum foobar'
 
         loaded_message = SlackOutput._format_message(alert, alert_publication)
@@ -78,7 +80,8 @@ class TestSlackOutput(object):
         """SlackOutput - Format Message, Custom Attachment"""
         rule_name = 'test_empty_rule_description'
         alert = get_random_alert(10, rule_name, True)
-        alert_publication = publish_alert(alert, None, None)  # FIXME (derek.wang)
+        output = MagicMock(spec=SlackOutput)
+        alert_publication = publish_alert(alert, output, 'asdf')
         alert_publication['slack.attachments'] = [
             {'text': 'aasdfkjadfj'}
         ]
@@ -94,7 +97,8 @@ class TestSlackOutput(object):
         """SlackOutput - Format Message, Custom Attachment is Truncated"""
         rule_name = 'test_empty_rule_description'
         alert = get_random_alert(10, rule_name, True)
-        alert_publication = publish_alert(alert, None, None)  # FIXME (derek.wang)
+        output = MagicMock(spec=SlackOutput)
+        alert_publication = publish_alert(alert, output, 'asdf')
 
         long_message = 'a'*(SlackOutput.MAX_MESSAGE_SIZE + 1)
         alert_publication['slack.attachments'] = [
@@ -115,7 +119,8 @@ class TestSlackOutput(object):
         """SlackOutput - Format Message, Multiple Custom Attachments"""
         rule_name = 'test_empty_rule_description'
         alert = get_random_alert(10, rule_name, True)
-        alert_publication = publish_alert(alert, None, None)  # FIXME (derek.wang)
+        output = MagicMock(spec=SlackOutput)
+        alert_publication = publish_alert(alert, output, 'asdf')
         alert_publication['slack.attachments'] = [
             {'text': 'attachment text1'},
             {'text': 'attachment text2'},
@@ -133,7 +138,8 @@ class TestSlackOutput(object):
         """SlackOutput - Format Message, Too many Custom Attachments is truncated"""
         rule_name = 'test_empty_rule_description'
         alert = get_random_alert(10, rule_name, True)
-        alert_publication = publish_alert(alert, None, None)  # FIXME (derek.wang)
+        output = MagicMock(spec=SlackOutput)
+        alert_publication = publish_alert(alert, output, 'asdf')
         alert_publication['slack.attachments'] = []
         for _ in range(SlackOutput.MAX_ATTACHMENTS + 1):
             alert_publication['slack.attachments'].append({'text': 'yay'})
@@ -153,7 +159,8 @@ class TestSlackOutput(object):
         """SlackOutput - Format Multi-Message"""
         rule_name = 'test_rule_multi-part'
         alert = get_random_alert(30, rule_name)
-        alert_publication = publish_alert(alert, None, None)  # FIXME (derek.wang)
+        output = MagicMock(spec=SlackOutput)
+        alert_publication = publish_alert(alert, output, 'asdf')
         loaded_message = SlackOutput._format_message(alert, alert_publication)
 
         # tests
@@ -166,7 +173,8 @@ class TestSlackOutput(object):
         """SlackOutput - Format Message, Default Rule Description"""
         rule_name = 'test_empty_rule_description'
         alert = get_random_alert(10, rule_name, True)
-        alert_publication = publish_alert(alert, None, None)  # FIXME (derek.wang)
+        output = MagicMock(spec=SlackOutput)
+        alert_publication = publish_alert(alert, output, 'asdf')
         loaded_message = SlackOutput._format_message(alert, alert_publication)
 
         # tests
@@ -284,7 +292,8 @@ class TestSlackOutput(object):
         """SlackOutput - Max Attachment Reached"""
         alert = get_alert()
         alert.record = {'info': 'test' * 20000}
-        alert_publication = publish_alert(alert, None, None)  # FIXME (derek.wang)
+        output = MagicMock(spec=SlackOutput)
+        alert_publication = publish_alert(alert, output, 'asdf')
         SlackOutput._format_default_attachments(alert, alert_publication, 'foo')
         log_mock.assert_called_with(
             '%s: %d-part message truncated to %d parts',
