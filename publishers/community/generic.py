@@ -1,5 +1,5 @@
 from copy import deepcopy
-from publishers.core import AlertPublisher, Register
+from stream_alert.shared.publisher import Register
 
 
 @Register

@@ -19,7 +19,7 @@ from nose.tools import assert_true, assert_equal, assert_false
 
 from stream_alert.alert_processor.helpers import _assemble_alert_publisher_for_output
 from stream_alert.alert_processor.outputs.output_base import StreamAlertOutput
-from publishers.core import (
+from stream_alert.shared.publisher import (
     AlertPublisherRepository,
     AlertPublisher,
     CompositePublisher,

@@ -21,7 +21,7 @@ from mock import Mock, patch, PropertyMock
 from nose.tools import assert_equal
 
 from publishers.community.generic import remove_internal_fields
-from publishers.core import AlertPublisher, Register, DefaultPublisher
+from stream_alert.shared.publisher import AlertPublisher, Register, DefaultPublisher
 import stream_alert.rules_engine.rules_engine as rules_engine_module
 from stream_alert.rules_engine.rules_engine import RulesEngine
 
@@ -298,7 +298,7 @@ class TestRulesEngine(object):
             outputs_set={'slack:test', 'demisto:test'},
             description='rule description',
             publishers={
-                'demisto': 'publishers.core.DefaultPublisher',
+                'demisto': 'stream_alert.shared.publisher.DefaultPublisher',
                 'slack': [that_publisher],
                 'slack:test': [ThisPublisher],
             },
@@ -335,7 +335,7 @@ class TestRulesEngine(object):
                         'tests.unit.streamalert.rules_engine.test_rules_engine.that_publisher',
                     ],
                     'demisto:test': [
-                        'publishers.core.DefaultPublisher'
+                        'stream_alert.shared.publisher.DefaultPublisher'
                     ],
                 },
                 rule_description='rule description',
@@ -364,11 +364,11 @@ class TestRulesEngine(object):
         """RulesEngine - _configure_publishers, Single string"""
         rule = Mock(
             outputs_set={'slack:test'},
-            publishers='publishers.core.DefaultPublisher'
+            publishers='stream_alert.shared.publisher.DefaultPublisher'
         )
 
         publishers = self._rules_engine._configure_publishers(rule)
-        expectation = {'slack:test': ['publishers.core.DefaultPublisher']}
+        expectation = {'slack:test': ['stream_alert.shared.publisher.DefaultPublisher']}
 
         assert_equal(publishers, expectation)
 
@@ -380,7 +380,7 @@ class TestRulesEngine(object):
         )
 
         publishers = self._rules_engine._configure_publishers(rule)
-        expectation = {'slack:test': ['publishers.core.DefaultPublisher']}
+        expectation = {'slack:test': ['stream_alert.shared.publisher.DefaultPublisher']}
 
         assert_equal(publishers, expectation)
 
@@ -421,9 +421,9 @@ class TestRulesEngine(object):
 
         publishers = self._rules_engine._configure_publishers(rule)
         expectation = {
-            'slack:test': ['publishers.core.DefaultPublisher'],
-            'demisto:test': ['publishers.core.DefaultPublisher'],
-            'pagerduty:test': ['publishers.core.DefaultPublisher'],
+            'slack:test': ['stream_alert.shared.publisher.DefaultPublisher'],
+            'demisto:test': ['stream_alert.shared.publisher.DefaultPublisher'],
+            'pagerduty:test': ['stream_alert.shared.publisher.DefaultPublisher'],
         }
 
         assert_equal(publishers, expectation)
@@ -437,7 +437,7 @@ class TestRulesEngine(object):
 
         publishers = self._rules_engine._configure_publishers(rule)
         expectation = {'slack:test': [
-            'publishers.core.DefaultPublisher',
+            'stream_alert.shared.publisher.DefaultPublisher',
             'publishers.community.generic.remove_internal_fields',
         ]}
 
@@ -448,7 +448,7 @@ class TestRulesEngine(object):
         rule = Mock(
             outputs_set={'slack:test', 'demisto:test'},
             publishers={
-                'demisto': 'publishers.core.DefaultPublisher',
+                'demisto': 'stream_alert.shared.publisher.DefaultPublisher',
                 'slack': [that_publisher],
                 'slack:test': [ThisPublisher],
             },
@@ -458,7 +458,7 @@ class TestRulesEngine(object):
         expectation = {
             'slack:test': ['tests.unit.streamalert.rules_engine.test_rules_engine.ThisPublisher',
                            'tests.unit.streamalert.rules_engine.test_rules_engine.that_publisher'],
-            'demisto:test': ['publishers.core.DefaultPublisher']
+            'demisto:test': ['stream_alert.shared.publisher.DefaultPublisher']
         }
 
         assert_equal(publishers, expectation)
@@ -468,7 +468,7 @@ class TestRulesEngine(object):
         rule = Mock(
             outputs_set={'slack:test', 'demisto:test'},
             publishers={
-                'demisto': 'publishers.core.DefaultPublisher',
+                'demisto': 'stream_alert.shared.publisher.DefaultPublisher',
                 'slack': that_publisher,
                 'slack:test': ThisPublisher,
             },
@@ -478,7 +478,7 @@ class TestRulesEngine(object):
         expectation = {
             'slack:test': ['tests.unit.streamalert.rules_engine.test_rules_engine.ThisPublisher',
                            'tests.unit.streamalert.rules_engine.test_rules_engine.that_publisher'],
-            'demisto:test': ['publishers.core.DefaultPublisher']
+            'demisto:test': ['stream_alert.shared.publisher.DefaultPublisher']
         }
 
         assert_equal(publishers, expectation)

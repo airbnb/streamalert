@@ -16,7 +16,7 @@ limitations under the License.
 from datetime import datetime, timedelta
 from os import environ as env
 
-from publishers.core import AlertPublisherRepository
+from stream_alert.shared.publisher import AlertPublisherRepository
 from stream_alert.rules_engine.alert_forwarder import AlertForwarder
 from stream_alert.rules_engine.threat_intel import ThreatIntel
 from stream_alert.shared import resources, RULES_ENGINE_FUNCTION_NAME as FUNCTION_NAME
