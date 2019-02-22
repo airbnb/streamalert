@@ -68,7 +68,14 @@ class CompositePublisher(AlertPublisher):
         new_publication = deepcopy(publication)
 
         for publisher in self._publishers:
-            new_publication = publisher.publish(alert, new_publication)
+            try:
+                new_publication = publisher.publish(alert, new_publication)
+            except KeyError:
+                LOGGER.exception(
+                    'CompositePublisher encountered KeyError with publisher: %s',
+                    publisher.__name__
+                )
+                raise
 
         return new_publication
 

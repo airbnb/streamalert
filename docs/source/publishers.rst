@@ -29,6 +29,8 @@ with the ``@Register`` decorator.
 
 .. code-block:: python
 
+  from stream_alert.shared.publisher import Register
+
   @Register
   def my_publisher(alert: Alert, publication: dict) -> dict:
     # ...
@@ -41,6 +43,8 @@ Implement a class that inherits from the ``AlertPublisher`` and fill in the impl
 Decorate the class with the ``@Register`` decorator.
 
 .. code-block:: python
+
+  from stream_alert.shared.publisher import AlertPublisher, Register
 
   @Register
   class MyPublisherClass(AlertPublisher):
@@ -60,6 +64,8 @@ should freely add, modify, or delete fields from previous publications. However,
 doing in-place modifications of the publications, and should prefer to copy-and-modify:
 
 .. code-block:: python
+
+  from stream_alert.shared.publisher import Register
 
   @Register
   def sample_publisher(alert, publication):
@@ -147,6 +153,7 @@ Register publishers on a rule using the ``publisher`` argument on the ``@Rule`` 
 .. code-block:: python
 
   from publishers import publisher_1, publisher_2
+  from stream_alert.shared.rule import Rule
 
   @Rule(
     logs=['stuff'],
@@ -225,6 +232,8 @@ The publisher can also simplify the PagerDuty title:
 
 .. code-block:: python
 
+  from stream_alert.shared.publisher import Register
+
   @Register
   def simplify_pagerduty_output(alert, publication):
     return {
@@ -242,6 +251,7 @@ integration, leaving the Slack integration the same. Registering the publisher c
 .. code-block:: python
 
   from publishers.pageduty import simplify_pagerduty_output
+  from stream_alert.shared.rule import Rule
 
   @Rule(
     logs=['ssh'],
