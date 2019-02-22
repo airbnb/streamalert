@@ -89,7 +89,7 @@ class CompositePublisher(AlertPublisher):
     """
 
     def __init__(self, publishers):
-        self._publishers = publishers  # Type list(BaseAlertPublisher)
+        self._publishers = publishers  # Type list(AlertPublisher)
 
         for publisher in self._publishers:
             if not isinstance(publisher, AlertPublisher):
