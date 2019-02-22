@@ -212,6 +212,10 @@ class Alert(object):
     def output_dict(self):
         """Convert the alert into a dictionary ready to send to an output.
 
+        (!) This method is deprecated. Going forward, try to use the method:
+
+            stream_alert.alert_processor.helpers.compose_alert
+
         Returns:
             dict: An alert dictionary for sending to outputs.
                 The result is JSON-compatible, backwards-compatible (existing keys are not changed),
@@ -227,7 +231,7 @@ class Alert(object):
             'id': self.alert_id,
             'log_source': self.log_source or '',
             'log_type': self.log_type or '',
-            'outputs': list(sorted(self.outputs)),  # List instead of set for JSON-compatibility
+            'outputs': sorted(self.outputs),  # List instead of set for JSON-compatibility
             'publishers': self.publishers or {},
             'record': self.record,
             'rule_description': self.rule_description or '',
