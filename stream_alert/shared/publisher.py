@@ -109,15 +109,31 @@ class WrappedFunctionPublisher(AlertPublisher):
 
 
 class AlertPublisherRepository(object):
-    """A repository mapping names -> publishers"""
+    """A repository mapping names -> publishers
+
+    As a usability optimization, using this Repository will eagerly load and register all
+    publishers in the application.
+    """
     _publishers = {}
 
     @staticmethod
-    def is_valid_publisher(class_or_function):
-        """Returns TRUE if the given reference can be registered as a publisher"""
-        if isclass(class_or_function) and issubclass(class_or_function, AlertPublisher):
+    def is_valid_publisher(thing):
+        """Returns TRUE if the given reference can be registered as a publisher
+
+        Publishers are valid if and only if they fall into one of the following categories:
+
+        * They are a python function that accepts 2 arguments: (alert: Alert, publication: dict)
+        * They are a python class that extends AlertPublisher
+
+        Args:
+            thing (mixed): Any primitive or reference to be checked
+
+        Returns:
+            bool
+        """
+        if isclass(thing) and issubclass(thing, AlertPublisher):
             return True
-        elif callable(class_or_function):
+        elif callable(thing):
             return True
 
         return False
@@ -126,15 +142,26 @@ class AlertPublisherRepository(object):
     def get_publisher_name(class_or_function):
         """Given a class or function, will return its fully qualified name.
 
-            This is useful for assigning a unique string name for a publisher."""
+        This is useful for assigning a unique string name for a publisher.
+
+        Args:
+            class_or_function (callable|Class): A reference to a python function or class
+
+        Returns:
+            string
+        """
         return '{}.{}'.format(class_or_function.__module__, class_or_function.__name__)
 
     @classmethod
     def register_publisher(cls, publisher):
         """Registers the publisher into the repository.
 
+        To standardize the interface of publishers, if a function publisher is given, it will be
+        wrapped with a WrappedFunctionPublisher instance prior to being registed into the
+        Repository.
+
         Args:
-             publisher (callable|AlertPublisher): An instance of a publisher class
+             publisher (callable|AlertPublisher): An instance of a publisher class or a function
 
         Return:
             void
@@ -167,7 +194,7 @@ class AlertPublisherRepository(object):
 
     @classmethod
     def get_publisher(cls, name):
-        """Returns the subclass that should handle this particular service
+        """Returns the publisher with the given name
 
         Args:
             name (str): The name of the publisher.
@@ -182,12 +209,19 @@ class AlertPublisherRepository(object):
 
     @classmethod
     def has_publisher(cls, name):
+        """Returns true if the given publisher name has been registered in this Repository
+        """
         AlertPublisherImporter.import_publishers()
         return name in cls._publishers
 
     @classmethod
     def all_publishers(cls):
-        """
+        """Returns all registered publishers in a dict mapping their unique name to instances.
+
+        Remember: Function publishers are wrapped with WrappedFunctionPublisher
+        Also remember: These publishers are INSTANCES of the publisher classes, not the classes
+            themselves.
+
         Returns:
             dict
         """
