@@ -40,6 +40,10 @@ class PublisherRegistrationError(PublisherError):
     """Exception to raise when an error occurs during the @Register step of a publisher"""
 
 
+class PublisherAssemblyError(PublisherError):
+    """Exception to raise when a publisher fails lookup or assembly"""
+
+
 class Register(object):
     """This is a decorator used to register publishers into the AlertPublisherRepository."""
 

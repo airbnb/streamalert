@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from stream_alert.shared.publisher import AlertPublisherRepository
+from stream_alert.shared.publisher import AlertPublisherRepository, PublisherAssemblyError
 
 
 def elide_string_middle(text, max_length):
@@ -88,25 +88,26 @@ def _assemble_alert_publisher_for_output(alert, output, descriptor):
         # helper.py -> output_base.py -> __init__ -> komand.py -> helper.py
         # This is a temporary workaround
         from stream_alert.alert_processor.outputs.output_base import OutputDispatcher
+        output_service_name = output.__service__ if isinstance(output, OutputDispatcher) else None
 
-        if isinstance(output, OutputDispatcher):
-            output_service_name = output.__service__
+        if not output_service_name:
+            raise PublisherAssemblyError('Invalid output service')
 
-            # Order is important here; we load the output-generic publishers first
-            if output_service_name and output_service_name in alert_publishers:
-                publisher_name_or_names = alert_publishers[output_service_name]
-                if isinstance(publisher_name_or_names, list):
-                    publisher_names = publisher_names + publisher_name_or_names
-                else:
-                    publisher_names.append(publisher_name_or_names)
+        # Order is important here; we load the output-generic publishers first
+        if output_service_name in alert_publishers:
+            publisher_name_or_names = alert_publishers[output_service_name]
+            if isinstance(publisher_name_or_names, list):
+                publisher_names = publisher_names + publisher_name_or_names
+            else:
+                publisher_names.append(publisher_name_or_names)
 
-            # Then load output+descriptor-specific publishers second
-            described_output_name = '{}:{}'.format(output_service_name, descriptor)
-            if described_output_name in alert_publishers:
-                publisher_name_or_names = alert_publishers[described_output_name]
-                if isinstance(publisher_name_or_names, list):
-                    publisher_names += publisher_name_or_names
-                else:
-                    publisher_names.append(publisher_name_or_names)
+        # Then load output+descriptor-specific publishers second
+        described_output_name = '{}:{}'.format(output_service_name, descriptor)
+        if described_output_name in alert_publishers:
+            publisher_name_or_names = alert_publishers[described_output_name]
+            if isinstance(publisher_name_or_names, list):
+                publisher_names += publisher_name_or_names
+            else:
+                publisher_names.append(publisher_name_or_names)
 
     return AlertPublisherRepository.create_composite_publisher(publisher_names)
