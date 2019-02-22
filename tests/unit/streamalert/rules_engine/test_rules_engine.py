@@ -43,7 +43,7 @@ def mock_conf():
 
 
 @Register
-def that_publisher(alert, publication):  # pylint: disable=unused-argument
+def that_publisher(_, __):
     return {}
 
 

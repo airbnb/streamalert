@@ -58,14 +58,14 @@ class SamplePublisher3(AlertPublisher):
 
 
 @Register
-def sample_publisher_4(alert, publication):  # pylint: disable=unused-argument
+def sample_publisher_4(_, publication):
     new_publication = publication.copy()
     new_publication['test4'] = True
     return new_publication
 
 
 @Register
-def sample_publisher_blank(alert, publication):  # pylint: disable=unused-argument
+def sample_publisher_blank(_, __):
     return {}
 
 

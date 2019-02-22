@@ -77,6 +77,7 @@ EXPECTED_LABELS_FOR_SAMPLE_ALERT = [
     {'type': 'staged', 'value': 'False'},
 ]
 
+
 class TestDemistoOutput(object):
     """Test class for SlackOutput"""
     DESCRIPTOR = 'unit_test_demisto'
@@ -127,6 +128,7 @@ class TestDemistoOutput(object):
             'details': 'Info about this rule and what actions to take',
             'createInvestigation': True,
         }
+
         class Matcher(object):
             def __eq__(self, other):
                 if other == expected_data:
