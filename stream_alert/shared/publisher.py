@@ -1,3 +1,18 @@
+"""
+Copyright 2017-present, Airbnb Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
 from abc import abstractmethod
 from copy import deepcopy
 from inspect import isclass
@@ -33,10 +48,6 @@ class AlertPublisher(object):
     def publish(self, alert, publication):
         """Publishes the given alert.
 
-        Publishers are not intended to MODIFY the given publication; It is preferable to use
-        deepcopy and to append on new fields onto the publication, in order to reduce the chance
-        for bugs.
-
         As a general rule of thumb, published fields that are specific to a certain output are
         published as top-level keys of the following format:
 
@@ -55,7 +66,15 @@ class AlertPublisher(object):
 
 
 class CompositePublisher(AlertPublisher):
-    """A publisher class that combines the logic of multiple other publishers together in series"""
+    """A publisher class that combines the logic of multiple other publishers together in series
+
+    To reduce the chance that one publisher has side effects in other publishers in the chain,
+    we use deepcopy between the publishers.
+
+    Note: This publisher is not meant to be @Register'd as it does not have any logic on its own.
+          It is only meant to be composed by AlertPublisherRepository to give a common interface to
+          multiple publishers chained in sequence.
+    """
 
     def __init__(self, publishers):
         self._publishers = publishers  # Type list(BaseAlertPublisher)
@@ -65,11 +84,10 @@ class CompositePublisher(AlertPublisher):
                 LOGGER.error('CompositePublisher given invalid publisher')
 
     def publish(self, alert, publication):
-        new_publication = deepcopy(publication)
-
         for publisher in self._publishers:
             try:
-                new_publication = publisher.publish(alert, new_publication)
+                publication = deepcopy(publication)
+                publication = publisher.publish(alert, publication)
             except KeyError:
                 LOGGER.exception(
                     'CompositePublisher encountered KeyError with publisher: %s',
@@ -77,7 +95,7 @@ class CompositePublisher(AlertPublisher):
                 )
                 raise
 
-        return new_publication
+        return publication
 
 
 class WrappedFunctionPublisher(AlertPublisher):
