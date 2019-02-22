@@ -90,21 +90,22 @@ def _assemble_alert_publisher_for_output(alert, output, descriptor):
         from stream_alert.alert_processor.outputs.output_base import OutputDispatcher
 
         if isinstance(output, OutputDispatcher):
-            # Order is important here; we load the output+descriptor-specific publishers first
             output_service_name = output.__service__
+
+            # Order is important here; we load the output-generic publishers first
+            if output_service_name and output_service_name in alert_publishers:
+                publisher_name_or_names = alert_publishers[output_service_name]
+                if isinstance(publisher_name_or_names, list):
+                    publisher_names = publisher_names + publisher_name_or_names
+                else:
+                    publisher_names.append(publisher_name_or_names)
+
+            # Then load output+descriptor-specific publishers second
             described_output_name = '{}:{}'.format(output_service_name, descriptor)
             if described_output_name in alert_publishers:
                 publisher_name_or_names = alert_publishers[described_output_name]
                 if isinstance(publisher_name_or_names, list):
                     publisher_names += publisher_name_or_names
-                else:
-                    publisher_names.append(publisher_name_or_names)
-
-            # Then load output-specific publishers second
-            if output_service_name and output_service_name in alert_publishers:
-                publisher_name_or_names = alert_publishers[output_service_name]
-                if isinstance(publisher_name_or_names, list):
-                    publisher_names = publisher_names + publisher_name_or_names
                 else:
                     publisher_names.append(publisher_name_or_names)
 
