@@ -131,6 +131,9 @@ class AlertPublisherRepository(object):
         Returns:
             bool
         """
+
+        # We have to put the isclass() check BEFORE the callable() check because classes are also
+        # callable!
         if isclass(thing) and issubclass(thing, AlertPublisher):
             return True
         elif callable(thing):
@@ -170,8 +173,6 @@ class AlertPublisherRepository(object):
             )
             return
 
-        # We have to put the isclass() check BEFORE the callable() check because classes are also
-        # callable!
         elif isclass(publisher):
             # If the provided publisher is a Class, then we simply need to instantiate an instance
             # of the class and register it.
