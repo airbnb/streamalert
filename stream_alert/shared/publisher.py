@@ -32,6 +32,14 @@ class AlertPublisherImporter(object):
         import_folders(cls._PUBLISHERS_DIRECTORY)
 
 
+class PublisherError(Exception):
+    """Exception to raise for any errors with invalid publishers"""
+
+
+class PublisherRegistrationError(PublisherError):
+    """Exception to raise when an error occurs during the @Register step of a publisher"""
+
+
 class Register(object):
     """This is a decorator used to register publishers into the AlertPublisherRepository."""
 
@@ -171,7 +179,7 @@ class AlertPublisherRepository(object):
                 'Could not register publisher %s; Not callable nor subclass of AlertPublisher',
                 publisher
             )
-            return
+            raise PublisherRegistrationError
 
         elif isclass(publisher):
             # If the provided publisher is a Class, then we simply need to instantiate an instance
@@ -186,7 +194,7 @@ class AlertPublisherRepository(object):
 
         if name in cls._publishers:
             LOGGER.error('Publisher with name [%s] has already been registered.', name)
-            return
+            raise PublisherRegistrationError
 
         cls._publishers[name] = publisher_instance
 
@@ -243,7 +251,7 @@ class AlertPublisherRepository(object):
             if publisher:
                 publishers.append(publisher)
 
-        if len(publishers) <= 0:
+        if not publishers:
             # If no publishers were given, or if all of the publishers failed to load, then we
             # load a default publisher.
             default_publisher_name = cls.get_publisher_name(DefaultPublisher)
