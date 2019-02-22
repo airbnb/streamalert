@@ -31,8 +31,8 @@ class TestPublishersForOutput(object):
         alert = get_alert(context={'context': 'value'})
         alert.created = datetime(2019, 1, 1)
         alert.publishers = {
-            'slack:unit_test_channel': 'stream_alert.shared.publisher.DefaultPublisher',
-            'slack': 'publishers.community.generic.remove_internal_fields',
+            'slack': 'stream_alert.shared.publisher.DefaultPublisher',
+            'slack:unit_test_channel': 'publishers.community.generic.remove_internal_fields',
             'demisto': 'publishers.community.generic.blank',
         }
         output = MagicMock(spec=OutputDispatcher)

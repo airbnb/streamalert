@@ -394,4 +394,3 @@ class TestAlertPublisherRepositoryAssemblePublisher(object):
         assert_true(isinstance(publisher._publishers[1], SamplePublisher2))
         assert_true(isinstance(publisher._publishers[2], SamplePublisher3))
         assert_true(isinstance(publisher._publishers[3], SamplePublisher4))
-
