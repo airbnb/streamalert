@@ -157,14 +157,14 @@ fields directly:
 Registering Publishers
 ----------------------
 
-Register publishers on a rule using the ``publisher`` argument on the ``@Rule`` annotation:
+Register publishers on a rule using the ``publisher`` argument on the ``@rule`` annotation:
 
 .. code-block:: python
 
   from publishers import publisher_1, publisher_2
   from stream_alert.shared.rule import Rule
 
-  @Rule(
+  @rule(
     logs=['stuff'],
     outputs=['pagerduty', 'slack'],
     publishers=[publisher_1, publisher_2]
@@ -211,7 +211,7 @@ to groups of outputs (e.g. ``pagerduty``).
 DefaultPublisher
 ----------------
 
-When the ``publishers`` argument is omitted from a ``@Rule``, a ``DefaultPublisher`` is loaded and used. This
+When the ``publishers`` argument is omitted from a ``@rule``, a ``DefaultPublisher`` is loaded and used. This
 also occurs when the ``publishers`` are misconfigured.
 
 The ``DefaultPublisher`` is reverse-compatible with old implementations of ``alert.output_dict()``.
@@ -262,7 +262,7 @@ integration, leaving the Slack integration the same. Registering the publisher c
   from publishers.pageduty import simplify_pagerduty_output
   from stream_alert.shared.rule import Rule
 
-  @Rule(
+  @rule(
     logs=['ssh'],
     output=['slack:engineering', 'pagerduty:engineering'],
     publishers={
