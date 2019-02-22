@@ -26,10 +26,39 @@ resource "aws_lambda_function" "athena_partition_refresh" {
   }
 }
 
+// Policy for S3 bucket
+data "aws_iam_policy_document" "athena_results_bucket" {
+  # Force SSL access only
+  statement {
+    sid = "ForceSSLOnlyAccess"
+
+    effect = "Deny"
+
+    principals {
+      type        = "AWS"
+      identifiers = ["*"]
+    }
+
+    actions = ["s3:*"]
+
+    resources = [
+      "arn:aws:s3:::${var.results_bucket}",
+      "arn:aws:s3:::${var.results_bucket}/*",
+    ]
+
+    condition {
+      test     = "Bool"
+      variable = "aws:SecureTransport"
+      values   = ["false"]
+    }
+  }
+}
+
 // S3 Bucket: Athena Query Results and Metastore Bucket
 resource "aws_s3_bucket" "athena_results_bucket" {
   bucket        = "${var.results_bucket}"
   acl           = "private"
+  policy        = "${data.aws_iam_policy_document.athena_results_bucket.json}"
   force_destroy = false
 
   tags {

@@ -1,6 +1,11 @@
+locals {
+  apply_filter_string    = "{ $$.awsRegion != \"${var.region}\" }"
+  cloudtrail_bucket_name = "${var.prefix}.${var.cluster}.streamalert.cloudtrail"
+}
+
 // KMS key for encrypting CloudTrail logs
 resource "aws_kms_key" "cloudtrail_encryption" {
-  description         = "Encrypt Cloudtrail logs for ${var.prefix}.${var.cluster}.streamalert.cloudtrail"
+  description         = "Encrypt Cloudtrail logs for ${local.cloudtrail_bucket_name}"
   policy              = "${data.aws_iam_policy_document.cloudtrail_encryption.json}"
   enable_key_rotation = true
 }
@@ -86,7 +91,7 @@ resource "aws_kms_alias" "cloudtrail_encryption" {
 // StreamAlert CloudTrail, also sending to CloudWatch Logs group
 resource "aws_cloudtrail" "streamalert" {
   count                         = "${var.send_to_cloudwatch && !var.existing_trail ? 1 : 0}"
-  name                          = "${var.prefix}.${var.cluster}.streamalert.cloudtrail"
+  name                          = "${local.cloudtrail_bucket_name}"
   s3_bucket_name                = "${aws_s3_bucket.cloudtrail_bucket.id}"
   cloud_watch_logs_role_arn     = "${aws_iam_role.cloudtrail_to_cloudwatch_role.arn}"
   cloud_watch_logs_group_arn    = "${aws_cloudwatch_log_group.cloudtrail_logging.arn}"
@@ -113,7 +118,7 @@ resource "aws_cloudtrail" "streamalert" {
 // StreamAlert CloudTrail, not sending to CloudWatch
 resource "aws_cloudtrail" "streamalert_no_cloudwatch" {
   count                         = "${!var.send_to_cloudwatch && !var.existing_trail ? 1 : 0}"
-  name                          = "${var.prefix}.${var.cluster}.streamalert.cloudtrail"
+  name                          = "${local.cloudtrail_bucket_name}"
   s3_bucket_name                = "${aws_s3_bucket.cloudtrail_bucket.id}"
   enable_log_file_validation    = true
   enable_logging                = "${var.enable_logging}"
@@ -204,10 +209,6 @@ data "aws_iam_policy_document" "cloudtrail_to_cloudwatch_create_logs" {
   }
 }
 
-locals {
-  apply_filter_string = "{ $$.awsRegion != \"${var.region}\" }"
-}
-
 // CloudWatch Log Subscription Filter
 //   If we are collecting CloudTrail logs in the 'home region' another way, this allows
 //   for suppression of logs that originated in this region.
@@ -220,10 +221,39 @@ resource "aws_cloudwatch_log_subscription_filter" "cloudtrail_via_cloudwatch" {
   distribution    = "Random"
 }
 
+// Policy for S3 bucket
+data "aws_iam_policy_document" "cloudtrail_bucket" {
+  # Force SSL access only
+  statement {
+    sid = "ForceSSLOnlyAccess"
+
+    effect = "Deny"
+
+    principals {
+      type        = "AWS"
+      identifiers = ["*"]
+    }
+
+    actions = ["s3:*"]
+
+    resources = [
+      "arn:aws:s3:::${local.cloudtrail_bucket_name}",
+      "arn:aws:s3:::${local.cloudtrail_bucket_name}/*",
+    ]
+
+    condition {
+      test     = "Bool"
+      variable = "aws:SecureTransport"
+      values   = ["false"]
+    }
+  }
+}
+
 // S3 bucket for CloudTrail output
 resource "aws_s3_bucket" "cloudtrail_bucket" {
   count         = "${var.existing_trail ? 0 : 1}"
-  bucket        = "${var.prefix}.${var.cluster}.streamalert.cloudtrail"
+  bucket        = "${local.cloudtrail_bucket_name}"
+  policy        = "${data.aws_iam_policy_document.cloudtrail_bucket.json}"
   force_destroy = false
 
   versioning {
@@ -232,7 +262,7 @@ resource "aws_s3_bucket" "cloudtrail_bucket" {
 
   logging {
     target_bucket = "${var.s3_logging_bucket}"
-    target_prefix = "${var.prefix}.${var.cluster}.streamalert.cloudtrail/"
+    target_prefix = "${local.cloudtrail_bucket_name}/"
   }
 
   policy = "${data.aws_iam_policy_document.cloudtrail_bucket.json}"
@@ -247,7 +277,7 @@ resource "aws_s3_bucket" "cloudtrail_bucket" {
   }
 
   tags {
-    Name    = "${var.prefix}.${var.cluster}.streamalert.cloudtrail"
+    Name    = "${local.cloudtrail_bucket_name}"
     Cluster = "${var.cluster}"
   }
 }
@@ -263,7 +293,7 @@ data "aws_iam_policy_document" "cloudtrail_bucket" {
     ]
 
     resources = [
-      "arn:aws:s3:::${var.prefix}.${var.cluster}.streamalert.cloudtrail",
+      "arn:aws:s3:::${local.cloudtrail_bucket_name}",
     ]
 
     principals {
@@ -280,7 +310,7 @@ data "aws_iam_policy_document" "cloudtrail_bucket" {
     ]
 
     resources = [
-      "${formatlist("arn:aws:s3:::${var.prefix}.${var.cluster}.streamalert.cloudtrail/AWSLogs/%s/*", var.account_ids)}",
+      "${formatlist("arn:aws:s3:::${local.cloudtrail_bucket_name}/AWSLogs/%s/*", var.account_ids)}",
     ]
 
     principals {
