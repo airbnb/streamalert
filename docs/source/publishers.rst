@@ -118,9 +118,14 @@ should offer a default implementation:
 
 **Custom fields**
 
-To allow Publishers fine-grained control of the look and feel of alerts, outputs can be implemented to
-offer custom fields that can be filled in by Publishers. This (optionally) grants fine-grained control
-of outputs to Publishers. Below is an example of how you could implement an output:
+Outputs can be implemented to offer custom fields that can be filled in by Publishers. This (optionally)
+grants fine-grained control of outputs to Publishers. Such fields should follow the following conventions:
+
+* They are fields on the publication dictionary
+* Keys are strings, with the ``output.__service__`` as a prefix
+* The key should be delimited by period, and the suffix should describe the function of the field
+
+Below is an example of how you could implement an output:
 
 .. code-block:: python
 
