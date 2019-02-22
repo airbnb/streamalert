@@ -119,13 +119,17 @@ should offer a default implementation:
 **Custom fields**
 
 To allow Publishers fine-grained control of the look and feel of alerts, outputs can be implemented to
-offer custom fields that can control.
+offer custom fields that can be filled in by Publishers. This (optionally) grants fine-grained control
+of outputs to Publishers. Below is an example of how you could implement an output:
 
 .. code-block:: python
 
   def _dispatch(self, alert, descriptor):
     # ...
     publication = publish_alert(alert, self, descriptor)
+
+    default_title = 'Incident Title: #{}'.format(alert.alert_id)
+    default_html = '<html><body>Rule: {}</body></html>'.format(alert.rule_description)
 
     title = publication.get('pagerduty.title', default_title)
     body_html = publication.get('pagerduty.body_html', default_html)
