@@ -331,8 +331,8 @@ class TestRulesEngine(object):
                 merge_window=timedelta(minutes=0),
                 publishers={
                     'slack:test': [
-                        'tests.unit.streamalert.rules_engine.test_rules_engine.ThisPublisher',
                         'tests.unit.streamalert.rules_engine.test_rules_engine.that_publisher',
+                        'tests.unit.streamalert.rules_engine.test_rules_engine.ThisPublisher',
                     ],
                     'demisto:test': [
                         'stream_alert.shared.publisher.DefaultPublisher'
@@ -456,8 +456,10 @@ class TestRulesEngine(object):
 
         publishers = self._rules_engine._configure_publishers(rule)
         expectation = {
-            'slack:test': ['tests.unit.streamalert.rules_engine.test_rules_engine.ThisPublisher',
-                           'tests.unit.streamalert.rules_engine.test_rules_engine.that_publisher'],
+            'slack:test': [
+                'tests.unit.streamalert.rules_engine.test_rules_engine.that_publisher',
+                'tests.unit.streamalert.rules_engine.test_rules_engine.ThisPublisher'
+            ],
             'demisto:test': ['stream_alert.shared.publisher.DefaultPublisher']
         }
 
@@ -476,8 +478,10 @@ class TestRulesEngine(object):
 
         publishers = self._rules_engine._configure_publishers(rule)
         expectation = {
-            'slack:test': ['tests.unit.streamalert.rules_engine.test_rules_engine.ThisPublisher',
-                           'tests.unit.streamalert.rules_engine.test_rules_engine.that_publisher'],
+            'slack:test': [
+                'tests.unit.streamalert.rules_engine.test_rules_engine.that_publisher',
+                'tests.unit.streamalert.rules_engine.test_rules_engine.ThisPublisher',
+            ],
             'demisto:test': ['stream_alert.shared.publisher.DefaultPublisher']
         }
 

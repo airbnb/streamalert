@@ -204,8 +204,10 @@ When using this syntax, all given publishers will be applied to all outputs.
   }
 
 When using this syntax, publishers under each key will be applied to their matching outputs. Publisher keys
-with specific outputs (e.g. ``pagerduty:analyst``) are loaded first, before publisher keys that pertain
-to groups of outputs (e.g. ``pagerduty``).
+with generic outputs (e.g. ``pagerduty``) are loaded first, before publisher keys that pertain to more
+specific outputs (e.g. ``pagerduty:analyst``).
+
+The order in which publishers are loaded will dictate the order in which they are executed.
 
 
 DefaultPublisher

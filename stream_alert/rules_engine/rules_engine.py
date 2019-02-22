@@ -266,6 +266,13 @@ class RulesEngine(object):
             return isinstance(string_or_reference, basestring) \
                 or AlertPublisherRepository.is_valid_publisher(string_or_reference)
 
+        def add_publisher(publisher_reference, current_list):
+            _publisher = standardize_publisher_name(publisher_reference)
+            current_list += [_publisher] if _publisher is not None else []
+
+        def add_publishers(publisher_references, current_list):
+            current_list += standardize_publisher_list(publisher_references)
+
         requested_outputs = rule.outputs_set
         requested_publishers = rule.publishers
         if not requested_publishers:
@@ -274,19 +281,16 @@ class RulesEngine(object):
         configured_publishers = {}
 
         for output in requested_outputs:
-            output_service = output.split(':')[0]
-
             assigned_publishers = []
 
             if is_publisher_declaration(requested_publishers):
                 # Case 1: The publisher is a single string.
                 #   apply this single publisher to all outputs + descriptors
-                publisher = standardize_publisher_name(requested_publishers)
-                assigned_publishers += [publisher] if publisher is not None else []
+                add_publisher(requested_publishers, assigned_publishers)
             elif isinstance(requested_publishers, list):
                 # Case 2: The publisher is an array of strings.
                 #   apply all publishers to all outputs + descriptors
-                assigned_publishers += standardize_publisher_list(requested_publishers)
+                add_publishers(requested_publishers, assigned_publishers)
             elif isinstance(requested_publishers, dict):
                 # Case 3: The publisher is a dict mapping output strings -> strings or list of
                 #   strings. Apply only publishers under a matching output key.
@@ -295,24 +299,23 @@ class RulesEngine(object):
                 #     - [Output]: Applies publishers to all outputs for a specific output type.
                 #     - [Output+Descriptor]: Applies publishers only to the specific output that
                 #           exactly matches the output+descriptor key.
+                output_service = output.split(':')[0]
 
-                # Order is important here; we load the output+descriptor-specific publishers first
-                if output in requested_publishers:
-                    specific_publishers = requested_publishers[output]
-                    if is_publisher_declaration(specific_publishers):
-                        publisher = standardize_publisher_name(specific_publishers)
-                        assigned_publishers += [publisher] if publisher is not None else []
-                    elif isinstance(specific_publishers, list):
-                        assigned_publishers += standardize_publisher_list(specific_publishers)
-
-                # Then load output-specific publishers second
+                # Order is important here; We load output-specific publishers first
                 if output_service in requested_publishers:
                     specific_publishers = requested_publishers[output_service]
                     if is_publisher_declaration(specific_publishers):
-                        publisher = standardize_publisher_name(specific_publishers)
-                        assigned_publishers += [publisher] if publisher is not None else []
+                        add_publisher(specific_publishers, assigned_publishers)
                     elif isinstance(specific_publishers, list):
-                        assigned_publishers += standardize_publisher_list(specific_publishers)
+                        add_publishers(specific_publishers, assigned_publishers)
+
+                # Then we load the output+descriptor-specific publishers second
+                if output in requested_publishers:
+                    specific_publishers = requested_publishers[output]
+                    if is_publisher_declaration(specific_publishers):
+                        add_publisher(specific_publishers, assigned_publishers)
+                    elif isinstance(specific_publishers, list):
+                        add_publishers(specific_publishers, assigned_publishers)
             else:
                 LOGGER.error('Invalid publisher argument: %s', requested_publishers)
 
