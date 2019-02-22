@@ -241,7 +241,7 @@ integration, leaving the Slack integration the same. Registering the publisher c
 
 .. code-block:: python
 
-  import simply_pagerduty_output
+  from publishers.pageduty import simplify_pagerduty_output
 
   @Rule(
     logs=['ssh'],

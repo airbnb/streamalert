@@ -218,4 +218,3 @@ class DefaultPublisher(AlertPublisher):
             'source_service': alert.source_service or '',
             'staged': alert.staged,
         }
-
