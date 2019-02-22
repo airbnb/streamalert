@@ -2,8 +2,8 @@ from abc import abstractmethod
 from copy import deepcopy
 from inspect import isclass
 
+from stream_alert.shared.importer import import_folders
 from stream_alert.shared.logger import get_logger
-from stream_alert.shared.rule import import_folders
 
 LOGGER = get_logger(__name__)
 
