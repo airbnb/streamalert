@@ -9,18 +9,12 @@ LOGGER = get_logger(__name__)
 
 
 class AlertPublisherImporter(object):
-    """A service that loads all publishers in the publishers/ directory."""
-    _is_imported = False
-    _is_importing = False
+    """A service that loads all publishers from their designated location."""
+    _PUBLISHERS_DIRECTORY = 'publishers'
 
     @classmethod
     def import_publishers(cls):
-        if cls._is_imported or cls._is_importing:
-            return
-
-        cls._is_importing = True
-        import_folders('publishers')
-        cls._is_imported = True
+        import_folders(cls._PUBLISHERS_DIRECTORY)
 
 
 class Register(object):
