@@ -175,7 +175,7 @@ Register publishers on a rule using the ``publisher`` argument on the ``@rule`` 
 The ``publishers`` argument is a structure containing references to **Publishers** and can follow any of the
 following structures:
 
-**String, Publisher Name**
+**Single Publisher**
 
 .. code-block:: python
 
@@ -184,7 +184,7 @@ following structures:
 When using this syntax, the given publisher will be applied to all outputs.
 
 
-**List of Publisher Name Strings**
+**List of Publishers**
 
 .. code-block:: python
 
@@ -193,7 +193,7 @@ When using this syntax, the given publisher will be applied to all outputs.
 When using this syntax, all given publishers will be applied to all outputs.
 
 
-**Dict mapping Output to Publisher Names**
+**Dict mapping Output strings to Publisher**
 
 .. code-block:: python
 
