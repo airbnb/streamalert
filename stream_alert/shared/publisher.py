@@ -162,9 +162,6 @@ class AlertPublisherRepository(object):
 
         Args:
              publisher (callable|AlertPublisher): An instance of a publisher class or a function
-
-        Return:
-            void
         """
         if not AlertPublisherRepository.is_valid_publisher(publisher):
             LOGGER.error(
