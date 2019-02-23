@@ -16,7 +16,7 @@ limitations under the License.
 import cgi
 from collections import OrderedDict
 
-from stream_alert.alert_processor.helpers import publish_alert, elide_string_middle
+from stream_alert.alert_processor.helpers import compose_alert, elide_string_middle
 from stream_alert.alert_processor.outputs.output_base import (
     OutputDispatcher,
     OutputProperty,
@@ -421,7 +421,7 @@ class SlackOutput(OutputDispatcher):
         if not creds:
             return False
 
-        publication = publish_alert(alert, self, descriptor)
+        publication = compose_alert(alert, self, descriptor)
 
         slack_message = self._format_message(alert, publication)
 

@@ -82,24 +82,24 @@ Preparing Outputs
 
 In order to take advantage of Publishers, all outputs must be implemented with the following guidelines:
 
-**Use publish_alert()**
+**Use compose_alert()**
 
 When presenting unstructured or miscellaneous data to an output (e.g. an email body, incident details),
-outputs should be implemented to use the ``publish_alert(alert: Alert, output: OutputDispatcher, descriptor: str) -> dict``
+outputs should be implemented to use the ``compose_alert(alert: Alert, output: OutputDispatcher, descriptor: str) -> dict``
 method.
 
-``publish_alert()`` loads all publishers relevant to the given ``Alert`` and executes these publishers in series,
+``compose_alert()`` loads all publishers relevant to the given ``Alert`` and executes these publishers in series,
 returning the result of the final publisher.
 
-All data returned by ``publish_alert()`` should be assumed as optional.
+All data returned by ``compose_alert()`` should be assumed as optional.
 
 .. code-block:: python
 
-  from stream_alert.alert_processor.helpers import publish_alert
+  from stream_alert.alert_processor.helpers import compose_alert
 
   def _dispatch(self, alert, descriptor):
     # ...
-    publication = publish_alert(alert, self, descriptor)
+    publication = compose_alert(alert, self, descriptor)
     make_api_call(misc_data=publication)
 
 
@@ -131,7 +131,7 @@ Below is an example of how you could implement an output:
 
   def _dispatch(self, alert, descriptor):
     # ...
-    publication = publish_alert(alert, self, descriptor)
+    publication = compose_alert(alert, self, descriptor)
 
     default_title = 'Incident Title: #{}'.format(alert.alert_id)
     default_html = '<html><body>Rule: {}</body></html>'.format(alert.rule_description)

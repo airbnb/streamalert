@@ -19,7 +19,7 @@ from datetime import datetime
 from mock import MagicMock
 from nose.tools import assert_equal
 
-from stream_alert.alert_processor.helpers import publish_alert
+from stream_alert.alert_processor.helpers import compose_alert
 from stream_alert.alert_processor.outputs.output_base import OutputDispatcher
 from tests.unit.stream_alert_alert_processor.helpers import get_alert
 
@@ -39,7 +39,7 @@ class TestPublishersForOutput(object):
         output.__service__ = 'slack'
         descriptor = 'unit_test_channel'
 
-        publication = publish_alert(alert, output, descriptor)
+        publication = compose_alert(alert, output, descriptor)
 
         expectation = {
             'source_entity': 'corp-prefix.prod.cb.region',
@@ -76,7 +76,7 @@ class TestDefaultPublisher(object):
 
     def test_default_publisher(self):
         """AlertPublisher - DefaultPublisher - Positive Case"""
-        publication = publish_alert(self._alert, None, None)
+        publication = compose_alert(self._alert, None, None)
         expectation = {
             'publishers': ['stream_alert.shared.publisher.DefaultPublisher'],
             'source_entity': 'corp-prefix.prod.cb.region',
@@ -115,7 +115,7 @@ class TestRecordPublisher(object):
 
     def test_default_publisher(self):
         """AlertPublisher - add_record - Positive Case"""
-        publication = publish_alert(self._alert, None, None)
+        publication = compose_alert(self._alert, None, None)
         expectation = {
             'record': {
                 'compressed_size': '9982',
@@ -142,7 +142,7 @@ class TestRemoveInternalFieldsPublisher(object):
     def test_remove_internal_fields(self):
         """AlertPublisher - remove_internal_fields"""
 
-        publication = publish_alert(self._alert, None, None)
+        publication = compose_alert(self._alert, None, None)
 
         expectation = {
             'source_entity': 'corp-prefix.prod.cb.region',

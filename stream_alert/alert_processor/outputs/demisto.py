@@ -15,7 +15,7 @@ limitations under the License.
 """
 from collections import OrderedDict
 
-from stream_alert.alert_processor.helpers import publish_alert
+from stream_alert.alert_processor.helpers import compose_alert
 from stream_alert.alert_processor.outputs.output_base import (
     OutputDispatcher,
     OutputProperty,
@@ -71,7 +71,7 @@ class DemistoOutput(OutputDispatcher):
         if not creds:
             return False
 
-        request = DemistoRequestAssembler.assemble(alert, publish_alert(alert, self, descriptor))
+        request = DemistoRequestAssembler.assemble(alert, compose_alert(alert, self, descriptor))
         integration = DemistoApiIntegration(creds, self)
 
         LOGGER.debug('Sending alert to Demisto: %s', creds['url'])

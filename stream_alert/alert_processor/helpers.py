@@ -33,7 +33,7 @@ def elide_string_middle(text, max_length):
     return '{} ... {}'.format(text[:half_len], text[-half_len:])
 
 
-def publish_alert(alert, output, descriptor):
+def compose_alert(alert, output, descriptor):
     """Presents the alert as a dict for output classes to send to their API integrations.
 
     Args:

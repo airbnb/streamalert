@@ -75,7 +75,7 @@ Adding support for a new service involves five steps:
 
 .. code-block:: python
 
-  from stream_alert.alert_processor.helpers import publish_alert
+  from stream_alert.alert_processor.helpers import compose_alert
 
 
   def get_user_defined_properties(self):
@@ -97,7 +97,7 @@ Adding support for a new service involves five steps:
     Any external API calls for this service should be added here.
     This method should return a boolean where True means the alert was successfully sent.
 
-    In general, use the publish_alert() method defined in stream_alert.alert_processor.helpers
+    In general, use the compose_alert() method defined in stream_alert.alert_processor.helpers
     when presenting the alert in a generic polymorphic format to be rendered on the chosen output
     integration. This is so specialized Publishers can modify how the alert is represented on the
     output.
@@ -115,7 +115,7 @@ Adding support for a new service involves five steps:
     alert.alert_id). Do not rely on the published alert.
     """
 
-    publication = publish_alert(alert, self, descriptor)
+    publication = compose_alert(alert, self, descriptor)
     # ...
     return True
 

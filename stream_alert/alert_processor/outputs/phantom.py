@@ -16,7 +16,7 @@ limitations under the License.
 from collections import OrderedDict
 import os
 
-from stream_alert.alert_processor.helpers import publish_alert
+from stream_alert.alert_processor.helpers import compose_alert
 from stream_alert.alert_processor.outputs.output_base import (
     OutputDispatcher,
     OutputProperty,
@@ -147,7 +147,7 @@ class PhantomOutput(OutputDispatcher):
         if not creds:
             return False
 
-        publication = publish_alert(alert, self, descriptor)
+        publication = compose_alert(alert, self, descriptor)
         record = alert.record
 
         headers = {"ph-auth-token": creds['ph_auth_token']}
