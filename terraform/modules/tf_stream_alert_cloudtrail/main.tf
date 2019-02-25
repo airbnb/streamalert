@@ -221,6 +221,34 @@ resource "aws_cloudwatch_log_subscription_filter" "cloudtrail_via_cloudwatch" {
   distribution    = "Random"
 }
 
+// Policy for S3 bucket
+data "aws_iam_policy_document" "cloudtrail_bucket" {
+  # Force SSL access only
+  statement {
+    sid = "ForceSSLOnlyAccess"
+
+    effect = "Deny"
+
+    principals {
+      type        = "AWS"
+      identifiers = ["*"]
+    }
+
+    actions = ["s3:*"]
+
+    resources = [
+      "arn:aws:s3:::${local.cloudtrail_bucket_name}",
+      "arn:aws:s3:::${local.cloudtrail_bucket_name}/*",
+    ]
+
+    condition {
+      test     = "Bool"
+      variable = "aws:SecureTransport"
+      values   = ["false"]
+    }
+  }
+}
+
 // S3 bucket for CloudTrail output
 resource "aws_s3_bucket" "cloudtrail_bucket" {
   count         = "${var.existing_trail ? 0 : 1}"
