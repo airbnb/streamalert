@@ -1,6 +1,35 @@
+// Policy for S3 bucket
+data "aws_iam_policy_document" "stream_alert_data" {
+  # Force SSL access only
+  statement {
+    sid = "ForceSSLOnlyAccess"
+
+    effect = "Deny"
+
+    principals {
+      type        = "AWS"
+      identifiers = ["*"]
+    }
+
+    actions = ["s3:*"]
+
+    resources = [
+      "arn:aws:s3:::${var.s3_bucket_name}",
+      "arn:aws:s3:::${var.s3_bucket_name}/*",
+    ]
+
+    condition {
+      test     = "Bool"
+      variable = "aws:SecureTransport"
+      values   = ["false"]
+    }
+  }
+}
+
 resource "aws_s3_bucket" "stream_alert_data" {
   bucket        = "${var.s3_bucket_name}"
   acl           = "private"
+  policy        = "${data.aws_iam_policy_document.stream_alert_data.json}"
   force_destroy = false
 
   versioning {

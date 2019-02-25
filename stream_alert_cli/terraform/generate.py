@@ -89,7 +89,27 @@ def generate_s3_bucket(bucket, logging, **kwargs):
                     'sse_algorithm': sse_algorithm
                 }
             }
-        }
+        },
+        'policy': json.dumps({
+            'Version': '2012-10-17',
+            'Statement': [
+                {
+                    'Sid': 'ForceSSLOnlyAccess',
+                    'Effect': 'Deny',
+                    'Principal': '*',
+                    'Action': 's3:*',
+                    'Resource': [
+                        'arn:aws:s3:::{}/*'.format(bucket),
+                        'arn:aws:s3:::{}'.format(bucket)
+                    ],
+                    'Condition': {
+                        'Bool': {
+                            'aws:SecureTransport': 'false'
+                        }
+                    }
+                }
+            ]
+        })
     }
 
     if sse_algorithm == 'aws:kms':
