@@ -51,7 +51,7 @@ from stream_alert_cli.athena.handler import get_athena_database_name
 
 
 RESTRICTED_CLUSTER_NAMES = ('main', 'athena')
-TERRAFORM_VERSIONS = {'application': '~> 0.11.7', 'provider': {'aws': '~> 1.26.0'}}
+TERRAFORM_VERSIONS = {'application': '~> 0.11.7', 'provider': {'aws': '~> 1.55.0'}}
 LOGGER = get_logger(__name__)
 
 

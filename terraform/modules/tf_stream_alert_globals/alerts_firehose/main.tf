@@ -6,7 +6,8 @@ resource "aws_kinesis_firehose_delivery_stream" "stream_alerts" {
   extended_s3_configuration {
     role_arn           = "${aws_iam_role.firehose.arn}"
     bucket_arn         = "arn:aws:s3:::${var.prefix}.streamalerts"
-    prefix             = "alerts/"
+    prefix             = "alerts/dt=!{timestamp:yyyy-MM-dd-HH}/"
+    error_output_prefix= "alerts/!{firehose:error-output-type}/"
     buffer_size        = "${var.buffer_size}"
     buffer_interval    = "${var.buffer_interval}"
     compression_format = "UNCOMPRESSED"

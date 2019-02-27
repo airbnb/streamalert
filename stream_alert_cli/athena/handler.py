@@ -23,6 +23,7 @@ from stream_alert_cli.helpers import continue_prompt, record_to_schema
 LOGGER = get_logger(__name__)
 
 CREATE_TABLE_STATEMENT = ('CREATE EXTERNAL TABLE {table_name} ({schema}) '
+                          'PARTITIONED BY (dt string) '
                           'STORED AS PARQUET '
                           'LOCATION \'s3://{bucket}/{table_name}/\'')
 
