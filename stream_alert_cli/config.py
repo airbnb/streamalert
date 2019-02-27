@@ -73,8 +73,6 @@ class CLIConfig(object):
             'buckets': {
                 '{}.streamalerts'.format(prefix): 'alert'
             },
-            'log_level': 'info',
-            'third_party_libraries': []
         }
 
         self.config['global']['infrastructure']['athena'] = athena_config_template

@@ -348,7 +348,7 @@ def create_log_tables(config):
         config['logs']
     )
 
-    for log_stream_name, _ in enabled_logs.iteritems():
+    for log_stream_name in enabled_logs:
         if not create_table(log_stream_name, firehose_s3_bucket_name, config):
             return False
 
