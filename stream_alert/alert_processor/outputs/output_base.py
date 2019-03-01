@@ -395,7 +395,7 @@ class OutputDispatcher(object):
 
         Args:
             alert (Alert): Alert instance which triggered a rule
-            descriptor (str): Output descriptor (e.g. slack channel, pd integration)
+            output (str): Fully described output (e.g. "demisto:version1", "pagerduty:engineering"
 
         Returns:
             bool: True if alert was sent successfully, False otherwise

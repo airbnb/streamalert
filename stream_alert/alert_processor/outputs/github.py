@@ -17,6 +17,7 @@ from collections import OrderedDict
 import base64
 import json
 
+from stream_alert.alert_processor.helpers import compose_alert
 from stream_alert.alert_processor.outputs.output_base import (
     OutputDispatcher,
     OutputProperty,
@@ -93,7 +94,7 @@ class GithubOutput(OutputDispatcher):
         url = '{}/repos/{}/issues'.format(credentials['api'],
                                           credentials['repository'])
 
-        publication = alert.publish_for(self, descriptor)
+        publication = compose_alert(alert, self, descriptor)
         record = publication.get('record', {})
 
         # Default presentation to the output

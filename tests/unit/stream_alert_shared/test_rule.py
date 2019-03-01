@@ -16,9 +16,8 @@ limitations under the License.
 # pylint: disable=no-self-use,protected-access
 import hashlib
 
-from mock import call, patch
-from nose.tools import assert_equal, assert_raises, raises
-from pyfakefs import fake_filesystem_unittest
+from mock import patch
+from nose.tools import assert_equal, raises
 
 from stream_alert.shared import rule, rule_table
 
@@ -291,59 +290,3 @@ def {}(_):
         result = rule.Rule.rules_for_log_type('log_type_03')
         assert_equal(len(result), 1)
         assert_equal(result[0].name, 'rule_04')
-
-
-class RuleImportTest(fake_filesystem_unittest.TestCase):
-    """Test rule import logic with a mocked filesystem."""
-    # pylint: disable=protected-access
-
-    def setUp(self):
-        self.setUpPyfakefs()
-
-        # Add rules files which should be imported.
-        self.fs.create_file('rules/matchers/matchers.py')
-        self.fs.create_file('rules/example.py')
-        self.fs.create_file('rules/community/cloudtrail/critical_api.py')
-
-        # Add other files which should NOT be imported.
-        self.fs.create_file('rules/matchers/README.md')
-        self.fs.create_file('rules/__init__.py')
-        self.fs.create_file('rules/example.pyc')
-        self.fs.create_file('rules/community/REVIEWERS')
-
-    @staticmethod
-    def test_python_rule_paths():
-        """Rule - Python File Paths"""
-        result = set(rule._python_file_paths('rules'))
-        expected = {
-            'rules/matchers/matchers.py',
-            'rules/example.py',
-            'rules/community/cloudtrail/critical_api.py'
-        }
-        assert_equal(expected, result)
-
-    @staticmethod
-    def test_path_to_module():
-        """Rule - Path to Module"""
-        assert_equal('name', rule._path_to_module('name.py'))
-        assert_equal('a.b.c.name', rule._path_to_module('a/b/c/name.py'))
-
-    @staticmethod
-    def test_path_to_module_invalid():
-        """Rule - Path to Module, Raises Exception"""
-        with assert_raises(NameError):
-            rule._path_to_module('a.b.py')
-
-        with assert_raises(NameError):
-            rule._path_to_module('a/b/old.name.py')
-
-    @staticmethod
-    @patch('importlib.import_module')
-    def test_import_rules(mock_import):
-        """Rule - Import Folders"""
-        rule.import_folders('rules')
-        mock_import.assert_has_calls([
-            call('rules.matchers.matchers'),
-            call('rules.example'),
-            call('rules.community.cloudtrail.critical_api')
-        ], any_order=True)

@@ -77,6 +77,7 @@ Table of Contents
    rules
    testing
    outputs
+   publishers
    metrics
    troubleshooting
    faq
