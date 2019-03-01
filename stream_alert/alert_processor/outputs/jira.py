@@ -17,6 +17,7 @@ from collections import OrderedDict
 import json
 import os
 
+from stream_alert.alert_processor.helpers import compose_alert
 from stream_alert.alert_processor.outputs.output_base import (
     OutputDispatcher,
     OutputProperty,
@@ -289,7 +290,7 @@ class JiraOutput(OutputDispatcher):
         if not creds:
             return False
 
-        publication = alert.publish_for(self, descriptor)
+        publication = compose_alert(alert, self, descriptor)
 
         # Presentation defaults
         default_issue_summary = 'StreamAlert {}'.format(alert.rule_name)

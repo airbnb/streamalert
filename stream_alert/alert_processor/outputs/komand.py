@@ -15,6 +15,7 @@ limitations under the License.
 """
 from collections import OrderedDict
 
+from stream_alert.alert_processor.helpers import compose_alert
 from stream_alert.alert_processor.outputs.output_base import (
     OutputDispatcher,
     OutputProperty,
@@ -77,7 +78,7 @@ class KomandOutput(OutputDispatcher):
 
         LOGGER.debug('sending alert to Komand')
 
-        publication = alert.publish_for(self, descriptor)
+        publication = compose_alert(alert, self, descriptor)
         resp = self._post_request(creds['url'], {'data': publication}, headers, False)
 
         return self._check_http_response(resp)
