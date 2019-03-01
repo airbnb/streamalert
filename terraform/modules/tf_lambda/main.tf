@@ -4,6 +4,7 @@
 locals {
   schedule_enabled = "${var.schedule_expression != ""}"
   vpc_enabled      = "${length(var.vpc_subnet_ids) > 0}"
+  tags             = "${merge(var.default_tags, var.tags)}"
 }
 
 // Either the function_vpc or the function_no_vpc resource will be used
@@ -35,9 +36,7 @@ resource "aws_lambda_function" "function_vpc" {
     subnet_ids         = "${var.vpc_subnet_ids}"
   }
 
-  tags {
-    Name = "${var.name_tag}"
-  }
+  tags = "${local.tags}"
 
   // We need VPC access before the function can be created
   depends_on = ["aws_iam_role_policy_attachment.vpc_access"]
@@ -73,9 +72,7 @@ resource "aws_lambda_function" "function_no_vpc" {
     variables = "${var.environment_variables}"
   }
 
-  tags {
-    Name = "${var.name_tag}"
-  }
+  tags = "${local.tags}"
 }
 
 resource "aws_lambda_alias" "alias_no_vpc" {

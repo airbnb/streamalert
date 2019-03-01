@@ -94,5 +94,8 @@ def generate_classifier(cluster_name, cluster_dict, config):
         environment={
             'CLUSTER': cluster_name,
             'SQS_QUEUE_URL': '${module.globals.classifier_sqs_queue_url}',
-        }
+        },
+        tags={
+            'Cluster': cluster_name
+        },
     )
