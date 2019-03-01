@@ -81,16 +81,23 @@ class EventsV2DataProvider(object):
         details = publication.get('pagerduty-v2.custom_details', default_custom_details)
         severity = publication.get('pagerduty-v2.severity', default_severity)
 
-        payload = {
-            'source': alert.log_source,
-            'summary': summary,
-            'severity': severity,
-            'custom_details': details
-        }
+        # Structure: https://v2.developer.pagerduty.com/docs/send-an-event-events-api-v2
         return {
             'routing_key': routing_key,
-            'payload': payload,
             'event_action': 'trigger',
+            'dedup_key': '',
+            'payload': {
+                'summary': summary,
+                'source': alert.log_source,
+                'severity': severity,
+                'timestamp': '',
+                'component': '',
+                'group': '',
+                'class': '',
+                'custom_details': details,
+                'images': [],
+                'links': [],
+            },
             'client': 'StreamAlert'
         }
 
@@ -127,6 +134,9 @@ class PagerDutyOutput(OutputDispatcher):
             ('descriptor',
              OutputProperty(description='a short and unique descriptor for this '
                                         'PagerDuty integration')),
+            # A version 4 UUID expressed as a 32 digit hexadecimal number. This is the
+            # integration key for an integration on a given service and can be found on
+            # the pagerduty integrations UI.
             ('service_key',
              OutputProperty(description='the service key for this PagerDuty integration',
                             mask_input=True,
@@ -153,16 +163,45 @@ class PagerDutyOutput(OutputDispatcher):
             'description': alert.rule_description,
             'record': alert.record,
         }
+        default_contexts = []
+        default_client_url = ''
 
         # Override presentation with publisher
         publication = compose_alert(alert, self, descriptor)
         description = publication.get('pagerduty.description', default_description)
         details = publication.get('pagerduty.details', default_details)
+        client_url = publication.get('pagerduty.client_url', default_client_url)
+        contexts = publication.get('pagerduty.contexts', default_contexts)
+        contexts = self._strip_invalid_contexts(contexts)
 
         http = JsonHttpProvider(self)
         client = PagerDutyEventsV1ApiClient(creds['service_key'], http, api_endpoint=creds['url'])
 
-        return client.send_event(description, details)
+        return client.send_event(description, details, contexts, client_url)
+
+    @staticmethod
+    def _strip_invalid_contexts(contexts):
+        if not isinstance(contexts, list):
+            LOGGER.warning('Invalid pagerduty.contexts provided: Not an array')
+            return []
+
+        def is_valid_context(context):
+            if not 'type' in context:
+                return False
+
+            if context['type'] == 'link':
+                if 'href' not in context:
+                    return False
+            elif context['type'] == 'image':
+                if 'src' not in context:
+                    return False
+            else:
+                return False
+
+            return True
+
+        return [x for x in contexts if is_valid_context(x)]
+
 
 
 @StreamAlertOutput
@@ -295,6 +334,11 @@ class PagerDutyIncidentOutput(OutputDispatcher, EventsV2DataProvider):
             ('service_name',
              OutputProperty(description='the service name for this PagerDuty integration',
                             cred_requirement=True)),
+            # The service ID is the unique resource ID of a PagerDuty service, created through
+            # the UI. You can find the service id by looking at the URL:
+            # - www.pagerduty.com/services/PDBBCC9
+            #
+            # In the above case, the service id is 'PDBBCC9'
             ('service_id',
              OutputProperty(description='the service ID for this PagerDuty integration',
                             cred_requirement=True)),
@@ -302,13 +346,22 @@ class PagerDutyIncidentOutput(OutputDispatcher, EventsV2DataProvider):
              OutputProperty(description='the name of the default escalation policy',
                             input_restrictions={},
                             cred_requirement=True)),
+            # The escalation policy ID is the unique resource ID of a PagerDuty escalation policy,
+            # created through the UI. You can find it on the URL:
+            # - www.pagerduty.com/escalation_policies#PDBBBB0
+            #
+            # In the above case, the escalation policy id is PDBBBB0
             ('escalation_policy_id',
              OutputProperty(description='the ID of the default escalation policy',
                             cred_requirement=True)),
+            # This must exactly match the email address of a user on the PagerDuty account.
             ('email_from',
              OutputProperty(description='valid user email from the PagerDuty '
                                         'account linked to the token',
                             cred_requirement=True)),
+            # A version 4 UUID expressed as a 32 digit hexadecimal number. This is the
+            # integration key for an integration on a given service and can be found on
+            # the pagerduty integrations UI.
             ('integration_key',
              OutputProperty(description='the integration key for this PagerDuty integration',
                             cred_requirement=True))
@@ -403,13 +456,18 @@ class WorkContext(object):
         assigned_key, assigned_value = self.get_incident_assignment(rule_context)
 
         # Using the service ID for the PagerDuty API
-        incident_service = {'id': self._incident_service, 'type': 'service_reference'}
+        # https://api-reference.pagerduty.com/#!/Incidents/post_incidents
         incident_data = {
             'incident': {
                 'type': 'incident',
                 'title': incident_title,
-                'service': incident_service,
+                'service': {
+                    'id': self._incident_service,
+                    'type': 'service_reference'
+                },
                 'priority': incident_priority,
+                'urgency': '',
+                'incident_key': '',
                 'body': incident_body,
                 assigned_key: assigned_value
             }
@@ -766,6 +824,14 @@ class PagerDutyRestApiClient(SslVerifiable):
 
         Reference: https://api-reference.pagerduty.com/#!/Incidents/post_incidents
 
+        (!) FIXME (derek.wang)
+                  The legacy implementation utilizes this POST /incidents endpoint to create
+                  incidents and merge them with events created through the events-v2 API, but
+                  the PagerDuty API documentation explicitly says to NOT use the REST API
+                  to create incidents. Research if our use of the POST /incidents endpoint is
+                  incorrect.
+                  Reference: https://v2.developer.pagerduty.com/docs/getting-started
+
         Args:
             incident_data (dict)
 
@@ -824,8 +890,8 @@ class PagerDutyRestApiClient(SslVerifiable):
     def _construct_headers(self, omit_email=False):
         headers = {
             'Accept': 'application/vnd.pagerduty+json;version=2',
+            'Authorization': 'Token token={}'.format(self._authorization_token),
             'Content-Type': 'application/json',
-            'Authorization': 'Token token={}'.format(self._authorization_token)
         }
         if not omit_email:
             headers['From'] = self._user_email
@@ -906,6 +972,12 @@ class PagerDutyEventsV1ApiClient(SslVerifiable):
 
     EVENTS_V1_API_ENDPOINT = 'https://events.pagerduty.com/generic/2010-04-15/create_event.json'
 
+    EVENT_TYPE_TRIGGER = 'trigger'
+    EVENT_TYPE_ACKNOWLEDGE = 'acknowledge'
+    EVENT_TYPE_RESOLVE = 'resolve'
+
+    CLIENT_STREAMALERT = 'streamalert'
+
     def __init__(self, service_key, http_provider, api_endpoint=None):
         super(PagerDutyEventsV1ApiClient, self).__init__()
 
@@ -913,13 +985,24 @@ class PagerDutyEventsV1ApiClient(SslVerifiable):
         self._http_provider = http_provider #  type: JsonHttpProvider
         self._api_endpoint = api_endpoint if api_endpoint else self.EVENTS_V1_API_ENDPOINT
 
-    def send_event(self, incident_description, incident_details):
+    def send_event(self, incident_description, incident_details, contexts, client_url):
+        """
+        Args:
+            incident_description (str): The title of the alert
+            incident_details (dict): Arbitrary JSON object that is rendered in custom details field
+            contexts (array): Array of context dicts, which can be used to embed links or images.
+        :return:
+        """
+        # Structure of body: https://v2.developer.pagerduty.com/docs/trigger-events
         data = {# FIXME (derek.wang) test-coverage
             'service_key': self._service_key,
-            'event_type': 'trigger',
+            'event_type': self.EVENT_TYPE_TRIGGER,
+
             'description': incident_description,
             'details': incident_details,
-            'client': 'StreamAlert'
+            'client': self.CLIENT_STREAMALERT,
+            'client_url': client_url,
+            'contexts': contexts,
         }
         result = self._http_provider.post(
             self._api_endpoint,
