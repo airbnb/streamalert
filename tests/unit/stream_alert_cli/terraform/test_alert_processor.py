@@ -60,6 +60,7 @@ class TestAlertProcessor(unittest.TestCase):
                         'ENABLE_METRICS': '0',
                         'LOGGER_LEVEL': 'info'
                     },
+                    'tags': {},
                     'errors_alarm_enabled': True,
                     'errors_alarm_evaluation_periods': 1,
                     'errors_alarm_period_secs': 2,
@@ -117,6 +118,7 @@ class TestAlertProcessor(unittest.TestCase):
                         'ENABLE_METRICS': '0',
                         'LOGGER_LEVEL': 'info'
                     },
+                    'tags': {},
                     'filename': 'alert_processor.zip',
                     'function_name': 'unit-testing_streamalert_alert_processor',
                     'handler': 'stream_alert.alert_processor.main.handler',

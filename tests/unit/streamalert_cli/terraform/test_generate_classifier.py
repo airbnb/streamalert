@@ -112,6 +112,9 @@ class TestTerraformGenerateClassifier(object):
                         'LOGGER_LEVEL': 'info',
                         'ENABLE_METRICS': '0'
                     },
+                    'tags': {
+                        'Cluster': 'test'
+                    },
                     'errors_alarm_enabled': True,
                     'errors_alarm_evaluation_periods': 1,
                     'errors_alarm_period_secs': 120,

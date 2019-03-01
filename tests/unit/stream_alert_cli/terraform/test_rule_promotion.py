@@ -56,6 +56,7 @@ class TestRulePromotion(object):
                         'ENABLE_METRICS': '0',
                         'LOGGER_LEVEL': 'info'
                     },
+                    'tags': {},
                     'errors_alarm_enabled': True,
                     'errors_alarm_evaluation_periods': 1,
                     'errors_alarm_period_secs': 2,
