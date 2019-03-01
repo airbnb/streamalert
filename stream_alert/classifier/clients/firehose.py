@@ -19,7 +19,7 @@ import re
 
 import backoff
 import boto3
-from botocore.exceptions import ClientError, ConnectionClosedError, ConnectionError
+from botocore.exceptions import ClientError, ConnectionError, HTTPClientError
 
 from stream_alert.shared import CLASSIFIER_FUNCTION_NAME as FUNCTION_NAME
 import stream_alert.shared.helpers.boto as boto_helpers
@@ -54,7 +54,7 @@ class FirehoseClient(object):
     DEFAULT_FIREHOSE_PREFIX = 'streamalert_data_{}'
 
     # Exception for which backoff operations should be performed
-    EXCEPTIONS_TO_BACKOFF = (ClientError, ConnectionClosedError, ConnectionError)
+    EXCEPTIONS_TO_BACKOFF = (ClientError, ConnectionError, HTTPClientError)
 
     # Set of enabled log types for firehose, loaded from configs
     _ENABLED_LOGS = dict()
@@ -99,7 +99,7 @@ class FirehoseClient(object):
             # Check if the max size of the batch has been reached or if the current
             # record will exceed the max batch size and start a new batch
             if ((len(current_batch) == cls.MAX_BATCH_COUNT) or
-                    (current_batch_size + line_len > cls.MAX_BATCH_SIZE)):
+                    (current_batch_size + line_len > cls.MAX_BATCH_SIZE)) and current_batch:
                 yield current_batch[:]
                 current_batch_size = 0
                 del current_batch[:]

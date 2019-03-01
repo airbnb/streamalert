@@ -18,7 +18,7 @@ import os
 
 import backoff
 import boto3
-from botocore.exceptions import ClientError, ConnectionClosedError, ConnectionError
+from botocore.exceptions import ClientError, ConnectionError, HTTPClientError
 
 from stream_alert.shared import CLASSIFIER_FUNCTION_NAME as FUNCTION_NAME
 from stream_alert.shared.helpers import boto
@@ -40,7 +40,7 @@ class SQSClientError(Exception):
 class SQSClient(object):
     """SQSClient for sending batches of classified records to the Rules Engine function"""
     # Exception for which backoff operations should be performed
-    EXCEPTIONS_TO_BACKOFF = (ClientError, ConnectionClosedError, ConnectionError)
+    EXCEPTIONS_TO_BACKOFF = (ClientError, ConnectionError, HTTPClientError)
 
     # Maximum amount of times to retry with backoff
     MAX_BACKOFF_ATTEMPTS = 5
@@ -76,6 +76,7 @@ class SQSClient(object):
             size = len(record) + (1 if idx != record_count and batch else 0)
             if size + 2 > cls.MAX_SIZE:
                 LOGGER.error('Record is too large to send to SQS:\n%s', record)
+                MetricLogger.log_metric(FUNCTION_NAME, MetricLogger.SQS_FAILED_RECORDS, 1)
                 continue
 
             if idx == record_count or size + batch_size >= cls.MAX_SIZE:

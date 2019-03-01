@@ -105,7 +105,7 @@ class TestFirehoseClient(object):
         ]
 
         result = list(FirehoseClient._record_batches(records))
-        assert_equal(result, [[]])
+        assert_equal(result, [])
         failure_mock.assert_called_with(1)
 
     def test_record_batches_max_batch_count(self):

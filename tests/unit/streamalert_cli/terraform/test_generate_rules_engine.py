@@ -101,6 +101,7 @@ class TestTerraformGenerateRuleEngine(object):
                         'LOGGER_LEVEL': 'info',
                         'STREAMALERT_PREFIX': 'unit-test',
                     },
+                    'tags': {},
                     'errors_alarm_enabled': True,
                     'errors_alarm_evaluation_periods': 1,
                     'errors_alarm_period_secs': 120,

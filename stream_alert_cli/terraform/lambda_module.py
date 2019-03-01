@@ -52,7 +52,7 @@ def _tf_vpc_config(lambda_config):
 
 
 def generate_lambda(function_name, zip_file, handler, lambda_config, config,
-                    environment=None, input_event=None):
+                    environment=None, input_event=None, tags=None):
     """Generate an instance of the Lambda Terraform module.
 
     Args:
@@ -63,6 +63,7 @@ def generate_lambda(function_name, zip_file, handler, lambda_config, config,
         config (dict): Parsed config from conf/
         environment (dict): Optional environment variables to specify.
             ENABLE_METRICS and LOGGER_LEVEL are included automatically.
+        tags (dict): Optional tags to be added to this Lambda resource.
 
     Example Lambda config:
         {
@@ -117,7 +118,8 @@ def generate_lambda(function_name, zip_file, handler, lambda_config, config,
         'memory_size_mb': lambda_config['memory'],
         'timeout_sec': lambda_config['timeout'],
         'filename': zip_file,
-        'environment_variables': environment_variables
+        'environment_variables': environment_variables,
+        'tags': tags or {},
     }
 
     # Add Classifier input config from the loaded cluster file

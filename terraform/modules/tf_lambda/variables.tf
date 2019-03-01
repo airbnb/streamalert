@@ -63,9 +63,20 @@ variable "vpc_security_group_ids" {
   description = "Optional list of security group IDs (for VPC)"
 }
 
-variable "name_tag" {
-  default     = "StreamAlert"
-  description = "The value for the Name cost tag associated with all applicable components"
+variable "default_tags" {
+  type = "map"
+
+  default = {
+    Name = "StreamAlert"
+  }
+
+  description = "The default tags to be associated with all applicable components"
+}
+
+variable "tags" {
+  type        = "map"
+  default     = {}
+  description = "Any dditional tags to be associated with all applicable components"
 }
 
 variable "auto_publish_versions" {
