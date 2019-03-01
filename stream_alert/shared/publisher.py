@@ -23,15 +23,6 @@ from stream_alert.shared.logger import get_logger
 LOGGER = get_logger(__name__)
 
 
-class AlertPublisherImporter(object):
-    """A service that loads all publishers from their designated location."""
-    _PUBLISHERS_DIRECTORY = 'publishers'
-
-    @classmethod
-    def import_publishers(cls):
-        import_folders(cls._PUBLISHERS_DIRECTORY)
-
-
 class PublisherError(Exception):
     """Exception to raise for any errors with invalid publishers"""
 
@@ -126,7 +117,14 @@ class AlertPublisherRepository(object):
     As a usability optimization, using this Repository will eagerly load and register all
     publishers in the application.
     """
+    _PUBLISHERS_DIRECTORY = 'publishers'
     _publishers = {}
+
+    # import_publishers() ?? FIXME (derek.wang)
+
+    @classmethod
+    def import_publishers(cls):
+        import_folders(cls._PUBLISHERS_DIRECTORY)
 
     @staticmethod
     def is_valid_publisher(thing):
@@ -146,12 +144,7 @@ class AlertPublisherRepository(object):
 
         # We have to put the isclass() check BEFORE the callable() check because classes are also
         # callable!
-        if isclass(thing) and issubclass(thing, AlertPublisher):
-            return True
-        elif callable(thing):
-            return True
-
-        return False
+        return (isclass(thing) and issubclass(thing, AlertPublisher)) or callable(thing)
 
     @staticmethod
     def get_publisher_name(class_or_function):
@@ -179,11 +172,10 @@ class AlertPublisherRepository(object):
              publisher (callable|AlertPublisher): An instance of a publisher class or a function
         """
         if not AlertPublisherRepository.is_valid_publisher(publisher):
-            LOGGER.error(
-                'Could not register publisher %s; Not callable nor subclass of AlertPublisher',
-                publisher
-            )
-            raise PublisherRegistrationError
+            error = (
+                'Could not register publisher {}; Not callable nor subclass of AlertPublisher'
+            ).format(publisher)
+            raise PublisherRegistrationError(error)
 
         elif isclass(publisher):
             # If the provided publisher is a Class, then we simply need to instantiate an instance
@@ -197,8 +189,8 @@ class AlertPublisherRepository(object):
         name = AlertPublisherRepository.get_publisher_name(publisher)
 
         if name in cls._publishers:
-            LOGGER.error('Publisher with name [%s] has already been registered.', name)
-            raise PublisherRegistrationError
+            error = 'Publisher with name [{}] has already been registered.'.format(name)
+            raise PublisherRegistrationError(error)
 
         cls._publishers[name] = publisher_instance
 
@@ -221,7 +213,7 @@ class AlertPublisherRepository(object):
     def has_publisher(cls, name):
         """Returns true if the given publisher name has been registered in this Repository
         """
-        AlertPublisherImporter.import_publishers()
+        cls.import_publishers()
         return name in cls._publishers
 
     @classmethod

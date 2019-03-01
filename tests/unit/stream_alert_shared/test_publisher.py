@@ -57,9 +57,11 @@ class SamplePublisher3(AlertPublisher):
         new_publication[self._FIELD] = True
         return new_publication
 
+
 @Register
 class SamplePublisher4(SamplePublisher3):
     _FIELD = 'test4'
+
 
 @Register
 def sample_publisher_5(_, publication):
@@ -69,7 +71,7 @@ def sample_publisher_5(_, publication):
 
 
 @Register
-def sample_publisher_blank(_, __):
+def sample_publisher_blank(*_):
     return {}
 
 
