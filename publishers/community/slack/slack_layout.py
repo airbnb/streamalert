@@ -13,9 +13,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+import calendar
 import cgi
 import json
-import time
 import urllib
 
 from stream_alert.shared.publisher import AlertPublisher, Register
@@ -63,7 +63,7 @@ class Summary(AlertPublisher):
                     'thumb_url': '',
                     'footer': '',
                     'footer_icon': '',
-                    'ts': time.mktime(alert.created.timetuple()) if alert.created else '',
+                    'ts': calendar.timegm(alert.created.timetuple()) if alert.created else '',
                     'mrkdwn_in': [],
                 },
             ],
@@ -123,13 +123,10 @@ class AttachRuleInfo(AlertPublisher):
 
         publication['slack.attachments'].append({
             'color': self._color(),
-            'fields': map(
-                lambda (key): {
-                    'title': key.capitalize(),
-                    'value': rule_presentation['fields'][key]
-                },
-                rule_presentation['fields'].keys()
-            )
+            'fields': [
+                {'title': key.capitalize(), 'value': rule_presentation['fields'][key]}
+                for key in rule_presentation['fields'].keys()
+            ],
         })
 
         return publication

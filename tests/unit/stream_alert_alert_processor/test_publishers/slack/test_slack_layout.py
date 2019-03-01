@@ -15,7 +15,6 @@ limitations under the License.
 """
 # pylint: disable=protected-access,attribute-defined-outside-init
 from datetime import datetime
-
 from nose.tools import assert_equal, assert_less_equal
 
 from publishers.community.slack.slack_layout import Summary, AttachRuleInfo, AttachPublication, \
@@ -23,15 +22,16 @@ from publishers.community.slack.slack_layout import Summary, AttachRuleInfo, Att
 from tests.unit.stream_alert_alert_processor.helpers import get_alert
 
 
-class TestPrettyLayout(object):
+class TestSummary(object):
 
     def setup(self):
         self._publisher = Summary()
 
     def test_simple(self):
-        """Publishers - Slack - PrettyLayout"""
+        """Publishers - Slack - Summary"""
         alert = get_alert()
-        alert.created = datetime(2019, 1, 1)
+
+        alert.created = datetime.utcfromtimestamp(1546329600)
 
         publication = self._publisher.publish(alert, {})
 
@@ -48,7 +48,7 @@ class TestPrettyLayout(object):
                     'thumb_url': '',
                     'title': 'cb_binarystore_file_added',
                     'footer': '',
-                    'ts': 1546329600.0,
+                    'ts': 1546329600,
                     'title_link': (
                         'https://github.com/airbnb/streamalert/search'
                         '?q=cb_binarystore_file_added+path%3A%2Frules'
