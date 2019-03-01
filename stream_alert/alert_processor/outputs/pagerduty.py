@@ -637,9 +637,6 @@ class JsonHttpProvider(object):
         except OutputRequestFailure:
             return False
 
-        if not result:
-            return False# FIXME (derek.wang) test-coverage
-
         response = result.json()
         if not response:
             return False
@@ -652,9 +649,6 @@ class JsonHttpProvider(object):
         except OutputRequestFailure:
             return False
 
-        if not result:
-            return False# FIXME (derek.wang) test-coverage
-
         response = result.json()
         if not response:
             return False
@@ -665,10 +659,7 @@ class JsonHttpProvider(object):
         try:
             result = self._output_dispatcher._put_request_retry(url, params, headers, verify)
         except OutputRequestFailure:
-            return False# FIXME (derek.wang) test-coverage
-
-        if not result:
-            return False# FIXME (derek.wang) test-coverage
+            return False
 
         response = result.json()
         if not response:

@@ -19,7 +19,7 @@ from collections import OrderedDict
 from mock import patch, PropertyMock, Mock, MagicMock
 from nose.tools import assert_equal, assert_false, assert_true
 # import cProfile, pstats, StringIO
-
+from stream_alert.alert_processor.outputs.output_base import OutputDispatcher, OutputRequestFailure
 from stream_alert.alert_processor.outputs.pagerduty import (
     PagerDutyOutput,
     PagerDutyOutputV2,
@@ -70,20 +70,24 @@ class TestPagerDutyOutput(object):
             'http://pagerduty.foo.bar/create_event.json',
             headers=None,
             json={
+                'client_url': '',
+                'event_type': 'trigger',
+                'contexts': [],
+                'client': 'streamalert',
                 'details': {
                     'record': {
                         'compressed_size': '9982',
                         'node_id': '1',
                         'cb_server': 'cbserver',
-                        'timestamp': '1496947381.18', 'md5': '0F9AA55DA3BDE84B35656AD8911A22E1',
+                        'timestamp': '1496947381.18',
+                        'md5': '0F9AA55DA3BDE84B35656AD8911A22E1',
                         'type': 'binarystore.file.added',
                         'file_path': '/tmp/5DA/AD8/0F9AA55DA3BDE84B35656AD8911A22E1.zip',
-                        'size': '21504'},
+                        'size': '21504'
+                    },
                     'description': 'Info about this rule and what actions to take'
                 },
                 'service_key': 'mocked_service_key',
-                'client': 'StreamAlert',
-                'event_type': 'trigger',
                 'description': 'StreamAlert Rule Triggered - cb_binarystore_file_added'
             },
             timeout=3.05,
@@ -930,6 +934,33 @@ class TestPagerDutyRestApiClient(object):
         http = JsonHttpProvider(dispatcher)
         self._api_client = PagerDutyRestApiClient('mocked_token', 'user@email.com', http)
 
+    @patch('requests.get')
+    def test_multiple_requests_verify_ssl_once(self, post_mock):
+        """PagerDutyIncidentOutput - Multiple Requests Verify SSL Once"""
+        post_mock.return_value.status_code = 200
+
+        self._api_client.add_note('incident_id', 'this is the note')
+
+        class VerifyIsCalledWith(object):
+            def __init__(self, expected_verify_value):
+                self._expected_verify_value = expected_verify_value
+
+            def __eq__(self, other):
+                return self._expected_verify_value == other
+
+        post_mock.assert_called_with(
+            'https://api.pagerduty.com/incidents/incident_id/notes',
+            headers={
+                'From': 'user@email.com',
+                'Content-Type': 'application/json',
+                'Authorization': 'Token token=mocked_token',
+                'Accept': 'application/vnd.pagerduty+json;version=2'
+            },
+            json={'note': {'content': 'this is the note'}},
+            timeout=3.05,
+            verify=True
+        )
+
     @patch('requests.post')
     def test_add_note_incident_sends_correct_request(self, post_mock):
         """PagerDutyIncidentOutput - Add Note to Incident Sends Correct Request"""
@@ -993,3 +1024,70 @@ class TestPagerDutyRestApiClient(object):
         note = self._api_client.add_note('incident_id', 'this is the note')
 
         assert_false(note)
+
+
+class TestJsonHttpProvider(object):
+
+    def setup(self):
+        self._dispatcher = MagicMock(spec=OutputDispatcher)
+        self._http = JsonHttpProvider(self._dispatcher)
+
+    def test_get_sends_correct_arguments(self):
+        """JsonHttpProvider - Get - Arguments"""
+        self._http.get(
+            'http://airbnb.com',
+            {'q': 'zz'},
+            headers={'Accept': 'application/tofu'},
+            verify=True
+        )
+        self._dispatcher._get_request_retry.assert_called_with(
+            'http://airbnb.com',
+            {'q': 'zz'},
+            {'Accept': 'application/tofu'},
+            True
+        )
+
+    def test_get_returns_false_on_error(self):
+        """JsonHttpProvider - Get - Error"""
+        self._dispatcher._get_request_retry.side_effect = OutputRequestFailure('?')
+        assert_false(self._http.get('http://airbnb.com', {'q': 'zz'}))
+
+    def test_post_sends_correct_arguments(self):
+        """JsonHttpProvider - Post - Arguments"""
+        self._http.post(
+            'http://airbnb.com',
+            {'q': 'zz'},
+            headers={'Accept': 'application/tofu'},
+            verify=True
+        )
+        self._dispatcher._post_request_retry.assert_called_with(
+            'http://airbnb.com',
+            {'q': 'zz'},
+            {'Accept': 'application/tofu'},
+            True
+        )
+
+    def test_post_returns_false_on_error(self):
+        """JsonHttpProvider - Post - Error"""
+        self._dispatcher._post_request_retry.side_effect = OutputRequestFailure('?')
+        assert_false(self._http.post('http://airbnb.com', {'q': 'zz'}))
+
+    def test_put_sends_correct_arguments(self):
+        """JsonHttpProvider - Post - Arguments"""
+        self._http.put(
+            'http://airbnb.com',
+            {'q': 'zz'},
+            headers={'Accept': 'application/tofu'},
+            verify=True
+        )
+        self._dispatcher._put_request_retry.assert_called_with(
+            'http://airbnb.com',
+            {'q': 'zz'},
+            {'Accept': 'application/tofu'},
+            True
+        )
+
+    def test_put_returns_false_on_error(self):
+        """JsonHttpProvider - Put - Error"""
+        self._dispatcher._put_request_retry.side_effect = OutputRequestFailure('?')
+        assert_false(self._http.put('http://airbnb.com', {}))
