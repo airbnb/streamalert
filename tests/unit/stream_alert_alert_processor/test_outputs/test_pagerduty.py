@@ -952,7 +952,8 @@ class TestPagerDutyRestApiClient(object):
             def __eq__(self, other):
                 return self._expected_verify_value == other
 
-        post_mock.assert_has_calls([
+        post_mock.assert_has_calls(
+            [
                 call(
                     Anything(),
                     headers=Anything(), json=Anything(), timeout=Anything(),
