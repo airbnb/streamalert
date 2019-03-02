@@ -182,6 +182,7 @@ class PagerDutyOutput(OutputDispatcher):
 
     @staticmethod
     def _strip_invalid_contexts(contexts):
+        """When an array of contexts, will return a new array containing only valid ones."""
         if not isinstance(contexts, list):
             LOGGER.warning('Invalid pagerduty.contexts provided: Not an array')
             return []
@@ -633,6 +634,7 @@ class JsonHttpProvider(object):
         self._output_dispatcher = output_dispatcher
 
     def get(self, url, params, headers=None, verify=False):
+        """Returns the JSON response of the given request, or FALSE on failure"""
         try:
             result = self._output_dispatcher._get_request_retry(url, params, headers, verify)
         except OutputRequestFailure:
@@ -645,6 +647,7 @@ class JsonHttpProvider(object):
         return response
 
     def post(self, url, data, headers=None, verify=False):
+        """Returns the JSON response of the given request, or FALSE on failure"""
         try:
             result = self._output_dispatcher._post_request_retry(url, data, headers, verify)
         except OutputRequestFailure:
@@ -657,6 +660,7 @@ class JsonHttpProvider(object):
         return response
 
     def put(self, url, params, headers=None, verify=False):
+        """Returns the JSON response of the given request, or FALSE on failure"""
         try:
             result = self._output_dispatcher._put_request_retry(url, params, headers, verify)
         except OutputRequestFailure:
@@ -718,7 +722,7 @@ class PagerDutyRestApiClient(SslVerifiable):
     def get_user_by_email(self, user_email):
         """Fetches a pagerduty user by an email address.
 
-        Returns false on failure or if no user is found.
+        Returns false on failure or if no matching user is found.
         """
         response = self._http_provider.get(
             self._get_users_url(),
@@ -738,6 +742,10 @@ class PagerDutyRestApiClient(SslVerifiable):
         return users[0] if users else False
 
     def get_incident_by_key(self, incident_key):
+        """Fetches an incident resource given its key
+
+        Returns False on failure or if no matching incident is found.
+        """
         incidents = self._http_provider.get(
             self._get_incidents_url(),
             {
@@ -756,6 +764,7 @@ class PagerDutyRestApiClient(SslVerifiable):
         return incidents[0] if incidents else False
 
     def get_priorities(self):
+        """Returns a list of all valid priorities"""
         priorities = self._http_provider.get(
             self._get_priorities_url(),
             None,
@@ -770,6 +779,10 @@ class PagerDutyRestApiClient(SslVerifiable):
         return priorities.get('priorities', [])
 
     def get_escalation_policy_by_id(self, escalation_policy_id):
+        """Given an escalation policy id, returns the resource
+
+        Returns False on failure or if no escalation policy exists with that id
+        """
         escalation_policies = self._http_provider.get(
             self._get_escalation_policies_url(),
             {
@@ -788,6 +801,10 @@ class PagerDutyRestApiClient(SslVerifiable):
         return escalation_policies[0] if escalation_policies else False
 
     def merge_incident(self, parent_incident_id, merged_incident_id):
+        """Given two incident ids, notifies PagerDuty to merge them into a single incident
+
+        Returns the json representation of the merged incident, or False on failure.
+        """
         data = {
             'source_incidents': [
                 {
@@ -873,13 +890,13 @@ class PagerDutyRestApiClient(SslVerifiable):
 
         return note.get('note', False)
 
-    def _update_ssl_verified(self, response):
-        if response is not False:
-            self._host_ssl_verified = True
-
-        return response
-
     def _construct_headers(self, omit_email=False):
+        """Returns a dict containing all headers to send for PagerDuty requests
+
+        PagerDuty performs validation on the email provided in the From: header. PagerDuty will
+        error if the requested email does not exist. In one specific case, we do not want this to
+        happen; when we are querying for the existence of a user with this email.
+        """
         headers = {
             'Accept': 'application/vnd.pagerduty+json;version=2',
             'Authorization': 'Token token={}'.format(self._authorization_token),
@@ -983,7 +1000,9 @@ class PagerDutyEventsV1ApiClient(SslVerifiable):
             incident_description (str): The title of the alert
             incident_details (dict): Arbitrary JSON object that is rendered in custom details field
             contexts (array): Array of context dicts, which can be used to embed links or images.
-        :return:
+
+        Return:
+            dict: The JSON representation of the created event
         """
         # Structure of body: https://v2.developer.pagerduty.com/docs/trigger-events
         data = {
