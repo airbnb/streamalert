@@ -536,7 +536,7 @@ class WorkContext(object):
         """
         event_incident = self._api_client.get_incident_by_key(incident_key)
         if not event_incident:
-            raise PagerdutySearchDelay()# FIXME (derek.wang) test-coverage
+            raise PagerdutySearchDelay('Received no PagerDuty response')
 
         return event_incident.get('id')
 
@@ -748,7 +748,7 @@ class PagerDutyRestApiClient(SslVerifiable):
         self._update_ssl_verified(incidents)
 
         if not incidents:
-            return False# FIXME (derek.wang) test-coverage
+            return False
 
         incidents = incidents.get('incidents', [])
 
@@ -769,7 +769,7 @@ class PagerDutyRestApiClient(SslVerifiable):
         return priorities.get('priorities', [])
 
     def get_escalation_policy_by_id(self, escalation_policy_id):
-        escalation_policies = self._http_provider.get(# FIXME (derek.wang) test-coverage
+        escalation_policies = self._http_provider.get(
             self._get_escalation_policies_url(),
             {
                 'query': escalation_policy_id,
@@ -890,7 +890,7 @@ class PagerDutyRestApiClient(SslVerifiable):
         return headers
 
     def _get_escalation_policies_url(self):
-        return '{base_url}/escalation_policies'.format(base_url=self._base_url)# FIXME (derek.wang) test-coverage
+        return '{base_url}/escalation_policies'.format(base_url=self._base_url)
 
     def _get_priorities_url(self):
         return '{base_url}/priorities'.format(base_url=self._base_url)
@@ -972,7 +972,7 @@ class PagerDutyEventsV1ApiClient(SslVerifiable):
     def __init__(self, service_key, http_provider, api_endpoint=None):
         super(PagerDutyEventsV1ApiClient, self).__init__()
 
-        self._service_key = service_key# FIXME (derek.wang) test-coverage
+        self._service_key = service_key
         self._http_provider = http_provider #  type: JsonHttpProvider
         self._api_endpoint = api_endpoint if api_endpoint else self.EVENTS_V1_API_ENDPOINT
 
@@ -985,7 +985,7 @@ class PagerDutyEventsV1ApiClient(SslVerifiable):
         :return:
         """
         # Structure of body: https://v2.developer.pagerduty.com/docs/trigger-events
-        data = {# FIXME (derek.wang) test-coverage
+        data = {
             'service_key': self._service_key,
             'event_type': self.EVENT_TYPE_TRIGGER,
 

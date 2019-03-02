@@ -15,10 +15,9 @@ limitations under the License.
 """
 # pylint: disable=protected-access,attribute-defined-outside-init,too-many-lines,invalid-name
 from collections import OrderedDict
-
-from mock import patch, PropertyMock, Mock, MagicMock
+from mock import patch, PropertyMock, Mock, MagicMock, call
 from nose.tools import assert_equal, assert_false, assert_true
-# import cProfile, pstats, StringIO
+
 from stream_alert.alert_processor.outputs.output_base import OutputDispatcher, OutputRequestFailure
 from stream_alert.alert_processor.outputs.pagerduty import (
     PagerDutyOutput,
@@ -150,17 +149,13 @@ class TestPagerDutyOutputV2(object):
             'http://pagerduty.foo.bar/create_event.json',
             headers=None,
             json={
-                'event_action': 'trigger',
-                'client': 'StreamAlert',
-                'routing_key': 'mocked_routing_key',
+                'event_action': 'trigger', 'client': 'StreamAlert',
                 'payload': {
                     'custom_details': OrderedDict(
                         [
                             ('description', 'Info about this rule and what actions to take'),
                             ('record', {
-                                'compressed_size': '9982',
-                                'node_id': '1',
-                                'cb_server': 'cbserver',
+                                'compressed_size': '9982', 'node_id': '1', 'cb_server': 'cbserver',
                                 'timestamp': '1496947381.18',
                                 'md5': '0F9AA55DA3BDE84B35656AD8911A22E1',
                                 'type': 'binarystore.file.added',
@@ -170,12 +165,13 @@ class TestPagerDutyOutputV2(object):
                         ]
                     ),
                     'source': 'carbonblack:binarystore.file.added',
-                    'severity': 'critical',
+                    'group': '', 'severity': 'critical', 'links': [], 'images': [], 'timestamp': '',
+                    'component': '', 'class': '',
                     'summary': 'StreamAlert Rule Triggered - cb_binarystore_file_added'
-                }
+                },
+                'routing_key': 'mocked_routing_key', 'dedup_key': ''
             },
-            timeout=3.05,
-            verify=True
+            timeout=3.05, verify=True
         )
 
     @patch('logging.Logger.info')
@@ -275,14 +271,16 @@ class TestPagerDutyIncidentOutput(object):
         self._dispatcher.dispatch(get_alert(context=ctx), self.OUTPUT)
 
         # Useful tidbit; for writing fixtures for implement multiple sequential calls, you can use
-        # mock.assert_has_calls() to render out all of the calls in order
+        # mock.assert_has_calls() to render out all of the calls in order:
+        # post_mock.assert_has_calls([call()])
         post_mock.assert_any_call(
             'https://api.pagerduty.com/incidents',
             headers={
                 'From': 'email@domain.com',
                 'Content-Type': 'application/json',
                 'Authorization': 'Token token=mocked_token',
-                'Accept': 'application/vnd.pagerduty+json;version=2'},
+                'Accept': 'application/vnd.pagerduty+json;version=2'
+            },
             json={
                 'incident': {
                     'body': {
@@ -298,17 +296,16 @@ class TestPagerDutyIncidentOutput(object):
                     'assignments': [
                         {
                             'assignee': {
-                                'type': 'user_reference',
-                                'id': 'valid_user_id'
+                                'type': 'user_reference', 'id': 'valid_user_id'
                             }
                         }
                     ],
-                    'type': 'incident'
+                    'type': 'incident',
+                    'urgency': '',
+                    'incident_key': '',
                 }
             },
-            timeout=3.05,
-            # verify=True  # FIXME (derek.wang) before the refactor this was True. Why?
-            verify=False
+            timeout=3.05, verify=False
         )
 
     @patch('requests.put')
@@ -339,35 +336,36 @@ class TestPagerDutyIncidentOutput(object):
 
         self._dispatcher.dispatch(get_alert(context=ctx), self.OUTPUT)
 
+        # post_mock.assert_has_calls([call()])
         post_mock.assert_any_call(
             'https://events.pagerduty.com/v2/enqueue',
-            headers=None,  # FIXME (derek.wang) Verify is this correct??
+            headers=None,
             json={
                 'event_action': 'trigger',
                 'client': 'StreamAlert',
-                'routing_key': 'mocked_key',
                 'payload': {
-                    'custom_details': OrderedDict([
-                        ('description', 'Info about this rule and what actions to take'),
-                        ('record', {
-                            'compressed_size': '9982',
-                            'node_id': '1',
-                            'cb_server': 'cbserver',
-                            'timestamp': '1496947381.18',
-                            'md5': '0F9AA55DA3BDE84B35656AD8911A22E1',
-                            'type': 'binarystore.file.added',
-                            'file_path': '/tmp/5DA/AD8/0F9AA55DA3BDE84B35656AD8911A22E1.zip',
-                            'size': '21504'
-                        })
-                    ]),
+                    'custom_details': OrderedDict(
+                        [
+                            ('description', 'Info about this rule and what actions to take'),
+                            ('record', {
+                                'compressed_size': '9982', 'node_id': '1', 'cb_server': 'cbserver',
+                                'timestamp': '1496947381.18',
+                                'md5': '0F9AA55DA3BDE84B35656AD8911A22E1',
+                                'type': 'binarystore.file.added',
+                                'file_path': '/tmp/5DA/AD8/0F9AA55DA3BDE84B35656AD8911A22E1.zip',
+                                'size': '21504'
+                            })
+                        ]
+                    ),
                     'source': 'carbonblack:binarystore.file.added',
-                    'severity': 'critical',
+                    'group': '', 'severity': 'critical', 'links': [], 'images': [], 'timestamp': '',
+                    'component': '', 'class': '',
                     'summary': 'StreamAlert Rule Triggered - cb_binarystore_file_added'
-                }
+                },
+                'routing_key': 'mocked_key',
+                'dedup_key': ''
             },
-            timeout=3.05,
-            # verify=False  # FIXME (derek.wang) Before the refactor this was False. Why?
-            verify=True,
+            timeout=3.05, verify=True
         )
 
     @patch('requests.put')
@@ -934,12 +932,18 @@ class TestPagerDutyRestApiClient(object):
         http = JsonHttpProvider(dispatcher)
         self._api_client = PagerDutyRestApiClient('mocked_token', 'user@email.com', http)
 
-    @patch('requests.get')
+    @patch('requests.post')
     def test_multiple_requests_verify_ssl_once(self, post_mock):
         """PagerDutyIncidentOutput - Multiple Requests Verify SSL Once"""
         post_mock.return_value.status_code = 200
 
         self._api_client.add_note('incident_id', 'this is the note')
+        self._api_client.add_note('incident_id', 'this is another note')
+        self._api_client.add_note('incident_id', 'this is a third note')
+
+        class Anything(object):
+            def __eq__(self, _):
+                return True
 
         class VerifyIsCalledWith(object):
             def __init__(self, expected_verify_value):
@@ -948,17 +952,32 @@ class TestPagerDutyRestApiClient(object):
             def __eq__(self, other):
                 return self._expected_verify_value == other
 
-        post_mock.assert_called_with(
-            'https://api.pagerduty.com/incidents/incident_id/notes',
-            headers={
-                'From': 'user@email.com',
-                'Content-Type': 'application/json',
-                'Authorization': 'Token token=mocked_token',
-                'Accept': 'application/vnd.pagerduty+json;version=2'
-            },
-            json={'note': {'content': 'this is the note'}},
-            timeout=3.05,
-            verify=True
+        post_mock.assert_has_calls([
+                call(
+                    Anything(),
+                    headers=Anything(), json=Anything(), timeout=Anything(),
+                    verify=VerifyIsCalledWith(True)
+                ),
+                call(
+                    Anything(),
+                    headers=Anything(), json=Anything(), timeout=Anything(),
+                    verify=VerifyIsCalledWith(False)
+                ),
+                call(
+                    Anything(),
+                    headers=Anything(), json=Anything(), timeout=Anything(),
+                    verify=VerifyIsCalledWith(False)
+                ),
+            ],
+            # So the problem with assert_has_calls() is that it requires you to declare all calls
+            # including chained calls. This doesn't work because we do a bunch of random stuff
+            # inbetween with the return value (such as .json() calls) and it's not really feasible
+            # to declare ALL of the calls.
+            #
+            # By setting any_order=True, we ensure all of the above calls are made at least once.
+            # We lose out on the ability to detect that we called verify=True FIRST (before the
+            # two verify=False calls)... but, oh well?
+            any_order=True
         )
 
     @patch('requests.post')
@@ -1024,6 +1043,37 @@ class TestPagerDutyRestApiClient(object):
         note = self._api_client.add_note('incident_id', 'this is the note')
 
         assert_false(note)
+
+    @patch('requests.get')
+    def test_get_escalation_policy_sends_correct_request(self, get_mock):
+        """PagerDutyIncidentOutput - Get Escalation Policies Success"""
+        get_mock.return_value.status_code = 200
+
+        self._api_client.get_escalation_policy_by_id('PDUDOHF')
+
+        get_mock.assert_called_with(
+            'https://api.pagerduty.com/escalation_policies',
+            headers={
+                'From': 'user@email.com', 'Content-Type': 'application/json',
+                'Authorization': 'Token token=mocked_token',
+                'Accept': 'application/vnd.pagerduty+json;version=2'
+            },
+            params={
+                'query': 'PDUDOHF'
+            },
+            timeout=3.05, verify=True
+        )
+
+    @patch('requests.get')
+    def test_get_escalation_policy_success(self, get_mock):
+        """PagerDutyIncidentOutput - Get Escalation Policies Success"""
+        get_mock.return_value.status_code = 200
+        json_note = {'escalation_policies': [{'id': 'PDUDOHF'}]}
+        get_mock.return_value.json.return_value = json_note
+
+        policy = self._api_client.get_escalation_policy_by_id('PDUDOHF')
+
+        assert_equal(policy.get('id'), 'PDUDOHF')
 
 
 class TestJsonHttpProvider(object):
