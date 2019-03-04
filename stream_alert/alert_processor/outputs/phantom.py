@@ -136,6 +136,10 @@ class PhantomOutput(OutputDispatcher):
     def _dispatch(self, alert, descriptor):
         """Send alert to Phantom
 
+        Publishing:
+            By default this output sends the current publication in as JSON to Phantom.
+            There is no "magic" field to "override" it: Simply publish what you want to send!
+
         Args:
             alert (Alert): Alert instance which triggered a rule
             descriptor (str): Output descriptor

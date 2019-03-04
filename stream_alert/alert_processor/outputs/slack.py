@@ -305,11 +305,11 @@ class SlackOutput(OutputDispatcher):
                     ...
         """
         default_header_text = '*StreamAlert Rule Triggered: {}*'.format(alert.rule_name)
-        header_text = alert_publication.get('slack.text', default_header_text)
+        header_text = alert_publication.get('@slack.text', default_header_text)
 
-        if 'slack.attachments' in alert_publication:
+        if '@slack.attachments' in alert_publication:
             attachments = cls._standardize_custom_attachments(
-                alert_publication.get('slack.attachments')
+                alert_publication.get('@slack.attachments')
             )
         else:
             # Default attachments
@@ -409,6 +409,25 @@ class SlackOutput(OutputDispatcher):
 
     def _dispatch(self, alert, descriptor):
         """Send alert text to Slack
+
+        Publishing:
+            By default the slack output sends a slack message comprising some default intro text
+            and a series of attachments containing:
+            * alert description
+            * alert record, chunked into pieces if it's too long
+
+            To override this behavior use the following fields:
+
+            - @slack.text (str):
+                    Replaces the text that appears as the first line in the slack message.
+
+            - @slack.attachments (list[dict]):
+                    A list of individual slack attachments to include in the message. Each
+                    element of this list is a dict that must adhere to the syntax of attachments
+                    on Slack's API.
+
+                    @see cls._standardize_custom_attachments() for some insight into how individual
+                    attachments can be written.
 
         Args:
             alert (Alert): Alert instance which triggered a rule

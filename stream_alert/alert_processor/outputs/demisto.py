@@ -60,6 +60,39 @@ class DemistoOutput(OutputDispatcher):
     def _dispatch(self, alert, descriptor):
         """Send a new Incident to Demisto
 
+        Publishing:
+            Demisto offers a suite of default incident values. You can override any of the
+            following:
+
+            - @demisto.incident_type (str):
+
+            - @demisto.severity (str):
+                    Controls the severity of the incident. Any of the following:
+                    'info', 'informational', 'low', 'med', 'medium', 'high', 'critical', 'unknown'
+
+            - @demisto.owner (str):
+                    Controls which name shows up under the owner. This can be any name, even of
+                    users that are not registered on Demisto. Incidents can be filtered by name.
+
+            - @demisto.details (str):
+                    A string that briefly describes the nature of the incident and how to respond.
+
+            - @demisto.incident_name (str):
+                    Incident name shows up as the title of the Incident.
+
+            - @demisto.label_data (dict):
+                    By default, this output sends the entire publication into the Demisto labels
+                    section, where the label names are the keys of the publication and the label
+                    values are the values of the publication.
+
+                    For deeply nested dictionary publications, the label names become the full path
+                    of all nest dictionary keys, concatenated with periods (".").
+
+                    By providing this override field, you can send a different dict of data to
+                    Demisto, other than the entire publication. Just like in the default case,
+                    if this provided dict is deeply nested, the keys will be flattened.
+
+
         Args:
             alert (Alert): Alert instance which triggered a rule
             descriptor (str): Output descriptor
@@ -252,15 +285,17 @@ class DemistoRequestAssembler(object):
         default_severity = 'unknown'
         default_owner = 'StreamAlert'
         default_details = alert.rule_description
+        default_label_data = alert_publication
 
         # Special keys that publishers can use to modify default presentation
-        incident_type = alert_publication.get('demisto.incident_type', default_incident_type)
+        incident_type = alert_publication.get('@demisto.incident_type', default_incident_type)
         severity = DemistoCreateIncidentRequest.map_severity_string_to_severity_value(
-            alert_publication.get('demisto.severity', default_severity)
+            alert_publication.get('@demisto.severity', default_severity)
         )
-        owner = alert_publication.get('demisto.owner', default_owner)
-        details = alert_publication.get('demisto.details', default_details)
-        incident_name = alert_publication.get('demisto.incident_name', default_incident_name)
+        owner = alert_publication.get('@demisto.owner', default_owner)
+        details = alert_publication.get('@demisto.details', default_details)
+        incident_name = alert_publication.get('@demisto.incident_name', default_incident_name)
+        label_data = alert_publication.get('@demisto.label_data', default_label_data)
 
         request = DemistoCreateIncidentRequest(
             incident_name=incident_name,
@@ -288,6 +323,6 @@ class DemistoRequestAssembler(object):
             else:
                 request.add_label(path, record)
 
-        enumerate_fields(alert_publication)
+        enumerate_fields(label_data)
 
         return request
