@@ -58,6 +58,28 @@ class EventsV2DataProvider(object):
 
         (!) NOTE: this method will not work unless this class is mixed into an OutputDispatcher
 
+        Publishing:
+            By default the pagerduty event is setup with a blob of data comprising the rule
+            description and the record in the custom details. You can customize behavior with
+            the following fields:
+
+            - @pagerduty-v2:summary (str):
+                    Modifies the title of the event
+
+            - @pagerduty-v2.custom_details (dict):
+                    Fills out the pagerduty customdetails with this structure.
+
+                    (!) NOTE: Due to PagerDuty's UI, it is extremely hard to read very deeply
+                        nested JSON dicts. It is also extremely hard to read large blobs of data.
+                        Try to collapse deeply nested structures into single-level keys, and
+                        try to truncate blobs of data.
+
+            - @pagerduty-v2:severity (string):
+                    By default the severity of alerts are "critical". You can override this with
+                    any of the following:
+                    'info', 'warning', 'error', 'critical'
+
+
         Args:
             descriptor (str): The descriptor of the output sending these data
             alert (Alert): Alert relevant to the triggered rule
@@ -78,9 +100,9 @@ class EventsV2DataProvider(object):
         default_severity = SEVERITY_CRITICAL
 
         # Special field that Publishers can use to customize the header
-        summary = publication.get('pagerduty-v2.summary', default_summary)
-        details = publication.get('pagerduty-v2.custom_details', default_custom_details)
-        severity = publication.get('pagerduty-v2.severity', default_severity)
+        summary = publication.get('@pagerduty-v2.summary', default_summary)
+        details = publication.get('@pagerduty-v2.custom_details', default_custom_details)
+        severity = publication.get('@pagerduty-v2.severity', default_severity)
 
         # Structure: https://v2.developer.pagerduty.com/docs/send-an-event-events-api-v2
         return {
@@ -147,6 +169,34 @@ class PagerDutyOutput(OutputDispatcher):
     def _dispatch(self, alert, descriptor):
         """Send alert to Pagerduty
 
+        Publishing:
+            This output can be override with the following fields:
+
+            - @pagerduty.description (str):
+                    The provided string will be rendered as the event's title.
+
+            - @pagerduty.details (dict):
+                    By default this output renders rule description and rule record in a deeply
+                    nested json structure. You can override this with your own dict.
+
+                    (!) NOTE: Due to PagerDuty's UI, it is extremely hard to read very deeply
+                        nested JSON dicts. It is also extremely hard to read large blobs of data.
+                        Try to collapse deeply nested structures into single-level keys, and
+                        try to truncate blobs of data.
+
+            - @pagerduty.client_url (str):
+                    .... FIXME I'm not sure what this does yet!
+
+                    This is not included in the default implementation.
+
+            - @pagerduty.contexts (list[dict]):
+                    This field can be used to attach images and links to the incident event.
+
+                    .... FIXME not sure what this does either???
+
+
+                    This is not included in the default implementation.
+
         Args:
             alert (Alert): Alert instance which triggered a rule
             descriptor (str): Output descriptor
@@ -169,10 +219,10 @@ class PagerDutyOutput(OutputDispatcher):
 
         # Override presentation with publisher
         publication = compose_alert(alert, self, descriptor)
-        description = publication.get('pagerduty.description', default_description)
-        details = publication.get('pagerduty.details', default_details)
-        client_url = publication.get('pagerduty.client_url', default_client_url)
-        contexts = publication.get('pagerduty.contexts', default_contexts)
+        description = publication.get('@pagerduty.description', default_description)
+        details = publication.get('@pagerduty.details', default_details)
+        client_url = publication.get('@pagerduty.client_url', default_client_url)
+        contexts = publication.get('@pagerduty.contexts', default_contexts)
         contexts = self._strip_invalid_contexts(contexts)
 
         http = JsonHttpProvider(self)
@@ -248,6 +298,9 @@ class PagerDutyOutputV2(OutputDispatcher, EventsV2DataProvider):
 
     def _dispatch(self, alert, descriptor):
         """Send alert to Pagerduty
+
+        Publishing:
+            @see EventsV2DataProvider for more details
 
         Args:
             alert (Alert): Alert instance which triggered a rule
@@ -372,6 +425,26 @@ class PagerDutyIncidentOutput(OutputDispatcher, EventsV2DataProvider):
     def _dispatch(self, alert, descriptor):
         """Send incident to Pagerduty Incidents API v2
 
+        Context:
+
+            - with_record (bool):
+            - note (bool):
+
+        Publishing:
+            This output has a complex workflow.
+
+
+            - @pagerduty-incident.incident_title
+            - @pagerduty-incident.incident_body
+            - @pagerduty-incident.note
+            - @pagerduty-incident.urgency
+
+
+            In addition, the final event that is merged into the parent incident can be customized
+            as well.
+            @see EventsV2DataProvider for more details
+
+
         Args:
             alert (Alert): Alert instance which triggered a rule
             descriptor (str): Output descriptor
@@ -433,18 +506,18 @@ class WorkContext(object):
 
         # Override presentation defaults with publisher fields
         incident_title = publication.get(
-            'pagerduty-incident.incident_title',
+            '@pagerduty-incident.incident_title',
             default_incident_title
         )
-        incident_body = publication.get('pagerduty-incident.incident_body', default_incident_body)
+        incident_body = publication.get('@pagerduty-incident.incident_body', default_incident_body)
         incident_note = publication.get(
-            'pagerduty-incident.note',
+            '@pagerduty-incident.note',
             rule_context.get(
                 'note',
                 default_incident_note
             )
         )
-        incident_urgency = publication.get('pagerduty-incident.urgency', default_urgency);
+        incident_urgency = publication.get('@pagerduty-incident.urgency', default_urgency);
 
         # FIXME (derek.wang) use publisher to set priority instead of context
         # Use the priority provided in the context, use it or the incident will be low priority
