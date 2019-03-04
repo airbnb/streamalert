@@ -67,7 +67,7 @@ class TestSlackOutput(object):
         alert = get_random_alert(25, rule_name)
         output = MagicMock(spec=SlackOutput)
         alert_publication = compose_alert(alert, output, 'asdf')
-        alert_publication['slack.text'] = 'Lorem ipsum foobar'
+        alert_publication['@slack.text'] = 'Lorem ipsum foobar'
 
         loaded_message = SlackOutput._format_message(alert, alert_publication)
 
@@ -82,7 +82,7 @@ class TestSlackOutput(object):
         alert = get_random_alert(10, rule_name, True)
         output = MagicMock(spec=SlackOutput)
         alert_publication = compose_alert(alert, output, 'asdf')
-        alert_publication['slack.attachments'] = [
+        alert_publication['@slack.attachments'] = [
             {'text': 'aasdfkjadfj'}
         ]
 
@@ -101,7 +101,7 @@ class TestSlackOutput(object):
         alert_publication = compose_alert(alert, output, 'asdf')
 
         long_message = 'a'*(SlackOutput.MAX_MESSAGE_SIZE + 1)
-        alert_publication['slack.attachments'] = [
+        alert_publication['@slack.attachments'] = [
             {'text': long_message}
         ]
 
@@ -121,7 +121,7 @@ class TestSlackOutput(object):
         alert = get_random_alert(10, rule_name, True)
         output = MagicMock(spec=SlackOutput)
         alert_publication = compose_alert(alert, output, 'asdf')
-        alert_publication['slack.attachments'] = [
+        alert_publication['@slack.attachments'] = [
             {'text': 'attachment text1'},
             {'text': 'attachment text2'},
         ]
@@ -140,9 +140,9 @@ class TestSlackOutput(object):
         alert = get_random_alert(10, rule_name, True)
         output = MagicMock(spec=SlackOutput)
         alert_publication = compose_alert(alert, output, 'asdf')
-        alert_publication['slack.attachments'] = []
+        alert_publication['@slack.attachments'] = []
         for _ in range(SlackOutput.MAX_ATTACHMENTS + 1):
-            alert_publication['slack.attachments'].append({'text': 'yay'})
+            alert_publication['@slack.attachments'].append({'text': 'yay'})
 
         loaded_message = SlackOutput._format_message(alert, alert_publication)
 

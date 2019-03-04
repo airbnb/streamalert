@@ -121,9 +121,12 @@ should offer a default implementation:
 Outputs can be implemented to offer custom fields that can be filled in by Publishers. This (optionally)
 grants fine-grained control of outputs to Publishers. Such fields should follow the following conventions:
 
-* They are fields on the publication dictionary
-* Keys are strings, with the ``output.__service__`` as a prefix
-* The key should be delimited by period, and the suffix should describe the function of the field
+* They are top level keys on the final publication dictionary
+* Keys are strings, following the format: ``@{output_service}.{field_name}``
+* Keys MUST begin with an at-sign
+* The ``output_service`` should match the current outputs ``cls.__service__`` value
+* The ``field_name`` should describe its function
+* Example: ``@slack.attachments``
 
 Below is an example of how you could implement an output:
 
@@ -136,8 +139,8 @@ Below is an example of how you could implement an output:
     default_title = 'Incident Title: #{}'.format(alert.alert_id)
     default_html = '<html><body>Rule: {}</body></html>'.format(alert.rule_description)
 
-    title = publication.get('pagerduty.title', default_title)
-    body_html = publication.get('pagerduty.body_html', default_html)
+    title = publication.get('@pagerduty.title', default_title)
+    body_html = publication.get('@pagerduty.body_html', default_html)
 
     make_api_call(title, body_html, data=publication)
 
@@ -248,12 +251,12 @@ The publisher can also simplify the PagerDuty title:
   @Register
   def simplify_pagerduty_output(alert, publication):
     return {
-      'record': {
+      '@pagerduty.record': {
           'source_ip': alert.record['source_ip'],
           'time': alert.record['timestamp'],
           'username': alert.record['user'],
       },
-      'pagerduty.summary': 'Machine SSH: {}'.format(alert.record['user']),
+      '@pagerduty.summary': 'Machine SSH: {}'.format(alert.record['user']),
     }
 
 Suppose this rule is being output to both PagerDuty and Slack, but you only wish to simplify the PagerDuty

@@ -36,9 +36,9 @@ class TestSummary(object):
         publication = self._publisher.publish(alert, {})
 
         expectation = {
-            'slack.text': 'Rule triggered',
+            '@slack.text': 'Rule triggered',
             '_previous_publication': {},
-            'slack.attachments': [
+            '@slack.attachments': [
                 {
                     'author_link': '',
                     'color': '#ff5a5f',
@@ -61,14 +61,14 @@ class TestSummary(object):
             ]
         }
 
-        assert_equal(publication['slack.text'], expectation['slack.text'])
+        assert_equal(publication['@slack.text'], expectation['@slack.text'])
         assert_equal(publication['_previous_publication'], expectation['_previous_publication'])
-        assert_equal(len(publication['slack.attachments']), len(expectation['slack.attachments']))
+        assert_equal(len(publication['@slack.attachments']), len(expectation['@slack.attachments']))
         assert_equal(
-            publication['slack.attachments'][0].keys(),
-            expectation['slack.attachments'][0].keys()
+            publication['@slack.attachments'][0].keys(),
+            expectation['@slack.attachments'][0].keys()
         )
-        assert_equal(publication['slack.attachments'][0], expectation['slack.attachments'][0])
+        assert_equal(publication['@slack.attachments'][0], expectation['@slack.attachments'][0])
 
 
 class TestAttachRuleInfo(object):
@@ -90,7 +90,7 @@ Att&ck vector:  Assuming direct control
         publication = self._publisher.publish(alert, {})
 
         expectation = {
-            'slack.attachments': [
+            '@slack.attachments': [
                 {
                     'color': '#8ce071',
                     'fields': [
@@ -122,7 +122,7 @@ class TestAttachPublication(object):
 
         previous = {
             '_previous_publication': {'foo': 'bar'},
-            'slack.attachments': [
+            '@slack.attachments': [
                 {
                     'text': 'attachment1',
                 },
@@ -132,7 +132,7 @@ class TestAttachPublication(object):
 
         expectation = {
             '_previous_publication': {'foo': 'bar'},
-            'slack.attachments': [
+            '@slack.attachments': [
                 {'text': 'attachment1'},
                 {
                     'color': '#00d1c1',
@@ -159,7 +159,7 @@ class TestAttachFullRecord(object):
         publication = self._publisher.publish(alert, {})
 
         expectation = {
-            'slack.attachments': [
+            '@slack.attachments': [
                 {
                     'footer': 'via <https://console.aws.amazon.com/s3/home|s3>',
                     'fields': [
@@ -198,7 +198,7 @@ class TestAttachFullRecord(object):
 
         publication = self._publisher.publish(alert, {})
 
-        attachments = publication['slack.attachments']
+        attachments = publication['@slack.attachments']
 
         assert_equal(len(attachments), 14)
         for attachment in attachments:

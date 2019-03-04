@@ -100,6 +100,10 @@ class KinesisFirehoseOutput(AWSOutput):
     def _dispatch(self, alert, descriptor):
         """Send alert to a Kinesis Firehose Delivery Stream
 
+        Publishing:
+            By default this output sends the current publication in JSON to Kinesis.
+            There is no "magic" field to "override" it: Simply publish what you want to send!
+
         Args:
             alert (Alert): Alert instance which triggered a rule
             descriptor (str): Output descriptor
@@ -187,6 +191,14 @@ class LambdaOutput(AWSOutput):
 
         The alert gets dumped to a JSON string to be sent to the Lambda function
 
+        Publishing:
+            By default this output sends the JSON-serialized alert record as the payload to the
+            lambda function. You can override this:
+
+            - @aws-lambda.alert_data (dict):
+                    Overrides the alert record. Will instead send this dict, JSON-serialized, to
+                    Lambda as the payload.
+
         Args:
             alert (Alert): Alert instance which triggered a rule
             descriptor (str): Output descriptor
@@ -195,9 +207,14 @@ class LambdaOutput(AWSOutput):
             bool: True if alert was sent successfully, False otherwise
         """
         publication = compose_alert(alert, self, descriptor)
-        record = publication.get('record', {})
 
-        alert_string = json.dumps(record, separators=(',', ':'))
+        # Defaults
+        default_alert_data = alert.record
+
+        # Override with publisher
+        alert_data = publication.get('@aws-lambda.alert_data', default_alert_data)
+
+        alert_string = json.dumps(alert_data, separators=(',', ':'))
         function_name = self.config[self.__service__][descriptor]
 
         # Check to see if there is an optional qualifier included here
@@ -272,6 +289,10 @@ class S3Output(AWSOutput):
             service/entity/rule_name/datetime.json
         The alert gets dumped to a JSON string
 
+        Publishing:
+            By default this output sends the current publication in JSON to S3.
+            There is no "magic" field to "override" it: Simply publish what you want to send!
+
         Args:
             alert (Alert): Alert instance which triggered a rule
             descriptor (str): Output descriptor
@@ -312,6 +333,16 @@ class SNSOutput(AWSOutput):
     def get_user_defined_properties(cls):
         """Properties assigned by the user when configuring a new SNS output.
 
+        Publishing:
+            By default this output sets a default subject and sends a message body that is the
+            JSON-serialized publication including indents/newlines. You can override this behavior:
+
+            - @aws-sns.topic (str):
+                    Sends a custom subject
+
+            - @aws-sns.message (str);
+                    Send a custom message body.
+
         Returns:
             OrderedDict: With 'descriptor' and 'aws_value' OutputProperty tuples
         """
@@ -344,8 +375,8 @@ class SNSOutput(AWSOutput):
 
         # Published presentation fields
         # Subject must be < 100 characters long;
-        subject = elide_string_middle(publication.get('aws-sns.topic', default_subject), 99)
-        message = publication.get('aws-sns.message', default_message)
+        subject = elide_string_middle(publication.get('@aws-sns.topic', default_subject), 99)
+        message = publication.get('@aws-sns.message', default_message)
 
         topic.publish(
             Message=message,
@@ -380,6 +411,14 @@ class SQSOutput(AWSOutput):
     def _dispatch(self, alert, descriptor):
         """Send alert to an SQS queue
 
+        Publishing:
+            By default it sends the alert.record to SQS as a JSON string. You can override
+            it with the following fields:
+
+            - @aws-sqs.message_data (dict):
+                    Replace alert.record with your own JSON-serializable dict. Will send this
+                    as a JSON string to SQS.
+
         Args:
             alert (Alert): Alert instance which triggered a rule
             descriptor (str): Output descriptor
@@ -394,13 +433,14 @@ class SQSOutput(AWSOutput):
         publication = compose_alert(alert, self, descriptor)
 
         # Presentation defaults
-        record = publication.get('record', {})
-        default_message_body = json.dumps(record, separators=(',', ':'))
+        default_message_data = alert.record
 
         # Presentation values
-        message_body = publication.get('aws-sqs:message_body', default_message_body)
+        message_data = publication.get('@aws-sqs.message_data', default_message_data)
 
-        queue.send_message(MessageBody=message_body)
+        # Transform the body from a dict to a string for SQS
+        sqs_message = json.dumps(message_data, separators=(',', ':'))
+        queue.send_message(MessageBody=sqs_message)
 
         return True
 
@@ -413,6 +453,11 @@ class CloudwatchLogOutput(AWSOutput):
     @classmethod
     def get_user_defined_properties(cls):
         """Get properties that must be assigned by the user when configuring a new Lambda
+
+        Publishing:
+            By default this output sends the current publication in JSON to CloudWatch.
+            There is no "magic" field to "override" it: Simply publish what you want to send!
+
         Returns:
             OrderedDict: Contains various OutputProperty items
         """

@@ -103,12 +103,10 @@ Adding support for a new service involves five steps:
     output.
 
     In addition, adding output-specific fields can be useful to offer more fine-grained control
-    of the look and feel of an alert. Prefix all such fields with the output's service name and
-    delimit the field with a period.
+    of the look and feel of an alert.
 
     For example, an optional field that directly controls a PagerDuty incident's title:
-
-    - 'pagerduty.incident_title'
+    - '@pagerduty.incident_title'
 
 
     When referencing an alert's attributes, reference the alert's field directly (e.g.
