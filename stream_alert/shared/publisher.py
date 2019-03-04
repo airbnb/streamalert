@@ -119,12 +119,14 @@ class AlertPublisherRepository(object):
     """
     _PUBLISHERS_DIRECTORY = 'publishers'
     _publishers = {}
-
-    # import_publishers() ?? FIXME (derek.wang)
+    _is_imported = False
 
     @classmethod
     def import_publishers(cls):
-        import_folders(cls._PUBLISHERS_DIRECTORY)
+        if not cls._is_imported:
+            import_folders(cls._PUBLISHERS_DIRECTORY)
+            cls._is_imported = True
+
 
     @staticmethod
     def is_valid_publisher(thing):
