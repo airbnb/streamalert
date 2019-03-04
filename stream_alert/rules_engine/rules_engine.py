@@ -318,8 +318,8 @@ class RulesEngine(object):
     def is_publisher_declaration(cls, string_or_reference):
         """Returns TRUE if the requested publisher is valid (a string name or reference)"""
         return (
-                isinstance(string_or_reference, basestring) or
-                AlertPublisherRepository.is_valid_publisher(string_or_reference)
+            isinstance(string_or_reference, basestring) or
+            AlertPublisherRepository.is_valid_publisher(string_or_reference)
         )
 
     @classmethod
