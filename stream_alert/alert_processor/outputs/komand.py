@@ -63,6 +63,10 @@ class KomandOutput(OutputDispatcher):
     def _dispatch(self, alert, descriptor):
         """Send alert to Komand
 
+        Publishing:
+            By default this output sends the current publication to Komand.
+            There is no "magic" field to "override" it: Simply publish what you want to send!
+
         Args:
             alert (Alert): Alert instance which triggered a rule
             descriptor (str): Output descriptor

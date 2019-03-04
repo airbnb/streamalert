@@ -48,8 +48,8 @@ class Summary(AlertPublisher):
         author = rule_presentation['author']
 
         return {
-            'slack.text': 'Rule triggered',
-            'slack.attachments': [
+            '@slack.text': 'Rule triggered',
+            '@slack.attachments': [
                 {
                     'fallback': 'Rule triggered: {}'.format(rule_name),
                     'color': self._color(),
@@ -116,12 +116,12 @@ class AttachRuleInfo(AlertPublisher):
     """
 
     def publish(self, alert, publication):
-        publication['slack.attachments'] = publication.get('slack.attachments', [])
+        publication['@slack.attachments'] = publication.get('@slack.attachments', [])
 
         rule_description = alert.rule_description
         rule_presentation = RuleDescriptionParser.present(rule_description)
 
-        publication['slack.attachments'].append({
+        publication['@slack.attachments'].append({
             'color': self._color(),
             'fields': [
                 {'title': key.capitalize(), 'value': rule_presentation['fields'][key]}
@@ -141,7 +141,7 @@ class AttachPublication(AlertPublisher):
     """A publisher run after PrettyLayout that attaches previous publications as an attachment"""
 
     def publish(self, alert, publication):
-        if '_previous_publication' not in publication or 'slack.attachments' not in publication:
+        if '_previous_publication' not in publication or '@slack.attachments' not in publication:
             # This publisher cannot be run except immediately after PrettyLayout
             return publication
 
@@ -154,7 +154,7 @@ class AttachPublication(AlertPublisher):
             )
         )
 
-        publication['slack.attachments'].append({
+        publication['@slack.attachments'].append({
             'color': self._color(),
             'title': 'Alert Data:',
             'text': cgi.escape(publication_block),
@@ -186,7 +186,7 @@ class AttachFullRecord(AlertPublisher):
     _LENGTH_PADDING = 10
 
     def publish(self, alert, publication):
-        publication['slack.attachments'] = publication.get('slack.attachments', [])
+        publication['@slack.attachments'] = publication.get('@slack.attachments', [])
 
         # Generate the record and then dice it up into parts
         record_document = json.dumps(alert.record, indent=2, sort_keys=True, separators=(',', ': '))
@@ -234,7 +234,7 @@ class AttachFullRecord(AlertPublisher):
             next_length = next_item_length + len(next_document)
             if next_document and next_length > character_limit:
                 # Do not pop off the item just yet.
-                publication['slack.attachments'].append(
+                publication['@slack.attachments'].append(
                     make_attachment(next_document, is_first_document, False)
                 )
                 next_document = ''
@@ -244,7 +244,7 @@ class AttachFullRecord(AlertPublisher):
 
         # Attach last document, if any remains
         if next_document:
-            publication['slack.attachments'].append(
+            publication['@slack.attachments'].append(
                 make_attachment(next_document, is_first_document, True)
             )
 

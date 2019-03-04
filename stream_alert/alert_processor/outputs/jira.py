@@ -279,6 +279,18 @@ class JiraOutput(OutputDispatcher):
     def _dispatch(self, alert, descriptor):
         """Send alert to Jira
 
+        Publishing:
+            This output uses a default issue summary and sends the entire publication into the
+            issue body as a {{code}} block. To override:
+
+            - @jira.issue_summary (str):
+                    Overrides the issue title that shows up at the top on the JIRA UI
+
+            - @jira.description (str):
+                    Send your own custom description. Remember: This field is in JIRA's syntax,
+                    so it supports their custom markdown-like formatting and respects newline
+                    characters (e.g. \n).
+
         Args:
             alert (Alert): Alert instance which triggered a rule
             descriptor (str): Output descriptor
@@ -299,8 +311,8 @@ class JiraOutput(OutputDispatcher):
         )
 
         # True Presentation values
-        issue_summary = publication.get('jira.issue_summary', default_issue_summary)
-        description = publication.get('jira.description', default_alert_body)
+        issue_summary = publication.get('@jira.issue_summary', default_issue_summary)
+        description = publication.get('@jira.description', default_alert_body)
 
         issue_id = None
         comment_id = None
