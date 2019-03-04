@@ -146,7 +146,7 @@ class AlertPublisherRepository(object):
 
         # We have to put the isclass() check BEFORE the callable() check because classes are also
         # callable!
-        return (isclass(thing) and issubclass(thing, AlertPublisher)) or callable(thing)
+        return issubclass(thing, AlertPublisher) if isclass(thing) else callable(thing)
 
     @staticmethod
     def get_publisher_name(class_or_function):
