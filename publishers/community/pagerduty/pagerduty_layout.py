@@ -35,3 +35,39 @@ class ShortenTitle(AlertPublisher):
         publication['pagerduty.description'] = alert.rule_name
 
         return publication
+
+
+@Register
+def as_custom_details(_, publication):
+    """Takes the current publication and sends the entire thing to custom details.
+
+    It does this for all fields EXCEPT the pagerduty special fields."""
+    def _is_custom_field(key):
+        return (
+            key.startsWith('pagerduty.') or
+            key.startsWith('pagerduty-v2.') or
+            key.startsWith('pagerduty-incident.')
+        )
+
+    custom_details = {
+        {key: value} for key, value in publication.iteritmes() if not _is_custom_field(key)
+    }
+
+    publication['pagerduty.details'] = custom_details
+    publication['pagerduty-v2.custom_details'] = custom_details
+
+    return publication
+
+
+@Register
+def v2_high_urgency(_, publication):
+    publication['pagerduty-v2.severity'] = 'critical'
+    publication['pagerduty-incident.urgency'] = 'high'
+    return publication
+
+
+@Register
+def v2_low_urgency(_, publication):
+    publication['pagerduty-v2.severity'] = 'warning'
+    publication['pagerduty-incident.urgency'] = 'low'
+    return publication

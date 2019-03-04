@@ -427,19 +427,16 @@ class WorkContext(object):
         # Presentation defaults
         default_incident_title = 'StreamAlert Incident - Rule triggered: {}'.format(
             alert.rule_name)
-        default_incident_body = {
-            'type': 'incident_body',
-            'details': alert.rule_description,
-        }
-        default_incident_note = 'Creating SOX Incident'
+        default_incident_body = alert.rule_description
+        default_incident_note = 'Creating SOX Incident'  # For reverse compatibility reasons
+        default_urgency = ''
 
         # Override presentation defaults with publisher fields
         incident_title = publication.get(
             'pagerduty-incident.incident_title',
             default_incident_title
         )
-        incident_body = publication.get('pagerduty-incident.incident_body',
-                                        default_incident_body)
+        incident_body = publication.get('pagerduty-incident.incident_body', default_incident_body)
         incident_note = publication.get(
             'pagerduty-incident.note',
             rule_context.get(
@@ -447,14 +444,13 @@ class WorkContext(object):
                 default_incident_note
             )
         )
+        incident_urgency = publication.get('pagerduty-incident.urgency', default_urgency);
 
         # FIXME (derek.wang) use publisher to set priority instead of context
         # Use the priority provided in the context, use it or the incident will be low priority
         incident_priority = self.get_standardized_priority(rule_context)
 
         # FIXME (derek.wang) use publisher to set priority instead of context
-        # Incident assignment goes in this order:
-        #  Provided user -> provided policy -> default policy
         assigned_key, assigned_value = self.get_incident_assignment(rule_context)
 
         # Using the service ID for the PagerDuty API
@@ -468,9 +464,12 @@ class WorkContext(object):
                     'type': 'service_reference'
                 },
                 'priority': incident_priority,
-                'urgency': '',
+                'urgency': incident_urgency,
                 'incident_key': '',
-                'body': incident_body,
+                'body': {
+                    'type': 'incident_body',
+                    'details': incident_body,
+                },
                 assigned_key: assigned_value
             }
         }
@@ -590,6 +589,9 @@ class WorkContext(object):
 
     def get_incident_assignment(self, context):
         """Method to determine if the incident gets assigned to a user or an escalation policy
+
+        Incident assignment goes in this order:
+          Provided user -> provided policy -> default escalation policy
 
         Args:
             context (dict): Context provided in the alert record
@@ -994,12 +996,13 @@ class PagerDutyEventsV1ApiClient(SslVerifiable):
         self._http_provider = http_provider #  type: JsonHttpProvider
         self._api_endpoint = api_endpoint if api_endpoint else self.EVENTS_V1_API_ENDPOINT
 
-    def send_event(self, incident_description, incident_details, contexts, client_url):
+    def send_event(self, incident_description, incident_details, contexts, client_url=''):
         """
         Args:
             incident_description (str): The title of the alert
             incident_details (dict): Arbitrary JSON object that is rendered in custom details field
             contexts (array): Array of context dicts, which can be used to embed links or images.
+            client_url (string): An external URL that appears as a link on the event.
 
         Return:
             dict: The JSON representation of the created event

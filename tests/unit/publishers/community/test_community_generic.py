@@ -169,7 +169,7 @@ class TestRemoveInternalFieldsPublisher(object):
         assert_equal(publication, expectation)
 
 
-class TestFilterFields(object):
+class TestRemoveStreamAlertNormalizationFields(object):
     PUBLISHER_NAME = 'publishers.community.generic.remove_streamalert_normalization'
 
     def setup(self):
