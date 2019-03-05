@@ -41,12 +41,13 @@ class ShortenTitle(AlertPublisher):
 def as_custom_details(_, publication):
     """Takes the current publication and sends the entire thing to custom details.
 
-    It does this for all fields EXCEPT the pagerduty special fields."""
+    It does this for all fields EXCEPT the pagerduty special fields.
+    """
     def _is_custom_field(key):
-        return key.startsWith('@pagerduty')
+        return key.startswith('@pagerduty')
 
     custom_details = {
-        {key: value} for key, value in publication.iteritmes() if not _is_custom_field(key)
+        key: value for key, value in publication.iteritems() if not _is_custom_field(key)
     }
 
     publication['@pagerduty.details'] = custom_details
@@ -57,6 +58,11 @@ def as_custom_details(_, publication):
 
 @Register
 def v2_high_urgency(_, publication):
+    """Designates this alert as critical or high urgency
+
+    This only works for pagerduty-v2 and pagerduty-incident Outputs. The original pagerduty
+    integration uses the Events v1 API which does not support urgency.
+    """
     publication['@pagerduty-v2.severity'] = 'critical'
     publication['@pagerduty-incident.urgency'] = 'high'
     return publication
@@ -64,6 +70,11 @@ def v2_high_urgency(_, publication):
 
 @Register
 def v2_low_urgency(_, publication):
+    """Designates this alert as a warning or low urgency
+
+    This only works for pagerduty-v2 and pagerduty-incident Outputs. The original pagerduty
+    integration uses the Events v1 API which does not support urgency.
+    """
     publication['@pagerduty-v2.severity'] = 'warning'
     publication['@pagerduty-incident.urgency'] = 'low'
     return publication

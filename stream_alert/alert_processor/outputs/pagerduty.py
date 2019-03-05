@@ -382,6 +382,10 @@ class PagerDutyIncidentOutput(OutputDispatcher, EventsV2DataProvider):
             ('descriptor',
              OutputProperty(description='a short and unique descriptor for this '
                                         'PagerDuty integration')),
+            # The REST API Access Token. This needs to be generated through the PagerDuty console.
+            # Unlike the routing key this token is EXTREMELY IMPORTANT NOT TO LOSE as it grants
+            # access to all resources on PagerDuty, whereas the routing key only allows
+            # the generation of new events.
             ('token',
              OutputProperty(description='the token for this PagerDuty integration',
                             mask_input=True,
@@ -414,9 +418,8 @@ class PagerDutyIncidentOutput(OutputDispatcher, EventsV2DataProvider):
              OutputProperty(description='valid user email from the PagerDuty '
                                         'account linked to the token',
                             cred_requirement=True)),
-            # A version 4 UUID expressed as a 32 digit hexadecimal number. This is the
-            # integration key for an integration on a given service and can be found on
-            # the pagerduty integrations UI.
+            # A version 4 UUID expressed as a 32 digit hexadecimal number. This is the same
+            # as the routing key that is used in the v2 Events API.
             ('integration_key',
              OutputProperty(description='the integration key for this PagerDuty integration',
                             cred_requirement=True))
