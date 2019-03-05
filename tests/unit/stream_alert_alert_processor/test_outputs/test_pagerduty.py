@@ -165,7 +165,7 @@ class TestPagerDutyOutputV2(object):
                         ]
                     ),
                     'source': 'carbonblack:binarystore.file.added',
-                    'group': '', 'severity': 'critical', 'links': [], 'images': [], 'timestamp': '',
+                    'group': '', 'severity': 'critical', 'links': [], 'images': [],
                     'component': '', 'class': '',
                     'summary': 'StreamAlert Rule Triggered - cb_binarystore_file_added'
                 },
@@ -358,7 +358,7 @@ class TestPagerDutyIncidentOutput(object):
                         ]
                     ),
                     'source': 'carbonblack:binarystore.file.added',
-                    'group': '', 'severity': 'critical', 'links': [], 'images': [], 'timestamp': '',
+                    'group': '', 'severity': 'critical', 'links': [], 'images': [],
                     'component': '', 'class': '',
                     'summary': 'StreamAlert Rule Triggered - cb_binarystore_file_added'
                 },
