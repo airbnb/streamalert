@@ -520,7 +520,7 @@ class WorkContext(object):
                 default_incident_note
             )
         )
-        incident_urgency = publication.get('@pagerduty-incident.urgency', default_urgency);
+        incident_urgency = publication.get('@pagerduty-incident.urgency', default_urgency)
 
         # FIXME (derek.wang) use publisher to set priority instead of context
         # Use the priority provided in the context, use it or the incident will be low priority
