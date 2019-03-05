@@ -520,7 +520,7 @@ class WorkContext(object):
             alert.rule_name)
         default_incident_body = alert.rule_description
         default_incident_note = 'Creating SOX Incident'  # For reverse compatibility reasons
-        default_urgency = ''
+        default_urgency = 'high'
 
         # Override presentation defaults with publisher fields
         incident_title = publication.get(
@@ -555,6 +555,8 @@ class WorkContext(object):
                     'type': 'service_reference'
                 },
                 'priority': incident_priority,
+
+                # Urgency, if provided, must always be 'high' or 'low' or the API will error
                 'urgency': incident_urgency,
                 'incident_key': '',
                 'body': {
@@ -842,7 +844,7 @@ class PagerDutyRestApiClient(SslVerifiable):
         incidents = self._http_provider.get(
             self._get_incidents_url(),
             {
-                'incident_key': incident_key
+                'query': incident_key
             },
             headers=self._construct_headers(),
             verify=self._should_do_ssl_verify()

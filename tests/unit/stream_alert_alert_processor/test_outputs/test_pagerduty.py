@@ -301,7 +301,7 @@ class TestPagerDutyIncidentOutput(object):
                         }
                     ],
                     'type': 'incident',
-                    'urgency': '',
+                    'urgency': 'high',
                     'incident_key': '',
                 }
             },
