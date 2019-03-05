@@ -113,7 +113,8 @@ class EventsV2DataProvider(object):
                 'summary': summary,
                 'source': alert.log_source,
                 'severity': severity,
-                'timestamp': '',
+                # When provided, must be in valid ISO 8601 format
+                # 'timestamp': '',
                 'component': '',
                 'group': '',
                 'class': '',
@@ -185,15 +186,29 @@ class PagerDutyOutput(OutputDispatcher):
                         try to truncate blobs of data.
 
             - @pagerduty.client_url (str):
-                    .... FIXME I'm not sure what this does yet!
+                    A URL. It should be a link to the same alert in a different service.
+                    When given, there will be a "view in streamalert" link given at the bottom.
+                    Currently this 'streamalert' string is hardcoded into the api client
+                    as the 'client' field.
 
                     This is not included in the default implementation.
 
             - @pagerduty.contexts (list[dict]):
-                    This field can be used to attach images and links to the incident event.
+                    This field can be used to automatically attach images and links to the incident
+                    event. This should be a list of dicts. Each dict should follow ONE OF these
+                    formats:
 
-                    .... FIXME not sure what this does either???
+                    Link:
+                        {
+                            'type': 'link',
+                            'href': 'https://streamalert.io/',
+                        }
 
+                    Image embed
+                        {
+                            'type': 'image',
+                            'src': 'https://streamalert.io/en/stable/_images/sa-complete-arch.png',
+                        }
 
                     This is not included in the default implementation.
 
