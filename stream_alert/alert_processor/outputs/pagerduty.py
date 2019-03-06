@@ -570,7 +570,7 @@ class WorkContext(object):
         incident = self._api_client.create_incident(incident_data)
 
         if not incident:
-            LOGGER.error('Could not create main incident, %s', self._output.__service__)
+            LOGGER.error('[%s] Could not create main incident', self._output.__service__)
             return False
 
         # Extract the incident id from the incident that was just created
@@ -587,14 +587,14 @@ class WorkContext(object):
 
         event = self._events_client.enqueue_event(event_data)
         if not event:
-            LOGGER.error('Could not create incident event, %s', self._output.__service__)
+            LOGGER.error('[%s] Could not create incident event', self._output.__service__)
             return False
 
         # Lookup the incident_key returned as dedup_key to get the incident id
         incident_key = event.get('dedup_key')
 
         if not incident_key:
-            LOGGER.error('Could not get incident key, %s', self._output.__service__)
+            LOGGER.error('[%s] Could not get incident key', self._output.__service__)
             return False
 
         # Keep that id to be merged later with the created incident
@@ -607,7 +607,12 @@ class WorkContext(object):
 
         # Add a note to the combined incident to help with triage
         if not merged_incident:
-            LOGGER.error('Could not add note to incident, %s', self._output.__service__)
+            LOGGER.error(
+                '[%s] Failed to merge incident [%s] into [%s]',
+                self._output.__service__,
+                event_incident_id,
+                incident_id
+            )
         else:
             merged_id = merged_incident.get('id')
             self._api_client.add_note(merged_id, incident_note)
