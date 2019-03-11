@@ -1140,3 +1140,99 @@ class TestJsonHttpProvider(object):
         """JsonHttpProvider - Put - Error"""
         self._dispatcher._put_request_retry.side_effect = OutputRequestFailure('?')
         assert_false(self._http.put('http://airbnb.com', {}))
+
+
+class TestWorkContextUnit(object):
+    """This test focuses on testing corner cases instead of top-down.
+
+    This class does not mock out entire requests but rather mocks out behavior on the Work class.
+    """
+
+    def setup(self):
+        incident = {'id': 'ABCDEFGH'}
+        event = {'dedup_key': '000000ppppdpdpdpdpd'}
+        merged_incident = {'id': '12345678'}
+        note = {'id': 'notepaid'}
+        work = WorkContext(
+            MagicMock(
+                spec=OutputDispatcher,
+                __service__='test'
+            ),
+            {
+                'email_from': 'test@test.test',
+                'escalation_policy_id': 'EP123123',
+                'service_id': 'SP123123',
+                'token': 'zzzzzzzzzz',
+                'api': 'https://api.pagerduty.com',
+            }
+        )
+        work.verify_user_exists = MagicMock(return_value=True)
+        work._create_base_incident = MagicMock(return_value=incident)
+        work._create_base_alert_event = MagicMock(return_value=event)
+        work._merge_event_into_incident = MagicMock(return_value=merged_incident)
+        work._add_incident_note = MagicMock(return_value=note)
+        work._add_instability_note = MagicMock(return_value=note)
+
+        self._work = work
+
+    @patch('logging.Logger.error')
+    @patch('stream_alert.alert_processor.outputs.pagerduty.compose_alert')
+    def test_positive_case(self, compose_alert_mock, log_error):
+        """PagerDuty WorkContext - Minimum Positive Case"""
+        publication = {}
+        compose_alert_mock.return_value = publication
+
+        alert = get_alert()
+        result = self._work.run(alert, 'descriptor')
+        assert_true(result)
+
+        log_error.assert_not_called()
+
+    @patch('logging.Logger.error')
+    @patch('stream_alert.alert_processor.outputs.pagerduty.compose_alert')
+    def test_unstable_merge_fail(self, compose_alert_mock, log_error):
+        """PagerDuty WorkContext - Unstable - Merge Failed"""
+        publication = {}
+        compose_alert_mock.return_value = publication
+
+        self._work._merge_event_into_incident = MagicMock(return_value=False)
+
+        alert = get_alert()
+        result = self._work.run(alert, 'descriptor')
+        assert_true(result)
+
+        log_error.assert_called_with(
+            '[%s] Failed to merge alert [%s] into [%s]', 'test', '000000ppppdpdpdpdpd', 'ABCDEFGH'
+        )
+
+    @patch('logging.Logger.error')
+    @patch('stream_alert.alert_processor.outputs.pagerduty.compose_alert')
+    def test_unstable_note_fail(self, compose_alert_mock, log_error):
+        """PagerDuty WorkContext - Unstable - Add Node Failed"""
+        publication = {}
+        compose_alert_mock.return_value = publication
+
+        self._work._add_incident_note = MagicMock(return_value=False)
+
+        alert = get_alert()
+        result = self._work.run(alert, 'descriptor')
+        assert_true(result)
+
+        log_error.assert_called_with(
+            '[%s] Failed to add note to incident (%s)', 'test', 'ABCDEFGH'
+        )
+
+    @patch('logging.Logger.error')
+    @patch('stream_alert.alert_processor.outputs.pagerduty.compose_alert')
+    def test_unstable_adds_instability_note(self, compose_alert_mock, log_error):
+        """PagerDuty WorkContext - Unstable - Add Instability Note"""
+        publication = {}
+        compose_alert_mock.return_value = publication
+
+        self._work._add_incident_note = MagicMock(return_value=False)
+
+        alert = get_alert()
+        result = self._work.run(alert, 'descriptor')
+        assert_true(result)
+
+        self._work._add_instability_note.assert_called_with('ABCDEFGH')

@@ -275,7 +275,6 @@ class PagerDutyOutput(OutputDispatcher):
         return [x for x in contexts if is_valid_context(x)]
 
 
-
 @StreamAlertOutput
 class PagerDutyOutputV2(OutputDispatcher, EventsV2DataProvider):
     """PagerDutyOutput handles all alert dispatching for PagerDuty Events API v2"""
@@ -527,7 +526,7 @@ class WorkContext(object):
         self._events_client = PagerDutyEventsV2ApiClient(http)
 
     def run(self, alert, descriptor):
-        """Sets up an assigned incident
+        """Sets up an assigned incident.
 
         FIXME (derek.wang):
             This work routine is a large, non-atomic set of jobs that can sometimes partially fail.
@@ -547,12 +546,77 @@ class WorkContext(object):
         if rule_context:
             rule_context = rule_context.get(self._output.__service__, {})
 
-        # Presentation defaults
         publication = compose_alert(alert, self._output, descriptor)
-        default_incident_title = 'StreamAlert Incident - Rule triggered: {}'.format(
-            alert.rule_name)
+
+        incident = self._create_base_incident(alert, publication, rule_context)
+        incident_id = incident.get('id')
+        if not incident or not incident_id:
+            LOGGER.error('[%s] Could not create main incident', self._output.__service__)
+            return False
+
+        # Create alert to hold all the incident details
+        event = self._create_base_alert_event(alert, descriptor, rule_context)
+        if not event:
+            LOGGER.error('[%s] Could not create incident event', self._output.__service__)
+            return False
+
+        # FIXME (derek.wang), see above
+        #   At this point, both the incident and the relevant alert event have been successfully
+        #   created. Any further work that fails the dispatch call will cause the alert to retry
+        #   and redundantly create more incidents and alert events.
+        #   Therefore, the hack is to simply let further failures go by always returning True.
+        #   The tradeoff is that incidents can be created on pagerduty in an incomplete state,
+        #   but this is easier to manage than StreamAlert redundantly creating hundreds (or more!)
+        #   redundant alerts.
+        stable = True
+
+        # Merge the incident with the event, so we can have a rich context incident
+        # assigned to a specific person, which the PagerDuty REST API v2 does not allow
+        merged_incident = self._merge_event_into_incident(incident, event)
+        if not merged_incident:
+            LOGGER.error(
+                '[%s] Failed to merge alert [%s] into [%s]',
+                self._output.__service__,
+                event.get('dedup_key'),
+                incident_id
+            )
+            stable = False
+
+        if merged_incident:
+            note = self._add_incident_note(incident, publication, rule_context)
+            if not note:
+                LOGGER.error(
+                    '[%s] Failed to add note to incident (%s)',
+                    self._output.__service__,
+                    incident_id
+                )
+                stable = False
+
+        # If something went wrong, we can't throw an error anymore; log it on the Incident
+        if not stable:
+            self._add_instability_note(incident_id)
+
+        return True
+
+    def _add_instability_note(self, incident_id):
+        instability_note = '''
+StreamAlert failed to correctly setup this incident. Please contact your StreamAlert administrator.
+        '''.strip()
+        self._api_client.add_note(incident_id, instability_note)
+
+    def _create_base_incident(self, alert, publication, rule_context):
+        """Creates a container incident for this alert
+
+        In PagerDuty's REST API design, Incidents are designed to behave like containers for many
+        alerts. Unlike alerts, which must obey service escalation policies, Incidents can be given
+        custom assignments.
+
+        Returns the newly created incident as a JSON dict. Returns False if anything goes wrong.
+        """
+
+        # Presentation defaults
+        default_incident_title = 'StreamAlert Incident - Rule triggered: {}'.format(alert.rule_name)
         default_incident_body = alert.rule_description
-        default_incident_note = 'Creating SOX Incident'  # For reverse compatibility reasons
         default_urgency = 'high'
 
         # Override presentation defaults with publisher fields
@@ -561,13 +625,6 @@ class WorkContext(object):
             default_incident_title
         )
         incident_body = publication.get('@pagerduty-incident.incident_body', default_incident_body)
-        incident_note = publication.get(
-            '@pagerduty-incident.note',
-            rule_context.get(
-                'note',
-                default_incident_note
-            )
-        )
         incident_urgency = publication.get('@pagerduty-incident.urgency', default_urgency)
 
         # FIXME (derek.wang) use publisher to set priority instead of context
@@ -598,18 +655,17 @@ class WorkContext(object):
                 assigned_key: assigned_value
             }
         }
-        incident = self._api_client.create_incident(incident_data)
-        if not incident:
-            LOGGER.error('[%s] Could not create main incident', self._output.__service__)
-            return False
+        return self._api_client.create_incident(incident_data)
 
-        # Extract the incident id from the incident that was just created
-        incident_id = incident.get('id')
-        if not incident_id:
-            LOGGER.error('[%s] Incident missing Id?', self._output.__service__)
-            return False
+    def _create_base_alert_event(self, alert, descriptor, rule_context):
+        """Creates an alert on REST API v2
 
-        # Create alert to hold all the incident details
+        Returns the JSON representation of the ENQUEUE RESPONSE. This actually does not return
+        either the alert nor the incident itself, but rather a small acknowledgement structure
+        containing a "dedup_key". This key can be used to find the incident that is created.
+
+        Returns False if event was not created.
+        """
         with_record = rule_context.get('with_record', True)
         event_data = self._output.events_v2_data(
             alert,
@@ -618,26 +674,24 @@ class WorkContext(object):
             with_record
         )
 
-        event = self._events_client.enqueue_event(event_data)
-        if not event:
-            LOGGER.error('[%s] Could not create incident event', self._output.__service__)
-            return False
+        return self._events_client.enqueue_event(event_data)
 
-        # FIXME (derek.wang), see above
-        #   At this point, both the incident and the relevant alert event have been successfully
-        #   created. Any further work that fails the dispatch call will cause the alert to retry
-        #   and redundantly create more incidents and alert events.
-        #   Therefore, the hack is to simply let further failures go by always returning True.
-        #   The tradeoff is that incidents can be created on pagerduty in an incomplete state,
-        #   but this is easier to manage than StreamAlert redundantly creating hundreds (or more!)
-        #   redundant alerts.
-        stable = True
+    def _merge_event_into_incident(self, incident, event):
+        """Merges the given event into the incident.
+
+        Returns the final, merged incident as a JSON dict. Returns False if anything goes wrong.
+        """
+        # Extract the incident id from the incident that was just created
+        incident_id = incident.get('id')
+        if not incident_id:
+            LOGGER.error('[%s] Incident missing Id?', self._output.__service__)
+            return False
 
         # Lookup the incident_key returned as dedup_key to get the incident id
         incident_key = event.get('dedup_key')
         if not incident_key:
             LOGGER.error('[%s] Event missing dedup_key', self._output.__service__)
-            stable = False
+            return False
 
         # Keep that id to be merged later with the created incident
         event_incident_id = self.get_incident_id_from_event_incident_key(incident_key)
@@ -647,40 +701,34 @@ class WorkContext(object):
                 self._output.__service__,
                 incident_key
             )
-            stable = False
+            return False
 
         # Merge the incident with the event, so we can have a rich context incident
         # assigned to a specific person, which the PagerDuty REST API v2 does not allow
-        merged_incident = self._api_client.merge_incident(incident_id, event_incident_id)
-        if not merged_incident:
-            LOGGER.error(
-                '[%s] Failed to merge incident [%s] into [%s]',
-                self._output.__service__,
-                event_incident_id,
-                incident_id
-            )
-            stable = False
+        return self._api_client.merge_incident(incident_id, event_incident_id)
+
+    def _add_incident_note(self, incident, publication, rule_context):
+        """Adds a note to the incident.
+
+        Returns the newly created note, as a JSON dict. Returns False if anything goes wrong.
+        """
 
         # Add a note to the combined incident to help with triage
-        if merged_incident:
-            merged_id = merged_incident.get('id')
-            note = self._api_client.add_note(merged_id, incident_note)
-            if not note:
-                LOGGER.error(
-                    '[%s] Failed to add note to incident (%s)',
-                    self._output.__service__,
-                    merged_id
-                )
-                stable = False
+        merged_id = incident.get('id')
+        if not merged_id:
+            LOGGER.error('[%s] Merged incident missing Id?', self._output.__service__)
+            return False
 
-        # If something went wrong, we can't throw an error anymore; log it on the Incident
-        if not stable:
-            instability_note = '''
-StreamAlert failed to correctly setup this incident. Please contact your StreamAlert administrator.
-'''.strip()
-            self._api_client.add_note(incident_id, instability_note)
+        default_incident_note = 'Creating SOX Incident'  # For reverse compatibility reasons
+        incident_note = publication.get(
+            '@pagerduty-incident.note',
+            rule_context.get(
+                'note',
+                default_incident_note
+            )
+        )
+        return self._api_client.add_note(merged_id, incident_note)
 
-        return True
 
     @backoff.on_exception(backoff.constant,
                           PagerdutySearchDelay,

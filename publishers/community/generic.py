@@ -28,7 +28,7 @@ def add_record(alert, publication):
 
 
 @Register
-def blank(_, __):
+def blank(*_):
     """Erases all fields on existing publications and returns a blank dict"""
     return {}
 
@@ -73,11 +73,13 @@ def _delete_dictionary_fields(publication, regexp):
 def remove_fields(alert, publication):
     """This publisher deletes fields from the current publication.
 
-    The publisher uses the alert "context" to determine which fields to delete:
+    The publisher uses the alert's context to determine which fields to delete. Example:
 
     context={
       'remove_fields': ['^field1$', '^field2$', ...]
     }
+
+    "remove_fields" should be an array of strings that are valid regular expressions.
 
     The algorithm deeply searches the publication for any dict key that matches the given regular
     expression. Any such key is removed, and if the value is a nested dict, the entire dict
