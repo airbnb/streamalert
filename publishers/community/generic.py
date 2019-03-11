@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from collections import deque, OrderedDict
-
+import re
 from stream_alert.shared.publisher import Register
 from stream_alert.shared.normalize import Normalizer
 
@@ -44,10 +44,7 @@ def remove_internal_fields(_, publication):
     return publication
 
 
-@Register
-def remove_streamalert_normalization(_, publication):
-    """This publisher removes the super heavyweight 'streamalert:normalization' fields"""
-
+def _delete_dictionary_fields(publication, regexp):
     # Python is bad at recursion so I managed to tip toe around that with BFS using a queue.
     # This heavily takes advantage of internal references being maintained properly as the loop
     # does not actually track the "current scope" of the next_item.
@@ -57,8 +54,9 @@ def remove_streamalert_normalization(_, publication):
         next_item = fringe.popleft()
 
         if isinstance(next_item, dict):
-            if Normalizer.NORMALIZATION_KEY in next_item.keys():
-                next_item.pop(Normalizer.NORMALIZATION_KEY, None)
+            for key in next_item.keys():
+                if re.search(regexp, key):
+                    next_item.pop(key, None)
 
             for key, item in next_item.iteritems():
                 fringe.append(item)
@@ -69,6 +67,34 @@ def remove_streamalert_normalization(_, publication):
             pass
 
     return publication
+
+
+@Register
+def remove_fields(alert, publication):
+    """This publisher deletes fields from the current publication.
+
+    The publisher uses the alert "context" to determine which fields to delete:
+
+    context={
+      'remove_fields': ['^field1$', '^field2$', ...]
+    }
+
+    The algorithm deeply searches the publication for any dict key that matches the given regular
+    expression. Any such key is removed, and if the value is a nested dict, the entire dict
+    branch underneath is removed.
+    """
+    fields = alert.context.get('remove_fields', [])
+
+    for field in fields:
+        publication = _delete_dictionary_fields(publication, field)
+
+    return publication
+
+
+@Register
+def remove_streamalert_normalization(_, publication):
+    """This publisher removes the super heavyweight 'streamalert:normalization' fields"""
+    return _delete_dictionary_fields(publication, Normalizer.NORMALIZATION_KEY)
 
 
 @Register

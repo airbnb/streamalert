@@ -318,3 +318,44 @@ class TestEnumerateFields(object):
         ]
 
         assert_equal(publication.keys(), expectation)
+
+
+class TestRemoveFields(object):
+    PUBLISHER_NAME = 'publishers.community.generic.remove_fields'
+
+    def setup(self):
+        self._alert = get_alert(context={
+            'remove_fields': [
+                'streamalert', '^publishers', 'type$',
+                '^outputs$', '^cluster$', '^context$'
+            ]
+        })
+        self._alert.created = datetime(2019, 1, 1)
+        self._alert.publishers = [TestDefaultPublisher.PUBLISHER_NAME, self.PUBLISHER_NAME]
+
+    def test_remove_fields(self):
+        """AlertPublisher - enumerate_fields - enforce alphabetical order"""
+
+        publication = compose_alert(self._alert, None, None)
+
+        expectation = {
+            'staged': False,
+            'source_entity': 'corp-prefix.prod.cb.region',
+            'rule_name': 'cb_binarystore_file_added',
+            'created': '2019-01-01T00:00:00.000000Z',
+            'log_source': 'carbonblack:binarystore.file.added',
+            'source_service': 's3',
+            'id': '79192344-4a6d-4850-8d06-9c3fef1060a4',
+            'rule_description': 'Info about this rule and what actions to take',
+            'record': {
+                'compressed_size': '9982',
+                'timestamp': '1496947381.18',
+                'node_id': '1',
+                'cb_server': 'cbserver',
+                'size': '21504',
+                'file_path': '/tmp/5DA/AD8/0F9AA55DA3BDE84B35656AD8911A22E1.zip',
+                'md5': '0F9AA55DA3BDE84B35656AD8911A22E1'
+            }
+        }
+
+        assert_equal(publication, expectation)
