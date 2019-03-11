@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from collections import deque
+from collections import deque, OrderedDict
 
 from stream_alert.shared.publisher import Register
 from stream_alert.shared.normalize import Normalizer
@@ -76,7 +76,8 @@ def enumerate_fields(_, publication):
     """Flattens all currently published fields.
 
     By default, publications are deeply nested dict structures. This can be very hard to read
-    when rendered in certain outputs. PagerDuty is one example where
+    when rendered in certain outputs. PagerDuty is one example where the default UI does a very
+    poor job rendering nested dicts.
 
     This publisher collapses deeply nested fields into a single-leveled dict with keys that
     correspond to the original path of each value in a deeply nested dict. For example:
@@ -102,15 +103,17 @@ def enumerate_fields(_, publication):
       "top1.mid3.low1: "verylow",
       "top2": "mid"
     }
+
+    The output dict is an OrderedDict with keys sorted in alphabetical order.
     """
-    def enumerate_fields(structure, output_reference, path=''):
+    def _recursive_enumerate_fields(structure, output_reference, path=''):
         if isinstance(structure, list):
             for index, item in enumerate(structure):
-                enumerate_fields(item, output_reference, '{}[{}]'.format(path, index))
+                _recursive_enumerate_fields(item, output_reference, '{}[{}]'.format(path, index))
 
         elif isinstance(structure, dict):
             for key in structure:
-                enumerate_fields(structure[key], output_reference, '{prefix}{key}'.format(
+                _recursive_enumerate_fields(structure[key], output_reference, '{prefix}{key}'.format(
                     prefix='{}.'.format(path) if path else '',  # Omit first period
                     key=key
                 ))
@@ -119,6 +122,6 @@ def enumerate_fields(_, publication):
             output_reference[path] = structure
 
     output = {}
-    enumerate_fields(publication, output)
+    _recursive_enumerate_fields(publication, output)
 
-    return output
+    return OrderedDict(sorted(output.items()))

@@ -280,3 +280,41 @@ class TestEnumerateFields(object):
             'staged': False,
         }
         assert_equal(publication, expectation)
+
+    def test_enumerate_fields_alphabetical_order(self):
+        """AlertPublisher - enumerate_fields - enforce alphabetical order"""
+
+        publication = compose_alert(self._alert, None, None)
+
+        expectation = [
+            'cluster',
+            'context.attribs[0].type',
+            'context.attribs[0].value',
+            'context.attribs[1].type',
+            'context.attribs[1].value',
+            'context.attribs[2].type',
+            'context.attribs[2].value',
+            'context.context1',
+            'created',
+            'id',
+            'log_source',
+            'log_type',
+            'outputs[0]',
+            'publishers[0]',
+            'publishers[1]',
+            'record.cb_server',
+            'record.compressed_size',
+            'record.file_path',
+            'record.md5',
+            'record.node_id',
+            'record.size',
+            'record.timestamp',
+            'record.type',
+            'rule_description',
+            'rule_name',
+            'source_entity',
+            'source_service',
+            'staged',
+        ]
+
+        assert_equal(publication.keys(), expectation)
