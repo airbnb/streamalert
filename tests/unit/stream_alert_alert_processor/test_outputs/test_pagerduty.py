@@ -1222,9 +1222,8 @@ class TestWorkContextUnit(object):
             '[%s] Failed to add note to incident (%s)', 'test', 'ABCDEFGH'
         )
 
-    @patch('logging.Logger.error')
     @patch('stream_alert.alert_processor.outputs.pagerduty.compose_alert')
-    def test_unstable_adds_instability_note(self, compose_alert_mock, log_error):
+    def test_unstable_adds_instability_note(self, compose_alert_mock):
         """PagerDuty WorkContext - Unstable - Add Instability Note"""
         publication = {}
         compose_alert_mock.return_value = publication
