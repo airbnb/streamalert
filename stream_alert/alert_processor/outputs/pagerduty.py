@@ -108,19 +108,24 @@ class EventsV2DataProvider(object):
         return {
             'routing_key': routing_key,
             'event_action': 'trigger',
-            'dedup_key': '',
+
+            # Beware of providing this; when this is provided, even if empty string, this will
+            # cause the dedup_key to be bound to the ALERT, not the incident. The implication
+            # is that the incident will no longer be searchable with incident_key=dedup_key
+            # 'dedup_key': '',
             'payload': {
                 'summary': summary,
                 'source': alert.log_source,
                 'severity': severity,
+                'custom_details': details,
+
                 # When provided, must be in valid ISO 8601 format
                 # 'timestamp': '',
-                'component': '',
-                'group': '',
-                'class': '',
-                'custom_details': details,
-                'images': [],
-                'links': [],
+                # 'component': '',
+                # 'group': '',
+                # 'class': '',
+                # 'images': [],
+                # 'links': [],
             },
             'client': 'StreamAlert'
         }
@@ -455,6 +460,7 @@ class PagerDutyIncidentOutput(OutputDispatcher, EventsV2DataProvider):
             - @pagerduty-incident.incident_title
             - @pagerduty-incident.incident_body
             - @pagerduty-incident.note
+
             - @pagerduty-incident.urgency
 
 
@@ -505,6 +511,18 @@ class WorkContext(object):
         self._events_client = PagerDutyEventsV2ApiClient(http)
 
     def run(self, alert, descriptor):
+        """Sets up an assigned incident
+
+        FIXME:
+            This work routine is a large, non-atomic set of jobs that can sometimes partially fail.
+            Partial failures can have side effects on PagerDuty, including the creation of
+            incomplete or partially complete alerts. Because the Alert Processor will automatically
+            retry the entire routine from scratch, this can cause partial alerts to get created
+            redundantly forever. The temporary solution is to delete the erroneous record from
+            DynamoDB manually, but in the future we should consider writing back state into the
+            DynamoDB alert record to track the steps involved in "fulfilling" the dispatch of this
+            alert.
+        """
         if not self.verify_user_exists():
             return False
 
@@ -568,13 +586,15 @@ class WorkContext(object):
         }
 
         incident = self._api_client.create_incident(incident_data)
-
         if not incident:
             LOGGER.error('[%s] Could not create main incident', self._output.__service__)
             return False
 
         # Extract the incident id from the incident that was just created
         incident_id = incident.get('id')
+        if not incident_id:
+            LOGGER.error('[%s] Incident missing Id?', self._output.__service__)
+            return False
 
         # Create alert to hold all the incident details
         with_record = rule_context.get('with_record', True)
@@ -592,20 +612,18 @@ class WorkContext(object):
 
         # Lookup the incident_key returned as dedup_key to get the incident id
         incident_key = event.get('dedup_key')
-
         if not incident_key:
-            LOGGER.error('[%s] Could not get incident key', self._output.__service__)
+            LOGGER.error('[%s] Event missing dedup_key', self._output.__service__)
             return False
 
         # Keep that id to be merged later with the created incident
         event_incident_id = self.get_incident_id_from_event_incident_key(incident_key)
+        if not event_incident_id:
+            LOGGER.error('[%s] Failed to retrieve Event Incident Id from dedup_key', incident_key)
 
         # Merge the incident with the event, so we can have a rich context incident
         # assigned to a specific person, which the PagerDuty REST API v2 does not allow
-
         merged_incident = self._api_client.merge_incident(incident_id, event_incident_id)
-
-        # Add a note to the combined incident to help with triage
         if not merged_incident:
             LOGGER.error(
                 '[%s] Failed to merge incident [%s] into [%s]',
@@ -613,9 +631,11 @@ class WorkContext(object):
                 event_incident_id,
                 incident_id
             )
-        else:
-            merged_id = merged_incident.get('id')
-            self._api_client.add_note(merged_id, incident_note)
+            return False
+
+        # Add a note to the combined incident to help with triage
+        merged_id = merged_incident.get('id')
+        self._api_client.add_note(merged_id, incident_note)
 
         return True
 
@@ -849,7 +869,7 @@ class PagerDutyRestApiClient(SslVerifiable):
         incidents = self._http_provider.get(
             self._get_incidents_url(),
             {
-                'query': incident_key
+                'incident_key': incident_key  # Beware: this key is intentionally not "query"
             },
             headers=self._construct_headers(),
             verify=self._should_do_ssl_verify()

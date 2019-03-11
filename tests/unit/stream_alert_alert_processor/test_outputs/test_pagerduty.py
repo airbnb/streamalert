@@ -165,11 +165,10 @@ class TestPagerDutyOutputV2(object):
                         ]
                     ),
                     'source': 'carbonblack:binarystore.file.added',
-                    'group': '', 'severity': 'critical', 'links': [], 'images': [],
-                    'component': '', 'class': '',
+                    'severity': 'critical',
                     'summary': 'StreamAlert Rule Triggered - cb_binarystore_file_added'
                 },
-                'routing_key': 'mocked_routing_key', 'dedup_key': ''
+                'routing_key': 'mocked_routing_key',
             },
             timeout=3.05, verify=True
         )
@@ -358,12 +357,10 @@ class TestPagerDutyIncidentOutput(object):
                         ]
                     ),
                     'source': 'carbonblack:binarystore.file.added',
-                    'group': '', 'severity': 'critical', 'links': [], 'images': [],
-                    'component': '', 'class': '',
+                    'severity': 'critical',
                     'summary': 'StreamAlert Rule Triggered - cb_binarystore_file_added'
                 },
                 'routing_key': 'mocked_key',
-                'dedup_key': ''
             },
             timeout=3.05, verify=True
         )
