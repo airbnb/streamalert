@@ -354,7 +354,9 @@ class PagerDutyIncidentOutput(OutputDispatcher, EventsV2DataProvider):
     assignment of the incident, based upon context parameters.
 
     context = {
-      'assigned_user': 'somebody@somewhere.somewhere'
+      'assigned_user': 'somebody@somewhere.somewhere',
+      'with_record': True|False,
+      'note': 'String goes here'
     }
     """
     __service__ = 'pagerduty-incident'
@@ -446,7 +448,7 @@ class PagerDutyIncidentOutput(OutputDispatcher, EventsV2DataProvider):
         ])
 
     def _dispatch(self, alert, descriptor):
-        """Send incident to Pagerduty Incidents API v2
+        """Send incident to Pagerduty Incidents REST API v2
 
         Context:
 
@@ -454,14 +456,28 @@ class PagerDutyIncidentOutput(OutputDispatcher, EventsV2DataProvider):
             - note (bool):
 
         Publishing:
-            This output has a complex workflow.
+            This output has a more complex workflow. The magic publisher fields for @pagerduty-v2
+            ALSO are respected by this output.
 
+            - @pagerduty-incident.incident_title (str):
+                    The provided string will override the PARENT INCIDENT's title. The child Alert's
+                    title is controlled by other publisher magic fields.
 
-            - @pagerduty-incident.incident_title
-            - @pagerduty-incident.incident_body
-            - @pagerduty-incident.note
+            - @pagerduty-incident.incident_body (str):
+                    This is text that shows up in the body of the newly created incident.
 
-            - @pagerduty-incident.urgency
+                    (!) NOTE: Due to the way incidents are merged, this text is almost never
+                              displayed properly on PagerDuty's UI. The only instance where it
+                              shows up correctly is when incident merging fails and the newly
+                              created incident does not have an alert attached to it.
+
+            - @pagerduty-incident.note (str):
+                    Due to legacy reasons, this PagerDuty services adds a note containing
+                    "Creating SOX Incident" to the final PagerDuty incident. Providing a string
+                    to this magic field will override that behavior.
+
+            - @pagerduty-incident.urgency (str):
+                    Either "low" or "high". By default urgency is "high" for all incidents.
 
 
             In addition, the final event that is merged into the parent incident can be customized
@@ -513,7 +529,7 @@ class WorkContext(object):
     def run(self, alert, descriptor):
         """Sets up an assigned incident
 
-        FIXME:
+        FIXME (derek.wang):
             This work routine is a large, non-atomic set of jobs that can sometimes partially fail.
             Partial failures can have side effects on PagerDuty, including the creation of
             incomplete or partially complete alerts. Because the Alert Processor will automatically
@@ -527,13 +543,12 @@ class WorkContext(object):
             return False
 
         # Extracting context data to assign the incident
-        publication = compose_alert(alert, self._output, descriptor)
-
         rule_context = alert.context
         if rule_context:
             rule_context = rule_context.get(self._output.__service__, {})
 
         # Presentation defaults
+        publication = compose_alert(alert, self._output, descriptor)
         default_incident_title = 'StreamAlert Incident - Rule triggered: {}'.format(
             alert.rule_name)
         default_incident_body = alert.rule_description
@@ -562,7 +577,6 @@ class WorkContext(object):
         # FIXME (derek.wang) use publisher to set priority instead of context
         assigned_key, assigned_value = self.get_incident_assignment(rule_context)
 
-        # Using the service ID for the PagerDuty API
         # https://api-reference.pagerduty.com/#!/Incidents/post_incidents
         incident_data = {
             'incident': {
@@ -584,7 +598,6 @@ class WorkContext(object):
                 assigned_key: assigned_value
             }
         }
-
         incident = self._api_client.create_incident(incident_data)
         if not incident:
             LOGGER.error('[%s] Could not create main incident', self._output.__service__)
@@ -610,16 +623,31 @@ class WorkContext(object):
             LOGGER.error('[%s] Could not create incident event', self._output.__service__)
             return False
 
+        # FIXME (derek.wang), see above
+        #   At this point, both the incident and the relevant alert event have been successfully
+        #   created. Any further work that fails the dispatch call will cause the alert to retry
+        #   and redundantly create more incidents and alert events.
+        #   Therefore, the hack is to simply let further failures go by always returning True.
+        #   The tradeoff is that incidents can be created on pagerduty in an incomplete state,
+        #   but this is easier to manage than StreamAlert redundantly creating hundreds (or more!)
+        #   redundant alerts.
+        stable = True
+
         # Lookup the incident_key returned as dedup_key to get the incident id
         incident_key = event.get('dedup_key')
         if not incident_key:
             LOGGER.error('[%s] Event missing dedup_key', self._output.__service__)
-            return False
+            stable = False
 
         # Keep that id to be merged later with the created incident
         event_incident_id = self.get_incident_id_from_event_incident_key(incident_key)
         if not event_incident_id:
-            LOGGER.error('[%s] Failed to retrieve Event Incident Id from dedup_key', incident_key)
+            LOGGER.error(
+                '[%s] Failed to retrieve Event Incident Id from dedup_key (%s)',
+                self._output.__service__,
+                incident_key
+            )
+            stable = False
 
         # Merge the incident with the event, so we can have a rich context incident
         # assigned to a specific person, which the PagerDuty REST API v2 does not allow
@@ -631,11 +659,26 @@ class WorkContext(object):
                 event_incident_id,
                 incident_id
             )
-            return False
+            stable = False
 
         # Add a note to the combined incident to help with triage
-        merged_id = merged_incident.get('id')
-        self._api_client.add_note(merged_id, incident_note)
+        if merged_incident:
+            merged_id = merged_incident.get('id')
+            note = self._api_client.add_note(merged_id, incident_note)
+            if not note:
+                LOGGER.error(
+                    '[%s] Failed to add note to incident (%s)',
+                    self._output.__service__,
+                    merged_id
+                )
+                stable = False
+
+        # If something went wrong, we can't throw an error anymore; log it on the Incident
+        if not stable:
+            instability_note = '''
+StreamAlert failed to correctly setup this incident. Please contact your StreamAlert administrator.
+'''.strip()
+            self._api_client.add_note(incident_id, instability_note)
 
         return True
 
@@ -653,6 +696,9 @@ class WorkContext(object):
         but only an incident_key is returned, which is not the same as the incident's REST API
         resource id.
         """
+        if not incident_key:
+            return False
+
         event_incident = self._api_client.get_incident_by_key(incident_key)
         if not event_incident:
             raise PagerdutySearchDelay('Received no PagerDuty response')

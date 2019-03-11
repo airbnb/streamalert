@@ -624,9 +624,10 @@ class TestPagerDutyIncidentOutput(object):
         post_mock.return_value.status_code = 200
         json_incident = {'incident': {'id': 'incident_id'}}
         json_event = {'dedup_key': 'returned_dedup_key'}
-        post_mock.return_value.json.side_effect = [json_incident, json_event]
+        json_note = {'note': {'aa'}}
+        post_mock.return_value.json.side_effect = [json_incident, json_event, json_note]
 
-        # PUT /incidents/indicent_id/merge
+        # PUT /incidents/{incident_id}/merge
         put_mock.return_value.status_code = 200
         put_mock.return_value.json.return_value = {}
 
