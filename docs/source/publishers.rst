@@ -69,12 +69,10 @@ doing in-place modifications of the publications, and should prefer to copy-and-
 
   @Register
   def sample_publisher(alert, publication):
-    new_publication = deepcopy(publication)
+    publication['new_field'] = 'new_value']
+    publication.pop('old_field', None)
 
-    new_publication['new_field'] = 'new_value']
-    new_publication.pop('old_field', None)
-
-    return new_publication
+    return publication
 
 
 Preparing Outputs
@@ -119,7 +117,7 @@ should offer a default implementation:
 **Custom fields**
 
 Outputs can be implemented to offer custom fields that can be filled in by Publishers. This (optionally)
-grants fine-grained control of outputs to Publishers. Such fields should follow the following conventions:
+grants fine-grained control of outputs to Publishers. Such fields should adhere to the following conventions:
 
 * They are top level keys on the final publication dictionary
 * Keys are strings, following the format: ``@{output_service}.{field_name}``
@@ -160,7 +158,7 @@ fields directly:
 Registering Publishers
 ----------------------
 
-Register publishers on a rule using the ``publisher`` argument on the ``@rule`` annotation:
+Register publishers on a rule using the ``publisher`` argument on the ``@rule`` decorator:
 
 .. code-block:: python
 
@@ -264,7 +262,7 @@ integration, leaving the Slack integration the same. Registering the publisher c
 
 .. code-block:: python
 
-  from publishers.pageduty import simplify_pagerduty_output
+  from publishers.pagerduty import simplify_pagerduty_output
   from stream_alert.shared.rule import Rule
 
   @rule(
