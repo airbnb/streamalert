@@ -148,28 +148,13 @@ class SlackOutput(OutputDispatcher):
         return attachments
 
     @classmethod
-    def _standardize_custom_attachments(cls, custom_slack_attachments):
-        """Supplies default fields to given attachments and validates their structure.
+    def _get_attachment_skeleton(cls):
+        """Returns a skeleton for a Slack attachment containing various default values.
 
-        You can test out custom attachments using this tool:
-          https://api.slack.com/docs/messages/builder
-
-        When publishers provider custom slack attachments to the SlackOutput, it offers increased
-        flexibility, but requires more work. Publishers need to pay attention to the following:
-
-        - Slack requires escaping the characters: '&', '>' and '<'
-        - Slack messages have a limit of 4000 characters
-        - Individual slack messages support a maximum of 20 attachments
-
-
-        Args:
-            custom_slack_attachments (list): A list of dicts that is provided by the publisher.
-
-        Returns:
-            list: The value to the "attachments" Slack API argument
+        Return:
+             dict
         """
-
-        attachment_skeleton = {
+        return {
             # String
             # Plaintext summary of the attachment; renders in non-markdown compliant clients,
             # such as push notifications.
@@ -257,10 +242,32 @@ class SlackOutput(OutputDispatcher):
             ],
         }
 
+    @classmethod
+    def _standardize_custom_attachments(cls, custom_slack_attachments):
+        """Supplies default fields to given attachments and validates their structure.
+
+        You can test out custom attachments using this tool:
+          https://api.slack.com/docs/messages/builder
+
+        When publishers provider custom slack attachments to the SlackOutput, it offers increased
+        flexibility, but requires more work. Publishers need to pay attention to the following:
+
+        - Slack requires escaping the characters: '&', '>' and '<'
+        - Slack messages have a limit of 4000 characters
+        - Individual slack messages support a maximum of 20 attachments
+
+
+        Args:
+            custom_slack_attachments (list): A list of dicts that is provided by the publisher.
+
+        Returns:
+            list: The value to the "attachments" Slack API argument
+        """
+
         attachments = []
 
         for custom_slack_attachment in custom_slack_attachments:
-            attachment = attachment_skeleton.copy()
+            attachment = cls._get_attachment_skeleton()
             attachment.update(custom_slack_attachment)
 
             # Enforce maximum text length; make sure to check size AFTER escaping in case

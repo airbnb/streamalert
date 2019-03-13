@@ -25,7 +25,7 @@ def add_record(alert, publication):
 
 
 @Register
-def blank(_, __):
+def blank(*_):
     """Erases all fields on existing publications and returns a blank dict"""
     return {}
 
