@@ -19,6 +19,7 @@ from datetime import datetime
 from mock import MagicMock
 from nose.tools import assert_equal
 
+from publishers.community.generic import _delete_dictionary_fields
 from stream_alert.alert_processor.helpers import compose_alert
 from stream_alert.alert_processor.outputs.output_base import OutputDispatcher
 from tests.unit.stream_alert_alert_processor.helpers import get_alert
@@ -166,4 +167,240 @@ class TestRemoveInternalFieldsPublisher(object):
             'log_type': 'json',
             'rule_description': 'Info about this rule and what actions to take'
         }
+        assert_equal(publication, expectation)
+
+
+class TestRemoveStreamAlertNormalizationFields(object):
+    PUBLISHER_NAME = 'publishers.community.generic.remove_streamalert_normalization'
+
+    def setup(self):
+        self._alert = get_alert(context={'context': 'value'})
+        self._alert.created = datetime(2019, 1, 1)
+        self._alert.record['added_fields'] = {
+            'streamalert': {
+                'yay': 'no',
+            },
+            'oof': [
+                {
+                    'streamalert:normalization': '/////',
+                    'other': 'key'
+                }
+            ],
+            'streamalert:normalization': {
+                'bunch of stuff': 'that does not belong'
+            },
+        }
+        self._alert.publishers = [TestDefaultPublisher.PUBLISHER_NAME, self.PUBLISHER_NAME]
+
+    def test_works(self):
+        """AlertPublisher - FilterFields - Nothing"""
+        publication = compose_alert(self._alert, None, None)
+
+        expectation = {
+            'staged': False,
+            'publishers': [
+                'stream_alert.shared.publisher.DefaultPublisher',
+                'publishers.community.generic.remove_streamalert_normalization'
+            ],
+            'source_entity': 'corp-prefix.prod.cb.region',
+            'rule_name': 'cb_binarystore_file_added',
+            'outputs': ['slack:unit_test_channel'],
+            'created': '2019-01-01T00:00:00.000000Z',
+            'log_source': 'carbonblack:binarystore.file.added',
+            'log_type': 'json', 'cluster': '',
+            'context': {'context': 'value'},
+            'source_service': 's3',
+            'id': '79192344-4a6d-4850-8d06-9c3fef1060a4',
+            'rule_description': 'Info about this rule and what actions to take',
+            'record': {
+                'compressed_size': '9982',
+                'added_fields': {
+                    'streamalert': {'yay': 'no'},
+                    'oof': [{'other': 'key'}],
+                },
+                'timestamp': '1496947381.18',
+                'node_id': '1',
+                'cb_server': 'cbserver',
+                'size': '21504',
+                'type': 'binarystore.file.added',
+                'file_path': '/tmp/5DA/AD8/0F9AA55DA3BDE84B35656AD8911A22E1.zip',
+                'md5': '0F9AA55DA3BDE84B35656AD8911A22E1'
+            }
+        }
+        assert_equal(publication, expectation)
+
+
+class TestEnumerateFields(object):
+    PUBLISHER_NAME = 'publishers.community.generic.enumerate_fields'
+
+    def setup(self):
+        self._alert = get_alert(context={
+            'context1': 'value',
+            'attribs': [
+                {'type': 'Name', 'value': 'Bob'},
+                {'type': 'Age', 'value': '42'},
+                {'type': 'Profession', 'value': 'Software engineer'},
+            ]
+        })
+        self._alert.created = datetime(2019, 1, 1)
+        self._alert.publishers = [TestDefaultPublisher.PUBLISHER_NAME, self.PUBLISHER_NAME]
+
+    def test_enumerate_fields(self):
+        """AlertPublisher - enumerate_fields"""
+
+        publication = compose_alert(self._alert, None, None)
+
+        expectation = {
+            'cluster': '',
+            'context.context1': 'value',
+            'context.attribs[0].type': 'Name',
+            'context.attribs[0].value': 'Bob',
+            'context.attribs[1].type': 'Age',
+            'context.attribs[1].value': '42',
+            'context.attribs[2].value': 'Software engineer',
+            'context.attribs[2].type': 'Profession',
+            'created': '2019-01-01T00:00:00.000000Z',
+            'id': '79192344-4a6d-4850-8d06-9c3fef1060a4',
+            'log_source': 'carbonblack:binarystore.file.added',
+            'log_type': 'json',
+            'outputs[0]': 'slack:unit_test_channel',
+            'publishers[0]': 'stream_alert.shared.publisher.DefaultPublisher',
+            'publishers[1]': 'publishers.community.generic.enumerate_fields',
+            'record.timestamp': '1496947381.18',
+            'record.compressed_size': '9982',
+            'record.cb_server': 'cbserver',
+            'record.file_path': '/tmp/5DA/AD8/0F9AA55DA3BDE84B35656AD8911A22E1.zip',
+            'record.md5': '0F9AA55DA3BDE84B35656AD8911A22E1',
+            'record.node_id': '1',
+            'record.size': '21504',
+            'record.type': 'binarystore.file.added',
+            'rule_description': 'Info about this rule and what actions to take',
+            'rule_name': 'cb_binarystore_file_added',
+            'source_entity': 'corp-prefix.prod.cb.region',
+            'source_service': 's3',
+            'staged': False,
+        }
+        assert_equal(publication, expectation)
+
+    def test_enumerate_fields_alphabetical_order(self):
+        """AlertPublisher - enumerate_fields - enforce alphabetical order"""
+
+        publication = compose_alert(self._alert, None, None)
+
+        expectation = [
+            'cluster',
+            'context.attribs[0].type',
+            'context.attribs[0].value',
+            'context.attribs[1].type',
+            'context.attribs[1].value',
+            'context.attribs[2].type',
+            'context.attribs[2].value',
+            'context.context1',
+            'created',
+            'id',
+            'log_source',
+            'log_type',
+            'outputs[0]',
+            'publishers[0]',
+            'publishers[1]',
+            'record.cb_server',
+            'record.compressed_size',
+            'record.file_path',
+            'record.md5',
+            'record.node_id',
+            'record.size',
+            'record.timestamp',
+            'record.type',
+            'rule_description',
+            'rule_name',
+            'source_entity',
+            'source_service',
+            'staged',
+        ]
+
+        assert_equal(publication.keys(), expectation)
+
+
+def test_delete_dictionary_fields():
+    """Generic - _delete_dictionary_fields"""
+    pub = {
+        'level1-1': {
+            'level2-1': [
+                {
+                    'level3-1': 'level4',
+                    'level3-2': 'level4',
+                }
+            ],
+            'level2-2': {
+                'level3': 'level4',
+            }
+        },
+        'level1-2': [
+            {
+                'thereisno': 'spoon'
+            }
+        ]
+    }
+
+    result = _delete_dictionary_fields(pub, '^level3-1$')
+
+    expectation = {
+        'level1-1': {
+            'level2-1': [
+                {
+                    'level3-2': 'level4',
+                }
+            ],
+            'level2-2': {
+                'level3': 'level4',
+            }
+        },
+        'level1-2': [
+            {
+                'thereisno': 'spoon'
+            }
+        ]
+    }
+
+    assert_equal(result, expectation)
+
+
+class TestRemoveFields(object):
+    PUBLISHER_NAME = 'publishers.community.generic.remove_fields'
+
+    def setup(self):
+        self._alert = get_alert(context={
+            'remove_fields': [
+                'streamalert', '^publishers', 'type$',
+                '^outputs$', '^cluster$', '^context$'
+            ]
+        })
+        self._alert.created = datetime(2019, 1, 1)
+        self._alert.publishers = [TestDefaultPublisher.PUBLISHER_NAME, self.PUBLISHER_NAME]
+
+    def test_remove_fields(self):
+        """AlertPublisher - enumerate_fields - enforce alphabetical order"""
+
+        publication = compose_alert(self._alert, None, None)
+
+        expectation = {
+            'staged': False,
+            'source_entity': 'corp-prefix.prod.cb.region',
+            'rule_name': 'cb_binarystore_file_added',
+            'created': '2019-01-01T00:00:00.000000Z',
+            'log_source': 'carbonblack:binarystore.file.added',
+            'source_service': 's3',
+            'id': '79192344-4a6d-4850-8d06-9c3fef1060a4',
+            'rule_description': 'Info about this rule and what actions to take',
+            'record': {
+                'compressed_size': '9982',
+                'timestamp': '1496947381.18',
+                'node_id': '1',
+                'cb_server': 'cbserver',
+                'size': '21504',
+                'file_path': '/tmp/5DA/AD8/0F9AA55DA3BDE84B35656AD8911A22E1.zip',
+                'md5': '0F9AA55DA3BDE84B35656AD8911A22E1'
+            }
+        }
+
         assert_equal(publication, expectation)
