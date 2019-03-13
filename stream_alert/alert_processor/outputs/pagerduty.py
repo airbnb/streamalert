@@ -39,7 +39,7 @@ SEVERITY_CRITICAL = 'critical'
 SEVERITY_ERROR = 'error'
 SEVERITY_WARNING = 'warning'
 SEVERITY_INFO = 'info'
-SEVERITY_UNKNOWN = ''
+SEVERITY_UNKNOWN = 'unknown'  # empty string and any string not in the above defaults to "unknown"
 
 
 class PagerdutySearchDelay(Exception):
@@ -78,7 +78,6 @@ class EventsV2DataProvider(object):
                     By default the severity of alerts are "critical". You can override this with
                     any of the following:
                     'info', 'warning', 'error', 'critical'
-
 
         Args:
             descriptor (str): The descriptor of the output sending these data

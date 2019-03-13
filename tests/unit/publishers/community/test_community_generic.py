@@ -19,6 +19,7 @@ from datetime import datetime
 from mock import MagicMock
 from nose.tools import assert_equal
 
+from publishers.community.generic import _delete_dictionary_fields
 from stream_alert.alert_processor.helpers import compose_alert
 from stream_alert.alert_processor.outputs.output_base import OutputDispatcher
 from tests.unit.stream_alert_alert_processor.helpers import get_alert
@@ -318,6 +319,50 @@ class TestEnumerateFields(object):
         ]
 
         assert_equal(publication.keys(), expectation)
+
+
+def test_delete_dictionary_fields():
+    """Generic - _delete_dictionary_fields"""
+    pub = {
+        'level1-1': {
+            'level2-1': [
+                {
+                    'level3-1': 'level4',
+                    'level3-2': 'level4',
+                }
+            ],
+            'level2-2': {
+                'level3': 'level4',
+            }
+        },
+        'level1-2': [
+            {
+                'thereisno': 'spoon'
+            }
+        ]
+    }
+
+    result = _delete_dictionary_fields(pub, '^level3-1$')
+
+    expectation = {
+        'level1-1': {
+            'level2-1': [
+                {
+                    'level3-2': 'level4',
+                }
+            ],
+            'level2-2': {
+                'level3': 'level4',
+            }
+        },
+        'level1-2': [
+            {
+                'thereisno': 'spoon'
+            }
+        ]
+    }
+
+    assert_equal(result, expectation)
 
 
 class TestRemoveFields(object):

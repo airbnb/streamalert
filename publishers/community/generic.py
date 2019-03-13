@@ -45,6 +45,16 @@ def remove_internal_fields(_, publication):
 
 
 def _delete_dictionary_fields(publication, regexp):
+    """Deeply destroys all nested dict keys matching the given regexp string
+
+    Args:
+        publication (dict): A publication
+        regexp (str): A String that is valid regexp
+
+    Returns:
+        dict
+        (!) warning, will modify the original publication
+    """
     # Python is bad at recursion so I managed to tip toe around that with BFS using a queue.
     # This heavily takes advantage of internal references being maintained properly as the loop
     # does not actually track the "current scope" of the next_item.
