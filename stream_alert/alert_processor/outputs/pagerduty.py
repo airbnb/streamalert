@@ -657,7 +657,7 @@ StreamAlert failed to correctly setup this incident. Please contact your StreamA
             if incident_urgency in ['low', 'high']:
                 incident_urgency['incident']['urgency'] = incident_urgency
             else:
-                LOGGER.error(
+                LOGGER.warn(
                     '[%s] Invalid pagerduty incident urgency: "%s"',
                     self._output.__service__,
                     incident_urgency
