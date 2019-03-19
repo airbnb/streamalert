@@ -300,7 +300,6 @@ class TestPagerDutyIncidentOutput(object):
                         }
                     ],
                     'type': 'incident',
-                    'urgency': 'high',
                     'incident_key': '',
                 }
             },
@@ -457,7 +456,7 @@ class TestPagerDutyIncidentOutput(object):
         json_note = {'note': {'id': 'note_id'}}
         post_mock.return_value.json.side_effect = [json_incident, json_event, json_note]
 
-        # PUT /incidents/indicent_id/merge
+        # PUT /incidents/{incident_id}/merge
         put_mock.return_value.status_code = 200
 
         ctx = {'pagerduty-incident': {'assigned_policy_id': 'valid_policy_id'}}
@@ -518,6 +517,127 @@ class TestPagerDutyIncidentOutput(object):
             'pagerduty-incident': {
                 'assigned_policy_id': 'valid_policy_id',
                 'incident_priority': 'priority_name'
+            }
+        }
+
+        assert_true(self._dispatcher.dispatch(get_alert(context=ctx), self.OUTPUT))
+
+        log_mock.assert_called_with('Successfully sent alert to %s:%s',
+                                    self.SERVICE, self.DESCRIPTOR)
+
+    @patch('logging.Logger.info')
+    @patch('requests.put')
+    @patch('requests.post')
+    @patch('requests.get')
+    def test_dispatch_success_with_note(self, get_mock, post_mock, put_mock, log_mock):
+        """PagerDutyIncidentOutput - Dispatch Success With Note"""
+        # GET /priorities, /users
+        json_user = {'users': [{'id': 'user_id'}]}
+        json_lookup = {'incidents': [{'id': 'incident_id'}]}
+
+        def setup_post_mock(mock, json_incident, json_event, json_note):
+            def post(*args, **_):
+                url = args[0]
+                if url == 'https://api.pagerduty.com/incidents':
+                    response = json_incident
+                elif url == 'https://events.pagerduty.com/v2/enqueue':
+                    response = json_event
+                elif (
+                        url.startswith('https://api.pagerduty.com/incidents/') and
+                        url.endswith('/notes')
+                ):
+                    response = json_note
+                else:
+                    raise RuntimeError('Misconfigured mock: {}'.format(url))
+
+                _mock = MagicMock()
+                _mock.status_code = 200
+                _mock.json.return_value = response
+                return _mock
+
+            mock.side_effect = post
+
+        get_mock.return_value.status_code = 200
+        get_mock.return_value.json.side_effect = [json_user, json_lookup]
+
+        # POST /incidents, /v2/enqueue, /incidents/{incident_id}/notes
+        json_incident = {'incident': {'id': 'incident_id'}}
+        json_event = {'dedup_key': 'returned_dedup_key'}
+        json_note = {'note': {'id': 'note_id'}}
+        setup_post_mock(post_mock, json_incident, json_event, json_note)
+
+        # PUT /incidents/{incident_id}/merge
+        put_mock.return_value.status_code = 200
+
+        ctx = {
+            'pagerduty-incident': {
+                'note': 'This is just a note'
+            }
+        }
+
+        assert_true(self._dispatcher.dispatch(get_alert(context=ctx), self.OUTPUT))
+
+        # post_mock.assert_has_calls([call()])
+        post_mock.assert_any_call(
+            'https://api.pagerduty.com/incidents/incident_id/notes',
+            headers={'From': 'email@domain.com',
+                     'Content-Type': 'application/json',
+                     'Authorization': 'Token token=mocked_token',
+                     'Accept': 'application/vnd.pagerduty+json;version=2'},
+            json={'note': {'content': 'This is just a note'}},
+            timeout=3.05, verify=False
+        )
+
+        log_mock.assert_called_with('Successfully sent alert to %s:%s',
+                                    self.SERVICE, self.DESCRIPTOR)
+
+    @patch('logging.Logger.info')
+    @patch('requests.put')
+    @patch('requests.post')
+    @patch('requests.get')
+    def test_dispatch_success_none_note(self, get_mock, post_mock, put_mock, log_mock):
+        """PagerDutyIncidentOutput - Dispatch Success With No Note"""
+        # GET /priorities, /users
+        json_user = {'users': [{'id': 'user_id'}]}
+        json_lookup = {'incidents': [{'id': 'incident_id'}]}
+
+        def setup_post_mock(mock, json_incident, json_event):
+            def post(*args, **_):
+                url = args[0]
+                if url == 'https://api.pagerduty.com/incidents':
+                    response = json_incident
+                elif url == 'https://events.pagerduty.com/v2/enqueue':
+                    response = json_event
+                elif (
+                        url.startswith('https://api.pagerduty.com/incidents/') and
+                        url.endswith('/notes')
+                ):
+                    # assert the /notes endpoint is never called
+                    raise RuntimeError('This endpoint is not intended to be called')
+                else:
+                    raise RuntimeError('Misconfigured mock: {}'.format(url))
+
+                _mock = MagicMock()
+                _mock.status_code = 200
+                _mock.json.return_value = response
+                return _mock
+
+            mock.side_effect = post
+
+        get_mock.return_value.status_code = 200
+        get_mock.return_value.json.side_effect = [json_user, json_lookup]
+
+        # POST /incidents, /v2/enqueue, /incidents/{incident_id}/notes
+        json_incident = {'incident': {'id': 'incident_id'}}
+        json_event = {'dedup_key': 'returned_dedup_key'}
+        setup_post_mock(post_mock, json_incident, json_event)
+
+        # PUT /incidents/{incident_id}/merge
+        put_mock.return_value.status_code = 200
+
+        ctx = {
+            'pagerduty-incident': {
+                'note': None
             }
         }
 

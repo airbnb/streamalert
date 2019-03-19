@@ -616,7 +616,7 @@ StreamAlert failed to correctly setup this incident. Please contact your StreamA
         # Presentation defaults
         default_incident_title = 'StreamAlert Incident - Rule triggered: {}'.format(alert.rule_name)
         default_incident_body = alert.rule_description
-        default_urgency = 'high'
+        default_urgency = None  # Assumes the default urgency on the service referenced
 
         # Override presentation defaults with publisher fields
         incident_title = publication.get(
@@ -643,9 +643,6 @@ StreamAlert failed to correctly setup this incident. Please contact your StreamA
                     'type': 'service_reference'
                 },
                 'priority': incident_priority,
-
-                # Urgency, if provided, must always be 'high' or 'low' or the API will error
-                'urgency': incident_urgency,
                 'incident_key': '',
                 'body': {
                     'type': 'incident_body',
@@ -654,6 +651,18 @@ StreamAlert failed to correctly setup this incident. Please contact your StreamA
                 assigned_key: assigned_value
             }
         }
+
+        # Urgency, if provided, must always be 'high' or 'low' or the API will error
+        if incident_urgency:
+            if incident_urgency in ['low', 'high']:
+                incident_urgency['incident']['urgency'] = incident_urgency
+            else:
+                LOGGER.error(
+                    '[%s] Invalid pagerduty incident urgency: "%s"',
+                    self._output.__service__,
+                    incident_urgency
+                )
+
         return self._api_client.create_incident(incident_data)
 
     def _create_base_alert_event(self, alert, descriptor, rule_context):
@@ -707,9 +716,10 @@ StreamAlert failed to correctly setup this incident. Please contact your StreamA
         return self._api_client.merge_incident(incident_id, event_incident_id)
 
     def _add_incident_note(self, incident, publication, rule_context):
-        """Adds a note to the incident.
+        """Adds a note to the incident, when applicable.
 
-        Returns the newly created note, as a JSON dict. Returns False if anything goes wrong.
+        Returns:
+            bool: True if the note was created or no note needed to be created, False on error.
         """
 
         # Add a note to the combined incident to help with triage
@@ -726,7 +736,12 @@ StreamAlert failed to correctly setup this incident. Please contact your StreamA
                 default_incident_note
             )
         )
-        return self._api_client.add_note(merged_id, incident_note)
+
+        if not incident_note:
+            # Simply return early without adding a note; no need to add a blank one
+            return True
+
+        return bool(self._api_client.add_note(merged_id, incident_note))
 
 
     @backoff.on_exception(backoff.constant,
@@ -767,7 +782,7 @@ StreamAlert failed to correctly setup this incident. Please contact your StreamA
         return True
 
     def get_standardized_priority(self, context):
-        """Method to verify the existance of a incident priority with the API
+        """Method to verify the existence of a incident priority with the API
 
         Args:
             context (dict): Context provided in the alert record
@@ -790,8 +805,9 @@ StreamAlert failed to correctly setup this incident. Please contact your StreamA
 
         # If the requested priority is in the list, get the id
         priority_id = next(
-            (item for item in priorities if item["name"] == priority_name), {}).get('id',
-                                                                                    False)
+            (item for item in priorities if item["name"] == priority_name), {}
+        ).get('id', False)
+
         # If the priority id is found, compose the JSON
         if priority_id:
             return {'id': priority_id, 'type': 'priority_reference'}
