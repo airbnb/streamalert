@@ -44,20 +44,39 @@ def compose_alert(alert, output, descriptor):
     Returns:
         dict
     """
+
+    # FIXME (derek.wang)
+    #   this is here because currently the OutputDispatcher sits in a __init__.py module that
+    #   performs eager loading of the other output classes. If you load this helper before
+    #   the output classes are loaded, it creates a cyclical dependency
+    #   helper.py -> output_base.py -> __init__ -> komand.py -> helper.py
+    #   This is a temporary workaround
+    #   A more permanent solution will involve refactoring the OutputDispatcher to load on-demand
+    #   instead of eagerly.
+    from stream_alert.alert_processor.outputs.output_base import OutputDispatcher
+    output_service_name = output.__service__ if isinstance(output, OutputDispatcher) else None
+
+    # if not output_service_name:
+    #     raise PublisherAssemblyError('Invalid output service')
+
     publisher = _assemble_alert_publisher_for_output(
         alert,
-        output,
+        output_service_name,
         descriptor
     )
     return publisher.publish(alert, {})
 
 
-def _assemble_alert_publisher_for_output(alert, output, descriptor):
+def _assemble_alert_publisher_for_output(alert, output_service_name, descriptor):
     """Gathers all requested publishers on the alert and returns them as a single Publisher
+
+    Note: The alert.publishers field cannot contain references to actual publisher functions
+    or classes, because this field is pulled from Dynamo. It is always going to be a JSON-formatted
+    object.
 
     Args:
         alert (Alert): The alert that is pulled from DynamoDB
-        output (OutputDispatcher|None): Instance of OutputDispatcher that is sending the alert
+        output_service_name (str|None): The __service__ name of the OutputDispatcher
         descriptor (str): The descriptor of the Output
 
     Returns:
@@ -80,18 +99,6 @@ def _assemble_alert_publisher_for_output(alert, output, descriptor):
         #   one key that applies publishers to all outputs for a specific output type, and
         #   another key that applies publishers only to outputs of the type AND matching
         #   descriptor.
-
-        # FIXME (derek.wang)
-        # this is here because currently the OutputDispatcher sits in a __init__.py module that
-        # performs on-demand loading of the other output classes. If you load this helper before
-        # the output classes are loaded, it creates a cyclical dependency
-        # helper.py -> output_base.py -> __init__ -> komand.py -> helper.py
-        # This is a temporary workaround
-        from stream_alert.alert_processor.outputs.output_base import OutputDispatcher
-        output_service_name = output.__service__ if isinstance(output, OutputDispatcher) else None
-
-        if not output_service_name:
-            raise PublisherAssemblyError('Invalid output service')
 
         # Order is important here; we load the output-generic publishers first
         if output_service_name in alert_publishers:

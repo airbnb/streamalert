@@ -111,8 +111,13 @@ class TestRunner(object):
         with patch.object(rules_engine.ThreatIntel, '_query') as ti_mock, \
              patch.object(rules_engine.LookupTables, 'load_lookup_tables') as lt_mock, \
              patch.object(rules_engine, 'AlertForwarder'), \
-             patch.object(rules_engine, 'RuleTable'), \
+             patch.object(rules_engine, 'RuleTable') as rule_table, \
              patch('rules.helpers.base.random_bool', return_value=True):
+
+            # Emptying out the rule table will force all rules to be unstaged, which causes
+            # non-required outputs to get properly populated on the Alerts that are generated
+            # when running the Rules Engine.
+            rule_table.return_value = False
 
             ti_mock.side_effect = self._threat_intel_mock
 
@@ -218,6 +223,9 @@ class TestRunner(object):
                     alerts = self._run_rules_engine(classifier_result[0].sqs_messages)
                     test_result.alerts = alerts
 
+                    for alert in alerts:
+                        publication_result = self._run_publishers(alert)
+
                     if self._type == self.Types.LIVE:
                         for alert in alerts:
                             alert_result = self._run_alerting(alert)
@@ -235,6 +243,9 @@ class TestRunner(object):
         self._finalize()
 
         return self._failed == 0
+
+    def _run_publishers(self, alert):
+        pass
 
     def _get_test_files(self):
         """Helper to get rule files to be tested

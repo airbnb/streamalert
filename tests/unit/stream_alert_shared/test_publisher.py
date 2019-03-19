@@ -14,11 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 # pylint: disable=protected-access,attribute-defined-outside-init,invalid-name
-from mock import patch, MagicMock
+from mock import patch
 from nose.tools import assert_true, assert_equal, assert_false
 
 from stream_alert.alert_processor.helpers import _assemble_alert_publisher_for_output
-from stream_alert.alert_processor.outputs.output_base import StreamAlertOutput
 from stream_alert.shared.publisher import (
     AlertPublisherRepository,
     AlertPublisher,
@@ -211,7 +210,7 @@ class TestAlertPublisherRepositoryAssemblePublisher(object):
     def setup(self):
         self._alert = get_alert(context={'this_context': 'that_value'})
         self._descriptor = 'some_descriptor'
-        self._output = StreamAlertOutput.create_dispatcher('demisto', MagicMock())
+        self._output = 'demisto'
 
     def test_assemble_alert_publisher_for_output_none(self):
         """AlertPublisher - AlertPublisherRepository - assemble() - String"""
