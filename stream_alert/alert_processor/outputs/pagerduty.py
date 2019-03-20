@@ -655,7 +655,7 @@ StreamAlert failed to correctly setup this incident. Please contact your StreamA
         # Urgency, if provided, must always be 'high' or 'low' or the API will error
         if incident_urgency:
             if incident_urgency in ['low', 'high']:
-                incident_urgency['incident']['urgency'] = incident_urgency
+                incident_data['incident']['urgency'] = incident_urgency
             else:
                 LOGGER.warn(
                     '[%s] Invalid pagerduty incident urgency: "%s"',
