@@ -205,7 +205,7 @@ class TestPagerDutyOutputV2(object):
         log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, 'bad_descriptor')
 
 
-#pylint: disable=too-many-public-methods
+# pylint: disable=too-many-public-methods
 @patch('stream_alert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS', 1)
 @patch('stream_alert.alert_processor.outputs.pagerduty.PagerDutyIncidentOutput.BACKOFF_MAX', 0)
 @patch('stream_alert.alert_processor.outputs.pagerduty.PagerDutyIncidentOutput.BACKOFF_TIME', 0)
@@ -305,6 +305,152 @@ class TestPagerDutyIncidentOutput(object):
             },
             timeout=3.05, verify=False
         )
+
+    @patch('stream_alert.alert_processor.outputs.pagerduty.compose_alert')
+    @patch('requests.put')
+    @patch('requests.post')
+    @patch('requests.get')
+    def test_dispatch_sends_correct_with_urgency(self, get_mock, post_mock, put_mock,
+                                                 compose_alert):
+        """PagerDutyIncidentOutput - Dispatch Success, Good User, Sends Correct Urgency"""
+        compose_alert.return_value = {
+            '@pagerduty-incident.urgency': 'low'
+        }
+
+        # GET /users, /users
+        json_user = {'users': [{'id': 'valid_user_id'}]}
+
+        # GET /incidents
+        json_lookup = {'incidents': [{'id': 'incident_id'}]}
+
+        get_mock.return_value.status_code = 200
+        get_mock.return_value.json.side_effect = [json_user, json_user, json_lookup]
+
+        # POST /incidents, /v2/enqueue, /incidents/incident_id/notes
+        post_mock.return_value.status_code = 200
+        json_incident = {'incident': {'id': 'incident_id'}}
+        json_event = {'dedup_key': 'returned_dedup_key'}
+        json_note = {'note': {'id': 'note_id'}}
+        post_mock.return_value.json.side_effect = [json_incident, json_event, json_note]
+
+        # PUT /incidents/indicent_id/merge
+        put_mock.return_value.status_code = 200
+
+        ctx = {'pagerduty-incident': {'assigned_user': 'valid_user'}}
+
+        self._dispatcher.dispatch(get_alert(context=ctx), self.OUTPUT)
+
+        # Useful tidbit; for writing fixtures for implement multiple sequential calls, you can use
+        # mock.assert_has_calls() to render out all of the calls in order:
+        # post_mock.assert_has_calls([call()])
+        post_mock.assert_any_call(
+            'https://api.pagerduty.com/incidents',
+            headers={
+                'From': 'email@domain.com',
+                'Content-Type': 'application/json',
+                'Authorization': 'Token token=mocked_token',
+                'Accept': 'application/vnd.pagerduty+json;version=2'
+            },
+            json={
+                'incident': {
+                    'body': {
+                        'type': 'incident_body',
+                        'details': 'Info about this rule and what actions to take'
+                    },
+                    'service': {
+                        'type': 'service_reference',
+                        'id': 'mocked_service_id'
+                    },
+                    'title': 'StreamAlert Incident - Rule triggered: cb_binarystore_file_added',
+                    'priority': {},
+                    'assignments': [
+                        {
+                            'assignee': {
+                                'type': 'user_reference', 'id': 'valid_user_id'
+                            }
+                        }
+                    ],
+                    'urgency': 'low',
+                    'type': 'incident',
+                    'incident_key': '',
+                }
+            },
+            timeout=3.05, verify=False
+        )
+
+    @patch('logging.Logger.warn')
+    @patch('stream_alert.alert_processor.outputs.pagerduty.compose_alert')
+    @patch('requests.put')
+    @patch('requests.post')
+    @patch('requests.get')
+    def test_dispatch_sends_correct_bad_urgency(self, get_mock, post_mock, put_mock,
+                                                compose_alert, log_mock):
+        """PagerDutyIncidentOutput - Dispatch Success, Good User, Sends Correct Urgency"""
+        compose_alert.return_value = {
+            '@pagerduty-incident.urgency': 'asdf'
+        }
+
+        # GET /users, /users
+        json_user = {'users': [{'id': 'valid_user_id'}]}
+
+        # GET /incidents
+        json_lookup = {'incidents': [{'id': 'incident_id'}]}
+
+        get_mock.return_value.status_code = 200
+        get_mock.return_value.json.side_effect = [json_user, json_user, json_lookup]
+
+        # POST /incidents, /v2/enqueue, /incidents/incident_id/notes
+        post_mock.return_value.status_code = 200
+        json_incident = {'incident': {'id': 'incident_id'}}
+        json_event = {'dedup_key': 'returned_dedup_key'}
+        json_note = {'note': {'id': 'note_id'}}
+        post_mock.return_value.json.side_effect = [json_incident, json_event, json_note]
+
+        # PUT /incidents/indicent_id/merge
+        put_mock.return_value.status_code = 200
+
+        ctx = {'pagerduty-incident': {'assigned_user': 'valid_user'}}
+
+        self._dispatcher.dispatch(get_alert(context=ctx), self.OUTPUT)
+
+        # Useful tidbit; for writing fixtures for implement multiple sequential calls, you can use
+        # mock.assert_has_calls() to render out all of the calls in order:
+        # post_mock.assert_has_calls([call()])
+        post_mock.assert_any_call(
+            'https://api.pagerduty.com/incidents',
+            headers={
+                'From': 'email@domain.com',
+                'Content-Type': 'application/json',
+                'Authorization': 'Token token=mocked_token',
+                'Accept': 'application/vnd.pagerduty+json;version=2'
+            },
+            json={
+                'incident': {
+                    'body': {
+                        'type': 'incident_body',
+                        'details': 'Info about this rule and what actions to take'
+                    },
+                    'service': {
+                        'type': 'service_reference',
+                        'id': 'mocked_service_id'
+                    },
+                    'title': 'StreamAlert Incident - Rule triggered: cb_binarystore_file_added',
+                    'priority': {},
+                    'assignments': [
+                        {
+                            'assignee': {
+                                'type': 'user_reference', 'id': 'valid_user_id'
+                            }
+                        }
+                    ],
+                    'type': 'incident',
+                    'incident_key': '',
+                }
+            },
+            timeout=3.05, verify=False
+        )
+        log_mock.assert_called_with('[%s] Invalid pagerduty incident urgency: "%s"',
+                                    'pagerduty-incident', 'asdf')
 
     @patch('requests.put')
     @patch('requests.post')
@@ -440,7 +586,7 @@ class TestPagerDutyIncidentOutput(object):
     @patch('requests.get')
     def test_dispatch_success_good_policy(self, get_mock, post_mock, put_mock, log_mock):
         """PagerDutyIncidentOutput - Dispatch Success, Good Policy"""
-         # GET /users
+        # GET /users
         json_user = {'users': [{'id': 'user_id'}]}
 
         # GET /incidents
@@ -472,7 +618,7 @@ class TestPagerDutyIncidentOutput(object):
     @patch('requests.get')
     def test_dispatch_success_with_priority(self, get_mock, post_mock, put_mock, log_mock):
         """PagerDutyIncidentOutput - Dispatch Success With Priority"""
-         # GET /priorities, /users
+        # GET /priorities, /users
         json_user = {'users': [{'id': 'user_id'}]}
         json_priority = {'priorities': [{'id': 'priority_id', 'name': 'priority_name'}]}
         json_lookup = {'incidents': [{'id': 'incident_id'}]}
@@ -832,7 +978,6 @@ class TestPagerDutyIncidentOutput(object):
         assert_false(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
 
         log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, self.DESCRIPTOR)
-
 
     @patch('logging.Logger.error')
     @patch('requests.get')
