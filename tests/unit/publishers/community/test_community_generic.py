@@ -404,3 +404,37 @@ class TestRemoveFields(object):
         }
 
         assert_equal(publication, expectation)
+
+
+class TestBubbleFields(object):
+    PUBLISHER_NAME = 'publishers.community.generic.bubble_fields'
+
+    def setup(self):
+        self._alert = get_alert(context={
+            'bubble_fields': [
+                'compressed_size', 'id', 'oof', 'multi_field'
+            ],
+            'other_field': 'a',
+            'container': {
+                'multi_field': 1,
+                'depth2': {
+                    'multi_field': 2,
+                }
+            }
+        })
+        self._alert.created = datetime(2019, 1, 1)
+        self._alert.publishers = [TestDefaultPublisher.PUBLISHER_NAME, self.PUBLISHER_NAME]
+
+    def test_remove_fields(self):
+        """AlertPublisher - bubble_fields"""
+
+        publication = compose_alert(self._alert, None, None)
+
+        expectation = {
+            'compressed_size': '9982',
+            'oof': None,
+            'id': '79192344-4a6d-4850-8d06-9c3fef1060a4',
+            'multi_field': [1, 2]
+        }
+
+        assert_equal(publication, expectation)

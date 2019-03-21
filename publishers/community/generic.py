@@ -17,6 +17,7 @@ from collections import deque, OrderedDict
 import re
 from stream_alert.shared.publisher import Register
 from stream_alert.shared.normalize import Normalizer
+from stream_alert.shared.utils import get_keys
 
 
 @Register
@@ -163,3 +164,46 @@ def enumerate_fields(_, publication):
     _recursive_enumerate_fields(publication, output)
 
     return OrderedDict(sorted(output.items()))
+
+
+@Register
+def bubble_fields(alert, publication):
+    """This publisher bubbles all requested fields to the top level and deletes everything else.
+
+    It uses the context to determine which fields to keep. Example:
+
+    context={
+      'bubble_fields': [ 'field1', 'field2', 'field3' ]
+    }
+
+    "bubble_fields" should be an array of strings that are exact matches to the field names.
+
+    The algorithm deeply searches the publication for any dict key that exactly matches one of the
+    given fields. It then takes the contents of that field and bubbles them up to the top level.
+    It discovers ALL values matching each field, so if a field is returned multiple times, the
+    resulting top level field will be an array. In the special case where exactly one entry is
+    returned for a bubble_field, the value will instead be equal to that value (instead of an
+    array with 1 element being that value). In the special case when no entries are returned for
+    an extract_field, the value will be None.
+
+    Aside from the bubbled fields, this publisher throws away everything else in the original
+    publication.
+
+    NOTE: It is possible for bubbled fields to continue to contain nested dicts, so do not assume
+          this publisher will result in a flat dictionary publication.
+    """
+
+    new_publication = {}
+    for bubble_field in alert.context.get('bubble_fields', []):
+        extractions = get_keys(publication, bubble_field)
+
+        if len(extractions) > 1:
+            value = extractions
+        elif len(extractions) == 1:
+            value = extractions[0]
+        else:
+            value = None
+
+        new_publication[bubble_field] = value
+
+    return new_publication
