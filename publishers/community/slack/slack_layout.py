@@ -25,7 +25,6 @@ RAUSCH = '#ff5a5f'
 BABU = '#00d1c1'
 LIMA = '#8ce071'
 HACKBERRY = '#7b0051'
-BEACH = '#ffb400'
 
 
 @Register

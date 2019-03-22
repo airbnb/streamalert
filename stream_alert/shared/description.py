@@ -83,7 +83,7 @@ class RuleDescriptionParser(object):
                   to that field. All field names are lowercase.
         """
         rule_description = '' if not rule_description else rule_description
-        tokens = rule_description.strip().split('\n')
+        tokens = [line.strip() for line in rule_description.strip().split('\n')]
 
         field_lines = {}
 
@@ -92,7 +92,7 @@ class RuleDescriptionParser(object):
             if current_field not in field_lines:
                 field_lines[current_field] = []
 
-            if not token or not token.strip():
+            if not token:
                 field_lines[current_field].append('')
                 continue
 
@@ -100,13 +100,13 @@ class RuleDescriptionParser(object):
             # to write a regex that detects for \s++(?:http:) because operator will attempt to
             # give up characters to the negative lookahead. So, we strip the line first before
             # doing the negative lookahead.
-            match = cls._FIELD_REGEX.match(token.strip())
+            match = cls._FIELD_REGEX.match(token)
 
             if match is not None:
                 current_field = match.group('field').strip().lower()
                 value = match.group('remainder').strip()
             else:
-                value = token.strip()
+                value = token
 
             if current_field not in field_lines:
                 field_lines[current_field] = []
