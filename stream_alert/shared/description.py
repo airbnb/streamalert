@@ -64,7 +64,9 @@ class RuleDescriptionParser(object):
 
     # Match alphanumeric, plus underscores, dashes, spaces, and & signs
     # Labels are a maximum of 20 characters long. They also never start with http or https
-    _FIELD_REGEX = re.compile(r'^(?!http:|https:)(?P<field>[a-zA-Z\d\-_&\s]{0,20}):(?P<remainder>.*)$')
+    _FIELD_REGEX = re.compile(
+        r'^(?!http:|https:)(?P<field>[a-zA-Z\d\-_&\s]{0,20}):(?P<remainder>.*)$'
+    )
     _URL_REGEX = re.compile(
         r'^(?:http(s)?://)?[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~:/?#[\]@!\$&\'\(\)\*\+,;=.]+$'
     )
