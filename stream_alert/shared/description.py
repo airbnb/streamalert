@@ -47,11 +47,24 @@ class RuleDescriptionParser(object):
         author:   Derek
         reference: https://this.is.a.really.really/long/url
                         ?that=does+not+fit+on+one+line#but=gets%53eventually+smushed+together
+
+    Lastly, by default all line breaks are stripped out. However, if there is a double-line-break
+    in the middle of a text, this double-line-break will appear in the final text as two newline
+    characters.
+
+    Example:
+
+        description:
+            This is paragraph 1 and remains unbroken despite having
+            a linebreak in the middle of it.
+
+            However, this paragraph 2 is broken from paragraph 1 because
+            it has a double break in between.
     """
 
     # Match alphanumeric, plus underscores, dashes, spaces, and & signs
-    # Labels are a maximum of 20 characters long
-    _FIELD_REGEX = re.compile(r'^(?P<field>[a-zA-Z\d\-_&\s]{0,20}):(?P<remainder>.*)$')
+    # Labels are a maximum of 20 characters long. They also never start with http or https
+    _FIELD_REGEX = re.compile(r'^(?!http:|https:)(?P<field>[a-zA-Z\d\-_&\s]{0,20}):(?P<remainder>.*)$')
     _URL_REGEX = re.compile(
         r'^(?:http(s)?://)?[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~:/?#[\]@!\$&\'\(\)\*\+,;=.]+$'
     )
@@ -67,16 +80,25 @@ class RuleDescriptionParser(object):
             dict: A dict mapping fields to lists of strings, each corresponding to a line belonging
                   to that field. All field names are lowercase.
         """
-        tokens = rule_description.split('\n')
+        rule_description = '' if not rule_description else rule_description
+        tokens = rule_description.strip().split('\n')
 
         field_lines = {}
 
         current_field = 'description'
         for token in tokens:
+            if current_field not in field_lines:
+                field_lines[current_field] = []
+
             if not token or not token.strip():
+                field_lines[current_field].append('')
                 continue
 
-            match = cls._FIELD_REGEX.match(token)
+            # Python regex does not support possessive qualifiers, which means it not easy
+            # to write a regex that detects for \s++(?:http:) because operator will attempt to
+            # give up characters to the negative lookahead. So, we strip the line first before
+            # doing the negative lookahead.
+            match = cls._FIELD_REGEX.match(token.strip())
 
             if match is not None:
                 current_field = match.group('field').strip().lower()
@@ -96,16 +118,27 @@ class RuleDescriptionParser(object):
             if not isinstance(lines, list) or len(lines) <= 0:
                 return ''
 
+            previous_line_empty = False
             document = None
             for line in lines:
+                if not line:
+                    previous_line_empty = True
+                    continue
+
                 if document is None:
+                    previous_line_empty = False
                     document = line
                 else:
                     match = cls._URL_REGEX.match(document + line)
                     if match is not None:
                         document += line
                     else:
-                        document += ' ' + line
+                        space = '\n\n' if previous_line_empty else ' '
+                        previous_line_empty = False
+                        document += space + line
+
+            if document is None:
+                document = ''
 
             return document
 
