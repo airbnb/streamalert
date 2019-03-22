@@ -17,9 +17,9 @@ limitations under the License.
 from datetime import datetime
 
 from mock import MagicMock
-from nose.tools import assert_equal
+from nose.tools import assert_equal, assert_true, assert_false
 
-from publishers.community.generic import _delete_dictionary_fields
+from publishers.community.generic import _delete_dictionary_fields, StringifyArrays
 from stream_alert.alert_processor.helpers import compose_alert
 from stream_alert.alert_processor.outputs.output_base import OutputDispatcher
 from tests.unit.stream_alert_alert_processor.helpers import get_alert
@@ -431,10 +431,73 @@ class TestPopulateFields(object):
         publication = compose_alert(self._alert, None, None)
 
         expectation = {
-            'compressed_size': '9982',
-            'oof': None,
-            'id': '79192344-4a6d-4850-8d06-9c3fef1060a4',
+            'compressed_size': ['9982'],
+            'oof': [],
+            'id': ['79192344-4a6d-4850-8d06-9c3fef1060a4'],
             'multi_field': [1, 2]
         }
 
         assert_equal(publication, expectation)
+
+
+class TestStringifyArrays(object):
+    PUBLISHER_NAME = 'publishers.community.generic.StringifyArrays'
+
+    def setup(self):
+        self._alert = get_alert(context={
+            'array': ['a', 'b', 'c'],
+            'not_array': ['a', {'b': 'c'}, 'd'],
+            'nest': {
+                'deep_array': ['a', 'b', 'c'],
+            }
+        })
+        self._alert.created = datetime(2019, 1, 1)
+        self._alert.publishers = [TestDefaultPublisher.PUBLISHER_NAME, self.PUBLISHER_NAME]
+
+    def test_publish(self):
+        """AlertPublisher - StringifyArrays - publish"""
+
+        publication = compose_alert(self._alert, None, None)
+
+        expectation = {
+            'not_array': ['a', {'b': 'c'}, 'd'],
+            'array': 'a\nb\nc',
+            'nest': {'deep_array': 'a\nb\nc'}
+        }
+
+        assert_equal(publication['context'], expectation)
+
+
+def test_stringifyarrays_is_scalar_array_none():
+    """AlertPublisher - StringifyArrays - is_scalar_array - None"""
+    assert_false(StringifyArrays.is_scalar_array(None))
+
+
+def test_stringifyarrays_is_scalar_array_dict():
+    """AlertPublisher - StringifyArrays - is_scalar_array - Dict"""
+    assert_false(StringifyArrays.is_scalar_array({'a': 'b'}))
+
+
+def test_stringifyarrays_is_scalar_array_string():
+    """AlertPublisher - StringifyArrays - is_scalar_array - String"""
+    assert_false(StringifyArrays.is_scalar_array('aaa'))
+
+
+def test_stringifyarrays_is_scalar_array_array_string():
+    """AlertPublisher - StringifyArrays - is_scalar_array - Array[str]"""
+    assert_true(StringifyArrays.is_scalar_array(['a', 'b']))
+
+
+def test_stringifyarrays_is_scalar_array_array_int():
+    """AlertPublisher - StringifyArrays - is_scalar_array - Array[int]"""
+    assert_true(StringifyArrays.is_scalar_array([1, 2]))
+
+
+def test_stringifyarrays_is_scalar_array_array_mixed():
+    """AlertPublisher - StringifyArrays - is_scalar_array - Array[mixed]"""
+    assert_true(StringifyArrays.is_scalar_array([1, 'a']))
+
+
+def test_stringifyarrays_is_scalar_array_array_mixed_invalid():
+    """AlertPublisher - StringifyArrays - is_scalar_array - Array[mixed], invalid"""
+    assert_false(StringifyArrays.is_scalar_array([1, 'a', {}]))

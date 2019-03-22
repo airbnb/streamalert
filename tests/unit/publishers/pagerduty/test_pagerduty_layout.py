@@ -160,3 +160,36 @@ def test_v2_low_urgency():
 
     expectation = {'@pagerduty-incident.urgency': 'low', '@pagerduty-v2.severity': 'warning'}
     assert_equal(publication, expectation)
+
+
+def test_pretty_print_arrays():
+    """Publishers - PagerDuty - PrettyPrintArrays"""
+    alert = get_alert(context={'populate_fields': ['publishers', 'cb_server', 'staged']})
+    alert.created = datetime(2019, 1, 1)
+    alert.publishers = {
+        'pagerduty': [
+            'stream_alert.shared.publisher.DefaultPublisher',
+            'publishers.community.generic.populate_fields',
+            'publishers.community.pagerduty.pagerduty_layout.PrettyPrintArrays'
+        ]
+    }
+    output = MagicMock(spec=OutputDispatcher)
+    output.__service__ = 'pagerduty'
+    descriptor = 'unit_test_channel'
+
+    publication = compose_alert(alert, output, descriptor)
+
+    expectation = {
+        'publishers': [
+            {
+                'pagerduty': (
+                    'stream_alert.shared.publisher.DefaultPublisher\n\n----------\n\n'
+                    'publishers.community.generic.populate_fields\n\n----------\n\n'
+                    'publishers.community.pagerduty.pagerduty_layout.PrettyPrintArrays'
+                )
+            }
+        ],
+        'staged': 'False',
+        'cb_server': 'cbserver'
+    }
+    assert_equal(publication, expectation)

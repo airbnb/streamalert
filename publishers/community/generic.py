@@ -15,7 +15,7 @@ limitations under the License.
 """
 from collections import deque, OrderedDict
 import re
-from stream_alert.shared.publisher import Register
+from stream_alert.shared.publisher import Register, AlertPublisher
 from stream_alert.shared.normalize import Normalizer
 from stream_alert.shared.utils import get_keys
 
@@ -196,14 +196,57 @@ def populate_fields(alert, publication):
     new_publication = {}
     for populate_field in alert.context.get('populate_fields', []):
         extractions = get_keys(publication, populate_field)
-
-        if len(extractions) > 1:
-            value = extractions
-        elif len(extractions) == 1:
-            value = extractions[0]
-        else:
-            value = None
-
-        new_publication[populate_field] = value
+        new_publication[populate_field] = extractions
 
     return new_publication
+
+
+@Register
+class StringifyArrays(AlertPublisher):
+    """Deeply navigates a dict publication and coverts all scalar arrays to strings
+
+    Any array discovered with only scalar values will be joined into a single string with the
+    given DELIMITER. Subclass implementations of this can override the delimiter to join the
+    string differently.
+    """
+    DELIMITER = '\n'
+
+    def publish(self, alert, publication):
+        fringe = deque()
+        fringe.append(publication)
+        while len(fringe) > 0:
+            next_item = fringe.popleft()
+
+            if isinstance(next_item, dict):
+                # Check all keys
+                for key, item in next_item.iteritems():
+                    if self.is_scalar_array(item):
+                        next_item[key] = self.stringify(item)
+                    else:
+                        fringe.append(item)
+
+            elif isinstance(next_item, list):
+                # At this point, if the item is a list we assert that it is not a SCALAR array;
+                # because it is too late to stringify it, since we do not have a back reference
+                # to the object that contains it
+                fringe.extend(next_item)
+            else:
+                # It's a leaf node, or it's some strange object that doesn't belong here
+                pass
+
+        return publication
+
+    @staticmethod
+    def is_scalar_array(item):
+        if not isinstance(item, list):
+            return False
+
+        for element in item:
+            if isinstance(element, dict) or isinstance(element, list):
+                return False
+
+        return True
+
+    @classmethod
+    def stringify(cls, array):
+        return cls.DELIMITER.join([str(elem) for elem in array])
