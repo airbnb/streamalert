@@ -93,6 +93,7 @@ class RuleDescriptionParser(object):
                 field_lines[current_field] = []
 
             if not token:
+                # preserve an empty line
                 field_lines[current_field].append('')
                 continue
 

@@ -238,6 +238,18 @@ class StringifyArrays(AlertPublisher):
 
     @staticmethod
     def is_scalar_array(item):
+        """Returns if the given item is a python list containing only scalar elements
+
+        NOTE: This method assumes that the 'item' provided comes from a valid JSON compliant dict.
+              It does not account for strange or complicated types, such as references to functions
+              or class definitions or other stuff.
+
+        Args:
+            item (mixed): The python variable to check
+
+        Returns:
+            bool
+        """
         if not isinstance(item, list):
             return False
 
@@ -249,4 +261,12 @@ class StringifyArrays(AlertPublisher):
 
     @classmethod
     def stringify(cls, array):
+        """Given a list of elements, will join them together with the publisher's DELIMITER
+
+        Args:
+            array (list): The array of elements.
+
+        Returns:
+            str
+        """
         return cls.DELIMITER.join([str(elem) for elem in array])
