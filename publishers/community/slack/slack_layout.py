@@ -138,11 +138,14 @@ class AttachRuleInfo(AlertPublisher):
 
 @Register
 class AttachPublication(AlertPublisher):
-    """A publisher run after PrettyLayout that attaches previous publications as an attachment"""
+    """A publisher that attaches previous publications as an attachment
+
+    This publisher needs to be run after the Summary publisher
+    """
 
     def publish(self, alert, publication):
         if '_previous_publication' not in publication or '@slack.attachments' not in publication:
-            # This publisher cannot be run except immediately after PrettyLayout
+            # This publisher cannot be run except immediately after the Summary publisher
             return publication
 
         publication_block = '```\n{}\n```'.format(

@@ -30,7 +30,7 @@ author: Derek Wang
 '''
 
         data = RuleDescriptionParser.parse(case)
-        assert_equal(data, {'author': ['Derek Wang']})
+        assert_equal(data, {'author': ['Derek Wang'], 'description': []})
 
     @staticmethod
     def test_strange_spacing():
@@ -43,7 +43,7 @@ author: Derek Wang
     '''
 
         data = RuleDescriptionParser.parse(case)
-        assert_equal(data, {'author': ['Derek Wang']})
+        assert_equal(data, {'author': ['Derek Wang'], 'description': []})
 
     @staticmethod
     def test_no_fields():
@@ -88,7 +88,7 @@ owner:  Bobby Tables
 '''
 
         data = RuleDescriptionParser.parse(case)
-        assert_equal(data, {'author': ['Derek Wang'], 'owner': ['Bobby Tables']})
+        assert_equal(data, {'author': ['Derek Wang'], 'description': [], 'owner': ['Bobby Tables']})
 
     @staticmethod
     def test_multiple_fields_multiple_lines():
@@ -102,6 +102,7 @@ reference:  There is no cow level
         data = RuleDescriptionParser.parse(case)
         assert_equal(data, {
             'author': ['Derek Wang (CSIRT)'],
+            'description': [],
             'reference': ['There is no cow level', 'Greed is good'],
         })
 
@@ -137,7 +138,10 @@ reference:  https://www.google.com
 
         data = RuleDescriptionParser.parse(case)
         assert_equal(data, {
-            'description': ['This rule triggers when the temperature of the boiler exceeds 9000'],
+            'description': [
+                'This rule triggers when the temperature of the boiler exceeds 9000',
+                ''
+            ],
             'author': ['Derek Wang (CSIRT)'],
             'reference': ['https://www.google.com'],
         })
@@ -155,7 +159,8 @@ reference:  https://www.google.com
 
         data = RuleDescriptionParser.parse(case)
         assert_equal(data, {
-            'author': ['Derek Wang (CSIRT)'],
+            'author': ['Derek Wang (CSIRT)', ''],
+            'description': [],
             'att&ck tactic': ['Defense Evasion'],
             'att&ck technique': ['Obfuscated Files or Information'],
             'att&ck url': ['https://attack.mitre.org/wiki/Technique/T1027'],
@@ -247,4 +252,72 @@ reference:    https://www.airbnb.com/users/notifications
                     'Gets concatenated with this line with a space inbetween.'
                 )
             }
+        })
+
+    @staticmethod
+    def test_handle_multiple_urls():
+        """RuleDescriptionParser - present - Do not use http: as field"""
+        case = '''
+reference:    https://www.airbnb.com/users/notifications
+              https://www.airbnb.com/account/profile
+    HTTP URL: https://www.airbnb.com/account/haha
+'''
+
+        data = RuleDescriptionParser.present(case)
+        assert_equal(data, {
+            'author': '',
+            'description': '',
+            'fields': {
+                'reference': (
+                    'https://www.airbnb.com/users/notifications'
+                    'https://www.airbnb.com/account/profile'
+                ),
+                'http url': 'https://www.airbnb.com/account/haha'
+            }
+        })
+
+    @staticmethod
+    def test_two_linebreaks_equals_newline():
+        """RuleDescriptionParser - present - Handle linebreaks"""
+        case = '''
+description:
+    This is a long description where normal linebreaks like
+    this one will simply cause the sentence to continue flowing
+    as normal.
+
+    However a double linebreak will cause a real newline character 
+    to appear in the final product.
+'''
+
+        data = RuleDescriptionParser.present(case)
+        assert_equal(data, {
+            'author': '',
+            'description': (
+                'This is a long description where normal linebreaks like '
+                'this one will simply cause the sentence to continue flowing '
+                'as normal.\n\n'
+                'However a double linebreak will cause a real newline character '
+                'to appear in the final product.'
+            ),
+            'fields': {}
+        })
+
+    @staticmethod
+    def test_url_plus_string():
+        """RuleDescriptionParser - present - URL Plus String"""
+        case = '''
+    description:
+        https://airbnb.com
+    
+        The above url is line broken from this comment.
+    '''
+
+        data = RuleDescriptionParser.present(case)
+        assert_equal(data, {
+            'author': '',
+            'description': (
+                'https://airbnb.com\n\n'
+                'The above url is line broken from this comment.'
+            ),
+            'fields': {}
         })

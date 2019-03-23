@@ -15,8 +15,9 @@ limitations under the License.
 """
 from collections import deque, OrderedDict
 import re
-from stream_alert.shared.publisher import Register
+from stream_alert.shared.publisher import Register, AlertPublisher
 from stream_alert.shared.normalize import Normalizer
+from stream_alert.shared.utils import get_keys
 
 
 @Register
@@ -163,3 +164,109 @@ def enumerate_fields(_, publication):
     _recursive_enumerate_fields(publication, output)
 
     return OrderedDict(sorted(output.items()))
+
+
+@Register
+def populate_fields(alert, publication):
+    """This publisher moves all requested fields to the top level and ignores everything else.
+
+    It uses the context to determine which fields to keep. Example:
+
+    context={
+      'populate_fields': [ 'field1', 'field2', 'field3' ]
+    }
+
+    "populate_fields" should be an array of strings that are exact matches to the field names.
+
+    The algorithm deeply searches the publication for any dict key that exactly matches one of the
+    given fields. It then takes the contents of that field and moves them up to the top level.
+    It discovers ALL values matching each field, so if a field is returned multiple times, the
+    resulting top level field will be an array. In the special case where exactly one entry is
+    returned for a populate_field, the value will instead be equal to that value (instead of an
+    array with 1 element being that value). In the special case when no entries are returned for
+    an extract_field, the value will be None.
+
+    Aside from the moved fields, this publisher throws away everything else in the original
+    publication.
+
+    NOTE: It is possible for moved fields to continue to contain nested dicts, so do not assume
+          this publisher will result in a flat dictionary publication.
+    """
+
+    new_publication = {}
+    for populate_field in alert.context.get('populate_fields', []):
+        extractions = get_keys(publication, populate_field)
+        new_publication[populate_field] = extractions
+
+    return new_publication
+
+
+@Register
+class StringifyArrays(AlertPublisher):
+    """Deeply navigates a dict publication and coverts all scalar arrays to strings
+
+    Any array discovered with only scalar values will be joined into a single string with the
+    given DELIMITER. Subclass implementations of this can override the delimiter to join the
+    string differently.
+    """
+    DELIMITER = '\n'
+
+    def publish(self, alert, publication):
+        fringe = deque()
+        fringe.append(publication)
+        while len(fringe) > 0:
+            next_item = fringe.popleft()
+
+            if isinstance(next_item, dict):
+                # Check all keys
+                for key, item in next_item.iteritems():
+                    if self.is_scalar_array(item):
+                        next_item[key] = self.stringify(item)
+                    else:
+                        fringe.append(item)
+
+            elif isinstance(next_item, list):
+                # At this point, if the item is a list we assert that it is not a SCALAR array;
+                # because it is too late to stringify it, since we do not have a back reference
+                # to the object that contains it
+                fringe.extend(next_item)
+            else:
+                # It's a leaf node, or it's some strange object that doesn't belong here
+                pass
+
+        return publication
+
+    @staticmethod
+    def is_scalar_array(item):
+        """Returns if the given item is a python list containing only scalar elements
+
+        NOTE: This method assumes that the 'item' provided comes from a valid JSON compliant dict.
+              It does not account for strange or complicated types, such as references to functions
+              or class definitions or other stuff.
+
+        Args:
+            item (mixed): The python variable to check
+
+        Returns:
+            bool
+        """
+        if not isinstance(item, list):
+            return False
+
+        for element in item:
+            if isinstance(element, dict) or isinstance(element, list):
+                return False
+
+        return True
+
+    @classmethod
+    def stringify(cls, array):
+        """Given a list of elements, will join them together with the publisher's DELIMITER
+
+        Args:
+            array (list): The array of elements.
+
+        Returns:
+            str
+        """
+        return cls.DELIMITER.join([str(elem) for elem in array])
