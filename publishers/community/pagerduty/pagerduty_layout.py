@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from publishers.community.generic import StringifyArrays
 from stream_alert.shared.publisher import AlertPublisher, Register
 
 
@@ -78,3 +79,30 @@ def v2_low_urgency(_, publication):
     publication['@pagerduty-v2.severity'] = 'warning'
     publication['@pagerduty-incident.urgency'] = 'low'
     return publication
+
+
+@Register
+class PrettyPrintArrays(StringifyArrays):
+    """Deeply navigates a dict publication and coverts all scalar arrays to strings
+
+    Scalar arrays render poorly on PagerDuty's default UI. Newlines are ignored, and the scalar
+    values are wrapped with quotations:
+
+        [
+          "element_here\n with newlines\noh no",
+          "hello world\nhello world"
+        ]
+
+    This method searches the publication dict for scalar arrays and transforms them into strings
+    by joining their values with the provided delimiter. This converts the above array into:
+
+        element here
+        with newlines
+        oh no
+
+        ----------
+
+        hello world
+        hello world
+    """
+    DELIMITER = '\n\n----------\n\n'
