@@ -61,7 +61,7 @@ class TestResult(object):
     """TestResult contains information useful for tracking test results"""
 
     _NONE_STRING = '<None>'
-    _SIMPLE_TEMPLATE = '{header}: {status}'
+    _SIMPLE_TEMPLATE = '{header}: {status}{publisher_results}'
     _VERBOSE_TEMPLATE = (
         '''
             Description: {description}
@@ -99,6 +99,7 @@ class TestResult(object):
         self._with_rules = with_rules
         self._verbose = verbose
         self._live_test_results = {}
+        self._publication_results = {}
         self.alerts = []
 
     def __nonzero__(self):
@@ -114,8 +115,23 @@ class TestResult(object):
 
         fmt = {
             'header': 'Test #{idx:02d}'.format(idx=self._idx + 1),
-            'status': format_green('Pass') if passed else format_red('Fail')
+            'status': format_green('Pass') if passed else format_red('Fail'),
+            'publisher_results': ''
         }
+
+        if self._publication_results:
+            num_pass = 0
+            num_total = 0
+            for output_descriptor, result in self._publication_results.iteritems():
+                num_total += 1
+                num_pass += 1 if result['success'] else 0
+            fmt['publisher_results'] = '\n  Publishers: {}'.format(
+                (
+                    format_green('{}/{} Passed'.format(num_pass, num_total))
+                    if num_pass == num_total
+                    else format_red('{}/{} Passed'.format(num_pass, num_total))
+                )
+            )
 
         if passed and not self._verbose:
             return self._SIMPLE_TEMPLATE.format(**fmt)
@@ -266,6 +282,9 @@ class TestResult(object):
                 return False
 
         return True
+
+    def set_publication_results(self, publication_results):
+        self._publication_results = publication_results
 
     def add_live_test_result(self, rule_name, result):
         self._live_test_results[rule_name] = result

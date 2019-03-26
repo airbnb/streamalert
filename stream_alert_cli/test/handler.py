@@ -23,9 +23,11 @@ import re
 import time
 import zlib
 
-from mock import patch
+from mock import patch, MagicMock
 
 from stream_alert.alert_processor import main as alert_processor
+from stream_alert.alert_processor.helpers import compose_alert
+from stream_alert.alert_processor.outputs.output_base import OutputDispatcher
 from stream_alert.classifier import classifier
 from stream_alert.classifier.parsers import ParserBase
 from stream_alert.rules_engine import rules_engine
@@ -88,6 +90,8 @@ class TestRunner(object):
         self._lookup_tables_mock = mock_lookup_table_results()
         self._passed = 0
         self._failed = 0
+        self._publishers_run = 0
+        self._publishers_failed = 0
         prefix = self._config['global']['account']['prefix']
         patch.dict(
             os.environ,
@@ -147,8 +151,19 @@ class TestRunner(object):
             format_underline('\nSummary:\n'),
             'Total Tests: {}'.format(self._passed + self._failed),
             format_green('Pass: {}'.format(self._passed)) if self._passed else 'Pass: 0',
-            format_red('Fail: {}\n'.format(self._failed)) if self._failed else 'Fail: 0\n'
+            format_red('Fail: {}\n'.format(self._failed)) if self._failed else 'Fail: 0\n',
         ]
+
+        if self._publishers_run:
+            summary.append('Publishers Run: {}'.format(self._publishers_run))
+            summary.append(
+                (
+                    format_red('Failed: {}'.format(self._publishers_failed))
+                    if self._publishers_failed
+                    else format_green('All passed')
+                )
+            )
+            summary.append('')
 
         print('\n'.join(summary))
 
@@ -192,6 +207,7 @@ class TestRunner(object):
         for event_file in self._get_test_files():
             test_event = TestEventFile(event_file.replace(self._files_dir, ''))
             # Iterate over the individual test events in the file
+            publication_results = None
             for idx, original_event, event in self._load_test_file(event_file):
                 if not event:
                     continue
@@ -223,8 +239,10 @@ class TestRunner(object):
                     alerts = self._run_rules_engine(classifier_result[0].sqs_messages)
                     test_result.alerts = alerts
 
-                    for alert in alerts:
-                        publication_result = self._run_publishers(alert)
+                    if not original_event.get('skip_publishers'):
+                        for alert in alerts:
+                            publication_results = self._run_publishers(alert)
+                            test_result.set_publication_results(publication_results)
 
                     if self._type == self.Types.LIVE:
                         for alert in alerts:
@@ -233,6 +251,12 @@ class TestRunner(object):
 
             self._passed += test_event.passed
             self._failed += test_event.failed
+
+            if publication_results:
+                for _output, _result in publication_results.iteritems():
+                    self._publishers_run += 1
+                    if not _result['success']:
+                        self._publishers_failed += 1
 
             # It is possible for a test_event to have no results,
             # so only print it if it does and if quiet mode is no being used
@@ -244,8 +268,37 @@ class TestRunner(object):
 
         return self._failed == 0
 
-    def _run_publishers(self, alert):
-        pass
+    @staticmethod
+    def _run_publishers(alert):
+        """Runs publishers for all currently configured outputs on the given alert
+
+        Args:
+            - alert (Alert): The alert
+
+        Returns:
+            dict: A dict keyed by output:descriptor strings, mapped to nested dicts.
+                  The nested dicts have 2 keys:
+                  - publication (dict): The dict publication
+                  - success (bool): True if the publishing finished, False if it errored.
+        """
+        configured_outputs = alert.outputs
+
+        results = {}
+        for configured_output in configured_outputs:
+            [output_name, descriptor] = configured_output.split(':')
+
+            try:
+                output = MagicMock(spec=OutputDispatcher, __service__=output_name)
+                results[configured_output] = {
+                    'publication': compose_alert(alert, output, descriptor),
+                    'success': True,
+                }
+            except (RuntimeError, TypeError, NameError) as err:
+                results[configured_output] = {
+                    'success': False,
+                    'error': err,
+                }
+        return results
 
     def _get_test_files(self):
         """Helper to get rule files to be tested
