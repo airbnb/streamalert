@@ -142,7 +142,7 @@ class TestResult(object):
 
             num_pass = 0
             num_total = 0
-            for output_descriptor, result in self._publication_results.iteritems():
+            for _, result in self._publication_results.iteritems():
                 num_total += 1
                 num_pass += 1 if result['success'] else 0
             fmt['publishers_status'] = (
@@ -319,7 +319,7 @@ class TestResult(object):
         if not self.rules_run:
             return False
 
-        for output_descriptor, result in self._publication_results.iteritems():
+        for _, result in self._publication_results.iteritems():
             if not result['success']:
                 return False
 
