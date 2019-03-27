@@ -64,42 +64,42 @@ class TestResult(object):
     _PASS_STRING = format_green('Pass')
     _FAIL_STRING = format_red('Fail')
     _SIMPLE_TEMPLATE = '{header}:'
-    _CLASSIFICATION_STATUS_TEMPLATE = '  Classification: {classification_status}'
-    _RULES_STATUS_TEMPLATE = '  Rules: {rules_status}'
-    _PUBLISHERS_STATUS_TEMPLATE = '  Publishers: {publishers_status}'
-    _VERBOSE_TEMPLATE = (
+    _PASS_TEMPLATE = '{header}: {pass}'
+    _DESCRIPTION_LINE = (
         '''
-            Description: {description}
-            Classified Type: {classified_type}
-            Expected Type: {expected_type}'''
+    Description: {description}'''
     )
-
-    _VALIDATION_ONLY = (
+    _CLASSIFICATION_STATUS_TEMPLATE = (
         '''
-            Validation Only: True'''
+    Classification: {classification_status}
+        Classified Type: {classified_type}
+        Expected Type: {expected_type}'''
     )
-
-    _RULES_TEMPLATE = (
+    _RULES_STATUS_TEMPLATE = (
         '''
-            Triggered Rules: {triggered_rules}
-            Expected Rules: {expected_rules}'''
+    Rules: {rules_status}
+        Triggered Rules: {triggered_rules}
+        Expected Rules: {expected_rules}'''
     )
-
     _DISABLED_RULES_TEMPLATE = (
         '''
-            Disabled Rules: {disabled_rules}'''
+        Disabled Rules: {disabled_rules}'''
     )
-
+    _PUBLISHERS_STATUS_TEMPLATE = (
+        '''
+    Publishers: {publishers_status}
+        Errors:
+{publisher_errors}'''
+    )
+    _VALIDATION_ONLY = (
+        '''
+    Validation Only: True'''
+    )
     _ALERTS_TEMPLATE = (
         '''
-            Sent Alerts: {sent_alerts}
-            Failed Alerts: {failed_alerts}'''
-    )
-
-    _PUBLISHERS_TEMPLATE = (
-        '''
-            Publisher Errors:
-                {publisher_errors}'''
+    Live Alerts:
+        Sent Alerts: {sent_alerts}
+        Failed Alerts: {failed_alerts}'''
     )
     _DEFAULT_INDENT = 4
 
@@ -120,49 +120,23 @@ class TestResult(object):
     __bool__ = __nonzero__
 
     def __str__(self):
-        # Store the computed property
-        passed = self.passed
-
-        template = self._SIMPLE_TEMPLATE + '\n' + self._CLASSIFICATION_STATUS_TEMPLATE
         fmt = {
             'header': 'Test #{idx:02d}'.format(idx=self._idx + 1),
-            'classification_status': (
-                self._PASS_STRING if self.classification_status_passed else self._FAIL_STRING
-            )
         }
-
-        if self.rules_run:
-            template += '\n' + self._RULES_STATUS_TEMPLATE
-            fmt['rules_status'] = (
-                self._PASS_STRING if self.rules_status_passed else self._FAIL_STRING
-            )
-
-        if self.publishers_run:
-            template += '\n' + self._PUBLISHERS_STATUS_TEMPLATE
-
-            num_pass = 0
-            num_total = 0
-            for _, result in self._publication_results.iteritems():
-                num_total += 1
-                num_pass += 1 if result['success'] else 0
-            fmt['publishers_status'] = (
-                format_green('{}/{} Passed'.format(num_pass, num_total))
-                if num_pass == num_total
-                else format_red('{}/{} Passed'.format(num_pass, num_total))
-            )
-
-        if passed and not self._verbose:
+        if self.passed and not self._verbose:
+            template = self._PASS_TEMPLATE
+            fmt['pass'] = self._PASS_STRING
             return template.format(**fmt)
 
-        # Intent all lines in the original template
-        right_justified_lines = '\n'.join(
-            [i.rjust(len(i) + self._DEFAULT_INDENT * 2) for i in template.split('\n')]
-        )
-        template = '{}\n{}'.format(
-            right_justified_lines,
-            self._VERBOSE_TEMPLATE
-        )
+        # Otherwise, expand the entire test with verbose details
+        template = self._SIMPLE_TEMPLATE + '\n' + self._DESCRIPTION_LINE
         fmt['description'] = self._test_event['description']
+
+        # First, render classification
+        template += '\n' + self._CLASSIFICATION_STATUS_TEMPLATE
+        fmt['classification_status'] = (
+            self._PASS_STRING if self.classification_status_passed else self._FAIL_STRING
+        )
         fmt['expected_type'] = self._test_event['log']
         fmt['classified_type'] = (
             self._classified_result.log_schema_type
@@ -173,10 +147,13 @@ class TestResult(object):
         )
 
         if self._test_event.get('validate_schema_only'):
-            line = 'Validation Only: True'
-            template += '\n' + line.rjust(len(line) + self._DEFAULT_INDENT * 3)
-        elif self._with_rules:
-            template += self._RULES_TEMPLATE
+            template += self._VALIDATION_ONLY
+
+        if self.rules_run:
+            template += '\n' + self._RULES_STATUS_TEMPLATE
+            fmt['rules_status'] = (
+                self._PASS_STRING if self.rules_status_passed else self._FAIL_STRING
+            )
             fmt['triggered_rules'] = self._format_rules(
                 self._triggered_rules,
                 self.expected_rules
@@ -197,8 +174,25 @@ class TestResult(object):
                 fmt['sent_alerts'], fmt['failed_alerts'] = self._format_alert_results()
 
         if self.publishers_run:
-            template += self._PUBLISHERS_TEMPLATE
-            fmt['publisher_errors'] = format_red(self.publisher_errors)
+            template += '\n' + self._PUBLISHERS_STATUS_TEMPLATE
+
+            num_pass = 0
+            num_total = 0
+            for _, result in self._publication_results.iteritems():
+                num_total += 1
+                num_pass += 1 if result['success'] else 0
+            fmt['publishers_status'] = (
+                format_green('{}/{} Passed'.format(num_pass, num_total))
+                if num_pass == num_total
+                else format_red('{}/{} Passed'.format(num_pass, num_total))
+            )
+            fmt['publisher_errors'] = (
+                format_red('\n'.join([
+                    '           ' + error for error in self.publisher_errors
+                ]))
+                if self.publisher_errors
+                else '           ' + self._NONE_STRING
+            )
 
         return textwrap.dedent(template.format(**fmt)).rstrip() + '\n'
 
@@ -327,12 +321,18 @@ class TestResult(object):
 
     @property
     def publisher_errors(self):
+        """Returns an array of strings describing errors in the publisher tests
+
+        The strings take the form:
+
+            [output:descriptor]: (Error Type) Error message
+        """
         if not self.publishers_run:
             return []
 
         return [
-            item['error']
-            for _, item
+            "{}: ({}) {}".format(output_descriptor, type(item['error']).__name__, item['error'])
+            for output_descriptor, item
             in self._publication_results.iteritems()
             if not item['success']
         ]
