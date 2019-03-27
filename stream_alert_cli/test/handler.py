@@ -90,8 +90,6 @@ class TestRunner(object):
         self._lookup_tables_mock = mock_lookup_table_results()
         self._passed = 0
         self._failed = 0
-        self._publishers_run = 0
-        self._publishers_failed = 0
         prefix = self._config['global']['account']['prefix']
         patch.dict(
             os.environ,
@@ -154,17 +152,6 @@ class TestRunner(object):
             format_red('Fail: {}\n'.format(self._failed)) if self._failed else 'Fail: 0\n',
         ]
 
-        if self._publishers_run:
-            summary.append('Publishers Run: {}'.format(self._publishers_run))
-            summary.append(
-                (
-                    format_red('Failed: {}'.format(self._publishers_failed))
-                    if self._publishers_failed
-                    else format_green('All passed')
-                )
-            )
-            summary.append('')
-
         print('\n'.join(summary))
 
         for path in sorted(self._errors):
@@ -207,7 +194,6 @@ class TestRunner(object):
         for event_file in self._get_test_files():
             test_event = TestEventFile(event_file.replace(self._files_dir, ''))
             # Iterate over the individual test events in the file
-            publication_results = None
             for idx, original_event, event in self._load_test_file(event_file):
                 if not event:
                     continue
@@ -251,12 +237,6 @@ class TestRunner(object):
 
             self._passed += test_event.passed
             self._failed += test_event.failed
-
-            if publication_results:
-                for _output, _result in publication_results.iteritems():
-                    self._publishers_run += 1
-                    if not _result['success']:
-                        self._publishers_failed += 1
 
             # It is possible for a test_event to have no results,
             # so only print it if it does and if quiet mode is no being used
