@@ -61,7 +61,12 @@ class TestResult(object):
     """TestResult contains information useful for tracking test results"""
 
     _NONE_STRING = '<None>'
-    _SIMPLE_TEMPLATE = '{header}: {status}{publisher_results}'
+    _PASS_STRING = format_green('Pass')
+    _FAIL_STRING = format_red('Fail')
+    _SIMPLE_TEMPLATE = '{header}:'
+    _CLASSIFICATION_STATUS_TEMPLATE = '  Classification: {classification_status}'
+    _RULES_STATUS_TEMPLATE = '  Rules: {rules_status}'
+    _PUBLISHERS_STATUS_TEMPLATE = '  Publishers: {publishers_status}'
     _VERBOSE_TEMPLATE = (
         '''
             Description: {description}
@@ -90,6 +95,12 @@ class TestResult(object):
             Sent Alerts: {sent_alerts}
             Failed Alerts: {failed_alerts}'''
     )
+
+    _PUBLISHERS_TEMPLATE = (
+        '''
+            Publisher Errors:
+                {publisher_errors}'''
+    )
     _DEFAULT_INDENT = 4
 
     def __init__(self, index, test_event, classified_result, with_rules=False, verbose=False):
@@ -109,35 +120,46 @@ class TestResult(object):
     __bool__ = __nonzero__
 
     def __str__(self):
-
         # Store the computed property
         passed = self.passed
 
+        template = self._SIMPLE_TEMPLATE + '\n' + self._CLASSIFICATION_STATUS_TEMPLATE
         fmt = {
             'header': 'Test #{idx:02d}'.format(idx=self._idx + 1),
-            'status': format_green('Pass') if passed else format_red('Fail'),
-            'publisher_results': ''
+            'classification_status': (
+                self._PASS_STRING if self.classification_status_passed else self._FAIL_STRING
+            )
         }
 
-        if self._publication_results:
+        if self.rules_run:
+            template += '\n' + self._RULES_STATUS_TEMPLATE
+            fmt['rules_status'] = (
+                self._PASS_STRING if self.rules_status_passed else self._FAIL_STRING
+            )
+
+        if self.publishers_run:
+            template += '\n' + self._PUBLISHERS_STATUS_TEMPLATE
+
             num_pass = 0
             num_total = 0
             for output_descriptor, result in self._publication_results.iteritems():
                 num_total += 1
                 num_pass += 1 if result['success'] else 0
-            fmt['publisher_results'] = '\n  Publishers: {}'.format(
-                (
-                    format_green('{}/{} Passed'.format(num_pass, num_total))
-                    if num_pass == num_total
-                    else format_red('{}/{} Passed'.format(num_pass, num_total))
-                )
+            fmt['publishers_status'] = (
+                format_green('{}/{} Passed'.format(num_pass, num_total))
+                if num_pass == num_total
+                else format_red('{}/{} Passed'.format(num_pass, num_total))
             )
 
         if passed and not self._verbose:
-            return self._SIMPLE_TEMPLATE.format(**fmt)
+            return template.format(**fmt)
 
-        template = '{}{}'.format(
-            self._SIMPLE_TEMPLATE.rjust(len(self._SIMPLE_TEMPLATE) + self._DEFAULT_INDENT * 2),
+        # Intent all lines in the original template
+        right_justified_lines = '\n'.join(
+            [i.rjust(len(i) + self._DEFAULT_INDENT * 2) for i in template.split('\n')]
+        )
+        template = '{}\n{}'.format(
+            right_justified_lines,
             self._VERBOSE_TEMPLATE
         )
         fmt['description'] = self._test_event['description']
@@ -173,6 +195,10 @@ class TestResult(object):
             if self._live_test_results:
                 template += self._ALERTS_TEMPLATE
                 fmt['sent_alerts'], fmt['failed_alerts'] = self._format_alert_results()
+
+        if self.publishers_run:
+            template += self._PUBLISHERS_TEMPLATE
+            fmt['publisher_errors'] = format_red(self.publisher_errors)
 
         return textwrap.dedent(template.format(**fmt)).rstrip() + '\n'
 
@@ -258,6 +284,68 @@ class TestResult(object):
         return self._NONE_STRING if not result_block else '\n{}'.format('\n'.join(result_block))
 
     @property
+    def rules_run(self):
+        return not self._test_event.get('validate_schema_only') and self._with_rules
+
+    @property
+    def publishers_run(self):
+        return (
+            self.rules_run
+            and not self._test_event.get('skip_publishers')
+            and self._publication_results
+        )
+
+    @property
+    def classification_status_passed(self):
+        return self._classified
+
+    @property
+    def rules_status_passed(self):
+        return self.rules_run and (self._triggered_rules == self.expected_rules)
+
+    @property
+    def has_live_tests(self):
+        return self._live_test_results
+
+    @property
+    def live_tests_status_passed(self):
+        for result in self._live_test_results.itervalues():
+            if not all(status for status in result.itervalues()):
+                return False
+        return True
+
+    @property
+    def publishers_status_passed(self):
+        if not self.rules_run:
+            return False
+
+        for output_descriptor, result in self._publication_results.iteritems():
+            if not result['success']:
+                return False
+
+        return True
+
+    @property
+    def publisher_errors(self):
+        if not self.publishers_run:
+            return []
+
+        return [
+            item['error']
+            for _, item
+            in self._publication_results.iteritems()
+            if not item['success']
+        ]
+
+    @property
+    def count_publisher_tests_passed(self):
+        return sum(1 for _, result in self._publication_results.iteritems() if result['success'])
+
+    @property
+    def count_publisher_tests_run(self):
+        return len(self._publication_results)
+
+    @property
     def passed(self):
         """A test has passed if it meets the following criteria:
 
@@ -265,21 +353,20 @@ class TestResult(object):
         2) If rules are being tested, all triggered rules match expected rules
         3) If a live test is being performed, all alerts sent to outputs successfully
         """
-        if not self._classified:
+        if not self.classification_status_passed:
             return False
 
-        if self._test_event.get('validate_schema_only'):
+        if not self.rules_run:
             return True
 
-        if not self._with_rules:
-            return True
-
-        if not self._triggered_rules == self.expected_rules:
+        if not self.rules_status_passed:
             return False
 
-        for result in self._live_test_results.itervalues():
-            if not all(status for status in result.itervalues()):
-                return False
+        if not self.live_tests_status_passed:
+            return False
+
+        if not self.publishers_status_passed:
+            return False
 
         return True
 
