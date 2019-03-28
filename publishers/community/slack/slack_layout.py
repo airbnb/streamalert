@@ -70,7 +70,7 @@ class Summary(AlertPublisher):
             ],
 
             # This information is passed-through to future publishers.
-            '_previous_publication': publication,
+            '@slack._previous_publication': publication,
         }
 
     @staticmethod
@@ -146,7 +146,7 @@ class AttachPublication(AlertPublisher):
     """
 
     def publish(self, alert, publication):
-        if '_previous_publication' not in publication or '@slack.attachments' not in publication:
+        if '@slack._previous_publication' not in publication or '@slack.attachments' not in publication:
             # This publisher cannot be run except immediately after the Summary publisher
             return publication
 
@@ -174,7 +174,7 @@ class AttachPublication(AlertPublisher):
 
     @staticmethod
     def _get_publication(_, publication):
-        return publication['_previous_publication']
+        return publication['@slack._previous_publication']
 
 
 @Register
@@ -189,8 +189,8 @@ class AttachStringTemplate(AlertPublisher):
     Subclass implementations of this can decide to override any of the implementation or come
     up with their own!
 
-    By default, this publisher needs to be run after the Summary publisher, as it depends on
-    the magic-magic _previous_publication field.
+    If this publisher is run after the Summary publisher, it will correctly pull the original
+    publication from the @slack._previous_publication, otherwise it uses the default publication.
     """
 
     def publish(self, alert, publication):
@@ -217,7 +217,11 @@ class AttachStringTemplate(AlertPublisher):
 
     @staticmethod
     def _get_template_args(_, publication):
-        return publication['_previous_publication']
+        return (
+            publication['@slack._previous_publication']
+            if '@slack._previous_publication' in publication
+            else publication
+        )
 
     @staticmethod
     def _color():

@@ -17,8 +17,13 @@ limitations under the License.
 from datetime import datetime
 from nose.tools import assert_equal, assert_less_equal
 
-from publishers.community.slack.slack_layout import Summary, AttachRuleInfo, AttachPublication, \
-    AttachFullRecord
+from publishers.community.slack.slack_layout import (
+    AttachFullRecord,
+    AttachPublication,
+    AttachRuleInfo,
+    AttachStringTemplate,
+    Summary
+)
 from tests.unit.stream_alert_alert_processor.helpers import get_alert
 
 
@@ -37,7 +42,7 @@ class TestSummary(object):
 
         expectation = {
             '@slack.text': 'Rule triggered',
-            '_previous_publication': {},
+            '@slack._previous_publication': {},
             '@slack.attachments': [
                 {
                     'author_link': '',
@@ -62,7 +67,10 @@ class TestSummary(object):
         }
 
         assert_equal(publication['@slack.text'], expectation['@slack.text'])
-        assert_equal(publication['_previous_publication'], expectation['_previous_publication'])
+        assert_equal(
+            publication['@slack._previous_publication'],
+            expectation['@slack._previous_publication']
+        )
         assert_equal(len(publication['@slack.attachments']), len(expectation['@slack.attachments']))
         assert_equal(
             publication['@slack.attachments'][0].keys(),
@@ -121,7 +129,7 @@ class TestAttachPublication(object):
         alert.created = datetime(2019, 1, 1)
 
         previous = {
-            '_previous_publication': {'foo': 'bar'},
+            '@slack._previous_publication': {'foo': 'bar'},
             '@slack.attachments': [
                 {
                     'text': 'attachment1',
@@ -131,7 +139,7 @@ class TestAttachPublication(object):
         publication = self._publisher.publish(alert, previous)
 
         expectation = {
-            '_previous_publication': {'foo': 'bar'},
+            '@slack._previous_publication': {'foo': 'bar'},
             '@slack.attachments': [
                 {'text': 'attachment1'},
                 {
@@ -143,6 +151,52 @@ class TestAttachPublication(object):
             ]
         }
 
+        assert_equal(publication, expectation)
+
+
+class TestAttachStringTemplate(object):
+    def setup(self):
+        self._publisher = AttachStringTemplate()
+
+    def test_from_publication(self):
+        """Publishers - Slack - AttachStringTemplate - from publication"""
+        alert = get_alert(context={
+            'slack_message_template': 'Foo {bar} baz {buzz}'
+        })
+        alert.created = datetime(2019, 1, 1)
+
+        publication = self._publisher.publish(alert, {'bar': 'BAR?', 'buzz': 'BUZZ?'})
+
+        expectation = {
+            '@slack.attachments': [
+                {'color': '#ffb400', 'text': 'Foo BAR? baz BUZZ?'}
+            ],
+            'bar': 'BAR?',
+            'buzz': 'BUZZ?',
+        }
+        assert_equal(publication, expectation)
+
+    def test_from_previous_publication(self):
+        """Publishers - Slack - AttachStringTemplate - from previous publication"""
+        alert = get_alert(context={
+            'slack_message_template': 'Foo {bar} baz {buzz}'
+        })
+        alert.created = datetime(2019, 1, 1)
+
+        publication = self._publisher.publish(alert, {
+            '@slack._previous_publication': {
+                'bar': 'BAR?', 'buzz': 'BUZZ?',
+            },
+            'bar': 'wrong',
+            'buzz': 'wrong',
+        })
+
+        expectation = {
+            '@slack._previous_publication': {'bar': 'BAR?', 'buzz': 'BUZZ?'},
+            '@slack.attachments': [{'color': '#ffb400', 'text': 'Foo BAR? baz BUZZ?'}],
+            'bar': 'wrong',
+            'buzz': 'wrong',
+        }
         assert_equal(publication, expectation)
 
 
