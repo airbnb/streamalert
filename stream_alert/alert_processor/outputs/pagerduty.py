@@ -312,7 +312,7 @@ class PagerDutyOutput(OutputDispatcher):
                 return False
 
             if context['type'] == 'link':
-                if 'href' not in context:
+                if 'href' not in context or 'text' not in context:
                     return False
             elif context['type'] == 'image':
                 if 'src' not in context:
@@ -322,7 +322,19 @@ class PagerDutyOutput(OutputDispatcher):
 
             return True
 
-        return [x for x in contexts if is_valid_context(x)]
+        def standardize_context(context):
+            if context['type'] == 'link':
+                return {
+                    'type': 'link',
+                    'href': context['href'],
+                    'text': context['text'],
+                }
+            return {
+                'type': 'image',
+                'src': context['src'],
+            }
+
+        return [standardize_context(x) for x in contexts if is_valid_context(x)]
 
 
 @StreamAlertOutput

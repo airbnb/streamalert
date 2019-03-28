@@ -106,3 +106,45 @@ class PrettyPrintArrays(StringifyArrays):
         hello world
     """
     DELIMITER = '\n\n----------\n\n'
+
+
+@Register
+class AttachImage(StringifyArrays):
+    """Attaches the given image to the PagerDuty request
+
+    Works for both the v1 and v2 event api integrations.
+
+    It is recommended to subclass this class with your own implementation of _image_url(),
+    _click_url() and _alt_text() so that you can customize your own image.
+    """
+    IMAGE_URL = 'https://streamalert.io/en/stable/_images/sa-banner.png'
+    IMAGE_CLICK_URL = 'https://streamalert.io/en/stable/'
+    IMAGE_ALT_TEXT = 'StreamAlert Docs'
+
+    def publish(self, alert, publication):
+        publication['@pagerduty-v2.images'] = publication.get('@pagerduty-v2.images', [])
+        publication['@pagerduty-v2.images'].append({
+            'src': self._image_url(),
+            'href': self._click_url(),
+            'alt': self._alt_text(),
+        })
+
+        publication['@pagerduty.contexts'] = publication.get('@pagerduty.contexts', [])
+        publication['@pagerduty.contexts'].append({
+            'type': 'image',
+            'src': self._image_url(),
+        })
+
+        return publication
+
+    @classmethod
+    def _image_url(cls):
+        return cls.IMAGE_URL
+
+    @classmethod
+    def _click_url(cls):
+        return cls.IMAGE_CLICK_URL
+
+    @classmethod
+    def _alt_text(cls):
+        return cls.IMAGE_ALT_TEXT
