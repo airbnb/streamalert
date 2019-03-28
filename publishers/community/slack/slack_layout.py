@@ -25,6 +25,7 @@ RAUSCH = '#ff5a5f'
 BABU = '#00d1c1'
 LIMA = '#8ce071'
 HACKBERRY = '#7b0051'
+BEACH = '#ffb400'
 
 
 @Register
@@ -140,7 +141,8 @@ class AttachRuleInfo(AlertPublisher):
 class AttachPublication(AlertPublisher):
     """A publisher that attaches previous publications as an attachment
 
-    This publisher needs to be run after the Summary publisher
+    By default, this publisher needs to be run after the Summary publisher, as it depends on
+    the magic-magic _previous_publication field.
     """
 
     def publish(self, alert, publication):
@@ -150,7 +152,7 @@ class AttachPublication(AlertPublisher):
 
         publication_block = '```\n{}\n```'.format(
             json.dumps(
-                publication['_previous_publication'],
+                self._get_publication(alert, publication),
                 indent=2,
                 sort_keys=True,
                 separators=(',', ': ')
@@ -169,6 +171,57 @@ class AttachPublication(AlertPublisher):
     @staticmethod
     def _color():
         return BABU
+
+    @staticmethod
+    def _get_publication(_, publication):
+        return publication['_previous_publication']
+
+
+@Register
+class AttachStringTemplate(AlertPublisher):
+    """An extremely flexible publisher that simply renders an attachment as text
+
+    By default, this publisher accepts a template from the alert.context['slack_message_template']
+    which is .format()'d with the current publication. This allows individual rules to render
+    whatever they want. The template is a normal slack message, so it can support newline
+    characters, and any of slack's pseudo-markdown.
+
+    Subclass implementations of this can decide to override any of the implementation or come
+    up with their own!
+
+    By default, this publisher needs to be run after the Summary publisher, as it depends on
+    the magic-magic _previous_publication field.
+    """
+
+    def publish(self, alert, publication):
+        rendered_text = self._render_text(alert, publication)
+
+        publication['@slack.attachments'] = publication.get('@slack.attachments', [])
+        publication['@slack.attachments'].append({
+            'color': self._color(),
+            'text': cgi.escape(rendered_text),
+        })
+
+        return publication
+
+    @classmethod
+    def _render_text(cls, alert, publication):
+        template = cls._get_format_template(alert, publication)
+        args = cls._get_template_args(alert, publication)
+
+        return template.format(**args)
+
+    @staticmethod
+    def _get_format_template(alert, _):
+        return alert.context.get('slack_message_template', '[MISSING TEMPLATE]')
+
+    @staticmethod
+    def _get_template_args(_, publication):
+        return publication['_previous_publication']
+
+    @staticmethod
+    def _color():
+        return BEACH
 
 
 @Register
