@@ -121,23 +121,23 @@ class RuleDescriptionParser(object):
             if not isinstance(lines, list) or len(lines) <= 0:
                 return ''
 
-            previous_line_empty = False
             document = None
+            buffered_newlines = ''
             for line in lines:
                 if not line:
-                    previous_line_empty = True
+                    buffered_newlines += '\n'
                     continue
 
                 if document is None:
-                    previous_line_empty = False
+                    buffered_newlines = ''
                     document = line
                 else:
                     match = cls._URL_REGEX.match(document + line)
                     if match is not None:
                         document += line
                     else:
-                        space = '\n\n' if previous_line_empty else ' '
-                        previous_line_empty = False
+                        space = buffered_newlines if buffered_newlines else ' '
+                        buffered_newlines = ''
                         document += space + line
 
             if document is None:

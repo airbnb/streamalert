@@ -287,6 +287,9 @@ description:
 
     However a double linebreak will cause a real newline character 
     to appear in the final product.
+
+
+    And double linebreaks cause double newlines.
 '''
 
         data = RuleDescriptionParser.present(case)
@@ -295,9 +298,11 @@ description:
             'description': (
                 'This is a long description where normal linebreaks like '
                 'this one will simply cause the sentence to continue flowing '
-                'as normal.\n\n'
+                'as normal.\n'
                 'However a double linebreak will cause a real newline character '
                 'to appear in the final product.'
+                '\n\n'
+                'And double linebreaks cause double newlines.'
             ),
             'fields': {}
         })
@@ -316,7 +321,7 @@ description:
         assert_equal(data, {
             'author': '',
             'description': (
-                'https://airbnb.com\n\n'
+                'https://airbnb.com\n'
                 'The above url is line broken from this comment.'
             ),
             'fields': {}
