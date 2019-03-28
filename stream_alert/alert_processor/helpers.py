@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from stream_alert.shared.publisher import AlertPublisherRepository
+from stream_alert.shared.publisher import AlertPublisherRepository, PublisherAssemblyError
 
 
 def elide_string_middle(text, max_length):
@@ -38,7 +38,7 @@ def compose_alert(alert, output, descriptor):
 
     Args:
         alert (Alert): The alert to be dispatched
-        output (OutputDispatcher): Instance of the output class dispatching this alert
+        output (OutputDispatcher|None): Instance of the output class dispatching this alert
         descriptor (str): The descriptor for the output
 
     Returns:
@@ -56,8 +56,8 @@ def compose_alert(alert, output, descriptor):
     from stream_alert.alert_processor.outputs.output_base import OutputDispatcher
     output_service_name = output.__service__ if isinstance(output, OutputDispatcher) else None
 
-    # if not output_service_name:
-    #     raise PublisherAssemblyError('Invalid output service')
+    if not output_service_name:
+        raise PublisherAssemblyError('Invalid output service')
 
     publisher = _assemble_alert_publisher_for_output(
         alert,
@@ -76,7 +76,7 @@ def _assemble_alert_publisher_for_output(alert, output_service_name, descriptor)
 
     Args:
         alert (Alert): The alert that is pulled from DynamoDB
-        output_service_name (str|None): The __service__ name of the OutputDispatcher
+        output_service_name (str): The __service__ name of the OutputDispatcher
         descriptor (str): The descriptor of the Output
 
     Returns:
@@ -101,7 +101,7 @@ def _assemble_alert_publisher_for_output(alert, output_service_name, descriptor)
         #   descriptor.
 
         # Order is important here; we load the output-generic publishers first
-        if output_service_name in alert_publishers:
+        if output_service_name and output_service_name in alert_publishers:
             publisher_name_or_names = alert_publishers[output_service_name]
             if isinstance(publisher_name_or_names, list):
                 publisher_names = publisher_names + publisher_name_or_names
