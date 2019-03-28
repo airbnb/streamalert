@@ -124,6 +124,7 @@ class TestResult(object):
             'header': 'Test #{idx:02d}'.format(idx=self._idx + 1),
         }
         if self.passed and not self._verbose:
+            # Simply render "Test #XYZ: Pass" if the whole test case passed
             template = self._PASS_TEMPLATE
             fmt['pass'] = self._PASS_STRING
             return template.format(**fmt)
@@ -135,7 +136,7 @@ class TestResult(object):
         # First, render classification
         template += '\n' + self._CLASSIFICATION_STATUS_TEMPLATE
         fmt['classification_status'] = (
-            self._PASS_STRING if self.classification_status_passed else self._FAIL_STRING
+            self._PASS_STRING if self.classification_tests_passed else self._FAIL_STRING
         )
         fmt['expected_type'] = self._test_event['log']
         fmt['classified_type'] = (
@@ -146,13 +147,15 @@ class TestResult(object):
             )
         )
 
-        if self._test_event.get('validate_schema_only'):
+        # If it was classification-only, note it down
+        if self.validate_schema_only:
             template += self._VALIDATION_ONLY
 
-        if self.rules_run:
+        # Render the result of rules engine run
+        if self.rule_tests_were_run:
             template += '\n' + self._RULES_STATUS_TEMPLATE
             fmt['rules_status'] = (
-                self._PASS_STRING if self.rules_status_passed else self._FAIL_STRING
+                self._PASS_STRING if self.rule_tests_passed else self._FAIL_STRING
             )
             fmt['triggered_rules'] = self._format_rules(
                 self._triggered_rules,
@@ -169,11 +172,13 @@ class TestResult(object):
                 template += self._DISABLED_RULES_TEMPLATE
                 fmt['disabled_rules'] = ', '.join(disabled)
 
-            if self._live_test_results:
+            # Render live test results
+            if self.has_live_tests:
                 template += self._ALERTS_TEMPLATE
                 fmt['sent_alerts'], fmt['failed_alerts'] = self._format_alert_results()
 
-        if self.publishers_run:
+        # Render any publisher errors
+        if self.publisher_tests_were_run:
             template += '\n' + self._PUBLISHERS_STATUS_TEMPLATE
 
             num_pass = 0
@@ -186,12 +191,13 @@ class TestResult(object):
                 if num_pass == num_total
                 else format_red('{}/{} Passed'.format(num_pass, num_total))
             )
+            pad = ' ' * self._DEFAULT_INDENT * 3
             fmt['publisher_errors'] = (
                 format_red('\n'.join([
-                    '           ' + error for error in self.publisher_errors
+                    '{}{}'.format(pad, error) for error in self.publisher_errors
                 ]))
                 if self.publisher_errors
-                else '           ' + self._NONE_STRING
+                else '{}{}'.format(pad, self._NONE_STRING)
             )
 
         return textwrap.dedent(template.format(**fmt)).rstrip() + '\n'
@@ -278,39 +284,67 @@ class TestResult(object):
         return self._NONE_STRING if not result_block else '\n{}'.format('\n'.join(result_block))
 
     @property
-    def rules_run(self):
-        return not self._test_event.get('validate_schema_only') and self._with_rules
+    def validate_schema_only(self):
+        """Returns True if the testcase only requires classification and skips rules"""
+        return self._test_event.get('validate_schema_only')
 
     @property
-    def publishers_run(self):
+    def skip_publishers(self):
+        """Returns True if the testcase skips running publisher tests"""
+        return self._test_event.get('skip_publishers')
+
+    @property
+    def rule_tests_were_run(self):
+        """Returns True if this testcase ran Rules Engine tests"""
+        return not self.validate_schema_only and self._with_rules
+
+    @property
+    def publisher_tests_were_run(self):
+        """Returns True if this test ran Publisher tests for each output"""
         return (
-            self.rules_run
-            and not self._test_event.get('skip_publishers')
+            self.rule_tests_were_run
+            and not self.skip_publishers
             and self._publication_results
         )
 
     @property
-    def classification_status_passed(self):
+    def classification_tests_passed(self):
+        """Returns True if all classification tests passed"""
         return self._classified
 
     @property
-    def rules_status_passed(self):
-        return self.rules_run and (self._triggered_rules == self.expected_rules)
+    def rule_tests_passed(self):
+        """Returns True if all rules engine tests passed
+
+        Also returns False if the rules engine tests were not run
+        """
+        return self.rule_tests_were_run and (self._triggered_rules == self.expected_rules)
 
     @property
     def has_live_tests(self):
+        """Returns True if this testcase ran any live tests"""
         return self._live_test_results
 
     @property
-    def live_tests_status_passed(self):
+    def live_tests_passed(self):
+        """Returns True if all live tests passed
+
+        Also returns False if live tests were not run
+        """
+        if not self.has_live_tests:
+            return False
         for result in self._live_test_results.itervalues():
             if not all(status for status in result.itervalues()):
                 return False
         return True
 
     @property
-    def publishers_status_passed(self):
-        if not self.rules_run:
+    def publisher_tests_passed(self):
+        """Returns True if all publisher tests were passed
+
+        Also returns False if publisher tests were not run
+        """
+        if not self.publisher_tests_were_run:
             return False
 
         for _, result in self._publication_results.iteritems():
@@ -327,7 +361,7 @@ class TestResult(object):
 
             [output:descriptor]: (Error Type) Error message
         """
-        if not self.publishers_run:
+        if not self.publisher_tests_were_run:
             return []
 
         return [
@@ -339,10 +373,12 @@ class TestResult(object):
 
     @property
     def count_publisher_tests_passed(self):
+        """Returns number of publisher tests that failed"""
         return sum(1 for _, result in self._publication_results.iteritems() if result['success'])
 
     @property
     def count_publisher_tests_run(self):
+        """Returns total number of publisher tests"""
         return len(self._publication_results)
 
     @property
@@ -353,20 +389,20 @@ class TestResult(object):
         2) If rules are being tested, all triggered rules match expected rules
         3) If a live test is being performed, all alerts sent to outputs successfully
         """
-        if not self.classification_status_passed:
+        if not self.classification_tests_passed:
             return False
 
-        if not self.rules_run:
-            return True
+        if self.rule_tests_were_run:
+            if not self.rule_tests_passed:
+                return False
 
-        if not self.rules_status_passed:
-            return False
+        if self.has_live_tests:
+            if not self.live_tests_passed:
+                return False
 
-        if not self.live_tests_status_passed:
-            return False
-
-        if not self.publishers_status_passed:
-            return False
+        if self.publisher_tests_were_run:
+            if not self.publisher_tests_passed:
+                return False
 
         return True
 
