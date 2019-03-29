@@ -22,6 +22,7 @@ from nose.tools import assert_equal, assert_true, assert_false
 from publishers.community.generic import _delete_dictionary_fields, StringifyArrays
 from stream_alert.alert_processor.helpers import compose_alert
 from stream_alert.alert_processor.outputs.output_base import OutputDispatcher
+from stream_alert.alert_processor.outputs.slack import SlackOutput
 from tests.unit.stream_alert_alert_processor.helpers import get_alert
 
 
@@ -74,10 +75,11 @@ class TestDefaultPublisher(object):
         self._alert = get_alert(context={'context': 'value'})
         self._alert.created = datetime(2019, 1, 1)
         self._alert.publishers = [self.PUBLISHER_NAME]
+        self._output = MagicMock(spec=SlackOutput)  # Just use some random output
 
     def test_default_publisher(self):
         """AlertPublisher - DefaultPublisher - Positive Case"""
-        publication = compose_alert(self._alert, None, None)
+        publication = compose_alert(self._alert, self._output, 'test')
         expectation = {
             'publishers': ['stream_alert.shared.publisher.DefaultPublisher'],
             'source_entity': 'corp-prefix.prod.cb.region',
@@ -113,10 +115,11 @@ class TestRecordPublisher(object):
         self._alert = get_alert(context={'context': 'value'})
         self._alert.created = datetime(2019, 1, 1)
         self._alert.publishers = [self.PUBLISHER_NAME]
+        self._output = MagicMock(spec=SlackOutput)  # Just use some random output
 
     def test_default_publisher(self):
         """AlertPublisher - add_record - Positive Case"""
-        publication = compose_alert(self._alert, None, None)
+        publication = compose_alert(self._alert, self._output, 'test')
         expectation = {
             'record': {
                 'compressed_size': '9982',
@@ -139,11 +142,11 @@ class TestRemoveInternalFieldsPublisher(object):
         self._alert = get_alert(context={'context': 'value'})
         self._alert.created = datetime(2019, 1, 1)
         self._alert.publishers = [TestDefaultPublisher.PUBLISHER_NAME, self.PUBLISHER_NAME]
+        self._output = MagicMock(spec=SlackOutput)  # Just use some random output
 
     def test_remove_internal_fields(self):
         """AlertPublisher - remove_internal_fields"""
-
-        publication = compose_alert(self._alert, None, None)
+        publication = compose_alert(self._alert, self._output, 'test')
 
         expectation = {
             'source_entity': 'corp-prefix.prod.cb.region',
@@ -191,10 +194,11 @@ class TestRemoveStreamAlertNormalizationFields(object):
             },
         }
         self._alert.publishers = [TestDefaultPublisher.PUBLISHER_NAME, self.PUBLISHER_NAME]
+        self._output = MagicMock(spec=SlackOutput)  # Just use some random output
 
     def test_works(self):
         """AlertPublisher - FilterFields - Nothing"""
-        publication = compose_alert(self._alert, None, None)
+        publication = compose_alert(self._alert, self._output, 'test')
 
         expectation = {
             'staged': False,
@@ -244,11 +248,11 @@ class TestEnumerateFields(object):
         })
         self._alert.created = datetime(2019, 1, 1)
         self._alert.publishers = [TestDefaultPublisher.PUBLISHER_NAME, self.PUBLISHER_NAME]
+        self._output = MagicMock(spec=SlackOutput)  # Just use some random output
 
     def test_enumerate_fields(self):
         """AlertPublisher - enumerate_fields"""
-
-        publication = compose_alert(self._alert, None, None)
+        publication = compose_alert(self._alert, self._output, 'test')
 
         expectation = {
             'cluster': '',
@@ -284,8 +288,7 @@ class TestEnumerateFields(object):
 
     def test_enumerate_fields_alphabetical_order(self):
         """AlertPublisher - enumerate_fields - enforce alphabetical order"""
-
-        publication = compose_alert(self._alert, None, None)
+        publication = compose_alert(self._alert, self._output, 'test')
 
         expectation = [
             'cluster',
@@ -377,11 +380,11 @@ class TestRemoveFields(object):
         })
         self._alert.created = datetime(2019, 1, 1)
         self._alert.publishers = [TestDefaultPublisher.PUBLISHER_NAME, self.PUBLISHER_NAME]
+        self._output = MagicMock(spec=SlackOutput)  # Just use some random output
 
     def test_remove_fields(self):
         """AlertPublisher - enumerate_fields - enforce alphabetical order"""
-
-        publication = compose_alert(self._alert, None, None)
+        publication = compose_alert(self._alert, self._output, 'test')
 
         expectation = {
             'staged': False,
@@ -424,11 +427,11 @@ class TestPopulateFields(object):
         })
         self._alert.created = datetime(2019, 1, 1)
         self._alert.publishers = [TestDefaultPublisher.PUBLISHER_NAME, self.PUBLISHER_NAME]
+        self._output = MagicMock(spec=SlackOutput)  # Just use some random output
 
     def test_remove_fields(self):
         """AlertPublisher - populate_fields"""
-
-        publication = compose_alert(self._alert, None, None)
+        publication = compose_alert(self._alert, self._output, 'test')
 
         expectation = {
             'compressed_size': ['9982'],
@@ -453,11 +456,11 @@ class TestStringifyArrays(object):
         })
         self._alert.created = datetime(2019, 1, 1)
         self._alert.publishers = [TestDefaultPublisher.PUBLISHER_NAME, self.PUBLISHER_NAME]
+        self._output = MagicMock(spec=SlackOutput)  # Just use some random output
 
     def test_publish(self):
         """AlertPublisher - StringifyArrays - publish"""
-
-        publication = compose_alert(self._alert, None, None)
+        publication = compose_alert(self._alert, self._output, 'test')
 
         expectation = {
             'not_array': ['a', {'b': 'c'}, 'd'],

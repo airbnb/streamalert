@@ -23,9 +23,11 @@ import re
 import time
 import zlib
 
-from mock import patch
+from mock import patch, MagicMock
 
 from stream_alert.alert_processor import main as alert_processor
+from stream_alert.alert_processor.helpers import compose_alert
+from stream_alert.alert_processor.outputs.output_base import OutputDispatcher
 from stream_alert.classifier import classifier
 from stream_alert.classifier.parsers import ParserBase
 from stream_alert.rules_engine import rules_engine
@@ -111,8 +113,13 @@ class TestRunner(object):
         with patch.object(rules_engine.ThreatIntel, '_query') as ti_mock, \
              patch.object(rules_engine.LookupTables, 'load_lookup_tables') as lt_mock, \
              patch.object(rules_engine, 'AlertForwarder'), \
-             patch.object(rules_engine, 'RuleTable'), \
+             patch.object(rules_engine, 'RuleTable') as rule_table, \
              patch('rules.helpers.base.random_bool', return_value=True):
+
+            # Emptying out the rule table will force all rules to be unstaged, which causes
+            # non-required outputs to get properly populated on the Alerts that are generated
+            # when running the Rules Engine.
+            rule_table.return_value = False
 
             ti_mock.side_effect = self._threat_intel_mock
 
@@ -142,7 +149,7 @@ class TestRunner(object):
             format_underline('\nSummary:\n'),
             'Total Tests: {}'.format(self._passed + self._failed),
             format_green('Pass: {}'.format(self._passed)) if self._passed else 'Pass: 0',
-            format_red('Fail: {}\n'.format(self._failed)) if self._failed else 'Fail: 0\n'
+            format_red('Fail: {}\n'.format(self._failed)) if self._failed else 'Fail: 0\n',
         ]
 
         print('\n'.join(summary))
@@ -218,6 +225,11 @@ class TestRunner(object):
                     alerts = self._run_rules_engine(classifier_result[0].sqs_messages)
                     test_result.alerts = alerts
 
+                    if not original_event.get('skip_publishers'):
+                        for alert in alerts:
+                            publication_results = self._run_publishers(alert)
+                            test_result.set_publication_results(publication_results)
+
                     if self._type == self.Types.LIVE:
                         for alert in alerts:
                             alert_result = self._run_alerting(alert)
@@ -235,6 +247,38 @@ class TestRunner(object):
         self._finalize()
 
         return self._failed == 0
+
+    @staticmethod
+    def _run_publishers(alert):
+        """Runs publishers for all currently configured outputs on the given alert
+
+        Args:
+            - alert (Alert): The alert
+
+        Returns:
+            dict: A dict keyed by output:descriptor strings, mapped to nested dicts.
+                  The nested dicts have 2 keys:
+                  - publication (dict): The dict publication
+                  - success (bool): True if the publishing finished, False if it errored.
+        """
+        configured_outputs = alert.outputs
+
+        results = {}
+        for configured_output in configured_outputs:
+            [output_name, descriptor] = configured_output.split(':')
+
+            try:
+                output = MagicMock(spec=OutputDispatcher, __service__=output_name)
+                results[configured_output] = {
+                    'publication': compose_alert(alert, output, descriptor),
+                    'success': True,
+                }
+            except (RuntimeError, TypeError, NameError) as err:
+                results[configured_output] = {
+                    'success': False,
+                    'error': err,
+                }
+        return results
 
     def _get_test_files(self):
         """Helper to get rule files to be tested
