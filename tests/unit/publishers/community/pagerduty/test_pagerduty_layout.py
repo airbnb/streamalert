@@ -193,3 +193,37 @@ def test_pretty_print_arrays():
         'cb_server': 'cbserver'
     }
     assert_equal(publication, expectation)
+
+
+def test_attach_image():
+    """Publishers - PagerDuty - AttachImage"""
+    alert = get_alert()
+    alert.created = datetime(2019, 1, 1)
+    alert.publishers = {
+        'pagerduty': [
+            'publishers.community.pagerduty.pagerduty_layout.AttachImage'
+        ]
+    }
+
+    output = MagicMock(spec=OutputDispatcher)
+    output.__service__ = 'pagerduty'
+    descriptor = 'unit_test_channel'
+
+    publication = compose_alert(alert, output, descriptor)
+
+    expectation = {
+        '@pagerduty-v2.images': [
+            {
+                'src': 'https://streamalert.io/en/stable/_images/sa-banner.png',
+                'alt': 'StreamAlert Docs',
+                'href': 'https://streamalert.io/en/stable/'
+            }
+        ],
+        '@pagerduty.contexts': [
+            {
+                'src': 'https://streamalert.io/en/stable/_images/sa-banner.png',
+                'type': 'image'
+            }
+        ]
+    }
+    assert_equal(publication, expectation)

@@ -94,7 +94,7 @@ class CompositePublisher(AlertPublisher):
             except KeyError:
                 LOGGER.exception(
                     'CompositePublisher encountered KeyError with publisher: %s',
-                    publisher.__name__
+                    publisher.__class__.__name__
                 )
                 raise
 

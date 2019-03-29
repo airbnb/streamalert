@@ -149,7 +149,9 @@ class TestPagerDutyOutputV2(object):
             'http://pagerduty.foo.bar/create_event.json',
             headers=None,
             json={
-                'event_action': 'trigger', 'client': 'StreamAlert',
+                'event_action': 'trigger',
+                'client': 'StreamAlert',
+                'client_url': None,
                 'payload': {
                     'custom_details': OrderedDict(
                         [
@@ -166,9 +168,14 @@ class TestPagerDutyOutputV2(object):
                     ),
                     'source': 'carbonblack:binarystore.file.added',
                     'severity': 'critical',
-                    'summary': 'StreamAlert Rule Triggered - cb_binarystore_file_added'
+                    'summary': 'StreamAlert Rule Triggered - cb_binarystore_file_added',
+                    'component': None,
+                    'group': None,
+                    'class': None,
                 },
                 'routing_key': 'mocked_routing_key',
+                'images': [],
+                'links': [],
             },
             timeout=3.05, verify=True
         )
@@ -487,6 +494,7 @@ class TestPagerDutyIncidentOutput(object):
             json={
                 'event_action': 'trigger',
                 'client': 'StreamAlert',
+                'client_url': None,
                 'payload': {
                     'custom_details': OrderedDict(
                         [
@@ -503,9 +511,14 @@ class TestPagerDutyIncidentOutput(object):
                     ),
                     'source': 'carbonblack:binarystore.file.added',
                     'severity': 'critical',
-                    'summary': 'StreamAlert Rule Triggered - cb_binarystore_file_added'
+                    'summary': 'StreamAlert Rule Triggered - cb_binarystore_file_added',
+                    'component': None,
+                    'group': None,
+                    'class': None,
                 },
                 'routing_key': 'mocked_key',
+                'images': [],
+                'links': [],
             },
             timeout=3.05, verify=True
         )

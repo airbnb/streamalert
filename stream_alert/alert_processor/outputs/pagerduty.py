@@ -102,6 +102,12 @@ class EventsV2DataProvider(object):
         summary = publication.get('@pagerduty-v2.summary', default_summary)
         details = publication.get('@pagerduty-v2.custom_details', default_custom_details)
         severity = publication.get('@pagerduty-v2.severity', default_severity)
+        client_url = publication.get('@pagerduty-v2.client_url', None)
+        images = self._standardize_images(publication.get('@pagerduty-v2.images', []))
+        links = self._standardize_links(publication.get('@pagerduty-v2.links', []))
+        component = publication.get('@pagerduty-v2.component', None)
+        group = publication.get('@pagerduty-v2.group', None)
+        alert_class = publication.get('@pagerduty-v2.class', None)
 
         # Structure: https://v2.developer.pagerduty.com/docs/send-an-event-events-api-v2
         return {
@@ -120,14 +126,59 @@ class EventsV2DataProvider(object):
 
                 # When provided, must be in valid ISO 8601 format
                 # 'timestamp': '',
-                # 'component': '',
-                # 'group': '',
-                # 'class': '',
-                # 'images': [],
-                # 'links': [],
+                'component': component,
+                'group': group,
+                'class': alert_class,
             },
-            'client': 'StreamAlert'
+            'client': 'StreamAlert',
+            'client_url': client_url,
+            'images': images,
+            'links': links,
         }
+
+    @staticmethod
+    def _standardize_images(images):
+        """Strips invalid images out of the images argument
+
+        Images should be dicts with 3 keys:
+            - src: The full http URL of the image
+            - href: A URL that the image opens when clicked (Optional)
+            - alt: Alt text (Optional)
+        """
+        if not isinstance(images, list):
+            return []
+
+        return [
+            {
+                # Notably, if href is provided but is an invalid URL, the entire image will
+                # be entirely omitted from the incident... beware.
+                'src': image['src'],
+                'href': image['href'] if 'href' in image else '',
+                'alt': image['alt'] if 'alt' in image else '',
+            }
+            for image in images
+            if isinstance(image, dict) and 'src' in image
+        ]
+
+    @staticmethod
+    def _standardize_links(links):
+        """Strips invalid links out of the links argument
+
+        Images should be dicts with 2 keys:
+           - href: A URL of the link
+           - text: Text of the link (Optional: Defaults to the href if no text given)
+        """
+        if not isinstance(links, list):
+            return []
+
+        return [
+            {
+                'href': link['href'],
+                'text': link['text'] if 'text' in link else link['href'],
+            }
+            for link in links
+            if isinstance(link, dict) and 'href' in link
+        ]
 
 
 @StreamAlertOutput
@@ -261,7 +312,7 @@ class PagerDutyOutput(OutputDispatcher):
                 return False
 
             if context['type'] == 'link':
-                if 'href' not in context:
+                if 'href' not in context or 'text' not in context:
                     return False
             elif context['type'] == 'image':
                 if 'src' not in context:
@@ -271,7 +322,19 @@ class PagerDutyOutput(OutputDispatcher):
 
             return True
 
-        return [x for x in contexts if is_valid_context(x)]
+        def standardize_context(context):
+            if context['type'] == 'link':
+                return {
+                    'type': 'link',
+                    'href': context['href'],
+                    'text': context['text'],
+                }
+            return {
+                'type': 'image',
+                'src': context['src'],
+            }
+
+        return [standardize_context(x) for x in contexts if is_valid_context(x)]
 
 
 @StreamAlertOutput
