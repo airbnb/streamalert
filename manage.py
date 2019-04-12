@@ -703,7 +703,7 @@ def _setup_test_subparser(subparser):
 
 
 def _setup_test_classifier_subparser(subparsers):
-    """Add the test validation subparser: manage.py test validate [options]"""
+    """Add the test validation subparser: manage.py test classifier [options]"""
     test_validate_parser = _generate_subparser(
         subparsers,
         'classifier',
