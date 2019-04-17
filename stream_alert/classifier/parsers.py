@@ -430,7 +430,14 @@ class ParserBase:
         # Handle jsonpath extraction of records
         LOGGER.debug('Parsing records with JSONPath: %s', self._json_path)
 
-        return jmespath.search(self._json_path, payload)
+        result = jmespath.search(self._json_path, payload)
+        if not result:
+            return []
+
+        if not isinstance(result, list):
+            result = [result]
+
+        return result
 
     def parse(self, data):
         """Main parser method to be handle parsing of the passed data

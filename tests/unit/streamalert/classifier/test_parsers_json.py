@@ -271,6 +271,41 @@ class TestJSONParser(object):
             options['schema']
         )
 
+    def test_single_nested_json(self):
+        """JSONParser - Single nested JSON"""
+        options = {
+            'schema': {
+                'middlekey1': 'string',
+                'middlekey2': []
+            },
+            'configuration': {
+                'json_path': 'topkey'
+            }
+        }
+
+        expected_record = {
+            'middlekey1': '1',
+            'middlekey2': []
+        }
+
+        data = {
+            'topkey': {
+                'middlekey1': '1',
+                'middlekey2': [],
+            }
+        }
+
+        record_data = json.dumps(data)
+
+        # get parsed data
+        parser = JSONParser(options)
+        assert_equal(parser.parse(record_data), True)
+
+        expected_result = [
+            expected_record
+        ]
+        assert_equal(parser.parsed_records, expected_result)
+
     def test_multi_nested_json(self):
         """JSONParser - Multi-nested JSON"""
         options = {
