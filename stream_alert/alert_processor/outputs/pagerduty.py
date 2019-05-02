@@ -120,7 +120,6 @@ class EventsV2DataProvider(object):
             # Once the alert is resolved, the dedup_key can be re-used.
             # https://v2.developer.pagerduty.com/docs/events-api-v2#alert-de-duplication
             'dedup_key': alert.alert_id,
-            #'incident_key': alert.alert_id,
             'payload': {
                 'summary': summary,
                 'source': alert.log_source,
@@ -414,14 +413,62 @@ class PagerDutyOutputV2(OutputDispatcher, EventsV2DataProvider):
 class PagerDutyIncidentOutput(OutputDispatcher, EventsV2DataProvider):
     """PagerDutyIncidentOutput handles all alert dispatching for PagerDuty Incidents REST API
 
-    In addition to using the REST API, this PagerDuty implementation also performs automatic
-    assignment of the incident, based upon context parameters.
+    In addition to creating an Alert through the EventsV2 API, this output will then find the
+    PagerDuty Incident that is created and automatically reassign, add more details, set priority,
+    add a note, and attach any additional responders to the incident.
 
-    context = {
-      'assigned_user': 'somebody@somewhere.somewhere',
-      'with_record': True|False,
-      'note': 'String goes here'
-    }
+
+    Context:
+        - assigned_user (string):
+                Email address of user to assign the incident to. If omitted will default to
+                the service's default escalation policy. If the email address is not
+                associated with a user in PagerDuty, it will log a warning and default to
+                the service's escalation policy.
+
+        - with_record (bool):
+                True to include the entire record in the Alert's payload. False to omit it.
+                Will be superseded by certain @pagerduty-v2 fields.
+
+        - note (bool):
+                A text note that is added to the Incident. Will be superseded by publisher
+                fields (see below).
+
+        - responders (list<string>):
+                A list of email addresses of users to add as Requested Responders. If any
+                email address is not associated with a user in PagerDuty, it will be omitted
+                and a warning will be logged.
+
+        - responder_message (string)
+                Text string that shows up in Response Request messages sent to requested
+                responders.
+
+
+    Publishing:
+        This output has a more complex workflow. The magic publisher fields for @pagerduty-v2
+        ALSO are respected by this output.
+
+        - @pagerduty-incident.incident_title (str):
+                The provided string will show up in the PagerDuty incident's title.
+
+                The child Alert's
+                title is controlled by other publisher magic fields.
+
+        - @pagerduty-incident.note (str):
+                Due to legacy reasons, this PagerDuty services adds a note containing
+                "Creating SOX Incident" to the final PagerDuty incident. Providing a string
+                to this magic field will override that behavior.
+
+        - @pagerduty-incident.urgency (str):
+                Either "low" or "high". By default urgency is "high" for all incidents.
+
+
+        - @pagerduty-incident.incident_body (str):
+                @deprecated
+                This is a legacy field that no longer serves any functionality. It populates
+                a field on the PagerDuty Incident that is never visible.
+
+
+        @see Also EventsV2DataProvider for more details
     """
     __service__ = 'pagerduty-incident'
     INCIDENTS_ENDPOINT = 'incidents'
@@ -513,41 +560,6 @@ class PagerDutyIncidentOutput(OutputDispatcher, EventsV2DataProvider):
 
     def _dispatch(self, alert, descriptor):
         """Send incident to Pagerduty Incidents REST API v2
-
-        Context:
-
-            - with_record (bool):
-            - note (bool):
-
-        Publishing:
-            This output has a more complex workflow. The magic publisher fields for @pagerduty-v2
-            ALSO are respected by this output.
-
-            - @pagerduty-incident.incident_title (str):
-                    The provided string will override the PARENT INCIDENT's title. The child Alert's
-                    title is controlled by other publisher magic fields.
-
-            - @pagerduty-incident.incident_body (str):
-                    This is text that shows up in the body of the newly created incident.
-
-                    (!) NOTE: Due to the way incidents are merged, this text is almost never
-                              displayed properly on PagerDuty's UI. The only instance where it
-                              shows up correctly is when incident merging fails and the newly
-                              created incident does not have an alert attached to it.
-
-            - @pagerduty-incident.note (str):
-                    Due to legacy reasons, this PagerDuty services adds a note containing
-                    "Creating SOX Incident" to the final PagerDuty incident. Providing a string
-                    to this magic field will override that behavior.
-
-            - @pagerduty-incident.urgency (str):
-                    Either "low" or "high". By default urgency is "high" for all incidents.
-
-
-            In addition, the final event that is merged into the parent incident can be customized
-            as well.
-            @see EventsV2DataProvider for more details
-
 
         Args:
             alert (Alert): Alert instance which triggered a rule
@@ -653,7 +665,7 @@ class WorkContext(object):
 
             for responder_email in responders:
                 result = self._add_incident_response_request(
-                    incident,
+                    incident_id,
                     responder_email,
                     responder_message
                 )
@@ -667,7 +679,7 @@ class WorkContext(object):
                     errors.append(error)
 
         # Add a note to the incident
-        note = self._add_incident_note(incident, publication, rule_context)
+        note = self._add_incident_note(incident_id, publication, rule_context)
         if not note:
             error = '[{}] Failed to add note to incident ({})'.format(
                 self._output.__service__,
@@ -745,41 +757,6 @@ Errors:
         incident_body = publication.get('@pagerduty-incident.incident_body', default_incident_body)
         incident_urgency = publication.get('@pagerduty-incident.urgency', default_urgency)
 
-        # FIXME (derek.wang) use publisher to set priority instead of context
-        # Use the priority provided in the context, use it or the incident will be low priority
-        incident_priority = self._get_standardized_priority(rule_context)
-
-        # Get assignment
-        assignments = False
-        user_to_assign = rule_context.get('assigned_user', False)
-
-        # If provided, verify the user and get the id from API
-        if user_to_assign:
-            user = self._api_client.get_user_by_email(user_to_assign)
-            if user and user.get('id'):
-                assignments = [{'assignee': {
-                    'id': user.get('id'),
-                    'type': 'user_reference',
-                }}]
-            else:
-                LOGGER.warn(
-                    '[%s] Assignee (%s) could not be found in PagerDuty',
-                    self._output.__service__,
-                    user_to_assign
-                )
-
-        # Policies
-        # If escalation policy ID was not provided, use default one
-        policy_id_to_assign = rule_context.get(
-            'assigned_policy_id',
-            self._default_escalation_policy_id
-        )
-        # Assigned to escalation policy ID, return tuple
-        escalation_policy = {
-            'id': policy_id_to_assign,
-            'type': 'escalation_policy_reference'
-        }
-
         # https://api-reference.pagerduty.com/#!/Incidents/post_incidents
         incident_data = {
             'incident': {
@@ -819,15 +796,18 @@ Errors:
             }
         }
 
+        incident_priority = self._get_standardized_priority(rule_context)
         if incident_priority:
             incident_data['incident']['priority'] = incident_priority
 
+        assignments = self._get_incident_assignments(rule_context)
         if assignments:
             incident_data['incident']['assignments'] = assignments
         else:
             # Important detail;
             #   'assignments' and 'escalation_policy' seem to be exclusive. If you send both, the
             #   'escalation_policy' seems to supersede any custom assignments you have.
+            escalation_policy = self._get_incident_escalation_policy(rule_context)
             incident_data['incident']['escalation_policy'] = escalation_policy
 
         # Urgency, if provided, must always be 'high' or 'low' or the API will error
@@ -842,6 +822,38 @@ Errors:
                 )
 
         return incident_data
+
+    def _get_incident_assignments(self, rule_context):
+        assignments = False
+        user_to_assign = rule_context.get('assigned_user', False)
+
+        # If provided, verify the user and get the id from API
+        if user_to_assign:
+            user = self._api_client.get_user_by_email(user_to_assign)
+            if user and user.get('id'):
+                assignments = [{'assignee': {
+                    'id': user.get('id'),
+                    'type': 'user_reference',
+                }}]
+            else:
+                LOGGER.warn(
+                    '[%s] Assignee (%s) could not be found in PagerDuty',
+                    self._output.__service__,
+                    user_to_assign
+                )
+        return assignments
+
+    def _get_incident_escalation_policy(self, rule_context):
+        # If escalation policy ID was not provided, use default one
+        policy_id_to_assign = rule_context.get(
+            'assigned_policy_id',
+            self._default_escalation_policy_id
+        )
+        # Assigned to escalation policy ID, return tuple
+        return {
+            'id': policy_id_to_assign,
+            'type': 'escalation_policy_reference'
+        }
 
     def _create_base_alert_event(self, alert, descriptor, rule_context):
         """Creates an alert on REST API v2
@@ -865,7 +877,7 @@ Errors:
 
         return self._events_client.enqueue_event(event_data)
 
-    def _add_incident_response_request(self, incident, responder_email, message):
+    def _add_incident_response_request(self, incident_id, responder_email, message):
         responder = self._api_client.get_user_by_email(responder_email)
         if not responder:
             LOGGER.error(
@@ -875,13 +887,13 @@ Errors:
             return False
 
         return bool(self._api_client.request_responder(
-            incident.get('id'),
+            incident_id,
             self._api_user.get('id'),
             message,
             responder.get('id')
         ))
 
-    def _add_incident_note(self, incident, publication, rule_context):
+    def _add_incident_note(self, incident_id, publication, rule_context):
         """Adds a note to the incident, when applicable.
 
         Returns:
@@ -889,11 +901,6 @@ Errors:
         """
 
         # Add a note to the combined incident to help with triage
-        merged_id = incident.get('id')
-        if not merged_id:
-            LOGGER.error('[%s] Merged incident missing Id?', self._output.__service__)
-            return False
-
         default_incident_note = 'Creating SOX Incident'  # For reverse compatibility reasons
         incident_note = publication.get(
             '@pagerduty-incident.note',
@@ -907,7 +914,7 @@ Errors:
             # Simply return early without adding a note; no need to add a blank one
             return True
 
-        return bool(self._api_client.add_note(merged_id, incident_note))
+        return bool(self._api_client.add_note(incident_id, incident_note))
 
     @backoff.on_exception(backoff.constant,
                           PagerdutySearchDelay,
@@ -958,6 +965,9 @@ Errors:
     def _get_standardized_priority(self, context):
         """Method to verify the existence of a incident priority with the API
 
+        Uses the priority provided in the context. When omitted the incident defaults to low
+        priority.
+
         Args:
             context (dict): Context provided in the alert record
 
@@ -968,6 +978,7 @@ Errors:
         if not context:
             return False
 
+        # FIXME (derek.wang) use publisher to set priority instead of context
         priority_name = context.get('incident_priority', False)
         if not priority_name:
             return False
@@ -1171,32 +1182,6 @@ class PagerDutyRestApiClient(SslVerifiable):
 
         return escalation_policies[0] if escalation_policies else False
 
-    def merge_incident(self, parent_incident_id, merged_incident_id):
-        """Given two incident ids, notifies PagerDuty to merge them into a single incident
-
-        Returns the json representation of the merged incident, or False on failure.
-        """
-        data = {
-            'source_incidents': [
-                {
-                    'id': merged_incident_id,
-                    'type': 'incident_reference'
-                }
-            ]
-        }
-        merged_incident = self._http_provider.put(
-            self._get_incident_merge_url(parent_incident_id),
-            data,
-            headers=self._construct_headers(),
-            verify=self._should_do_ssl_verify()
-        )
-        self._update_ssl_verified(merged_incident)
-
-        if not merged_incident:
-            return False
-
-        return merged_incident.get('incident', False)
-
     def modify_incident(self, incident_id, incident_data):
         """Modifies an existing Incident
 
@@ -1316,9 +1301,6 @@ class PagerDutyRestApiClient(SslVerifiable):
             incidents_url=self._get_incidents_url(),
             incident_id=incident_id
         )
-
-    def _get_incident_merge_url(self, incident_id):
-        return '{incident_url}/merge'.format(incident_url=self._get_incident_url(incident_id))
 
     def _get_incident_notes_url(self, incident_id):
         return '{incident_url}/notes'.format(incident_url=self._get_incident_url(incident_id))
