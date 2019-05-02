@@ -590,8 +590,8 @@ class WorkContext(object):
         )
         self._events_client = PagerDutyEventsV2ApiClient(http)
 
-        # Cached REST API resources that may be used multiple times
-        self._api_from_user = None
+        # We cache the API User because we may use it multiple times
+        self._api_user = None
 
     def run(self, alert, descriptor):
         """Sets up an assigned incident."""
@@ -870,21 +870,13 @@ Errors:
         if not responder:
             LOGGER.error(
                 'Could not verify if requested incident responder "%s" exists',
-                self._email_from
-            )
-            return False
-
-        requester = self._api_client.get_user_by_email(self._email_from)
-        if not requester:
-            LOGGER.error(
-                'Could not verify if incident response requester "%s" exists',
-                self._email_from
+                responder_email
             )
             return False
 
         return bool(self._api_client.request_responder(
             incident.get('id'),
-            requester.get('id'),
+            self._api_user.get('id'),
             message,
             responder.get('id')
         ))
@@ -959,7 +951,7 @@ Errors:
             )
             return False
 
-        self._api_from_user = user
+        self._api_user = user
 
         return True
 
@@ -1261,7 +1253,7 @@ class PagerDutyRestApiClient(SslVerifiable):
 
         return note.get('note', False)
 
-    def request_responder(self, incident_id, requested_user_id, message, responder_user_id):
+    def request_responder(self, incident_id, requester_user_id, message, responder_user_id):
         # Be very careful with this API endpoint, there are several things you will need to know:
         #
         # 1) The requester_id MUST match the user associated with the API token
@@ -1272,7 +1264,7 @@ class PagerDutyRestApiClient(SslVerifiable):
         responder_request = self._http_provider.post(
             self._get_incident_responder_requests_url(incident_id),
             {
-                'requester_id': requested_user_id,
+                'requester_id': requester_user_id,
                 'message': message,
                 'responder_request_targets': [
                     {
