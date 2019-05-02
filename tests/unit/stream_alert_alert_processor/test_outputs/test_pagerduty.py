@@ -268,7 +268,8 @@ class TestPagerDutyIncidentOutput(object):
 
         # PUT /incidents/indicent_id/merge
         put_mock.return_value.status_code = 200
-        put_mock.return_value.json.side_effect = {'incident': {'id': 'incident_id'}}
+        json_incident = {'incident': {'id': 'incident_id'}}
+        put_mock.return_value.json.side_effect = [json_incident]
 
         ctx = {'pagerduty-incident': {'assigned_user': 'valid_user'}}
 
@@ -341,7 +342,8 @@ class TestPagerDutyIncidentOutput(object):
         # Order of PUT CALLS:
         #   1) /incidents/{incident_id} (Modify the incident)
         put_mock.return_value.status_code = 200
-        put_mock.return_value.json.side_effect = {'incident': {'id': 'incident_id'}}
+        json_incident = {'incident': {'id': 'incident_id'}}
+        put_mock.return_value.json.side_effect = [json_incident]
 
         ctx = {'pagerduty-incident': {'assigned_user': 'valid_user'}}
 
@@ -415,7 +417,8 @@ class TestPagerDutyIncidentOutput(object):
         # Order of PUT CALLS:
         #   1) /incidents/{incident_id} (Modify the incident)
         put_mock.return_value.status_code = 200
-        put_mock.return_value.json.side_effect = {'incident': {'id': 'incident_id'}}
+        json_incident = {'incident': {'id': 'incident_id'}}
+        put_mock.return_value.json.side_effect = [json_incident]
 
         ctx = {'pagerduty-incident': {'assigned_user': 'valid_user'}}
 
@@ -490,7 +493,8 @@ class TestPagerDutyIncidentOutput(object):
         # Order of PUT CALLS:
         #   1) /incidents/{incident_id} (Modify the incident)
         put_mock.return_value.status_code = 200
-        put_mock.return_value.json.side_effect = {'incident': {'id': 'incident_id'}}
+        json_incident = {'incident': {'id': 'incident_id'}}
+        put_mock.return_value.json.side_effect = [json_incident]
 
         ctx = {'pagerduty-incident': {'assigned_user': 'valid_user'}}
 
@@ -534,137 +538,42 @@ class TestPagerDutyIncidentOutput(object):
         log_mock.assert_called_with('[%s] Invalid pagerduty incident urgency: "%s"',
                                     'pagerduty-incident', 'asdf')
 
-    @patch('requests.put')
-    @patch('requests.post')
-    @patch('requests.get')
-    def test_dispatch_sends_correct_enqueue_event_request(self, get_mock, post_mock, put_mock):
-        """PagerDutyIncidentOutput - Dispatch Success, Good User, Sends Correct Event Request"""
-        # GET /users, /users
-        json_user = {'users': [{'id': 'valid_user_id'}]}
-
-        # GET /incidents
-        json_lookup = {'incidents': [{'id': 'incident_id'}]}
-
-        get_mock.return_value.status_code = 200
-        get_mock.return_value.json.side_effect = [json_user, json_user, json_lookup]
-
-        # POST /v2/enqueue, /incidents/incident_id/notes
-        post_mock.return_value.status_code = 200
-        json_event = {'dedup_key': 'returned_dedup_key'}
-        json_note = {'note': {'id': 'note_id'}}
-        post_mock.return_value.json.side_effect = [json_event, json_note]
-
-        # PUT /incidents/indicent_id/merge
-        put_mock.return_value.status_code = 200
-        put_mock.return_value.json.side_effect = {'incident': {'id': 'incident_id'}}
-
-        ctx = {'pagerduty-incident': {'assigned_user': 'valid_user'}}
-
-        self._dispatcher.dispatch(get_alert(context=ctx), self.OUTPUT)
-
-        # post_mock.assert_has_calls([call()])
-        post_mock.assert_any_call(
-            'https://events.pagerduty.com/v2/enqueue',
-            headers=None,
-            json={
-                'event_action': 'trigger',
-                'client': 'StreamAlert',
-                'client_url': None,
-                'payload': {
-                    'custom_details': OrderedDict(
-                        [
-                            ('description', 'Info about this rule and what actions to take'),
-                            ('record', {
-                                'compressed_size': '9982', 'node_id': '1', 'cb_server': 'cbserver',
-                                'timestamp': '1496947381.18',
-                                'md5': '0F9AA55DA3BDE84B35656AD8911A22E1',
-                                'type': 'binarystore.file.added',
-                                'file_path': '/tmp/5DA/AD8/0F9AA55DA3BDE84B35656AD8911A22E1.zip',
-                                'size': '21504'
-                            })
-                        ]
-                    ),
-                    'source': 'carbonblack:binarystore.file.added',
-                    'severity': 'critical',
-                    'summary': 'StreamAlert Rule Triggered - cb_binarystore_file_added',
-                    'component': None,
-                    'group': None,
-                    'class': None,
-                },
-                'routing_key': 'mocked_key',
-                'images': [],
-                'links': [],
-            },
-            timeout=3.05, verify=True
-        )
-
-    @patch('requests.put')
-    @patch('requests.post')
-    @patch('requests.get')
-    def test_dispatch_sends_correct_merge_request(self, get_mock, post_mock, put_mock):
-        """PagerDutyIncidentOutput - Dispatch Success, Good User, Sends Correct Merge Request"""
-        # GET /users, /users
-        json_user = {'users': [{'id': 'valid_user_id'}]}
-
-        # GET /incidents
-        json_lookup = {'incidents': [{'id': 'incident_id'}]}
-
-        get_mock.return_value.status_code = 200
-        get_mock.return_value.json.side_effect = [json_user, json_user, json_lookup]
-
-        # POST /v2/enqueue, /incidents/incident_id/notes
-        post_mock.return_value.status_code = 200
-        json_event = {'dedup_key': 'returned_dedup_key'}
-        json_note = {'note': {'id': 'note_id'}}
-        post_mock.return_value.json.side_effect = [json_event, json_note]
-
-        # PUT /incidents/indicent_id/merge
-        put_mock.return_value.status_code = 200
-        put_mock.return_value.json.side_effect = {'incident': {'id': 'incident_id'}}
-
-        ctx = {'pagerduty-incident': {'assigned_user': 'valid_user'}}
-
-        self._dispatcher.dispatch(get_alert(context=ctx), self.OUTPUT)
-
-        put_mock.assert_called_with(
-            'https://api.pagerduty.com/incidents/incident_id/merge',
-            headers={'From': 'email@domain.com', 'Content-Type': 'application/json',
-                     'Authorization': 'Token token=mocked_token',
-                     'Accept': 'application/vnd.pagerduty+json;version=2'},
-            json={'source_incidents': [{'type': 'incident_reference', 'id': 'incident_id'}]},
-            timeout=3.05,
-            verify=False
-        )
-
     @patch('logging.Logger.info')
     @patch('requests.put')
     @patch('requests.post')
     @patch('requests.get')
     def test_dispatch_success_good_user(self, get_mock, post_mock, put_mock, log_mock):
         """PagerDutyIncidentOutput - Dispatch Success, Good User"""
-        # GET /users, /users
+        # Order of GET CALLS:
+        #   1) /users (Verify user)
+        #   2) /incidents (Find incident from event)
+        #   3) /users (Verify assigned user)
         json_user = {'users': [{'id': 'valid_user_id'}]}
-
-        # GET /incidents
         json_lookup = {'incidents': [{'id': 'incident_id'}]}
 
         get_mock.return_value.status_code = 200
-        get_mock.return_value.json.side_effect = [json_user, json_user, json_lookup]
+        get_mock.return_value.json.side_effect = [json_user, json_lookup, json_user]
 
-        # POST /v2/enqueue, /incidents/incident_id/notes
+        # Order of POST CALLS:
+        #   1) /v2/enqueue (Create Event/Alert)
+        #   2) /incidents/incident_id/notes (Add notes)
         post_mock.return_value.status_code = 200
         json_event = {'dedup_key': 'returned_dedup_key'}
         json_note = {'note': {'id': 'note_id'}}
         post_mock.return_value.json.side_effect = [json_event, json_note]
 
-        # PUT /incidents/indicent_id/merge
+        # Order of PUT CALLS:
+        #   1) /incidents/{incident_id} (Modify the incident)
         put_mock.return_value.status_code = 200
-        put_mock.return_value.json.side_effect = {'incident': {'id': 'incident_id'}}
+        json_incident = {'incident': {'id': 'incident_id'}}
+        put_mock.return_value.json.side_effect = [json_incident]
 
+        # make the call
         ctx = {'pagerduty-incident': {'assigned_user': 'valid_user'}}
+        res = self._dispatcher.dispatch(get_alert(context=ctx), self.OUTPUT)
+        assert_true(res)
 
-        assert_true(self._dispatcher.dispatch(get_alert(context=ctx), self.OUTPUT))
-
+        # log_mock.assert_has_calls([call()])
         log_mock.assert_called_with('Successfully sent alert to %s:%s',
                                     self.SERVICE, self.DESCRIPTOR)
 
@@ -674,27 +583,31 @@ class TestPagerDutyIncidentOutput(object):
     @patch('requests.get')
     def test_dispatch_success_good_policy(self, get_mock, post_mock, put_mock, log_mock):
         """PagerDutyIncidentOutput - Dispatch Success, Good Policy"""
-        # GET /users
-        json_user = {'users': [{'id': 'user_id'}]}
-
-        # GET /incidents
+        # Order of GET CALLS:
+        #   1) /users (Verify user)
+        #   2) /incidents (Find incident from event)
+        #   3) /users (Verify assigned user)
+        json_user = {'users': [{'id': 'valid_user_id'}]}
         json_lookup = {'incidents': [{'id': 'incident_id'}]}
 
         get_mock.return_value.status_code = 200
-        get_mock.return_value.json.side_effect = [json_user, json_lookup]
+        get_mock.return_value.json.side_effect = [json_user, json_lookup, json_user]
 
-        # POST /v2/enqueue, /incidents/incident_id/notes
+        # Order of POST CALLS:
+        #   1) /v2/enqueue (Create Event/Alert)
+        #   2) /incidents/incident_id/notes (Add notes)
         post_mock.return_value.status_code = 200
         json_event = {'dedup_key': 'returned_dedup_key'}
         json_note = {'note': {'id': 'note_id'}}
         post_mock.return_value.json.side_effect = [json_event, json_note]
 
-        # PUT /incidents/{incident_id}/merge
+        # Order of PUT CALLS:
+        #   1) /incidents/{incident_id} (Modify the incident)
         put_mock.return_value.status_code = 200
-        put_mock.return_value.json.side_effect = {'incident': {'id': 'incident_id'}}
+        json_incident = {'incident': {'id': 'incident_id'}}
+        put_mock.return_value.json.side_effect = [json_incident]
 
         ctx = {'pagerduty-incident': {'assigned_policy_id': 'valid_policy_id'}}
-
         assert_true(self._dispatcher.dispatch(get_alert(context=ctx), self.OUTPUT))
 
         log_mock.assert_called_with('Successfully sent alert to %s:%s',
