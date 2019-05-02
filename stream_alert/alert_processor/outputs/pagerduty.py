@@ -590,20 +590,12 @@ class WorkContext(object):
         )
         self._events_client = PagerDutyEventsV2ApiClient(http)
 
-    def run(self, alert, descriptor):
-        """Sets up an assigned incident.
+        # Cached REST API resources that may be used multiple times
+        self._api_from_user = None
 
-        FIXME (derek.wang):
-            This work routine is a large, non-atomic set of jobs that can sometimes partially fail.
-            Partial failures can have side effects on PagerDuty, including the creation of
-            incomplete or partially complete alerts. Because the Alert Processor will automatically
-            retry the entire routine from scratch, this can cause partial alerts to get created
-            redundantly forever. The temporary solution is to delete the erroneous record from
-            DynamoDB manually, but in the future we should consider writing back state into the
-            DynamoDB alert record to track the steps involved in "fulfilling" the dispatch of this
-            alert.
-        """
-        if not self.verify_user_exists():
+    def run(self, alert, descriptor):
+        """Sets up an assigned incident."""
+        if not self._verify_user_exists():
             return False
 
         # Extracting context data to assign the incident
@@ -636,49 +628,68 @@ class WorkContext(object):
             )
             return False
 
-        # FIXME (derek.wang), see above
-        #   At this point, both the incident and the relevant alert event have been successfully
-        #   created. Any further work that fails the dispatch call will cause the alert to retry
-        #   and redundantly create more incidents and alert events.
-        #   Therefore, the hack is to simply let further failures go by always returning True.
-        #   The tradeoff is that incidents can be created on pagerduty in an incomplete state,
-        #   but this is easier to manage than StreamAlert redundantly creating hundreds (or more!)
-        #   redundant alerts.
-        stable = True
+        # At this point, both the incident and the relevant alert event have been successfully
+        # created.
+        #
+        # All of the code above this line is considered idempotent and can be called repeatedly
+        # without adverse side effects. Code BELOW this line is neither atomic nor idempotent, so
+        # we will not retry if any of the below code fails. Instead, we log an error and make a
+        # best-effort attempt to attach an error note to the PagerDuty incident, signalling that
+        # it was not setup properly.
+        #
+        # In the fateful event the alert gets stuck ANYWAY, the easiest solution is to destroy the
+        # associated record on the DynamoDB table.
+        errors = []
 
         # Add responder requests
-        responder_email = 'derek.wang@airbnb.com'
-        message = 'Please help us with something'
-        result = self._add_incident_response_request(incident, responder_email, message)
-        if not result:
-            LOGGER.error(
-                '[%s] Failed to request a responder (%s) on incident (%s)',
-                self._output.__service__,
-                responder_email,
-                incident_id
-            )
-            stable = False
+        responders = rule_context.get('responders', [])
+        if responders and not isinstance(responders, list):
+            responders = [responders]
+
+        if responders:
+            # The message shows up in the email
+            default_message = 'An incident was reported that requires your attention.'
+            responder_message = rule_context.get('responder_message', default_message)
+
+            for responder_email in responders:
+                result = self._add_incident_response_request(
+                    incident,
+                    responder_email,
+                    responder_message
+                )
+                if not result:
+                    error = '[{}] Failed to request a responder ({}) on incident ({})'.format(
+                        self._output.__service__,
+                        responder_email,
+                        incident_id
+                    )
+                    LOGGER.error(error)
+                    errors.append(error)
 
         # Add a note to the incident
         note = self._add_incident_note(incident, publication, rule_context)
         if not note:
-            LOGGER.error(
-                '[%s] Failed to add note to incident (%s)',
+            error = '[{}] Failed to add note to incident ({})'.format(
                 self._output.__service__,
                 incident_id
             )
-            stable = False
+            LOGGER.error(error)
+            errors.append(error)
 
         # If something went wrong, we can't throw an error anymore; log it on the Incident
-        if not stable:
-            self._add_instability_note(incident_id)
+        if errors:
+            self._add_instability_note(incident_id, errors)
 
         return True
 
-    def _add_instability_note(self, incident_id):
+    def _add_instability_note(self, incident_id, errors):
+        error_section = '\n'.join(['- {}'.format(err) for err in errors])
         instability_note = '''
 StreamAlert failed to correctly setup this incident. Please contact your StreamAlert administrator.
-        '''.strip()
+
+Errors:
+{}
+        '''.format(error_section).strip()
         self._api_client.add_note(incident_id, instability_note)
 
     def _update_base_incident(self, event, alert, publication, rule_context):
@@ -702,7 +713,7 @@ StreamAlert failed to correctly setup this incident. Please contact your StreamA
             )
             return False
 
-        event_incident_id = self.get_incident_id_from_event_incident_key(incident_key)
+        event_incident_id = self._get_incident_id_from_event_incident_key(incident_key)
         if not event_incident_id:
             LOGGER.error(
                 '[%s] Failed to retrieve Event Incident Id from dedup_key (%s)',
@@ -736,7 +747,7 @@ StreamAlert failed to correctly setup this incident. Please contact your StreamA
 
         # FIXME (derek.wang) use publisher to set priority instead of context
         # Use the priority provided in the context, use it or the incident will be low priority
-        incident_priority = self.get_standardized_priority(rule_context)
+        incident_priority = self._get_standardized_priority(rule_context)
 
         # Get assignment
         assignments = False
@@ -768,9 +779,6 @@ StreamAlert failed to correctly setup this incident. Please contact your StreamA
             'id': policy_id_to_assign,
             'type': 'escalation_policy_reference'
         }
-
-        # FIXME (derek.wang) use publisher to set priority instead of context
-        # assigned_key, assigned_value = self.get_incident_assignment(rule_context)
 
         # https://api-reference.pagerduty.com/#!/Incidents/post_incidents
         incident_data = {
@@ -916,7 +924,7 @@ StreamAlert failed to correctly setup this incident. Please contact your StreamA
                           on_backoff=backoff_handler(),
                           on_success=success_handler(),
                           on_giveup=giveup_handler())
-    def get_incident_id_from_event_incident_key(self, incident_key):
+    def _get_incident_id_from_event_incident_key(self, incident_key):
         """Queries the API to get the incident id from an incident key
 
         When creating an EVENT from the events-v2 API, events are created alongside an incident,
@@ -939,7 +947,7 @@ StreamAlert failed to correctly setup this incident. Please contact your StreamA
 
         return event_incident.get('id')
 
-    def verify_user_exists(self):
+    def _verify_user_exists(self):
         """Verifies that the 'email_from' provided in the creds is valid and exists."""
         user = self._api_client.get_user_by_email(self._email_from)
 
@@ -951,9 +959,11 @@ StreamAlert failed to correctly setup this incident. Please contact your StreamA
             )
             return False
 
+        self._api_from_user = user
+
         return True
 
-    def get_standardized_priority(self, context):
+    def _get_standardized_priority(self, context):
         """Method to verify the existence of a incident priority with the API
 
         Args:
@@ -985,41 +995,6 @@ StreamAlert failed to correctly setup this incident. Please contact your StreamA
             return {'id': priority_id, 'type': 'priority_reference'}
 
         return False
-
-    def get_incident_assignment(self, context):
-        """Method to determine if the incident gets assigned to a user or an escalation policy
-
-        Incident assignment goes in this order:
-          Provided user -> provided policy -> default escalation policy
-
-        Args:
-            context (dict): Context provided in the alert record
-
-        Returns:
-            tuple: assigned_key (str), assigned_value (dict to assign incident to an escalation
-            policy or array of dicts to assign incident to users)
-        """
-        # Check if a user to assign the incident is provided
-        user_to_assign = context.get('assigned_user', False)
-
-        # If provided, verify the user and get the id from API
-        if user_to_assign:
-            user = self._api_client.get_user_by_email(user_to_assign)
-            if user and user.get('id'):
-                return 'assignments', [{'assignee': {
-                    'id': user.get('id'),
-                    'type': 'user_reference',
-                }}]
-
-        # If escalation policy ID was not provided, use default one
-        policy_id_to_assign = context.get(
-            'assigned_policy_id',
-            self._default_escalation_policy_id
-        )
-
-        # Assigned to escalation policy ID, return tuple
-        return 'escalation_policy', {
-            'id': policy_id_to_assign, 'type': 'escalation_policy_reference'}
 
 
 # pylint: disable=protected-access
