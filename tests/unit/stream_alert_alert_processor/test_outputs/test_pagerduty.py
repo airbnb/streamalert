@@ -1019,7 +1019,7 @@ class TestPagerDutyIncidentOutput(object):
             },
             json={
                 'requester_id': 'valid_user_id',
-                'message': 'I am tea kettle short and stout',
+                'message': 'An incident was reported that requires your attention.',
                 'responder_request_targets': [
                     {
                         'responder_request_target': {
