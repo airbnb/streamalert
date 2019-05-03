@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 # pylint: disable=protected-access,attribute-defined-outside-init,too-many-lines,invalid-name
+import re
 from collections import OrderedDict
 from mock import patch, PropertyMock, Mock, MagicMock, call
 from nose.tools import assert_equal, assert_false, assert_true
@@ -619,46 +620,9 @@ class TestPagerDutyIncidentOutput(object):
     @patch('requests.get')
     def test_dispatch_success_with_priority(self, get_mock, post_mock, put_mock, log_mock):
         """PagerDutyIncidentOutput - Dispatch Success With Priority"""
-        # GET /priorities, /users
-        json_user = {'users': [{'id': 'user_id'}]}
-        json_priority = {'priorities': [{'id': 'priority_id', 'name': 'priority_name'}]}
-        json_lookup = {'incidents': [{'id': 'incident_id'}]}
-
-        def setup_post_mock(mock, json_incident, json_event, json_note):
-            def post(*args, **_):
-                url = args[0]
-                if url == 'https://api.pagerduty.com/incidents':
-                    response = json_incident
-                elif url == 'https://events.pagerduty.com/v2/enqueue':
-                    response = json_event
-                elif (
-                        url.startswith('https://api.pagerduty.com/incidents/') and
-                        url.endswith('/notes')
-                ):
-                    response = json_note
-                else:
-                    raise RuntimeError('Misconfigured mock: {}'.format(url))
-
-                _mock = MagicMock()
-                _mock.status_code = 200
-                _mock.json.return_value = response
-                return _mock
-
-            mock.side_effect = post
-
-        get_mock.return_value.status_code = 200
-        get_mock.return_value.json.side_effect = [json_user, json_priority, json_lookup]
-
-        # POST /incidents, /v2/enqueue, /incidents/{incident_id}/notes
-        json_incident = {'incident': {'id': 'incident_id'}}
-        json_event = {'dedup_key': 'returned_dedup_key'}
-        json_note = {'note': {'id': 'note_id'}}
-        # post_mock.return_value.status_code = 200
-        # post_mock.return_value.json.side_effect = [json_incident, json_event, json_note]
-        setup_post_mock(post_mock, json_incident, json_event, json_note)
-
-        # PUT /incidents/{incident_id}/merge
-        put_mock.return_value.status_code = 200
+        RequestMocker.setup_mock(get_mock)
+        RequestMocker.setup_mock(post_mock)
+        RequestMocker.setup_mock(put_mock)
 
         ctx = {
             'pagerduty-incident': {
@@ -678,43 +642,9 @@ class TestPagerDutyIncidentOutput(object):
     @patch('requests.get')
     def test_dispatch_success_with_note(self, get_mock, post_mock, put_mock, log_mock):
         """PagerDutyIncidentOutput - Dispatch Success With Note"""
-        # GET /priorities, /users
-        json_user = {'users': [{'id': 'user_id'}]}
-        json_lookup = {'incidents': [{'id': 'incident_id'}]}
-
-        def setup_post_mock(mock, json_incident, json_event, json_note):
-            def post(*args, **_):
-                url = args[0]
-                if url == 'https://api.pagerduty.com/incidents':
-                    response = json_incident
-                elif url == 'https://events.pagerduty.com/v2/enqueue':
-                    response = json_event
-                elif (
-                        url.startswith('https://api.pagerduty.com/incidents/') and
-                        url.endswith('/notes')
-                ):
-                    response = json_note
-                else:
-                    raise RuntimeError('Misconfigured mock: {}'.format(url))
-
-                _mock = MagicMock()
-                _mock.status_code = 200
-                _mock.json.return_value = response
-                return _mock
-
-            mock.side_effect = post
-
-        get_mock.return_value.status_code = 200
-        get_mock.return_value.json.side_effect = [json_user, json_lookup]
-
-        # POST /incidents, /v2/enqueue, /incidents/{incident_id}/notes
-        json_incident = {'incident': {'id': 'incident_id'}}
-        json_event = {'dedup_key': 'returned_dedup_key'}
-        json_note = {'note': {'id': 'note_id'}}
-        setup_post_mock(post_mock, json_incident, json_event, json_note)
-
-        # PUT /incidents/{incident_id}/merge
-        put_mock.return_value.status_code = 200
+        RequestMocker.setup_mock(get_mock)
+        RequestMocker.setup_mock(post_mock)
+        RequestMocker.setup_mock(put_mock)
 
         ctx = {
             'pagerduty-incident': {
@@ -744,43 +674,9 @@ class TestPagerDutyIncidentOutput(object):
     @patch('requests.get')
     def test_dispatch_success_none_note(self, get_mock, post_mock, put_mock, log_mock):
         """PagerDutyIncidentOutput - Dispatch Success With No Note"""
-        # GET /priorities, /users
-        json_user = {'users': [{'id': 'user_id'}]}
-        json_lookup = {'incidents': [{'id': 'incident_id'}]}
-
-        def setup_post_mock(mock, json_incident, json_event):
-            def post(*args, **_):
-                url = args[0]
-                if url == 'https://api.pagerduty.com/incidents':
-                    response = json_incident
-                elif url == 'https://events.pagerduty.com/v2/enqueue':
-                    response = json_event
-                elif (
-                        url.startswith('https://api.pagerduty.com/incidents/') and
-                        url.endswith('/notes')
-                ):
-                    # assert the /notes endpoint is never called
-                    raise RuntimeError('This endpoint is not intended to be called')
-                else:
-                    raise RuntimeError('Misconfigured mock: {}'.format(url))
-
-                _mock = MagicMock()
-                _mock.status_code = 200
-                _mock.json.return_value = response
-                return _mock
-
-            mock.side_effect = post
-
-        get_mock.return_value.status_code = 200
-        get_mock.return_value.json.side_effect = [json_user, json_lookup]
-
-        # POST /incidents, /v2/enqueue, /incidents/{incident_id}/notes
-        json_incident = {'incident': {'id': 'incident_id'}}
-        json_event = {'dedup_key': 'returned_dedup_key'}
-        setup_post_mock(post_mock, json_incident, json_event)
-
-        # PUT /incidents/{incident_id}/merge
-        put_mock.return_value.status_code = 200
+        RequestMocker.setup_mock(get_mock)
+        RequestMocker.setup_mock(post_mock)
+        RequestMocker.setup_mock(put_mock)
 
         ctx = {
             'pagerduty-incident': {
@@ -789,6 +685,8 @@ class TestPagerDutyIncidentOutput(object):
         }
 
         assert_true(self._dispatcher.dispatch(get_alert(context=ctx), self.OUTPUT))
+
+        # FIXME (derek.wang) assert no call made to note endpoint?
 
         log_mock.assert_called_with('Successfully sent alert to %s:%s',
                                     self.SERVICE, self.DESCRIPTOR)
@@ -799,29 +697,30 @@ class TestPagerDutyIncidentOutput(object):
     @patch('requests.get')
     def test_dispatch_success_bad_user(self, get_mock, post_mock, put_mock, log_mock):
         """PagerDutyIncidentOutput - Dispatch Success, Bad User"""
-        # GET /users, /users
-        json_user = {'users': [{'id': 'user_id'}]}
-        json_not_user = {'not_users': [{'id': 'user_id'}]}
 
-        # GET /incidents
-        json_lookup = {'incidents': [{'id': 'incident_id'}]}
+        def user_matcher(*args, **kwargs):
+            if args[0] != 'https://api.pagerduty.com/users':
+                return False
 
-        get_mock.return_value.status_code = 200
-        get_mock.return_value.json.side_effect = [json_user, json_not_user, json_lookup]
+            query = kwargs.get('params', {}).get('query', None)
+            return query == 'invalid_user'
 
-        # POST /incidents, /v2/enqueue, /incidents/incident_id/notes
-        post_mock.return_value.status_code = 200
-        json_incident = {'incident': {'id': 'incident_id'}}
-        json_event = {'dedup_key': 'returned_dedup_key'}
-        json_note = {'note': {'id': 'note_id'}}
-        post_mock.return_value.json.side_effect = [json_incident, json_event, json_note]
-
-        # PUT /incidents/indicent_id/merge
-        put_mock.return_value.status_code = 200
+        RequestMocker.setup_mock(post_mock)
+        RequestMocker.setup_mock(put_mock)
+        RequestMocker.setup_mock(
+            get_mock,
+            [
+                [user_matcher, 200, {'users': []}],
+                ['/users', 200, RequestMocker.USERS_JSON],
+                ['/incidents', 200, RequestMocker.INCIDENTS_JSON],
+            ]
+        )
 
         ctx = {'pagerduty-incident': {'assigned_user': 'invalid_user'}}
 
         assert_true(self._dispatcher.dispatch(get_alert(context=ctx), self.OUTPUT))
+
+        # FIXME (derek.wang) assert bad user is replaced with default user?
 
         log_mock.assert_called_with('Successfully sent alert to %s:%s',
                                     self.SERVICE, self.DESCRIPTOR)
@@ -1485,3 +1384,92 @@ class TestWorkContextUnit(object):
 class StringThatStartsWith(str):
     def __eq__(self, other):
         return other.startswith(self)
+
+
+class RequestMocker(object):
+    USERS_JSON = {'users': [{'id': 'valid_user_id'}]}
+    INCIDENTS_JSON = {'incidents': [{'id': 'incident_id'}]}
+    INCIDENT_JSON = {'incident': {'id': 'incident_id'}}
+    PRIORITIES_JSON = {'priorities': [{'id': 'priority_id', 'name': 'priority_name'}]}
+    EVENT_JSON = {'dedup_key': 'returned_dedup_key'}
+    NOTE_JSON = {'note': {'id': 'note_id'}}
+
+    @staticmethod
+    def inspect_calls(mock):
+        """Immediately fail the test, but prints out existing calls to the given mock
+
+        So the problem with assert_has_calls() is that it requires you to declare all calls
+        including chained calls. This doesn't work because we do a bunch of random stuff
+        inbetween with the return value (such as .json() calls) and it's not really feasible
+        to declare ALL of the calls.
+
+        If you use assert_any_call(), this is helpful because you can ignore calls that you don't
+        care about. However, if the assertion fails, the error message does not return anything
+        useful.
+
+        Useful tidbit; for writing fixtures for implement multiple sequential calls, you can use
+        mock.assert_has_calls([call()]) to render out all of the calls in order they come.
+        """
+        mock.assert_has_calls([call()])
+
+    @classmethod
+    def setup_mock(cls, get_mock, conditions=None):
+        """Sets up a magic mock to return values based upon the conditions provided
+
+        The "conditions" arg is an array of structures.
+        Each structure is another array of exactly 3 elements:
+
+            1) The first element can be one of three types:
+                function
+                regex
+                string
+
+            2) The second element is an integer, the HTTP response code
+
+            3) The third element is a JSON dict, the response of the HTTP request
+
+        When the magic mock is called, it will iterate through each condition to find the first
+        condition that matches the given input arguments. It then sets up a mock response object
+        and returns it. If all conditions are false, it mocks a 404 response.
+
+        When conditions are omitted, it assumes some defaults that return positive cases.
+        """
+
+        if conditions is None:
+            conditions = [
+                ['/users', 200, cls.USERS_JSON],
+                ['/incidents', 200, cls.INCIDENTS_JSON],
+                ['/priorities', 200, cls.PRIORITIES_JSON],
+                ['/enqueue', 200, cls.EVENT_JSON],
+                ['/notes', 200, cls.NOTE_JSON],
+                [re.compile(r'^.*/incidents/[a-zA-Z0-9_-]+$'), 200, cls.INCIDENT_JSON],
+            ]
+
+        def _mocked_call(*args, **kwargs):
+            for condition in conditions:
+                matcher, status_code, response = condition
+
+                if callable(matcher):
+                    # Lambda or function
+                    is_condition_match = matcher(*args, **kwargs)
+                else:
+                    try:
+                        # I couldn't find an easy way to determine if a variable was an instance
+                        # of a regex type, so this was the best I could do
+                        is_condition_match = matcher.match(args[0])
+                    except AttributeError:
+                        # String
+                        is_condition_match = args[0].endswith(matcher)
+
+                if is_condition_match:
+                    _mock_response = MagicMock()
+                    _mock_response.status_code = 200
+                    _mock_response.json.return_value = response
+                    return _mock_response
+
+            _404_response = MagicMock()
+            _404_response.status_code = 404
+            return _404_response
+
+        get_mock.side_effect = _mocked_call
+
