@@ -16,7 +16,7 @@ limitations under the License.
 # pylint: disable=protected-access,attribute-defined-outside-init,too-many-lines,invalid-name
 import re
 from collections import OrderedDict
-from mock import patch, PropertyMock, Mock, MagicMock, call
+from mock import patch, Mock, MagicMock, call
 from nose.tools import assert_equal, assert_false, assert_true
 
 from stream_alert.alert_processor.outputs.output_base import OutputDispatcher, OutputRequestFailure
@@ -1245,7 +1245,7 @@ class RequestMocker(object):
 
                 if is_condition_match:
                     _mock_response = MagicMock()
-                    _mock_response.status_code = 200
+                    _mock_response.status_code = status_code
                     _mock_response.json.return_value = response
                     return _mock_response
 
@@ -1254,4 +1254,3 @@ class RequestMocker(object):
             return _404_response
 
         get_mock.side_effect = _mocked_call
-
