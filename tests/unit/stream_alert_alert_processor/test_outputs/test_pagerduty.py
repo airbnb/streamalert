@@ -1037,6 +1037,77 @@ class TestPagerDutyIncidentOutput(object):
             'Successfully sent alert to %s:%s', self.SERVICE, self.DESCRIPTOR
         )
 
+    @patch('logging.Logger.error')
+    @patch('logging.Logger.info')
+    @patch('requests.put')
+    @patch('requests.post')
+    @patch('requests.get')
+    def test_dispatch_request_responder_not_valid(self, get_mock, post_mock, put_mock,
+                                                  log_mock, log_error_mock):
+        """PagerDutyIncidentOutput - Dispatch Success, Responder not valid
+
+        When a responer is requested but the email is not associated with a PD user, it will
+        omit the request, log an error, add an instability note, but the overall request will
+        still succeed.
+        """
+        def invalid_user_matcher(*args, **kwargs):
+            if args[0] != 'https://api.pagerduty.com/users':
+                return False
+
+            query = kwargs.get('params', {}).get('query', None)
+            return query == 'invalid_responder@airbnb.com'
+
+        RequestMocker.setup_mock(post_mock)
+        RequestMocker.setup_mock(put_mock)
+        RequestMocker.setup_mock(
+            get_mock,
+            [
+                [invalid_user_matcher, 200, {'users': []}],
+                ['/users', 200, RequestMocker.USERS_JSON],
+                ['/incidents', 200, RequestMocker.INCIDENTS_JSON],
+            ]
+        )
+
+        ctx = {
+            'pagerduty-incident': {
+                'responders': ['invalid_responder@airbnb.com'],
+            }
+        }
+        assert_true(self._dispatcher.dispatch(get_alert(context=ctx), self.OUTPUT))
+
+        def responder_request_calls(*args, **_):
+            return args[0].endswith('/responder_requests')
+
+        RequestMocker.assert_mock_with_no_calls_like(post_mock, responder_request_calls)
+        log_error_mock.assert_called_with(
+            (
+                '[pagerduty-incident] Failed to request a responder (invalid_responder@airbnb.com)'
+                ' on incident (incident_id)'
+            )
+        )
+
+        expected_note = (
+            'StreamAlert failed to correctly setup this incident. Please contact your '
+            'StreamAlert administrator.\n\nErrors:\n- [pagerduty-incident] Failed to request '
+            'a responder (invalid_responder@airbnb.com) on incident (incident_id)'
+        )
+        post_mock.assert_any_call(
+            'https://api.pagerduty.com/incidents/incident_id/notes',
+            headers={'From': 'email@domain.com',
+                     'Content-Type': 'application/json',
+                     'Authorization': 'Token token=mocked_token',
+                     'Accept': 'application/vnd.pagerduty+json;version=2'},
+            json={'note': {'content': expected_note}},
+            timeout=3.05, verify=False
+        )
+
+        log_mock.assert_called_with('Successfully sent alert to %s:%s',
+                                    self.SERVICE, self.DESCRIPTOR)
+
+        log_mock.assert_called_with(
+            'Successfully sent alert to %s:%s', self.SERVICE, self.DESCRIPTOR
+        )
+
 
 @patch('stream_alert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS', 1)
 @patch('stream_alert.alert_processor.outputs.pagerduty.PagerDutyIncidentOutput.BACKOFF_MAX', 0)
