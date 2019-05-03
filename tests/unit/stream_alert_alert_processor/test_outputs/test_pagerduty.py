@@ -145,8 +145,14 @@ class TestPagerDutyOutput(object):
                 'client_url': '',
                 'event_type': 'trigger',
                 'contexts': [
-                    {'text': 'Link text', 'href': 'https://streamalert.io', 'type': 'link'},
-                    {'src': 'https://streamalert.io/en/stable/_images/sa-complete-arch.png', 'type': 'image'}
+                    {
+                        'text': 'Link text',
+                        'href': 'https://streamalert.io', 'type': 'link'
+                    },
+                    {
+                        'src': 'https://streamalert.io/en/stable/_images/sa-complete-arch.png',
+                        'type': 'image'
+                    }
                 ],
                 'client': 'streamalert',
                 'details': {
