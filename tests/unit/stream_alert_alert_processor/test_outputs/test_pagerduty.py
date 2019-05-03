@@ -112,6 +112,59 @@ class TestPagerDutyOutput(object):
 
         log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, 'bad_descriptor')
 
+    @patch('stream_alert.alert_processor.outputs.pagerduty.compose_alert')
+    @patch('logging.Logger.info')
+    @patch('requests.post')
+    def test_dispatch_success_with_contexts(self, post_mock, log_mock, compose_alert):
+        """PagerDutyOutput - Dispatch Success"""
+        compose_alert.return_value = {
+            '@pagerduty.contexts': [
+                {
+                    'type': 'link',
+                    'href': 'https://streamalert.io',
+                    'text': 'Link text'
+                },
+                {
+                    'type': 'image',
+                    'src': 'https://streamalert.io/en/stable/_images/sa-complete-arch.png',
+                }
+            ]
+        }
+
+        RequestMocker.setup_mock(post_mock)
+
+        assert_true(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
+
+        log_mock.assert_called_with('Successfully sent alert to %s:%s',
+                                    self.SERVICE, self.DESCRIPTOR)
+
+        post_mock.assert_called_with(
+            'http://pagerduty.foo.bar/create_event.json',
+            headers=None,
+            json={
+                'client_url': '',
+                'event_type': 'trigger',
+                'contexts': [
+                    {'text': 'Link text', 'href': 'https://streamalert.io', 'type': 'link'},
+                    {'src': 'https://streamalert.io/en/stable/_images/sa-complete-arch.png', 'type': 'image'}
+                ],
+                'client': 'streamalert',
+                'details': {
+                    'record': {
+                        'compressed_size': '9982', 'node_id': '1', 'cb_server': 'cbserver',
+                        'timestamp': '1496947381.18', 'md5': '0F9AA55DA3BDE84B35656AD8911A22E1',
+                        'type': 'binarystore.file.added',
+                        'file_path': '/tmp/5DA/AD8/0F9AA55DA3BDE84B35656AD8911A22E1.zip',
+                        'size': '21504'
+                    },
+                    'description': 'Info about this rule and what actions to take'
+                },
+                'service_key': 'mocked_service_key',
+                'description': 'StreamAlert Rule Triggered - cb_binarystore_file_added'
+            },
+            timeout=3.05, verify=True
+        )
+
 
 @patch('stream_alert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS', 1)
 class TestPagerDutyOutputV2(object):
@@ -737,7 +790,7 @@ class TestPagerDutyIncidentOutput(object):
         }
         assert_true(self._dispatcher.dispatch(get_alert(context=ctx), self.OUTPUT))
 
-        def notes_api_call(*args, **kwargs):
+        def notes_api_call(*args, **_):
             return args[0].endswith('/notes')
 
         RequestMocker.assert_mock_with_no_calls_like(post_mock, notes_api_call)
@@ -1382,6 +1435,7 @@ class StringThatStartsWith(str):
 
 
 class RequestMocker(object):
+    CREATE_EVENT_JSON = {'something': '?'}
     USERS_JSON = {'users': [{'id': 'valid_user_id'}]}
     INCIDENTS_JSON = {'incidents': [{'id': 'incident_id'}]}
     INCIDENT_JSON = {'incident': {'id': 'incident_id'}}
@@ -1410,11 +1464,8 @@ class RequestMocker(object):
             if condition(*args, **kwargs):
                 failed.append(index)
 
-        if not failed:
-            return
-
         assert_false(
-            True,
+            failed,
             (
                 'Failed to assert that mock was not called.\nOut of {} calls, '
                 'calls {} failed the condition.'
@@ -1446,6 +1497,7 @@ class RequestMocker(object):
 
         if conditions is None:
             conditions = [
+                ['/create_event.json', 200, cls.CREATE_EVENT_JSON],
                 ['/users', 200, cls.USERS_JSON],
                 ['/incidents', 200, cls.INCIDENTS_JSON],
                 ['/priorities', 200, cls.PRIORITIES_JSON],

@@ -264,6 +264,7 @@ class PagerDutyOutput(OutputDispatcher):
                         {
                             'type': 'link',
                             'href': 'https://streamalert.io/',
+                            'text': 'Link Text'
                         }
 
                     Image embed
