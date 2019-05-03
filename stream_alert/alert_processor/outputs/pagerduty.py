@@ -109,6 +109,11 @@ class EventsV2DataProvider(object):
         group = publication.get('@pagerduty-v2.group', None)
         alert_class = publication.get('@pagerduty-v2.class', None)
 
+        # We namespace the dedup_key by the descriptor, preventing situations where a single
+        # alert sending to multiple PagerDuty services from having colliding dedup_keys, which
+        # would PROBABLY be ok (because of segregated environments) but why take the risk?
+        dedup_key = '{}:{}'.format(descriptor, alert.alert_id)
+
         # Structure: https://v2.developer.pagerduty.com/docs/send-an-event-events-api-v2
         return {
             'routing_key': routing_key,
@@ -119,7 +124,7 @@ class EventsV2DataProvider(object):
             # the original result.
             # Once the alert is resolved, the dedup_key can be re-used.
             # https://v2.developer.pagerduty.com/docs/events-api-v2#alert-de-duplication
-            'dedup_key': alert.alert_id,
+            'dedup_key': dedup_key,
             'payload': {
                 'summary': summary,
                 'source': alert.log_source,
@@ -872,7 +877,7 @@ Errors:
             alert,
             descriptor,
             self._credentials['integration_key'],
-            with_record
+            with_record=with_record
         )
 
         return self._events_client.enqueue_event(event_data)
