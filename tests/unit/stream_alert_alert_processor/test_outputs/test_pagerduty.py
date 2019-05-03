@@ -876,13 +876,39 @@ class TestPagerDutyIncidentOutput(object):
         RequestMocker.setup_mock(
             put_mock,
             [
-                [r'^.*/incidents/[a-zA-Z0-9-_]+$', 400, {}],
+                [re.compile(r'^.*/incidents/[a-zA-Z0-9-_]+$'), 400, {}],
             ]
         )
 
         assert_false(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
 
+        log_mock.assert_any_call('[%s] Failed to update container incident for event', self.SERVICE)
         log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, self.DESCRIPTOR)
+
+    @patch('logging.Logger.error')
+    @patch('requests.put')
+    @patch('requests.post')
+    @patch('requests.get')
+    def test_dispatch_no_dispatch_no_incident_id_in_response(self, get_mock, post_mock, put_mock,
+                                                             log_mock):
+        """PagerDutyIncidentOutput - Dispatch Failure, No Incident Id in Response
+
+        This is somewhat of a specific weird case when the response structure is not what we
+        expect and is missing the id.
+        """
+        RequestMocker.setup_mock(get_mock)
+        RequestMocker.setup_mock(post_mock)
+        RequestMocker.setup_mock(
+            put_mock,
+            [
+                [re.compile(r'^.*/incidents/[a-zA-Z0-9-_]+$'), 200, {'incident': {'not_id': '?'}}],
+            ]
+        )
+
+        assert_false(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
+
+        RequestMocker.inspect_calls(log_mock)
+        log_mock.assert_any_call('[%s] Incident is missing "id"??', self.SERVICE)
 
     @patch('logging.Logger.error')
     def test_dispatch_bad_descriptor(self, log_mock):
@@ -909,6 +935,65 @@ class TestPagerDutyIncidentOutput(object):
             'pagerduty-incident': {
                 'responders': ['responder1@airbnb.com'],
                 'responder_message': 'I am tea kettle short and stout',
+            }
+        }
+        assert_true(self._dispatcher.dispatch(get_alert(context=ctx), self.OUTPUT))
+
+        get_mock.assert_any_call(
+            'https://api.pagerduty.com/users',
+            headers={
+                'Content-Type': 'application/json',
+                'Authorization': 'Token token=mocked_token',
+                'Accept': 'application/vnd.pagerduty+json;version=2'
+            },
+            params={'query': 'responder1@airbnb.com'},
+            timeout=3.05, verify=False
+        )
+
+        post_mock.assert_any_call(
+            'https://api.pagerduty.com/incidents/incident_id/responder_requests',
+            headers={
+                'From': 'email@domain.com',
+                'Content-Type': 'application/json',
+                'Authorization': 'Token token=mocked_token',
+                'Accept': 'application/vnd.pagerduty+json;version=2'
+            },
+            json={
+                'requester_id': 'valid_user_id',
+                'message': 'I am tea kettle short and stout',
+                'responder_request_targets': [
+                    {
+                        'responder_request_target': {
+                            'type': 'user_reference',
+                            'id': 'valid_user_id'
+                        }
+                    }
+                ]
+            },
+            timeout=3.05,
+            verify=False
+        )
+
+        log_mock.assert_called_with(
+            'Successfully sent alert to %s:%s', self.SERVICE, self.DESCRIPTOR
+        )
+
+    @patch('logging.Logger.info')
+    @patch('requests.put')
+    @patch('requests.post')
+    @patch('requests.get')
+    def test_dispatch_request_responder_single(self, get_mock, post_mock, put_mock, log_mock):
+        """PagerDutyIncidentOutput - Dispatch Success, Support single responder and default message
+
+        Ensure support for omitting the message and using string syntax for responder.
+        """
+        RequestMocker.setup_mock(get_mock)
+        RequestMocker.setup_mock(post_mock)
+        RequestMocker.setup_mock(put_mock)
+
+        ctx = {
+            'pagerduty-incident': {
+                'responders': 'responder1@airbnb.com',
             }
         }
         assert_true(self._dispatcher.dispatch(get_alert(context=ctx), self.OUTPUT))
