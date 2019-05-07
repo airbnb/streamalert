@@ -109,15 +109,22 @@ class EventsV2DataProvider(object):
         group = publication.get('@pagerduty-v2.group', None)
         alert_class = publication.get('@pagerduty-v2.class', None)
 
+        # We namespace the dedup_key by the descriptor, preventing situations where a single
+        # alert sending to multiple PagerDuty services from having colliding dedup_keys, which
+        # would PROBABLY be ok (because of segregated environments) but why take the risk?
+        dedup_key = '{}:{}'.format(descriptor, alert.alert_id)
+
         # Structure: https://v2.developer.pagerduty.com/docs/send-an-event-events-api-v2
         return {
             'routing_key': routing_key,
             'event_action': 'trigger',
 
-            # Beware of providing this; when this is provided, even if empty string, this will
-            # cause the dedup_key to be bound to the ALERT, not the incident. The implication
-            # is that the incident will no longer be searchable with incident_key=dedup_key
-            # 'dedup_key': '',
+            # Passing a dedup_key will ensure that only one event is ever created. Any subsequent
+            # request with the same dedup_key + routing_key + event_action will simply return
+            # the original result.
+            # Once the alert is resolved, the dedup_key can be re-used.
+            # https://v2.developer.pagerduty.com/docs/events-api-v2#alert-de-duplication
+            'dedup_key': dedup_key,
             'payload': {
                 'summary': summary,
                 'source': alert.log_source,
@@ -257,6 +264,7 @@ class PagerDutyOutput(OutputDispatcher):
                         {
                             'type': 'link',
                             'href': 'https://streamalert.io/',
+                            'text': 'Link Text'
                         }
 
                     Image embed
@@ -411,14 +419,62 @@ class PagerDutyOutputV2(OutputDispatcher, EventsV2DataProvider):
 class PagerDutyIncidentOutput(OutputDispatcher, EventsV2DataProvider):
     """PagerDutyIncidentOutput handles all alert dispatching for PagerDuty Incidents REST API
 
-    In addition to using the REST API, this PagerDuty implementation also performs automatic
-    assignment of the incident, based upon context parameters.
+    In addition to creating an Alert through the EventsV2 API, this output will then find the
+    PagerDuty Incident that is created and automatically reassign, add more details, set priority,
+    add a note, and attach any additional responders to the incident.
 
-    context = {
-      'assigned_user': 'somebody@somewhere.somewhere',
-      'with_record': True|False,
-      'note': 'String goes here'
-    }
+
+    Context:
+        - assigned_user (string):
+                Email address of user to assign the incident to. If omitted will default to
+                the service's default escalation policy. If the email address is not
+                associated with a user in PagerDuty, it will log a warning and default to
+                the service's escalation policy.
+
+        - with_record (bool):
+                True to include the entire record in the Alert's payload. False to omit it.
+                Will be superseded by certain @pagerduty-v2 fields.
+
+        - note (bool):
+                A text note that is added to the Incident. Will be superseded by publisher
+                fields (see below).
+
+        - responders (list<string>):
+                A list of email addresses of users to add as Requested Responders. If any
+                email address is not associated with a user in PagerDuty, it will be omitted
+                and a warning will be logged.
+
+        - responder_message (string)
+                Text string that shows up in Response Request messages sent to requested
+                responders.
+
+
+    Publishing:
+        This output has a more complex workflow. The magic publisher fields for @pagerduty-v2
+        ALSO are respected by this output.
+
+        - @pagerduty-incident.incident_title (str):
+                The provided string will show up in the PagerDuty incident's title.
+
+                The child Alert's
+                title is controlled by other publisher magic fields.
+
+        - @pagerduty-incident.note (str):
+                Due to legacy reasons, this PagerDuty services adds a note containing
+                "Creating SOX Incident" to the final PagerDuty incident. Providing a string
+                to this magic field will override that behavior.
+
+        - @pagerduty-incident.urgency (str):
+                Either "low" or "high". By default urgency is "high" for all incidents.
+
+
+        - @pagerduty-incident.incident_body (str):
+                @deprecated
+                This is a legacy field that no longer serves any functionality. It populates
+                a field on the PagerDuty Incident that is never visible.
+
+
+        @see Also EventsV2DataProvider for more details
     """
     __service__ = 'pagerduty-incident'
     INCIDENTS_ENDPOINT = 'incidents'
@@ -511,41 +567,6 @@ class PagerDutyIncidentOutput(OutputDispatcher, EventsV2DataProvider):
     def _dispatch(self, alert, descriptor):
         """Send incident to Pagerduty Incidents REST API v2
 
-        Context:
-
-            - with_record (bool):
-            - note (bool):
-
-        Publishing:
-            This output has a more complex workflow. The magic publisher fields for @pagerduty-v2
-            ALSO are respected by this output.
-
-            - @pagerduty-incident.incident_title (str):
-                    The provided string will override the PARENT INCIDENT's title. The child Alert's
-                    title is controlled by other publisher magic fields.
-
-            - @pagerduty-incident.incident_body (str):
-                    This is text that shows up in the body of the newly created incident.
-
-                    (!) NOTE: Due to the way incidents are merged, this text is almost never
-                              displayed properly on PagerDuty's UI. The only instance where it
-                              shows up correctly is when incident merging fails and the newly
-                              created incident does not have an alert attached to it.
-
-            - @pagerduty-incident.note (str):
-                    Due to legacy reasons, this PagerDuty services adds a note containing
-                    "Creating SOX Incident" to the final PagerDuty incident. Providing a string
-                    to this magic field will override that behavior.
-
-            - @pagerduty-incident.urgency (str):
-                    Either "low" or "high". By default urgency is "high" for all incidents.
-
-
-            In addition, the final event that is merged into the parent incident can be customized
-            as well.
-            @see EventsV2DataProvider for more details
-
-
         Args:
             alert (Alert): Alert instance which triggered a rule
             descriptor (str): Output descriptor
@@ -587,20 +608,12 @@ class WorkContext(object):
         )
         self._events_client = PagerDutyEventsV2ApiClient(http)
 
-    def run(self, alert, descriptor):
-        """Sets up an assigned incident.
+        # We cache the API User because we may use it multiple times
+        self._api_user = None
 
-        FIXME (derek.wang):
-            This work routine is a large, non-atomic set of jobs that can sometimes partially fail.
-            Partial failures can have side effects on PagerDuty, including the creation of
-            incomplete or partially complete alerts. Because the Alert Processor will automatically
-            retry the entire routine from scratch, this can cause partial alerts to get created
-            redundantly forever. The temporary solution is to delete the erroneous record from
-            DynamoDB manually, but in the future we should consider writing back state into the
-            DynamoDB alert record to track the steps involved in "fulfilling" the dispatch of this
-            alert.
-        """
-        if not self.verify_user_exists():
+    def run(self, alert, descriptor):
+        """Sets up an assigned incident."""
+        if not self._verify_user_exists():
             return False
 
         # Extracting context data to assign the incident
@@ -610,70 +623,131 @@ class WorkContext(object):
 
         publication = compose_alert(alert, self._output, descriptor)
 
-        incident = self._create_base_incident(alert, publication, rule_context)
-        incident_id = incident.get('id')
-        if not incident or not incident_id:
-            LOGGER.error('[%s] Could not create main incident', self._output.__service__)
-            return False
-
         # Create alert to hold all the incident details
         event = self._create_base_alert_event(alert, descriptor, rule_context)
         if not event:
             LOGGER.error('[%s] Could not create incident event', self._output.__service__)
             return False
 
-        # FIXME (derek.wang), see above
-        #   At this point, both the incident and the relevant alert event have been successfully
-        #   created. Any further work that fails the dispatch call will cause the alert to retry
-        #   and redundantly create more incidents and alert events.
-        #   Therefore, the hack is to simply let further failures go by always returning True.
-        #   The tradeoff is that incidents can be created on pagerduty in an incomplete state,
-        #   but this is easier to manage than StreamAlert redundantly creating hundreds (or more!)
-        #   redundant alerts.
-        stable = True
-
-        # Merge the incident with the event, so we can have a rich context incident
-        # assigned to a specific person, which the PagerDuty REST API v2 does not allow
-        merged_incident = self._merge_event_into_incident(incident, event)
-        if not merged_incident:
+        # Create an incident to house the alert
+        incident = self._update_base_incident(event, alert, publication, rule_context)
+        if not incident:
             LOGGER.error(
-                '[%s] Failed to merge alert [%s] into [%s]',
+                '[%s] Failed to update container incident for event',
+                self._output.__service__
+            )
+            return False
+
+        incident_id = incident.get('id', False)
+        if not incident_id:
+            LOGGER.error(
+                '[%s] Incident is missing "id"??',
+                self._output.__service__
+            )
+            return False
+
+        # At this point, both the incident and the relevant alert event have been successfully
+        # created.
+        #
+        # All of the code above this line is considered idempotent and can be called repeatedly
+        # without adverse side effects. Code BELOW this line is neither atomic nor idempotent, so
+        # we will not retry if any of the below code fails. Instead, we log an error and make a
+        # best-effort attempt to attach an error note to the PagerDuty incident, signalling that
+        # it was not setup properly.
+        #
+        # In the fateful event the alert gets stuck ANYWAY, the easiest solution is to destroy the
+        # associated record on the DynamoDB table.
+        errors = []
+
+        # Add responder requests
+        responders = rule_context.get('responders', [])
+        if responders and not isinstance(responders, list):
+            responders = [responders]
+
+        if responders:
+            # The message shows up in the email
+            default_message = 'An incident was reported that requires your attention.'
+            responder_message = rule_context.get('responder_message', default_message)
+
+            for responder_email in responders:
+                result = self._add_incident_response_request(
+                    incident_id,
+                    responder_email,
+                    responder_message
+                )
+                if not result:
+                    error = '[{}] Failed to request a responder ({}) on incident ({})'.format(
+                        self._output.__service__,
+                        responder_email,
+                        incident_id
+                    )
+                    LOGGER.error(error)
+                    errors.append(error)
+
+        # Add a note to the incident
+        note = self._add_incident_note(incident_id, publication, rule_context)
+        if not note:
+            error = '[{}] Failed to add note to incident ({})'.format(
                 self._output.__service__,
-                event.get('dedup_key'),
                 incident_id
             )
-            stable = False
-
-        if merged_incident:
-            note = self._add_incident_note(incident, publication, rule_context)
-            if not note:
-                LOGGER.error(
-                    '[%s] Failed to add note to incident (%s)',
-                    self._output.__service__,
-                    incident_id
-                )
-                stable = False
+            LOGGER.error(error)
+            errors.append(error)
 
         # If something went wrong, we can't throw an error anymore; log it on the Incident
-        if not stable:
-            self._add_instability_note(incident_id)
+        if errors:
+            self._add_instability_note(incident_id, errors)
 
         return True
 
-    def _add_instability_note(self, incident_id):
+    def _add_instability_note(self, incident_id, errors):
+        error_section = '\n'.join(['- {}'.format(err) for err in errors])
         instability_note = '''
 StreamAlert failed to correctly setup this incident. Please contact your StreamAlert administrator.
-        '''.strip()
+
+Errors:
+{}
+        '''.format(error_section).strip()
         self._api_client.add_note(incident_id, instability_note)
 
-    def _create_base_incident(self, alert, publication, rule_context):
-        """Creates a container incident for this alert
+    def _update_base_incident(self, event, alert, publication, rule_context):
+        """Given an event, will find the container incident and update it.
 
         In PagerDuty's REST API design, Incidents are designed to behave like containers for many
-        alerts. Unlike alerts, which must obey service escalation policies, Incidents can be given
-        custom assignments.
+        alerts. Unlike alerts, Incidents can be given custom assignments and escalation policies.
 
-        Returns the newly created incident as a JSON dict. Returns False if anything goes wrong.
+        When an alert is created through the EventsV2 API, PagerDuty automatically creates an
+        incident to contain it. The Incident resource that is created is given an "incident_key"
+        that is identical to the "dedup_key" of the Event.
+
+        Returns the updated incident as a JSON dict. Returns False if anything goes wrong.
+        """
+        incident_key = event.get('dedup_key')
+        if not incident_key:
+            LOGGER.error(
+                '[%s] Event created is missing its "dedup_key"? %s',
+                self._output.__service__,
+                event
+            )
+            return False
+
+        event_incident_id = self._get_incident_id_from_event_incident_key(incident_key)
+        if not event_incident_id:
+            LOGGER.error(
+                '[%s] Failed to retrieve Event Incident Id from dedup_key (%s)',
+                self._output.__service__,
+                incident_key
+            )
+            return False
+
+        incident_data = self._construct_incident_put_request_data(alert, publication, rule_context)
+
+        return self._api_client.modify_incident(event_incident_id, incident_data)
+
+    def _construct_incident_put_request_data(self, alert, publication, rule_context):
+        """Builds the payload for an HTTP PUT /incidents/:incident_id request
+
+        Returns it as a JSON dict
         """
 
         # Presentation defaults
@@ -689,13 +763,6 @@ StreamAlert failed to correctly setup this incident. Please contact your StreamA
         incident_body = publication.get('@pagerduty-incident.incident_body', default_incident_body)
         incident_urgency = publication.get('@pagerduty-incident.urgency', default_urgency)
 
-        # FIXME (derek.wang) use publisher to set priority instead of context
-        # Use the priority provided in the context, use it or the incident will be low priority
-        incident_priority = self.get_standardized_priority(rule_context)
-
-        # FIXME (derek.wang) use publisher to set priority instead of context
-        assigned_key, assigned_value = self.get_incident_assignment(rule_context)
-
         # https://api-reference.pagerduty.com/#!/Incidents/post_incidents
         incident_data = {
             'incident': {
@@ -705,15 +772,49 @@ StreamAlert failed to correctly setup this incident. Please contact your StreamA
                     'id': self._incident_service,
                     'type': 'service_reference'
                 },
-                'priority': incident_priority,
-                'incident_key': '',
                 'body': {
                     'type': 'incident_body',
+                    # Notably, the incident body is basically useless and doesn't show up on the
+                    # UI if the Incident has an alert attached to it.
                     'details': incident_body,
                 },
-                assigned_key: assigned_value
+
+                # The incident_key behaves very similarly to the deduplication key, but subsequent
+                # requests to create a second incident with the same incident_key will return an
+                # HTTP 400 instead of returning the original result.
+                # https://v2.developer.pagerduty.com/docs/incident-creation-api#making-a-request
+                #
+                # The incident_key is a super bizarre field.
+                #
+                # AS-FAR-AS-I-CAN-TELL it functions something like this:
+                #
+                # - If you create an incident with incident_key A, any subsequent requests to
+                #   create another incident with the same incident_key will return an HTTP 400
+                # - If you create an event using EventsV2 API (with or without a dedup_key), the
+                #   associated incident_key of the incident that is automatically created from
+                #   the event will be the same as the dedup_key
+                # - If you create an event with EventsV2 API and attempt to then create an incident
+                #   with an incident_key that is the same as the dedup_key, instead of returning
+                #   an HTTP 400, it will return the incident that was originally created from the
+                #   EventsV2 API... "idempotently".
+                #
+                # 'incident_key': '',
             }
         }
+
+        incident_priority = self._get_standardized_priority(rule_context)
+        if incident_priority:
+            incident_data['incident']['priority'] = incident_priority
+
+        assignments = self._get_incident_assignments(rule_context)
+        if assignments:
+            incident_data['incident']['assignments'] = assignments
+        else:
+            # Important detail;
+            #   'assignments' and 'escalation_policy' seem to be exclusive. If you send both, the
+            #   'escalation_policy' seems to supersede any custom assignments you have.
+            escalation_policy = self._get_incident_escalation_policy(rule_context)
+            incident_data['incident']['escalation_policy'] = escalation_policy
 
         # Urgency, if provided, must always be 'high' or 'low' or the API will error
         if incident_urgency:
@@ -726,7 +827,39 @@ StreamAlert failed to correctly setup this incident. Please contact your StreamA
                     incident_urgency
                 )
 
-        return self._api_client.create_incident(incident_data)
+        return incident_data
+
+    def _get_incident_assignments(self, rule_context):
+        assignments = False
+        user_to_assign = rule_context.get('assigned_user', False)
+
+        # If provided, verify the user and get the id from API
+        if user_to_assign:
+            user = self._api_client.get_user_by_email(user_to_assign)
+            if user and user.get('id'):
+                assignments = [{'assignee': {
+                    'id': user.get('id'),
+                    'type': 'user_reference',
+                }}]
+            else:
+                LOGGER.warn(
+                    '[%s] Assignee (%s) could not be found in PagerDuty',
+                    self._output.__service__,
+                    user_to_assign
+                )
+        return assignments
+
+    def _get_incident_escalation_policy(self, rule_context):
+        # If escalation policy ID was not provided, use default one
+        policy_id_to_assign = rule_context.get(
+            'assigned_policy_id',
+            self._default_escalation_policy_id
+        )
+        # Assigned to escalation policy ID, return tuple
+        return {
+            'id': policy_id_to_assign,
+            'type': 'escalation_policy_reference'
+        }
 
     def _create_base_alert_event(self, alert, descriptor, rule_context):
         """Creates an alert on REST API v2
@@ -735,6 +868,9 @@ StreamAlert failed to correctly setup this incident. Please contact your StreamA
         either the alert nor the incident itself, but rather a small acknowledgement structure
         containing a "dedup_key". This key can be used to find the incident that is created.
 
+        This method is idempotent. The calls out to PagerDuty will create a new alert+incident,
+        or return the existing one if this method has already been called.
+
         Returns False if event was not created.
         """
         with_record = rule_context.get('with_record', True)
@@ -742,43 +878,28 @@ StreamAlert failed to correctly setup this incident. Please contact your StreamA
             alert,
             descriptor,
             self._credentials['integration_key'],
-            with_record
+            with_record=with_record
         )
 
         return self._events_client.enqueue_event(event_data)
 
-    def _merge_event_into_incident(self, incident, event):
-        """Merges the given event into the incident.
-
-        Returns the final, merged incident as a JSON dict. Returns False if anything goes wrong.
-        """
-        # Extract the incident id from the incident that was just created
-        incident_id = incident.get('id')
-        if not incident_id:
-            LOGGER.error('[%s] Incident missing Id?', self._output.__service__)
-            return False
-
-        # Lookup the incident_key returned as dedup_key to get the incident id
-        incident_key = event.get('dedup_key')
-        if not incident_key:
-            LOGGER.error('[%s] Event missing dedup_key', self._output.__service__)
-            return False
-
-        # Keep that id to be merged later with the created incident
-        event_incident_id = self.get_incident_id_from_event_incident_key(incident_key)
-        if not event_incident_id:
+    def _add_incident_response_request(self, incident_id, responder_email, message):
+        responder = self._api_client.get_user_by_email(responder_email)
+        if not responder:
             LOGGER.error(
-                '[%s] Failed to retrieve Event Incident Id from dedup_key (%s)',
-                self._output.__service__,
-                incident_key
+                'Could not verify if requested incident responder "%s" exists',
+                responder_email
             )
             return False
 
-        # Merge the incident with the event, so we can have a rich context incident
-        # assigned to a specific person, which the PagerDuty REST API v2 does not allow
-        return self._api_client.merge_incident(incident_id, event_incident_id)
+        return bool(self._api_client.request_responder(
+            incident_id,
+            self._api_user.get('id'),
+            message,
+            responder.get('id')
+        ))
 
-    def _add_incident_note(self, incident, publication, rule_context):
+    def _add_incident_note(self, incident_id, publication, rule_context):
         """Adds a note to the incident, when applicable.
 
         Returns:
@@ -786,11 +907,6 @@ StreamAlert failed to correctly setup this incident. Please contact your StreamA
         """
 
         # Add a note to the combined incident to help with triage
-        merged_id = incident.get('id')
-        if not merged_id:
-            LOGGER.error('[%s] Merged incident missing Id?', self._output.__service__)
-            return False
-
         default_incident_note = 'Creating SOX Incident'  # For reverse compatibility reasons
         incident_note = publication.get(
             '@pagerduty-incident.note',
@@ -804,8 +920,7 @@ StreamAlert failed to correctly setup this incident. Please contact your StreamA
             # Simply return early without adding a note; no need to add a blank one
             return True
 
-        return bool(self._api_client.add_note(merged_id, incident_note))
-
+        return bool(self._api_client.add_note(incident_id, incident_note))
 
     @backoff.on_exception(backoff.constant,
                           PagerdutySearchDelay,
@@ -814,12 +929,19 @@ StreamAlert failed to correctly setup this incident. Please contact your StreamA
                           on_backoff=backoff_handler(),
                           on_success=success_handler(),
                           on_giveup=giveup_handler())
-    def get_incident_id_from_event_incident_key(self, incident_key):
+    def _get_incident_id_from_event_incident_key(self, incident_key):
         """Queries the API to get the incident id from an incident key
 
         When creating an EVENT from the events-v2 API, events are created alongside an incident,
         but only an incident_key is returned, which is not the same as the incident's REST API
         resource id.
+
+        (!) WARNING: This method can sometimes fail even if an event was successfully created.
+            Pagerduty can sometimes experience a small amount of "lag time" between when an
+            Event is created and when its containing Incident is searchable via this API.
+            Therefore, all code that calls this method must account for the possibility that this
+            method can be inconsistent with the state of the "real world", and should retry as
+            appropriate.
         """
         if not incident_key:
             return False
@@ -830,7 +952,7 @@ StreamAlert failed to correctly setup this incident. Please contact your StreamA
 
         return event_incident.get('id')
 
-    def verify_user_exists(self):
+    def _verify_user_exists(self):
         """Verifies that the 'email_from' provided in the creds is valid and exists."""
         user = self._api_client.get_user_by_email(self._email_from)
 
@@ -842,29 +964,35 @@ StreamAlert failed to correctly setup this incident. Please contact your StreamA
             )
             return False
 
+        self._api_user = user
+
         return True
 
-    def get_standardized_priority(self, context):
+    def _get_standardized_priority(self, context):
         """Method to verify the existence of a incident priority with the API
+
+        Uses the priority provided in the context. When omitted the incident defaults to low
+        priority.
 
         Args:
             context (dict): Context provided in the alert record
 
         Returns:
-            dict: JSON object be used in the API call, containing the priority id
-                  and the priority reference, empty if it fails or it does not exist
+            dict|False: JSON object be used in the API call, containing the priority id
+                        and the priority reference, False if it fails or it does not exist
         """
         if not context:
-            return dict()
+            return False
 
+        # FIXME (derek.wang) use publisher to set priority instead of context
         priority_name = context.get('incident_priority', False)
         if not priority_name:
-            return dict()
+            return False
 
         priorities = self._api_client.get_priorities()
 
         if not priorities:
-            return dict()
+            return False
 
         # If the requested priority is in the list, get the id
         priority_id = next(
@@ -875,42 +1003,7 @@ StreamAlert failed to correctly setup this incident. Please contact your StreamA
         if priority_id:
             return {'id': priority_id, 'type': 'priority_reference'}
 
-        return dict()
-
-    def get_incident_assignment(self, context):
-        """Method to determine if the incident gets assigned to a user or an escalation policy
-
-        Incident assignment goes in this order:
-          Provided user -> provided policy -> default escalation policy
-
-        Args:
-            context (dict): Context provided in the alert record
-
-        Returns:
-            tuple: assigned_key (str), assigned_value (dict to assign incident to an escalation
-            policy or array of dicts to assign incident to users)
-        """
-        # Check if a user to assign the incident is provided
-        user_to_assign = context.get('assigned_user', False)
-
-        # If provided, verify the user and get the id from API
-        if user_to_assign:
-            user = self._api_client.get_user_by_email(user_to_assign)
-            if user and user.get('id'):
-                return 'assignments', [{'assignee': {
-                    'id': user.get('id'),
-                    'type': 'user_reference',
-                }}]
-
-        # If escalation policy ID was not provided, use default one
-        policy_id_to_assign = context.get(
-            'assigned_policy_id',
-            self._default_escalation_policy_id
-        )
-
-        # Assigned to escalation policy ID, return tuple
-        return 'escalation_policy', {
-            'id': policy_id_to_assign, 'type': 'escalation_policy_reference'}
+        return False
 
 
 # pylint: disable=protected-access
@@ -929,7 +1022,8 @@ class JsonHttpProvider(object):
         """Returns the JSON response of the given request, or FALSE on failure"""
         try:
             result = self._output_dispatcher._get_request_retry(url, params, headers, verify)
-        except OutputRequestFailure:
+        except OutputRequestFailure as e:
+            LOGGER.error('Encountered HTTP error on GET %s: %s', url, e.response)
             return False
 
         response = result.json()
@@ -942,7 +1036,8 @@ class JsonHttpProvider(object):
         """Returns the JSON response of the given request, or FALSE on failure"""
         try:
             result = self._output_dispatcher._post_request_retry(url, data, headers, verify)
-        except OutputRequestFailure:
+        except OutputRequestFailure as e:
+            LOGGER.error('Encountered HTTP error on POST %s: %s', url, e.response)
             return False
 
         response = result.json()
@@ -955,7 +1050,8 @@ class JsonHttpProvider(object):
         """Returns the JSON response of the given request, or FALSE on failure"""
         try:
             result = self._output_dispatcher._put_request_retry(url, params, headers, verify)
-        except OutputRequestFailure:
+        except OutputRequestFailure as e:
+            LOGGER.error('Encountered HTTP error on PUT %s: %s', url, e.response)
             return False
 
         response = result.json()
@@ -1092,46 +1188,12 @@ class PagerDutyRestApiClient(SslVerifiable):
 
         return escalation_policies[0] if escalation_policies else False
 
-    def merge_incident(self, parent_incident_id, merged_incident_id):
-        """Given two incident ids, notifies PagerDuty to merge them into a single incident
-
-        Returns the json representation of the merged incident, or False on failure.
-        """
-        data = {
-            'source_incidents': [
-                {
-                    'id': merged_incident_id,
-                    'type': 'incident_reference'
-                }
-            ]
-        }
-        merged_incident = self._http_provider.put(
-            self._get_incident_merge_url(parent_incident_id),
-            data,
-            headers=self._construct_headers(),
-            verify=self._should_do_ssl_verify()
-        )
-        self._update_ssl_verified(merged_incident)
-
-        if not merged_incident:
-            return False
-
-        return merged_incident.get('incident', False)
-
-    def create_incident(self, incident_data):
-        """Creates a new incident
+    def modify_incident(self, incident_id, incident_data):
+        """Modifies an existing Incident
 
         Returns the incident json representation on success, or False on failure.
 
         Reference: https://api-reference.pagerduty.com/#!/Incidents/post_incidents
-
-        (!) FIXME (derek.wang)
-                  The legacy implementation utilizes this POST /incidents endpoint to create
-                  incidents and merge them with events created through the events-v2 API, but
-                  the PagerDuty API documentation explicitly says to NOT use the REST API
-                  to create incidents. Research if our use of the POST /incidents endpoint is
-                  incorrect.
-                  Reference: https://v2.developer.pagerduty.com/docs/getting-started
 
         Args:
             incident_data (dict)
@@ -1139,8 +1201,8 @@ class PagerDutyRestApiClient(SslVerifiable):
         Returns:
             dict
         """
-        incident = self._http_provider.post(
-            self._get_incidents_url(),
+        incident = self._http_provider.put(
+            self._get_incident_url(incident_id),
             incident_data,
             headers=self._construct_headers(),
             verify=self._should_do_ssl_verify()
@@ -1182,6 +1244,38 @@ class PagerDutyRestApiClient(SslVerifiable):
 
         return note.get('note', False)
 
+    def request_responder(self, incident_id, requester_user_id, message, responder_user_id):
+        # Be very careful with this API endpoint, there are several things you will need to know:
+        #
+        # 1) The requester_id MUST match the user associated with the API token
+        # 2) Both the requester_id and the responder id must have pagerduty accounts. If EITHER
+        #    of them don't, this API endpoint actually exhibits strange behavior; instead of
+        #    returning an HTTP 400 with a useful error message, it will return an HTTP 404.
+        # 3) You cannot add a requester to an incident that is resolved, it will also 404.
+        responder_request = self._http_provider.post(
+            self._get_incident_responder_requests_url(incident_id),
+            {
+                'requester_id': requester_user_id,
+                'message': message,
+                'responder_request_targets': [
+                    {
+                        'responder_request_target': {
+                            'id': responder_user_id,
+                            'type': 'user_reference',
+                        }
+                    }
+                ]
+            },
+            self._construct_headers(),
+            verify=self._should_do_ssl_verify()
+        )
+        self._update_ssl_verified(responder_request)
+
+        if not responder_request:
+            return False
+
+        return responder_request.get('responder_request', False)
+
     def _construct_headers(self, omit_email=False):
         """Returns a dict containing all headers to send for PagerDuty requests
 
@@ -1214,11 +1308,13 @@ class PagerDutyRestApiClient(SslVerifiable):
             incident_id=incident_id
         )
 
-    def _get_incident_merge_url(self, incident_id):
-        return '{incident_url}/merge'.format(incident_url=self._get_incident_url(incident_id))
-
     def _get_incident_notes_url(self, incident_id):
         return '{incident_url}/notes'.format(incident_url=self._get_incident_url(incident_id))
+
+    def _get_incident_responder_requests_url(self, incident_id):
+        return '{incident_url}/responder_requests'.format(
+            incident_url=self._get_incident_url(incident_id)
+        )
 
     def _get_users_url(self):
         return '{base_url}/users'.format(base_url=self._base_url)
