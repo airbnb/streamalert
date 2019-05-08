@@ -1,17 +1,10 @@
 from stream_alert.shared.rule import rule
 from stream_alert.shared.rule import disable
-from publishers.community.slack.slack_layout import Summary, AttachRuleInfo \
-        , AttachPublication, AttachFullRecord
+
 
 @disable
 @rule(
-    logs=['fleet:results'],
-    publishers=[
-        Summary,           # Prints the first rausch colored section
-        AttachRuleInfo,    # Prints the 2nd lima colored section
-        AttachPublication, # Prints the babu/cyan colored section
-        AttachFullRecord,  # Prints the hackberry colored section
-    ]
+    logs=['fleet:results']
 )
 def fleet_bad_action(rec):
     """
