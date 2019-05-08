@@ -1,4 +1,5 @@
 from stream_alert.shared.rule import rule
+# Remove disable import if no rules are disabled using the @disable decorator.
 from stream_alert.shared.rule import disable
 
 # Remove the @disable decorator to use this rule in a live deployment
