@@ -16,5 +16,5 @@ def fleet_bad_action(rec):
                   (b) Link appropriate Jira ticket.
     """
     return (
-        '1' == rec['columns'].get('bad_action', '1')
+        rec['columns'].get('bad_action', '1') == '1'
     )
