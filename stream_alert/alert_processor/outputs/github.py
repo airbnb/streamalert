@@ -17,6 +17,7 @@ from collections import OrderedDict
 import base64
 import json
 
+from stream_alert.alert_processor.helpers import compose_alert
 from stream_alert.alert_processor.outputs.output_base import (
     OutputDispatcher,
     OutputProperty,
@@ -75,6 +76,17 @@ class GithubOutput(OutputDispatcher):
     def _dispatch(self, alert, descriptor):
         """Send alert to Github
 
+        Publishing:
+            This output provides a default issue title and a very basic issue body containing
+            the alert record. To override:
+
+            - @github.title (str):
+                    Override the Issue's title
+
+            - @github.body (str):
+                    Overrides the default github issue body. Remember: this string is in Github's
+                    syntax, so it supports markdown and respects linebreaks characters (e.g. \n).
+
         Args:
             alert (Alert): Alert instance which triggered a rule
             descriptor (str): Output descriptor
@@ -93,20 +105,23 @@ class GithubOutput(OutputDispatcher):
         url = '{}/repos/{}/issues'.format(credentials['api'],
                                           credentials['repository'])
 
-        publication = alert.publish_for(self, descriptor)
-        record = publication.get('record', {})
+        publication = compose_alert(alert, self, descriptor)
 
         # Default presentation to the output
         default_title = "StreamAlert: {}".format(alert.rule_name)
         default_body = "### Description\n{}\n\n### Event data\n\n```\n{}\n```".format(
             alert.rule_description,
-            json.dumps(record, indent=2, sort_keys=True)
+            json.dumps(alert.record, indent=2, sort_keys=True)
         )
+
+        # Override presentation defaults
+        issue_title = publication.get('@github.title', default_title)
+        issue_body = publication.get('@github.body', default_body)
 
         # Github Issue to be created
         issue = {
-            'title': publication.get('github.title', default_title),
-            'body': publication.get('github.body', default_body),
+            'title': issue_title,
+            'body': issue_body,
             'labels': credentials['labels'].split(',')
         }
 

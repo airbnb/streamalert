@@ -15,6 +15,7 @@ Out of the box, StreamAlert supports:
 * **AWS SNS**
 * **AWS SQS**
 * **CarbonBlack**
+* **Demisto**
 * **GitHub**
 * **Jira**
 * **Komand**
@@ -74,6 +75,9 @@ Adding support for a new service involves five steps:
 
 .. code-block:: python
 
+  from stream_alert.alert_processor.helpers import compose_alert
+
+
   def get_user_defined_properties(self):
     """Returns any properties for this output that must be provided by the user
     At a minimum, this method should prompt the user for a 'descriptor' value to
@@ -88,12 +92,29 @@ Adding support for a new service involves five steps:
                                     '(ie: name of integration/channel/service/etc)'))
     ])
 
-  def _dispatch(self, **kwargs):
+  def _dispatch(self, alert, descriptor):
     """Handles the actual sending of alerts to the configured service.
     Any external API calls for this service should be added here.
     This method should return a boolean where True means the alert was successfully sent.
+
+    In general, use the compose_alert() method defined in stream_alert.alert_processor.helpers
+    when presenting the alert in a generic polymorphic format to be rendered on the chosen output
+    integration. This is so specialized Publishers can modify how the alert is represented on the
+    output.
+
+    In addition, adding output-specific fields can be useful to offer more fine-grained control
+    of the look and feel of an alert.
+
+    For example, an optional field that directly controls a PagerDuty incident's title:
+    - '@pagerduty.incident_title'
+
+
+    When referencing an alert's attributes, reference the alert's field directly (e.g.
+    alert.alert_id). Do not rely on the published alert.
     """
-    ...
+
+    publication = compose_alert(alert, self, descriptor)
+    # ...
     return True
 
 **Note**: The ``OutputProperty`` object used in ``get_user_defined_properties`` is a namedtuple consisting of a few properties:

@@ -16,15 +16,17 @@ limitations under the License.
 from datetime import datetime, timedelta
 from os import environ as env
 
+from stream_alert.shared.publisher import AlertPublisherRepository
 from stream_alert.rules_engine.alert_forwarder import AlertForwarder
 from stream_alert.rules_engine.threat_intel import ThreatIntel
 from stream_alert.shared import resources, RULES_ENGINE_FUNCTION_NAME as FUNCTION_NAME
 from stream_alert.shared.alert import Alert
 from stream_alert.shared.config import load_config
-from stream_alert.shared.rule import import_folders, Rule
+from stream_alert.shared.importer import import_folders
 from stream_alert.shared.logger import get_logger
 from stream_alert.shared.lookup_tables import LookupTables
 from stream_alert.shared.metrics import MetricLogger
+from stream_alert.shared.rule import Rule
 from stream_alert.shared.rule_table import RuleTable
 from stream_alert.shared.stats import get_rule_stats
 
@@ -178,27 +180,22 @@ class RulesEngine(object):
         """Analyze a record with the rule, adding a new alert if applicable
 
         Args:
-            record (dict): Record to perform rule analysis against
+            payload (dict): Representation of event to perform rule analysis against
             rule (rule.Rule): Attributes for the rule which triggered the alert
         """
         rule_result = rule.process(payload['record'])
         if not rule_result:
             return
 
-        # Check if the rule is staged and, if so, only use the required alert outputs
-        if rule.is_staged(self._rule_table):
-            all_outputs = self._required_outputs_set
-        else:  # Otherwise, combine the required alert outputs with the ones for this rule
-            all_outputs = self._required_outputs_set.union(rule.outputs_set)
-
         alert = Alert(
-            rule.name, payload['record'], all_outputs,
+            rule.name, payload['record'], self._configure_outputs(rule),
             cluster=payload['cluster'],
             context=rule.context,
             log_source=payload['log_schema_type'],
             log_type=payload['data_type'],
             merge_by_keys=rule.merge_by_keys,
             merge_window=timedelta(minutes=rule.merge_window_mins),
+            publishers=self._configure_publishers(rule),
             rule_description=rule.description,
             source_entity=payload['resource'],
             source_service=payload['service'],
@@ -210,6 +207,129 @@ class RulesEngine(object):
                     payload['resource'], payload['service'])
 
         return alert
+
+    def _configure_outputs(self, rule):
+        # Check if the rule is staged and, if so, only use the required alert outputs
+        if rule.is_staged(self._rule_table):
+            all_outputs = self._required_outputs_set
+        else:  # Otherwise, combine the required alert outputs with the ones for this rule
+            all_outputs = self._required_outputs_set.union(rule.outputs_set)
+
+        return all_outputs
+
+    @classmethod
+    def _configure_publishers(cls, rule):
+        """Assigns publishers to each output.
+
+        The @Rule publisher syntax accepts several formats, including a more permissive blanket
+        option.
+
+        In this configuration we DELIBERATELY do not include required_outputs as required outputs
+        should never have their alerts transformed.
+
+        Args:
+            rule (Rule): The rule to create publishers for
+
+        Returns:
+            dict: Maps string outputs names to lists of strings of their fully qualified publishers
+        """
+        requested_outputs = rule.outputs_set
+        requested_publishers = rule.publishers
+        if not requested_publishers:
+            return None
+
+        configured_publishers = {}
+
+        for output in requested_outputs:
+            assigned_publishers = []
+
+            if cls.is_publisher_declaration(requested_publishers):
+                # Case 1: The publisher is a single string.
+                #   apply this single publisher to all outputs + descriptors
+                cls.add_publisher(requested_publishers, assigned_publishers)
+            elif isinstance(requested_publishers, list):
+                # Case 2: The publisher is an array of strings.
+                #   apply all publishers to all outputs + descriptors
+                cls.add_publishers(requested_publishers, assigned_publishers)
+            elif isinstance(requested_publishers, dict):
+                # Case 3: The publisher is a dict mapping output strings -> strings or list of
+                #   strings. Apply only publishers under a matching output key.
+                #
+                #   We look under 2 keys:
+                #     - [Output]: Applies publishers to all outputs for a specific output type.
+                #     - [Output+Descriptor]: Applies publishers only to the specific output that
+                #           exactly matches the output+descriptor key.
+                output_service = output.split(':')[0]
+
+                # Order is important here; We load output-specific publishers first
+                if output_service in requested_publishers:
+                    specific_publishers = requested_publishers[output_service]
+                    if cls.is_publisher_declaration(specific_publishers):
+                        cls.add_publisher(specific_publishers, assigned_publishers)
+                    elif isinstance(specific_publishers, list):
+                        cls.add_publishers(specific_publishers, assigned_publishers)
+
+                # Then we load the output+descriptor-specific publishers second
+                if output in requested_publishers:
+                    specific_publishers = requested_publishers[output]
+                    if cls.is_publisher_declaration(specific_publishers):
+                        cls.add_publisher(specific_publishers, assigned_publishers)
+                    elif isinstance(specific_publishers, list):
+                        cls.add_publishers(specific_publishers, assigned_publishers)
+            else:
+                LOGGER.error('Invalid publisher argument: %s', requested_publishers)
+
+            configured_publishers[output] = assigned_publishers
+
+        return configured_publishers
+
+    @classmethod
+    def standardize_publisher_list(cls, list_of_references):
+        """Standardizes a list of requested publishers"""
+        publisher_names = [cls.standardize_publisher_name(x) for x in list_of_references]
+
+        # Filter out None from the array
+        return [x for x in publisher_names if x is not None]
+
+    @classmethod
+    def standardize_publisher_name(cls, string_or_reference):
+        """Standardizes a requested publisher into a string name
+
+        Requested publishers can be either the fully qualified string name, OR it can be a
+        direct reference to the function or class.
+        """
+        if not cls.is_publisher_declaration(string_or_reference):
+            LOGGER.error('Invalid publisher requested: %s', string_or_reference)
+            return None
+
+        if isinstance(string_or_reference, basestring):
+            publisher_name = string_or_reference
+        else:
+            publisher_name = AlertPublisherRepository.get_publisher_name(
+                string_or_reference
+            )
+
+        if AlertPublisherRepository.has_publisher(publisher_name):
+            return publisher_name
+
+        LOGGER.warning('Requested publisher named (%s) is not registered.', publisher_name)
+
+    @classmethod
+    def is_publisher_declaration(cls, string_or_reference):
+        """Returns TRUE if the requested publisher is valid (a string name or reference)"""
+        return (
+            isinstance(string_or_reference, basestring) or
+            AlertPublisherRepository.is_valid_publisher(string_or_reference)
+        )
+
+    @classmethod
+    def add_publisher(cls, publisher_reference, current_list):
+        _publisher = cls.standardize_publisher_name(publisher_reference)
+        current_list += [_publisher] if _publisher is not None else []
+
+    @classmethod
+    def add_publishers(cls, publisher_references, current_list):
+        current_list += cls.standardize_publisher_list(publisher_references)
 
     def run(self, records):
         """Run rules against the records sent from the Classifier function

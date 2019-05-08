@@ -43,6 +43,10 @@ OutputProperty.__new__.__defaults__ = ('', '', {' ', ':'}, False, False)
 class OutputRequestFailure(Exception):
     """OutputRequestFailure handles any HTTP failures"""
 
+    def __init__(self, response):
+        super(OutputRequestFailure, self).__init__()
+        self.response = response
+
 
 def retry_on_exception(exceptions):
     """Decorator function to attempt retry based on passed exceptions"""
@@ -222,7 +226,7 @@ class OutputDispatcher(object):
             resp = cls._put_request(url, params, headers, verify)
             success = cls._check_http_response(resp)
             if not success:
-                raise OutputRequestFailure()
+                raise OutputRequestFailure(resp)
 
             return resp
         return do_put_request()
@@ -263,7 +267,7 @@ class OutputDispatcher(object):
             resp = cls._get_request(url, params, headers, verify)
             success = cls._check_http_response(resp)
             if not success:
-                raise OutputRequestFailure()
+                raise OutputRequestFailure(resp)
 
             return resp
         return do_get_request()
@@ -304,7 +308,7 @@ class OutputDispatcher(object):
             resp = cls._post_request(url, data, headers, verify)
             success = cls._check_http_response(resp)
             if not success:
-                raise OutputRequestFailure()
+                raise OutputRequestFailure(resp)
 
             return resp
         return do_post_request()
@@ -395,7 +399,7 @@ class OutputDispatcher(object):
 
         Args:
             alert (Alert): Alert instance which triggered a rule
-            descriptor (str): Output descriptor (e.g. slack channel, pd integration)
+            output (str): Fully described output (e.g. "demisto:version1", "pagerduty:engineering"
 
         Returns:
             bool: True if alert was sent successfully, False otherwise

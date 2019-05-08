@@ -15,6 +15,7 @@ limitations under the License.
 """
 from collections import OrderedDict
 
+from stream_alert.alert_processor.helpers import compose_alert
 from stream_alert.alert_processor.outputs.output_base import (
     OutputDispatcher,
     OutputProperty,
@@ -62,6 +63,10 @@ class KomandOutput(OutputDispatcher):
     def _dispatch(self, alert, descriptor):
         """Send alert to Komand
 
+        Publishing:
+            By default this output sends the current publication to Komand.
+            There is no "magic" field to "override" it: Simply publish what you want to send!
+
         Args:
             alert (Alert): Alert instance which triggered a rule
             descriptor (str): Output descriptor
@@ -77,7 +82,7 @@ class KomandOutput(OutputDispatcher):
 
         LOGGER.debug('sending alert to Komand')
 
-        publication = alert.publish_for(self, descriptor)
+        publication = compose_alert(alert, self, descriptor)
         resp = self._post_request(creds['url'], {'data': publication}, headers, False)
 
         return self._check_http_response(resp)

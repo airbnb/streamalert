@@ -60,6 +60,9 @@ class CarbonBlackOutput(OutputDispatcher):
     def _dispatch(self, alert, descriptor):
         """Send ban hash command to CarbonBlack
 
+        Publishing:
+            There is currently no method to control carbonblack's behavior with publishers.
+
         Args:
             alert (Alert): Alert instance which triggered a rule
             descriptor (str): Output descriptor

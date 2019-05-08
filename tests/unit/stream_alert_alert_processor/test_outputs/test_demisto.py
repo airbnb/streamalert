@@ -20,6 +20,7 @@ from datetime import datetime
 from mock import patch, Mock, MagicMock
 from nose.tools import assert_is_instance, assert_true, assert_false, assert_equal
 
+from stream_alert.alert_processor.helpers import compose_alert
 from stream_alert.alert_processor.outputs.demisto import DemistoOutput, DemistoRequestAssembler
 from stream_alert.alert_processor.outputs.output_base import OutputRequestFailure
 
@@ -76,6 +77,7 @@ EXPECTED_LABELS_FOR_SAMPLE_ALERT = [
     {'type': 'staged', 'value': 'False'},
 ]
 
+
 class TestDemistoOutput(object):
     """Test class for SlackOutput"""
     DESCRIPTOR = 'unit_test_demisto'
@@ -126,6 +128,7 @@ class TestDemistoOutput(object):
             'details': 'Info about this rule and what actions to take',
             'createInvestigation': True,
         }
+
         class Matcher(object):
             def __eq__(self, other):
                 if other == expected_data:
@@ -180,7 +183,8 @@ def test_assemble():
     alert = get_alert(context=SAMPLE_CONTEXT)
     alert.created = datetime(2019, 1, 1)
 
-    alert_publication = alert.publish_for(None, None)  # FIXME (derek.wang)
+    output = MagicMock(spec=DemistoOutput)
+    alert_publication = compose_alert(alert, output, 'asdf')
 
     request = DemistoRequestAssembler.assemble(alert, alert_publication)
 
