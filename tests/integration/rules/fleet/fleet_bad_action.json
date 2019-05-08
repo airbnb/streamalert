@@ -43,7 +43,7 @@
   },
   "log": "fleet:results",
   "description": "bad action",
-  "trigger_rules": [],
+  "trigger_rules": ["fleet_bad_action"],
   "source": "prefix.cluster.sample.bucket",
   "service": "s3"
   }

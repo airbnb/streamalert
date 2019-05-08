@@ -13,14 +13,13 @@ from publishers.community.slack.slack_layout import Summary, AttachRuleInfo \
         AttachFullRecord,  # Prints the hackberry colored section
     ]
 )
-def osquery_batch_puppet_disabled(rec):
+def fleet_bad_action(rec):
     """
-    author:       coresec
-    description:  Alert when puppet is set to disabled on a users device.
-    reference:    https://brevi.link/puppet-disabled
+    author:       gavinelder
+    description:  Alert when a user carries out a bad action.
+    reference:    https://
     playbook:     (a) Reach out to the user who made the modification and confirm intent.
                   (b) Link appropriate Jira ticket.
-                  (c) Re-Enable puppet.
     """
     return (
         '1' in rec['columns']['bad_action']
