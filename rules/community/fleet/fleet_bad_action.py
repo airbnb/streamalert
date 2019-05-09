@@ -11,7 +11,7 @@ def fleet_bad_action(rec):
     """
     author:       gavinelder
     description:  Alert when a user carries out a bad action.
-    reference:    https://
+    reference:    N/A
     playbook:     (a) Reach out to the user who made the modification and confirm intent.
                   (b) Link appropriate Jira ticket.
     """
