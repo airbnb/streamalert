@@ -12,7 +12,8 @@
     "prefix.cluster.sample.bucket": {
       "logs": [
         "cloudtrail",
-        "carbonblack"
+        "carbonblack",
+        "fleet"
       ]
     }
   },
