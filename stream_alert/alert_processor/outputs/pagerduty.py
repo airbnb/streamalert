@@ -316,7 +316,7 @@ class PagerDutyOutput(OutputDispatcher):
             return []
 
         def is_valid_context(context):
-            if not 'type' in context:
+            if 'type' not in context:
                 return False
 
             if context['type'] == 'link':

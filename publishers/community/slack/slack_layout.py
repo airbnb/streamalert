@@ -125,8 +125,8 @@ class AttachRuleInfo(AlertPublisher):
         publication['@slack.attachments'].append({
             'color': self._color(),
             'fields': [
-                {'title': key.capitalize(), 'value': rule_presentation['fields'][key]}
-                for key in rule_presentation['fields'].keys()
+                {'title': key.capitalize(), 'value': value}
+                for key, value in rule_presentation['fields'].iteritems()
             ],
         })
 
@@ -285,7 +285,7 @@ class AttachFullRecord(AlertPublisher):
         character_limit = self._SLACK_MAXIMUM_ATTACHMENT_CHARACTER_LENGTH - self._LENGTH_PADDING
         is_first_document = True
         next_document = ''
-        while len(record_document_lines) > 0:
+        while record_document_lines:
             # Loop, removing one line at a time and attempting to attach it to the next document
             # When the next document nears the maximum attachment size, it is flushed, generating
             # a new attachment, and the document is reset before the loop pops off the next line.

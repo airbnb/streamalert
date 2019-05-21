@@ -61,7 +61,7 @@ def _delete_dictionary_fields(publication, regexp):
     # does not actually track the "current scope" of the next_item.
     fringe = deque()
     fringe.append(publication)
-    while len(fringe) > 0:
+    while fringe:
         next_item = fringe.popleft()
 
         if isinstance(next_item, dict):
@@ -214,7 +214,7 @@ class StringifyArrays(AlertPublisher):
     def publish(self, alert, publication):
         fringe = deque()
         fringe.append(publication)
-        while len(fringe) > 0:
+        while fringe:
             next_item = fringe.popleft()
 
             if isinstance(next_item, dict):
@@ -254,7 +254,7 @@ class StringifyArrays(AlertPublisher):
             return False
 
         for element in item:
-            if isinstance(element, dict) or isinstance(element, list):
+            if isinstance(element, (dict, list)):
                 return False
 
         return True
