@@ -1,3 +1,4 @@
+import calendar
 import time
 import re
 
@@ -30,7 +31,7 @@ class IntercomApp(AppIntegration):
     def _required_auth_info(cls):
         return {
             'token': {
-                'description': 'the OAuth token for this Intercom app',
+                'description': 'the access token for this Intercom app',
                 'format': re.compile(r'.*')
             }
         }
@@ -39,7 +40,8 @@ class IntercomApp(AppIntegration):
         """Return the number of seconds this polling function should sleep for
         between requests to avoid failed requests. Intercom API allows for a default of 500 requests
         every minute, distributed over 10 seconds periods. This means for a default rate limit of
-        500 per minute, you can send a maximum of 83 operations per 10 second period.
+        500 per minute, you can send a maximum of 83 operations per 10 second period. It's unlikely
+        we will hit that limit, so this can default to 0.
 
         Resource(s):
             https://developers.intercom.com/intercom-api-reference/reference#rate-limiting
@@ -47,7 +49,7 @@ class IntercomApp(AppIntegration):
         Returns:
             int: Number of seconds that this function should sleep for between requests
         """
-        return 10
+        return 0
 
     def _gather_logs(self):
         # Generate headers
@@ -62,7 +64,7 @@ class IntercomApp(AppIntegration):
             params = None
             url = self._next_page
         else:
-            params = {'created_at_before': int(time.time()),
+            params = {'created_at_before': int(calendar.timegm(time.gmtime())),
                       'created_at_after': self._last_timestamp}
             url = self._INTERCOM_LOGS_URL
 
