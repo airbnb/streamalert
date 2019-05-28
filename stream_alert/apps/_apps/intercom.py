@@ -32,7 +32,7 @@ class IntercomApp(AppIntegration):
         return {
             'token': {
                 'description': 'the access token for this Intercom app',
-                'format': re.compile(r'.*')
+                'format': re.compile(r'^dG9r([0-9A-Za-z+\/=]*)$')
             }
         }
 
