@@ -104,7 +104,7 @@ class TestIntercomApp(object):
         # The .json should be called on the response once, to return the response.
         assert_equal(requests_mock.return_value.json.call_count, 1)
 
-    @patch('time.time')
+    @patch('calendar.timegm')
     @patch('requests.get')
     def test_gather_intercom_logs_no_pagination(self, requests_mock, time_mock):
         """IntercomApp - Gather Logs No Pagination"""
@@ -132,7 +132,7 @@ class TestIntercomApp(object):
             params=params,
             timeout=self._app._DEFAULT_REQUEST_TIMEOUT)
 
-    @patch('time.time')
+    @patch('calendar.timegm')
     @patch('requests.get')
     def test_gather_intercom_logs_response_with_next_page(self, requests_mock, time_mock):
         """IntercomApp - Gather Logs Next Page"""
@@ -180,7 +180,7 @@ class TestIntercomApp(object):
             params=None,
             timeout=self._app._DEFAULT_REQUEST_TIMEOUT)
 
-    @patch('time.time')
+    @patch('calendar.timegm')
     @patch('requests.get')
     def test_gather_intercom_logs_setting_last_timestamp(self, requests_mock, time_mock):
         """IntercomApp - Gather Logs Setting _last_timestamp"""
@@ -208,7 +208,7 @@ class TestIntercomApp(object):
             params=params,
             timeout=self._app._DEFAULT_REQUEST_TIMEOUT)
 
-    @patch('time.time')
+    @patch('calendar.timegm')
     @patch('requests.get')
     def test_gather_intercom_logs_by_last_timestamp(self, requests_mock, time_mock):
         """IntercomApp - Gather Logs Filtering By _last_timestamp"""
