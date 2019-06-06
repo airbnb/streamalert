@@ -35,18 +35,16 @@ class JiraOutput(OutputDispatcher):
     """JiraOutput handles all alert dispatching for Jira"""
     __service__ = 'jira'
 
-    DEFAULT_HEADERS = {
-        "Accept": "application/json",
-        "Content-Type": "application/json"
-    }
-    SEARCH_ENDPOINT = 'rest/api/3/search'
-    ISSUE_ENDPOINT = 'rest/api/3/issue'
-    COMMENT_ENDPOINT = 'rest/api/3/issue/{}/comment'
+    DEFAULT_HEADERS = {'Content-Type': 'application/json'}
+    LOGIN_ENDPOINT = 'rest/auth/1/session'
+    SEARCH_ENDPOINT = 'rest/api/2/search'
+    ISSUE_ENDPOINT = 'rest/api/2/issue'
+    COMMENT_ENDPOINT = 'rest/api/2/issue/{}/comment'
 
     def __init__(self, *args, **kwargs):
         OutputDispatcher.__init__(self, *args, **kwargs)
         self._base_url = None
-        self._api_key = None
+        self._auth_cookie = None
 
     @classmethod
     def get_user_defined_properties(cls):
@@ -57,7 +55,7 @@ class JiraOutput(OutputDispatcher):
         Every output should return a dict that contains a 'descriptor' with a description of the
         integration being configured.
 
-        Jira requires a api key, URL, project key, and issue type for alert dispatching.
+        Jira requires a username, password, URL, project key, and issue type for alert dispatching.
         These values should be masked during input and are credential requirements.
 
         An additional parameter 'aggregate' is used to determine if alerts are aggregated into a
@@ -70,8 +68,12 @@ class JiraOutput(OutputDispatcher):
             ('descriptor',
              OutputProperty(description='a short and unique descriptor for this '
                                         'Jira integration')),
-            ('api_key',
-             OutputProperty(description='the Jira api key',
+            ('username',
+             OutputProperty(description='the Jira username',
+                            mask_input=True,
+                            cred_requirement=True)),
+            ('password',
+             OutputProperty(description='the Jira password',
                             mask_input=True,
                             cred_requirement=True)),
             ('url',
@@ -99,8 +101,8 @@ class JiraOutput(OutputDispatcher):
         return cls.DEFAULT_HEADERS.copy()
 
     def _get_headers(self):
-        """Instance method used to pass the default headers plus the api key"""
-        return dict(self._get_default_headers(), **{'Bearer': self._api_key})
+        """Instance method used to pass the default headers plus the auth cookie"""
+        return dict(self._get_default_headers(), **{'cookie': self._auth_cookie})
 
     def _search_jira(self, jql, fields=None, max_results=100, validate_query=True):
         """Search Jira for issues using a JQL query
@@ -244,6 +246,35 @@ class JiraOutput(OutputDispatcher):
 
         return response.get('id', False)
 
+    def _establish_session(self, username, password):
+        """Establish a cookie based Jira session via basic user auth.
+
+        Args:
+            username (str): The Jira username used for establishing the session
+            password (str): The Jira password used for establishing the session
+
+        Returns:
+            str: Header value intended to be passed with every subsequent Jira request
+                 or False if unsuccessful
+        """
+        login_url = os.path.join(self._base_url, self.LOGIN_ENDPOINT)
+        auth_info = {'username': username, 'password': password}
+
+        try:
+            resp = self._post_request_retry(login_url,
+                                            data=auth_info,
+                                            headers=self._get_default_headers(),
+                                            verify=False)
+        except OutputRequestFailure:
+            LOGGER.error("Failed to authenticate to Jira")
+            return False
+
+        resp_dict = resp.json()
+        if not resp_dict:
+            return False
+
+        return '{}={}'.format(resp_dict['session']['name'],
+                              resp_dict['session']['value'])
 
     def _dispatch(self, alert, descriptor):
         """Send alert to Jira
@@ -287,6 +318,11 @@ class JiraOutput(OutputDispatcher):
         comment_id = None
 
         self._base_url = creds['url']
+        self._auth_cookie = self._establish_session(creds['username'], creds['password'])
+
+        # Validate successful authentication
+        if not self._auth_cookie:
+            return False
 
         # If aggregation is enabled, attempt to add alert to an existing issue. If a
         # failure occurs in this block, creation of a new Jira issue will be attempted.
