@@ -17,18 +17,17 @@ limitations under the License.
 from mock import patch, PropertyMock, Mock, MagicMock
 from nose.tools import assert_equal, assert_false, assert_true
 
-from stream_alert.alert_processor.outputs.jira import JiraOutput
+from stream_alert.alert_processor.outputs.jira_v2 import JiraOutput
 from tests.unit.stream_alert_alert_processor.helpers import get_alert
 
 
 @patch('stream_alert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS', 1)
 class TestJiraOutput(object):
     """Test class for JiraOutput"""
-    DESCRIPTOR = 'unit_test_jira'
+    DESCRIPTOR = 'unit_test_jira_v2'
     SERVICE = 'jira_v2'
     OUTPUT = ':'.join([SERVICE, DESCRIPTOR])
-    CREDS = {'username': 'jira@foo.bar',
-             'password': 'jirafoobar',
+    CREDS = {'api_key': 'xxxxyyyyyyyzzzzzzz',
              'url': 'jira.foo.bar',
              'project_key': 'foobar',
              'issue_type': 'Task',
