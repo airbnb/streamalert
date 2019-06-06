@@ -33,7 +33,7 @@ LOGGER = get_logger(__name__)
 @StreamAlertOutput
 class JiraOutput(OutputDispatcher):
     """JiraOutput handles all alert dispatching for Jira"""
-    __service__ = 'jira'
+    __service__ = 'jira_v2'
 
     DEFAULT_HEADERS = {
         "Accept": "application/json",
@@ -243,7 +243,6 @@ class JiraOutput(OutputDispatcher):
             return False
 
         return response.get('id', False)
-
 
     def _dispatch(self, alert, descriptor):
         """Send alert to Jira
