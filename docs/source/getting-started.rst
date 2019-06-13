@@ -10,12 +10,12 @@ Install Dependencies
 1. Install Python 2.7 and `pip <https://pip.pypa.io/en/stable/installing/>`_
 2. Install `Terraform <https://www.terraform.io/intro/getting-started/install.html>`_ v0.11.X: 
 
-.. note:: Terraform versions newer than 0.11.X are not currently supported.
-
 .. code-block:: bash
 
   brew install terraform  # MacOS Homebrew
   terraform --version     # Must be v0.11.X
+  
+.. note:: Terraform versions >= 0.12.X are not currently supported.
 
 3. Install `virtualenv <https://virtualenv.pypa.io/en/stable/installation/>`_:
 
