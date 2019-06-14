@@ -8,7 +8,7 @@ Install Dependencies
 --------------------
 
 1. Install Python 2.7 and `pip <https://pip.pypa.io/en/stable/installing/>`_
-2. Install `Terraform <https://www.terraform.io/intro/getting-started/install.html>`_ v0.11.X: 
+2. Install `Terraform <https://www.terraform.io/intro/getting-started/install.html>`_ v0.11.X:
 
 .. code-block:: bash
 
