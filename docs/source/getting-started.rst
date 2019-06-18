@@ -16,6 +16,8 @@ Install Dependencies
 
   brew install terraform  # MacOS Homebrew
   terraform --version     # Must be v0.11.X
+  
+.. note:: Terraform versions >= 0.12.X are not currently supported.
 
 3. Install `virtualenv <https://virtualenv.pypa.io/en/stable/installation/>`_:
 
