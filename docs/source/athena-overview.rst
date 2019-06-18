@@ -34,8 +34,7 @@ To create tables for searching data sent to StreamAlert, run:
 
   $ python manage.py athena create-table \
     --bucket <prefix>.streamalert.data \
-    --table-name <log_name> \
-    --table-type data
+    --table-name <log_name>
 
 The log name above reflects an enabled log type in your StreamAlert deployment. These are also top level keys in the ``logs.json``.
 
