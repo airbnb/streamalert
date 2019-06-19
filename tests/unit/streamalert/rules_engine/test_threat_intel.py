@@ -136,6 +136,34 @@ class TestThreatIntel(object):
             self._threat_intel.threat_detection(payloads)
             assert_equal(payloads[0]['record'], expected_result)
 
+    def test_threat_detection_no_iocs(self):
+        """ThreatIntel - Threat Detection, No IOCs"""
+        payloads = [self._sample_payload]
+
+        expected_result = {
+            'account': 12345,
+            'region': 'us-east-1',
+            'detail': {
+                'eventName': 'ConsoleLogin',
+                'userIdentity': {
+                    'userName': 'alice',
+                    'accountId': '12345'
+                },
+                'sourceIPAddress': '1.1.1.2',
+                'recipientAccountId': '12345'
+            },
+            'source': '1.1.1.2',
+            'streamalert:normalization': {
+                'sourceAddress': {'1.1.1.2'},
+                'userName': {'alice'}
+            }
+        }
+
+        with patch.object(self._threat_intel, '_process_ioc_values') as process_mock:
+            process_mock.return_value = []
+            self._threat_intel.threat_detection(payloads)
+            assert_equal(payloads[0]['record'], expected_result)
+
     def test_insert_ioc_info(self):
         """ThreatIntel - Insert IOC Info"""
         record = {
