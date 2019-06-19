@@ -41,19 +41,18 @@ class TestStagingStatistic(object):
     def test_construct_compound_count_query(self):
         """StagingStatistic - Construct Compound Count Query"""
         query = StagingStatistic.construct_compound_count_query([self.statistic, self.statistic])
-        expected_query = ("SELECT 'test_rule' AS rule_name, count(*) AS count "
-                          "FROM alerts WHERE dt >= '2000-01-01-01' AND "
-                          "rule_name = 'test_rule' UNION ALL SELECT 'test_rule' "
-                          "AS rule_name, count(*) AS count FROM alerts WHERE "
-                          "dt >= '2000-01-01-01' AND rule_name = 'test_rule'")
+        expected_query = ("SELECT rule_name, count(*) AS count "
+                          "FROM alerts WHERE "
+                          "(dt >= '2000-01-01-01' AND rule_name = 'test_rule') OR "
+                          "(dt >= '2000-01-01-01' AND rule_name = 'test_rule') "
+                          "GROUP BY rule_name")
 
         assert_equal(query, expected_query)
 
-    def test_sql_count_statement(self):
-        """StagingStatistic - SQL Count Statement"""
-        expected_sql = ("SELECT 'test_rule' AS rule_name, count(*) AS count FROM alerts "
-                        "WHERE dt >= '2000-01-01-01' AND rule_name = 'test_rule'")
-        assert_equal(self.statistic.sql_count_statement, expected_sql)
+    def test_sql_where_fragment(self):
+        """StagingStatistic - SQL Count Where Fragment"""
+        expected_sql = ("(dt >= '2000-01-01-01' AND rule_name = 'test_rule')")
+        assert_equal(self.statistic.sql_where_fragment, expected_sql)
 
     def test_sql_info_statement(self):
         """StagingStatistic - SQL Info Statement"""
