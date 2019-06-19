@@ -26,5 +26,5 @@ def handler(event, _):
     try:
         Classifier().run(event.get('Records', []))
     except Exception:
-        logger.get_logger(__name__).error('Invocation event: %s', json.dumps(event))
+        logger.get_logger(__name__).exception('Invocation event: %s', json.dumps(event))
         raise
