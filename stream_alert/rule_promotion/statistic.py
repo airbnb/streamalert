@@ -20,9 +20,11 @@ class StagingStatistic(object):
 
     _ALERT_COUNT_UNKOWN = 'unknown'
 
-    _COUNT_QUERY_TEMPLATE = ("SELECT '{rule_name}' AS rule_name, count(*) AS count "
-                             "FROM alerts WHERE dt >= '{date}-{hour:02}' AND "
-                             "rule_name = '{rule_name}'")
+    _COUNT_QUERY_TEMPLATE = (
+        "SELECT rule_name, count(*) AS count FROM alerts WHERE {where_clause} GROUP BY rule_name"
+    )
+
+    _COUNT_QUERY_WHERE_FRAGMENT = "(dt >= '{date}-{hour:02}' AND rule_name = '{rule_name}')"
 
     _INFO_QUERY_TEMPLATE = ("SELECT id, rule_name, created, cluster, log_source, source_entity, "
                             "record FROM alerts WHERE dt >= '{date}-{hour:02}' AND "
@@ -53,15 +55,18 @@ class StagingStatistic(object):
     def construct_compound_count_query(cls, stats):
         """Create a SQL query to get the alert counts for staged rules
 
+        Args:
+            stats (list[StagingStatistic])
+
         Returns:
             list: SQL statement for counting alerts created by staged rules
         """
-        return ' UNION ALL '.join(stat.sql_count_statement for stat in stats)
+        where_clause = ' OR '.join(stat.sql_where_fragment for stat in stats)
+        return cls._COUNT_QUERY_TEMPLATE.format(where_clause=where_clause)
 
     @property
-    def sql_count_statement(self):
-        """Athena count statement for this rule to get alert count."""
-        return self._COUNT_QUERY_TEMPLATE.format(
+    def sql_where_fragment(self):
+        return self._COUNT_QUERY_WHERE_FRAGMENT.format(
             date=self._staged_at.date().isoformat(),
             hour=self._staged_at.hour,
             rule_name=self._rule_name
