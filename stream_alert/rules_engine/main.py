@@ -33,5 +33,5 @@ def handler(event, _):
                 records.append(body)
         RulesEngine().run(records)
     except Exception:
-        logger.get_logger(__name__).error('Invocation event: %s', json.dumps(event))
+        logger.get_logger(__name__).exception('Invocation event: %s', json.dumps(event))
         raise
