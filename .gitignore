@@ -35,3 +35,6 @@ htmlcov/
 
 # Pycharm IDE
 .idea/
+
+# Vagrant VM artifacts
+ubuntu*.log
