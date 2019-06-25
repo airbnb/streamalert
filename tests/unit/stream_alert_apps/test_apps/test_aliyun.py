@@ -52,7 +52,7 @@ class TestAliyunApp(object):
 
     def test_required_auth_info(self):
         """AliyunApp - Required Auth Info"""
-        assert_items_equal(self._app.required_auth_info().keys(),
+        assert_items_equal(list(self._app.required_auth_info().keys()),
                            {'access_key_id', 'access_key_secret', 'region_id'})
 
     def test_region_validator_success(self):

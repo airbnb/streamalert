@@ -30,7 +30,7 @@ class JsonFileSorter(object):
         schema = json.loads(original_text, object_pairs_hook=OrderedDict)
 
         # Sort the loaded schema by top-level key. Preserve the ordering of internal keys.
-        ordered_schema = OrderedDict(sorted(schema.items(), key=lambda k: k[0]))
+        ordered_schema = OrderedDict(sorted(list(schema.items()), key=lambda k: k[0]))
 
         with open(file_path, 'w') as outfile:
             json.dump(ordered_schema, outfile, indent=2, separators=(',', ': '))

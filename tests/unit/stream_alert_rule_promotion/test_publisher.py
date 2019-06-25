@@ -76,7 +76,7 @@ class TestStatsPublisher(object):
 
     def test_format_digest(self):
         """StatsPublisher - Format Digest"""
-        expected_digest = u'''\u25E6 test_rule_1
+        expected_digest = '''\u25E6 test_rule_1
 	- Staged At:					2000-01-01 01:01:01 UTC
 	- Staged Until:					2000-01-03 01:01:01 UTC
 	- Remaining Stage Time:		1d 0h 0m
@@ -125,7 +125,7 @@ class TestStatsPublisher(object):
         self.publisher._publish_message(list(self._get_fake_stats(count=1)))
 
         args = {
-            'Message': u'''\u25E6 test_rule_0
+            'Message': '''\u25E6 test_rule_0
 	- Staged At:					2000-01-01 01:01:01 UTC
 	- Staged Until:					2000-01-03 01:01:01 UTC
 	- Remaining Stage Time:		1d 0h 0m

@@ -12,7 +12,7 @@ def convert_test_event(path):
         try:
             data = json.load(test_event)
         except ValueError as err:
-            print '[ERROR] {}: {}'.format(os.path.basename(path), err)
+            print('[ERROR] {}: {}'.format(os.path.basename(path), err))
             return
         # Convert legacy test events
         if isinstance(data, dict) and 'records' in data:

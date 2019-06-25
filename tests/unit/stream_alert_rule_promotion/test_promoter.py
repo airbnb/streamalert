@@ -139,7 +139,7 @@ class TestRulePromoter(object):
         with patch.object(self.promoter, '_update_alert_count', Mock()), \
              patch.object(self.promoter, '_promote_rules', Mock()):
             self.promoter.run(True)
-            publish_mock.assert_called_with(self.promoter._staging_stats.values())
+            publish_mock.assert_called_with(list(self.promoter._staging_stats.values()))
 
     @patch('logging.Logger.debug')
     def test_run_none_staged(self, log_mock):

@@ -356,10 +356,10 @@ class TestParserBaseClassMethods(object):
             'key': 'string'
         }
         record = {
-            'key': u'\ue82a'
+            'key': '\ue82a'
         }
         assert_equal(ParserBase._convert_type(record, schema), True)
-        assert_equal(record, {'key': u'\ue82a'})
+        assert_equal(record, {'key': '\ue82a'})
 
     def test_convert_type_int(self):
         """ParserBase - Convert Type, Int"""

@@ -129,8 +129,8 @@ class TestConfigLoading(fake_filesystem_unittest.TestCase):
         config = load_config(include={'clusters', 'logs.json'})
         expected_keys = ['clusters', 'logs']
         expected_clusters_keys = ['prod', 'dev']
-        assert_items_equal(config.keys(), expected_keys)
-        assert_items_equal(config['clusters'].keys(), expected_clusters_keys)
+        assert_items_equal(list(config.keys()), expected_keys)
+        assert_items_equal(list(config['clusters'].keys()), expected_clusters_keys)
 
 
 class TestConfigValidation(object):

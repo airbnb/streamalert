@@ -43,7 +43,7 @@ class TestSlackApp(object):
 
     def test_required_auth_info(self):
         """SlackApp - Required Auth Info"""
-        assert_items_equal(self._app.required_auth_info().keys(), {'auth_token'})
+        assert_items_equal(list(self._app.required_auth_info().keys()), {'auth_token'})
 
     @patch('requests.post')
     @patch('logging.Logger.error')
@@ -228,14 +228,14 @@ class TestSlackAccessApp(object):
 
         self._app._last_timestamp = 1522922593
         gathered_logs = self._app._gather_logs()
-        assert 'before' not in requests_mock.call_args[1]['data'].keys()
+        assert 'before' not in list(requests_mock.call_args[1]['data'].keys())
         assert_equal(len(gathered_logs), 0)
         assert_equal(self._app._next_page, 1)
         assert_equal(True, self._app._more_to_poll)
         assert_equal(self._app._before_time, logs['logins'][-1]['date_first'])
 
         self._app._gather_logs()
-        assert 'before' in requests_mock.call_args[1]['data'].keys()
+        assert 'before' in list(requests_mock.call_args[1]['data'].keys())
 
 
 @mock_ssm

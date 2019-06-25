@@ -73,8 +73,8 @@ class TestSummary(object):
         )
         assert_equal(len(publication['@slack.attachments']), len(expectation['@slack.attachments']))
         assert_equal(
-            publication['@slack.attachments'][0].keys(),
-            expectation['@slack.attachments'][0].keys()
+            list(publication['@slack.attachments'][0].keys()),
+            list(expectation['@slack.attachments'][0].keys())
         )
         assert_equal(publication['@slack.attachments'][0], expectation['@slack.attachments'][0])
 

@@ -61,12 +61,12 @@ def {}(_):
     return False
 """.format(rule_name)
 
-        exec custom_rule_code  # pylint: disable=exec-used
+        exec(custom_rule_code)  # pylint: disable=exec-used
 
     def test_rule_valid(self):
         """Rule - Create Valid Rule"""
         self._create_rule_helper('test_rule')
-        assert_equal(rule.Rule._rules.keys(), ['test_rule'])
+        assert_equal(list(rule.Rule._rules.keys()), ['test_rule'])
 
     @raises(rule.RuleCreationError)
     def test_rule_invalid(self):

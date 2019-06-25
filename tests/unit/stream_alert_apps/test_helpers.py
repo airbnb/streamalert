@@ -30,7 +30,7 @@ def put_mock_params(app_type):
         '{}_auth'.format(app_type): _get_auth_info(app_type)
     }
     ssm_client = boto3.client('ssm')
-    for key, value in params.iteritems():
+    for key, value in params.items():
         ssm_client.put_parameter(
             Name=key,
             Value=json.dumps(value),
