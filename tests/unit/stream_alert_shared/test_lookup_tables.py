@@ -42,7 +42,7 @@ class TestLookupTables(object):
         self._put_mock_tables()
 
     def _put_mock_tables(self):
-        for bucket, files in self.buckets_info.iteritems():
+        for bucket, files in self.buckets_info.items():
             for json_file in files:
                 put_mock_s3_object(
                     bucket,

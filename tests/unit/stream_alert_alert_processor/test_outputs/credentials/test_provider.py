@@ -355,8 +355,8 @@ class TestS3Driver(object):
         loaded_creds = json.loads(credentials.get_data_kms_decrypted())
 
         assert_equal(len(loaded_creds), 2)
-        assert_equal(loaded_creds['url'], u'http://www.foo.bar/test')
-        assert_equal(loaded_creds['token'], u'token_to_encrypt')
+        assert_equal(loaded_creds['url'], 'http://www.foo.bar/test')
+        assert_equal(loaded_creds['token'], 'token_to_encrypt')
 
     def test_has_credentials(self):
         """S3Driver - Has Credentials

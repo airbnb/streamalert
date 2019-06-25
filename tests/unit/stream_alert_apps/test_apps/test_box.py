@@ -50,7 +50,7 @@ class TestBoxApp(object):
 
     def test_required_auth_info(self):
         """BoxApp - Required Auth Info"""
-        assert_items_equal(self._app.required_auth_info().keys(), {'keyfile'})
+        assert_items_equal(list(self._app.required_auth_info().keys()), {'keyfile'})
 
     @patch('stream_alert.apps._apps.box.JWTAuth.from_settings_dictionary',
            Mock(return_value=True))

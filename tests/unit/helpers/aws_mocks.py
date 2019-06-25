@@ -15,7 +15,7 @@ limitations under the License.
 """
 from datetime import datetime
 import uuid
-from StringIO import StringIO
+from io import StringIO
 import zipfile
 
 import boto3

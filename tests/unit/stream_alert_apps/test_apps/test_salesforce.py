@@ -113,7 +113,7 @@ class TestSalesforceApp(object):
     def test_required_auth_info(self):
         """SalesforceApp - Required Auth Info"""
         assert_items_equal(
-            self._app.required_auth_info().keys(),
+            list(self._app.required_auth_info().keys()),
             {'client_id', 'client_secret', 'username', 'password', 'security_token'}
         )
 

@@ -121,8 +121,8 @@ class TestAlert(object):
             source_service=''
         )
         record = alert.dynamo_record()
-        assert_not_in('', record.values())
-        assert_not_in(set(), record.values())
+        assert_not_in('', list(record.values()))
+        assert_not_in(set(), list(record.values()))
 
     def test_create_from_dynamo_record(self):
         """Alert Class - Create Alert from Dynamo Record"""
@@ -143,7 +143,7 @@ class TestAlert(object):
         # Ensure result is JSON-serializable (no sets)
         assert_is_instance(json.dumps(result), str)
         # Ensure result is Athena compatible (no None values)
-        assert_not_in(None, result.values())
+        assert_not_in(None, list(result.values()))
 
     def test_can_merge_no_config(self):
         """Alert Class - Can Merge - False if Either Alert Does Not Have Merge Config"""
