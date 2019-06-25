@@ -1,5 +1,5 @@
-aliyun-python-sdk-core==2.8.5
-aliyun-python-sdk-actiontrail==2.0.0
+aliyun-python-sdk-core
+aliyun-python-sdk-actiontrail
 autoflake
 autopep8
 backoff
