@@ -80,7 +80,7 @@ def test_create_dispatcher():
 
 def test_user_defined_properties():
     """OutputDispatcher - User Defined Properties"""
-    for output in StreamAlertOutput.get_all_outputs().values():
+    for output in list(StreamAlertOutput.get_all_outputs().values()):
         props = output.get_user_defined_properties()
         # The user defined properties should at a minimum contain a descriptor
         assert_is_not_none(props.get('descriptor'))
@@ -185,8 +185,8 @@ class TestOutputDispatcher(object):
 
         assert_is_not_none(loaded_creds)
         assert_equal(len(loaded_creds), 2)
-        assert_equal(loaded_creds['url'], u'http://www.foo.bar/test')
-        assert_equal(loaded_creds['token'], u'token_to_encrypt')
+        assert_equal(loaded_creds['url'], 'http://www.foo.bar/test')
+        assert_equal(loaded_creds['token'], 'token_to_encrypt')
 
     def test_format_output_config(self):
         """OutputDispatcher - Format Output Config"""

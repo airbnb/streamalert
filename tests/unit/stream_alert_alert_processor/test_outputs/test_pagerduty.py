@@ -1614,7 +1614,7 @@ class RequestMocker(object):
     def inspect_calls(mock):
         """Prints out all of the calls to this mock, in the order of call.
         """
-        print mock.call_args_list
+        print(mock.call_args_list)
 
     @staticmethod
     def assert_mock_with_no_calls_like(mock, condition):

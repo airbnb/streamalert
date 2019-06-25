@@ -85,7 +85,7 @@ class TestOneLoginApp(object):
 
     def test_required_auth_info(self):
         """OneLoginApp - Required Auth Info"""
-        assert_items_equal(self._app.required_auth_info().keys(),
+        assert_items_equal(list(self._app.required_auth_info().keys()),
                            {'region', 'client_secret', 'client_id'})
 
     @staticmethod

@@ -15,7 +15,7 @@ limitations under the License.
 """
 from datetime import datetime
 import os
-from StringIO import StringIO
+from io import StringIO
 
 from botocore.exceptions import ClientError
 from mock import Mock, patch
@@ -324,7 +324,7 @@ class TestRuleTable(object):
             'StagedUntil':  '2018-04-23T02:23:13.0Z'
         })
         with patch('sys.stdout', new=StringIO()) as stdout:
-            print self.rule_table
+            print(self.rule_table)
             expected_output = """
 Rule            Staged?
   1: test_01    False
@@ -337,7 +337,7 @@ Rule            Staged?
     def test_print_table_empty(self):
         """Rule Table - Print Table, Empty"""
         with patch('sys.stdout', new=StringIO()) as stdout:
-            print self.rule_table
+            print(self.rule_table)
             expected_output = 'Rule table is empty'
             output = stdout.getvalue().strip()
             assert_equal(output, expected_output.strip())
@@ -352,7 +352,7 @@ Rule            Staged?
             'StagedUntil':  '2018-04-23T02:23:13.0Z'
         })
         with patch('sys.stdout', new=StringIO()) as stdout:
-            print self.rule_table.__str__(True)
+            print(self.rule_table.__str__(True))
             expected_output = """
 Rule            Staged?
   1: test_01    False

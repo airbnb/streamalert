@@ -54,7 +54,7 @@ class TestGSuiteReportsApp(object):
 
     def test_required_auth_info(self):
         """GSuiteReportsApp - Required Auth Info"""
-        assert_items_equal(self._app.required_auth_info().keys(),
+        assert_items_equal(list(self._app.required_auth_info().keys()),
                            {'delegation_email', 'keyfile'})
 
     @patch('oauth2client.service_account.ServiceAccountCredentials.from_json_keyfile_dict',
@@ -275,7 +275,7 @@ class TestGSuiteReportsApp(object):
             'kind': 'audit#activity',
             'id': {
                 'time': _get_timestamp('2011-06-17T15:39:18.460000Z', index),
-                'uniqueQualifier': -12345678901234567890L + index,
+                'uniqueQualifier': -12345678901234567890 + index,
                 'applicationName': 'admin',
                 'customerId': 'C03az79cb'
             },

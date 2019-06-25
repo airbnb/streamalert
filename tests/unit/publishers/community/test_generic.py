@@ -321,7 +321,7 @@ class TestEnumerateFields(object):
             'staged',
         ]
 
-        assert_equal(publication.keys(), expectation)
+        assert_equal(list(publication.keys()), expectation)
 
 
 def test_delete_dictionary_fields():
