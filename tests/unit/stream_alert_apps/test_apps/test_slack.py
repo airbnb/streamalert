@@ -17,7 +17,7 @@ import os
 
 from mock import Mock, patch
 from moto import mock_ssm
-from nose.tools import assert_equal, assert_false, assert_items_equal, raises
+from nose.tools import assert_equal, assert_false, assert_count_equal, raises
 
 from stream_alert.apps._apps.slack import SlackApp, SlackAccessApp, SlackIntegrationsApp
 from tests.unit.stream_alert_apps.test_helpers import get_event, put_mock_params
@@ -43,7 +43,7 @@ class TestSlackApp(object):
 
     def test_required_auth_info(self):
         """SlackApp - Required Auth Info"""
-        assert_items_equal(list(self._app.required_auth_info().keys()), {'auth_token'})
+        assert_count_equal(list(self._app.required_auth_info().keys()), {'auth_token'})
 
     @patch('requests.post')
     @patch('logging.Logger.error')

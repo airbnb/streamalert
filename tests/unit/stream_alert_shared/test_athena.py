@@ -21,7 +21,7 @@ from mock import Mock, patch
 from nose.tools import (
     assert_equal,
     assert_false,
-    assert_items_equal,
+    assert_count_equal,
     assert_raises,
     assert_true,
     raises
@@ -81,7 +81,7 @@ class TestAthenaClient(object):
         expected_result = {'foobar', 'barfoo', 'foobarbaz'}
 
         result = self.client._unique_values_from_query(query)
-        assert_items_equal(result, expected_result)
+        assert_count_equal(result, expected_result)
 
     def test_check_database_exists(self):
         """Athena - Check Database Exists"""
@@ -119,7 +119,7 @@ class TestAthenaClient(object):
         expected_result = {'dt=2018-12-10-10', 'dt=2018-12-09-10', 'dt=2018-12-11-10'}
 
         result = self.client.get_table_partitions('test_table')
-        assert_items_equal(result, expected_result)
+        assert_count_equal(result, expected_result)
 
     def test_get_table_partitions_error(self):
         """Athena - Get Table Partitions, Exception"""
@@ -189,7 +189,7 @@ class TestAthenaClient(object):
         ]
 
         items = list(self.client.query_result_paginator('test query'))
-        assert_items_equal(items, [{'ResultSet': {'Rows': [data]}}] * 4)
+        assert_count_equal(items, [{'ResultSet': {'Rows': [data]}}] * 4)
 
     @raises(AthenaQueryExecutionError)
     def test_query_result_paginator_error(self):

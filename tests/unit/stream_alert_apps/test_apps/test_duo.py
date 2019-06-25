@@ -17,7 +17,7 @@ import os
 
 from mock import Mock, patch
 from moto import mock_ssm
-from nose.tools import assert_equal, assert_false, assert_items_equal, raises
+from nose.tools import assert_equal, assert_false, assert_count_equal, raises
 import requests
 
 from stream_alert.apps._apps.duo import DuoAdminApp, DuoApp, DuoAuthApp
@@ -53,7 +53,7 @@ class TestDuoApp(object):
     def test_generate_auth(self):
         """DuoApp - Generate Auth"""
         auth = self._app._generate_auth('hostname', {})
-        assert_items_equal(list(auth.keys()), {'Date', 'Authorization', 'Host'})
+        assert_count_equal(list(auth.keys()), {'Date', 'Authorization', 'Host'})
 
     def test_sleep(self):
         """DuoApp - Sleep Seconds"""
@@ -64,7 +64,7 @@ class TestDuoApp(object):
 
     def test_required_auth_info(self):
         """DuoApp - Required Auth Info"""
-        assert_items_equal(list(self._app.required_auth_info().keys()),
+        assert_count_equal(list(self._app.required_auth_info().keys()),
                            {'api_hostname', 'integration_key', 'secret_key'})
 
     @staticmethod

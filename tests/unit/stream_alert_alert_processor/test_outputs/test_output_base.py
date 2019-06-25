@@ -21,7 +21,7 @@ from nose.tools import (
     assert_is_instance,
     assert_is_not_none,
     assert_is_none,
-    assert_items_equal
+    assert_count_equal
 )
 from requests.exceptions import Timeout as ReqTimeout
 
@@ -108,7 +108,7 @@ def test_output_loading():
         'phantom',
         'slack'
     }
-    assert_items_equal(loaded_outputs, expected_outputs)
+    assert_count_equal(loaded_outputs, expected_outputs)
 
 
 @patch.object(OutputDispatcher, '__service__', 'test_service')

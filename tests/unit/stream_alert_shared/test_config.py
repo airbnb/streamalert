@@ -16,7 +16,7 @@ limitations under the License.
 import json
 
 from mock import Mock
-from nose.tools import assert_equal, assert_items_equal, assert_raises
+from nose.tools import assert_equal, assert_count_equal, assert_raises
 from pyfakefs import fake_filesystem_unittest
 
 from stream_alert.shared.config import (
@@ -129,8 +129,8 @@ class TestConfigLoading(fake_filesystem_unittest.TestCase):
         config = load_config(include={'clusters', 'logs.json'})
         expected_keys = ['clusters', 'logs']
         expected_clusters_keys = ['prod', 'dev']
-        assert_items_equal(list(config.keys()), expected_keys)
-        assert_items_equal(list(config['clusters'].keys()), expected_clusters_keys)
+        assert_count_equal(list(config.keys()), expected_keys)
+        assert_count_equal(list(config['clusters'].keys()), expected_clusters_keys)
 
 
 class TestConfigValidation(object):
