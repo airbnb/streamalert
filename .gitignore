@@ -28,3 +28,12 @@ venv/
 
 .vagrant/
 htmlcov/
+<<<<<<< HEAD
+=======
+
+# Pycharm IDE
+.idea/
+
+# Vagrant VM artifacts
+ubuntu*.log
+>>>>>>> [setup] Configure the Vagrantfile for Python 2.x and 3.x development.
