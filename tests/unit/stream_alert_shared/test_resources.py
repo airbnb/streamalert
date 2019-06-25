@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from nose.tools import assert_equal, assert_items_equal
+from nose.tools import assert_equal, assert_count_equal
 
 from stream_alert.shared import resources
 
@@ -48,7 +48,7 @@ def test_merge_required_outputs_dne():
         'alerts': 'test_streamalert_alert_delivery'
     }
 
-    assert_items_equal(outputs['aws-firehose'], expected_fh)
+    assert_count_equal(outputs['aws-firehose'], expected_fh)
 
 
 def test_merge_required_outputs_exists():
@@ -76,4 +76,4 @@ def test_merge_required_outputs_exists():
         'alerts': 'test_streamalert_alert_delivery'
     }
 
-    assert_items_equal(outputs['aws-firehose'], expected_fh)
+    assert_count_equal(outputs['aws-firehose'], expected_fh)

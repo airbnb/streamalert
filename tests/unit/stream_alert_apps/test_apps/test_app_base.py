@@ -22,7 +22,7 @@ from nose.tools import (
     assert_equal,
     assert_false,
     assert_is_instance,
-    assert_items_equal,
+    assert_count_equal,
     assert_true,
     raises
 )
@@ -67,7 +67,7 @@ class TestStreamAlertApp(object):
             'aliyun_actiontrail'
         }
 
-        assert_items_equal(expected_apps, StreamAlertApp.get_all_apps())
+        assert_count_equal(expected_apps, StreamAlertApp.get_all_apps())
 
     @patch('stream_alert.apps.app_base.Batcher', Mock())
     def test_get_app(self):
