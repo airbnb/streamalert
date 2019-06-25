@@ -72,9 +72,9 @@ class TestSummary:
             expectation['@slack._previous_publication']
         )
         assert_equal(len(publication['@slack.attachments']), len(expectation['@slack.attachments']))
-        assert_dict_equal(
-            publication['@slack.attachments'][0],
-            expectation['@slack.attachments'][0]
+        assert_equal(
+            list(publication['@slack.attachments'][0].keys()),
+            list(expectation['@slack.attachments'][0].keys())
         )
         assert_dict_equal(publication['@slack.attachments'][0],
                           expectation['@slack.attachments'][0])
