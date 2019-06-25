@@ -17,7 +17,7 @@ import os
 
 from mock import patch
 from moto import mock_ssm
-from nose.tools import assert_equal, assert_false, assert_items_equal
+from nose.tools import assert_equal, assert_false, assert_count_equal
 
 from aliyunsdkcore.acs_exception.exceptions import ServerException
 
@@ -52,7 +52,7 @@ class TestAliyunApp(object):
 
     def test_required_auth_info(self):
         """AliyunApp - Required Auth Info"""
-        assert_items_equal(list(self._app.required_auth_info().keys()),
+        assert_count_equal(list(self._app.required_auth_info().keys()),
                            {'access_key_id', 'access_key_secret', 'region_id'})
 
     def test_region_validator_success(self):

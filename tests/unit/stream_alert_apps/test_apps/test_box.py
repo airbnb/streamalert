@@ -19,7 +19,7 @@ import os
 from boxsdk.exception import BoxException
 from mock import Mock, mock_open, patch
 from moto import mock_ssm
-from nose.tools import assert_equal, assert_false, assert_items_equal, assert_true
+from nose.tools import assert_equal, assert_false, assert_count_equal, assert_true
 from requests.exceptions import ConnectionError, Timeout
 
 from stream_alert.apps._apps.box import BoxApp
@@ -50,7 +50,7 @@ class TestBoxApp(object):
 
     def test_required_auth_info(self):
         """BoxApp - Required Auth Info"""
-        assert_items_equal(list(self._app.required_auth_info().keys()), {'keyfile'})
+        assert_count_equal(list(self._app.required_auth_info().keys()), {'keyfile'})
 
     @patch('stream_alert.apps._apps.box.JWTAuth.from_settings_dictionary',
            Mock(return_value=True))

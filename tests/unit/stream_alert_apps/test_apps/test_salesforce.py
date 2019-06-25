@@ -21,7 +21,7 @@ from nose.tools import (
     assert_equal,
     assert_false,
     assert_true,
-    assert_items_equal,
+    assert_count_equal,
     raises
 )
 from requests.exceptions import Timeout
@@ -112,7 +112,7 @@ class TestSalesforceApp(object):
 
     def test_required_auth_info(self):
         """SalesforceApp - Required Auth Info"""
-        assert_items_equal(
+        assert_count_equal(
             list(self._app.required_auth_info().keys()),
             {'client_id', 'client_secret', 'username', 'password', 'security_token'}
         )
