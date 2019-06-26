@@ -81,7 +81,7 @@ class S3Payload(StreamPayload):
     def _unquote(cls, data):
         # Use the urllib unquote method to decode any url encoded characters
         # (ie - %26 --> &) from the bucket and key names
-        return urllib.parse.unquote(data).encode('utf-8').decode()
+        return urllib.parse.unquote(data)
 
     def _check_size(self):
         """Ensure the S3 file's size is not too large to download into the Lambda environment

@@ -126,7 +126,7 @@ class AttachRuleInfo(AlertPublisher):
             'color': self._color(),
             'fields': [
                 {'title': key.capitalize(), 'value': rule_presentation['fields'][key]}
-                for key in rule_presentation['fields'].keys()
+                for key in list(rule_presentation['fields'].keys())
             ],
         })
 
