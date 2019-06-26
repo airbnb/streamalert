@@ -79,7 +79,7 @@ def generate_classifier(cluster_name, cluster_dict, config):
         input_mapping = {
             'input_sns_topics': 'aws-sns'
         }
-        for tf_key, input_key in input_mapping.items():
+        for tf_key, input_key in list(input_mapping.items()):
             if input_key in input_config:
                 cluster_dict['module'][iam_module][tf_key] = input_config[input_key]
 

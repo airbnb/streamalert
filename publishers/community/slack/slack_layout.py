@@ -16,7 +16,7 @@ limitations under the License.
 import calendar
 import cgi
 import json
-import urllib
+import urllib.request, urllib.parse, urllib.error
 
 from stream_alert.shared.publisher import AlertPublisher, Register
 from stream_alert.shared.description import RuleDescriptionParser
@@ -102,7 +102,7 @@ class Summary(AlertPublisher):
         return '{}{}?{}'.format(
             cls._GITHUB_REPO_URL,
             cls._SEARCH_PATH,
-            urllib.urlencode({
+            urllib.parse.urlencode({
                 'q': '{} path:{}'.format(rule_name, cls._RULES_PATH)
             })
         )
@@ -126,7 +126,7 @@ class AttachRuleInfo(AlertPublisher):
             'color': self._color(),
             'fields': [
                 {'title': key.capitalize(), 'value': rule_presentation['fields'][key]}
-                for key in rule_presentation['fields'].keys()
+                for key in list(rule_presentation['fields'].keys())
             ],
         })
 

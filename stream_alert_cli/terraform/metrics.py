@@ -34,22 +34,22 @@ def generate_aggregate_cloudwatch_metric_filters(config):
             if cluster_config['modules']['stream_alert']['{}_config'.format(func)].get(
                 'enable_custom_metrics'
             )
-        ] for cluster, cluster_config in config['clusters'].iteritems()
+        ] for cluster, cluster_config in config['clusters'].items()
     }
 
     functions['global'] = {
-        func.replace('_config', '') for func, func_config in config['lambda'].iteritems()
+        func.replace('_config', '') for func, func_config in config['lambda'].items()
         if func_config.get('enable_custom_metrics')
     }
 
-    if not any(funcs for funcs in functions.values()):
+    if not any(funcs for funcs in list(functions.values())):
         return  # Nothing to add if no funcs have metrics enabled
 
     result = infinitedict()
 
     current_metrics = metrics.MetricLogger.get_available_metrics()
 
-    for cluster, functions in functions.iteritems():
+    for cluster, functions in functions.items():
         is_global = cluster == 'global'
 
         for function in functions:
@@ -71,7 +71,7 @@ def generate_aggregate_cloudwatch_metric_filters(config):
                 cluster = '{}_AGGREGATE'.format(cluster)
 
             # Add filters for the cluster and aggregate
-            for metric, filter_settings in current_metrics[function].iteritems():
+            for metric, filter_settings in current_metrics[function].items():
                 module_name = 'metric_filters_{}_{}_{}'.format(metric_prefix, metric, cluster)
                 result['module'][module_name] = {
                     'source': 'modules/tf_metric_filters',
@@ -94,7 +94,7 @@ def generate_aggregate_cloudwatch_metric_alarms(config):
 
     sns_topic_arn = monitoring_topic_arn(config)
 
-    for func, func_config in config['lambda'].iteritems():
+    for func, func_config in config['lambda'].items():
         metric_alarms = func_config.get('custom_metric_alarms')
         if not metric_alarms:
             continue
@@ -142,7 +142,7 @@ def generate_cluster_cloudwatch_metric_filters(cluster_name, cluster_dict, confi
         cluster_name = cluster_name.upper()
 
         # Add filters for the cluster and aggregate
-        for metric, filter_settings in current_metrics[func].iteritems():
+        for metric, filter_settings in current_metrics[func].items():
             cluster_dict['module']['metric_filters_{}_{}_{}'.format(
                 metric_prefix,
                 metric,

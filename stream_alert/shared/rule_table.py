@@ -51,7 +51,7 @@ class RuleTable(object):
         if not self.remote_rule_names:
             return 'Rule table is empty'
 
-        pad_size = max([len(rule) for rule in self.remote_rule_info.keys()]) + 4
+        pad_size = max([len(rule) for rule in list(self.remote_rule_info.keys())]) + 4
         output = ['{rule:<{pad}}Staged?'.format(rule='Rule', pad=pad_size+5)]
         for index, rule in enumerate(sorted(self.remote_rule_info.keys()), start=1):
             output.append(
@@ -65,7 +65,7 @@ class RuleTable(object):
             # Append additional information if verbose is enabled
             if verbose:
                 details_pad_size = max([len(prop)
-                                        for prop in self.remote_rule_info[rule].keys()]) + 4
+                                        for prop in list(self.remote_rule_info[rule].keys())]) + 4
                 output.extend(
                     '{prefix:>{left_pad}}{property: <{internal_pad}}{value}'.format(
                         prefix='- ',
@@ -135,7 +135,7 @@ class RuleTable(object):
         return {
             item['RuleName']: {
                 key: self._cast_value(key, value)
-                for key, value in item.iteritems()
+                for key, value in item.items()
                 if key != 'RuleName'
             }
             for page in page_iterator
@@ -242,7 +242,7 @@ class RuleTable(object):
 
         args = {
             'UpdateExpression': ','.join(update_expressions),
-            'ExpressionAttributeValues': dict(zip(expression_attributes, expression_values))
+            'ExpressionAttributeValues': dict(list(zip(expression_attributes, expression_values)))
         }
         args.update(self._default_dynamo_kwargs(rule_name))
 

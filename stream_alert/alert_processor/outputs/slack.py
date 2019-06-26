@@ -368,7 +368,7 @@ class SlackOutput(OutputDispatcher):
             list: strings that have been properly tabbed and formatted for printing
         """
         all_lines = []
-        for key, value in sorted(json_values.iteritems()):
+        for key, value in sorted(json_values.items()):
             if isinstance(value, (dict, list)) and value:
                 all_lines.append('{}*{}:*'.format(tab*indent_count, key))
                 all_lines.extend(cls._json_to_slack_mrkdwn(value, indent_count+1))

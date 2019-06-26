@@ -37,7 +37,7 @@ def generate_rule_promotion(config):
     result = infinitedict()
 
     athena_config = config['lambda']['athena_partition_refresh_config']
-    data_buckets = athena_config['buckets'].keys()
+    data_buckets = list(athena_config['buckets'].keys())
 
     # Set variables for the IAM permissions, etc module
     result['module']['rule_promotion_iam'] = {

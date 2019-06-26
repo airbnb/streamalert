@@ -32,7 +32,7 @@ def generate_apps(cluster_name, cluster_dict, config):
     prefix = config['global']['account']['prefix']
 
     for function_name, app_info in config['clusters'][cluster_name]['modules'].get(
-            'stream_alert_apps', {}).iteritems():
+            'stream_alert_apps', {}).items():
 
         tf_module_prefix = 'app_{}_{}'.format(app_info['app_name'], cluster_name)
 

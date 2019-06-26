@@ -277,7 +277,7 @@ def generate_outputs(cluster_name, cluster_dict, config):
     """
     output_config = config['clusters'][cluster_name].get('outputs')
     if output_config:
-        for tf_module, output_vars in output_config.items():
+        for tf_module, output_vars in list(output_config.items()):
             for output_var in output_vars:
                 cluster_dict['output']['{}_{}_{}'.format(tf_module, cluster_name, output_var)] = {
                     'value': '${{module.{}_{}.{}}}'.format(tf_module, cluster_name, output_var)}

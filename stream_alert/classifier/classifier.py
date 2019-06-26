@@ -101,7 +101,7 @@ class Classifier(object):
         # Get the log schemas for source(s)
         return OrderedDict(
             (source, self.config['logs'][source])
-            for source in self.config['logs'].keys()
+            for source in list(self.config['logs'].keys())
             if source.split(':')[0] in source_config['logs']
         )
 
@@ -120,7 +120,7 @@ class Classifier(object):
             bool: True if the payload's data was successfully parsed, False otherwise
         """
         # Loop over all logs schemas declared for this source
-        for log_type, options in logs_config.iteritems():
+        for log_type, options in logs_config.items():
             LOGGER.debug('Trying schema \'%s\' with options: %s', log_type, options)
 
             # Get the parser type to use for this log and set up the parser

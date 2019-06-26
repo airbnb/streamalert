@@ -18,7 +18,7 @@ from datetime import datetime
 import hashlib
 import hmac
 import re
-import urllib
+import urllib.request, urllib.parse, urllib.error
 
 import requests
 
@@ -59,7 +59,7 @@ class DuoApp(AppIntegration):
         formatted_date = datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S -0000')
 
         auth_string = '\n'.join([formatted_date, 'GET', hostname,
-                                 self._endpoint(), urllib.urlencode(params)])
+                                 self._endpoint(), urllib.parse.urlencode(params)])
 
         try:
             signature = hmac.new(self._config.auth['secret_key'],

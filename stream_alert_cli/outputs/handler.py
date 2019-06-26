@@ -53,7 +53,7 @@ def output_handler(options, config):
     # get dictionary of OutputProperty items to be used for user prompting
     props = output.get_user_defined_properties()
 
-    for name, prop in props.iteritems():
+    for name, prop in props.items():
         # pylint: disable=protected-access
         props[name] = prop._replace(
             value=user_input(prop.description, prop.mask_input, prop.input_restrictions))

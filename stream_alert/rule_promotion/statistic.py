@@ -41,7 +41,7 @@ class StagingStatistic(object):
         self.alert_count = self._ALERT_COUNT_UNKOWN
         self.execution_id = None
 
-    def __nonzero__(self):
+    def __bool__(self):
         return self.alert_count not in {0, self._ALERT_COUNT_UNKOWN}
 
     # For forward compatibility to Python3
@@ -119,10 +119,10 @@ class StagingStatistic(object):
 
         # \u25E6 is unicode for a bullet
         return (
-            u'\u25E6 {_rule_name}\n'
-            u'\t- {staged_at_label}:\t\t\t\t\t{_staged_at} UTC\n'
-            u'\t- {staged_until_label}:\t\t\t\t\t{staged_until} UTC\n'
-            u'\t- {staged_time_label}\t\t{staged_delta}\n'
-            u'\t- {alert_count_label}:\t\t\t\t\t{alert_count}\n'
-            u'\t- {alert_info_label}:\t\t\t\t\t{info_link}'
+            '\u25E6 {_rule_name}\n'
+            '\t- {staged_at_label}:\t\t\t\t\t{_staged_at} UTC\n'
+            '\t- {staged_until_label}:\t\t\t\t\t{staged_until} UTC\n'
+            '\t- {staged_time_label}\t\t{staged_delta}\n'
+            '\t- {alert_count_label}:\t\t\t\t\t{alert_count}\n'
+            '\t- {alert_info_label}:\t\t\t\t\t{info_link}'
         ).encode('utf-8').format(**info)

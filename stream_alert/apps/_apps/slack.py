@@ -81,7 +81,7 @@ class SlackApp(AppIntegration):
 
     def _check_for_more_to_poll(self, response):
         self._next_page += 1
-        return not ('paging' in response.keys() and
+        return not ('paging' in list(response.keys()) and
                     response['paging']['pages'] == response['paging']['page'])
 
     def _filter_response_entries(self, response):

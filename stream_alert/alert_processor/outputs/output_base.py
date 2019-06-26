@@ -116,7 +116,7 @@ class StreamAlertOutput(object):
         return cls._outputs.copy()
 
 
-class OutputDispatcher(object):
+class OutputDispatcher(object, metaclass=ABCMeta):
     """OutputDispatcher is the base class to handle routing alerts to outputs
 
     Public methods:
@@ -127,7 +127,6 @@ class OutputDispatcher(object):
         dispatch: handles the actual sending of alerts to the configured service. must
             be implemented by subclass
     """
-    __metaclass__ = ABCMeta
     __service__ = NotImplemented
 
     # How many times it will attempt to retry something failing using backoff

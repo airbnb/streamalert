@@ -248,7 +248,7 @@ class DemistoCreateIncidentRequest(object):
 
     @classmethod
     def map_severity_string_to_severity_value(cls, severity_string):
-        if not isinstance(severity_string, basestring):
+        if not isinstance(severity_string, str):
             return cls.SEVERITY_UNKNOWN
 
         lc_severity_string = severity_string.lower()

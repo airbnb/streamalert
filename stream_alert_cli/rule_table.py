@@ -32,7 +32,7 @@ def rule_staging_handler(options, config):
 
     table_name = '{}_streamalert_rules'.format(config['global']['account']['prefix'])
     if options.subcommand == 'status':
-        print RuleTable(table_name).__str__(options.verbose)
+        print(RuleTable(table_name).__str__(options.verbose))
 
     if options.subcommand in {'stage', 'unstage'}:
         stage = (options.subcommand == 'stage')

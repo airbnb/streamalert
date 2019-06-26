@@ -85,7 +85,7 @@ def _assemble_alert_publisher_for_output(alert, output_service_name, descriptor)
 
     alert_publishers = alert.publishers
     publisher_names = []
-    if isinstance(alert_publishers, basestring):
+    if isinstance(alert_publishers, str):
         # Case 1: The publisher is a single string.
         #   apply this single publisher to all outputs + descriptors
         publisher_names.append(alert_publishers)
