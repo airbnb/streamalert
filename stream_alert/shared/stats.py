@@ -94,7 +94,7 @@ def get_rule_stats(reset=False):
     max_rule_name_len = max([len(rule) for rule in RULE_STATS])
 
     stat_lines = []
-    for rule, stat in sorted(RULE_STATS.iteritems(), key=lambda (k, v): (v, k)):
+    for rule, stat in sorted(iter(RULE_STATS.items()), key=lambda k_v: (k_v[1], k_v[0])):
         stat_lines.append(
             '{rule: <{pad}}{stat}'.format(rule=rule, pad=max_rule_name_len+4, stat=stat))
 

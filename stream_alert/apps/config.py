@@ -157,8 +157,8 @@ class AppConfig(object):
 
         # Load the authentication info. This data can vary from service to service
         auth_config = {
-            key: value.encode('utf-8') if isinstance(value, unicode) else value
-            for key, value in params[auth_param_name].iteritems()
+            key: value.encode('utf-8') if isinstance(value, str) else value
+            for key, value in params[auth_param_name].items()
         }
         state_config = params.get(state_param_name, {})
 
@@ -181,7 +181,7 @@ class AppConfig(object):
         """
         info = param_info.copy()
         info[auth_param_name] = {key: '*' * len(str(value))
-                                 for key, value in info[auth_param_name].iteritems()}
+                                 for key, value in info[auth_param_name].items()}
 
         return info
 

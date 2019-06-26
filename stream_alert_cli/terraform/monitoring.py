@@ -80,7 +80,7 @@ def generate_monitoring(cluster_name, cluster_dict, config):
     # Note: This does not strictly check for proper variable names, since there are so many.
     #       Instead, Terraform will error out if an improper name is used.
     #       Also, every value in these settings should be a string, so cast for safety.
-    for setting_name, setting_value in monitoring_config.get('settings', {}).iteritems():
+    for setting_name, setting_value in monitoring_config.get('settings', {}).items():
         cluster_dict['module']['cloudwatch_monitoring_{}'.format(
             cluster_name)][setting_name] = str(setting_value)
 

@@ -280,7 +280,7 @@ class Alert(object):
             dict: A new record, with no ignored_keys
         """
         result = {}
-        for key, val in record.iteritems():
+        for key, val in record.items():
             if key in ignored_keys:
                 continue
             result[key] = cls._clean_record(val, ignored_keys) if isinstance(val, dict) else val
@@ -311,7 +311,7 @@ class Alert(object):
         # Any common key must be in the first record, so just traverse the first record.
         other_records = records[1:]
         common = {}
-        for key, val in records[0].iteritems():
+        for key, val in records[0].items():
             if not all(key in r for r in other_records):
                 # This key does not exist in all other records and so cannot be common.
                 continue
@@ -357,7 +357,7 @@ class Alert(object):
             return record
 
         diff = {}
-        for key, val in record.iteritems():
+        for key, val in record.items():
             if key not in common:
                 # This key is in the record but not in the common set.
                 # Everything in the value is unique to this record.

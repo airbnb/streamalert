@@ -119,7 +119,7 @@ class OutputCredentialsProvider(object):
         """
 
         creds = {name: prop.value
-                 for (name, prop) in props.iteritems() if prop.cred_requirement}
+                 for (name, prop) in props.items() if prop.cred_requirement}
 
         credentials = Credentials(creds, False, self._region)
         return self._core_driver.save_credentials_into_s3(descriptor, credentials, kms_key_alias)

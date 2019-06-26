@@ -44,7 +44,7 @@ class PayloadRecord(object):
         self.service = None
         self.resource = None
 
-    def __nonzero__(self):
+    def __bool__(self):
         """Valid if there is a parser, and the parser itself is valid
 
         ParserBase implements __nonzero__ as well, so return the result of it
@@ -183,7 +183,7 @@ class RegisterInput(object):
             LOGGER.error('Requested payload service [%s] does not exist', service)
 
 
-class StreamPayload(object):
+class StreamPayload(object, metaclass=ABCMeta):
     """StreamAlert payload object for incoming records
 
     Attributes:
@@ -193,14 +193,13 @@ class StreamPayload(object):
         fully_classified (bool): Whether the payload has been successfully
             and completely classified.
     """
-    __metaclass__ = ABCMeta
 
     def __init__(self, resource, raw_record):
         self.raw_record = raw_record
         self.resource = resource
         self.fully_classified = True
 
-    def __nonzero__(self):
+    def __bool__(self):
         return self.fully_classified
 
     # For forward compatibility to Python3
@@ -248,7 +247,7 @@ class StreamPayload(object):
 
         service, resource = None, None
         # check raw record for either kinesis, s3, or apps keys
-        for svc, map_function in resource_mapper.iteritems():
+        for svc, map_function in resource_mapper.items():
             if svc in raw_record:
                 # map the resource name from a record
                 resource = map_function(raw_record)

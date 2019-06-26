@@ -23,7 +23,7 @@ def set_logger_levels(debug=False):
     Args:
         debug (bool): True to enable debug logging, False otherwise
     """
-    for name, logger in logging.Logger.manager.loggerDict.iteritems():
+    for name, logger in logging.Logger.manager.loggerDict.items():
         if isinstance(logger, logging.PlaceHolder):
             continue
 

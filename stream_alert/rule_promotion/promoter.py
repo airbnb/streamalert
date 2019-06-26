@@ -92,14 +92,14 @@ class RulePromoter(object):
             dict: Representation of alert counts, where key is the rule name
                 and value is the alert count (int) since this rule was staged
         """
-        query = StagingStatistic.construct_compound_count_query(self._staging_stats.values())
+        query = StagingStatistic.construct_compound_count_query(list(self._staging_stats.values()))
         LOGGER.debug('Running compound query for alert count: \'%s\'', query)
         for page, results in enumerate(self._athena_client.query_result_paginator(query)):
             for i, row in enumerate(results['ResultSet']['Rows']):
                 if page == 0 and i == 0: # skip header row included in first page only
                     continue
 
-                row_values = [data.values()[0] for data in row['Data']]
+                row_values = [list(data.values())[0] for data in row['Data']]
                 rule_name, alert_count = row_values[0], int(row_values[1])
 
                 LOGGER.debug('Found %d alerts for rule \'%s\'', alert_count, rule_name)
@@ -123,7 +123,7 @@ class RulePromoter(object):
 
         if send_digest:
             publisher = StatsPublisher(self._config, self._athena_client, self._current_time)
-            publisher.publish(self._staging_stats.values())
+            publisher.publish(list(self._staging_stats.values()))
         else:
             LOGGER.debug('Staging statistics digest will not be sent')
 
@@ -136,11 +136,11 @@ class RulePromoter(object):
     @property
     def _rules_to_be_promoted(self):
         """Returns a list of rules that are eligible for promotion"""
-        return [rule for rule, stat in self._staging_stats.iteritems()
+        return [rule for rule, stat in self._staging_stats.items()
                 if self._current_time > stat.staged_until and stat.alert_count == 0]
 
     @property
     def _rules_failing_promotion(self):
         """Returns a list of rules that are ineligible for promotion"""
-        return [rule for rule, stat in self._staging_stats.iteritems()
+        return [rule for rule, stat in self._staging_stats.items()
                 if stat.alert_count != 0]

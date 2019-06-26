@@ -15,7 +15,7 @@ limitations under the License.
 """
 import json
 import logging
-import urllib
+import urllib.request, urllib.parse, urllib.error
 import gzip
 import os
 import tempfile
@@ -79,7 +79,7 @@ class S3Payload(StreamPayload):
     def _unquote(cls, data):
         # Use the urllib unquote method to decode any url encoded characters
         # (ie - %26 --> &) from the bucket and key names
-        return urllib.unquote(data).decode('utf-8')
+        return urllib.parse.unquote(data).decode('utf-8')
 
     def _check_size(self):
         """Ensure the S3 file's size is not too large to download into the Lambda environment
@@ -160,7 +160,7 @@ class S3Payload(StreamPayload):
         # Iterate over the lines, returning each
         # This could be dicts from a jsonlines.Reader, or raw strings
         for line_num, line in enumerate(cls._jsonlines_reader(reader), start=1):
-            yield line_num, line.strip() if isinstance(line, basestring) else line
+            yield line_num, line.strip() if isinstance(line, str) else line
 
     def _read_file(self):
         """Download and read the contents of the S3 file

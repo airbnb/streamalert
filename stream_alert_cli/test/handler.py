@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from __future__ import print_function
+
 
 import base64
 from collections import defaultdict
@@ -381,7 +381,7 @@ class TestRunner(object):
         data = test_event['data']
         if isinstance(data, dict):
             data = json.dumps(data)
-        elif not isinstance(data, basestring):
+        elif not isinstance(data, str):
             return False, 'Invalid data type: {}'.format(type(data))
 
         if test_event['service'] not in {'s3', 'kinesis', 'sns', 'stream_alert_app'}:
@@ -547,7 +547,7 @@ class TestRunner(object):
         # Add apply default values based on the declared schema
         default_test_event = {
             key: ParserBase.default_optional_values(value)
-            for key, value in schema.iteritems()
+            for key, value in schema.items()
         }
 
         # Overwrite the fields included in the 'override_record' field,
@@ -577,8 +577,8 @@ class TestRunner(object):
 
         def _find_and_apply_helpers(test_record):
             """Apply any helpers to the passed in test_record"""
-            for key, value in test_record.iteritems():
-                if isinstance(value, (str, unicode)):
+            for key, value in test_record.items():
+                if isinstance(value, str):
                     test_record[key] = re.sub(
                         helper_regex,
                         lambda match: record_helpers[match.group('helper')](),

@@ -153,7 +153,7 @@ class RuleDescriptionParser(object):
             'fields': {},
         }
 
-        for key, value in fragments.iteritems():
+        for key, value in fragments.items():
             if key in ['author', 'maintainer']:
                 presentation['author'] = join_lines(value)
             elif key in ['description']:
