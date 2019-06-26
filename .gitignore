@@ -26,14 +26,12 @@ terminal.glue
 # virtualenv files
 venv/
 
+# Vagrant VM artifacts
+ubuntu*.log
 .vagrant/
+
+# Coverage artifacts
 htmlcov/
-<<<<<<< HEAD
-=======
 
 # Pycharm IDE
 .idea/
-
-# Vagrant VM artifacts
-ubuntu*.log
->>>>>>> [setup] Configure the Vagrantfile for Python 2.x and 3.x development.
