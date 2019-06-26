@@ -215,14 +215,14 @@ class Rule(object):
 
     @classmethod
     def rule_names(cls):
-        return Rule._rules.keys()
+        return list(Rule._rules.keys())
 
     @classmethod
     def rules_with_datatypes(cls):
-        return [item for item in Rule._rules.values()
+        return [item for item in list(Rule._rules.values())
                 if item.datatypes and not item.disabled]
 
     @classmethod
     def rules_for_log_type(cls, log_type):
-        return [item for item in Rule._rules.values()
+        return [item for item in list(Rule._rules.values())
                 if (item.logs is None or log_type in item.logs) and not item.disabled]

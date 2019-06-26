@@ -80,7 +80,7 @@ def save_api_creds_info(region, overwrite=False):
     }
 
     creds_dict = {auth_key: user_input(info['description'], False, info['format'])
-                  for auth_key, info in required_creds.iteritems()}
+                  for auth_key, info in required_creds.items()}
 
     description = ('Required credentials for the Threat Intel Downloader')
 

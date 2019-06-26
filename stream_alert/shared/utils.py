@@ -127,7 +127,7 @@ def get_keys(data, search_key, max_matches=-1):
                     return results
 
             # Enqueue all nested dicts and lists for further searching
-            for key, val in obj.iteritems():
+            for key, val in obj.items():
                 # The data may contain normalized keys if data normalization feature is in use.
                 # We need to exclude normalization information from the data, otherwise this
                 # helper may fetch info from normalization if there are keyname conflict.

@@ -13,12 +13,12 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from __future__ import absolute_import  # Suppresses RuntimeWarning import error in Lambda
+  # Suppresses RuntimeWarning import error in Lambda
 from collections import defaultdict
 import json
 import posixpath
 import re
-import urllib
+import urllib.request, urllib.parse, urllib.error
 
 from stream_alert.shared.athena import AthenaClient
 from stream_alert.shared.config import load_config
@@ -98,7 +98,7 @@ class AthenaRefresher(object):
         partitions = defaultdict(dict)
 
         LOGGER.info('Processing new Hive partitions...')
-        for bucket, keys in self._s3_buckets_and_keys.iteritems():
+        for bucket, keys in self._s3_buckets_and_keys.items():
             athena_table = self._athena_buckets.get(bucket)
             if not athena_table:
                 # TODO(jacknagz): Add this as a metric
@@ -157,7 +157,7 @@ class AthenaRefresher(object):
         for athena_table in partitions:
             partition_statement = ' '.join(
                 ['PARTITION {0} LOCATION {1}'.format(partition, location)
-                 for partition, location in partitions[athena_table].iteritems()])
+                 for partition, location in partitions[athena_table].items()])
             query = ('ALTER TABLE {athena_table} '
                      'ADD IF NOT EXISTS {partition_statement};'.format(
                          athena_table=athena_table,
@@ -200,7 +200,7 @@ class AthenaRefresher(object):
 
                 # Account for special characters in the S3 object key
                 # Example: Usage of '=' in the key name
-                object_key = urllib.unquote_plus(s3_rec['s3']['object']['key']).decode('utf8')
+                object_key = urllib.parse.unquote_plus(s3_rec['s3']['object']['key']).decode('utf8')
 
                 LOGGER.debug('Received notification for object \'%s\' in bucket \'%s\'',
                              object_key,

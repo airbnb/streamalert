@@ -48,7 +48,7 @@ def as_custom_details(_, publication):
         return key.startswith('@pagerduty')
 
     custom_details = {
-        key: value for key, value in publication.iteritems() if not _is_custom_field(key)
+        key: value for key, value in publication.items() if not _is_custom_field(key)
     }
 
     publication['@pagerduty.details'] = custom_details

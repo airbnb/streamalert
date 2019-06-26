@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from __future__ import absolute_import
+
 from datetime import datetime, timedelta
 import json
 
@@ -251,7 +251,7 @@ class ThreatStream(object):
         for obj in data:
             for source in self.ioc_sources:
                 if source in obj['source'].lower():
-                    filtered_obj = {key: value for key, value in obj.iteritems()
+                    filtered_obj = {key: value for key, value in obj.items()
                                     if key in self.ioc_keys}
                     filtered_obj['expiration_ts'] = self._epoch_time(filtered_obj['expiration_ts'])
                     results.append(filtered_obj)

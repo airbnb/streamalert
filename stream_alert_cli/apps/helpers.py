@@ -29,7 +29,7 @@ def save_app_auth_info(app, info, func_name, overwrite=False):
     """
     # Get all of the required authentication values from the user for this app integration
     auth_dict = {auth_key: user_input(info['description'], False, info['format'])
-                 for auth_key, info in app.required_auth_info().iteritems()}
+                 for auth_key, info in app.required_auth_info().items()}
 
     description = ('Required authentication information for the \'{}\' service for '
                    'use in the \'{}\' app'.format(info['type'], info['app_name']))

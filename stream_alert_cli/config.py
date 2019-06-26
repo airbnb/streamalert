@@ -54,11 +54,11 @@ class CLIConfig(object):
 
     def keys(self):
         """Config keys"""
-        return self.config.keys()
+        return list(self.config.keys())
 
     def clusters(self):
         """Return list of cluster configuration keys"""
-        return self.config['clusters'].keys()
+        return list(self.config['clusters'].keys())
 
     def generate_athena(self):
         """Generate a base Athena config"""
@@ -86,7 +86,7 @@ class CLIConfig(object):
 
     def set_prefix(self, prefix):
         """Set the Org Prefix in Global settings"""
-        if not isinstance(prefix, (unicode, str)):
+        if not isinstance(prefix, str):
             LOGGER.error('Invalid prefix type, must be string')
             return False
 
@@ -135,7 +135,7 @@ class CLIConfig(object):
         Args:
             enabled (bool): False if disabling rule staging, true if enabling
         """
-        print 'Setting rule staging enabled setting to: {}'.format(enabled)
+        print('Setting rule staging enabled setting to: {}'.format(enabled))
         self.config['global']['infrastructure']['rule_staging']['enabled'] = enabled
         self.write()
 
@@ -181,7 +181,7 @@ class CLIConfig(object):
 
         current_alarms[alarm_info['alarm_name']] = {
             key: value
-            for key, value in alarm_info.iteritems() if key not in omitted_keys
+            for key, value in alarm_info.items() if key not in omitted_keys
         }
 
         return current_alarms
@@ -202,7 +202,7 @@ class CLIConfig(object):
         funcs = {metrics.CLASSIFIER_FUNCTION_NAME}
         for func in funcs:
             func_config = '{}_config'.format(func)
-            for cluster, cluster_config in self.config['clusters'].iteritems():
+            for cluster, cluster_config in self.config['clusters'].items():
                 func_alarms = cluster_config['modules']['stream_alert'][func_config].get(
                     'custom_metric_alarms', {}
                 )
@@ -212,7 +212,7 @@ class CLIConfig(object):
                                  message)
                     return True
 
-        for func, global_lambda_config in self.config['lambda'].iteritems():
+        for func, global_lambda_config in self.config['lambda'].items():
             if alarm_name in global_lambda_config.get('custom_metric_alarms', {}):
                 LOGGER.error('An alarm with name \'%s\' already exists in the '
                              '\'conf/lambda.json\' in function config \'%s\'. %s',
@@ -225,7 +225,7 @@ class CLIConfig(object):
         function_config = '{}_config'.format(function)
         return {
             cluster
-            for cluster, cluster_config in self.config['clusters'].iteritems()
+            for cluster, cluster_config in self.config['clusters'].items()
             if (self.config['clusters'][cluster]['modules']['stream_alert']
                 [function_config].get('enable_custom_metrics'))
         }
@@ -521,7 +521,7 @@ class CLIConfig(object):
 
         self.config['lambda']['threat_intel_downloader_config'] = default_config
         # overwrite settings in conf/lambda.json for Threat Intel Downloader
-        for key, value in ti_downloader_info.iteritems():
+        for key, value in ti_downloader_info.items():
             if key in self.config['lambda']['threat_intel_downloader_config']:
                 self.config['lambda']['threat_intel_downloader_config'][key] = value
 

@@ -56,7 +56,7 @@ class LookupTables(object):
         boto_config = boto_helpers.default_config(timeout=10)
         s3_client = boto3.resource('s3', config=boto_config)
 
-        for bucket, files in buckets_info.iteritems():
+        for bucket, files in buckets_info.items():
             for json_file in files:
                 try:
                     start_time = time.time()

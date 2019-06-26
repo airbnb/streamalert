@@ -145,7 +145,7 @@ class RulesEngine(object):
         if not rule.req_subkeys:
             return True
 
-        for key, nested_keys in rule.req_subkeys.iteritems():
+        for key, nested_keys in rule.req_subkeys.items():
             # This is an extra layer of protection when
             # verifying a subkey exists in a record with a null value.
             # In the case of CloudTrail, a top level key has been
@@ -302,7 +302,7 @@ class RulesEngine(object):
             LOGGER.error('Invalid publisher requested: %s', string_or_reference)
             return None
 
-        if isinstance(string_or_reference, basestring):
+        if isinstance(string_or_reference, str):
             publisher_name = string_or_reference
         else:
             publisher_name = AlertPublisherRepository.get_publisher_name(
@@ -318,7 +318,7 @@ class RulesEngine(object):
     def is_publisher_declaration(cls, string_or_reference):
         """Returns TRUE if the requested publisher is valid (a string name or reference)"""
         return (
-            isinstance(string_or_reference, basestring) or
+            isinstance(string_or_reference, str) or
             AlertPublisherRepository.is_valid_publisher(string_or_reference)
         )
 

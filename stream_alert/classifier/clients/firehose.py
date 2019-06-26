@@ -131,7 +131,7 @@ class FirehoseClient(object):
             dict: A sanitized record
         """
         new_record = {}
-        for key, value in record.iteritems():
+        for key, value in record.items():
             sanitized_key = re.sub(cls.SPECIAL_CHAR_REGEX, cls.SPECIAL_CHAR_SUB, key)
 
             # Handle nested objects
@@ -382,7 +382,7 @@ class FirehoseClient(object):
         # Iterate through each set of categorized payloads.
         # Each batch will be processed to their specific Firehose, which lands the data
         # in a specific prefix in S3.
-        for log_type, records in records.iteritems():
+        for log_type, records in records.items():
             # This same substitution method is used when naming the Delivery Streams
             formatted_log_type = self.firehose_log_name(log_type)
             stream_name = self.DEFAULT_FIREHOSE_PREFIX.format(formatted_log_type)

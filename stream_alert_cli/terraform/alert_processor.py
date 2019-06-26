@@ -43,11 +43,11 @@ def generate_alert_processor(config):
         'sse_kms_key_arn': '${aws_kms_key.server_side_encryption.arn}',
         'output_lambda_functions': [
             # Strip qualifiers: only the function name is needed for the IAM permissions
-            func.split(':')[0] for func in config['outputs'].get('aws-lambda', {}).values()
+            func.split(':')[0] for func in list(config['outputs'].get('aws-lambda', {}).values())
         ],
-        'output_s3_buckets': config['outputs'].get('aws-s3', {}).values(),
-        'output_sns_topics': config['outputs'].get('aws-sns', {}).values(),
-        'output_sqs_queues': config['outputs'].get('aws-sqs', {}).values()
+        'output_s3_buckets': list(config['outputs'].get('aws-s3', {}).values()),
+        'output_sns_topics': list(config['outputs'].get('aws-sns', {}).values()),
+        'output_sqs_queues': list(config['outputs'].get('aws-sqs', {}).values())
     }
 
     # Set variables for the Lambda module
