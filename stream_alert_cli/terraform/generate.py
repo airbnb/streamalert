@@ -365,13 +365,14 @@ def generate_cluster(config, cluster_name):
 
 def cleanup_old_tf_files(config):
     """Cleanup old .tf files, these are now .tf.json files per Hashicorp best practices"""
+    files_for_removal = set(config.clusters()).union({'athena', 'main'})
     for terraform_file in os.listdir('terraform'):
         if terraform_file == 'variables.tf':
             continue
 
-        if fnmatch(terraform_file, '*.tf'):
+        if fnmatch(terraform_file, '*.tf.json'):
             # Allow to retain misc files in the terraform/ directory
-            if terraform_file.split('.')[0] in config.clusters() + ['athena', 'main']:
+            if terraform_file.split('.')[0] in files_for_removal:
                 os.remove(os.path.join('terraform', terraform_file))
 
 

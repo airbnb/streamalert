@@ -57,10 +57,23 @@ class Normalizer(object):
                 'region': ['us-east-1', 'us-west-2']
             }
         """
-        return {
-            key: sorted(set(cls._extract_values(record, set(keys_to_normalize))))
-            for key, keys_to_normalize in normalized_types.iteritems()
-        }
+        result = {}
+        for key, keys_to_normalize in normalized_types.iteritems():
+            values = set()
+            for value in cls._extract_values(record, set(keys_to_normalize)):
+                # Skip emtpy values
+                if value is None or value == '':
+                    continue
+
+                values.add(value)
+
+            if not values:
+                continue
+
+            result[key] = sorted(values)
+
+        return result
+
 
     @classmethod
     def _extract_values(cls, record, keys_to_normalize):
