@@ -151,6 +151,7 @@ class JiraOutput(OutputDispatcher):
                                             data={'body': comment},
                                             headers=self._get_headers(),
                                             verify=False)
+            print resp
         except OutputRequestFailure:
             return False
 

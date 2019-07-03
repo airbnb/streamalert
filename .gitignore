@@ -20,11 +20,17 @@ terminal.glue
 # Coveralls repo token
 .coveralls.yml
 
+# VSCode
+.vscode/*
+
 # nose coverage file
 .coverage
+.noseids
+nosetests.xml
 
 # virtualenv files
 venv/
+.envrc
 
 .vagrant/
 htmlcov/
