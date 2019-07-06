@@ -216,13 +216,12 @@ class TestJiraOutput(object):
         get_mock.return_value.json.return_value = existing_issues
         # setup successful auth, failed comment creation, and successful issue creation
         type(post_mock.return_value).status_code = PropertyMock(side_effect=[200, 400, 200])
-        auth_resp = {'session': {'foo': 'bar'}}
-        post_mock.return_value.json.side_effect = [auth_resp, {'id': 6000}]
+        post_mock.return_value.json.side_effect = [{'id': 6000}]
 
         assert_true(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
 
         log_mock.assert_called_with('Encountered an error when adding alert to existing Jira '
-                                    'issue %s. Attempting to create new Jira issue.', 6000)
+                                    'issue %s. Attempting to create new Jira issue.', 5000)
 
     @patch('logging.Logger.error')
     def test_dispatch_bad_descriptor(self, log_error_mock):

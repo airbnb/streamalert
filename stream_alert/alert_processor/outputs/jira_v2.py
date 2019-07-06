@@ -102,6 +102,18 @@ class JiraOutput(OutputDispatcher):
         """Instance method used to pass the default headers plus the api key"""
         return dict(self._get_default_headers(), **{'Bearer': self._api_key})
 
+    def _load_creds(self, descriptor):
+        """Loads a dict of credentials relevant to this output descriptor
+
+        Args:
+            descriptor (str): unique identifier used to look up these credentials
+
+        Returns:
+            dict: the loaded credential info needed for sending alerts to this service
+                or None if nothing gets loaded
+        """
+        return self._credentials_provider.load_credentials(descriptor)
+
     def _search_jira(self, jql, fields=None, max_results=100, validate_query=True):
         """Search Jira for issues using a JQL query
 
@@ -151,7 +163,7 @@ class JiraOutput(OutputDispatcher):
                                             data={'body': comment},
                                             headers=self._get_headers(),
                                             verify=False)
-            print resp
+
         except OutputRequestFailure:
             return False
 
@@ -292,6 +304,7 @@ class JiraOutput(OutputDispatcher):
         # failure occurs in this block, creation of a new Jira issue will be attempted.
         if creds.get('aggregate', '').lower() == 'yes':
             issue_id = self._get_existing_issue(issue_summary, creds['project_key'])
+            print 'issue_id', issue_id
             if issue_id:
                 comment_id = self._create_comment(issue_id, description)
                 if comment_id:
@@ -299,10 +312,10 @@ class JiraOutput(OutputDispatcher):
                                  issue_id,
                                  comment_id)
                     return True
-                else:
-                    LOGGER.error('Encountered an error when adding alert to existing '
-                                 'Jira issue %s. Attempting to create new Jira issue.',
-                                 issue_id)
+            else:
+                LOGGER.error('Encountered an error when adding alert to existing '
+                             'Jira issue %s. Attempting to create new Jira issue.',
+                             issue_id)
 
         # Create a new Jira issue
         issue_id = self._create_issue(issue_summary,
