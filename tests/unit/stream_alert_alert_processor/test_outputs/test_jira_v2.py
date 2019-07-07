@@ -214,8 +214,7 @@ class TestJiraOutput(object):
         get_mock.return_value.status_code = 200
         existing_issues = {'issues': [{'fields': {'summary': 'Bogus'}, 'id': '5000'}]}
         get_mock.return_value.json.return_value = existing_issues
-        # setup successful auth, failed comment creation, and successful issue creation
-        type(post_mock.return_value).status_code = PropertyMock(side_effect=[200, 400, 200])
+        type(post_mock.return_value).status_code = PropertyMock(side_effect=[400, 200])
         post_mock.return_value.json.side_effect = [{'id': 6000}]
 
         assert_true(self._dispatcher.dispatch(get_alert(), self.OUTPUT))

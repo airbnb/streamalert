@@ -299,12 +299,12 @@ class JiraOutput(OutputDispatcher):
         comment_id = None
 
         self._base_url = creds['url']
+        self._api_key = creds['api_key']
 
         # If aggregation is enabled, attempt to add alert to an existing issue. If a
         # failure occurs in this block, creation of a new Jira issue will be attempted.
         if creds.get('aggregate', '').lower() == 'yes':
             issue_id = self._get_existing_issue(issue_summary, creds['project_key'])
-            print 'issue_id', issue_id
             if issue_id:
                 comment_id = self._create_comment(issue_id, description)
                 if comment_id:
@@ -312,10 +312,10 @@ class JiraOutput(OutputDispatcher):
                                  issue_id,
                                  comment_id)
                     return True
-            else:
-                LOGGER.error('Encountered an error when adding alert to existing '
-                             'Jira issue %s. Attempting to create new Jira issue.',
-                             issue_id)
+                else:
+                    LOGGER.error('Encountered an error when adding alert to existing '
+                                 'Jira issue %s. Attempting to create new Jira issue.',
+                                 issue_id)
 
         # Create a new Jira issue
         issue_id = self._create_issue(issue_summary,
