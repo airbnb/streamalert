@@ -1,28 +1,10 @@
 // SQS Queue: Send logs from the Classifier to the SQS queue
-# resource "aws_sqs_queue" "classifier_queue_prefixed" {
-#   count = "${var.use_prefix == "true" ? 1 : 0}"
-#   name = "${var.prefix}_streamalert_classified_logs"
-
-#   # The amount of time messages are hidden after being received from a consumer
-#   # Default this to 2 seconds longer than the maximum AWS Lambda duration
-#   visibility_timeout_seconds = "${var.rules_engine_timeout + 2}"
-
-#   # Enable queue encryption of messages in the queue
-#   kms_master_key_id = "${aws_kms_key.sqs_sse.arn}"
-
-#   tags {
-#     Name = "StreamAlert"
-#   }
-# }
-
 locals {
   classifier_prefix = "${var.prefix}_"
 }
 
 resource "aws_sqs_queue" "classifier_queue" {
-  # count = "${var.use_prefix == "true" ?  : 1}"
   name = "${var.classifier_use_prefix == "true" ? local.classifier_prefix : ""}streamalert_classified_logs"
-  # name = "streamalert_classified_logs"
 
   # The amount of time messages are hidden after being received from a consumer
   # Default this to 2 seconds longer than the maximum AWS Lambda duration
