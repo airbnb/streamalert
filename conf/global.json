@@ -1,6 +1,7 @@
 {
   "account": {
     "aws_account_id": "AWS_ACCOUNT_ID_GOES_HERE",
+    "classifier_use_prefix": "false",
     "kms_key_alias": "PREFIX_GOES_HERE_streamalert_secrets",
     "prefix": "PREFIX_GOES_HERE",
     "region": "us-east-1"

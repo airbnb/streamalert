@@ -2,6 +2,10 @@ variable "account_id" {}
 
 variable "prefix" {}
 
+variable "classifier_use_prefix" {
+   description = "Allows support for multiple instances of StreamAlert on one account"
+}
+
 variable "region" {}
 
 variable "kms_key_arn" {}

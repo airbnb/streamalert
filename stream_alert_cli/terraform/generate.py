@@ -209,6 +209,7 @@ def generate_main(config, init=False):
         'account_id': config['global']['account']['aws_account_id'],
         'region': config['global']['account']['region'],
         'prefix': config['global']['account']['prefix'],
+        'classifier_use_prefix': config['global']['account']['classifier_use_prefix'],
         'kms_key_arn': '${aws_kms_key.server_side_encryption.arn}',
         'alerts_table_read_capacity': (
             config['global']['infrastructure']['alerts_table']['read_capacity']),
