@@ -24,8 +24,9 @@ _CRITICAL_EVENTS = {
     # S3 Public Access Block
     'DeleteAccountPublicAccessBlock',
     # EBS default encryption
-    'DisableEbsEncryptionByDefault'
+    'DisableEbsEncryptionByDefault',
 }
+
 
 @rule(logs=['cloudtrail:events'])
 def cloudtrail_critical_api_calls(rec):
@@ -51,17 +52,20 @@ def cloudtrail_critical_api_calls(rec):
     if rec['eventName'] == 'PutBucketPublicAccessBlock':
         # Check if any of the types of public access for a bucket have been disabled
         config = rec.get('requestParameters', {}).get(
-            'PublicAccessBlockConfiguration', {})
-        if (not config.get('RestrictPublicBuckets', False) and 
-            not config.get('BlockPublicPolicy', False) and 
-            not config.get('BlockPublicPolicy', False) and 
-            not config.get('BlockPublicPolicy', False)):
+            'PublicAccessBlockConfiguration', {}
+        )
+        if (
+                not config.get('RestrictPublicBuckets', False)
+                and not config.get('BlockPublicPolicy', False)
+                and not config.get('BlockPublicPolicy', False)
+                and not config.get('BlockPublicPolicy', False)
+        ):
             return True
 
     # PutAccountPublicAccessBlock does not indicate if the account is
-    # enabling or disabling this feature so to reduce FPs, 
+    # enabling or disabling this feature so to reduce FPs,
     # for now this is not being detected.
-    # This issue was reported to aws-security@amazon.com by spiper 
+    # This issue was reported to aws-security@amazon.com by spiper
     # on 2019.07.09
 
     return False
