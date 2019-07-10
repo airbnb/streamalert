@@ -1,4 +1,4 @@
-"""Alert on destructive AWS API calls."""
+"""Alert on resources made public"""
 from stream_alert.shared.rule import rule
 
 @rule(logs=['cloudtrail:events'])
