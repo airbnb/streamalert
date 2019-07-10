@@ -34,14 +34,20 @@ variable "rules_table_arn" {
   description = "ARN of the rules table for reading rule staging information"
 }
 
-variable "classifier_sqs_queue_arn" {
-  description = "ARN of the SQS queue to which classified logs should be sent"
-}
-
-variable "classifier_sqs_sse_kms_key_arn" {
-  description = "URL of the SQS queue to which classified logs should be sent"
-}
-
 variable "sqs_record_batch_size" {
   description = "Number of records the Lambda function should read from the SQS queue each time (max=10)"
 }
+
+# FIXME (derek.wang) Remove these two variables post-migration
+variable "classifier_sqs_queue_arn" {
+  description = "(deprecated) ARN of the SQS queue to which classified logs should be sent"
+}
+
+variable "classifier_sqs_sse_kms_key_arn" {
+  description = "ARN of KMS key responsible for SQS Serverside Encryption"
+}
+
+variable "classifier_destination_sqs_queue_arn" {
+  description = "ARN of the SQS queue to which classified logs should be sent"
+}
+

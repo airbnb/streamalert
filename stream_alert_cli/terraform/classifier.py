@@ -69,8 +69,8 @@ def generate_classifier(cluster_name, cluster_dict, config):
         'function_role_id': '${{module.{}_lambda.role_id}}'.format(tf_module_prefix),
         'function_alias_arn': '${{module.{}_lambda.function_alias_arn}}'.format(tf_module_prefix),
         'function_name': '${{module.{}_lambda.function_name}}'.format(tf_module_prefix),
-        'classifier_sqs_queue_arn': '${module.globals.classifier_sqs_queue_arn}',
-        'classifier_sqs_queue_url': '${module.globals.classifier_sqs_queue_url}',
+        'classifier_sqs_queue_arn': '${module.globals.classifier_destination_sqs_queue_arn}',
+        'classifier_sqs_queue_url': '${module.globals.classifier_destination_sqs_queue_url}',
         'classifier_sqs_sse_kms_key_arn': '${module.globals.classifier_sqs_sse_kms_key_arn}',
     }
 

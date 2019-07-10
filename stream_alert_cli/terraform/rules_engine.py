@@ -44,6 +44,9 @@ def generate_rules_engine(config):
         'rules_table_arn': '${module.globals.rules_table_arn}',
         'classifier_sqs_queue_arn': '${module.globals.classifier_sqs_queue_arn}',
         'classifier_sqs_sse_kms_key_arn': '${module.globals.classifier_sqs_sse_kms_key_arn}',
+        'classifier_destination_sqs_queue_arn': (
+            '${module.globals.classifier_destination_sqs_queue_arn}'
+        ),
         'sqs_record_batch_size': min(config.get('sqs_record_batch_size', 10), 10)
     }
 
