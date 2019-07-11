@@ -20,6 +20,9 @@ data "aws_iam_policy_document" "classifier_policy" {
   statement {
     sid       = "AllowPublishToQueue"
     actions   = ["sqs:SendMessage*"]
-    resources = ["${var.classifier_sqs_queue_arn}"]
+    resources = [
+      "${var.classifier_sqs_queue_arn}",
+      "${var.classifier_destination_sqs_queue_arn}",
+    ]
   }
 }
