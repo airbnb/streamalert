@@ -20,6 +20,7 @@ from stream_alert_cli.terraform import common, classifier
 
 class TestTerraformGenerateClassifier(object):
     """CLI Terraform Generate, Classifier"""
+
     # pylint: disable=no-self-use,attribute-defined-outside-init
 
     def setup(self):
@@ -94,8 +95,12 @@ class TestTerraformGenerateClassifier(object):
                     'function_role_id': '${module.classifier_test_lambda.role_id}',
                     'function_alias_arn': '${module.classifier_test_lambda.function_alias_arn}',
                     'function_name': '${module.classifier_test_lambda.function_name}',
-                    'classifier_sqs_queue_arn': '${module.globals.classifier_sqs_queue_arn}',
-                    'classifier_sqs_queue_url': '${module.globals.classifier_sqs_queue_url}',
+                    'legacy_classifier_sqs_queue_arn': (
+                        '${module.globals.legacy_classifier_sqs_queue_arn}'
+                    ),
+                    'new_classifier_sqs_queue_arn': (
+                        '${module.globals.new_classifier_sqs_queue_arn}'
+                    ),
                     'classifier_sqs_sse_kms_key_arn': (
                         '${module.globals.classifier_sqs_sse_kms_key_arn}'
                     ),
@@ -108,7 +113,7 @@ class TestTerraformGenerateClassifier(object):
                     'description': 'Unit-Test Streamalert Classifier Test',
                     'environment_variables': {
                         'CLUSTER': 'test',
-                        'SQS_QUEUE_URL': '${module.globals.classifier_sqs_queue_url}',
+                        'SQS_QUEUE_URL': '${module.globals.new_classifier_sqs_queue_url}',
                         'LOGGER_LEVEL': 'info',
                         'ENABLE_METRICS': '0'
                     },
