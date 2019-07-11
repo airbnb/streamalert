@@ -43,10 +43,12 @@ resource "aws_sqs_queue_policy" "classifier_queue" {
 
 resource "aws_sqs_queue_policy" "classifier_destination_queue" {
   queue_url = "${aws_sqs_queue.classifier_destination_queue.id}"
-  policy    = "${data.aws_iam_policy_document.classifier_queue.json}"
+  policy    = "${data.aws_iam_policy_document.classifier_destination_queue.json}"
 }
 
 // IAM Policy Doc: Allow Classifiers to send messages to SQS
+
+# FIXME (derek.wang) Delete this post-migration
 data "aws_iam_policy_document" "classifier_queue" {
   statement {
     effect = "Allow"
@@ -58,11 +60,33 @@ data "aws_iam_policy_document" "classifier_queue" {
     }
 
     actions   = ["sqs:SendMessage"]
-    resources = [
-      # FIXME (derek.wang) Remove the old queue later
-      "${aws_sqs_queue.classifier_queue.arn}",
-      "${aws_sqs_queue.classifier_destination_queue.arn}",
-    ]
+    # FIXME (derek.wang) The policy document is duplicated below because for some reason AWS
+    #       Forces there to only be 1 resource in a SQS Policy document.
+    resources = ["${aws_sqs_queue.classifier_queue.arn}"]
+
+    condition {
+      test     = "ArnLike"
+      variable = "aws:SourceArn"
+
+      values = [
+        "arn:aws:lambda:${var.region}:${var.account_id}:function:${var.prefix}_streamalert_classifier_*",
+      ]
+    }
+  }
+}
+
+data "aws_iam_policy_document" "classifier_destination_queue" {
+  statement {
+    effect = "Allow"
+    sid    = "AllowPublishToQueue"
+
+    principals {
+      type        = "AWS"
+      identifiers = ["*"]
+    }
+
+    actions   = ["sqs:SendMessage"]
+    resources = ["${aws_sqs_queue.classifier_destination_queue.arn}"]
 
     condition {
       test     = "ArnLike"
