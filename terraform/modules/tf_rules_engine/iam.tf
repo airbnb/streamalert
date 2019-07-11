@@ -71,8 +71,8 @@ data "aws_iam_policy_document" "rules_engine_policy" {
 
     resources = [
       # FIXME (derek.wang) Temporarily grant access to both old + new SQS
-      "${var.classifier_sqs_queue_arn}",
-      "${var.classifier_destination_sqs_queue_arn}"
+      "${var.legacy_classifier_sqs_queue_arn}",
+      "${var.new_classifier_sqs_queue_arn}"
     ]
   }
 }

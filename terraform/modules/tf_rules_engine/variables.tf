@@ -38,16 +38,15 @@ variable "sqs_record_batch_size" {
   description = "Number of records the Lambda function should read from the SQS queue each time (max=10)"
 }
 
-# FIXME (derek.wang) Remove these two variables post-migration
-variable "classifier_sqs_queue_arn" {
+# FIXME (derek.wang) Remove the legacy variable post-migration
+variable "legacy_classifier_sqs_queue_arn" {
   description = "(deprecated) ARN of the SQS queue to which classified logs should be sent"
+}
+
+variable "new_classifier_sqs_queue_arn" {
+  description = "ARN of the SQS queue to which classified logs should be sent"
 }
 
 variable "classifier_sqs_sse_kms_key_arn" {
   description = "ARN of KMS key responsible for SQS Serverside Encryption"
 }
-
-variable "classifier_destination_sqs_queue_arn" {
-  description = "ARN of the SQS queue to which classified logs should be sent"
-}
-

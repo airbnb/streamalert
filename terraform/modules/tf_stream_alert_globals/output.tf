@@ -3,21 +3,21 @@ output "rules_table_arn" {
 }
 
 # FIXME (derek.wang) Remove these post-migration
-output "classifier_sqs_queue_url" {
-  value = "${module.classifier_queue.sqs_queue_url}"
+output "legacy_classifier_sqs_queue_url" {
+  value = "${module.classifier_queue.legacy_sqs_queue_url}"
 }
-output "classifier_sqs_queue_arn" {
-  value = "${module.classifier_queue.sqs_queue_arn}"
+output "legacy_classifier_sqs_queue_arn" {
+  value = "${module.classifier_queue.legacy_sqs_queue_arn}"
+}
+
+output "new_classifier_sqs_queue_url" {
+  value = "${module.classifier_queue.new_sqs_queue_url}"
+}
+
+output "new_classifier_sqs_queue_arn" {
+  value = "${module.classifier_queue.new_sqs_queue_arn}"
 }
 
 output "classifier_sqs_sse_kms_key_arn" {
   value = "${module.classifier_queue.sqs_sse_kms_key_arn}"
-}
-
-output "classifier_destination_sqs_queue_url" {
-  value = "${module.classifier_queue.destination_sqs_queue_url}"
-}
-
-output "classifier_destination_sqs_queue_arn" {
-  value = "${module.classifier_queue.destination_sqs_queue_arn}"
 }

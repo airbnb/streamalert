@@ -24,14 +24,15 @@ variable "input_sns_topics" {
   default     = []
 }
 
-variable "classifier_sqs_queue_arn" {
+# FIXME (derek.wang) remove this old one
+variable "legacy_classifier_sqs_queue_arn" {
+  description = "ARN of the SQS queue to which classified logs should be sent"
+}
+
+variable "new_classifier_sqs_queue_arn" {
   description = "ARN of the SQS queue to which classified logs should be sent"
 }
 
 variable "classifier_sqs_sse_kms_key_arn" {
   description = "URL of the SQS queue to which classified logs should be sent"
-}
-
-variable "classifier_destination_sqs_queue_arn" {
-  description = "ARN of the SQS queue to which classified logs should be sent"
 }

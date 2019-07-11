@@ -1,6 +1,9 @@
 // SQS Queue: Send logs from the Classifier to the SQS queue
 
 # FIXME (derek.wang) This old queue has an un-prefixed name and is deprecated
+# We CANNOT change the resource id as Terraform uses this id to determine whether or not to
+# Destroy it. If we change it to something like "classifier_queue_OLD" Terraform will destroy
+# the original and create anew, which is not what we want.
 resource "aws_sqs_queue" "classifier_queue" {
   name = "streamalert_classified_logs"
 
@@ -32,8 +35,14 @@ resource "aws_sqs_queue" "classifier_destination_queue" {
 }
 
 // SQS Queue Policy: Allow the Classifiers to send messages to SQS
+# FIXME (derek.wang) get rid of this old one later.
 resource "aws_sqs_queue_policy" "classifier_queue" {
   queue_url = "${aws_sqs_queue.classifier_queue.id}"
+  policy    = "${data.aws_iam_policy_document.classifier_queue.json}"
+}
+
+resource "aws_sqs_queue_policy" "classifier_destination_queue" {
+  queue_url = "${aws_sqs_queue.classifier_destination_queue.id}"
   policy    = "${data.aws_iam_policy_document.classifier_queue.json}"
 }
 
@@ -49,7 +58,11 @@ data "aws_iam_policy_document" "classifier_queue" {
     }
 
     actions   = ["sqs:SendMessage"]
-    resources = ["${aws_sqs_queue.classifier_queue.arn}"]
+    resources = [
+      # FIXME (derek.wang) Remove the old queue later
+      "${aws_sqs_queue.classifier_queue.arn}",
+      "${aws_sqs_queue.classifier_destination_queue.arn}",
+    ]
 
     condition {
       test     = "ArnLike"
