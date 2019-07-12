@@ -95,11 +95,8 @@ class TestTerraformGenerateClassifier(object):
                     'function_role_id': '${module.classifier_test_lambda.role_id}',
                     'function_alias_arn': '${module.classifier_test_lambda.function_alias_arn}',
                     'function_name': '${module.classifier_test_lambda.function_name}',
-                    'legacy_classifier_sqs_queue_arn': (
-                        '${module.globals.legacy_classifier_sqs_queue_arn}'
-                    ),
-                    'new_classifier_sqs_queue_arn': (
-                        '${module.globals.new_classifier_sqs_queue_arn}'
+                    'classifier_sqs_queue_arn': (
+                        '${module.globals.classifier_sqs_queue_arn}'
                     ),
                     'classifier_sqs_sse_kms_key_arn': (
                         '${module.globals.classifier_sqs_sse_kms_key_arn}'

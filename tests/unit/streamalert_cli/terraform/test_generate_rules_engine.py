@@ -86,11 +86,8 @@ class TestTerraformGenerateRuleEngine(object):
                     'threat_intel_enabled': self.config['threat_intel']['enabled'],
                     'dynamodb_table_name': self.config['threat_intel']['dynamodb_table_name'],
                     'rules_table_arn': '${module.globals.rules_table_arn}',
-                    'legacy_classifier_sqs_queue_arn': (
-                        '${module.globals.legacy_classifier_sqs_queue_arn}'
-                    ),
-                    'new_classifier_sqs_queue_arn': (
-                        '${module.globals.new_classifier_sqs_queue_arn}'
+                    'classifier_sqs_queue_arn': (
+                        '${module.globals.classifier_sqs_queue_arn}'
                     ),
                     'classifier_sqs_sse_kms_key_arn': (
                         '${module.globals.classifier_sqs_sse_kms_key_arn}'

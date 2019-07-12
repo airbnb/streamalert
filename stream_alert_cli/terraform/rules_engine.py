@@ -42,8 +42,7 @@ def generate_rules_engine(config):
         'threat_intel_enabled': config.get('threat_intel', {}).get('enabled'),
         'dynamodb_table_name': config.get('threat_intel', {}).get('dynamodb_table_name'),
         'rules_table_arn': '${module.globals.rules_table_arn}',
-        'legacy_classifier_sqs_queue_arn': '${module.globals.legacy_classifier_sqs_queue_arn}',
-        'new_classifier_sqs_queue_arn': '${module.globals.new_classifier_sqs_queue_arn}',
+        'classifier_sqs_queue_arn': '${module.globals.classifier_sqs_queue_arn}',
         'classifier_sqs_sse_kms_key_arn': '${module.globals.classifier_sqs_sse_kms_key_arn}',
         'sqs_record_batch_size': min(config.get('sqs_record_batch_size', 10), 10)
     }

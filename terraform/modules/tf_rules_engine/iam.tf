@@ -69,11 +69,7 @@ data "aws_iam_policy_document" "rules_engine_policy" {
       "sqs:ReceiveMessage",
     ]
 
-    resources = [
-      # FIXME (derek.wang) Temporarily grant access to both old + new SQS
-      "${var.legacy_classifier_sqs_queue_arn}",
-      "${var.new_classifier_sqs_queue_arn}"
-    ]
+    resources = ["${var.classifier_sqs_queue_arn}"]
   }
 }
 

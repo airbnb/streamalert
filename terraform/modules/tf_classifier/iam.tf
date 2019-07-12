@@ -21,11 +21,7 @@ data "aws_iam_policy_document" "classifier_policy" {
     sid       = "AllowPublishToQueue"
     actions   = ["sqs:SendMessage*"]
     resources = [
-      # FIXME (derek.wang) We temporarily grant the classifier privilege to publish to both.
-      # this is because there might be in-flight records during deployment that we don't want
-      # to get stuck.
-      "${var.legacy_classifier_sqs_queue_arn}",
-      "${var.new_classifier_sqs_queue_arn}",
+      "${var.classifier_sqs_queue_arn}",
     ]
   }
 }
