@@ -110,7 +110,7 @@ class TestTerraformGenerateClassifier(object):
                     'description': 'Unit-Test Streamalert Classifier Test',
                     'environment_variables': {
                         'CLUSTER': 'test',
-                        'SQS_QUEUE_URL': '${module.globals.new_classifier_sqs_queue_url}',
+                        'SQS_QUEUE_URL': '${module.globals.classifier_sqs_queue_url}',
                         'LOGGER_LEVEL': 'info',
                         'ENABLE_METRICS': '0'
                     },
