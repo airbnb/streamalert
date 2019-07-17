@@ -60,7 +60,7 @@ def cloudtrail_critical_api_calls(rec):
                 or config.get('BlockPublicPolicy', False) is False
                 or config.get('BlockPublicAcls', False) is False
                 or config.get('IgnorePublicAcls', False) is False
-        ):
+           ):
             return True
 
     # PutAccountPublicAccessBlock does not indicate if the account is

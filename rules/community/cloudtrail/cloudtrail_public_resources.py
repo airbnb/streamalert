@@ -23,7 +23,7 @@ def cloudtrail_public_resources(rec):
         policy = Policy(policy)
         if policy.is_internet_accessible():
             return True
-    
+
     # Get the policy string for each resource
     policy_string = ''
 
