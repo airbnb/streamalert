@@ -52,6 +52,7 @@ class LambdaPackage(object):
         'jsonlines': 'jsonlines==1.2.0',
         'netaddr': 'netaddr==0.7.19',
         'oauth2client': 'oauth2client==4.1.3',
+        'policyuniverse': 'policyuniverse=1.3.2.0',
         'requests': 'requests==2.20.1',
     }
 
@@ -210,7 +211,7 @@ class RulesEnginePackage(LambdaPackage):
         'stream_alert/shared',
     }
     package_name = 'rules_engine'
-    package_libs = {'netaddr'}
+    package_libs = {'netaddr', 'policyuniverse'}
 
 
 class AlertProcessorPackage(LambdaPackage):
