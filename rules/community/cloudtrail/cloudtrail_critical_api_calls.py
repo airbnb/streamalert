@@ -50,15 +50,16 @@ def cloudtrail_critical_api_calls(rec):
             return True
 
     if rec['eventName'] == 'PutBucketPublicAccessBlock':
-        # Check if any of the types of public access for a bucket have been disabled
+        # The call to PutBucketPublicAccessBlock sets the policy for what to
+        # block for a bucket. We need to get the configuration and see if any
+        # of the items are set to False.
         config = rec.get('requestParameters', {}).get(
             'PublicAccessBlockConfiguration', {}
         )
-        if (
-                not config.get('RestrictPublicBuckets', False)
-                and not config.get('BlockPublicPolicy', False)
-                and not config.get('BlockPublicPolicy', False)
-                and not config.get('BlockPublicPolicy', False)
+        if (config.get('RestrictPublicBuckets', False) is False
+                or config.get('BlockPublicPolicy', False) is False
+                or config.get('BlockPublicAcls', False) is False
+                or config.get('IgnorePublicAcls', False) is False
         ):
             return True
 

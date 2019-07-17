@@ -22,7 +22,7 @@ def cloudtrail_snapshot_or_ami_made_public(rec):
         params = rec.get('requestParameters', {})
         if params.get('attributeType', '') == 'launchPermission':
             if 'add' in params.get('launchPermission', {}):
-                items = params['launchPermission']['add']['items']
+                items = params['launchPermission']['add'].get('items', [])
                 for item in items:
                     if item.get('group', '') == 'all':
                         return True
@@ -32,7 +32,7 @@ def cloudtrail_snapshot_or_ami_made_public(rec):
         params = rec.get('requestParameters', {})
         if params.get('attributeType', '') == 'CREATE_VOLUME_PERMISSION':
             if 'add' in params.get('createVolumePermission', {}):
-                items = params['createVolumePermission']['add']['items']
+                items = params['createVolumePermission']['add'].get('items', [])
                 for item in items:
                     if item.get('group', '') == 'all':
                         return True
