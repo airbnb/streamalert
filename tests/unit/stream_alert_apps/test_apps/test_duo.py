@@ -27,13 +27,24 @@ from tests.unit.stream_alert_shared.test_config import get_mock_lambda_context
 
 
 @mock_ssm
-@patch.object(DuoApp, 'type', Mock(return_value='type'))
+# Patching the DuoApp class-wide allows for all `test_*` methods to have
+# patched `_type` and `_endpoint` methods. This _does not_ apply to the
+# `setup` method, which means the `setup` method must be decorated as well.
+@patch.object(DuoApp, '_type', Mock(return_value='test'))
 @patch.object(DuoApp, '_endpoint', Mock(return_value='endpoint'))
+# By setting the abstract methods to an empty `frozenset()`, an error requiring
+# subclasses to implement the `_type` and `_endpoint`methods will not be raised.
+# This also also allows us to subsequently patch these methods for use in the
+# tests.
+@patch.object(DuoApp, '__abstractmethods__', frozenset())
 class TestDuoApp(object):
     """Test class for the DuoApp"""
     # pylint: disable=protected-access
 
     @patch.dict(os.environ, {'AWS_DEFAULT_REGION': 'us-east-1'})
+    @patch.object(DuoApp, '_type', Mock(return_value='test'))
+    @patch.object(DuoApp, '_endpoint', Mock(return_value='endpoint'))
+    @patch.object(DuoApp, '__abstractmethods__', frozenset())
     def setup(self):
         """Setup before each method"""
         # pylint: disable=abstract-class-instantiated,attribute-defined-outside-init
