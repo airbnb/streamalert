@@ -195,10 +195,10 @@ def {}(_):
     def test_rule_checksum(self):
         """Rule - Rule Checksum"""
         # The known dumped ast of a function that just returns False is below
-        ast_value = 'Return(value=Name(id=\'False\', ctx=Load()))'
+        ast_value = 'Return(value=NameConstant(value=False))'
 
         # The known checksum of the above is # c119f541816c6364ea3e2e884ba18f9c
-        expected_checksum = hashlib.md5(ast_value).hexdigest() # nosec
+        expected_checksum = hashlib.md5(ast_value.encode('utf-8')).hexdigest() # nosec
 
         # Test rule without a docstring
         rule.Rule(_test_checksum, logs=['log_type'])
