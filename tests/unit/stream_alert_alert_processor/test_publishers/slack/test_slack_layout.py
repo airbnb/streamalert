@@ -15,7 +15,7 @@ limitations under the License.
 """
 # pylint: disable=protected-access,attribute-defined-outside-init
 from datetime import datetime
-from nose.tools import assert_equal, assert_less_equal
+from nose.tools import assert_equal, assert_dict_equal, assert_less_equal
 
 from publishers.community.slack.slack_layout import (
     AttachFullRecord,
@@ -67,16 +67,16 @@ class TestSummary(object):
         }
 
         assert_equal(publication['@slack.text'], expectation['@slack.text'])
-        assert_equal(
+        assert_dict_equal(
             publication['@slack._previous_publication'],
             expectation['@slack._previous_publication']
         )
         assert_equal(len(publication['@slack.attachments']), len(expectation['@slack.attachments']))
-        assert_equal(
-            list(publication['@slack.attachments'][0].keys()),
-            list(expectation['@slack.attachments'][0].keys())
+        assert_dict_equal(
+            publication['@slack.attachments'][0],
+            expectation['@slack.attachments'][0]
         )
-        assert_equal(publication['@slack.attachments'][0], expectation['@slack.attachments'][0])
+        assert_dict_equal(publication['@slack.attachments'][0], expectation['@slack.attachments'][0])
 
 
 class TestAttachRuleInfo(object):
@@ -103,19 +103,19 @@ Att&ck vector:  Assuming direct control
                     'color': '#8ce071',
                     'fields': [
                         {
-                            'title': 'Att&ck vector',
-                            'value': 'Assuming direct control',
-                        },
-                        {
                             'title': 'Reference',
                             'value': 'somewhere_over_the_rainbow',
+                        },
+                        {
+                            'title': 'Att&ck vector',
+                            'value': 'Assuming direct control',
                         }
                     ]
                 }
             ]
         }
 
-        assert_equal(publication, expectation)
+        assert_dict_equal(publication, expectation)
 
 
 class TestAttachPublication(object):
