@@ -250,7 +250,7 @@ class SalesforceApp(AppIntegration):
                 return False, None
             except ValueError:
                 # When fetch log events, Salesforce returns raw data in csv format, not json
-                return True, resp.text.encode('utf-8')
+                return True, resp.text
 
         return _make_get_request()
 

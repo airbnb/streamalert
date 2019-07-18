@@ -200,7 +200,7 @@ class AthenaRefresher(object):
 
                 # Account for special characters in the S3 object key
                 # Example: Usage of '=' in the key name
-                object_key = urllib.parse.unquote_plus(s3_rec['s3']['object']['key']).decode('utf8')
+                object_key = urllib.parse.unquote_plus(s3_rec['s3']['object']['key']).encode()
 
                 LOGGER.debug('Received notification for object \'%s\' in bucket \'%s\'',
                              object_key,

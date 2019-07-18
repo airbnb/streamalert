@@ -100,8 +100,8 @@ class GithubOutput(OutputDispatcher):
 
         username_password = "{}:{}".format(credentials['username'],
                                            credentials['access_token'])
-        encoded_credentials = base64.b64encode(username_password)
-        headers = {'Authorization': "Basic {}".format(encoded_credentials)}
+        encoded_credentials = base64.b64encode(username_password.encode())
+        headers = {'Authorization': "Basic {}".format(encoded_credentials.decode())}
         url = '{}/repos/{}/issues'.format(credentials['api'],
                                           credentials['repository'])
 

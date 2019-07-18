@@ -88,7 +88,7 @@ class TestS3Payload(object):
     def test_gz_reader(self):
         """S3Payload - GZ Reader"""
         record = {'key': 'value'}
-        json_line = json.dumps(record, separators=(',', ':')) + '\n'
+        json_line = (json.dumps(record, separators=(',', ':')) + '\n').encode()
         with tempfile.SpooledTemporaryFile(max_size=10*1024) as reader:
             writer = gzip.GzipFile(filename='test', fileobj=reader)
             writer.writelines([
@@ -104,7 +104,7 @@ class TestS3Payload(object):
     def test_gz_reader_non_gz(self):
         """S3Payload - GZ Reader, Non-gzip"""
         record = {'key': 'value'}
-        json_line = json.dumps(record, separators=(',', ':')) + '\n'
+        json_line = (json.dumps(record, separators=(',', ':')) + '\n').encode()
         with tempfile.SpooledTemporaryFile(max_size=10*1024) as reader:
             reader.writelines([
                 json_line,
@@ -117,7 +117,7 @@ class TestS3Payload(object):
     def test_jsonlines_reader(self):
         """S3Payload - JSON Lines Reader"""
         record = {'key': 'value'}
-        json_line = json.dumps(record, separators=(',', ':')) + '\n'
+        json_line = (json.dumps(record, separators=(',', ':')) + '\n').encode()
         with tempfile.SpooledTemporaryFile(max_size=10*1024) as reader:
             reader.writelines([
                 json_line,
@@ -130,7 +130,7 @@ class TestS3Payload(object):
     def test_jsonlines_reader_fallback(self):
         """S3Payload - JSON Lines Reader, Fallback"""
         with tempfile.SpooledTemporaryFile(max_size=10*1024) as reader:
-            reader.write('non-json-value\n')
+            reader.write('non-json-value\n'.encode())
             reader.seek(0)
             line_reader = S3Payload._jsonlines_reader(reader)
             assert_equal(reader == line_reader, True)
@@ -139,16 +139,16 @@ class TestS3Payload(object):
         """S3Payload - Read Downloaded Object"""
         record = {'key': 'value'}
         with tempfile.SpooledTemporaryFile(max_size=10*1024) as reader:
-            json.dump(record, reader, indent=2)
+            reader.write(json.dumps(record, indent=2).encode())
             reader.seek(0)
             read_lines = list(S3Payload._read_downloaded_object(reader))
             assert_equal(read_lines, [(1, record)])
 
     def test_read_downloaded_object_fallback(self):
         """S3Payload - Read Downloaded Object, Fallback"""
-        value = 'non-json-value'
+        value = 'non-json-value\n'.encode()
         with tempfile.SpooledTemporaryFile(max_size=10*1024) as reader:
-            reader.write('{}\n'.format(value))
+            reader.write(value)
             reader.seek(0)
             read_lines = list(S3Payload._read_downloaded_object(reader))
             assert_equal(read_lines, [(1, value)])
@@ -156,7 +156,7 @@ class TestS3Payload(object):
     @mock_s3
     def test_read_file(self):
         """S3Payload - Read File"""
-        value = 'test_data'
+        value = 'test_data'.encode()
         boto3.resource('s3').Bucket(self._bucket).create()
         boto3.resource('s3').Bucket(self._bucket).put_object(
             Key=self._key,

@@ -178,7 +178,7 @@ class Rule(object):
                     # This check is necessary to ensure changes to the docstring
                     # are allowed without altering the checksum
                     if not isinstance(expression, ast.Expr):
-                        md5.update(ast.dump(expression))
+                        md5.update(ast.dump(expression).encode('utf-8'))
 
                 self._checksum = md5.hexdigest()
             except (TypeError, IndentationError, IndexError):

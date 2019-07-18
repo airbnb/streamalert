@@ -74,7 +74,7 @@ class TestCredentialsEncrypted(object):
     def test_get_data_kms_decrypted(self):
         """Credentials - Encrypted Credentials - KMS Decrypt"""
         decrypted = self._credentials.get_data_kms_decrypted()
-        assert_equal(decrypted, self._plaintext_payload)
+        assert_equal(decrypted, self._plaintext_payload.encode())
 
     def test_encrypt(self):
         """Credentials - Encrypted Credentials - Encrypt
@@ -128,7 +128,7 @@ class TestCredentialsUnencrypted(object):
         self._credentials.encrypt(REGION, KMS_ALIAS)
 
         assert_true(self._credentials.is_encrypted())
-        assert_equal(self._credentials.data(), 'InBsYWludGV4dCBjcmVkZW50aWFscyI=')
+        assert_equal(self._credentials.data(), 'InBsYWludGV4dCBjcmVkZW50aWFscyI='.encode())
 
 
 class TestCredentialsEmpty(object):
@@ -326,7 +326,7 @@ class TestS3Driver(object):
         # (!) Notably, in this test the credential contents are not encrypted when setup. They
         #     are supposed to be encrypted PRIOR to putting it in.
         assert_true(credentials.is_encrypted())
-        assert_equal(credentials.data(), test_data)
+        assert_equal(credentials.data(), test_data.encode())
 
     @mock_s3
     @mock_kms
@@ -520,7 +520,7 @@ class TestLocalFileDriver(object):
 
         assert_is_not_none(loaded_credentials)
         assert_true(loaded_credentials.is_encrypted())
-        assert_equal(loaded_credentials.get_data_kms_decrypted(), raw_credentials)
+        assert_equal(loaded_credentials.get_data_kms_decrypted(), raw_credentials.encode())
 
     @mock_kms
     def test_save_and_load_credentials_persists_statically(self):
@@ -538,7 +538,7 @@ class TestLocalFileDriver(object):
 
         assert_is_not_none(loaded_credentials)
         assert_true(loaded_credentials.is_encrypted())
-        assert_equal(loaded_credentials.get_data_kms_decrypted(), raw_credentials)
+        assert_equal(loaded_credentials.get_data_kms_decrypted(), raw_credentials.encode())
 
     def test_save_errors_on_unencrypted(self):
         """LocalFileDriver - Save Errors on Unencrypted Credentials"""
@@ -604,7 +604,7 @@ class TestSpooledTempfileDriver(object):
 
         assert_is_not_none(loaded_credentials)
         assert_true(loaded_credentials.is_encrypted())
-        assert_equal(loaded_credentials.get_data_kms_decrypted(), raw_credentials)
+        assert_equal(loaded_credentials.get_data_kms_decrypted(), raw_credentials.encode())
 
     @mock_kms
     def test_save_and_load_credentials_persists_statically(self):
@@ -626,7 +626,7 @@ class TestSpooledTempfileDriver(object):
 
         assert_is_not_none(loaded_credentials)
         assert_true(loaded_credentials.is_encrypted())
-        assert_equal(loaded_credentials.get_data_kms_decrypted(), raw_credentials)
+        assert_equal(loaded_credentials.get_data_kms_decrypted(), raw_credentials.encode())
 
     def test_save_errors_on_unencrypted(self):
         """SpooledTempfileDriver - Save Errors on Unencrypted Credentials"""
