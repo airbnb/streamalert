@@ -20,7 +20,7 @@ import boto3
 from botocore.exceptions import ClientError
 from mock import patch
 from moto import mock_ssm
-from nose.tools import assert_equal, assert_false, assert_true, raises
+from nose.tools import assert_equal, assert_false, assert_true, assert_dict_equal, raises
 
 from stream_alert.apps.config import AppConfig
 from stream_alert.apps.exceptions import AppAuthError, AppConfigError, AppStateError
@@ -75,15 +75,15 @@ class TestAppConfig(object):
 
     def test_successive_event(self):
         """AppConfig - Get Successive Event"""
-        event = self._config.successive_event
-        expected_event = json.dumps({
+        event = json.loads(self._config.successive_event)
+        expected_event = {
             'app_type': 'test_app',
             'schedule_expression': 'rate(10 minutes)',
             'destination_function_name':
                 'unit_test_prefix_unit_test_cluster_streamalert_classifier',
             'invocation_type': 'successive'
-        })
-        assert_equal(event, expected_event)
+        }
+        assert_dict_equal(event, expected_event)
 
     def test_set_starting_timestamp(self):
         """AppConfig - Set Starting Timestamp"""
