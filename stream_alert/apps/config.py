@@ -157,7 +157,7 @@ class AppConfig(object):
 
         # Load the authentication info. This data can vary from service to service
         auth_config = {
-            key: value.encode('utf-8') if isinstance(value, str) else value
+            key: value if isinstance(value, str) else value
             for key, value in params[auth_param_name].items()
         }
         state_config = params.get(state_param_name, {})
@@ -290,7 +290,7 @@ class AppConfig(object):
             })
         except TypeError as err:
             raise AppStateError('Could not serialize state for name \'{}\'. Error: '
-                                '{}'.format(self._state_name, err.message))
+                                '{}'.format(self._state_name, str(err)))
 
         @backoff.on_exception(backoff.expo,
                               ClientError,
