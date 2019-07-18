@@ -51,9 +51,6 @@ class PayloadRecord(object):
         """
         return self._parser is not None
 
-    # For forward compatibility to Python3
-    __bool__ = __nonzero__
-
     def __len__(self):
         return (
             len(json.dumps(self._record_data, separators=(',', ':')))
@@ -201,9 +198,6 @@ class StreamPayload(object, metaclass=ABCMeta):
 
     def __bool__(self):
         return self.fully_classified
-
-    # For forward compatibility to Python3
-    __bool__ = __nonzero__
 
     def __repr__(self):
         if self:
