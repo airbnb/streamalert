@@ -395,8 +395,8 @@ class TestFirehoseClient(object):
             'log_type_01_sub_type_01': 'log_type_01:sub_type_01'
         }
         expected_batch = [
-            '{"unit_key_02":"test","unit_key_01":1}\n',
-            '{"unit_key_02":"test","unit_key_01":2}\n'
+            '{"unit_key_01":1,"unit_key_02":"test"}\n',
+            '{"unit_key_01":2,"unit_key_02":"test"}\n'
         ]
         self._client.send(self._sample_payloads)
         send_batch_mock.assert_called_with(
