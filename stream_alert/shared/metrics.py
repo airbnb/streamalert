@@ -42,7 +42,7 @@ try:
 except ValueError as err:
     ENABLE_METRICS = False
     LOGGER.error('Invalid value for metric toggling, expected 0 or 1: %s',
-                 err.message)
+                 str(err))
 
 if not ENABLE_METRICS:
     LOGGER.debug('Logging of metric data is currently disabled.')
