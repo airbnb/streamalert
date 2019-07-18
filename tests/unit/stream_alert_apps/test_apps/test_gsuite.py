@@ -17,6 +17,7 @@ import json
 import os
 import socket
 import ssl
+import builtins
 from datetime import datetime, timedelta
 
 import apiclient
@@ -64,7 +65,7 @@ class TestGSuiteReportsApp(object):
         validation_function = self._app.required_auth_info()['keyfile']['format']
         data = {'test': 'keydata'}
         mocker = mock_open(read_data=json.dumps(data))
-        with patch('__builtin__.open', mocker):
+        with patch('builtins.open', mocker):
             loaded_keydata = validation_function('fakepath')
             assert_equal(loaded_keydata, data)
 
@@ -74,7 +75,7 @@ class TestGSuiteReportsApp(object):
         validation_function = self._app.required_auth_info()['keyfile']['format']
         cred_mock.return_value = False
         mocker = mock_open(read_data=json.dumps({'test': 'keydata'}))
-        with patch('__builtin__.open', mocker):
+        with patch('builtins.open', mocker):
             assert_false(validation_function('fakepath'))
             cred_mock.assert_called()
 
@@ -83,7 +84,7 @@ class TestGSuiteReportsApp(object):
         """GSuiteReportsApp - Keyfile Validation, Bad JSON"""
         validation_function = self._app.required_auth_info()['keyfile']['format']
         mocker = mock_open(read_data='invalid json')
-        with patch('__builtin__.open', mocker):
+        with patch('builtins.open', mocker):
             assert_false(validation_function('fakepath'))
             cred_mock.assert_not_called()
 
