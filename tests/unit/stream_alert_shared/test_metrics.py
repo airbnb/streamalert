@@ -15,6 +15,7 @@ limitations under the License.
 """
 # pylint: disable=no-self-use,protected-access
 import os
+import importlib
 
 from mock import patch
 from nose.tools import assert_equal
@@ -29,7 +30,7 @@ class TestMetrics(object):
         """Setup before each method"""
         os.environ['ENABLE_METRICS'] = '1'
         # Force reload the metrics package to trigger env var loading
-        reload(shared.metrics)
+        importlib.reload(shared.metrics)
 
     @patch('logging.Logger.error')
     def test_invalid_metric_name(self, log_mock):
@@ -55,7 +56,7 @@ class TestMetrics(object):
         """Metrics - Metrics Disabled"""
         with patch.dict('os.environ', {'ENABLE_METRICS': '0'}):
             # Force reload the metrics package to trigger constant loading
-            reload(shared.metrics)
+            importlib.reload(shared.metrics)
 
             log_mock.assert_called_with('Logging of metric data is currently disabled.')
 
@@ -64,7 +65,7 @@ class TestMetrics(object):
         """Metrics - Bad Boolean Value"""
         with patch.dict('os.environ', {'ENABLE_METRICS': 'bad'}):
             # Force reload the metrics package to trigger constant loading
-            reload(shared.metrics)
+            importlib.reload(shared.metrics)
 
             log_mock.assert_called_with('Invalid value for metric toggling, '
                                         'expected 0 or 1: %s',
