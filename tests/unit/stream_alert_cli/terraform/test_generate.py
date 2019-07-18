@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from mock import ANY, patch
-from nose.tools import assert_equal, assert_false, assert_raises, assert_true
+from nose.tools import assert_equal, assert_dict_equal, assert_false, assert_raises, assert_true
 
 from stream_alert_cli.config import CLIConfig
 from stream_alert_cli.terraform import (
@@ -145,14 +145,7 @@ class TestTerraformGenerate(object):
                                 }
                             }
                         },
-                        'policy': (
-                            '{"Version": "2012-10-17", "Statement": [{"Resource": '
-                            '["arn:aws:s3:::unit-testing.streamalert.secrets/*", '
-                            '"arn:aws:s3:::unit-testing.streamalert.secrets"], "Effect": '
-                            '"Deny", "Sid": "ForceSSLOnlyAccess", "Action": "s3:*", '
-                            '"Condition": {"Bool": {"aws:SecureTransport": "false"}}, '
-                            '"Principal": "*"}]}'
-                        )
+                        'policy': ANY
                     },
                     'terraform_remote_state': {
                         'bucket': 'unit-testing.streamalert.terraform.state',
@@ -174,14 +167,7 @@ class TestTerraformGenerate(object):
                                 }
                             }
                         },
-                        'policy': (
-                            '{"Version": "2012-10-17", "Statement": [{"Resource": '
-                            '["arn:aws:s3:::unit-testing.streamalert.terraform.state/*", '
-                            '"arn:aws:s3:::unit-testing.streamalert.terraform.state"], "Effect": '
-                            '"Deny", "Sid": "ForceSSLOnlyAccess", "Action": "s3:*", '
-                            '"Condition": {"Bool": {"aws:SecureTransport": "false"}}, '
-                            '"Principal": "*"}]}'
-                        )
+                        'policy': ANY
                     },
                     'logging_bucket': {
                         'bucket': 'unit-testing.streamalert.s3-logging',
@@ -209,14 +195,7 @@ class TestTerraformGenerate(object):
                                 }
                             }
                         },
-                        'policy': (
-                            '{"Version": "2012-10-17", "Statement": [{"Resource": '
-                            '["arn:aws:s3:::unit-testing.streamalert.s3-logging/*", '
-                            '"arn:aws:s3:::unit-testing.streamalert.s3-logging"], "Effect": '
-                            '"Deny", "Sid": "ForceSSLOnlyAccess", "Action": "s3:*", '
-                            '"Condition": {"Bool": {"aws:SecureTransport": "false"}}, '
-                            '"Principal": "*"}]}'
-                        )
+                        'policy': ANY
                     },
                     'streamalerts': {
                         'bucket': 'unit-testing.streamalerts',
@@ -238,14 +217,7 @@ class TestTerraformGenerate(object):
                                 }
                             }
                         },
-                        'policy': (
-                            '{"Version": "2012-10-17", "Statement": [{"Resource": '
-                            '["arn:aws:s3:::unit-testing.streamalerts/*", '
-                            '"arn:aws:s3:::unit-testing.streamalerts"], "Effect": '
-                            '"Deny", "Sid": "ForceSSLOnlyAccess", "Action": "s3:*", '
-                            '"Condition": {"Bool": {"aws:SecureTransport": "false"}}, '
-                            '"Principal": "*"}]}'
-                        )
+                        'policy': ANY
                     }
                 },
                 'aws_sns_topic': {
@@ -256,9 +228,9 @@ class TestTerraformGenerate(object):
             }
         }
 
-        assert_equal(tf_main['provider'], tf_main_expected['provider'])
-        assert_equal(tf_main['terraform'], tf_main_expected['terraform'])
-        assert_equal(tf_main['resource'], tf_main_expected['resource'])
+        assert_dict_equal(tf_main['provider'], tf_main_expected['provider'])
+        assert_dict_equal(tf_main['terraform'], tf_main_expected['terraform'])
+        assert_dict_equal(tf_main['resource'], tf_main_expected['resource'])
 
     def test_generate_main_with_firehose(self):
         """CLI - Terraform Generate Main with Firehose Enabled"""
