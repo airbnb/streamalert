@@ -29,7 +29,7 @@ def elide_string_middle(text, max_length):
     if len(text) <= max_length:
         return text
 
-    half_len = (max_length - 5) / 2  # Length of text on either side.
+    half_len = (max_length - 5) // 2  # Length of text on either side.
     return '{} ... {}'.format(text[:half_len], text[-half_len:])
 
 
