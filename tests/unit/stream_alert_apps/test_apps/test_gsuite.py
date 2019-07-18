@@ -166,7 +166,7 @@ class TestGSuiteReportsApp(object):
     def test_gather_logs_http_error(self, log_mock):
         """GSuiteReportsApp - Gather Logs, Google API HTTP Error"""
         with patch.object(self._app, '_activities_service') as service_mock:
-            error = apiclient.errors.HttpError('response', bytes('bad'))
+            error = apiclient.errors.HttpError('response', 'bad'.encode())
             service_mock.list.return_value.execute.side_effect = error
             assert_false(self._app._gather_logs())
             log_mock.assert_called_with('[%s] Failed to execute activities listing', self._app)

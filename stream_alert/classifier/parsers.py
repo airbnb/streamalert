@@ -83,9 +83,6 @@ class ParserBase(metaclass=ABCMeta):
     def __bool__(self):
         return self.valid
 
-    # For forward compatibility to Python3
-    __bool__ = __nonzero__
-
     def __len__(self):
         return len(self._valid_parses)
 
@@ -465,7 +462,7 @@ class ParserBase(metaclass=ABCMeta):
             try:
                 data_copy = json.loads(data)
             except (ValueError, TypeError) as err:
-                LOGGER.debug('Data is not valid json: %s', err.message)
+                LOGGER.debug('Data is not valid json: %s', str(err))
                 data_copy = data
 
         # Check to make sure any non-optional envelope keys exist before proceeding
@@ -546,7 +543,7 @@ class JSONParser(ParserBase):
                     # purposely raising here to be caught below & handled
                     raise TypeError('record data is not a dictionary')
             except (ValueError, TypeError) as err:
-                LOGGER.debug('Embedded json is invalid: %s', err.message)
+                LOGGER.debug('Embedded json is invalid: %s', str(err))
                 valid = False
 
             embedded_records.append((record, valid))
@@ -578,7 +575,7 @@ class JSONParser(ParserBase):
                 # purposely raising here to be caught below & handled
                 raise TypeError('record data is not a dictionary')
         except (ValueError, TypeError) as err:
-            LOGGER.debug('Matched regex string is invalid (%s): %s', err.message, match_str)
+            LOGGER.debug('Matched regex string is invalid (%s): %s', str(err), match_str)
             return False
 
         return [(record, True)]

@@ -70,7 +70,7 @@ class TestStagingStatistic(object):
 	- Staged Until:					2000-01-03 01:01:01 UTC
 	- Time Past Staging:			1d 10h 0m
 	- Alert Count:					200
-	- Alert Info:					n/a'''.encode('utf-8')
+	- Alert Info:					n/a'''
 
         assert_equal(str(self.statistic), expected_string)
 
@@ -84,7 +84,7 @@ class TestStagingStatistic(object):
 	- Remaining Stage Time:		1d 0h 0m
 	- Alert Count:					100
 	- Alert Info:					https://console.aws.amazon.com/athena/\
-home#query/history/678cc350-d4e1-4296-86d5-9351b7f92ed4'''.encode('utf-8')
+home#query/history/678cc350-d4e1-4296-86d5-9351b7f92ed4'''
 
         assert_equal(str(self.statistic), expected_string)
 

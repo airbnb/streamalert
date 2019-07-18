@@ -88,7 +88,7 @@ class TestStatsPublisher(object):
 	- Staged Until:					2000-01-03 01:01:01 UTC
 	- Remaining Stage Time:		1d 0h 0m
 	- Alert Count:					1
-	- Alert Info:					n/a'''.encode('utf-8')
+	- Alert Info:					n/a'''
         stats = list(self._get_fake_stats())
         digest = self.publisher._format_digest(stats)
         assert_equal(digest, expected_digest)
@@ -130,7 +130,7 @@ class TestStatsPublisher(object):
 	- Staged Until:					2000-01-03 01:01:01 UTC
 	- Remaining Stage Time:		1d 0h 0m
 	- Alert Count:					1
-	- Alert Info:					n/a'''.encode('utf-8'),
+	- Alert Info:					n/a''',
             'Subject': 'Alert statistics for 1 staged rule(s) [2000-01-01 01:01:01 UTC]'
         }
         boto_mock.resource.return_value.Topic.return_value.publish.assert_called_with(**args)
