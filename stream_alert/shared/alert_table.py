@@ -54,7 +54,7 @@ class AlertTable(object):
             if response.get('LastEvaluatedKey'):
                 func_kwargs['ExclusiveStartKey'] = response['LastEvaluatedKey']
             else:
-                raise StopIteration
+                return
 
     def rule_names(self):
         """Find all of the distinct rule names in the table.
