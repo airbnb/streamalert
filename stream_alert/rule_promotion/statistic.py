@@ -44,9 +44,6 @@ class StagingStatistic(object):
     def __bool__(self):
         return self.alert_count not in {0, self._ALERT_COUNT_UNKOWN}
 
-    # For forward compatibility to Python3
-    __bool__ = __nonzero__
-
     def __lt__(self, other):
         """Statistic should be ordered by their alert count."""
         return self.alert_count < other.alert_count
@@ -125,4 +122,4 @@ class StagingStatistic(object):
             '\t- {staged_time_label}\t\t{staged_delta}\n'
             '\t- {alert_count_label}:\t\t\t\t\t{alert_count}\n'
             '\t- {alert_info_label}:\t\t\t\t\t{info_link}'
-        ).encode('utf-8').format(**info)
+        ).format(**info)

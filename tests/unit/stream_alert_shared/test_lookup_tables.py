@@ -73,7 +73,7 @@ class TestLookupTables(object):
         put_mock_s3_object(
             'bucket_name',
             'bar.json',
-            zlib.compress(json.dumps({'compressed_key': 'compressed_val'}))
+            zlib.compress(json.dumps({'compressed_key': 'compressed_val'}).encode())
         )
 
         expected_result = {

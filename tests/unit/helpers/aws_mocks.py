@@ -15,7 +15,7 @@ limitations under the License.
 """
 from datetime import datetime
 import uuid
-from io import StringIO
+from io import BytesIO
 import zipfile
 
 import boto3
@@ -138,7 +138,7 @@ def _make_lambda_package():
 def handler(event, context):
     return event
 """
-    package_output = StringIO()
+    package_output = BytesIO()
     package = zipfile.ZipFile(package_output, 'w', zipfile.ZIP_DEFLATED)
     package.writestr('function.zip', mock_lambda_function)
     package.close()

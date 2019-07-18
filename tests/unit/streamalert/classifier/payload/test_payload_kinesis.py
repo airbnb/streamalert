@@ -44,7 +44,7 @@ class TestKinesisPayload(object):
         expected_result = [
             json.dumps({
                 'key': 'value'
-            })
+            }).encode()
         ]
 
         payload = KinesisPayload(None, record)
@@ -58,7 +58,7 @@ class TestKinesisPayload(object):
         expected_result = [
             json.dumps({
                 'key': 'value'
-            })
+            }).encode()
         ]
 
         payload = KinesisPayload(None, record)

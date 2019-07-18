@@ -31,7 +31,7 @@ class TestAwsKms(object):
     @mock_kms
     def test_encrypt_decrypt():
         """AwsApiClient - AwsKms - encrypt/decrypt - Encrypt and push creds, then pull them down"""
-        secret = 'shhhhhh' # nosec
+        secret = 'shhhhhh'.encode() # nosec
 
         ciphertext = AwsKms.encrypt(secret, region=REGION, key_alias=KMS_ALIAS)
         response = AwsKms.decrypt(ciphertext, region=REGION)
@@ -59,7 +59,7 @@ class TestAwsS3(object):
     @mock_s3
     def test_put_download():
         """AwsApiClient - AwsS3 - PutObject/Download - Upload then download object"""
-        payload = 'zzzzz'
+        payload = 'zzzzz'.encode()
         bucket = 'bucket'
         key = 'key'
 

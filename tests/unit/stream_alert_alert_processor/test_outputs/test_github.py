@@ -62,8 +62,8 @@ class TestGithubOutput(object):
 
         credentials = url_mock.call_args[1]['headers']['Authorization'].split(' ')[-1]
         decoded_username_password = base64.b64decode(credentials)
-        assert_equal(decoded_username_password, '{}:{}'.format(self.CREDS['username'],
-                                                               self.CREDS['access_token']))
+        assert_equal(decoded_username_password, "{}:{}".format(self.CREDS['username'],
+                                                               self.CREDS['access_token']).encode())
 
         log_mock.assert_called_with('Successfully sent alert to %s:%s',
                                     self.SERVICE, self.DESCRIPTOR)

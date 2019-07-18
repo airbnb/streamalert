@@ -484,8 +484,12 @@ class LocalFileDriver(CredentialsProvidingDriver, FileDescriptorProvider, Creden
             LOGGER.error('Error: Writing unencrypted credentials to disk is disallowed.')
             return False
 
+        creds = credentials.data()
+        if not isinstance(creds, bytes):
+            creds = creds.encode()
+
         with self.offer_fileobj(descriptor) as file_handle:
-            file_handle.write(credentials.data())
+            file_handle.write(creds)
         return True
 
     @staticmethod
@@ -591,6 +595,8 @@ class SpooledTempfileDriver(CredentialsProvidingDriver, FileDescriptorProvider):
             return False
 
         raw_creds = credentials.data()
+        if not isinstance(raw_creds, bytes):
+            raw_creds = raw_creds.encode()
 
         spool = tempfile.SpooledTemporaryFile()
         spool.write(raw_creds)

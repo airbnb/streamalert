@@ -183,7 +183,7 @@ class TestAthenaRefresher(object):
         self._refresher.run(self._create_test_message(1))
         log_mock.assert_called_with(
             'Received notification for object \'%s\' in bucket \'%s\'',
-            'alerts/dt=2017/08/01/14/02/test.json',
+            'alerts/dt=2017/08/01/14/02/test.json'.encode(),
             'unit-testing.streamalerts'
         )
 
