@@ -202,11 +202,13 @@ class TestAlertMerger(object):
         ])
 
         self.merger.dispatch()
+        # NOTE (Bobby): The following assertion was modified during the py2 -> py3
+        # conversion to disregard order of calls.
         mock_logger.assert_has_calls([
             call.info('Merged %d alerts into a new alert with ID %s', 2, ANY),
             call.info('Dispatching %s to %s (attempt %d)', ANY, _ALERT_PROCESSOR, 1),
             call.info('Dispatching %s to %s (attempt %d)', ANY, _ALERT_PROCESSOR, 1)
-        ])
+        ], any_order=True)
 
     @patch.object(main, 'LOGGER')
     def test_dispatch_no_alerts(self, mock_logger):
