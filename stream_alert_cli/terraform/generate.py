@@ -536,7 +536,7 @@ def _generate_global_module(config):
             'in global.json. '
             'For existing/legacy deployments, change this value to False. '
             'For new deployments, change this value to True. '
-            'For more information, refer to THIS PULL REQUEST.'
+            'For more information, refer to https://github.com/airbnb/streamalert/pull/960.'
         )
         raise MisconfigurationError(message)
 
