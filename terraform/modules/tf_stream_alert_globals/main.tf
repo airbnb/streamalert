@@ -12,6 +12,7 @@ module "classifier_queue" {
   prefix               = "${var.prefix}"
   region               = "${var.region}"
   rules_engine_timeout = "${var.rules_engine_timeout}"
+  use_prefix           = "${var.sqs_use_prefix}"
 }
 
 // TODO: Autoscaling
