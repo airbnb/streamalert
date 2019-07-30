@@ -46,5 +46,5 @@ data "aws_iam_policy_document" "classifier_queue" {
 }
 
 locals {
-  aws_sqs_queue_name = "${var.use_prefix ? join("", [var.prefix, "_"]) : ""}streamalert_classified_logs"
+  aws_sqs_queue_name = "${var.use_prefix ? "${var.prefix}_" : ""}streamalert_classified_logs"
 }
