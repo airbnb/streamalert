@@ -15,7 +15,7 @@
       "write_capacity": 5
     },
     "classifier_sqs": {
-      "use_prefix": false
+      "use_prefix": true
     },
     "firehose": {
       "buffer_interval": 900,

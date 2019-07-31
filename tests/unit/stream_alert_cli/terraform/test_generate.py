@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from mock import ANY, patch
-from nose.tools import assert_equal, assert_false, assert_true
+from nose.tools import assert_equal, assert_false, assert_raises, assert_true
 
 from stream_alert_cli.config import CLIConfig
 from stream_alert_cli.terraform import (
@@ -24,6 +24,7 @@ from stream_alert_cli.terraform import (
     flow_logs,
     generate
 )
+from stream_alert_cli.terraform.common import MisconfigurationError
 
 
 class TestTerraformGenerate(object):
@@ -489,3 +490,32 @@ class TestTerraformGenerate(object):
 
         assert_equal(set(tf_cluster['module'].keys()), advanced_modules)
         assert_equal(set(tf_cluster.keys()), cluster_keys)
+
+    def test_generate_main_with_sqs_url_unspecified(self):
+        """CLI - Terraform Generate Main with unspecified classifier_sqs.use_prefix"""
+        del self.config['global']['infrastructure']['classifier_sqs']['use_prefix']
+
+        assert_raises(
+            MisconfigurationError,
+            generate.generate_main,
+            config=self.config,
+            init=False
+        )
+
+    def test_generate_main_with_sqs_url_true(self):
+        """CLI - Terraform Generate Main with classifier_sqs.use_prefix = True"""
+        self.config['global']['infrastructure']['classifier_sqs']['use_prefix'] = True
+
+        result = generate.generate_main(config=self.config, init=False)
+
+        assert_equal(result['module']['globals']['source'], 'modules/tf_stream_alert_globals')
+        assert_true(result['module']['globals']['sqs_use_prefix'])
+
+    def test_generate_main_with_sqs_url_false(self):
+        """CLI - Terraform Generate Main with classifier_sqs.use_prefix = False"""
+        self.config['global']['infrastructure']['classifier_sqs']['use_prefix'] = False
+
+        result = generate.generate_main(config=self.config, init=False)
+
+        assert_equal(result['module']['globals']['source'], 'modules/tf_stream_alert_globals')
+        assert_false(result['module']['globals']['sqs_use_prefix'])
