@@ -534,7 +534,7 @@ def _generate_global_module(config):
     if use_prefix is None:
         message = (
             '[WARNING] '
-            'As of StreamAlert 2.4.0+ you must specify the classifier_sqs.use_prefix parameter '
+            'As of StreamAlert v2.3.0+ you must specify the classifier_sqs.use_prefix parameter '
             'in global.json. '
             'For existing/legacy deployments, change this value to False. '
             'For new deployments, change this value to True. '
