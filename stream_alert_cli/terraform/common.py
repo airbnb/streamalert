@@ -48,4 +48,3 @@ def monitoring_topic_arn(config):
 
 class MisconfigurationError(ValueError):
     """This error is thrown when StreamAlert is misconfigured."""
-    pass
