@@ -28,10 +28,6 @@ variable "classifier_sqs_queue_arn" {
   description = "ARN of the SQS queue to which classified logs should be sent"
 }
 
-variable "classifier_sqs_queue_url" {
-  description = "URL of the SQS queue to which classified logs should be sent"
-}
-
 variable "classifier_sqs_sse_kms_key_arn" {
-  description = "URL of the SQS queue to which classified logs should be sent"
+  description = "ARN of the KMS key that handles server-side-encryption of classifier SQS frames"
 }

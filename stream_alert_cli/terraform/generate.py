@@ -22,7 +22,8 @@ from stream_alert_cli.helpers import check_credentials
 from stream_alert_cli.terraform.common import (
     DEFAULT_SNS_MONITORING_TOPIC,
     InvalidClusterName,
-    infinitedict
+    infinitedict,
+    MisconfigurationError,
 )
 from stream_alert_cli.terraform.alert_merger import generate_alert_merger
 from stream_alert_cli.terraform.alert_processor import generate_alert_processor
@@ -161,26 +162,24 @@ def generate_main(config, init=False):
             'acl': 'private',
             'kms_key_id': 'alias/{}'.format(config['global']['account']['kms_key_alias'])}
 
-    logging_bucket = config['global']['s3_access_logging']['logging_bucket']
-
     # Configure initial S3 buckets
     main_dict['resource']['aws_s3_bucket'] = {
         'stream_alert_secrets': generate_s3_bucket(
             # FIXME (derek.wang) DRY out by using OutputCredentialsProvider?
             bucket='{}.streamalert.secrets'.format(config['global']['account']['prefix']),
-            logging=logging_bucket
+            logging=_config_get_logging_bucket(config)
         ),
         'streamalerts': generate_s3_bucket(
             bucket='{}.streamalerts'.format(config['global']['account']['prefix']),
-            logging=logging_bucket
+            logging=_config_get_logging_bucket(config)
         )
     }
 
     # Create bucket for S3 access logs (if applicable)
     if config['global']['s3_access_logging'].get('create_bucket', True):
         main_dict['resource']['aws_s3_bucket']['logging_bucket'] = generate_s3_bucket(
-            bucket=logging_bucket,
-            logging=logging_bucket,
+            bucket=_config_get_logging_bucket(config),
+            logging=_config_get_logging_bucket(config),
             acl='log-delivery-write',
             lifecycle_rule={
                 'prefix': '/',
@@ -197,34 +196,14 @@ def generate_main(config, init=False):
     if config['global']['terraform'].get('create_bucket', True):
         main_dict['resource']['aws_s3_bucket']['terraform_remote_state'] = generate_s3_bucket(
             bucket=config['global']['terraform']['tfstate_bucket'],
-            logging=logging_bucket
+            logging=_config_get_logging_bucket(config)
         )
 
     # Setup Firehose Delivery Streams
-    generate_firehose(logging_bucket, main_dict, config)
+    generate_firehose(_config_get_logging_bucket(config), main_dict, config)
 
     # Configure global resources like Firehose alert delivery and alerts table
-    global_module = {
-        'source': 'modules/tf_stream_alert_globals',
-        'account_id': config['global']['account']['aws_account_id'],
-        'region': config['global']['account']['region'],
-        'prefix': config['global']['account']['prefix'],
-        'kms_key_arn': '${aws_kms_key.server_side_encryption.arn}',
-        'alerts_table_read_capacity': (
-            config['global']['infrastructure']['alerts_table']['read_capacity']),
-        'alerts_table_write_capacity': (
-            config['global']['infrastructure']['alerts_table']['write_capacity']),
-        'rules_engine_timeout': config['lambda']['rules_engine_config']['timeout']
-    }
-
-    if config['global']['infrastructure']['rule_staging'].get('enabled'):
-        global_module['enable_rule_staging'] = True
-        global_module['rules_table_read_capacity'] = (
-            config['global']['infrastructure']['rule_staging']['table']['read_capacity'])
-        global_module['rules_table_write_capacity'] = (
-            config['global']['infrastructure']['rule_staging']['table']['write_capacity'])
-
-    main_dict['module']['globals'] = global_module
+    main_dict['module']['globals'] = _generate_global_module(config)
 
     # KMS Key and Alias creation
     main_dict['resource']['aws_kms_key']['server_side_encryption'] = {
@@ -532,3 +511,62 @@ def remove_temp_terraform_file(tf_tmp_file, message):
     if os.path.isfile(tf_tmp_file):
         LOGGER.info(message)
         os.remove(tf_tmp_file)
+
+
+def _generate_global_module(config):
+    # 2019-07-30 (Ryxias)
+    #   This variable is left here to accommodate for a bug that misses the prefix on the SQS
+    #   queue name.
+    #   See: https://github.com/airbnb/streamalert/issues/885
+    #
+    #   Because of the possibility of data loss, and the difficulty of doing a resource migration,
+    #   we offer this option to maintain an account's un-prefixed SQS resource name.
+    #
+    #   The default value provided in global.json is 'None'. For all versions that are <3.0.0,
+    #   in order to facilitate a graceful upgrade, we require the StreamAlert instance modify this
+    #   value to True or False, to explicitly state whether or not to use the SQS prefix.
+    #
+    #   In version 3.0.0+, StreamAlert will default to always using the prefix, when "use_prefix"
+    #   is not present.
+    use_prefix = config['global']['infrastructure'].get('classifier_sqs', {}).get(
+        'use_prefix', None
+    )
+    if use_prefix is None:
+        message = (
+            '[WARNING] '
+            'As of StreamAlert v2.3.0+ you must specify the classifier_sqs.use_prefix parameter '
+            'in global.json. '
+            'For existing/legacy deployments, change this value to False. '
+            'For new deployments, change this value to True. '
+            'For more information, refer to https://github.com/airbnb/streamalert/pull/960.'
+        )
+        raise MisconfigurationError(message)
+
+    global_module = {
+        'source': 'modules/tf_stream_alert_globals',
+        'account_id': config['global']['account']['aws_account_id'],
+        'region': config['global']['account']['region'],
+        'prefix': config['global']['account']['prefix'],
+        'kms_key_arn': '${aws_kms_key.server_side_encryption.arn}',
+        'alerts_table_read_capacity': (
+            config['global']['infrastructure']['alerts_table']['read_capacity']
+        ),
+        'alerts_table_write_capacity': (
+            config['global']['infrastructure']['alerts_table']['write_capacity']
+        ),
+        'rules_engine_timeout': config['lambda']['rules_engine_config']['timeout'],
+        'sqs_use_prefix': use_prefix,
+    }
+
+    if config['global']['infrastructure']['rule_staging'].get('enabled'):
+        global_module['enable_rule_staging'] = True
+        global_module['rules_table_read_capacity'] = (
+            config['global']['infrastructure']['rule_staging']['table']['read_capacity'])
+        global_module['rules_table_write_capacity'] = (
+            config['global']['infrastructure']['rule_staging']['table']['write_capacity'])
+
+    return global_module
+
+
+def _config_get_logging_bucket(config):
+    return config['global']['s3_access_logging']['logging_bucket']
