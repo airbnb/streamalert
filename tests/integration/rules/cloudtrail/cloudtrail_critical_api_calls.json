@@ -583,21 +583,21 @@
           "sourceIPAddress": "...",
           "userAgent": "...",
           "requestParameters": {
-              "host": [
-                  "954574370272.s3-control.us-east-1.amazonaws.com"
-              ]
+            "host": [
+              "954574370272.s3-control.us-east-1.amazonaws.com"
+            ]
           },
           "responseElements": null,
           "additionalEventData": {
-              "SignatureVersion": "SigV4",
-              "CipherSuite": "ECDHE-RSA-AES128-GCM-SHA256",
-              "AuthenticationMethod": "AuthHeader"
+            "SignatureVersion": "SigV4",
+            "CipherSuite": "ECDHE-RSA-AES128-GCM-SHA256",
+            "AuthenticationMethod": "AuthHeader"
           },
           "requestID": "...",
           "eventID": "...",
           "eventType": "AwsApiCall",
           "recipientAccountId": "123456789123"
-      }
+        }
       ]
     },
     "description": "Turning off S3 PublicAccessBlock for an entire account",
@@ -760,20 +760,20 @@
           "sourceIPAddress": "...",
           "userAgent": "...",
           "requestParameters": {
-              "DisableEbsEncryptionByDefaultRequest": {}
+            "DisableEbsEncryptionByDefaultRequest": {}
           },
           "responseElements": {
-              "DisableEbsEncryptionByDefaultResponse": {
-                  "xmlns": "http://ec2.amazonaws.com/doc/2016-11-15/",
-                  "ebsEncryptionByDefault": false,
-                  "requestId": "19a19cd8-5f1b-4d5e-8af4-3e826fa03d0f"
-              }
+            "DisableEbsEncryptionByDefaultResponse": {
+              "xmlns": "http://ec2.amazonaws.com/doc/2016-11-15/",
+              "ebsEncryptionByDefault": false,
+              "requestId": "19a19cd8-5f1b-4d5e-8af4-3e826fa03d0f"
+            }
           },
           "requestID": "...",
           "eventID": "...",
           "eventType": "AwsApiCall",
           "recipientAccountId": "123456789123"
-      }
+        }
       ]
     },
     "description": "Disabling default EBS encryption",
