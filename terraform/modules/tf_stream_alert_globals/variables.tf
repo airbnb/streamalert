@@ -25,3 +25,7 @@ variable "rules_table_write_capacity" {
 variable "rules_engine_timeout" {
   default = 300
 }
+
+variable "sqs_use_prefix" {
+  default = false
+}
