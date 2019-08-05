@@ -18,8 +18,15 @@ _CRITICAL_EVENTS = {
     'StopConfigurationRecorder',
     # CloudWatch
     'DeleteRule',
-    'DisableRule'
+    'DisableRule',
+    # GuardDuty
+    'DeleteDetector',
+    # S3 Public Access Block
+    'DeleteAccountPublicAccessBlock',
+    # EBS default encryption
+    'DisableEbsEncryptionByDefault',
 }
+
 
 @rule(logs=['cloudtrail:events'])
 def cloudtrail_critical_api_calls(rec):
@@ -34,4 +41,32 @@ def cloudtrail_critical_api_calls(rec):
                       (b) identify what resource(s) are impacted by the API call
                       (c) determine if the intent is valid, malicious or accidental
     """
-    return rec['eventName'] in _CRITICAL_EVENTS
+    if rec['eventName'] in _CRITICAL_EVENTS:
+        return True
+
+    if rec['eventName'] == 'UpdateDetector':
+        # Check if GuardDuty is being disabled, where enable is set to False
+        if not rec.get('requestParameters', {}).get('enable', True):
+            return True
+
+    if rec['eventName'] == 'PutBucketPublicAccessBlock':
+        # The call to PutBucketPublicAccessBlock sets the policy for what to
+        # block for a bucket. We need to get the configuration and see if any
+        # of the items are set to False.
+        config = rec.get('requestParameters', {}).get(
+            'PublicAccessBlockConfiguration', {}
+        )
+        if (config.get('RestrictPublicBuckets', False) is False
+                or config.get('BlockPublicPolicy', False) is False
+                or config.get('BlockPublicAcls', False) is False
+                or config.get('IgnorePublicAcls', False) is False
+           ):
+            return True
+
+    # PutAccountPublicAccessBlock does not indicate if the account is
+    # enabling or disabling this feature so to reduce FPs,
+    # for now this is not being detected.
+    # This issue was reported to aws-security@amazon.com by spiper
+    # on 2019.07.09
+
+    return False

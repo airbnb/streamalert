@@ -18,6 +18,7 @@ netaddr
 nose
 nose-timer
 pathlib2
+policyuniverse
 pyfakefs
 pylint
 requests
