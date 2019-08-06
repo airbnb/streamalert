@@ -13,7 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-  # Suppresses RuntimeWarning import error in Lambda
 from collections import defaultdict
 import json
 import posixpath

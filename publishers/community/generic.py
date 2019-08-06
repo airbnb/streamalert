@@ -65,6 +65,7 @@ def _delete_dictionary_fields(publication, regexp):
         next_item = fringe.popleft()
 
         if isinstance(next_item, dict):
+            # work on a copy of the keys to avoid modifying the dict while iterating over it
             for key in list(next_item.keys()):
                 if re.search(regexp, key):
                     next_item.pop(key, None)
