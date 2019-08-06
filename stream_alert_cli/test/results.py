@@ -30,9 +30,6 @@ class TestEventFile(object):
     def __bool__(self):
         return bool(self._results)
 
-    # For forward compatibility to Python3
-    __bool__ = __nonzero__
-
     @property
     def all_passed(self):
         return self.passed == len(self._results)
@@ -115,9 +112,6 @@ class TestResult(object):
 
     def __bool__(self):
         return bool(self._classified_result)
-
-    # For forward compatibility to Python3
-    __bool__ = __nonzero__
 
     def __str__(self):
         fmt = {
