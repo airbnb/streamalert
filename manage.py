@@ -359,7 +359,7 @@ def _setup_custom_metrics_subparser(subparser):
     )
 
     available_metrics = metrics.MetricLogger.get_available_metrics()
-    available_functions = [func for func, value in available_metrics.iteritems() if value]
+    available_functions = [func for func, value in available_metrics.items() if value]
 
     # allow the user to select 1 or more functions to enable metrics for
     subparser.add_argument(
@@ -416,11 +416,11 @@ def _add_default_metric_alarms_args(alarm_parser, clustered=False):
 
     if clustered:
         available_functions = [
-            func for func, value in available_metrics.iteritems()
+            func for func, value in available_metrics.items()
             if func in CLUSTERED_FUNCTIONS and value
         ]
     else:
-        available_functions = [func for func, value in available_metrics.iteritems() if value]
+        available_functions = [func for func, value in available_metrics.items() if value]
 
     all_metrics = [metric for func in available_functions for metric in available_metrics[func]]
 
