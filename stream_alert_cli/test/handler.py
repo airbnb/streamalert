@@ -306,7 +306,7 @@ class TestRunner(object):
 
     def _setup_s3_mock(self, data):
         self._s3_mocker.return_value.Bucket.return_value.download_fileobj = (
-            lambda k, d: d.write(json.dumps(data))
+            lambda k, d: d.write(json.dumps(data).encode())
         )
 
     def _append_error(self, error, path=None, idx=None):
@@ -448,7 +448,7 @@ class TestRunner(object):
             if compress:
                 data = zlib.compress(data)
 
-            kinesis_data = base64.b64encode(data)
+            kinesis_data = base64.b64encode(data.encode())
 
             return {
                 'eventID': '...',
