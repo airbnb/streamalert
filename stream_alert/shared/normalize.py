@@ -70,7 +70,7 @@ class Normalizer(object):
             if not values:
                 continue
 
-            result[key] = sorted(values)
+            result[key] = sorted(values, key=lambda x: str(x))
 
         return result
 
