@@ -68,7 +68,7 @@ class PayloadRecord(object):
         except (TypeError, ValueError):
             record_data = self._record_data
             invalid_records = self.invalid_records
-            LOGGER.warning('A PayloadRecord has records that is not serializable as JSON')
+            LOGGER.debug('A PayloadRecord has data that is not serializable as JSON')
 
         if not self:
             return '<{} valid:{}; raw record:{};>'.format(
@@ -225,7 +225,7 @@ class StreamPayload(object):
             raw_record = json.dumps(self.raw_record)
         except (TypeError, ValueError):
             raw_record = self.raw_record
-            LOGGER.warning('A StreamPayload has a raw record that is not serializable as JSON')
+            LOGGER.debug('A StreamPayload has data that is not serializable as JSON')
 
         return '<{} valid:{}; resource:{}; raw record:{};>'.format(
             self.__class__.__name__,
