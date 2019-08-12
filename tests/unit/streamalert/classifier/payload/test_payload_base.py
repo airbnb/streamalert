@@ -95,7 +95,7 @@ class TestStreamPayload(object):
         """StreamPayload - Repr, Invalid"""
         self._payload.fully_classified = False
         expected_result = (
-            '<StreamPayload valid:False; resource:foobar; raw record:{\'key\': \'value\'};>'
+            '<StreamPayload valid:False; resource:foobar; raw record:{"key": "value"};>'
         )
         assert_equal(repr(self._payload), expected_result)
 
