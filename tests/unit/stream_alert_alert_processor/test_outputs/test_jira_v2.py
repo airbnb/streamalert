@@ -25,9 +25,10 @@ from tests.unit.stream_alert_alert_processor.helpers import get_alert
 class TestJiraOutput(object):
     """Test class for JiraOutput"""
     DESCRIPTOR = 'unit_test_jira_v2'
-    SERVICE = 'jira_v2'
+    SERVICE = 'jira-v2'
     OUTPUT = ':'.join([SERVICE, DESCRIPTOR])
     CREDS = {'api_key': 'xxxxyyyyyyyzzzzzzz',
+             'user_name': 'user@company.com',
              'url': 'jira.foo.bar',
              'project_key': 'foobar',
              'issue_type': 'Task',
