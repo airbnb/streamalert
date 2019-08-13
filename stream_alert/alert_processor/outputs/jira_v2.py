@@ -31,7 +31,6 @@ class JiraOutput(OutputDispatcher):
     __service__ = 'jira-v2'
 
     DEFAULT_HEADERS = {"Accept": "application/json"}
-
     SEARCH_ENDPOINT = '/rest/api/2/search'
     ISSUE_ENDPOINT = '/rest/api/2/issue'
     COMMENT_ENDPOINT = '/rest/api/2/issue/{}/comment'
@@ -108,7 +107,7 @@ class JiraOutput(OutputDispatcher):
 
     def _get_headers(self):
         """Instance method used to pass the default headers plus the api key"""
-        auth_token = "%s:%s" % (self._user_name,  self._api_key)
+        auth_token = "%s:%s" % (self._user_name, self._api_key)
         encoded_credentials = base64.b64encode(auth_token)
         return dict(self._get_default_headers(),
                     **{"Authorization": "Basic %s" % encoded_credentials})
