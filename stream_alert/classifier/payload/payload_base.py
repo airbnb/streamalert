@@ -62,11 +62,19 @@ class PayloadRecord(object):
         )
 
     def __repr__(self):
+        try:
+            record_data = json.dumps(self._record_data)
+            invalid_records = json.dumps(self.invalid_records)
+        except (TypeError, ValueError):
+            record_data = self._record_data
+            invalid_records = self.invalid_records
+            LOGGER.debug('A PayloadRecord has data that is not serializable as JSON')
+
         if not self:
             return '<{} valid:{}; raw record:{};>'.format(
                 self.__class__.__name__,
                 bool(self),
-                self._record_data
+                record_data
             )
 
         if self.invalid_records:
@@ -79,8 +87,8 @@ class PayloadRecord(object):
                 self.log_schema_type,
                 len(self.parsed_records),
                 len(self.invalid_records),
-                self.invalid_records,
-                self._record_data
+                invalid_records,
+                record_data
             )
 
         return '<{} valid:{}; log type:{}; parsed records:{};>'.format(
@@ -213,12 +221,17 @@ class StreamPayload(object):
                 bool(self),
                 self.resource
             )
+        try:
+            raw_record = json.dumps(self.raw_record)
+        except (TypeError, ValueError):
+            raw_record = self.raw_record
+            LOGGER.debug('A StreamPayload has data that is not serializable as JSON')
 
         return '<{} valid:{}; resource:{}; raw record:{};>'.format(
             self.__class__.__name__,
             bool(self),
             self.resource,
-            self.raw_record
+            raw_record
         )
 
     @classmethod
