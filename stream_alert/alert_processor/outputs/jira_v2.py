@@ -13,221 +13,328 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-# pylint: disable=protected-access,attribute-defined-outside-init
-from mock import patch, PropertyMock, Mock, MagicMock
-from nose.tools import assert_equal, assert_false, assert_true
+from collections import OrderedDict
+import json
+import base64
 
-from stream_alert.alert_processor.outputs.jira_v2 import JiraOutput
-from tests.unit.stream_alert_alert_processor.helpers import get_alert
+from stream_alert.alert_processor.helpers import compose_alert
+from stream_alert.alert_processor.outputs.output_base import (
+    OutputDispatcher, OutputProperty, OutputRequestFailure, StreamAlertOutput)
+from stream_alert.shared.logger import get_logger
+
+LOGGER = get_logger(__name__)
 
 
-@patch('stream_alert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS', 1)
-class TestJiraOutput(object):
-    """Test class for JiraOutput"""
-    DESCRIPTOR = 'unit_test_jira_v2'
-    SERVICE = 'jira-v2'
-    OUTPUT = ':'.join([SERVICE, DESCRIPTOR])
-    CREDS = {'api_key': 'xxxxyyyyyyyzzzzzzz',
-             'user_name': 'user@company.com',
-             'url': 'jira.foo.bar',
-             'project_key': 'foobar',
-             'issue_type': 'Task',
-             'aggregate': 'yes'}
+@StreamAlertOutput
+class JiraOutput(OutputDispatcher):
+    """JiraOutput handles all alert dispatching for Jira"""
+    __service__ = 'jira-v2'
 
-    @patch('stream_alert.alert_processor.outputs.output_base.OutputCredentialsProvider')
-    def setup(self, provider_constructor):
-        """Setup before each method"""
-        provider = MagicMock()
-        provider_constructor.return_value = provider
-        provider.load_credentials = Mock(
-            side_effect=lambda x: self.CREDS if x == self.DESCRIPTOR else None
+    DEFAULT_HEADERS = {"Accept": "application/json"}
+
+    SEARCH_ENDPOINT = '/rest/api/2/search'
+    ISSUE_ENDPOINT = '/rest/api/2/issue'
+    COMMENT_ENDPOINT = '/rest/api/2/issue/{}/comment'
+
+    def __init__(self, *args, **kwargs):
+        OutputDispatcher.__init__(self, *args, **kwargs)
+        self._base_url = None
+        self._api_key = None
+        self._user_name = None
+
+    @classmethod
+    def get_user_defined_properties(cls):
+        """Get properties that must be assigned by the user when configuring a new Jira
+        output.  This should be sensitive or unique information for this use-case that needs
+        to come from the user.
+
+        Every output should return a dict that contains a 'descriptor' with a description of the
+        integration being configured.
+
+        Jira requires a api key, URL, project key, and issue type for alert dispatching.
+        These values should be masked during input and are credential requirements.
+
+        An additional parameter 'aggregate' is used to determine if alerts are aggregated into a
+        single Jira issue based on the StreamAlert rule.
+
+        Returns:
+            OrderedDict: Contains various OutputProperty items
+        """
+        return OrderedDict(
+            [('descriptor',
+              OutputProperty(description='a short and unique descriptor for this '
+                             'Jira integration')),
+             ('api_key',
+              OutputProperty(
+                  description='the Jira api key for Jira '
+                  'generated at https://id.atlassian.com/manage/api-tokens',
+                  mask_input=True,
+                  cred_requirement=True)),
+             ('user_name',
+              OutputProperty(
+                  description='Please provide the associated usernamefor the api key'
+                  'example "username@company.com"',
+                  mask_input=False,
+                  cred_requirement=True)),
+             ('url',
+              OutputProperty(
+                  description='Please provide the base URL of your Jira instance'
+                  'example https://company.atlassian.net',
+                  mask_input=False,
+                  input_restrictions={},
+                  cred_requirement=True)),
+             ('project_key',
+              OutputProperty(
+                  description='Please provide Jira project key where issues should be created',
+                  mask_input=False,
+                  cred_requirement=True)),
+             ('issue_type',
+              OutputProperty(
+                  description='the Jira issue type please note this is case sensitive'
+                  'example ("Task" not "task)"',
+                  mask_input=False,
+                  cred_requirement=True)),
+             ('aggregate',
+              OutputProperty(
+                  description='the Jira aggregation behavior to aggregate '
+                  'alerts by rule name (yes/no)',
+                  mask_input=False,
+                  cred_requirement=True))])
+
+    @classmethod
+    def _get_default_headers(cls):
+        """Class method to be used to pass the default headers"""
+        return cls.DEFAULT_HEADERS.copy()
+
+    def _get_headers(self):
+        """Instance method used to pass the default headers plus the api key"""
+        auth_token = "%s:%s" % (self._user_name,  self._api_key)
+        encoded_credentials = base64.b64encode(auth_token)
+        return dict(self._get_default_headers(),
+                    **{"Authorization": "Basic %s" % encoded_credentials})
+
+    def _load_creds(self, descriptor):
+        """Loads a dict of credentials relevant to this output descriptor
+
+        Args:
+            descriptor (str): unique identifier used to look up these credentials
+
+        Returns:
+            dict: the loaded credential info needed for sending alerts to this service
+                or None if nothing gets loaded
+        """
+        return self._credentials_provider.load_credentials(descriptor)
+
+    def _search_jira(self, jql, fields=None, max_results=100, validate_query=True):
+        """Search Jira for issues using a JQL query
+
+        Args:
+            jql (str): The JQL query
+            fields (list): List of fields to return for each issue
+            max_results (int): Maximum number of results to return
+            validate_query (bool): Whether to validate the JQL query or not
+
+        Returns:
+            list: list of issues matching JQL query
+        """
+        search_url = self._base_url + self.SEARCH_ENDPOINT
+        params = {
+            'jql': jql,
+            'maxResults': max_results,
+            'validateQuery': validate_query,
+            'fields': fields
+        }
+        try:
+            resp = self._get_request_retry(search_url,
+                                           params=params,
+                                           headers=self._get_headers(),
+                                           verify=False)
+        except OutputRequestFailure:
+            return []
+
+        response = resp.json()
+        if not response:
+            return []
+
+        return response.get('issues', [])
+
+    def _create_comment(self, issue_id, comment):
+        """Add a comment to an existing issue
+
+        Args:
+            issue_id (str): The existing issue ID or key
+            comment (str): The body of the comment
+
+        Returns:
+            int: ID of the created comment or False if unsuccessful
+        """
+        comment_url = self._base_url + self.COMMENT_ENDPOINT.format(issue_id)
+        try:
+            resp = self._post_request_retry(comment_url,
+                                            data={'body': comment},
+                                            headers=self._get_headers(),
+                                            verify=False)
+
+        except OutputRequestFailure:
+            return False
+
+        response = resp.json()
+        if not response:
+            return False
+
+        return response.get('id', False)
+
+    def _get_comments(self, issue_id):
+        """Get all comments for an existing Jira issue
+
+        Args:
+            issue_id (str): The existing issue ID or key
+
+        Returns:
+            list: List of comments associated with a Jira issue
+        """
+        comment_url = self._base_url + self.COMMENT_ENDPOINT.format(issue_id)
+        try:
+            resp = self._get_request_retry(comment_url,
+                                           headers=self._get_headers(),
+                                           verify=False)
+        except OutputRequestFailure:
+            return []
+
+        response = resp.json()
+        if not response:
+            return []
+
+        return response.get('comments', [])
+
+    def _get_existing_issue(self, issue_summary, project_key):
+        """Find an existing Jira issue based on the issue summary
+
+        Args:
+            issue_summary (str): The Jira issue summary
+            project_key (str): The Jira project to search
+
+        Returns:
+            int: ID of the found issue or False if existing issue does not exist
+        """
+        jql = 'summary ~ "{}" and project="{}"'.format(issue_summary, project_key)
+        resp = self._search_jira(jql, fields=['id', 'summary'], max_results=1)
+        jira_id = False
+
+        try:
+            jira_id = int(resp[0]['id'])
+        except (IndexError, KeyError):
+            LOGGER.debug('Existing Jira issue not found')
+
+        return jira_id
+
+    def _create_issue(self, summary, project_key, issue_type, description):
+        """Create a Jira issue to write alerts to. Alert is written to the "description"
+        field of an issue.
+
+        Args:
+            summary (str): The name of the Jira issue
+            project_key (str): The Jira project key which issues will be associated with
+            issue_type (str): The type of issue being created
+            description (str): The body of text which describes the issue
+
+        Returns:
+            int: ID of the created issue or False if unsuccessful
+        """
+        issue_url = self._base_url + self.ISSUE_ENDPOINT
+        issue_body = {
+            'fields': {
+                'project': {
+                    'key': project_key
+                },
+                'summary': summary,
+                'description': description,
+                'issuetype': {
+                    'name': issue_type
+                }
+            }
+        }
+        try:
+            resp = self._post_request_retry(issue_url,
+                                            data=issue_body,
+                                            headers=self._get_headers(),
+                                            verify=False)
+        except OutputRequestFailure:
+            return False
+
+        response = resp.json()
+        if not response:
+            return False
+
+        return response.get('id', False)
+
+    def _dispatch(self, alert, descriptor):
+        """Send alert to Jira
+
+        Publishing:
+            This output uses a default issue summary and sends the entire publication into the
+            issue body as a {{code}} block. To override:
+
+            - @jira.issue_summary (str):
+                    Overrides the issue title that shows up at the top on the JIRA UI
+
+            - @jira.description (str):
+                    Send your own custom description. Remember: This field is in JIRA's syntax,
+                    so it supports their custom markdown-like formatting and respects newline
+                    characters (e.g. \n).
+
+        Args:
+            alert (Alert): Alert instance which triggered a rule
+            descriptor (str): Output descriptor
+
+        Returns:
+            bool: True if alert was sent successfully, False otherwise
+        """
+        creds = self._load_creds(descriptor)
+        if not creds:
+            return False
+
+        publication = compose_alert(alert, self, descriptor)
+
+        # Presentation defaults
+        default_issue_summary = 'StreamAlert {}'.format(alert.rule_name)
+        default_alert_body = '{{code:JSON}}{}{{code}}'.format(
+            json.dumps(publication, sort_keys=True)
         )
-        self._provider = provider
-        self._dispatcher = JiraOutput(None)
-        self._dispatcher._base_url = self.CREDS['url']
 
-    @patch('logging.Logger.info')
-    @patch('requests.get')
-    @patch('requests.post')
-    def test_dispatch_issue_new(self, post_mock, get_mock, log_mock):
-        """JiraOutput - Dispatch Success, New Issue"""
-        # setup the request to not find an existing issue
-        get_mock.return_value.status_code = 200
-        get_mock.return_value.json.return_value = {'issues': []}
-        post_mock.return_value.status_code = 200
-        post_mock.return_value.json.side_effect = [{'id': 5000}]
+        # True Presentation values
+        issue_summary = publication.get('@jira.issue_summary', default_issue_summary)
+        description = publication.get('@jira.description', default_alert_body)
 
-        assert_true(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
+        issue_id = None
+        comment_id = None
 
-        log_mock.assert_called_with('Successfully sent alert to %s:%s',
-                                    self.SERVICE, self.DESCRIPTOR)
+        self._base_url = creds['url']
+        self._api_key = creds['api_key']
+        self._user_name = creds['user_name']
 
-    @patch('logging.Logger.info')
-    @patch('requests.get')
-    @patch('requests.post')
-    def test_dispatch_issue_existing(self, post_mock, get_mock, log_mock):
-        """JiraOutput - Dispatch Success, Existing Issue"""
-        # setup the request to find an existing issue
-        get_mock.return_value.status_code = 200
-        existing_issues = {'issues': [{'fields': {'summary': 'Bogus'}, 'id': '5000'}]}
-        get_mock.return_value.json.return_value = existing_issues
+        # If aggregation is enabled, attempt to add alert to an existing issue. If a
+        # failure occurs in this block, creation of a new Jira issue will be attempted.
+        if creds.get('aggregate', '').lower() == 'yes':
+            issue_id = self._get_existing_issue(issue_summary, creds['project_key'])
+            if issue_id:
+                comment_id = self._create_comment(issue_id, description)
+                if comment_id:
+                    LOGGER.debug('Sending alert to an existing Jira issue %s with comment %s',
+                                 issue_id,
+                                 comment_id)
+                    return True
+                else:
+                    LOGGER.error('Encountered an error when adding alert to existing '
+                                 'Jira issue %s. Attempting to create new Jira issue.',
+                                 issue_id)
 
-        post_mock.return_value.status_code = 200
+        # Create a new Jira issue
+        issue_id = self._create_issue(issue_summary,
+                                      creds['project_key'],
+                                      creds['issue_type'],
+                                      description)
+        if issue_id:
+            LOGGER.debug('Sending alert to a new Jira issue %s', issue_id)
 
-        assert_true(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
-
-        log_mock.assert_called_with('Successfully sent alert to %s:%s',
-                                    self.SERVICE, self.DESCRIPTOR)
-
-    @patch('logging.Logger.info')
-    @patch('requests.get')
-    @patch('requests.post')
-    def test_dispatch_issue_empty_comment(self, post_mock, get_mock, log_mock):
-        """JiraOutput - Dispatch Success, Empty Comment"""
-        # setup the request to find an existing issue
-        get_mock.return_value.status_code = 200
-        existing_issues = {'issues': [{'fields': {'summary': 'Bogus'}, 'id': '5000'}]}
-        get_mock.return_value.json.return_value = existing_issues
-        type(post_mock.return_value).status_code = PropertyMock(side_effect=[200, 200, 200])
-        post_mock.return_value.json.side_effect = [{}, {'id': 5000}]
-
-        assert_true(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
-
-        log_mock.assert_called_with('Successfully sent alert to %s:%s',
-                                    self.SERVICE, self.DESCRIPTOR)
-
-    @patch('requests.get')
-    def test_get_comments_success(self, get_mock):
-        """JiraOutput - Get Comments, Success"""
-        # setup successful get comments response
-        get_mock.return_value.status_code = 200
-        expected_result = [{}, {}]
-        get_mock.return_value.json.return_value = {'comments': expected_result}
-
-        self._dispatcher._load_creds('jira')
-        assert_equal(self._dispatcher._get_comments('5000'), expected_result)
-
-    @patch('requests.get')
-    def test_get_comments_empty_success(self, get_mock):
-        """JiraOutput - Get Comments, Success Empty"""
-        # setup successful get comments empty response
-        get_mock.return_value.status_code = 200
-        get_mock.return_value.json.return_value = {}
-
-        self._dispatcher._load_creds('jira_v2')
-        assert_equal(self._dispatcher._get_comments('5000'), [])
-
-    @patch('requests.get')
-    def test_get_comments_failure(self, get_mock):
-        """JiraOutput - Get Comments, Failure"""
-        # setup successful get comments response
-        get_mock.return_value.status_code = 400
-
-        self._dispatcher._load_creds('jira')
-        assert_equal(self._dispatcher._get_comments('5000'), [])
-
-    @patch('requests.get')
-    def test_search_failure(self, get_mock):
-        """JiraOutput - Search, Failure"""
-        # setup successful search
-        get_mock.return_value.status_code = 400
-
-        self._dispatcher._load_creds('jira_v2')
-        assert_equal(self._dispatcher._search_jira('foobar'), [])
-
-    @patch('logging.Logger.error')
-    @patch('requests.post')
-    def test_auth_failure(self, post_mock, log_mock):
-        """JiraOutput - Auth, Failure"""
-        # setup unsuccesful auth response
-        post_mock.return_value.status_code = 400
-        post_mock.return_value.content = 'content'
-        post_mock.return_value.json.return_value = dict()
-
-        assert_false(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
-
-        log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, self.DESCRIPTOR)
-
-    @patch('logging.Logger.error')
-    @patch('requests.post')
-    def test_auth_empty_response(self, post_mock, log_mock):
-        """JiraOutput - Auth, Failure Empty Response"""
-        # setup unsuccesful auth response
-        post_mock.return_value.status_code = 200
-        post_mock.return_value.json.return_value = {}
-
-        assert_false(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
-
-        log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, self.DESCRIPTOR)
-
-    @patch('logging.Logger.error')
-    @patch('requests.get')
-    @patch('requests.post')
-    def test_issue_creation_failure(self, post_mock, get_mock, log_mock):
-        """JiraOutput - Issue Creation, Failure"""
-        # setup the successful search response - no results
-        get_mock.return_value.status_code = 200
-        get_mock.return_value.json.return_value = {'issues': []}
-        post_mock.return_value.content = 'some bad content'
-        post_mock.return_value.json.side_effect = [dict()]
-
-        assert_false(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
-
-        log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, self.DESCRIPTOR)
-
-    @patch('logging.Logger.error')
-    @patch('requests.get')
-    @patch('requests.post')
-    def test_issue_creation_empty_search(self, post_mock, get_mock, log_mock):
-        """JiraOutput - Issue Creation, Failure Empty Search"""
-        # setup the successful search response - empty response
-        get_mock.return_value.status_code = 200
-        get_mock.return_value.json.return_value = {}
-        post_mock.return_value.content = 'some bad content'
-        post_mock.return_value.json.side_effect = [dict()]
-
-        assert_false(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
-
-        log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, self.DESCRIPTOR)
-
-    @patch('logging.Logger.error')
-    @patch('requests.get')
-    @patch('requests.post')
-    def test_issue_creation_empty_response(self, post_mock, get_mock, log_mock):
-        """JiraOutput - Issue Creation, Failure Empty Response"""
-        # setup the successful search response - no results
-        get_mock.return_value.status_code = 200
-        get_mock.return_value.json.return_value = {'issues': []}
-        # setup successful auth response and failed issue creation - empty response
-        type(post_mock.return_value).status_code = PropertyMock(side_effect=[200, 200])
-        post_mock.return_value.json.side_effect = [{}]
-
-        assert_false(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
-
-        log_mock.assert_called_with('Failed to send alert to %s:%s', self.SERVICE, self.DESCRIPTOR)
-
-    @patch('logging.Logger.error')
-    @patch('requests.get')
-    @patch('requests.post')
-    def test_comment_creation_failure(self, post_mock, get_mock, log_mock):
-        """JiraOutput - Comment Creation, Failure"""
-        # setup successful search response
-        get_mock.return_value.status_code = 200
-        existing_issues = {'issues': [{'fields': {'summary': 'Bogus'}, 'id': '5000'}]}
-        get_mock.return_value.json.return_value = existing_issues
-        type(post_mock.return_value).status_code = PropertyMock(side_effect=[400, 200])
-        post_mock.return_value.json.side_effect = [{'id': 6000}]
-
-        assert_true(self._dispatcher.dispatch(get_alert(), self.OUTPUT))
-
-        log_mock.assert_called_with('Encountered an error when adding alert to existing Jira '
-                                    'issue %s. Attempting to create new Jira issue.', 5000)
-
-    @patch('logging.Logger.error')
-    def test_dispatch_bad_descriptor(self, log_error_mock):
-        """JiraOutput - Dispatch Failure, Bad Descriptor"""
-        assert_false(
-            self._dispatcher.dispatch(get_alert(), ':'.join([self.SERVICE, 'bad_descriptor'])))
-
-        log_error_mock.assert_called_with('Failed to send alert to %s:%s',
-                                          self.SERVICE, 'bad_descriptor')
+        return bool(issue_id or comment_id)
