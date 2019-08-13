@@ -91,6 +91,10 @@ class ThreatIntel(object):
         # Extract information from the records for IOC detection
         potential_iocs = self._extract_ioc_values(records)
 
+        if not potential_iocs:
+            LOGGER.debug('No IOCs extracted from records for processing')
+            return
+
         # Query DynamoDB IOC type to verify if the extracted info are malicious IOC(s)
         for valid_ioc in self._process_ioc_values(list(potential_iocs)):
             value = valid_ioc['ioc_value']

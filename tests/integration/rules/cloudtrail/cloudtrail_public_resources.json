@@ -1,0 +1,813 @@
+[
+  {
+    "data": {
+      "Records": [
+        {
+          "eventVersion": "1.05",
+          "userIdentity": {
+            "accessKeyId": "...",
+            "accountId": "12345",
+            "arn": "...",
+            "principalId": "12345",
+            "sessionContext": {
+              "attributes": {
+                "creationDate": "...",
+                "mfaAuthenticated": "true"
+              }
+            },
+            "type": "..."
+          },
+          "eventTime": "2019-07-09T21:13:33Z",
+          "eventSource": "s3.amazonaws.com",
+          "eventName": "PutBucketPolicy",
+          "awsRegion": "us-east-1",
+          "sourceIPAddress": "...",
+          "userAgent": "...",
+          "requestParameters": {
+            "bucketName": "test",
+            "bucketPolicy": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Principal": "*",
+                  "Action": "s3:GetObject",
+                  "Resource": "arn:aws:s3:::test/*"
+                }
+              ],
+              "Id": "Policy1562365274513"
+            },
+            "host": [
+              "s3.amazonaws.com"
+            ],
+            "policy": [
+              ""
+            ]
+          },
+          "responseElements": null,
+          "additionalEventData": {
+            "SignatureVersion": "SigV4",
+            "CipherSuite": "ECDHE-RSA-AES128-SHA",
+            "AuthenticationMethod": "AuthHeader",
+            "vpcEndpointId": "vpce-00000000"
+          },
+          "requestID": "...",
+          "eventID": "...",
+          "eventType": "AwsApiCall",
+          "recipientAccountId": "123456789123",
+          "vpcEndpointId": "vpce-00000000"
+        }
+      ]
+    },
+    "description": "S3 made public",
+    "log": "cloudtrail:events",
+    "service": "s3",
+    "source": "prefix.cluster.sample.bucket",
+    "trigger_rules": [
+      "cloudtrail_public_resources"
+    ]
+  },
+  {
+    "data": {
+      "Records": [
+        {
+          "eventVersion": "1.05",
+          "userIdentity": {
+            "accessKeyId": "...",
+            "accountId": "12345",
+            "arn": "...",
+            "principalId": "12345",
+            "sessionContext": {
+              "attributes": {
+                "creationDate": "...",
+                "mfaAuthenticated": "true"
+              }
+            },
+            "type": "..."
+          },
+          "eventTime": "2019-07-10T01:48:29Z",
+          "eventSource": "es.amazonaws.com",
+          "eventName": "CreateElasticsearchDomain",
+          "awsRegion": "us-east-1",
+          "sourceIPAddress": "...",
+          "userAgent": "...",
+          "requestParameters": {
+            "elasticsearchVersion": "6.7",
+            "elasticsearchClusterConfig": {
+              "zoneAwarenessEnabled": false,
+              "instanceType": "t2.small.elasticsearch",
+              "dedicatedMasterEnabled": false,
+              "instanceCount": 1
+            },
+            "nodeToNodeEncryptionOptions": {},
+            "snapshotOptions": {
+              "automatedSnapshotStartHour": 0
+            },
+            "domainName": "test",
+            "encryptionAtRestOptions": {},
+            "eBSOptions": {
+              "eBSEnabled": true,
+              "volumeSize": 10,
+              "volumeType": "gp2"
+            },
+            "accessPolicies": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":[\"*\"]},\"Action\":[\"es:*\"],\"Resource\":\"arn:aws:es:us-east-1:123456789123:domain/test/*\"}]}",
+            "advancedOptions": {
+              "rest.action.multi.allow_explicit_index": "true"
+            }
+          },
+          "responseElements": {
+            "domainStatus": {
+              "created": true,
+              "serviceSoftwareOptions": {
+                "description": "There is no software update available for this domain.",
+                "currentVersion": "",
+                "newVersion": "",
+                "updateAvailable": false,
+                "automatedUpdateDate": "Dec 31, 1969 4:00:00 PM",
+                "updateStatus": "COMPLETED",
+                "cancellable": false
+              },
+              "elasticsearchClusterConfig": {
+                "zoneAwarenessEnabled": false,
+                "instanceType": "t2.small.elasticsearch",
+                "dedicatedMasterEnabled": false,
+                "instanceCount": 1
+              },
+              "cognitoOptions": {
+                "enabled": false
+              },
+              "encryptionAtRestOptions": {
+                "enabled": false
+              },
+              "advancedOptions": {
+                "rest.action.multi.allow_explicit_index": "true"
+              },
+              "upgradeProcessing": false,
+              "snapshotOptions": {
+                "automatedSnapshotStartHour": 0
+              },
+              "eBSOptions": {
+                "eBSEnabled": true,
+                "volumeSize": 10,
+                "volumeType": "gp2"
+              },
+              "elasticsearchVersion": "6.7",
+              "nodeToNodeEncryptionOptions": {
+                "enabled": false
+              },
+              "processing": true,
+              "aRN": "arn:aws:es:us-east-1:123456789123:domain/test",
+              "domainId": "123456789123/test",
+              "deleted": false,
+              "domainName": "test",
+              "accessPolicies": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"*\"},\"Action\":\"es:*\",\"Resource\":\"arn:aws:es:us-east-1:123456789123:domain/test/*\"}]}"
+            }
+          },
+          "requestID": "...",
+          "eventID": "...",
+          "eventType": "AwsApiCall",
+          "recipientAccountId": "123456789123"
+        }
+      ]
+    },
+    "description": "ElasticSearch cluster made public",
+    "log": "cloudtrail:events",
+    "service": "s3",
+    "source": "prefix.cluster.sample.bucket",
+    "trigger_rules": [
+      "cloudtrail_public_resources"
+    ]
+  },
+  {
+    "data": {
+      "Records": [
+        {
+          "eventVersion": "1.05",
+          "userIdentity": {
+            "accessKeyId": "...",
+            "accountId": "12345",
+            "arn": "...",
+            "principalId": "12345",
+            "sessionContext": {
+              "attributes": {
+                "creationDate": "...",
+                "mfaAuthenticated": "true"
+              }
+            },
+            "type": "..."
+          },
+          "eventTime": "2019-07-10T15:51:27Z",
+          "eventSource": "es.amazonaws.com",
+          "eventName": "UpdateElasticsearchDomainConfig",
+          "awsRegion": "us-east-1",
+          "sourceIPAddress": "...",
+          "userAgent": "...",
+          "requestParameters": {
+            "domainName": "test",
+            "accessPolicies": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":[\"*\"]},\"Action\":[\"es:*\"],\"Resource\":\"arn:aws:es:us-east-1:123456789123:domain/test/*\"}]}"
+          },
+          "responseElements": {
+            "domainConfig": {
+              "eBSOptions": {
+                "status": {
+                  "creationDate": "Jul 10, 2019 8:22:00 AM",
+                  "pendingDeletion": false,
+                  "updateDate": "Jul 10, 2019 8:37:36 AM",
+                  "updateVersion": 6,
+                  "state": "Active"
+                },
+                "options": {
+                  "eBSEnabled": true,
+                  "volumeSize": 10,
+                  "volumeType": "gp2"
+                }
+              },
+              "snapshotOptions": {
+                "options": {
+                  "automatedSnapshotStartHour": 0
+                },
+                "status": {
+                  "creationDate": "Jul 10, 2019 8:22:00 AM",
+                  "pendingDeletion": false,
+                  "updateDate": "Jul 10, 2019 8:37:36 AM",
+                  "updateVersion": 6,
+                  "state": "Active"
+                }
+              },
+              "nodeToNodeEncryptionOptions": {
+                "status": {
+                  "creationDate": "Jul 10, 2019 8:22:00 AM",
+                  "pendingDeletion": false,
+                  "updateDate": "Jul 10, 2019 8:37:36 AM",
+                  "updateVersion": 6,
+                  "state": "Active"
+                },
+                "options": {
+                  "enabled": false
+                }
+              },
+              "vPCOptions": {
+                "status": {
+                  "creationDate": "Jul 10, 2019 8:51:27 AM",
+                  "pendingDeletion": false,
+                  "updateDate": "Jul 10, 2019 8:51:27 AM",
+                  "updateVersion": 10,
+                  "state": "Active"
+                },
+                "options": {}
+              },
+              "cognitoOptions": {
+                "options": {
+                  "enabled": false
+                },
+                "status": {
+                  "creationDate": "Jul 10, 2019 8:51:27 AM",
+                  "pendingDeletion": false,
+                  "updateDate": "Jul 10, 2019 8:51:27 AM",
+                  "updateVersion": 10,
+                  "state": "Active"
+                }
+              },
+              "logPublishingOptions": {
+                "status": {
+                  "creationDate": "Jul 10, 2019 8:51:27 AM",
+                  "pendingDeletion": false,
+                  "updateDate": "Jul 10, 2019 8:51:27 AM",
+                  "updateVersion": 10,
+                  "state": "Active"
+                },
+                "options": {}
+              },
+              "elasticsearchClusterConfig": {
+                "options": {
+                  "zoneAwarenessEnabled": false,
+                  "instanceType": "t2.small.elasticsearch",
+                  "dedicatedMasterEnabled": false,
+                  "instanceCount": 1
+                },
+                "status": {
+                  "creationDate": "Jul 10, 2019 8:22:00 AM",
+                  "pendingDeletion": false,
+                  "updateDate": "Jul 10, 2019 8:37:36 AM",
+                  "updateVersion": 6,
+                  "state": "Active"
+                }
+              },
+              "elasticsearchVersion": {
+                "options": "6.7",
+                "status": {
+                  "creationDate": "Jul 10, 2019 8:22:00 AM",
+                  "pendingDeletion": false,
+                  "updateDate": "Jul 10, 2019 8:37:36 AM",
+                  "updateVersion": 6,
+                  "state": "Active"
+                }
+              },
+              "encryptionAtRestOptions": {
+                "status": {
+                  "creationDate": "Jul 10, 2019 8:22:00 AM",
+                  "pendingDeletion": false,
+                  "updateDate": "Jul 10, 2019 8:37:36 AM",
+                  "updateVersion": 6,
+                  "state": "Active"
+                },
+                "options": {
+                  "enabled": false
+                }
+              },
+              "accessPolicies": {
+                "status": {
+                  "creationDate": "Jul 10, 2019 8:22:00 AM",
+                  "pendingDeletion": false,
+                  "updateDate": "Jul 10, 2019 8:51:27 AM",
+                  "updateVersion": 10,
+                  "state": "Processing"
+                },
+                "options": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"*\"},\"Action\":\"es:*\",\"Resource\":\"arn:aws:es:us-east-1:123456789123:domain/test/*\"}]}"
+              },
+              "advancedOptions": {
+                "status": {
+                  "creationDate": "Jul 10, 2019 8:22:00 AM",
+                  "pendingDeletion": false,
+                  "updateDate": "Jul 10, 2019 8:37:36 AM",
+                  "updateVersion": 6,
+                  "state": "Active"
+                },
+                "options": {
+                  "rest.action.multi.allow_explicit_index": "true"
+                }
+              }
+            }
+          },
+          "requestID": "...",
+          "eventID": "...",
+          "eventType": "AwsApiCall",
+          "recipientAccountId": "123456789123"
+        }
+      ]
+    },
+    "description": "ElasticSearch cluster made public",
+    "log": "cloudtrail:events",
+    "service": "s3",
+    "source": "prefix.cluster.sample.bucket",
+    "trigger_rules": [
+      "cloudtrail_public_resources"
+    ]
+  },
+  {
+    "data": {
+      "Records": [
+        {
+          "eventVersion": "1.05",
+          "userIdentity": {
+            "accessKeyId": "...",
+            "accountId": "12345",
+            "arn": "...",
+            "principalId": "12345",
+            "sessionContext": {
+              "attributes": {
+                "creationDate": "...",
+                "mfaAuthenticated": "true"
+              }
+            },
+            "type": "..."
+          },
+          "eventTime": "2019-07-10T01:49:24Z",
+          "eventSource": "glacier.amazonaws.com",
+          "eventName": "SetVaultAccessPolicy",
+          "awsRegion": "us-east-1",
+          "sourceIPAddress": "...",
+          "userAgent": "...",
+          "requestParameters": {
+            "accountId": "-",
+            "vaultName": "test",
+            "policy": {
+              "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"*\"},\"Action\":\"glacier:InitiateJob\",\"Resource\":\"arn:aws:glacier:us-east-1:123456789123:vaults/test\"}]}"
+            }
+          },
+          "responseElements": null,
+          "requestID": "...",
+          "eventID": "...",
+          "eventType": "AwsApiCall",
+          "recipientAccountId": "123456789123"
+        }
+      ]
+    },
+    "description": "Glacier vault made public",
+    "log": "cloudtrail:events",
+    "service": "s3",
+    "source": "prefix.cluster.sample.bucket",
+    "trigger_rules": [
+      "cloudtrail_public_resources"
+    ]
+  },
+  {
+    "data": {
+      "Records": [
+        {
+          "eventVersion": "1.05",
+          "userIdentity": {
+            "accessKeyId": "...",
+            "accountId": "12345",
+            "arn": "...",
+            "principalId": "12345",
+            "sessionContext": {
+              "attributes": {
+                "creationDate": "...",
+                "mfaAuthenticated": "true"
+              }
+            },
+            "type": "..."
+          },
+          "eventTime": "2019-07-10T01:45:07Z",
+          "eventSource": "sqs.amazonaws.com",
+          "eventName": "SetQueueAttributes",
+          "awsRegion": "us-east-1",
+          "sourceIPAddress": "...",
+          "userAgent": "...",
+          "requestParameters": {
+            "attributes": {
+              "Policy": "{\"Version\":\"2012-10-17\", \"Id\":\"arn:aws:sqs:us-east-1:123456789123:tmp/SQSDefaultPolicy\", \"Statement\":[{\"Effect\":\"Allow\", \"Principal\":\"*\", \"Action\":\"SQS:SendMessage\", \"Resource\":\"arn:aws:sqs:us-east-1:123456789123:tmp\", \"Sid\":\"Sid1562723107715\"}]}"
+            },
+            "queueUrl": "https://sqs.us-east-1.amazonaws.com/123456789123/tmp"
+          },
+          "responseElements": null,
+          "requestID": "...",
+          "eventID": "...",
+          "eventType": "AwsApiCall",
+          "recipientAccountId": "123456789123"
+        }
+      ]
+    },
+    "description": "SQS made public",
+    "log": "cloudtrail:events",
+    "service": "s3",
+    "source": "prefix.cluster.sample.bucket",
+    "trigger_rules": [
+      "cloudtrail_public_resources"
+    ]
+  },
+  {
+    "data": {
+      "Records": [
+        {
+          "eventVersion": "1.05",
+          "userIdentity": {
+            "accessKeyId": "...",
+            "accountId": "12345",
+            "arn": "...",
+            "principalId": "12345",
+            "sessionContext": {
+              "attributes": {
+                "creationDate": "...",
+                "mfaAuthenticated": "true"
+              }
+            },
+            "type": "..."
+          },
+          "eventTime": "2019-07-10T01:47:00Z",
+          "eventSource": "sns.amazonaws.com",
+          "eventName": "SetTopicAttributes",
+          "awsRegion": "us-east-1",
+          "sourceIPAddress": "...",
+          "userAgent": "...",
+          "requestParameters": {
+            "attributeName": "Policy",
+            "topicArn": "arn:aws:sns:us-east-1:123456789123:test",
+            "attributeValue": "{\n  \"Version\": \"2008-10-17\",\n  \"Id\": \"__default_policy_ID\",\n  \"Statement\": [\n    {\n      \"Sid\": \"__default_statement_ID\",\n      \"Effect\": \"Allow\",\n      \"Principal\": {\n        \"AWS\": \"*\"\n      },\n      \"Action\": [\n        \"SNS:Publish\",\n        \"SNS:RemovePermission\",\n        \"SNS:SetTopicAttributes\",\n        \"SNS:DeleteTopic\",\n        \"SNS:ListSubscriptionsByTopic\",\n        \"SNS:GetTopicAttributes\",\n        \"SNS:Receive\",\n        \"SNS:AddPermission\",\n        \"SNS:Subscribe\"\n      ],\n      \"Resource\": \"arn:aws:sns:us-east-1:123456789123:test\",\n      \"Condition\": {\n        \"StringEquals\": {\n          \"AWS:SourceOwner\": \"123456789123\"\n        }\n      }\n    }\n  ]\n}"
+          },
+          "responseElements": null,
+          "requestID": "a873a3c8-061a-564c-893a-f65743ce7c88",
+          "eventID": "f7a98acd-245d-4850-92db-e249dd98ed63",
+          "eventType": "AwsApiCall",
+          "recipientAccountId": "123456789123"
+        }
+      ]
+    },
+    "description": "SNS policy changed, but private - Do not alert",
+    "log": "cloudtrail:events",
+    "service": "s3",
+    "source": "prefix.cluster.sample.bucket",
+    "trigger_rules": []
+  },
+  {
+    "data": {
+      "Records": [
+        {
+          "eventVersion": "1.05",
+          "userIdentity": {
+            "accessKeyId": "...",
+            "accountId": "12345",
+            "arn": "...",
+            "principalId": "12345",
+            "sessionContext": {
+              "attributes": {
+                "creationDate": "...",
+                "mfaAuthenticated": "true"
+              }
+            },
+            "type": "..."
+          },
+          "eventTime": "2019-07-10T01:47:00Z",
+          "eventSource": "sns.amazonaws.com",
+          "eventName": "SetTopicAttributes",
+          "awsRegion": "us-east-1",
+          "sourceIPAddress": "...",
+          "userAgent": "...",
+          "requestParameters": {
+            "attributeName": "Policy",
+            "topicArn": "arn:aws:sns:us-east-1:123456789123:test",
+            "attributeValue": "{\"Version\":\"2008-10-17\",\"Id\":\"__default_policy_ID\",\"Statement\":[{\"Sid\":\"__default_statement_ID\",\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"*\"},\"Action\":[\"SNS:Publish\",\"SNS:RemovePermission\",\"SNS:SetTopicAttributes\",\"SNS:DeleteTopic\",\"SNS:ListSubscriptionsByTopic\",\"SNS:GetTopicAttributes\",\"SNS:Receive\",\"SNS:AddPermission\",\"SNS:Subscribe\"],\"Resource\":\"arn:aws:sns:us-east-1:123456789123:test\",\"Condition\":{\"StringEquals\":{\"AWS:SourceOwner\":\"123456789123\"}}},{\"Sid\":\"__console_pub_0\",\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"*\"},\"Action\":\"SNS:Publish\",\"Resource\":\"arn:aws:sns:us-east-1:123456789123:test\"},{\"Sid\":\"__console_sub_0\",\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"*\"},\"Action\":[\"SNS:Subscribe\",\"SNS:Receive\"],\"Resource\":\"arn:aws:sns:us-east-1:123456789123:test\"}]}"
+          },
+          "responseElements": null,
+          "requestID": "...",
+          "eventID": "...",
+          "eventType": "AwsApiCall",
+          "recipientAccountId": "123456789123"
+        }
+      ]
+    },
+    "description": "SNS policy changed, made public",
+    "log": "cloudtrail:events",
+    "service": "s3",
+    "source": "prefix.cluster.sample.bucket",
+    "trigger_rules": [
+      "cloudtrail_public_resources"
+    ]
+  },
+  {
+    "data": {
+      "Records": [
+        {
+          "eventVersion": "1.05",
+          "userIdentity": {
+            "accessKeyId": "...",
+            "accountId": "12345",
+            "arn": "...",
+            "principalId": "12345",
+            "sessionContext": {
+              "attributes": {
+                "creationDate": "...",
+                "mfaAuthenticated": "true"
+              }
+            },
+            "type": "..."
+          },
+          "eventTime": "2019-07-10T01:45:41Z",
+          "eventSource": "sns.amazonaws.com",
+          "eventName": "CreateTopic",
+          "awsRegion": "us-east-1",
+          "sourceIPAddress": "...",
+          "userAgent": "...",
+          "requestParameters": {
+            "name": "test",
+            "attributes": {
+              "Policy": "{\"Version\":\"2008-10-17\",\"Id\":\"__default_policy_ID\",\"Statement\":[{\"Sid\":\"__default_statement_ID\",\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"*\"},\"Action\":[\"SNS:Publish\",\"SNS:RemovePermission\",\"SNS:SetTopicAttributes\",\"SNS:DeleteTopic\",\"SNS:ListSubscriptionsByTopic\",\"SNS:GetTopicAttributes\",\"SNS:Receive\",\"SNS:AddPermission\",\"SNS:Subscribe\"],\"Resource\":\"arn:aws:sns:us-east-1:123456789123:test\",\"Condition\":{\"StringEquals\":{\"AWS:SourceOwner\":\"123456789123\"}}},{\"Sid\":\"__console_pub_0\",\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"*\"},\"Action\":\"SNS:Publish\",\"Resource\":\"arn:aws:sns:us-east-1:123456789123:test\"},{\"Sid\":\"__console_sub_0\",\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"*\"},\"Action\":[\"SNS:Subscribe\",\"SNS:Receive\"],\"Resource\":\"arn:aws:sns:us-east-1:123456789123:test\"}]}"
+            },
+            "tags": []
+          },
+          "responseElements": {
+            "topicArn": "arn:aws:sns:us-east-1:123456789123:test"
+          },
+          "requestID": "...",
+          "eventID": "...",
+          "eventType": "AwsApiCall",
+          "recipientAccountId": "123456789123"
+        }
+      ]
+    },
+    "description": "SNS created as public",
+    "log": "cloudtrail:events",
+    "service": "s3",
+    "source": "prefix.cluster.sample.bucket",
+    "trigger_rules": [
+      "cloudtrail_public_resources"
+    ]
+  },
+  {
+    "data": {
+      "Records": [
+        {
+          "eventVersion": "1.05",
+          "userIdentity": {
+            "accessKeyId": "...",
+            "accountId": "12345",
+            "arn": "...",
+            "principalId": "12345",
+            "sessionContext": {
+              "attributes": {
+                "creationDate": "...",
+                "mfaAuthenticated": "true"
+              }
+            },
+            "type": "..."
+          },
+          "eventTime": "2019-07-10T15:38:02Z",
+          "eventSource": "ecr.amazonaws.com",
+          "eventName": "SetRepositoryPolicy",
+          "awsRegion": "us-east-1",
+          "sourceIPAddress": "...",
+          "userAgent": "...",
+          "requestParameters": {
+            "repositoryName": "test",
+            "policyText": "{\"Version\":\"2008-10-17\",\"Statement\":[{\"Sid\":\"new statement\",\"Action\":[\"ecr:DescribeImages\"],\"Effect\":\"Allow\",\"Principal\":\"*\"}]}",
+            "force": false
+          },
+          "responseElements": {
+            "policyText": "{\n  \"Version\" : \"2008-10-17\",\n  \"Statement\" : [ {\n    \"Sid\" : \"new statement\",\n    \"Effect\" : \"Allow\",\n    \"Principal\" : \"*\",\n    \"Action\" : \"ecr:DescribeImages\"\n  } ]\n}",
+            "repositoryName": "test",
+            "registryId": "123456789123"
+          },
+          "requestID": "...",
+          "eventID": "...",
+          "resources": [
+            {
+              "accountId": "123456789123",
+              "ARN": "arn:aws:ecr:us-east-1:123456789123:repository/test"
+            }
+          ],
+          "eventType": "AwsApiCall",
+          "recipientAccountId": "123456789123"
+        }
+      ]
+    },
+    "description": "ECR made public",
+    "log": "cloudtrail:events",
+    "service": "s3",
+    "source": "prefix.cluster.sample.bucket",
+    "trigger_rules": [
+      "cloudtrail_public_resources"
+    ]
+  },
+  {
+    "data": {
+      "Records": [
+        {
+          "eventVersion": "1.05",
+          "userIdentity": {
+            "accessKeyId": "...",
+            "accountId": "12345",
+            "arn": "...",
+            "principalId": "12345",
+            "sessionContext": {
+              "attributes": {
+                "creationDate": "...",
+                "mfaAuthenticated": "true"
+              }
+            },
+            "type": "..."
+          },
+          "eventTime": "2019-07-10T15:30:56Z",
+          "eventSource": "kms.amazonaws.com",
+          "eventName": "PutKeyPolicy",
+          "awsRegion": "us-east-1",
+          "sourceIPAddress": "...",
+          "userAgent": "...",
+          "requestParameters": {
+            "keyId": "0000000-0000-0000-0000-0000000000000",
+            "policyName": "default",
+            "policy": "{\n    \"Id\": \"key-consolepolicy-3\",\n    \"Version\": \"2012-10-17\",\n    \"Statement\": [\n        {\n            \"Sid\": \"Enable IAM User Permissions\",\n            \"Effect\": \"Allow\",\n            \"Principal\": {\n                \"AWS\": \"arn:aws:iam::123456789123:root\"\n            },\n            \"Action\": \"kms:*\",\n            \"Resource\": \"*\"\n        },\n        {\n            \"Sid\": \"Allow access for Key Administrators\",\n            \"Effect\": \"Allow\",\n            \"Principal\": {\n                \"AWS\": \"arn:aws:iam::123456789123:user/bob\"\n            },\n            \"Action\": [\n                \"kms:Create*\",\n                \"kms:Describe*\",\n                \"kms:Enable*\",\n                \"kms:List*\",\n                \"kms:Put*\",\n                \"kms:Update*\",\n                \"kms:Revoke*\",\n                \"kms:Disable*\",\n                \"kms:Get*\",\n                \"kms:Delete*\",\n                \"kms:TagResource\",\n                \"kms:UntagResource\",\n                \"kms:ScheduleKeyDeletion\",\n                \"kms:CancelKeyDeletion\"\n            ],\n            \"Resource\": \"*\"\n        },\n        {\n            \"Sid\": \"Allow use of the key\",\n            \"Effect\": \"Allow\",\n            \"Principal\": {\n                \"AWS\": \"*\"\n            },\n            \"Action\": [\n                \"kms:Encrypt\",\n                \"kms:Decrypt\",\n                \"kms:ReEncrypt*\",\n                \"kms:GenerateDataKey*\",\n                \"kms:DescribeKey\"\n            ],\n            \"Resource\": \"*\"\n        },\n        {\n            \"Sid\": \"Allow attachment of persistent resources\",\n            \"Effect\": \"Allow\",\n            \"Principal\": {\n                \"AWS\": \"arn:aws:iam::123456789123:user/bob\"\n            },\n            \"Action\": [\n                \"kms:CreateGrant\",\n                \"kms:ListGrants\",\n                \"kms:RevokeGrant\"\n            ],\n            \"Resource\": \"*\",\n            \"Condition\": {\n                \"Bool\": {\n                    \"kms:GrantIsForAWSResource\": \"true\"\n                }\n            }\n        }\n    ]\n}",
+            "bypassPolicyLockoutSafetyCheck": false
+          },
+          "responseElements": null,
+          "requestID": "...",
+          "eventID": "...",
+          "readOnly": false,
+          "resources": [
+            {
+              "ARN": "arn:aws:kms:us-east-1:123456789123:key/0000000-0000-0000-0000-0000000000000",
+              "accountId": "123456789123",
+              "type": "AWS::KMS::Key"
+            }
+          ],
+          "eventType": "AwsApiCall",
+          "recipientAccountId": "123456789123"
+        }
+      ]
+    },
+    "description": "KMS made public",
+    "log": "cloudtrail:events",
+    "service": "s3",
+    "source": "prefix.cluster.sample.bucket",
+    "trigger_rules": [
+      "cloudtrail_public_resources"
+    ]
+  },
+  {
+    "data": {
+      "Records": [
+        {
+          "eventVersion": "1.05",
+          "userIdentity": {
+            "accessKeyId": "...",
+            "accountId": "12345",
+            "arn": "...",
+            "principalId": "12345",
+            "sessionContext": {
+              "attributes": {
+                "creationDate": "...",
+                "mfaAuthenticated": "true"
+              }
+            },
+            "type": "..."
+          },
+          "eventTime": "2019-07-10T15:29:54Z",
+          "eventSource": "kms.amazonaws.com",
+          "eventName": "CreateKey",
+          "awsRegion": "us-east-1",
+          "sourceIPAddress": "...",
+          "userAgent": "...",
+          "requestParameters": {
+            "policy": "{\n    \"Id\": \"key-consolepolicy-3\",\n    \"Version\": \"2012-10-17\",\n    \"Statement\": [\n        {\n            \"Sid\": \"Enable IAM User Permissions\",\n            \"Effect\": \"Allow\",\n            \"Principal\": {\n                \"AWS\": \"arn:aws:iam::123456789123:root\"\n            },\n            \"Action\": \"kms:*\",\n            \"Resource\": \"*\"\n        },\n        {\n            \"Sid\": \"Allow access for Key Administrators\",\n            \"Effect\": \"Allow\",\n            \"Principal\": {\n                \"AWS\": \"arn:aws:iam::123456789123:user/bob\"\n            },\n            \"Action\": [\n                \"kms:Create*\",\n                \"kms:Describe*\",\n                \"kms:Enable*\",\n                \"kms:List*\",\n                \"kms:Put*\",\n                \"kms:Update*\",\n                \"kms:Revoke*\",\n                \"kms:Disable*\",\n                \"kms:Get*\",\n                \"kms:Delete*\",\n                \"kms:TagResource\",\n                \"kms:UntagResource\",\n                \"kms:ScheduleKeyDeletion\",\n                \"kms:CancelKeyDeletion\"\n            ],\n            \"Resource\": \"*\"\n        },\n        {\n            \"Sid\": \"Allow use of the key\",\n            \"Effect\": \"Allow\",\n            \"Principal\": {\n                \"AWS\": \"*\"\n            },\n            \"Action\": [\n                \"kms:Encrypt\",\n                \"kms:Decrypt\",\n                \"kms:ReEncrypt*\",\n                \"kms:GenerateDataKey*\",\n                \"kms:DescribeKey\"\n            ],\n            \"Resource\": \"*\"\n        },\n        {\n            \"Sid\": \"Allow attachment of persistent resources\",\n            \"Effect\": \"Allow\",\n            \"Principal\": {\n                \"AWS\": \"arn:aws:iam::123456789123:user/bob\"\n            },\n            \"Action\": [\n                \"kms:CreateGrant\",\n                \"kms:ListGrants\",\n                \"kms:RevokeGrant\"\n            ],\n            \"Resource\": \"*\",\n            \"Condition\": {\n                \"Bool\": {\n                    \"kms:GrantIsForAWSResource\": \"true\"\n                }\n            }\n        }\n    ]\n}",
+            "description": "",
+            "keyUsage": "ENCRYPT_DECRYPT",
+            "origin": "AWS_KMS",
+            "bypassPolicyLockoutSafetyCheck": false,
+            "tags": []
+          },
+          "responseElements": {
+            "keyMetadata": {
+              "aWSAccountId": "123456789123",
+              "keyId": "0000000-0000-0000-0000-0000000000000",
+              "arn": "arn:aws:kms:us-east-1:123456789123:key/0000000-0000-0000-0000-0000000000000",
+              "creationDate": "Jul 10, 2019 3:29:54 PM",
+              "enabled": true,
+              "description": "",
+              "keyUsage": "ENCRYPT_DECRYPT",
+              "keyState": "Enabled",
+              "origin": "AWS_KMS",
+              "keyManager": "CUSTOMER",
+              "keySpec": "SYMMETRIC_DEFAULT"
+            }
+          },
+          "requestID": "...",
+          "eventID": "...",
+          "readOnly": false,
+          "resources": [
+            {
+              "ARN": "arn:aws:kms:us-east-1:123456789123:key/0000000-0000-0000-0000-0000000000000",
+              "accountId": "123456789123",
+              "type": "AWS::KMS::Key"
+            }
+          ],
+          "eventType": "AwsApiCall",
+          "recipientAccountId": "123456789123"
+        }
+      ]
+    },
+    "description": "KMS made public",
+    "log": "cloudtrail:events",
+    "service": "s3",
+    "source": "prefix.cluster.sample.bucket",
+    "trigger_rules": [
+      "cloudtrail_public_resources"
+    ]
+  },
+  {
+    "data": {
+      "Records": [
+        {
+          "eventVersion": "1.05",
+          "userIdentity": {
+            "accessKeyId": "...",
+            "accountId": "12345",
+            "arn": "...",
+            "principalId": "12345",
+            "sessionContext": {
+              "attributes": {
+                "creationDate": "...",
+                "mfaAuthenticated": "true"
+              }
+            },
+            "type": "..."
+          },
+          "eventTime": "2019-07-10T18:00:58Z",
+          "eventSource": "secretsmanager.amazonaws.com",
+          "eventName": "PutResourcePolicy",
+          "awsRegion": "us-east-1",
+          "sourceIPAddress": "...",
+          "userAgent": "...",
+          "requestParameters": {
+            "secretId": "test",
+            "resourcePolicy": "{\"Version\":\"2008-10-17\",\"Statement\":[{\"Action\":[\"secretsmanager:GetSecretValue\"],\"Effect\":\"Allow\",\"Principal\":\"*\",\"Resource\": \"arn:aws:secretsmanager:us-east-1:123456789123:secret:test-zeCISw\"}]}"
+          },
+          "responseElements": {
+            "aRN": "arn:aws:secretsmanager:us-east-1:123456789123:secret:test-zeCISw",
+            "name": "test"
+          },
+          "requestID": "...",
+          "eventID": "...",
+          "eventType": "AwsApiCall",
+          "recipientAccountId": "123456789123"
+        }
+      ]
+    },
+    "description": "Secrets manager secret made public",
+    "log": "cloudtrail:events",
+    "service": "s3",
+    "source": "prefix.cluster.sample.bucket",
+    "trigger_rules": [
+      "cloudtrail_public_resources"
+    ]
+  }
+]

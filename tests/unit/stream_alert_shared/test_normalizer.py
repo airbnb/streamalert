@@ -139,38 +139,45 @@ class TestNormalizer(object):
         Normalizer.normalize(self._test_record(), log_type)
         log_mock.assert_called_with('No normalized types defined for log type: %s', log_type)
 
-    def test_normalize_bad_normalized_key(self):
-        """Normalizer - Normalize, Bad Key(s)"""
-        log_type = 'cloudtrail'
-        bad_types = {
-            'bad_key_01',
-            'bad_key_02'
-        }
-        Normalizer._types_config = {
-            log_type: {
-                'bad_type': bad_types
-            }
-        }
-        expected_record = {
-            'account': 123456,
-            'region': 'region_name',
-            'detail': {
-                'awsRegion': 'region_name',
-                'source': '1.1.1.2',
-                'userIdentity': {
-                    "userName": "Alice",
-                    "invokedBy": "signin.amazonaws.com"
-                }
-            },
-            'sourceIPAddress': '1.1.1.3',
-            'streamalert:normalization': {
-                'bad_type': list(),
-            }
+    def test_key_does_not_exist(self):
+        """Normalizer - Normalize, Key Does Not Exist"""
+        test_record = {
+            'accountId': 123456,
+            'region': 'region_name'
         }
 
-        record = self._test_record()
-        Normalizer.normalize(record, log_type)
-        assert_equal(record, expected_record)
+        normalized_types = {
+            'region': ['region', 'awsRegion'],
+            'sourceAccount': ['account', 'accountId'],
+            # There is no IP value in record, so normalization should not include this
+            'ipv4': ['sourceIPAddress']
+        }
+        expected_results = {
+            'sourceAccount': [123456],
+            'region': ['region_name']
+        }
+
+        results = Normalizer.match_types(test_record, normalized_types)
+        assert_equal(results, expected_results)
+
+    def test_empty_value(self):
+        """Normalizer - Normalize, Empty Value"""
+        test_record = {
+            'account': 123456,
+            'region': ''  # This value is empty so should not be stored
+        }
+
+        normalized_types = {
+            'region': ['region', 'awsRegion'],
+            'sourceAccount': ['account', 'accountId'],
+            'ipv4': ['sourceIPAddress']
+        }
+        expected_results = {
+            'sourceAccount': [123456]
+        }
+
+        results = Normalizer.match_types(test_record, normalized_types)
+        assert_equal(results, expected_results)
 
     def test_get_values_for_normalized_type(self):
         """Normalizer - Get Values for Normalized Type"""

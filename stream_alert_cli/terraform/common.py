@@ -44,3 +44,7 @@ def monitoring_topic_arn(config):
         account_id=config['global']['account']['aws_account_id'],
         topic=topic_name
     )
+
+
+class MisconfigurationError(ValueError):
+    """This error is thrown when StreamAlert is misconfigured."""

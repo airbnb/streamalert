@@ -1,0 +1,278 @@
+[
+  {
+    "data": {
+      "Records": [
+        {
+          "eventVersion": "1.05",
+          "userIdentity": {
+            "accessKeyId": "...",
+            "accountId": "12345",
+            "arn": "...",
+            "principalId": "12345",
+            "sessionContext": {
+              "attributes": {
+                "creationDate": "...",
+                "mfaAuthenticated": "true"
+              }
+            },
+            "type": "..."
+          },
+          "eventTime": "2019-07-09T19:32:47Z",
+          "eventSource": "ec2.amazonaws.com",
+          "eventName": "ModifyImageAttribute",
+          "awsRegion": "us-east-1",
+          "sourceIPAddress": "...",
+          "userAgent": "...",
+          "requestParameters": {
+            "imageId": "ami-00000000000000000",
+            "launchPermission": {
+              "remove": {
+                "items": [
+                  {
+                    "group": "all"
+                  }
+                ]
+              }
+            },
+            "attributeType": "launchPermission"
+          },
+          "responseElements": {
+            "_return": true
+          },
+          "requestID": "...",
+          "eventID": "...",
+          "eventType": "AwsApiCall",
+          "recipientAccountId": "123456789123"
+        }
+      ]
+    },
+    "description": "Removing public permission from AMI - Do not alert",
+    "log": "cloudtrail:events",
+    "service": "s3",
+    "source": "prefix.cluster.sample.bucket",
+    "trigger_rules": []
+  },
+  {
+    "data": {
+      "Records": [
+        {
+          "eventVersion": "1.05",
+          "userIdentity": {
+            "accessKeyId": "...",
+            "accountId": "12345",
+            "arn": "...",
+            "principalId": "12345",
+            "sessionContext": {
+              "attributes": {
+                "creationDate": "...",
+                "mfaAuthenticated": "true"
+              }
+            },
+            "type": "..."
+          },
+          "eventTime": "2019-07-09T19:32:47Z",
+          "eventSource": "ec2.amazonaws.com",
+          "eventName": "ModifyImageAttribute",
+          "awsRegion": "us-east-1",
+          "sourceIPAddress": "...",
+          "userAgent": "...",
+          "requestParameters": {
+            "imageId": "ami-00000000000000000",
+            "launchPermission": {
+              "add": {
+                "items": [
+                  {
+                    "group": "all"
+                  }
+                ]
+              }
+            },
+            "attributeType": "launchPermission"
+          },
+          "responseElements": {
+            "_return": true
+          },
+          "requestID": "...",
+          "eventID": "...",
+          "eventType": "AwsApiCall",
+          "recipientAccountId": "123456789123"
+        }
+      ]
+    },
+    "description": "Adding public permission to AMI",
+    "log": "cloudtrail:events",
+    "service": "s3",
+    "source": "prefix.cluster.sample.bucket",
+    "trigger_rules": [
+      "cloudtrail_snapshot_or_ami_made_public"
+    ]
+  },
+  {
+    "data": {
+      "Records": [
+        {
+          "eventVersion": "1.05",
+          "userIdentity": {
+            "accessKeyId": "...",
+            "accountId": "12345",
+            "arn": "...",
+            "principalId": "12345",
+            "sessionContext": {
+              "attributes": {
+                "creationDate": "...",
+                "mfaAuthenticated": "true"
+              }
+            },
+            "type": "..."
+          },
+          "eventTime": "2019-07-09T19:30:04Z",
+          "eventSource": "ec2.amazonaws.com",
+          "eventName": "ModifySnapshotAttribute",
+          "awsRegion": "us-east-1",
+          "sourceIPAddress": "...",
+          "userAgent": "...",
+          "requestParameters": {
+            "snapshotId": "snap-00000000000000000",
+            "createVolumePermission": {
+              "add": {
+                "items": [
+                  {
+                    "group": "all"
+                  }
+                ]
+              }
+            },
+            "attributeType": "CREATE_VOLUME_PERMISSION"
+          },
+          "responseElements": {
+            "requestId": "...",
+            "_return": true
+          },
+          "requestID": "...",
+          "eventID": "...",
+          "eventType": "AwsApiCall",
+          "recipientAccountId": "123456789123"
+        }
+      ]
+    },
+    "description": "Adding public permission to EBS Snapshot",
+    "log": "cloudtrail:events",
+    "service": "s3",
+    "source": "prefix.cluster.sample.bucket",
+    "trigger_rules": [
+      "cloudtrail_snapshot_or_ami_made_public"
+    ]
+  },
+  {
+    "data": {
+      "Records": [
+        {
+          "eventVersion": "1.05",
+          "userIdentity": {
+            "accessKeyId": "...",
+            "accountId": "12345",
+            "arn": "...",
+            "principalId": "12345",
+            "sessionContext": {
+              "attributes": {
+                "creationDate": "...",
+                "mfaAuthenticated": "true"
+              }
+            },
+            "type": "..."
+          },
+          "eventTime": "2019-07-09T19:54:37Z",
+          "eventSource": "rds.amazonaws.com",
+          "eventName": "ModifyDBClusterSnapshotAttribute",
+          "awsRegion": "us-east-1",
+          "sourceIPAddress": "...",
+          "userAgent": "...",
+          "requestParameters": {
+            "dBClusterSnapshotIdentifier": "mysnapshot",
+            "attributeName": "restore",
+            "valuesToAdd": [
+              "123456789013"
+            ]
+          },
+          "responseElements": {
+            "dBClusterSnapshotIdentifier": "mysnapshot",
+            "dBClusterSnapshotAttributes": [
+              {
+                "attributeName": "restore",
+                "attributeValues": [
+                  "123456789013"
+                ]
+              }
+            ]
+          },
+          "requestID": "...",
+          "eventID": "...",
+          "eventType": "AwsApiCall",
+          "recipientAccountId": "123456789012"
+        }
+      ]
+    },
+    "description": "Adding permission to RDS Snapshot to only a single other account - Do not alert",
+    "log": "cloudtrail:events",
+    "service": "s3",
+    "source": "prefix.cluster.sample.bucket",
+    "trigger_rules": []
+  },
+  {
+    "data": {
+      "Records": [
+        {
+          "eventVersion": "1.05",
+          "userIdentity": {
+            "accessKeyId": "...",
+            "accountId": "12345",
+            "arn": "...",
+            "principalId": "12345",
+            "sessionContext": {
+              "attributes": {
+                "creationDate": "...",
+                "mfaAuthenticated": "true"
+              }
+            },
+            "type": "..."
+          },
+          "eventTime": "2019-07-09T21:04:07Z",
+          "eventSource": "rds.amazonaws.com",
+          "eventName": "ModifyDBClusterSnapshotAttribute",
+          "awsRegion": "us-east-1",
+          "sourceIPAddress": "...",
+          "userAgent": "...",
+          "requestParameters": {
+            "valuesToAdd": [
+              "all"
+            ],
+            "attributeName": "restore",
+            "dBClusterSnapshotIdentifier": "mysnapshot"
+          },
+          "responseElements": {
+            "dBClusterSnapshotAttributes": [
+              {
+                "attributeName": "restore",
+                "attributeValues": [
+                  "all"
+                ]
+              }
+            ],
+            "dBClusterSnapshotIdentifier": "mysnapshot"
+          },
+          "requestID": "...",
+          "eventID": "...",
+          "eventType": "AwsApiCall",
+          "recipientAccountId": "123456789012"
+        }
+      ]
+    },
+    "description": "Adding public permission to RDS Snapshot",
+    "log": "cloudtrail:events",
+    "service": "s3",
+    "source": "prefix.cluster.sample.bucket",
+    "trigger_rules": [
+      "cloudtrail_snapshot_or_ami_made_public"
+    ]
+  }
+]

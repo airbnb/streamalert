@@ -103,7 +103,8 @@
     },
     "sqs_record_batch_size": 10,
     "third_party_libraries": [
-      "pathlib2"
+      "pathlib2",
+      "policyuniverse"
     ],
     "timeout": 60,
     "vpc_config": {
