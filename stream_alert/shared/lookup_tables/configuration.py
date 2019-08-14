@@ -8,7 +8,6 @@ class LookupTablesConfiguration(object):
     """
     An abstraction around lookup tables configuration. LookupTables can be configured in two places.
     """
-    _DEFAULT_CACHE_REFRESH_MINUTES = 10
 
     def __init__(self, config=None):
         self._configuration = {}

@@ -11,7 +11,8 @@
       "driver": "s3",
       "bucket": "bucket_name",
       "key": "bar.json",
-      "cache_refresh_minutes": 10
+      "cache_refresh_minutes": 10,
+      "compression": "gzip"
     }
   }
 }
