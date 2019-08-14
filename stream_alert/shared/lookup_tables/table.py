@@ -1,5 +1,5 @@
 from stream_alert.shared.logger import get_logger
-from stream_alert.shared.lookup_tables.drivers import PersistenceDriver, S3Driver
+from stream_alert.shared.lookup_tables.drivers import PersistenceDriver
 
 LOGGER = get_logger(__name__)
 

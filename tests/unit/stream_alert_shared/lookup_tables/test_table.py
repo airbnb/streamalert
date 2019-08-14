@@ -13,55 +13,43 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-import copy
-from datetime import datetime, timedelta
-import json
+from nose.tools import assert_equal
 
-from nose.tools import (
-    assert_equal,
-    assert_false,
-    assert_is_instance,
-    assert_not_in,
-    assert_raises,
-    assert_true
-)
-
-from stream_alert.shared.lookup_tables.configuration import LookupTablesConfiguration
+from stream_alert.shared.lookup_tables.drivers import construct_persistence_driver
+from stream_alert.shared.lookup_tables.table import LookupTable
 
 
 class TestLookupTable(object):
-    """Test shared LookupTablesConfiguration class."""
+    """Test shared LookupTable class."""
 
     # pylint: disable=no-self-use,protected-access,too-many-public-methods
+    def __init__(self):
+        self._driver = None
+        self._table = None
 
-    @staticmethod
-    def _basic_configuration():
-        return {
-            "lookup_tables": {
-                "enabled": True,
-                "tables": {
-                    "resource_map_prototype": {
-                        "driver": "s3",
-                        "bucket": "airbnb.sample.lookuptable",
-                        "key": "resource_map.gz",
-                        "cache_refresh_minutes": 10,
-                        "compression": "gzip"
-                    },
-                    "resource_map_dynamodb": {
-                        "driver": "dynamodb",
-                        "table": "some_table_name",
-                        "partition_key": "MyPartitionKey",
-                        "value_key": "MyValueKey",
-                        "cache": {
-                            "refresh_minutes": 2,
-                            "maximum_keys": 10
-                        }
-                    }
-                }
-            }
-        }
+    def setup(self):
+        config = {'driver': 'ephemeral'}
+        self._driver = construct_persistence_driver(config)
+        self._driver.set('this', 'that')
+        self._driver.set('those', {'theys': 'thens'})
+        self._table = LookupTable('my-table', self._driver, config)
 
-    def test_configuration_enabled(self):
-        """LookupTable - Basic Configuration - Enabled"""
-        config = LookupTablesConfiguration(self._basic_configuration())
-        assert_true(config.is_enabled)
+    def test_table_nonexistent(self):
+        """LookupTable - Basic Table - Nonexistent Key None Default"""
+        assert_equal(self._table.get('nonexistent_key'), None)
+
+    def test_table_nonexistent_default(self):
+        """LookupTable - Basic Table - Nonexistent Key With Default"""
+        assert_equal(self._table.get('nonexistent_key', '1'), '1')
+
+    def test_table_existent(self):
+        """LookupTable - Basic Table - Existent"""
+        assert_equal(self._table.get('this', '?'), 'that')
+
+    def test_table_driver_id(self):
+        """LookupTable - Basic Table - Driver Id"""
+        assert_equal(self._table.driver_id, 'ephemeral:1')
+
+    def test_table_driver_type(self):
+        """LookupTable - Basic Table - Driver Type"""
+        assert_equal(self._table.driver_type, 'ephemeral')
