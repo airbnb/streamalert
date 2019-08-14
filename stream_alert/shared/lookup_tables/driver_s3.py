@@ -96,8 +96,7 @@ class S3Driver(PersistenceDriver):
         Uses the "cache_refresh_minutes" option to determine whether or not the current LookupTable
         should be re-fetched from S3.
 
-        Return:
-             boolean
+        If it needs a reload, this method will appropriately call reload.
         """
         now = datetime.utcnow()
         refresh_delta = timedelta(minutes=self._cache_refresh_minutes)
@@ -121,6 +120,10 @@ class S3Driver(PersistenceDriver):
         self._reload()
 
     def _reload(self):
+        """
+        Reaches to AWS S3, downloads the relevant data file, decompresses, decodes, and caches
+        the file's contents into memory.
+        """
         # First, download the item from S3
         try:
             start_time = time.time()
