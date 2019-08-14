@@ -28,6 +28,7 @@ class TopLevelConfigKeys(object):
     OUTPUTS = 'outputs'
     SOURCES = 'sources'
     THREAT_INTEL = 'threat_intel'
+    LOOKUP_TABLES = 'lookup_tables'
 
 
 class ConfigError(Exception):
@@ -220,3 +221,5 @@ def _validate_config(config):
                         'IOC key \'{}\' within IOC type \'{}\' must be defined for at least '
                         'one log type in normalized types'.format(normalized_key, ioc_type)
                     )
+
+    # FIXME (derek.wang) write a configuration validator for lookuptables (new one)
