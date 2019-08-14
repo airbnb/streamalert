@@ -16,10 +16,25 @@ class LookupTablesConfiguration(object):
         if config is None:
             config = load_config()
 
-        self.load_canonical_configurations(config)
-        self.load_legacy_configurations(config)
+        self._load_canonical_configurations(config)
+        self._load_legacy_configurations(config)
 
-    def load_canonical_configurations(self, config):
+    @property
+    def is_enabled(self):
+        """Returns true when LookupTables is enabled. False otherwise."""
+        return self._configuration.get('enabled', False)
+
+    @property
+    def table_configurations(self):
+        """Returns a dict keyed by table names, mapped to dict table configurations"""
+        return self._configuration.get('tables', {})
+
+    @property
+    def table_names(self):
+        """Returns a list of all of the table names that are configured"""
+        return self.table_configurations.keys()
+
+    def _load_canonical_configurations(self, config):
         """
         Load the canonical configuration
 
@@ -36,7 +51,7 @@ class LookupTablesConfiguration(object):
 
         self._configuration = lookup_tables_configuration
 
-    def load_legacy_configurations(self, config):
+    def _load_legacy_configurations(self, config):
         """
         Load legacy configuration
 
@@ -74,18 +89,3 @@ class LookupTablesConfiguration(object):
                     )
 
                 self._configuration['tables'][table_name] = table_config
-
-    @property
-    def is_enabled(self):
-        """Returns true when LookupTables is enabled. False otherwise."""
-        return self._configuration.get('enabled', False)
-
-    @property
-    def table_configurations(self):
-        """Returns a dict keyed by table names, mapped to dict table configurations"""
-        return self._configuration.get('tables', {})
-
-    @property
-    def table_names(self):
-        """Returns a list of all of the table names that are configured"""
-        return self.table_configurations.keys()
