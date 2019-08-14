@@ -10,10 +10,12 @@ class LookupTablesConfiguration(object):
     """
     _DEFAULT_CACHE_REFRESH_MINUTES = 10
 
-    def __init__(self):
+    def __init__(self, config=None):
         self._configuration = {}
 
-        config = load_config()
+        if config is None:
+            config = load_config()
+
         self.load_canonical_configurations(config)
         self.load_legacy_configurations(config)
 
@@ -28,7 +30,7 @@ class LookupTablesConfiguration(object):
             tables:  Dict. Keyed by table names, mapping to dict configurations for each table.
 
         """
-        lookup_tables_configuration = config['lookup_tables']
+        lookup_tables_configuration = config.get('lookup_tables', False)
         if not (lookup_tables_configuration and lookup_tables_configuration.get('enabled', False)):
             return
 
@@ -42,7 +44,9 @@ class LookupTablesConfiguration(object):
         global.json. The format of these configurations is outdated, so we merge them into the
         new configuration format.
         """
-        lookup_tables_configuration = config['global']['infrastructure'].get('lookup_tables')
+        lookup_tables_configuration = config.get('global', {})\
+            .get('infrastructure', {})\
+            .get('lookup_tables')
         if not (lookup_tables_configuration and lookup_tables_configuration.get('enabled', False)):
             return
 
