@@ -11,12 +11,19 @@ from botocore.exceptions import ClientError, ConnectTimeoutError, ReadTimeoutErr
 
 import stream_alert.shared.helpers.boto as boto_helpers
 from stream_alert.shared.logger import get_logger
-from stream_alert.shared.lookup_tables.errors import LookupTablesInitializationError
+from stream_alert.shared.lookup_tables.errors import LookupTablesInitializationError, \
+    LookupTablesConfigurationError
 
 LOGGER = get_logger(__name__)
 
 
 class PersistenceDriver(object):
+
+    TYPE_S3 = 's3'
+    TYPE_DYNAMODB = 'dynamodb'
+    TYPE_NULL = 'null'
+    TYPE_EPHEMERAL = 'ephemeral'
+
     __metaclass__ = ABCMeta
 
     def __init__(self, configuration):
@@ -49,6 +56,32 @@ class PersistenceDriver(object):
         """Sets the value of a key"""
 
 
+def construct_persistence_driver(table_configuration):
+    """
+    Constructs a raw, uninitialized PersistenceDriver from the given configuration.
+
+    :args
+        table_configuration (dict)
+
+    :return
+        PersistenceDriver
+    """
+    driver_name = table_configuration.get('driver', False)
+
+    if driver_name == PersistenceDriver.TYPE_S3:
+        return S3Driver(table_configuration)
+    elif driver_name == PersistenceDriver.TYPE_DYNAMODB:
+        return DynamoDBDriver(table_configuration)
+    elif driver_name == PersistenceDriver.TYPE_NULL:
+        return NullDriver(table_configuration)
+    elif driver_name == PersistenceDriver.TYPE_EPHEMERAL:
+        return EphemeralDriver(table_configuration)
+    else:
+        raise LookupTablesConfigurationError(
+            'Unrecognized driver name: {}'.format(driver_name)
+        )
+
+
 class EphemeralDriver(PersistenceDriver):
     """
     Ephemeral persistence driver
@@ -68,7 +101,7 @@ class EphemeralDriver(PersistenceDriver):
 
     @property
     def driver_type(self):
-        return "Ephemeral"
+        return self.TYPE_EPHEMERAL
 
     @property
     def id(self):
@@ -79,6 +112,37 @@ class EphemeralDriver(PersistenceDriver):
 
     def set(self, key, value):
         self._cache[key] = value
+
+
+class NullDriver(PersistenceDriver):
+    """
+    This driver does nothing... goes nowhere. It's simply to prevent our system from crashing
+    if a nonexistent LookupTable is referenced--in this case, we simply return the Null table,
+    backed by this NullDriver.
+    """
+
+    def __init__(self, configuration):
+        super(NullDriver, self).__init__(configuration)
+
+    @property
+    def driver_type(self):
+        return self.TYPE_NULL
+
+    @property
+    def id(self):
+        return 'Null:Driver'
+
+    def initialize(self):
+        pass
+
+    def commit(self):
+        pass
+
+    def get(self, _, default=None):
+        return default
+
+    def set(self, _, __):
+        pass
 
 
 class S3Driver(PersistenceDriver):
@@ -101,7 +165,7 @@ class S3Driver(PersistenceDriver):
 
     @property
     def driver_type(self):
-        return 'AWS_S3'
+        return self.TYPE_S3
 
     @property
     def id(self):
@@ -180,10 +244,20 @@ class S3Driver(PersistenceDriver):
         self._s3_data.set(key, value)
         self._dirty = True
 
+    def legacy_get_s3_internal_dict(self):
+        """
+        This method is hacked in simply to support reverse compatibility kind of cases.
 
-class DynamoDbDriver(PersistenceDriver):
+        (!) DO NOT USE THIS METHOD UNLESS YOU KNOW WHAT YOU ARE DOING.
+        (!) AVOID COPYING OR ALLOCATING SPACE AS THIS VARIABLE IS KNOWN TO BE LARGE AND CAN EAT
+            UP LOTS OF MEMORY
+        """
+        return self._s3_data
+
+
+class DynamoDBDriver(PersistenceDriver):
     def __init__(self, configuration):
-        super(DynamoDbDriver, self).__init__(configuration)
+        super(DynamoDBDriver, self).__init__(configuration)
         self._dynamo_db_table = 'table_name'
 
         # FIXME we should not get this.... from env
@@ -192,7 +266,7 @@ class DynamoDbDriver(PersistenceDriver):
 
     @property
     def driver_type(self):
-        return 'AWS_DynamoDB'
+        return self.TYPE_DYNAMODB
 
     @property
     def id(self):
