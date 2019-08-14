@@ -24,15 +24,21 @@ class LookupTablesCore(object):
     _tables = None  # type: Dict[str, LookupTable]
     _null_table = None  # type: LookupTable
 
-    def __init__(self):
-        self._configuration = LookupTablesConfiguration(config=load_config())
+    def __init__(self, config=None):
+        if config is None:
+            config = load_config()
+
+        self._configuration = LookupTablesConfiguration(config=config)
         self._tables = {}
         self._null_table = LookupTable('null_table', NullDriver(self._configuration), {})
 
-    def load_lookup_tables(self, config):
+    @staticmethod
+    def load_lookup_tables(config):
         """Drop-in replacement method for load_lookup_tables()"""
-        self._configuration = LookupTablesConfiguration(config=config)
-        self.setup_tables()
+        core = LookupTablesCore(config=config)
+        core.setup_tables()
+
+        return core
 
     def setup_tables(self):
         """

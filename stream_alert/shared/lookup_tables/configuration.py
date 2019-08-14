@@ -17,7 +17,6 @@ class LookupTablesConfiguration(object):
             config = load_config()
 
         self._load_canonical_configurations(config)
-        self._load_legacy_configurations(config)
 
     @property
     def is_enabled(self):
@@ -50,42 +49,3 @@ class LookupTablesConfiguration(object):
             return
 
         self._configuration = lookup_tables_configuration
-
-    def _load_legacy_configurations(self, config):
-        """
-        Load legacy configuration
-
-        In order to maintain reverse compatibility, we load old lookup_tables configurations from
-        global.json. The format of these configurations is outdated, so we merge them into the
-        new configuration format.
-        """
-        lookup_tables_configuration = config.get('global', {})\
-            .get('infrastructure', {})\
-            .get('lookup_tables')
-        if not (lookup_tables_configuration and lookup_tables_configuration.get('enabled', False)):
-            return
-
-        self._configuration['enabled'] = True
-        self._configuration['tables'] = self._configuration['tables'] or {}
-
-        for s3_bucket, json_files in lookup_tables_configuration.get('buckets', {}).iteritems():
-            for json_file in json_files:
-                table_name = os.path.splitext(json_file)[0]
-                table_config = {
-                    "driver": "s3",
-                    "bucket": s3_bucket,
-                    "key": json_file,
-                    "cache_refresh_minutes": lookup_tables_configuration.get(
-                        'cache_refresh_minutes',
-                        self._DEFAULT_CACHE_REFRESH_MINUTES
-                    ),
-                    "compression": "gzip"
-                }
-
-                if table_name in self._configuration['tables']:
-                    raise LookupTablesConfigurationError(
-                        'LookupTables Configuration Error: The \'%s\' table has redundant '
-                        'configurations'
-                    )
-
-                self._configuration['tables'][table_name] = table_config
