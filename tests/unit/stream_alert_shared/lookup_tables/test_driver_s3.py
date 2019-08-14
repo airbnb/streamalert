@@ -50,24 +50,13 @@ class TestS3Driver(object):
             self.config['lookup_tables']['tables']['bar']
         )
 
+        self._put_mock_tables()
+
     def _put_mock_tables(self):
         put_mock_s3_object('bucket_name', 'foo.json', json.dumps({
             'key_1': 'foo_1',
             'key_2': 'foo_2',
         }))
-        put_mock_s3_object('bucket_name', 'bar.json', json.dumps({
-            'key_1': 'bar_1',
-            'key_2': 'bar_2',
-        }))
-
-    def _put_mock_compressed_data(self):
-        put_mock_s3_object(
-            'bucket_name', 'foo.json',
-            zlib.compress(json.dumps({
-                'key_1': 'compressed_foo_1',
-                'key_2': 'compressed_foo_2',
-            }))
-        )
         put_mock_s3_object(
             'bucket_name', 'bar.json',
             zlib.compress(json.dumps({
@@ -81,23 +70,13 @@ class TestS3Driver(object):
 
     def test_get(self):
         """LookupTables - Drivers - S3 Driver - Get Key"""
-        self._put_mock_tables()
-
         self._foo_driver.initialize()
-        self._bar_driver.initialize()
-
         assert_equal(self._foo_driver.get('key_1'), 'foo_1')
-        assert_equal(self._bar_driver.get('key_1'), 'bar_1')
 
-    @patch('logging.Logger.info')
+    @patch('logging.Logger.debug')
     def test_get_decompressed(self, mock_logger):
         """LookupTables - Drivers - S3 Driver - Compressed Data - Get Key"""
-        self._put_mock_compressed_data()
-
-        self._foo_driver.initialize()
         self._bar_driver.initialize()
-
-        assert_equal(self._foo_driver.get('key_1'), 'compressed_foo_1')
         assert_equal(self._bar_driver.get('key_1'), 'compressed_bar_1')
 
         mock_logger.assert_any_call(

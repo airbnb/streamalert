@@ -34,6 +34,8 @@ class LookupTablesCore(object):
         core = LookupTablesCore(config=config)
         core.setup_tables()
 
+        LOGGER.info('LookupTablesCore initialized!')
+
         return core
 
     def setup_tables(self):
