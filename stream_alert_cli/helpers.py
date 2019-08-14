@@ -180,7 +180,7 @@ def user_input(requested_info, mask, input_restrictions):
 
         # Restrict having spaces or colons in items (applies to things like
         # descriptors, etc)
-        if isinstance(input_restrictions, re._pattern_type):
+        if isinstance(input_restrictions, re.Pattern):
             valid_response = input_restrictions.match(response)
             if not valid_response:
                 LOGGER.error('The supplied input should match the following '
