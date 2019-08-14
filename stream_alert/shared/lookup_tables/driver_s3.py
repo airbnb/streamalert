@@ -155,12 +155,13 @@ class S3Driver(PersistenceDriver):
 
         except (ConnectTimeoutError, ReadTimeoutError):
             # Catching ConnectTimeoutError and ReadTimeoutError from botocore
-            LOGGER.exception(
-                'LookupTable (%s): Reading %s from S3 timed out',
-                self.id,
-                self._s3_key
+            LOGGER.error(
+                'LookupTable (%s): Reading from S3 timed out',
+                self.id
             )
-            # raise LookupTablesInitializationError()
+            raise LookupTablesInitializationError(
+                'LookupTable ({}): Reading from S3 timed out'.format(self.id)
+            )
 
         # The lookup data can optionally be compressed, so try to decompress
         # This will fall back and use the original data if decompression fails

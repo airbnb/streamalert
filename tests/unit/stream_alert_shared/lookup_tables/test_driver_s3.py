@@ -13,19 +13,20 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 import os
 import zlib
 
 from botocore.exceptions import ReadTimeoutError
 
-from mock import patch
+from mock import patch, ANY
 from moto import mock_s3
-from nose.tools import assert_equal
+from nose.tools import assert_equal, assert_raises
 
 from stream_alert.shared.config import load_config
 from stream_alert.shared.lookup_tables.drivers import construct_persistence_driver
+from stream_alert.shared.lookup_tables.errors import LookupTablesInitializationError
 from tests.unit.helpers.aws_mocks import put_mock_s3_object
 
 
@@ -49,6 +50,13 @@ class TestS3Driver(object):
         self._bar_driver = construct_persistence_driver(
             self.config['lookup_tables']['tables']['bar']
         )
+        self._bad_driver = construct_persistence_driver(
+            {
+                'driver': 's3',
+                'bucket': 'bucket_name',
+                'key': 'invalid-key',
+            }
+        )
 
         self._put_mock_tables()
 
@@ -70,7 +78,7 @@ class TestS3Driver(object):
 
     @patch('logging.Logger.info')
     def test_initialize(self, mock_logger):
-        """LookupTables - Drivers - S3 Driver - Get Key"""
+        """LookupTables - Drivers - S3 Driver - Init"""
         self._foo_driver.initialize()
         mock_logger.assert_any_call(
             'LookupTable (%s): Running initialization routine',
@@ -98,64 +106,90 @@ class TestS3Driver(object):
             95
         )
 
-    # @patch('logging.Logger.error')
-    # def test_download_s3_object_bucket_exception(self, mock_logger):
-    #     """LookupTables - Download S3 Object, Bucket Does Not Exist"""
-    #     LookupTables._download_s3_objects({'wrong_bucket': ['foo.json']})
-    #     mock_logger.assert_called_with(
-    #         'Encounterred error while downloading %s from %s, %s',
-    #         'foo.json',
-    #         'wrong_bucket',
-    #         'The specified bucket does not exist'
-    #     )
-    #
-    # @patch('botocore.response.StreamingBody.read')
-    # @patch('logging.Logger.exception')
-    # def test_download_s3_object_bucket_timeout(self, mock_logger, mock_s3_conn):
-    #     """LookupTables - Download S3 Object, ReadTimeoutError"""
-    #     mock_s3_conn.side_effect = ReadTimeoutError(
-    #         'TestPool', 'Test Read timed out.', endpoint_url='test/url'
-    #     )
-    #     self.buckets_info['bucket_name'].pop()
-    #     LookupTables._download_s3_objects(self.buckets_info)
-    #     assert_equal(LookupTables._tables, {})
-    #     mock_logger.assert_called_with('Reading %s from S3 timed out', 'foo.json')
-    #
-    # def test_load_lookup_tables_missing_config(self):
-    #     """LookupTables - Load Lookup Tables, Missing Config"""
-    #     # Remove lookup_tables config for this test case.
-    #     self.config['global']['infrastructure'].pop('lookup_tables')
-    #     lookup_tables = LookupTables.load_lookup_tables(self.config)
-    #     assert_equal(lookup_tables, False)
-    #     assert_equal(LookupTables._LOOKUP_TABLES_LAST_REFRESH,
-    #                  datetime(year=1970, month=1, day=1))
-    #
-    # @patch('logging.Logger.error')
-    # def test_load_lookup_tables_missing_buckets(self, log_mock):
-    #     """LookupTables - Load Lookup Tables, Missing Buckets"""
-    #     del self.config['global']['infrastructure']['lookup_tables']['buckets']
-    #     self.config['global']['infrastructure']['lookup_tables']['enabled'] = True
-    #     LookupTables.load_lookup_tables(self.config)
-    #     log_mock.assert_called_with('Buckets not defined')
-    #
-    # def test_load_lookup_tables(self):
-    #     """LookupTables - Load Lookup Table"""
-    #     self.config['global']['infrastructure']['lookup_tables']['enabled'] = True
-    #     with patch.object(LookupTables, '_download_s3_objects') as download_mock:
-    #         result = LookupTables.load_lookup_tables(self.config)
-    #
-    #         download_mock.assert_called_with(self.buckets_info)
-    #         assert_equal(result, LookupTables)
-    #         assert_equal(
-    #             LookupTables._LOOKUP_TABLES_LAST_REFRESH != datetime(year=1970, month=1, day=1),
-    #             True
-    #         )
-    #
-    # def test_load_lookup_tables_no_refresh(self):
-    #     """LookupTables - Load Lookup Table, No Refresh"""
-    #     self.config['global']['infrastructure']['lookup_tables']['enabled'] = True
-    #     LookupTables._LOOKUP_TABLES_LAST_REFRESH = datetime.utcnow()
-    #     with patch.object(LookupTables, '_download_s3_objects') as download_mock:
-    #         result = LookupTables.load_lookup_tables(self.config)
-    #         download_mock.assert_not_called()
-    #         assert_equal(result, LookupTables)
+    @patch('logging.Logger.warn')
+    def test_get_decompression_fallback(self, mock_logger):
+        """LookupTables - Drivers - S3 Driver - Not compressed data misconfigured - Fallback"""
+        put_mock_s3_object(
+            'bucket_name', 'bar.json',
+            json.dumps({
+                'key_1': 'not_compressed_bar_1',
+                'key_2': 'not_compressed_bar_2',
+            })
+        )
+        self._bar_driver.initialize()
+        assert_equal(self._bar_driver.get('key_1'), 'not_compressed_bar_1')
+
+        mock_logger.assert_any_call(
+            'LookupTable (%s): Data is not compressed; defaulting to original payload',
+            's3:bucket_name/bar.json'
+        )
+
+    def test_non_existent_key(self):
+        """LookupTables - Drivers - S3 Driver - Non-existent Key with default"""
+        self._foo_driver.initialize()
+        assert_equal(self._foo_driver.get('key_????', 'default?'), 'default?')
+
+    @patch('logging.Logger.error')
+    def test_non_existent_bucket_key(self, mock_logger):
+        """LookupTables - Drivers - S3 Driver - Non-existent Bucket Key"""
+        assert_raises(
+            LookupTablesInitializationError,
+            self._bad_driver.initialize
+        )
+        mock_logger.assert_any_call(
+            'LookupTable (%s): Encountered error while downloading %s from %s: %s',
+            's3:bucket_name/invalid-key',
+            'invalid-key',
+            'bucket_name',
+            'The specified key does not exist.'
+        )
+
+    @patch('botocore.response.StreamingBody.read')
+    @patch('logging.Logger.error')
+    def test_botocore_read_timeout(self, mock_logger, mock_s3_conn):
+        """LookupTables - Drivers - S3 Driver - ReadTimeoutError"""
+        """LookupTables - Download S3 Object, ReadTimeoutError"""
+        mock_s3_conn.side_effect = ReadTimeoutError(
+            'TestPool', 'Test Read timed out.', endpoint_url='test/url'
+        )
+
+        assert_raises(
+            LookupTablesInitializationError,
+            self._foo_driver.initialize
+        )
+
+        mock_logger.assert_called_with(
+            'LookupTable (%s): Reading from S3 timed out',
+            's3:bucket_name/foo.json'
+        )
+
+    @patch('logging.Logger.debug')
+    def test_no_need_refresh(self, mock_logger):
+        """LookupTables - Drivers - S3 Driver - Does not need refresh"""
+        self._foo_driver.initialize()
+        self._foo_driver.get('key_1')
+
+        mock_logger.assert_any_call(
+            'LookupTable (%s): Does not need refresh. Last refresh: %s; Currently: %s',
+            ANY, ANY, ANY
+        )
+
+    @patch('logging.Logger.info')
+    def test_needs_refresh(self, mock_logger):
+        """LookupTables - Drivers - S3 Driver - Needs refresh"""
+        self._foo_driver.initialize()
+
+        # Mess up some of the data so we fake that it's "stale"
+        self._foo_driver._s3_data['key_1'] = 'wrong'
+        assert_equal(self._foo_driver.get('key_1'), 'wrong')
+
+        # Wind the "clock" way back
+        self._foo_driver._last_load_time = datetime.utcnow() - timedelta(minutes=10, seconds=1)
+
+        # Do another fetch and observe our updated results
+        assert_equal(self._foo_driver.get('key_1'), 'foo_1')
+
+        mock_logger.assert_any_call(
+            'LookupTable (%s): Needs refresh, starting now. Last refresh: %s; Currently: %s',
+            ANY, ANY, ANY
+        )
