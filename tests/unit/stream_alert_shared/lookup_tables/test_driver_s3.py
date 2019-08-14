@@ -68,6 +68,19 @@ class TestS3Driver(object):
     def teardown(self):
         self.s3_mock.stop()
 
+    @patch('logging.Logger.info')
+    def test_initialize(self, mock_logger):
+        """LookupTables - Drivers - S3 Driver - Get Key"""
+        self._foo_driver.initialize()
+        mock_logger.assert_any_call(
+            'LookupTable (%s): Running initialization routine',
+            's3:bucket_name/foo.json'
+        )
+        mock_logger.assert_any_call(
+            'LookupTable (%s): Successfully loaded',
+            's3:bucket_name/foo.json'
+        )
+
     def test_get(self):
         """LookupTables - Drivers - S3 Driver - Get Key"""
         self._foo_driver.initialize()
