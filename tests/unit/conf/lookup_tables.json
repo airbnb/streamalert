@@ -13,6 +13,17 @@
       "key": "bar.json",
       "cache_refresh_minutes": 10,
       "compression": "gzip"
+    },
+    "dinosaur": {
+      "driver": "dynamodb",
+      "table": "table_name",
+      "partition_key": "MyPartitionKey",
+      "sort_key": "MySortKey",
+      "value_key": "MyValueKey",
+      "cache_refresh_minutes": 3,
+      "cache_maximum_key_count": 3,
+      "consistent_read": false,
+      "key_delimiter": ":"
     }
   }
 }
