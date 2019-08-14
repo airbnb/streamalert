@@ -41,11 +41,18 @@ class PersistenceDriver(object):
 
     @abstractmethod
     def initialize(self):
-        """Configures and initializes this driver"""
+        """
+        Configures and initializes this driver
+
+        Initialization is called exactly once, and is should always called BEFORE any other
+        interaction (get/set/commit) is made with the driver.
+        """
 
     @abstractmethod
     def commit(self):
-        """Takes any changes and flushes them"""
+        """
+        Takes any changes and flushes them to remote storage.
+        """
 
     @abstractmethod
     def get(self, key, default=None):
@@ -53,7 +60,12 @@ class PersistenceDriver(object):
 
     @abstractmethod
     def set(self, key, value):
-        """Sets the value of a key"""
+        """
+        Modifies the value of a key in the LookupTable.
+
+        For LookupTables with remote persistence, you will need to call commit() in order to
+        permanently persist the changes.
+        """
 
 
 def construct_persistence_driver(table_configuration):
@@ -146,14 +158,34 @@ class NullDriver(PersistenceDriver):
 
 
 class S3Driver(PersistenceDriver):
+    """
+    S3Driver
+
+    This PersistenceDriver uses AWS S3 as the backing layer. The entire table is stored in a single
+    large S3 file.
+
+    Upon initialization, the S3 file is loaded, decompressed, decoded, and loaded into memory as
+    a Python dict.
+
+    The S3 file is reloaded every cache_refresh
+    """
 
     def __init__(self, configuration):
+        # {
+        #     "driver": "s3",
+        #     "bucket": "airbnb.sample.lookuptable",
+        #     "key": "resource_map.gz",
+        #     "cache_refresh_minutes": 10,
+        #     "compression": "gzip",
+        #     "key_delimiter": "|"
+        # },
+
         super(S3Driver, self).__init__(configuration)
 
-        self._s3_bucket = 'airbnb.sample.lookuptable'
-        self._s3_key = 'resource_map_current.gz'
-        self._compression = 'gz'
-        self._cache_refresh_minutes = 10
+        self._s3_bucket = configuration['bucket']
+        self._s3_key = configuration['key']
+        self._compression = configuration['compression']
+        self._cache_refresh_minutes = configuration['cache_refresh_minutes']
         self._load_time = 0
 
         self._s3_data = {}
@@ -226,9 +258,10 @@ class S3Driver(PersistenceDriver):
                 'LookupTable (%s): Failed to json decode data', self.id
             )
 
-        total_time = time.time() - start_time
+        self._load_time = time.time()
+        total_time = self._load_time - start_time
         LOGGER.info(
-            'LookupTable (%s): Downloaded S3 file %s seconds', self.id, round(total_time, 2)
+            'LookupTable (%s): Downloaded S3 file in %s seconds', self.id, round(total_time, 2)
         )
 
     def commit(self):
@@ -244,21 +277,31 @@ class S3Driver(PersistenceDriver):
         self._s3_data.set(key, value)
         self._dirty = True
 
-    def legacy_get_s3_internal_dict(self):
-        """
-        This method is hacked in simply to support reverse compatibility kind of cases.
-
-        (!) DO NOT USE THIS METHOD UNLESS YOU KNOW WHAT YOU ARE DOING.
-        (!) AVOID COPYING OR ALLOCATING SPACE AS THIS VARIABLE IS KNOWN TO BE LARGE AND CAN EAT
-            UP LOTS OF MEMORY
-        """
-        return self._s3_data
-
 
 class DynamoDBDriver(PersistenceDriver):
     def __init__(self, configuration):
+        # {
+        #     "driver": "dynamodb",
+        #     "table": "some_table_name",
+        #     "partition_key": "MyPartitionKey",
+        #     "sort_key": "MySortKey",
+        #     "value_key": "MyValueKey",
+        #     "cache_refresh_minutes": 2,
+        #     "cache_maximum_key_count": 10,
+        #     "consistent_read": false,
+        #     "key_delimiter": ":"
+        # }
+
         super(DynamoDBDriver, self).__init__(configuration)
-        self._dynamo_db_table = 'table_name'
+
+        self._dynamo_db_table = configuration['table']
+        self._dynamo_db_partition_key = configuration['partition_key']
+        self._dynamo_db_sort_key = configuration['sort_key']
+        self._dynamo_db_value_key = configuration['value_key']
+        self._dynamo_consistent_read = configuration['consistent_read']
+
+        self._cache_maximum_key_count = configuration['cache_maximum_key_count']
+        self._cache_refresh_minutes = configuration['cache_refresh_minutes']
 
         # FIXME we should not get this.... from env
         region = env.get('AWS_REGION') or env.get('AWS_DEFAULT_REGION') or 'us-east-1'

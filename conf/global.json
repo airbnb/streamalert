@@ -40,15 +40,6 @@
       "use_prefix": null
     }
   },
-  "lookup_tables": {
-    "buckets": {
-      "airbnb.sample.lookuptable": [
-        "resource_map_legacy.gz"
-      ]
-    },
-    "cache_refresh_minutes": 10,
-    "enabled": false
-  },
   "s3_access_logging": {
     "create_bucket": true,
     "logging_bucket": "PREFIX_GOES_HERE.streamalert.s3-logging"

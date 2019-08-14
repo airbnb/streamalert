@@ -29,7 +29,7 @@ from nose.tools import (
 from stream_alert.shared.lookup_tables.configuration import LookupTablesConfiguration
 
 
-class TestLookupTablesConfiguration(object):
+class TestLookupTable(object):
     """Test shared LookupTablesConfiguration class."""
 
     # pylint: disable=no-self-use,protected-access,too-many-public-methods
@@ -62,42 +62,6 @@ class TestLookupTablesConfiguration(object):
         }
 
     def test_configuration_enabled(self):
-        """LookupTablesConfiguration - Basic Configuration - Enabled"""
+        """LookupTable - Basic Configuration - Enabled"""
         config = LookupTablesConfiguration(self._basic_configuration())
         assert_true(config.is_enabled)
-
-    def test_configuration_table_names(self):
-        """LookupTablesConfiguration - Basic Configuration - Table Names"""
-        config = LookupTablesConfiguration(self._basic_configuration())
-        assert_equal(
-            config.table_names,
-            ['resource_map_prototype', 'resource_map_dynamodb']
-        )
-
-    def test_configuration_table_configurations(self):
-        """LookupTablesConfiguration - Basic Configuration - Table Configurations"""
-        config = LookupTablesConfiguration(self._basic_configuration())
-        assert_equal(config.table_configurations['resource_map_dynamodb']['driver'], 'dynamodb')
-
-    def test_configuration_empty_configuration_not_enabled(self):
-        """LookupTablesConfiguration - Empty Configuration - Not Enabled"""
-        config = LookupTablesConfiguration({})
-        assert_false(config.is_enabled)
-
-    def test_configuration_disabled_configuration(self):
-        """LookupTablesConfiguration - Disabled Configuration - Disabled"""
-        config = LookupTablesConfiguration({
-            "lookup_tables": {
-                "enabled": False,
-                "tables": {
-                    "resource_map_prototype": {
-                        "driver": "s3",
-                        "bucket": "airbnb.sample.lookuptable",
-                        "key": "resource_map.gz",
-                        "cache_refresh_minutes": 10,
-                        "compression": "gzip"
-                    },
-                }
-            }
-        })
-        assert_false(config.is_enabled)
