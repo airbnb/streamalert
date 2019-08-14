@@ -70,7 +70,7 @@ class AliyunApp(AppIntegration):
     def date_formatter(cls):
         """Return a format string for a date, ie: 2014-05-26T12:00:00Z
 
-        This format is consisten with the format used by the Aliyun API:
+        This format is consistent with the format used by the Aliyun API:
             https://www.alibabacloud.com/help/doc-detail/28849.htm
         """
         return '%Y-%m-%dT%H:%M:%SZ'
