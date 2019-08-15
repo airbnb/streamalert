@@ -171,6 +171,9 @@ class DynamoDBDriver(PersistenceDriver):
 
                 # FIXME (derek.wang) Should be off for non-debug mode
                 ReturnConsumedCapacity='TOTAL',
+
+                # FIXME (derek.wang) This should have a ProjectionExpression to prevent the
+                #  response from returning irrelevant fields.
             )
         except (ConnectTimeoutError, ReadTimeoutError):
             # Catching timeouts
