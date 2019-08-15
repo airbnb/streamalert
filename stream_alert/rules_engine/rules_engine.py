@@ -24,7 +24,7 @@ from stream_alert.shared.alert import Alert
 from stream_alert.shared.config import load_config
 from stream_alert.shared.importer import import_folders
 from stream_alert.shared.logger import get_logger
-from stream_alert.shared.lookup_tables import LookupTables
+from stream_alert.shared.lookup_tables.core import LookupTablesCore
 from stream_alert.shared.metrics import MetricLogger
 from stream_alert.shared.rule import Rule
 from stream_alert.shared.rule_table import RuleTable
@@ -54,7 +54,7 @@ class RulesEngine(object):
         RulesEngine._alert_forwarder = RulesEngine._alert_forwarder or AlertForwarder()
 
         # Load the lookup tables, which include logic for refreshing the tables
-        RulesEngine._lookup_tables = LookupTables.load_lookup_tables(self.config)
+        RulesEngine._lookup_tables = LookupTablesCore.load_lookup_tables(self.config)
 
         # If not rule import paths are specified, default to the config
         if not rule_paths:
