@@ -16,7 +16,6 @@ limitations under the License.
 from datetime import datetime, timedelta
 from mock import ANY, patch
 
-import boto3
 from botocore.exceptions import ReadTimeoutError
 from moto import mock_dynamodb2
 from nose.tools import assert_equal, assert_false, assert_raises, assert_true
@@ -24,6 +23,7 @@ from nose.tools import assert_equal, assert_false, assert_raises, assert_true
 from stream_alert.shared.config import load_config
 from stream_alert.shared.lookup_tables.drivers import construct_persistence_driver
 from stream_alert.shared.lookup_tables.errors import LookupTablesInitializationError
+from tests.unit.helpers.aws_mocks import put_mock_dynamod_data
 
 
 class TestDynamoDBDriver(object):
@@ -55,68 +55,57 @@ class TestDynamoDBDriver(object):
 
     def _put_mock_tables(self):
         # Build a new dynamodb schema matching the tables configured
-        boto3.client('dynamodb').create_table(
-            AttributeDefinitions=[
-                {
-                    'AttributeName': 'MyPartitionKey',
-                    'AttributeType': 'S'
-                },
-                {
-                    'AttributeName': 'MySortKey',
-                    'AttributeType': 'S'
-                },
-                {
-                    'AttributeName': 'MyValueKey',
-                    'AttributeType': 'S'
-                }
-            ],
-            KeySchema=[
-                {
-                    'AttributeName': 'MyPartitionKey',
-                    'KeyType': 'HASH'
-                },
-                {
-                    'AttributeName': 'MySortKey',
-                    'KeyType': 'RANGE'
-                }
-            ],
-            ProvisionedThroughput={
-                'ReadCapacityUnits': 5,
-                'WriteCapacityUnits': 5
+        put_mock_dynamod_data(
+            'table_name',
+            {
+                'AttributeDefinitions': [
+                    {
+                        'AttributeName': 'MyPartitionKey',
+                        'AttributeType': 'S'
+                    },
+                    {
+                        'AttributeName': 'MySortKey',
+                        'AttributeType': 'S'
+                    },
+                    {
+                        'AttributeName': 'MyValueKey',
+                        'AttributeType': 'S'
+                    }
+                ],
+                'KeySchema': [
+                    {
+                        'AttributeName': 'MyPartitionKey',
+                        'KeyType': 'HASH'
+                    },
+                    {
+                        'AttributeName': 'MySortKey',
+                        'KeyType': 'RANGE'
+                    }
+                ]
             },
-            TableName='table_name'
-        )
-
-        table = boto3.resource('dynamodb').Table('table_name')
-        with table.batch_writer() as batch:
-            batch.put_item(
-                Item={
+            [
+                {
                     'MyPartitionKey': 'aaaa',
                     'MySortKey': '1',
                     'MyValueKey': 'could_this_be_a_foo?',
-                }
-            )
-            batch.put_item(
-                Item={
+                },
+                {
                     'MyPartitionKey': 'aaaa',
                     'MySortKey': '2',
                     'MyValueKey': 'or_is_this_just_fantasy?',
-                }
-            )
-            batch.put_item(
-                Item={
+                },
+                {
                     'MyPartitionKey': 'aaaa',
                     'MySortKey': '3',
                     'MyValueKey': 'no_couldnt_be',
-                }
-            )
-            batch.put_item(
-                Item={
+                },
+                {
                     'MyPartitionKey': 'bbbb',
                     'MySortKey': '1',
                     'MyValueKey': 'beeffedfeedbeefdeaddeafbeddab',
                 }
-            )
+            ]
+        )
 
     def teardown(self):
         self._dynamodb_mock.stop()
@@ -268,42 +257,36 @@ class TestDynamoDBDriver_MultiTable(object):
 
     def _put_mock_tables(self):
         # Build a new dynamodb schema matching the tables configured
-        boto3.client('dynamodb').create_table(
-            AttributeDefinitions=[
-                {
-                    'AttributeName': 'Pkey',
-                    'AttributeType': 'S'
-                },
-                {
-                    'AttributeName': 'IntegerField',
-                    'AttributeType': 'N'
-                },
-                {
-                    'AttributeName': 'StringField',
-                    'AttributeType': 'S'
-                },
-                {
-                    'AttributeName': 'DictField',
-                    'AttributeType': 'M'
-                },
-            ],
-            KeySchema=[
-                {
-                    'AttributeName': 'Pkey',
-                    'KeyType': 'HASH'
-                }
-            ],
-            ProvisionedThroughput={
-                'ReadCapacityUnits': 5,
-                'WriteCapacityUnits': 5
+        put_mock_dynamod_data(
+            'multi_table',
+            {
+                'AttributeDefinitions': [
+                    {
+                        'AttributeName': 'Pkey',
+                        'AttributeType': 'S'
+                    },
+                    {
+                        'AttributeName': 'IntegerField',
+                        'AttributeType': 'N'
+                    },
+                    {
+                        'AttributeName': 'StringField',
+                        'AttributeType': 'S'
+                    },
+                    {
+                        'AttributeName': 'DictField',
+                        'AttributeType': 'M'
+                    },
+                ],
+                'KeySchema': [
+                    {
+                        'AttributeName': 'Pkey',
+                        'KeyType': 'HASH'
+                    }
+                ],
             },
-            TableName='multi_table'
-        )
-
-        table = boto3.resource('dynamodb').Table('multi_table')
-        with table.batch_writer() as batch:
-            batch.put_item(
-                Item={
+            [
+                {
                     'Pkey': 'aaaa-bbbb-cccc',
                     'IntegerField': 123,
                     'StringField': 'hello world!',
@@ -313,7 +296,8 @@ class TestDynamoDBDriver_MultiTable(object):
                         }
                     }
                 }
-            )
+            ]
+        )
 
     def teardown(self):
         self._dynamodb_mock.stop()

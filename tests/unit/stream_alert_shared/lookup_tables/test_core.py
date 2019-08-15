@@ -16,14 +16,13 @@ limitations under the License.
 import json
 import zlib
 
-import boto3
 from mock import ANY, patch
 from moto import mock_s3, mock_dynamodb2
 from nose.tools import assert_equal
 
 from stream_alert.shared.config import load_config
 from stream_alert.shared.lookup_tables.core import LookupTables
-from tests.unit.helpers.aws_mocks import put_mock_s3_object
+from tests.unit.helpers.aws_mocks import put_mock_s3_object, put_mock_dynamod_data
 
 
 class TestLookupTablesCore(object):
@@ -61,47 +60,42 @@ class TestLookupTablesCore(object):
 
         # DynamoDB Mock data
         # Build a new dynamodb schema matching the tables configured
-        boto3.client('dynamodb').create_table(
-            AttributeDefinitions=[
-                {
-                    'AttributeName': 'MyPartitionKey',
-                    'AttributeType': 'S'
-                },
-                {
-                    'AttributeName': 'MySortKey',
-                    'AttributeType': 'S'
-                },
-                {
-                    'AttributeName': 'MyValueKey',
-                    'AttributeType': 'S'
-                }
-            ],
-            KeySchema=[
-                {
-                    'AttributeName': 'MyPartitionKey',
-                    'KeyType': 'HASH'
-                },
-                {
-                    'AttributeName': 'MySortKey',
-                    'KeyType': 'RANGE'
-                }
-            ],
-            ProvisionedThroughput={
-                'ReadCapacityUnits': 5,
-                'WriteCapacityUnits': 5
+        put_mock_dynamod_data(
+            'table_name',
+            {
+                'AttributeDefinitions': [
+                    {
+                        'AttributeName': 'MyPartitionKey',
+                        'AttributeType': 'S'
+                    },
+                    {
+                        'AttributeName': 'MySortKey',
+                        'AttributeType': 'S'
+                    },
+                    {
+                        'AttributeName': 'MyValueKey',
+                        'AttributeType': 'S'
+                    }
+                ],
+                'KeySchema': [
+                    {
+                        'AttributeName': 'MyPartitionKey',
+                        'KeyType': 'HASH'
+                    },
+                    {
+                        'AttributeName': 'MySortKey',
+                        'KeyType': 'RANGE'
+                    }
+                ],
             },
-            TableName='table_name'
-        )
-
-        table = boto3.resource('dynamodb').Table('table_name')
-        with table.batch_writer() as batch:
-            batch.put_item(
-                Item={
+            [
+                {
                     'MyPartitionKey': 'aaaa',
                     'MySortKey': '1',
                     'MyValueKey': 'Over 9000!',
                 }
-            )
+            ]
+        )
 
     def teardown(self):
         self.s3_mock.stop()
