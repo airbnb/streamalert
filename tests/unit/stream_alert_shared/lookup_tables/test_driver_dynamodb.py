@@ -163,7 +163,7 @@ class TestDynamoDBDriver(object):
                 "DynamoDB: 'Requested resource not found'"
             )
         )
-    #
+
     # @patch('botocore.response.StreamingBody.read')
     # @patch('logging.Logger.error')
     # def test_botocore_read_timeout(self, mock_logger, mock_s3_conn):
