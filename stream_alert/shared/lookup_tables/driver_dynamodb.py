@@ -84,6 +84,7 @@ class DynamoDBDriver(PersistenceDriver):
             raise LookupTablesInitializationError(message)
 
     def commit(self):
+        # FIXME (derek.wang)
         pass
 
     def get(self, key, default=None):
@@ -92,6 +93,7 @@ class DynamoDBDriver(PersistenceDriver):
         return self._dynamo_data.get(key, default)
 
     def set(self, key, value):
+        # FIXME (derek.wang)
         pass
 
     def _reload_if_necessary(self, key):
