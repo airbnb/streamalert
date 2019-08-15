@@ -5,6 +5,7 @@ from stream_alert.shared.lookup_tables.errors import LookupTablesConfigurationEr
 LOGGER = get_logger(__name__)
 
 
+# pylint: disable=invalid-name
 class PersistenceDriver(object):
 
     TYPE_S3 = 's3'
@@ -124,9 +125,6 @@ class NullDriver(PersistenceDriver):
     backed by this NullDriver.
     """
 
-    def __init__(self, configuration):
-        super(NullDriver, self).__init__(configuration)
-
     @property
     def driver_type(self):
         return self.TYPE_NULL
@@ -146,4 +144,3 @@ class NullDriver(PersistenceDriver):
 
     def set(self, _, __):
         pass
-

@@ -15,11 +15,9 @@ limitations under the License.
 """
 from datetime import datetime, timedelta
 import json
-import os
 import zlib
 
 from botocore.exceptions import ReadTimeoutError
-
 from mock import patch, ANY
 from moto import mock_s3
 from nose.tools import assert_equal, assert_raises

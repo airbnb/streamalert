@@ -1,5 +1,4 @@
 from stream_alert.shared.logger import get_logger
-from stream_alert.shared.lookup_tables.drivers import PersistenceDriver
 
 LOGGER = get_logger(__name__)
 
@@ -11,14 +10,13 @@ class LookupTable(dict):
     LookupTables offer a standardized interface, backed by the PersistenceDriver system in
     the background.
     """
-    _driver = None  # type: PersistenceDriver
 
     def __init__(self, table_name, driver, table_configuration):
-        super(dict, self).__init__()
+        super(LookupTable, self).__init__()
 
         self._table_name = table_name
         self._table_configuration = table_configuration
-        self._driver = driver
+        self._driver = driver  # type: PersistenceDriver
         self._initialized = False
 
     @property

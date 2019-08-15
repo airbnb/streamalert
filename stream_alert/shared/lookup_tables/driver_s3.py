@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta
 import json
 import time
-import os
 import sys
 import zlib
 
@@ -35,6 +34,7 @@ class S3Driver(PersistenceDriver):
     _DEFAULT_CACHE_REFRESH_MINUTES = 10
 
     def __init__(self, configuration):
+        # Example configuration:
         # {
         #     "driver": "s3",
         #     "bucket": "airbnb.sample.lookuptable",

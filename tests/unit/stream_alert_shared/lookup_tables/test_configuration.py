@@ -13,16 +13,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-import copy
-from datetime import datetime, timedelta
-import json
-
 from nose.tools import (
     assert_equal,
     assert_false,
-    assert_is_instance,
-    assert_not_in,
-    assert_raises,
     assert_true
 )
 
