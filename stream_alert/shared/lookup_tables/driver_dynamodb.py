@@ -95,6 +95,34 @@ class DynamoDBDriver(PersistenceDriver):
         pass
 
     def _reload_if_necessary(self, key):
+        """
+        Uses the "cache_refresh_minutes" option to determine whether or not the current LookupTable
+        should be re-fetched from S3.
+
+        If it needs a reload, this method will appropriately call reload.
+        """
+        last_load_time = self._dynamo_load_times.get(key, 0)
+
+        now = datetime.utcnow()
+        refresh_delta = timedelta(minutes=self._cache_refresh_minutes)
+        needs_refresh = last_load_time + refresh_delta < now if last_load_time else True
+
+        if not needs_refresh:
+            LOGGER.debug(
+                'LookupTable (%s): Does not need refresh. Last refresh: %s; Currently: %s',
+                self.id,
+                last_load_time,
+                now
+            )
+            return
+
+        LOGGER.info(
+            'LookupTable (%s): Key %s needs refresh, starting now. Last refresh: %s; Currently: %s',
+            self.id,
+            key,
+            last_load_time,
+            now
+        )
         self._load(key)
 
     def _load(self, key):
