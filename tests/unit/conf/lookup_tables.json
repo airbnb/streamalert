@@ -19,38 +19,38 @@
       "table": "table_name",
       "value_key": "MyValueKey"
     },
+    "dinosaur_multi_dict": {
+      "cache_maximum_key_count": 3,
+      "cache_refresh_minutes": 3,
+      "consistent_read": true,
+      "driver": "dynamodb",
+      "partition_key": "Pkey",
+      "table": "multi_table",
+      "value_key": "DictField"
+    },
+    "dinosaur_multi_int": {
+      "cache_maximum_key_count": 3,
+      "cache_refresh_minutes": 3,
+      "consistent_read": true,
+      "driver": "dynamodb",
+      "partition_key": "Pkey",
+      "table": "multi_table",
+      "value_key": "IntegerField"
+    },
+    "dinosaur_multi_string": {
+      "cache_maximum_key_count": 3,
+      "cache_refresh_minutes": 3,
+      "consistent_read": true,
+      "driver": "dynamodb",
+      "partition_key": "Pkey",
+      "table": "multi_table",
+      "value_key": "StringField"
+    },
     "foo": {
       "bucket": "bucket_name",
       "cache_refresh_minutes": 10,
       "driver": "s3",
       "key": "foo.json"
-    },
-    "dinosaur_multi_int": {
-      "table": "multi_table",
-      "cache_maximum_key_count": 3,
-      "cache_refresh_minutes": 3,
-      "consistent_read": true,
-      "driver": "dynamodb",
-      "partition_key": "Pkey",
-      "value_key": "IntegerField"
-    },
-    "dinosaur_multi_string": {
-      "table": "multi_table",
-      "cache_maximum_key_count": 3,
-      "cache_refresh_minutes": 3,
-      "consistent_read": true,
-      "driver": "dynamodb",
-      "partition_key": "Pkey",
-      "value_key": "StringField"
-    },
-    "dinosaur_multi_dict": {
-      "table": "multi_table",
-      "cache_maximum_key_count": 3,
-      "cache_refresh_minutes": 3,
-      "consistent_read": true,
-      "driver": "dynamodb",
-      "partition_key": "Pkey",
-      "value_key": "DictField"
     }
   }
 }

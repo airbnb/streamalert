@@ -13,10 +13,12 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+import boto3
 import json
+from mock import ANY, patch
 import zlib
 
-from moto import mock_s3
+from moto import mock_s3, mock_dynamodb2
 from nose.tools import assert_equal
 
 from stream_alert.shared.config import load_config
@@ -36,6 +38,9 @@ class TestLookupTablesCore(object):
         self.s3_mock = mock_s3()
         self.s3_mock.start()
 
+        self.dynamodb_mock = mock_dynamodb2()
+        self.dynamodb_mock.start()
+
         self._put_mock_data()
 
         self._lookup_tables = LookupTablesCore.load_lookup_tables(self.config)
@@ -54,14 +59,79 @@ class TestLookupTablesCore(object):
             }))
         )
 
+        # DynamoDB Mock data
+        # Build a new dynamodb schema matching the tables configured
+        boto3.client('dynamodb').create_table(
+            AttributeDefinitions=[
+                {
+                    'AttributeName': 'MyPartitionKey',
+                    'AttributeType': 'S'
+                },
+                {
+                    'AttributeName': 'MySortKey',
+                    'AttributeType': 'S'
+                },
+                {
+                    'AttributeName': 'MyValueKey',
+                    'AttributeType': 'S'
+                }
+            ],
+            KeySchema=[
+                {
+                    'AttributeName': 'MyPartitionKey',
+                    'KeyType': 'HASH'
+                },
+                {
+                    'AttributeName': 'MySortKey',
+                    'KeyType': 'RANGE'
+                }
+            ],
+            ProvisionedThroughput={
+                'ReadCapacityUnits': 5,
+                'WriteCapacityUnits': 5
+            },
+            TableName='table_name'
+        )
+
+        table = boto3.resource('dynamodb').Table('table_name')
+        with table.batch_writer() as batch:
+            batch.put_item(
+                Item={
+                    'MyPartitionKey': 'aaaa',
+                    'MySortKey': '1',
+                    'MyValueKey': 'Over 9000!',
+                }
+            )
+
     def teardown(self):
         self.s3_mock.stop()
+        self.dynamodb_mock.stop()
 
     def test_get(self):
         """LookupTables - Core - get()"""
         assert_equal(self._lookup_tables.get('foo', 'key_1'), 'foo_1')
 
-    def test_get_table(self):
-        """LookupTables - Core - table()"""
+    def test_get_table_s3(self):
+        """LookupTables - Core - table() - S3"""
         table = self._lookup_tables.table('foo')
         assert_equal(table.get('key_2'), 'foo_2')
+
+    def test_get_table_dynamodb(self):
+        """LookupTables - Core - table() - DynamoDB"""
+        table = self._lookup_tables.table('dinosaur')
+        assert_equal(table.get('aaaa:1'), 'Over 9000!')
+
+    @patch('logging.Logger.error')
+    def test_get_nonexistent_table(self, mock_logger):
+        """LookupTables - Core - table()"""
+        table = self._lookup_tables.table('does-not-exist')
+        assert_equal(table.get('key_2'), None)
+
+        mock_logger.assert_any_call(
+            (
+                'Nonexistent LookupTable \'%s\' referenced. Defaulting to null table. '
+                'Valid tables were (%s)'
+            ),
+            'does-not-exist',
+            ANY
+        )
