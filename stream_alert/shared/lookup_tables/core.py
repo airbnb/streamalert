@@ -12,34 +12,80 @@ from stream_alert.shared.lookup_tables.table import LookupTable
 LOGGER = get_logger(__name__)
 
 
+class LookupTables(object):
+    """
+    A class primarily responsible for syntactic sugar + application singleton behavior that wraps
+    the LookupTablesCore.
+    """
+    _instance = None  # type: LookupTablesCore
+
+    @classmethod
+    def get_instance(cls, config=None):
+        """
+        Returns a singleton instance of LookupTablesCore.
+
+        Params:
+            config (dict) OPTIONAL. You can provide this to override default behavior or as an
+                optimization. Be careful; once loaded the LookupTables is cached statically
+                and future invocations will ignore this config parameter, even when provided.
+
+        Returns:
+            LookupTablesCore
+        """
+        if not cls._instance:
+            if config is None:
+                config = load_config()
+
+            cls._instance = LookupTablesCore(config)
+            cls._instance.setup_tables()
+
+        return cls._instance
+
+    @classmethod
+    def get(cls, table_name, key, default=None):
+        """
+        Retrieves the key's value on the requested lookup table. If the given key does not exist
+        on the table, or if the table does not exist, the default is returned instead.
+
+        This is a convenient static wrapper for the LookupTablesCore systems. Instead of having to
+        do this:
+
+            LookupTables.get_instance().table('table_name').get('key')
+
+        You can do this:
+
+            LookupTables.get('table_name', 'key')
+
+
+        Params:
+            table_name (str)
+            key (str)
+            default (mixed)
+
+        Returns:
+            mixed
+        """
+        return cls.get_instance().get(table_name, key, default)
+
+
 class LookupTablesCore(object):
     """
-    The core component that manages LookupTables. Designed to be a drop-in replacement for
-    the original LookupTables class.
+    The core component that manages LookupTables.
+
+    This is designed to be a drop-in replacement for the original LookupTables class.
     """
-    _tables = None  # type: Dict[str, LookupTable]
-    _null_table = None  # type: LookupTable
-
-    def __init__(self, config=None):
-        if config is None:
-            config = load_config()
-
+    def __init__(self, config):
         self._configuration = LookupTablesConfiguration(config=config)
-        self._tables = {}
+        self._tables = {}  # type: Dict[str, LookupTable]
         self._null_table = LookupTable('null_table', NullDriver(self._configuration), {})
-
-    @staticmethod
-    def load_lookup_tables(config):
-        """Drop-in replacement method for load_lookup_tables()"""
-        core = LookupTablesCore(config=config)
-        core.setup_tables()
-
-        return core
 
     def setup_tables(self):
         """
-        After setup_tables are called, the tables are constructed but their internal drivers
-        are not initialized until the tables are actually used.
+        After setup_tables are called, the tables are constructed and ready to use.
+
+        HOWEVER, their internal drivers are not initialized until the tables are actually used.
+        This delays the step where drivers initialize connections until right before they are used,
+        preventing unnecessary memory usage.
         """
         if not self._configuration.is_enabled:
             LOGGER.debug(
@@ -58,7 +104,17 @@ class LookupTablesCore(object):
         LOGGER.info('LookupTablesCore initialized!')
 
     def table(self, table_name):
-        """Drop-in replacement method for table(), on the original LookupTables implementation"""
+        """
+        Drop-in replacement method for table(), on the original LookupTables implementation, with
+        a small caveat; the original implementation returns a dict, whereas this one returns an
+        individual LookupTable instance.
+
+        Params:
+            table_name (str)
+
+        Returns:
+            LookupTable
+        """
         return self.get_table(table_name)
 
     def get_table(self, table_name):
@@ -70,7 +126,7 @@ class LookupTablesCore(object):
             table_name (str): The name of the lookup table desired
 
         Returns:
-            LookupTable
+            LookupTable: An individual instance. Not to be mixed up with LookupTables (plural!)
         """
         if table_name in self._tables:
             return self._tables[table_name]
@@ -93,7 +149,7 @@ class LookupTablesCore(object):
 
     def get(self, table_name, key, default=None):
         """
-        Syntax sugar for get_table()
+        Syntax sugar for get_table().get()
 
         Params:
             table_name (str)

@@ -22,7 +22,7 @@ from moto import mock_s3, mock_dynamodb2
 from nose.tools import assert_equal
 
 from stream_alert.shared.config import load_config
-from stream_alert.shared.lookup_tables.core import LookupTablesCore
+from stream_alert.shared.lookup_tables.core import LookupTables
 from tests.unit.helpers.aws_mocks import put_mock_s3_object
 
 
@@ -43,7 +43,7 @@ class TestLookupTablesCore(object):
 
         self._put_mock_data()
 
-        self._lookup_tables = LookupTablesCore.load_lookup_tables(self.config)
+        self._lookup_tables = LookupTables.get_instance(self.config)
 
     def _put_mock_data(self):
         # S3 mock data
