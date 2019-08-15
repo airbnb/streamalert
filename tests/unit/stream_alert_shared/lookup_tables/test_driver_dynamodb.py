@@ -23,7 +23,7 @@ from botocore.exceptions import ReadTimeoutError
 
 from mock import patch, ANY, MagicMock
 from moto import mock_dynamodb2
-from nose.tools import assert_equal, assert_raises
+from nose.tools import assert_equal, assert_false, assert_raises, assert_true
 
 from stream_alert.shared.config import load_config
 from stream_alert.shared.lookup_tables.drivers import construct_persistence_driver
@@ -168,15 +168,10 @@ class TestDynamoDBDriver(object):
     @patch('logging.Logger.error')
     def test_botocore_read_timeout(self, mock_logger, boto_resource_fn_mock):
         """LookupTables - Drivers - DynamoDB Driver - Get - ReadTimeoutError"""
-        resource_mock = MagicMock(name='ResourceMock')
-        boto_resource_fn_mock.return_value = resource_mock
-
-        table_mock = MagicMock(name='TableMock')
-        resource_mock.Table.return_value = table_mock
-
-        table_mock.get_item.side_effect = ReadTimeoutError(
-            'TestPool', 'Test Read timed out.', endpoint_url='test/url'
-        )
+        boto_resource_fn_mock.return_value.Table.return_value.get_item.side_effect = \
+            ReadTimeoutError(
+                'TestPool', 'Test Read timed out.', endpoint_url='test/url'
+            )
 
         self._driver.initialize()
 
@@ -192,6 +187,8 @@ class TestDynamoDBDriver(object):
         """LookupTables - Drivers - DynamoDB Driver - Refresh - On First Read"""
         self._driver.initialize()
 
+        assert_false('bbbb:1' in self._driver._dynamo_load_times)
+
         assert_equal(self._driver.get('bbbb:1', '?'), 'beeffedfeedbeefdeaddeafbeddab')
 
         mock_logger.assert_called_with(
@@ -202,43 +199,47 @@ class TestDynamoDBDriver(object):
             ANY
         )
 
-    #
-    # @patch('logging.Logger.debug')
-    # def test_barely_does_not_need_refresh(self, mock_logger):
-    #     """LookupTables - Drivers - S3 Driver - Refresh - Barely Does not need refresh"""
-    #     self._driver.initialize()
-    #
-    #     # Mess up some of the data so we fake that it's "stale"
-    #     self._driver._s3_data['key_1'] = 'stale'
-    #     assert_equal(self._driver.get('key_1'), 'stale')
-    #
-    #     # Wind the "clock" back JUST before it needs a refresh
-    #     self._driver._last_load_time = datetime.utcnow() - timedelta(minutes=9, seconds=59)
-    #
-    #     # Do another fetch and observe that it's still stale
-    #     assert_equal(self._driver.get('key_1'), 'stale')
-    #
-    #     mock_logger.assert_any_call(
-    #         'LookupTable (%s): Does not need refresh. Last refresh: %s; Currently: %s',
-    #         ANY, ANY, ANY
-    #     )
-    #
-    # @patch('logging.Logger.info')
-    # def test_needs_refresh(self, mock_logger):
-    #     """LookupTables - Drivers - S3 Driver - Refresh - Needs refresh"""
-    #     self._driver.initialize()
-    #
-    #     # Mess up some of the data so we fake that it's "stale"
-    #     self._driver._s3_data['key_1'] = 'wrong'
-    #     assert_equal(self._driver.get('key_1'), 'wrong')
-    #
-    #     # Wind the "clock" way back
-    #     self._driver._last_load_time = datetime.utcnow() - timedelta(minutes=10, seconds=1)
-    #
-    #     # Do another fetch and observe our updated results
-    #     assert_equal(self._driver.get('key_1'), 'foo_1')
-    #
-    #     mock_logger.assert_any_call(
-    #         'LookupTable (%s): Needs refresh, starting now. Last refresh: %s; Currently: %s',
-    #         ANY, ANY, ANY
-    #     )
+        assert_true('bbbb:1' in self._driver._dynamo_load_times)
+
+    @patch('logging.Logger.debug')
+    def test_barely_does_not_need_refresh(self, mock_logger):
+        """LookupTables - Drivers - DynamoDB Driver - Refresh - Barely Does not need refresh"""
+        self._driver.initialize()
+
+        # Mess up some of the data so we fake that it's "stale"
+        self._driver._dynamo_data['bbbb:1'] = 'stale'
+
+        # Wind the "clock" back JUST before it needs a refresh
+        self._driver._dynamo_load_times['bbbb:1'] = (
+            datetime.utcnow() - timedelta(minutes=2, seconds=59)
+        )
+
+        assert_equal(self._driver.get('bbbb:1'), 'stale')
+
+        mock_logger.assert_any_call(
+            'LookupTable (%s): Key %s does not need refresh. Last refresh: %s; Currently: %s',
+            'dynamodb:table_name', 'bbbb:1', ANY, ANY
+        )
+
+    @patch('logging.Logger.info')
+    def test_needs_refresh(self, mock_logger):
+        """LookupTables - Drivers - DynamoDB Driver - Refresh - Does need refresh"""
+        self._driver.initialize()
+
+        # Mess up some of the data so we fake that it's "stale"
+        self._driver._dynamo_data['bbbb:1'] = 'stale'
+
+        # Wind the "clock" back JUST before it needs a refresh
+        self._driver._dynamo_load_times['bbbb:1'] = (
+            datetime.utcnow() - timedelta(minutes=3, seconds=1)
+        )
+
+        assert_equal(self._driver.get('bbbb:1'), 'beeffedfeedbeefdeaddeafbeddab')
+
+        mock_logger.assert_called_with(
+            'LookupTable (%s): Key %s needs refresh, starting now. Last refresh: %s; Currently: %s',
+            'dynamodb:table_name',
+            'bbbb:1',
+            ANY,
+            ANY
+        )
