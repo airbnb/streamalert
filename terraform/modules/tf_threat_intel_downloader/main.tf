@@ -3,7 +3,7 @@
 resource "aws_lambda_function" "threat_intel_downloader" {
   function_name = "${var.prefix}_streamalert_threat_intel_downloader"
   description   = "StreamAlert Threat Intel Downloader"
-  runtime       = "python2.7"
+  runtime       = "python3.7"
   role          = "${aws_iam_role.threat_intel_downloader.arn}"
   handler       = "${var.lambda_handler}"
   memory_size   = "${var.lambda_memory}"

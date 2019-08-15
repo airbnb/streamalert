@@ -2,7 +2,7 @@
 This Terraform module creates a Lambda function for refreshing Athena Partitions once new data is written to S3
 
 ## Components
-* A Python2.7 Lambda Function to perform a table refresh
+* A Python3.7 Lambda Function to perform a table refresh
 * IAM Role and Policy to allow for Athena execution
 * S3 bucket notifications
 * Lambda permissions
