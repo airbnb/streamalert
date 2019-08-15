@@ -245,7 +245,7 @@ def put_mock_dynamod_data(table_name, schema, data):
 
     boto3.client('dynamodb').create_table(**schema)
 
-    table = boto3.resource('dynamodb').Table(table_name)
+    table = boto3.resource('dynamodb', region_name='us-east-1').Table(table_name)
     with table.batch_writer() as batch:
         for datum in data:
             batch.put_item(Item=datum)
