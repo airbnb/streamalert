@@ -111,7 +111,7 @@ class TestRunner(object):
     def _run_rules_engine(self, record):
         """Create a fresh rules engine and process the record, returning the result"""
         with patch.object(rules_engine.ThreatIntel, '_query') as ti_mock, \
-             patch.object(rules_engine.LookupTables, 'load_lookup_tables') as lt_mock, \
+             patch.object(rules_engine.LookupTables, 'get_instance') as lt_mock, \
              patch.object(rules_engine, 'AlertForwarder'), \
              patch.object(rules_engine, 'RuleTable') as rule_table, \
              patch('rules.helpers.base.random_bool', return_value=True):
