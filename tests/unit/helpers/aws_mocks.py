@@ -243,7 +243,7 @@ def put_mock_dynamod_data(table_name, schema, data):
         'WriteCapacityUnits': 5
     }
 
-    boto3.client('dynamodb').create_table(**schema)
+    boto3.client('dynamodb', region_name='us-east-1').create_table(**schema)
 
     table = boto3.resource('dynamodb', region_name='us-east-1').Table(table_name)
     with table.batch_writer() as batch:
