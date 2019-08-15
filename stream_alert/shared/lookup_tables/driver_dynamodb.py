@@ -109,8 +109,9 @@ class DynamoDBDriver(PersistenceDriver):
 
         if not needs_refresh:
             LOGGER.debug(
-                'LookupTable (%s): Does not need refresh. Last refresh: %s; Currently: %s',
+                'LookupTable (%s): Key %s does not need refresh. Last refresh: %s; Currently: %s',
                 self.id,
+                key,
                 last_load_time,
                 now
             )
