@@ -45,7 +45,7 @@ class MockLambdaClient(object):
         return {
             'FunctionName': function_name,
             'FunctionArn': 'arn:aws:lambda:region:account-id:function:{}'.format(function_name),
-            'Runtime': 'python2.7',
+            'Runtime': 'python3.7',
             'Role': 'string',
             'Handler': 'main.handler',
             'CodeSize': 128,
@@ -154,7 +154,7 @@ def create_lambda_function(function_name, region):
 
     boto3.client('lambda', region_name=region).create_function(
         FunctionName=function_name,
-        Runtime='python2.7',
+        Runtime='python3.7',
         Role='test-iam-role',
         Handler='function.handler',
         Description='test lambda function',

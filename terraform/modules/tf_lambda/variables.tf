@@ -15,7 +15,7 @@ variable "description" {
 }
 
 variable "runtime" {
-  default     = "python2.7"
+  default     = "python3.7"
   description = "Function runtime environment"
 }
 

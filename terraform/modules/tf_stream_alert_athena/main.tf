@@ -2,7 +2,7 @@
 resource "aws_lambda_function" "athena_partition_refresh" {
   function_name = "${var.prefix}_streamalert_athena_partition_refresh"
   description   = "StreamAlert Athena Refresh"
-  runtime       = "python2.7"
+  runtime       = "python3.7"
   role          = "${aws_iam_role.athena_partition_role.arn}"
   handler       = "${var.lambda_handler}"
   memory_size   = "${var.lambda_memory}"
