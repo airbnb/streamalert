@@ -109,6 +109,7 @@ class AthenaRefresher(object):
             # Iterate over each key
             for key in keys:
                 match = None
+                key = key.decode('utf-8')
                 for pattern in (self.FIREHOSE_REGEX, self.STREAMALERTS_REGEX):
                     match = pattern.search(key)
                     if match:
