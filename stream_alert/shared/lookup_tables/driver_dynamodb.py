@@ -57,7 +57,7 @@ class DynamoDBDriver(PersistenceDriver):
 
         self._key_delimiter = configuration.get('key_delimiter', ':')
 
-        self._resource = None
+        self._table = None
 
     @property
     def driver_type(self):
@@ -72,8 +72,10 @@ class DynamoDBDriver(PersistenceDriver):
         LOGGER.info('LookupTable (%s): Running initialization routine', self.id)
 
         try:
-            self._resource = boto3.resource('dynamodb').Table(self._dynamo_db_table)
-            _ = self._resource.table_arn
+            boto_config = boto_helpers.default_config(timeout=10)
+            resource = boto3.resource('dynamodb', config=boto_config)
+            self._table = resource.Table(self._dynamo_db_table)
+            _ = self._table.table_arn  # This is only here to blow up on invalid tables
         except ClientError as err:
             message = (
                 'LookupTable ({}): Encountered error while connecting with DynamoDB: \'{}\''
@@ -128,14 +130,26 @@ class DynamoDBDriver(PersistenceDriver):
             json.dumps(key_schema)
         )
 
-        response = self._resource.get_item(
-            Key=key_schema,
+        try:
+            response = self._table.get_item(
+                Key=key_schema,
 
-            # It's not urgently vital to do consistent reads; we accept that for some time we
-            # may get out-of-date reads.
-            ConsistentRead=False,
-            ReturnConsumedCapacity='TOTAL',  # FIXME (derek.wang) Should be off for non-debug mode
-        )
+                # It's not urgently vital to do consistent reads; we accept that for some time we
+                # may get out-of-date reads.
+                ConsistentRead=False,
+
+                # FIXME (derek.wang) Should be off for non-debug mode
+                ReturnConsumedCapacity='TOTAL',
+            )
+        except (ConnectTimeoutError, ReadTimeoutError):
+            # Catching timeouts
+            LOGGER.error(
+                'LookupTable (%s): Reading from DynamoDB timed out',
+                self.id
+            )
+            raise LookupTablesInitializationError(
+                'LookupTable ({}): Reading from DynamoDB timed out'.format(self.id)
+            )
 
         self._dynamo_load_times[key] = datetime.utcnow()
 
@@ -143,6 +157,7 @@ class DynamoDBDriver(PersistenceDriver):
             return
 
         if self._dynamo_db_value_key not in response['Item']:
+            # FIXME (derek.wang) Warn when it seems like there's no matching value key?
             return
 
         self._dynamo_data[key] = response['Item'][self._dynamo_db_value_key]
