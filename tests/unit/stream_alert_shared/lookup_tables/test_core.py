@@ -13,11 +13,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-import boto3
 import json
-from mock import ANY, patch
 import zlib
 
+import boto3
+from mock import ANY, patch
 from moto import mock_s3, mock_dynamodb2
 from nose.tools import assert_equal
 
@@ -28,7 +28,7 @@ from tests.unit.helpers.aws_mocks import put_mock_s3_object
 
 class TestLookupTablesCore(object):
     """
-
+    Tests LookupTablesCore
     """
     # pylint: disable=protected-access,attribute-defined-outside-init,no-self-use
     def setup(self):

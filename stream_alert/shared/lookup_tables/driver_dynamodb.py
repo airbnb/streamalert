@@ -1,12 +1,7 @@
 from datetime import datetime, timedelta
 import json
-import time
-import os
-import sys
-import zlib
 
 import boto3
-from boto.dynamodb2.exceptions import ResourceNotFoundException
 from botocore.exceptions import ClientError, ConnectTimeoutError, ReadTimeoutError
 
 import stream_alert.shared.helpers.boto as boto_helpers
@@ -29,6 +24,7 @@ class DynamoDBDriver(PersistenceDriver):
         not possible to have a non-string type for either of these.
     """
     def __init__(self, configuration):
+        # Example configuration:
         # {
         #     "driver": "dynamodb",
         #     "table": "some_table_name",
@@ -157,6 +153,7 @@ class DynamoDBDriver(PersistenceDriver):
 
         LOGGER.debug(
             'LookupTable (%s): Loading key \'%s\' with schema (%s)',
+            self.id,
             key,
             json.dumps(key_schema)
         )

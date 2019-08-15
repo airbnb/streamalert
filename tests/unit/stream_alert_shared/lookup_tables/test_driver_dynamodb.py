@@ -14,21 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from datetime import datetime, timedelta
+from mock import ANY, patch
+
 import boto3
-import json
-import os
-import zlib
-
 from botocore.exceptions import ReadTimeoutError
-
-from mock import patch, ANY
 from moto import mock_dynamodb2
 from nose.tools import assert_equal, assert_false, assert_raises, assert_true
 
 from stream_alert.shared.config import load_config
 from stream_alert.shared.lookup_tables.drivers import construct_persistence_driver
 from stream_alert.shared.lookup_tables.errors import LookupTablesInitializationError
-from tests.unit.helpers.aws_mocks import put_mock_s3_object
 
 
 class TestDynamoDBDriver(object):
@@ -245,12 +240,13 @@ class TestDynamoDBDriver(object):
         )
 
 
+# pylint: disable=protected-access,attribute-defined-outside-init,no-self-use,invalid-name
 class TestDynamoDBDriver_MultiTable(object):
     """
     Tests the DynamoDB Driver, but it tests with a variety of drivers built over the same table,
     different columns.
     """
-    # pylint: disable=protected-access,attribute-defined-outside-init,no-self-use
+
     def setup(self):
         """LookupTables - Setup S3 bucket mocking"""
         self.config = load_config('tests/unit/conf')

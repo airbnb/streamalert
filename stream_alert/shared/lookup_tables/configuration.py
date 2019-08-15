@@ -1,6 +1,4 @@
 from stream_alert.shared.config import load_config
-from stream_alert.shared.lookup_tables.errors import LookupTablesConfigurationError
-
 
 class LookupTablesConfiguration(object):
     """

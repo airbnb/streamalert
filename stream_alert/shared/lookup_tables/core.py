@@ -1,5 +1,3 @@
-from typing import Dict
-
 from stream_alert.shared.config import load_config
 from stream_alert.shared.logger import get_logger
 from stream_alert.shared.lookup_tables.configuration import LookupTablesConfiguration
