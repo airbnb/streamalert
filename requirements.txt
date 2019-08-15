@@ -59,7 +59,6 @@ packaging==19.0
 pathlib2==2.3.4
 pbr==5.3.1
 pika==1.0.1
-pkg-resources==0.0.0
 prompt-toolkit==2.0.9
 protobuf==3.8.0
 pyasn1==0.4.5

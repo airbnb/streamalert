@@ -45,21 +45,21 @@ class TestAthenaRefresher(object):
         """AthenaRefresher - Add Partitions"""
         self._refresher._s3_buckets_and_keys = {
             'unit-testing.streamalerts': {
-                'alerts/dt=2017-08-26-14/rule_name_alerts-1304134918401.json',
-                'alerts/dt=2017-08-27-14/rule_name_alerts-1304134918401.json'
+                b'alerts/dt=2017-08-26-14/rule_name_alerts-1304134918401.json',
+                b'alerts/dt=2017-08-27-14/rule_name_alerts-1304134918401.json'
             },
             'unit-testing.streamalert.data': {
-                'log_type_1/2017/08/26/14/test-data-11111-22222-33333.snappy',
-                'log_type_2/2017/08/26/14/test-data-11111-22222-33333.snappy',
-                'log_type_2/2017/08/26/15/test-data-11111-22222-33333.snappy',
-                'log_type_2/2017/08/26/16/test-data-11111-22222-33333.snappy',
-                'log_type_3/2017/08/26/14/test-data-11111-22222-33333.snappy',
-                'log_type_1/2017/08/26/11/test-data-11111-22222-33333.snappy'
+                b'log_type_1/2017/08/26/14/test-data-11111-22222-33333.snappy',
+                b'log_type_2/2017/08/26/14/test-data-11111-22222-33333.snappy',
+                b'log_type_2/2017/08/26/15/test-data-11111-22222-33333.snappy',
+                b'log_type_2/2017/08/26/16/test-data-11111-22222-33333.snappy',
+                b'log_type_3/2017/08/26/14/test-data-11111-22222-33333.snappy',
+                b'log_type_1/2017/08/26/11/test-data-11111-22222-33333.snappy'
             },
             'test-bucket-with-data': {
-                '2017/08/26/14/rule_name_alerts-1304134918401.json',
-                '2017/08/28/14/rule_name_alerts-1304134918401.json',
-                '2017/07/30/14/rule_name_alerts-1304134918401.json'
+                b'2017/08/26/14/rule_name_alerts-1304134918401.json',
+                b'2017/08/28/14/rule_name_alerts-1304134918401.json',
+                b'2017/07/30/14/rule_name_alerts-1304134918401.json'
             }
         }
         result = self._refresher._add_partitions()
@@ -104,21 +104,21 @@ class TestAthenaRefresher(object):
 
         self._refresher._s3_buckets_and_keys = {
             'unit-testing.streamalerts': {
-                'alerts/dt=2017-08-26-14/rule_name_alerts-1304134918401.json',
-                'alerts/dt=2017-08-27-14/rule_name_alerts-1304134918401.json',
-                'alerts/2017/08/26/15/rule_name_alerts-1304134918401.json'
+                b'alerts/dt=2017-08-26-14/rule_name_alerts-1304134918401.json',
+                b'alerts/dt=2017-08-27-14/rule_name_alerts-1304134918401.json',
+                b'alerts/2017/08/26/15/rule_name_alerts-1304134918401.json'
             },
             'unit-testing.streamalert.data': {
-                'log_type_1/2017/08/26/14/test-data-11111-22222-33333.snappy',
-                'log_type_2/2017/08/26/14/test-data-11111-22222-33333.snappy',
-                'log_type_2/2017/08/26/14/test-data-11111-22222-33334.snappy',
-                'log_type_2/2017/08/26/15/test-data-11111-22222-33333.snappy',
-                'log_type_2/2017/08/26/16/test-data-11111-22222-33333.snappy',
-                'log_type_3/2017/08/26/14/test-data-11111-22222-33333.snappy',
+                b'log_type_1/2017/08/26/14/test-data-11111-22222-33333.snappy',
+                b'log_type_2/2017/08/26/14/test-data-11111-22222-33333.snappy',
+                b'log_type_2/2017/08/26/14/test-data-11111-22222-33334.snappy',
+                b'log_type_2/2017/08/26/15/test-data-11111-22222-33333.snappy',
+                b'log_type_2/2017/08/26/16/test-data-11111-22222-33333.snappy',
+                b'log_type_3/2017/08/26/14/test-data-11111-22222-33333.snappy',
             },
             'test-bucket-with-data': {
-                '2017/08/26/14/rule_name_alerts-1304134918401.json',
-                '2017/07/30/14/rule_name_alerts-1304134918401.json'
+                b'2017/08/26/14/rule_name_alerts-1304134918401.json',
+                b'2017/07/30/14/rule_name_alerts-1304134918401.json'
             }
         }
 
@@ -129,7 +129,7 @@ class TestAthenaRefresher(object):
     @patch('logging.Logger.error')
     def test_get_partitions_from_keys_error(self, log_mock):
         """AthenaRefresher - Get Partitions From Keys, Bad Key"""
-        bad_key = 'bad_match_string'
+        bad_key = b'bad_match_string'
         self._refresher._s3_buckets_and_keys = {
             'unit-testing.streamalerts': {
                 bad_key
@@ -138,7 +138,7 @@ class TestAthenaRefresher(object):
 
         result = self._refresher._get_partitions_from_keys()
 
-        log_mock.assert_called_with('The key %s does not match any regex, skipping', bad_key)
+        log_mock.assert_called_with('The key %s does not match any regex, skipping', bad_key.decode('utf-8'))
         assert_equal(result, dict())
 
     @staticmethod
