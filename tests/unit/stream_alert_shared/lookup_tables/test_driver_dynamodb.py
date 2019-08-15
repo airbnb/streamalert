@@ -243,3 +243,97 @@ class TestDynamoDBDriver(object):
             ANY,
             ANY
         )
+
+
+class TestDynamoDBDriver_MultiTable(object):
+    """
+    Tests the DynamoDB Driver, but it tests with a variety of drivers built over the same table,
+    different columns.
+    """
+    # pylint: disable=protected-access,attribute-defined-outside-init,no-self-use
+    def setup(self):
+        """LookupTables - Setup S3 bucket mocking"""
+        self.config = load_config('tests/unit/conf')
+
+        self._dynamodb_mock = mock_dynamodb2()
+        self._dynamodb_mock.start()
+
+        self._int_driver = construct_persistence_driver(
+            self.config['lookup_tables']['tables']['dinosaur_multi_int']
+        )
+        self._string_driver = construct_persistence_driver(
+            self.config['lookup_tables']['tables']['dinosaur_multi_string']
+        )
+        self._dict_driver = construct_persistence_driver(
+            self.config['lookup_tables']['tables']['dinosaur_multi_dict']
+        )
+
+        self._put_mock_tables()
+
+    def _put_mock_tables(self):
+        # Build a new dynamodb schema matching the tables configured
+        boto3.client('dynamodb').create_table(
+            AttributeDefinitions=[
+                {
+                    'AttributeName': 'Pkey',
+                    'AttributeType': 'S'
+                },
+                {
+                    'AttributeName': 'IntegerField',
+                    'AttributeType': 'N'
+                },
+                {
+                    'AttributeName': 'StringField',
+                    'AttributeType': 'S'
+                },
+                {
+                    'AttributeName': 'DictField',
+                    'AttributeType': 'M'
+                },
+            ],
+            KeySchema=[
+                {
+                    'AttributeName': 'Pkey',
+                    'KeyType': 'HASH'
+                }
+            ],
+            ProvisionedThroughput={
+                'ReadCapacityUnits': 5,
+                'WriteCapacityUnits': 5
+            },
+            TableName='multi_table'
+        )
+
+        table = boto3.resource('dynamodb').Table('multi_table')
+        with table.batch_writer() as batch:
+            batch.put_item(
+                Item={
+                    'Pkey': 'aaaa-bbbb-cccc',
+                    'IntegerField': 123,
+                    'StringField': 'hello world!',
+                    'DictField': {
+                        'message': {
+                            'depth': 'Will this work?'
+                        }
+                    }
+                }
+            )
+
+    def teardown(self):
+        self._dynamodb_mock.stop()
+
+    def test_get_int(self):
+        """LookupTables - Drivers - DynamoDb Multi Driver - Integer - Get Key"""
+        self._int_driver.initialize()
+        assert_equal(self._int_driver.get('aaaa-bbbb-cccc'), 123)
+
+    def test_get_string(self):
+        """LookupTables - Drivers - DynamoDb Multi Driver - String - Get Key"""
+        self._string_driver.initialize()
+        assert_equal(self._string_driver.get('aaaa-bbbb-cccc'), 'hello world!')
+
+    def test_get_dict(self):
+        """LookupTables - Drivers - DynamoDb Multi Driver - Dict - Get Key"""
+        self._dict_driver.initialize()
+        data = self._dict_driver.get('aaaa-bbbb-cccc')
+        assert_equal(data['message']['depth'], 'Will this work?')
