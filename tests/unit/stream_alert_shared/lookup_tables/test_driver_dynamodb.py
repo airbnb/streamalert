@@ -21,7 +21,7 @@ import zlib
 
 from botocore.exceptions import ReadTimeoutError
 
-from mock import patch, ANY, MagicMock
+from mock import patch, ANY
 from moto import mock_dynamodb2
 from nose.tools import assert_equal, assert_false, assert_raises, assert_true
 
