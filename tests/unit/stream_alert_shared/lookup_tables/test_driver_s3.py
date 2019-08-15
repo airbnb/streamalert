@@ -148,7 +148,6 @@ class TestS3Driver(object):
     @patch('logging.Logger.error')
     def test_botocore_read_timeout(self, mock_logger, mock_s3_conn):
         """LookupTables - Drivers - S3 Driver - Get - ReadTimeoutError"""
-        """LookupTables - Download S3 Object, ReadTimeoutError"""
         mock_s3_conn.side_effect = ReadTimeoutError(
             'TestPool', 'Test Read timed out.', endpoint_url='test/url'
         )
