@@ -1,29 +1,29 @@
 {
   "enabled": true,
   "tables": {
-    "foo": {
-      "driver": "s3",
-      "bucket": "bucket_name",
-      "key": "foo.json",
-      "cache_refresh_minutes": 10
-    },
     "bar": {
-      "driver": "s3",
       "bucket": "bucket_name",
-      "key": "bar.json",
       "cache_refresh_minutes": 10,
-      "compression": "gzip"
+      "compression": "gzip",
+      "driver": "s3",
+      "key": "bar.json"
     },
     "dinosaur": {
+      "cache_maximum_key_count": 3,
+      "cache_refresh_minutes": 3,
+      "consistent_read": false,
       "driver": "dynamodb",
-      "table": "table_name",
+      "key_delimiter": ":",
       "partition_key": "MyPartitionKey",
       "sort_key": "MySortKey",
-      "value_key": "MyValueKey",
-      "cache_refresh_minutes": 3,
-      "cache_maximum_key_count": 3,
-      "consistent_read": false,
-      "key_delimiter": ":"
+      "table": "table_name",
+      "value_key": "MyValueKey"
+    },
+    "foo": {
+      "bucket": "bucket_name",
+      "cache_refresh_minutes": 10,
+      "driver": "s3",
+      "key": "foo.json"
     }
   }
 }

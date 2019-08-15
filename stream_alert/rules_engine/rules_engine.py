@@ -86,9 +86,9 @@ class RulesEngine(object):
                 extension.
 
         Returns:
-            dict: A dictionary contains lookup table information.
+            LookupTable: An instance of a LookupTable
         """
-        return cls._lookup_tables.table(table_name) if cls._lookup_tables else dict()
+        return cls._lookup_tables.table(table_name)
 
     @classmethod
     def _load_rule_table(cls, config):

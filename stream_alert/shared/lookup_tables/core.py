@@ -34,8 +34,6 @@ class LookupTablesCore(object):
         core = LookupTablesCore(config=config)
         core.setup_tables()
 
-        LOGGER.info('LookupTablesCore initialized!')
-
         return core
 
     def setup_tables(self):
@@ -44,9 +42,8 @@ class LookupTablesCore(object):
         are not initialized until the tables are actually used.
         """
         if not self._configuration.is_enabled:
-            LOGGER.error(
-                'Cannot setup LookupTables as it has not been enabled in configuration. '
-                'Have you taken a look at conf/lookup_tables.json?'
+            LOGGER.debug(
+                'Skipping LookupTables as it is not enabled'
             )
             return
 
@@ -57,6 +54,8 @@ class LookupTablesCore(object):
                 driver,
                 table_configuration
             )
+
+        LOGGER.info('LookupTablesCore initialized!')
 
     def table(self, table_name):
         """Drop-in replacement method for table(), on the original LookupTables implementation"""
