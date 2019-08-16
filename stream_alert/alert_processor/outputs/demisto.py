@@ -117,7 +117,7 @@ class DemistoOutput(OutputDispatcher):
             return False
 
 
-class DemistoApiIntegration(object):
+class DemistoApiIntegration:
     """Bridge class to reduce coupling between DemistoOutput and whatever client we use."""
 
     def __init__(self, creds, dispatcher):
@@ -161,7 +161,7 @@ class DemistoApiIntegration(object):
         )
 
 
-class DemistoCreateIncidentRequest(object):
+class DemistoCreateIncidentRequest:
     """Encapsulation of a request to Demisto to create an incident."""
     SEVERITY_UNKNOWN = 0
     SEVERITY_INFORMATIONAL = 0.5
@@ -252,21 +252,21 @@ class DemistoCreateIncidentRequest(object):
             return cls.SEVERITY_UNKNOWN
 
         lc_severity_string = severity_string.lower()
-        if lc_severity_string == 'info' or lc_severity_string == 'informational':
+        if lc_severity_string in ['info', 'informational']:
             return cls.SEVERITY_INFORMATIONAL
-        elif lc_severity_string == 'low':
+        if lc_severity_string == 'low':
             return cls.SEVERITY_LOW
-        elif lc_severity_string == 'med' or lc_severity_string == 'medium':
+        if lc_severity_string in ['med', 'medium']:
             return cls.SEVERITY_MEDIUM
-        elif lc_severity_string == 'high':
+        if lc_severity_string == 'high':
             return cls.SEVERITY_HIGH
-        elif lc_severity_string == 'critical':
+        if lc_severity_string == 'critical':
             return cls.SEVERITY_CRITICAL
 
         return cls.SEVERITY_UNKNOWN
 
 
-class DemistoRequestAssembler(object):
+class DemistoRequestAssembler:
     """Factory class for DemistoCreateIncidentRequest objects"""
 
     @staticmethod

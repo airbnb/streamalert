@@ -29,7 +29,7 @@ from nose.tools import (
 from stream_alert.shared.alert import Alert, AlertCreationError
 
 
-class TestAlert(object):
+class TestAlert:
     """Test shared Alert class."""
     # pylint: disable=no-self-use,protected-access,too-many-public-methods
 

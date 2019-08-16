@@ -48,10 +48,10 @@ def athena_handler(options, config):
             options.bucket,
             config)
 
-    elif options.subcommand == 'drop-all-tables':
+    if options.subcommand == 'drop-all-tables':
         return drop_all_tables(config)
 
-    elif options.subcommand == 'create-table':
+    if options.subcommand == 'create-table':
         return create_table(
             options.table_name,
             options.bucket,

@@ -37,7 +37,7 @@ def _mock_boto(name, **kwargs):
     return client(name, **kwargs)
 
 
-class TestRulePromoter(object):
+class TestRulePromoter:
     """Tests for rule_promotion/promoter.py:RulePromoter"""
     # pylint: disable=protected-access
 

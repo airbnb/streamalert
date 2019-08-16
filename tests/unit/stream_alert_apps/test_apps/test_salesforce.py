@@ -40,7 +40,7 @@ from tests.unit.stream_alert_shared.test_config import get_mock_lambda_context
 @patch('time.sleep', Mock())
 @patch.object(SalesforceApp, '_type', Mock(return_value='Console'))
 @patch.object(SalesforceApp, 'type', Mock(return_value='type'))
-class TestSalesforceApp(object):
+class TestSalesforceApp:
     """Test class for the SalesforceApp"""
     # pylint: disable=protected-access
 

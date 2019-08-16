@@ -21,7 +21,6 @@ DEFAULT_SNS_MONITORING_TOPIC = 'stream_alert_monitoring'
 
 class InvalidClusterName(Exception):
     """Exception for invalid cluster names"""
-    pass
 
 
 def infinitedict():

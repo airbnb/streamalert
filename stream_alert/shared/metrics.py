@@ -48,7 +48,7 @@ if not ENABLE_METRICS:
     LOGGER.debug('Logging of metric data is currently disabled.')
 
 
-class MetricLogger(object):
+class MetricLogger:
     """Class to hold metric logging to be picked up by log metric filters.
 
     This basically acts as an enum, allowing for the use of dot notation for

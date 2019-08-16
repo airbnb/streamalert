@@ -65,10 +65,10 @@ def test_handler(options, config):
     return result
 
 
-class TestRunner(object):
+class TestRunner:
     """TestRunner to handle running various tests"""
 
-    class Types(object):
+    class Types:
         """Simple types enum for test types"""
         CLASSIFY = 'classifier'
         RULES = 'rules'
@@ -444,7 +444,7 @@ class TestRunner(object):
                 'eventSource': 'aws:s3'
             }
 
-        elif service == 'kinesis':
+        if service == 'kinesis':
             if compress:
                 data = zlib.compress(data)
 
@@ -469,7 +469,7 @@ class TestRunner(object):
                 'awsRegion': 'us-east-1'
             }
 
-        elif service == 'sns':
+        if service == 'sns':
             return {
                 'EventVersion': '1.0',
                 'EventSubscriptionArn': 'arn:aws:sns:us-east-1:123456789012:{}'.format(source),
@@ -494,7 +494,7 @@ class TestRunner(object):
                 }
             }
 
-        elif service == 'stream_alert_app':
+        if service == 'stream_alert_app':
             return {'stream_alert_app': source, 'logs': [data]}
 
     @staticmethod

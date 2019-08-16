@@ -18,7 +18,7 @@ from nose.tools import assert_equal
 from stream_alert.shared.description import RuleDescriptionParser
 
 
-class TestRuleDescriptionParserParse(object):
+class TestRuleDescriptionParserParse:
 
     @staticmethod
     def test_simple():
@@ -167,7 +167,7 @@ reference:  https://www.google.com
         })
 
 
-class TestRuleDescriptionParserPresent(object):
+class TestRuleDescriptionParserPresent:
 
     @staticmethod
     def test_simple():

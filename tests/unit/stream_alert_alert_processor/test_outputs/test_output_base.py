@@ -112,7 +112,7 @@ def test_output_loading():
 
 
 @patch.object(OutputDispatcher, '__service__', 'test_service')
-class TestOutputDispatcher(object):
+class TestOutputDispatcher:
     """Test class for OutputDispatcher"""
 
     @patch.object(OutputDispatcher, '__service__', 'test_service')

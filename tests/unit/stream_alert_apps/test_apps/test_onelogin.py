@@ -27,7 +27,7 @@ from tests.unit.stream_alert_shared.test_config import get_mock_lambda_context
 
 @mock_ssm
 @patch.object(OneLoginApp, 'type', Mock(return_value='type'))
-class TestOneLoginApp(object):
+class TestOneLoginApp:
     """Test class for the OneLoginApp"""
     # pylint: disable=protected-access
 

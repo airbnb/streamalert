@@ -27,7 +27,7 @@ from stream_alert.shared.logger import get_logger
 LOGGER = get_logger(__name__)
 
 
-class OutputCredentialsProvider(object):
+class OutputCredentialsProvider:
     """Loads credentials that are housed on AWS S3, or cached locally.
 
     Helper service to OutputDispatcher.
@@ -148,7 +148,7 @@ class OutputCredentialsProvider(object):
                 descriptor
             )
             return None
-        elif credentials.is_encrypted():
+        if credentials.is_encrypted():
             decrypted_creds = credentials.get_data_kms_decrypted()
         else:
             decrypted_creds = credentials.data()
@@ -167,7 +167,7 @@ class OutputCredentialsProvider(object):
         return self._account_id
 
 
-class Credentials(object):
+class Credentials:
     """Encapsulation for a set of credentials.
 
     When storing to or loading from a Driver, the raw credentials data may or may not be encrypted
@@ -249,7 +249,7 @@ class Credentials(object):
         self._data = AwsKms.encrypt(creds_json, region=self._region, key_alias=kms_key_alias)
 
 
-class CredentialsProvidingDriver(object):
+class CredentialsProvidingDriver:
     """Drivers encapsulate logic for loading credentials"""
 
     @abstractmethod
@@ -277,7 +277,7 @@ class CredentialsProvidingDriver(object):
         """
 
 
-class FileDescriptorProvider(object):
+class FileDescriptorProvider:
     """Interface for Drivers capable of offering file-handles to aid in download of credentials."""
 
     @abstractmethod
@@ -292,7 +292,7 @@ class FileDescriptorProvider(object):
         """
 
 
-class CredentialsCachingDriver(object):
+class CredentialsCachingDriver:
     """Interface for Drivers capable of being used as a caching layer to accelerate the speed
     of credential loading."""
 

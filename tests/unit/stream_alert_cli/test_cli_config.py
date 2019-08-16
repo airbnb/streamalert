@@ -24,7 +24,7 @@ from stream_alert_cli.config import CLIConfig
 from tests.unit.helpers.config import basic_streamalert_config
 
 
-class TestCLIConfig(object):
+class TestCLIConfig:
     """Test class for CLIConfig"""
 
     def __init__(self):

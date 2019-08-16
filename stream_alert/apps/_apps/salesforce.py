@@ -194,15 +194,15 @@ class SalesforceApp(AppIntegration):
 
             # Get request will retry when SalesforceAppError exception raised
             raise SalesforceAppError
-        elif resp.status_code == 403 and resp.json().get('errorCode') == 'REQUEST_LIMIT_EXCEEDED':
+        if resp.status_code == 403 and resp.json().get('errorCode') == 'REQUEST_LIMIT_EXCEEDED':
             # Exceeded API request limits in your org. Log this information for
             # future reference.
             LOGGER.error('Exceeded API request limits')
             return False
-        elif resp.status_code == 500:
+        if resp.status_code == 500:
             # Server internal error. Get request will retry.
             raise SalesforceAppError
-        elif resp.status_code > 200:
+        if resp.status_code > 200:
             LOGGER.error('Unexpected status code %d detected, error message %s',
                          resp.status_code,
                          resp.json())

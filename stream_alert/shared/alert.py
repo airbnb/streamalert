@@ -24,7 +24,7 @@ class AlertCreationError(Exception):
     """Raised when alert creation fails because of an invalid format."""
 
 
-class Alert(object):
+class Alert:
     """Encapsulates a single alert and handles serializing to Dynamo and merging."""
 
     _EXPECTED_INIT_KWARGS = {

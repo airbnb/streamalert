@@ -37,7 +37,7 @@ MOCK_ENV.update({
 })
 
 
-class TestAlertProcessor(object):
+class TestAlertProcessor:
     """Tests for alert_processor/main.py"""
     # pylint: disable=no-member,no-self-use,protected-access
 

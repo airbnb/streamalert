@@ -39,7 +39,7 @@ from stream_alert.threat_intel_downloader.exceptions import (
 LOGGER = get_logger(__name__)
 
 
-class ThreatStream(object):
+class ThreatStream:
     """Class to retrieve IOCs from ThreatStream.com and store them in DynamoDB"""
     _API_URL = 'https://api.threatstream.com'
     _API_RESOURCE = 'intelligence'

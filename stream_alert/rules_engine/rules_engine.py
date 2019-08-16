@@ -34,7 +34,7 @@ from stream_alert.shared.stats import get_rule_stats
 LOGGER = get_logger(__name__)
 
 
-class RulesEngine(object):
+class RulesEngine:
     """Rule engine to processes rules"""
     _RULE_TABLE_LAST_REFRESH = datetime(year=1970, month=1, day=1)
     _RULE_TABLE_DEFAULT_REFRESH_MIN = 10

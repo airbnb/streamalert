@@ -24,7 +24,7 @@ LOGGER = get_logger(__name__)
 RULE_STATS = defaultdict(lambda: RuleStatistic(0.0))
 
 
-class RuleStatistic(object):
+class RuleStatistic:
     """Simple class for tracking rule times and call count"""
     def __init__(self, proc_time):
         self.calls = 0

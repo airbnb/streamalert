@@ -30,7 +30,7 @@ class CLIConfigError(Exception):
     pass
 
 
-class CLIConfig(object):
+class CLIConfig:
     """A class to load, modify, and display the StreamAlertCLI Config"""
     DEFAULT_CONFIG_PATH = 'conf/'
 
@@ -63,7 +63,7 @@ class CLIConfig(object):
     def generate_athena(self):
         """Generate a base Athena config"""
         if 'athena_partition_refresh_config' in self.config['lambda']:
-            LOGGER.warn('The Athena configuration already exists, skipping.')
+            LOGGER.warning('The Athena configuration already exists, skipping.')
             return
 
         prefix = self.config['global']['account']['prefix']

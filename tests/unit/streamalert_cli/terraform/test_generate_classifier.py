@@ -18,7 +18,7 @@ from nose.tools import assert_equal
 from stream_alert_cli.terraform import common, classifier
 
 
-class TestTerraformGenerateClassifier(object):
+class TestTerraformGenerateClassifier:
     """CLI Terraform Generate, Classifier"""
     # pylint: disable=no-self-use,attribute-defined-outside-init
 

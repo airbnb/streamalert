@@ -23,7 +23,7 @@ from nose.tools import assert_equal
 from stream_alert import shared
 
 
-class TestMetrics(object):
+class TestMetrics:
     """Test class for Metrics class"""
 
     def setup(self):

@@ -20,7 +20,7 @@ from nose.tools import assert_equal
 from stream_alert.classifier.clients.firehose import FirehoseClient
 
 
-class TestFirehoseClient(object):
+class TestFirehoseClient:
     """Test class for FirehoseClient"""
     # pylint: disable=protected-access,no-self-use,attribute-defined-outside-init
 

@@ -9,7 +9,7 @@ from collections import OrderedDict
 CONF_LOGS_FILE = os.path.join(os.path.dirname(__file__), '../../conf/logs.json')
 
 
-class JsonFileSorter(object):
+class JsonFileSorter:
     """
     Tests that the conf.json file is formatted properly and is sorted alphabetically
     on the top-level key

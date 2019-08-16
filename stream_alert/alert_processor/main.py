@@ -29,7 +29,7 @@ from stream_alert.shared.normalize import Normalizer
 LOGGER = get_logger(__name__)
 
 
-class AlertProcessor(object):
+class AlertProcessor:
     """Orchestrates delivery of alerts to the appropriate dispatchers."""
     ALERT_PROCESSOR = None  # AlertProcessor instance which can be re-used across Lambda invocations
     BACKOFF_MAX_TRIES = 5

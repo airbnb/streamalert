@@ -23,7 +23,7 @@ LOGGER = get_logger(__name__)
 LOGGER_DEBUG_ENABLED = LOGGER.isEnabledFor(logging.DEBUG)
 
 
-class Normalizer(object):
+class Normalizer:
     """Normalizer class to handle log key normalization in payloads"""
 
     NORMALIZATION_KEY = 'streamalert:normalization'
@@ -70,7 +70,7 @@ class Normalizer(object):
             if not values:
                 continue
 
-            result[key] = sorted(values, key=lambda x: str(x))
+            result[key] = sorted(values, key=str)
 
         return result
 
