@@ -99,6 +99,16 @@ class TestStreamPayload(object):
         )
         assert_equal(repr(self._payload), expected_result)
 
+    @patch.object(StreamPayload, '__abstractmethods__', frozenset())
+    def test_repr_invalid_str(self):
+        """StreamPayload - Repr, Invalid, Str Payload"""
+        payload = StreamPayload('foobar', '{"key": "value"}')
+        payload.fully_classified = False
+        expected_result = (
+            '<StreamPayload valid:False; resource:foobar; raw record:{"key": "value"};>'
+        )
+        assert_equal(repr(payload), expected_result)
+
     def test_load_from_raw_record_kinesis(self):
         """StreamPayload - Load from Raw Record, Kinesis"""
         record = {

@@ -64,15 +64,17 @@ class PayloadRecord(object):
     def __repr__(self):
         record_data = self._record_data
         invalid_records = self.invalid_records
+
         try:
-            if not isinstance(self._record_data, str):
-                record_data = json.dumps(self._record_data)
+            if isinstance(record_data, dict):
+                record_data = json.dumps(record_data)
         except (TypeError, ValueError):
             LOGGER.debug('A PayloadRecord has data that is not serializable as JSON')
 
         try:
-            if not isinstance(invalid_records, str):
-                invalid_records = json.dumps(self.invalid_records)
+            #Build a JSON string if data is a dict or non-empty list of dicts
+            if isinstance(invalid_records, dict) or (isinstance(invalid_records, list) and invalid_records and isinstance(invalid_records[0], dict)):
+                invalid_records = json.dumps(invalid_records)
         except (TypeError, ValueError):
             LOGGER.debug('A PayloadRecord has invalid records that are not serializable as JSON')
 
@@ -229,7 +231,7 @@ class StreamPayload(object):
             )
         raw_record = self.raw_record
         try:
-            if not isinstance(raw_record, str):
+            if isinstance(raw_record, dict):
                 raw_record = json.dumps(self.raw_record)
         except (TypeError, ValueError):
             LOGGER.debug('A StreamPayload has data that is not serializable as JSON')
