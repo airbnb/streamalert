@@ -99,5 +99,5 @@ class TestAliyunApp(object):
                                    '"StartTime":"2018-06-23T19:28:30Z"}'
         logs = self._app._gather_logs()
         assert_equal(2, len(logs))
-        assert self._app._more_to_poll #nosec
+        assert self._app._more_to_poll # nosec
         assert_equal(self._app.request.get_NextToken(), "20")

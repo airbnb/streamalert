@@ -98,7 +98,7 @@ class TestOneLoginApp(object):
             'user_id': 321,
             'event_type_id': 4321,
             'notes': 'Notes',
-            'ipaddr': '0.0.0.0', #nosec
+            'ipaddr': '0.0.0.0', # nosec
             'actor_user_id': 987,
             'assuming_acting_user_id': 654,
             'role_id': 456,
