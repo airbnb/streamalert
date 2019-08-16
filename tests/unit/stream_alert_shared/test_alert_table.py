@@ -28,7 +28,7 @@ _ALERTS_TABLE = 'PREFIX_streamalert_alerts'
 _ALERT_PROCESSOR_TIMEOUT_SEC = 60
 
 
-class TestAlertTable(object):
+class TestAlertTable:
     """Tests for shared/alert_table.py"""
     # pylint: disable=protected-access
 

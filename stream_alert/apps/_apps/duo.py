@@ -18,7 +18,9 @@ from datetime import datetime
 import hashlib
 import hmac
 import re
-import urllib.request, urllib.parse, urllib.error
+import urllib.request
+import urllib.parse
+import urllib.error
 
 import requests
 

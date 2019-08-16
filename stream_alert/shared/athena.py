@@ -35,7 +35,7 @@ class AthenaQueryExecutionError(Exception):
     """Exception to be raised when an Athena query fails"""
 
 
-class AthenaClient(object):
+class AthenaClient:
     """A StreamAlert Athena Client for creating tables, databases, and executing queries
 
     Attributes:

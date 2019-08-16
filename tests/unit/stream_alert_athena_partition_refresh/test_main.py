@@ -29,7 +29,7 @@ from tests.unit.helpers.aws_mocks import MockAthenaClient
 # Without this time.sleep patch, backoff performs sleep
 # operations and drastically slows down testing
 @patch('time.sleep', Mock())
-class TestAthenaRefresher(object):
+class TestAthenaRefresher:
     """Test class for AthenaRefresher"""
 
     @patch('stream_alert.athena_partition_refresh.main.load_config',
@@ -138,7 +138,8 @@ class TestAthenaRefresher(object):
 
         result = self._refresher._get_partitions_from_keys()
 
-        log_mock.assert_called_with('The key %s does not match any regex, skipping', bad_key.decode('utf-8'))
+        log_mock.assert_called_with('The key %s does not match any regex, skipping',
+                                    bad_key.decode('utf-8'))
         assert_equal(result, dict())
 
     @staticmethod

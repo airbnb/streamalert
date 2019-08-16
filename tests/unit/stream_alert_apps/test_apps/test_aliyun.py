@@ -28,7 +28,7 @@ from tests.unit.stream_alert_shared.test_config import get_mock_lambda_context
 
 
 @mock_ssm
-class TestAliyunApp(object):
+class TestAliyunApp:
     """Test class for the AliyunApp"""
     # pylint: disable=protected-access
 

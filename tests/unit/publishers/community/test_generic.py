@@ -26,7 +26,7 @@ from stream_alert.alert_processor.outputs.slack import SlackOutput
 from tests.unit.stream_alert_alert_processor.helpers import get_alert
 
 
-class TestPublishersForOutput(object):
+class TestPublishersForOutput:
 
     @staticmethod
     def test_publisher_for_output():
@@ -68,7 +68,7 @@ class TestPublishersForOutput(object):
         assert_equal(publication, expectation)
 
 
-class TestDefaultPublisher(object):
+class TestDefaultPublisher:
     PUBLISHER_NAME = 'stream_alert.shared.publisher.DefaultPublisher'
 
     def setup(self):
@@ -108,7 +108,7 @@ class TestDefaultPublisher(object):
         assert_equal(publication, expectation)
 
 
-class TestRecordPublisher(object):
+class TestRecordPublisher:
     PUBLISHER_NAME = 'publishers.community.generic.add_record'
 
     def setup(self):
@@ -135,7 +135,7 @@ class TestRecordPublisher(object):
         assert_equal(publication, expectation)
 
 
-class TestRemoveInternalFieldsPublisher(object):
+class TestRemoveInternalFieldsPublisher:
     PUBLISHER_NAME = 'publishers.community.generic.remove_internal_fields'
 
     def setup(self):
@@ -173,7 +173,7 @@ class TestRemoveInternalFieldsPublisher(object):
         assert_equal(publication, expectation)
 
 
-class TestRemoveStreamAlertNormalizationFields(object):
+class TestRemoveStreamAlertNormalizationFields:
     PUBLISHER_NAME = 'publishers.community.generic.remove_streamalert_normalization'
 
     def setup(self):
@@ -234,7 +234,7 @@ class TestRemoveStreamAlertNormalizationFields(object):
         assert_equal(publication, expectation)
 
 
-class TestEnumerateFields(object):
+class TestEnumerateFields:
     PUBLISHER_NAME = 'publishers.community.generic.enumerate_fields'
 
     def setup(self):
@@ -368,7 +368,7 @@ def test_delete_dictionary_fields():
     assert_equal(result, expectation)
 
 
-class TestRemoveFields(object):
+class TestRemoveFields:
     PUBLISHER_NAME = 'publishers.community.generic.remove_fields'
 
     def setup(self):
@@ -409,7 +409,7 @@ class TestRemoveFields(object):
         assert_equal(publication, expectation)
 
 
-class TestPopulateFields(object):
+class TestPopulateFields:
     PUBLISHER_NAME = 'publishers.community.generic.populate_fields'
 
     def setup(self):
@@ -443,7 +443,7 @@ class TestPopulateFields(object):
         assert_equal(publication, expectation)
 
 
-class TestStringifyArrays(object):
+class TestStringifyArrays:
     PUBLISHER_NAME = 'publishers.community.generic.StringifyArrays'
 
     def setup(self):

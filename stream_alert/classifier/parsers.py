@@ -458,7 +458,7 @@ class ParserBase(metaclass=ABCMeta):
 
         # If the data is a string, attempt to load it to json,
         # falling back on a string type on error
-        elif isinstance(data, str) or isinstance(data, bytes):
+        elif isinstance(data, (str, bytes)):
             try:
                 data_copy = json.loads(data)
             except (ValueError, TypeError) as err:

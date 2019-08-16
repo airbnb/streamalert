@@ -55,7 +55,7 @@ from tests.unit.stream_alert_alert_processor.helpers import (
 #
 
 
-class TestCredentialsEncrypted(object):
+class TestCredentialsEncrypted:
     @mock_kms
     def setup(self):
         self._plaintext_payload = 'plaintext credentials'
@@ -100,7 +100,7 @@ class TestCredentialsEncrypted(object):
         logging_exception.assert_called_with('an error occurred during credentials decryption')
 
 
-class TestCredentialsUnencrypted(object):
+class TestCredentialsUnencrypted:
     def setup(self):
         self._plaintext_payload = 'plaintext credentials'
         self._credentials = Credentials(self._plaintext_payload, is_encrypted=False)
@@ -131,7 +131,7 @@ class TestCredentialsUnencrypted(object):
         assert_equal(self._credentials.data(), 'InBsYWludGV4dCBjcmVkZW50aWFscyI='.encode())
 
 
-class TestCredentialsEmpty(object):
+class TestCredentialsEmpty:
     def setup(self):
         self._plaintext_payload = ''
         self._credentials = Credentials(self._plaintext_payload, is_encrypted=False)
@@ -162,7 +162,7 @@ def test_constructor_loads_from_os_when_not_provided():
 
 
 @mock_s3
-class TestOutputCredentialsProvider(object):
+class TestOutputCredentialsProvider:
     def setup(self):
         service_name = 'service'
         defaults = {
@@ -285,7 +285,7 @@ class TestOutputCredentialsProvider(object):
 #
 
 
-class TestS3Driver(object):
+class TestS3Driver:
     def setup(self):
         self._s3_driver = S3Driver('rawr', 'service_name', REGION)
 
@@ -408,7 +408,7 @@ class TestS3Driver(object):
         assert_equal(self._s3_driver.get_s3_secrets_bucket(), 'rawr.streamalert.secrets')
 
 
-class TestS3DriverWithFileDriver(object):
+class TestS3DriverWithFileDriver:
     def setup(self):
         service_name = 'test_service'
         self._fs_driver = LocalFileDriver(REGION, service_name)
@@ -486,7 +486,7 @@ def test_get_formatted_output_credentials_name_no_descriptor(): #pylint: disable
     assert_equal(name, 'test_service_name')
 
 
-class TestLocalFileDriver(object):
+class TestLocalFileDriver:
 
     def setup(self):
         LocalFileDriver.clear()
@@ -571,7 +571,7 @@ class TestLocalFileDriver(object):
 #
 
 
-class TestSpooledTempfileDriver(object):
+class TestSpooledTempfileDriver:
 
     def setup(self):
         SpooledTempfileDriver.clear()
@@ -664,7 +664,7 @@ class TestSpooledTempfileDriver(object):
 # class EphemeralUnencryptedDriver tests
 #
 
-class TestEphemeralUnencryptedDriver(object):
+class TestEphemeralUnencryptedDriver:
 
     def setup(self):
         EphemeralUnencryptedDriver.clear()

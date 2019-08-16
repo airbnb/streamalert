@@ -38,7 +38,7 @@ from tests.unit.threat_intel_downloader.test_helpers import put_mock_params
 
 
 @patch('time.sleep', Mock())
-class TestThreatStream(object):
+class TestThreatStream:
     """Test class to test ThreatStream functionalities"""
     # pylint: disable=protected-access
 

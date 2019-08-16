@@ -19,7 +19,7 @@ from stream_alert_cli.config import CLIConfig
 from stream_alert_cli.terraform import rule_promotion
 
 
-class TestRulePromotion(object):
+class TestRulePromotion:
     """Test the Terraform generation for the rule promotion function"""
 
     def setup(self):

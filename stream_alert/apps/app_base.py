@@ -61,7 +61,7 @@ def safe_timeout(func):
     return _wrapper
 
 
-class AppIntegration(object, metaclass=ABCMeta):
+class AppIntegration(metaclass=ABCMeta):
     """Base class for all app integrations to be implemented for various services"""
     # This _POLL_BUFFER_MULTIPLIER is a multiplier that will be used, along with the time it
     # took to perform an API request and forward logs, to determine if there is enough

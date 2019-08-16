@@ -21,7 +21,7 @@ from stream_alert.shared.logger import get_logger
 LOGGER = get_logger(__name__)
 
 
-class StatsPublisher(object):
+class StatsPublisher:
     """Run queries to generate statistics on alerts."""
 
     DEFAULT_STATS_SNS_TOPIC = 'staging_stats'

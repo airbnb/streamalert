@@ -26,7 +26,7 @@ from stream_alert.shared.rule_table import RuleTable
 LOGGER = get_logger(__name__)
 
 
-class RulePromoter(object):
+class RulePromoter:
     """Run queries to generate statistics on alerts."""
 
     ATHENA_S3_PREFIX = 'rule_promoter'

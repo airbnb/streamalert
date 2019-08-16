@@ -23,7 +23,7 @@ from botocore.exceptions import ClientError
 
 from stream_alert.shared.helpers.aws_api_client import AwsS3
 
-class MockLambdaClient(object):
+class MockLambdaClient:
     """http://boto3.readthedocs.io/en/latest/reference/services/lambda.html"""
 
     def __init__(self, name, **kwargs):
@@ -58,10 +58,10 @@ class MockLambdaClient(object):
         }
 
 
-class MockAthenaClient(object):
+class MockAthenaClient:
     """http://boto3.readthedocs.io/en/latest/reference/services/athena.html"""
 
-    class MockAthenaPaginator(object):
+    class MockAthenaPaginator:
         """Mock class for paginating athena results"""
         def __init__(self, func, pages):
             self._func = func

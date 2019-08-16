@@ -26,7 +26,7 @@ def cloudtrail_put_bucket_acl(rec):
     if rec['detail']['eventName'] != 'PutBucketAcl':
         # check the event type early to avoid unnecessary performance impact
         return False
-    elif rec['detail']['requestParameters'] is None:
+    if rec['detail']['requestParameters'] is None:
         # requestParameters can be defined with a value of null
         return False
 

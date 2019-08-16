@@ -27,7 +27,7 @@ from tests.unit.stream_alert_shared.test_config import get_mock_lambda_context
 @mock_ssm
 @patch.object(SlackApp, '_endpoint', Mock(return_value='endpoint'))
 @patch.object(SlackApp, '_type', Mock(return_value='type'))
-class TestSlackApp(object):
+class TestSlackApp:
     """Test class for the SlackApp"""
     # pylint: disable=protected-access
 
@@ -71,7 +71,7 @@ class TestSlackApp(object):
 
 
 @mock_ssm
-class TestSlackAccessApp(object):
+class TestSlackAccessApp:
     """Test class for the SlackAccessApp"""
     # pylint: disable=protected-access
 
@@ -239,7 +239,7 @@ class TestSlackAccessApp(object):
 
 
 @mock_ssm
-class TestSlackIntegrationsApp(object):
+class TestSlackIntegrationsApp:
     """Test class for the SlackIntegrationsApp"""
     # pylint: disable=protected-access
 

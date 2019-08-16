@@ -78,7 +78,7 @@ EXPECTED_LABELS_FOR_SAMPLE_ALERT = [
 ]
 
 
-class TestDemistoOutput(object):
+class TestDemistoOutput:
     """Test class for SlackOutput"""
     DESCRIPTOR = 'unit_test_demisto'
     SERVICE = 'demisto'
@@ -129,7 +129,7 @@ class TestDemistoOutput(object):
             'createInvestigation': True,
         }
 
-        class Matcher(object):
+        class Matcher:
             def __eq__(self, other):
                 if other == expected_data:
                     return True
@@ -172,7 +172,7 @@ class TestDemistoOutput(object):
 
         assert_false(success)
 
-        class Matcher(object):
+        class Matcher:
             def __eq__(self, other):
                 return isinstance(other, OutputRequestFailure)
         logger_spy.assert_called_with('Failed to create Demisto incident: %s.', Matcher())

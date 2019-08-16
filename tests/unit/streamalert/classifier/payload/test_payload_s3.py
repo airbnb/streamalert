@@ -28,7 +28,7 @@ from pyfakefs import fake_filesystem_unittest
 from stream_alert.classifier.payload.s3 import S3Payload, S3PayloadError
 
 
-class TestS3Payload(object):
+class TestS3Payload:
     """S3Payload tests"""
     # pylint: disable=no-self-use,protected-access,attribute-defined-outside-init
 

@@ -20,7 +20,7 @@ from nose.tools import assert_equal
 from stream_alert.classifier.payload.kinesis import KinesisPayload
 
 
-class TestKinesisPayload(object):
+class TestKinesisPayload:
     """KinesisPayload tests"""
     # pylint: disable=no-self-use,protected-access
 

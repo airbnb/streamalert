@@ -22,7 +22,7 @@ import stream_alert.classifier.classifier as classifier_module
 from stream_alert.classifier.classifier import Classifier
 
 
-class TestClassifier(object):
+class TestClassifier:
     """Classifier tests"""
     # pylint: disable=protected-access,no-self-use,attribute-defined-outside-init
 

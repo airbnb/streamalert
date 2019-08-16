@@ -15,7 +15,7 @@ limitations under the License.
 """
 
 
-class StagingStatistic(object):
+class StagingStatistic:
     """Store information on generated alerts."""
 
     _ALERT_COUNT_UNKOWN = 'unknown'

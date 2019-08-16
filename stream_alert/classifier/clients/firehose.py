@@ -19,7 +19,8 @@ import re
 
 import backoff
 import boto3
-from botocore.exceptions import ClientError, ConnectionError, HTTPClientError
+from botocore.exceptions import ClientError, HTTPClientError
+from botocore.exceptions import ConnectionError as botocoreConnectionError
 
 from stream_alert.shared import CLASSIFIER_FUNCTION_NAME as FUNCTION_NAME
 import stream_alert.shared.helpers.boto as boto_helpers
@@ -34,7 +35,7 @@ from stream_alert.shared.backoff_handlers import (
 LOGGER = get_logger(__name__)
 
 
-class FirehoseClient(object):
+class FirehoseClient:
     """Handles preparing and sending data from the classifier function to Kinesis Firehose"""
     # Used to detect special characters in payload keys.
     # This is necessary for sanitization of data prior to searching in Athena.
@@ -54,7 +55,7 @@ class FirehoseClient(object):
     DEFAULT_FIREHOSE_PREFIX = 'streamalert_data_{}'
 
     # Exception for which backoff operations should be performed
-    EXCEPTIONS_TO_BACKOFF = (ClientError, ConnectionError, HTTPClientError)
+    EXCEPTIONS_TO_BACKOFF = (ClientError, botocoreConnectionError, HTTPClientError)
 
     # Set of enabled log types for firehose, loaded from configs
     _ENABLED_LOGS = dict()

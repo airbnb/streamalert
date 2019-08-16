@@ -65,7 +65,7 @@ def retry_on_exception(exceptions):
     return real_decorator
 
 
-class StreamAlertOutput(object):
+class StreamAlertOutput:
     """Class to be used as a decorator to register all OutputDispatcher subclasses"""
     _outputs = {}
 
@@ -116,7 +116,7 @@ class StreamAlertOutput(object):
         return cls._outputs.copy()
 
 
-class OutputDispatcher(object, metaclass=ABCMeta):
+class OutputDispatcher(metaclass=ABCMeta):
     """OutputDispatcher is the base class to handle routing alerts to outputs
 
     Public methods:
@@ -346,7 +346,6 @@ class OutputDispatcher(object, metaclass=ABCMeta):
         Returns:
             dict: Contains various default items for this output (ie: url)
         """
-        pass
 
     @classmethod
     def format_output_config(cls, service_config, values):

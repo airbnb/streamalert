@@ -24,7 +24,7 @@ from stream_alert.rules_engine.threat_intel import ThreatIntel
 # Without this time.sleep patch, backoff performs sleep
 # operations and drastically slows down testing
 @patch('time.sleep', Mock())
-class TestThreatIntel(object):
+class TestThreatIntel:
     """Tests for ThreatIntel"""
     # pylint: disable=attribute-defined-outside-init,protected-access,no-self-use
     def setup(self):

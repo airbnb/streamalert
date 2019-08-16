@@ -18,7 +18,7 @@ import json
 import os
 
 
-class TopLevelConfigKeys(object):
+class TopLevelConfigKeys:
     """Define the available top level keys in the loaded config"""
     CLUSTERS = 'clusters'
     GLOBAL = 'global'
@@ -215,7 +215,8 @@ def _validate_config(config):
         for ioc_type, normalized_keys in normalized_ioc_types.items():
             for normalized_key in normalized_keys:
                 if not any(normalized_key in set(log_keys)
-                           for log_keys in list(config[TopLevelConfigKeys.NORMALIZED_TYPES].values())):
+                           for log_keys in
+                           list(config[TopLevelConfigKeys.NORMALIZED_TYPES].values())):
                     raise ConfigError(
                         'IOC key \'{}\' within IOC type \'{}\' must be defined for at least '
                         'one log type in normalized types'.format(normalized_key, ioc_type)

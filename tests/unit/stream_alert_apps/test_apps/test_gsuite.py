@@ -17,7 +17,6 @@ import json
 import os
 import socket
 import ssl
-import builtins
 from datetime import datetime, timedelta
 
 import apiclient
@@ -35,7 +34,7 @@ from tests.unit.stream_alert_shared.test_config import get_mock_lambda_context
 @mock_ssm
 @patch.object(GSuiteReportsApp, '_type', Mock(return_value='admin'))
 @patch.object(GSuiteReportsApp, 'type', Mock(return_value='type'))
-class TestGSuiteReportsApp(object):
+class TestGSuiteReportsApp:
     """Test class for the GSuiteReportsApp"""
     # pylint: disable=protected-access
 

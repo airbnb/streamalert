@@ -37,7 +37,7 @@ from tests.unit.stream_alert_shared.test_config import get_mock_lambda_context
 # This also also allows us to subsequently patch these methods for use in the
 # tests.
 @patch.object(DuoApp, '__abstractmethods__', frozenset())
-class TestDuoApp(object):
+class TestDuoApp:
     """Test class for the DuoApp"""
     # pylint: disable=protected-access
 

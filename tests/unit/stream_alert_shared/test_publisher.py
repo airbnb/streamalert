@@ -74,7 +74,7 @@ def sample_publisher_blank(*_):
     return {}
 
 
-class TestRegister(object):
+class TestRegister:
 
     @staticmethod
     def test_register_works_properly():
@@ -84,7 +84,7 @@ class TestRegister(object):
         ))
 
 
-class TestCompositePublisher(object):
+class TestCompositePublisher:
 
     @staticmethod
     def test_composite_publisher_ordering():
@@ -102,7 +102,7 @@ class TestCompositePublisher(object):
         assert_equal(publication, expectation)
 
 
-class TestWrappedFunctionPublisher(object):
+class TestWrappedFunctionPublisher:
 
     @staticmethod
     def test_wrapped_function_publisher():
@@ -116,7 +116,7 @@ class TestWrappedFunctionPublisher(object):
         assert_equal(publication, expectation)
 
 
-class TestAlertPublisherRepository(object):
+class TestAlertPublisherRepository:
 
     @staticmethod
     def test_is_valid_publisher_class():
@@ -206,7 +206,7 @@ class TestAlertPublisherRepository(object):
         error_log.assert_called_with('Publisher [%s] does not exist', 'no_exist')
 
 
-class TestAlertPublisherRepositoryAssemblePublisher(object):
+class TestAlertPublisherRepositoryAssemblePublisher:
     def setup(self):
         self._alert = get_alert(context={'this_context': 'that_value'})
         self._descriptor = 'some_descriptor'

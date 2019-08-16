@@ -27,7 +27,7 @@ BUILD_DIRECTORY = os.path.join(THIS_DIRECTORY, '..', '..', 'terraform')
 LOGGER = get_logger(__name__)
 
 
-class LambdaPackage(object):
+class LambdaPackage:
     """Build a deployment package for a StreamAlert Lambda function."""
     config_key = None                  # Configuration key to access conf/lambda.json
     lambda_handler = None              # Entry point for the Lambda function

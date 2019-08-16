@@ -23,7 +23,7 @@ from stream_alert.shared.logger import get_logger
 LOGGER = get_logger(__name__)
 
 
-class AwsKms(object):
+class AwsKms:
     @staticmethod
     def encrypt(plaintext_data, region, key_alias):
         """Encrypts the given plaintext data using AWS KMS
@@ -77,7 +77,7 @@ class AwsKms(object):
             raise
 
 
-class AwsS3(object):
+class AwsS3:
     @staticmethod
     def head_bucket(bucket, region):
         """Determines if given bucket exists with correct permissions.

@@ -154,8 +154,8 @@ def _create(function_name, config, clusters=None):
                  'stream_alert_apps', {}
              ).values()
              if 'app_name' in app_info},
-            True if any(info['modules'].get('stream_alert_apps')
-                        for info in config['clusters'].values()) else False
+            any(info['modules'].get('stream_alert_apps')
+                for info in config['clusters'].values())
         ),
         'athena': PackageMap(
             stream_alert_packages.AthenaPackage,

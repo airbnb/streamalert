@@ -27,7 +27,7 @@ from publishers.community.slack.slack_layout import (
 from tests.unit.stream_alert_alert_processor.helpers import get_alert
 
 
-class TestSummary(object):
+class TestSummary:
 
     def setup(self):
         self._publisher = Summary()
@@ -76,10 +76,11 @@ class TestSummary(object):
             publication['@slack.attachments'][0],
             expectation['@slack.attachments'][0]
         )
-        assert_dict_equal(publication['@slack.attachments'][0], expectation['@slack.attachments'][0])
+        assert_dict_equal(publication['@slack.attachments'][0],
+                          expectation['@slack.attachments'][0])
 
 
-class TestAttachRuleInfo(object):
+class TestAttachRuleInfo:
 
     def setup(self):
         self._publisher = AttachRuleInfo()
@@ -118,7 +119,7 @@ Att&ck vector:  Assuming direct control
         assert_dict_equal(publication, expectation)
 
 
-class TestAttachPublication(object):
+class TestAttachPublication:
 
     def setup(self):
         self._publisher = AttachPublication()
@@ -154,7 +155,7 @@ class TestAttachPublication(object):
         assert_equal(publication, expectation)
 
 
-class TestAttachStringTemplate(object):
+class TestAttachStringTemplate:
     def setup(self):
         self._publisher = AttachStringTemplate()
 
@@ -200,7 +201,7 @@ class TestAttachStringTemplate(object):
         assert_equal(publication, expectation)
 
 
-class TestAttachFullRecord(object):
+class TestAttachFullRecord:
 
     def setup(self):
         self._publisher = AttachFullRecord()

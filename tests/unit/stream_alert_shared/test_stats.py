@@ -22,7 +22,7 @@ from nose.tools import assert_equal
 from stream_alert.shared import stats
 
 
-class TestRuleStats(object):
+class TestRuleStats:
     """TestTimeRule class"""
     def setup(self):
         stats.RULE_STATS.clear()

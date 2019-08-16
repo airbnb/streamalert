@@ -22,7 +22,7 @@ from nose.tools import assert_equal
 from stream_alert.rule_promotion.statistic import StagingStatistic
 
 
-class TestStagingStatistic(object):
+class TestStagingStatistic:
     """Tests for rule_promotion/statistic.py:StagingStatistic"""
     # pylint: disable=protected-access
 

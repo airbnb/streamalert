@@ -133,7 +133,7 @@ class TestConfigLoading(fake_filesystem_unittest.TestCase):
         assert_count_equal(list(config['clusters'].keys()), expected_clusters_keys)
 
 
-class TestConfigValidation(object):
+class TestConfigValidation:
     """Test config validation"""
     # pylint: disable=no-self-use
 

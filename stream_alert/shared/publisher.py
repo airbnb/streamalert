@@ -35,7 +35,7 @@ class PublisherAssemblyError(PublisherError):
     """Exception to raise when a publisher fails lookup or assembly"""
 
 
-class Register(object):
+class Register:
     """This is a decorator used to register publishers into the AlertPublisherRepository."""
 
     def __new__(cls, class_or_function):
@@ -44,7 +44,7 @@ class Register(object):
         return class_or_function  # Return the definition, not the instantiated object
 
 
-class AlertPublisher(object):
+class AlertPublisher:
     """Interface for a Publisher. All class-based publishers must inherit from this class."""
 
     @abstractmethod
@@ -111,7 +111,7 @@ class WrappedFunctionPublisher(AlertPublisher):
         return self._function(alert, publication)
 
 
-class AlertPublisherRepository(object):
+class AlertPublisherRepository:
     """A repository mapping names -> publishers
 
     As a usability optimization, using this Repository will eagerly load and register all
@@ -179,7 +179,7 @@ class AlertPublisherRepository(object):
             ).format(publisher)
             raise PublisherRegistrationError(error)
 
-        elif isclass(publisher):
+        if isclass(publisher):
             # If the provided publisher is a Class, then we simply need to instantiate an instance
             # of the class and register it.
             publisher_instance = publisher()
