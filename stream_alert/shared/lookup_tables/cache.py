@@ -8,7 +8,7 @@ class DriverCache(object):
     This class is to intended to be used in the following pattern:
 
     def get(key, default=None):
-        if cache.has(key):
+        if not cache.has(key):
             try:
                 data = load_data(key)
                 cache.set(key, data)
@@ -22,6 +22,18 @@ class DriverCache(object):
         self._data = {}
         self._ttls = {}
         self._clock = DriverCacheClock()
+
+    def ttl(self, key):
+        """
+        Returns the datetime time-to-live of the requested key.
+
+        Params:
+            key (str)
+
+        Returns:
+            datetime|None
+        """
+        return self._ttls.get(key, None)
 
     def has(self, key):
         """

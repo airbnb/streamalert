@@ -171,19 +171,17 @@ class TestDynamoDBDriver(object):
         """LookupTables - Drivers - DynamoDB Driver - Refresh - On First Read"""
         self._driver.initialize()
 
-        assert_false('bbbb:1' in self._driver._dynamo_load_times)
+        assert_false(self._driver._cache.has('bbbb:1'))
 
         assert_equal(self._driver.get('bbbb:1', '?'), 'beeffedfeedbeefdeaddeafbeddab')
 
         mock_logger.assert_called_with(
-            'LookupTable (%s): Key %s needs refresh, starting now. Last refresh: %s; Currently: %s',
+            'LookupTable (%s): Key %s needs refresh, starting now.',
             'dynamodb:table_name',
-            'bbbb:1',
-            0,
-            ANY
+            'bbbb:1'
         )
 
-        assert_true('bbbb:1' in self._driver._dynamo_load_times)
+        assert_true(self._driver._cache.has('bbbb:1'))
 
     @patch('logging.Logger.debug')
     def test_barely_does_not_need_refresh(self, mock_logger):
@@ -191,18 +189,19 @@ class TestDynamoDBDriver(object):
         self._driver.initialize()
 
         # Mess up some of the data so we fake that it's "stale"
-        self._driver._dynamo_data['bbbb:1'] = 'stale'
+        self._driver._cache._clock.time_machine(datetime(year=3000, month=1, day=1))
+        self._driver._cache.set('bbbb:1', 'stale', 3)  # 3-minute ttl
 
-        # Wind the "clock" back JUST before it needs a refresh
-        self._driver._dynamo_load_times['bbbb:1'] = (
-            datetime.utcnow() - timedelta(minutes=2, seconds=59)
+        # Wind the "clock" forward JUST before it needs a refresh
+        self._driver._cache._clock.time_machine(
+            datetime(year=3000, month=1, day=1, minute=2, second=59)
         )
 
         assert_equal(self._driver.get('bbbb:1'), 'stale')
 
         mock_logger.assert_any_call(
-            'LookupTable (%s): Key %s does not need refresh. Last refresh: %s; Currently: %s',
-            'dynamodb:table_name', 'bbbb:1', ANY, ANY
+            'LookupTable (%s): Key %s does not need refresh. TTL: %s',
+            'dynamodb:table_name', 'bbbb:1', datetime(year=3000, month=1, day=1, minute=3)
         )
 
     @patch('logging.Logger.info')
@@ -211,21 +210,20 @@ class TestDynamoDBDriver(object):
         self._driver.initialize()
 
         # Mess up some of the data so we fake that it's "stale"
-        self._driver._dynamo_data['bbbb:1'] = 'stale'
+        self._driver._cache._clock.time_machine(datetime(year=3000, month=1, day=1))
+        self._driver._cache.set('bbbb:1', 'stale', 3)  # 3-minute ttl
 
-        # Wind the "clock" back JUST before it needs a refresh
-        self._driver._dynamo_load_times['bbbb:1'] = (
-            datetime.utcnow() - timedelta(minutes=3, seconds=1)
+        # Wind the "clock" forward JUST AFTER it needs a refresh
+        self._driver._cache._clock.time_machine(
+            datetime(year=3000, month=1, day=1, minute=3, second=1)
         )
 
         assert_equal(self._driver.get('bbbb:1'), 'beeffedfeedbeefdeaddeafbeddab')
 
         mock_logger.assert_called_with(
-            'LookupTable (%s): Key %s needs refresh, starting now. Last refresh: %s; Currently: %s',
+            'LookupTable (%s): Key %s needs refresh, starting now.',
             'dynamodb:table_name',
-            'bbbb:1',
-            ANY,
-            ANY
+            'bbbb:1'
         )
 
 

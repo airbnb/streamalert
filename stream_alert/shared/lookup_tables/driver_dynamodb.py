@@ -6,6 +6,7 @@ from botocore.exceptions import ClientError, ConnectTimeoutError, ReadTimeoutErr
 
 import stream_alert.shared.helpers.boto as boto_helpers
 from stream_alert.shared.logger import get_logger
+from stream_alert.shared.lookup_tables.cache import DriverCache
 from stream_alert.shared.lookup_tables.drivers import PersistenceDriver
 from stream_alert.shared.lookup_tables.errors import LookupTablesInitializationError
 
@@ -45,8 +46,7 @@ class DynamoDBDriver(PersistenceDriver):
         self._dynamo_db_sort_key = configuration.get('sort_key', False)
         self._dynamo_consistent_read = configuration.get('consistent_read', True)
 
-        self._dynamo_data = {}
-        self._dynamo_load_times = {}
+        self._cache = DriverCache()
 
         self._cache_maximum_key_count = configuration.get('cache_maximum_key_count', 1000)
         self._cache_refresh_minutes = configuration.get('cache_refresh_minutes', 3)
@@ -86,7 +86,7 @@ class DynamoDBDriver(PersistenceDriver):
     def get(self, key, default=None):
         self._reload_if_necessary(key)
 
-        return self._dynamo_data.get(key, default)
+        return self._cache.get(key, default)
 
     def set(self, key, value):
         # FIXME (derek.wang)
@@ -99,29 +99,22 @@ class DynamoDBDriver(PersistenceDriver):
 
         If it needs a reload, this method will appropriately call reload.
         """
-        last_load_time = self._dynamo_load_times.get(key, 0)
-
-        now = datetime.utcnow()
-        refresh_delta = timedelta(minutes=self._cache_refresh_minutes)
-        needs_refresh = last_load_time + refresh_delta < now if last_load_time else True
-
-        if not needs_refresh:
+        if not self._cache.has(key):
+            LOGGER.info(
+                'LookupTable (%s): Key %s needs refresh, starting now.',
+                self.id,
+                key
+            )
+            self._load(key)
+        else:
             LOGGER.debug(
-                'LookupTable (%s): Key %s does not need refresh. Last refresh: %s; Currently: %s',
+                'LookupTable (%s): Key %s does not need refresh. TTL: %s',
                 self.id,
                 key,
-                last_load_time,
-                now
+                self._cache.ttl(key)
             )
             return
 
-        LOGGER.info(
-            'LookupTable (%s): Key %s needs refresh, starting now. Last refresh: %s; Currently: %s',
-            self.id,
-            key,
-            last_load_time,
-            now
-        )
         self._load(key)
 
     def _load(self, key):
@@ -182,13 +175,18 @@ class DynamoDBDriver(PersistenceDriver):
                 'LookupTable ({}): Reading from DynamoDB timed out'.format(self.id)
             )
 
-        self._dynamo_load_times[key] = datetime.utcnow()
-
         if 'Item' not in response:
+            self._cache.set_blank(key, self._cache_refresh_minutes)
             return
 
         if self._dynamo_db_value_key not in response['Item']:
-            # FIXME (derek.wang) Warn when it seems like there's no matching value key?
+            # FIXME (derek.wang)
+            self._cache.set_blank(key, self._cache_refresh_minutes)
+            LOGGER.error(
+                'LookupTable (%s): Requested value key %s seems to be missing from the table.',
+                self.id,
+                self._dynamo_db_value_key
+            )
             return
 
-        self._dynamo_data[key] = response['Item'][self._dynamo_db_value_key]
+        self._cache.set(key, response['Item'][self._dynamo_db_value_key], self._cache_refresh_minutes)
