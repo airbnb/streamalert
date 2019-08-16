@@ -228,14 +228,14 @@ class TestSlackAccessApp(object):
 
         self._app._last_timestamp = 1522922593
         gathered_logs = self._app._gather_logs()
-        assert 'before' not in requests_mock.call_args[1]['data'].keys()
+        assert 'before' not in requests_mock.call_args[1]['data'].keys() #nosec
         assert_equal(len(gathered_logs), 0)
         assert_equal(self._app._next_page, 1)
         assert_equal(True, self._app._more_to_poll)
         assert_equal(self._app._before_time, logs['logins'][-1]['date_first'])
 
         self._app._gather_logs()
-        assert 'before' in requests_mock.call_args[1]['data'].keys()
+        assert 'before' in requests_mock.call_args[1]['data'].keys() #nosec
 
 
 @mock_ssm

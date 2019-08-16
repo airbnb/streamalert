@@ -61,7 +61,7 @@ def {}(_):
     return False
 """.format(rule_name)
 
-        exec custom_rule_code  # pylint: disable=exec-used
+        exec custom_rule_code #nosec # pylint: disable=exec-used
 
     def test_rule_valid(self):
         """Rule - Create Valid Rule"""
@@ -198,7 +198,7 @@ def {}(_):
         ast_value = 'Return(value=Name(id=\'False\', ctx=Load()))'
 
         # The known checksum of the above is # c119f541816c6364ea3e2e884ba18f9c
-        expected_checksum = hashlib.md5(ast_value).hexdigest()
+        expected_checksum = hashlib.md5(ast_value).hexdigest() #nosec
 
         # Test rule without a docstring
         rule.Rule(_test_checksum, logs=['log_type'])
