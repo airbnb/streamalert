@@ -4,10 +4,10 @@ Contributing
 Installing Dependencies
 -----------------------
 
-Make sure you are running Python 2.7::
+Make sure you are running Python 3.7::
 
   $ python -V
-  Python 2.7.x
+  Python 3.7.x
 
 Install:
 
