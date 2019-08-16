@@ -167,28 +167,33 @@ class TestS3Driver(object):
         self._foo_driver.get('key_1')
 
         mock_logger.assert_any_call(
-            'LookupTable (%s): Does not need refresh. Last refresh: %s; Currently: %s',
-            ANY, ANY, ANY
+            'LookupTable (%s): Does not need refresh. TTL: %s',
+            's3:bucket_name/foo.json',
+            ANY
         )
 
     @patch('logging.Logger.debug')
     def test_barely_does_not_need_refresh(self, mock_logger):
         """LookupTables - Drivers - S3 Driver - Refresh - Barely Does not need refresh"""
+        # Wind the clock back; note this is before initialize.
+        self._foo_driver._cache._clock.time_machine(datetime(year=3000, month=1, day=1))
+
         self._foo_driver.initialize()
 
         # Mess up some of the data so we fake that it's "stale"
-        self._foo_driver._s3_data['key_1'] = 'stale'
-        assert_equal(self._foo_driver.get('key_1'), 'stale')
+        self._foo_driver._cache.set('key_1', 'stale', 10)  # 10-minute ttl
 
-        # Wind the "clock" back JUST before it needs a refresh
-        self._foo_driver._last_load_time = datetime.utcnow() - timedelta(minutes=9, seconds=59)
+        # Wind the "clock" forward JUST BEFORE it needs a refresh
+        self._foo_driver._cache._clock.time_machine(
+            datetime(year=3000, month=1, day=1, minute=9, second=59)
+        )
 
         # Do another fetch and observe that it's still stale
         assert_equal(self._foo_driver.get('key_1'), 'stale')
 
         mock_logger.assert_any_call(
-            'LookupTable (%s): Does not need refresh. Last refresh: %s; Currently: %s',
-            ANY, ANY, ANY
+            'LookupTable (%s): Does not need refresh. TTL: %s',
+            's3:bucket_name/foo.json', datetime(year=3000, month=1, day=1, minute=10)
         )
 
     @patch('logging.Logger.info')
@@ -197,16 +202,18 @@ class TestS3Driver(object):
         self._foo_driver.initialize()
 
         # Mess up some of the data so we fake that it's "stale"
-        self._foo_driver._s3_data['key_1'] = 'wrong'
-        assert_equal(self._foo_driver.get('key_1'), 'wrong')
+        self._foo_driver._cache._clock.time_machine(datetime(year=3000, month=1, day=1))
+        self._foo_driver._cache.set('key_1', 'stale', 10)  # 10-minute ttl
 
-        # Wind the "clock" way back
-        self._foo_driver._last_load_time = datetime.utcnow() - timedelta(minutes=10, seconds=1)
+        # Wind the "clock" forward JUST AFTER it needs a refresh
+        self._foo_driver._cache._clock.time_machine(
+            datetime(year=3000, month=1, day=1, minute=10, second=1)
+        )
 
         # Do another fetch and observe our updated results
         assert_equal(self._foo_driver.get('key_1'), 'foo_1')
 
         mock_logger.assert_any_call(
-            'LookupTable (%s): Needs refresh, starting now. Last refresh: %s; Currently: %s',
-            ANY, ANY, ANY
+            'LookupTable (%s): Needs refresh, starting now.',
+            's3:bucket_name/foo.json'
         )

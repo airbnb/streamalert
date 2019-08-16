@@ -9,6 +9,7 @@ from botocore.exceptions import ClientError, ConnectTimeoutError, ReadTimeoutErr
 
 import stream_alert.shared.helpers.boto as boto_helpers
 from stream_alert.shared.logger import get_logger
+from stream_alert.shared.lookup_tables.cache import DriverCache
 from stream_alert.shared.lookup_tables.drivers import PersistenceDriver
 from stream_alert.shared.lookup_tables.errors import LookupTablesInitializationError
 
@@ -32,6 +33,7 @@ class S3Driver(PersistenceDriver):
         LookupTable. If you are having memory issues on your Lambda, try using the DynamoDBDriver.
     """
     _DEFAULT_CACHE_REFRESH_MINUTES = 10
+    _MAGIC_CACHE_TTL_KEY = '____LAST_LOAD_TIME____'
 
     def __init__(self, configuration):
         # Example configuration:
@@ -54,9 +56,8 @@ class S3Driver(PersistenceDriver):
             self._DEFAULT_CACHE_REFRESH_MINUTES
         )
 
-        self._last_load_time = None
+        self._cache = DriverCache()
 
-        self._s3_data = {}
         self._dirty = False
 
         # Explicitly set timeout for S3 connection. The boto default timeout is 60 seconds.
@@ -84,11 +85,13 @@ class S3Driver(PersistenceDriver):
 
     def get(self, key, default=None):
         self._reload_if_necessary()
-
-        return self._s3_data.get(key, default)
+        return self._cache.get(key, default)
 
     def set(self, key, value):
-        self._s3_data.set(key, value)
+        """
+        Under construction
+        FIXME (derek.wang)
+        """
         self._dirty = True
 
     def _reload_if_necessary(self):
@@ -98,26 +101,19 @@ class S3Driver(PersistenceDriver):
 
         If it needs a reload, this method will appropriately call reload.
         """
-        now = datetime.utcnow()
-        refresh_delta = timedelta(minutes=self._cache_refresh_minutes)
-        needs_refresh = self._last_load_time + refresh_delta < now
-
-        if not needs_refresh:
+        if self._cache.has(self._MAGIC_CACHE_TTL_KEY):
             LOGGER.debug(
-                'LookupTable (%s): Does not need refresh. Last refresh: %s; Currently: %s',
+                'LookupTable (%s): Does not need refresh. TTL: %s',
                 self.id,
-                self._last_load_time,
-                now
+                self._cache.ttl(self._MAGIC_CACHE_TTL_KEY)
             )
-            return
 
-        LOGGER.info(
-            'LookupTable (%s): Needs refresh, starting now. Last refresh: %s; Currently: %s',
-            self.id,
-            self._last_load_time,
-            now
-        )
-        self._reload()
+        else:
+            LOGGER.info(
+                'LookupTable (%s): Needs refresh, starting now.',
+                self.id
+            )
+            self._reload()
 
     def _reload(self):
         """
@@ -184,12 +180,13 @@ class S3Driver(PersistenceDriver):
         # Decode the data; right now we make the assumption that the data is always encoded
         # as JSON.
         try:
-            self._s3_data = json.loads(data)
-            self._last_load_time = datetime.utcnow()
+            data = json.loads(data)
+            self._cache.setall(data, self._cache_refresh_minutes)
+            self._cache.set(self._MAGIC_CACHE_TTL_KEY, 'True', self._cache_refresh_minutes)
             LOGGER.debug(
                 'LookupTable (%s): File successfully JSON decoded. Discovered %s keys.',
                 self.id,
-                len(self._s3_data)
+                len(data)
             )
         except ValueError:
             LOGGER.exception(

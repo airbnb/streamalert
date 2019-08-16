@@ -1,4 +1,3 @@
-from datetime import datetime, timedelta
 import json
 
 import boto3
@@ -99,23 +98,20 @@ class DynamoDBDriver(PersistenceDriver):
 
         If it needs a reload, this method will appropriately call reload.
         """
-        if not self._cache.has(key):
-            LOGGER.info(
-                'LookupTable (%s): Key %s needs refresh, starting now.',
-                self.id,
-                key
-            )
-            self._load(key)
-        else:
+        if self._cache.has(key):
             LOGGER.debug(
                 'LookupTable (%s): Key %s does not need refresh. TTL: %s',
                 self.id,
                 key,
                 self._cache.ttl(key)
             )
-            return
-
-        self._load(key)
+        else:
+            LOGGER.info(
+                'LookupTable (%s): Key %s needs refresh, starting now.',
+                self.id,
+                key
+            )
+            self._load(key)
 
     def _load(self, key):
         # FIXME (derek.wang)
