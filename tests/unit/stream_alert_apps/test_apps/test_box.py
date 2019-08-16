@@ -15,7 +15,6 @@ limitations under the License.
 """
 import json
 import os
-import builtins
 
 from boxsdk.exception import BoxException
 from mock import Mock, mock_open, patch

@@ -77,6 +77,7 @@ class TestSummary:
             expectation['@slack.attachments'][0]
         )
 
+
 class TestAttachRuleInfo:
 
     def setup(self):
