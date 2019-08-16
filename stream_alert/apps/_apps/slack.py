@@ -35,7 +35,7 @@ class SlackApp(AppIntegration):
         contain details about your workspace's integrated apps
     """
 
-    _DEFAULT_REQUEST_TIMEOUT = 6.05
+    _DEFAULT_REQUEST_TIMEOUT = 10
     _SLACK_API_BASE_URL = 'https://slack.com/api/'
     _SLACK_API_MAX_ENTRY_COUNT = 1000
     _SLACK_API_MAX_PAGE_COUNT = 100
