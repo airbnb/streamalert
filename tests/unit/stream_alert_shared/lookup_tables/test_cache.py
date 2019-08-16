@@ -13,18 +13,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from datetime import datetime, timedelta
-from mock import ANY, patch
+from datetime import datetime
 
-from botocore.exceptions import ReadTimeoutError
-from moto import mock_dynamodb2
-from nose.tools import assert_equal, assert_false, assert_raises, assert_true
+from nose.tools import assert_equal, assert_false, assert_true
 
-from stream_alert.shared.config import load_config
-from stream_alert.shared.lookup_tables.cache import DriverCache, DriverCacheClock
-from stream_alert.shared.lookup_tables.drivers import construct_persistence_driver
-from stream_alert.shared.lookup_tables.errors import LookupTablesInitializationError
-from tests.unit.helpers.aws_mocks import put_mock_dynamod_data
+from stream_alert.shared.lookup_tables.cache import DriverCache
 
 
 class TestDriverCache(object):
