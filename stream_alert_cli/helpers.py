@@ -91,7 +91,7 @@ def continue_prompt(message=None):
 
     response = ''
     while response not in required_responses:
-        response = input('\n{} (yes or no): '.format(message))
+        response = input('\n{} (yes or no): '.format(message)) # nosec
 
     return response == 'yes'
 
@@ -176,7 +176,7 @@ def user_input(requested_info, mask, input_restrictions):
 
     if not mask:
         while not response:
-            response = input(prompt)
+            response = input(prompt) # nosec
 
         # Restrict having spaces or colons in items (applies to things like
         # descriptors, etc)
