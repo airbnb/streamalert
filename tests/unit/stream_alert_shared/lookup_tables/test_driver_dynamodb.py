@@ -13,8 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from datetime import datetime, timedelta
-from mock import ANY, patch
+from datetime import datetime
+from mock import patch
 
 from botocore.exceptions import ReadTimeoutError
 from moto import mock_dynamodb2

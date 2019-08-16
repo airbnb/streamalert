@@ -176,7 +176,6 @@ class DynamoDBDriver(PersistenceDriver):
             return
 
         if self._dynamo_db_value_key not in response['Item']:
-            # FIXME (derek.wang)
             self._cache.set_blank(key, self._cache_refresh_minutes)
             LOGGER.error(
                 'LookupTable (%s): Requested value key %s seems to be missing from the table.',
@@ -185,4 +184,8 @@ class DynamoDBDriver(PersistenceDriver):
             )
             return
 
-        self._cache.set(key, response['Item'][self._dynamo_db_value_key], self._cache_refresh_minutes)
+        self._cache.set(
+            key,
+            response['Item'][self._dynamo_db_value_key],
+            self._cache_refresh_minutes
+        )
