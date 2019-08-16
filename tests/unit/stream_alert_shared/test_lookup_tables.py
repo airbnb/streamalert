@@ -29,7 +29,7 @@ from stream_alert.shared.lookup_tables import LookupTables
 from tests.unit.helpers.aws_mocks import put_mock_s3_object
 
 
-class TestLookupTables(object):
+class TestLookupTables:
     """Test LookupTables class"""
     # pylint: disable=protected-access,attribute-defined-outside-init,no-self-use
 

@@ -30,7 +30,7 @@ from tests.unit.stream_alert_shared.test_config import get_mock_lambda_context
 
 @mock_ssm
 @patch.object(AppConfig, 'MAX_STATE_SAVE_TRIES', 1)
-class TestAppConfig(object):
+class TestAppConfig:
     """Test class for AppConfig"""
     # pylint: disable=protected-access,no-self-use,too-many-public-methods
 

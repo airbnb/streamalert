@@ -25,7 +25,7 @@ LOGGER = get_logger(__name__)
 LOGGER_DEBUG_ENABLED = LOGGER.isEnabledFor(logging.DEBUG)
 
 
-class PayloadRecord(object):
+class PayloadRecord:
     """PayloadRecord for extracted records from within a payload
 
     Attributes:
@@ -146,7 +146,7 @@ class PayloadRecord(object):
         ]
 
 
-class RegisterInput(object):
+class RegisterInput:
     """Class to be used as a decorator to register all StreamPayload subclasses"""
     _payload_classes = {}
 
@@ -188,7 +188,7 @@ class RegisterInput(object):
             LOGGER.error('Requested payload service [%s] does not exist', service)
 
 
-class StreamPayload(object, metaclass=ABCMeta):
+class StreamPayload(metaclass=ABCMeta):
     """StreamAlert payload object for incoming records
 
     Attributes:

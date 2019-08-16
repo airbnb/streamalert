@@ -27,7 +27,7 @@ from tests.unit.stream_alert_alert_processor.helpers import get_alert
 
 
 @patch('stream_alert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS', 1)
-class TestCarbonBlackOutput(object):
+class TestCarbonBlackOutput:
     """Test class for CarbonBlackOutput"""
     DESCRIPTOR = 'unit_test_carbonblack'
     SERVICE = 'carbonblack'

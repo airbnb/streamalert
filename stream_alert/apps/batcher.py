@@ -25,7 +25,7 @@ from stream_alert.shared.logger import get_logger
 LOGGER = get_logger(__name__)
 
 
-class Batcher(object):
+class Batcher:
     """Batcher class to handle segmenting large messages going to the classifier lambda function"""
     # Max lambda input payload size is 128K for the 'event' invocation type
     MAX_LAMBDA_PAYLOAD_SIZE = 128 * 1000

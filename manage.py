@@ -327,7 +327,7 @@ def _add_default_app_args(app_parser):
     # Validate the name being used to make sure it does not contain specific characters
     def _validate_name(val):
         """Validate acceptable inputs for the name of the function"""
-        acceptable_chars = ''.join([string.digits, string.letters, '_-'])
+        acceptable_chars = ''.join([string.digits, string.ascii_letters, '_-'])
         if not set(str(val)).issubset(acceptable_chars):
             raise app_parser.error('Name must contain only letters, numbers, '
                                    'hyphens, or underscores.')

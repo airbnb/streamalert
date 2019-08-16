@@ -18,7 +18,7 @@ from nose.tools import assert_equal
 from stream_alert_cli.config import CLIConfig
 from stream_alert_cli.terraform import common, firehose
 
-class TestFirehoseGenerate(object):
+class TestFirehoseGenerate:
     """Class for testing firehose generation code"""
     #pylint: disable=attribute-defined-outside-init
 

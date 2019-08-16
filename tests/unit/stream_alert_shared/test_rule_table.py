@@ -28,7 +28,7 @@ from tests.unit.helpers.aws_mocks import setup_mock_rules_table
 _RULES_TABLE = 'PREFIX_streamalert_rules'
 
 
-class TestRuleTable(object):
+class TestRuleTable:
     """Tests for shared/rule_table.py"""
     # pylint: disable=protected-access
 

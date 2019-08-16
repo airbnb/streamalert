@@ -46,7 +46,7 @@ class PagerdutySearchDelay(Exception):
     """PagerdutyAlertDelay handles any delays looking up PagerDuty Incidents"""
 
 
-class EventsV2DataProvider(object):
+class EventsV2DataProvider:
     """This class is meant to be mixed-into pagerduty outputs that integrate with v2 of the API
 
     This is called the CommonEventFormat (PD-CEF). Documentation can be found here:
@@ -582,7 +582,7 @@ class PagerDutyIncidentOutput(OutputDispatcher, EventsV2DataProvider):
         return work.run(alert, descriptor)
 
 
-class WorkContext(object):
+class WorkContext:
     """Class encapsulating a bunch of self-contained, interdependent PagerDuty work.
 
     Because PagerDuty work involves a lot of steps that share a lot of data, we carved this
@@ -821,7 +821,7 @@ Errors:
             if incident_urgency in ['low', 'high']:
                 incident_data['incident']['urgency'] = incident_urgency
             else:
-                LOGGER.warn(
+                LOGGER.warning(
                     '[%s] Invalid pagerduty incident urgency: "%s"',
                     self._output.__service__,
                     incident_urgency
@@ -842,7 +842,7 @@ Errors:
                     'type': 'user_reference',
                 }}]
             else:
-                LOGGER.warn(
+                LOGGER.warning(
                     '[%s] Assignee (%s) could not be found in PagerDuty',
                     self._output.__service__,
                     user_to_assign
@@ -1007,7 +1007,7 @@ Errors:
 
 
 # pylint: disable=protected-access
-class JsonHttpProvider(object):
+class JsonHttpProvider:
     """Wraps and re-uses the HTTP implementation on the output dispatcher.
 
     Intended to de-couple the ApiClient classes from the OutputDispatcher. It re-uses some
@@ -1061,7 +1061,7 @@ class JsonHttpProvider(object):
         return response
 
 
-class SslVerifiable(object):
+class SslVerifiable:
     """Mixin for tracking whether or not this is an SSL verifiable.
 
     Mix this into API client types of classes.

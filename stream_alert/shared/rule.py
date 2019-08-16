@@ -43,7 +43,7 @@ def disable(rule_instance):
     return rule_instance
 
 
-class Rule(object):
+class Rule:
     """Rule class to handle processing"""
     DEFAULT_RULE_DESCRIPTION = 'No rule description provided'
     CHECKSUM_UNKNOWN = 'checksum unknown'

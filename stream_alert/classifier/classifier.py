@@ -29,7 +29,7 @@ LOGGER = get_logger(__name__)
 LOGGER_DEBUG_ENABLED = LOGGER.isEnabledFor(logging.DEBUG)
 
 
-class Classifier(object):
+class Classifier:
     """Classify, map source, and parse a raw record into its declared type."""
 
     _config = None

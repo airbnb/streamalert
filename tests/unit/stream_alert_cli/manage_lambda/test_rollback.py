@@ -10,7 +10,7 @@ from stream_alert_cli.manage_lambda import rollback
 from tests.unit.helpers.config import basic_streamalert_config, MockCLIConfig
 
 
-class MockOptions(object):
+class MockOptions:
     """Simple mock for the options parsed from the command line arguments."""
 
     def __init__(self, clusters, function):
@@ -41,7 +41,7 @@ class RollbackTest(unittest.TestCase):
 
         rollback._rollback_production(mock_client, 'test_function')
 
-        mock_logger.warn.assert_called_once()
+        mock_logger.warning.assert_called_once()
         mock_client.update_alias.assert_not_called()
 
     @mock.patch.object(rollback, 'LOGGER')

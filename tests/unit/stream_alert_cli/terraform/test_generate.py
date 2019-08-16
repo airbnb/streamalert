@@ -27,7 +27,7 @@ from stream_alert_cli.terraform import (
 from stream_alert_cli.terraform.common import MisconfigurationError
 
 
-class TestTerraformGenerate(object):
+class TestTerraformGenerate:
     """Test class for the Terraform Cluster Generating"""
     # pylint: disable=no-self-use,attribute-defined-outside-init
 

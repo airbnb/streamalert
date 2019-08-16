@@ -20,7 +20,7 @@ from stream_alert.shared import rule
 from stream_alert_cli.test.format import format_green, format_red, format_underline
 
 
-class TestEventFile(object):
+class TestEventFile:
     """TestEventFile handles caching results of test events within a test file"""
 
     def __init__(self, rel_path):
@@ -54,7 +54,7 @@ class TestEventFile(object):
         return '\n'.join(str(item) for item in output)
 
 
-class TestResult(object):
+class TestResult:
     """TestResult contains information useful for tracking test results"""
 
     _NONE_STRING = '<None>'

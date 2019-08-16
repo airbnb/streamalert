@@ -36,7 +36,7 @@ from tests.unit.stream_alert_apps.test_helpers import get_event, put_mock_params
 from tests.unit.stream_alert_shared.test_config import get_mock_lambda_context
 
 
-class TestStreamAlertApp(object):
+class TestStreamAlertApp:
     """Test class for the StreamAlertApp"""
     # pylint: disable=no-self-use
 
@@ -83,7 +83,7 @@ class TestStreamAlertApp(object):
 
 @mock_ssm
 @patch.object(AppIntegration, 'type', Mock(return_value='type'))
-class TestAppIntegration(object):
+class TestAppIntegration:
     """Test class for the AppIntegration"""
     # pylint: disable=protected-access
 

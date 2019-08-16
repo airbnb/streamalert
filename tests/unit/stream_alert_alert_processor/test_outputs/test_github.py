@@ -24,7 +24,7 @@ from tests.unit.stream_alert_alert_processor.helpers import get_alert
 
 
 @patch('stream_alert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS', 1)
-class TestGithubOutput(object):
+class TestGithubOutput:
     """Test class for GithubOutput"""
     DESCRIPTOR = 'unit_test_repo'
     SERVICE = 'github'

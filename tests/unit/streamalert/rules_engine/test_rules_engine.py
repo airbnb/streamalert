@@ -56,7 +56,7 @@ class ThisPublisher(AlertPublisher):
 # Without this time.sleep patch, backoff performs sleep
 # operations and drastically slows down testing
 # @patch('time.sleep', Mock())
-class TestRulesEngine(object):
+class TestRulesEngine:
     """Tests for RulesEngine"""
     # pylint: disable=attribute-defined-outside-init,protected-access,no-self-use
     def setup(self):

@@ -106,6 +106,5 @@ class CarbonBlackOutput(OutputDispatcher):
                 banned_hash.save()
 
             return banned_hash.enabled is True
-        else:
-            LOGGER.error('[%s] Action not supported: %s', self.__service__, action)
-            return False
+        LOGGER.error('[%s] Action not supported: %s', self.__service__, action)
+        return False

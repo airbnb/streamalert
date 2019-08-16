@@ -23,7 +23,7 @@ from stream_alert.rule_promotion.statistic import StagingStatistic
 from stream_alert.shared import athena, config
 
 
-class TestStatsPublisher(object):
+class TestStatsPublisher:
     """Tests for rule_promotion/publisher.py:StatsPublisher"""
     # pylint: disable=protected-access
 

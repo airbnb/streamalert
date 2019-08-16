@@ -16,7 +16,7 @@ limitations under the License.
 import json
 
 
-class MockCLIConfig(object):
+class MockCLIConfig:
     """Fake CLI Config Class"""
 
     def __init__(self, config):

@@ -18,7 +18,7 @@ import json
 from boxsdk import Client, JWTAuth
 from boxsdk.exception import BoxException
 from boxsdk.object.events import EnterpriseEventsStreamType
-from requests.exceptions import ConnectionError
+from requests.exceptions import ConnectionError as requestsConnectionError
 
 from . import AppIntegration, StreamAlertApp, get_logger, safe_timeout
 
@@ -129,8 +129,8 @@ class BoxApp(AppIntegration):
                 )
             except BoxException:
                 LOGGER.exception('[%s] Failed to get events', self)
-                return False, None   # Return a tuple to conform to return value of safe_timeout
-            except ConnectionError:
+                return False, {}   # Return a tuple to conform to return value of safe_timeout
+            except requestsConnectionError:
                 # In testing, the requests connection seemed to get reset for no
                 # obvious reason, and a simple retry once works fine so catch it
                 # and retry once, but after that return False
@@ -138,7 +138,7 @@ class BoxApp(AppIntegration):
                 if allow_retry:
                     return _perform_request(allow_retry=False)
 
-                return False, None   # Return a tuple to conform to return value of safe_timeout
+                return False, {}   # Return a tuple to conform to return value of safe_timeout
 
             # Return a successful status and the JSON from the box response
             # Return a tuple to conform to return value of safe_timeout

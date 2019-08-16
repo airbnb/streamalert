@@ -27,7 +27,7 @@ from tests.unit.stream_alert_alert_processor.helpers import (
 
 
 @patch('stream_alert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS', 1)
-class TestSlackOutput(object):
+class TestSlackOutput:
     """Test class for SlackOutput"""
     DESCRIPTOR = 'unit_test_channel'
     SERVICE = 'slack'

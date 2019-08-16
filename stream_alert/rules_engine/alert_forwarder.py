@@ -26,7 +26,7 @@ from stream_alert.shared.metrics import MetricLogger
 LOGGER = get_logger(__name__)
 
 
-class AlertForwarder(object):
+class AlertForwarder:
     """Sends alerts to the Alert Processor and the alerts DynamoDB table."""
 
     def __init__(self):

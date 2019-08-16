@@ -33,7 +33,7 @@ def _test_checksum_doc(_):
     return False
 
 
-class TestRule(object):
+class TestRule:
     """TestRule class"""
     def setup(self):
         rule.Rule._rules.clear()

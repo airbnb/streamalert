@@ -34,7 +34,7 @@ from stream_alert.shared.utils import in_network, valid_ip
 LOGGER = get_logger(__name__)
 
 
-class ThreatIntel(object):
+class ThreatIntel:
     """Load threat intelligence data from DynamoDB and perform IOC detection"""
     IOC_KEY = 'streamalert:ioc'
 

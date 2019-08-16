@@ -26,7 +26,7 @@ from stream_alert.shared.rule import Rule
 LOGGER = get_logger(__name__)
 
 
-class RuleTable(object):
+class RuleTable:
     """Provides convenience methods for accessing and modifying the rules table."""
     DEFAULT_STAGING_HOURS = 48
     DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S.%fZ'
@@ -104,7 +104,7 @@ class RuleTable(object):
 
         Args:
             key (str): Name of key that this value corresponds to
-            value (object): Object to be cast, could be various types
+            value : Object to be cast, could be various types
 
         Returns:
             object: Variant type object in the expected type

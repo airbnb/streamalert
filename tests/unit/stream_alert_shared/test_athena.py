@@ -33,7 +33,7 @@ from stream_alert.shared.config import load_config
 from tests.unit.helpers.aws_mocks import MockAthenaClient
 
 
-class TestAthenaClient(object):
+class TestAthenaClient:
     """Test class for AthenaClient"""
 
     @patch.dict(os.environ, {'AWS_DEFAULT_REGION': 'us-west-1'})

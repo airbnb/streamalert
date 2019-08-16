@@ -17,7 +17,9 @@ from collections import defaultdict
 import json
 import posixpath
 import re
-import urllib.request, urllib.parse, urllib.error
+import urllib.request
+import urllib.parse
+import urllib.error
 
 from stream_alert.shared.athena import AthenaClient
 from stream_alert.shared.config import load_config
@@ -31,7 +33,7 @@ class AthenaRefreshError(Exception):
     """Generic Athena Partition Error for erroring the Lambda function"""
 
 
-class AthenaRefresher(object):
+class AthenaRefresher:
     """Handle polling an SQS queue and running Athena queries for updating tables"""
 
     STREAMALERTS_REGEX = re.compile(r'alerts/dt=(?P<year>\d{4})'

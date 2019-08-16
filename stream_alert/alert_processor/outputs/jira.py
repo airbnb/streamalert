@@ -335,10 +335,9 @@ class JiraOutput(OutputDispatcher):
                                  issue_id,
                                  comment_id)
                     return True
-                else:
-                    LOGGER.error('Encountered an error when adding alert to existing '
-                                 'Jira issue %s. Attempting to create new Jira issue.',
-                                 issue_id)
+                LOGGER.error('Encountered an error when adding alert to existing '
+                             'Jira issue %s. Attempting to create new Jira issue.',
+                             issue_id)
 
         # Create a new Jira issue
         issue_id = self._create_issue(issue_summary,

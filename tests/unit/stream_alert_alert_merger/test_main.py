@@ -30,7 +30,7 @@ _ALERT_PROCESSOR = 'PREFIX_streamalert_alert_processor'
 _ALERT_PROCESSOR_TIMEOUT_SEC = 60
 
 
-class TestAlertMergeGroup(object):
+class TestAlertMergeGroup:
     """Tests for merger/main.py:AlertMergeGroup class"""
 
     def test_add_mergeable(self):
@@ -52,7 +52,7 @@ class TestAlertMergeGroup(object):
         assert_equal([alert1], group.alerts)
 
 
-class TestAlertMerger(object):
+class TestAlertMerger:
     """Tests for merger/main.py:AlertMerger class"""
 
     @patch.dict(os.environ, {

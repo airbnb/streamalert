@@ -98,7 +98,7 @@ def configure_handler(options, config):
     if options.key == 'prefix':
         return config.set_prefix(options.value)
 
-    elif options.key == 'aws_account_id':
+    if options.key == 'aws_account_id':
         return config.set_aws_account_id(options.value)
 
 
