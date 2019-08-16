@@ -75,7 +75,7 @@ class TestDuoApp(object):
             'device': '+1 123 456 1234',
             'factor': 'Duo Push',
             'integration': 'Test Access',
-            'ip': '0.0.0.0',
+            'ip': '0.0.0.0', # nosec
             'location': {},
             'new_enrollment': False,
             'reason': 'No response',

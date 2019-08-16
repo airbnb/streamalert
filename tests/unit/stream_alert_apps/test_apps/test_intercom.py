@@ -29,7 +29,7 @@ class TestIntercomApp(object):
         self._event = get_event(self._test_app_name)
         self._context = get_mock_lambda_context(self._test_app_name)
         self._app = IntercomApp(self._event, self._context)
-        self._app._config.auth['token'] = 'good_token'
+        self._app._config.auth['token'] = 'good_token' # nosec
 
     def test_required_auth_info(self):
         """IntercomApp - Required Auth Info"""
