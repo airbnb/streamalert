@@ -1,9 +1,10 @@
 from datetime import datetime, timedelta
+import random
 
 
 class DriverCache(object):
     """
-    A class that is responsible for caching objects.
+    A class that is responsible for caching objects in-memory.
 
     This class is to intended to be used in the following pattern:
 
@@ -18,10 +19,21 @@ class DriverCache(object):
         return cache.get(key, default)
     """
 
-    def __init__(self):
+    def __init__(self, maximum_key_count=0):
+        """
+        Constructor
+
+        Params:
+            maximum_key_count (int)
+                The maximum number of keys allowed in this cache before records start getting
+                evicted. Eviction is at random. A maximum key count of 0 or less means the cache
+                size is unlimited and will perform no evictions (dangerous!!!)
+        """
         self._data = {}
         self._ttls = {}
         self._clock = DriverCacheClock()
+
+        self._maximum_key_count = maximum_key_count
 
     def ttl(self, key):
         """
@@ -79,6 +91,15 @@ class DriverCache(object):
         self._data[key] = value
         self._ttls[key] = self._clock.utcnow() + timedelta(minutes=ttl_minutes)
 
+        if 0 < self._maximum_key_count < len(self._data):
+            # Cache is too full, evict a random record
+            # The reason for RANDOM eviction is that for a LRU cache replacement policy,
+            # Cache pollution can occur for Lambdas that experience extremely deterministic
+            # key loading orders.
+            selected_key = random.choice(self._ttls.keys())
+            del self._ttls[selected_key]
+            del self._data[selected_key]
+
     def set_blank(self, key, ttl_minutes):
         """
         When loading a key that is discovered to be blank, instead of setting a 'None' value into
@@ -98,6 +119,8 @@ class DriverCache(object):
     def setall(self, keyvalue_data, ttl_minutes):
         """
         As set(), but replaces the entire set of currently cached values with a new data set.
+
+        (!) NOTE: This disregards the maximum_key_count option.
 
         Params:
             keyvalue_data (dict)
