@@ -64,7 +64,7 @@ class TestResult(object):
     _PASS_STRING = format_green('Pass')
     _FAIL_STRING = format_red('Fail')
     _SIMPLE_TEMPLATE = '{header}:'
-    _PASS_TEMPLATE = '{header}: {pass}'
+    _PASS_TEMPLATE = '{header}: {pass}' # nosec
     _DESCRIPTION_LINE = (
         '''
     Description: {description}'''
