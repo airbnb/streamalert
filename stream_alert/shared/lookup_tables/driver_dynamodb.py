@@ -45,9 +45,8 @@ class DynamoDBDriver(PersistenceDriver):
         self._dynamo_db_sort_key = configuration.get('sort_key', False)
         self._dynamo_consistent_read = configuration.get('consistent_read', True)
 
-        self._cache = DriverCache()
+        self._cache = DriverCache(maximum_key_count=configuration.get('cache_maximum_key_count', 0))
 
-        self._cache_maximum_key_count = configuration.get('cache_maximum_key_count', 1000)
         self._cache_refresh_minutes = configuration.get('cache_refresh_minutes', 3)
 
         self._key_delimiter = configuration.get('key_delimiter', ':')

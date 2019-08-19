@@ -55,7 +55,7 @@ class S3Driver(PersistenceDriver):
             self._DEFAULT_CACHE_REFRESH_MINUTES
         )
 
-        self._cache = DriverCache()
+        self._cache = DriverCache(maximum_key_count=0)
 
         self._dirty = False
 
