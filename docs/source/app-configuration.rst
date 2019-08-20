@@ -54,6 +54,10 @@ Supported Services
   - Access Logs
   - Integrations Logs
 
+* `Intercom <https://developers.intercom.com/intercom-api-reference/reference#view-admin-activity-logs>`_
+
+- Admin Activity Logs
+
 * *More to come*
 
 
@@ -163,3 +167,11 @@ The Aliyun API requires an access key and access key secret for an authorized us
 To obtain the access key and access key secret, an authorized user of the Aliyun account should follow their directions to `Create an Access Key <https://www.alibabacloud.com/help/doc-detail/53045.htm>`_.
 
 Additionly, the user for whom the access key was created must have sufficient privileges to make use of ActionTrail; follow the directions on the `Grant ActionTrail permissions to RAM users <https://www.alibabacloud.com/help/doc-detail/28818.htm>`_ page.
+
+How to set up the Intercom App
+------------------------------
+
+The Intercom API requires an access token. Get an access token by following these `instructions <https://developers.intercom.com/building-apps/docs/authorization#section-how-to-get-an-access-token>`_.
+
+To specify an API version, follow `these instructions <https://developers.intercom.com/building-apps/docs/api-versioning>`_ to do so through Intercom's Developer Hub. 
+The default will be the latest stable version. The Intercom app works on versions 1.2 or later. 

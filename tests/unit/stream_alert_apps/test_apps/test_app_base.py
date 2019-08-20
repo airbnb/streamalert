@@ -56,6 +56,7 @@ class TestStreamAlertApp(object):
             'gsuite_rules',
             'gsuite_saml',
             'gsuite_token',
+            'intercom_admin_activity_logs',
             'onelogin_events',
             'salesforce_console',
             'salesforce_login',

@@ -31,7 +31,7 @@ class TestAwsKms(object):
     @mock_kms
     def test_encrypt_decrypt():
         """AwsApiClient - AwsKms - encrypt/decrypt - Encrypt and push creds, then pull them down"""
-        secret = 'shhhhhh'
+        secret = 'shhhhhh' # nosec
 
         ciphertext = AwsKms.encrypt(secret, region=REGION, key_alias=KMS_ALIAS)
         response = AwsKms.decrypt(ciphertext, region=REGION)

@@ -57,7 +57,7 @@ class SalesforceApp(AppIntegration):
     ReportExport:
         events contain details about reports that a user exported.
     """
-    _SALESFORCE_TOKEN_URL = 'https://login.salesforce.com/services/oauth2/token'
+    _SALESFORCE_TOKEN_URL = 'https://login.salesforce.com/services/oauth2/token' # nosec
     _SALESFORCE_QUERY_URL = ('{instance_url}/services/data/v{api_version}/'
                              '{query}{start_time}{event_type}')
     # Use the Query resource to retrieve log files.
