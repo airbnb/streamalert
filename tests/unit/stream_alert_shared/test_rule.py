@@ -198,11 +198,7 @@ def {}(_):
         ast_value = 'Return(value=NameConstant(value=False))'
 
         # The known checksum of the above is # c119f541816c6364ea3e2e884ba18f9c
-<<<<<<< HEAD
         expected_checksum = hashlib.md5(ast_value.encode('utf-8')).hexdigest() # nosec
-=======
-        expected_checksum = hashlib.md5(ast_value.encode('utf-8')).hexdigest()
->>>>>>> 4bc2f915cf232e377454234fe19011c7deb20df3
 
         # Test rule without a docstring
         rule.Rule(_test_checksum, logs=['log_type'])
