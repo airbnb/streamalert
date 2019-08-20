@@ -3,7 +3,7 @@ import os
 from mock import Mock, patch
 from moto import mock_ssm
 from nose.tools import (
-    assert_equal, assert_false, assert_items_equal, assert_is_none
+    assert_equal, assert_false, assert_count_equal, assert_is_none
 )
 # import requests
 
@@ -16,7 +16,7 @@ from tests.unit.stream_alert_shared.test_config import get_mock_lambda_context
 
 
 @mock_ssm
-class TestIntercomApp(object):
+class TestIntercomApp:
     """Test class for the IntercomApp"""
     # pylint: disable=protected-access
 
@@ -33,7 +33,7 @@ class TestIntercomApp(object):
 
     def test_required_auth_info(self):
         """IntercomApp - Required Auth Info"""
-        assert_items_equal(self._app._required_auth_info().keys(),
+        assert_count_equal(self._app._required_auth_info().keys(),
                            {'token'})
 
     @staticmethod
