@@ -3,7 +3,7 @@ from stream_alert.shared.logger import get_logger
 LOGGER = get_logger(__name__)
 
 
-class LookupTable(dict):
+class LookupTable(object):
     """
     A single LookupTable instance.
 

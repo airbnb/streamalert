@@ -1,4 +1,5 @@
 import json
+import logging
 
 import boto3
 from botocore.exceptions import ClientError, ConnectTimeoutError, ReadTimeoutError
@@ -10,6 +11,7 @@ from stream_alert.shared.lookup_tables.drivers import PersistenceDriver
 from stream_alert.shared.lookup_tables.errors import LookupTablesInitializationError
 
 LOGGER = get_logger(__name__)
+LOGGER_DEBUG_ENABLED = LOGGER.isEnabledFor(logging.DEBUG)
 
 
 class DynamoDBDriver(PersistenceDriver):
@@ -74,7 +76,6 @@ class DynamoDBDriver(PersistenceDriver):
             message = (
                 'LookupTable ({}): Encountered error while connecting with DynamoDB: \'{}\''
             ).format(self.id, err.response['Error']['Message'])
-            LOGGER.error(message)
             raise LookupTablesInitializationError(message)
 
     def commit(self):
@@ -139,27 +140,34 @@ class DynamoDBDriver(PersistenceDriver):
                 self._dynamo_db_partition_key: key,
             }
 
-        LOGGER.debug(
-            'LookupTable (%s): Loading key \'%s\' with schema (%s)',
-            self.id,
-            key,
-            json.dumps(key_schema)
-        )
+        if LOGGER_DEBUG_ENABLED:
+            # Guard json.dumps calls due to its expensive computation
+            LOGGER.debug(
+                'LookupTable (%s): Loading key \'%s\' with schema (%s)',
+                self.id,
+                key,
+                json.dumps(key_schema)
+            )
 
         try:
-            response = self._table.get_item(
-                Key=key_schema,
-
+            get_item_args = {
+                'Key': key_schema,
                 # It's not urgently vital to do consistent reads; we accept that for some time we
                 # may get out-of-date reads.
-                ConsistentRead=False,
-
-                # FIXME (derek.wang) Should be off for non-debug mode
-                ReturnConsumedCapacity='TOTAL',
+                'ConsistentRead': False,
 
                 # FIXME (derek.wang) This should have a ProjectionExpression to prevent the
                 #  response from returning irrelevant fields.
-            )
+            }
+
+            if LOGGER_DEBUG_ENABLED:
+                get_item_args['ReturnConsumedCapacity'] = 'TOTAL'
+
+            response = self._table.get_item(**get_item_args)
+
+            # FIXME (derek.wang)
+            #  on debug mode, log the capacity consumption
+
         except (ConnectTimeoutError, ReadTimeoutError):
             # Catching timeouts
             LOGGER.error(

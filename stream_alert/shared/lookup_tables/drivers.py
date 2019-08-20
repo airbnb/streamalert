@@ -1,11 +1,9 @@
 from abc import abstractmethod, ABCMeta
 from stream_alert.shared.logger import get_logger
-from stream_alert.shared.lookup_tables.errors import LookupTablesConfigurationError
 
 LOGGER = get_logger(__name__)
 
 
-# pylint: disable=invalid-name
 class PersistenceDriver(object):
 
     TYPE_S3 = 's3'
@@ -23,6 +21,7 @@ class PersistenceDriver(object):
     def driver_type(self):
         """Returns a string that describes the type of driver"""
 
+    # pylint: disable=invalid-name
     @property
     @abstractmethod
     def id(self):
@@ -39,9 +38,7 @@ class PersistenceDriver(object):
 
     @abstractmethod
     def commit(self):
-        """
-        Takes any changes and flushes them to remote storage.
-        """
+        """Takes any changes and flushes them to remote storage."""
 
     @abstractmethod
     def get(self, key, default=None):
@@ -55,35 +52,6 @@ class PersistenceDriver(object):
         For LookupTables with remote persistence, you will need to call commit() in order to
         permanently persist the changes.
         """
-
-
-def construct_persistence_driver(table_configuration):
-    """
-    Constructs a raw, uninitialized PersistenceDriver from the given configuration.
-
-    :args
-        table_configuration (dict)
-
-    :return
-        PersistenceDriver
-    """
-    import stream_alert.shared.lookup_tables.driver_dynamodb as driver_dynamodb
-    import stream_alert.shared.lookup_tables.driver_s3 as driver_s3
-
-    driver_name = table_configuration.get('driver', False)
-
-    if driver_name == PersistenceDriver.TYPE_S3:
-        return driver_s3.S3Driver(table_configuration)
-    elif driver_name == PersistenceDriver.TYPE_DYNAMODB:
-        return driver_dynamodb.DynamoDBDriver(table_configuration)
-    elif driver_name == PersistenceDriver.TYPE_NULL:
-        return NullDriver(table_configuration)
-    elif driver_name == PersistenceDriver.TYPE_EPHEMERAL:
-        return EphemeralDriver(table_configuration)
-    else:
-        raise LookupTablesConfigurationError(
-            'Unrecognized driver name: {}'.format(driver_name)
-        )
 
 
 class EphemeralDriver(PersistenceDriver):

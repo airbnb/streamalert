@@ -1,10 +1,8 @@
 from stream_alert.shared.config import load_config
 from stream_alert.shared.logger import get_logger
 from stream_alert.shared.lookup_tables.configuration import LookupTablesConfiguration
-from stream_alert.shared.lookup_tables.drivers import (
-    construct_persistence_driver,
-    NullDriver,
-)
+from stream_alert.shared.lookup_tables.drivers import NullDriver
+from stream_alert.shared.lookup_tables.drivers_factory import construct_persistence_driver
 from stream_alert.shared.lookup_tables.table import LookupTable
 
 LOGGER = get_logger(__name__)
@@ -130,20 +128,13 @@ class LookupTablesCore(object):
             return self._tables[table_name]
 
         LOGGER.error(
-            (
-                'Nonexistent LookupTable \'%s\' referenced. Defaulting to null table. '
-                'Valid tables were (%s)'
-            ),
+            'Nonexistent LookupTable \'%s\' referenced. Defaulting to null table. '
+            'Valid tables were (%s)',
             table_name,
-            ', '.join(self._tables.keys())
+            ', '.join(sorted(self._tables.keys()))
         )
-        # FIXME (derek.wang) Would it be preferable to raise an exception instead?
-        #  In the current implementation if it returns a NullTable, the code could continue
-        #  executing with None values everywhere, which may cause undesirable behavior. Maybe
-        #  fail fast?
-        return self._null_table
 
-        # raise LookupTablesError('Nonexistent LookupTable {} referenced.'.format(table_name))
+        return self._null_table
 
     def get(self, table_name, key, default=None):
         """

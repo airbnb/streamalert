@@ -21,7 +21,7 @@ from moto import mock_dynamodb2
 from nose.tools import assert_equal, assert_false, assert_raises, assert_true
 
 from stream_alert.shared.config import load_config
-from stream_alert.shared.lookup_tables.drivers import construct_persistence_driver
+from stream_alert.shared.lookup_tables.drivers_factory import construct_persistence_driver
 from stream_alert.shared.lookup_tables.errors import LookupTablesInitializationError
 from tests.unit.helpers.aws_mocks import put_mock_dynamod_data
 
@@ -134,18 +134,11 @@ class TestDynamoDBDriver(object):
         self._driver.initialize()
         assert_equal(self._driver.get('key_????:2', 'default?'), 'default?')
 
-    @patch('logging.Logger.error')
-    def test_non_existent_table_key(self, mock_logger):
+    def test_non_existent_table_key(self):
         """LookupTables - Drivers - DynamoDb Driver - Get - Non-existent Table"""
         assert_raises(
             LookupTablesInitializationError,
             self._bad_driver.initialize
-        )
-        mock_logger.assert_any_call(
-            (
-                "LookupTable (dynamodb:table???): Encountered error while connecting with "
-                "DynamoDB: 'Requested resource not found'"
-            )
         )
 
     @patch('boto3.resource')

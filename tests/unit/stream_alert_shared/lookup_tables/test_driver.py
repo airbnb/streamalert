@@ -16,10 +16,10 @@ limitations under the License.
 from nose.tools import assert_equal, assert_raises, assert_true
 
 from stream_alert.shared.lookup_tables.drivers import (
-    construct_persistence_driver,
     EphemeralDriver,
     NullDriver,
 )
+from stream_alert.shared.lookup_tables.drivers_factory import construct_persistence_driver
 from stream_alert.shared.lookup_tables.errors import LookupTablesConfigurationError
 
 
