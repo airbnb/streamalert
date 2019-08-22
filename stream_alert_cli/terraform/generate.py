@@ -518,7 +518,7 @@ def _generate_global_module(config):
     #   In version 3.0.0+, StreamAlert will default to always using the prefix, when "use_prefix"
     #   is not present.
     #
-    #   Refer to this PR for more information:
+    #   Refer to this PR for more information: https://github.com/airbnb/streamalert/pull/979
     use_prefix = config['global']['infrastructure'].get('classifier_sqs', {}).get(
         'use_prefix', True
     )
