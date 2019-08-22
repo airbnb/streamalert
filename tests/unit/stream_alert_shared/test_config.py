@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import json
+from collections import OrderedDict
 
 from mock import Mock
 from nose.tools import assert_equal, assert_items_equal, assert_raises
@@ -66,6 +67,22 @@ class TestConfigLoading(fake_filesystem_unittest.TestCase):
         self.fs.create_file(
             'conf/normalized_types.json',
             contents=json.dumps(config_data['normalized_types'])
+        )
+        
+        # Create similar structure but with schemas folder instead of logs.json
+        self.fs.create_file('conf_schemas/clusters/prod.json', contents='{}')
+        self.fs.create_file('conf_schemas/clusters/dev.json', contents='{}')
+        self.fs.create_file('conf_schemas/global.json', contents='{}')
+        self.fs.create_file('conf_schemas/lambda.json', contents='{}')
+        self.fs.create_file('conf_schemas/outputs.json', contents='{}')
+        self.fs.create_file('conf_schemas/sources.json', contents='{}')
+        self.fs.create_file(
+            'conf_schemas/schemas/csv.json',
+            contents='{"csv_log": {"schema": {"data": "string","uid": "integer"},"parser": "csv"}}'
+        )
+        self.fs.create_file(
+            'conf_schemas/schemas/json.json',
+            contents='{"json_log": {"schema": {"name": "string"},"parser": "json"}}'
         )
 
     def test_load_invalid_file(self):
@@ -124,6 +141,19 @@ class TestConfigLoading(fake_filesystem_unittest.TestCase):
         assert_equal(set(config), expected_keys)
 
     @staticmethod
+    def test_load_exclude_schemas():
+        """Shared - Config Loading - Exclude Clusters"""
+        config = load_config(conf_dir='conf_schemas', exclude={'schemas'})
+        expected_keys = {
+            'clusters',
+            'global',
+            'lambda',
+            'outputs',
+            'sources',
+        }
+        assert_equal(set(config), expected_keys)
+
+    @staticmethod
     def test_load_include():
         """Shared - Config Loading - Include"""
         config = load_config(include={'clusters', 'logs.json'})
@@ -131,6 +161,14 @@ class TestConfigLoading(fake_filesystem_unittest.TestCase):
         expected_clusters_keys = ['prod', 'dev']
         assert_items_equal(config.keys(), expected_keys)
         assert_items_equal(config['clusters'].keys(), expected_clusters_keys)
+
+    @staticmethod
+    def test_load_schemas():
+        """Shared - Config Loading - Schemas"""
+        # Load from separate dir where logs.json doesn't exist
+        config = load_config(conf_dir='conf_schemas')
+        basic_config = basic_streamalert_config()
+        assert_equal(config['logs'].keys(), basic_config['logs'].keys())
 
 
 class TestConfigValidation(object):
