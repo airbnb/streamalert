@@ -165,7 +165,7 @@ class TestAppIntegration(object):
         """App Integration - Initialize, Valid"""
         assert_true(self._app._initialize())
 
-    @patch('logging.Logger.error')
+    @patch('logging.Logger.warning')
     def test_initialize_running(self, log_mock):
         """App Integration - Initialize, Already Running"""
         self._app._config.current_state = 'running'
