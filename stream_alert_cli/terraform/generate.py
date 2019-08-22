@@ -23,7 +23,6 @@ from stream_alert_cli.terraform.common import (
     DEFAULT_SNS_MONITORING_TOPIC,
     InvalidClusterName,
     infinitedict,
-    MisconfigurationError,
 )
 from stream_alert_cli.terraform.alert_merger import generate_alert_merger
 from stream_alert_cli.terraform.alert_processor import generate_alert_processor
