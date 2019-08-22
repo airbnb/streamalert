@@ -1,0 +1,147 @@
+{
+	"cloudwatch:cloudtrail": {
+    "schema": {
+      "additionalEventData": {},
+      "apiVersion": "string",
+      "awsRegion": "string",
+      "errorCode": "string",
+      "errorMessage": "string",
+      "eventID": "string",
+      "eventName": "string",
+      "eventSource": "string",
+      "eventTime": "string",
+      "eventType": "string",
+      "eventVersion": "string",
+      "managementEvent": "boolean",
+      "readOnly": "boolean",
+      "recipientAccountId": "string",
+      "requestID": "string",
+      "requestParameters": {},
+      "resources": [],
+      "responseElements": {},
+      "serviceEventDetails": {},
+      "sharedEventID": "string",
+      "sourceIPAddress": "string",
+      "userAgent": "string",
+      "userIdentity": {},
+      "vpcEndpointId": "string"
+    },
+    "parser": "json",
+    "configuration": {
+      "embedded_json": true,
+      "envelope_keys": {
+        "logGroup": "string",
+        "logStream": "string",
+        "messageType": "string",
+        "owner": "string",
+        "subscriptionFilters": []
+      },
+      "json_path": "logEvents[*].message",
+      "optional_top_level_keys": [
+        "additionalEventData",
+        "apiVersion",
+        "errorCode",
+        "errorMessage",
+        "managementEvent",
+        "readOnly",
+        "resources",
+        "serviceEventDetails",
+        "sharedEventID",
+        "vpcEndpointId"
+      ]
+    }
+  },
+  "cloudwatch:control_message": {
+    "schema": {
+      "id": "string",
+      "message": "string",
+      "timestamp": "integer"
+    },
+    "parser": "json",
+    "configuration": {
+      "envelope_keys": {
+        "logGroup": "string",
+        "logStream": "string",
+        "messageType": "string",
+        "owner": "string",
+        "subscriptionFilters": []
+      },
+      "log_patterns": {
+        "streamalert:envelope_keys": {
+          "messageType": [
+            "CONTROL_MESSAGE"
+          ]
+        }
+      },
+      "json_path": "logEvents[*]"
+    }
+  },
+  "cloudwatch:events": {
+    "schema": {
+      "account": "string",
+      "detail": {},
+      "detail-type": "string",
+      "id": "string",
+      "region": "string",
+      "resources": [],
+      "source": "string",
+      "time": "string",
+      "version": "string"
+    },
+    "parser": "json"
+  },
+  "cloudwatch:flow_logs": {
+    "schema": {
+      "account": "string",
+      "action": "string",
+      "bytes": "string",
+      "destination": "string",
+      "destport": "string",
+      "eni": "string",
+      "flowlogstatus": "string",
+      "packets": "string",
+      "protocol": "string",
+      "source": "string",
+      "srcport": "string",
+      "version": "integer",
+      "windowend": "integer",
+      "windowstart": "integer"
+    },
+    "parser": "json",
+    "configuration": {
+      "envelope_keys": {
+        "logGroup": "string",
+        "logStream": "string",
+        "owner": "integer"
+      },
+      "json_path": "logEvents[*].extractedFields"
+    }
+  },
+  "cloudwatch:rds_aurora": {
+    "schema": {
+      "timestamp": "integer",
+      "serverhost": "string",
+      "username": "string",
+      "host": "string",
+      "connectionid": "integer",
+      "queryid": "integer",
+      "operation": "string",
+      "database": "string",
+      "object": "string",
+      "retcode": "integer"
+    },
+    "parser": "csv",
+    "configuration": {
+      "envelope_keys": {
+        "logGroup": "string",
+        "logStream": "string",
+        "messageType": "string",
+        "owner": "string",
+        "subscriptionFilters": []
+      },
+      "json_path": "logEvents[*].message",
+      "escapechar": "\\",
+      "quotechar": "'"
+    }
+  }
+}

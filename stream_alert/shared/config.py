@@ -33,6 +33,24 @@ class TopLevelConfigKeys(object):
 class ConfigError(Exception):
     """Exception class for config file errors"""
 
+class SchemaSorter(object):
+    """Sort Schema by Priority"""
+
+    # Set a default index to -1
+    max_index = -1
+
+    @classmethod
+    def sort(cls, key_and_value_tuple):
+        dict_value = key_and_value_tuple[1]
+        value = int(dict_value.get('configuration', {}).get('priority', -1))
+
+        # Update the index to the max of the current index or cached one
+        cls.max_index = max(cls.max_index, value)
+
+        # If the index is -1 (or unset), use the current "max_index"
+        # Otherwise, return the actual priority value
+        return cls.max_index if value == -1 else value
+
 
 def parse_lambda_arn(function_arn):
     """Extract info on the current environment from the lambda function ARN
@@ -103,21 +121,34 @@ def load_config(conf_dir='conf/', exclude=None, include=None, validate=True):
     conf_files = (include or default_files).copy()
     include_clusters = TopLevelConfigKeys.CLUSTERS in conf_files
 
+    schemas_dir = os.path.join(conf_dir, 'schemas')
+    split_schemas = os.path.exists(schemas_dir) and os.listdir(schemas_dir)
+
     conf_files.intersection_update(default_files)
     exclusions = exclude or set()
     conf_files = conf_files.difference(exclusions)
 
-    if not (conf_files or include_clusters):
+    if not (conf_files or include_clusters or split_schemas):
         available_files = ', '.join("'{}'".format(name) for name in sorted(default_files))
         raise ConfigError('No config files to load. This is likely due the misuse of '
                           'the \'include\' or \'exclude\' keyword arguments. Available '
-                          'files are: {}, and clusters'.format(available_files))
+                          'files are: {}, clusters'.format(available_files))
 
     config = defaultdict(dict)
     for name in conf_files:
         path = os.path.join(conf_dir, name)
         # we use object_pairs_hook=OrderdDict to preserve schema order for CSV/KV log types
         config[os.path.splitext(name)[0]] = _load_json_file(path, name == 'logs.json')
+
+    #Load split logs.json configuration
+    if 'logs.json' not in default_files and split_schemas and \
+         'schemas' not in exclusions:
+        schemas = {file for file in os.listdir(schemas_dir)
+                   if file.endswith('.json')}
+        for schema in schemas:
+            config['logs'].update(_load_json_file(os.path.join(schemas_dir, schema), True))
+    schema = OrderedDict(sorted(config['logs'].items(), key=SchemaSorter.sort))
+    config['logs'] = schema
 
     # Load the configs for clusters if it is not excluded
     if TopLevelConfigKeys.CLUSTERS not in exclusions and not include or include_clusters:
