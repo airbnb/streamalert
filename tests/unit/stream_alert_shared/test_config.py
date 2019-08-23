@@ -67,7 +67,6 @@ class TestConfigLoading(fake_filesystem_unittest.TestCase):
             'conf/normalized_types.json',
             contents=json.dumps(config_data['normalized_types'])
         )
-        
         # Create similar structure but with schemas folder instead of logs.json
         self.fs.create_file('conf_schemas/clusters/prod.json', contents='{}')
         self.fs.create_file('conf_schemas/clusters/dev.json', contents='{}')
