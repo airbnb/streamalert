@@ -11,20 +11,14 @@ terraform/terraform.tfstate*
 terraform/*.zip
 terraform/*.tf.json
 
-# MacOS artifacts
-Thumbs.db
-.DS_Store
-*.swp
-terminal.glue
-
 # Coveralls repo token
 .coveralls.yml
 
 # nose coverage file
 .coverage
 
-# virtualenv files
-venv/
+# virtualenv files in root of repo
+/venv
 
-.vagrant/
-htmlcov/
+/vagrant
+/htmlcov
