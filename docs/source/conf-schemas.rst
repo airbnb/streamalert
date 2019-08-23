@@ -6,7 +6,9 @@ Overview
 
 Log schemas are required by StreamAlert to detect the correct log type of an incoming record.
 
-Schemas are defined in ``conf/logs.json`` and used by rules to determine which records are analyzed.
+Schemas are defined in ``conf/schemas/<log type>.json`` and used by rules to determine which records are analyzed.
+
+They can be defined in one single file, or multiple files, ideally split by each log type, i.e ``carbonblack.json``
 
 They represent the structure of a given log in the form of key/value pairs.
 
@@ -69,6 +71,7 @@ Key                          Description
 ``log_patterns``             Various patterns to enforce within a log given provided fields
 ``optional_top_level_keys``  Keys that may or may not be present in a log being parsed
 ``optional_envelope_keys``   Keys that may or may not be present in the envelope of a log being parsed
+``priority``                 Used to enforce the order that schema will get tested against data with the highest priority starting at 0.
 ``separator``                For use with key/value logs to identify the separator character for the log
 ===========================  ======================
 

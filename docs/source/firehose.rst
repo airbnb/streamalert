@@ -37,7 +37,7 @@ For example, if the ``sources.json`` defines the following:
     }
   }
 
-And the following schemas are defined in ``logs.json``:
+And the following schemas are defined across one or multiple files in ``conf/schemas``:
 
 .. code-block:: json
 
