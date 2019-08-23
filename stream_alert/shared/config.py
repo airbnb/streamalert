@@ -143,12 +143,7 @@ def load_config(conf_dir='conf/', exclude=None, include=None, validate=True):
     #Load split logs.json configuration
     if 'logs.json' not in default_files and split_schemas and \
          'schemas' not in exclusions:
-        schemas = {file for file in os.listdir(schemas_dir)
-                   if file.endswith('.json')}
-        for schema in schemas:
-            config['logs'].update(_load_json_file(os.path.join(schemas_dir, schema), True))
-    schema = OrderedDict(sorted(config['logs'].items(), key=SchemaSorter.sort))
-    config['logs'] = schema
+        config['logs'] = _load_schemas(conf_dir, schemas_dir)
 
     # Load the configs for clusters if it is not excluded
     if TopLevelConfigKeys.CLUSTERS not in exclusions and not include or include_clusters:
@@ -165,6 +160,14 @@ def load_config(conf_dir='conf/', exclude=None, include=None, validate=True):
 
     return config
 
+def _load_schemas(conf_dir, schemas_dir):
+    schemas_dir = os.path.join(conf_dir, 'schemas')
+    schema_files = {file for file in os.listdir(schemas_dir)
+                    if file.endswith('.json')}
+    schemas = dict()
+    for schema in schema_files:
+        schemas.update(_load_json_file(os.path.join(schemas_dir, schema), True))
+    return OrderedDict(sorted(schemas.items(), key=SchemaSorter.sort))
 
 def _load_json_file(path, ordered=False):
     """Helper to return the loaded json from a given path
