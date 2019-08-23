@@ -34,22 +34,27 @@ class ConfigError(Exception):
     """Exception class for config file errors"""
 
 class SchemaSorter(object):
-    """Sort Schema by Priority"""
+    """Statefully sort schema by priority where 0 is the highest priority
+    and the lowest priority is any positive numeric value.
+    In the event that no priority is specified for a schema,
+    it will be placed at the end after all schema with a priority defined.
+    The intent of the statefulness of this function is that there is no arbitrarily
+    enforced upper bound for priority."""
 
-    # Set a default index to -1
-    max_index = -1
+    def __init__(self):
+        # Set a default index to -1
+        self.max_index = -1
 
-    @classmethod
-    def sort(cls, key_and_value_tuple):
+    def sort(self, key_and_value_tuple):
         dict_value = key_and_value_tuple[1]
         value = int(dict_value.get('configuration', {}).get('priority', -1))
 
         # Update the index to the max of the current index or cached one
-        cls.max_index = max(cls.max_index, value)
+        self.max_index = max(self.max_index, value)
 
         # If the index is -1 (or unset), use the current "max_index"
         # Otherwise, return the actual priority value
-        return cls.max_index if value == -1 else value
+        return self.max_index if value == -1 else value
 
 
 def parse_lambda_arn(function_arn):
@@ -140,7 +145,7 @@ def load_config(conf_dir='conf/', exclude=None, include=None, validate=True):
         # we use object_pairs_hook=OrderdDict to preserve schema order for CSV/KV log types
         config[os.path.splitext(name)[0]] = _load_json_file(path, name == 'logs.json')
 
-    #Load split logs.json configuration
+    # Load split logs.json configuration
     if 'logs.json' not in default_files and split_schemas and \
          'schemas' not in exclusions:
         config['logs'] = _load_schemas(conf_dir, schemas_dir)
@@ -162,12 +167,14 @@ def load_config(conf_dir='conf/', exclude=None, include=None, validate=True):
 
 def _load_schemas(conf_dir, schemas_dir):
     schemas_dir = os.path.join(conf_dir, 'schemas')
-    schema_files = {file for file in os.listdir(schemas_dir)
-                    if file.endswith('.json')}
+    schema_files = {
+        file for file in os.listdir(schemas_dir)
+        if file.endswith('.json')
+    }
     schemas = dict()
     for schema in schema_files:
         schemas.update(_load_json_file(os.path.join(schemas_dir, schema), True))
-    return OrderedDict(sorted(schemas.items(), key=SchemaSorter.sort))
+    return OrderedDict(sorted(schemas.items(), key=SchemaSorter().sort))
 
 def _load_json_file(path, ordered=False):
     """Helper to return the loaded json from a given path

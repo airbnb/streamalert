@@ -18,7 +18,7 @@ This file should contain the following structure:
     {
       "data": "Either a string, or JSON object",
       "description": "This test should trigger or not trigger an alert",
-      "log": "The log name declared in a json file under conf/schemas",
+      "log": "The log name declared in a json file under the conf/schemas directory",
       "service": "The service sending the log - kinesis, s3, sns, or stream_alert_app",
       "source": "The exact resource which sent the log - kinesis stream name, s3 bucket ID, SNS topic name, or stream_alert_app_function name",
       "trigger_rules": [
@@ -112,7 +112,7 @@ Key                        Type                    Required  Description
                                                              \*This is not required if the ``data`` option is used.
 ``description``            ``string``              Yes       A short sentence describing the intent of the test
 ``log``                    ``string``              Yes       The log type this test record should parse as. The value of this
-                                                             should be taken from the defined logs in one or multiple files in ``conf/schemas``
+                                                             should be taken from the defined logs in one or multiple files in the ``conf/schemas`` directory
 ``service``                ``string``              Yes       The name of the service which sent the log.
                                                              This should be one of: ``kinesis``, ``s3``, ``sns``, or ``stream_alert_app``.
 ``source``                 ``string``              Yes       The name of the Kinesis Stream or S3 bucket, SNS topic or StreamAlert App
