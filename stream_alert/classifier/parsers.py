@@ -462,7 +462,7 @@ class ParserBase(metaclass=ABCMeta):
             try:
                 data_copy = json.loads(data)
             except (ValueError, TypeError) as err:
-                LOGGER.debug('Data is not valid json: %s', str(err))
+                LOGGER.debug('Data is not valid json: %s', err)
                 data_copy = data
 
         # Check to make sure any non-optional envelope keys exist before proceeding

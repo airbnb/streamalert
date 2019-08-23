@@ -63,7 +63,7 @@ def get_first_key(data, search_key, default_value=None):
     Args:
         data (dict or list): Record data to search
         search_key (string): The first value associated with this key is returned
-        default_value : Value which should be returned if no match was found
+        default_value (object): Value which should be returned if no match was found
 
     Returns:
         (object) First value found or default_value if no match was found

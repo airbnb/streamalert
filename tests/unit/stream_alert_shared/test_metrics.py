@@ -17,7 +17,7 @@ limitations under the License.
 import os
 import importlib
 
-from mock import patch
+from mock import patch, ANY
 from nose.tools import assert_equal
 
 from stream_alert import shared
@@ -69,5 +69,4 @@ class TestMetrics:
 
             log_mock.assert_called_with('Invalid value for metric toggling, '
                                         'expected 0 or 1: %s',
-                                        'invalid literal for int() with '
-                                        'base 10: \'bad\'')
+                                        ANY)

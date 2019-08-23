@@ -101,7 +101,7 @@ class Classifier:
         # Get the log schemas for source(s)
         return OrderedDict(
             (source, self.config['logs'][source])
-            for source in list(self.config['logs'].keys())
+            for source in self.config['logs'].keys()
             if source.split(':')[0] in source_config['logs']
         )
 

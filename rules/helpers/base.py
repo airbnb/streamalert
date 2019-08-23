@@ -155,7 +155,7 @@ def data_has_value(data, search_value):
         return any(data_has_value(item, search_value) for item in data)
 
     if isinstance(data, dict):
-        return any(data_has_value(v, search_value) for v in list(data.values()))
+        return any(data_has_value(v, search_value) for v in data.values())
 
     return data == search_value
 
@@ -174,7 +174,7 @@ def data_has_value_with_substring(data, search_value):
         return any(data_has_value_with_substring(item, search_value) for item in data)
 
     if isinstance(data, dict):
-        return any(data_has_value_with_substring(v, search_value) for v in list(data.values()))
+        return any(data_has_value_with_substring(v, search_value) for v in data.values())
 
     return isinstance(data, str) and search_value in data
 
@@ -193,7 +193,7 @@ def data_has_value_from_list(data, needle_list):
         return any(data_has_value_from_list(item, needle_list) for item in data)
 
     if isinstance(data, dict):
-        return any(data_has_value_from_list(v, needle_list) for v in list(data.values()))
+        return any(data_has_value_from_list(v, needle_list) for v in data.values())
 
     if not data:
         return False
@@ -214,7 +214,7 @@ def data_has_value_from_substring_list(data, needle_list):
         return any(data_has_value_from_substring_list(item, needle_list) for item in data)
 
     if isinstance(data, dict):
-        return any(data_has_value_from_substring_list(v, needle_list) for v in list(data.values()))
+        return any(data_has_value_from_substring_list(v, needle_list) for v in data.values())
 
     if not data:
         return False

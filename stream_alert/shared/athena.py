@@ -81,7 +81,7 @@ class AthenaClient:
         return {
             value
             for row in query_result['ResultSet']['Rows'] for result in row['Data']
-            for value in list(result.values())
+            for value in result.values()
         }
 
     def _execute_and_wait(self, query):

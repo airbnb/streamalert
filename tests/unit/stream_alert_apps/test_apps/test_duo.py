@@ -42,8 +42,6 @@ class TestDuoApp:
     # pylint: disable=protected-access
 
     @patch.dict(os.environ, {'AWS_DEFAULT_REGION': 'us-east-1'})
-    @patch.object(DuoApp, '_type', Mock(return_value='test'))
-    @patch.object(DuoApp, '_endpoint', Mock(return_value='endpoint'))
     @patch.object(DuoApp, '__abstractmethods__', frozenset())
     def setup(self):
         """Setup before each method"""

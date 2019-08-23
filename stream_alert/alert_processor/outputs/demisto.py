@@ -252,11 +252,11 @@ class DemistoCreateIncidentRequest:
             return cls.SEVERITY_UNKNOWN
 
         lc_severity_string = severity_string.lower()
-        if lc_severity_string in ['info', 'informational']:
+        if lc_severity_string in {'info', 'informational'}:
             return cls.SEVERITY_INFORMATIONAL
         if lc_severity_string == 'low':
             return cls.SEVERITY_LOW
-        if lc_severity_string in ['med', 'medium']:
+        if lc_severity_string in {'med', 'medium'}:
             return cls.SEVERITY_MEDIUM
         if lc_severity_string == 'high':
             return cls.SEVERITY_HIGH

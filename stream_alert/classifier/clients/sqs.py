@@ -19,7 +19,7 @@ import os
 import backoff
 import boto3
 from botocore.exceptions import ClientError, HTTPClientError
-from botocore.exceptions import ConnectionError as botocoreConnectionError
+from botocore.exceptions import ConnectionError as BotocoreConnectionError
 
 from stream_alert.shared import CLASSIFIER_FUNCTION_NAME as FUNCTION_NAME
 from stream_alert.shared.helpers import boto
@@ -41,7 +41,7 @@ class SQSClientError(Exception):
 class SQSClient:
     """SQSClient for sending batches of classified records to the Rules Engine function"""
     # Exception for which backoff operations should be performed
-    EXCEPTIONS_TO_BACKOFF = (ClientError, botocoreConnectionError, HTTPClientError)
+    EXCEPTIONS_TO_BACKOFF = (ClientError, BotocoreConnectionError, HTTPClientError)
 
     # Maximum amount of times to retry with backoff
     MAX_BACKOFF_ATTEMPTS = 5

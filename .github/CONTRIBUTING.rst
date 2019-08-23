@@ -147,5 +147,3 @@ In your pull request body, use the following template::
   * summary of changes 2
 
 All pull requests must pass continuous integration tests (nosetests) and receive a code review from one of the maintainers.
-
-After your branch has been accepted, you are free to merge into ``master``!
