@@ -14,7 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import json
-from collections import OrderedDict
 
 from mock import Mock
 from nose.tools import assert_equal, assert_items_equal, assert_raises
