@@ -28,7 +28,7 @@ def get_required_outputs():
     """
     return {'{}:{}'.format(service, output)
             for service, value in REQUIRED_OUTPUTS.items()
-            for output in value.keys()}
+            for output in value}
 
 
 def merge_required_outputs(user_config, prefix):

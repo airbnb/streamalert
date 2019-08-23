@@ -222,7 +222,7 @@ def _setup_output_subparser(subparser):
 
 def _setup_app_subparser(subparser):
     """Add the app integration subparser: manage.py app [subcommand] [options]"""
-    app_subparsers = subparser.add_subparsers()
+    app_subparsers = subparser.add_subparsers(dest="app subcommand", required=True)
 
     _setup_app_list_subparser(app_subparsers)
     _setup_app_new_subparser(app_subparsers)
@@ -695,7 +695,7 @@ def _setup_rollback_subparser(subparser):
 
 def _setup_test_subparser(subparser):
     """Add the test subparser: manage.py test"""
-    test_subparsers = subparser.add_subparsers()
+    test_subparsers = subparser.add_subparsers(dest="test subcommand", required=True)
 
     _setup_test_classifier_subparser(test_subparsers)
     _setup_test_rules_subparser(test_subparsers)
@@ -971,7 +971,7 @@ def _setup_configure_subparser(subparser):
 
 def _setup_athena_subparser(subparser):
     """Add athena subparser: manage.py athena [subcommand]"""
-    athena_subparsers = subparser.add_subparsers()
+    athena_subparsers = subparser.add_subparsers(dest="athena subcommand", required=True)
 
     _setup_athena_create_table_subparser(athena_subparsers)
     _setup_athena_rebuild_subparser(athena_subparsers)
@@ -1247,7 +1247,7 @@ def _setup_threat_intel_auth_subparser(subparsers):
 
 def _setup_threat_intel_downloader_subparser(subparser):
     """Add threat intel downloader subparser: manage.py threat-intel-downloader [subcommand]"""
-    ti_subparsers = subparser.add_subparsers()
+    ti_subparsers = subparser.add_subparsers(dest="threat-intel-downloader subcommand", required=True)
 
     _setup_threat_intel_configure_subparser(ti_subparsers)
     _setup_threat_intel_auth_subparser(ti_subparsers)
@@ -1255,7 +1255,7 @@ def _setup_threat_intel_downloader_subparser(subparser):
 
 def _setup_rule_staging_subparser(subparser):
     """Add the rule staging subparser: manage.py rule-staging [subcommand] [options]"""
-    rule_staging_subparsers = subparser.add_subparsers()
+    rule_staging_subparsers = subparser.add_subparsers(dest="rule-staging subcommand", required=True)
 
     _setup_rule_staging_enable_subparser(rule_staging_subparsers)
     _setup_rule_staging_status_subparser(rule_staging_subparsers)
@@ -1467,7 +1467,7 @@ For additional help with any command above, try:
 
     # Dynamically generate subparsers, and create a 'commands' block for the prog description
     command_block = []
-    subparsers = parser.add_subparsers()
+    subparsers = parser.add_subparsers(dest="command", required=True)
     command_col_size = max([len(command) for command in commands]) + 10
     for command in sorted(commands):
         setup_subparser_func, description = commands[command]

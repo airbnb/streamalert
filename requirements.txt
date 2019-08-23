@@ -38,7 +38,6 @@ docutils==0.14
 ecdsa==0.13.2
 enum34==1.1.6
 funcsigs==1.0.2
-future==0.17.1
 gitdb2==2.0.5
 GitPython==2.1.11
 google-api-python-client==1.6.4
