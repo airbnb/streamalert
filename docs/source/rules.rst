@@ -182,7 +182,7 @@ logs
 
 ``logs`` define the log schema(s) supported by the rule.
 
-Log `sources <conf-datasources.html>`_ are defined in ``conf/sources.json`` and their `schemas <conf-schemas.html>`_ are defined in one or multiple files in the ``conf/schemas`` directory.
+Log `sources <conf-datasources.html>`_ are defined in ``conf/sources.json`` and their `schemas <conf-schemas.html>`_ are defined in one or more files in the ``conf/schemas`` directory.
 
 .. note:: Either ``logs`` or ``datatypes`` must be specified for each rule
 

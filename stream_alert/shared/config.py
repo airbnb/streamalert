@@ -131,13 +131,17 @@ def load_config(conf_dir='conf/', exclude=None, include=None, validate=True):
     include_clusters = TopLevelConfigKeys.CLUSTERS in conf_files
 
     schemas_dir = os.path.join(conf_dir, 'schemas')
-    split_schemas = os.path.exists(schemas_dir) and os.listdir(schemas_dir)
+    schema_files = []
+    if os.path.exists(schemas_dir):
+        schema_files = [
+            schema_file for schema_file in os.listdir(schemas_dir) if schema_file.endswith('.json')
+        ]
 
     conf_files.intersection_update(default_files)
     exclusions = exclude or set()
     conf_files = conf_files.difference(exclusions)
 
-    if not (conf_files or include_clusters or split_schemas):
+    if not (conf_files or include_clusters or schema_files):
         available_files = ', '.join("'{}'".format(name) for name in sorted(default_files))
         raise ConfigError('No config files to load. This is likely due the misuse of '
                           'the \'include\' or \'exclude\' keyword arguments. Available '
@@ -150,9 +154,9 @@ def load_config(conf_dir='conf/', exclude=None, include=None, validate=True):
         config[os.path.splitext(name)[0]] = _load_json_file(path, name == 'logs.json')
 
     # Load split logs.json configuration
-    if 'logs.json' not in default_files and split_schemas and \
-         'schemas' not in exclusions:
-        config['logs'] = _load_schemas(conf_dir, schemas_dir)
+    if ('logs.json' not in default_files and schema_files and
+            'schemas' not in exclusions):
+        config['logs'] = _load_schemas(schemas_dir, schema_files)
 
     # Load the configs for clusters if it is not excluded
     if TopLevelConfigKeys.CLUSTERS not in exclusions and not include or include_clusters:
@@ -169,7 +173,7 @@ def load_config(conf_dir='conf/', exclude=None, include=None, validate=True):
 
     return config
 
-def _load_schemas(conf_dir, schemas_dir):
+def _load_schemas(schemas_dir, schema_files):
     """Helper to load all schemas from the schemas directory into one ordered dictionary.
 
     Args:
@@ -179,11 +183,6 @@ def _load_schemas(conf_dir, schemas_dir):
     Returns:
         OrderedDict: The sorted schema dictionary.
     """
-    schemas_dir = os.path.join(conf_dir, 'schemas')
-    schema_files = {
-        file for file in os.listdir(schemas_dir)
-        if file.endswith('.json')
-    }
     schemas = dict()
     for schema in schema_files:
         schemas.update(_load_json_file(os.path.join(schemas_dir, schema), True))

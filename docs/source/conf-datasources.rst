@@ -10,7 +10,7 @@ Datasources defined in ``conf/sources.json`` control which datasources can send 
 
 Each datasource (``kinesis``, ``s3``, or ``sns``) contains a mapping of specific resource names (kinesis stream names, s3 bucket IDs) along with a list of logs coming from that source.
 
-Log schemas are defined in one or multiple files in the ``conf/schemas`` directory.
+Log schemas are defined in one or more files in the ``conf/schemas`` directory.
 
 An example of this would be to put all carbonblack schema into ``conf/schemas/carbonblack.json``.
 

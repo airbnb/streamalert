@@ -112,7 +112,7 @@ Key                        Type                    Required  Description
                                                              \*This is not required if the ``data`` option is used.
 ``description``            ``string``              Yes       A short sentence describing the intent of the test
 ``log``                    ``string``              Yes       The log type this test record should parse as. The value of this
-                                                             should be taken from the defined logs in one or multiple files in the ``conf/schemas`` directory
+                                                             should be taken from the defined logs in one or more files in the ``conf/schemas`` directory
 ``service``                ``string``              Yes       The name of the service which sent the log.
                                                              This should be one of: ``kinesis``, ``s3``, ``sns``, or ``stream_alert_app``.
 ``source``                 ``string``              Yes       The name of the Kinesis Stream or S3 bucket, SNS topic or StreamAlert App
