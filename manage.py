@@ -1247,7 +1247,8 @@ def _setup_threat_intel_auth_subparser(subparsers):
 
 def _setup_threat_intel_downloader_subparser(subparser):
     """Add threat intel downloader subparser: manage.py threat-intel-downloader [subcommand]"""
-    ti_subparsers = subparser.add_subparsers(dest="threat-intel-downloader subcommand", required=True)
+    ti_subparsers = subparser.add_subparsers(dest="threat-intel-downloader subcommand",
+                                             required=True)
 
     _setup_threat_intel_configure_subparser(ti_subparsers)
     _setup_threat_intel_auth_subparser(ti_subparsers)
@@ -1255,7 +1256,8 @@ def _setup_threat_intel_downloader_subparser(subparser):
 
 def _setup_rule_staging_subparser(subparser):
     """Add the rule staging subparser: manage.py rule-staging [subcommand] [options]"""
-    rule_staging_subparsers = subparser.add_subparsers(dest="rule-staging subcommand", required=True)
+    rule_staging_subparsers = subparser.add_subparsers(dest="rule-staging subcommand",
+                                                       required=True)
 
     _setup_rule_staging_enable_subparser(rule_staging_subparsers)
     _setup_rule_staging_status_subparser(rule_staging_subparsers)

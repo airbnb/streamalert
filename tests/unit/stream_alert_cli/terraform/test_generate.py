@@ -15,7 +15,7 @@ limitations under the License.
 """
 from mock import ANY, patch
 
-from nose.tools import assert_equal, assert_dict_equal, assert_false, assert_raises, assert_true
+from nose.tools import assert_equal, assert_dict_equal, assert_false, assert_true
 
 from stream_alert_cli.config import CLIConfig
 from stream_alert_cli.terraform import (
