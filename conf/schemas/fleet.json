@@ -1,7 +1,7 @@
 {
-  "fleet:results":{
+  "fleet:results": {
     "schema": {
-      "name":"string",
+      "name": "string",
       "hostIdentifier": "string",
       "calendarTime": "string",
       "unixTime": "integer",

@@ -1,5 +1,5 @@
 {
-    "binaryalert": {
+  "binaryalert": {
     "schema": {
       "FileInfo": {},
       "MatchedRules": {},
