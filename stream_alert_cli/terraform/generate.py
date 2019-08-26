@@ -23,7 +23,6 @@ from stream_alert_cli.terraform.common import (
     DEFAULT_SNS_MONITORING_TOPIC,
     InvalidClusterName,
     infinitedict,
-    MisconfigurationError,
 )
 from stream_alert_cli.terraform.alert_merger import generate_alert_merger
 from stream_alert_cli.terraform.alert_processor import generate_alert_processor
@@ -514,33 +513,14 @@ def remove_temp_terraform_file(tf_tmp_file, message):
 
 
 def _generate_global_module(config):
-    # 2019-07-30 (Ryxias)
-    #   This variable is left here to accommodate for a bug that misses the prefix on the SQS
-    #   queue name.
-    #   See: https://github.com/airbnb/streamalert/issues/885
-    #
-    #   Because of the possibility of data loss, and the difficulty of doing a resource migration,
-    #   we offer this option to maintain an account's un-prefixed SQS resource name.
-    #
-    #   The default value provided in global.json is 'None'. For all versions that are <3.0.0,
-    #   in order to facilitate a graceful upgrade, we require the StreamAlert instance modify this
-    #   value to True or False, to explicitly state whether or not to use the SQS prefix.
-    #
+    # 2019-08-22 (Ryxias)
     #   In version 3.0.0+, StreamAlert will default to always using the prefix, when "use_prefix"
     #   is not present.
+    #
+    #   Refer to this PR for more information: https://github.com/airbnb/streamalert/pull/979
     use_prefix = config['global']['infrastructure'].get('classifier_sqs', {}).get(
-        'use_prefix', None
+        'use_prefix', True
     )
-    if use_prefix is None:
-        message = (
-            '[WARNING] '
-            'As of StreamAlert v2.3.0+ you must specify the classifier_sqs.use_prefix parameter '
-            'in global.json. '
-            'For existing/legacy deployments, change this value to False. '
-            'For new deployments, change this value to True. '
-            'For more information, refer to https://github.com/airbnb/streamalert/pull/960.'
-        )
-        raise MisconfigurationError(message)
 
     global_module = {
         'source': 'modules/tf_stream_alert_globals',
