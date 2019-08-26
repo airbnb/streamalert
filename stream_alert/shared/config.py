@@ -39,7 +39,7 @@ class SchemaSorter(object):
     In the event that no priority is specified for a schema,
     it will be placed at the end after all schema with a priority defined.
     If no priority or equal priority is specified for multiple schema, they will
-    be sorted in the order they were encountered. The intent of the statefulness 
+    be sorted in the order they were encountered. The intent of the statefulness
     of this function is that there is no arbitrarily enforced upper bound for priority."""
 
     def __init__(self):
@@ -171,10 +171,10 @@ def load_config(conf_dir='conf/', exclude=None, include=None, validate=True):
 
 def _load_schemas(conf_dir, schemas_dir):
     """Helper to load all schemas from the schemas directory into one ordered dictionary.
-    
+
     Args:
         conf_dir (str):  The relative path of the configuration directory
-        schemas_dir (bool): The realtive path of the schemas directory 
+        schemas_dir (bool): The realtive path of the schemas directory
 
     Returns:
         OrderedDict: The sorted schema dictionary.

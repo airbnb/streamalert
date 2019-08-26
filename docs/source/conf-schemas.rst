@@ -71,7 +71,7 @@ Key                          Description
 ``log_patterns``             Various patterns to enforce within a log given provided fields
 ``optional_top_level_keys``  Keys that may or may not be present in a log being parsed
 ``optional_envelope_keys``   Keys that may or may not be present in the envelope of a log being parsed
-``priority``                 Used to enforce the order that schema will get tested against data with the highest priority starting at 0.
+``priority``                 Used to enforce the order that schema will get tested against data with the highest priority starting at 0 and the lowest being any positive integer.
 ``separator``                For use with key/value logs to identify the separator character for the log
 ===========================  ======================
 
