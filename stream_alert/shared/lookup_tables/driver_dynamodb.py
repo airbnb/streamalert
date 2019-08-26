@@ -94,7 +94,7 @@ class DynamoDBDriver(PersistenceDriver):
     def _reload_if_necessary(self, key):
         """
         Uses the "cache_refresh_minutes" option to determine whether or not the current LookupTable
-        should be re-fetched from S3.
+        should be re-fetched from DynamoDb.
 
         If it needs a reload, this method will appropriately call reload.
         """
