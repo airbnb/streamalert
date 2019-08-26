@@ -38,14 +38,18 @@ class SchemaSorter(object):
     and the lowest priority is any positive numeric value.
     In the event that no priority is specified for a schema,
     it will be placed at the end after all schema with a priority defined.
-    The intent of the statefulness of this function is that there is no arbitrarily
-    enforced upper bound for priority."""
+    If no priority or equal priority is specified for multiple schema, they will
+    be sorted in the order they were encountered. The intent of the statefulness 
+    of this function is that there is no arbitrarily enforced upper bound for priority."""
 
     def __init__(self):
         # Set a default index to -1
         self.max_index = -1
 
-    def sort(self, key_and_value_tuple):
+    def sort_key(self, key_and_value_tuple):
+        """Key function for pythons sort function.
+        Return each schemas priority or the max encountered priority if none was specified.
+        """
         dict_value = key_and_value_tuple[1]
         value = int(dict_value.get('configuration', {}).get('priority', -1))
 
@@ -166,6 +170,15 @@ def load_config(conf_dir='conf/', exclude=None, include=None, validate=True):
     return config
 
 def _load_schemas(conf_dir, schemas_dir):
+    """Helper to load all schemas from the schemas directory into one ordered dictionary.
+    
+    Args:
+        conf_dir (str):  The relative path of the configuration directory
+        schemas_dir (bool): The realtive path of the schemas directory 
+
+    Returns:
+        OrderedDict: The sorted schema dictionary.
+    """
     schemas_dir = os.path.join(conf_dir, 'schemas')
     schema_files = {
         file for file in os.listdir(schemas_dir)
@@ -174,7 +187,7 @@ def _load_schemas(conf_dir, schemas_dir):
     schemas = dict()
     for schema in schema_files:
         schemas.update(_load_json_file(os.path.join(schemas_dir, schema), True))
-    return OrderedDict(sorted(schemas.items(), key=SchemaSorter().sort))
+    return OrderedDict(sorted(schemas.items(), key=SchemaSorter().sort_key))
 
 def _load_json_file(path, ordered=False):
     """Helper to return the loaded json from a given path

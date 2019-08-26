@@ -12,7 +12,7 @@ Each datasource (``kinesis``, ``s3``, or ``sns``) contains a mapping of specific
 
 Log schemas are defined in one or multiple files in the ``conf/schemas`` directory.
 
-An example of this would be to put all carbonblack schema into ``carbonblack.json``.
+An example of this would be to put all carbonblack schema into ``conf/schemas/carbonblack.json``.
 
 Each log in the list of ``logs`` dictates to StreamAlert how to parse incoming data from a given resource.  Data will only be analyzed if its type is defined here.
 
