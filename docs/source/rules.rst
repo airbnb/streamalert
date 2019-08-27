@@ -46,7 +46,7 @@ The simplest possible rule looks like this:
       """Minimal StreamAlert rule: alert on all CloudWatch events"""
       return True
 
-This rule will be evaluated against all inbound logs that match the ``cloudwatch:events`` schema defined a schema file in the ``conf/schemas`` directory.
+This rule will be evaluated against all inbound logs that match the ``cloudwatch:events`` schema defined in a schema file in the ``conf/schemas`` directory, i.e ``conf/schemas/cloudwatch.json``.
 In this case, *all* CloudWatch events will generate an alert, which will be sent to the :ref:`alerts Athena table <athena_user_guide>`.
 
 Example: Logic & Outputs
