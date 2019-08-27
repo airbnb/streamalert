@@ -67,6 +67,11 @@ class TestConfigLoading(fake_filesystem_unittest.TestCase):
             'conf/normalized_types.json',
             contents=json.dumps(config_data['normalized_types'])
         )
+        self.fs.create_file(
+            'conf/schemas/csv.json',
+            contents='{"csv_log2": {"schema": {"data": "string","uid": "integer"},"parser": "csv"}}'
+        )
+
         # Create similar structure but with schemas folder instead of logs.json
         self.fs.create_file('conf_schemas/clusters/prod.json', contents='{}')
         self.fs.create_file('conf_schemas/clusters/dev.json', contents='{}')
@@ -166,7 +171,15 @@ class TestConfigLoading(fake_filesystem_unittest.TestCase):
         # Load from separate dir where logs.json doesn't exist
         config = load_config(conf_dir='conf_schemas')
         basic_config = basic_streamalert_config()
-        assert_equal(config['logs'].keys(), basic_config['logs'].keys())
+        assert_equal(config['logs'], basic_config['logs'])
+
+    @staticmethod
+    def test_load_schemas_logs():
+        """Shared - Config Loading - Schemas and Logs.json Exist"""
+        # Check if data was loaded from conf/logs.json or the schemas dir if both exist
+        config = load_config(conf_dir='conf')
+        # Logs.json is preferred over schemas for backwards compatibility.
+        assert_equal(config['logs'], {})
 
 
 class TestConfigValidation(object):

@@ -17,6 +17,11 @@ from collections import defaultdict, OrderedDict
 import json
 import os
 
+from stream_alert.shared.logger import get_logger
+
+
+LOGGER = get_logger(__name__)
+
 
 class TopLevelConfigKeys(object):
     """Define the available top level keys in the loaded config"""
@@ -132,7 +137,8 @@ def load_config(conf_dir='conf/', exclude=None, include=None, validate=True):
 
     schemas_dir = os.path.join(conf_dir, 'schemas')
     schema_files = []
-    if os.path.exists(schemas_dir):
+
+    if os.path.exists(schemas_dir) and (not include or "schemas" in include):
         schema_files = [
             schema_file for schema_file in os.listdir(schemas_dir) if schema_file.endswith('.json')
         ]
@@ -185,7 +191,12 @@ def _load_schemas(schemas_dir, schema_files):
     """
     schemas = dict()
     for schema in schema_files:
-        schemas.update(_load_json_file(os.path.join(schemas_dir, schema), True))
+        schemas_from_file = _load_json_file(os.path.join(schemas_dir, schema), True)
+        dup_schema = set(schemas).intersection(schemas_from_file)
+        if dup_schema:
+            LOGGER.warning('Duplicate schema detected %s. This may result in undefined behavior.',
+                           format(dup_schema))
+        schemas.update(schemas_from_file)
     return OrderedDict(sorted(schemas.items(), key=SchemaSorter().sort_key))
 
 def _load_json_file(path, ordered=False):
