@@ -135,17 +135,20 @@ def load_config(conf_dir='conf/', exclude=None, include=None, validate=True):
     conf_files = (include or default_files).copy()
     include_clusters = TopLevelConfigKeys.CLUSTERS in conf_files
 
-    schemas_dir = os.path.join(conf_dir, 'schemas')
-    schema_files = []
-
-    if os.path.exists(schemas_dir) and (not include or "schemas" in include):
-        schema_files = [
-            schema_file for schema_file in os.listdir(schemas_dir) if schema_file.endswith('.json')
-        ]
-
     conf_files.intersection_update(default_files)
     exclusions = exclude or set()
     conf_files = conf_files.difference(exclusions)
+
+
+    schemas_name = 'schemas'
+    schemas_dir = os.path.join(conf_dir, schemas_name)
+    schema_files = []
+
+    if (os.path.exists(schemas_dir) and schemas_name not in exclusions
+            and (not include or schemas_name in include)):
+        schema_files = [
+            schema_file for schema_file in os.listdir(schemas_dir) if schema_file.endswith('.json')
+        ]
 
     if not (conf_files or include_clusters or schema_files):
         available_files = ', '.join("'{}'".format(name) for name in sorted(default_files))
@@ -160,9 +163,8 @@ def load_config(conf_dir='conf/', exclude=None, include=None, validate=True):
         config[os.path.splitext(name)[0]] = _load_json_file(path, name == 'logs.json')
 
     # Load split logs.json configuration
-    if ('logs.json' not in default_files and schema_files and
-            'schemas' not in exclusions):
-        config['logs'] = _load_schemas(schemas_dir, schema_files)
+    if ('logs.json' not in default_files and schema_files):
+        config[TopLevelConfigKeys.LOGS] = _load_schemas(schemas_dir, schema_files)
 
     # Load the configs for clusters if it is not excluded
     if TopLevelConfigKeys.CLUSTERS not in exclusions and not include or include_clusters:
