@@ -46,6 +46,7 @@ class LambdaPackage:
         'backoff': 'backoff==1.8.0',
         'boto3': 'boto3==1.9.208',
         'boxsdk[jwt]': 'boxsdk[jwt]==2.0.0a11',
+        'cbapi': 'cbapi==1.5.1',
         'google-api-python-client': 'google-api-python-client==1.6.4',
         'jmespath': 'jmespath==0.9.4',
         'jsonlines': 'jsonlines==1.2.0',
@@ -177,7 +178,7 @@ class LambdaPackage:
         LOGGER.info('Installing libraries: %s', ', '.join(libs_to_install))
         pip_command = ['pip', 'install']
         pip_command.extend(libs_to_install)
-        pip_command.extend(['--upgrade', '--target', temp_package_path])
+        pip_command.extend(['--no-cache-dir', '--upgrade', '--target', temp_package_path])
 
         # Return True if the pip command is successfully run
         return run_command(pip_command, cwd=temp_package_path, quiet=True)
@@ -225,7 +226,7 @@ class AlertProcessorPackage(LambdaPackage):
         'stream_alert/shared'
     }
     package_name = 'alert_processor'
-    package_libs = {'netaddr', 'requests'}
+    package_libs = {'cbapi', 'netaddr', 'requests'}
 
 
 class AlertMergerPackage(LambdaPackage):
