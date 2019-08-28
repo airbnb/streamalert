@@ -22,7 +22,7 @@ import stream_alert.classifier.parsers as parsers
 from stream_alert.classifier.parsers import ParserBase
 
 
-class TestParserBaseConfiguration(object):
+class TestParserBaseConfiguration:
     """Test class for ParserBase properties"""
     # pylint: disable=protected-access,no-self-use
 
@@ -94,7 +94,7 @@ class TestParserBaseConfiguration(object):
         assert_equal(self._parser._optional_envelope_keys, expected_result)
 
 
-class TestParserBaseClassMethods(object):
+class TestParserBaseClassMethods:
     """Test class for ParserBase classmethods"""
     # pylint: disable=protected-access,no-self-use,too-many-public-methods
 
@@ -356,10 +356,10 @@ class TestParserBaseClassMethods(object):
             'key': 'string'
         }
         record = {
-            'key': u'\ue82a'
+            'key': '\ue82a'
         }
         assert_equal(ParserBase._convert_type(record, schema), True)
-        assert_equal(record, {'key': u'\ue82a'})
+        assert_equal(record, {'key': '\ue82a'})
 
     def test_convert_type_int(self):
         """ParserBase - Convert Type, Int"""
@@ -490,7 +490,7 @@ class TestParserBaseClassMethods(object):
 
 
 @patch.object(ParserBase, '__abstractmethods__', frozenset())
-class TestParserBaseMethods(object):
+class TestParserBaseMethods:
     """Test class for ParserBase"""
     # pylint: disable=protected-access,no-self-use,abstract-class-instantiated
 

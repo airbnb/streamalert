@@ -6,7 +6,7 @@ import os
 from stream_alert.apps.exceptions import AppException
 
 
-class StreamAlertApp(object):
+class StreamAlertApp:
     """Class to be used as a decorator to register all AppIntegration subclasses"""
     _apps = {}
 

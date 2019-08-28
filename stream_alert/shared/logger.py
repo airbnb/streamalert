@@ -38,6 +38,6 @@ def get_logger(name, level=None):
         logger.setLevel(level.upper())
     except (TypeError, ValueError) as err:
         logger.setLevel('INFO')
-        logger.error('Defaulting to INFO logging: %s', err.message)
+        logger.error('Defaulting to INFO logging: %s', str(err))
 
     return logger

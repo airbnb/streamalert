@@ -29,7 +29,7 @@ from stream_alert.shared.logger import get_logger
 LOGGER = get_logger(__name__)
 
 
-class LookupTables(object):
+class LookupTables:
     """Lookup Tables to useful information which can be referenced from rules"""
 
     _LOOKUP_TABLES_LAST_REFRESH = datetime(year=1970, month=1, day=1)
@@ -56,7 +56,7 @@ class LookupTables(object):
         boto_config = boto_helpers.default_config(timeout=10)
         s3_client = boto3.resource('s3', config=boto_config)
 
-        for bucket, files in buckets_info.iteritems():
+        for bucket, files in buckets_info.items():
             for json_file in files:
                 try:
                     start_time = time.time()

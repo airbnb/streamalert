@@ -21,7 +21,7 @@ from nose.tools import (
     assert_equal,
     assert_false,
     assert_true,
-    assert_items_equal,
+    assert_count_equal,
     raises
 )
 from requests.exceptions import Timeout
@@ -40,7 +40,7 @@ from tests.unit.stream_alert_shared.test_config import get_mock_lambda_context
 @patch('time.sleep', Mock())
 @patch.object(SalesforceApp, '_type', Mock(return_value='Console'))
 @patch.object(SalesforceApp, 'type', Mock(return_value='type'))
-class TestSalesforceApp(object):
+class TestSalesforceApp:
     """Test class for the SalesforceApp"""
     # pylint: disable=protected-access
 
@@ -112,8 +112,8 @@ class TestSalesforceApp(object):
 
     def test_required_auth_info(self):
         """SalesforceApp - Required Auth Info"""
-        assert_items_equal(
-            self._app.required_auth_info().keys(),
+        assert_count_equal(
+            list(self._app.required_auth_info().keys()),
             {'client_id', 'client_secret', 'username', 'password', 'security_token'}
         )
 

@@ -34,7 +34,7 @@ from stream_alert.shared.utils import in_network, valid_ip
 LOGGER = get_logger(__name__)
 
 
-class ThreatIntel(object):
+class ThreatIntel:
     """Load threat intelligence data from DynamoDB and perform IOC detection"""
     IOC_KEY = 'streamalert:ioc'
 
@@ -268,7 +268,7 @@ class ThreatIntel(object):
         for raw_data in dynamodb_data:
             yield {
                 key: cls._deserializer.deserialize(val)
-                for key, val in raw_data.iteritems()
+                for key, val in raw_data.items()
             }
 
     def _is_excluded_ioc(self, ioc_type, ioc_value):
@@ -308,7 +308,7 @@ class ThreatIntel(object):
             if Normalizer.NORMALIZATION_KEY not in record:
                 continue
             normalized_values = record[Normalizer.NORMALIZATION_KEY]
-            for normalized_key, values in normalized_values.iteritems():
+            for normalized_key, values in normalized_values.items():
                 # Look up mapped IOC type based on normalized CEF type
                 ioc_type = self._ioc_config.get(normalized_key)
                 if not ioc_type:
@@ -330,7 +330,7 @@ class ThreatIntel(object):
         if not excluded:
             return None
 
-        excluded = {itype: set(iocs) for itype, iocs in excluded.iteritems()}
+        excluded = {itype: set(iocs) for itype, iocs in excluded.items()}
 
         # Try to load IP addresses
         if 'ip' in excluded:
@@ -357,7 +357,7 @@ class ThreatIntel(object):
 
         # Threat Intel can be disabled for any given cluster
         enabled_clusters = {
-            cluster for cluster, values in config['clusters'].iteritems()
+            cluster for cluster, values in config['clusters'].items()
             if values['modules']['stream_alert'].get('enable_threat_intel', False)
         }
 
@@ -368,7 +368,7 @@ class ThreatIntel(object):
         # {'normalized_key': 'ioc_type'} for simpler lookups
         ioc_config = {
             key: ioc_type
-            for ioc_type, keys in intel_config['normalized_ioc_types'].iteritems()
+            for ioc_type, keys in intel_config['normalized_ioc_types'].items()
             for key in keys
         }
 

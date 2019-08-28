@@ -22,7 +22,7 @@ import stream_alert.classifier.classifier as classifier_module
 from stream_alert.classifier.classifier import Classifier
 
 
-class TestClassifier(object):
+class TestClassifier:
     """Classifier tests"""
     # pylint: disable=protected-access,no-self-use,attribute-defined-outside-init
 
@@ -263,6 +263,9 @@ class TestClassifier(object):
                 self._service_name
             )
 
+    # Since we mock the Normalizer, we must also mock the class variable
+    # referenced in the class methods.
+    @patch('stream_alert.shared.normalize.Normalizer._types_config', dict())
     def test_classify_payload_bad_record(self):
         """Classifier - Classify Payload, Bad Record"""
         with patch.object(Classifier, '_process_log_schemas'), \

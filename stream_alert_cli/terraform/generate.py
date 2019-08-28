@@ -49,7 +49,7 @@ from stream_alert_cli.terraform.s3_events import generate_s3_events
 from stream_alert_cli.terraform.threat_intel_downloader import generate_threat_intel_downloader
 
 RESTRICTED_CLUSTER_NAMES = ('main', 'athena')
-TERRAFORM_VERSIONS = {'application': '~> 0.11.7', 'provider': {'aws': '~> 1.26.0'}}
+TERRAFORM_VERSIONS = {'application': '~> 0.11.7', 'provider': {'aws': '~> 1.51.0'}}
 LOGGER = get_logger(__name__)
 
 
@@ -276,7 +276,7 @@ def generate_outputs(cluster_name, cluster_dict, config):
     """
     output_config = config['clusters'][cluster_name].get('outputs')
     if output_config:
-        for tf_module, output_vars in output_config.items():
+        for tf_module, output_vars in list(output_config.items()):
             for output_var in output_vars:
                 cluster_dict['output']['{}_{}_{}'.format(tf_module, cluster_name, output_var)] = {
                     'value': '${{module.{}_{}.{}}}'.format(tf_module, cluster_name, output_var)}

@@ -29,7 +29,7 @@ from stream_alert.shared.lookup_tables import LookupTables
 from tests.unit.helpers.aws_mocks import put_mock_s3_object
 
 
-class TestLookupTables(object):
+class TestLookupTables:
     """Test LookupTables class"""
     # pylint: disable=protected-access,attribute-defined-outside-init,no-self-use
 
@@ -42,7 +42,7 @@ class TestLookupTables(object):
         self._put_mock_tables()
 
     def _put_mock_tables(self):
-        for bucket, files in self.buckets_info.iteritems():
+        for bucket, files in self.buckets_info.items():
             for json_file in files:
                 put_mock_s3_object(
                     bucket,
@@ -73,7 +73,7 @@ class TestLookupTables(object):
         put_mock_s3_object(
             'bucket_name',
             'bar.json',
-            zlib.compress(json.dumps({'compressed_key': 'compressed_val'}))
+            zlib.compress(json.dumps({'compressed_key': 'compressed_val'}).encode())
         )
 
         expected_result = {

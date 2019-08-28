@@ -19,8 +19,8 @@ import os
 from boxsdk.exception import BoxException
 from mock import Mock, mock_open, patch
 from moto import mock_ssm
-from nose.tools import assert_equal, assert_false, assert_items_equal, assert_true
-from requests.exceptions import ConnectionError, Timeout
+from nose.tools import assert_equal, assert_false, assert_count_equal, assert_true
+from requests.exceptions import ConnectionError as reConnectionError, Timeout
 
 from stream_alert.apps._apps.box import BoxApp
 
@@ -30,7 +30,7 @@ from tests.unit.stream_alert_shared.test_config import get_mock_lambda_context
 
 @mock_ssm
 @patch.object(BoxApp, 'type', Mock(return_value='type'))
-class TestBoxApp(object):
+class TestBoxApp:
     """Test class for the BoxApp"""
     # pylint: disable=protected-access,no-self-use
 
@@ -50,7 +50,7 @@ class TestBoxApp(object):
 
     def test_required_auth_info(self):
         """BoxApp - Required Auth Info"""
-        assert_items_equal(self._app.required_auth_info().keys(), {'keyfile'})
+        assert_count_equal(list(self._app.required_auth_info().keys()), {'keyfile'})
 
     @patch('stream_alert.apps._apps.box.JWTAuth.from_settings_dictionary',
            Mock(return_value=True))
@@ -59,7 +59,7 @@ class TestBoxApp(object):
         validation_function = self._app.required_auth_info()['keyfile']['format']
         data = {'test': 'keydata'}
         mocker = mock_open(read_data=json.dumps(data))
-        with patch('__builtin__.open', mocker):
+        with patch('builtins.open', mocker):
             loaded_keydata = validation_function('fakepath')
             assert_equal(loaded_keydata, data)
 
@@ -69,7 +69,7 @@ class TestBoxApp(object):
         validation_function = self._app.required_auth_info()['keyfile']['format']
         cred_mock.return_value = False
         mocker = mock_open(read_data=json.dumps({'test': 'keydata'}))
-        with patch('__builtin__.open', mocker):
+        with patch('builtins.open', mocker):
             assert_false(validation_function('fakepath'))
             cred_mock.assert_called()
 
@@ -78,7 +78,7 @@ class TestBoxApp(object):
         """BoxApp - Keyfile Validation, Bad JSON"""
         validation_function = self._app.required_auth_info()['keyfile']['format']
         mocker = mock_open(read_data='invalid json')
-        with patch('__builtin__.open', mocker):
+        with patch('builtins.open', mocker):
             assert_false(validation_function('fakepath'))
             cred_mock.assert_not_called()
 
@@ -142,10 +142,10 @@ class TestBoxApp(object):
            Mock(return_value=True))
     @patch('logging.Logger.exception')
     def test_gather_logs_requests_error(self, log_mock):
-        """BoxApp - Gather Logs, ConnectionError"""
+        """BoxApp - Gather Logs, requests.ConnectionError"""
         with patch.object(self._app, '_client') as client_mock:
             self._app._next_stream_position = 10241040195019
-            client_mock.make_request.side_effect = ConnectionError(response='bad error')
+            client_mock.make_request.side_effect = reConnectionError(response='bad error')
             assert_false(self._app._gather_logs())
             log_mock.assert_called_with('Bad response received from host, will retry once')
 

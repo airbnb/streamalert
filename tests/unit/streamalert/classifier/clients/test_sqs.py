@@ -21,7 +21,7 @@ import stream_alert.classifier.clients.sqs as sqs
 from stream_alert.classifier.clients.sqs import SQSClient, SQSClientError
 
 
-class TestSQSClient(object):
+class TestSQSClient:
     """Test class for SQSClient"""
     # pylint: disable=protected-access,no-self-use,attribute-defined-outside-init
 

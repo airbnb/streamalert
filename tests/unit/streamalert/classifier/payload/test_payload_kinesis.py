@@ -20,7 +20,7 @@ from nose.tools import assert_equal
 from stream_alert.classifier.payload.kinesis import KinesisPayload
 
 
-class TestKinesisPayload(object):
+class TestKinesisPayload:
     """KinesisPayload tests"""
     # pylint: disable=no-self-use,protected-access
 
@@ -44,7 +44,7 @@ class TestKinesisPayload(object):
         expected_result = [
             json.dumps({
                 'key': 'value'
-            })
+            }).encode()
         ]
 
         payload = KinesisPayload(None, record)
@@ -58,7 +58,7 @@ class TestKinesisPayload(object):
         expected_result = [
             json.dumps({
                 'key': 'value'
-            })
+            }).encode()
         ]
 
         payload = KinesisPayload(None, record)

@@ -16,7 +16,7 @@ limitations under the License.
 import re
 
 
-class RuleDescriptionParser(object):
+class RuleDescriptionParser:
     """Class that does fuzzy parsing information out of the rule description
 
     In general, rule descriptions follow a very FUZZY scheme where they are newline-delimited
@@ -118,7 +118,7 @@ class RuleDescriptionParser(object):
     @classmethod
     def present(cls, rule_description):
         def join_lines(lines):
-            if not isinstance(lines, list) or len(lines) <= 0:
+            if not isinstance(lines, list) or not lines:
                 return ''
 
             document = None
@@ -153,7 +153,7 @@ class RuleDescriptionParser(object):
             'fields': {},
         }
 
-        for key, value in fragments.iteritems():
+        for key, value in fragments.items():
             if key in ['author', 'maintainer']:
                 presentation['author'] = join_lines(value)
             elif key in ['description']:

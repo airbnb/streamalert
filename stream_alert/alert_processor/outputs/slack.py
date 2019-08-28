@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-import cgi
+import html
 from collections import OrderedDict
 
 from stream_alert.alert_processor.helpers import compose_alert, elide_string_middle
@@ -77,8 +77,8 @@ class SlackOutput(OutputDispatcher):
         # Convert the alert we have to a nicely formatted string for slack
         alert_text = '\n'.join(cls._json_to_slack_mrkdwn(alert_record, 0))
 
-        # Slack requires escaping the characters: '&', '>' and '<' and cgi does just that
-        alert_text = cgi.escape(alert_text)
+        # Slack requires escaping the characters: '&', '>' and '<' and html does just that
+        alert_text = html.escape(alert_text)
 
         while alert_text:
             if len(alert_text) <= cls.MAX_MESSAGE_SIZE:
@@ -368,7 +368,7 @@ class SlackOutput(OutputDispatcher):
             list: strings that have been properly tabbed and formatted for printing
         """
         all_lines = []
-        for key, value in sorted(json_values.iteritems()):
+        for key, value in sorted(json_values.items()):
             if isinstance(value, (dict, list)) and value:
                 all_lines.append('{}*{}:*'.format(tab*indent_count, key))
                 all_lines.extend(cls._json_to_slack_mrkdwn(value, indent_count+1))

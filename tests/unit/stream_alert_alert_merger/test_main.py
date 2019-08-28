@@ -30,7 +30,7 @@ _ALERT_PROCESSOR = 'PREFIX_streamalert_alert_processor'
 _ALERT_PROCESSOR_TIMEOUT_SEC = 60
 
 
-class TestAlertMergeGroup(object):
+class TestAlertMergeGroup:
     """Tests for merger/main.py:AlertMergeGroup class"""
 
     def test_add_mergeable(self):
@@ -52,7 +52,7 @@ class TestAlertMergeGroup(object):
         assert_equal([alert1], group.alerts)
 
 
-class TestAlertMerger(object):
+class TestAlertMerger:
     """Tests for merger/main.py:AlertMerger class"""
 
     @patch.dict(os.environ, {
@@ -202,11 +202,13 @@ class TestAlertMerger(object):
         ])
 
         self.merger.dispatch()
+        # NOTE (Bobby): The following assertion was modified during the py2 -> py3
+        # conversion to disregard order of calls.
         mock_logger.assert_has_calls([
             call.info('Merged %d alerts into a new alert with ID %s', 2, ANY),
             call.info('Dispatching %s to %s (attempt %d)', ANY, _ALERT_PROCESSOR, 1),
             call.info('Dispatching %s to %s (attempt %d)', ANY, _ALERT_PROCESSOR, 1)
-        ])
+        ], any_order=True)
 
     @patch.object(main, 'LOGGER')
     def test_dispatch_no_alerts(self, mock_logger):

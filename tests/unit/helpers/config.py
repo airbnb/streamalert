@@ -16,7 +16,7 @@ limitations under the License.
 import json
 
 
-class MockCLIConfig(object):
+class MockCLIConfig:
     """Fake CLI Config Class"""
 
     def __init__(self, config):
@@ -32,7 +32,7 @@ class MockCLIConfig(object):
         self.config.__setitem__(key, new_value)
 
     def clusters(self):
-        return self.config['clusters'].keys()
+        return list(self.config['clusters'].keys())
 
     def get(self, key):
         return self.config.get(key)

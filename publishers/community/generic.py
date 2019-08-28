@@ -65,11 +65,12 @@ def _delete_dictionary_fields(publication, regexp):
         next_item = fringe.popleft()
 
         if isinstance(next_item, dict):
-            for key in next_item.keys():
+            # work on a copy of the keys to avoid modifying the dict while iterating over it
+            for key in list(next_item.keys()):
                 if re.search(regexp, key):
                     next_item.pop(key, None)
 
-            for key, item in next_item.iteritems():
+            for key, item in next_item.items():
                 fringe.append(item)
         elif isinstance(next_item, list):
             fringe.extend(next_item)
@@ -219,7 +220,7 @@ class StringifyArrays(AlertPublisher):
 
             if isinstance(next_item, dict):
                 # Check all keys
-                for key, item in next_item.iteritems():
+                for key, item in next_item.items():
                     if self.is_scalar_array(item):
                         next_item[key] = self.stringify(item)
                     else:

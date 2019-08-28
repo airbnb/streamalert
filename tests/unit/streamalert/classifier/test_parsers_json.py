@@ -22,7 +22,7 @@ from nose.tools import assert_equal
 from stream_alert.classifier.parsers import JSONParser
 
 
-class TestJSONParser(object):
+class TestJSONParser:
     """Test class for JSONParser"""
     # pylint: disable=attribute-defined-outside-init,no-self-use,protected-access
 
@@ -1047,7 +1047,8 @@ class TestJSONParser(object):
         parser = JSONParser(options)
         result = parser._extract_via_json_path(record_data)
         assert_equal(result, [('not json', False)])
-        log_mock.assert_any_call('Embedded json is invalid: %s', 'No JSON object could be decoded')
+        log_mock.assert_any_call('Embedded json is invalid: %s',
+                                 'Expecting value: line 1 column 1 (char 0)')
 
     @patch('logging.Logger.debug')
     def test_extract_via_json_path_not_dict(self, log_mock):

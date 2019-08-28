@@ -22,7 +22,7 @@ from nose.tools import assert_equal
 from stream_alert.rule_promotion.statistic import StagingStatistic
 
 
-class TestStagingStatistic(object):
+class TestStagingStatistic:
     """Tests for rule_promotion/statistic.py:StagingStatistic"""
     # pylint: disable=protected-access
 
@@ -65,12 +65,12 @@ class TestStagingStatistic(object):
         """StagingStatistic - Stringer, Past Staging"""
         self.statistic.alert_count = 200
         self.statistic._current_time += timedelta(days=2, hours=10)
-        expected_string = u'''\u25E6 test_rule
+        expected_string = '''\u25E6 test_rule
 	- Staged At:					2000-01-01 01:01:01 UTC
 	- Staged Until:					2000-01-03 01:01:01 UTC
 	- Time Past Staging:			1d 10h 0m
 	- Alert Count:					200
-	- Alert Info:					n/a'''.encode('utf-8')
+	- Alert Info:					n/a'''
 
         assert_equal(str(self.statistic), expected_string)
 
@@ -78,13 +78,13 @@ class TestStagingStatistic(object):
         """StagingStatistic - Stringer, Staging Remaining"""
         self.statistic.alert_count = 100
         self.statistic.execution_id = '678cc350-d4e1-4296-86d5-9351b7f92ed4'
-        expected_string = u'''\u25E6 test_rule
+        expected_string = '''\u25E6 test_rule
 	- Staged At:					2000-01-01 01:01:01 UTC
 	- Staged Until:					2000-01-03 01:01:01 UTC
 	- Remaining Stage Time:		1d 0h 0m
 	- Alert Count:					100
 	- Alert Info:					https://console.aws.amazon.com/athena/\
-home#query/history/678cc350-d4e1-4296-86d5-9351b7f92ed4'''.encode('utf-8')
+home#query/history/678cc350-d4e1-4296-86d5-9351b7f92ed4'''
 
         assert_equal(str(self.statistic), expected_string)
 

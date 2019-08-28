@@ -23,7 +23,7 @@ LOGGER = get_logger(__name__)
 LOGGER_DEBUG_ENABLED = LOGGER.isEnabledFor(logging.DEBUG)
 
 
-class Normalizer(object):
+class Normalizer:
     """Normalizer class to handle log key normalization in payloads"""
 
     NORMALIZATION_KEY = 'streamalert:normalization'
@@ -58,7 +58,7 @@ class Normalizer(object):
             }
         """
         result = {}
-        for key, keys_to_normalize in normalized_types.iteritems():
+        for key, keys_to_normalize in normalized_types.items():
             values = set()
             for value in cls._extract_values(record, set(keys_to_normalize)):
                 # Skip emtpy values
@@ -70,7 +70,7 @@ class Normalizer(object):
             if not values:
                 continue
 
-            result[key] = sorted(values)
+            result[key] = sorted(values, key=str)
 
         return result
 
@@ -87,7 +87,7 @@ class Normalizer(object):
         Yields:
             list: Parts of path in dictionary that contain normalized keys
         """
-        for key, value in record.iteritems():
+        for key, value in record.items():
             if isinstance(value, dict):  # If this is a dict, look for nested
                 for nested_value in cls._extract_values(value, keys_to_normalize):
                     yield nested_value

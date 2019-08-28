@@ -17,7 +17,7 @@ import os
 
 from mock import Mock, patch
 from moto import mock_ssm
-from nose.tools import assert_equal, assert_false, assert_items_equal, raises
+from nose.tools import assert_equal, assert_false, assert_count_equal, raises
 import requests
 
 from stream_alert.apps._apps.duo import DuoAdminApp, DuoApp, DuoAuthApp
@@ -27,13 +27,22 @@ from tests.unit.stream_alert_shared.test_config import get_mock_lambda_context
 
 
 @mock_ssm
-@patch.object(DuoApp, 'type', Mock(return_value='type'))
+# Patching the DuoApp class-wide allows for all `test_*` methods to have
+# patched `_type` and `_endpoint` methods. This _does not_ apply to the
+# `setup` method, which means the `setup` method must be decorated as well.
+@patch.object(DuoApp, '_type', Mock(return_value='test'))
 @patch.object(DuoApp, '_endpoint', Mock(return_value='endpoint'))
-class TestDuoApp(object):
+# By setting the abstract methods to an empty `frozenset()`, an error requiring
+# subclasses to implement the `_type` and `_endpoint`methods will not be raised.
+# This also also allows us to subsequently patch these methods for use in the
+# tests.
+@patch.object(DuoApp, '__abstractmethods__', frozenset())
+class TestDuoApp:
     """Test class for the DuoApp"""
     # pylint: disable=protected-access
 
     @patch.dict(os.environ, {'AWS_DEFAULT_REGION': 'us-east-1'})
+    @patch.object(DuoApp, '__abstractmethods__', frozenset())
     def setup(self):
         """Setup before each method"""
         # pylint: disable=abstract-class-instantiated,attribute-defined-outside-init
@@ -53,7 +62,7 @@ class TestDuoApp(object):
     def test_generate_auth(self):
         """DuoApp - Generate Auth"""
         auth = self._app._generate_auth('hostname', {})
-        assert_items_equal(auth.keys(), {'Date', 'Authorization', 'Host'})
+        assert_count_equal(list(auth.keys()), {'Date', 'Authorization', 'Host'})
 
     def test_sleep(self):
         """DuoApp - Sleep Seconds"""
@@ -64,7 +73,7 @@ class TestDuoApp(object):
 
     def test_required_auth_info(self):
         """DuoApp - Required Auth Info"""
-        assert_items_equal(self._app.required_auth_info().keys(),
+        assert_count_equal(list(self._app.required_auth_info().keys()),
                            {'api_hostname', 'integration_key', 'secret_key'})
 
     @staticmethod

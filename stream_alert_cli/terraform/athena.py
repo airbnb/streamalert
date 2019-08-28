@@ -30,7 +30,7 @@ def generate_athena(config):
     athena_dict = infinitedict()
     athena_config = config['lambda']['athena_partition_refresh_config']
 
-    data_buckets = athena_config['buckets'].keys()
+    data_buckets = list(athena_config['buckets'].keys())
 
     prefix = config['global']['account']['prefix']
     database = athena_config.get('database_name', '{}_streamalert'.format(prefix))
@@ -96,7 +96,7 @@ def generate_athena(config):
                                  settings[filter_pattern_idx],
                                  settings[filter_value_idx])
                for metric, settings in
-               current_metrics[metrics.ATHENA_PARTITION_REFRESH_NAME].iteritems()]
+               current_metrics[metrics.ATHENA_PARTITION_REFRESH_NAME].items()]
 
     athena_dict['module']['stream_alert_athena']['athena_metric_filters'] = filters
 

@@ -18,7 +18,7 @@ import json
 import os
 
 
-class TopLevelConfigKeys(object):
+class TopLevelConfigKeys:
     """Define the available top level keys in the loaded config"""
     CLUSTERS = 'clusters'
     GLOBAL = 'global'
@@ -174,7 +174,7 @@ def _validate_config(config):
     """
     # Check the log declarations
     if TopLevelConfigKeys.LOGS in config:
-        for log, attrs in config[TopLevelConfigKeys.LOGS].iteritems():
+        for log, attrs in config[TopLevelConfigKeys.LOGS].items():
             if 'schema' not in attrs:
                 raise ConfigError('The \'schema\' is missing for {}'.format(log))
 
@@ -195,8 +195,8 @@ def _validate_config(config):
             )
 
         # Iterate over each defined source and make sure the required subkeys exist
-        for attrs in config[TopLevelConfigKeys.SOURCES].values():
-            for entity, entity_attrs in attrs.iteritems():
+        for attrs in list(config[TopLevelConfigKeys.SOURCES].values()):
+            for entity, entity_attrs in attrs.items():
                 if TopLevelConfigKeys.LOGS not in entity_attrs:
                     raise ConfigError('Missing \'logs\' key for entity: {}'.format(entity))
 
@@ -212,10 +212,11 @@ def _validate_config(config):
 
         normalized_ioc_types = config[TopLevelConfigKeys.THREAT_INTEL]['normalized_ioc_types']
 
-        for ioc_type, normalized_keys in normalized_ioc_types.iteritems():
+        for ioc_type, normalized_keys in normalized_ioc_types.items():
             for normalized_key in normalized_keys:
                 if not any(normalized_key in set(log_keys)
-                           for log_keys in config[TopLevelConfigKeys.NORMALIZED_TYPES].values()):
+                           for log_keys in
+                           list(config[TopLevelConfigKeys.NORMALIZED_TYPES].values())):
                     raise ConfigError(
                         'IOC key \'{}\' within IOC type \'{}\' must be defined for at least '
                         'one log type in normalized types'.format(normalized_key, ioc_type)

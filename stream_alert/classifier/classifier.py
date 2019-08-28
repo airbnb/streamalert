@@ -29,7 +29,7 @@ LOGGER = get_logger(__name__)
 LOGGER_DEBUG_ENABLED = LOGGER.isEnabledFor(logging.DEBUG)
 
 
-class Classifier(object):
+class Classifier:
     """Classify, map source, and parse a raw record into its declared type."""
 
     _config = None
@@ -120,7 +120,7 @@ class Classifier(object):
             bool: True if the payload's data was successfully parsed, False otherwise
         """
         # Loop over all logs schemas declared for this source
-        for log_type, options in logs_config.iteritems():
+        for log_type, options in logs_config.items():
             LOGGER.debug('Trying schema \'%s\' with options: %s', log_type, options)
 
             # Get the parser type to use for this log and set up the parser

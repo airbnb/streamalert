@@ -23,7 +23,7 @@ from stream_alert.apps.batcher import Batcher
 from tests.unit.stream_alert_apps.test_helpers import MockLambdaClient
 
 
-class TestAppBatcher(object):
+class TestAppBatcher:
     """Class for handling testing of the app integration output batcher"""
     # pylint: disable=protected-access
 

@@ -128,7 +128,7 @@ def generate_lambda(function_name, zip_file, handler, lambda_config, config,
         input_mapping = {
             'input_sns_topics': 'aws-sns'
         }
-        for tf_key, input_key in input_mapping.iteritems():
+        for tf_key, input_key in input_mapping.items():
             if input_key in input_config:
                 lambda_module[tf_key] = input_config[input_key]
 

@@ -118,7 +118,7 @@ def _update_rule_table(options, config):
         # Create a dictionary of rule_name: stage=True|False
         rules = {rule_name: False for rule_name in options.unstage_rules}
         rules.update({rule_name: True for rule_name in options.stage_rules})
-        for rule, stage in rules.iteritems():
+        for rule, stage in rules.items():
             table.toggle_staged_state(rule, stage)
 
 
@@ -152,10 +152,10 @@ def _create(function_name, config, clusters=None):
              for cluster in clusters
              for app_info in config['clusters'][cluster]['modules'].get(
                  'stream_alert_apps', {}
-             ).itervalues()
+             ).values()
              if 'app_name' in app_info},
-            True if any(info['modules'].get('stream_alert_apps')
-                        for info in config['clusters'].itervalues()) else False
+            any(info['modules'].get('stream_alert_apps')
+                for info in config['clusters'].values())
         ),
         'athena': PackageMap(
             stream_alert_packages.AthenaPackage,

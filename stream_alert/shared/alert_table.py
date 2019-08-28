@@ -22,7 +22,7 @@ from stream_alert.shared.alert import Alert
 from stream_alert.shared.helpers.dynamodb import ignore_conditional_failure
 
 
-class AlertTable(object):
+class AlertTable:
     """Provides convenience methods for accessing and modifying the alerts table."""
     def __init__(self, table_name):
         self._table = boto3.resource('dynamodb').Table(table_name)
@@ -54,7 +54,7 @@ class AlertTable(object):
             if response.get('LastEvaluatedKey'):
                 func_kwargs['ExclusiveStartKey'] = response['LastEvaluatedKey']
             else:
-                raise StopIteration
+                return
 
     def rule_names(self):
         """Find all of the distinct rule names in the table.

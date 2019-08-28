@@ -13,7 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from __future__ import absolute_import
 from datetime import datetime, timedelta
 import json
 
@@ -39,7 +38,7 @@ from stream_alert.threat_intel_downloader.exceptions import (
 LOGGER = get_logger(__name__)
 
 
-class ThreatStream(object):
+class ThreatStream:
     """Class to retrieve IOCs from ThreatStream.com and store them in DynamoDB"""
     _API_URL = 'https://api.threatstream.com'
     _API_RESOURCE = 'intelligence'
@@ -251,7 +250,7 @@ class ThreatStream(object):
         for obj in data:
             for source in self.ioc_sources:
                 if source in obj['source'].lower():
-                    filtered_obj = {key: value for key, value in obj.iteritems()
+                    filtered_obj = {key: value for key, value in obj.items()
                                     if key in self.ioc_keys}
                     filtered_obj['expiration_ts'] = self._epoch_time(filtered_obj['expiration_ts'])
                     results.append(filtered_obj)

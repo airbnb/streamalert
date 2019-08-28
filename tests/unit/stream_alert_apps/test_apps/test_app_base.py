@@ -22,7 +22,7 @@ from nose.tools import (
     assert_equal,
     assert_false,
     assert_is_instance,
-    assert_items_equal,
+    assert_count_equal,
     assert_true,
     raises
 )
@@ -36,7 +36,7 @@ from tests.unit.stream_alert_apps.test_helpers import get_event, put_mock_params
 from tests.unit.stream_alert_shared.test_config import get_mock_lambda_context
 
 
-class TestStreamAlertApp(object):
+class TestStreamAlertApp:
     """Test class for the StreamAlertApp"""
     # pylint: disable=no-self-use
 
@@ -68,7 +68,7 @@ class TestStreamAlertApp(object):
             'aliyun_actiontrail'
         }
 
-        assert_items_equal(expected_apps, StreamAlertApp.get_all_apps())
+        assert_count_equal(expected_apps, StreamAlertApp.get_all_apps())
 
     @patch('stream_alert.apps.app_base.Batcher', Mock())
     def test_get_app(self):
@@ -83,7 +83,7 @@ class TestStreamAlertApp(object):
 
 @mock_ssm
 @patch.object(AppIntegration, 'type', Mock(return_value='type'))
-class TestAppIntegration(object):
+class TestAppIntegration:
     """Test class for the AppIntegration"""
     # pylint: disable=protected-access
 

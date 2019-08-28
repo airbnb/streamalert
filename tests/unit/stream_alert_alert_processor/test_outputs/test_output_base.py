@@ -21,7 +21,7 @@ from nose.tools import (
     assert_is_instance,
     assert_is_not_none,
     assert_is_none,
-    assert_items_equal
+    assert_count_equal
 )
 from requests.exceptions import Timeout as ReqTimeout
 
@@ -80,7 +80,7 @@ def test_create_dispatcher():
 
 def test_user_defined_properties():
     """OutputDispatcher - User Defined Properties"""
-    for output in StreamAlertOutput.get_all_outputs().values():
+    for output in list(StreamAlertOutput.get_all_outputs().values()):
         props = output.get_user_defined_properties()
         # The user defined properties should at a minimum contain a descriptor
         assert_is_not_none(props.get('descriptor'))
@@ -108,11 +108,11 @@ def test_output_loading():
         'phantom',
         'slack'
     }
-    assert_items_equal(loaded_outputs, expected_outputs)
+    assert_count_equal(loaded_outputs, expected_outputs)
 
 
 @patch.object(OutputDispatcher, '__service__', 'test_service')
-class TestOutputDispatcher(object):
+class TestOutputDispatcher:
     """Test class for OutputDispatcher"""
 
     @patch.object(OutputDispatcher, '__service__', 'test_service')
@@ -185,8 +185,8 @@ class TestOutputDispatcher(object):
 
         assert_is_not_none(loaded_creds)
         assert_equal(len(loaded_creds), 2)
-        assert_equal(loaded_creds['url'], u'http://www.foo.bar/test')
-        assert_equal(loaded_creds['token'], u'token_to_encrypt')
+        assert_equal(loaded_creds['url'], 'http://www.foo.bar/test')
+        assert_equal(loaded_creds['token'], 'token_to_encrypt')
 
     def test_format_output_config(self):
         """OutputDispatcher - Format Output Config"""

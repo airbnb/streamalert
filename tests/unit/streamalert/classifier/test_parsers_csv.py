@@ -21,7 +21,7 @@ from nose.tools import assert_equal
 from stream_alert.classifier.parsers import CSVParser
 
 
-class TestCSVParser(object):
+class TestCSVParser:
     """Test class for CSVParser"""
     # pylint: disable=no-self-use,protected-access
 

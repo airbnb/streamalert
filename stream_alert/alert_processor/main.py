@@ -13,7 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from __future__ import absolute_import  # Suppresses RuntimeWarning import error in Lambda
 from os import environ as env
 
 import backoff
@@ -30,7 +29,7 @@ from stream_alert.shared.normalize import Normalizer
 LOGGER = get_logger(__name__)
 
 
-class AlertProcessor(object):
+class AlertProcessor:
     """Orchestrates delivery of alerts to the appropriate dispatchers."""
     ALERT_PROCESSOR = None  # AlertProcessor instance which can be re-used across Lambda invocations
     BACKOFF_MAX_TRIES = 5
@@ -89,7 +88,7 @@ class AlertProcessor(object):
             dispatcher = self._create_dispatcher(output)
             result[output] = dispatcher.dispatch(alert, output) if dispatcher else False
 
-        alert.outputs_sent = set(output for output, success in result.items() if success)
+        alert.outputs_sent = set(output for output, success in list(result.items()) if success)
         return result
 
     @backoff.on_exception(backoff.expo, ClientError,

@@ -75,7 +75,7 @@ def logs_schema_to_athena_schema(log_schema):
 
     athena_schema = {}
 
-    for key_name, key_type in log_schema.iteritems():
+    for key_name, key_type in log_schema.items():
         key_name = '`{}`'.format(key_name)
         if key_type == {}:
             # For empty dicts
@@ -106,5 +106,5 @@ def unique_values_from_query(query_result):
     return {
         value
         for row in query_result['ResultSet']['Rows'] for result in row['Data']
-        for value in result.values()
+        for value in list(result.values())
     }

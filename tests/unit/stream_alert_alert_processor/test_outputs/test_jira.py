@@ -22,7 +22,7 @@ from tests.unit.stream_alert_alert_processor.helpers import get_alert
 
 
 @patch('stream_alert.alert_processor.outputs.output_base.OutputDispatcher.MAX_RETRY_ATTEMPTS', 1)
-class TestJiraOutput(object):
+class TestJiraOutput:
     """Test class for JiraOutput"""
     DESCRIPTOR = 'unit_test_jira'
     SERVICE = 'jira'

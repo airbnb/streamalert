@@ -23,7 +23,7 @@ from stream_alert.rules_engine.alert_forwarder import AlertForwarder
 _ALERTS_TABLE = 'corp-prefix_streamalert_alerts'
 
 
-class TestAlertForwarder(object):
+class TestAlertForwarder:
     """Test class for AlertForwarder"""
     # pylint: disable=attribute-defined-outside-init,protected-access
 

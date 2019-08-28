@@ -27,7 +27,7 @@ BUILD_DIRECTORY = os.path.join(THIS_DIRECTORY, '..', '..', 'terraform')
 LOGGER = get_logger(__name__)
 
 
-class LambdaPackage(object):
+class LambdaPackage:
     """Build a deployment package for a StreamAlert Lambda function."""
     config_key = None                  # Configuration key to access conf/lambda.json
     lambda_handler = None              # Entry point for the Lambda function
@@ -178,7 +178,7 @@ class LambdaPackage(object):
         LOGGER.info('Installing libraries: %s', ', '.join(libs_to_install))
         pip_command = ['pip', 'install']
         pip_command.extend(libs_to_install)
-        pip_command.extend(['--upgrade', '--target', temp_package_path])
+        pip_command.extend(['--no-cache-dir', '--upgrade', '--target', temp_package_path])
 
         # Return True if the pip command is successfully run
         return run_command(pip_command, cwd=temp_package_path, quiet=True)

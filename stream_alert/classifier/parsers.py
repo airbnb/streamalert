@@ -20,7 +20,7 @@ from fnmatch import fnmatch
 import json
 import logging
 import re
-import StringIO
+import io
 
 import jmespath
 
@@ -57,9 +57,8 @@ def get_parser(parser_type):
     return PARSERS[parser_type]
 
 
-class ParserBase:
+class ParserBase(metaclass=ABCMeta):
     """Abstract Parser class to be inherited by all StreamAlert Parsers"""
-    __metaclass__ = ABCMeta
     _type = None
 
     ENVELOPE_KEY = 'streamalert:envelope_keys'
@@ -81,11 +80,8 @@ class ParserBase:
         self._valid_parses = []
         self._invalid_parses = []
 
-    def __nonzero__(self):
+    def __bool__(self):
         return self.valid
-
-    # For forward compatibility to Python3
-    __bool__ = __nonzero__
 
     def __len__(self):
         return len(self._valid_parses)
@@ -143,7 +139,7 @@ class ParserBase:
     def default_optional_values(cls, key):
         """Return a default value for a given supported schema type"""
         # Return instances of types that are defined, or of the type being passed in
-        return cls._TYPE_MAP[key]() if isinstance(key, basestring) else type(key)()
+        return cls._TYPE_MAP[key]() if isinstance(key, str) else type(key)()
 
     @classmethod
     def _apply_envelope(cls, record, envelope):
@@ -192,7 +188,7 @@ class ParserBase:
             return True
 
         result = True
-        for field, patterns in log_patterns.iteritems():
+        for field, patterns in log_patterns.items():
             if field == cls.ENVELOPE_KEY:
                 return cls._matches_log_patterns(envelope, patterns)
 
@@ -201,7 +197,7 @@ class ParserBase:
                 return cls._matches_log_patterns(record[field], patterns)
 
             # Transform a flat pattern into a list
-            if isinstance(patterns, basestring):
+            if isinstance(patterns, str):
                 LOGGER.debug('Transforming flat pattern \'%s\' into list', patterns)
                 patterns = [patterns]
 
@@ -265,7 +261,7 @@ class ParserBase:
 
         # Nested key check
         match = True
-        for key, key_type in schema.iteritems():
+        for key, key_type in schema.items():
             # Skip any value that is not a dictionary
             if not isinstance(key_type, dict):
                 continue
@@ -301,7 +297,7 @@ class ParserBase:
         Returns:
             bool: True if type conversion was successful, False otherwise
         """
-        for key, value in schema.iteritems():
+        for key, value in schema.items():
             key = str(key)
 
             # No need to type an optional key if it's value is not in the
@@ -319,7 +315,7 @@ class ParserBase:
                 try:
                     record[key] = str(record[key])
                 except UnicodeEncodeError:
-                    record[key] = unicode(record[key])
+                    record[key] = str(record[key])
 
             # if the schema value is declared as integer
             elif value == 'integer':
@@ -462,11 +458,11 @@ class ParserBase:
 
         # If the data is a string, attempt to load it to json,
         # falling back on a string type on error
-        elif isinstance(data, basestring):
+        elif isinstance(data, (str, bytes)):
             try:
                 data_copy = json.loads(data)
             except (ValueError, TypeError) as err:
-                LOGGER.debug('Data is not valid json: %s', err.message)
+                LOGGER.debug('Data is not valid json: %s', err)
                 data_copy = data
 
         # Check to make sure any non-optional envelope keys exist before proceeding
@@ -547,7 +543,7 @@ class JSONParser(ParserBase):
                     # purposely raising here to be caught below & handled
                     raise TypeError('record data is not a dictionary')
             except (ValueError, TypeError) as err:
-                LOGGER.debug('Embedded json is invalid: %s', err.message)
+                LOGGER.debug('Embedded json is invalid: %s', str(err))
                 valid = False
 
             embedded_records.append((record, valid))
@@ -579,7 +575,7 @@ class JSONParser(ParserBase):
                 # purposely raising here to be caught below & handled
                 raise TypeError('record data is not a dictionary')
         except (ValueError, TypeError) as err:
-            LOGGER.debug('Matched regex string is invalid (%s): %s', err.message, match_str)
+            LOGGER.debug('Matched regex string is invalid (%s): %s', str(err), match_str)
             return False
 
         return [(record, True)]
@@ -644,7 +640,7 @@ class CSVParser(ParserBase):
         """
         try:
             return csv.reader(
-                StringIO.StringIO(data),
+                io.StringIO(data),
                 delimiter=self.delimiter,
                 quotechar=self.quotechar,
                 escapechar=self.escapechar
@@ -791,7 +787,7 @@ class KVParser(ParserBase):
                 # handle duplicate keys
                 if key in kv_payload:
                     # load key from our configuration
-                    kv_payload[self._schema.keys()[index]] = value
+                    kv_payload[list(self._schema.keys())[index]] = value
                 else:
                     # add the data value
                     kv_payload[key] = value

@@ -21,7 +21,7 @@ from nose.tools import assert_equal
 from stream_alert.classifier.payload.payload_base import RegisterInput, StreamPayload
 
 
-class TestRegisterInput(object):
+class TestRegisterInput:
     """RegisterInput tests"""
     # pylint: disable=no-self-use,protected-access
 
@@ -31,7 +31,7 @@ class TestRegisterInput(object):
         self._service = 'foobar'
 
         @RegisterInput
-        class Test(object):
+        class Test:
             """Fake test class to register"""
 
             def __init__(self, *args, **kwargs):
@@ -65,7 +65,7 @@ class TestRegisterInput(object):
         assert_equal(self._class, class_type)
 
 
-class TestStreamPayload(object):
+class TestStreamPayload:
     """StreamPayload tests"""
     # pylint: disable=no-self-use
 

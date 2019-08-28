@@ -38,24 +38,24 @@ def app_handler(options, config):
     if options.subcommand == 'list':
         all_info = {
             cluster: cluster_config['modules'].get('stream_alert_apps')
-            for cluster, cluster_config in config['clusters'].iteritems()
+            for cluster, cluster_config in config['clusters'].items()
         }
 
-        for cluster, info in all_info.iteritems():
-            print '\nCluster: {}\n'.format(cluster)
+        for cluster, info in all_info.items():
+            print('\nCluster: {}\n'.format(cluster))
             if not info:
-                print '\tNo Apps configured\n'
+                print('\tNo Apps configured\n')
                 continue
 
-            for name, details in info.iteritems():
-                print '\tName: {}'.format(name)
-                print '\n'.join([
+            for name, details in info.items():
+                print('\tName: {}'.format(name))
+                print('\n'.join([
                     '\t\t{key}:{padding_char:<{padding_count}}{value}'.format(
                         key=key_name,
                         padding_char=' ',
                         padding_count=30 - (len(key_name)),
-                        value=value) for key_name, value in details.iteritems()
-                ] + ['\n'])
+                        value=value) for key_name, value in details.items()
+                ] + ['\n']))
         return True
 
     # Convert the options to a dict
@@ -87,7 +87,7 @@ def app_handler(options, config):
 
         # Find the appropriate function config for this app
         func_name = None
-        for function_name, app_config in apps.iteritems():
+        for function_name, app_config in apps.items():
             if app_config.get('app_name') == app_info['app_name']:
                 func_name = function_name
                 break

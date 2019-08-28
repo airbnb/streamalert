@@ -43,7 +43,7 @@ from tests.unit.stream_alert_alert_processor import (
 from tests.unit.stream_alert_alert_processor.helpers import get_alert
 
 
-class TestAWSOutput(object):
+class TestAWSOutput:
     """Test class for AWSOutput Base"""
 
     @patch.object(AWSOutput, '__service__', 'aws-s3')
@@ -65,7 +65,7 @@ class TestAWSOutput(object):
 
 
 @mock_kinesis
-class TestFirehoseOutput(object):
+class TestFirehoseOutput:
     """Test class for AWS Kinesis Firehose"""
     DESCRIPTOR = 'unit_test_delivery_stream'
     SERVICE = 'aws-firehose'
@@ -111,7 +111,7 @@ class TestFirehoseOutput(object):
 
 
 @patch.object(aws_outputs, 'boto3', MagicMock())
-class TestLambdaOutput(object):
+class TestLambdaOutput:
     """Test class for LambdaOutput"""
     DESCRIPTOR = 'unit_test_lambda'
     SERVICE = 'aws-lambda'
@@ -148,7 +148,7 @@ class TestLambdaOutput(object):
 
 
 @mock_s3
-class TestS3Output(object):
+class TestS3Output:
     """Test class for S3Output"""
     DESCRIPTOR = 'unit_test_bucket'
     SERVICE = 'aws-s3'
@@ -176,7 +176,7 @@ class TestS3Output(object):
 
 
 @mock_sns
-class TestSNSOutput(object):
+class TestSNSOutput:
     """Test class for SNSOutput"""
     DESCRIPTOR = 'unit_test_topic'
     SERVICE = 'aws-sns'
@@ -199,7 +199,7 @@ class TestSNSOutput(object):
 
 
 @mock_sqs
-class TestSQSOutput(object):
+class TestSQSOutput:
     """Test class for SQSOutput"""
     DESCRIPTOR = 'unit_test_queue'
     SERVICE = 'aws-sqs'
@@ -221,7 +221,7 @@ class TestSQSOutput(object):
                                     self.SERVICE, self.DESCRIPTOR)
 
 
-class TestCloudwatchLogOutput(object):
+class TestCloudwatchLogOutput:
     """Test class for CloudwatchLogOutput"""
     DESCRIPTOR = 'unit_test_default'
     SERVICE = 'aws-cloudwatch-log'
