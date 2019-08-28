@@ -21,6 +21,7 @@ from stream_alert_cli.athena.handler import athena_handler
 from stream_alert_cli.config import CLIConfig
 from stream_alert_cli.kinesis.handler import kinesis_handler
 from stream_alert_cli.logger import set_logger_levels
+from stream_alert_cli.lookup_tables.handler import lookup_tables_handler
 from stream_alert_cli.manage_lambda.deploy import deploy_handler
 from stream_alert_cli.manage_lambda.rollback import rollback_handler
 from stream_alert_cli.outputs.handler import output_handler
@@ -72,6 +73,7 @@ def cli_runner(args):
         'init': lambda opts: terraform_init(opts, config),
         'kinesis': lambda opts: kinesis_handler(opts, config),
         'list-targets': lambda opts: terraform_list_targets(config),
+        'lookup-tables': lambda opts: lookup_tables_handler(opts, config),
         'output': lambda opts: output_handler(opts, config),
         'rollback': lambda opts: rollback_handler(opts, config),
         'rule-staging': lambda opts: rule_staging_handler(opts, config),
