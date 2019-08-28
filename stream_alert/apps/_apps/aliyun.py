@@ -47,6 +47,7 @@ class AliyunApp(AppIntegration):
         https://www.alibabacloud.com/help/doc-detail/28849.htm
     """
 
+    # The maximum number of results to be returned. Valid values: 0 to 50.
     _MAX_RESULTS = 50
 
     def __init__(self, event, context):
@@ -76,16 +77,64 @@ class AliyunApp(AppIntegration):
         return '%Y-%m-%dT%H:%M:%SZ'
 
     def _gather_logs(self):
+        """Fetch ActionTrail events and return a list of events
 
+        Example response from do_action_with_exception method
+
+        {
+          'EndTime': '2019-08-22T04:41:32Z',
+          'NextToken': '2',
+          'RequestId': '562D9C08-E766-4038-B49F-B0D2BE1980FE',
+          'StartTime': '2019-08-01T04:31:52Z',
+          'Events': [{
+            'eventId': '60.152_1566447558068_1247',
+            'eventVersion': '1',
+            'acsRegion': 'cn-hangzhou',
+            'additionalEventData': {
+              'mfaChecked': 'true',
+              'callbackUrl': 'https://home.console.aliyun.com/'
+            },
+            'eventType': 'ConsoleSignin',
+            'errorMessage': 'success',
+            'eventTime': '2019-08-22T04:19:18Z',
+            'eventName': 'ConsoleSignin',
+            'userIdentity': {
+              'userName': 'dead_joke',
+              'type': 'ram-user',
+              'principalId': '222222222222222222',
+              'accountId': '1111111111111111'
+            },
+            'eventSource': 'signin.aliyun.com',
+            'requestId': '60.152_1566447558068_1247',
+            'userAgent': 'some browser version',
+            'sourceIpAddress': '1.1.1.1',
+            'serviceName': 'AasSub'
+          }, {
+            'eventId': '029B39F0-5E23-4931-B4C9-BA72C7261ADF',
+            ...
+            'eventTime': '2019-08-21T22:26:09Z',
+            ...
+          }]
+        }
+        """
         try:
             response = self.client.do_action_with_exception(self.request)
             json_response = json.loads(response)
+
+            # Note: ActionTrail API return ActionTrail events in sorted order, and
+            # it is latest events first. There still has a small chance that it may not get
+            # all the logs when there are still more logs to pull when lambda function
+            # timeout reached, and remaining logs will be lost because the last_timestamp
+            # is updated to "EndTime" during the first lambda function call.
+            #
+            # To lower the data loss possibility, suggest to have longer timeout for lambda
+            # function (aliyun app) and set app schedule more frequently, e.g. every 10 mins
+            self._last_timestamp = json_response['EndTime']
             if 'NextToken' in json_response:
                 self._more_to_poll = True
                 self.request.set_NextToken(json_response['NextToken'])
             else:
                 self._more_to_poll = False
-                self._last_timestamp = json_response['EndTime']
 
             return json_response['Events']
 
