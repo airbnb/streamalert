@@ -172,8 +172,14 @@ def load_config(conf_dir='conf/', exclude=None, include=None, validate=True):
                     if file.endswith('.json')}
         for cluster in clusters:
             cluster_path = os.path.join(conf_dir, TopLevelConfigKeys.CLUSTERS, cluster)
+            cluster_from_file = _load_json_file(cluster_path)
+            try:
+                sources = cluster_from_file.pop("data_sources")
+                config[TopLevelConfigKeys.SOURCES].update(sources)
+            except KeyError:
+                pass
             config[TopLevelConfigKeys.CLUSTERS][os.path.splitext(cluster)[0]] = (
-                _load_json_file(cluster_path)
+                cluster_from_file
             )
 
     if validate:
