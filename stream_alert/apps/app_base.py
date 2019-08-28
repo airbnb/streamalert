@@ -199,7 +199,7 @@ class AppIntegration(metaclass=ABCMeta):
         """Method for performing any startup steps, like setting state to running"""
         # Perform another safety check to make sure this is not being invoked already
         if self._config.is_running:
-            LOGGER.error('[%s] App already running', self)
+            LOGGER.warning('[%s] App already running', self)
             return False
 
         # Check if this is an invocation spawned from a previous partial execution
