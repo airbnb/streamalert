@@ -36,6 +36,8 @@ MAX_QUERY_LENGTH = 262144
 
 class AthenaCommand(CliCommand):
 
+    description = 'Perform actions related to Athena'
+
     @classmethod
     def setup_subparser(cls, subparser):
         """Add athena subparser: manage.py athena [subcommand]"""

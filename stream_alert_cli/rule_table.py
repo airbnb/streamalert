@@ -19,6 +19,8 @@ from stream_alert_cli.utils import generate_subparser, UniqueSetAction, CliComma
 
 class RuleStagingCommand(CliCommand):
 
+    description = 'Perform actions related to rule staging'
+
     @classmethod
     def setup_subparser(cls, subparser):
         """Add the rule staging subparser: manage.py rule-staging [subcommand] [options]"""

@@ -40,6 +40,7 @@ from stream_alert_cli.threat_intel_downloader.handler import (
     ThreatIntelCommand,
     ThreatIntelDownloaderCommand,
 )
+from stream_alert_cli.utils import CliCommand
 
 LOGGER = get_logger(__name__)
 
@@ -62,31 +63,66 @@ def cli_runner(args):
 
     LOGGER.info('Issues? Report here: https://github.com/airbnb/streamalert/issues')
 
-    cmds = {
-        'app': lambda opts: AppCommand.handler(opts, config),
-        'athena': lambda opts: AthenaCommand.handler(opts, config),
-        'build': lambda opts: TerraformBuildCommand.handler(opts, config),
-        'clean': lambda opts: TerraformCleanCommand.handler(opts, config),
-        'configure': lambda opts: ConfigureCommand.handler(opts, config),
-        'create-alarm': lambda opts: MetricAlarmCommand.handler(opts, config),
-        'create-cluster-alarm': lambda opts: MetricAlarmCommand.handler(opts, config),
-        'custom-metrics': lambda opts: CustomMetricsCommand.handler(opts, config),
-        'deploy': lambda opts: DeployCommand.handler(opts, config),
-        'destroy': lambda opts: TerraformDestroyCommand.handler(opts, config),
-        'generate': lambda opts: TerraformGenerateCommand.handler(opts, config),
-        'init': lambda opts: TerraformInitCommand.handler(opts, config),
-        'kinesis': lambda opts: KinesisCommand.handler(opts, config),
-        'list-targets': lambda opts: TerraformListTargetsCommand.handler(opts, config),
-        'lookup-tables': lambda opts: LookupTablesCommand.handler(opts, config),
-        'output': lambda opts: OutputCommand.handler(opts, config),
-        'rollback': lambda opts: RollbackCommand.handler(opts, config),
-        'rule-staging': lambda opts: RuleStagingCommand.handler(opts, config),
-        'status': lambda opts: StatusCommand.handler(opts, config),
-        'test': lambda opts: TestCommand.handler(opts, config),
-        'threat-intel': lambda opts: ThreatIntelCommand.handler(opts, config),
-        'threat-intel-downloader': lambda opts: ThreatIntelDownloaderCommand.handler(opts, config),
-    }
+    cmds = StreamAlertCliCommandRepository.command_handlers(config)
 
     result = cmds[args.command](args)
     LOGGER.info('Completed')
     return result
+
+
+class StreamAlertCliCommandRepository(object):
+    COMMANDS = {}
+
+    @classmethod
+    def register(cls, command, cli_command):
+        if not issubclass(cli_command, CliCommand):
+            LOGGER.error('Invalid CLI Command in registry')
+            return False
+
+        cls.COMMANDS[command] = cli_command
+
+    @classmethod
+    def register_all(cls):
+        cmds = {
+            'app': AppCommand,
+            'athena': AthenaCommand,
+            'build': TerraformBuildCommand,
+            'clean': TerraformCleanCommand,
+            'configure': ConfigureCommand,
+            'create-alarm': MetricAlarmCommand,
+            'create-cluster-alarm': MetricAlarmCommand,
+            'custom-metrics': CustomMetricsCommand,
+            'deploy': DeployCommand,
+            'destroy': TerraformDestroyCommand,
+            'generate': TerraformGenerateCommand,
+            'init': TerraformInitCommand,
+            'kinesis': KinesisCommand,
+            'list-targets': TerraformListTargetsCommand,
+            'lookup-tables': LookupTablesCommand,
+            'output': OutputCommand,
+            'rollback': RollbackCommand,
+            'rule-staging': RuleStagingCommand,
+            'status': StatusCommand,
+            'test': TestCommand,
+            'threat-intel': ThreatIntelCommand,
+            'threat-intel-downloader': ThreatIntelDownloaderCommand,
+        }
+
+        for command, cli_command in cmds.iteritems():
+            cls.register(command, cli_command)
+
+    @classmethod
+    def command_handlers(cls, config):
+        return {
+            command: lambda opts: cli_command.handler(opts, config)
+            for command, cli_command in cls.COMMANDS.iteritems()
+        }
+
+    @classmethod
+    def command_parsers(cls):
+        return {
+            command: (cli_command.setup_subparser, cli_command.description)
+            for command, cli_command in cls.COMMANDS.iteritems()
+        }
+
+StreamAlertCliCommandRepository.register_all()

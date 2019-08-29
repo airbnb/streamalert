@@ -46,6 +46,8 @@ LOGGER = get_logger(__name__)
 
 class TestCommand(CliCommand):
 
+    description = 'Perform various integration/functional tests'
+
     @classmethod
     def setup_subparser(cls, subparser):
         """Add the test subparser: manage.py test"""

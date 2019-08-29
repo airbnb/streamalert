@@ -22,6 +22,8 @@ LOGGER = get_logger(__name__)
 
 class LookupTablesCommand(CliCommand):
 
+    description = 'Describe and manage your LookupTables'
+
     @classmethod
     def setup_subparser(cls, subparser):
         """Add subparser for LookupTables"""

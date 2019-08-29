@@ -21,6 +21,8 @@ LOGGER = get_logger(__name__)
 
 class ConfigureCommand(CliCommand):
 
+    description = 'Configure global StreamAlert settings'
+
     @classmethod
     def setup_subparser(cls, subparser):
         """Add configure subparser: manage.py configure key value"""

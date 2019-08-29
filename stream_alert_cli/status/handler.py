@@ -22,6 +22,8 @@ LOGGER = get_logger(__name__)
 
 class StatusCommand(CliCommand):
 
+    description = 'Output information on currently configured infrastructure'
+
     @classmethod
     def setup_subparser(cls, subparser):
         """Status command subparser takes no args"""

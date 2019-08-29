@@ -32,6 +32,8 @@ LOGGER = get_logger(__name__)
 
 class TerraformInitCommand(CliCommand):
 
+    description = 'Initialize StreamAlert infrastructure'
+
     @classmethod
     def setup_subparser(cls, subparser):
         """Add init subparser: manage.py init [options]"""
@@ -125,6 +127,8 @@ class TerraformInitCommand(CliCommand):
 
 class TerraformBuildCommand(CliCommand):
 
+    description = 'Run terraform against StreamAlert modules, optionally targeting specific modules'
+
     @classmethod
     def setup_subparser(cls, subparser):
         """Add build subparser: manage.py build [options]"""
@@ -163,6 +167,8 @@ class TerraformBuildCommand(CliCommand):
 
 
 class TerraformDestroyCommand(CliCommand):
+
+    description = 'Destroy StreamAlert infrastructure, optionally targeting specific modules'
 
     @staticmethod
     def setup_subparser(subparser):
@@ -234,6 +240,8 @@ class TerraformDestroyCommand(CliCommand):
 
 class TerraformGenerateCommand(CliCommand):
 
+    description = 'Generate Terraform files from JSON cluster files'
+
     @classmethod
     def setup_subparser(cls, subparser):
         """Terraform generate accepts no arguments"""
@@ -244,6 +252,8 @@ class TerraformGenerateCommand(CliCommand):
 
 
 class TerraformCleanCommand(CliCommand):
+
+    description = 'Remove current Terraform files'
 
     @classmethod
     def setup_subparser(cls, subparser):
@@ -339,6 +349,8 @@ def get_tf_modules(config, generate=False):
 
 
 class TerraformListTargetsCommand(CliCommand):
+
+    description = 'List available Terraform modules to be used for targeted builds'
 
     @classmethod
     def setup_subparser(cls, subparser):

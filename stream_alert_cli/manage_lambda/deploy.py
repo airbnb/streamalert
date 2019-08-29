@@ -31,6 +31,8 @@ PackageMap = namedtuple('package_attrs', ['package_class', 'targets', 'enabled']
 
 class DeployCommand(CliCommand):
 
+    description = 'Deploy the specified AWS Lambda function(s)'
+
     @staticmethod
     def setup_subparser(subparser):
         """Add the deploy subparser: manage.py deploy [options]"""

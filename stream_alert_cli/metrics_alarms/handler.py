@@ -23,6 +23,8 @@ LOGGER = get_logger(__name__)
 
 class MetricAlarmCommand(CliCommand):
 
+    description = 'Add a global CloudWatch alarm for predefined metrics for a given function'
+
     @classmethod
     def setup_subparser(cls, subparser):
         """Add the create-alarm subparser: manage.py create-alarm [options]"""
@@ -85,6 +87,8 @@ class MetricAlarmCommand(CliCommand):
 
 
 class CustomMetricsCommand(CliCommand):
+
+    description = 'Enable or disable custom metrics for the lambda functions'
 
     @classmethod
     def setup_subparser(cls, subparser):

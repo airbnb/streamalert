@@ -27,6 +27,8 @@ LOGGER = get_logger(__name__)
 
 class OutputCommand(CliCommand):
 
+    description = 'Create a new StreamAlert output'
+
     @classmethod
     def setup_subparser(cls, subparser):
         """Add the output subparser: manage.py output SERVICE"""

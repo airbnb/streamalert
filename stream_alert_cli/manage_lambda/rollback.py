@@ -25,6 +25,8 @@ LOGGER = get_logger(__name__)
 
 class RollbackCommand(CliCommand):
 
+    description = 'Rollback the specified AWS Lambda function(s)'
+
     @classmethod
     def setup_subparser(cls, subparser):
         """Add the rollback subparser: manage.py rollback [options]"""

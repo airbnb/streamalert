@@ -23,6 +23,8 @@ LOGGER = get_logger(__name__)
 
 class KinesisCommand(CliCommand):
 
+    description = 'Update AWS Kinesis settings and run Terraform to apply changes'
+
     @classmethod
     def setup_subparser(cls, subparser):
         """Add kinesis subparser: manage.py kinesis [options]"""

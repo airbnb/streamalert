@@ -134,16 +134,24 @@ def add_memory_arg(parser):
 
 
 class CliCommand(object):
+    """
+    An abstract class that encapsulates the logic of a single manage.py CLI command.
+    """
+    description = NotImplemented
 
     @classmethod
     @abstractmethod
     def setup_subparser(cls, subparser):
-        """Yes asdf"""
+        """
+        Code that sets up an ArgParser subparser.
+        """
 
     @classmethod
     @abstractmethod
     def handler(cls, options, config):
-        """No asdlkfj"""
+        """
+        Code that is executed when the command is run.
+        """
 
 
 class UniqueSetAction(Action):

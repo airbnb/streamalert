@@ -31,6 +31,8 @@ LOGGER = get_logger(__name__)
 
 class AppCommand(CliCommand):
 
+    description = 'Create, list, or update a StreamAlert app to poll logs from various services'
+
     @classmethod
     def setup_subparser(cls, subparser):
         """Add the app integration subparser: manage.py app [subcommand] [options]"""

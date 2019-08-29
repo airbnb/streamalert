@@ -23,38 +23,12 @@ To run terraform by hand, change to the terraform directory and run:
 
 terraform <cmd>
 """
-# pylint: disable=too-many-lines
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
 import sys
 
 from stream_alert import __version__ as version
-from stream_alert_cli.apps.handler import AppCommand
-from stream_alert_cli.athena.handler import AthenaCommand
-from stream_alert_cli.configure.handler import ConfigureCommand
-from stream_alert_cli.kinesis.handler import KinesisCommand
-from stream_alert_cli.lookup_tables.handler import LookupTablesCommand
-from stream_alert_cli.manage_lambda.deploy import DeployCommand
-from stream_alert_cli.manage_lambda.rollback import RollbackCommand
-from stream_alert_cli.metrics_alarms.handler import CustomMetricsCommand, MetricAlarmCommand
-from stream_alert_cli.outputs.handler import OutputCommand
-from stream_alert_cli.rule_table import RuleStagingCommand
-from stream_alert_cli.status.handler import StatusCommand
-from stream_alert_cli.terraform.handlers import (
-    TerraformBuildCommand,
-    TerraformCleanCommand,
-    TerraformDestroyCommand,
-    TerraformGenerateCommand,
-    TerraformInitCommand,
-    TerraformListTargetsCommand
-)
-from stream_alert_cli.runner import cli_runner
-from stream_alert_cli.test.handler import TestCommand
-from stream_alert_cli.threat_intel_downloader.handler import (
-    ThreatIntelCommand,
-    ThreatIntelDownloaderCommand,
-)
+from stream_alert_cli.runner import cli_runner, StreamAlertCliCommandRepository
 from stream_alert_cli.utils import generate_subparser
-
 
 
 def build_parser():
@@ -62,96 +36,7 @@ def build_parser():
 
     # Map of top-level commands and their setup functions/description
     # New top-level commands should be added to this dictionary
-    commands = {
-        'app': (
-            AppCommand.setup_subparser,
-            'Create, list, or update a StreamAlert app to poll logs from various services'
-        ),
-        'athena': (
-            AthenaCommand.setup_subparser,
-            'Perform actions related to Athena'
-        ),
-        'build': (
-            TerraformBuildCommand.setup_subparser,
-            'Run terraform against StreamAlert modules, optionally targeting specific modules'
-        ),
-        'clean': (
-            TerraformCleanCommand.setup_subparser,
-            'Remove current Terraform files'
-        ),
-        'configure': (
-            ConfigureCommand.setup_subparser,
-            'Configure global StreamAlert settings'
-        ),
-        'create-alarm': (
-            MetricAlarmCommand.setup_subparser,
-            'Add a global CloudWatch alarm for predefined metrics for a given function'
-        ),
-        'create-cluster-alarm': (
-            MetricAlarmCommand.setup_subparser,
-            'Add a CloudWatch alarm for predefined metrics for a given cluster/function'
-        ),
-        'custom-metrics': (
-            CustomMetricsCommand.setup_subparser,
-            'Enable or disable custom metrics for the lambda functions'
-        ),
-        'deploy': (
-            DeployCommand.setup_subparser,
-            'Deploy the specified AWS Lambda function(s)'
-        ),
-        'destroy': (
-            TerraformDestroyCommand.setup_subparser,
-            'Destroy StreamAlert infrastructure, optionally targeting specific modules',
-        ),
-        'generate': (
-            TerraformGenerateCommand.setup_subparser,
-            'Generate Terraform files from JSON cluster files'
-        ),
-        'init': (
-            TerraformInitCommand.setup_subparser,
-            'Initialize StreamAlert infrastructure'
-        ),
-        'kinesis': (
-            KinesisCommand.setup_subparser,
-            'Update AWS Kinesis settings and run Terraform to apply changes'
-        ),
-        'list-targets': (
-            TerraformListTargetsCommand.setup_subparser,
-            'List available Terraform modules to be used for targeted builds'
-        ),
-        'lookup-tables': (
-            LookupTablesCommand.setup_subparser,
-            'List commands for LookupTables'
-        ),
-        'output': (
-            OutputCommand.setup_subparser,
-            'Create a new StreamAlert output'
-        ),
-        'rollback': (
-            RollbackCommand.setup_subparser,
-            'Rollback the specified AWS Lambda function(s)'
-        ),
-        'rule-staging': (
-            RuleStagingCommand.setup_subparser,
-            'Perform actions related to rule staging'
-        ),
-        'status': (
-            StatusCommand.setup_subparser,
-            'Output information on currently configured infrastructure'
-        ),
-        'test': (
-            TestCommand.setup_subparser,
-            'Perform various integration/functional tests'
-        ),
-        'threat-intel': (
-            ThreatIntelCommand.setup_subparser,
-            'Enable/disable and configure the StreamAlert Threat Intelligence feature'
-        ),
-        'threat-intel-downloader': (
-            ThreatIntelDownloaderCommand.setup_subparser,
-            'Configure and update the threat intel downloader'
-        )
-    }
+    commands = StreamAlertCliCommandRepository.command_parsers()
 
     description_template = """
 StreamAlert v{}

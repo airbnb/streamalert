@@ -33,6 +33,8 @@ LOGGER = get_logger(__name__)
 
 class ThreatIntelDownloaderCommand(CliCommand):
 
+    description = 'Configure and update the threat intel downloader'
+
     @classmethod
     def setup_subparser(cls, subparser):
         """Add threat intel downloader subparser: manage.py threat-intel-downloader [subcommand]"""
@@ -258,6 +260,8 @@ class ThreatIntelDownloaderCommand(CliCommand):
 
 
 class ThreatIntelCommand(CliCommand):
+
+    description = 'Enable/disable and configure the StreamAlert Threat Intelligence feature'
 
     @classmethod
     def setup_subparser(cls, subparser):
