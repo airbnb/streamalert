@@ -181,6 +181,18 @@ class TestConfigLoading(fake_filesystem_unittest.TestCase):
         # Logs.json is preferred over schemas for backwards compatibility.
         assert_equal(config['logs'], {})
 
+    #@staticmethod
+    #def test_load_sources_clusters():
+    #    """Shared - Config Loading - Sources from a Cluster JSON File"""
+    #    basic_config = basic_streamalert_config()
+    #    sources = basic_config['sources']
+    #    prod = basic_config['clusters']['prod']
+    #    prod["data_sources"] = sources
+    #    with open("conf/clusters/prod.json", "w") as f:
+    #        f.write(json.dumps(prod))
+    #    config = load_config()
+    #    assert_equal(config['sources'], basic_config['sources'])
+
 
 class TestConfigValidation:
     """Test config validation"""
@@ -214,7 +226,7 @@ class TestConfigValidation:
         config = basic_streamalert_config()
 
         # Remove everything from the sources entry
-        config['sources']['kinesis']['stream_1'] = {}
+        config['clusters']['prod']['data_sources']['kinesis']['stream_1'] = {}
 
         assert_raises(ConfigError, _validate_config, config)
 
@@ -224,7 +236,7 @@ class TestConfigValidation:
         config = basic_streamalert_config()
 
         # Set the logs key to an empty list
-        config['sources']['kinesis']['stream_1']['logs'] = []
+        config['clusters']['prod']['data_sources']['kinesis']['stream_1']['logs'] = []
 
         assert_raises(ConfigError, _validate_config, config)
 
@@ -234,7 +246,7 @@ class TestConfigValidation:
         config = basic_streamalert_config()
 
         # Set the sources value to contain an invalid data source ('sqs')
-        config['sources'] = {'sqs': {'queue_1': {}}}
+        config['clusters']['prod']['data_sources'] = {'sqs': {'queue_1': {}}}
 
         assert_raises(ConfigError, _validate_config, config)
 

@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from collections import OrderedDict
+import os
 
 from mock import Mock, patch
 from nose.tools import assert_equal
@@ -47,8 +48,8 @@ class TestClassifier:
     def _mock_conf(cls):
         return {
             'logs': cls._mock_logs(),
-            'sources': cls._mock_sources(),
-            'global': cls._mock_global()
+            'clusters': {'prod': {'data_sources': cls._mock_sources()}},
+            'global': cls._mock_sources()
         }
 
     @classmethod
@@ -141,6 +142,7 @@ class TestClassifier:
         """Classifier - Data Retention Enabled Property"""
         assert_equal(self._classifier.data_retention_enabled, True)
 
+    @patch.dict(os.environ, {'CLUSTER': 'prod'})
     def test_load_logs_for_resource(self):
         """Classifier - Load Logs for Resource"""
         expected_result = OrderedDict([
@@ -157,6 +159,7 @@ class TestClassifier:
         result = self._classifier._load_logs_for_resource(self._service_name, self._resource_name)
         assert_equal(result, expected_result)
 
+    @patch.dict(os.environ, {'CLUSTER': 'prod'})
     @patch('logging.Logger.error')
     def test_load_logs_for_resource_invalid_service(self, log_mock):
         """Classifier - Load Logs for Resource, Invalid Service"""
@@ -165,6 +168,7 @@ class TestClassifier:
         assert_equal(result, False)
         log_mock.assert_called_with('Service [%s] not declared in sources configuration', service)
 
+    @patch.dict(os.environ, {'CLUSTER': 'prod'})
     @patch('logging.Logger.error')
     def test_load_logs_for_resource_invalid_resource(self, log_mock):
         """Classifier - Load Logs for Resource, Invalid Resource"""
@@ -232,6 +236,7 @@ class TestClassifier:
             'Failed to classify data with schema: %s', 'log_type_02:sub_type'
         )
 
+    @patch.dict(os.environ, {'CLUSTER': 'prod'})
     @patch.object(Classifier, '_process_log_schemas')
     def test_classify_payload(self, process_mock):
         """Classifier - Classify Payload"""
