@@ -3,6 +3,7 @@ docs/build
 
 # Compiled Python files
 *.pyc
+__pycache__
 
 # Terraform files
 *.terraform/

@@ -639,6 +639,8 @@ class CSVParser(ParserBase):
             StringIO: Open CSV reader object or False upon error
         """
         try:
+            if isinstance(data, bytes):
+                data = data.decode()
             return csv.reader(
                 io.StringIO(data),
                 delimiter=self.delimiter,
