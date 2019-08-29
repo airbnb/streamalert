@@ -183,6 +183,7 @@ class AthenaRefresher:
                 should contain one (or maybe more) S3 bucket notification message.
         """
         # Check that the database being used exists before running queries
+        is_test_notification = False
         for sqs_rec in event['Records']:
             LOGGER.debug('Processing event with message ID \'%s\' and SentTimestamp %s',
                          sqs_rec['messageId'],
@@ -190,6 +191,7 @@ class AthenaRefresher:
 
             body = json.loads(sqs_rec['body'])
             if body.get('Event') == 's3:TestEvent':
+                is_test_notification = True
                 LOGGER.debug('Skipping S3 bucket notification test event')
                 continue
 
@@ -210,7 +212,7 @@ class AthenaRefresher:
 
                 self._s3_buckets_and_keys[bucket_name].add(object_key)
 
-        if not self._add_partitions():
+        if not (is_test_notification or _self._add_partitions()):
             raise AthenaRefreshError(
                 'Failed to add partitions: {}'.format(dict(self._s3_buckets_and_keys))
             )
