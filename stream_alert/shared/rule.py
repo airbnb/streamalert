@@ -17,6 +17,7 @@ import ast
 from copy import deepcopy
 import hashlib
 import inspect
+import json
 
 from stream_alert.shared.logger import get_logger
 from stream_alert.shared.stats import time_rule
@@ -159,6 +160,7 @@ class Rule:
             return self.func(record)
         except Exception:  # pylint: disable=broad-except
             LOGGER.exception('Encountered error with rule: %s', self.name)
+            LOGGER.error('Record that resulted in error:\n%s', json.dumps(record))
 
         return False
 
