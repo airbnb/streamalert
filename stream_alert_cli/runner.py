@@ -71,6 +71,10 @@ def cli_runner(args):
 
 
 class StreamAlertCliCommandRepository(object):
+    """
+    This repository class contains and manages all StreamAlert manage.py commands that are
+    configured on this repository.
+    """
     COMMANDS = {}
 
     @classmethod
@@ -113,6 +117,9 @@ class StreamAlertCliCommandRepository(object):
 
     @classmethod
     def command_handlers(cls, config):
+        """
+        Returns a dict of command strings mapped to their respective CliCommand classes.
+        """
         return {
             command: lambda opts: cli_command.handler(opts, config)
             for command, cli_command in cls.COMMANDS.iteritems()
@@ -120,6 +127,11 @@ class StreamAlertCliCommandRepository(object):
 
     @classmethod
     def command_parsers(cls):
+        """
+        Returns a dict of commands mapped to tuples. The first element of the tuple is the
+        CliCommand.setup_subparser function for that command. The second element is a string
+        description of that CliCommand.
+        """
         return {
             command: (cli_command.setup_subparser, cli_command.description)
             for command, cli_command in cls.COMMANDS.iteritems()
