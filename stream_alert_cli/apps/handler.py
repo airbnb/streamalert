@@ -24,12 +24,12 @@ from stream_alert_cli.utils import (
     add_timeout_arg,
     generate_subparser,
     set_parser_epilog,
-    CLUSTERS)
+    CLUSTERS, CliCommand)
 
 LOGGER = get_logger(__name__)
 
 
-class AppCommand(object):
+class AppCommand(CliCommand):
 
     @classmethod
     def setup_subparser(cls, subparser):

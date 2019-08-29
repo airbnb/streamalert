@@ -19,12 +19,12 @@ from stream_alert.shared.logger import get_logger
 from stream_alert.threat_intel_downloader.main import ThreatStream
 from stream_alert_cli.helpers import user_input, save_parameter
 from stream_alert_cli.utils import generate_subparser, add_schedule_expression_arg, add_timeout_arg, \
-    add_memory_arg, UniqueSetAction, set_parser_epilog
+    add_memory_arg, UniqueSetAction, set_parser_epilog, CliCommand
 
 LOGGER = get_logger(__name__)
 
 
-class ThreatIntelDownloaderCommand(object):
+class ThreatIntelDownloaderCommand(CliCommand):
 
     @classmethod
     def setup_subparser(cls, subparser):
@@ -250,7 +250,7 @@ class ThreatIntelDownloaderCommand(object):
         return saved
 
 
-class ThreatIntelCommand(object):
+class ThreatIntelCommand(CliCommand):
 
     @classmethod
     def setup_subparser(cls, subparser):

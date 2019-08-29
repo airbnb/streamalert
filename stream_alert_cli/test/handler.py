@@ -39,12 +39,12 @@ from stream_alert_cli.test import DEFAULT_TEST_FILES_DIRECTORY
 from stream_alert_cli.test.format import format_green, format_red, format_underline, format_yellow
 from stream_alert_cli.test.mocks import mock_lookup_table_results, mock_threat_intel_query_results
 from stream_alert_cli.test.results import TestEventFile, TestResult
-from stream_alert_cli.utils import UniqueSetAction, generate_subparser
+from stream_alert_cli.utils import UniqueSetAction, generate_subparser, CliCommand
 
 LOGGER = get_logger(__name__)
 
 
-class TestCommand(object):
+class TestCommand(CliCommand):
 
     @classmethod
     def setup_subparser(cls, subparser):

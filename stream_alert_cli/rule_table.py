@@ -14,10 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from stream_alert.shared.rule_table import RuleTable
-from stream_alert_cli.utils import generate_subparser, UniqueSetAction
+from stream_alert_cli.utils import generate_subparser, UniqueSetAction, CliCommand
 
 
-class RuleStagingCommand(object):
+class RuleStagingCommand(CliCommand):
 
     @classmethod
     def setup_subparser(cls, subparser):

@@ -22,14 +22,14 @@ from stream_alert_cli import helpers
 from stream_alert_cli.manage_lambda import package as stream_alert_packages
 from stream_alert_cli.terraform.generate import terraform_generate_handler
 from stream_alert_cli.utils import set_parser_epilog, MutuallyExclusiveStagingAction, \
-    add_default_lambda_args
+    add_default_lambda_args, CliCommand
 
 LOGGER = get_logger(__name__)
 
 PackageMap = namedtuple('package_attrs', ['package_class', 'targets', 'enabled'])
 
 
-class DeployCommand(object):
+class DeployCommand(CliCommand):
 
     @staticmethod
     def setup_subparser(subparser):
