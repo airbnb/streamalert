@@ -14,41 +14,102 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from stream_alert.shared.logger import get_logger
-from stream_alert_cli.helpers import tf_runner
-from stream_alert_cli.terraform.generate import terraform_generate_handler
+from stream_alert.shared.lookup_tables.core import LookupTables
+from stream_alert_cli.utils import CliCommand, generate_subparser
 
 LOGGER = get_logger(__name__)
 
 
-def lookup_tables_handler(options, config):
-    """Main handler for the Kinesis parser
+class LookupTablesCommand(CliCommand):
 
-    Args:
-        options (argparse.Namespace): Parsed arguments
-        config (CLIConfig): Loaded StreamAlert config
+    @classmethod
+    def setup_subparser(cls, subparser):
+        """Add subparser for LookupTables"""
+        athena_subparsers = subparser.add_subparsers()
 
-    Returns:
-        bool: False if errors occurred, True otherwise
-    """
+        cls._setup_describe_tables_subparser(athena_subparsers)
+        cls._setup_get_subparser(athena_subparsers)
 
-    enable = options.action == 'enable-events'
-    LOGGER.info('%s Kinesis Events', 'Enabling' if enable else 'Disabling')
+    @classmethod
+    def _setup_describe_tables_subparser(cls, subparsers):
+        generate_subparser(
+            subparsers,
+            'describe-tables',
+            description='Show tables',
+            subcommand=True
+        )
 
-    for cluster in options.clusters or config.clusters():
-        if 'kinesis_events' in config['clusters'][cluster]['modules']:
-            config['clusters'][cluster]['modules']['kinesis_events']['enabled'] = enable
+    @classmethod
+    def _setup_get_subparser(cls, subparsers):
+        """
+        Get subcommand:
 
-    config.write()
+        $ ./manage.py lookup-tables get -t [table] -k [key]
+        """
+        get_parser = generate_subparser(
+            subparsers,
+            'get',
+            description='Validate defined log schemas using integration test files',
+            subcommand=True
+        )
 
-    if options.skip_terraform:
-        return True  # not an error
+        get_parser.add_argument(
+            '-t',
+            '--table',
+            help='Name of the LookupTable',
+            required=True,
+            default=None
+        )
 
-    if not terraform_generate_handler(config):
-        return False
+        get_parser.add_argument(
+            '-k',
+            '--key',
+            help='Key to fetch on the LookupTable',
+            required=True,
+            default=None
+        )
 
-    return tf_runner(
-        action='apply',
-        targets=[
-            'module.{}_{}'.format('kinesis_events', cluster) for cluster in config.clusters()
-        ]
-    )
+    @classmethod
+    def handler(cls, options, config):
+        subcommand = options.subcommand
+        if subcommand == 'describe-tables':
+            return cls._lookup_tables_handler_describe_tables(options, config)
+        elif subcommand == 'get':
+            return cls._lookup_tables_handler_get(options, config)
+        else:
+            LOGGER.error('Unhandled lookup-tables subcommand %s', subcommand)
+
+    @staticmethod
+    def _lookup_tables_handler_describe_tables(options, config):
+        LOGGER.info('==== LookupTables; Describe Tables ====\n')
+
+        lookup_tables = LookupTables.get_instance(config=config)
+
+        LOGGER.info('%d Tables:\n', len(lookup_tables._tables))
+        for table_name, table in lookup_tables._tables.iteritems():
+            LOGGER.info(' Table Name: %s', table.table_name)
+            LOGGER.info(' Driver Id: %s', table.driver_id)
+            LOGGER.info(' Driver Type: %s\n', table.driver_type)
+
+    @staticmethod
+    def _lookup_tables_handler_get(options, config):
+        """
+
+
+        """
+
+        table_name = options.table
+        key = options.key
+
+        LOGGER.info('==== LookupTables; Get Key ====')
+
+        LookupTables.get_instance(config=config)
+
+        LOGGER.info('  Table: %s', table_name)
+        LOGGER.info('  Key:   %s', key)
+
+        value = LookupTables.get(table_name, key)
+
+        LOGGER.info('  Value: %s', value)
+
+        return True

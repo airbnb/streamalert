@@ -18,8 +18,96 @@ from botocore.exceptions import ClientError
 
 from stream_alert.shared.logger import get_logger
 from stream_alert_cli.terraform.generate import terraform_generate_handler
+from stream_alert_cli.utils import add_default_lambda_args, set_parser_epilog, CliCommand
 
 LOGGER = get_logger(__name__)
+
+
+class RollbackCommand(CliCommand):
+
+    @classmethod
+    def setup_subparser(cls, subparser):
+        """Add the rollback subparser: manage.py rollback [options]"""
+        set_parser_epilog(
+            subparser,
+            epilog=(
+                '''\
+                Example:
+
+                    manage.py rollback --function rule
+                '''
+            )
+        )
+
+        add_default_lambda_args(subparser)
+
+    @classmethod
+    def handler(cls, options, config):
+        """Rollback the current production Lambda version(s) by 1.
+
+        Args:
+            options: Argparse parsed options
+            config (dict): Parsed configuration from conf/
+
+        Returns:
+            bool: False if errors occurred, True otherwise
+        """
+        # Make sure the Terraform code is up to date
+        if not terraform_generate_handler(config=config):
+            return False
+
+        LOGGER.info('Rolling back: %s', ' '.join(options.function))
+
+        rollback_all = 'all' in options.function
+        prefix = config['global']['account']['prefix']
+        clusters = sorted(options.clusters or config.clusters())
+        client = boto3.client('lambda')
+
+        # Track the success of rolling back the functions
+        success = True
+        if rollback_all or 'alert' in options.function:
+            success = success and _rollback_production(
+                client,
+                '{}_streamalert_alert_processor'.format(prefix)
+            )
+
+        if rollback_all or 'alert_merger' in options.function:
+            success = success and _rollback_production(
+                client,
+                '{}_streamalert_alert_merger'.format(prefix)
+            )
+
+        if rollback_all or 'apps' in options.function:
+            for cluster in clusters:
+                apps_config = config['clusters'][cluster]['modules'].get('stream_alert_apps', {})
+                for lambda_name in sorted(apps_config):
+                    success = success and _rollback_production(client, lambda_name)
+
+        if rollback_all or 'athena' in options.function:
+            success = success and _rollback_production(
+                client,
+                '{}_streamalert_athena_partition_refresh'.format(prefix)
+            )
+
+        if rollback_all or 'classifier' in options.function:
+            for cluster in clusters:
+                success = success and _rollback_production(
+                    client,
+                    '{}_streamalert_classifier_{}'.format(prefix, cluster)
+                )
+
+        if rollback_all or 'rule' in options.function:
+            success = success and _rollback_production(
+                client, '{}_streamalert_rules_engine'.format(prefix)
+            )
+
+        if rollback_all or 'threat_intel_downloader' in options.function:
+            success = success and _rollback_production(
+                client,
+                '{}_streamalert_threat_intel_downloader'.format(prefix)
+            )
+
+        return success
 
 
 def _rollback_production(lambda_client, function_name):
@@ -58,69 +146,4 @@ def _rollback_production(lambda_client, function_name):
     return True
 
 
-def rollback_handler(options, config):
-    """Rollback the current production Lambda version(s) by 1.
 
-    Args:
-        options: Argparse parsed options
-        config (dict): Parsed configuration from conf/
-
-    Returns:
-        bool: False if errors occurred, True otherwise
-    """
-    # Make sure the Terraform code is up to date
-    if not terraform_generate_handler(config=config):
-        return False
-
-    LOGGER.info('Rolling back: %s', ' '.join(options.function))
-
-    rollback_all = 'all' in options.function
-    prefix = config['global']['account']['prefix']
-    clusters = sorted(options.clusters or config.clusters())
-    client = boto3.client('lambda')
-
-    # Track the success of rolling back the functions
-    success = True
-    if rollback_all or 'alert' in options.function:
-        success = success and _rollback_production(
-            client,
-            '{}_streamalert_alert_processor'.format(prefix)
-        )
-
-    if rollback_all or 'alert_merger' in options.function:
-        success = success and _rollback_production(
-            client,
-            '{}_streamalert_alert_merger'.format(prefix)
-        )
-
-    if rollback_all or 'apps' in options.function:
-        for cluster in clusters:
-            apps_config = config['clusters'][cluster]['modules'].get('stream_alert_apps', {})
-            for lambda_name in sorted(apps_config):
-                success = success and _rollback_production(client, lambda_name)
-
-    if rollback_all or 'athena' in options.function:
-        success = success and _rollback_production(
-            client,
-            '{}_streamalert_athena_partition_refresh'.format(prefix)
-        )
-
-    if rollback_all or 'classifier' in options.function:
-        for cluster in clusters:
-            success = success and _rollback_production(
-                client,
-                '{}_streamalert_classifier_{}'.format(prefix, cluster)
-            )
-
-    if rollback_all or 'rule' in options.function:
-        success = success and _rollback_production(
-            client, '{}_streamalert_rules_engine'.format(prefix)
-        )
-
-    if rollback_all or 'threat_intel_downloader' in options.function:
-        success = success and _rollback_production(
-            client,
-            '{}_streamalert_threat_intel_downloader'.format(prefix)
-        )
-
-    return success
