@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from collections import OrderedDict
+import os
 import logging
 
 from streamalert.classifier.clients import FirehoseClient, SQSClient
@@ -86,7 +87,8 @@ class Classifier:
             bool: True if the resource's log sources loaded properly
         """
         # Get all logs for the configured service/entity (s3, kinesis, or sns)
-        resources = self._config['sources'].get(service)
+
+        resources = self._config['clusters'][os.environ['CLUSTER']]['data_sources'].get(service)
         if not resources:
             LOGGER.error('Service [%s] not declared in sources configuration', service)
             return False
