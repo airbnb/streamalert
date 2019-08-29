@@ -212,7 +212,7 @@ class AthenaRefresher:
 
                 self._s3_buckets_and_keys[bucket_name].add(object_key)
 
-        if not (is_test_notification or _self._add_partitions()):
+        if not (is_test_notification or self._add_partitions()):
             raise AthenaRefreshError(
                 'Failed to add partitions: {}'.format(dict(self._s3_buckets_and_keys))
             )
