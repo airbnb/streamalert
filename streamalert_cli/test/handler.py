@@ -230,7 +230,7 @@ class TestRunner:
         patch.dict(
             os.environ,
             {
-                'CLUSTER': 'local-test',
+                'CLUSTER': 'prod',
                 'STREAMALERT_PREFIX': prefix,
                 'AWS_ACCOUNT_ID': self._config['global']['account']['aws_account_id'],
                 'ALERTS_TABLE': '{}_streamalert_alerts'.format(prefix),
