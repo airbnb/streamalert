@@ -121,7 +121,7 @@ class StreamAlertCliCommandRepository(object):
         Returns a dict of command strings mapped to their respective CliCommand classes.
         """
         return {
-            command: lambda opts: cli_command.handler(opts, config)
+            command: lambda opts, cmd=cli_command: cmd.handler(opts, config)
             for command, cli_command in cls.COMMANDS.iteritems()
         }
 
