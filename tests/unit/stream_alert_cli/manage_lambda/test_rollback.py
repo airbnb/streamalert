@@ -65,7 +65,7 @@ class RollbackTest(unittest.TestCase):
         """CLI - Lambda rollback all"""
         mock_helper.return_value = True
         assert_equal(
-            rollback.rollback_handler(
+            rollback.RollbackCommand.handler(
                 MockOptions(None, ['all']),
                 MockCLIConfig(config=basic_streamalert_config())
             ),
@@ -89,7 +89,7 @@ class RollbackTest(unittest.TestCase):
         """CLI - Lambda rollback apps and rule"""
         mock_helper.return_value = True
         assert_equal(
-            rollback.rollback_handler(
+            rollback.RollbackCommand.handler(
                 MockOptions(None, ['apps', 'rule']),
                 MockCLIConfig(config=basic_streamalert_config())
             ),

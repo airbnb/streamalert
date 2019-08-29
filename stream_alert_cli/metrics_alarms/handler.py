@@ -155,4 +155,3 @@ class CustomMetricsCommand(CliCommand):
         )
 
         return True
-

@@ -26,6 +26,8 @@ class StatusCommand(CliCommand):
     def setup_subparser(cls, subparser):
         """Status command subparser takes no args"""
 
+    # In python3, print() is necessary
+    # pylint: disable=superfluous-parens
     @classmethod
     def handler(cls, options, config):
         """Display current AWS infrastructure built by Terraform

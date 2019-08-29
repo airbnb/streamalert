@@ -121,7 +121,8 @@ def _rollback_production(lambda_client, function_name):
         bool: False if errors occurred, True otherwise
     """
     version = lambda_client.get_alias(
-        FunctionName=function_name, Name='production')['FunctionVersion']
+        FunctionName=function_name, Name='production'
+    )['FunctionVersion']
 
     if version == '$LATEST':
         # This won't happen with Terraform, but the alias could have been manually changed.
@@ -144,6 +145,3 @@ def _rollback_production(lambda_client, function_name):
         return False
 
     return True
-
-
-

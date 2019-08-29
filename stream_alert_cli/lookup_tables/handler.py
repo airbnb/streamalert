@@ -73,20 +73,21 @@ class LookupTablesCommand(CliCommand):
     def handler(cls, options, config):
         subcommand = options.subcommand
         if subcommand == 'describe-tables':
-            return cls._lookup_tables_handler_describe_tables(options, config)
+            return cls._lookup_tables_handler_describe_tables(config)
         elif subcommand == 'get':
             return cls._lookup_tables_handler_get(options, config)
         else:
             LOGGER.error('Unhandled lookup-tables subcommand %s', subcommand)
 
+    # pylint: disable=protected-access
     @staticmethod
-    def _lookup_tables_handler_describe_tables(options, config):
+    def _lookup_tables_handler_describe_tables(config):
         LOGGER.info('==== LookupTables; Describe Tables ====\n')
 
         lookup_tables = LookupTables.get_instance(config=config)
 
         LOGGER.info('%d Tables:\n', len(lookup_tables._tables))
-        for table_name, table in lookup_tables._tables.iteritems():
+        for _, table in lookup_tables._tables.iteritems():
             LOGGER.info(' Table Name: %s', table.table_name)
             LOGGER.info(' Driver Id: %s', table.driver_id)
             LOGGER.info(' Driver Type: %s\n', table.driver_type)

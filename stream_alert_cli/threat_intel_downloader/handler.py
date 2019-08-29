@@ -18,8 +18,15 @@ import re
 from stream_alert.shared.logger import get_logger
 from stream_alert.threat_intel_downloader.main import ThreatStream
 from stream_alert_cli.helpers import user_input, save_parameter
-from stream_alert_cli.utils import generate_subparser, add_schedule_expression_arg, add_timeout_arg, \
-    add_memory_arg, UniqueSetAction, set_parser_epilog, CliCommand
+from stream_alert_cli.utils import (
+    add_memory_arg,
+    add_schedule_expression_arg,
+    add_timeout_arg,
+    CliCommand,
+    generate_subparser,
+    set_parser_epilog,
+    UniqueSetAction,
+)
 
 LOGGER = get_logger(__name__)
 

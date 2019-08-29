@@ -36,7 +36,10 @@ from stream_alert_cli.terraform.handlers import (
     TerraformListTargetsCommand,
     TerraformGenerateCommand)
 from stream_alert_cli.test.handler import TestCommand
-from stream_alert_cli.threat_intel_downloader.handler import ThreatIntelDownloaderCommand, ThreatIntelCommand
+from stream_alert_cli.threat_intel_downloader.handler import (
+    ThreatIntelCommand,
+    ThreatIntelDownloaderCommand,
+)
 
 LOGGER = get_logger(__name__)
 
@@ -87,4 +90,3 @@ def cli_runner(args):
     result = cmds[args.command](args)
     LOGGER.info('Completed')
     return result
-

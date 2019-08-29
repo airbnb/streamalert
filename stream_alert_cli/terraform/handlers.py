@@ -358,7 +358,11 @@ class TerraformListTargetsCommand(CliCommand):
         if not modules:
             return False
 
-        max_resource_len = max(len(value) for values in modules.itervalues() for value in values) + 8
+        max_resource_len = max(
+            len(value)
+            for values in modules.itervalues()
+            for value in values
+        ) + 8
 
         row_format_str = '{prefix:<{pad}}{value}'
 
