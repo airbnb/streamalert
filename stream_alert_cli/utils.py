@@ -251,51 +251,12 @@ def _setup_output_subparser(subparser):
 
 
 
-def _setup_deploy_subparser(subparser):
-    """Add the deploy subparser: manage.py deploy [options]"""
-    _set_parser_epilog(
-        subparser,
-        epilog=(
-            '''\
-            Example:
 
-                manage.py deploy --function rule alert
-            '''
-        )
-    )
-
-    # Flag to manually bypass rule staging for new rules upon deploy
-    # This only has an effect if rule staging is enabled
-    subparser.add_argument(
-        '--skip-rule-staging',
-        action='store_true',
-        help='Skip staging of new rules so they go directly into production'
-    )
-
-    # flag to manually demote specific rules to staging during deploy
-    subparser.add_argument(
-        '--stage-rules',
-        action=MutuallyExclusiveStagingAction,
-        default=set(),
-        help='Stage the rules provided in a space-separated list',
-        nargs='+'
-    )
-
-    # flag to manually bypass rule staging for specific rules during deploy
-    subparser.add_argument(
-        '--unstage-rules',
-        action=MutuallyExclusiveStagingAction,
-        default=set(),
-        help='Unstage the rules provided in a space-separated list',
-        nargs='+'
-    )
-
-    _add_default_lambda_args(subparser)
 
 
 def _setup_rollback_subparser(subparser):
     """Add the rollback subparser: manage.py rollback [options]"""
-    _set_parser_epilog(
+    set_parser_epilog(
         subparser,
         epilog=(
             '''\
@@ -306,7 +267,7 @@ def _setup_rollback_subparser(subparser):
         )
     )
 
-    _add_default_lambda_args(subparser)
+    add_default_lambda_args(subparser)
 
 
 def _setup_test_subparser(subparser):
@@ -320,7 +281,7 @@ def _setup_test_subparser(subparser):
 
 def _setup_test_classifier_subparser(subparsers):
     """Add the test validation subparser: manage.py test classifier [options]"""
-    test_validate_parser = _generate_subparser(
+    test_validate_parser = generate_subparser(
         subparsers,
         'classifier',
         description='Validate defined log schemas using integration test files',
@@ -332,7 +293,7 @@ def _setup_test_classifier_subparser(subparsers):
 
 def _setup_test_rules_subparser(subparsers):
     """Add the test rules subparser: manage.py test rules [options]"""
-    test_rules_parser = _generate_subparser(
+    test_rules_parser = generate_subparser(
         subparsers,
         'rules',
         description='Test rules using integration test files',
@@ -376,7 +337,7 @@ def _setup_test_rules_subparser(subparsers):
 
 def _setup_test_live_subparser(subparsers):
     """Add the test live subparser: manage.py test live [options]"""
-    test_live_parser = _generate_subparser(
+    test_live_parser = generate_subparser(
         subparsers,
         'live',
         description='Run end-to-end tests that will attempt to send alerts to each rule\'s outputs',
@@ -439,7 +400,7 @@ def _add_default_test_args(test_parser):
     )
 
 
-def _add_default_lambda_args(lambda_parser):
+def add_default_lambda_args(lambda_parser):
     """Add the default arguments to the deploy and rollback parsers"""
 
     functions = sorted([
@@ -464,52 +425,9 @@ def _add_default_lambda_args(lambda_parser):
     add_clusters_arg(lambda_parser)
 
 
-def _setup_init_subparser(subparser):
-    """Add init subparser: manage.py init [options]"""
-    subparser.add_argument(
-        '-b',
-        '--backend',
-        action='store_true',
-        help=(
-            'Initialize the Terraform backend (S3). '
-            'Useful for refreshing a pre-existing deployment'
-        )
-    )
 
 
 
-
-
-def _setup_build_subparser(subparser):
-    """Add build subparser: manage.py build [options]"""
-    _set_parser_epilog(
-        subparser,
-        epilog=(
-            '''\
-            Example:
-
-                manage.py build --target alert_processor_lambda
-            '''
-        )
-    )
-
-    _add_default_tf_args(subparser)
-
-
-def _setup_destroy_subparser(subparser):
-    """Add destroy subparser: manage.py destroy [options]"""
-    _set_parser_epilog(
-        subparser,
-        epilog=(
-            '''\
-            Example:
-
-                manage.py destroy --target aws_s3_bucket.streamalerts
-            '''
-        )
-    )
-
-    _add_default_tf_args(subparser)
 
 
 def _setup_kinesis_subparser(subparser):

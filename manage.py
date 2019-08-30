@@ -39,22 +39,11 @@ def build_parser():
     commands = {
 
 
-        'deploy': (
-            _setup_deploy_subparser,
-            'Deploy the specified AWS Lambda function(s)'
-        ),
-        'destroy': (
-            _setup_destroy_subparser,
-            'Destroy StreamAlert infrastructure, optionally targeting specific modules',
-        ),
         'generate': (
             None,
             'Generate Terraform files from JSON cluster files'
         ),
-        'init': (
-            _setup_init_subparser,
-            'Initialize StreamAlert infrastructure'
-        ),
+
         'kinesis': (
             _setup_kinesis_subparser,
             'Update AWS Kinesis settings and run Terraform to apply changes'

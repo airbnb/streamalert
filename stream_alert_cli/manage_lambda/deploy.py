@@ -21,48 +21,96 @@ from stream_alert.shared.logger import get_logger
 from stream_alert_cli import helpers
 from stream_alert_cli.manage_lambda import package as stream_alert_packages
 from stream_alert_cli.terraform.generate import terraform_generate_handler
+from stream_alert_cli.utils import CliCommand, set_parser_epilog, MutuallyExclusiveStagingAction, \
+    add_default_lambda_args
 
 LOGGER = get_logger(__name__)
 
 PackageMap = namedtuple('package_attrs', ['package_class', 'targets', 'enabled'])
 
 
-def deploy_handler(options, config):
-    """CLI handler for deploying new versions of Lambda functions
+class DeployCommand(CliCommand):
+    description = 'Deploy the specified AWS Lambda function(s)'
 
-    Args:
-        options (argparse.Namespace): Parsed argparse namespace from the CLI
-        config (CLIConfig): Loaded StreamAlert config
+    @classmethod
+    def setup_subparser(cls, subparser):
+        """Add the deploy subparser: manage.py deploy [options]"""
+        set_parser_epilog(
+            subparser,
+            epilog=(
+                '''\
+                Example:
 
-    Returns:
-        bool: False if errors occurred, True otherwise
-    """
-    # Make sure the Terraform code is up to date
-    if not terraform_generate_handler(config=config):
-        return False
+                    manage.py deploy --function rule alert
+                '''
+            )
+        )
 
-    functions = options.function
+        # Flag to manually bypass rule staging for new rules upon deploy
+        # This only has an effect if rule staging is enabled
+        subparser.add_argument(
+            '--skip-rule-staging',
+            action='store_true',
+            help='Skip staging of new rules so they go directly into production'
+        )
 
-    if 'all' in options.function:
-        functions = {
-            'alert',
-            'alert_merger',
-            'apps',
-            'athena',
-            'classifier',
-            'rule',
-            'rule_promo',
-            'threat_intel_downloader'
-        }
+        # flag to manually demote specific rules to staging during deploy
+        subparser.add_argument(
+            '--stage-rules',
+            action=MutuallyExclusiveStagingAction,
+            default=set(),
+            help='Stage the rules provided in a space-separated list',
+            nargs='+'
+        )
 
-    if not deploy(functions, config, options.clusters):
-        return False
+        # flag to manually bypass rule staging for specific rules during deploy
+        subparser.add_argument(
+            '--unstage-rules',
+            action=MutuallyExclusiveStagingAction,
+            default=set(),
+            help='Unstage the rules provided in a space-separated list',
+            nargs='+'
+        )
 
-    # Update the rule table now if the rules engine is being deployed
-    if 'rule' in functions:
-        _update_rule_table(options, config)
+        add_default_lambda_args(subparser)
 
-    return True
+    @classmethod
+    def handler(cls, options, config):
+        """CLI handler for deploying new versions of Lambda functions
+
+        Args:
+            options (argparse.Namespace): Parsed argparse namespace from the CLI
+            config (CLIConfig): Loaded StreamAlert config
+
+        Returns:
+            bool: False if errors occurred, True otherwise
+        """
+        # Make sure the Terraform code is up to date
+        if not terraform_generate_handler(config=config):
+            return False
+
+        functions = options.function
+
+        if 'all' in options.function:
+            functions = {
+                'alert',
+                'alert_merger',
+                'apps',
+                'athena',
+                'classifier',
+                'rule',
+                'rule_promo',
+                'threat_intel_downloader'
+            }
+
+        if not deploy(functions, config, options.clusters):
+            return False
+
+        # Update the rule table now if the rules engine is being deployed
+        if 'rule' in functions:
+            _update_rule_table(options, config)
+
+        return True
 
 
 def deploy(functions, config, clusters=None):
