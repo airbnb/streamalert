@@ -14,7 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from stream_alert.shared import metrics, CLUSTERED_FUNCTIONS
+from stream_alert.shared.logger import get_logger
 from stream_alert_cli.utils import CliCommand, set_parser_epilog, add_clusters_arg
+
+LOGGER = get_logger(__name__)
 
 
 class CreateMetricAlarmCommand(CliCommand):
@@ -56,6 +59,10 @@ class CreateMetricAlarmCommand(CliCommand):
         )
 
         _add_default_metric_alarms_args(subparser)
+
+    @classmethod
+    def handler(cls, options, config):
+        return _create_alarm_handler(options, config)
 
 
 class CreateClusterMetricAlarmCommand(CliCommand):
@@ -101,6 +108,10 @@ class CreateClusterMetricAlarmCommand(CliCommand):
 
         # Add the option to specify cluster(s)
         add_clusters_arg(subparser, required=True)
+
+    @classmethod
+    def handler(cls, options, config):
+        return _create_alarm_handler(options, config)
 
 
 class CreateMetricsCommand(CliCommand):
@@ -337,3 +348,25 @@ def _add_default_metric_alarms_args(alarm_parser, clustered=False):
         ).format(', '.join(statistics)),
         default='Sum'
     )
+
+def _create_alarm_handler(options, config):
+    """Create a new CloudWatch alarm for the given metric
+
+    Args:
+        options (argparse.Namespace): Contains all of the necessary info for configuring
+            a CloudWatch alarm
+
+    Returns:
+        bool: False if errors occurred, True otherwise
+    """
+    # Perform safety check for max total evaluation period. This logic cannot
+    # be performed by argparse so must be performed now.
+    seconds_in_day = 86400
+    if options.period * options.evaluation_periods > seconds_in_day:
+        LOGGER.error('The product of the value for period multiplied by the '
+                     'value for evaluation periods cannot exceed 86,400. 86,400 '
+                     'is the number of seconds in one day and an alarm\'s total '
+                     'current evaluation period can be no longer than one day.')
+        return False
+
+    return config.add_metric_alarm(vars(options))

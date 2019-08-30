@@ -121,29 +121,6 @@ def _status_handler(config):
     return True
 
 
-def _create_alarm_handler(options, config):
-    """Create a new CloudWatch alarm for the given metric
-
-    Args:
-        options (argparse.Namespace): Contains all of the necessary info for configuring
-            a CloudWatch alarm
-
-    Returns:
-        bool: False if errors occurred, True otherwise
-    """
-    # Perform safety check for max total evaluation period. This logic cannot
-    # be performed by argparse so must be performed now.
-    seconds_in_day = 86400
-    if options.period * options.evaluation_periods > seconds_in_day:
-        LOGGER.error('The product of the value for period multiplied by the '
-                     'value for evaluation periods cannot exceed 86,400. 86,400 '
-                     'is the number of seconds in one day and an alarm\'s total '
-                     'current evaluation period can be no longer than one day.')
-        return False
-
-    return config.add_metric_alarm(vars(options))
-
-
 def _threat_intel_handler(options, config):
     """Configure Threat Intel from command line
 

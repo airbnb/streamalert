@@ -39,10 +39,6 @@ def build_parser():
     commands = {
 
 
-        'custom-metrics': (
-            _setup_custom_metrics_subparser,
-
-        ),
         'deploy': (
             _setup_deploy_subparser,
             'Deploy the specified AWS Lambda function(s)'
