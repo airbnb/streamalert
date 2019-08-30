@@ -219,6 +219,20 @@ class TestDynamoDBDriver:
             'bbbb:1'
         )
 
+    def test_set_commit_get(self, ):
+        """LookupTables - Drivers - DynamoDB Driver - Set/Commmit - Can be refetched"""
+        self._driver.initialize()
+
+        self._driver.set('asdfasdf:1', 'A whole new world')
+        self._driver.commit()
+        assert_equal(self._driver.get('asdfasdf:1'), 'A whole new world')
+
+    def test_invalid_key(self, ):
+        """LookupTables - Drivers - DynamoDB Driver - Get - Invalid key raises"""
+        self._driver.initialize()
+
+        assert_raises(LookupTablesInitializationError, self._driver.get, 'invalid-key')
+
 
 # pylint: disable=protected-access,attribute-defined-outside-init,no-self-use,invalid-name
 class TestDynamoDBDriver_MultiTable:

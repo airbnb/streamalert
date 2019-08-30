@@ -98,6 +98,9 @@ class S3Driver(PersistenceDriver):
         # Upload to S3
         self._s3_adapter.upload(data)
 
+        # Invalidate the cache key
+        self._cache.set(self._MAGIC_CACHE_TTL_KEY, False, 9999)
+
         LOGGER.info('LookupTable (%s): Successfully uploaded new data', self.id)
 
     def get(self, key, default=None):
@@ -120,7 +123,9 @@ class S3Driver(PersistenceDriver):
 
         If it needs a reload, this method will appropriately call reload.
         """
-        if self._cache.has(self._MAGIC_CACHE_TTL_KEY):
+        if (
+            self._cache.has(self._MAGIC_CACHE_TTL_KEY) and self._cache.get(self._MAGIC_CACHE_TTL_KEY)
+        ):
             LOGGER.debug(
                 'LookupTable (%s): Does not need refresh. TTL: %s',
                 self.id,
@@ -154,7 +159,7 @@ class S3Driver(PersistenceDriver):
         data = Encoding.json_decode(self, data)
 
         self._cache.setall(data, self._cache_refresh_minutes)
-        self._cache.set(self._MAGIC_CACHE_TTL_KEY, 'True', self._cache_refresh_minutes)
+        self._cache.set(self._MAGIC_CACHE_TTL_KEY, True, self._cache_refresh_minutes)
         LOGGER.info('LookupTable (%s): Successfully loaded', self.id)
 
 
@@ -193,6 +198,11 @@ class Compression(object):
 
 
 class Encoding(object):
+    """
+    Encapsulation of encoding algorithms for S3 data.
+
+    Right now we only support JSON encoding. In the future, we could potentially support
+    """
 
     @staticmethod
     def json_encode(driver, data):
@@ -220,6 +230,7 @@ class Encoding(object):
 
 
 class S3Adapter(object):
+    """Adapter class that manages uploading data to and downloading data from AWS S3"""
 
     def __init__(self, driver, boto_s3_client, s3_bucket, s3_key):
         self._driver = driver
