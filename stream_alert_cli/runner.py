@@ -16,7 +16,9 @@ limitations under the License.
 from stream_alert.shared import CLUSTERED_FUNCTIONS
 from stream_alert.shared.logger import get_logger
 from stream_alert_cli.apps.handler import AppCommand
+from stream_alert_cli.athena.handler import AthenaCommand
 from stream_alert_cli.config import CLIConfig
+from stream_alert_cli.configure.handler import ConfigureCommand
 from stream_alert_cli.logger import set_logger_levels
 from stream_alert_cli.utils import CliCommand
 

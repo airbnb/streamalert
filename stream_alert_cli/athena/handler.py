@@ -20,6 +20,8 @@ from stream_alert.shared.athena import AthenaClient
 from stream_alert.shared.logger import get_logger
 from stream_alert_cli.athena import helpers
 from stream_alert_cli.helpers import continue_prompt, record_to_schema
+from stream_alert_cli.utils import CliCommand, generate_subparser, set_parser_epilog, \
+    UniqueSetAction
 
 LOGGER = get_logger(__name__)
 
@@ -32,31 +34,143 @@ CREATE_TABLE_STATEMENT = ('CREATE EXTERNAL TABLE {table_name} ({schema}) '
 MAX_QUERY_LENGTH = 262144
 
 
-def athena_handler(options, config):
-    """Main Athena handler
+class AthenaCommand(CliCommand):
+    description = 'Perform actions related to Athena'
 
-    Args:
-        options (argparse.Namespace): The parsed args passed from the CLI
-        config (CLIConfig): Loaded StreamAlert config
+    @classmethod
+    def setup_subparser(cls, subparser):
+        """Add athena subparser: manage.py athena [subcommand]"""
+        athena_subparsers = subparser.add_subparsers(dest="athena subcommand", required=True)
 
-    Returns:
-        bool: False if errors occurred, True otherwise
-    """
-    if options.subcommand == 'rebuild-partitions':
-        return rebuild_partitions(
-            options.table_name,
-            options.bucket,
-            config)
+        cls._setup_athena_create_table_subparser(athena_subparsers)
+        cls._setup_athena_rebuild_subparser(athena_subparsers)
+        cls._setup_athena_drop_all_subparser(athena_subparsers)
 
-    if options.subcommand == 'drop-all-tables':
-        return drop_all_tables(config)
+    @classmethod
+    def _setup_athena_create_table_subparser(cls, subparsers):
+        """Add the athena create-table subparser: manage.py athena create-table [options]"""
+        athena_create_table_parser = generate_subparser(
+            subparsers,
+            'create-table',
+            description='Create an Athena table',
+            subcommand=True
+        )
 
-    if options.subcommand == 'create-table':
-        return create_table(
-            options.table_name,
-            options.bucket,
-            config,
-            options.schema_override)
+        set_parser_epilog(
+            athena_create_table_parser,
+            epilog=(
+                '''\
+                Examples:
+
+                    manage.py athena create-table \\
+                      --bucket s3.bucket.name \\
+                      --table-name my_athena_table
+                '''
+            )
+        )
+
+        cls._add_default_athena_args(athena_create_table_parser)
+
+        # Validate the provided schema-override options
+        def _validate_override(val):
+            """Make sure the input is in the format column_name=type"""
+            err = ('Invalid override expression [{}]. The proper format is '
+                   '"column_name=value_type"').format(val)
+            if '=' not in val:
+                raise athena_create_table_parser.error(err)
+
+            if len(val.split('=')) != 2:
+                raise athena_create_table_parser.error(err)
+
+        athena_create_table_parser.add_argument(
+            '--schema-override',
+            nargs='+',
+            help=(
+                'Value types to override with new types in the log schema. '
+                'The provided input should be space-separated '
+                'directives like "column_name=value_type"'
+            ),
+            action=UniqueSetAction,
+            default=set(),
+            type=_validate_override
+        )
+
+    @classmethod
+    def _setup_athena_rebuild_subparser(cls, subparsers):
+        """Add the athena rebuild-partitions subparser: manage.py athena rebuild-partitions [options]"""
+        athena_rebuild_parser = generate_subparser(
+            subparsers,
+            'rebuild-partitions',
+            description='Rebuild the partitions for an Athena table',
+            subcommand=True
+        )
+
+        set_parser_epilog(
+            athena_rebuild_parser,
+            epilog=(
+                '''\
+                Examples:
+
+                    manage.py athena rebuild-partitions \\
+                      --bucket s3.bucket.name \\
+                      --table-name my_athena_table
+                '''
+            )
+        )
+
+        cls._add_default_athena_args(athena_rebuild_parser)
+
+    @staticmethod
+    def _setup_athena_drop_all_subparser(subparsers):
+        """Add the athena drop-all-tables subparser: manage.py athena drop-all-tables"""
+        generate_subparser(
+            subparsers,
+            'drop-all-tables',
+            description='Drop all tables from an Athena database',
+            subcommand=True
+        )
+
+    @staticmethod
+    def _add_default_athena_args(athena_parser):
+        """Adds the default required arguments for athena subcommands (bucket and table)"""
+        athena_parser.add_argument(
+            '-b', '--bucket',
+            help='Name of the S3 bucket where log data is located',
+            required=True
+        )
+
+        athena_parser.add_argument(
+            '-t', '--table-name',
+            help='Name of the Athena table to create. This must be a type of log defined in logs.json',
+            required=True
+        )
+
+    @classmethod
+    def handler(cls, options, config):
+        """Main Athena handler
+
+            Args:
+                options (argparse.Namespace): The parsed args passed from the CLI
+                config (CLIConfig): Loaded StreamAlert config
+
+            Returns:
+                bool: False if errors occurred, True otherwise
+            """
+        if options.subcommand == 'rebuild-partitions':
+            return rebuild_partitions(
+                options.table_name,
+                options.bucket,
+                config)
+
+        if options.subcommand == 'drop-all-tables':
+            return drop_all_tables(config)
+
+        if options.subcommand == 'create-table':
+            return create_table(
+                options.table_name,
+                options.bucket,
+                config,
+                options.schema_override)
 
 
 def get_athena_client(config):

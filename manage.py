@@ -37,10 +37,6 @@ def build_parser():
     # Map of top-level commands and their setup functions/description
     # New top-level commands should be added to this dictionary
     commands = {
-        'athena': (
-            _setup_athena_subparser,
-            'Perform actions related to Athena'
-        ),
         'build': (
             _setup_build_subparser,
             'Run terraform against StreamAlert modules, optionally targeting specific modules'
