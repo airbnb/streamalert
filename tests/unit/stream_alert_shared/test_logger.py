@@ -17,9 +17,9 @@ import logging
 import os
 
 from mock import patch
-from nose.tools import assert_equal
+from nose.tools import assert_equal, assert_is_instance
 
-from stream_alert.shared.logger import get_logger
+from stream_alert.shared.logger import get_logger, LogFormatter, set_formatter
 
 
 def test_get_logger():
@@ -52,3 +52,32 @@ def test_get_logger_bad_level(log_mock):
     logger = get_logger('test', 'foo')
     assert_equal(logging.getLevelName(logger.getEffectiveLevel()), 'INFO')
     log_mock.assert_called_with('Defaulting to INFO logging: %s', 'Unknown level: \'FOO\'')
+
+
+def test_set_logger_formatter_existing_handler():
+    """Shared - Set Logger Formatter, Existing Handler"""
+    logger = logging.getLogger('test')  # non-root logger
+
+    # Create handler to be added
+    # This simulates what happens in the Lambda execution environment
+    handler = logging.StreamHandler()
+    logger.addHandler(handler)
+
+    # Now set the formatter on the logger that already has a handler
+    set_formatter(logger)
+
+    assert_is_instance(handler.formatter, LogFormatter)
+
+
+@patch('logging.Logger.hasHandlers')
+def test_set_logger_formatter_new_handler(log_mock):
+    """Shared - Set Logger Formatter, New Handler"""
+    logger = logging.getLogger('test')  # non-root logger
+
+    # Hack because nosetests uses a `MyMemoryHandler` that is attached to loggers
+    log_mock.return_value = False
+
+    # Set the formatter on the logger that does not have any existing handlers
+    set_formatter(logger)
+
+    assert_is_instance(logger.handlers[0].formatter, LogFormatter)
