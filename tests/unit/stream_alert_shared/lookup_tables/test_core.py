@@ -25,7 +25,7 @@ from stream_alert.shared.lookup_tables.core import LookupTables
 from tests.unit.helpers.aws_mocks import put_mock_s3_object, put_mock_dynamod_data
 
 
-class TestLookupTablesCore(object):
+class TestLookupTablesCore:
     """
     Tests LookupTablesCore
     """

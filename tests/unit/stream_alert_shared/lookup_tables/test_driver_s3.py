@@ -28,7 +28,7 @@ from stream_alert.shared.lookup_tables.errors import LookupTablesInitializationE
 from tests.unit.helpers.aws_mocks import put_mock_s3_object
 
 
-class TestS3Driver(object):
+class TestS3Driver:
     """
     Tests the S3Driver
 

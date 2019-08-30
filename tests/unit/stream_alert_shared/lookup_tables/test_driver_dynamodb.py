@@ -26,7 +26,7 @@ from stream_alert.shared.lookup_tables.errors import LookupTablesInitializationE
 from tests.unit.helpers.aws_mocks import put_mock_dynamod_data
 
 
-class TestDynamoDBDriver(object):
+class TestDynamoDBDriver:
     """
     Tests the S3Driver
 
@@ -221,7 +221,7 @@ class TestDynamoDBDriver(object):
 
 
 # pylint: disable=protected-access,attribute-defined-outside-init,no-self-use,invalid-name
-class TestDynamoDBDriver_MultiTable(object):
+class TestDynamoDBDriver_MultiTable:
     """
     Tests the DynamoDB Driver, but it tests with a variety of drivers built over the same table,
     different columns.

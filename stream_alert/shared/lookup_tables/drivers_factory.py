@@ -19,13 +19,16 @@ def construct_persistence_driver(table_configuration):
 
     if driver_name == PersistenceDriver.TYPE_S3:
         return driver_s3.S3Driver(table_configuration)
-    elif driver_name == PersistenceDriver.TYPE_DYNAMODB:
+
+    if driver_name == PersistenceDriver.TYPE_DYNAMODB:
         return driver_dynamodb.DynamoDBDriver(table_configuration)
-    elif driver_name == PersistenceDriver.TYPE_NULL:
+
+    if driver_name == PersistenceDriver.TYPE_NULL:
         return NullDriver(table_configuration)
-    elif driver_name == PersistenceDriver.TYPE_EPHEMERAL:
+
+    if driver_name == PersistenceDriver.TYPE_EPHEMERAL:
         return EphemeralDriver(table_configuration)
-    else:
-        raise LookupTablesConfigurationError(
-            'Unrecognized driver name: {}'.format(driver_name)
-        )
+
+    raise LookupTablesConfigurationError(
+        'Unrecognized driver name: {}'.format(driver_name)
+    )

@@ -20,7 +20,7 @@ from nose.tools import assert_equal, assert_false, assert_true
 from stream_alert.shared.lookup_tables.cache import DriverCache
 
 
-class TestDriverCache(object):
+class TestDriverCache:
     """
     Tests the S3Driver
 

@@ -23,7 +23,7 @@ from stream_alert.shared.lookup_tables.drivers_factory import construct_persiste
 from stream_alert.shared.lookup_tables.errors import LookupTablesConfigurationError
 
 
-class TestEphemeralDriver(object):
+class TestEphemeralDriver:
     """Test shared EphemeralDriver"""
 
     # pylint: disable=no-self-use,protected-access,too-many-public-methods
@@ -60,7 +60,7 @@ class TestEphemeralDriver(object):
         assert_equal(self._driver.driver_type, 'ephemeral')
 
 
-class TestNullDriver(object):
+class TestNullDriver:
     """... purely for test coverage"""
 
     # pylint: disable=no-self-use,protected-access,too-many-public-methods
