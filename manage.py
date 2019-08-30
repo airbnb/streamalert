@@ -37,14 +37,8 @@ def build_parser():
     # Map of top-level commands and their setup functions/description
     # New top-level commands should be added to this dictionary
     commands = {
-        'create-alarm': (
-            _setup_metric_alarm_subparser,
-            'Add a global CloudWatch alarm for predefined metrics for a given function'
-        ),
-        'create-cluster-alarm': (
-            _setup_cluster_metric_alarm_subparser,
-            'Add a CloudWatch alarm for predefined metrics for a given cluster/function'
-        ),
+
+
         'custom-metrics': (
             _setup_custom_metrics_subparser,
             'Enable or disable custom metrics for the lambda functions'

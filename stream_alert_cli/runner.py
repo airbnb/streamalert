@@ -20,6 +20,9 @@ from stream_alert_cli.athena.handler import AthenaCommand
 from stream_alert_cli.config import CLIConfig
 from stream_alert_cli.configure.handler import ConfigureCommand
 from stream_alert_cli.logger import set_logger_levels
+from stream_alert_cli.metrics_alarms.handler import CreateMetricAlarmCommand, \
+    CreateClusterMetricAlarmCommand
+from stream_alert_cli.terraform.handlers import TerraformCleanCommand, TerraformBuildCommand
 from stream_alert_cli.utils import CliCommand
 
 LOGGER = get_logger(__name__)
@@ -194,8 +197,8 @@ class StreamAlertCliCommandRepository:
             'build': TerraformBuildCommand,
             'clean': TerraformCleanCommand,
             'configure': ConfigureCommand,
-            'create-alarm': MetricAlarmCommand,
-            'create-cluster-alarm': MetricAlarmCommand,
+            'create-alarm': CreateMetricAlarmCommand,
+            'create-cluster-alarm': CreateClusterMetricAlarmCommand,
             'custom-metrics': CustomMetricsCommand,
             'deploy': DeployCommand,
             'destroy': TerraformDestroyCommand,
