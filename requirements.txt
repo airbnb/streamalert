@@ -114,7 +114,6 @@ typed-ast==1.4.0
 typing==3.6.6
 uritemplate==3.0.0
 urllib3==1.25.3
-ushlex==0.99.1
 validators==0.13.0
 wcwidth==0.1.7
 websocket-client==0.56.0
