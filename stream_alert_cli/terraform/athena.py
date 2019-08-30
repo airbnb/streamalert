@@ -90,7 +90,7 @@ def generate_athena(config):
     filter_pattern_idx, filter_value_idx = 0, 1
 
     # Add filters for the cluster and aggregate
-    # Use a list of strings that represnt the following comma separated values:
+    # Use a list of strings that represent the following comma separated values:
     #   <filter_name>,<filter_pattern>,<value>
     filters = ['{},{},{}'.format('{}-{}'.format(metric_prefix, metric),
                                  settings[filter_pattern_idx],

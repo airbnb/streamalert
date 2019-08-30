@@ -340,7 +340,7 @@ class AppIntegration(object):
 
     @_report_time
     def _gather(self):
-        """Protected entry point to peform the gather that returns the time the process took
+        """Protected entry point to perform the gather that returns the time the process took
 
         Returns:
             float: time, in seconds, for which the function ran
