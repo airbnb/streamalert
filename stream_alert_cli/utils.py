@@ -250,61 +250,6 @@ def _setup_output_subparser(subparser):
 
 
 
-def _setup_custom_metrics_subparser(subparser):
-    """Add the metrics subparser: manage.py custom-metrics [options]"""
-    _set_parser_epilog(
-        subparser,
-        epilog=(
-            '''\
-            Example:
-
-                manage.py custom-metrics --enable --functions rule
-            '''
-        )
-    )
-
-    available_metrics = metrics.MetricLogger.get_available_metrics()
-    available_functions = [func for func, value in available_metrics.items() if value]
-
-    # allow the user to select 1 or more functions to enable metrics for
-    subparser.add_argument(
-        '-f',
-        '--functions',
-        choices=available_functions,
-        metavar='FUNCTION',
-        help='One or more of the following functions for which to enable metrics: {}'.format(
-            ', '.join(available_functions)
-        ),
-        nargs='+',
-        required=True
-    )
-
-    # get the metric toggle value
-    toggle_group = subparser.add_mutually_exclusive_group(required=True)
-
-    toggle_group.add_argument(
-        '-e',
-        '--enable',
-        dest='enable_custom_metrics',
-        help='Enable custom CloudWatch metrics',
-        action='store_true'
-    )
-
-    toggle_group.add_argument(
-        '-d',
-        '--disable',
-        dest='enable_custom_metrics',
-        help='Disable custom CloudWatch metrics',
-        action='store_false'
-    )
-
-    # Add the option to specify cluster(s)
-    add_clusters_arg(subparser)
-
-
-
-
-
 
 def _setup_deploy_subparser(subparser):
     """Add the deploy subparser: manage.py deploy [options]"""

@@ -56,22 +56,6 @@ def cli_runner(args):
 
 
 
-def _custom_metrics_handler(options, config):
-    """Enable or disable logging CloudWatch metrics
-
-    Args:
-        options (argparse.Namespace): Contains boolean necessary for toggling metrics
-
-    Returns:
-        bool: False if errors occurred, True otherwise
-    """
-    config.toggle_metrics(
-        *options.functions,
-        enabled=options.enable_custom_metrics,
-        clusters=options.clusters
-    )
-
-    return True
 
 
 def _status_handler(config):

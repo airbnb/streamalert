@@ -41,7 +41,7 @@ def build_parser():
 
         'custom-metrics': (
             _setup_custom_metrics_subparser,
-            'Enable or disable custom metrics for the lambda functions'
+
         ),
         'deploy': (
             _setup_deploy_subparser,
