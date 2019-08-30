@@ -123,9 +123,8 @@ class S3Driver(PersistenceDriver):
 
         If it needs a reload, this method will appropriately call reload.
         """
-        if (
-            self._cache.has(self._MAGIC_CACHE_TTL_KEY) and self._cache.get(self._MAGIC_CACHE_TTL_KEY)
-        ):
+        if self._cache.has(self._MAGIC_CACHE_TTL_KEY) and \
+                self._cache.get(self._MAGIC_CACHE_TTL_KEY):
             LOGGER.debug(
                 'LookupTable (%s): Does not need refresh. TTL: %s',
                 self.id,

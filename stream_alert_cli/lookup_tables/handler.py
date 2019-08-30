@@ -136,10 +136,6 @@ class LookupTablesCommand(CliCommand):
             LOGGER.info(' Driver Type: %s\n', table.driver_type)
 
     @staticmethod
-    def _show_keys_handler(options, config):
-        LOGGER.info('==== LookupTables; Show Keys ====\n')
-
-    @staticmethod
     def _get_handler(options, config):
         """
 
