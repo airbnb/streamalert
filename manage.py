@@ -39,19 +39,12 @@ def build_parser():
     commands = {
 
 
-        'generate': (
-            None,
-            'Generate Terraform files from JSON cluster files'
-        ),
 
         'kinesis': (
             _setup_kinesis_subparser,
             'Update AWS Kinesis settings and run Terraform to apply changes'
         ),
-        'list-targets': (
-            None,
-            'List available Terraform modules to be used for targeted builds'
-        ),
+
         'output': (
             _setup_output_subparser,
             'Create a new StreamAlert output'

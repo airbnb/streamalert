@@ -47,6 +47,7 @@ from stream_alert_cli.terraform.classifier import generate_classifier
 from stream_alert_cli.terraform.rules_engine import generate_rules_engine
 from stream_alert_cli.terraform.s3_events import generate_s3_events
 from stream_alert_cli.terraform.threat_intel_downloader import generate_threat_intel_downloader
+from stream_alert_cli.utils import CliCommand
 
 RESTRICTED_CLUSTER_NAMES = ('main', 'athena')
 TERRAFORM_VERSIONS = {'application': '~> 0.11.7', 'provider': {'aws': '~> 1.51.0'}}
@@ -352,6 +353,18 @@ def cleanup_old_tf_files(config):
             # Allow to retain misc files in the terraform/ directory
             if terraform_file.split('.')[0] in files_for_removal:
                 os.remove(os.path.join('terraform', terraform_file))
+
+
+class TerraformGenerateCommand(CliCommand):
+    description = 'Generate Terraform files from JSON cluster files'
+
+    @classmethod
+    def setup_subparser(cls, subparser):
+        """Manage.py generate takes no arguments"""
+
+    @classmethod
+    def handler(cls, options, config):
+        return terraform_generate_handler(config, check_creds=False)
 
 
 def terraform_generate_handler(config, init=False, check_tf=True, check_creds=True):

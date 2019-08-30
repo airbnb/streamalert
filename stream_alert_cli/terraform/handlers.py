@@ -276,6 +276,41 @@ class TerraformCleanCommand(CliCommand):
         return True
 
 
+class TerraformListTargetsCommand(CliCommand):
+    description = 'List available Terraform modules to be used for targeted builds'
+
+    @classmethod
+    def setup_subparser(cls, subparser):
+        """Manage.py list-targets does not take any arguments"""
+
+    @classmethod
+    def handler(cls, options, config):
+        """Print the available terraform targets
+
+        Args:
+            config (CLIConfig): Loaded StreamAlert config
+
+        Returns:
+            bool: False if errors occurred, True otherwise
+        """
+        modules = get_tf_modules(config, True)
+        if not modules:
+            return False
+
+        max_resource_len = max(len(value) for values in modules.values() for value in values) + 8
+
+        row_format_str = '{prefix:<{pad}}{value}'
+
+        header = row_format_str.format(prefix='Target', pad=max_resource_len, value='Type')
+        print(header)
+        print('-' * (len(header) + 4))
+        for value_type in sorted(modules):
+            for item in sorted(modules[value_type]):
+                print(row_format_str.format(prefix=item, pad=max_resource_len, value=value_type))
+
+        return True
+
+
 def _add_default_tf_args(tf_parser):
     """Add the default terraform parser options"""
     tf_parser.add_argument(
@@ -349,28 +384,3 @@ def get_tf_modules(config, generate=False):
     return {'module': modules, 'resource': resources}
 
 
-def terraform_list_targets(config):
-    """Print the available terraform targets
-
-    Args:
-        config (CLIConfig): Loaded StreamAlert config
-
-    Returns:
-        bool: False if errors occurred, True otherwise
-    """
-    modules = get_tf_modules(config, True)
-    if not modules:
-        return False
-
-    max_resource_len = max(len(value) for values in modules.values() for value in values) + 8
-
-    row_format_str = '{prefix:<{pad}}{value}'
-
-    header = row_format_str.format(prefix='Target', pad=max_resource_len, value='Type')
-    print(header)
-    print('-' * (len(header) + 4))
-    for value_type in sorted(modules):
-        for item in sorted(modules[value_type]):
-            print(row_format_str.format(prefix=item, pad=max_resource_len, value=value_type))
-
-    return True
