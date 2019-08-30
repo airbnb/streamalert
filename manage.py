@@ -27,7 +27,8 @@ from argparse import ArgumentParser, RawDescriptionHelpFormatter
 import sys
 
 from stream_alert import __version__ as version
-from stream_alert_cli.runner import cli_runner
+from stream_alert_cli.runner import cli_runner, StreamAlertCliCommandRepository
+from stream_alert_cli.utils import generate_subparser
 
 
 def build_parser():
@@ -35,26 +36,7 @@ def build_parser():
 
     # Map of top-level commands and their setup functions/description
     # New top-level commands should be added to this dictionary
-    commands = {
-
-
-        'status': (
-            None,
-
-        ),
-        'test': (
-            _setup_test_subparser,
-            'Perform various integration/functional tests'
-        ),
-        'threat-intel': (
-            _setup_threat_intel_subparser,
-            'Enable/disable and configure the StreamAlert Threat Intelligence feature'
-        ),
-        'threat-intel-downloader': (
-            _setup_threat_intel_downloader_subparser,
-            'Configure and update the threat intel downloader'
-        )
-    }
+    commands = StreamAlertCliCommandRepository.command_parsers()
 
     description_template = """
 StreamAlert v{}
@@ -95,7 +77,7 @@ For additional help with any command above, try:
     command_col_size = max([len(command) for command in commands]) + 10
     for command in sorted(commands):
         setup_subparser_func, description = commands[command]
-        subparser = _generate_subparser(subparsers, command, description=description)
+        subparser = generate_subparser(subparsers, command, description=description)
 
         # If there are additional arguments to set for this command, call its setup function
         if setup_subparser_func:

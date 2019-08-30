@@ -22,12 +22,17 @@ from stream_alert_cli.configure.handler import ConfigureCommand
 from stream_alert_cli.kinesis.handler import KinesisCommand
 from stream_alert_cli.logger import set_logger_levels
 from stream_alert_cli.manage_lambda.deploy import DeployCommand
+from stream_alert_cli.manage_lambda.rollback import RollbackCommand
 from stream_alert_cli.metrics_alarms.handler import CreateMetricAlarmCommand, \
     CreateClusterMetricAlarmCommand, CustomMetricsCommand
+from stream_alert_cli.outputs.handler import OutputCommand
+from stream_alert_cli.rule_table import RuleStagingCommand
 from stream_alert_cli.status.handler import StatusCommand
 from stream_alert_cli.terraform.generate import TerraformGenerateCommand
 from stream_alert_cli.terraform.handlers import TerraformCleanCommand, TerraformBuildCommand, \
     TerraformDestroyCommand, TerraformInitCommand, TerraformListTargetsCommand
+from stream_alert_cli.test.handler import TestCommand
+from stream_alert_cli.threat_intel.handler import ThreatIntelCommand
 from stream_alert_cli.utils import CliCommand
 
 LOGGER = get_logger(__name__)
@@ -56,28 +61,6 @@ def cli_runner(args):
     result = cmds[args.command](args)
     LOGGER.info('Completed')
     return result
-
-
-
-
-
-
-
-
-
-
-def _threat_intel_handler(options, config):
-    """Configure Threat Intel from command line
-
-    Args:
-        options (argparse.Namespace): The parsed args passed from the CLI
-        config (CLIConfig): Loaded StreamAlert config
-
-    Returns:
-        bool: False if errors occurred, True otherwise
-    """
-    config.add_threat_intel(vars(options))
-    return True
 
 
 class StreamAlertCliCommandRepository:
