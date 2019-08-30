@@ -96,7 +96,7 @@ class DynamoDBDriver(PersistenceDriver):
             raise LookupTablesInitializationError(message)
 
     def commit(self):
-        for key, value in self._dirty_rows.iteritems():
+        for key, value in self._dirty_rows.items():
             key_schema = self._convert_key_to_key_schema(key)
 
             if LOGGER_DEBUG_ENABLED:
