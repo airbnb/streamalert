@@ -242,7 +242,7 @@ class DynamoDBDriver(PersistenceDriver):
                 self._dynamo_db_partition_key: components[0],
                 self._dynamo_db_sort_key: components[1],
             }
-        else:
-            return {
-                self._dynamo_db_partition_key: key,
-            }
+
+        return {
+            self._dynamo_db_partition_key: key,
+        }

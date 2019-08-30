@@ -162,7 +162,7 @@ class S3Driver(PersistenceDriver):
         LOGGER.info('LookupTable (%s): Successfully loaded', self.id)
 
 
-class Compression(object):
+class Compression:
 
     @staticmethod
     def gz_decompress(driver, data):
@@ -174,7 +174,7 @@ class Compression(object):
                 sys.getsizeof(data)
             )
         except zlib.error:
-            LOGGER.warn(
+            LOGGER.warning(
                 'LookupTable (%s): Data is not compressed; defaulting to original payload',
                 driver.id
             )
@@ -196,7 +196,7 @@ class Compression(object):
             LOGGER.exception('LookupTable (%s): Data compression error.', driver.id)
 
 
-class Encoding(object):
+class Encoding:
     """
     Encapsulation of encoding algorithms for S3 data.
 
@@ -228,7 +228,7 @@ class Encoding(object):
             )
 
 
-class S3Adapter(object):
+class S3Adapter:
     """Adapter class that manages uploading data to and downloading data from AWS S3"""
 
     def __init__(self, driver, boto_s3_client, s3_bucket, s3_key):

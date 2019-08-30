@@ -115,12 +115,14 @@ class LookupTablesCommand(CliCommand):
         subcommand = options.subcommand
         if subcommand == 'describe-tables':
             return cls._describe_tables_handler(config)
-        elif subcommand == 'get':
+
+        if subcommand == 'get':
             return cls._get_handler(options, config)
-        elif subcommand == 'set':
+
+        if subcommand == 'set':
             return cls._set_handler(options, config)
-        else:
-            LOGGER.error('Unhandled lookup-tables subcommand %s', subcommand)
+
+        LOGGER.error('Unhandled lookup-tables subcommand %s', subcommand)
 
     # pylint: disable=protected-access
     @staticmethod
