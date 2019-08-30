@@ -45,7 +45,7 @@ def generate_cloudtrail(cluster_name, cluster_dict, config):
         set([config['global']['account']['aws_account_id']] + modules['cloudtrail'].get(
             'cross_account_ids', [])))
 
-    # Allow for backwards compatilibity
+    # Allow for backwards compatibility
     if enabled_legacy:
         del config['clusters'][cluster_name]['modules']['cloudtrail']['enabled']
         config['clusters'][cluster_name]['modules']['cloudtrail']['enable_logging'] = True

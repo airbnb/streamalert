@@ -13,7 +13,7 @@ The Athena Partition Refresh function utilizes:
 * `AWS S3 Event Notifications <http://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html>`_
 * `AWS SQS <https://aws.amazon.com/sqs/details/>`_
 * `AWS Lambda Invocations by Schedule <http://docs.aws.amazon.com/lambda/latest/dg/tutorial-scheduled-events-schedule-expressions.html>`_
-* `AWS Athena Repair Table <http://docs.aws.amazon.com/athena/latest/ug/ddl/msck-repair-table.html>`_
+* `AWS Athena Repair Table <https://docs.aws.amazon.com/athena/latest/ug/msck-repair-table.html>`_
 
 Diagram
 ~~~~~~~

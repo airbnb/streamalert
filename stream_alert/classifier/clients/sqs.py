@@ -104,7 +104,7 @@ class SQSClient(object):
             response (string|bool): MessageId or False if this request failed
             count (int): The size of the batch being sent to be logged as successful or failed
         """
-        if not response:  # Could happen in the case of backoff failing enitrely
+        if not response:  # Could happen in the case of backoff failing entirely
             MetricLogger.log_metric(FUNCTION_NAME, MetricLogger.SQS_FAILED_RECORDS, count)
             return
 

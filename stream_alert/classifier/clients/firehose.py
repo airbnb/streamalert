@@ -193,7 +193,7 @@ class FirehoseClient(object):
             size (int): The original size of the batch being sent
         """
         if not response:
-            return  # Could happen in the case of backoff failing enitrely
+            return  # Could happen in the case of backoff failing entirely
 
         # Check for failures that occurred in PutRecordBatch after several backoff attempts
         if response.get('FailedPutCount'):
@@ -281,13 +281,13 @@ class FirehoseClient(object):
 
     @classmethod
     def firehose_log_name(cls, log_name):
-        """Convert conventional log names into Firehose delievery stream names
+        """Convert conventional log names into Firehose delivery stream names
 
         Args:
             log_name: The name of the log from logs.json
 
         Returns
-            str: Converted name which corresponds to a Firehose Delievery Stream
+            str: Converted name which corresponds to a Firehose delivery Stream
         """
         return re.sub(cls.SPECIAL_CHAR_REGEX, cls.SPECIAL_CHAR_SUB, log_name)
 
