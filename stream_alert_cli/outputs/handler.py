@@ -20,63 +20,83 @@ from stream_alert.alert_processor.outputs.output_base import (
 )
 from stream_alert_cli.helpers import user_input
 from stream_alert_cli.outputs.helpers import output_exists
+from stream_alert_cli.utils import CliCommand
 
 LOGGER = get_logger(__name__)
 
 
-def output_handler(options, config):
-    """Configure a new output for this service
+class OutputCommand(CliCommand):
+    description = 'Create a new StreamAlert output'
 
-    Args:
-        options (argparse.Namespace): Basically a namedtuple with the service setting
+    @classmethod
+    def setup_subparser(cls, subparser):
+        """Add the output subparser: manage.py output SERVICE"""
+        outputs = sorted(StreamAlertOutput.get_all_outputs().keys())
 
-    Returns:
-        bool: False if errors occurred, True otherwise
-    """
-    account_config = config['global']['account']
-    region = account_config['region']
-    prefix = account_config['prefix']
-    kms_key_alias = account_config['kms_key_alias']
-    # Verify that the word alias is not in the config.
-    # It is interpolated when the API call is made.
-    if 'alias/' in kms_key_alias:
-        kms_key_alias = kms_key_alias.split('/')[1]
+        # Output parser arguments
+        subparser.add_argument(
+            'service',
+            choices=outputs,
+            metavar='SERVICE',
+            help='Create a new StreamAlert output for one of the available services: {}'.format(
+                ', '.join(outputs)
+            )
+        )
 
-    # Retrieve the proper service class to handle dispatching the alerts of this services
-    output = StreamAlertOutput.get_dispatcher(options.service)
+    @classmethod
+    def handler(cls, options, config):
+        """Configure a new output for this service
 
-    # If an output for this service has not been defined, the error is logged
-    # prior to this
-    if not output:
-        return False
+        Args:
+            options (argparse.Namespace): Basically a namedtuple with the service setting
 
-    # get dictionary of OutputProperty items to be used for user prompting
-    props = output.get_user_defined_properties()
+        Returns:
+            bool: False if errors occurred, True otherwise
+        """
+        account_config = config['global']['account']
+        region = account_config['region']
+        prefix = account_config['prefix']
+        kms_key_alias = account_config['kms_key_alias']
+        # Verify that the word alias is not in the config.
+        # It is interpolated when the API call is made.
+        if 'alias/' in kms_key_alias:
+            kms_key_alias = kms_key_alias.split('/')[1]
 
-    for name, prop in props.items():
-        # pylint: disable=protected-access
-        props[name] = prop._replace(
-            value=user_input(prop.description, prop.mask_input, prop.input_restrictions))
+        # Retrieve the proper service class to handle dispatching the alerts of this services
+        output = StreamAlertOutput.get_dispatcher(options.service)
 
-    output_config = config['outputs']
-    service = output.__service__
+        # If an output for this service has not been defined, the error is logged
+        # prior to this
+        if not output:
+            return False
 
-    # If it exists already, ask for user input again for a unique configuration
-    if output_exists(output_config, props, service):
-        return output_handler(options, config)
+        # get dictionary of OutputProperty items to be used for user prompting
+        props = output.get_user_defined_properties()
 
-    provider = OutputCredentialsProvider(service, config=config, region=region, prefix=prefix)
-    result = provider.save_credentials(props['descriptor'].value, kms_key_alias, props)
-    if not result:
-        LOGGER.error('An error occurred while saving \'%s\' '
-                     'output configuration for service \'%s\'', props['descriptor'].value,
-                     options.service)
-        return False
+        for name, prop in props.items():
+            # pylint: disable=protected-access
+            props[name] = prop._replace(
+                value=user_input(prop.description, prop.mask_input, prop.input_restrictions))
 
-    updated_config = output.format_output_config(output_config, props)
-    output_config[service] = updated_config
-    config.write()
+        output_config = config['outputs']
+        service = output.__service__
 
-    LOGGER.info('Successfully saved \'%s\' output configuration for service \'%s\'',
-                props['descriptor'].value, options.service)
-    return True
+        # If it exists already, ask for user input again for a unique configuration
+        if output_exists(output_config, props, service):
+            return cls.handler(options, config)
+
+        provider = OutputCredentialsProvider(service, config=config, region=region, prefix=prefix)
+        result = provider.save_credentials(props['descriptor'].value, kms_key_alias, props)
+        if not result:
+            LOGGER.error('An error occurred while saving \'%s\' '
+                         'output configuration for service \'%s\'', props['descriptor'].value,
+                         options.service)
+            return False
+
+        updated_config = output.format_output_config(output_config, props)
+        output_config[service] = updated_config
+        config.write()
+
+        LOGGER.info('Successfully saved \'%s\' output configuration for service \'%s\'',
+                    props['descriptor'].value, options.service)
+        return True

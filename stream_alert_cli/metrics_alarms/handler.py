@@ -114,7 +114,7 @@ class CreateClusterMetricAlarmCommand(CliCommand):
         return _create_alarm_handler(options, config)
 
 
-class CreateMetricsCommand(CliCommand):
+class CustomMetricsCommand(CliCommand):
     description = 'Enable or disable custom metrics for the lambda functions'
 
     @classmethod

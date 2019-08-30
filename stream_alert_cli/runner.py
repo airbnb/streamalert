@@ -19,10 +19,15 @@ from stream_alert_cli.apps.handler import AppCommand
 from stream_alert_cli.athena.handler import AthenaCommand
 from stream_alert_cli.config import CLIConfig
 from stream_alert_cli.configure.handler import ConfigureCommand
+from stream_alert_cli.kinesis.handler import KinesisCommand
 from stream_alert_cli.logger import set_logger_levels
+from stream_alert_cli.manage_lambda.deploy import DeployCommand
 from stream_alert_cli.metrics_alarms.handler import CreateMetricAlarmCommand, \
-    CreateClusterMetricAlarmCommand
-from stream_alert_cli.terraform.handlers import TerraformCleanCommand, TerraformBuildCommand
+    CreateClusterMetricAlarmCommand, CustomMetricsCommand
+from stream_alert_cli.status.handler import StatusCommand
+from stream_alert_cli.terraform.generate import TerraformGenerateCommand
+from stream_alert_cli.terraform.handlers import TerraformCleanCommand, TerraformBuildCommand, \
+    TerraformDestroyCommand, TerraformInitCommand, TerraformListTargetsCommand
 from stream_alert_cli.utils import CliCommand
 
 LOGGER = get_logger(__name__)

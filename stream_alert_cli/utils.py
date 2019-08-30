@@ -227,19 +227,6 @@ def generate_subparser(parser, name, description=None, subcommand=False):
     return subparser
 
 
-def _setup_output_subparser(subparser):
-    """Add the output subparser: manage.py output SERVICE"""
-    outputs = sorted(StreamAlertOutput.get_all_outputs().keys())
-
-    # Output parser arguments
-    subparser.add_argument(
-        'service',
-        choices=outputs,
-        metavar='SERVICE',
-        help='Create a new StreamAlert output for one of the available services: {}'.format(
-            ', '.join(outputs)
-        )
-    )
 
 
 
@@ -249,25 +236,6 @@ def _setup_output_subparser(subparser):
 
 
 
-
-
-
-
-
-def _setup_rollback_subparser(subparser):
-    """Add the rollback subparser: manage.py rollback [options]"""
-    set_parser_epilog(
-        subparser,
-        epilog=(
-            '''\
-            Example:
-
-                manage.py rollback --function rule
-            '''
-        )
-    )
-
-    add_default_lambda_args(subparser)
 
 
 def _setup_test_subparser(subparser):

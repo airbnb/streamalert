@@ -38,19 +38,9 @@ def build_parser():
     commands = {
 
 
-
-        'kinesis': (
-            _setup_kinesis_subparser,
-            'Update AWS Kinesis settings and run Terraform to apply changes'
-        ),
-
-        'output': (
-            _setup_output_subparser,
-            'Create a new StreamAlert output'
-        ),
         'rollback': (
             _setup_rollback_subparser,
-            'Rollback the specified AWS Lambda function(s)'
+
         ),
         'rule-staging': (
             _setup_rule_staging_subparser,
