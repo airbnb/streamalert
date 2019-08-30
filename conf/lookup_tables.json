@@ -16,6 +16,13 @@
       "cache_maximum_key_count": 3,
       "cache_refresh_minutes": 3,
       "consistent_read": false
+    },
+    "dragonite": {
+      "driver": "s3",
+      "bucket": "ryxias-test-lookuptables",
+      "key": "file.json",
+      "compression": false,
+      "cache_refresh_minutes": 10
     }
   }
 }

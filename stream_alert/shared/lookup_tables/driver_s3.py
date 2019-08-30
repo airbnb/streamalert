@@ -229,8 +229,7 @@ class S3Adapter(object):
 
     def upload(self, data):
         try:
-            self._s3_client.put_object(
-                Bucket=self._s3_bucket,
+            self._s3_client.Bucket(self._s3_bucket).put_object(
                 Key=self._s3_key,
                 Body=data
             )
