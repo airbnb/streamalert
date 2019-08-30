@@ -32,6 +32,7 @@ from stream_alert_cli.terraform.handlers import TerraformCleanCommand, Terraform
     TerraformDestroyCommand, TerraformInitCommand, TerraformListTargetsCommand
 from stream_alert_cli.test.handler import TestCommand
 from stream_alert_cli.threat_intel.handler import ThreatIntelCommand
+from stream_alert_cli.threat_intel_downloader.handler import ThreatIntelDownloaderCommand
 from stream_alert_cli.utils import CliCommand
 
 LOGGER = get_logger(__name__)
@@ -94,7 +95,7 @@ class StreamAlertCliCommandRepository:
             'init': TerraformInitCommand,
             'kinesis': KinesisCommand,
             'list-targets': TerraformListTargetsCommand,
-            'lookup-tables': LookupTablesCommand,
+            # 'lookup-tables': LookupTablesCommand,
             'output': OutputCommand,
             'rollback': RollbackCommand,
             'rule-staging': RuleStagingCommand,
@@ -104,7 +105,7 @@ class StreamAlertCliCommandRepository:
             'threat-intel-downloader': ThreatIntelDownloaderCommand,
         }
 
-        for command, cli_command in cmds.iteritems():
+        for command, cli_command in cmds.items():
             cls.register(command, cli_command)
 
     @classmethod
@@ -114,7 +115,7 @@ class StreamAlertCliCommandRepository:
         """
         return {
             command: lambda opts, cmd=cli_command: cmd.handler(opts, config)
-            for command, cli_command in cls.COMMANDS.iteritems()
+            for command, cli_command in cls.COMMANDS.items()
         }
 
     @classmethod
@@ -126,7 +127,7 @@ class StreamAlertCliCommandRepository:
         """
         return {
             command: (cli_command.setup_subparser, cli_command.description)
-            for command, cli_command in cls.COMMANDS.iteritems()
+            for command, cli_command in cls.COMMANDS.items()
         }
 
 
