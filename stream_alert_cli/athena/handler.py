@@ -97,7 +97,11 @@ class AthenaCommand(CliCommand):
 
     @classmethod
     def _setup_athena_rebuild_subparser(cls, subparsers):
-        """Add the athena rebuild-partitions subparser: manage.py athena rebuild-partitions [options]"""
+        """
+        Add the athena rebuild-partitions subparser:
+
+        $ manage.py athena rebuild-partitions [options]
+        """
         athena_rebuild_parser = generate_subparser(
             subparsers,
             'rebuild-partitions',
@@ -141,7 +145,10 @@ class AthenaCommand(CliCommand):
 
         athena_parser.add_argument(
             '-t', '--table-name',
-            help='Name of the Athena table to create. This must be a type of log defined in logs.json',
+            help=(
+                'Name of the Athena table to create. '
+                'This must be a type of log defined in logs.json'
+            ),
             required=True
         )
 

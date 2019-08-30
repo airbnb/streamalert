@@ -36,7 +36,7 @@ CLUSTERS = [
 ]
 
 
-class CliCommand(object):
+class CliCommand:
     """
     An abstract class that encapsulates the logic of a single manage.py CLI command.
     """

@@ -116,7 +116,9 @@ class TestCommand(CliCommand):
         test_live_parser = generate_subparser(
             subparsers,
             'live',
-            description='Run end-to-end tests that will attempt to send alerts to each rule\'s outputs',
+            description=(
+                'Run end-to-end tests that will attempt to send alerts to each rule\'s outputs'
+            ),
             subcommand=True
         )
 
