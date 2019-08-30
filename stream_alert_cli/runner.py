@@ -15,25 +15,10 @@ limitations under the License.
 """
 from stream_alert.shared import CLUSTERED_FUNCTIONS
 from stream_alert.shared.logger import get_logger
-from stream_alert_cli.apps.handler import app_handler
-from stream_alert_cli.athena.handler import athena_handler
+from stream_alert_cli.apps.handler import AppCommand
 from stream_alert_cli.config import CLIConfig
-from stream_alert_cli.kinesis.handler import kinesis_handler
 from stream_alert_cli.logger import set_logger_levels
-from stream_alert_cli.manage_lambda.deploy import deploy_handler
-from stream_alert_cli.manage_lambda.rollback import rollback_handler
-from stream_alert_cli.outputs.handler import output_handler
-from stream_alert_cli.rule_table import rule_staging_handler
-from stream_alert_cli.terraform.generate import terraform_generate_handler
-from stream_alert_cli.terraform.handlers import (
-    terraform_build_handler,
-    terraform_clean_handler,
-    terraform_destroy_handler,
-    terraform_init,
-    terraform_list_targets
-)
-from stream_alert_cli.test.handler import test_handler
-from stream_alert_cli.threat_intel_downloader.handler import threat_intel_downloader_handler
+from stream_alert_cli.utils import CliCommand
 
 LOGGER = get_logger(__name__)
 
@@ -56,49 +41,14 @@ def cli_runner(args):
 
     LOGGER.info('Issues? Report here: https://github.com/airbnb/streamalert/issues')
 
-    cmds = {
-        'app': lambda opts: app_handler(opts, config),
-        'athena': lambda opts: athena_handler(opts, config),
-        'build': lambda opts: terraform_build_handler(opts, config),
-        'clean': lambda opts: terraform_clean_handler(),
-        'configure': lambda opts: configure_handler(opts, config),
-        'create-alarm': lambda opts: _create_alarm_handler(opts, config),
-        'create-cluster-alarm': lambda opts: _create_alarm_handler(opts, config),
-        'custom-metrics': lambda opts: _custom_metrics_handler(opts, config),
-        'deploy': lambda opts: deploy_handler(opts, config),
-        'destroy': lambda opts: terraform_destroy_handler(opts, config),
-        'generate': lambda opts: terraform_generate_handler(config, check_creds=False),
-        'init': lambda opts: terraform_init(opts, config),
-        'kinesis': lambda opts: kinesis_handler(opts, config),
-        'list-targets': lambda opts: terraform_list_targets(config),
-        'output': lambda opts: output_handler(opts, config),
-        'rollback': lambda opts: rollback_handler(opts, config),
-        'rule-staging': lambda opts: rule_staging_handler(opts, config),
-        'status': lambda opts: _status_handler(config),
-        'test': lambda opts: test_handler(opts, config),
-        'threat-intel': lambda opts: _threat_intel_handler(opts, config),
-        'threat-intel-downloader': lambda opts: threat_intel_downloader_handler(opts, config),
-    }
+    cmds = StreamAlertCliCommandRepository.command_handlers(config)
 
     result = cmds[args.command](args)
     LOGGER.info('Completed')
     return result
 
 
-def configure_handler(options, config):
-    """Configure StreamAlert main settings
 
-    Args:
-        options (argparse.Namespace): ArgParse command result
-
-    Returns:
-        bool: False if errors occurred, True otherwise
-    """
-    if options.key == 'prefix':
-        return config.set_prefix(options.value)
-
-    if options.key == 'aws_account_id':
-        return config.set_aws_account_id(options.value)
 
 
 def _custom_metrics_handler(options, config):
@@ -217,3 +167,74 @@ def _threat_intel_handler(options, config):
     """
     config.add_threat_intel(vars(options))
     return True
+
+
+class StreamAlertCliCommandRepository:
+    """
+    This repository class contains and manages all StreamAlert manage.py commands that are
+    configured on this repository.
+    """
+    COMMANDS = {}
+
+    @classmethod
+    def register(cls, command, cli_command):
+        if not issubclass(cli_command, CliCommand):
+            LOGGER.error('Invalid CLI Command in registry')
+            return False
+
+        cls.COMMANDS[command] = cli_command
+
+    @classmethod
+    def register_all(cls):
+        cmds = {
+            'app': AppCommand,
+            'athena': AthenaCommand,
+            'build': TerraformBuildCommand,
+            'clean': TerraformCleanCommand,
+            'configure': ConfigureCommand,
+            'create-alarm': MetricAlarmCommand,
+            'create-cluster-alarm': MetricAlarmCommand,
+            'custom-metrics': CustomMetricsCommand,
+            'deploy': DeployCommand,
+            'destroy': TerraformDestroyCommand,
+            'generate': TerraformGenerateCommand,
+            'init': TerraformInitCommand,
+            'kinesis': KinesisCommand,
+            'list-targets': TerraformListTargetsCommand,
+            'lookup-tables': LookupTablesCommand,
+            'output': OutputCommand,
+            'rollback': RollbackCommand,
+            'rule-staging': RuleStagingCommand,
+            'status': StatusCommand,
+            'test': TestCommand,
+            'threat-intel': ThreatIntelCommand,
+            'threat-intel-downloader': ThreatIntelDownloaderCommand,
+        }
+
+        for command, cli_command in cmds.iteritems():
+            cls.register(command, cli_command)
+
+    @classmethod
+    def command_handlers(cls, config):
+        """
+        Returns a dict of command strings mapped to their respective CliCommand classes.
+        """
+        return {
+            command: lambda opts, cmd=cli_command: cmd.handler(opts, config)
+            for command, cli_command in cls.COMMANDS.iteritems()
+        }
+
+    @classmethod
+    def command_parsers(cls):
+        """
+        Returns a dict of commands mapped to tuples. The first element of the tuple is the
+        CliCommand.setup_subparser function for that command. The second element is a string
+        description of that CliCommand.
+        """
+        return {
+            command: (cli_command.setup_subparser, cli_command.description)
+            for command, cli_command in cls.COMMANDS.iteritems()
+        }
+
+
+StreamAlertCliCommandRepository.register_all()
