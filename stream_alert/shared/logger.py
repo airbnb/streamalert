@@ -43,9 +43,11 @@ def set_formatter(logger):
     """
     # Update the LambdaLoggerHandler formatter
     if logger.hasHandlers():
-        formatter = LogFormatter()
         for handler in logger.handlers + logger.parent.handlers:
-            handler.setFormatter(formatter)
+            # pylint: disable=protected-access
+            # Retain the handlers format spec if it has one
+            fmt = handler.formatter._fmt if handler.formatter else None
+            handler.setFormatter(LogFormatter(fmt=fmt))
         return
 
     # Otherwise, create a handler with the desired formatter
