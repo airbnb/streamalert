@@ -1,5 +1,21 @@
 {
-  "enabled": false,
+  "enabled": true,
   "tables": {
+    "bar": {
+      "bucket": "bucket_name",
+      "cache_refresh_minutes": 10,
+      "compression": "gzip",
+      "driver": "s3",
+      "key": "bar.json"
+    },
+    "dinosaur": {
+      "driver": "dynamodb",
+      "table": "ryxias-test-dinosaur",
+      "partition_key": "pkey",
+      "value_key": "DinoValue",
+      "cache_maximum_key_count": 3,
+      "cache_refresh_minutes": 3,
+      "consistent_read": false
+    }
   }
 }

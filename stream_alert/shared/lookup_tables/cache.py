@@ -131,6 +131,9 @@ class DriverCache:
         for key in keyvalue_data.keys():
             self._ttls[key] = ttl
 
+    def getall(self):
+        return self._data
+
 
 class DriverCacheClock:
     """
