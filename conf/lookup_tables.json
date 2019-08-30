@@ -1,25 +1,18 @@
 {
-  "enabled": true,
+  "enabled": false,
   "tables": {
-    "bar": {
-      "bucket": "bucket_name",
-      "cache_refresh_minutes": 10,
-      "compression": "gzip",
-      "driver": "s3",
-      "key": "bar.json"
-    },
-    "dinosaur": {
+    "dynamo-backed-table": {
       "driver": "dynamodb",
-      "table": "ryxias-test-dinosaur",
-      "partition_key": "pkey",
-      "value_key": "DinoValue",
+      "table": "dynamodb-table-name",
+      "partition_key": "partition-key",
+      "value_key": "value-column",
       "cache_maximum_key_count": 3,
       "cache_refresh_minutes": 3,
       "consistent_read": false
     },
-    "dragonite": {
+    "s3-backed-table": {
       "driver": "s3",
-      "bucket": "ryxias-test-lookuptables",
+      "bucket": "s3-bucket-name",
       "key": "file.json",
       "compression": false,
       "cache_refresh_minutes": 10
