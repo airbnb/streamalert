@@ -22,7 +22,7 @@ from nose.tools import (
 from stream_alert.shared.lookup_tables.configuration import LookupTablesConfiguration
 
 
-class TestLookupTablesConfiguration(object):
+class TestLookupTablesConfiguration:
     """Test shared LookupTablesConfiguration class."""
 
     # pylint: disable=no-self-use,protected-access,too-many-public-methods

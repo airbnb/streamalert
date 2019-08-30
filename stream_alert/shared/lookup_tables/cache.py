@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 import random
 
 
-class DriverCache(object):
+class DriverCache:
     """
     A class that is responsible for caching objects in-memory.
 
@@ -128,11 +128,11 @@ class DriverCache(object):
         """
         self._data = keyvalue_data
         ttl = self._clock.utcnow() + timedelta(minutes=ttl_minutes)
-        for key in keyvalue_data.iterkeys():
+        for key in keyvalue_data.keys():
             self._ttls[key] = ttl
 
 
-class DriverCacheClock(object):
+class DriverCacheClock:
     """
     The DriverCacheClock is a convenient utility that is useful for manipulating time during tests.
     """

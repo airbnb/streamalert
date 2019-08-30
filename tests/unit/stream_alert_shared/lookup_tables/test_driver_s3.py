@@ -68,7 +68,7 @@ class TestS3Driver(object):
             zlib.compress(json.dumps({
                 'key_1': 'compressed_bar_1',
                 'key_2': 'compressed_bar_2',
-            }))
+            }).encode())
         )
 
     def teardown(self):
@@ -101,10 +101,10 @@ class TestS3Driver(object):
         mock_logger.assert_any_call(
             'LookupTable (%s): Object decompressed to %d byte payload',
             's3:bucket_name/bar.json',
-            95
+            ANY
         )
 
-    @patch('logging.Logger.warn')
+    @patch('logging.Logger.warning')
     def test_get_decompression_fallback(self, mock_logger):
         """LookupTables - Drivers - S3 Driver - Compressed Get - Compression Fallback"""
         put_mock_s3_object(

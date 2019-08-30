@@ -1,6 +1,7 @@
 from stream_alert.shared.config import load_config
 
-class LookupTablesConfiguration(object):
+
+class LookupTablesConfiguration:
     """
     An abstraction around lookup tables configuration. LookupTables can be configured in two places.
     """
@@ -26,7 +27,7 @@ class LookupTablesConfiguration(object):
     @property
     def table_names(self):
         """Returns a list of all of the table names that are configured"""
-        return self.table_configurations.keys()
+        return list(self.table_configurations.keys())
 
     def _load_canonical_configurations(self, config):
         """

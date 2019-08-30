@@ -77,7 +77,7 @@ class S3Driver(PersistenceDriver):
 
     def commit(self):
         if not self._dirty:
-            LOGGER.warn('LookupTable (%s): Empty commit; no records dirtied', self.id)
+            LOGGER.warning('LookupTable (%s): Empty commit; no records dirtied', self.id)
             return
 
         raise NotImplementedError('Help derek you screwed me')
@@ -169,7 +169,7 @@ class S3Driver(PersistenceDriver):
                     sys.getsizeof(data)
                 )
             except zlib.error:
-                LOGGER.warn(
+                LOGGER.warning(
                     'LookupTable (%s): Data is not compressed; defaulting to original payload',
                     self.id
                 )

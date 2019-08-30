@@ -3,7 +3,7 @@ from stream_alert.shared.logger import get_logger
 LOGGER = get_logger(__name__)
 
 
-class LookupTable(object):
+class LookupTable:
     """
     A single LookupTable instance.
 
@@ -12,8 +12,6 @@ class LookupTable(object):
     """
 
     def __init__(self, table_name, driver, table_configuration):
-        super(LookupTable, self).__init__()
-
         self._table_name = table_name
         self._table_configuration = table_configuration
         self._driver = driver  # type: PersistenceDriver

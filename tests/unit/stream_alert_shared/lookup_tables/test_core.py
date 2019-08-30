@@ -55,7 +55,7 @@ class TestLookupTablesCore(object):
             zlib.compress(json.dumps({
                 'key_1': 'compressed_bar_1',
                 'key_2': 'compressed_bar_2',
-            }))
+            }).encode())
         )
 
         # DynamoDB Mock data

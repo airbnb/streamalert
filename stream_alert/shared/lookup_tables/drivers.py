@@ -4,7 +4,7 @@ from stream_alert.shared.logger import get_logger
 LOGGER = get_logger(__name__)
 
 
-class PersistenceDriver(object):
+class PersistenceDriver:
 
     TYPE_S3 = 's3'
     TYPE_DYNAMODB = 'dynamodb'

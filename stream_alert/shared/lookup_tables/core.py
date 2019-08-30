@@ -8,7 +8,7 @@ from stream_alert.shared.lookup_tables.table import LookupTable
 LOGGER = get_logger(__name__)
 
 
-class LookupTables(object):
+class LookupTables:
     """
     A class primarily responsible for syntactic sugar + application singleton behavior that wraps
     the LookupTablesCore.
@@ -64,7 +64,7 @@ class LookupTables(object):
         return cls.get_instance().get(table_name, key, default)
 
 
-class LookupTablesCore(object):
+class LookupTablesCore:
     """
     The core component that manages LookupTables.
 
@@ -89,7 +89,7 @@ class LookupTablesCore(object):
             )
             return
 
-        for table_name, table_configuration in self._configuration.table_configurations.iteritems():
+        for table_name, table_configuration in self._configuration.table_configurations.items():
             driver = construct_persistence_driver(table_configuration)
             self._tables[table_name] = LookupTable(
                 table_name,
