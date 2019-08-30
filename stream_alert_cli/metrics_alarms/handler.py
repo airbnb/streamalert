@@ -349,6 +349,7 @@ def _add_default_metric_alarms_args(alarm_parser, clustered=False):
         default='Sum'
     )
 
+
 def _create_alarm_handler(options, config):
     """Create a new CloudWatch alarm for the given metric
 
