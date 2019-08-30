@@ -132,7 +132,7 @@ class LookupTablesCommand(CliCommand):
         lookup_tables = LookupTables.get_instance(config=config)
 
         LOGGER.info('%d Tables:\n', len(lookup_tables._tables))
-        for _, table in lookup_tables._tables.iteritems():
+        for _, table in lookup_tables._tables.items():
             LOGGER.info(' Table Name: %s', table.table_name)
             LOGGER.info(' Driver Id: %s', table.driver_id)
             LOGGER.info(' Driver Type: %s\n', table.driver_type)
