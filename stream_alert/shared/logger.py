@@ -45,7 +45,9 @@ def set_formatter(logger):
     if logger.hasHandlers():
         for handler in logger.handlers + logger.parent.handlers:
             # pylint: disable=protected-access
-            handler.setFormatter(LogFormatter(fmt=handler.formatter._fmt))
+            # Retain the handlers format spec if it has one
+            fmt = handler.formatter._fmt if handler.formatter else None
+            handler.setFormatter(LogFormatter(fmt=fmt))
         return
 
     # Otherwise, create a handler with the desired formatter
