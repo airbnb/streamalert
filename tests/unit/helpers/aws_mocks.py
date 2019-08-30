@@ -104,7 +104,7 @@ class MockAthenaClient:
         }
 
     def start_query_execution(self, **kwargs):
-        """Start an Athena Query Exectuion."""
+        """Start an Athena Query Execution."""
         if self.raise_exception:
             raise ClientError({'Error': {'Code': 10}}, 'InvalidRequestException')
         new_query_execution = self.get_start_query_execution(**kwargs)
@@ -116,7 +116,7 @@ class MockAthenaClient:
         }
 
     def get_query_execution(self, **kwargs):
-        """Get the status of an Athena Query Exectuion."""
+        """Get the status of an Athena Query Execution."""
         query_execution = self.query_executions.get(kwargs['QueryExecutionId'])
         query_execution['QueryExecution']['Status']['State'] = self.result_state
 
