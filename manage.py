@@ -30,7 +30,6 @@ from stream_alert import __version__ as version
 from stream_alert_cli.runner import cli_runner
 
 
-
 def build_parser():
     """Build the argument parser."""
 
@@ -59,7 +58,7 @@ def build_parser():
         ),
         'status': (
             None,
-            'Output information on currently configured infrastructure'
+
         ),
         'test': (
             _setup_test_subparser,

@@ -427,9 +427,6 @@ def add_default_lambda_args(lambda_parser):
 
 
 
-
-
-
 def _setup_kinesis_subparser(subparser):
     """Add kinesis subparser: manage.py kinesis [options]"""
     _set_parser_epilog(
