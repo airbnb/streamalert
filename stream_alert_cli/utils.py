@@ -25,19 +25,10 @@ terraform <cmd>
 """
 # pylint: disable=too-many-lines
 from abc import abstractmethod
-from argparse import Action, ArgumentParser, RawDescriptionHelpFormatter
+from argparse import Action, RawDescriptionHelpFormatter
 import os
-import string
-import sys
 import textwrap
-
-from stream_alert import __version__ as version
-from stream_alert.alert_processor.outputs.output_base import StreamAlertOutput
-from stream_alert.apps import StreamAlertApp
 from stream_alert.apps.config import AWS_RATE_RE, AWS_RATE_HELPER
-from stream_alert.shared import CLUSTERED_FUNCTIONS, metrics
-from stream_alert_cli.test import DEFAULT_TEST_FILES_DIRECTORY
-from stream_alert_cli.runner import cli_runner
 
 CLUSTERS = [
     os.path.splitext(cluster)[0] for _, _, files in os.walk('../conf/clusters')
@@ -206,6 +197,7 @@ def add_clusters_arg(parser, required=False):
         **kwargs
     )
 
+
 def set_parser_epilog(parser, epilog):
     """Set the epilog on the given parser. This will typically be an 'Example' block"""
     parser.epilog = textwrap.dedent(epilog) if epilog else None
@@ -225,19 +217,6 @@ def generate_subparser(parser, name, description=None, subcommand=False):
         subparser.set_defaults(command=name)
 
     return subparser
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 def add_default_lambda_args(lambda_parser):
@@ -263,44 +242,3 @@ def add_default_lambda_args(lambda_parser):
 
     # Add the option to specify cluster(s)
     add_clusters_arg(lambda_parser)
-
-
-
-
-def _setup_kinesis_subparser(subparser):
-    """Add kinesis subparser: manage.py kinesis [options]"""
-    _set_parser_epilog(
-        subparser,
-        epilog=(
-            '''\
-            Example:
-
-                manage.py kinesis disable-events --clusters corp prod
-            '''
-        )
-    )
-
-    actions = ['disable-events', 'enable-events']
-    subparser.add_argument(
-        'action',
-        metavar='ACTION',
-        choices=actions,
-        help='One of the following actions to be performed: {}'.format(', '.join(actions))
-    )
-
-    # Add the option to specify cluster(s)
-    add_clusters_arg(subparser)
-
-    subparser.add_argument(
-        '-s',
-        '--skip-terraform',
-        action='store_true',
-        help='Only update the config options and do not run Terraform'
-    )
-
-
-
-
-
-
-
