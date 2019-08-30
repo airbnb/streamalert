@@ -38,14 +38,6 @@ def build_parser():
     commands = {
 
 
-        'rollback': (
-            _setup_rollback_subparser,
-
-        ),
-        'rule-staging': (
-            _setup_rule_staging_subparser,
-            'Perform actions related to rule staging'
-        ),
         'status': (
             None,
 
