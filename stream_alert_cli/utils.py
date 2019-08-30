@@ -766,23 +766,7 @@ def _setup_init_subparser(subparser):
     )
 
 
-def _add_default_tf_args(tf_parser):
-    """Add the default terraform parser options"""
-    tf_parser.add_argument(
-        '-t',
-        '--target',
-        metavar='TARGET',
-        help=(
-            'One or more Terraform module name to target. Use `list-targets` for a list '
-            'of available targets'
-        ),
-        action=UniqueSetAction,
-        default=set(),
-        nargs='+'
-    )
 
-    # Add the option to specify cluster(s)
-    add_clusters_arg(tf_parser)
 
 
 def _setup_build_subparser(subparser):

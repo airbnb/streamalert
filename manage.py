@@ -37,14 +37,6 @@ def build_parser():
     # Map of top-level commands and their setup functions/description
     # New top-level commands should be added to this dictionary
     commands = {
-        'build': (
-            _setup_build_subparser,
-            'Run terraform against StreamAlert modules, optionally targeting specific modules'
-        ),
-        'clean': (
-            None,
-            'Remove current Terraform files'
-        ),
         'create-alarm': (
             _setup_metric_alarm_subparser,
             'Add a global CloudWatch alarm for predefined metrics for a given function'

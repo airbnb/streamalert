@@ -24,6 +24,7 @@ from stream_alert_cli.helpers import check_credentials, continue_prompt, run_com
 from stream_alert_cli.manage_lambda.deploy import deploy
 from stream_alert_cli.terraform.generate import terraform_generate_handler
 from stream_alert_cli.terraform.helpers import terraform_check
+from stream_alert_cli.utils import CliCommand, set_parser_epilog, UniqueSetAction, add_clusters_arg
 
 LOGGER = get_logger(__name__)
 
@@ -105,24 +106,64 @@ def terraform_init(options, config):
     return tf_runner(refresh=False)
 
 
-def terraform_build_handler(options, config):
-    """Run Terraform with an optional set of targets and clusters
 
-    Args:
-        options (argparse.Namespace): Parsed arguments from manage.py
-        config (CLIConfig): Loaded StreamAlert config
+class TerraformBuildCommand(CliCommand):
+    description = 'Run terraform against StreamAlert modules, optionally targeting specific modules'
 
-    Returns:
-        bool: False if errors occurred, True otherwise
-    """
-    if not terraform_generate_handler(config=config):
-        return False
+    @classmethod
+    def setup_subparser(cls, subparser):
+        """Add build subparser: manage.py build [options]"""
+        set_parser_epilog(
+            subparser,
+            epilog=(
+                '''\
+                Example:
 
-    target_modules, valid = _get_valid_tf_targets(config, options.target)
-    if not valid:
-        return False
+                    manage.py build --target alert_processor_lambda
+                '''
+            )
+        )
 
-    return tf_runner(targets=target_modules if target_modules else None)
+        _add_default_tf_args(subparser)
+
+    @classmethod
+    def handler(cls, options, config):
+        """Run Terraform with an optional set of targets and clusters
+
+        Args:
+            options (argparse.Namespace): Parsed arguments from manage.py
+            config (CLIConfig): Loaded StreamAlert config
+
+        Returns:
+            bool: False if errors occurred, True otherwise
+        """
+        if not terraform_generate_handler(config=config):
+            return False
+
+        target_modules, valid = _get_valid_tf_targets(config, options.target)
+        if not valid:
+            return False
+
+        return tf_runner(targets=target_modules if target_modules else None)
+
+
+def _add_default_tf_args(tf_parser):
+    """Add the default terraform parser options"""
+    tf_parser.add_argument(
+        '-t',
+        '--target',
+        metavar='TARGET',
+        help=(
+            'One or more Terraform module name to target. Use `list-targets` for a list '
+            'of available targets'
+        ),
+        action=UniqueSetAction,
+        default=set(),
+        nargs='+'
+    )
+
+    # Add the option to specify cluster(s)
+    add_clusters_arg(tf_parser)
 
 
 def terraform_destroy_handler(options, config):
@@ -172,41 +213,49 @@ def terraform_destroy_handler(options, config):
         return False
 
     # Remove old Terraform files
-    return terraform_clean_handler()
+    return TerraformCleanCommand.handler(options, config)
 
 
-def terraform_clean_handler():
-    """Remove leftover Terraform statefiles and main/cluster files
+class TerraformCleanCommand(CliCommand):
+    description = 'Remove current Terraform files'
 
-    Args:
-        config (CLIConfig): Loaded StreamAlert config
+    @classmethod
+    def setup_subparser(cls, subparser):
+        """Manage.py clean takes no arguments"""
 
-    Returns:
-        bool: False if errors occurred, True otherwise
-    """
-    LOGGER.info('Cleaning Terraform files')
+    @classmethod
+    def handler(cls, options, config):
+        """Remove leftover Terraform statefiles and main/cluster files
 
-    def _rm_file(path):
-        if not os.path.isfile(path):
-            return
-        print('Removing terraform file: {}'.format(path))
-        os.remove(path)
+        Args:
+            config (CLIConfig): Loaded StreamAlert config
 
-    for root, _, files in os.walk('terraform'):
-        for file_name in files:
-            path = os.path.join(root, file_name)
-            if path.endswith('.tf.json'):
-                _rm_file(path)
+        Returns:
+            bool: False if errors occurred, True otherwise
+        """
+        LOGGER.info('Cleaning Terraform files')
 
-    for tf_file in ['terraform.tfstate', 'terraform.tfstate.backup']:
-        path = 'terraform/{}'.format(tf_file)
-        _rm_file(path)
+        def _rm_file(path):
+            if not os.path.isfile(path):
+                return
+            print('Removing terraform file: {}'.format(path))
+            os.remove(path)
 
-    # Finally, delete the Terraform directory
-    if os.path.isdir('terraform/.terraform/'):
-        shutil.rmtree('terraform/.terraform/')
+        for root, _, files in os.walk('terraform'):
+            for file_name in files:
+                path = os.path.join(root, file_name)
+                if path.endswith('.tf.json'):
+                    _rm_file(path)
 
-    return True
+        for tf_file in ['terraform.tfstate', 'terraform.tfstate.backup']:
+            path = 'terraform/{}'.format(tf_file)
+            _rm_file(path)
+
+        # Finally, delete the Terraform directory
+        if os.path.isdir('terraform/.terraform/'):
+            shutil.rmtree('terraform/.terraform/')
+
+        return True
 
 
 def _get_valid_tf_targets(config, targets):
