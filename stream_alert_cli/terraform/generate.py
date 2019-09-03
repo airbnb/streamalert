@@ -496,10 +496,10 @@ def _generate_lookup_tables_settings(config):
     """
     Generates .tf.json file for LookupTables
     """
-    tf_file = 'terraform/lookup_tables.tf.json'
+    tf_file_name = 'terraform/lookup_tables.tf.json'
 
     if not config['lookup_tables'].get('enabled', False):
-        remove_temp_terraform_file(tf_file, 'Removing old LookupTables Terraform file')
+        remove_temp_terraform_file(tf_file_name, 'Removing old LookupTables Terraform file')
         return
 
     dynamodb_tables = []
@@ -511,7 +511,7 @@ def _generate_lookup_tables_settings(config):
             continue
 
         if table_config['driver'] == 'dynamodb':
-            s3_buckets.append(table_config['table'])
+            dynamodb_tables.append(table_config['table'])
             continue
 
     generated_config = {
@@ -526,7 +526,8 @@ def _generate_lookup_tables_settings(config):
             }
         }
     }
-    json.dump(generated_config, tf_file, indent=2, sort_keys=True)
+    with open(tf_file_name, 'w') as tf_file:
+        json.dump(generated_config, tf_file, indent=2, sort_keys=True)
 
 
 def generate_global_lambda_settings(config, config_name, generate_func, tf_tmp_file, message):
