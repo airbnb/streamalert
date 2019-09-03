@@ -486,7 +486,47 @@ def terraform_generate_handler(config, init=False, check_tf=True, check_creds=Tr
         message='Removing old Alert Merger Terraform file'
     )
 
+    # Setup Lookup Tables if applicable
+    _generate_lookup_tables_settings(config)
+
     return True
+
+
+def _generate_lookup_tables_settings(config):
+    """
+    Generates .tf.json file for LookupTables
+    """
+    tf_file = 'terraform/lookup_tables.tf.json'
+
+    if not config['lookup_tables'].get('enabled', False):
+        remove_temp_terraform_file(tf_file, 'Removing old LookupTables Terraform file')
+        return
+
+    dynamodb_tables = []
+    s3_buckets = []
+
+    for _, table_config in config['lookup_tables'].get('tables', {}).items():
+        if table_config['driver'] == 's3':
+            s3_buckets.append(table_config['bucket'])
+            continue
+
+        if table_config['driver'] == 'dynamodb':
+            s3_buckets.append(table_config['table'])
+            continue
+
+    generated_config = {
+        'module': {
+            'lookup_tables_iam': {
+                'source': 'modules/tf_lookup_tables',
+                'account_id': config['global']['account']['aws_account_id'],
+                'region': config['global']['account']['region'],
+                'prefix': config['global']['account']['prefix'],
+                'dynamodb_tables': dynamodb_tables,
+                's3_buckets': s3_buckets
+            }
+        }
+    }
+    json.dump(generated_config, tf_file, indent=2, sort_keys=True)
 
 
 def generate_global_lambda_settings(config, config_name, generate_func, tf_tmp_file, message):

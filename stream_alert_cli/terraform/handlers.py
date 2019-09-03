@@ -109,7 +109,6 @@ class TerraformInitCommand(CLICommand):
         LOGGER.info('Building remainding infrastructure')
         return tf_runner(refresh=False)
 
-
     @staticmethod
     def _terraform_init_backend():
         """Initialize the infrastructure backend (S3) using Terraform
