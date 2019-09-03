@@ -34,9 +34,9 @@ resource "aws_iam_policy_attachment" "streamalert_read_from_lookup_tables" {
 
 locals {
   lambda_roles = [
-    "airbnb_streamalert_rules_engine_role",
-    "airbnb_streamalert_alert_processor_role",
-    "airbnb_streamalert_classifier_*_role",
+    "${var.prefix}_streamalert_rules_engine_role",
+    "${var.prefix}_streamalert_alert_processor_role",
+    "${var.prefix}_streamalert_classifier_prod_role", # FIXME (derek.wang) dynamically generate these
   ]
 
   s3_bucket_arns = "${formatlist("arn:aws:s3:::%s", var.s3_buckets)}"
