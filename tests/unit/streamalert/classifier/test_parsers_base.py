@@ -268,6 +268,19 @@ class TestParserBaseClassMethods:
         assert_equal(ParserBase._key_check(record, schema), False)
         log_mock.assert_called_with('Found keys not expected in record: %s', 'not_key')
 
+    @patch('logging.Logger.debug')
+    def test_key_check_mismatch_non_str_key(self, log_mock):
+        """ParserBase - Key Check, Mismatch; Non-String Key"""
+        schema = {
+            'key': 'string'
+        }
+        record = {
+            100: 'test',
+            200: 'test'
+        }
+        assert_equal(ParserBase._key_check(record, schema), False)
+        log_mock.assert_called_with('Found keys not expected in record: %s', '100, 200')
+
     def test_key_check_nested(self):
         """ParserBase - Key Check, Nested"""
         schema = {
