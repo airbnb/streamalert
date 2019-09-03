@@ -24,12 +24,17 @@ from stream_alert_cli.helpers import check_credentials, continue_prompt, run_com
 from stream_alert_cli.manage_lambda.deploy import deploy
 from stream_alert_cli.terraform.generate import terraform_generate_handler
 from stream_alert_cli.terraform.helpers import terraform_check
-from stream_alert_cli.utils import CliCommand, set_parser_epilog, UniqueSetAction, add_clusters_arg
+from stream_alert_cli.utils import (
+    add_clusters_arg,
+    CLICommand,
+    set_parser_epilog,
+    UniqueSetAction,
+)
 
 LOGGER = get_logger(__name__)
 
 
-class TerraformInitCommand(CliCommand):
+class TerraformInitCommand(CLICommand):
     description = 'Initialize StreamAlert infrastructure'
 
     @classmethod
@@ -124,7 +129,7 @@ class TerraformInitCommand(CliCommand):
         return run_command(['terraform', 'init'])
 
 
-class TerraformBuildCommand(CliCommand):
+class TerraformBuildCommand(CLICommand):
     description = 'Run terraform against StreamAlert modules, optionally targeting specific modules'
 
     @classmethod
@@ -164,7 +169,7 @@ class TerraformBuildCommand(CliCommand):
         return tf_runner(targets=target_modules if target_modules else None)
 
 
-class TerraformDestroyCommand(CliCommand):
+class TerraformDestroyCommand(CLICommand):
     description = 'Destroy StreamAlert infrastructure, optionally targeting specific modules'
 
     @classmethod
@@ -235,7 +240,7 @@ class TerraformDestroyCommand(CliCommand):
         return TerraformCleanCommand.handler(options, config)
 
 
-class TerraformCleanCommand(CliCommand):
+class TerraformCleanCommand(CLICommand):
     description = 'Remove current Terraform files'
 
     @classmethod
@@ -277,7 +282,7 @@ class TerraformCleanCommand(CliCommand):
         return True
 
 
-class TerraformListTargetsCommand(CliCommand):
+class TerraformListTargetsCommand(CLICommand):
     description = 'List available Terraform modules to be used for targeted builds'
 
     @classmethod

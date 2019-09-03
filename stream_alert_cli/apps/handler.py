@@ -19,14 +19,19 @@ from stream_alert.apps import StreamAlertApp
 from stream_alert.shared.logger import get_logger
 from stream_alert_cli.apps.helpers import save_app_auth_info
 from stream_alert_cli.utils import (
-    CliCommand, set_parser_epilog, generate_subparser,
-    add_schedule_expression_arg, add_timeout_arg, add_memory_arg,
-    CLUSTERS)
+    add_memory_arg,
+    add_schedule_expression_arg,
+    add_timeout_arg,
+    CLICommand,
+    CLUSTERS,
+    generate_subparser,
+    set_parser_epilog,
+)
 
 LOGGER = get_logger(__name__)
 
 
-class AppCommand(CliCommand):
+class AppCommand(CLICommand):
     description = 'Create, list, or update a StreamAlert app to poll logs from various services'
 
     @classmethod

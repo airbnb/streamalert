@@ -14,10 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from stream_alert.shared.rule_table import RuleTable
-from stream_alert_cli.utils import CliCommand, generate_subparser, UniqueSetAction
+from stream_alert_cli.utils import (
+    CLICommand,
+    generate_subparser,
+    UniqueSetAction,
+)
 
 
-class RuleStagingCommand(CliCommand):
+class RuleStagingCommand(CLICommand):
     description = 'Perform actions related to rule staging'
 
     @classmethod

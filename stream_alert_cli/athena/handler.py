@@ -20,8 +20,12 @@ from stream_alert.shared.athena import AthenaClient
 from stream_alert.shared.logger import get_logger
 from stream_alert_cli.athena import helpers
 from stream_alert_cli.helpers import continue_prompt, record_to_schema
-from stream_alert_cli.utils import CliCommand, generate_subparser, set_parser_epilog, \
+from stream_alert_cli.utils import (
+    CLICommand,
+    generate_subparser,
+    set_parser_epilog,
     UniqueSetAction
+)
 
 LOGGER = get_logger(__name__)
 
@@ -34,7 +38,7 @@ CREATE_TABLE_STATEMENT = ('CREATE EXTERNAL TABLE {table_name} ({schema}) '
 MAX_QUERY_LENGTH = 262144
 
 
-class AthenaCommand(CliCommand):
+class AthenaCommand(CLICommand):
     description = 'Perform actions related to Athena'
 
     @classmethod

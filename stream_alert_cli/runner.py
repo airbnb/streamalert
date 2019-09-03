@@ -22,18 +22,26 @@ from stream_alert_cli.kinesis.handler import KinesisCommand
 from stream_alert_cli.logger import set_logger_levels
 from stream_alert_cli.manage_lambda.deploy import DeployCommand
 from stream_alert_cli.manage_lambda.rollback import RollbackCommand
-from stream_alert_cli.metrics_alarms.handler import CreateMetricAlarmCommand, \
-    CreateClusterMetricAlarmCommand, CustomMetricsCommand
+from stream_alert_cli.metrics_alarms.handler import (
+    CreateClusterMetricAlarmCommand,
+    CreateMetricAlarmCommand,
+    CustomMetricsCommand
+)
 from stream_alert_cli.outputs.handler import OutputCommand
 from stream_alert_cli.rule_table import RuleStagingCommand
 from stream_alert_cli.status.handler import StatusCommand
 from stream_alert_cli.terraform.generate import TerraformGenerateCommand
-from stream_alert_cli.terraform.handlers import TerraformCleanCommand, TerraformBuildCommand, \
-    TerraformDestroyCommand, TerraformInitCommand, TerraformListTargetsCommand
+from stream_alert_cli.terraform.handlers import (
+    TerraformBuildCommand,
+    TerraformCleanCommand,
+    TerraformDestroyCommand,
+    TerraformInitCommand,
+    TerraformListTargetsCommand,
+)
 from stream_alert_cli.test.handler import TestCommand
 from stream_alert_cli.threat_intel.handler import ThreatIntelCommand
 from stream_alert_cli.threat_intel_downloader.handler import ThreatIntelDownloaderCommand
-from stream_alert_cli.utils import CliCommand
+from stream_alert_cli.utils import CLICommand
 
 LOGGER = get_logger(__name__)
 
@@ -72,7 +80,7 @@ class StreamAlertCliCommandRepository:
 
     @classmethod
     def register(cls, command, cli_command):
-        if not issubclass(cli_command, CliCommand):
+        if not issubclass(cli_command, CLICommand):
             LOGGER.error('Invalid CLI Command in registry')
             return False
 
@@ -111,7 +119,7 @@ class StreamAlertCliCommandRepository:
     @classmethod
     def command_handlers(cls, config):
         """
-        Returns a dict of command strings mapped to their respective CliCommand classes.
+        Returns a dict of command strings mapped to their respective CLICommand classes.
         """
         return {
             command: lambda opts, cmd=cli_command: cmd.handler(opts, config)
@@ -122,8 +130,8 @@ class StreamAlertCliCommandRepository:
     def command_parsers(cls):
         """
         Returns a dict of commands mapped to tuples. The first element of the tuple is the
-        CliCommand.setup_subparser function for that command. The second element is a string
-        description of that CliCommand.
+        CLICommand.setup_subparser function for that command. The second element is a string
+        description of that CLICommand.
         """
         return {
             command: (cli_command.setup_subparser, cli_command.description)

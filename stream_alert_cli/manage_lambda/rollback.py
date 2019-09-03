@@ -18,7 +18,11 @@ from botocore.exceptions import ClientError
 
 from stream_alert.shared.logger import get_logger
 from stream_alert_cli.terraform.generate import terraform_generate_handler
-from stream_alert_cli.utils import CliCommand, add_default_lambda_args, set_parser_epilog
+from stream_alert_cli.utils import (
+    add_default_lambda_args,
+    CLICommand,
+    set_parser_epilog,
+)
 
 LOGGER = get_logger(__name__)
 
@@ -59,7 +63,7 @@ def _rollback_production(lambda_client, function_name):
     return True
 
 
-class RollbackCommand(CliCommand):
+class RollbackCommand(CLICommand):
     description = 'Rollback the specified AWS Lambda function(s)'
 
     @classmethod

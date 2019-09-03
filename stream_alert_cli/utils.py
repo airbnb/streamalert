@@ -23,7 +23,6 @@ To run terraform by hand, change to the terraform directory and run:
 
 terraform <cmd>
 """
-# pylint: disable=too-many-lines
 from abc import abstractmethod
 from argparse import Action, RawDescriptionHelpFormatter
 import os
@@ -36,7 +35,7 @@ CLUSTERS = [
 ]
 
 
-class CliCommand:
+class CLICommand:
     """
     An abstract class that encapsulates the logic of a single manage.py CLI command.
     """

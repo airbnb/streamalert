@@ -15,12 +15,16 @@ limitations under the License.
 """
 from stream_alert.shared import metrics, CLUSTERED_FUNCTIONS
 from stream_alert.shared.logger import get_logger
-from stream_alert_cli.utils import CliCommand, set_parser_epilog, add_clusters_arg
+from stream_alert_cli.utils import (
+    add_clusters_arg,
+    CLICommand,
+    set_parser_epilog,
+)
 
 LOGGER = get_logger(__name__)
 
 
-class CreateMetricAlarmCommand(CliCommand):
+class CreateMetricAlarmCommand(CLICommand):
     description = 'Add a global CloudWatch alarm for predefined metrics for a given function'
 
     @classmethod
@@ -65,7 +69,7 @@ class CreateMetricAlarmCommand(CliCommand):
         return _create_alarm_handler(options, config)
 
 
-class CreateClusterMetricAlarmCommand(CliCommand):
+class CreateClusterMetricAlarmCommand(CLICommand):
     description = 'Add a CloudWatch alarm for predefined metrics for a given cluster/function'
 
     @classmethod
@@ -114,7 +118,7 @@ class CreateClusterMetricAlarmCommand(CliCommand):
         return _create_alarm_handler(options, config)
 
 
-class CustomMetricsCommand(CliCommand):
+class CustomMetricsCommand(CLICommand):
     description = 'Enable or disable custom metrics for the lambda functions'
 
     @classmethod

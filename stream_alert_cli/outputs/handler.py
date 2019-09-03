@@ -20,12 +20,12 @@ from stream_alert.alert_processor.outputs.output_base import (
 )
 from stream_alert_cli.helpers import user_input
 from stream_alert_cli.outputs.helpers import output_exists
-from stream_alert_cli.utils import CliCommand
+from stream_alert_cli.utils import CLICommand
 
 LOGGER = get_logger(__name__)
 
 
-class OutputCommand(CliCommand):
+class OutputCommand(CLICommand):
     description = 'Create a new StreamAlert output'
 
     @classmethod

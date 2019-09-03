@@ -14,10 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from stream_alert.shared import CLUSTERED_FUNCTIONS
-from stream_alert_cli.utils import CliCommand
+from stream_alert_cli.utils import CLICommand
 
 
-class StatusCommand(CliCommand):
+class StatusCommand(CLICommand):
     description = 'Output information on currently configured infrastructure'
 
     @classmethod

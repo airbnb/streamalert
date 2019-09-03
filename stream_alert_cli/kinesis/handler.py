@@ -16,12 +16,12 @@ limitations under the License.
 from stream_alert.shared.logger import get_logger
 from stream_alert_cli.helpers import tf_runner
 from stream_alert_cli.terraform.generate import terraform_generate_handler
-from stream_alert_cli.utils import CliCommand, set_parser_epilog, add_clusters_arg
+from stream_alert_cli.utils import CLICommand, set_parser_epilog, add_clusters_arg
 
 LOGGER = get_logger(__name__)
 
 
-class KinesisCommand(CliCommand):
+class KinesisCommand(CLICommand):
     description = 'Update AWS Kinesis settings and run Terraform to apply changes'
 
     @classmethod

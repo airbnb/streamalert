@@ -13,10 +13,10 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from stream_alert_cli.utils import CliCommand, set_parser_epilog
+from stream_alert_cli.utils import CLICommand, set_parser_epilog
 
 
-class ThreatIntelCommand(CliCommand):
+class ThreatIntelCommand(CLICommand):
     description = 'Enable/disable and configure the StreamAlert Threat Intelligence feature'
 
     @classmethod

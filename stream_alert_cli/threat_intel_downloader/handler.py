@@ -22,7 +22,7 @@ from stream_alert_cli.utils import (
     add_memory_arg,
     add_schedule_expression_arg,
     add_timeout_arg,
-    CliCommand,
+    CLICommand,
     generate_subparser,
     UniqueSetAction,
 )
@@ -30,7 +30,7 @@ from stream_alert_cli.utils import (
 LOGGER = get_logger(__name__)
 
 
-class ThreatIntelDownloaderCommand(CliCommand):
+class ThreatIntelDownloaderCommand(CLICommand):
     description = 'Configure and update the threat intel downloader'
 
     @classmethod
