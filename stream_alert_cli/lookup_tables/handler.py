@@ -15,12 +15,12 @@ limitations under the License.
 """
 from stream_alert.shared.logger import get_logger
 from stream_alert.shared.lookup_tables.core import LookupTables
-from stream_alert_cli.utils import CliCommand, generate_subparser
+from stream_alert_cli.utils import CLICommand, generate_subparser
 
 LOGGER = get_logger(__name__)
 
 
-class LookupTablesCommand(CliCommand):
+class LookupTablesCommand(CLICommand):
 
     description = 'Describe and manage your LookupTables'
 
