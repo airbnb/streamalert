@@ -1,4 +1,12 @@
-data "aws_iam_policy_document" "streamalert_read_objects_from_lookup_tables_s3" {
+data "aws_iam_policy_document" "streamalert_read_items_from_lookup_tables" {
+  statement {
+    actions   = [
+      "dynamodb:GetItem",
+      "dynamodb:DescribeTable"
+    ]
+    resources = "${local.dynamodb_table_arns}"
+  }
+
   statement {
     actions   = ["s3:List*"]
     resources = "${local.s3_bucket_arns}"
@@ -10,20 +18,10 @@ data "aws_iam_policy_document" "streamalert_read_objects_from_lookup_tables_s3" 
   }
 }
 
-data "aws_iam_policy_document" "streamalert_read_items_from_lookup_tables_dynamodb" {
-  statement {
-    actions   = [
-      "dynamodb:GetItem",
-      "dynamodb:DescribeTable"
-    ]
-    resources = "${local.dynamodb_table_arns}"
-  }
-}
-
 
 resource "aws_iam_policy" "streamalert_read_from_lookup_tables_policy" {
   name   = "StreamAlertReadFromLookupTablesPolicy"
-  policy = "${data.aws_iam_policy_document.streamalert_read_items_from_lookup_tables_dynamodb.json}"
+  policy = "${data.aws_iam_policy_document.streamalert_read_items_from_lookup_tables.json}"
 }
 
 resource "aws_iam_policy_attachment" "streamalert_read_from_lookup_tables" {
