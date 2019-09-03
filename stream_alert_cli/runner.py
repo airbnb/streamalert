@@ -64,14 +64,14 @@ def cli_runner(args):
 
     LOGGER.info('Issues? Report here: https://github.com/airbnb/streamalert/issues')
 
-    cmds = StreamAlertCliCommandRepository.command_handlers(config)
+    cmds = StreamAlertCLICommandRepository.command_handlers(config)
 
     result = cmds[args.command](args)
     LOGGER.info('Completed')
     return result
 
 
-class StreamAlertCliCommandRepository:
+class StreamAlertCLICommandRepository:
     """
     This repository class contains and manages all StreamAlert manage.py commands that are
     configured on this repository.
@@ -139,4 +139,4 @@ class StreamAlertCliCommandRepository:
         }
 
 
-StreamAlertCliCommandRepository.register_all()
+StreamAlertCLICommandRepository.register_all()

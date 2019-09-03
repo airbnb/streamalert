@@ -27,7 +27,7 @@ from argparse import ArgumentParser, RawDescriptionHelpFormatter
 import sys
 
 from stream_alert import __version__ as version
-from stream_alert_cli.runner import cli_runner, StreamAlertCliCommandRepository
+from stream_alert_cli.runner import cli_runner, StreamAlertCLICommandRepository
 from stream_alert_cli.utils import generate_subparser
 
 
@@ -36,7 +36,7 @@ def build_parser():
 
     # Map of top-level commands and their setup functions/description
     # New top-level commands should be added to this dictionary
-    commands = StreamAlertCliCommandRepository.command_parsers()
+    commands = StreamAlertCLICommandRepository.command_parsers()
 
     description_template = """
 StreamAlert v{}
