@@ -15,7 +15,7 @@ limitations under the License.
 """
 from stream_alert.shared.logger import get_logger
 from stream_alert.shared.lookup_tables.core import LookupTables
-from stream_alert_cli.utils import CLICommand, generate_subparser
+from stream_alert_cli.utils import CLICommand, generate_subparser, set_parser_epilog
 
 LOGGER = get_logger(__name__)
 
@@ -27,6 +27,17 @@ class LookupTablesCommand(CLICommand):
     @classmethod
     def setup_subparser(cls, subparser):
         """Add subparser for LookupTables"""
+        set_parser_epilog(
+            subparser,
+            epilog=(
+                '''\
+                Examples:
+
+                    manage.py lookup-tables [describe-tables|get|set]
+                '''
+            )
+        )
+
         lookup_tables_subparsers = subparser.add_subparsers()
 
         cls._setup_describe_tables_subparser(lookup_tables_subparsers)
@@ -35,25 +46,42 @@ class LookupTablesCommand(CLICommand):
 
     @classmethod
     def _setup_describe_tables_subparser(cls, subparsers):
-        generate_subparser(
+        describe_tables_parser = generate_subparser(
             subparsers,
             'describe-tables',
-            description='Show tables',
+            description='Shows metadata about all currently configured LookupTables',
             subcommand=True
+        )
+
+        set_parser_epilog(
+            describe_tables_parser,
+            epilog=(
+                '''\
+                Examples:
+
+                    manage.py lookup-tables describe-tables
+                '''
+            )
         )
 
     @classmethod
     def _setup_get_subparser(cls, subparsers):
-        """
-        Get subcommand:
-
-        $ ./manage.py lookup-tables get -t [table] -k [key]
-        """
         get_parser = generate_subparser(
             subparsers,
             'get',
-            description='Validate defined log schemas using integration test files',
+            description='Retrieves a key from the requested LookupTable',
             subcommand=True
+        )
+
+        set_parser_epilog(
+            get_parser,
+            epilog=(
+                '''\
+                Examples:
+
+                    manage.py lookup-tables get -t [table] -k [key]
+                '''
+            )
         )
 
         get_parser.add_argument(
@@ -74,16 +102,22 @@ class LookupTablesCommand(CLICommand):
 
     @classmethod
     def _setup_set_subparser(cls, subparsers):
-        """
-        Set subcommand:
-
-        $ ./manage.py lookup-tables set -t [table] -k [key] -v [value]
-        """
         set_parser = generate_subparser(
             subparsers,
             'set',
-            description='Validate defined log schemas using integration test files',
+            description='Sets a key on the requested LookupTable',
             subcommand=True
+        )
+
+        set_parser_epilog(
+            set_parser,
+            epilog=(
+                '''\
+                Examples:
+
+                    manage.py lookup-tables set -t [table] -k [key] -v [value]
+                '''
+            )
         )
 
         set_parser.add_argument(
@@ -127,59 +161,51 @@ class LookupTablesCommand(CLICommand):
     # pylint: disable=protected-access
     @staticmethod
     def _describe_tables_handler(config):
-        LOGGER.info('==== LookupTables; Describe Tables ====\n')
+        print('==== LookupTables; Describe Tables ====\n')
 
         lookup_tables = LookupTables.get_instance(config=config)
 
-        LOGGER.info('%d Tables:\n', len(lookup_tables._tables))
+        print('{} Tables:\n'.format(len(lookup_tables._tables)))
         for _, table in lookup_tables._tables.items():
-            LOGGER.info(' Table Name: %s', table.table_name)
-            LOGGER.info(' Driver Id: %s', table.driver_id)
-            LOGGER.info(' Driver Type: %s\n', table.driver_type)
+            print(' Table Name: {}'.format(table.table_name))
+            print(' Driver Id: {}'.format(table.driver_id))
+            print(' Driver Type: {}\n'.format(table.driver_type))
 
     @staticmethod
     def _get_handler(options, config):
-        """
-
-
-        """
-
         table_name = options.table
         key = options.key
 
-        LOGGER.info('==== LookupTables; Get Key ====')
+        print('==== LookupTables; Get Key ====')
 
         LookupTables.get_instance(config=config)
 
-        LOGGER.info('  Table: %s', table_name)
-        LOGGER.info('  Key:   %s', key)
+        print('  Table: {}'.format(table_name))
+        print('  Key:   {}'.format(key))
 
         value = LookupTables.get(table_name, key)
 
-        LOGGER.info('  Value: %s', value)
+        print('  Value: {}'.format(value))
 
         return True
 
     @staticmethod
     def _set_handler(options, config):
-        """
-
-        """
         table_name = options.table
         key = options.key
         new_value = options.value
 
-        LOGGER.info('==== LookupTables; Set Key ====')
+        print('==== LookupTables; Set Key ====')
 
         core = LookupTables.get_instance(config=config)
 
-        LOGGER.info('  Table: %s', table_name)
-        LOGGER.info('  Key:   %s', key)
+        print('  Table: {}'.format(table_name))
+        print('  Key:   {}'.format(key))
 
         table = core.table(table_name)
         old_value = table.get(key)
 
-        LOGGER.info('  Value: %s --> %s', old_value, new_value)
+        print('  Value: {} --> {}'.format(old_value, new_value))
 
         table._driver.set(key, new_value)
         table._driver.commit()

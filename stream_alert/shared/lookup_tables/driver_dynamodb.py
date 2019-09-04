@@ -123,7 +123,7 @@ class DynamoDBDriver(PersistenceDriver):
                 #       /dynamodb.html#DynamoDB.Table.put_item
                 self._table.put_item(**put_item_args)
 
-            except (ConnectTimeoutError, ReadTimeoutError):
+            except (ClientError, ConnectTimeoutError, ReadTimeoutError):
                 raise LookupTablesInitializationError(
                     'LookupTable ({}): Failure to set key'.format(self.id)
                 )
@@ -235,8 +235,8 @@ class DynamoDBDriver(PersistenceDriver):
             if len(components) != 2:
                 message = (
                     'LookupTable ({}): Invalid key. The requested table requires a sort key, '
-                    'which the provided key \'{}\' does not provide, given the configured '
-                    'delimiter: ({})'
+                    'which the provided key (\'{}\') does not provide, given the configured '
+                    'delimiter: \'{}\''
                 ).format(self.id, key, self._key_delimiter)
                 raise LookupTablesInitializationError(message)
 

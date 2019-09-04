@@ -1,6 +1,21 @@
+"""
+Copyright 2017-present, Airbnb Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
 import json
-import time
 import sys
+import time
 import zlib
 
 import boto3
@@ -10,8 +25,10 @@ import stream_alert.shared.helpers.boto as boto_helpers
 from stream_alert.shared.logger import get_logger
 from stream_alert.shared.lookup_tables.cache import DriverCache
 from stream_alert.shared.lookup_tables.drivers import PersistenceDriver
-from stream_alert.shared.lookup_tables.errors import LookupTablesInitializationError, \
-    LookupTablesCommitError
+from stream_alert.shared.lookup_tables.errors import (
+    LookupTablesCommitError,
+    LookupTablesInitializationError,
+)
 
 LOGGER = get_logger(__name__)
 
