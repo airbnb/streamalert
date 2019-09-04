@@ -31,11 +31,7 @@ resource "aws_iam_policy_attachment" "streamalert_read_from_lookup_tables" {
 }
 
 locals {
-  lambda_roles = [
-    "${var.prefix}_streamalert_rules_engine_role",
-    "${var.prefix}_streamalert_alert_processor_role",
-    "${var.prefix}_streamalert_classifier_prod_role", # FIXME (derek.wang) dynamically generate these
-  ]
+  lambda_roles = "${var.roles}"
 
   s3_bucket_arns = "${formatlist("arn:aws:s3:::%s", var.s3_buckets)}"
   s3_bucket_arn_star = "${formatlist("arn:aws:s3:::%s/*", var.s3_buckets)}"

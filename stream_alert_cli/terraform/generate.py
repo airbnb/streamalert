@@ -514,6 +514,15 @@ def _generate_lookup_tables_settings(config):
             dynamodb_tables.append(table_config['table'])
             continue
 
+    roles = [
+        '${module.alert_processor_lambda.role_id}',
+        '${module.alert_merger_lambda.role_id}',
+        '${module.rules_engine_lambda.role_id}',
+    ]
+
+    for cluster in config.clusters():
+        roles.append('${{module.classifier_{}_lambda.role_id}}'.format(cluster))
+
     generated_config = {
         'module': {
             'lookup_tables_iam': {
@@ -522,7 +531,8 @@ def _generate_lookup_tables_settings(config):
                 'region': config['global']['account']['region'],
                 'prefix': config['global']['account']['prefix'],
                 'dynamodb_tables': dynamodb_tables,
-                's3_buckets': s3_buckets
+                's3_buckets': s3_buckets,
+                'roles': roles,
             }
         }
     }

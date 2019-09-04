@@ -8,6 +8,11 @@ variable "s3_buckets" {
   type        = "list"
 }
 
+variable "roles" {
+  description = "Role ids to grant LookupTable access to"
+  type        = "list"
+}
+
 variable "account_id" {
   type = "string"
 }
