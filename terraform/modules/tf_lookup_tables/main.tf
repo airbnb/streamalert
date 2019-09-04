@@ -24,9 +24,9 @@ resource "aws_iam_policy" "streamalert_read_from_lookup_tables_policy" {
   policy = "${data.aws_iam_policy_document.streamalert_read_items_from_lookup_tables.json}"
 }
 
-resource "aws_iam_policy_attachment" "streamalert_read_from_lookup_tables" {
-  name       = "StreamAlertPermissionReadFromLookupTables"
-  roles      = ["${var.roles}"]
+resource "aws_iam_role_policy_attachment" "streamalert_read_from_lookup_tables" {
+  count      = "${length(var.roles)}"
+  role       = "${element(var.roles, count.index)}"
   policy_arn = "${aws_iam_policy.streamalert_read_from_lookup_tables_policy.arn}"
 }
 
