@@ -1,5 +1,25 @@
+"""
+Copyright 2017-present, Airbnb Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
+import copy
 from datetime import datetime, timedelta
 import random
+
+from stream_alert.shared.logger import get_logger
+
+LOGGER = get_logger(__name__)
 
 
 class DriverCache:
@@ -88,10 +108,7 @@ class DriverCache:
             value (mixed)
             ttl_minutes (int)
         """
-        self._data[key] = value
-        self._ttls[key] = self._clock.utcnow() + timedelta(minutes=ttl_minutes)
-
-        if 0 < self._maximum_key_count < len(self._data):
+        if 0 < self._maximum_key_count < len(self._data) + 1:
             # Cache is too full, evict a random record
             # The reason for RANDOM eviction is that for a LRU cache replacement policy,
             # Cache pollution can occur for Lambdas that experience extremely deterministic
@@ -99,6 +116,9 @@ class DriverCache:
             selected_key = random.choice(self._ttls.keys())
             del self._ttls[selected_key]
             del self._data[selected_key]
+
+        self._data[key] = value
+        self._ttls[key] = self._clock.utcnow() + timedelta(minutes=ttl_minutes)
 
     def set_blank(self, key, ttl_minutes):
         """
@@ -130,6 +150,9 @@ class DriverCache:
         ttl = self._clock.utcnow() + timedelta(minutes=ttl_minutes)
         for key in keyvalue_data.keys():
             self._ttls[key] = ttl
+
+    def getall(self):
+        return copy.copy(self._data)
 
 
 class DriverCacheClock:

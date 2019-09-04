@@ -217,3 +217,11 @@ class TestS3Driver:
             'LookupTable (%s): Needs refresh, starting now.',
             's3:bucket_name/foo.json'
         )
+
+    def test_set_commit_get(self):
+        """LookupTables - Drivers - S3 Driver - Set Commit Get"""
+        self._foo_driver.initialize()
+
+        self._foo_driver.set('new_key', 'BazBuzz')
+        self._foo_driver.commit()
+        assert_equal(self._foo_driver.get('new_key'), 'BazBuzz')

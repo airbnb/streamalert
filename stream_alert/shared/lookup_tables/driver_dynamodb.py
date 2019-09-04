@@ -70,6 +70,8 @@ class DynamoDBDriver(PersistenceDriver):
 
         self._table = None
 
+        self._dirty_rows = {}
+
     @property
     def driver_type(self):
         return self.TYPE_DYNAMODB
@@ -94,8 +96,39 @@ class DynamoDBDriver(PersistenceDriver):
             raise LookupTablesInitializationError(message)
 
     def commit(self):
-        # FIXME (derek.wang)
-        pass
+        for key, value in self._dirty_rows.items():
+            key_schema = self._convert_key_to_key_schema(key)
+
+            if LOGGER_DEBUG_ENABLED:
+                # Guard json.dumps calls due to its expensive computation
+                LOGGER.debug(
+                    'LookupTable (%s): Updating key \'%s\' with schema (%s)',
+                    self.id,
+                    key,
+                    json.dumps(key_schema)
+                )
+
+            try:
+                item = key_schema
+                item[self._dynamo_db_value_key] = value
+
+                put_item_args = {
+                    'Item': item,
+                }
+
+                if LOGGER_DEBUG_ENABLED:
+                    put_item_args['ReturnConsumedCapacity'] = 'TOTAL'
+
+                # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services
+                #       /dynamodb.html#DynamoDB.Table.put_item
+                self._table.put_item(**put_item_args)
+
+            except (ClientError, ConnectTimeoutError, ReadTimeoutError):
+                raise LookupTablesInitializationError(
+                    'LookupTable ({}): Failure to set key'.format(self.id)
+                )
+
+        self._dirty_rows = {}
 
     def get(self, key, default=None):
         self._reload_if_necessary(key)
@@ -103,8 +136,7 @@ class DynamoDBDriver(PersistenceDriver):
         return self._cache.get(key, default)
 
     def set(self, key, value):
-        # FIXME (derek.wang)
-        pass
+        self._dirty_rows[key] = value
 
     def _reload_if_necessary(self, key):
         """
@@ -129,31 +161,7 @@ class DynamoDBDriver(PersistenceDriver):
             self._load(key)
 
     def _load(self, key):
-        # FIXME (derek.wang)
-        #   Because of the way we explode the key using a delim, there is no way to do last-minute
-        #   casting of sort key into a format OTHER than string. A sort key of 'N' (number) type
-        #   simply will never work...
-        if self._dynamo_db_sort_key:
-            components = key.split(self._key_delimiter, 2)
-            if len(components) != 2:
-                LOGGER.error(
-                    'LookupTable (%s): Invalid key. The requested table requires a sort key, '
-                    'which the provided key \'%s\' does not provide, given the configured '
-                    'delimiter: (%s)',
-                    self.id,
-                    key,
-                    self._key_delimiter
-                )
-                return
-
-            key_schema = {
-                self._dynamo_db_partition_key: components[0],
-                self._dynamo_db_sort_key: components[1],
-            }
-        else:
-            key_schema = {
-                self._dynamo_db_partition_key: key,
-            }
+        key_schema = self._convert_key_to_key_schema(key)
 
         if LOGGER_DEBUG_ENABLED:
             # Guard json.dumps calls due to its expensive computation
@@ -178,10 +186,9 @@ class DynamoDBDriver(PersistenceDriver):
             if LOGGER_DEBUG_ENABLED:
                 get_item_args['ReturnConsumedCapacity'] = 'TOTAL'
 
+            # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services
+            #       /dynamodb.html#DynamoDB.Table.get_item
             response = self._table.get_item(**get_item_args)
-
-            # FIXME (derek.wang)
-            #  on debug mode, log the capacity consumption
 
         except (ConnectTimeoutError, ReadTimeoutError):
             # Catching timeouts
@@ -211,3 +218,33 @@ class DynamoDBDriver(PersistenceDriver):
             response['Item'][self._dynamo_db_value_key],
             self._cache_refresh_minutes
         )
+
+    def _convert_key_to_key_schema(self, key):
+        """
+        For DynamoDb, a key can either be a single string or can be a composition of TWO keys--the
+        primary key + the sort key--that are delimited by a given delimiter.
+
+        This function converts a given single string into a dict of pkey + sort key components.
+        """
+        # FIXME (derek.wang)
+        #   Because of the way we explode the key using a delim, there is no way to do last-minute
+        #   casting of sort key into a format OTHER than string. A sort key of 'N' (number) type
+        #   simply will never work...
+        if self._dynamo_db_sort_key:
+            components = key.split(self._key_delimiter, 2)
+            if len(components) != 2:
+                message = (
+                    'LookupTable ({}): Invalid key. The requested table requires a sort key, '
+                    'which the provided key (\'{}\') does not provide, given the configured '
+                    'delimiter: \'{}\''
+                ).format(self.id, key, self._key_delimiter)
+                raise LookupTablesInitializationError(message)
+
+            return {
+                self._dynamo_db_partition_key: components[0],
+                self._dynamo_db_sort_key: components[1],
+            }
+
+        return {
+            self._dynamo_db_partition_key: key,
+        }
