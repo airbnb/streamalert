@@ -26,13 +26,11 @@ resource "aws_iam_policy" "streamalert_read_from_lookup_tables_policy" {
 
 resource "aws_iam_policy_attachment" "streamalert_read_from_lookup_tables" {
   name       = "StreamAlertPermissionReadFromLookupTables"
-  roles      = "${local.lambda_roles}"
+  roles      = ["${var.roles}"]
   policy_arn = "${aws_iam_policy.streamalert_read_from_lookup_tables_policy.arn}"
 }
 
 locals {
-  lambda_roles = "${var.roles}"
-
   s3_bucket_arns = "${formatlist("arn:aws:s3:::%s", var.s3_buckets)}"
   s3_bucket_arn_star = "${formatlist("arn:aws:s3:::%s/*", var.s3_buckets)}"
 
