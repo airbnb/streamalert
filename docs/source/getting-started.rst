@@ -168,7 +168,7 @@ Open ``conf/clusters/prod.json`` and change the ``stream_alert`` module to look 
   }
 
 5. Tell StreamAlert which `log schemas <conf-schemas.html>`_ will be sent to this input.
-Open ``conf/sources.json`` and change the ``sns`` section to look like this:
+Open ``conf/clusters/prod.json`` and change the ``data_sources`` section to look like this:
 
 .. code-block:: json
 

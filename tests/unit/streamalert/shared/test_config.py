@@ -58,7 +58,6 @@ class TestConfigLoading(fake_filesystem_unittest.TestCase):
         self.fs.create_file('conf/lambda.json', contents='{}')
         self.fs.create_file('conf/logs.json', contents='{}')
         self.fs.create_file('conf/outputs.json', contents='{}')
-        self.fs.create_file('conf/sources.json', contents='{}')
         self.fs.create_file(
             'conf/threat_intel.json',
             contents=json.dumps(config_data['threat_intel'])
@@ -78,7 +77,6 @@ class TestConfigLoading(fake_filesystem_unittest.TestCase):
         self.fs.create_file('conf_schemas/global.json', contents='{}')
         self.fs.create_file('conf_schemas/lambda.json', contents='{}')
         self.fs.create_file('conf_schemas/outputs.json', contents='{}')
-        self.fs.create_file('conf_schemas/sources.json', contents='{}')
         self.fs.create_file(
             'conf_schemas/schemas/csv.json',
             contents='{"csv_log": {"schema": {"data": "string","uid": "integer"},"parser": "csv"}}'
@@ -108,7 +106,6 @@ class TestConfigLoading(fake_filesystem_unittest.TestCase):
             'lambda',
             'logs',
             'outputs',
-            'sources',
             'threat_intel',
             'normalized_types'
         }
@@ -122,7 +119,6 @@ class TestConfigLoading(fake_filesystem_unittest.TestCase):
             'clusters',
             'lambda',
             'outputs',
-            'sources',
             'threat_intel',
             'normalized_types'
         }
@@ -137,7 +133,6 @@ class TestConfigLoading(fake_filesystem_unittest.TestCase):
             'lambda',
             'logs',
             'outputs',
-            'sources',
             'threat_intel',
             'normalized_types'
         }
@@ -152,7 +147,6 @@ class TestConfigLoading(fake_filesystem_unittest.TestCase):
             'global',
             'lambda',
             'outputs',
-            'sources',
         }
         assert_equal(set(config), expected_keys)
 

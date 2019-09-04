@@ -15,7 +15,7 @@ Configuration
 
 When enabling the Kinesis Firehose module, a dedicated Delivery Stream is created per each log type.
 
-For example, if the ``sources.json`` defines the following:
+For example, if the data sources field for a cluster defined in ``conf/clusters/<cluster>.json`` looks like the following:
 
 .. code-block:: json
 

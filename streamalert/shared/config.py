@@ -127,8 +127,7 @@ def load_config(conf_dir='conf/', exclude=None, include=None, validate=True):
                 'global': <global.json contents>,
                 'lambda': <lambda.json contents>,
                 'logs': <logs.json contents>,
-                'outputs': <outputs.json contents>,
-                'sources': <sources.json contents>
+                'outputs': <outputs.json contents>
             }
     """
     default_files = {file for file in os.listdir(conf_dir) if file.endswith('.json')}
@@ -227,7 +226,7 @@ def _validate_config(config):
 
     Checks for `logs.json`:
         - each log has a schema and parser declared
-    Checks for `sources.json`
+    Checks for `cluster.json` data_sources:
         - the sources contains either kinesis or s3 keys
         - each sources has a list of logs declared
 
@@ -255,8 +254,9 @@ def _validate_config(config):
                 if not set(data_sources).issubset(supported_sources):
                     missing_sources = supported_sources - set(data_sources)
                     raise ConfigError(
-                        'The \'sources.json\' file contains invalid source entries: {}. '
+                        'The data sources for cluster {} contain invalid source entries: {}. '
                         'The following sources are supported: {}'.format(
+                            cluster,
                             ', '.join('\'{}\''.format(source) for source in missing_sources),
                             ', '.join('\'{}\''.format(source) for source in supported_sources)
                         )

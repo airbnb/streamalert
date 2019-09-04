@@ -446,9 +446,10 @@ class CLIConfig:
 
         # Add this service to the sources for this app integration
         # The `stream_alert_app` is purposely singular here
-        app_sources = self.config['sources'].get('stream_alert_app', {})
+        app_sources = self.config['clusters'][cluster_name]['data_sources'].get(
+            'stream_alert_app', {})
         app_sources[func_name] = {'logs': [app.service()]}
-        self.config['sources']['stream_alert_app'] = app_sources
+        self.config['clusters'][cluster_name]['data_sources']['stream_alert_app'] = app_sources
 
         LOGGER.info('Successfully added \'%s\' app integration to \'conf/clusters/%s.json\' '
                     'for service \'%s\'.', app_info['app_name'], app_info['cluster'],

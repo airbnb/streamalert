@@ -6,7 +6,7 @@ For background on supported datasource types, read `datasources <datasources.htm
 Overview
 --------
 
-Datasources defined in ``conf/sources.json`` control which datasources can send to and be analyzed by StreamAlert.
+Datasources defined in each cluster file in the ``conf/clusters`` directory under the ``data_sources`` top level key control which datasources can send to and be analyzed by StreamAlert. 
 
 Each datasource (``kinesis``, ``s3``, or ``sns``) contains a mapping of specific resource names (kinesis stream names, s3 bucket IDs) along with a list of logs coming from that source.
 

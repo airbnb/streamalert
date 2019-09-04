@@ -117,7 +117,7 @@ Key                        Type                    Required  Description
                                                              This should be one of: ``kinesis``, ``s3``, ``sns``, or ``stream_alert_app``.
 ``source``                 ``string``              Yes       The name of the Kinesis Stream or S3 bucket, SNS topic or StreamAlert App
                                                              function where the data originated from. This value should match a source
-                                                             provided in ``conf/sources.json``
+                                                             provided in the data_sources defined within a cluster in ``conf/clusters/<cluster>.json``
 ``trigger_rules``          ``list``                No        A list of zero or more rule names that this test record should trigger.
                                                              An empty list implies this record should not trigger any alerts
 ``validate_schemas_only``  ``boolean``             No        Whether or not the test record should go through the rule processing engine.
