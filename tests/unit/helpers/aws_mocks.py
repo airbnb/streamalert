@@ -169,56 +169,86 @@ def create_lambda_function(function_name, region):
 
 def setup_mock_alerts_table(table_name):
     """Create a mock DynamoDB alerts table used by rules engine, alert processor, alert merger"""
-    boto3.client('dynamodb').create_table(
-        AttributeDefinitions=[
-            {
-                'AttributeName': 'RuleName',
-                'AttributeType': 'S'
-            },
-            {
-                'AttributeName': 'AlertID',
-                'AttributeType': 'S'
-            }
-        ],
-        KeySchema=[
-            {
-                'AttributeName': 'RuleName',
-                'KeyType': 'HASH'
-            },
-            {
-                'AttributeName': 'AlertID',
-                'KeyType': 'RANGE'
-            }
-        ],
-        ProvisionedThroughput={
-            'ReadCapacityUnits': 5,
-            'WriteCapacityUnits': 5
+    put_mock_dynamod_data(
+        table_name,
+        {
+            'AttributeDefinitions': [
+                {
+                    'AttributeName': 'RuleName',
+                    'AttributeType': 'S'
+                },
+                {
+                    'AttributeName': 'AlertID',
+                    'AttributeType': 'S'
+                }
+            ],
+            'KeySchema': [
+                {
+                    'AttributeName': 'RuleName',
+                    'KeyType': 'HASH'
+                },
+                {
+                    'AttributeName': 'AlertID',
+                    'KeyType': 'RANGE'
+                }
+            ],
         },
-        TableName=table_name
+        []
     )
 
 
 def setup_mock_rules_table(table_name):
     """Create a mock DynamoDB rules table used by the CLI, rules engine, and rule promoter"""
-    boto3.client('dynamodb').create_table(
-        AttributeDefinitions=[
-            {
-                'AttributeName': 'RuleName',
-                'AttributeType': 'S'
-            }
-        ],
-        KeySchema=[
-            {
-                'AttributeName': 'RuleName',
-                'KeyType': 'HASH'
-            }
-        ],
-        ProvisionedThroughput={
-            'ReadCapacityUnits': 5,
-            'WriteCapacityUnits': 5
+    put_mock_dynamod_data(
+        table_name,
+        {
+            'AttributeDefinitions': [
+                {
+                    'AttributeName': 'RuleName',
+                    'AttributeType': 'S'
+                }
+            ],
+            'KeySchema': [
+                {
+                    'AttributeName': 'RuleName',
+                    'KeyType': 'HASH'
+                }
+            ]
         },
-        TableName=table_name
+        []
     )
+
+
+def put_mock_dynamod_data(table_name, schema, data):
+    """
+    Params:
+        table_name (str)
+        schema (dict)
+            A dynamodb schema. You will need the following keys:
+                * AttributeDefinitions
+                    List of attribute definition. Each attribute definition has 2 fields:
+                        * AttributeName
+                        * AttributeType
+                * KeySchema
+                    List of key definitions. Each key definition has 2 fields:
+                        * AttributeName
+                        * KeyType
+        data (list[dict])
+            A list of individual dict elements, mapping columns to values.
+    """
+
+    schema['TableName'] = table_name
+    schema['ProvisionedThroughput'] = {
+        'ReadCapacityUnits': 5,
+        'WriteCapacityUnits': 5
+    }
+
+    boto3.client('dynamodb', region_name='us-east-1').create_table(**schema)
+
+    table = boto3.resource('dynamodb', region_name='us-east-1').Table(table_name)
+    with table.batch_writer() as batch:
+        for datum in data:
+            batch.put_item(Item=datum)
 
 
 def put_mock_s3_object(bucket, key, data, region='us-east-1'):
