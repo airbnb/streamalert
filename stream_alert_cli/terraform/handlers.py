@@ -24,189 +24,316 @@ from stream_alert_cli.helpers import check_credentials, continue_prompt, run_com
 from stream_alert_cli.manage_lambda.deploy import deploy
 from stream_alert_cli.terraform.generate import terraform_generate_handler
 from stream_alert_cli.terraform.helpers import terraform_check
+from stream_alert_cli.utils import (
+    add_clusters_arg,
+    CLICommand,
+    set_parser_epilog,
+    UniqueSetAction,
+)
 
 LOGGER = get_logger(__name__)
 
 
-def _terraform_init_backend():
-    """Initialize the infrastructure backend (S3) using Terraform
+class TerraformInitCommand(CLICommand):
+    description = 'Initialize StreamAlert infrastructure'
 
-    Returns:
-        bool: False if errors occurred, True otherwise
-    """
-    # Check for valid credentials
-    if not check_credentials():
-        return False
+    @classmethod
+    def setup_subparser(cls, subparser):
+        """Add init subparser: manage.py init [options]"""
+        subparser.add_argument(
+            '-b',
+            '--backend',
+            action='store_true',
+            help=(
+                'Initialize the Terraform backend (S3). '
+                'Useful for refreshing a pre-existing deployment'
+            )
+        )
 
-    # Verify terraform is installed
-    if not terraform_check():
-        return False
+    @classmethod
+    def handler(cls, options, config):
+        """Initialize infrastructure using Terraform
 
-    LOGGER.info('Initializing StreamAlert backend')
-    return run_command(['terraform', 'init'])
+        Args:
+            config (CLIConfig): Loaded StreamAlert config
 
+        Returns:
+            bool: False if errors occurred, True otherwise
+        """
+        # Stop here if only initializing the backend
+        if options.backend:
+            return cls._terraform_init_backend()
 
-def terraform_init(options, config):
-    """Initialize infrastructure using Terraform
+        LOGGER.info('Initializing StreamAlert')
 
-    Args:
-        config (CLIConfig): Loaded StreamAlert config
+        # generate init Terraform files
+        if not terraform_generate_handler(config=config, init=True):
+            return False
 
-    Returns:
-        bool: False if errors occurred, True otherwise
-    """
-    # Stop here if only initializing the backend
-    if options.backend:
-        return _terraform_init_backend()
+        LOGGER.info('Initializing Terraform')
+        if not run_command(['terraform', 'init']):
+            return False
 
-    LOGGER.info('Initializing StreamAlert')
+        # build init infrastructure
+        LOGGER.info('Building initial infrastructure')
+        init_targets = [
+            'aws_s3_bucket.lambda_source', 'aws_s3_bucket.logging_bucket',
+            'aws_s3_bucket.stream_alert_secrets', 'aws_s3_bucket.terraform_remote_state',
+            'aws_s3_bucket.streamalerts',
+            'aws_kms_key.server_side_encryption', 'aws_kms_alias.server_side_encryption',
+            'aws_kms_key.stream_alert_secrets', 'aws_kms_alias.stream_alert_secrets'
+        ]
+        if not tf_runner(targets=init_targets):
+            LOGGER.error('An error occurred while running StreamAlert init')
+            return False
 
-    # generate init Terraform files
-    if not terraform_generate_handler(config=config, init=True):
-        return False
+        # generate the main.tf with remote state enabled
+        LOGGER.info('Configuring Terraform Remote State')
+        if not terraform_generate_handler(config=config, check_tf=False, check_creds=False):
+            return False
 
-    LOGGER.info('Initializing Terraform')
-    if not run_command(['terraform', 'init']):
-        return False
+        if not run_command(['terraform', 'init']):
+            return False
 
-    # build init infrastructure
-    LOGGER.info('Building initial infrastructure')
-    init_targets = [
-        'aws_s3_bucket.lambda_source', 'aws_s3_bucket.logging_bucket',
-        'aws_s3_bucket.stream_alert_secrets', 'aws_s3_bucket.terraform_remote_state',
-        'aws_s3_bucket.streamalerts',
-        'aws_kms_key.server_side_encryption', 'aws_kms_alias.server_side_encryption',
-        'aws_kms_key.stream_alert_secrets', 'aws_kms_alias.stream_alert_secrets'
-    ]
-    if not tf_runner(targets=init_targets):
-        LOGGER.error('An error occurred while running StreamAlert init')
-        return False
+        LOGGER.info('Deploying Lambda Functions')
 
-    # generate the main.tf with remote state enabled
-    LOGGER.info('Configuring Terraform Remote State')
-    if not terraform_generate_handler(config=config, check_tf=False, check_creds=False):
-        return False
+        functions = ['rule', 'alert', 'alert_merger', 'athena', 'classifier']
 
-    if not run_command(['terraform', 'init']):
-        return False
+        deploy(functions, config)
 
-    LOGGER.info('Deploying Lambda Functions')
+        # we need to manually create the streamalerts table since terraform does not support this
+        # See: https://github.com/terraform-providers/terraform-provider-aws/issues/1486
+        alerts_bucket = '{}.streamalerts'.format(config['global']['account']['prefix'])
+        create_table('alerts', alerts_bucket, config)
 
-    functions = ['rule', 'alert', 'alert_merger', 'athena', 'classifier']
-
-    deploy(functions, config)
-
-    # we need to manually create the streamalerts table since terraform does not support this
-    # See: https://github.com/terraform-providers/terraform-provider-aws/issues/1486
-    alerts_bucket = '{}.streamalerts'.format(config['global']['account']['prefix'])
-    create_table('alerts', alerts_bucket, config)
-
-    LOGGER.info('Building remainding infrastructure')
-    return tf_runner(refresh=False)
-
-
-def terraform_build_handler(options, config):
-    """Run Terraform with an optional set of targets and clusters
-
-    Args:
-        options (argparse.Namespace): Parsed arguments from manage.py
-        config (CLIConfig): Loaded StreamAlert config
-
-    Returns:
-        bool: False if errors occurred, True otherwise
-    """
-    if not terraform_generate_handler(config=config):
-        return False
-
-    target_modules, valid = _get_valid_tf_targets(config, options.target)
-    if not valid:
-        return False
-
-    return tf_runner(targets=target_modules if target_modules else None)
+        LOGGER.info('Building remainding infrastructure')
+        return tf_runner(refresh=False)
 
 
-def terraform_destroy_handler(options, config):
-    """Use Terraform to destroy any existing infrastructure
+    @staticmethod
+    def _terraform_init_backend():
+        """Initialize the infrastructure backend (S3) using Terraform
 
-    Args:
-        options (argparse.Namespace): Parsed arguments from manage.py
-        config (CLIConfig): Loaded StreamAlert config
+        Returns:
+            bool: False if errors occurred, True otherwise
+        """
+        # Check for valid credentials
+        if not check_credentials():
+            return False
 
-    Returns:
-        bool: False if errors occurred, True otherwise
-    """
-    # Check for valid credentials
-    if not check_credentials():
-        return False
+        # Verify terraform is installed
+        if not terraform_check():
+            return False
 
-    # Verify terraform is installed
-    if not terraform_check():
-        return False
+        LOGGER.info('Initializing StreamAlert backend')
+        return run_command(['terraform', 'init'])
 
-    # Ask for approval here since multiple Terraform commands may be necessary
-    if not continue_prompt(message='Are you sure you want to destroy?'):
-        return False
 
-    if options.target:
+class TerraformBuildCommand(CLICommand):
+    description = 'Run terraform against StreamAlert modules, optionally targeting specific modules'
+
+    @classmethod
+    def setup_subparser(cls, subparser):
+        """Add build subparser: manage.py build [options]"""
+        set_parser_epilog(
+            subparser,
+            epilog=(
+                '''\
+                Example:
+
+                    manage.py build --target alert_processor_lambda
+                '''
+            )
+        )
+
+        _add_default_tf_args(subparser)
+
+    @classmethod
+    def handler(cls, options, config):
+        """Run Terraform with an optional set of targets and clusters
+
+        Args:
+            options (argparse.Namespace): Parsed arguments from manage.py
+            config (CLIConfig): Loaded StreamAlert config
+
+        Returns:
+            bool: False if errors occurred, True otherwise
+        """
+        if not terraform_generate_handler(config=config):
+            return False
+
         target_modules, valid = _get_valid_tf_targets(config, options.target)
         if not valid:
             return False
 
-        return tf_runner(
-            action='destroy',
-            auto_approve=True,
-            targets=target_modules if target_modules else None
+        return tf_runner(targets=target_modules if target_modules else None)
+
+
+class TerraformDestroyCommand(CLICommand):
+    description = 'Destroy StreamAlert infrastructure, optionally targeting specific modules'
+
+    @classmethod
+    def setup_subparser(cls, subparser):
+        """Add destroy subparser: manage.py destroy [options]"""
+        set_parser_epilog(
+            subparser,
+            epilog=(
+                '''\
+                Example:
+
+                    manage.py destroy --target aws_s3_bucket.streamalerts
+                '''
+            )
         )
 
-    # Migrate back to local state so Terraform can successfully
-    # destroy the S3 bucket used by the backend.
-    # Do not check for terraform or aws creds again since these were checked above
-    if not terraform_generate_handler(config=config, init=True, check_tf=False, check_creds=False):
-        return False
+        _add_default_tf_args(subparser)
 
-    if not run_command(['terraform', 'init']):
-        return False
+    @classmethod
+    def handler(cls, options, config):
+        """Use Terraform to destroy any existing infrastructure
 
-    # Destroy all of the infrastructure
-    if not tf_runner(action='destroy', auto_approve=True):
-        return False
+        Args:
+            options (argparse.Namespace): Parsed arguments from manage.py
+            config (CLIConfig): Loaded StreamAlert config
 
-    # Remove old Terraform files
-    return terraform_clean_handler()
+        Returns:
+            bool: False if errors occurred, True otherwise
+        """
+        # Check for valid credentials
+        if not check_credentials():
+            return False
+
+        # Verify terraform is installed
+        if not terraform_check():
+            return False
+
+        # Ask for approval here since multiple Terraform commands may be necessary
+        if not continue_prompt(message='Are you sure you want to destroy?'):
+            return False
+
+        if options.target:
+            target_modules, valid = _get_valid_tf_targets(config, options.target)
+            if not valid:
+                return False
+
+            return tf_runner(
+                action='destroy',
+                auto_approve=True,
+                targets=target_modules if target_modules else None
+            )
+
+        # Migrate back to local state so Terraform can successfully
+        # destroy the S3 bucket used by the backend.
+        # Do not check for terraform or aws creds again since these were checked above
+        if not terraform_generate_handler(config=config, init=True, check_tf=False,
+                                          check_creds=False):
+            return False
+
+        if not run_command(['terraform', 'init']):
+            return False
+
+        # Destroy all of the infrastructure
+        if not tf_runner(action='destroy', auto_approve=True):
+            return False
+
+        # Remove old Terraform files
+        return TerraformCleanCommand.handler(options, config)
 
 
-def terraform_clean_handler():
-    """Remove leftover Terraform statefiles and main/cluster files
+class TerraformCleanCommand(CLICommand):
+    description = 'Remove current Terraform files'
 
-    Args:
-        config (CLIConfig): Loaded StreamAlert config
+    @classmethod
+    def setup_subparser(cls, subparser):
+        """Manage.py clean takes no arguments"""
 
-    Returns:
-        bool: False if errors occurred, True otherwise
-    """
-    LOGGER.info('Cleaning Terraform files')
+    @classmethod
+    def handler(cls, options, config):
+        """Remove leftover Terraform statefiles and main/cluster files
 
-    def _rm_file(path):
-        if not os.path.isfile(path):
-            return
-        print('Removing terraform file: {}'.format(path))
-        os.remove(path)
+        Args:
+            config (CLIConfig): Loaded StreamAlert config
 
-    for root, _, files in os.walk('terraform'):
-        for file_name in files:
-            path = os.path.join(root, file_name)
-            if path.endswith('.tf.json'):
-                _rm_file(path)
+        Returns:
+            bool: False if errors occurred, True otherwise
+        """
+        LOGGER.info('Cleaning Terraform files')
 
-    for tf_file in ['terraform.tfstate', 'terraform.tfstate.backup']:
-        path = 'terraform/{}'.format(tf_file)
-        _rm_file(path)
+        def _rm_file(path):
+            if not os.path.isfile(path):
+                return
+            print('Removing terraform file: {}'.format(path))
+            os.remove(path)
 
-    # Finally, delete the Terraform directory
-    if os.path.isdir('terraform/.terraform/'):
-        shutil.rmtree('terraform/.terraform/')
+        for root, _, files in os.walk('terraform'):
+            for file_name in files:
+                path = os.path.join(root, file_name)
+                if path.endswith('.tf.json'):
+                    _rm_file(path)
 
-    return True
+        for tf_file in ['terraform.tfstate', 'terraform.tfstate.backup']:
+            path = 'terraform/{}'.format(tf_file)
+            _rm_file(path)
+
+        # Finally, delete the Terraform directory
+        if os.path.isdir('terraform/.terraform/'):
+            shutil.rmtree('terraform/.terraform/')
+
+        return True
+
+
+class TerraformListTargetsCommand(CLICommand):
+    description = 'List available Terraform modules to be used for targeted builds'
+
+    @classmethod
+    def setup_subparser(cls, subparser):
+        """Manage.py list-targets does not take any arguments"""
+
+    @classmethod
+    def handler(cls, options, config):
+        """Print the available terraform targets
+
+        Args:
+            config (CLIConfig): Loaded StreamAlert config
+
+        Returns:
+            bool: False if errors occurred, True otherwise
+        """
+        modules = get_tf_modules(config, True)
+        if not modules:
+            return False
+
+        max_resource_len = max(len(value) for values in modules.values() for value in values) + 8
+
+        row_format_str = '{prefix:<{pad}}{value}'
+
+        header = row_format_str.format(prefix='Target', pad=max_resource_len, value='Type')
+        print(header)
+        print('-' * (len(header) + 4))
+        for value_type in sorted(modules):
+            for item in sorted(modules[value_type]):
+                print(row_format_str.format(prefix=item, pad=max_resource_len, value=value_type))
+
+        return True
+
+
+def _add_default_tf_args(tf_parser):
+    """Add the default terraform parser options"""
+    tf_parser.add_argument(
+        '-t',
+        '--target',
+        metavar='TARGET',
+        help=(
+            'One or more Terraform module name to target. Use `list-targets` for a list '
+            'of available targets'
+        ),
+        action=UniqueSetAction,
+        default=set(),
+        nargs='+'
+    )
+
+    # Add the option to specify cluster(s)
+    add_clusters_arg(tf_parser)
 
 
 def _get_valid_tf_targets(config, targets):
@@ -261,30 +388,3 @@ def get_tf_modules(config, generate=False):
                     )
 
     return {'module': modules, 'resource': resources}
-
-
-def terraform_list_targets(config):
-    """Print the available terraform targets
-
-    Args:
-        config (CLIConfig): Loaded StreamAlert config
-
-    Returns:
-        bool: False if errors occurred, True otherwise
-    """
-    modules = get_tf_modules(config, True)
-    if not modules:
-        return False
-
-    max_resource_len = max(len(value) for values in modules.values() for value in values) + 8
-
-    row_format_str = '{prefix:<{pad}}{value}'
-
-    header = row_format_str.format(prefix='Target', pad=max_resource_len, value='Type')
-    print(header)
-    print('-' * (len(header) + 4))
-    for value_type in sorted(modules):
-        for item in sorted(modules[value_type]):
-            print(row_format_str.format(prefix=item, pad=max_resource_len, value=value_type))
-
-    return True
