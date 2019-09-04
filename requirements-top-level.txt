@@ -5,7 +5,7 @@ autopep8
 backoff
 bandit
 boto3
-boxsdk[jwt]==2.0.0a11
+boxsdk[jwt]==2.6.0
 cbapi
 coverage
 coveralls

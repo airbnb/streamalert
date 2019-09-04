@@ -12,8 +12,8 @@ How to set up the intercom app
 
 The Intercom API requires an access token. Get an access token by following `these instructions <https://developers.intercom.com/building-apps/docs/authorization#section-how-to-get-an-access-token>`_.
 
-To specify an API version, follow `these instructions <https://developers.intercom.com/building-apps/docs/api-versioning>`_ to do so through Intercom's Developer Hub. 
-The default will be the latest stable version. The Intercom app works on versions 1.2 or later. 
+To specify an API version, follow `these instructions <https://developers.intercom.com/building-apps/docs/api-versioning>`_ to do so through Intercom's Developer Hub.
+The default will be the latest stable version. The Intercom app works on versions 1.2 or later.
 
 How to set up the slack app
 ###########################
@@ -35,8 +35,8 @@ How to update necessary dependencies
 ####################################
 
 
-Create an EC2 Instance
-======================
+Build dependencies on an EC2 Instance (python3.7)
+=================================================
 
 An EC2 instance that resembles the AWS Lambda environment must be launched.
 This should use the Amazon Linux AMI, documented `here <http://docs.aws.amazon.com/lambda/latest/dg/current-supported-versions.html>`_.
@@ -61,7 +61,7 @@ on ec2 instance
   $ rm -rf $HOME/.cache/pip/
 
   # Create and source venv
-  $ virtualenv $HOME/venv
+  $ virtualenv -p python3.7 $HOME/venv
   $ source $HOME/venv/bin/activate
 
   # Upgrade pip and setuptools (they are super old)
@@ -71,9 +71,9 @@ on ec2 instance
   $ mkdir $HOME/build_temp $HOME/pip_temp
 
   # Install all of the dependencies to this directory
-  $ pip install boxsdk[jwt]==2.0.0a11 --build $HOME/build_temp/ --target $HOME/pip_temp
+  $ pip install boxsdk[jwt]==2.6.0 --build $HOME/build_temp/ --target $HOME/pip_temp
 
-  # Replace the `boxsdk[jwt]==2.0.0a11` below with the desired package & version
+  # Replace the `boxsdk[jwt]==2.6.0` below with the desired package & version
   # For example, the following would update the aliyun dependencies:
   # pip install aliyun-python-sdk-actiontrail==2.0.0 --build $HOME/build_temp/ --target $HOME/pip_temp
 
@@ -96,3 +96,66 @@ back on local system
 
   # scp to local host's current directory
   $ scp -i /path/to/<private-key>.pem ec2-user@public.dns.address:~/pip_temp/pip.zip .
+
+Build dependencies on an virtual machine locally (python3.7)
+============================================================
+
+There is a Vagrantfile located in streamalert repo root directory. We can use this Vagrantfile to spin up an Ubuntu 18.04 virtual machine locally to build dependencies for box sdk or aliyun sdk.
+
+Download and install Vagrant if you haven't
++++++++++++++++++++++++++++++++++++++++++++
+
+Please visit `Vagrant download page <https://www.vagrantup.com/downloads.html>`_ for the information (recommend to install the latest Vagrant package).
+
+Bring up the virtual machine
+++++++++++++++++++++++++++++
+
+.. code-block:: bash
+
+  # It will take few mins to spin up virtual machine depending on your network speed
+  $ vagrant up
+
+Login virtual machine and build the dependencies
+++++++++++++++++++++++++++++++++++++++++++++++++
+
+.. code-block:: bash
+
+  $ vagrant ssh
+
+  # make sure you create virtual environment with python3.7
+  $ which python3.7
+
+  # Create virtual environment using virtualenvwrapper which is pre-installed
+  $ mkvirtualenv -p /usr/bin/python3.7 test_venv
+
+  # upgrade pip and setuptools if neccessary
+  $ pip install --upgrade pip setuptools
+
+  $ mkdir $HOME/build_temp $HOME/pip_temp
+  $ pip install boxsdk[jwt]==2.6.0 --build $HOME/build_temp/ --target $HOME/pip_temp
+
+  # Replace the `boxsdk[jwt]==2.6.0` below with the desired package & version
+  # For example, the following would update the aliyun dependencies:
+  # pip install aliyun-python-sdk-actiontrail==2.0.0 --build $HOME/build_temp/ --target $HOME/pip_temp
+
+  $ cd $HOME/pip_temp
+  $ find . -name '*.pyc' | xargs rm -rf
+
+  # Install zip package
+  $ sudo apt-get install zip
+  $ zip -r pip.zip .
+  $ exit
+
+Transfer pip.zip file from virtual machine to local host
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+.. code-block:: bash
+
+  $ vagrant scp development_py3:/home/vagrant/pip_temp/pip.zip stream_alert/apps/_apps/boxsdk[jwt]==2.6.0_dependencies.zip
+
+Destroy the virtual machine you are done
+++++++++++++++++++++++++++++++++++++++++
+
+.. code-block:: bash
+
+  $ vagrant destroy
