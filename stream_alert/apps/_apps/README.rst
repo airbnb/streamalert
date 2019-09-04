@@ -35,8 +35,8 @@ How to update necessary dependencies
 ####################################
 
 
-Build dependencies on an EC2 Instance (python3.7)
-=================================================
+Building Dependencies Using EC2
+===============================
 
 An EC2 instance that resembles the AWS Lambda environment must be launched.
 This should use the Amazon Linux AMI, documented `here <http://docs.aws.amazon.com/lambda/latest/dg/current-supported-versions.html>`_.
@@ -97,26 +97,26 @@ back on local system
   # scp to local host's current directory
   $ scp -i /path/to/<private-key>.pem ec2-user@public.dns.address:~/pip_temp/pip.zip .
 
-Build dependencies on an virtual machine locally (python3.7)
-============================================================
+Building Dependencies Using Vagrant
+===================================
 
-There is a Vagrantfile located in streamalert repo root directory. We can use this Vagrantfile to spin up an Ubuntu 18.04 virtual machine locally to build dependencies for box sdk or aliyun sdk.
+There is a `Vagrantfile <https://github.com/airbnb/streamalert/blob/release-3-0-0/Vagrantfile>`_ located in the root of the StreamAlert repository. This file can be used to spin up a virtual machine and build dependencies for the box sdk or aliyun sdk.
 
-Download and install Vagrant if you haven't
-+++++++++++++++++++++++++++++++++++++++++++
+Install Vagrant
++++++++++++++++
 
-Please visit `Vagrant download page <https://www.vagrantup.com/downloads.html>`_ for the information (recommend to install the latest Vagrant package).
+Please visit the `Vagrant download page <https://www.vagrantup.com/downloads.html>`_ for more information on Vagrant. It is recommended to install the latest version of Vagrant.
 
-Bring up the virtual machine
-++++++++++++++++++++++++++++
+Start the Virtual Machine
++++++++++++++++++++++++++
 
 .. code-block:: bash
 
-  # It will take few mins to spin up virtual machine depending on your network speed
+  # It may take few minutes to start the virtual machine for the first time, depending on your network speed
   $ vagrant up
 
-Login virtual machine and build the dependencies
-++++++++++++++++++++++++++++++++++++++++++++++++
+SSH and Build Dependencies
+++++++++++++++++++++++++++
 
 .. code-block:: bash
 
@@ -146,15 +146,19 @@ Login virtual machine and build the dependencies
   $ zip -r pip.zip .
   $ exit
 
-Transfer pip.zip file from virtual machine to local host
-++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Download Dependencies
++++++++++++++++++++++
+
+Copy the `pip.zip` file from the virtual machine to the local host.
 
 .. code-block:: bash
 
   $ vagrant scp development_py3:/home/vagrant/pip_temp/pip.zip stream_alert/apps/_apps/boxsdk[jwt]==2.6.0_dependencies.zip
 
-Destroy the virtual machine you are done
-++++++++++++++++++++++++++++++++++++++++
+Destroy the VM
+++++++++++++++
+
+Destroy the Vagrant virtual machine after you are finished building and copying dependencies.
 
 .. code-block:: bash
 
