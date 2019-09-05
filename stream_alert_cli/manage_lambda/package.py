@@ -45,7 +45,7 @@ class LambdaPackage:
         'aliyun-python-sdk-actiontrail': 'aliyun-python-sdk-actiontrail==2.0.0',
         'backoff': 'backoff==1.8.0',
         'boto3': 'boto3==1.9.208',
-        'boxsdk[jwt]': 'boxsdk[jwt]==2.0.0a11',
+        'boxsdk[jwt]': 'boxsdk[jwt]==2.6.0',
         'cbapi': 'cbapi==1.5.1',
         'google-api-python-client': 'google-api-python-client==1.6.4',
         'jmespath': 'jmespath==0.9.4',
