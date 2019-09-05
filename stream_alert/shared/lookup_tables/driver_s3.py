@@ -59,8 +59,7 @@ class S3Driver(PersistenceDriver):
         #     "bucket": "airbnb.sample.lookuptable",
         #     "key": "resource_map.gz",
         #     "cache_refresh_minutes": 10,
-        #     "compression": "gzip",
-        #     "key_delimiter": "|"
+        #     "compression": "gzip"
         # },
 
         super(S3Driver, self).__init__(configuration)
