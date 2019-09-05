@@ -182,6 +182,13 @@ class Compression:
 
     @staticmethod
     def gz_decompress(driver, data):
+        """
+        Params:
+            driver (PersistenceDriver)
+            data (str): Compressed data
+
+        Return: str
+        """
         try:
             data = zlib.decompress(data, 47)
             LOGGER.debug(
@@ -194,13 +201,20 @@ class Compression:
                 'LookupTable (%s): Data is not compressed; defaulting to original payload',
                 driver.id
             )
-        return data
+        return data.decode()
 
     @staticmethod
     def gz_compress(driver, data):
+        """
+        Params:
+            driver (PersistenceDriver)
+            data (str): Uncompressed data
+
+        Return: str
+        """
         try:
             original_size = sys.getsizeof(data)
-            data = zlib.compress(data, level=zlib.Z_BEST_COMPRESSION)
+            data = zlib.compress(data.encode(), level=zlib.Z_BEST_COMPRESSION)
             LOGGER.debug(
                 'LookupTable (%s): Successfully compressed input data from %d to %d bytes',
                 driver.id,

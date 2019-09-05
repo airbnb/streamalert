@@ -79,6 +79,17 @@ class TestDriverCache:
         assert_true(self._cache.has('key'))
         assert_equal(self._cache.get('key', 'default'), 'default')
 
+    def test_set_blank_with_existing(self):
+        """LookupTables - DriverCache - set_blank with Time Machine on existing - At ttl"""
+        self._cache._clock.time_machine(datetime(year=2000, month=1, day=1))
+
+        assert_false(self._cache.has('key'))
+        self._cache.set('key', 'nothing', 1)
+        assert_true(self._cache.has('key'))
+        self._cache.set_blank('key', 1)
+        assert_true(self._cache.has('key'))
+        assert_equal(self._cache.get('key', 'default'), 'default')
+
     def test_set_blank_past_ttl(self):
         """LookupTables - DriverCache - set_blank with Time Machine - At ttl"""
         self._cache._clock.time_machine(datetime(year=2000, month=1, day=1))
@@ -105,3 +116,21 @@ class TestDriverCache:
 
         assert_true(self._cache.has('space'))
         assert_true(self._cache.has('up'))
+
+    def test_cache_eviction(self):
+        """LookupTables - DriverCache - set with cache eviction"""
+        cache = DriverCache(maximum_key_count=5)
+
+        assert_equal(len(cache._data), 0)
+
+        cache.set('asdf1', 'cat', 1)
+        cache.set('asdf2', 'cat', 1)
+        cache.set('asdf3', 'cat', 1)
+        cache.set('asdf4', 'cat', 1)
+        cache.set('asdf5', 'always cats', 1)
+
+        assert_equal(len(cache._data), 5)
+
+        cache.set('asdf6', 'definitely always cats', 1)
+
+        assert_equal(len(cache._data), 5)
