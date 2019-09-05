@@ -73,7 +73,9 @@ class PayloadRecord(object):
 
         try:
             #Build a JSON string if data is a dict or non-empty list of dicts
-            if isinstance(invalid_records, dict) or (isinstance(invalid_records, list) and invalid_records and isinstance(invalid_records[0], dict)):
+            if (isinstance(invalid_records, dict) or
+                    (isinstance(invalid_records, list) and
+                     invalid_records and isinstance(invalid_records[0], dict))):
                 invalid_records = json.dumps(invalid_records)
         except (TypeError, ValueError):
             LOGGER.debug('A PayloadRecord has invalid records that are not serializable as JSON')
