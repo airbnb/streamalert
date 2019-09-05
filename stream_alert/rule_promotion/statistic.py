@@ -18,7 +18,7 @@ limitations under the License.
 class StagingStatistic:
     """Store information on generated alerts."""
 
-    _ALERT_COUNT_UNKOWN = 'unknown'
+    _ALERT_COUNT_UNKOWN = -1
 
     _COUNT_QUERY_TEMPLATE = (
         "SELECT rule_name, count(*) AS count FROM alerts WHERE {where_clause} GROUP BY rule_name"
