@@ -19,7 +19,6 @@ import os
 
 from stream_alert.shared.logger import get_logger
 
-
 LOGGER = get_logger(__name__)
 
 
@@ -31,6 +30,7 @@ class TopLevelConfigKeys(object):
     LOGS = 'logs'
     NORMALIZED_TYPES = 'normalized_types'
     OUTPUTS = 'outputs'
+    SCHEMAS = 'schemas'
     SOURCES = 'sources'
     THREAT_INTEL = 'threat_intel'
 
@@ -140,12 +140,11 @@ def load_config(conf_dir='conf/', exclude=None, include=None, validate=True):
     conf_files = conf_files.difference(exclusions)
 
 
-    schemas_name = 'schemas'
-    schemas_dir = os.path.join(conf_dir, schemas_name)
+    schemas_dir = os.path.join(conf_dir, TopLevelConfigKeys.SCHEMAS)
     schema_files = []
 
-    if (os.path.exists(schemas_dir) and schemas_name not in exclusions
-            and (not include or schemas_name in include)):
+    if (os.path.exists(schemas_dir) and TopLevelConfigKeys.SCHEMAS not in exclusions
+            and (not include or TopLevelConfigKeys.SCHEMAS in include)):
         schema_files = [
             schema_file for schema_file in os.listdir(schemas_dir) if schema_file.endswith('.json')
         ]
@@ -154,7 +153,7 @@ def load_config(conf_dir='conf/', exclude=None, include=None, validate=True):
         available_files = ', '.join("'{}'".format(name) for name in sorted(default_files))
         raise ConfigError('No config files to load. This is likely due the misuse of '
                           'the \'include\' or \'exclude\' keyword arguments. Available '
-                          'files are: {}, clusters'.format(available_files))
+                          'files are: {}, clusters, and schemas.'.format(available_files))
 
     config = defaultdict(dict)
     for name in conf_files:
@@ -197,7 +196,7 @@ def _load_schemas(schemas_dir, schema_files):
         dup_schema = set(schemas).intersection(schemas_from_file)
         if dup_schema:
             LOGGER.warning('Duplicate schema detected %s. This may result in undefined behavior.',
-                           format(dup_schema))
+                           ', '.join(dup_schema))
         schemas.update(schemas_from_file)
     return OrderedDict(sorted(schemas.items(), key=SchemaSorter().sort_key))
 
