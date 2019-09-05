@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from abc import ABCMeta, abstractmethod, abstractproperty
+from json import JSONDecodeError
 import time
 
 import boto3
@@ -321,8 +322,10 @@ class AppIntegration(metaclass=ABCMeta):
         """Method for returning the json loaded response for this POST request
 
         Returns:
-            tuple (bool, dict): False if the was an error performing the request,
-                and the dictionary loaded from the json response
+            tuple (bool, dict|None): The first return value will be False if there
+                was an error performing the request.
+                The second return value will be None if JSONDecodeError raised,
+                otherwise it will be the dictionary loaded from the json response.
         """
         LOGGER.debug('[%s] Making POST request on poll #%d', self, self._poll_count)
 
@@ -335,7 +338,15 @@ class AppIntegration(metaclass=ABCMeta):
             response = requests.post(full_url, headers=headers,
                                      data=data, timeout=self._DEFAULT_REQUEST_TIMEOUT)
 
-        return self._check_http_response(response), response.json()
+        try:
+            return self._check_http_response(response), response.json()
+        except JSONDecodeError:
+            # https://github.com/airbnb/streamalert/issues/998
+            # When response returns Gateway Timeout with status_code 504, the response
+            # object will return empty string and raises JSONDecoderError a when .json() refers to.
+            # See https://github.com/psf/requests/blob/v2.22.0/requests/models.py#L853
+            # Instead of raising exception, we can just return False, None
+            return False, None
 
     @_report_time
     def _gather(self):
