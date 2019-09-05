@@ -547,6 +547,5 @@ class CLIConfig:
                 for cluster_key in self.config['clusters']:
                     parts = path_parts + [cluster_key]
                     self._config_writer(format_path(parts), self.config['clusters'][cluster_key])
-            else:
-                sort = config_key != 'logs'  # logs.json should not be sorted
-                self._config_writer(format_path(path_parts), self.config[config_key], sort)
+            elif config_key != 'logs':
+                self._config_writer(format_path(path_parts), self.config[config_key], True)

@@ -17,6 +17,10 @@ from collections import defaultdict, OrderedDict
 import json
 import os
 
+from stream_alert.shared.logger import get_logger
+
+LOGGER = get_logger(__name__)
+
 
 class TopLevelConfigKeys:
     """Define the available top level keys in the loaded config"""
@@ -26,12 +30,40 @@ class TopLevelConfigKeys:
     LOGS = 'logs'
     NORMALIZED_TYPES = 'normalized_types'
     OUTPUTS = 'outputs'
+    SCHEMAS = 'schemas'
     SOURCES = 'sources'
     THREAT_INTEL = 'threat_intel'
 
 
 class ConfigError(Exception):
     """Exception class for config file errors"""
+
+class SchemaSorter:
+    """Statefully sort schema by priority where 0 is the highest priority
+    and the lowest priority is any positive numeric value.
+    In the event that no priority is specified for a schema,
+    it will be placed at the end after all schema with a priority defined.
+    If no priority or equal priority is specified for multiple schema, they will
+    be sorted in the order they were encountered. The intent of the statefulness
+    of this function is that there is no arbitrarily enforced upper bound for priority."""
+
+    def __init__(self):
+        # Set a default index to -1
+        self.max_index = -1
+
+    def sort_key(self, key_and_value_tuple):
+        """Key function for pythons sort function.
+        Return each schemas priority or the max encountered priority if none was specified.
+        """
+        dict_value = key_and_value_tuple[1]
+        value = int(dict_value.get('configuration', {}).get('priority', -1))
+
+        # Update the index to the max of the current index or cached one
+        self.max_index = max(self.max_index, value)
+
+        # If the index is -1 (or unset), use the current "max_index"
+        # Otherwise, return the actual priority value
+        return self.max_index if value == -1 else value
 
 
 def parse_lambda_arn(function_arn):
@@ -107,17 +139,31 @@ def load_config(conf_dir='conf/', exclude=None, include=None, validate=True):
     exclusions = exclude or set()
     conf_files = conf_files.difference(exclusions)
 
-    if not (conf_files or include_clusters):
+
+    schemas_dir = os.path.join(conf_dir, TopLevelConfigKeys.SCHEMAS)
+    schema_files = []
+
+    if (os.path.exists(schemas_dir) and TopLevelConfigKeys.SCHEMAS not in exclusions
+            and (not include or TopLevelConfigKeys.SCHEMAS in include)):
+        schema_files = [
+            schema_file for schema_file in os.listdir(schemas_dir) if schema_file.endswith('.json')
+        ]
+
+    if not (conf_files or include_clusters or schema_files):
         available_files = ', '.join("'{}'".format(name) for name in sorted(default_files))
         raise ConfigError('No config files to load. This is likely due the misuse of '
                           'the \'include\' or \'exclude\' keyword arguments. Available '
-                          'files are: {}, and clusters'.format(available_files))
+                          'files are: {}, clusters, and schemas.'.format(available_files))
 
     config = defaultdict(dict)
     for name in conf_files:
         path = os.path.join(conf_dir, name)
         # we use object_pairs_hook=OrderdDict to preserve schema order for CSV/KV log types
         config[os.path.splitext(name)[0]] = _load_json_file(path, name == 'logs.json')
+
+    # Load split logs.json configuration
+    if ('logs.json' not in default_files and schema_files):
+        config[TopLevelConfigKeys.LOGS] = _load_schemas(schemas_dir, schema_files)
 
     # Load the configs for clusters if it is not excluded
     if TopLevelConfigKeys.CLUSTERS not in exclusions and not include or include_clusters:
@@ -134,6 +180,25 @@ def load_config(conf_dir='conf/', exclude=None, include=None, validate=True):
 
     return config
 
+def _load_schemas(schemas_dir, schema_files):
+    """Helper to load all schemas from the schemas directory into one ordered dictionary.
+
+    Args:
+        conf_dir (str):  The relative path of the configuration directory
+        schemas_dir (bool): The realtive path of the schemas directory
+
+    Returns:
+        OrderedDict: The sorted schema dictionary.
+    """
+    schemas = dict()
+    for schema in schema_files:
+        schemas_from_file = _load_json_file(os.path.join(schemas_dir, schema), True)
+        dup_schema = set(schemas).intersection(schemas_from_file)
+        if dup_schema:
+            LOGGER.warning('Duplicate schema detected %s. This may result in undefined behavior.',
+                           ', '.join(dup_schema))
+        schemas.update(schemas_from_file)
+    return OrderedDict(sorted(schemas.items(), key=SchemaSorter().sort_key))
 
 def _load_json_file(path, ordered=False):
     """Helper to return the loaded json from a given path

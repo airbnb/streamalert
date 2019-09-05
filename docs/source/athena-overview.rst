@@ -36,7 +36,7 @@ To create tables for searching data sent to StreamAlert, run:
     --bucket <prefix>.streamalert.data \
     --table-name <log_name>
 
-The log name above reflects an enabled log type in your StreamAlert deployment. These are also top level keys in the ``logs.json``.
+The log name above reflects an enabled log type in your StreamAlert deployment. These are also top level keys in the various files under the ``schemas`` directory.
 
 For example, if you have 'cloudwatch' in your sources, you would want to create tables for all possible subtypes.  This includes ``cloudwatch:control_message``, ``cloudwatch:events``, and ``cloudwatch:flow_logs``. The ``:`` character is not an acceptable character in table names due to a Hive limitation, but your arguments can be either ``cloudwatch:events`` **or** ``cloudwatch_events``. Both will be handled properly by StreamAlert.
 

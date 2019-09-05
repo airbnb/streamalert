@@ -67,6 +67,26 @@ class TestConfigLoading(fake_filesystem_unittest.TestCase):
             'conf/normalized_types.json',
             contents=json.dumps(config_data['normalized_types'])
         )
+        self.fs.create_file(
+            'conf/schemas/csv.json',
+            contents='{"csv_log2": {"schema": {"data": "string","uid": "integer"},"parser": "csv"}}'
+        )
+
+        # Create similar structure but with schemas folder instead of logs.json
+        self.fs.create_file('conf_schemas/clusters/prod.json', contents='{}')
+        self.fs.create_file('conf_schemas/clusters/dev.json', contents='{}')
+        self.fs.create_file('conf_schemas/global.json', contents='{}')
+        self.fs.create_file('conf_schemas/lambda.json', contents='{}')
+        self.fs.create_file('conf_schemas/outputs.json', contents='{}')
+        self.fs.create_file('conf_schemas/sources.json', contents='{}')
+        self.fs.create_file(
+            'conf_schemas/schemas/csv.json',
+            contents='{"csv_log": {"schema": {"data": "string","uid": "integer"},"parser": "csv"}}'
+        )
+        self.fs.create_file(
+            'conf_schemas/schemas/json.json',
+            contents='{"json_log": {"schema": {"name": "string"},"parser": "json"}}'
+        )
 
     def test_load_invalid_file(self):
         """Shared - Config Loading - Bad JSON"""
@@ -124,6 +144,19 @@ class TestConfigLoading(fake_filesystem_unittest.TestCase):
         assert_equal(set(config), expected_keys)
 
     @staticmethod
+    def test_load_exclude_schemas():
+        """Shared - Config Loading - Exclude Clusters"""
+        config = load_config(conf_dir='conf_schemas', exclude={'schemas'})
+        expected_keys = {
+            'clusters',
+            'global',
+            'lambda',
+            'outputs',
+            'sources',
+        }
+        assert_equal(set(config), expected_keys)
+
+    @staticmethod
     def test_load_include():
         """Shared - Config Loading - Include"""
         config = load_config(include={'clusters', 'logs.json'})
@@ -131,6 +164,22 @@ class TestConfigLoading(fake_filesystem_unittest.TestCase):
         expected_clusters_keys = ['prod', 'dev']
         assert_count_equal(list(config.keys()), expected_keys)
         assert_count_equal(list(config['clusters'].keys()), expected_clusters_keys)
+
+    @staticmethod
+    def test_load_schemas():
+        """Shared - Config Loading - Schemas"""
+        # Load from separate dir where logs.json doesn't exist
+        config = load_config(conf_dir='conf_schemas')
+        basic_config = basic_streamalert_config()
+        assert_equal(config['logs'], basic_config['logs'])
+
+    @staticmethod
+    def test_load_schemas_logs():
+        """Shared - Config Loading - Schemas and Logs.json Exist"""
+        # Check if data was loaded from conf/logs.json or the schemas dir if both exist
+        config = load_config(conf_dir='conf')
+        # Logs.json is preferred over schemas for backwards compatibility.
+        assert_equal(config['logs'], {})
 
 
 class TestConfigValidation:

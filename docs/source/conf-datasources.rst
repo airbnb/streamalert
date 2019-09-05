@@ -10,7 +10,9 @@ Datasources defined in ``conf/sources.json`` control which datasources can send 
 
 Each datasource (``kinesis``, ``s3``, or ``sns``) contains a mapping of specific resource names (kinesis stream names, s3 bucket IDs) along with a list of logs coming from that source.
 
-Log schemas are defined in ``conf/logs.json``
+Log schemas are defined in one or more files in the ``conf/schemas`` directory.
+
+An example of this would be to put all carbonblack schemas into ``conf/schemas/carbonblack.json``.
 
 Each log in the list of ``logs`` dictates to StreamAlert how to parse incoming data from a given resource.  Data will only be analyzed if its type is defined here.
 

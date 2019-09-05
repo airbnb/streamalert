@@ -1,0 +1,38 @@
+{
+  "onelogin:events": {
+    "schema": {
+      "account_id": "integer",
+      "actor_system": "string",
+      "actor_user_id": "string",
+      "actor_user_name": "string",
+      "app_id": "string",
+      "app_name": "string",
+      "assuming_acting_user_id": "string",
+      "client_id": "string",
+      "created_at": "string",
+      "custom_message": "string",
+      "directory_id": "string",
+      "directory_sync_run_id": "string",
+      "error_description": "string",
+      "event_type_id": "integer",
+      "group_id": "string",
+      "group_name": "string",
+      "id": "integer",
+      "ipaddr": "string",
+      "notes": "string",
+      "operation_name": "string",
+      "otp_device_id": "string",
+      "otp_device_name": "string",
+      "policy_id": "string",
+      "policy_name": "string",
+      "proxy_ip": "string",
+      "resolution": "string",
+      "resource_type_id": "string",
+      "role_id": "string",
+      "role_name": "string",
+      "user_id": "string",
+      "user_name": "string"
+    },
+    "parser": "json"
+  }
+}

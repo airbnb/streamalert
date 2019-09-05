@@ -1,0 +1,90 @@
+{
+  "osquery:batch": {
+    "schema": {
+      "calendarTime": "string",
+      "counter": "integer",
+      "decorations": {},
+      "diffResults": {
+        "added": [],
+        "removed": []
+      },
+      "epoch": "integer",
+      "hostIdentifier": "string",
+      "name": "string",
+      "unixTime": "string"
+    },
+    "parser": "json",
+    "configuration": {
+      "optional_top_level_keys": [
+        "decorations",
+        "epoch",
+        "counter"
+      ]
+    }
+  },
+  "osquery:differential": {
+    "schema": {
+      "action": "string",
+      "calendarTime": "string",
+      "columns": {},
+      "counter": "integer",
+      "decorations": {},
+      "epoch": "integer",
+      "hostIdentifier": "string",
+      "log_type": "string",
+      "name": "string",
+      "unixTime": "integer"
+    },
+    "parser": "json",
+    "configuration": {
+      "optional_top_level_keys": [
+        "counter",
+        "decorations",
+        "epoch",
+        "log_type"
+      ]
+    }
+  },
+  "osquery:snapshot": {
+    "schema": {
+      "action": "string",
+      "calendarTime": "string",
+      "counter": "integer",
+      "decorations": {},
+      "epoch": "integer",
+      "hostIdentifier": "string",
+      "log_type": "string",
+      "name": "string",
+      "snapshot": [],
+      "unixTime": "string"
+    },
+    "parser": "json",
+    "configuration": {
+      "optional_top_level_keys": [
+        "decorations",
+        "epoch",
+        "counter"
+      ]
+    }
+  },
+  "osquery:status": {
+    "schema": {
+      "calendarTime": "string",
+      "decorations": {},
+      "filename": "string",
+      "hostIdentifier": "string",
+      "line": "integer",
+      "log_type": "string",
+      "message": "string",
+      "severity": "integer",
+      "unixTime": "string",
+      "version": "string"
+    },
+    "parser": "json",
+    "configuration": {
+      "optional_top_level_keys": [
+        "decorations"
+      ]
+    }
+  }
+}
