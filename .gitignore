@@ -23,7 +23,7 @@ terraform/*.tf.json
 
 # Vagrant VM artifacts
 ubuntu*.log
-/vagrant
+/.vagrant
 
 # Coverage artifacts
 /htmlcov
