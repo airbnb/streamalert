@@ -323,7 +323,7 @@ class S3Adapter:
         try:
             start_time = time.time()
             s3_object = self._s3_client.Object(self._s3_bucket, self._s3_key).get()
-            bytes = s3_object.get('Body').read()
+            bytes_data = s3_object.get('Body').read()
 
             total_time = time.time() - start_time
             size_kb = round(s3_object.get('ContentLength') / 1024.0, 2)
@@ -335,7 +335,7 @@ class S3Adapter:
                 round(total_time, 2)
             )
 
-            return bytes
+            return bytes_data
         except ClientError as err:
             LOGGER.error(
                 'LookupTable (%s): Encountered error while downloading %s from %s: %s',
