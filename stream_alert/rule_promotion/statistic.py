@@ -114,6 +114,8 @@ class StagingStatistic:
             else 'n/a'
         )
 
+        info['alert_count'] = 'unknown' if info['alert_count'] == -1 else info['alert_count']
+
         # \u25E6 is unicode for a bullet
         return (
             '\u25E6 {_rule_name}\n'

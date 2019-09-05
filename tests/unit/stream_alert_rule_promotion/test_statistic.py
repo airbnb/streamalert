@@ -100,3 +100,26 @@ home#query/history/678cc350-d4e1-4296-86d5-9351b7f92ed4'''
         second_stat.alert_count = 100
 
         assert_equal(self.statistic > second_stat, True)
+
+    def test_comp_no_alert_count(self):
+        """StagingStatistic - Comparison when alert_count is default value"""
+        # self.statistic.alert_count = 200
+        second_stat = StagingStatistic(
+            staged_at='fake_staged_at_time',
+            staged_until='fake_staged_until_time',
+            current_time='fake_current_time',
+            rule='test_rule'
+        )
+        second_stat.alert_count = 100
+
+        assert_equal(self.statistic > second_stat, False)
+
+        self.statistic._current_time += timedelta(days=2, hours=10)
+        expected_string = '''\u25E6 test_rule
+	- Staged At:					2000-01-01 01:01:01 UTC
+	- Staged Until:					2000-01-03 01:01:01 UTC
+	- Time Past Staging:			1d 10h 0m
+	- Alert Count:					unknown
+	- Alert Info:					n/a'''
+
+        assert_equal(str(self.statistic), expected_string)
